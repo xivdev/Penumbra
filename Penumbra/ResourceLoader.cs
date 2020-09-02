@@ -80,12 +80,8 @@ namespace Penumbra
 
 
             ReadSqpackHook = new Hook< ReadSqpackPrototype >( readSqpackAddress, new ReadSqpackPrototype( ReadSqpackHandler ) );
-
-            GetResourceSyncHook = new Hook< GetResourceSyncPrototype >( getResourceSyncAddress,
-                new GetResourceSyncPrototype( GetResourceSyncHandler ) );
-
-            GetResourceAsyncHook = new Hook< GetResourceAsyncPrototype >( getResourceAsyncAddress,
-                new GetResourceAsyncPrototype( GetResourceAsyncHandler ) );
+            GetResourceSyncHook = new Hook< GetResourceSyncPrototype >( getResourceSyncAddress, new GetResourceSyncPrototype( GetResourceSyncHandler ) );
+            GetResourceAsyncHook = new Hook< GetResourceAsyncPrototype >( getResourceAsyncAddress, new GetResourceAsyncPrototype( GetResourceAsyncHandler ) );
 
             ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
 
@@ -99,10 +95,8 @@ namespace Penumbra
 
             _playerResourceManagerAddress = scanner.GetStaticAddressFromSig( "0F 44 FE 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 05" );
 
-            LoadPlayerResources =
-                Marshal.GetDelegateForFunctionPointer< LoadPlayerResourcesPrototype >( loadPlayerResourcesAddress );
-            UnloadPlayerResources =
-                Marshal.GetDelegateForFunctionPointer< UnloadPlayerResourcesPrototype >( unloadPlayerResourcesAddress );
+            LoadPlayerResources = Marshal.GetDelegateForFunctionPointer< LoadPlayerResourcesPrototype >( loadPlayerResourcesAddress );
+            UnloadPlayerResources = Marshal.GetDelegateForFunctionPointer< UnloadPlayerResourcesPrototype >( unloadPlayerResourcesAddress );
             ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
         }
 
@@ -127,7 +121,9 @@ namespace Penumbra
             var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pPath ) );
 
             if( LogAllFiles )
+            {
                 PluginLog.Log( "[ReadSqPack] {0}", gameFsPath );
+            }
 
             var candidate = Plugin.ModManager.GetCandidateForGameFile( gameFsPath );
 
