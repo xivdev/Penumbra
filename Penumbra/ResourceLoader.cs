@@ -11,7 +11,7 @@ using Penumbra.Extensions;
 
 namespace Penumbra
 {
-    public class Penumbra : IDisposable
+    public class ResourceLoader : IDisposable
     {
         public Plugin Plugin { get; set; }
 
@@ -31,6 +31,10 @@ namespace Penumbra
         public unsafe delegate void* GetResourceAsyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType,
             uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown );
 
+        public unsafe delegate void* LoadPlayerResourcesPrototype( IntPtr pResourceManager );
+
+        public unsafe delegate void* UnloadPlayerResourcesPrototype( IntPtr pResourceManager );
+
 
         // Hooks
         public Hook< GetResourceSyncPrototype > GetResourceSyncHook { get; private set; }
@@ -41,7 +45,18 @@ namespace Penumbra
         public ReadFilePrototype ReadFile { get; private set; }
 
 
-        public Penumbra( Plugin plugin )
+        public LoadPlayerResourcesPrototype LoadPlayerResources { get; private set; }
+        public UnloadPlayerResourcesPrototype UnloadPlayerResources { get; private set; }
+
+        // Object addresses
+        private IntPtr _playerResourceManagerAddress;
+        public IntPtr PlayerResourceManagerPtr => Marshal.ReadIntPtr( _playerResourceManagerAddress );
+
+        
+        public bool LogAllFiles = false;
+
+
+        public ResourceLoader( Plugin plugin )
         {
             Plugin = plugin;
             Crc32 = new Crc32();
@@ -73,6 +88,22 @@ namespace Penumbra
                 new GetResourceAsyncPrototype( GetResourceAsyncHandler ) );
 
             ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
+
+            /////
+
+            var loadPlayerResourcesAddress =
+                scanner.ScanText(
+                    "E8 ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? BA ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? 48 8B 48 30 48 8B 01 FF 50 10 48 85 C0 74 0A " );
+            var unloadPlayerResourcesAddress =
+                scanner.ScanText( "41 55 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B E9 48 83 C1 08" );
+
+            _playerResourceManagerAddress = scanner.GetStaticAddressFromSig( "0F 44 FE 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 05" );
+
+            LoadPlayerResources =
+                Marshal.GetDelegateForFunctionPointer< LoadPlayerResourcesPrototype >( loadPlayerResourcesAddress );
+            UnloadPlayerResources =
+                Marshal.GetDelegateForFunctionPointer< UnloadPlayerResourcesPrototype >( unloadPlayerResourcesAddress );
+            ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
         }
 
 
@@ -94,6 +125,9 @@ namespace Penumbra
             char* pResourceType, uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown )
         {
             var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pPath ) );
+
+            if( LogAllFiles )
+                PluginLog.Log( "[ReadSqPack] {0}", gameFsPath );
 
             var candidate = Plugin.ModManager.GetCandidateForGameFile( gameFsPath );
 
@@ -154,6 +188,12 @@ namespace Penumbra
 
 
             return ReadFile( pFileHandler, pFileDesc, priority, isSync );
+        }
+
+        public unsafe void ReloadPlayerResource()
+        {
+            UnloadPlayerResources( PlayerResourceManagerPtr );
+            LoadPlayerResources( PlayerResourceManagerPtr );
         }
 
         public void Enable()

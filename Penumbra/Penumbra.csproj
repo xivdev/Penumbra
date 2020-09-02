@@ -80,7 +80,7 @@
     <Compile Include="Structs\FileMode.cs" />
     <Compile Include="Structs\SeFileDescriptor.cs" />
     <Compile Include="ResourceMod.cs" />
-    <Compile Include="Penumbra.cs" />
+    <Compile Include="ResourceLoader.cs" />
     <Compile Include="Structs\ResourceHandle.cs" />
     <Compile Include="SettingsInterface.cs" />
     <Compile Include="Util\Crc32.cs" />

@@ -13,7 +13,7 @@ namespace Penumbra
         public DalamudPluginInterface PluginInterface { get; set; }
         public Configuration Configuration { get; set; }
 
-        public Penumbra Penumbra { get; set; }
+        public ResourceLoader ResourceLoader { get; set; }
 
         public ModManager ModManager { get; set; }
 
@@ -26,13 +26,10 @@ namespace Penumbra
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize( PluginInterface );
 
-            SettingsInterface = new SettingsInterface( this );
-            PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
-
             ModManager = new ModManager( new DirectoryInfo( Configuration.BaseFolder ) );
             ModManager.DiscoverMods();
 
-            Penumbra = new Penumbra( this );
+            ResourceLoader = new ResourceLoader( this );
 
 
             PluginInterface.CommandManager.AddHandler( CommandName, new CommandInfo( OnCommand )
@@ -40,8 +37,11 @@ namespace Penumbra
                 HelpMessage = "/penumbra 0 will disable penumbra, /penumbra 1 will enable it."
             } );
 
-            Penumbra.Init();
-            Penumbra.Enable();
+            ResourceLoader.Init();
+            ResourceLoader.Enable();
+            
+            SettingsInterface = new SettingsInterface( this );
+            PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
         }
 
         public void Dispose()
@@ -51,7 +51,7 @@ namespace Penumbra
             PluginInterface.CommandManager.RemoveHandler( CommandName );
             PluginInterface.Dispose();
 
-            Penumbra.Dispose();
+            ResourceLoader.Dispose();
         }
 
         private void OnCommand( string command, string args )
@@ -60,9 +60,9 @@ namespace Penumbra
                 Configuration.IsEnabled = args[ 0 ] == '1';
 
             if( Configuration.IsEnabled )
-                Penumbra.Enable();
+                ResourceLoader.Enable();
             else
-                Penumbra.Disable();
+                ResourceLoader.Disable();
         }
     }
 }

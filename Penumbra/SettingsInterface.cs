@@ -74,6 +74,11 @@ namespace Penumbra
             {
                 ReloadMods();
             }
+            
+            if( ImGui.Button( "Reload Player Resource" ) )
+            {
+                _plugin.ResourceLoader.ReloadPlayerResource();
+            }
 
             if( !_isImportRunning )
             {
@@ -127,7 +132,14 @@ namespace Penumbra
             }
 
             if( ImGui.Button( "Save Settings" ) )
+            {
                 _plugin.Configuration.Save();
+            }
+            
+            if( _plugin.ResourceLoader != null )
+            {
+                ImGui.Checkbox( "DEBUG Log all loaded files", ref _plugin.ResourceLoader.LogAllFiles );
+            }
 
             ImGui.EndTabItem();
         }
