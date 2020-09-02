@@ -4,7 +4,7 @@ Penumbra is a runtime mod loader for FINAL FANTASY XIV, with a bunch of other us
 
 * No need to back up your install - mods don't touch game files
 * Disable and enable mods without restarting the game
-* Resolve conflicts between mods by changing mod order
+* Resolve conflicts between mods by changing mod order ([soon™](https://github.com/xivdev/Penumbra/issues/2))
 * Files can be edited and are often replicated in-game after a map change or closing and reopening a window
 
 ## Current Status
