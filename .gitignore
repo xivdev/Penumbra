@@ -2,3 +2,4 @@
 obj/
 bin/
 *.user
+backup*/
