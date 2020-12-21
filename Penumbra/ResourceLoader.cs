@@ -2,12 +2,13 @@
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
-using Dalamud.Hooking;
 using Dalamud.Plugin;
 using Penumbra.Structs;
 using Penumbra.Util;
 using FileMode = Penumbra.Structs.FileMode;
-using Penumbra.Extensions;
+using Reloaded.Hooks;
+using Reloaded.Hooks.Definitions;
+using Reloaded.Hooks.Definitions.X64;
 
 namespace Penumbra
 {
@@ -21,25 +22,31 @@ namespace Penumbra
 
 
         // Delegate prototypes
+        [Function( CallingConventions.Microsoft )]
         public unsafe delegate byte ReadFilePrototype( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync );
 
+        [Function( CallingConventions.Microsoft )]
         public unsafe delegate byte ReadSqpackPrototype( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync );
 
+        [Function( CallingConventions.Microsoft )]
         public unsafe delegate void* GetResourceSyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType,
             uint* pResourceHash, char* pPath, void* pUnknown );
 
+        [Function( CallingConventions.Microsoft )]
         public unsafe delegate void* GetResourceAsyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType,
             uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown );
 
+        [Function( CallingConventions.Microsoft )]
         public unsafe delegate void* LoadPlayerResourcesPrototype( IntPtr pResourceManager );
 
+        [Function( CallingConventions.Microsoft )]
         public unsafe delegate void* UnloadPlayerResourcesPrototype( IntPtr pResourceManager );
 
 
         // Hooks
-        public Hook< GetResourceSyncPrototype > GetResourceSyncHook { get; private set; }
-        public Hook< GetResourceAsyncPrototype > GetResourceAsyncHook { get; private set; }
-        public Hook< ReadSqpackPrototype > ReadSqpackHook { get; private set; }
+        public IHook< GetResourceSyncPrototype > GetResourceSyncHook { get; private set; }
+        public IHook< GetResourceAsyncPrototype > GetResourceAsyncHook { get; private set; }
+        public IHook< ReadSqpackPrototype > ReadSqpackHook { get; private set; }
 
         // Unmanaged functions
         public ReadFilePrototype ReadFile { get; private set; }
@@ -52,7 +59,7 @@ namespace Penumbra
         private IntPtr _playerResourceManagerAddress;
         public IntPtr PlayerResourceManagerPtr => Marshal.ReadIntPtr( _playerResourceManagerAddress );
 
-        
+
         public bool LogAllFiles = false;
 
 
@@ -79,9 +86,9 @@ namespace Penumbra
                 scanner.ScanText( "E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00" );
 
 
-            ReadSqpackHook = new Hook< ReadSqpackPrototype >( readSqpackAddress, new ReadSqpackPrototype( ReadSqpackHandler ) );
-            GetResourceSyncHook = new Hook< GetResourceSyncPrototype >( getResourceSyncAddress, new GetResourceSyncPrototype( GetResourceSyncHandler ) );
-            GetResourceAsyncHook = new Hook< GetResourceAsyncPrototype >( getResourceAsyncAddress, new GetResourceAsyncPrototype( GetResourceAsyncHandler ) );
+            ReadSqpackHook = new Hook< ReadSqpackPrototype >( ReadSqpackHandler, ( long )readSqpackAddress );
+            GetResourceSyncHook = new Hook< GetResourceSyncPrototype >( GetResourceSyncHandler, ( long )getResourceSyncAddress );
+            GetResourceAsyncHook = new Hook< GetResourceAsyncPrototype >( GetResourceAsyncHandler, ( long )getResourceAsyncAddress );
 
             ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
 
@@ -101,28 +108,54 @@ namespace Penumbra
         }
 
 
-        public unsafe void* GetResourceSyncHandler( IntPtr pFileManager, uint* pCategoryId,
-            char* pResourceType, uint* pResourceHash, char* pPath, void* pUnknown )
-        {
-            return GetResourceHandler( true, pFileManager, pCategoryId, pResourceType,
-                pResourceHash, pPath, pUnknown, false );
-        }
+        private unsafe void* GetResourceSyncHandler(
+            IntPtr pFileManager,
+            uint* pCategoryId,
+            char* pResourceType,
+            uint* pResourceHash,
+            char* pPath,
+            void* pUnknown
+        ) => GetResourceHandler( true, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, false );
 
-        public unsafe void* GetResourceAsyncHandler( IntPtr pFileManager, uint* pCategoryId,
-            char* pResourceType, uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown )
-        {
-            return GetResourceHandler( false, pFileManager, pCategoryId, pResourceType,
-                pResourceHash, pPath, pUnknown, isUnknown );
-        }
+        private unsafe void* GetResourceAsyncHandler(
+            IntPtr pFileManager,
+            uint* pCategoryId,
+            char* pResourceType,
+            uint* pResourceHash,
+            char* pPath,
+            void* pUnknown,
+            bool isUnknown
+        ) => GetResourceHandler( false, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
 
-        private unsafe void* GetResourceHandler( bool isSync, IntPtr pFileManager, uint* pCategoryId,
-            char* pResourceType, uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown )
+        private unsafe void* CallOriginalHandler(
+            bool isSync,
+            IntPtr pFileManager,
+            uint* pCategoryId,
+            char* pResourceType,
+            uint* pResourceHash,
+            char* pPath,
+            void* pUnknown,
+            bool isUnknown
+        ) => isSync
+            ? GetResourceSyncHook.OriginalFunction( pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown )
+            : GetResourceAsyncHook.OriginalFunction( pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
+
+        private unsafe void* GetResourceHandler(
+            bool isSync,
+            IntPtr pFileManager,
+            uint* pCategoryId,
+            char* pResourceType,
+            uint* pResourceHash,
+            char* pPath,
+            void* pUnknown,
+            bool isUnknown
+        )
         {
             var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pPath ) );
 
             if( LogAllFiles )
             {
-                PluginLog.Log( "[ReadSqPack] {0}", gameFsPath );
+                PluginLog.Log( "[GetResourceHandler] {0}", gameFsPath );
             }
 
             var candidate = Plugin.ModManager.GetCandidateForGameFile( gameFsPath );
@@ -130,11 +163,7 @@ namespace Penumbra
             // path must be < 260 because statically defined array length :(
             if( candidate == null || candidate.FullName.Length >= 260 || !candidate.Exists )
             {
-                return isSync
-                    ? GetResourceSyncHook.Original( pFileManager, pCategoryId, pResourceType,
-                        pResourceHash, pPath, pUnknown )
-                    : GetResourceAsyncHook.Original( pFileManager, pCategoryId, pResourceType,
-                        pResourceHash, pPath, pUnknown, isUnknown );
+                return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
             }
 
             var cleanPath = candidate.FullName.Replace( '\\', '/' );
@@ -148,15 +177,11 @@ namespace Penumbra
             Crc32.Update( asciiPath );
             *pResourceHash = Crc32.Checksum;
 
-            return isSync
-                ? GetResourceSyncHook.Original( pFileManager, pCategoryId, pResourceType,
-                    pResourceHash, pPath, pUnknown )
-                : GetResourceAsyncHook.Original( pFileManager, pCategoryId, pResourceType,
-                    pResourceHash, pPath, pUnknown, isUnknown );
+            return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }
 
 
-        public unsafe byte ReadSqpackHandler( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync )
+        private unsafe byte ReadSqpackHandler( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync )
         {
             var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pFileDesc->ResourceHandle->FileName ) );
 
@@ -164,7 +189,7 @@ namespace Penumbra
 
             if( gameFsPath == null || gameFsPath.Length >= 260 || !isRooted )
             {
-                return ReadSqpackHook.Original( pFileHandler, pFileDesc, priority, isSync );
+                return ReadSqpackHook.OriginalFunction( pFileHandler, pFileDesc, priority, isSync );
             }
 
 #if DEBUG
@@ -197,6 +222,10 @@ namespace Penumbra
             if( IsEnabled )
                 return;
 
+            ReadSqpackHook.Activate();
+            GetResourceSyncHook.Activate();
+            GetResourceAsyncHook.Activate();
+
             ReadSqpackHook.Enable();
             GetResourceSyncHook.Enable();
             GetResourceAsyncHook.Enable();
@@ -221,9 +250,9 @@ namespace Penumbra
             if( IsEnabled )
                 Disable();
 
-            ReadSqpackHook.Dispose();
-            GetResourceSyncHook.Dispose();
-            GetResourceAsyncHook.Dispose();
+            // ReadSqpackHook.Disable();
+            // GetResourceSyncHook.Disable();
+            // GetResourceAsyncHook.Disable();
         }
     }
 }
