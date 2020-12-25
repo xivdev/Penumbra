@@ -1,0 +1,33 @@
+name: .NET Build
+
+on:
+  push:
+    branches: *
+  pull_request:
+    branches: *
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.100
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Download Dalamud
+        run: |
+          Invoke-WebRequest -Uri https://goaaats.github.io/ffxiv/tools/launcher/addons/Hooks/latest.zip -OutFile latest.zip
+          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\"
+      - name: Build
+        run: |
+          dotnet build --no-restore --configuration Release --nologo
+      - name: Archive
+        run: Compress-Archive -Path Penumbra/bin/Release/* -DestinationPath Penumbra.zip
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.2.1
+      with:
+        path: |
+          ./Penumbra/bin/Release/**
