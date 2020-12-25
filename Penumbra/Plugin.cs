@@ -1,6 +1,13 @@
+using System;
+using System.Diagnostics;
+using System.Drawing;
 using System.IO;
+using System.Runtime.InteropServices;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
+using Penumbra.Extensions;
+using Penumbra.Mods;
+using Penumbra.UI;
 
 namespace Penumbra
 {
@@ -19,6 +26,8 @@ namespace Penumbra
 
         public SettingsInterface SettingsInterface { get; set; }
 
+        public string PluginDebugTitleStr { get; private set; }
+
         public void Initialize( DalamudPluginInterface pluginInterface )
         {
             PluginInterface = pluginInterface;
@@ -26,8 +35,8 @@ namespace Penumbra
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize( PluginInterface );
 
-            ModManager = new ModManager( new DirectoryInfo( Configuration.BaseFolder ) );
-            ModManager.DiscoverMods();
+            ModManager = new ModManager();
+            ModManager.DiscoverMods( Configuration.CurrentCollection );
 
             ResourceLoader = new ResourceLoader( this );
 
@@ -39,9 +48,11 @@ namespace Penumbra
 
             ResourceLoader.Init();
             ResourceLoader.Enable();
-            
+
             SettingsInterface = new SettingsInterface( this );
             PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
+
+            PluginDebugTitleStr = $"{Name} - Debug Build";
         }
 
         public void Dispose()

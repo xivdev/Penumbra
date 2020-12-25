@@ -1,10 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using Dalamud.Plugin;
 using Penumbra.Models;
 
-namespace Penumbra
+namespace Penumbra.Mods
 {
     public class ResourceMod
     {
@@ -12,7 +11,9 @@ namespace Penumbra
 
         public DirectoryInfo ModBasePath { get; set; }
 
-        public List< FileInfo > ModFiles { get; } = new List< FileInfo >();
+        public List< FileInfo > ModFiles { get; } = new();
+
+        public Dictionary< string, List< string > > FileConflicts { get; set; } = new();
 
         public void RefreshModFiles()
         {
@@ -30,6 +31,24 @@ namespace Penumbra
                     ModFiles.Add( file );
                 }
             }
+        }
+
+        public void AddConflict( string modName, string path )
+        {
+            if( FileConflicts.TryGetValue( modName, out var arr ) )
+            {
+                if( !arr.Contains( path ) )
+                {
+                    arr.Add( path );
+                }
+
+                return;
+            }
+
+            FileConflicts[ modName ] = new List< string >
+            {
+                path
+            };
         }
     }
 }

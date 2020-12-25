@@ -1,6 +1,7 @@
 ﻿using Dalamud.Configuration;
 using Dalamud.Plugin;
 using System;
+using System.Collections.Generic;
 
 namespace Penumbra
 {
@@ -11,7 +12,9 @@ namespace Penumbra
 
         public bool IsEnabled { get; set; } = true;
 
-        public string BaseFolder { get; set; } = @"D:/ffxiv/fs_mods/";
+        public string CurrentCollection { get; set; } = @"D:/ffxiv/fs_mods/";
+
+        public List< string > ModCollections { get; set; } = new();
 
         // the below exist just to make saving less cumbersome
 
