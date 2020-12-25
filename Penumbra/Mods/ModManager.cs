@@ -38,7 +38,8 @@ namespace Penumbra.Mods
 
             if( !basePath.Exists )
             {
-                Directory.CreateDirectory( basePath.FullName );
+                Mods = null;
+                return;
             }
 
             _basePath = basePath;

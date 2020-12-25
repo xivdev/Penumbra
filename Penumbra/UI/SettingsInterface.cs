@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -84,10 +85,31 @@ namespace Penumbra.UI
                 ReloadMods();
             }
 
+            ImGui.SameLine();
+
+            if( ImGui.Button( "Open Mods Folder" ) )
+            {
+                Process.Start( _plugin.Configuration.CurrentCollection );
+            }
+            
+            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
+
+#if DEBUG
+
+            ImGui.Text( "debug shit" );
+
             if( ImGui.Button( "Reload Player Resource" ) )
             {
                 _plugin.ResourceLoader.ReloadPlayerResource();
             }
+            
+            if( _plugin.ResourceLoader != null )
+            {
+                ImGui.Checkbox( "DEBUG Log all loaded files", ref _plugin.ResourceLoader.LogAllFiles );
+            }
+            
+            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
+#endif
 
             if( !_isImportRunning )
             {
@@ -139,15 +161,12 @@ namespace Penumbra.UI
             {
                 ImGui.Button( "Import in progress..." );
             }
+            
+            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
 
             if( ImGui.Button( "Save Settings" ) )
             {
                 _plugin.Configuration.Save();
-            }
-
-            if( _plugin.ResourceLoader != null )
-            {
-                ImGui.Checkbox( "DEBUG Log all loaded files", ref _plugin.ResourceLoader.LogAllFiles );
             }
 
             ImGui.EndTabItem();
@@ -481,6 +500,10 @@ namespace Penumbra.UI
         private void ReloadMods()
         {
             _selectedMod = null;
+
+            // create the directory if it doesn't exist
+            Directory.CreateDirectory( _plugin.Configuration.CurrentCollection );
+
             _plugin.ModManager.DiscoverMods( _plugin.Configuration.CurrentCollection );
         }
     }
