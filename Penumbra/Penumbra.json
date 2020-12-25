@@ -1,0 +1,11 @@
+{
+    "Author": "Adam",
+    "Name": "Penumbra",
+    "Description": "Runtime mod loader and manager.",
+    "InternalName": "Penumbra",
+    "AssemblyVersion": "1.0.0.0",
+    "RepoUrl": "https://github.com/xivdev/Penumbra",
+    "ApplicableVersion": "any",
+    "Tags": [ "modding" ],
+    "DalamudApiLevel": 69420
+}

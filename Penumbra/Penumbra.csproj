@@ -60,4 +60,10 @@
         <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
         <PackageReference Include="Reloaded.Hooks" Version="2.4.1" />
     </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Penumbra.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
 </Project>

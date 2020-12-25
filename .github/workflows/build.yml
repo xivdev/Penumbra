@@ -26,4 +26,4 @@ jobs:
         uses: actions/upload-artifact@v2.2.1
         with:
           path: |
-            ./Penumbra/bin/Release/**
+            ./Penumbra/bin/Release/net472/*
