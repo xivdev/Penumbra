@@ -17,8 +17,8 @@ namespace Penumbra.Importer.Models
         public string Name { get; set; }
         public string Category { get; set; }
         public string FullPath { get; set; }
-        public int ModOffset { get; set; }
-        public int ModSize { get; set; }
+        public long ModOffset { get; set; }
+        public long ModSize { get; set; }
         public string DatFile { get; set; }
         public object ModPackEntry { get; set; }
     }
