@@ -13,7 +13,7 @@ namespace Penumbra.Mods
 
         public List< FileInfo > ModFiles { get; } = new();
 
-        public Dictionary< string, List< string > > FileConflicts { get; set; } = new();
+        public Dictionary< string, List< string > > FileConflicts { get; } = new();
 
         public void RefreshModFiles()
         {

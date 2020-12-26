@@ -7,10 +7,9 @@ namespace Penumbra.Mods
     public class ModManager
     {
         public readonly Dictionary< string, FileInfo > ResolvedFiles = new();
+        public readonly Dictionary< string, string > SwappedFiles = new();
 
         public ModCollection Mods { get; set; }
-
-        public ResourceMod[] AvailableMods => Mods?.EnabledMods;
 
         private DirectoryInfo _basePath;
 
@@ -81,6 +80,20 @@ namespace Penumbra.Mods
                         mod.AddConflict( modName, path );
                     }
                 }
+
+                foreach( var swap in mod.Meta.FileSwaps )
+                {
+                    // just assume people put not fucked paths in here lol
+                    if( !SwappedFiles.ContainsKey( swap.Value ) )
+                    {
+                        SwappedFiles[ swap.Key ] = swap.Value;
+                        registeredFiles[ swap.Key ] = mod.Meta.Name;
+                    }
+                    else if( registeredFiles.TryGetValue( swap.Key, out var modName ) )
+                    {
+                        mod.AddConflict( modName, swap.Key );
+                    }
+                }
             }
         }
 
@@ -99,7 +112,23 @@ namespace Penumbra.Mods
 
         public FileInfo GetCandidateForGameFile( string resourcePath )
         {
-            return ResolvedFiles.TryGetValue( resourcePath.ToLowerInvariant(), out var fileInfo ) ? fileInfo : null;
+            var val = ResolvedFiles.TryGetValue( resourcePath.ToLowerInvariant(), out var candidate );
+            if( !val )
+            {
+                return null;
+            }
+
+            if( candidate.FullName.Length >= 260 || !candidate.Exists )
+            {
+                return null;
+            }
+
+            return candidate;
+        }
+
+        public string GetSwappedFilePath( string originalPath )
+        {
+            return SwappedFiles.TryGetValue( originalPath, out var swappedPath ) ? swappedPath : null;
         }
     }
 }
