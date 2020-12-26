@@ -25,7 +25,7 @@ jobs:
           dotnet build --no-restore --configuration Release --nologo
       - name: write version into json
         run: |
-          ((get-content -Path ./Penumbra.json -raw) -replace '1.0.0.0', '${{ github.ref }}') | set-content -path ./Penumbra.json
+          ((get-content -Path ./Penumbra/bin/Release/net472/Penumbra.json -raw) -replace '1.0.0.0', '${{ github.ref }}') | set-content -path ./Penumbra/bin/Release/net472/Penumbra.json
       - name: Archive
         run: Compress-Archive -Path Penumbra/bin/Release/net472/* -DestinationPath Penumbra.${{ github.ref }}.zip -p:Version=${{ github.ref }} -p:FileVersion=${{ github.ref }}
       - name: Upload a Build Artifact
