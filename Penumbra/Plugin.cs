@@ -43,7 +43,7 @@ namespace Penumbra
 
             PluginInterface.CommandManager.AddHandler( CommandName, new CommandInfo( OnCommand )
             {
-                HelpMessage = "/penumbra 0 will disable penumbra, /penumbra 1 will enable it."
+                HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods"
             } );
 
             ResourceLoader.Init();
@@ -65,15 +65,27 @@ namespace Penumbra
             ResourceLoader.Dispose();
         }
 
-        private void OnCommand( string command, string args )
+        private void OnCommand( string command, string rawArgs )
         {
+            var args = rawArgs.Split( ' ' );
             if( args.Length > 0 )
-                Configuration.IsEnabled = args[ 0 ] == '1';
+            {
+                switch( args[ 0 ] )
+                {
+                    case "reload":
+                    {
+                        ModManager.DiscoverMods();
+                        PluginInterface.Framework.Gui.Chat.Print( 
+                            $"Reloaded Penumbra mods. You have {ModManager.Mods.ModSettings.Count} mods, {ModManager.Mods.EnabledMods.Length} of which are enabled."
+                        );
+                        break;
+                    }
+                }
 
-            if( Configuration.IsEnabled )
-                ResourceLoader.Enable();
-            else
-                ResourceLoader.Disable();
+                return;
+            }
+
+            SettingsInterface.Visible = !SettingsInterface.Visible;
         }
     }
 }

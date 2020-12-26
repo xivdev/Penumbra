@@ -18,6 +18,7 @@ namespace Penumbra.UI
         private readonly Plugin _plugin;
 
         public bool Visible = false;
+        public bool ShowDebugBar = false;
 
         private static readonly Vector2 AutoFillSize = new Vector2( -1, -1 );
         private static readonly Vector2 ModListSize = new Vector2( 200, -1 );
@@ -36,10 +37,46 @@ namespace Penumbra.UI
         public SettingsInterface( Plugin plugin )
         {
             _plugin = plugin;
+#if DEBUG
+            Visible = true;
+            ShowDebugBar = true;
+#endif
         }
 
         public void Draw()
         {
+            if( ShowDebugBar && ImGui.BeginMainMenuBar() )
+            {
+                if( ImGui.BeginMenu( "Penumbra" ) )
+                {
+                    if( ImGui.MenuItem( "Toggle UI", "/penumbra", Visible ) )
+                    {
+                        Visible = !Visible;
+                    }
+
+                    if( ImGui.MenuItem( "Rediscover Mods" ) )
+                    {
+                        ReloadMods();
+                    }
+
+//                     ImGui.Separator();
+// #if DEBUG
+//                     ImGui.Text( _plugin.PluginDebugTitleStr );
+// #else
+//                     ImGui.Text( _plugin.Name );
+// #endif
+
+                    ImGui.EndMenu();
+                }
+
+                ImGui.EndMainMenuBar();
+            }
+
+            if( !Visible )
+            {
+                return;
+            }
+
             ImGui.SetNextWindowSizeConstraints( MinSettingsSize, MaxSettingsSize );
 #if DEBUG
             var ret = ImGui.Begin( _plugin.PluginDebugTitleStr, ref Visible );
@@ -94,7 +131,7 @@ namespace Penumbra.UI
             {
                 Process.Start( _plugin.Configuration.CurrentCollection );
             }
-            
+
             ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
 
 #if DEBUG
@@ -105,12 +142,12 @@ namespace Penumbra.UI
             {
                 _plugin.ResourceLoader.ReloadPlayerResource();
             }
-            
+
             if( _plugin.ResourceLoader != null )
             {
                 ImGui.Checkbox( "DEBUG Log all loaded files", ref _plugin.ResourceLoader.LogAllFiles );
             }
-            
+
             ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
 #endif
 
@@ -164,7 +201,7 @@ namespace Penumbra.UI
             {
                 ImGui.Button( "Import in progress..." );
             }
-            
+
             ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
 
             if( ImGui.Button( "Save Settings" ) )

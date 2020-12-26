@@ -84,6 +84,14 @@ namespace Penumbra.Mods
                     )
             ).ToList();
 
+            // if anything gets removed above, the priority ordering gets fucked, so we need to resort and reindex them otherwise BAD THINGS HAPPEN
+            ModSettings = ModSettings.OrderBy( x => x.Priority ).ToList();
+            var p = 0;
+            foreach( var modSetting in ModSettings )
+            {
+                modSetting.Priority = p++;
+            }
+
             // reorder the resourcemods list so we can just directly iterate
             EnabledMods = GetOrderedAndEnabledModList().ToArray();
 
@@ -129,6 +137,8 @@ namespace Penumbra.Mods
             // save new prios
             Save();
         }
+        
+        
 
         public ModInfo FindModSettings( string name )
         {
