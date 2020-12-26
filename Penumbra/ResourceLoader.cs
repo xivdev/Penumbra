@@ -162,27 +162,27 @@ namespace Penumbra
             var candidate = Plugin.ModManager.GetCandidateForGameFile( gameFsPath );
             var swappedFilePath = Plugin.ModManager.GetSwappedFilePath( gameFsPath );
 
-            var path = candidate?.FullName ?? swappedFilePath;
+            var fsPath = candidate?.FullName ?? swappedFilePath;
 
             // path must be < 260 because statically defined array length :(
-            if( path == null || path.Length >= 260 )
+            if( fsPath == null || fsPath.Length >= 260 )
             {
                 return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
             }
 
-            var cleanPath = path.Replace( '\\', '/' );
-            var utfPath = Encoding.UTF8.GetBytes( cleanPath );
+            var cleanPath = fsPath.Replace( '\\', '/' );
+            var path = Encoding.ASCII.GetBytes( cleanPath );
 
-            var bPath = stackalloc byte[utfPath.Length + 1];
-            Marshal.Copy( utfPath, 0, new IntPtr( bPath ), utfPath.Length );
+            var bPath = stackalloc byte[path.Length + 1];
+            Marshal.Copy( path, 0, new IntPtr( bPath ), path.Length );
             pPath = ( char* )bPath;
 
             Crc32.Init();
-            Crc32.Update( utfPath );
+            Crc32.Update( path );
             *pResourceHash = Crc32.Checksum;
 
 #if DEBUG
-            PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, path );
+            PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, fsPath );
 #endif
             
             return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
@@ -206,7 +206,8 @@ namespace Penumbra
 
             pFileDesc->FileMode = FileMode.LoadUnpackedResource;
 
-            var utfPath = Encoding.UTF8.GetBytes( gameFsPath );
+            // note: must be utf16
+            var utfPath = Encoding.Unicode.GetBytes( gameFsPath );
 
             Marshal.Copy( utfPath, 0, new IntPtr( &pFileDesc->UtfFileName ), utfPath.Length );
 
@@ -214,7 +215,6 @@ namespace Penumbra
             Marshal.Copy( utfPath, 0, new IntPtr( fd + 0x21 ), utfPath.Length );
 
             pFileDesc->FileDescriptor = fd;
-
 
             return ReadFile( pFileHandler, pFileDesc, priority, isSync );
         }

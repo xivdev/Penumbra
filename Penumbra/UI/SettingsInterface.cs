@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -18,7 +17,7 @@ namespace Penumbra.UI
     {
         private readonly Plugin _plugin;
 
-        public bool Visible { get; set; } = true;
+        public bool Visible = false;
 
         private static readonly Vector2 AutoFillSize = new Vector2( -1, -1 );
         private static readonly Vector2 ModListSize = new Vector2( 200, -1 );
@@ -43,9 +42,9 @@ namespace Penumbra.UI
         {
             ImGui.SetNextWindowSizeConstraints( MinSettingsSize, MaxSettingsSize );
 #if DEBUG
-            var ret = ImGui.Begin( _plugin.PluginDebugTitleStr );
+            var ret = ImGui.Begin( _plugin.PluginDebugTitleStr, ref Visible );
 #else
-            var ret = ImGui.Begin( _plugin.Name );
+            var ret = ImGui.Begin( _plugin.Name, ref Visible );
 #endif
             if( !ret )
             {
@@ -55,10 +54,14 @@ namespace Penumbra.UI
             ImGui.BeginTabBar( "PenumbraSettings" );
 
             DrawSettingsTab();
-            DrawResourceMods();
-            DrawEffectiveFileList();
 
-            DrawDeleteModal();
+            if( !_isImportRunning )
+            {
+                DrawResourceMods();
+                DrawEffectiveFileList();
+
+                DrawDeleteModal();
+            }
 
             ImGui.EndTabBar();
 
