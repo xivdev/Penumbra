@@ -22,12 +22,15 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\"
       - name: Build
         run: |
-          dotnet build --no-restore --configuration Release --nologo
+          dotnet build --no-restore --configuration Release --nologo -p:Version=${{ github.ref }} -p:FileVersion=${{ github.ref }}
       - name: write version into json
         run: |
-          ((get-content -Path ./Penumbra/bin/Release/net472/Penumbra.json -raw) -replace '1.0.0.0', '${{ github.ref }}') | set-content -path ./Penumbra/bin/Release/net472/Penumbra.json
+          $path = './Penumbra/bin/Release/net472/Penumbra.json'
+          $content = get-content -path $path
+          $content = $content -replace '1.0.0.0',('${{ github.ref }}' -replace 'refs/tags/','')
+          set-content -Path $path -Value $content
       - name: Archive
-        run: Compress-Archive -Path Penumbra/bin/Release/net472/* -DestinationPath Penumbra.${{ github.ref }}.zip -p:Version=${{ github.ref }} -p:FileVersion=${{ github.ref }}
+        run: Compress-Archive -Path Penumbra/bin/Release/net472/* -DestinationPath Penumbra.${{ github.ref }}.zip
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.2.1
         with:
