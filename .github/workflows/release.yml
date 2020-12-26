@@ -22,15 +22,17 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\"
       - name: Build
         run: |
-          dotnet build --no-restore --configuration Release --nologo -p:Version=('${{ github.ref }}' -replace 'refs/tags/','') -p:FileVersion=('${{ github.ref }}' -replace 'refs/tags/','')
+          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
+          invoke-expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver -p:FileVersion=$ver'
       - name: write version into json
         run: |
+          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
           $path = './Penumbra/bin/Release/net472/Penumbra.json'
           $content = get-content -path $path
-          $content = $content -replace '1.0.0.0',('${{ github.ref }}' -replace 'refs/tags/','')
+          $content = $content -replace '1.0.0.0',$ver
           set-content -Path $path -Value $content
       - name: Archive
-        run: Compress-Archive -Path Penumbra/bin/Release/net472/* -DestinationPath Penumbra.('${{ github.ref }}' -replace 'refs/tags/','').zip
+        run: Compress-Archive -Path Penumbra/bin/Release/net472/* -DestinationPath Penumbra.zip
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.2.1
         with:
@@ -53,6 +55,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
-          asset_path: ./Penumbra.('${{ github.ref }}' -replace 'refs/tags/','').zip
-          asset_name: Penumbra.('${{ github.ref }}' -replace 'refs/tags/','').zip
+          asset_path: ./Penumbra.zip
+          asset_name: Penumbra.zip
           asset_content_type: application/zip
