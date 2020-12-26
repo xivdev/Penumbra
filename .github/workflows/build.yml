@@ -1,6 +1,10 @@
 name: .NET Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches: '*'
+    tags-ignore: '*'
+  pull_request:
 
 jobs:
   build:
@@ -21,7 +25,7 @@ jobs:
         run: |
           dotnet build --no-restore --configuration Release --nologo
       - name: Archive
-        run: Compress-Archive -Path Penumbra/bin/Release/* -DestinationPath Penumbra.zip
+        run: Compress-Archive -Path Penumbra/bin/Release/net472/* -DestinationPath Penumbra.zip
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.2.1
         with:

@@ -1,0 +1,55 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 5.0.100
+      - name: Restore dependencies
+        run: dotnet restore
+      - name: Download Dalamud
+        run: |
+          Invoke-WebRequest -Uri https://goaaats.github.io/ffxiv/tools/launcher/addons/Hooks/latest.zip -OutFile latest.zip
+          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\"
+      - name: Build
+        run: |
+          dotnet build --no-restore --configuration Release --nologo
+      - name: write version into json
+        run: |
+          ((get-content -Path ./Penumbra.json -raw) -replace '1.0.0.0', '${{ github.ref }}') | set-content -path ./Penumbra.json
+      - name: Archive
+        run: Compress-Archive -Path Penumbra/bin/Release/net472/* -DestinationPath Penumbra.${{ github.ref }}.zip -p:Version=${{ github.ref }} -p:FileVersion=${{ github.ref }}
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v2.2.1
+        with:
+          path: |
+            ./Penumbra/bin/Release/net472/*
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+      - name: Upload Release Asset
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          asset_path: ./Penumbra.${{ github.ref }}.zip
+          asset_name: Penumbra.${{ github.ref }}.zip
+          asset_content_type: application/zip
