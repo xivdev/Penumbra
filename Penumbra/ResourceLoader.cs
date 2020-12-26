@@ -165,7 +165,7 @@ namespace Penumbra
             var path = candidate?.FullName ?? swappedFilePath;
 
             // path must be < 260 because statically defined array length :(
-            if( path == null || path.Length < 260 )
+            if( path == null || path.Length >= 260 )
             {
                 return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
             }
@@ -181,6 +181,10 @@ namespace Penumbra
             Crc32.Update( utfPath );
             *pResourceHash = Crc32.Checksum;
 
+#if DEBUG
+            PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, path );
+#endif
+            
             return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }
 

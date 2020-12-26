@@ -55,6 +55,7 @@ namespace Penumbra.Mods
         public void CalculateEffectiveFileList()
         {
             ResolvedFiles.Clear();
+            SwappedFiles.Clear();
 
             var registeredFiles = new Dictionary< string, string >();
 
