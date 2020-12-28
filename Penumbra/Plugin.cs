@@ -68,14 +68,14 @@ namespace Penumbra
         private void OnCommand( string command, string rawArgs )
         {
             var args = rawArgs.Split( ' ' );
-            if( args.Length > 0 )
+            if( args.Length > 0 && args[ 0 ].Length > 0 )
             {
                 switch( args[ 0 ] )
                 {
                     case "reload":
                     {
                         ModManager.DiscoverMods();
-                        PluginInterface.Framework.Gui.Chat.Print( 
+                        PluginInterface.Framework.Gui.Chat.Print(
                             $"Reloaded Penumbra mods. You have {ModManager.Mods.ModSettings.Count} mods, {ModManager.Mods.EnabledMods.Length} of which are enabled."
                         );
                         break;
