@@ -56,7 +56,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="DotNetZip" Version="1.13.8" />
+        <PackageReference Include="DotNetZip" Version="1.15.0" />
         <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
         <PackageReference Include="Reloaded.Hooks" Version="2.4.1" />
     </ItemGroup>
