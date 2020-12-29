@@ -68,17 +68,17 @@ namespace Penumbra.Mods
 
                 foreach( var file in mod.ModFiles )
                 {
-                    var path = file.FullName.Substring( baseDir.Length )
+                    var gamePath = file.FullName.Substring( baseDir.Length )
                         .TrimStart( '\\' ).Replace( '\\', '/' );
 
-                    if( !ResolvedFiles.ContainsKey( path ) )
+                    if( !ResolvedFiles.ContainsKey( gamePath ) )
                     {
-                        ResolvedFiles[ path ] = file;
-                        registeredFiles[ path ] = mod.Meta.Name;
+                        ResolvedFiles[ gamePath.ToLowerInvariant() ] = file;
+                        registeredFiles[ gamePath ] = mod.Meta.Name;
                     }
-                    else if( registeredFiles.TryGetValue( path, out var modName ) )
+                    else if( registeredFiles.TryGetValue( gamePath, out var modName ) )
                     {
-                        mod.AddConflict( modName, path );
+                        mod.AddConflict( modName, gamePath );
                     }
                 }
 
@@ -87,7 +87,7 @@ namespace Penumbra.Mods
                     // just assume people put not fucked paths in here lol
                     if( !SwappedFiles.ContainsKey( swap.Value ) )
                     {
-                        SwappedFiles[ swap.Key ] = swap.Value;
+                        SwappedFiles[ swap.Key.ToLowerInvariant() ] = swap.Value;
                         registeredFiles[ swap.Key ] = mod.Meta.Name;
                     }
                     else if( registeredFiles.TryGetValue( swap.Key, out var modName ) )
