@@ -158,19 +158,15 @@ namespace Penumbra
                 PluginLog.Log( "[GetResourceHandler] {0}", gameFsPath );
             }
 
-
-            var candidate = Plugin.ModManager.GetCandidateForGameFile( gameFsPath );
-            var swappedFilePath = Plugin.ModManager.GetSwappedFilePath( gameFsPath );
-
-            var fsPath = candidate?.FullName ?? swappedFilePath;
+            var replacementPath = Plugin.ModManager.ResolveSwappedOrReplacementFilePath( gameFsPath );
 
             // path must be < 260 because statically defined array length :(
-            if( fsPath == null || fsPath.Length >= 260 )
+            if( replacementPath == null || replacementPath.Length >= 260 )
             {
                 return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
             }
 
-            var cleanPath = fsPath.Replace( '\\', '/' );
+            var cleanPath = replacementPath.Replace( '\\', '/' );
             var path = Encoding.ASCII.GetBytes( cleanPath );
 
             var bPath = stackalloc byte[path.Length + 1];
@@ -182,7 +178,7 @@ namespace Penumbra
             *pResourceHash = Crc32.Checksum;
 
 #if DEBUG
-            PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, fsPath );
+            PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, replacementPath );
 #endif
             
             return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );

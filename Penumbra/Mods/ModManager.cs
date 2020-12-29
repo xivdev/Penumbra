@@ -111,9 +111,9 @@ namespace Penumbra.Mods
         }
 
 
-        public FileInfo GetCandidateForGameFile( string resourcePath )
+        public FileInfo GetCandidateForGameFile( string gameResourcePath )
         {
-            var val = ResolvedFiles.TryGetValue( resourcePath.ToLowerInvariant(), out var candidate );
+            var val = ResolvedFiles.TryGetValue( gameResourcePath, out var candidate );
             if( !val )
             {
                 return null;
@@ -127,9 +127,16 @@ namespace Penumbra.Mods
             return candidate;
         }
 
-        public string GetSwappedFilePath( string originalPath )
+        public string GetSwappedFilePath( string gameResourcePath )
         {
-            return SwappedFiles.TryGetValue( originalPath, out var swappedPath ) ? swappedPath : null;
+            return SwappedFiles.TryGetValue( gameResourcePath, out var swappedPath ) ? swappedPath : null;
+        }
+
+        public string ResolveSwappedOrReplacementFilePath( string gameResourcePath )
+        {
+            gameResourcePath = gameResourcePath.ToLowerInvariant();
+
+            return GetCandidateForGameFile( gameResourcePath )?.FullName ?? GetSwappedFilePath( gameResourcePath );
         }
     }
 }
