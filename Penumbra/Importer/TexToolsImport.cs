@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Dalamud.Plugin;
-using Ionic.Zip;
+using ICSharpCode.SharpZipLib.Zip;
 using Lumina.Data;
 using Newtonsoft.Json;
 using Penumbra.Importer.Models;
@@ -39,9 +39,11 @@ namespace Penumbra.Importer
         {
             PluginLog.Log( "    -> Importing V1 ModPack" );
 
-            using var extractedModPack = ZipFile.Read( modPackFile.OpenRead() );
+            using var zfs = modPackFile.OpenRead();
+            using var extractedModPack = new ZipFile( zfs );
 
-            var modListRaw = GetStringFromZipEntry( extractedModPack[ "TTMPL.mpl" ], Encoding.UTF8 ).Split(
+            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
+            var modListRaw = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 ).Split(
                 new[] { "\r\n", "\r", "\n" },
                 StringSplitOptions.None
             );
@@ -57,25 +59,31 @@ namespace Penumbra.Importer
             };
 
             // Open the mod data file from the modpack as a SqPackStream
-            var modData = GetSqPackStreamFromZipEntry( extractedModPack[ "TTMPD.mpd" ] );
+            var mpd = extractedModPack.GetEntry( "TTMPD.mpd" );
+            var modData = GetSqPackStreamFromZipEntry( extractedModPack, mpd );
 
-            var newModFolder = new DirectoryInfo( Path.Combine( _outDirectory.FullName,
-                Path.GetFileNameWithoutExtension( modPackFile.Name ) ) );
+            var newModFolder = new DirectoryInfo(
+                Path.Combine( _outDirectory.FullName,
+                    Path.GetFileNameWithoutExtension( modPackFile.Name )
+                )
+            );
             newModFolder.Create();
 
-            File.WriteAllText( Path.Combine( newModFolder.FullName, "meta.json" ),
-                JsonConvert.SerializeObject( modMeta ) );
+            File.WriteAllText(
+                Path.Combine( newModFolder.FullName, "meta.json" ),
+                JsonConvert.SerializeObject( modMeta )
+            );
 
             ExtractSimpleModList( newModFolder, modList, modData );
         }
 
         private void ImportV2ModPack( FileInfo modPackFile )
         {
-            using var extractedModPack = ZipFile.Read( modPackFile.OpenRead() );
+            using var zfs = modPackFile.OpenRead();
+            using var extractedModPack = new ZipFile( zfs );
 
-            var modList =
-                JsonConvert.DeserializeObject< SimpleModPack >( GetStringFromZipEntry( extractedModPack[ "TTMPL.mpl" ],
-                    Encoding.UTF8 ) );
+            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
+            var modList = JsonConvert.DeserializeObject< SimpleModPack >( GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 ) );
 
             if( modList.TTMPVersion.EndsWith( "s" ) )
             {
@@ -93,9 +101,8 @@ namespace Penumbra.Importer
         {
             PluginLog.Log( "    -> Importing Simple V2 ModPack" );
 
-            var modList =
-                JsonConvert.DeserializeObject< SimpleModPack >( GetStringFromZipEntry( extractedModPack[ "TTMPL.mpl" ],
-                    Encoding.UTF8 ) );
+            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
+            var modList = JsonConvert.DeserializeObject< SimpleModPack >( GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 ) );
 
             // Create a new ModMeta from the TTMP modlist info
             var modMeta = new ModMeta
@@ -108,7 +115,8 @@ namespace Penumbra.Importer
             };
 
             // Open the mod data file from the modpack as a SqPackStream
-            var modData = GetSqPackStreamFromZipEntry( extractedModPack[ "TTMPD.mpd" ] );
+            var mpd = extractedModPack.GetEntry( "TTMPD.mpd" );
+            var modData = GetSqPackStreamFromZipEntry( extractedModPack, mpd );
 
             var newModFolder = new DirectoryInfo( Path.Combine( _outDirectory.FullName,
                 Path.GetFileNameWithoutExtension( modList.Name ) ) );
@@ -124,9 +132,8 @@ namespace Penumbra.Importer
         {
             PluginLog.Log( "    -> Importing Extended V2 ModPack" );
 
-            var modList =
-                JsonConvert.DeserializeObject< ExtendedModPack >( GetStringFromZipEntry( extractedModPack[ "TTMPL.mpl" ],
-                    Encoding.UTF8 ) );
+            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
+            var modList = JsonConvert.DeserializeObject< ExtendedModPack >( GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 ) );
 
             // Create a new ModMeta from the TTMP modlist info
             var modMeta = new ModMeta
@@ -139,14 +146,20 @@ namespace Penumbra.Importer
             };
 
             // Open the mod data file from the modpack as a SqPackStream
-            var modData = GetSqPackStreamFromZipEntry( extractedModPack[ "TTMPD.mpd" ] );
+            var mpd = extractedModPack.GetEntry( "TTMPD.mpd" );
+            var modData = GetSqPackStreamFromZipEntry( extractedModPack, mpd );
 
-            var newModFolder = new DirectoryInfo( Path.Combine( _outDirectory.FullName,
-                Path.GetFileNameWithoutExtension( modList.Name ) ) );
+            var newModFolder = new DirectoryInfo(
+                Path.Combine( _outDirectory.FullName,
+                    Path.GetFileNameWithoutExtension( modList.Name )
+                )
+            );
             newModFolder.Create();
 
-            File.WriteAllText( Path.Combine( newModFolder.FullName, "meta.json" ),
-                JsonConvert.SerializeObject( modMeta ) );
+            File.WriteAllText(
+                Path.Combine( newModFolder.FullName, "meta.json" ),
+                JsonConvert.SerializeObject( modMeta )
+            );
 
             if( modList.SimpleModsList != null )
                 ExtractSimpleModList( newModFolder, modList.SimpleModsList, modData );
@@ -203,21 +216,22 @@ namespace Penumbra.Importer
             }
         }
 
-        private static MemoryStream GetStreamFromZipEntry( ZipEntry entry )
+        private static MemoryStream GetStreamFromZipEntry( ZipFile file, ZipEntry entry )
         {
             var stream = new MemoryStream();
-            entry.Extract( stream );
+            using var s = file.GetInputStream( entry );
+            s.CopyTo( stream );
             return stream;
         }
 
-        private static string GetStringFromZipEntry( ZipEntry entry, Encoding encoding )
+        private static string GetStringFromZipEntry( ZipFile file, ZipEntry entry, Encoding encoding )
         {
-            return encoding.GetString( GetStreamFromZipEntry( entry ).ToArray() );
+            return encoding.GetString( GetStreamFromZipEntry( file, entry ).ToArray() );
         }
 
-        private static SqPackStream GetSqPackStreamFromZipEntry( ZipEntry entry )
+        private static SqPackStream GetSqPackStreamFromZipEntry( ZipFile file, ZipEntry entry )
         {
-            return new SqPackStream( GetStreamFromZipEntry( entry ) );
+            return new( GetStreamFromZipEntry( file, entry ) );
         }
     }
 }
