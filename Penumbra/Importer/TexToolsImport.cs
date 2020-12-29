@@ -216,17 +216,17 @@ namespace Penumbra.Importer
             }
         }
 
-        private static MemoryStream GetStreamFromZipEntry( ZipFile file, ZipEntry entry )
+        private static Stream GetStreamFromZipEntry( ZipFile file, ZipEntry entry )
         {
-            var stream = new MemoryStream();
-            using var s = file.GetInputStream( entry );
-            s.CopyTo( stream );
-            return stream;
+            return file.GetInputStream( entry );
         }
 
         private static string GetStringFromZipEntry( ZipFile file, ZipEntry entry, Encoding encoding )
         {
-            return encoding.GetString( GetStreamFromZipEntry( file, entry ).ToArray() );
+            using var ms = new MemoryStream();
+            using var s = GetStreamFromZipEntry( file, entry );
+            s.CopyTo( ms );
+            return encoding.GetString( ms.ToArray() );
         }
 
         private static SqPackStream GetSqPackStreamFromZipEntry( ZipFile file, ZipEntry entry )
