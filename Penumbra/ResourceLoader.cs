@@ -36,13 +36,6 @@ namespace Penumbra
         public unsafe delegate void* GetResourceAsyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType,
             uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown );
 
-        [Function( CallingConventions.Microsoft )]
-        public unsafe delegate void* LoadPlayerResourcesPrototype( IntPtr pResourceManager );
-
-        [Function( CallingConventions.Microsoft )]
-        public unsafe delegate void* UnloadPlayerResourcesPrototype( IntPtr pResourceManager );
-
-
         // Hooks
         public IHook< GetResourceSyncPrototype > GetResourceSyncHook { get; private set; }
         public IHook< GetResourceAsyncPrototype > GetResourceAsyncHook { get; private set; }
@@ -50,14 +43,6 @@ namespace Penumbra
 
         // Unmanaged functions
         public ReadFilePrototype ReadFile { get; private set; }
-
-
-        public LoadPlayerResourcesPrototype LoadPlayerResources { get; private set; }
-        public UnloadPlayerResourcesPrototype UnloadPlayerResources { get; private set; }
-
-        // Object addresses
-        private IntPtr _playerResourceManagerAddress;
-        public IntPtr PlayerResourceManagerPtr => Marshal.ReadIntPtr( _playerResourceManagerAddress );
 
 
         public bool LogAllFiles = false;
@@ -90,20 +75,6 @@ namespace Penumbra
             GetResourceSyncHook = new Hook< GetResourceSyncPrototype >( GetResourceSyncHandler, ( long )getResourceSyncAddress );
             GetResourceAsyncHook = new Hook< GetResourceAsyncPrototype >( GetResourceAsyncHandler, ( long )getResourceAsyncAddress );
 
-            ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
-
-            /////
-
-            var loadPlayerResourcesAddress =
-                scanner.ScanText(
-                    "E8 ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? BA ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? 48 8B 48 30 48 8B 01 FF 50 10 48 85 C0 74 0A " );
-            var unloadPlayerResourcesAddress =
-                scanner.ScanText( "41 55 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B E9 48 83 C1 08" );
-
-            _playerResourceManagerAddress = scanner.GetStaticAddressFromSig( "0F 44 FE 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 05" );
-
-            LoadPlayerResources = Marshal.GetDelegateForFunctionPointer< LoadPlayerResourcesPrototype >( loadPlayerResourcesAddress );
-            UnloadPlayerResources = Marshal.GetDelegateForFunctionPointer< UnloadPlayerResourcesPrototype >( unloadPlayerResourcesAddress );
             ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
         }
 
@@ -213,12 +184,6 @@ namespace Penumbra
             pFileDesc->FileDescriptor = fd;
 
             return ReadFile( pFileHandler, pFileDesc, priority, isSync );
-        }
-
-        public unsafe void ReloadPlayerResource()
-        {
-            UnloadPlayerResources( PlayerResourceManagerPtr );
-            LoadPlayerResources( PlayerResourceManagerPtr );
         }
 
         public void Enable()

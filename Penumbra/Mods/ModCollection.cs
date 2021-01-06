@@ -15,6 +15,7 @@ namespace Penumbra.Mods
         public List< ModInfo > ModSettings { get; set; }
         public ResourceMod[] EnabledMods { get; set; }
 
+
         public ModCollection( DirectoryInfo basePath )
         {
             _basePath = basePath;
@@ -117,7 +118,7 @@ namespace Penumbra.Mods
         public void ReorderMod( ModInfo info, bool up )
         {
             // todo: certified fucked tier
-            
+
             var prio = info.Priority;
             var swapPrio = up ? prio + 1 : prio - 1;
             var swapMeta = ModSettings.FirstOrDefault( x => x.Priority == swapPrio );
@@ -126,10 +127,10 @@ namespace Penumbra.Mods
             {
                 return;
             }
-            
+
             info.Priority = swapPrio;
             swapMeta.Priority = prio;
-            
+
             // reorder mods list
             ModSettings = ModSettings.OrderBy( x => x.Priority ).ToList();
             EnabledMods = GetOrderedAndEnabledModList().ToArray();
@@ -137,8 +138,7 @@ namespace Penumbra.Mods
             // save new prios
             Save();
         }
-        
-        
+
 
         public ModInfo FindModSettings( string name )
         {

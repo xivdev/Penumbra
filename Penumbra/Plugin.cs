@@ -1,11 +1,6 @@
-using System;
-using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Runtime.InteropServices;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
-using Penumbra.Extensions;
+using Penumbra.Game;
 using Penumbra.Mods;
 using Penumbra.UI;
 
@@ -18,6 +13,7 @@ namespace Penumbra
         private const string CommandName = "/penumbra";
 
         public DalamudPluginInterface PluginInterface { get; set; }
+        
         public Configuration Configuration { get; set; }
 
         public ResourceLoader ResourceLoader { get; set; }
@@ -26,20 +22,25 @@ namespace Penumbra
 
         public SettingsInterface SettingsInterface { get; set; }
 
+        public GameUtils GameUtils { get; set; }
+
         public string PluginDebugTitleStr { get; private set; }
+
+        public bool ImportInProgress => SettingsInterface?.IsImportRunning ?? true;
 
         public void Initialize( DalamudPluginInterface pluginInterface )
         {
             PluginInterface = pluginInterface;
-
+            
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize( PluginInterface );
+
+            GameUtils = new GameUtils( PluginInterface );
 
             ModManager = new ModManager();
             ModManager.DiscoverMods( Configuration.CurrentCollection );
 
             ResourceLoader = new ResourceLoader( this );
-
 
             PluginInterface.CommandManager.AddHandler( CommandName, new CommandInfo( OnCommand )
             {
@@ -48,7 +49,7 @@ namespace Penumbra
 
             ResourceLoader.Init();
             ResourceLoader.Enable();
-
+            
             SettingsInterface = new SettingsInterface( this );
             PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
 
@@ -57,6 +58,8 @@ namespace Penumbra
 
         public void Dispose()
         {
+            ModManager?.Dispose();
+
             PluginInterface.UiBuilder.OnBuildUi -= SettingsInterface.Draw;
 
             PluginInterface.CommandManager.RemoveHandler( CommandName );

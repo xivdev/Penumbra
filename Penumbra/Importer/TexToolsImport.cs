@@ -16,13 +16,40 @@ namespace Penumbra.Importer
     {
         private readonly DirectoryInfo _outDirectory;
 
+        private const string TempFileName = "textools-import";
+        private readonly string _resolvedTempFilePath = null;
+
+        public ImporterState State { get; private set; }
+        
+        public long TotalProgress { get; private set; }
+        public long CurrentProgress { get; private set; }
+
+        public float Progress
+        {
+            get
+            {
+                if( CurrentProgress != 0 )
+                {
+                    // ReSharper disable twice RedundantCast
+                    return ( float )CurrentProgress / ( float )TotalProgress;
+                }
+
+                return 0;
+            }
+        }
+
+        public string CurrentModPack { get; private set; }
+
         public TexToolsImport( DirectoryInfo outDirectory )
         {
             _outDirectory = outDirectory;
+            _resolvedTempFilePath = Path.Combine( _outDirectory.FullName, TempFileName );
         }
 
         public void ImportModPack( FileInfo modPackFile )
         {
+            CurrentModPack = modPackFile.Name;
+            
             switch( modPackFile.Extension )
             {
                 case ".ttmp":
@@ -33,6 +60,29 @@ namespace Penumbra.Importer
                     ImportV2ModPack( modPackFile );
                     return;
             }
+
+            State = ImporterState.Done;
+        }
+
+        private void WriteZipEntryToTempFile( Stream s )
+        {
+            var fs = new FileStream( _resolvedTempFilePath, FileMode.Create );
+            s.CopyTo( fs );
+            fs.Close();
+        }
+
+        private SqPackStream GetMagicSqPackDeleterStream( ZipFile file, string entryName )
+        {
+            State = ImporterState.WritingPackToDisk;
+            
+            // write shitty zip garbage to disk
+            var entry = file.GetEntry( entryName );
+            using var s = file.GetInputStream( entry );
+
+            WriteZipEntryToTempFile( s );
+
+            var fs = new FileStream( _resolvedTempFilePath, FileMode.Open );
+            return new MagicTempFileStreamManagerAndDeleterFuckery( fs );
         }
 
         private void ImportV1ModPack( FileInfo modPackFile )
@@ -59,8 +109,7 @@ namespace Penumbra.Importer
             };
 
             // Open the mod data file from the modpack as a SqPackStream
-            var mpd = extractedModPack.GetEntry( "TTMPD.mpd" );
-            var modData = GetSqPackStreamFromZipEntry( extractedModPack, mpd );
+            using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
             var newModFolder = new DirectoryInfo(
                 Path.Combine( _outDirectory.FullName,
@@ -115,8 +164,7 @@ namespace Penumbra.Importer
             };
 
             // Open the mod data file from the modpack as a SqPackStream
-            var mpd = extractedModPack.GetEntry( "TTMPD.mpd" );
-            var modData = GetSqPackStreamFromZipEntry( extractedModPack, mpd );
+            using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
             var newModFolder = new DirectoryInfo( Path.Combine( _outDirectory.FullName,
                 Path.GetFileNameWithoutExtension( modList.Name ) ) );
@@ -142,12 +190,12 @@ namespace Penumbra.Importer
                 Name = modList.Name,
                 Description = string.IsNullOrEmpty( modList.Description )
                     ? "Mod imported from TexTools mod pack"
-                    : modList.Description
+                    : modList.Description,
+                Version = modList.Version
             };
 
             // Open the mod data file from the modpack as a SqPackStream
-            var mpd = extractedModPack.GetEntry( "TTMPD.mpd" );
-            var modData = GetSqPackStreamFromZipEntry( extractedModPack, mpd );
+            using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
             var newModFolder = new DirectoryInfo(
                 Path.Combine( _outDirectory.FullName,
@@ -187,13 +235,24 @@ namespace Penumbra.Importer
 
         private void ExtractSimpleModList( DirectoryInfo outDirectory, IEnumerable< SimpleMod > mods, SqPackStream dataStream )
         {
+            State = ImporterState.ExtractingModFiles;
+            
+            // haha allocation go brr
+            var wtf = mods.ToList();
+            
+            TotalProgress = wtf.LongCount();
+            
             // Extract each SimpleMod into the new mod folder
-            foreach( var simpleMod in mods )
+            foreach( var simpleMod in wtf )
             {
                 if( simpleMod == null )
+                {
+                    // do we increment here too???? can this even happen?????
                     continue;
-
+                }
+                
                 ExtractMod( outDirectory, simpleMod, dataStream );
+                CurrentProgress++;
             }
         }
 
@@ -227,11 +286,6 @@ namespace Penumbra.Importer
             using var s = GetStreamFromZipEntry( file, entry );
             s.CopyTo( ms );
             return encoding.GetString( ms.ToArray() );
-        }
-
-        private static SqPackStream GetSqPackStreamFromZipEntry( ZipFile file, ZipEntry entry )
-        {
-            return new( GetStreamFromZipEntry( file, entry ) );
         }
     }
 }

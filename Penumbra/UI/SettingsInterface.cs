@@ -32,7 +32,8 @@ namespace Penumbra.UI
         private int? _selectedModDeleteIndex;
         private ModInfo _selectedMod;
 
-        private bool _isImportRunning = false;
+        public bool IsImportRunning = false;
+        private TexToolsImport _texToolsImport = null!;
 
         public SettingsInterface( Plugin plugin )
         {
@@ -72,6 +73,39 @@ namespace Penumbra.UI
                 ImGui.EndMainMenuBar();
             }
 
+            if( !_plugin.PluginInterface.ClientState.Condition.Any() && !Visible )
+            {
+                // draw mods button on da menu :DDD
+                var ss = ImGui.GetIO().DisplaySize;
+                var padding = 50;
+                var width = 200;
+                var height = 45;
+
+                // magic numbers
+                ImGui.SetNextWindowPos( new Vector2( ss.X - padding - width, ss.Y - padding - height ), ImGuiCond.Always );
+
+                if(
+                    ImGui.Begin(
+                        "Penumbra Menu Buttons",
+                        ImGuiWindowFlags.AlwaysAutoResize |
+                        ImGuiWindowFlags.NoBackground |
+                        ImGuiWindowFlags.NoDecoration |
+                        ImGuiWindowFlags.NoMove |
+                        ImGuiWindowFlags.NoScrollbar |
+                        ImGuiWindowFlags.NoResize |
+                        ImGuiWindowFlags.NoSavedSettings
+                    )
+                )
+                {
+                    if( ImGui.Button( "Manage Mods", new Vector2( width, height ) ) )
+                    {
+                        Visible = !Visible;
+                    }
+
+                    ImGui.End();
+                }
+            }
+
             if( !Visible )
             {
                 return;
@@ -91,11 +125,19 @@ namespace Penumbra.UI
             ImGui.BeginTabBar( "PenumbraSettings" );
 
             DrawSettingsTab();
+            DrawImportTab();
 
-            if( !_isImportRunning )
+
+            if( !IsImportRunning )
             {
-                DrawResourceMods();
-                DrawEffectiveFileList();
+                DrawModBrowser();
+
+                DrawInstalledMods();
+
+                if( _plugin.Configuration.ShowAdvanced )
+                {
+                    DrawEffectiveFileList();
+                }
 
                 DrawDeleteModal();
             }
@@ -103,6 +145,105 @@ namespace Penumbra.UI
             ImGui.EndTabBar();
 
             ImGui.End();
+        }
+
+        void DrawImportTab()
+        {
+            var ret = ImGui.BeginTabItem( "Import Mods" );
+            if( !ret )
+            {
+                return;
+            }
+
+            if( !IsImportRunning )
+            {
+                if( ImGui.Button( "Import TexTools Modpacks" ) )
+                {
+                    IsImportRunning = true;
+
+                    Task.Run( async () =>
+                    {
+                        var picker = new OpenFileDialog
+                        {
+                            Multiselect = true,
+                            Filter = "TexTools TTMP Modpack (*.ttmp2)|*.ttmp*|All files (*.*)|*.*",
+                            CheckFileExists = true,
+                            Title = "Pick one or more modpacks."
+                        };
+
+                        var result = await picker.ShowDialogAsync();
+
+                        if( result == DialogResult.OK )
+                        {
+                            foreach( var fileName in picker.FileNames )
+                            {
+                                PluginLog.Log( "-> {0} START", fileName );
+
+                                try
+                                {
+                                    _texToolsImport = new TexToolsImport( new DirectoryInfo( _plugin.Configuration.CurrentCollection ) );
+                                    _texToolsImport.ImportModPack( new FileInfo( fileName ) );
+                                }
+                                catch( Exception ex )
+                                {
+                                    PluginLog.LogError( ex, "Could not import one or more modpacks." );
+                                }
+
+                                PluginLog.Log( "-> {0} OK!", fileName );
+                            }
+
+                            _texToolsImport = null;
+                            ReloadMods();
+                        }
+
+                        IsImportRunning = false;
+                    } );
+                }
+            }
+            else
+            {
+                ImGui.Button( "Import in progress..." );
+
+                if( _texToolsImport != null )
+                {
+                    switch( _texToolsImport.State )
+                    {
+                        case ImporterState.None:
+                            break;
+                        case ImporterState.WritingPackToDisk:
+                            ImGui.Text( "Writing modpack to disk before extracting..." );
+                            break;
+                        case ImporterState.ExtractingModFiles:
+                        {
+                            var str =
+                                $"{_texToolsImport.CurrentModPack} - {_texToolsImport.CurrentProgress} of {_texToolsImport.TotalProgress} files";
+
+                            ImGui.ProgressBar( _texToolsImport.Progress, new Vector2( -1, 0 ), str );
+                            break;
+                        }
+                        case ImporterState.Done:
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+
+            ImGui.EndTabItem();
+        }
+
+        [Conditional( "DEBUG" )]
+        void DrawModBrowser()
+        {
+            var ret = ImGui.BeginTabItem( "Available Mods" );
+            if( !ret )
+            {
+                return;
+            }
+
+            ImGui.Text( "woah" );
+
+            ImGui.EndTabItem();
         }
 
         void DrawSettingsTab()
@@ -113,11 +254,14 @@ namespace Penumbra.UI
                 return;
             }
 
+            bool dirty = false;
+
             // FUCKKKKK
             var basePath = _plugin.Configuration.CurrentCollection;
             if( ImGui.InputText( "Root Folder", ref basePath, 255 ) )
             {
                 _plugin.Configuration.CurrentCollection = basePath;
+                dirty = true;
             }
 
             if( ImGui.Button( "Rediscover Mods" ) )
@@ -134,77 +278,34 @@ namespace Penumbra.UI
 
             ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
 
-#if DEBUG
-
-            ImGui.Text( "debug shit" );
-
-            if( ImGui.Button( "Reload Player Resource" ) )
+            var showAdvanced = _plugin.Configuration.ShowAdvanced;
+            if( ImGui.Checkbox( "Show Advanced Settings", ref showAdvanced ) )
             {
-                _plugin.ResourceLoader.ReloadPlayerResource();
+                _plugin.Configuration.ShowAdvanced = showAdvanced;
+                dirty = true;
             }
 
-            if( _plugin.ResourceLoader != null )
+            if( _plugin.Configuration.ShowAdvanced )
             {
-                ImGui.Checkbox( "DEBUG Log all loaded files", ref _plugin.ResourceLoader.LogAllFiles );
-            }
-
-            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
-#endif
-
-            if( !_isImportRunning )
-            {
-                if( ImGui.Button( "Import TexTools Modpacks" ) )
+                if( _plugin.ResourceLoader != null )
                 {
-                    _isImportRunning = true;
+                    ImGui.Checkbox( "Log all loaded files", ref _plugin.ResourceLoader.LogAllFiles );
+                }
 
-                    Task.Run( async () =>
-                    {
-                        var picker = new OpenFileDialog
-                        {
-                            Multiselect = true,
-                            Filter = "TexTools TTMP Modpack (*.ttmp2)|*.ttmp*|All files (*.*)|*.*",
-                            CheckFileExists = true,
-                            Title = "Pick one or more modpacks."
-                        };
+                var fswatch = _plugin.Configuration.DisableFileSystemNotifications;
+                if( ImGui.Checkbox( "Disable filesystem change notifications", ref fswatch ) )
+                {
+                    _plugin.Configuration.DisableFileSystemNotifications = fswatch;
+                    dirty = true;
+                }
 
-                        var result = await picker.ShowDialogAsync();
-
-                        if( result == DialogResult.OK )
-                        {
-                            try
-                            {
-                                var importer =
-                                    new TexToolsImport( new DirectoryInfo( _plugin.Configuration.CurrentCollection ) );
-
-                                foreach( var fileName in picker.FileNames )
-                                {
-                                    PluginLog.Log( "-> {0} START", fileName );
-
-                                    importer.ImportModPack( new FileInfo( fileName ) );
-
-                                    PluginLog.Log( "-> {0} OK!", fileName );
-                                }
-
-                                ReloadMods();
-                            }
-                            catch( Exception ex )
-                            {
-                                PluginLog.LogError( ex, "Could not import one or more modpacks." );
-                            }
-                        }
-
-                        _isImportRunning = false;
-                    } );
+                if( ImGui.Button( "Reload Player Resource" ) )
+                {
+                    _plugin.GameUtils.ReloadPlayerResources();
                 }
             }
-            else
-            {
-                ImGui.Button( "Import in progress..." );
-            }
 
-            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
-
-            if( ImGui.Button( "Save Settings" ) )
+            if( dirty )
             {
                 _plugin.Configuration.Save();
             }
@@ -385,9 +486,9 @@ namespace Penumbra.UI
             ImGui.EndPopup();
         }
 
-        void DrawResourceMods()
+        void DrawInstalledMods()
         {
-            var ret = ImGui.BeginTabItem( "Mods" );
+            var ret = ImGui.BeginTabItem( "Installed Mods" );
             if( !ret )
             {
                 return;

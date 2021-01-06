@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Penumbra.Models;
 
 namespace Penumbra.Mods
 {
-    public class ModManager
+    public class ModManager : IDisposable
     {
         public readonly Dictionary< string, FileInfo > ResolvedFiles = new();
         public readonly Dictionary< string, string > SwappedFiles = new();
@@ -22,6 +23,33 @@ namespace Penumbra.Mods
 
             DiscoverMods( _basePath );
         }
+
+//         private void FileSystemWatcherOnChanged( object sender, FileSystemEventArgs e )
+//         {
+// #if DEBUG
+//             PluginLog.Verbose( "file changed: {FullPath}", e.FullPath );
+// #endif
+//
+//             if( _plugin.ImportInProgress )
+//             {
+//                 return;
+//             }
+//
+//             if( _plugin.Configuration.DisableFileSystemNotifications )
+//             {
+//                 return;
+//             }
+//
+//             var file = e.FullPath;
+//
+//             if( !ResolvedFiles.Any( x => x.Value.FullName == file ) )
+//             {
+//                 return;
+//             }
+//
+//             PluginLog.Log( "a loaded file has been modified - file: {FullPath}", file );
+//             _plugin.GameUtils.ReloadPlayerResources();
+//         }
 
         public void DiscoverMods( string basePath )
         {
@@ -43,7 +71,21 @@ namespace Penumbra.Mods
 
             _basePath = basePath;
 
-            ResolvedFiles.Clear();
+            // haha spaghet
+            // _fileSystemWatcher?.Dispose();
+            // _fileSystemWatcher = new FileSystemWatcher( _basePath.FullName )
+            // {
+            //     NotifyFilter = NotifyFilters.LastWrite |
+            //                    NotifyFilters.FileName |
+            //                    NotifyFilters.DirectoryName,
+            //     IncludeSubdirectories = true,
+            //     EnableRaisingEvents = true
+            // };
+            //
+            // _fileSystemWatcher.Changed += FileSystemWatcherOnChanged;
+            // _fileSystemWatcher.Created += FileSystemWatcherOnChanged;
+            // _fileSystemWatcher.Deleted += FileSystemWatcherOnChanged;
+            // _fileSystemWatcher.Renamed += FileSystemWatcherOnChanged;
 
             Mods = new ModCollection( basePath );
             Mods.Load();
@@ -62,7 +104,7 @@ namespace Penumbra.Mods
             foreach( var mod in Mods.GetOrderedAndEnabledModList() )
             {
                 mod.FileConflicts?.Clear();
-                
+
                 // fixup path
                 var baseDir = mod.ModBasePath.FullName;
 
@@ -137,6 +179,11 @@ namespace Penumbra.Mods
             gameResourcePath = gameResourcePath.ToLowerInvariant();
 
             return GetCandidateForGameFile( gameResourcePath )?.FullName ?? GetSwappedFilePath( gameResourcePath );
+        }
+
+        public void Dispose()
+        {
+            // _fileSystemWatcher?.Dispose();
         }
     }
 }
