@@ -49,7 +49,10 @@ namespace Penumbra
 
             ResourceLoader.Init();
             ResourceLoader.Enable();
-            
+
+            // Needed to reload body textures with mods
+            GameUtils.ReloadPlayerResources();
+
             SettingsInterface = new SettingsInterface( this );
             PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
 
