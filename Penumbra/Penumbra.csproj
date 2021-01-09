@@ -56,6 +56,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="EmbedIO" Version="3.4.3" />
         <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
         <PackageReference Include="Reloaded.Hooks" Version="2.4.1" />
         <PackageReference Include="SharpZipLib" Version="1.3.1" />

@@ -1,5 +1,9 @@
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
+using EmbedIO;
+using EmbedIO.Actions;
+using EmbedIO.WebApi;
+using Penumbra.API;
 using Penumbra.Game;
 using Penumbra.Mods;
 using Penumbra.UI;
@@ -13,7 +17,7 @@ namespace Penumbra
         private const string CommandName = "/penumbra";
 
         public DalamudPluginInterface PluginInterface { get; set; }
-        
+
         public Configuration Configuration { get; set; }
 
         public ResourceLoader ResourceLoader { get; set; }
@@ -26,18 +30,18 @@ namespace Penumbra
 
         public string PluginDebugTitleStr { get; private set; }
 
-        public bool ImportInProgress => SettingsInterface?.IsImportRunning ?? true;
+        private WebServer _webServer;
 
         public void Initialize( DalamudPluginInterface pluginInterface )
         {
             PluginInterface = pluginInterface;
-            
+
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize( PluginInterface );
 
             GameUtils = new GameUtils( PluginInterface );
 
-            ModManager = new ModManager();
+            ModManager = new ModManager( this );
             ModManager.DiscoverMods( Configuration.CurrentCollection );
 
             ResourceLoader = new ResourceLoader( this );
@@ -50,13 +54,39 @@ namespace Penumbra
             ResourceLoader.Init();
             ResourceLoader.Enable();
 
-            // Needed to reload body textures with mods
-            GameUtils.ReloadPlayerResources();
-
             SettingsInterface = new SettingsInterface( this );
             PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
 
             PluginDebugTitleStr = $"{Name} - Debug Build";
+
+            if( Configuration.EnableHttpApi )
+            {
+                CreateWebServer();
+            }
+        }
+
+        public void CreateWebServer()
+        {
+            var prefix = "http://localhost:45800/";
+            
+            ShutdownWebServer();
+
+            _webServer = new WebServer( o => o
+                    .WithUrlPrefix( prefix )
+                    .WithMode( HttpListenerMode.EmbedIO ) )
+                .WithCors( prefix )
+                .WithWebApi( "/api", m => m
+                    .WithController( () => new ModsController( this ) ) );
+
+            _webServer.StateChanged += ( s, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
+
+            _webServer.RunAsync();
+        }
+
+        public void ShutdownWebServer()
+        {
+            _webServer?.Dispose();
+            _webServer = null;
         }
 
         public void Dispose()
@@ -69,6 +99,8 @@ namespace Penumbra
             PluginInterface.Dispose();
 
             ResourceLoader.Dispose();
+
+            ShutdownWebServer();
         }
 
         private void OnCommand( string command, string rawArgs )

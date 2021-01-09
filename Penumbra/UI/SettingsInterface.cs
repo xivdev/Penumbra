@@ -299,6 +299,22 @@ namespace Penumbra.UI
                     dirty = true;
                 }
 
+                var http = _plugin.Configuration.EnableHttpApi;
+                if( ImGui.Checkbox( "Enable HTTP API", ref http ) )
+                {
+                    if( http )
+                    {
+                        _plugin.CreateWebServer();
+                    }
+                    else
+                    {
+                        _plugin.ShutdownWebServer();
+                    }
+
+                    _plugin.Configuration.EnableHttpApi = http;
+                    dirty = true;
+                }
+
                 if( ImGui.Button( "Reload Player Resource" ) )
                 {
                     _plugin.GameUtils.ReloadPlayerResources();

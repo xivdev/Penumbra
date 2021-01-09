@@ -7,12 +7,18 @@ namespace Penumbra.Mods
 {
     public class ModManager : IDisposable
     {
+        private readonly Plugin _plugin;
         public readonly Dictionary< string, FileInfo > ResolvedFiles = new();
         public readonly Dictionary< string, string > SwappedFiles = new();
 
         public ModCollection Mods { get; set; }
 
         private DirectoryInfo _basePath;
+
+        public ModManager( Plugin plugin )
+        {
+            _plugin = plugin;
+        }
 
         public void DiscoverMods()
         {
@@ -92,6 +98,9 @@ namespace Penumbra.Mods
             Mods.Save();
 
             CalculateEffectiveFileList();
+            
+            // Needed to reload body textures with mods
+            _plugin.GameUtils.ReloadPlayerResources();
         }
 
         public void CalculateEffectiveFileList()

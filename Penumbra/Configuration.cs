@@ -16,6 +16,8 @@ namespace Penumbra
         
         public bool DisableFileSystemNotifications { get; set; } = false;
 
+        public bool EnableHttpApi { get; set; } = false;
+
         public string CurrentCollection { get; set; } = @"D:/ffxiv/fs_mods/";
 
         public List< string > ModCollections { get; set; } = new();
