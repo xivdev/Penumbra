@@ -267,12 +267,30 @@ namespace Penumbra.Importer
                 var extractedFile = new FileInfo( Path.Combine( outDirectory.FullName, mod.FullPath ) );
                 extractedFile.Directory?.Create();
 
+                if( extractedFile.FullName.EndsWith( "mdl" ) )
+                    ProcessMdl( data.Data );
+
                 File.WriteAllBytes( extractedFile.FullName, data.Data );
             }
             catch( Exception ex )
             {
                 PluginLog.LogError( ex, "Could not export mod." );
             }
+        }
+
+        private void ProcessMdl( byte[] mdl )
+        {
+            // Model file header LOD num
+            mdl[ 64 ] = 1;
+            
+            // Model header LOD num
+            var stackSize = BitConverter.ToUInt32( mdl, 4 );
+            var runtimeBegin = stackSize + 0x44;
+            var stringsLengthOffset = runtimeBegin + 4;
+            var stringsLength = BitConverter.ToUInt32( mdl, (int) stringsLengthOffset );
+            var modelHeaderStart = stringsLengthOffset + stringsLength + 4;
+            var modelHeaderLodOffset = 22;
+            mdl[ modelHeaderStart + modelHeaderLodOffset ] = 1;
         }
 
         private static Stream GetStreamFromZipEntry( ZipFile file, ZipEntry entry )
