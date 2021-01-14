@@ -67,7 +67,7 @@ namespace Penumbra
 
         public void CreateWebServer()
         {
-            var prefix = "http://localhost:45800/";
+            var prefix = "http://localhost:42069/";
             
             ShutdownWebServer();
 
