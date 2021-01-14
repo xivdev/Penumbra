@@ -558,6 +558,39 @@ namespace Penumbra.UI
             }
         }
 
+        private void DrawGroupSelectors()
+        {
+            var hasTopTypes    = (_selectedMod.Mod.Meta.Groups.TopTypes?.Count    ?? 0) > 1;
+            var hasBottomTypes = (_selectedMod.Mod.Meta.Groups.BottomTypes?.Count ?? 0) > 1;
+            var hasGroups      = (_selectedMod.Mod.Meta.Groups.OtherGroups?.Count ?? 0) > 1;
+            var numSelectors   = (hasTopTypes ? 1 : 0) + (hasBottomTypes ? 1 : 0) + (hasGroups ? 1 : 0);
+            var selectorWidth  = (ImGui.GetWindowWidth() 
+                - (hasTopTypes    ? ImGui.CalcTextSize("Top       ").X    : 0)
+                - (hasBottomTypes ? ImGui.CalcTextSize("Bottom       ").X : 0)
+                - (hasGroups      ? ImGui.CalcTextSize("Group       ").X  : 0)) / numSelectors;
+            
+            void DrawSelector(string label, string propertyName, System.Collections.Generic.List<string> list, bool sameLine)
+            {
+                var current = (int) _selectedMod.GetType().GetProperty(propertyName).GetValue(_selectedMod);
+                ImGui.SetNextItemWidth( selectorWidth );
+                if (sameLine) ImGui.SameLine();
+                if ( ImGui.Combo(label, ref current, list.ToArray(), list.Count()) )
+                {
+                    _selectedMod.GetType().GetProperty(propertyName).SetValue(_selectedMod, current);
+                    _plugin.ModManager.Mods.Save();
+                    _plugin.ModManager.CalculateEffectiveFileList();
+                }
+            }
+
+            if ( hasTopTypes )
+                DrawSelector("Top", "CurrentTop", _selectedMod.Mod.Meta.Groups.TopTypes, false);
+
+            if ( hasBottomTypes )
+                DrawSelector("Bottom", "CurrentBottom", _selectedMod.Mod.Meta.Groups.BottomTypes, hasTopTypes);
+
+            if ( hasGroups )
+                DrawSelector("Group", "CurrentGroup", _selectedMod.Mod.Meta.Groups.OtherGroups, numSelectors > 1);
+        }
 
         void DrawInstalledMods()
         {
@@ -621,6 +654,7 @@ namespace Penumbra.UI
 
                     DrawEditButtons();
 
+                    DrawGroupSelectors();
 
                     ImGui.TextWrapped( _selectedMod.Mod.Meta.Description ?? "" );
 
@@ -647,25 +681,6 @@ namespace Penumbra.UI
 
                         ImGui.ListBoxFooter();
                         ImGui.EndTabItem();
-                    }
-
-                    if( _selectedMod.Mod.Meta.FileSwaps.Any() )
-                    {
-                        if( ImGui.BeginTabItem( "File Swaps" ) )
-                        {
-                            ImGui.SetNextItemWidth( -1 );
-                            if( ImGui.ListBoxHeader( "##", AutoFillSize ) )
-                            {
-                                foreach( var file in _selectedMod.Mod.Meta.FileSwaps )
-                                {
-                                    // todo: fucking gross alloc every frame * items
-                                    ImGui.Selectable( $"{file.Key} -> {file.Value}" );
-                                }
-                            }
-
-                            ImGui.ListBoxFooter();
-                            ImGui.EndTabItem();
-                        }
                     }
 
                     if( _selectedMod.Mod.FileConflicts.Any() )
@@ -742,7 +757,7 @@ namespace Penumbra.UI
                 // todo: virtualise this
                 foreach( var file in _plugin.ModManager.ResolvedFiles )
                 {
-                    ImGui.Selectable( file.Value.FullName );
+                    ImGui.Selectable( file.Value.FullName + " -> " + file.Key );
                 }
             }
 

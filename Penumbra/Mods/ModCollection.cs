@@ -156,6 +156,9 @@ namespace Penumbra.Mods
             var entry = new ModInfo
             {
                 Priority = ModSettings.Count,
+                CurrentGroup = 0,
+                CurrentTop = 0,
+                CurrentBottom = 0,
                 FolderName = mod.ModBasePath.Name,
                 Enabled = true,
                 Mod = mod
@@ -181,12 +184,23 @@ namespace Penumbra.Mods
             return AddModSettings( mod );
         }
 
-        public IEnumerable< ResourceMod > GetOrderedAndEnabledModList()
+        public IEnumerable<ModInfo> GetOrderedAndEnabledModSettings()
         {
             return ModSettings
                 .Where( x => x.Enabled )
-                .OrderBy( x => x.Priority )
+                .OrderBy( x => x.Priority );
+        }
+
+        public IEnumerable<ResourceMod> GetOrderedAndEnabledModList()
+        {
+            return GetOrderedAndEnabledModSettings()
                 .Select( x => x.Mod );
+        }
+
+        public IEnumerable<(ResourceMod, ModInfo)> GetOrderedAndEnabledModListWithSettings()
+        {
+            return GetOrderedAndEnabledModSettings()
+                .Select( x => (x.Mod, x) );
         }
     }
 }

@@ -204,11 +204,6 @@ namespace Penumbra.Importer
             );
             newModFolder.Create();
 
-            File.WriteAllText(
-                Path.Combine( newModFolder.FullName, "meta.json" ),
-                JsonConvert.SerializeObject( modMeta )
-            );
-
             if( modList.SimpleModsList != null )
                 ExtractSimpleModList( newModFolder, modList.SimpleModsList, modData );
 
@@ -216,15 +211,34 @@ namespace Penumbra.Importer
                 return;
 
             // Iterate through all pages
-            // For now, we are just going to import the default selections
-            // TODO: implement such a system in resrep?
             foreach( var option in from modPackPage in modList.ModPackPages
                 from modGroup in modPackPage.ModGroups
                 from option in modGroup.OptionList
-                where option.IsChecked
                 select option )
             {
-                ExtractSimpleModList( newModFolder, option.ModsJsons, modData );
+                var OptionFolder = new DirectoryInfo(Path.Combine(newModFolder.FullName, option.Name));
+                ExtractSimpleModList(OptionFolder, option.ModsJsons, modData );
+                AddMeta(OptionFolder, newModFolder, modMeta, option.Name);
+            }
+
+            File.WriteAllText(
+                Path.Combine( newModFolder.FullName, "meta.json" ),
+                JsonConvert.SerializeObject( modMeta, Formatting.Indented )
+            );
+        }
+        
+        void AddMeta(DirectoryInfo optionFolder, DirectoryInfo baseFolder, ModMeta meta, string optionName)
+        {
+            var optionFolderLength = optionFolder.FullName.Length;
+            var baseFolderLength = baseFolder.FullName.Length;
+            foreach( var dir in optionFolder.EnumerateDirectories() )
+            {
+                foreach( var file in dir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
+                {
+                    meta.Groups.AddFileToOtherGroups(optionName
+                         , file.FullName.Substring(baseFolderLength).TrimStart('\\')
+                         , file.FullName.Substring(optionFolderLength).TrimStart('\\').Replace('\\', '/'));
+                }
             }
         }
 

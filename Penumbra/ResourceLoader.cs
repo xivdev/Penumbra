@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -129,7 +129,7 @@ namespace Penumbra
                 PluginLog.Log( "[GetResourceHandler] {0}", gameFsPath );
             }
 
-            var replacementPath = Plugin.ModManager.ResolveSwappedOrReplacementFilePath( gameFsPath );
+            var replacementPath = Plugin.ModManager.ResolveReplacementFilePath( gameFsPath );
 
             // path must be < 260 because statically defined array length :(
             if( replacementPath == null || replacementPath.Length >= 260 )
