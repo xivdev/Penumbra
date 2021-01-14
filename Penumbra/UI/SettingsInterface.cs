@@ -625,16 +625,25 @@ namespace Penumbra.UI
                     ImGui.TextWrapped( _selectedMod.Mod.Meta.Description ?? "" );
 
                     ImGui.BeginTabBar( "PenumbraPluginDetails" );
+                    if ( (_selectedMod.Mod.Meta.ChangedItems?.Count ?? 0 ) > 0)
+                    {
+                        if( ImGui.BeginTabItem( "Changed Items" ) )
+                        {
+                            ImGui.SetNextItemWidth( -1 );
+                            if( ImGui.ListBoxHeader( "###",  AutoFillSize ) )
+                                foreach(var item in _selectedMod.Mod.Meta.ChangedItems)
+                                    ImGui.Selectable( item );
+                            ImGui.ListBoxFooter();
+                            ImGui.EndTabItem();
+                        }
+                    }
+
                     if( ImGui.BeginTabItem( "Files" ) )
                     {
                         ImGui.SetNextItemWidth( -1 );
                         if( ImGui.ListBoxHeader( "##", AutoFillSize ) )
-                        {
                             foreach( var file in _selectedMod.Mod.ModFiles )
-                            {
                                 ImGui.Selectable( file.FullName );
-                            }
-                        }
 
                         ImGui.ListBoxFooter();
                         ImGui.EndTabItem();
