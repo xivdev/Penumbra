@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Dalamud.Interface;
 using Dalamud.Plugin;
 using ImGuiNET;
+using Newtonsoft.Json;
 using Penumbra.Importer;
 using Penumbra.Models;
 
@@ -502,6 +503,62 @@ namespace Penumbra.UI
             ImGui.EndPopup();
         }
 
+        // Website button with On-Hover address if valid http(s), otherwise text.
+        private void DrawWebsiteText()
+        {
+            if ((_selectedMod.Mod.Meta.Website?.Length ?? 0) > 0)
+            {
+                var validUrl = Uri.TryCreate(_selectedMod.Mod.Meta.Website, UriKind.Absolute, out Uri uriResult)
+                    && (uriResult.Scheme == Uri.UriSchemeHttps ||uriResult.Scheme == Uri.UriSchemeHttp);
+                ImGui.SameLine();
+                if (validUrl)
+                {
+                    if (ImGui.SmallButton("Open Website"))
+                    { 
+                        Process.Start( _selectedMod.Mod.Meta.Website );
+                    }
+                    if (ImGui.IsItemHovered())
+                    {
+                        ImGui.BeginTooltip();
+                        ImGui.Text( _selectedMod.Mod.Meta.Website );
+                        ImGui.EndTooltip();
+                    }
+                }
+                else
+                {
+                    ImGui.TextColored( new Vector4( 1f, 1f, 1f, 0.66f ), "from" );
+                    ImGui.SameLine();
+                    ImGui.Text(_selectedMod.Mod.Meta.Website);
+                }
+            }
+        }
+
+        // Create Mod-Handling buttons.
+        private void DrawEditButtons()
+        {
+            ImGui.SameLine();
+            if( ImGui.Button( "Open Mod Folder" ) )
+            {
+                Process.Start( _selectedMod.Mod.ModBasePath.FullName );
+            }
+
+            ImGui.SameLine();
+            if( ImGui.Button( "Edit JSON" ) )
+            {
+                var metaPath = Path.Combine( _selectedMod.Mod.ModBasePath.FullName, "meta.json");
+                File.WriteAllText( metaPath, JsonConvert.SerializeObject( _selectedMod.Mod.Meta, Formatting.Indented ) );
+                Process.Start( metaPath );
+            }
+
+            ImGui.SameLine();
+            if( ImGui.Button( "Reload JSON" ) )
+            {
+                ReloadMods();
+                _selectedMod = _plugin.ModManager.Mods.ModSettings[ _selectedModIndex ];
+            }
+        }
+
+
         void DrawInstalledMods()
         {
             var ret = ImGui.BeginTabItem( "Installed Mods" );
@@ -533,12 +590,24 @@ namespace Penumbra.UI
                     ImGui.BeginChild( "selectedModInfo", AutoFillSize, true );
 
                     ImGui.Text( _selectedMod.Mod.Meta.Name );
+                    
+                    // (Version ...) or nothing.
+                    if ((_selectedMod.Mod.Meta.Version?.Length ?? 0) > 0)
+                    {
+                        ImGui.SameLine();
+                        ImGui.Text($"(Version {_selectedMod.Mod.Meta.Version})" );
+                    }
+
+                    // by Author or Unknown.
                     ImGui.SameLine();
                     ImGui.TextColored( new Vector4( 1f, 1f, 1f, 0.66f ), "by" );
                     ImGui.SameLine();
-                    ImGui.Text( _selectedMod.Mod.Meta.Author );
-
-                    ImGui.TextWrapped( _selectedMod.Mod.Meta.Description ?? "" );
+                    if ((_selectedMod.Mod.Meta.Author?.Length ?? 0) > 0 )
+                        ImGui.Text( _selectedMod.Mod.Meta.Author );
+                    else
+                        ImGui.Text( "Unknown" );
+                    
+                    DrawWebsiteText();
 
                     ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 10 );
 
@@ -550,10 +619,10 @@ namespace Penumbra.UI
                         _plugin.ModManager.CalculateEffectiveFileList();
                     }
 
-                    if( ImGui.Button( "Open Mod Folder" ) )
-                    {
-                        Process.Start( _selectedMod.Mod.ModBasePath.FullName );
-                    }
+                    DrawEditButtons();
+
+
+                    ImGui.TextWrapped( _selectedMod.Mod.Meta.Description ?? "" );
 
                     ImGui.BeginTabBar( "PenumbraPluginDetails" );
                     if( ImGui.BeginTabItem( "Files" ) )
