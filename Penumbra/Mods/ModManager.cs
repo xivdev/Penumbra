@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Windows.Forms.VisualStyles;
 using Penumbra.Models;
-using Swan.Logging;
 
 namespace Penumbra.Mods
 {
@@ -11,6 +9,7 @@ namespace Penumbra.Mods
     {
         private readonly Plugin _plugin;
         public readonly Dictionary< string, FileInfo > ResolvedFiles = new();
+        public readonly Dictionary< string, string > SwappedFiles = new();
 
         public ModCollection Mods { get; set; }
 
@@ -107,6 +106,7 @@ namespace Penumbra.Mods
         public void CalculateEffectiveFileList()
         {
             ResolvedFiles.Clear();
+            SwappedFiles.Clear();
 
             var registeredFiles = new Dictionary< string, string >();
 
@@ -149,6 +149,20 @@ namespace Penumbra.Mods
                         }
                     }
                 }
+
+                foreach( var swap in mod.Meta.FileSwaps )
+                {
+                    // just assume people put not fucked paths in here lol
+                    if( !SwappedFiles.ContainsKey( swap.Value ) )
+                    {
+                        SwappedFiles[ swap.Key.ToLowerInvariant() ] = swap.Value;
+                        registeredFiles[ swap.Key ] = mod.Meta.Name;
+                    }
+                    else if( registeredFiles.TryGetValue( swap.Key, out var modName ) )
+                    {
+                        mod.AddConflict( modName, swap.Key );
+                    }
+                }
             }
         }
 
@@ -180,12 +194,18 @@ namespace Penumbra.Mods
             return candidate;
         }
 
-        public string ResolveReplacementFilePath( string gameResourcePath )
+        public string GetSwappedFilePath( string gameResourcePath )
+        {
+            return SwappedFiles.TryGetValue( gameResourcePath, out var swappedPath ) ? swappedPath : null;
+        }
+
+        public string ResolveSwappedOrReplacementFilePath( string gameResourcePath )
         {
             gameResourcePath = gameResourcePath.ToLowerInvariant();
-
-            return GetCandidateForGameFile( gameResourcePath )?.FullName;
+ 
+            return GetCandidateForGameFile( gameResourcePath )?.FullName ?? GetSwappedFilePath( gameResourcePath );
         }
+ 
 
         public void Dispose()
         {

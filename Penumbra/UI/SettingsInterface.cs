@@ -683,6 +683,24 @@ namespace Penumbra.UI
                         ImGui.EndTabItem();
                     }
 
+                    if( _selectedMod.Mod.Meta.FileSwaps.Any() )
+                    {
+                        if( ImGui.BeginTabItem( "File Swaps" ) )
+                        {
+                            ImGui.SetNextItemWidth( -1 );
+                            if( ImGui.ListBoxHeader( "##", AutoFillSize ) )
+                            {
+                                foreach( var file in _selectedMod.Mod.Meta.FileSwaps )
+                                {
+                                    // todo: fucking gross alloc every frame * items
+                                    ImGui.Selectable( $"{file.Key} -> {file.Value}" );
+                                }
+                            }
+
+                            ImGui.ListBoxFooter();
+                            ImGui.EndTabItem();
+                        }
+                    }
                     if( _selectedMod.Mod.FileConflicts.Any() )
                     {
                         if( ImGui.BeginTabItem( "File Conflicts" ) )
