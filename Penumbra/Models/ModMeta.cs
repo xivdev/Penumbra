@@ -12,6 +12,10 @@ namespace Penumbra.Models
         
         public string Website { get; set; }
 
+        public List<string> ChangedItems { get; set; } = new();
+
         public Dictionary< string, string > FileSwaps { get; } = new();
+        
+        public GroupInformation Groups { get; set; } = new();
     }
 }
