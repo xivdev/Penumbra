@@ -7,8 +7,6 @@ namespace Penumbra.Game
 {
     public class GameUtils
     {
-        private readonly DalamudPluginInterface _pluginInterface;
-
         [Function( CallingConventions.Microsoft )]
         public unsafe delegate void* LoadPlayerResourcesPrototype( IntPtr pResourceManager );
 
@@ -25,9 +23,7 @@ namespace Penumbra.Game
 
         public GameUtils( DalamudPluginInterface pluginInterface )
         {
-            _pluginInterface = pluginInterface;
-
-            var scanner = _pluginInterface.TargetModuleScanner;
+            var scanner = pluginInterface.TargetModuleScanner;
 
             var loadPlayerResourcesAddress =
                 scanner.ScanText(

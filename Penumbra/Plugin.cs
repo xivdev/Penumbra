@@ -1,7 +1,6 @@
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using EmbedIO;
-using EmbedIO.Actions;
 using EmbedIO.WebApi;
 using Penumbra.API;
 using Penumbra.Game;

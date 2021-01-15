@@ -1,7 +1,5 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Runtime.CompilerServices;
-using Penumbra.Extensions;
 
 namespace Penumbra.Util
 {
@@ -10,14 +8,14 @@ namespace Penumbra.Util
     /// </summary>
     public class Crc32
     {
-        private const uint POLY = 0xedb88320;
+        private const uint Poly = 0xedb88320;
 
         private static readonly uint[] CrcArray =
             Enumerable.Range( 0, 256 ).Select( i =>
             {
                 var k = ( uint )i;
                 for( var j = 0; j < 8; j++ )
-                    k = ( k & 1 ) != 0 ? ( k >> 1 ) ^ POLY : k >> 1;
+                    k = ( k & 1 ) != 0 ? ( k >> 1 ) ^ Poly : k >> 1;
 
                 return k;
             } ).ToArray();

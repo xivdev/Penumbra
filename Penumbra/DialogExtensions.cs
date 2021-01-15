@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -49,15 +46,15 @@ namespace Penumbra
 
         public class HiddenForm : Form
         {
-            private readonly CommonDialog form;
-            private readonly IWin32Window owner;
-            private readonly TaskCompletionSource< DialogResult > taskSource;
+            private readonly CommonDialog _form;
+            private readonly IWin32Window _owner;
+            private readonly TaskCompletionSource< DialogResult > _taskSource;
 
             public HiddenForm( CommonDialog form, IWin32Window owner, TaskCompletionSource< DialogResult > taskSource )
             {
-                this.form = form;
-                this.owner = owner;
-                this.taskSource = taskSource;
+                this._form = form;
+                this._owner = owner;
+                this._taskSource = taskSource;
 
                 Opacity = 0;
                 FormBorderStyle = FormBorderStyle.None;
@@ -72,12 +69,12 @@ namespace Penumbra
                 Hide();
                 try
                 {
-                    var result = form.ShowDialog( owner );
-                    taskSource.SetResult( result );
+                    var result = _form.ShowDialog( _owner );
+                    _taskSource.SetResult( result );
                 }
                 catch( Exception e )
                 {
-                    taskSource.SetException( e );
+                    _taskSource.SetException( e );
                 }
 
                 Close();

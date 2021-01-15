@@ -17,10 +17,10 @@ namespace Penumbra.Importer
         private readonly DirectoryInfo _outDirectory;
 
         private const string TempFileName = "textools-import";
-        private readonly string _resolvedTempFilePath = null;
+        private readonly string _resolvedTempFilePath;
 
         public ImporterState State { get; private set; }
-        
+
         public long TotalProgress { get; private set; }
         public long CurrentProgress { get; private set; }
 
@@ -49,7 +49,7 @@ namespace Penumbra.Importer
         public void ImportModPack( FileInfo modPackFile )
         {
             CurrentModPack = modPackFile.Name;
-            
+
             switch( modPackFile.Extension )
             {
                 case ".ttmp":
@@ -74,7 +74,7 @@ namespace Penumbra.Importer
         private SqPackStream GetMagicSqPackDeleterStream( ZipFile file, string entryName )
         {
             State = ImporterState.WritingPackToDisk;
-            
+
             // write shitty zip garbage to disk
             var entry = file.GetEntry( entryName );
             using var s = file.GetInputStream( entry );
@@ -216,9 +216,9 @@ namespace Penumbra.Importer
                 from option in modGroup.OptionList
                 select option )
             {
-                var OptionFolder = new DirectoryInfo(Path.Combine(newModFolder.FullName, option.Name));
-                ExtractSimpleModList(OptionFolder, option.ModsJsons, modData );
-                AddMeta(OptionFolder, newModFolder, modMeta, option.Name);
+                var optionFolder = new DirectoryInfo( Path.Combine( newModFolder.FullName, option.Name ) );
+                ExtractSimpleModList( optionFolder, option.ModsJsons, modData );
+                AddMeta( optionFolder, newModFolder, modMeta, option.Name );
             }
 
             File.WriteAllText(
@@ -226,8 +226,8 @@ namespace Penumbra.Importer
                 JsonConvert.SerializeObject( modMeta, Formatting.Indented )
             );
         }
-        
-        void AddMeta(DirectoryInfo optionFolder, DirectoryInfo baseFolder, ModMeta meta, string optionName)
+
+        void AddMeta( DirectoryInfo optionFolder, DirectoryInfo baseFolder, ModMeta meta, string optionName )
         {
             var optionFolderLength = optionFolder.FullName.Length;
             var baseFolderLength = baseFolder.FullName.Length;
@@ -235,9 +235,9 @@ namespace Penumbra.Importer
             {
                 foreach( var file in dir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
                 {
-                    meta.Groups.AddFileToOtherGroups(optionName
-                         , file.FullName.Substring(baseFolderLength).TrimStart('\\')
-                         , file.FullName.Substring(optionFolderLength).TrimStart('\\').Replace('\\', '/'));
+                    meta.Groups.AddFileToOtherGroups( optionName
+                        , file.FullName.Substring( baseFolderLength ).TrimStart( '\\' )
+                        , file.FullName.Substring( optionFolderLength ).TrimStart( '\\' ).Replace( '\\', '/' ) );
                 }
             }
         }
@@ -250,12 +250,12 @@ namespace Penumbra.Importer
         private void ExtractSimpleModList( DirectoryInfo outDirectory, IEnumerable< SimpleMod > mods, SqPackStream dataStream )
         {
             State = ImporterState.ExtractingModFiles;
-            
+
             // haha allocation go brr
             var wtf = mods.ToList();
-            
+
             TotalProgress = wtf.LongCount();
-            
+
             // Extract each SimpleMod into the new mod folder
             foreach( var simpleMod in wtf )
             {
@@ -264,7 +264,7 @@ namespace Penumbra.Importer
                     // do we increment here too???? can this even happen?????
                     continue;
                 }
-                
+
                 ExtractMod( outDirectory, simpleMod, dataStream );
                 CurrentProgress++;
             }
@@ -296,12 +296,12 @@ namespace Penumbra.Importer
         {
             // Model file header LOD num
             mdl[ 64 ] = 1;
-            
+
             // Model header LOD num
             var stackSize = BitConverter.ToUInt32( mdl, 4 );
             var runtimeBegin = stackSize + 0x44;
             var stringsLengthOffset = runtimeBegin + 4;
-            var stringsLength = BitConverter.ToUInt32( mdl, (int) stringsLengthOffset );
+            var stringsLength = BitConverter.ToUInt32( mdl, ( int )stringsLengthOffset );
             var modelHeaderStart = stringsLengthOffset + stringsLength + 4;
             var modelHeaderLodOffset = 22;
             mdl[ modelHeaderStart + modelHeaderLodOffset ] = 1;

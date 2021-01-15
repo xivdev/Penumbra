@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.Linq;
 using EmbedIO;
 using EmbedIO.Routing;
@@ -25,7 +24,7 @@ namespace Penumbra.API
                 x.FolderName,
                 x.Mod.Meta,
                 BasePath = x.Mod.ModBasePath.FullName,
-                Files = x.Mod.ModFiles.Select( x => x.FullName )
+                Files = x.Mod.ModFiles.Select( fi => fi.FullName )
             } );
         }
 

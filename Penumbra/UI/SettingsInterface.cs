@@ -18,8 +18,8 @@ namespace Penumbra.UI
     {
         private readonly Plugin _plugin;
 
-        public bool Visible = false;
-        public bool ShowDebugBar = false;
+        public bool Visible;
+        public bool ShowDebugBar;
 
         private static readonly Vector2 AutoFillSize = new Vector2( -1, -1 );
         private static readonly Vector2 ModListSize = new Vector2( 200, -1 );
@@ -33,7 +33,7 @@ namespace Penumbra.UI
         private int? _selectedModDeleteIndex;
         private ModInfo _selectedMod;
 
-        public bool IsImportRunning = false;
+        private bool _isImportRunning;
         private TexToolsImport _texToolsImport = null!;
 
         public SettingsInterface( Plugin plugin )
@@ -129,7 +129,7 @@ namespace Penumbra.UI
             DrawImportTab();
 
 
-            if( !IsImportRunning )
+            if( !_isImportRunning )
             {
                 DrawModBrowser();
 
@@ -156,11 +156,11 @@ namespace Penumbra.UI
                 return;
             }
 
-            if( !IsImportRunning )
+            if( !_isImportRunning )
             {
                 if( ImGui.Button( "Import TexTools Modpacks" ) )
                 {
-                    IsImportRunning = true;
+                    _isImportRunning = true;
 
                     Task.Run( async () =>
                     {
@@ -197,7 +197,7 @@ namespace Penumbra.UI
                             ReloadMods();
                         }
 
-                        IsImportRunning = false;
+                        _isImportRunning = false;
                     } );
                 }
             }
@@ -269,7 +269,7 @@ namespace Penumbra.UI
             {
                 ReloadMods();
                 _selectedModIndex = 0;
-                _selectedMod      = null;
+                _selectedMod = null;
             }
 
             ImGui.SameLine();
@@ -279,7 +279,18 @@ namespace Penumbra.UI
                 Process.Start( _plugin.Configuration.CurrentCollection );
             }
 
-            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 15 );
+            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 20 );
+
+            var invertOrder = _plugin.Configuration.InvertModListOrder;
+            if( ImGui.Checkbox( "Invert mod load order (mods are loaded bottom up)", ref invertOrder ) )
+            {
+                _plugin.Configuration.InvertModListOrder = invertOrder;
+                dirty = true;
+
+                ReloadMods();
+            }
+
+            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 20 );
 
             var showAdvanced = _plugin.Configuration.ShowAdvanced;
             if( ImGui.Checkbox( "Show Advanced Settings", ref showAdvanced ) )
@@ -405,7 +416,13 @@ namespace Penumbra.UI
             ImGui.PopFont();
 
             if( ImGui.IsItemHovered() )
-                ImGui.SetTooltip( "Move the selected mod up in priority" );
+            {
+                ImGui.SetTooltip(
+                    _plugin.Configuration.InvertModListOrder
+                        ? "Move the selected mod down in priority"
+                        : "Move the selected mod up in priority"
+                );
+            }
 
             ImGui.PushFont( UiBuilder.IconFont );
 
@@ -430,7 +447,13 @@ namespace Penumbra.UI
             ImGui.PopFont();
 
             if( ImGui.IsItemHovered() )
-                ImGui.SetTooltip( "Move the selected mod down in priority" );
+            {
+                ImGui.SetTooltip(
+                    _plugin.Configuration.InvertModListOrder
+                        ? "Move the selected mod up in priority"
+                        : "Move the selected mod down in priority"
+                );
+            }
 
             ImGui.PushFont( UiBuilder.IconFont );
 
@@ -508,30 +531,33 @@ namespace Penumbra.UI
         // Website button with On-Hover address if valid http(s), otherwise text.
         private void DrawWebsiteText()
         {
-            if ((_selectedMod.Mod.Meta.Website?.Length ?? 0) > 0)
+            if( ( _selectedMod.Mod.Meta.Website?.Length ?? 0 ) <= 0 )
             {
-                var validUrl = Uri.TryCreate(_selectedMod.Mod.Meta.Website, UriKind.Absolute, out Uri uriResult)
-                    && (uriResult.Scheme == Uri.UriSchemeHttps ||uriResult.Scheme == Uri.UriSchemeHttp);
+                return;
+            }
+            
+            var validUrl = Uri.TryCreate( _selectedMod.Mod.Meta.Website, UriKind.Absolute, out Uri uriResult )
+                           && ( uriResult.Scheme == Uri.UriSchemeHttps || uriResult.Scheme == Uri.UriSchemeHttp );
+            ImGui.SameLine();
+            if( validUrl )
+            {
+                if( ImGui.SmallButton( "Open Website" ) )
+                {
+                    Process.Start( _selectedMod.Mod.Meta.Website );
+                }
+
+                if( ImGui.IsItemHovered() )
+                {
+                    ImGui.BeginTooltip();
+                    ImGui.Text( _selectedMod.Mod.Meta.Website );
+                    ImGui.EndTooltip();
+                }
+            }
+            else
+            {
+                ImGui.TextColored( new Vector4( 1f, 1f, 1f, 0.66f ), "from" );
                 ImGui.SameLine();
-                if (validUrl)
-                {
-                    if (ImGui.SmallButton("Open Website"))
-                    { 
-                        Process.Start( _selectedMod.Mod.Meta.Website );
-                    }
-                    if (ImGui.IsItemHovered())
-                    {
-                        ImGui.BeginTooltip();
-                        ImGui.Text( _selectedMod.Mod.Meta.Website );
-                        ImGui.EndTooltip();
-                    }
-                }
-                else
-                {
-                    ImGui.TextColored( new Vector4( 1f, 1f, 1f, 0.66f ), "from" );
-                    ImGui.SameLine();
-                    ImGui.Text(_selectedMod.Mod.Meta.Website);
-                }
+                ImGui.Text( _selectedMod.Mod.Meta.Website );
             }
         }
 
@@ -547,7 +573,7 @@ namespace Penumbra.UI
             ImGui.SameLine();
             if( ImGui.Button( "Edit JSON" ) )
             {
-                var metaPath = Path.Combine( _selectedMod.Mod.ModBasePath.FullName, "meta.json");
+                var metaPath = Path.Combine( _selectedMod.Mod.ModBasePath.FullName, "meta.json" );
                 File.WriteAllText( metaPath, JsonConvert.SerializeObject( _selectedMod.Mod.Meta, Formatting.Indented ) );
                 Process.Start( metaPath );
             }
@@ -558,50 +584,50 @@ namespace Penumbra.UI
                 ReloadMods();
 
                 // May select a different mod than before if mods were added or deleted, but will not crash.
-                if (_selectedModIndex < _plugin.ModManager.Mods.ModSettings.Count)
+                if( _selectedModIndex < _plugin.ModManager.Mods.ModSettings.Count )
                 {
-                    _selectedMod = _plugin.ModManager.Mods.ModSettings[_selectedModIndex];
+                    _selectedMod = _plugin.ModManager.Mods.ModSettings[ _selectedModIndex ];
                 }
                 else
                 {
                     _selectedModIndex = 0;
-                    _selectedMod      = null;
+                    _selectedMod = null;
                 }
             }
         }
 
         private void DrawGroupSelectors()
         {
-            var hasTopTypes    = (_selectedMod.Mod.Meta.Groups.TopTypes?.Count    ?? 0) > 1;
-            var hasBottomTypes = (_selectedMod.Mod.Meta.Groups.BottomTypes?.Count ?? 0) > 1;
-            var hasGroups      = (_selectedMod.Mod.Meta.Groups.OtherGroups?.Count ?? 0) > 1;
-            var numSelectors   = (hasTopTypes ? 1 : 0) + (hasBottomTypes ? 1 : 0) + (hasGroups ? 1 : 0);
-            var selectorWidth  = (ImGui.GetWindowWidth() 
-                - (hasTopTypes    ? ImGui.CalcTextSize("Top       ").X    : 0)
-                - (hasBottomTypes ? ImGui.CalcTextSize("Bottom       ").X : 0)
-                - (hasGroups      ? ImGui.CalcTextSize("Group       ").X  : 0)) / numSelectors;
-            
-            void DrawSelector(string label, string propertyName, System.Collections.Generic.List<string> list, bool sameLine)
+            var hasTopTypes = ( _selectedMod.Mod.Meta.Groups.TopTypes?.Count ?? 0 ) > 1;
+            var hasBottomTypes = ( _selectedMod.Mod.Meta.Groups.BottomTypes?.Count ?? 0 ) > 1;
+            var hasGroups = ( _selectedMod.Mod.Meta.Groups.OtherGroups?.Count ?? 0 ) > 1;
+            var numSelectors = ( hasTopTypes ? 1 : 0 ) + ( hasBottomTypes ? 1 : 0 ) + ( hasGroups ? 1 : 0 );
+            var selectorWidth = ( ImGui.GetWindowWidth()
+                                  - ( hasTopTypes ? ImGui.CalcTextSize( "Top       " ).X : 0 )
+                                  - ( hasBottomTypes ? ImGui.CalcTextSize( "Bottom       " ).X : 0 )
+                                  - ( hasGroups ? ImGui.CalcTextSize( "Group       " ).X : 0 ) ) / numSelectors;
+
+            void DrawSelector( string label, string propertyName, System.Collections.Generic.List< string > list, bool sameLine )
             {
-                var current = (int) _selectedMod.GetType().GetProperty(propertyName).GetValue(_selectedMod);
+                var current = ( int )_selectedMod.GetType().GetProperty( propertyName ).GetValue( _selectedMod );
                 ImGui.SetNextItemWidth( selectorWidth );
-                if (sameLine) ImGui.SameLine();
-                if ( ImGui.Combo(label, ref current, list.ToArray(), list.Count()) )
+                if( sameLine ) ImGui.SameLine();
+                if( ImGui.Combo( label, ref current, list.ToArray(), list.Count() ) )
                 {
-                    _selectedMod.GetType().GetProperty(propertyName).SetValue(_selectedMod, current);
+                    _selectedMod.GetType().GetProperty( propertyName ).SetValue( _selectedMod, current );
                     _plugin.ModManager.Mods.Save();
                     _plugin.ModManager.CalculateEffectiveFileList();
                 }
             }
 
-            if ( hasTopTypes )
-                DrawSelector("Top", "CurrentTop", _selectedMod.Mod.Meta.Groups.TopTypes, false);
+            if( hasTopTypes )
+                DrawSelector( "Top", "CurrentTop", _selectedMod.Mod.Meta.Groups.TopTypes, false );
 
-            if ( hasBottomTypes )
-                DrawSelector("Bottom", "CurrentBottom", _selectedMod.Mod.Meta.Groups.BottomTypes, hasTopTypes);
+            if( hasBottomTypes )
+                DrawSelector( "Bottom", "CurrentBottom", _selectedMod.Mod.Meta.Groups.BottomTypes, hasTopTypes );
 
-            if ( hasGroups )
-                DrawSelector("Group", "CurrentGroup", _selectedMod.Mod.Meta.Groups.OtherGroups, numSelectors > 1);
+            if( hasGroups )
+                DrawSelector( "Group", "CurrentGroup", _selectedMod.Mod.Meta.Groups.OtherGroups, numSelectors > 1 );
         }
 
         void DrawInstalledMods()
@@ -635,23 +661,23 @@ namespace Penumbra.UI
                     ImGui.BeginChild( "selectedModInfo", AutoFillSize, true );
 
                     ImGui.Text( _selectedMod.Mod.Meta.Name );
-                    
+
                     // (Version ...) or nothing.
-                    if ((_selectedMod.Mod.Meta.Version?.Length ?? 0) > 0)
+                    if( ( _selectedMod.Mod.Meta.Version?.Length ?? 0 ) > 0 )
                     {
                         ImGui.SameLine();
-                        ImGui.Text($"(Version {_selectedMod.Mod.Meta.Version})" );
+                        ImGui.Text( $"(Version {_selectedMod.Mod.Meta.Version})" );
                     }
 
                     // by Author or Unknown.
                     ImGui.SameLine();
                     ImGui.TextColored( new Vector4( 1f, 1f, 1f, 0.66f ), "by" );
                     ImGui.SameLine();
-                    if ((_selectedMod.Mod.Meta.Author?.Length ?? 0) > 0 )
+                    if( ( _selectedMod.Mod.Meta.Author?.Length ?? 0 ) > 0 )
                         ImGui.Text( _selectedMod.Mod.Meta.Author );
                     else
                         ImGui.Text( "Unknown" );
-                    
+
                     DrawWebsiteText();
 
                     ImGui.SetCursorPosY( ImGui.GetCursorPosY() + 10 );
@@ -668,16 +694,21 @@ namespace Penumbra.UI
 
                     DrawGroupSelectors();
 
-                    ImGui.TextWrapped( _selectedMod.Mod.Meta.Description ?? "" );
-
                     ImGui.BeginTabBar( "PenumbraPluginDetails" );
-                    if ( (_selectedMod.Mod.Meta.ChangedItems?.Count ?? 0 ) > 0)
+                    
+                    if( _selectedMod.Mod.Meta.Description?.Length > 0 && ImGui.BeginTabItem( "About" ) )
+                    {
+                        ImGui.TextWrapped( _selectedMod.Mod.Meta.Description );
+                        ImGui.EndTabItem();
+                    }
+                    
+                    if( ( _selectedMod.Mod.Meta.ChangedItems?.Count ?? 0 ) > 0 )
                     {
                         if( ImGui.BeginTabItem( "Changed Items" ) )
                         {
                             ImGui.SetNextItemWidth( -1 );
-                            if( ImGui.ListBoxHeader( "###",  AutoFillSize ) )
-                                foreach(var item in _selectedMod.Mod.Meta.ChangedItems)
+                            if( ImGui.ListBoxHeader( "###", AutoFillSize ) )
+                                foreach( var item in _selectedMod.Mod.Meta.ChangedItems )
                                     ImGui.Selectable( item );
                             ImGui.ListBoxFooter();
                             ImGui.EndTabItem();
@@ -713,6 +744,7 @@ namespace Penumbra.UI
                             ImGui.EndTabItem();
                         }
                     }
+
                     if( _selectedMod.Mod.FileConflicts.Any() )
                     {
                         if( ImGui.BeginTabItem( "File Conflicts" ) )

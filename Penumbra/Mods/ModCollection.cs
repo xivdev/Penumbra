@@ -21,7 +21,7 @@ namespace Penumbra.Mods
             _basePath = basePath;
         }
 
-        public void Load()
+        public void Load( bool invertOrder = false )
         {
             // find the collection json
             var collectionPath = Path.Combine( _basePath.FullName, "collection.json" );
@@ -94,7 +94,7 @@ namespace Penumbra.Mods
             }
 
             // reorder the resourcemods list so we can just directly iterate
-            EnabledMods = GetOrderedAndEnabledModList().ToArray();
+            EnabledMods = GetOrderedAndEnabledModList( invertOrder ).ToArray();
 
             // write the collection metadata back to disk
             Save();
@@ -181,22 +181,28 @@ namespace Penumbra.Mods
             return AddModSettings( mod );
         }
 
-        public IEnumerable<ModInfo> GetOrderedAndEnabledModSettings()
+        public IEnumerable<ModInfo> GetOrderedAndEnabledModSettings( bool invertOrder = false )
         {
-            return ModSettings
-                .Where( x => x.Enabled )
-                .OrderBy( x => x.Priority );
+            var query = ModSettings
+                .Where( x => x.Enabled );
+
+            if( !invertOrder )
+            {
+                return query.OrderBy( x => x.Priority );
+            }
+
+            return query.OrderByDescending( x => x.Priority );
         }
 
-        public IEnumerable<ResourceMod> GetOrderedAndEnabledModList()
+        public IEnumerable<ResourceMod> GetOrderedAndEnabledModList( bool invertOrder = false )
         {
-            return GetOrderedAndEnabledModSettings()
+            return GetOrderedAndEnabledModSettings( invertOrder )
                 .Select( x => x.Mod );
         }
 
-        public IEnumerable<(ResourceMod, ModInfo)> GetOrderedAndEnabledModListWithSettings()
+        public IEnumerable<(ResourceMod, ModInfo)> GetOrderedAndEnabledModListWithSettings( bool invertOrder = false )
         {
-            return GetOrderedAndEnabledModSettings()
+            return GetOrderedAndEnabledModSettings( invertOrder )
                 .Select( x => (x.Mod, x) );
         }
     }
