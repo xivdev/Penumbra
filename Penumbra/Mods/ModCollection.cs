@@ -156,9 +156,6 @@ namespace Penumbra.Mods
             var entry = new ModInfo
             {
                 Priority = ModSettings.Count,
-                CurrentGroup = 0,
-                CurrentTop = 0,
-                CurrentBottom = 0,
                 FolderName = mod.ModBasePath.Name,
                 Enabled = true,
                 Mod = mod

@@ -268,6 +268,8 @@ namespace Penumbra.UI
             if( ImGui.Button( "Rediscover Mods" ) )
             {
                 ReloadMods();
+                _selectedModIndex = 0;
+                _selectedMod      = null;
             }
 
             ImGui.SameLine();
@@ -554,7 +556,17 @@ namespace Penumbra.UI
             if( ImGui.Button( "Reload JSON" ) )
             {
                 ReloadMods();
-                _selectedMod = _plugin.ModManager.Mods.ModSettings[ _selectedModIndex ];
+
+                // May select a different mod than before if mods were added or deleted, but will not crash.
+                if (_selectedModIndex < _plugin.ModManager.Mods.ModSettings.Count)
+                {
+                    _selectedMod = _plugin.ModManager.Mods.ModSettings[_selectedModIndex];
+                }
+                else
+                {
+                    _selectedModIndex = 0;
+                    _selectedMod      = null;
+                }
             }
         }
 
