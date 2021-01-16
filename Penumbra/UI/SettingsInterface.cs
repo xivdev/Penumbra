@@ -619,7 +619,7 @@ namespace Penumbra.UI
                         var flag = conf[g.Key];
                         foreach(var opt in g.Value.Options) {
                             var enab = (flag & 1<<i)!=0;
-                            if(ImGui.Checkbox(opt.OptionName, ref enab)) {
+                            if(ImGui.Checkbox(g.Value.GroupName + " - " +opt.OptionName, ref enab)) {
                                 flag = flag ^= 1<<i;
                                 conf[g.Key] = flag;
                                 _plugin.ModManager.Mods.Save();
