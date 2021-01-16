@@ -5,7 +5,7 @@ namespace Penumbra.Importer.Models
     internal class OptionList
     {
         public string Name { get; set; }
-        public object Description { get; set; }
+        public string Description { get; set; }
         public string ImagePath { get; set; }
         public List< SimpleMod > ModsJsons { get; set; }
         public string GroupName { get; set; }

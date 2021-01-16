@@ -211,14 +211,16 @@ namespace Penumbra.Importer
                 return;
 
             // Iterate through all pages
-            foreach( var option in from modPackPage in modList.ModPackPages
-                from modGroup in modPackPage.ModGroups
-                from option in modGroup.OptionList
-                select option )
+            foreach( var page in modList.ModPackPages)
             {
-                var optionFolder = new DirectoryInfo( Path.Combine( newModFolder.FullName, option.Name ) );
-                ExtractSimpleModList( optionFolder, option.ModsJsons, modData );
-                AddMeta( optionFolder, newModFolder, modMeta, option.Name );
+                foreach(var group in page.ModGroups) {
+                    var groupFolder = new DirectoryInfo(Path.Combine(newModFolder.FullName, group.GroupName));
+                    foreach(var option in group.OptionList) {
+                        var optionFolder = new DirectoryInfo( Path.Combine( groupFolder.FullName, option.Name ) );
+                        ExtractSimpleModList( optionFolder, option.ModsJsons, modData );
+                    }
+                    AddMeta(newModFolder, groupFolder, group, modMeta);
+                }
             }
 
             File.WriteAllText(
@@ -227,19 +229,26 @@ namespace Penumbra.Importer
             );
         }
 
-        void AddMeta( DirectoryInfo optionFolder, DirectoryInfo baseFolder, ModMeta meta, string optionName )
+        private void AddMeta( DirectoryInfo baseFolder, DirectoryInfo groupFolder,ModGroup group, ModMeta meta)
         {
-            var optionFolderLength = optionFolder.FullName.Length;
-            var baseFolderLength = baseFolder.FullName.Length;
-            foreach( var dir in optionFolder.EnumerateDirectories() )
-            {
-                foreach( var file in dir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
-                {
-                    meta.Groups.AddFileToOtherGroups( optionName
-                        , file.FullName.Substring( baseFolderLength ).TrimStart( '\\' )
-                        , file.FullName.Substring( optionFolderLength ).TrimStart( '\\' ).Replace( '\\', '/' ) );
+            var Inf = new InstallerInfo {
+                SelectionType = group.SelectionType,
+                GroupName = group.GroupName,
+                Options = new List<Option>(),
+            };
+            foreach(var opt in group.OptionList) {
+                    var optio = new Option{
+                        OptionName = opt.Name,
+                        OptionDesc = String.IsNullOrEmpty(opt.Description) ? "" : opt.Description,
+                        OptionFiles = new Dictionary<string, string>()
+                    };
+                    var optDir = new DirectoryInfo(Path.Combine( groupFolder.FullName, opt.Name));
+                    foreach(var file in optDir.EnumerateFiles("*.*", SearchOption.AllDirectories)) {
+                        optio.OptionFiles[file.FullName.Substring(baseFolder.FullName.Length).TrimStart('\\')] = file.FullName.Substring(optDir.FullName.Length).TrimStart('\\').Replace('\\','/');
                 }
+                Inf.Options.Add(optio);
             }
+            meta.Groups.Add(group.GroupName, Inf);
         }
 
         private void ImportMetaModPack( FileInfo file )

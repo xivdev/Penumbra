@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using Penumbra.Mods;
 
 namespace Penumbra.Models
@@ -8,9 +9,7 @@ namespace Penumbra.Models
         public string FolderName { get; set; }
         public bool Enabled      { get; set; }
         public int Priority      { get; set; }
-        public int CurrentTop    { get; set; } = 0;
-        public int CurrentBottom { get; set; } = 0;
-        public int CurrentGroup  { get; set; } = 0;
+        public Dictionary<string, int> Conf {get;set;}
 
         [JsonIgnore]
         public ResourceMod Mod { get; set; }

@@ -53,6 +53,8 @@ namespace Penumbra
             ResourceLoader.Init();
             ResourceLoader.Enable();
 
+            GameUtils.ReloadPlayerResources();
+
             SettingsInterface = new SettingsInterface( this );
             PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
 
