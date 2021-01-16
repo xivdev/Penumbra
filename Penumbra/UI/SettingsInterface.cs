@@ -736,7 +736,6 @@ namespace Penumbra.UI
                     }
                     if(_selectedMod.Mod.Meta.Groups.Count >=1) {
                         if(ImGui.BeginTabItem( "Configuration" )) {
-                            ImGui.SetNextItemWidth(-1);
                             DrawGroupSelectors();
                             ImGui.EndTabItem();
                         }
