@@ -632,10 +632,12 @@ namespace Penumbra.UI
                     case "Single": 
                     {
                         var code = conf[g.Key];
-                        if(ImGui.Combo(g.Value.GroupName, ref code, g.Value.Options.Select(x=>x.OptionName).ToArray(), g.Value.Options.ToArray().Length)) {
-                            conf[g.Key] = code;
-                            _plugin.ModManager.Mods.Save();
-                            _plugin.ModManager.CalculateEffectiveFileList();
+                        if(g.Value.Options.Count >1) {
+                            if(ImGui.Combo(g.Value.GroupName, ref code, g.Value.Options.Select(x=>x.OptionName).ToArray(), g.Value.Options.ToArray().Length)) {
+                                conf[g.Key] = code;
+                                _plugin.ModManager.Mods.Save();
+                                _plugin.ModManager.CalculateEffectiveFileList();
+                            }
                         }
                         break;
                     }
