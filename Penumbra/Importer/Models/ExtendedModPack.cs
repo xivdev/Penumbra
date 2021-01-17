@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Penumbra.Models;
 
 namespace Penumbra.Importer.Models
 {
@@ -9,14 +10,14 @@ namespace Penumbra.Importer.Models
         public string ImagePath { get; set; }
         public List< SimpleMod > ModsJsons { get; set; }
         public string GroupName { get; set; }
-        public string SelectionType { get; set; }
+        public SelectType SelectionType { get; set; }
         public bool IsChecked { get; set; }
     }
 
     internal class ModGroup
     {
         public string GroupName { get; set; }
-        public string SelectionType { get; set; }
+        public SelectType SelectionType { get; set; }
         public List< OptionList > OptionList { get; set; }
     }
 

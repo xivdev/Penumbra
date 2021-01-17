@@ -145,7 +145,7 @@ namespace Penumbra.Mods
                             }
                             var current = settings.Conf[negivtron.Item1.GroupName];
                             var flag = negivtron.Item1.Options.IndexOf(negivtron.Item2);
-                            if(negivtron.Item1.SelectionType=="Single") {
+                            if(negivtron.Item1.SelectionType==SelectType.Single) {
                                 addFile = current == flag;
                             } else {
                                 flag = 1 << negivtron.Item1.Options.IndexOf(negivtron.Item2);

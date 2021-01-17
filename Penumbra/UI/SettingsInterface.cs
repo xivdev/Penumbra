@@ -613,7 +613,7 @@ namespace Penumbra.UI
                     conf[g.Key] = 0;
                 }
                 switch(g.Value.SelectionType) {
-                    case "Multi":
+                    case SelectType.Multi:
                     {
                         var i = 0;
                         var flag = conf[g.Key];
@@ -629,7 +629,7 @@ namespace Penumbra.UI
                         }
                         break;
                     }
-                    case "Single": 
+                    case SelectType.Single: 
                     {
                         var code = conf[g.Key];
                         if(g.Value.Options.Count >1) {
@@ -644,7 +644,7 @@ namespace Penumbra.UI
                     default: {
                         ImGui.Text("I dunno what this is, please report it!");
                         ImGui.Text(g.Value.GroupName);
-                        ImGui.Text(g.Value.SelectionType);
+                        ImGui.Text(g.Value.SelectionType.ToString());
                         break;
                     }
                 }
