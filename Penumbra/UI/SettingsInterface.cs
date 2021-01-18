@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -547,11 +548,7 @@ namespace Penumbra.UI
                 }
 
                 if( ImGui.IsItemHovered() )
-                {
-                    ImGui.BeginTooltip();
-                    ImGui.Text( _selectedMod.Mod.Meta.Website );
-                    ImGui.EndTooltip();
-                }
+                    ImGui.SetTooltip( _selectedMod.Mod.Meta.Website );
             }
             else
             {
@@ -569,6 +566,8 @@ namespace Penumbra.UI
             {
                 Process.Start( _selectedMod.Mod.ModBasePath.FullName );
             }
+            if( ImGui.IsItemHovered() )
+                ImGui.SetTooltip( "Open the directory containing this mod in your default file explorer." );
 
             ImGui.SameLine();
             if( ImGui.Button( "Edit JSON" ) )
@@ -577,23 +576,27 @@ namespace Penumbra.UI
                 File.WriteAllText( metaPath, JsonConvert.SerializeObject( _selectedMod.Mod.Meta, Formatting.Indented ) );
                 Process.Start( metaPath );
             }
+            if( ImGui.IsItemHovered() )
+                ImGui.SetTooltip( "Open the JSON configuration file in your default application for .json." );
 
             ImGui.SameLine();
             if( ImGui.Button( "Reload JSON" ) )
             {
                 ReloadMods();
-
-                // May select a different mod than before if mods were added or deleted, but will not crash.
-                if( _selectedModIndex < _plugin.ModManager.Mods.ModSettings.Count )
-                {
-                    _selectedMod = _plugin.ModManager.Mods.ModSettings[ _selectedModIndex ];
-                }
-                else
-                {
-                    _selectedModIndex = 0;
-                    _selectedMod = null;
-                }
             }
+            if( ImGui.IsItemHovered() )
+                ImGui.SetTooltip( "Reload the configuration of all mods." );
+
+            ImGui.SameLine();
+            if( ImGui.Button( "Deduplicate" ) )
+            {
+                new Deduplicator(_selectedMod.Mod.ModBasePath, _selectedMod.Mod.Meta).Run();
+                var metaPath = Path.Combine( _selectedMod.Mod.ModBasePath.FullName, "meta.json" );
+                File.WriteAllText( metaPath, JsonConvert.SerializeObject( _selectedMod.Mod.Meta, Formatting.Indented ) );
+                ReloadMods();
+            }
+            if( ImGui.IsItemHovered() )
+                ImGui.SetTooltip( "Try to find identical files and remove duplicate occurences to reduce the mods disk size." );
         }
 
         private void DrawGroupSelectors()
@@ -724,8 +727,9 @@ namespace Penumbra.UI
                             ImGui.EndTabItem();
                         }
                     }
-                    if(_selectedMod.Mod.Meta.Groups.Count >=1) {
-                        if(ImGui.BeginTabItem( "Configuration" )) {
+                    if(_selectedMod.Mod.Meta.HasGroupWithConfig) {
+                        if(ImGui.BeginTabItem( "Configuration" )) 
+                        {
                             DrawGroupSelectors();
                             ImGui.EndTabItem();
                         }
@@ -851,6 +855,17 @@ namespace Penumbra.UI
             Directory.CreateDirectory( _plugin.Configuration.CurrentCollection );
 
             _plugin.ModManager.DiscoverMods( _plugin.Configuration.CurrentCollection );
+
+            // May select a different mod than before if mods were added or deleted, but will not crash.
+            if( _selectedModIndex < _plugin.ModManager.Mods.ModSettings.Count )
+            {
+                _selectedMod = _plugin.ModManager.Mods.ModSettings[ _selectedModIndex ];
+            }
+            else
+            {
+                _selectedModIndex = 0;
+                _selectedMod = null;
+            }
         }
     }
 }

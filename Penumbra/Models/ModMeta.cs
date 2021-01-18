@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Penumbra.Models
 {
@@ -18,5 +19,8 @@ namespace Penumbra.Models
         public Dictionary< string, string > FileSwaps { get; } = new();
 
         public Dictionary<string, InstallerInfo> Groups { get; set; } = new();
+
+        [JsonIgnore]
+        public bool HasGroupWithConfig { get; set; } = false;
     }
 }

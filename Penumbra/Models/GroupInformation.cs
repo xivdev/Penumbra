@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace Penumbra.Models
 {
@@ -10,10 +11,21 @@ namespace Penumbra.Models
     {
         public string OptionName;
         public string OptionDesc;
-        public Dictionary<string, string> OptionFiles;
+
+        [JsonProperty(ItemConverterType = typeof(SingleOrArrayConverter<string>))]
+        public Dictionary<string, HashSet<string>> OptionFiles;
+
+        public bool AddFile(string filePath, string gamePath)
+        {
+            if (OptionFiles.TryGetValue(filePath, out var set))
+                return set.Add(gamePath);
+            else
+                OptionFiles[filePath] = new(){ gamePath };
+            return true;
+        }
     }
-    public struct InstallerInfo
-    {
+
+    public struct InstallerInfo {
         public string GroupName;
         public SelectType SelectionType;
         public List<Option> Options;

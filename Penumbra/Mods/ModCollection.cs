@@ -69,6 +69,8 @@ namespace Penumbra.Mods
                 try
                 {
                     meta = JsonConvert.DeserializeObject< ModMeta >( File.ReadAllText( metaFile.FullName ) );
+                    meta.HasGroupWithConfig = meta.Groups != null && meta.Groups.Count > 0 
+                        && meta.Groups.Values.Any( G => G.SelectionType == SelectType.Multi || G.Options.Count > 1);
                 }
                 catch( Exception e )
                 {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Penumbra.Models;
 
 namespace Penumbra.Mods
@@ -102,21 +103,7 @@ namespace Penumbra.Mods
             // Needed to reload body textures with mods
             //_plugin.GameUtils.ReloadPlayerResources();
         }
-        private (InstallerInfo, Option, string) GlobalPosition( string rel, Dictionary<string, InstallerInfo> gps )
-        {
-            string filePath = null;
-            foreach( var g in gps )
-            {
-                foreach( var opt in g.Value.Options )
-                {
-                    if( opt.OptionFiles.TryGetValue( rel, out filePath ) )
-                    {
-                        return (g.Value, opt, filePath);
-                    }
-                }
-            }
-            return (default( InstallerInfo ), default( Option ), null);
-        }
+
         public void CalculateEffectiveFileList()
         {
             ResolvedFiles.Clear();
@@ -131,65 +118,83 @@ namespace Penumbra.Mods
                 // fixup path
                 var baseDir = mod.ModBasePath.FullName;
 
+                if(settings.Conf == null) {
+                    settings.Conf = new();
+                    _plugin.ModManager.Mods.Save();
+                }
+
                 foreach( var file in mod.ModFiles )
                 {
                     var relativeFilePath = file.FullName.Substring( baseDir.Length ).TrimStart( '\\' );
+                    
+                    bool doNotAdd = false;
+                    void AddFiles(HashSet<string> gamePaths)
+                    {
+                        doNotAdd = true;
+                        foreach (var gamePath in gamePaths)
+                        {
+                            if( !ResolvedFiles.ContainsKey( gamePath ) )                            {
+                                ResolvedFiles[ gamePath.ToLowerInvariant() ] = file;
+                                registeredFiles[ gamePath ] = mod.Meta.Name;
+                            }
+                            else if( registeredFiles.TryGetValue( gamePath, out var modName ) )
+                            {
+                                mod.AddConflict( modName, gamePath );
+                            }
+                        }
+                    }
 
-                    string gamePath;
-                    bool addFile = true;
-                    var gps = mod.Meta.Groups;
-                    if( gps.Count >= 1 )
+                    HashSet<string> paths;
+                    foreach (var group in mod.Meta.Groups.Select( G => G.Value))
                     {
-                        var negivtron = GlobalPosition( relativeFilePath, gps );
-                        if( negivtron.Item3 != null )
+                        if (!settings.Conf.TryGetValue(group.GroupName, out var setting) 
+                            || (group.SelectionType == SelectType.Single && settings.Conf[group.GroupName] >= group.Options.Count))
                         {
-                            if( settings.Conf == null )
-                            {
-                                settings.Conf = new();
-                                _plugin.ModManager.Mods.Save();
-                            }
-                            if( !settings.Conf.ContainsKey( negivtron.Item1.GroupName ) )
-                            {
-                                settings.Conf[negivtron.Item1.GroupName] = 0;
-                                _plugin.ModManager.Mods.Save();
-                            }
-                            var current = settings.Conf[negivtron.Item1.GroupName];
-                            var flag = negivtron.Item1.Options.IndexOf( negivtron.Item2 );
-                            switch( negivtron.Item1.SelectionType )
-                            {
-                                case SelectType.Single:
-                                    {
-                                        addFile = current == flag;
-                                        break;
-                                    }
-                                case SelectType.Multi:
-                                    {
-                                        flag = 1 << negivtron.Item1.Options.IndexOf( negivtron.Item2 );
-                                        addFile = ( flag & current ) != 0;
-                                        break;
-                                    }
-                            }
-                            gamePath = negivtron.Item3;
+                            settings.Conf[group.GroupName] = 0;
+                            _plugin.ModManager.Mods.Save();
+                            setting = 0;
                         }
-                        else
+
+                        if (group.Options.Count == 0)
+                            continue;
+
+                        if (group.SelectionType == SelectType.Multi)
+                            settings.Conf[group.GroupName] &= ((1 << group.Options.Count) - 1);
+                        
+                        switch(group.SelectionType)
                         {
-                            gamePath = relativeFilePath.Replace( '\\', '/' );
+                            case SelectType.Single:
+                                if (group.Options[setting].OptionFiles.TryGetValue(relativeFilePath, out paths))
+                                    AddFiles(paths);
+                                else
+                                {
+                                    for(var i = 0; i < group.Options.Count; ++i)
+                                    {
+                                        if (i == setting)
+                                            continue;
+                                        if(group.Options[i].OptionFiles.ContainsKey(relativeFilePath))
+                                        {
+                                            doNotAdd = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                break;
+                            case SelectType.Multi:
+                                for(var i = 0; i < group.Options.Count; ++i)
+                                {
+                                    if ((setting & (1 << i)) != 0)
+                                        if (group.Options[i].OptionFiles.TryGetValue(relativeFilePath, out paths))
+                                            AddFiles(paths);
+                                }
+                                break;
                         }
                     }
-                    else
-                        gamePath = relativeFilePath.Replace( '\\', '/' );
-                    if( addFile )
-                    {
-                        if( !ResolvedFiles.ContainsKey( gamePath ) )                            {
-                            ResolvedFiles[ gamePath.ToLowerInvariant() ] = file;
-                            registeredFiles[ gamePath ] = mod.Meta.Name;
-                        }
-                        else if( registeredFiles.TryGetValue( gamePath, out var modName ) )
-                        {
-                            mod.AddConflict( modName, gamePath );
-                        }
-                    }
+                    if (!doNotAdd)
+                        AddFiles(new() { relativeFilePath.Replace( '\\', '/' ) });
                 }
+
+
                 foreach( var swap in mod.Meta.FileSwaps )
                 {
                     // just assume people put not fucked paths in here lol
