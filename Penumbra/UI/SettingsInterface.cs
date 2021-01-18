@@ -641,12 +641,6 @@ namespace Penumbra.UI
                         }
                         break;
                     }
-                    default: {
-                        ImGui.Text("I dunno what this is, please report it!");
-                        ImGui.Text(g.Value.GroupName);
-                        ImGui.Text(g.Value.SelectionType.ToString());
-                        break;
-                    }
                 }
             }
             
