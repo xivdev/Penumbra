@@ -139,9 +139,11 @@ namespace Penumbra.Mods
                         if(negivtron.Item3 != null) {
                             if(settings.Conf == null) {
                                 settings.Conf = new();
+                                _plugin.ModManager.Mods.Save();
                             }
                             if(!settings.Conf.ContainsKey(negivtron.Item1.GroupName)) {
                                 settings.Conf[negivtron.Item1.GroupName] = 0;
+                                _plugin.ModManager.Mods.Save();
                             }
                             var current = settings.Conf[negivtron.Item1.GroupName];
                             var flag = negivtron.Item1.Options.IndexOf(negivtron.Item2);

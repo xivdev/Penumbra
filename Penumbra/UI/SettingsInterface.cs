@@ -601,17 +601,8 @@ namespace Penumbra.UI
             //Spahetti code time
             var mod = _plugin.SettingsInterface._selectedMod;
             var conf = mod.Conf;
-            if(conf == null) {
-                mod.Conf = new();
-                conf = mod.Conf;
-                _plugin.ModManager.Mods.Save();
-                _plugin.ModManager.CalculateEffectiveFileList();
-            }
             var settings = mod.Mod.Meta.Groups;
             foreach(var g in settings) {
-                if(!conf.ContainsKey(g.Key)) {
-                    conf[g.Key] = 0;
-                }
                 switch(g.Value.SelectionType) {
                     case SelectType.Multi:
                     {
