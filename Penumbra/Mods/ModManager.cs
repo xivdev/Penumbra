@@ -147,11 +147,16 @@ namespace Penumbra.Mods
                             }
                             var current = settings.Conf[negivtron.Item1.GroupName];
                             var flag = negivtron.Item1.Options.IndexOf(negivtron.Item2);
-                            if(negivtron.Item1.SelectionType==SelectType.Single) {
-                                addFile = current == flag;
-                            } else {
-                                flag = 1 << negivtron.Item1.Options.IndexOf(negivtron.Item2);
-                                addFile = (flag & current)!=0;
+                            switch(negivtron.Item1.SelectionType) {
+                                case SelectType.Single: {
+                                    addFile = current == flag;
+                                    break;
+                                } 
+                                case SelectType.Multi: {
+                                    flag = 1 << negivtron.Item1.Options.IndexOf(negivtron.Item2);
+                                    addFile = (flag & current)!=0;
+                                    break;
+                                }
                             }
                             gamePath = negivtron.Item3;
                         } else {
