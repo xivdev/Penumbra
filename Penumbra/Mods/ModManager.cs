@@ -102,16 +102,20 @@ namespace Penumbra.Mods
             // Needed to reload body textures with mods
             //_plugin.GameUtils.ReloadPlayerResources();
         }
-        private (InstallerInfo, Option, string) GlobalPosition(string rel, Dictionary<string, InstallerInfo> gps) {
+        private (InstallerInfo, Option, string) GlobalPosition( string rel, Dictionary<string, InstallerInfo> gps )
+        {
             string filePath = null;
-            foreach(var g in gps) {
-                foreach(var opt in g.Value.Options) {
-                    if(opt.OptionFiles.TryGetValue(rel, out filePath)) {
+            foreach( var g in gps )
+            {
+                foreach( var opt in g.Value.Options )
+                {
+                    if( opt.OptionFiles.TryGetValue( rel, out filePath ) )
+                    {
                         return (g.Value, opt, filePath);
                     }
                 }
             }
-            return (default(InstallerInfo), default(Option), null);
+            return (default( InstallerInfo ), default( Option ), null);
         }
         public void CalculateEffectiveFileList()
         {
@@ -134,32 +138,41 @@ namespace Penumbra.Mods
                     string gamePath;
                     bool addFile = true;
                     var gps = mod.Meta.Groups;
-                    if(gps.Count >=1) {
-                        var negivtron = GlobalPosition(relativeFilePath, gps);
-                        if(negivtron.Item3 != null) {
-                            if(settings.Conf == null) {
+                    if( gps.Count >= 1 )
+                    {
+                        var negivtron = GlobalPosition( relativeFilePath, gps );
+                        if( negivtron.Item3 != null )
+                        {
+                            if( settings.Conf == null )
+                            {
                                 settings.Conf = new();
                                 _plugin.ModManager.Mods.Save();
                             }
-                            if(!settings.Conf.ContainsKey(negivtron.Item1.GroupName)) {
+                            if( !settings.Conf.ContainsKey( negivtron.Item1.GroupName ) )
+                            {
                                 settings.Conf[negivtron.Item1.GroupName] = 0;
                                 _plugin.ModManager.Mods.Save();
                             }
                             var current = settings.Conf[negivtron.Item1.GroupName];
-                            var flag = negivtron.Item1.Options.IndexOf(negivtron.Item2);
-                            switch(negivtron.Item1.SelectionType) {
-                                case SelectType.Single: {
-                                    addFile = current == flag;
-                                    break;
-                                } 
-                                case SelectType.Multi: {
-                                    flag = 1 << negivtron.Item1.Options.IndexOf(negivtron.Item2);
-                                    addFile = (flag & current)!=0;
-                                    break;
-                                }
+                            var flag = negivtron.Item1.Options.IndexOf( negivtron.Item2 );
+                            switch( negivtron.Item1.SelectionType )
+                            {
+                                case SelectType.Single:
+                                    {
+                                        addFile = current == flag;
+                                        break;
+                                    }
+                                case SelectType.Multi:
+                                    {
+                                        flag = 1 << negivtron.Item1.Options.IndexOf( negivtron.Item2 );
+                                        addFile = ( flag & current ) != 0;
+                                        break;
+                                    }
                             }
                             gamePath = negivtron.Item3;
-                        } else {
+                        }
+                        else
+                        {
                             gamePath = relativeFilePath.Replace( '\\', '/' );
                         }
                     }

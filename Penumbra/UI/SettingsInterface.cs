@@ -602,39 +602,44 @@ namespace Penumbra.UI
             var mod = _plugin.SettingsInterface._selectedMod;
             var conf = mod.Conf;
             var settings = mod.Mod.Meta.Groups;
-            foreach(var g in settings) {
-                switch(g.Value.SelectionType) {
+            foreach( var g in settings )
+            {
+                switch( g.Value.SelectionType )
+                {
                     case SelectType.Multi:
-                    {
-                        var i = 0;
-                        var flag = conf[g.Key];
-                        foreach(var opt in g.Value.Options) {
-                            var enab = (flag & 1<<i)!=0;
-                            if(ImGui.Checkbox(g.Value.GroupName + " - " +opt.OptionName, ref enab)) {
-                                flag = flag ^= 1<<i;
-                                conf[g.Key] = flag;
-                                _plugin.ModManager.Mods.Save();
-                                _plugin.ModManager.CalculateEffectiveFileList();
+                        {
+                            var i = 0;
+                            var flag = conf[g.Key];
+                            foreach( var opt in g.Value.Options )
+                            {
+                                var enab = ( flag & 1 << i ) != 0;
+                                if( ImGui.Checkbox( g.Value.GroupName + " - " + opt.OptionName, ref enab ) )
+                                {
+                                    flag = flag ^= 1 << i;
+                                    conf[g.Key] = flag;
+                                    _plugin.ModManager.Mods.Save();
+                                    _plugin.ModManager.CalculateEffectiveFileList();
+                                }
+                                i++;
                             }
-                            i++;
+                            break;
                         }
-                        break;
-                    }
-                    case SelectType.Single: 
-                    {
-                        var code = conf[g.Key];
-                        if(g.Value.Options.Count >1) {
-                            if(ImGui.Combo(g.Value.GroupName, ref code, g.Value.Options.Select(x=>x.OptionName).ToArray(), g.Value.Options.ToArray().Length)) {
-                                conf[g.Key] = code;
-                                _plugin.ModManager.Mods.Save();
-                                _plugin.ModManager.CalculateEffectiveFileList();
+                    case SelectType.Single:
+                        {
+                            var code = conf[g.Key];
+                            if( g.Value.Options.Count > 1 )
+                            {
+                                if( ImGui.Combo( g.Value.GroupName, ref code, g.Value.Options.Select( x => x.OptionName ).ToArray(), g.Value.Options.ToArray().Length ) )
+                                {
+                                    conf[g.Key] = code;
+                                    _plugin.ModManager.Mods.Save();
+                                    _plugin.ModManager.CalculateEffectiveFileList();
+                                }
                             }
+                            break;
                         }
-                        break;
-                    }
                 }
             }
-            
         }
 
         void DrawInstalledMods()

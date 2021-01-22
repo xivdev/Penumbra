@@ -231,24 +231,28 @@ namespace Penumbra.Importer
 
         private void AddMeta( DirectoryInfo baseFolder, DirectoryInfo groupFolder,ModGroup group, ModMeta meta)
         {
-            var Inf = new InstallerInfo {
+            var Inf = new InstallerInfo
+            {
                 SelectionType = group.SelectionType,
                 GroupName = group.GroupName,
                 Options = new List<Option>(),
             };
-            foreach(var opt in group.OptionList) {
-                    var optio = new Option{
-                        OptionName = opt.Name,
-                        OptionDesc = String.IsNullOrEmpty(opt.Description) ? "" : opt.Description,
-                        OptionFiles = new Dictionary<string, string>()
-                    };
-                    var optDir = new DirectoryInfo(Path.Combine( groupFolder.FullName, opt.Name));
-                    foreach(var file in optDir.EnumerateFiles("*.*", SearchOption.AllDirectories)) {
-                        optio.OptionFiles[file.FullName.Substring(baseFolder.FullName.Length).TrimStart('\\')] = file.FullName.Substring(optDir.FullName.Length).TrimStart('\\').Replace('\\','/');
+            foreach( var opt in group.OptionList )
+            {
+                var optio = new Option
+                {
+                    OptionName = opt.Name,
+                    OptionDesc = String.IsNullOrEmpty( opt.Description ) ? "" : opt.Description,
+                    OptionFiles = new Dictionary<string, string>()
+                };
+                var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name ) );
+                foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
+                {
+                    optio.OptionFiles[file.FullName.Substring( baseFolder.FullName.Length ).TrimStart( '\\' )] = file.FullName.Substring( optDir.FullName.Length ).TrimStart( '\\' ).Replace( '\\', '/' );
                 }
-                Inf.Options.Add(optio);
+                Inf.Options.Add( optio );
             }
-            meta.Groups.Add(group.GroupName, Inf);
+            meta.Groups.Add( group.GroupName, Inf );
         }
 
         private void ImportMetaModPack( FileInfo file )
