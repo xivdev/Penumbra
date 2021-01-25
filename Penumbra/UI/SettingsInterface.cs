@@ -598,36 +598,48 @@ namespace Penumbra.UI
 
         private void DrawGroupSelectors()
         {
-            var hasTopTypes = ( _selectedMod.Mod.Meta.Groups.TopTypes?.Count ?? 0 ) > 1;
-            var hasBottomTypes = ( _selectedMod.Mod.Meta.Groups.BottomTypes?.Count ?? 0 ) > 1;
-            var hasGroups = ( _selectedMod.Mod.Meta.Groups.OtherGroups?.Count ?? 0 ) > 1;
-            var numSelectors = ( hasTopTypes ? 1 : 0 ) + ( hasBottomTypes ? 1 : 0 ) + ( hasGroups ? 1 : 0 );
-            var selectorWidth = ( ImGui.GetWindowWidth()
-                                  - ( hasTopTypes ? ImGui.CalcTextSize( "Top       " ).X : 0 )
-                                  - ( hasBottomTypes ? ImGui.CalcTextSize( "Bottom       " ).X : 0 )
-                                  - ( hasGroups ? ImGui.CalcTextSize( "Group       " ).X : 0 ) ) / numSelectors;
-
-            void DrawSelector( string label, string propertyName, System.Collections.Generic.List< string > list, bool sameLine )
+            //Spahetti code time
+            var mod = _plugin.SettingsInterface._selectedMod;
+            var conf = mod.Conf;
+            var settings = mod.Mod.Meta.Groups;
+            foreach( var g in settings )
             {
-                var current = ( int )_selectedMod.GetType().GetProperty( propertyName ).GetValue( _selectedMod );
-                ImGui.SetNextItemWidth( selectorWidth );
-                if( sameLine ) ImGui.SameLine();
-                if( ImGui.Combo( label, ref current, list.ToArray(), list.Count() ) )
+                switch( g.Value.SelectionType )
                 {
-                    _selectedMod.GetType().GetProperty( propertyName ).SetValue( _selectedMod, current );
-                    _plugin.ModManager.Mods.Save();
-                    _plugin.ModManager.CalculateEffectiveFileList();
+                    case SelectType.Multi:
+                        {
+                            var i = 0;
+                            var flag = conf[g.Key];
+                            foreach( var opt in g.Value.Options )
+                            {
+                                var enab = ( flag & 1 << i ) != 0;
+                                if( ImGui.Checkbox( g.Value.GroupName + " - " + opt.OptionName, ref enab ) )
+                                {
+                                    flag = flag ^= 1 << i;
+                                    conf[g.Key] = flag;
+                                    _plugin.ModManager.Mods.Save();
+                                    _plugin.ModManager.CalculateEffectiveFileList();
+                                }
+                                i++;
+                            }
+                            break;
+                        }
+                    case SelectType.Single:
+                        {
+                            var code = conf[g.Key];
+                            if( g.Value.Options.Count > 1 )
+                            {
+                                if( ImGui.Combo( g.Value.GroupName, ref code, g.Value.Options.Select( x => x.OptionName ).ToArray(), g.Value.Options.ToArray().Length ) )
+                                {
+                                    conf[g.Key] = code;
+                                    _plugin.ModManager.Mods.Save();
+                                    _plugin.ModManager.CalculateEffectiveFileList();
+                                }
+                            }
+                            break;
+                        }
                 }
             }
-
-            if( hasTopTypes )
-                DrawSelector( "Top", "CurrentTop", _selectedMod.Mod.Meta.Groups.TopTypes, false );
-
-            if( hasBottomTypes )
-                DrawSelector( "Bottom", "CurrentBottom", _selectedMod.Mod.Meta.Groups.BottomTypes, hasTopTypes );
-
-            if( hasGroups )
-                DrawSelector( "Group", "CurrentGroup", _selectedMod.Mod.Meta.Groups.OtherGroups, numSelectors > 1 );
         }
 
         void DrawInstalledMods()
@@ -692,8 +704,6 @@ namespace Penumbra.UI
 
                     DrawEditButtons();
 
-                    DrawGroupSelectors();
-
                     ImGui.BeginTabBar( "PenumbraPluginDetails" );
                     
                     if( _selectedMod.Mod.Meta.Description?.Length > 0 && ImGui.BeginTabItem( "About" ) )
@@ -714,7 +724,12 @@ namespace Penumbra.UI
                             ImGui.EndTabItem();
                         }
                     }
-
+                    if(_selectedMod.Mod.Meta.Groups.Count >=1) {
+                        if(ImGui.BeginTabItem( "Configuration" )) {
+                            DrawGroupSelectors();
+                            ImGui.EndTabItem();
+                        }
+                    }
                     if( ImGui.BeginTabItem( "Files" ) )
                     {
                         ImGui.SetNextItemWidth( -1 );

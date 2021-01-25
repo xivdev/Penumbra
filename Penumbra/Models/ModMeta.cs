@@ -17,6 +17,6 @@ namespace Penumbra.Models
 
         public Dictionary< string, string > FileSwaps { get; } = new();
 
-        public GroupInformation Groups { get; set; } = new();
+        public Dictionary<string, InstallerInfo> Groups { get; set; } = new();
     }
 }

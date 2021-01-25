@@ -100,9 +100,23 @@ namespace Penumbra.Mods
             CalculateEffectiveFileList();
 
             // Needed to reload body textures with mods
-            _plugin.GameUtils.ReloadPlayerResources();
+            //_plugin.GameUtils.ReloadPlayerResources();
         }
-
+        private (InstallerInfo, Option, string) GlobalPosition( string rel, Dictionary<string, InstallerInfo> gps )
+        {
+            string filePath = null;
+            foreach( var g in gps )
+            {
+                foreach( var opt in g.Value.Options )
+                {
+                    if( opt.OptionFiles.TryGetValue( rel, out filePath ) )
+                    {
+                        return (g.Value, opt, filePath);
+                    }
+                }
+            }
+            return (default( InstallerInfo ), default( Option ), null);
+        }
         public void CalculateEffectiveFileList()
         {
             ResolvedFiles.Clear();
@@ -123,23 +137,50 @@ namespace Penumbra.Mods
 
                     string gamePath;
                     bool addFile = true;
-                    (string, uint, uint, ulong) tuple;
-                    if( mod.Meta.Groups.FileToGameAndGroup.TryGetValue( relativeFilePath, out tuple ) )
+                    var gps = mod.Meta.Groups;
+                    if( gps.Count >= 1 )
                     {
-                        gamePath = tuple.Item1;
-                        var (_, tops, bottoms, excludes) = tuple;
-                        var validTop = ( ( 1u << settings.CurrentTop ) & tops ) != 0;
-                        var validBottom = ( ( 1u << settings.CurrentBottom ) & bottoms ) != 0;
-                        var validGroup = ( ( 1ul << settings.CurrentGroup ) & excludes ) != 0;
-                        addFile = validTop && validBottom && validGroup;
+                        var negivtron = GlobalPosition( relativeFilePath, gps );
+                        if( negivtron.Item3 != null )
+                        {
+                            if( settings.Conf == null )
+                            {
+                                settings.Conf = new();
+                                _plugin.ModManager.Mods.Save();
+                            }
+                            if( !settings.Conf.ContainsKey( negivtron.Item1.GroupName ) )
+                            {
+                                settings.Conf[negivtron.Item1.GroupName] = 0;
+                                _plugin.ModManager.Mods.Save();
+                            }
+                            var current = settings.Conf[negivtron.Item1.GroupName];
+                            var flag = negivtron.Item1.Options.IndexOf( negivtron.Item2 );
+                            switch( negivtron.Item1.SelectionType )
+                            {
+                                case SelectType.Single:
+                                    {
+                                        addFile = current == flag;
+                                        break;
+                                    }
+                                case SelectType.Multi:
+                                    {
+                                        flag = 1 << negivtron.Item1.Options.IndexOf( negivtron.Item2 );
+                                        addFile = ( flag & current ) != 0;
+                                        break;
+                                    }
+                            }
+                            gamePath = negivtron.Item3;
+                        }
+                        else
+                        {
+                            gamePath = relativeFilePath.Replace( '\\', '/' );
+                        }
                     }
                     else
                         gamePath = relativeFilePath.Replace( '\\', '/' );
-
                     if( addFile )
                     {
-                        if( !ResolvedFiles.ContainsKey( gamePath ) )
-                        {
+                        if( !ResolvedFiles.ContainsKey( gamePath ) )                            {
                             ResolvedFiles[ gamePath.ToLowerInvariant() ] = file;
                             registeredFiles[ gamePath ] = mod.Meta.Name;
                         }
@@ -149,7 +190,6 @@ namespace Penumbra.Mods
                         }
                     }
                 }
-
                 foreach( var swap in mod.Meta.FileSwaps )
                 {
                     // just assume people put not fucked paths in here lol
@@ -164,6 +204,7 @@ namespace Penumbra.Mods
                     }
                 }
             }
+            _plugin.GameUtils.ReloadPlayerResources();
         }
 
         public void ChangeModPriority( ModInfo info, bool up = false )
