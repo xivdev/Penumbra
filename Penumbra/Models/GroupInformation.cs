@@ -27,6 +27,7 @@ namespace Penumbra.Models
 
     public struct InstallerInfo {
         public string GroupName;
+        [JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
         public SelectType SelectionType;
         public List<Option> Options;
     }
