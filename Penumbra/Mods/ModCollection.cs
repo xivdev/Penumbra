@@ -64,21 +64,7 @@ namespace Penumbra.Mods
                     continue;
                 }
 
-                ModMeta meta;
-
-                try
-                {
-                    meta = JsonConvert.DeserializeObject< ModMeta >( File.ReadAllText( metaFile.FullName ) );
-                    meta.HasGroupWithConfig = meta.Groups != null && meta.Groups.Count > 0 
-                        && meta.Groups.Values.Any( G => G.SelectionType == SelectType.Multi || G.Options.Count > 1);
-                }
-                catch( Exception e )
-                {
-                    PluginLog.Error( e, "failed to parse mod info, attempting basic load for: {FilePath}", metaFile.FullName );
-                    continue;
-                    
-                    // todo: handle broken mods properly
-                }
+                var meta = ModMeta.LoadFromFile(metaFile.FullName);
 
                 var mod = new ResourceMod
                 {

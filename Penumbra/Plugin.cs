@@ -124,7 +124,7 @@ namespace Penumbra
                 return;
             }
 
-            SettingsInterface.Visible = !SettingsInterface.Visible;
+            SettingsInterface.FlipVisibility();
         }
     }
 }

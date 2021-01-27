@@ -109,6 +109,9 @@ namespace Penumbra.Mods
             ResolvedFiles.Clear();
             SwappedFiles.Clear();
 
+            if (!_plugin.Configuration.IsEnabled)
+                return;
+
             var registeredFiles = new Dictionary< string, string >();
 
             foreach( var (mod, settings) in Mods.GetOrderedAndEnabledModListWithSettings( _plugin.Configuration.InvertModListOrder ) )
