@@ -99,6 +99,7 @@ namespace Penumbra.Models
                         inOption = true;
                         foreach (var value in values)
                             option.AddFile(relName1, value);
+                        option.OptionFiles.Remove(relName2);
                     }
                 }
             }

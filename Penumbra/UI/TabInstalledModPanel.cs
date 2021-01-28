@@ -228,6 +228,8 @@ namespace Penumbra.UI
                 {
                     new Deduplicator(Mod.Mod.ModBasePath, Meta).Run();
                     _selector.SaveCurrentMod();
+                    Mod.Mod.RefreshModFiles();
+                    _base._plugin.ModManager.CalculateEffectiveFileList();
                     _base._menu._effectiveTab.RebuildFileList(_base._plugin.Configuration.ShowAdvanced);
                 }
                 if( ImGui.IsItemHovered() )

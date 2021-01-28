@@ -23,6 +23,7 @@ namespace Penumbra.Mods
                 return;
             }
 
+            ModFiles.Clear();
             // we don't care about any _files_ in the root dir, but any folders should be a game folder/file combo
             foreach( var dir in ModBasePath.EnumerateDirectories() )
             {
