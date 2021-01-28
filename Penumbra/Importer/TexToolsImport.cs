@@ -246,9 +246,12 @@ namespace Penumbra.Importer
                     OptionFiles = new Dictionary<string, HashSet<string>>()
                 };
                 var optDir = new DirectoryInfo(Path.Combine( groupFolder.FullName, opt.Name));
-                foreach ( var file in optDir.EnumerateFiles("*.*", SearchOption.AllDirectories) ) 
+                if (optDir.Exists)
                 {
-                    optio.AddFile(file.FullName.Substring(baseFolder.FullName.Length).TrimStart('\\'), file.FullName.Substring(optDir.FullName.Length).TrimStart('\\').Replace('\\','/'));
+                    foreach ( var file in optDir.EnumerateFiles("*.*", SearchOption.AllDirectories) ) 
+                    {
+                        optio.AddFile(file.FullName.Substring(baseFolder.FullName.Length).TrimStart('\\'), file.FullName.Substring(optDir.FullName.Length).TrimStart('\\').Replace('\\','/'));
+                    }
                 }
                 Inf.Options.Add( optio );
             }
