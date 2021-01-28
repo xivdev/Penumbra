@@ -63,7 +63,6 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelEnabled, ref enabled ) )
                 {
                     _config.IsEnabled = enabled;
-                    _base.ReloadMods();
                     _configChanged = true;
                 }
             }
