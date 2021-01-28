@@ -19,10 +19,14 @@ namespace Penumbra.UI
             private const string LabelFileDialog        = "Pick one or more modpacks.";
             private const string LabelFileImportRunning = "Import in progress...";
             private const string TooltipModpack1        = "Writing modpack to disk before extracting...";
+            private const string FailedImport           = "One or more of your modpacks failed to import.\nPlease submit a bug report.";
+
+            private const uint ColorRed                 = 0xFF0000C8;
 
             private static readonly Vector2 ImportBarSize = new( -1, 0 );
 
             private bool                       _isImportRunning = false;
+            private bool                       _hasError = false;
             private TexToolsImport             _texToolsImport = null!;
             private readonly SettingsInterface _base;
 
@@ -47,6 +51,8 @@ namespace Penumbra.UI
 
                     if( result == DialogResult.OK )
                     {
+                        _hasError = false;
+
                         foreach( var fileName in picker.FileNames )
                         {
                             PluginLog.Log( $"-> {fileName} START");
@@ -55,13 +61,14 @@ namespace Penumbra.UI
                             {
                                 _texToolsImport = new TexToolsImport( new DirectoryInfo( _base._plugin.Configuration.CurrentCollection ) );
                                 _texToolsImport.ImportModPack( new FileInfo( fileName ) );
+
+                                PluginLog.Log( $"-> {fileName} OK!" );
                             }
                             catch( Exception ex )
                             {
-                                PluginLog.LogError( ex, "Could not import one or more modpacks." );
+                                PluginLog.LogError( ex, "Failed to import modpack at {0}", fileName );
+                                _hasError = true;
                             }
-
-                            PluginLog.Log( $"-> {fileName} OK!");
                         }
 
                         _texToolsImport = null;
@@ -108,6 +115,13 @@ namespace Penumbra.UI
                 }
             }
 
+            private void DrawFailedImportMessage()
+            {
+                ImGui.PushStyleColor( ImGuiCol.Text, ColorRed );
+                ImGui.Text( FailedImport );
+                ImGui.PopStyleColor();
+            }
+
             public void Draw()
             {
                 var ret = ImGui.BeginTabItem( LabelTab );
@@ -118,6 +132,9 @@ namespace Penumbra.UI
                     DrawImportButton();
                 else
                     DrawImportProgress();
+
+                if (_hasError)
+                    DrawFailedImportMessage();
 
                 ImGui.EndTabItem();
             }
