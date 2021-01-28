@@ -59,6 +59,9 @@ namespace Penumbra.Importer
                 case ".ttmp2":
                     ImportV2ModPack( modPackFile );
                     return;
+
+                default:
+                    throw new ArgumentException( $"Unrecognized modpack format: {modPackFile.Extension}", nameof(modPackFile) );
             }
 
             State = ImporterState.Done;
