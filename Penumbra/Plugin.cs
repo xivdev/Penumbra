@@ -1,3 +1,4 @@
+using System.Linq;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using EmbedIO;
@@ -119,12 +120,20 @@ namespace Penumbra
                         );
                         break;
                     }
+                    case "redraw":
+                    {
+                        if (args.Length > 1)
+                            RefreshActors.RedrawSpecific(PluginInterface.ClientState.Actors, string.Join(" ", args.Skip(1)));
+                        else
+                            RefreshActors.RedrawAll(PluginInterface.ClientState.Actors);
+                        break;
+                    }
                 }
 
                 return;
             }
 
-            SettingsInterface.Visible = !SettingsInterface.Visible;
+            SettingsInterface.FlipVisibility();
         }
     }
 }

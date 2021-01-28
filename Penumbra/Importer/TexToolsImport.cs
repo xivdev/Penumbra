@@ -59,6 +59,9 @@ namespace Penumbra.Importer
                 case ".ttmp2":
                     ImportV2ModPack( modPackFile );
                     return;
+
+                default:
+                    throw new ArgumentException( $"Unrecognized modpack format: {modPackFile.Extension}", nameof(modPackFile) );
             }
 
             State = ImporterState.Done;
@@ -237,18 +240,21 @@ namespace Penumbra.Importer
                 GroupName = group.GroupName,
                 Options = new List<Option>(),
             };
-            foreach( var opt in group.OptionList )
+            foreach( var opt in group.OptionList ) 
             {
                 var optio = new Option
                 {
                     OptionName = opt.Name,
-                    OptionDesc = String.IsNullOrEmpty( opt.Description ) ? "" : opt.Description,
-                    OptionFiles = new Dictionary<string, string>()
+                    OptionDesc = String.IsNullOrEmpty(opt.Description) ? "" : opt.Description,
+                    OptionFiles = new Dictionary<string, HashSet<string>>()
                 };
-                var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name ) );
-                foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
+                var optDir = new DirectoryInfo(Path.Combine( groupFolder.FullName, opt.Name));
+                if (optDir.Exists)
                 {
-                    optio.OptionFiles[file.FullName.Substring( baseFolder.FullName.Length ).TrimStart( '\\' )] = file.FullName.Substring( optDir.FullName.Length ).TrimStart( '\\' ).Replace( '\\', '/' );
+                    foreach ( var file in optDir.EnumerateFiles("*.*", SearchOption.AllDirectories) ) 
+                    {
+                        optio.AddFile(file.FullName.Substring(baseFolder.FullName.Length).TrimStart('\\'), file.FullName.Substring(optDir.FullName.Length).TrimStart('\\').Replace('\\','/'));
+                    }
                 }
                 Inf.Options.Add( optio );
             }
