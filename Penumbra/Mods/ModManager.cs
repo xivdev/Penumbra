@@ -184,8 +184,12 @@ namespace Penumbra.Mods
                                 for(var i = 0; i < group.Options.Count; ++i)
                                 {
                                     if ((setting & (1 << i)) != 0)
+                                    {
                                         if (group.Options[i].OptionFiles.TryGetValue(relativeFilePath, out paths))
                                             AddFiles(paths);
+                                    }
+                                    else if (group.Options[i].OptionFiles.ContainsKey(relativeFilePath))
+                                        doNotAdd = true;
                                 }
                                 break;
                         }

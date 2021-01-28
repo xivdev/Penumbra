@@ -260,6 +260,8 @@ namespace Penumbra.UI
                     _mod.Mod.Meta = ModMeta.LoadFromFile(metaPath) ?? _mod.Mod.Meta;
                     _base._menu._installedTab._modPanel._details.ResetState();
                 }
+                _mod.Mod.RefreshModFiles();
+                _base._plugin.ModManager.CalculateEffectiveFileList();
             }
 
             public string SaveCurrentMod()
