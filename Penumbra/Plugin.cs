@@ -1,3 +1,4 @@
+using System.Linq;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using EmbedIO;
@@ -117,6 +118,14 @@ namespace Penumbra
                         PluginInterface.Framework.Gui.Chat.Print(
                             $"Reloaded Penumbra mods. You have {ModManager.Mods.ModSettings.Count} mods, {ModManager.Mods.EnabledMods.Length} of which are enabled."
                         );
+                        break;
+                    }
+                    case "redraw":
+                    {
+                        if (args.Length > 1)
+                            RefreshActors.RedrawSpecific(PluginInterface.ClientState.Actors, string.Join(" ", args.Skip(1)));
+                        else
+                            RefreshActors.RedrawAll(PluginInterface.ClientState.Actors);
                         break;
                     }
                 }

@@ -64,6 +64,7 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged = true;
+                    RefreshActors.RedrawAll(_base._plugin.PluginInterface.ClientState.Actors);
                 }
             }
 
