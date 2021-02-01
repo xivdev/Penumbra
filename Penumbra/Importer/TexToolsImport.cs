@@ -21,7 +21,7 @@ namespace Penumbra.Importer
 
         public ImporterState State { get; private set; }
 
-        public long TotalProgress { get; private set; }
+        public long TotalProgress { get; private set; } = 0;
         public long CurrentProgress { get; private set; }
 
         public float Progress
@@ -282,7 +282,7 @@ namespace Penumbra.Importer
             // haha allocation go brr
             var wtf = mods.ToList();
 
-            TotalProgress = wtf.LongCount();
+            TotalProgress += wtf.LongCount();
 
             // Extract each SimpleMod into the new mod folder
             foreach( var simpleMod in wtf )
