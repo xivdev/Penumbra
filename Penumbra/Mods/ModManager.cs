@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Dalamud.Plugin;
 using Penumbra.Models;
 
 namespace Penumbra.Mods
@@ -246,7 +247,17 @@ namespace Penumbra.Mods
 
         public void DeleteMod( ResourceMod mod )
         {
-            Directory.Delete( mod.ModBasePath.FullName, true );
+            if (mod?.ModBasePath?.Exists ?? false)
+            {
+                try
+                {
+                    Directory.Delete(mod.ModBasePath.FullName, true);
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error($"Could not delete the mod {mod.ModBasePath.Name}:\n{e}");
+                }
+            }
             DiscoverMods();
         }
 
