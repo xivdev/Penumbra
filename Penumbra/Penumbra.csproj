@@ -21,6 +21,10 @@
         <DebugType>pdbonly</DebugType>
     </PropertyGroup>
 
+	<PropertyGroup>
+		<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+	</PropertyGroup>
+
     <ItemGroup>
         <Reference Include="Dalamud">
             <HintPath>$(DALAMUD_ROOT)\Dalamud.dll</HintPath>
