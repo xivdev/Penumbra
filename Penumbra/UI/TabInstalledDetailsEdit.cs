@@ -15,7 +15,7 @@ namespace Penumbra.UI
             private const string LabelNewMultiGroup      = "New Multi Group";
             private const string LabelGamePathsEdit      = "Game Paths";
             private const string LabelGamePathsEditBox   = "##gamePathsEdit";
-            private const string TextNoOptionAvailable   = "[No Option Available]";
+            private const string TextNoOptionAvailable   = "[Not Available]";
             private const string ButtonAddToGroup        = "Add to Group";
             private const string ButtonRemoveFromGroup   = "Remove from Group";
             private const string TooltipAboutEdit        = "Use Ctrl+Enter for newlines.";
@@ -27,12 +27,13 @@ namespace Penumbra.UI
 
             private const float MultiEditBoxWidth = 300f;
 
-            private void DrawEditGroupSelector()
+            private bool DrawEditGroupSelector()
             {
                 ImGui.SetNextItemWidth( OptionSelectionWidth );
                 if (Meta.Groups.Count == 0)
                 {
                     ImGui.Combo( LabelGroupSelect, ref _selectedGroupIndex, TextNoOptionAvailable, 1);
+                    return false;
                 }
                 else
                 {
@@ -42,21 +43,23 @@ namespace Penumbra.UI
                         SelectOption(0);
                     }
                 }
+                return true;
             }
 
-            private void DrawEditOptionSelector()
+            private bool DrawEditOptionSelector()
             {
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth( OptionSelectionWidth );
-                if (_selectedGroup?.Options.Count == 0)
+                if ((_selectedGroup?.Options.Count ?? 0) == 0)
                 {
                     ImGui.Combo( LabelOptionSelect, ref _selectedOptionIndex, TextNoOptionAvailable, 1);
-                    return;
+                    return false;
                 }
 
                 var group = (InstallerInfo) _selectedGroup;
                 if (ImGui.Combo( LabelOptionSelect, ref _selectedOptionIndex, group.Options.Select(O => O.OptionName).ToArray(), group.Options.Count))
                     SelectOption();
+                return true;
             }
 
             private void DrawFileListTabEdit()

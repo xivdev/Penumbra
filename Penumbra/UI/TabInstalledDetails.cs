@@ -377,9 +377,11 @@ namespace Penumbra.UI
                 if (_selectedOption == null)
                     SelectOption();
 
-                DrawEditGroupSelector();
+                if (!DrawEditGroupSelector())
+                    return;
                 ImGui.SameLine();
-                DrawEditOptionSelector();
+                if (!DrawEditOptionSelector())
+                    return;
                 ImGui.SameLine();
                 DrawAddToGroupButton();
                 ImGui.SameLine();
