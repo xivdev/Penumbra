@@ -53,11 +53,8 @@ namespace Penumbra.Importer
             switch( modPackFile.Extension )
             {
                 case ".ttmp":
-                    ImportV1ModPack( modPackFile );
-                    break;
-
                 case ".ttmp2":
-                    ImportV2ModPack( modPackFile );
+                    VerifyVersionAndImport(modPackFile);
                     break;
 
                 default:
@@ -88,15 +85,33 @@ namespace Penumbra.Importer
             return new MagicTempFileStreamManagerAndDeleterFuckery( fs );
         }
 
-        private void ImportV1ModPack( FileInfo modPackFile )
+        private void VerifyVersionAndImport(FileInfo modPackFile)
+        {
+            using var zfs = modPackFile.OpenRead();
+            using var extractedModPack = new ZipFile( zfs );
+            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
+            var modRaw = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 );
+
+            // At least a better validation than going by the extension.
+            if (modRaw.Contains("\"TTMPVersion\":"))
+            {
+                if (modPackFile.Extension != ".ttmp2")
+                    PluginLog.Warning($"File {modPackFile.FullName} seems to be a V2 TTMP, but has the wrong extension.");
+                ImportV2ModPack(modPackFile, extractedModPack, modRaw);
+            }
+            else
+            { 
+                if (modPackFile.Extension != ".ttmp")
+                    PluginLog.Warning($"File {modPackFile.FullName} seems to be a V1 TTMP, but has the wrong extension.");
+                ImportV1ModPack(modPackFile, extractedModPack, modRaw);
+            }
+        }
+
+        private void ImportV1ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw )
         {
             PluginLog.Log( "    -> Importing V1 ModPack" );
 
-            using var zfs = modPackFile.OpenRead();
-            using var extractedModPack = new ZipFile( zfs );
-
-            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
-            var modListRaw = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 ).Split(
+            var modListRaw = modRaw.Split(
                 new[] { "\r\n", "\r", "\n" },
                 StringSplitOptions.None
             );
@@ -129,32 +144,25 @@ namespace Penumbra.Importer
             ExtractSimpleModList( newModFolder, modList, modData );
         }
 
-        private void ImportV2ModPack( FileInfo modPackFile )
+        private void ImportV2ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw  )
         {
-            using var zfs = modPackFile.OpenRead();
-            using var extractedModPack = new ZipFile( zfs );
-
-            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
-            var modList = JsonConvert.DeserializeObject< SimpleModPack >( GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 ) );
+            var modList = JsonConvert.DeserializeObject< SimpleModPack >( modRaw );
 
             if( modList.TTMPVersion.EndsWith( "s" ) )
             {
-                ImportSimpleV2ModPack( extractedModPack );
+                ImportSimpleV2ModPack( extractedModPack, modList );
                 return;
             }
 
             if( modList.TTMPVersion.EndsWith( "w" ) )
             {
-                ImportExtendedV2ModPack( extractedModPack );
+                ImportExtendedV2ModPack( extractedModPack, modRaw );
             }
         }
 
-        private void ImportSimpleV2ModPack( ZipFile extractedModPack )
+        private void ImportSimpleV2ModPack( ZipFile extractedModPack, SimpleModPack modList )
         {
             PluginLog.Log( "    -> Importing Simple V2 ModPack" );
-
-            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
-            var modList = JsonConvert.DeserializeObject< SimpleModPack >( GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 ) );
 
             // Create a new ModMeta from the TTMP modlist info
             var modMeta = new ModMeta
@@ -179,12 +187,11 @@ namespace Penumbra.Importer
             ExtractSimpleModList( newModFolder, modList.SimpleModsList, modData );
         }
 
-        private void ImportExtendedV2ModPack( ZipFile extractedModPack )
+        private void ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
         {
             PluginLog.Log( "    -> Importing Extended V2 ModPack" );
 
-            var mpl = extractedModPack.GetEntry( "TTMPL.mpl" );
-            var modList = JsonConvert.DeserializeObject< ExtendedModPack >( GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 ) );
+            var modList = JsonConvert.DeserializeObject< ExtendedModPack >( modRaw );
 
             // Create a new ModMeta from the TTMP modlist info
             var modMeta = new ModMeta
@@ -202,7 +209,7 @@ namespace Penumbra.Importer
 
             var newModFolder = new DirectoryInfo(
                 Path.Combine( _outDirectory.FullName,
-                    Path.GetFileNameWithoutExtension( modList.Name )
+                    Path.GetFileNameWithoutExtension( modList.Name ).ReplaceInvalidPathSymbols()
                 )
             );
             newModFolder.Create();
@@ -216,10 +223,12 @@ namespace Penumbra.Importer
             // Iterate through all pages
             foreach( var page in modList.ModPackPages)
             {
-                foreach(var group in page.ModGroups) {
-                    var groupFolder = new DirectoryInfo(Path.Combine(newModFolder.FullName, group.GroupName));
-                    foreach(var option in group.OptionList) {
-                        var optionFolder = new DirectoryInfo( Path.Combine( groupFolder.FullName, option.Name ) );
+                foreach(var group in page.ModGroups)
+                {
+                    var groupFolder = new DirectoryInfo(Path.Combine(newModFolder.FullName, group.GroupName.ReplaceInvalidPathSymbols()));
+                    foreach(var option in group.OptionList)
+                    {
+                        var optionFolder = new DirectoryInfo( Path.Combine( groupFolder.FullName, option.Name.ReplaceInvalidPathSymbols()) );
                         ExtractSimpleModList( optionFolder, option.ModsJsons, modData );
                     }
                     AddMeta(newModFolder, groupFolder, group, modMeta);
@@ -248,7 +257,7 @@ namespace Penumbra.Importer
                     OptionDesc = String.IsNullOrEmpty(opt.Description) ? "" : opt.Description,
                     OptionFiles = new Dictionary<string, HashSet<string>>()
                 };
-                var optDir = new DirectoryInfo(Path.Combine( groupFolder.FullName, opt.Name));
+                var optDir = new DirectoryInfo(Path.Combine( groupFolder.FullName, opt.Name.ReplaceInvalidPathSymbols()));
                 if (optDir.Exists)
                 {
                     foreach ( var file in optDir.EnumerateFiles("*.*", SearchOption.AllDirectories) ) 
@@ -307,7 +316,7 @@ namespace Penumbra.Importer
             }
             catch( Exception ex )
             {
-                PluginLog.LogError( ex, "Could not export mod." );
+                PluginLog.LogError( ex, "Could not extract mod." );
             }
         }
 
