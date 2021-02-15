@@ -199,7 +199,7 @@ namespace Penumbra.Mods
                 }
 
 
-                foreach( var swap in mod.Meta.FileSwaps )
+                foreach( var swap in mod.Meta?.FileSwaps )
                 {
                     // just assume people put not fucked paths in here lol
                     if( !SwappedFiles.ContainsKey( swap.Value ) )
