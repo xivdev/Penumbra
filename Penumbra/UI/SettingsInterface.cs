@@ -35,12 +35,14 @@ namespace Penumbra.UI
 
         private void ReloadMods()
         {
+            _menu._installedTab._selector.ResetModNamesLower();
             _menu._installedTab._selector.ClearSelection();
             // create the directory if it doesn't exist
             Directory.CreateDirectory( _plugin.Configuration.CurrentCollection );
 
             _plugin.ModManager.DiscoverMods( _plugin.Configuration.CurrentCollection );
             _menu._effectiveTab.RebuildFileList(_plugin.Configuration.ShowAdvanced);
+            _menu._installedTab._selector.ResetModNamesLower();
         }
     }
 }

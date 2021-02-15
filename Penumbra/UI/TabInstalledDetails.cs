@@ -416,7 +416,7 @@ namespace Penumbra.UI
                     foreach (var gamePath in gamePaths)
                     {
                         string tmp = gamePath;
-                        if (ImGui.InputText($"##{gamePath}", ref tmp, 128, ImGuiInputTextFlags.EnterReturnsTrue))
+                        if (ImGui.InputText($"##{fileName}_{gamePath}", ref tmp, 128, ImGuiInputTextFlags.EnterReturnsTrue))
                         {
                             if (tmp != gamePath)
                             {
