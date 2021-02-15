@@ -1,5 +1,5 @@
-using Newtonsoft.Json;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 using Penumbra.Mods;
 
 namespace Penumbra.Models

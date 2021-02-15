@@ -1,8 +1,8 @@
-using ImGuiNET;
-using Dalamud.Plugin;
 using System;
-using System.Numerics;
 using System.Diagnostics;
+using System.Numerics;
+using Dalamud.Plugin;
+using ImGuiNET;
 using Penumbra.Models;
 
 namespace Penumbra.UI

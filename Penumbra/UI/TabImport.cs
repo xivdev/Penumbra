@@ -1,11 +1,11 @@
-using ImGuiNET;
+using System;
+using System.IO;
+using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO;
-using System;
-using Penumbra.Importer;
 using Dalamud.Plugin;
-using System.Numerics;
+using ImGuiNET;
+using Penumbra.Importer;
 
 namespace Penumbra.UI
 {

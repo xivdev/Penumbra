@@ -5,10 +5,10 @@ using System.Text;
 using Dalamud.Plugin;
 using Penumbra.Structs;
 using Penumbra.Util;
-using FileMode = Penumbra.Structs.FileMode;
 using Reloaded.Hooks;
 using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.X64;
+using FileMode = Penumbra.Structs.FileMode;
 
 namespace Penumbra
 {

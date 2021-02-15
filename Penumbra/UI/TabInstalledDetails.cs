@@ -1,8 +1,7 @@
-using Penumbra.Models;
-using ImGuiNET;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
+using ImGuiNET;
+using Penumbra.Models;
 
 namespace Penumbra.UI
 {

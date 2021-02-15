@@ -1,11 +1,11 @@
-using System.Numerics;
-using System.Linq;
 using System.IO;
-using Newtonsoft.Json;
-using ImGuiNET;
-using Penumbra.Mods;
-using Penumbra.Models;
+using System.Linq;
+using System.Numerics;
 using Dalamud.Interface;
+using ImGuiNET;
+using Newtonsoft.Json;
+using Penumbra.Models;
+using Penumbra.Mods;
 
 namespace Penumbra.UI
 {
