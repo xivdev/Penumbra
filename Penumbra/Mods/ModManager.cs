@@ -118,7 +118,8 @@ namespace Penumbra.Mods
                 // fixup path
                 var baseDir = mod.ModBasePath.FullName;
 
-                if(settings.Conf == null) {
+                if( settings.Conf == null )
+                {
                     settings.Conf = new();
                     _plugin.ModManager.Mods.Save();
                 }
@@ -126,14 +127,16 @@ namespace Penumbra.Mods
                 foreach( var file in mod.ModFiles )
                 {
                     var relativeFilePath = file.FullName.Substring( baseDir.Length ).TrimStart( '\\' );
-                    
+
                     bool doNotAdd = false;
-                    void AddFiles(HashSet<string> gamePaths)
+
+                    void AddFiles( HashSet< string > gamePaths )
                     {
                         doNotAdd = true;
-                        foreach (var gamePath in gamePaths)
+                        foreach( var gamePath in gamePaths )
                         {
-                            if( !ResolvedFiles.ContainsKey( gamePath ) )                            {
+                            if( !ResolvedFiles.ContainsKey( gamePath ) )
+                            {
                                 ResolvedFiles[ gamePath.ToLowerInvariant() ] = file;
                                 registeredFiles[ gamePath ] = mod.Meta.Name;
                             }
@@ -144,58 +147,61 @@ namespace Penumbra.Mods
                         }
                     }
 
-                    HashSet<string> paths;
-                    foreach (var group in mod.Meta.Groups.Select( G => G.Value))
+                    HashSet< string > paths;
+                    foreach( var group in mod.Meta.Groups.Select( G => G.Value ) )
                     {
-                        if (!settings.Conf.TryGetValue(group.GroupName, out var setting) 
-                            || (group.SelectionType == SelectType.Single && settings.Conf[group.GroupName] >= group.Options.Count))
+                        if( !settings.Conf.TryGetValue( group.GroupName, out var setting )
+                            || ( group.SelectionType == SelectType.Single && settings.Conf[ group.GroupName ] >= group.Options.Count ) )
                         {
-                            settings.Conf[group.GroupName] = 0;
+                            settings.Conf[ group.GroupName ] = 0;
                             _plugin.ModManager.Mods.Save();
                             setting = 0;
                         }
 
-                        if (group.Options.Count == 0)
+                        if( group.Options.Count == 0 )
                             continue;
 
-                        if (group.SelectionType == SelectType.Multi)
-                            settings.Conf[group.GroupName] &= ((1 << group.Options.Count) - 1);
-                        
-                        switch(group.SelectionType)
+                        if( group.SelectionType == SelectType.Multi )
+                            settings.Conf[ group.GroupName ] &= ( ( 1 << group.Options.Count ) - 1 );
+
+                        switch( group.SelectionType )
                         {
                             case SelectType.Single:
-                                if (group.Options[setting].OptionFiles.TryGetValue(relativeFilePath, out paths))
-                                    AddFiles(paths);
+                                if( group.Options[ setting ].OptionFiles.TryGetValue( relativeFilePath, out paths ) )
+                                    AddFiles( paths );
                                 else
                                 {
-                                    for(var i = 0; i < group.Options.Count; ++i)
+                                    for( var i = 0; i < group.Options.Count; ++i )
                                     {
-                                        if (i == setting)
+                                        if( i == setting )
                                             continue;
-                                        if(group.Options[i].OptionFiles.ContainsKey(relativeFilePath))
+                                        if( group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath ) )
                                         {
                                             doNotAdd = true;
                                             break;
                                         }
                                     }
                                 }
+
                                 break;
                             case SelectType.Multi:
-                                for(var i = 0; i < group.Options.Count; ++i)
+                                for( var i = 0; i < group.Options.Count; ++i )
                                 {
-                                    if ((setting & (1 << i)) != 0)
+                                    if( ( setting & ( 1 << i ) ) != 0 )
                                     {
-                                        if (group.Options[i].OptionFiles.TryGetValue(relativeFilePath, out paths))
-                                            AddFiles(paths);
+                                        if( group.Options[ i ].OptionFiles.TryGetValue( relativeFilePath, out paths ) )
+                                            AddFiles( paths );
                                     }
-                                    else if (group.Options[i].OptionFiles.ContainsKey(relativeFilePath))
+                                    else if( group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath ) )
                                         doNotAdd = true;
                                 }
+
                                 break;
                         }
                     }
-                    if (!doNotAdd)
-                        AddFiles(new() { relativeFilePath.Replace( '\\', '/' ) });
+
+                    if( !doNotAdd )
+                        AddFiles( new() { relativeFilePath.Replace( '\\', '/' ) } );
                 }
 
 
@@ -213,6 +219,7 @@ namespace Penumbra.Mods
                     }
                 }
             }
+
             _plugin.GameUtils.ReloadPlayerResources();
         }
 

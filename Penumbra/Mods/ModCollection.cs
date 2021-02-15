@@ -64,7 +64,7 @@ namespace Penumbra.Mods
                     continue;
                 }
 
-                var meta = ModMeta.LoadFromFile(metaFile.FullName);
+                var meta = ModMeta.LoadFromFile( metaFile.FullName );
 
                 var mod = new ResourceMod
                 {
@@ -181,7 +181,7 @@ namespace Penumbra.Mods
             return AddModSettings( mod );
         }
 
-        public IEnumerable<ModInfo> GetOrderedAndEnabledModSettings( bool invertOrder = false )
+        public IEnumerable< ModInfo > GetOrderedAndEnabledModSettings( bool invertOrder = false )
         {
             var query = ModSettings
                 .Where( x => x.Enabled );
@@ -194,16 +194,16 @@ namespace Penumbra.Mods
             return query.OrderByDescending( x => x.Priority );
         }
 
-        public IEnumerable<ResourceMod> GetOrderedAndEnabledModList( bool invertOrder = false )
+        public IEnumerable< ResourceMod > GetOrderedAndEnabledModList( bool invertOrder = false )
         {
             return GetOrderedAndEnabledModSettings( invertOrder )
                 .Select( x => x.Mod );
         }
 
-        public IEnumerable<(ResourceMod, ModInfo)> GetOrderedAndEnabledModListWithSettings( bool invertOrder = false )
+        public IEnumerable< (ResourceMod, ModInfo) > GetOrderedAndEnabledModListWithSettings( bool invertOrder = false )
         {
             return GetOrderedAndEnabledModSettings( invertOrder )
-                .Select( x => (x.Mod, x) );
+                .Select( x => ( x.Mod, x ) );
         }
     }
 }
