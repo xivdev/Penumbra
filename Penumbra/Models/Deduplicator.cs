@@ -9,45 +9,44 @@ namespace Penumbra.Models
 {
     public class Deduplicator
     {
-        private DirectoryInfo baseDir;
-        private int           baseDirLength;
-        private ModMeta       mod;
-        private SHA256        hasher = null;
+        private readonly DirectoryInfo _baseDir;
+        private readonly int           _baseDirLength;
+        private readonly ModMeta       _mod;
+        private SHA256                 _hasher = null;
 
-        private Dictionary<long, List<FileInfo>> filesBySize;
+        private readonly Dictionary<long, List<FileInfo>> _filesBySize = new();
 
         private ref SHA256 Sha()
         {
-            if (hasher == null)
-                hasher = SHA256.Create();
-            return ref hasher;
+            if (_hasher == null)
+                _hasher = SHA256.Create();
+            return ref _hasher;
         }
 
         public Deduplicator(DirectoryInfo baseDir, ModMeta mod)
         {
-            this.baseDir       = baseDir;
-            this.baseDirLength = baseDir.FullName.Length;
-            this.mod           = mod;
-            filesBySize        = new();
+            _baseDir       = baseDir;
+            _baseDirLength = baseDir.FullName.Length;
+            _mod           = mod;
 
             BuildDict();
         }
 
         private void BuildDict()
         {
-            foreach( var file in baseDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
+            foreach( var file in _baseDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
             {
                 var fileLength = file.Length;
-                if (filesBySize.TryGetValue(fileLength, out var files))
+                if (_filesBySize.TryGetValue(fileLength, out var files))
                     files.Add(file);
                 else
-                    filesBySize[fileLength] = new(){ file };
+                    _filesBySize[fileLength] = new(){ file };
             }
         }
 
         public void Run()
         {
-            foreach (var pair in filesBySize)
+            foreach (var pair in _filesBySize)
             {
                 if (pair.Value.Count < 2)
                     continue;
@@ -81,16 +80,16 @@ namespace Penumbra.Models
                     }
                 }
             }
-            ClearEmptySubDirectories(baseDir);
+            ClearEmptySubDirectories(_baseDir);
         }
 
         private void ReplaceFile(FileInfo f1, FileInfo f2)
         {
-            var relName1 = f1.FullName.Substring(baseDirLength).TrimStart('\\');
-            var relName2 = f2.FullName.Substring(baseDirLength).TrimStart('\\');
+            var relName1 = f1.FullName.Substring(_baseDirLength).TrimStart('\\');
+            var relName2 = f2.FullName.Substring(_baseDirLength).TrimStart('\\');
 
             var inOption = false;
-            foreach (var group in mod.Groups.Select( g => g.Value.Options))
+            foreach (var group in _mod.Groups.Select( g => g.Value.Options))
             {
                 foreach (var option in group)
                 {
@@ -106,7 +105,7 @@ namespace Penumbra.Models
             if (!inOption)
             {
                 const string duplicates = "Duplicates";
-                if (!mod.Groups.ContainsKey(duplicates))
+                if (!_mod.Groups.ContainsKey(duplicates))
                 {
                     InstallerInfo info = new()
                     {
@@ -122,10 +121,10 @@ namespace Penumbra.Models
                             }
                         }
                     };
-                    mod.Groups.Add(duplicates, info);
+                    _mod.Groups.Add(duplicates, info);
                 }
-                mod.Groups[duplicates].Options[0].AddFile(relName1, relName2.Replace('\\', '/'));
-                mod.Groups[duplicates].Options[0].AddFile(relName1, relName1.Replace('\\', '/'));
+                _mod.Groups[duplicates].Options[0].AddFile(relName1, relName2.Replace('\\', '/'));
+                _mod.Groups[duplicates].Options[0].AddFile(relName1, relName1.Replace('\\', '/'));
             }
             PluginLog.Information($"File {relName1} and {relName2} are identical. Deleting the second.");
             f2.Delete();

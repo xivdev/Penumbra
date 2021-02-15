@@ -4,7 +4,7 @@ namespace Penumbra
 {
     public static class StringPathExtensions
     {
-        private static char[] _invalid = Path.GetInvalidFileNameChars();
+        private static readonly char[] _invalid = Path.GetInvalidFileNameChars();
         public static string ReplaceInvalidPathSymbols( this string s, string replacement = "_" )
         {
             return string.Join( replacement, s.Split( _invalid ) );

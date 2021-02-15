@@ -18,7 +18,7 @@ namespace Penumbra.Game
         public UnloadPlayerResourcesPrototype UnloadPlayerResources { get; private set; }
 
         // Object addresses
-        private IntPtr _playerResourceManagerAddress;
+        private readonly IntPtr _playerResourceManagerAddress;
         public IntPtr PlayerResourceManagerPtr => Marshal.ReadIntPtr( _playerResourceManagerAddress );
 
         public GameUtils( DalamudPluginInterface pluginInterface )

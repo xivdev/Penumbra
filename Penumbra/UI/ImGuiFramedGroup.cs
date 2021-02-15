@@ -125,6 +125,6 @@ namespace Penumbra.UI
 
         private static readonly Vector2 ZeroVector = new(0, 0);
 
-        private static List<(Vector2, Vector2)> labelStack = new();
+        private static readonly List<(Vector2, Vector2)> labelStack = new();
     }
 }
