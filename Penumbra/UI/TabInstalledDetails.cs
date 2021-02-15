@@ -415,11 +415,18 @@ namespace Penumbra.UI
                     ImGui.Indent(indent);
                     foreach (var gamePath in gamePaths)
                     {
-                        ImGui.Text(gamePath);
-                        if (ImGui.IsItemClicked())
-                            ImGui.SetClipboardText(gamePath);
-                        if (ImGui.IsItemHovered())
-                            ImGui.SetTooltip( TooltipGamePathText );
+                        string tmp = gamePath;
+                        if (ImGui.InputText($"##{gamePath}", ref tmp, 128, ImGuiInputTextFlags.EnterReturnsTrue))
+                        {
+                            if (tmp != gamePath)
+                            {
+                                gamePaths.Remove(gamePath);
+                                if (tmp.Length > 0)
+                                    gamePaths.Add(tmp);
+                                _selector.SaveCurrentMod();
+                                _selector.ReloadCurrentMod();
+                            }
+                        }
                     }
                     ImGui.Unindent(indent);
                 }

@@ -265,6 +265,7 @@ namespace Penumbra.UI
                 }
                 _mod.Mod.RefreshModFiles();
                 _base._plugin.ModManager.CalculateEffectiveFileList();
+                _base._menu._effectiveTab.RebuildFileList(_base._plugin.Configuration.ShowAdvanced);
             }
 
             public string SaveCurrentMod()
