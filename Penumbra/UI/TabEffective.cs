@@ -16,9 +16,9 @@ namespace Penumbra.UI
             private float              _maxGamePath = 0f;
 
             public TabEffective(SettingsInterface ui)
-            { 
-                _mods = ui._plugin.ModManager; 
-                RebuildFileList(ui._plugin.Configuration.ShowAdvanced); 
+            {
+                _mods = ui._plugin.ModManager;
+                RebuildFileList(ui._plugin.Configuration.ShowAdvanced);
             }
 
             public void RebuildFileList(bool advanced)

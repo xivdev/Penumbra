@@ -21,7 +21,7 @@ namespace Penumbra.UI
             private const string ButtonRemoveFromGroup   = "Remove from Group";
             private const string TooltipGamePathText     = "Click to copy to clipboard.";
             private const string TooltipAboutEdit        = "Use Ctrl+Enter for newlines.";
-            
+
             private const string TextDefaultGamePath     = "default";
             private const char   GamePathsSeparator      = ';';
             private static readonly string TooltipFilesTabEdit  = $"{TooltipFilesTab}\nRed Files are replaced in another group or a different option in this group, but not contained in the current option.";

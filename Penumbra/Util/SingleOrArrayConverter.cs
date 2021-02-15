@@ -38,7 +38,7 @@ public class DictSingleOrArrayConverter<T,U> : JsonConverter
     public override object ReadJson( JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer )
     {
         var token = JToken.Load(reader);
-        
+
         if (token.Type == JTokenType.Array)
         {
             return token.ToObject<HashSet<T>>();

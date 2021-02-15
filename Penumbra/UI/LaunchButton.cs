@@ -35,7 +35,7 @@ namespace Penumbra.UI
             }
 
             public void Draw()
-            { 
+            {
                 if( !_condition.Any() && !_base._menu.Visible )
                 {
                     var ss = ImGui.GetIO().DisplaySize;

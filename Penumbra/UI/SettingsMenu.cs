@@ -6,7 +6,7 @@ namespace Penumbra.UI
     public partial class SettingsInterface
     {
         private partial class SettingsMenu
-        { 
+        {
             private const string PenumbraSettingsLabel = "PenumbraSettings";
 
             private static readonly Vector2 MinSettingsSize = new( 800, 450 );

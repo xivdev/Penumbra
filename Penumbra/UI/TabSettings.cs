@@ -18,7 +18,7 @@ namespace Penumbra.UI
             private const string LabelDisableNotifications = "Disable filesystem change notifications";
             private const string LabelEnableHttpApi        = "Enable HTTP API";
             private const string LabelReloadResource       = "Reload Player Resource";
-                
+
             private readonly SettingsInterface _base;
             private readonly Configuration     _config;
             private bool                       _configChanged;
@@ -154,10 +154,10 @@ namespace Penumbra.UI
 
                 ImGuiCustom.VerticalDistance(DefaultVerticalSpace);
                 DrawInvertModOrderBox();
-                    
+
                 ImGuiCustom.VerticalDistance(DefaultVerticalSpace);
                 DrawShowAdvancedBox();
-                    
+
                 if( _config.ShowAdvanced )
                     DrawAdvancedSettings();
 

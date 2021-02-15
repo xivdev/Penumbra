@@ -35,7 +35,7 @@ namespace Penumbra.UI
             private ModInfo _mod         = null;
             private int     _index       = 0;
             private int?    _deleteIndex = null;
-                
+
             public Selector(SettingsInterface ui)
             {
                 _base = ui;
@@ -105,7 +105,7 @@ namespace Penumbra.UI
                 // Selector controls
                 ImGui.PushStyleVar( ImGuiStyleVar.WindowPadding, ZeroVector );
                 ImGui.PushStyleVar( ImGuiStyleVar.FrameRounding, 0 );
-            
+
                 DrawPriorityChangeButton(ArrowUpString,   false, 0);
                 ImGui.SameLine();
                 DrawPriorityChangeButton(ArrowDownString, true, Mods?.ModSettings.Count - 1 ?? 0);

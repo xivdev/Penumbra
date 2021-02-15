@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -154,7 +154,7 @@ namespace Penumbra
                 PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, replacementPath );
 #endif
             }
-            
+
             return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }
 

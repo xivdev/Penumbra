@@ -35,7 +35,7 @@ namespace Penumbra.Mods
 
             // Only add if not in a sub-folder, otherwise it was already added.
             //foreach( var pair in Meta.Groups.FileToGameAndGroup )
-            //    if (pair.Key.IndexOfAny(new[]{'/', '\\'}) < 0) 
+            //    if (pair.Key.IndexOfAny(new[]{'/', '\\'}) < 0)
             //        ModFiles.Add( new FileInfo(Path.Combine(ModBasePath.FullName, pair.Key)) );
         }
 

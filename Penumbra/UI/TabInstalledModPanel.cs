@@ -29,7 +29,7 @@ namespace Penumbra.UI
             private const string TooltipDeduplicate   = "Try to find identical files and remove duplicate occurences to reduce the mods disk size. Introduces an invisible single-option Group \"Duplicates\".";
 
             private const float  HeaderLineDistance   = 10f;
-            private static readonly Vector4 GreyColor = new( 1f, 1f, 1f, 0.66f );    
+            private static readonly Vector4 GreyColor = new( 1f, 1f, 1f, 0.66f );
 
             private readonly SettingsInterface _base;
             private readonly Selector          _selector;
@@ -53,7 +53,7 @@ namespace Penumbra.UI
             private void DrawName()
             {
                 var name = Meta.Name;
-                if (ImGuiCustom.InputOrText(_editMode, LabelEditName, ref name, 64) 
+                if (ImGuiCustom.InputOrText(_editMode, LabelEditName, ref name, 64)
                     && name.Length > 0 && name != Meta.Name)
                 {
                     Meta.Name = name;
@@ -96,7 +96,7 @@ namespace Penumbra.UI
 
                 ImGui.SameLine();
                 var author = Meta.Author ?? "";
-                if (ImGuiCustom.InputOrText(_editMode, LabelEditAuthor, ref author, 64) 
+                if (ImGuiCustom.InputOrText(_editMode, LabelEditAuthor, ref author, 64)
                     && author != Meta.Author)
                 {
                     Meta.Author = author.Length > 0 ? author : null;
@@ -113,7 +113,7 @@ namespace Penumbra.UI
                     ImGui.TextColored( GreyColor, "from" );
                     ImGui.SameLine();
                     var website = Meta.Website ?? "";
-                    if (ImGuiCustom.ResizingTextInput(LabelEditWebsite, ref website, 512) 
+                    if (ImGuiCustom.ResizingTextInput(LabelEditWebsite, ref website, 512)
                         && website != Meta.Website)
                     {
                         Meta.Website = website.Length > 0 ? website : null;
@@ -125,7 +125,7 @@ namespace Penumbra.UI
                     if (_currentWebsite != Meta.Website)
                     {
                         _currentWebsite = Meta.Website;
-                        _validWebsite = Uri.TryCreate( Meta.Website, UriKind.Absolute, out var uriResult ) 
+                        _validWebsite = Uri.TryCreate( Meta.Website, UriKind.Absolute, out var uriResult )
                             && ( uriResult.Scheme == Uri.UriSchemeHttps || uriResult.Scheme == Uri.UriSchemeHttp );
                     }
                     if( _validWebsite )
@@ -253,7 +253,7 @@ namespace Penumbra.UI
                             return;
 
                         DrawHeaderLine();
-                        
+
                         // Next line with fixed distance.
                         ImGuiCustom.VerticalDistance(HeaderLineDistance);
 
@@ -263,13 +263,13 @@ namespace Penumbra.UI
                             ImGui.SameLine();
                             DrawEditableMark();
                         }
-                    
+
                         // Next line, if editable.
                         if (_editMode)
                             DrawEditLine();
 
                         _details.Draw(_editMode);
-                    
+
                         ImGui.EndChild();
                     }
                     catch( Exception ex )

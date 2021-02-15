@@ -100,7 +100,7 @@ namespace Penumbra.Importer
                 ImportV2ModPack(modPackFile, extractedModPack, modRaw);
             }
             else
-            { 
+            {
                 if (modPackFile.Extension != ".ttmp")
                     PluginLog.Warning($"File {modPackFile.FullName} seems to be a V1 TTMP, but has the wrong extension.");
                 ImportV1ModPack(modPackFile, extractedModPack, modRaw);
@@ -249,7 +249,7 @@ namespace Penumbra.Importer
                 GroupName = group.GroupName,
                 Options = new List<Option>(),
             };
-            foreach( var opt in group.OptionList ) 
+            foreach( var opt in group.OptionList )
             {
                 var optio = new Option
                 {
@@ -260,7 +260,7 @@ namespace Penumbra.Importer
                 var optDir = new DirectoryInfo(Path.Combine( groupFolder.FullName, opt.Name.ReplaceInvalidPathSymbols()));
                 if (optDir.Exists)
                 {
-                    foreach ( var file in optDir.EnumerateFiles("*.*", SearchOption.AllDirectories) ) 
+                    foreach ( var file in optDir.EnumerateFiles("*.*", SearchOption.AllDirectories) )
                     {
                         optio.AddFile(file.FullName.Substring(baseFolder.FullName.Length).TrimStart('\\'), file.FullName.Substring(optDir.FullName.Length).TrimStart('\\').Replace('\\','/'));
                     }

@@ -1,4 +1,4 @@
-﻿namespace Penumbra.Structs
+namespace Penumbra.Structs
 {
     public enum FileMode : uint
     {

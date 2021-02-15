@@ -32,7 +32,7 @@ namespace Penumbra
             }
             else
                 DrawObject(RenderTaskOtherDelay);
-            
+
         }
 
         public static void RedrawSpecific(ActorTable actors, string name)

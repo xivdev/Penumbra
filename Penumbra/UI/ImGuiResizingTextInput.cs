@@ -9,7 +9,7 @@ namespace Penumbra.UI
         {
             if (editable)
                 return ResizingTextInput(label, ref text, maxLength);
-                    
+
             ImGui.Text(text);
             return false;
         }

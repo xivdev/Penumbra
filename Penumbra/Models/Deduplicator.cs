@@ -30,7 +30,7 @@ namespace Penumbra.Models
             this.mod           = mod;
             filesBySize        = new();
 
-            BuildDict();  
+            BuildDict();
         }
 
         private void BuildDict()
@@ -113,11 +113,11 @@ namespace Penumbra.Models
                         GroupName = duplicates,
                         SelectionType = SelectType.Single,
                         Options = new()
-                        { 
+                        {
                             new()
                             {
-                                OptionName  = "Required", 
-                                OptionDesc  = "", 
+                                OptionName  = "Required",
+                                OptionDesc  = "",
                                 OptionFiles = new()
                             }
                         }
