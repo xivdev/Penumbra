@@ -16,8 +16,4 @@ We're working towards a 1.0 release, and you can follow it's progress [here](htt
 Contributions are welcome, but please make an issue first before writing any code. It's possible what you want to implement is out of scope for this project, or could be reworked so that it would provide greater benefit.
 
 ## TexTools Mods
-Penumbra has support for some types of TexTools modpacks, however no support will be given. This is aimed as an interim measure while better tooling is developed, but note that there is no ETA for this.
-
-### Why not support TexTools?
-
-Because it sucks. It's slow to use, the workflow is awful and the codebase is so far gone any notable improvements or support for new features would mean throwing out significant portions of the existing codebase.
+Penumbra has support for most TexTools modpacks however this is provided on a best-effort basis and support is not guaranteed. Built in tooling will be added to Penumbra over time to avoid many common TexTools use cases as

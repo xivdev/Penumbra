@@ -65,6 +65,11 @@ namespace Penumbra.Mods
                 }
 
                 var meta = ModMeta.LoadFromFile( metaFile.FullName );
+                if( meta == null )
+                {
+                    PluginLog.LogError( "mod meta is invalid for resource mod: {ResourceModFile}", metaFile.FullName );
+                    continue;
+                }
 
                 var mod = new ResourceMod
                 {

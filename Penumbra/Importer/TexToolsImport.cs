@@ -54,11 +54,11 @@ namespace Penumbra.Importer
             {
                 case ".ttmp":
                     ImportV1ModPack( modPackFile );
-                    return;
+                    break;
 
                 case ".ttmp2":
                     ImportV2ModPack( modPackFile );
-                    return;
+                    break;
 
                 default:
                     throw new ArgumentException( $"Unrecognized modpack format: {modPackFile.Extension}", nameof(modPackFile) );

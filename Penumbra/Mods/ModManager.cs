@@ -99,9 +99,6 @@ namespace Penumbra.Mods
             Mods.Save();
 
             CalculateEffectiveFileList();
-
-            // Needed to reload body textures with mods
-            //_plugin.GameUtils.ReloadPlayerResources();
         }
 
         public void CalculateEffectiveFileList()
@@ -114,113 +111,131 @@ namespace Penumbra.Mods
             foreach( var (mod, settings) in Mods.GetOrderedAndEnabledModListWithSettings( _plugin.Configuration.InvertModListOrder ) )
             {
                 mod.FileConflicts?.Clear();
-
-                // fixup path
-                var baseDir = mod.ModBasePath.FullName;
-
                 if( settings.Conf == null )
                 {
                     settings.Conf = new();
                     _plugin.ModManager.Mods.Save();
                 }
 
-                foreach( var file in mod.ModFiles )
-                {
-                    var relativeFilePath = file.FullName.Substring( baseDir.Length ).TrimStart( '\\' );
-
-                    bool doNotAdd = false;
-
-                    void AddFiles( HashSet< string > gamePaths )
-                    {
-                        doNotAdd = true;
-                        foreach( var gamePath in gamePaths )
-                        {
-                            if( !ResolvedFiles.ContainsKey( gamePath ) )
-                            {
-                                ResolvedFiles[ gamePath.ToLowerInvariant() ] = file;
-                                registeredFiles[ gamePath ] = mod.Meta.Name;
-                            }
-                            else if( registeredFiles.TryGetValue( gamePath, out var modName ) )
-                            {
-                                mod.AddConflict( modName, gamePath );
-                            }
-                        }
-                    }
-
-                    HashSet< string > paths;
-                    foreach( var group in mod.Meta.Groups.Select( G => G.Value ) )
-                    {
-                        if( !settings.Conf.TryGetValue( group.GroupName, out var setting )
-                            || ( group.SelectionType == SelectType.Single && settings.Conf[ group.GroupName ] >= group.Options.Count ) )
-                        {
-                            settings.Conf[ group.GroupName ] = 0;
-                            _plugin.ModManager.Mods.Save();
-                            setting = 0;
-                        }
-
-                        if( group.Options.Count == 0 )
-                            continue;
-
-                        if( group.SelectionType == SelectType.Multi )
-                            settings.Conf[ group.GroupName ] &= ( ( 1 << group.Options.Count ) - 1 );
-
-                        switch( group.SelectionType )
-                        {
-                            case SelectType.Single:
-                                if( group.Options[ setting ].OptionFiles.TryGetValue( relativeFilePath, out paths ) )
-                                    AddFiles( paths );
-                                else
-                                {
-                                    for( var i = 0; i < group.Options.Count; ++i )
-                                    {
-                                        if( i == setting )
-                                            continue;
-                                        if( group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath ) )
-                                        {
-                                            doNotAdd = true;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                break;
-                            case SelectType.Multi:
-                                for( var i = 0; i < group.Options.Count; ++i )
-                                {
-                                    if( ( setting & ( 1 << i ) ) != 0 )
-                                    {
-                                        if( group.Options[ i ].OptionFiles.TryGetValue( relativeFilePath, out paths ) )
-                                            AddFiles( paths );
-                                    }
-                                    else if( group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath ) )
-                                        doNotAdd = true;
-                                }
-
-                                break;
-                        }
-                    }
-
-                    if( !doNotAdd )
-                        AddFiles( new() { relativeFilePath.Replace( '\\', '/' ) } );
-                }
-
-
-                foreach( var swap in mod.Meta?.FileSwaps )
-                {
-                    // just assume people put not fucked paths in here lol
-                    if( !SwappedFiles.ContainsKey( swap.Value ) )
-                    {
-                        SwappedFiles[ swap.Key.ToLowerInvariant() ] = swap.Value;
-                        registeredFiles[ swap.Key ] = mod.Meta.Name;
-                    }
-                    else if( registeredFiles.TryGetValue( swap.Key, out var modName ) )
-                    {
-                        mod.AddConflict( modName, swap.Key );
-                    }
-                }
+                ProcessModFiles( registeredFiles, mod, settings );
+                ProcessSwappedFiles( registeredFiles, mod, settings );
             }
 
             _plugin.GameUtils.ReloadPlayerResources();
+        }
+
+        private void ProcessSwappedFiles( Dictionary< string, string > registeredFiles, ResourceMod mod, ModInfo settings )
+        {
+            if( mod?.Meta?.FileSwaps == null )
+            {
+                return;
+            }
+
+            foreach( var swap in mod.Meta.FileSwaps )
+            {
+                // just assume people put not fucked paths in here lol
+                if( !SwappedFiles.ContainsKey( swap.Value ) )
+                {
+                    SwappedFiles[ swap.Key.ToLowerInvariant() ] = swap.Value;
+                    registeredFiles[ swap.Key ] = mod.Meta.Name;
+                }
+                else if( registeredFiles.TryGetValue( swap.Key, out var modName ) )
+                {
+                    mod.AddConflict( modName, swap.Key );
+                }
+            }
+        }
+
+        private void ProcessModFiles( Dictionary< string, string > registeredFiles, ResourceMod mod, ModInfo settings )
+        {
+            var baseDir = mod.ModBasePath.FullName;
+
+            foreach( var file in mod.ModFiles )
+            {
+                var relativeFilePath = file.FullName.Substring( baseDir.Length ).TrimStart( '\\' );
+
+                bool doNotAdd = false;
+
+                HashSet< string > paths;
+                foreach( var group in mod.Meta.Groups.Select( G => G.Value ) )
+                {
+                    if( !settings.Conf.TryGetValue( group.GroupName, out var setting )
+                        || ( group.SelectionType == SelectType.Single && settings.Conf[ group.GroupName ] >= group.Options.Count ) )
+                    {
+                        settings.Conf[ group.GroupName ] = 0;
+                        _plugin.ModManager.Mods.Save();
+                        setting = 0;
+                    }
+
+                    if( group.Options.Count == 0 )
+                        continue;
+
+                    if( group.SelectionType == SelectType.Multi )
+                        settings.Conf[ group.GroupName ] &= ( ( 1 << group.Options.Count ) - 1 );
+
+                    switch( group.SelectionType )
+                    {
+                        case SelectType.Single:
+                            if( group.Options[ setting ].OptionFiles.TryGetValue( relativeFilePath, out paths ) )
+                            {
+                                AddFiles( paths, out doNotAdd, file, registeredFiles, mod );
+                            }
+                            else
+                            {
+                                for( var i = 0; i < group.Options.Count; ++i )
+                                {
+                                    if( i == setting )
+                                        continue;
+                                    if( group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath ) )
+                                    {
+                                        doNotAdd = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            break;
+                        case SelectType.Multi:
+                            for( var i = 0; i < group.Options.Count; ++i )
+                            {
+                                if( ( setting & ( 1 << i ) ) != 0 )
+                                {
+                                    if( group.Options[ i ].OptionFiles.TryGetValue( relativeFilePath, out paths ) )
+                                    {
+                                        AddFiles( paths, out doNotAdd, file, registeredFiles, mod );
+                                    }
+                                }
+                                else if( group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath ) )
+                                    doNotAdd = true;
+                            }
+
+                            break;
+                    }
+                }
+
+                if( !doNotAdd )
+                {
+                    AddFiles( new() { relativeFilePath.Replace( '\\', '/' ) }, out doNotAdd, file, registeredFiles, mod );
+                }
+            }
+        }
+
+        private void AddFiles( HashSet< string > gamePaths, out bool doNotAdd, FileInfo file, Dictionary< string, string > registeredFiles,
+            ResourceMod mod )
+        {
+            doNotAdd = true;
+            foreach( var gamePath in gamePaths )
+            {
+                if( !ResolvedFiles.ContainsKey( gamePath ) )
+                {
+                    ResolvedFiles[ gamePath.ToLowerInvariant() ] = file;
+                    registeredFiles[ gamePath ] = mod.Meta.Name;
+                }
+                else if( registeredFiles.TryGetValue( gamePath, out var modName ) )
+                {
+                    mod.AddConflict( modName, gamePath );
+                }
+            }
         }
 
         public void ChangeModPriority( ModInfo info, bool up = false )
