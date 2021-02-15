@@ -50,7 +50,6 @@ namespace Penumbra.UI
             private ModInfo Mod  { get{ return _selector.Mod(); } }
             private ModMeta Meta { get{ return Mod?.Mod.Meta; } }
 
-            #region Header Line Functions
             private void DrawName()
             {
                 var name = Meta.Name;
@@ -170,9 +169,7 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawWebsite();
             }
-            #endregion
 
-            #region Enabled Checkmarks
             private void DrawEnabledMark()
             {
                 var enabled = Mod.Enabled;
@@ -189,9 +186,7 @@ namespace Penumbra.UI
             {
                 ImGui.Checkbox( LabelEditingEnabled, ref _editMode);
             }
-            #endregion
 
-            #region Edit Line Functions
             private void DrawOpenModFolderButton()
             {
                 if( ImGui.Button( ButtonOpenModFolder ) )
@@ -246,7 +241,6 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawDeduplicateButton();
             }
-            #endregion
 
             public void Draw()
             {
