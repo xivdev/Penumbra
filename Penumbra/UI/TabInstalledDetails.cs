@@ -144,15 +144,21 @@ namespace Penumbra.UI
                         ? ImGuiInputTextFlags.EnterReturnsTrue | ImGuiInputTextFlags.CtrlEnterForNewLine
                         : ImGuiInputTextFlags.ReadOnly;
 
-                    if (ImGui.InputTextMultiline(LabelDescEdit,  ref desc, 1 << 16, AutoFillSize, flags))
+                    if( _editMode )
                     {
-                        Meta.Description = desc;
-                        _selector.SaveCurrentMod();
+                        if (ImGui.InputTextMultiline(LabelDescEdit,  ref desc, 1 << 16, AutoFillSize, flags))
+                        {
+                            Meta.Description = desc;
+                            _selector.SaveCurrentMod();
+                        }
+                        if (ImGui.IsItemHovered())
+                            ImGui.SetTooltip( TooltipAboutEdit );
                     }
-                    if (_editMode && ImGui.IsItemHovered())
-                        ImGui.SetTooltip( TooltipAboutEdit );
-
-
+                    else
+                    {
+                        ImGui.TextWrapped( desc );
+                    }
+                    
                     ImGui.EndTabItem();
                 }
             }
@@ -250,6 +256,7 @@ namespace Penumbra.UI
                                 ImGui.Selectable(file.Key);
                                 ImGui.SameLine(_fileSwapOffset ?? 0);
                                 ImGui.TextUnformatted("  -> ");
+                                ImGui.SameLine();
                                 ImGui.Selectable(file.Value);
                             }
                             ImGui.ListBoxFooter();
