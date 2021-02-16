@@ -19,29 +19,37 @@ namespace Penumbra.UI
 #endif
 
             private readonly SettingsInterface _base;
-            public MenuBar(SettingsInterface ui) => _base = ui;
+            public MenuBar( SettingsInterface ui ) => _base = ui;
 
             public void Draw()
             {
-                if( _showDebugBar && ImGui.BeginMainMenuBar() )
+                if( !_showDebugBar || !ImGui.BeginMainMenuBar() )
                 {
-                    if( ImGui.BeginMenu( MenuLabel ) )
+                    return;
+                }
+
+                if( ImGui.BeginMenu( MenuLabel ) )
+                {
+                    if( ImGui.MenuItem( MenuItemToggle, SlashCommand, _base._menu.Visible ) )
                     {
-                        if( ImGui.MenuItem( MenuItemToggle, SlashCommand, _base._menu.Visible ) )
-                            _base.FlipVisibility();
-
-                        if( ImGui.MenuItem( MenuItemRediscover ) )
-                            _base.ReloadMods();
-#if DEBUG
-                        if ( ImGui.MenuItem( MenuItemHide) )
-                            _showDebugBar = false;
-#endif
-
-                        ImGui.EndMenu();
+                        _base.FlipVisibility();
                     }
 
-                    ImGui.EndMainMenuBar();
+                    if( ImGui.MenuItem( MenuItemRediscover ) )
+                    {
+                        _base.ReloadMods();
+                    }
+#if DEBUG
+                    if( ImGui.MenuItem( MenuItemHide ) )
+                    {
+                        _showDebugBar = false;
+                    }
+#endif
+
+                    ImGui.EndMenu();
                 }
+
+                ImGui.EndMainMenuBar();
             }
         }
     }

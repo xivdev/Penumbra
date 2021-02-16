@@ -16,10 +16,7 @@ namespace Penumbra.Mods
         public ResourceMod[] EnabledMods { get; set; }
 
 
-        public ModCollection( DirectoryInfo basePath )
-        {
-            _basePath = basePath;
-        }
+        public ModCollection( DirectoryInfo basePath ) => _basePath = basePath;
 
         public void Load( bool invertOrder = false )
         {
@@ -51,7 +48,7 @@ namespace Penumbra.Mods
             }
 #endif
 
-            ModSettings ??= new();
+            ModSettings ??= new List< ModInfo >();
             var foundMods = new List< string >();
 
             foreach( var modDir in _basePath.EnumerateDirectories() )
@@ -73,7 +70,7 @@ namespace Penumbra.Mods
 
                 var mod = new ResourceMod
                 {
-                    Meta = meta,
+                    Meta        = meta,
                     ModBasePath = modDir
                 };
 
@@ -124,7 +121,7 @@ namespace Penumbra.Mods
         {
             // todo: certified fucked tier
 
-            var prio = info.Priority;
+            var prio     = info.Priority;
             var swapPrio = up ? prio + 1 : prio - 1;
             var swapMeta = ModSettings.FirstOrDefault( x => x.Priority == swapPrio );
 
@@ -133,7 +130,7 @@ namespace Penumbra.Mods
                 return;
             }
 
-            info.Priority = swapPrio;
+            info.Priority     = swapPrio;
             swapMeta.Priority = prio;
 
             // reorder mods list
@@ -160,10 +157,10 @@ namespace Penumbra.Mods
         {
             var entry = new ModInfo
             {
-                Priority = ModSettings.Count,
+                Priority   = ModSettings.Count,
                 FolderName = mod.ModBasePath.Name,
-                Enabled = true,
-                Mod = mod
+                Enabled    = true,
+                Mod        = mod
             };
 
 #if DEBUG

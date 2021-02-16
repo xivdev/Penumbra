@@ -7,8 +7,8 @@ namespace Penumbra.UI
     {
         private const float DefaultVerticalSpace = 20f;
 
-        private static readonly Vector2 AutoFillSize = new(-1, -1);
-        private static readonly Vector2 ZeroVector   = new( 0, 0);
+        private static readonly Vector2 AutoFillSize = new( -1, -1 );
+        private static readonly Vector2 ZeroVector   = new( 0, 0 );
 
         private readonly Plugin _plugin;
 
@@ -19,9 +19,9 @@ namespace Penumbra.UI
         public SettingsInterface( Plugin plugin )
         {
             _plugin       = plugin;
-            _launchButton = new(this);
-            _menuBar      = new(this);
-            _menu         = new(this);
+            _launchButton = new LaunchButton( this );
+            _menuBar      = new MenuBar( this );
+            _menu         = new SettingsMenu( this );
         }
 
         public void FlipVisibility() => _menu.Visible = !_menu.Visible;
@@ -35,14 +35,14 @@ namespace Penumbra.UI
 
         private void ReloadMods()
         {
-            _menu._installedTab._selector.ResetModNamesLower();
-            _menu._installedTab._selector.ClearSelection();
+            _menu.InstalledTab.Selector.ResetModNamesLower();
+            _menu.InstalledTab.Selector.ClearSelection();
             // create the directory if it doesn't exist
             Directory.CreateDirectory( _plugin.Configuration.CurrentCollection );
 
             _plugin.ModManager.DiscoverMods( _plugin.Configuration.CurrentCollection );
-            _menu._effectiveTab.RebuildFileList(_plugin.Configuration.ShowAdvanced);
-            _menu._installedTab._selector.ResetModNamesLower();
+            _menu.EffectiveTab.RebuildFileList( _plugin.Configuration.ShowAdvanced );
+            _menu.InstalledTab.Selector.ResetModNamesLower();
         }
     }
 }

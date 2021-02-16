@@ -11,22 +11,22 @@ namespace Penumbra.UI
             private const string LabelTab        = "Effective File List";
             private const float  TextSizePadding = 5f;
 
-            private readonly ModManager _mods;
-            private (string, string)[]  _fileList    = null;
-            private float               _maxGamePath = 0f;
+            private readonly ModManager         _mods;
+            private          (string, string)[] _fileList;
+            private          float              _maxGamePath;
 
-            public TabEffective(SettingsInterface ui)
+            public TabEffective( SettingsInterface ui )
             {
                 _mods = ui._plugin.ModManager;
-                RebuildFileList(ui._plugin.Configuration.ShowAdvanced);
+                RebuildFileList( ui._plugin.Configuration.ShowAdvanced );
             }
 
-            public void RebuildFileList(bool advanced)
+            public void RebuildFileList( bool advanced )
             {
-                if (advanced)
+                if( advanced )
                 {
-                    _fileList    = _mods.ResolvedFiles.Select( P => (P.Value.FullName, P.Key) ).ToArray();
-                    _maxGamePath = ((_fileList.Length > 0) ? _fileList.Max( P => ImGui.CalcTextSize(P.Item2).X ) : 0f) + TextSizePadding;
+                    _fileList    = _mods.ResolvedFiles.Select( P => ( P.Value.FullName, P.Key ) ).ToArray();
+                    _maxGamePath = ( _fileList.Length > 0 ? _fileList.Max( P => ImGui.CalcTextSize( P.Item2 ).X ) : 0f ) + TextSizePadding;
                 }
                 else
                 {
@@ -35,26 +35,30 @@ namespace Penumbra.UI
                 }
             }
 
-            private void DrawFileLine((string, string) file)
+            private void DrawFileLine( (string, string) file )
             {
-                ImGui.Selectable(file.Item2);
+                ImGui.Selectable( file.Item2 );
                 ImGui.SameLine();
-                ImGui.SetCursorPosX(_maxGamePath);
-                ImGui.TextUnformatted("  <-- ");
+                ImGui.SetCursorPosX( _maxGamePath );
+                ImGui.TextUnformatted( "  <-- " );
                 ImGui.SameLine();
-                ImGui.Selectable(file.Item1);
+                ImGui.Selectable( file.Item1 );
             }
 
             public void Draw()
             {
                 var ret = ImGui.BeginTabItem( LabelTab );
                 if( !ret )
+                {
                     return;
+                }
 
                 if( ImGui.ListBoxHeader( "##effective_files", AutoFillSize ) )
                 {
                     foreach( var file in _fileList )
-                        DrawFileLine(file);
+                    {
+                        DrawFileLine( file );
+                    }
 
                     ImGui.ListBoxFooter();
                 }

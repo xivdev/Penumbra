@@ -8,10 +8,7 @@ namespace Penumbra.Importer
     {
         private readonly FileStream _fileStream;
 
-        public MagicTempFileStreamManagerAndDeleterFuckery( FileStream stream ) : base( stream )
-        {
-            _fileStream = stream;
-        }
+        public MagicTempFileStreamManagerAndDeleterFuckery( FileStream stream ) : base( stream ) => _fileStream = stream;
 
         public new void Dispose()
         {

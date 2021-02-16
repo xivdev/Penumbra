@@ -21,9 +21,9 @@ namespace Penumbra.UI
 
             private readonly SettingsInterface _base;
             private readonly Configuration     _config;
-            private bool                       _configChanged;
+            private          bool              _configChanged;
 
-            public TabSettings(SettingsInterface ui)
+            public TabSettings( SettingsInterface ui )
             {
                 _base          = ui;
                 _config        = _base._plugin.Configuration;
@@ -36,7 +36,7 @@ namespace Penumbra.UI
                 if( ImGui.InputText( LabelRootFolder, ref basePath, 255 ) && _config.CurrentCollection != basePath )
                 {
                     _config.CurrentCollection = basePath;
-                    _configChanged = true;
+                    _configChanged            = true;
                 }
             }
 
@@ -45,7 +45,7 @@ namespace Penumbra.UI
                 if( ImGui.Button( LabelRediscoverButton ) )
                 {
                     _base.ReloadMods();
-                    _base._menu._installedTab._selector.ClearSelection();
+                    _base._menu.InstalledTab.Selector.ClearSelection();
                 }
             }
 
@@ -63,8 +63,8 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelEnabled, ref enabled ) )
                 {
                     _config.IsEnabled = enabled;
-                    _configChanged = true;
-                    RefreshActors.RedrawAll(_base._plugin.PluginInterface.ClientState.Actors);
+                    _configChanged    = true;
+                    Game.RefreshActors.RedrawAll( _base._plugin.PluginInterface.ClientState.Actors );
                 }
             }
 
@@ -85,15 +85,17 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelShowAdvanced, ref showAdvanced ) )
                 {
                     _config.ShowAdvanced = showAdvanced;
-                    _configChanged = true;
-                    _base._menu._effectiveTab.RebuildFileList(showAdvanced);
+                    _configChanged       = true;
+                    _base._menu.EffectiveTab.RebuildFileList( showAdvanced );
                 }
             }
 
             private void DrawLogLoadedFilesBox()
             {
                 if( _base._plugin.ResourceLoader != null )
+                {
                     ImGui.Checkbox( LabelLogLoadedFiles, ref _base._plugin.ResourceLoader.LogAllFiles );
+                }
             }
 
             private void DrawDisableNotificationsBox()
@@ -102,7 +104,7 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelDisableNotifications, ref fswatch ) )
                 {
                     _config.DisableFileSystemNotifications = fswatch;
-                    _configChanged = true;
+                    _configChanged                         = true;
                 }
             }
 
@@ -112,12 +114,16 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelEnableHttpApi, ref http ) )
                 {
                     if( http )
+                    {
                         _base._plugin.CreateWebServer();
+                    }
                     else
+                    {
                         _base._plugin.ShutdownWebServer();
+                    }
 
                     _config.EnableHttpApi = http;
-                    _configChanged = true;
+                    _configChanged        = true;
                 }
             }
 
@@ -141,7 +147,9 @@ namespace Penumbra.UI
             {
                 var ret = ImGui.BeginTabItem( LabelTab );
                 if( !ret )
+                {
                     return;
+                }
 
                 DrawRootFolder();
 
@@ -149,17 +157,19 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawOpenModsButton();
 
-                ImGuiCustom.VerticalDistance(DefaultVerticalSpace);
+                ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawEnabledBox();
 
-                ImGuiCustom.VerticalDistance(DefaultVerticalSpace);
+                ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawInvertModOrderBox();
 
-                ImGuiCustom.VerticalDistance(DefaultVerticalSpace);
+                ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawShowAdvancedBox();
 
                 if( _config.ShowAdvanced )
+                {
                     DrawAdvancedSettings();
+                }
 
                 if( _configChanged )
                 {

@@ -9,18 +9,15 @@ namespace Penumbra.Mods
 {
     public class ModManager : IDisposable
     {
-        private readonly Plugin _plugin;
-        public readonly Dictionary< string, FileInfo > ResolvedFiles = new();
-        public readonly Dictionary< string, string > SwappedFiles = new();
+        private readonly Plugin                         _plugin;
+        public readonly  Dictionary< string, FileInfo > ResolvedFiles = new();
+        public readonly  Dictionary< string, string >   SwappedFiles  = new();
 
         public ModCollection Mods { get; set; }
 
         private DirectoryInfo _basePath;
 
-        public ModManager( Plugin plugin )
-        {
-            _plugin = plugin;
-        }
+        public ModManager( Plugin plugin ) => _plugin = plugin;
 
         public void DiscoverMods()
         {
@@ -114,7 +111,7 @@ namespace Penumbra.Mods
                 mod.FileConflicts?.Clear();
                 if( settings.Conf == null )
                 {
-                    settings.Conf = new();
+                    settings.Conf = new Dictionary< string, int >();
                     _plugin.ModManager.Mods.Save();
                 }
 
@@ -138,7 +135,7 @@ namespace Penumbra.Mods
                 if( !SwappedFiles.ContainsKey( swap.Value ) )
                 {
                     SwappedFiles[ swap.Key.ToLowerInvariant() ] = swap.Value;
-                    registeredFiles[ swap.Key ] = mod.Meta.Name;
+                    registeredFiles[ swap.Key ]                 = mod.Meta.Name;
                 }
                 else if( registeredFiles.TryGetValue( swap.Key, out var modName ) )
                 {
@@ -155,13 +152,14 @@ namespace Penumbra.Mods
             {
                 var relativeFilePath = file.FullName.Substring( baseDir.Length ).TrimStart( '\\' );
 
-                bool doNotAdd = false;
+                var doNotAdd = false;
 
                 HashSet< string > paths;
                 foreach( var group in mod.Meta.Groups.Select( G => G.Value ) )
                 {
                     if( !settings.Conf.TryGetValue( group.GroupName, out var setting )
-                        || ( group.SelectionType == SelectType.Single && settings.Conf[ group.GroupName ] >= group.Options.Count ) )
+                        || group.SelectionType == SelectType.Single
+                        && settings.Conf[ group.GroupName ] >= group.Options.Count )
                     {
                         settings.Conf[ group.GroupName ] = 0;
                         _plugin.ModManager.Mods.Save();
@@ -169,10 +167,14 @@ namespace Penumbra.Mods
                     }
 
                     if( group.Options.Count == 0 )
+                    {
                         continue;
+                    }
 
                     if( group.SelectionType == SelectType.Multi )
-                        settings.Conf[ group.GroupName ] &= ( ( 1 << group.Options.Count ) - 1 );
+                    {
+                        settings.Conf[ group.GroupName ] &= ( 1 << group.Options.Count ) - 1;
+                    }
 
                     switch( group.SelectionType )
                     {
@@ -183,15 +185,10 @@ namespace Penumbra.Mods
                             }
                             else
                             {
-                                for( var i = 0; i < group.Options.Count; ++i )
+                                if( group.Options.Where( ( o, i ) => i != setting )
+                                         .Any( option => option.OptionFiles.ContainsKey( relativeFilePath ) ) )
                                 {
-                                    if( i == setting )
-                                        continue;
-                                    if( group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath ) )
-                                    {
-                                        doNotAdd = true;
-                                        break;
-                                    }
+                                    doNotAdd = true;
                                 }
                             }
 
@@ -207,7 +204,9 @@ namespace Penumbra.Mods
                                     }
                                 }
                                 else if( group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath ) )
+                                {
                                     doNotAdd = true;
+                                }
                             }
 
                             break;
@@ -216,7 +215,7 @@ namespace Penumbra.Mods
 
                 if( !doNotAdd )
                 {
-                    AddFiles( new() { relativeFilePath.Replace( '\\', '/' ) }, out doNotAdd, file, registeredFiles, mod );
+                    AddFiles( new HashSet< string > { relativeFilePath.Replace( '\\', '/' ) }, out doNotAdd, file, registeredFiles, mod );
                 }
             }
         }
@@ -230,7 +229,7 @@ namespace Penumbra.Mods
                 if( !ResolvedFiles.ContainsKey( gamePath ) )
                 {
                     ResolvedFiles[ gamePath.ToLowerInvariant() ] = file;
-                    registeredFiles[ gamePath ] = mod.Meta.Name;
+                    registeredFiles[ gamePath ]                  = mod.Meta.Name;
                 }
                 else if( registeredFiles.TryGetValue( gamePath, out var modName ) )
                 {
@@ -247,17 +246,18 @@ namespace Penumbra.Mods
 
         public void DeleteMod( ResourceMod mod )
         {
-            if (mod?.ModBasePath?.Exists ?? false)
+            if( mod?.ModBasePath?.Exists ?? false )
             {
                 try
                 {
-                    Directory.Delete(mod.ModBasePath.FullName, true);
+                    Directory.Delete( mod.ModBasePath.FullName, true );
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error($"Could not delete the mod {mod.ModBasePath.Name}:\n{e}");
+                    PluginLog.Error( $"Could not delete the mod {mod.ModBasePath.Name}:\n{e}" );
                 }
             }
+
             DiscoverMods();
         }
 
@@ -278,9 +278,7 @@ namespace Penumbra.Mods
         }
 
         public string GetSwappedFilePath( string gameResourcePath )
-        {
-            return SwappedFiles.TryGetValue( gameResourcePath, out var swappedPath ) ? swappedPath : null;
-        }
+            => SwappedFiles.TryGetValue( gameResourcePath, out var swappedPath ) ? swappedPath : null;
 
         public string ResolveSwappedOrReplacementFilePath( string gameResourcePath )
         {

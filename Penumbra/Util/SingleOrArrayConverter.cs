@@ -3,21 +3,16 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-public class SingleOrArrayConverter<T> : JsonConverter
+public class SingleOrArrayConverter< T > : JsonConverter
 {
-    public override bool CanConvert( Type objectType )
-    {
-        return (objectType == typeof(HashSet<T>));
-    }
+    public override bool CanConvert( Type objectType ) => objectType == typeof( HashSet< T > );
 
     public override object ReadJson( JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer )
     {
-        var token = JToken.Load(reader);
-        if (token.Type == JTokenType.Array)
-        {
-            return token.ToObject<HashSet<T>>();
-        }
-        return new HashSet<T>{ token.ToObject<T>() };
+        var token = JToken.Load( reader );
+        return token.Type == JTokenType.Array
+            ? token.ToObject< HashSet< T > >()
+            : new HashSet< T > { token.ToObject< T >() };
     }
 
     public override bool CanWrite => false;
@@ -28,22 +23,20 @@ public class SingleOrArrayConverter<T> : JsonConverter
     }
 }
 
-public class DictSingleOrArrayConverter<T,U> : JsonConverter
+public class DictSingleOrArrayConverter< T, U > : JsonConverter
 {
-    public override bool CanConvert( Type objectType )
-    {
-        return (objectType == typeof(Dictionary<T, HashSet<U>>));
-    }
+    public override bool CanConvert( Type objectType ) => objectType == typeof( Dictionary< T, HashSet< U > > );
 
     public override object ReadJson( JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer )
     {
-        var token = JToken.Load(reader);
+        var token = JToken.Load( reader );
 
-        if (token.Type == JTokenType.Array)
+        if( token.Type == JTokenType.Array )
         {
-            return token.ToObject<HashSet<T>>();
+            return token.ToObject< HashSet< T > >();
         }
-        return new HashSet<T>{ token.ToObject<T>() };
+
+        return new HashSet< T > { token.ToObject< T >() };
     }
 
     public override bool CanWrite => false;

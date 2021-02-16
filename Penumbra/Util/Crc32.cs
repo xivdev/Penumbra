@@ -15,7 +15,9 @@ namespace Penumbra.Util
             {
                 var k = ( uint )i;
                 for( var j = 0; j < 8; j++ )
+                {
                     k = ( k & 1 ) != 0 ? ( k >> 1 ) ^ Poly : k >> 1;
+                }
 
                 return k;
             } ).ToArray();
@@ -40,14 +42,16 @@ namespace Penumbra.Util
         public void Update( byte[] data )
         {
             foreach( var b in data )
+            {
                 Update( b );
+            }
         }
 
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public void Update( byte b )
         {
             _crc32 = CrcArray[ ( _crc32 ^ b ) & 0xFF ] ^
-                     ( ( _crc32 >> 8 ) & 0x00FFFFFF );
+                ( ( _crc32 >> 8 ) & 0x00FFFFFF );
         }
     }
 }
