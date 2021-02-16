@@ -50,16 +50,7 @@ namespace Penumbra.Importer
         {
             CurrentModPack = modPackFile.Name;
 
-            switch( modPackFile.Extension )
-            {
-                case ".ttmp":
-                case ".ttmp2":
-                    VerifyVersionAndImport(modPackFile);
-                    break;
-
-                default:
-                    throw new ArgumentException( $"Unrecognized modpack format: {modPackFile.Extension}", nameof(modPackFile) );
-            }
+            VerifyVersionAndImport(modPackFile);
 
             State = ImporterState.Done;
         }
