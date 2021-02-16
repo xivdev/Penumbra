@@ -1,11 +1,11 @@
-using ImGuiNET;
+using System;
+using System.IO;
+using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.IO;
-using System;
-using Penumbra.Importer;
 using Dalamud.Plugin;
-using System.Numerics;
+using ImGuiNET;
+using Penumbra.Importer;
 
 namespace Penumbra.UI
 {
@@ -15,22 +15,22 @@ namespace Penumbra.UI
         {
             private const string LabelTab               = "Import Mods";
             private const string LabelImportButton      = "Import TexTools Modpacks";
-            private const string FileTypeFilter         = "TexTools TTMP Modpack (*.ttmp2)|*.ttmp*|All files (*.*)|*.*";
             private const string LabelFileDialog        = "Pick one or more modpacks.";
             private const string LabelFileImportRunning = "Import in progress...";
+            private const string FileTypeFilter         = "TexTools TTMP Modpack (*.ttmp2)|*.ttmp*|All files (*.*)|*.*";
             private const string TooltipModpack1        = "Writing modpack to disk before extracting...";
             private const string FailedImport           = "One or more of your modpacks failed to import.\nPlease submit a bug report.";
 
-            private const uint ColorRed                 = 0xFF0000C8;
+            private const uint ColorRed = 0xFF0000C8;
 
             private static readonly Vector2 ImportBarSize = new( -1, 0 );
 
-            private bool                       _isImportRunning = false;
-            private bool                       _hasError = false;
-            private TexToolsImport             _texToolsImport = null!;
+            private          bool              _isImportRunning = false;
+            private          bool              _hasError        = false;
+            private          TexToolsImport    _texToolsImport  = null!;
             private readonly SettingsInterface _base;
 
-            public TabImport(SettingsInterface ui) => _base = ui;
+            public TabImport( SettingsInterface ui ) => _base = ui;
 
             public bool IsImporting() => _isImportRunning;
 
@@ -41,10 +41,10 @@ namespace Penumbra.UI
                 {
                     var picker = new OpenFileDialog
                     {
-                        Multiselect = true,
-                        Filter = FileTypeFilter,
+                        Multiselect     = true,
+                        Filter          = FileTypeFilter,
                         CheckFileExists = true,
-                        Title = LabelFileDialog
+                        Title           = LabelFileDialog
                     };
 
                     var result = await picker.ShowDialogAsync();
@@ -55,7 +55,7 @@ namespace Penumbra.UI
 
                         foreach( var fileName in picker.FileNames )
                         {
-                            PluginLog.Log( $"-> {fileName} START");
+                            PluginLog.Log( $"-> {fileName} START" );
 
                             try
                             {
@@ -74,6 +74,7 @@ namespace Penumbra.UI
                         _texToolsImport = null;
                         _base.ReloadMods();
                     }
+
                     _isImportRunning = false;
                 } );
             }
@@ -90,32 +91,34 @@ namespace Penumbra.UI
             {
                 ImGui.Button( LabelFileImportRunning );
 
-                if( _texToolsImport != null )
+                if( _texToolsImport == null )
                 {
-                    switch( _texToolsImport.State )
-                    {
-                        case ImporterState.None:
-                            break;
-                        case ImporterState.WritingPackToDisk:
-                            ImGui.Text( TooltipModpack1 );
-                            break;
-                        case ImporterState.ExtractingModFiles:
-                        {
-                            var str =
-                                $"{_texToolsImport.CurrentModPack} - {_texToolsImport.CurrentProgress} of {_texToolsImport.TotalProgress} files";
+                    return;
+                }
 
-                            ImGui.ProgressBar( _texToolsImport.Progress, ImportBarSize, str );
-                            break;
-                        }
-                        case ImporterState.Done:
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
+                switch( _texToolsImport.State )
+                {
+                    case ImporterState.None:
+                        break;
+                    case ImporterState.WritingPackToDisk:
+                        ImGui.Text( TooltipModpack1 );
+                        break;
+                    case ImporterState.ExtractingModFiles:
+                    {
+                        var str =
+                            $"{_texToolsImport.CurrentModPack} - {_texToolsImport.CurrentProgress} of {_texToolsImport.TotalProgress} files";
+
+                        ImGui.ProgressBar( _texToolsImport.Progress, ImportBarSize, str );
+                        break;
                     }
+                    case ImporterState.Done:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
 
-            private void DrawFailedImportMessage()
+            private static void DrawFailedImportMessage()
             {
                 ImGui.PushStyleColor( ImGuiCol.Text, ColorRed );
                 ImGui.Text( FailedImport );
@@ -126,15 +129,23 @@ namespace Penumbra.UI
             {
                 var ret = ImGui.BeginTabItem( LabelTab );
                 if( !ret )
+                {
                     return;
+                }
 
                 if( !_isImportRunning )
+                {
                     DrawImportButton();
+                }
                 else
+                {
                     DrawImportProgress();
+                }
 
-                if (_hasError)
+                if( _hasError )
+                {
                     DrawFailedImportMessage();
+                }
 
                 ImGui.EndTabItem();
             }

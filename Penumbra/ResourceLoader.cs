@@ -1,14 +1,14 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Plugin;
 using Penumbra.Structs;
 using Penumbra.Util;
-using FileMode = Penumbra.Structs.FileMode;
 using Reloaded.Hooks;
 using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.X64;
+using FileMode = Penumbra.Structs.FileMode;
 
 namespace Penumbra
 {
@@ -51,7 +51,7 @@ namespace Penumbra
         public ResourceLoader( Plugin plugin )
         {
             Plugin = plugin;
-            Crc32 = new Crc32();
+            Crc32  = new Crc32();
         }
 
         public unsafe void Init()
@@ -71,8 +71,8 @@ namespace Penumbra
                 scanner.ScanText( "E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00" );
 
 
-            ReadSqpackHook = new Hook< ReadSqpackPrototype >( ReadSqpackHandler, ( long )readSqpackAddress );
-            GetResourceSyncHook = new Hook< GetResourceSyncPrototype >( GetResourceSyncHandler, ( long )getResourceSyncAddress );
+            ReadSqpackHook       = new Hook< ReadSqpackPrototype >( ReadSqpackHandler, ( long )readSqpackAddress );
+            GetResourceSyncHook  = new Hook< GetResourceSyncPrototype >( GetResourceSyncHandler, ( long )getResourceSyncAddress );
             GetResourceAsyncHook = new Hook< GetResourceAsyncPrototype >( GetResourceAsyncHandler, ( long )getResourceAsyncAddress );
 
             ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
@@ -129,7 +129,7 @@ namespace Penumbra
                 PluginLog.Log( "[GetResourceHandler] {0}", gameFsPath );
             }
 
-            if (Plugin.Configuration.IsEnabled)
+            if( Plugin.Configuration.IsEnabled )
             {
                 var replacementPath = Plugin.ModManager.ResolveSwappedOrReplacementFilePath( gameFsPath );
 
@@ -140,7 +140,7 @@ namespace Penumbra
                 }
 
                 var cleanPath = replacementPath.Replace( '\\', '/' );
-                var path = Encoding.ASCII.GetBytes( cleanPath );
+                var path      = Encoding.ASCII.GetBytes( cleanPath );
 
                 var bPath = stackalloc byte[path.Length + 1];
                 Marshal.Copy( path, 0, new IntPtr( bPath ), path.Length );
@@ -154,7 +154,7 @@ namespace Penumbra
                 PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, replacementPath );
 #endif
             }
-            
+
             return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }
 
@@ -192,7 +192,9 @@ namespace Penumbra
         public void Enable()
         {
             if( IsEnabled )
+            {
                 return;
+            }
 
             ReadSqpackHook.Activate();
             GetResourceSyncHook.Activate();
@@ -208,7 +210,9 @@ namespace Penumbra
         public void Disable()
         {
             if( !IsEnabled )
+            {
                 return;
+            }
 
             ReadSqpackHook.Disable();
             GetResourceSyncHook.Disable();
@@ -220,7 +224,9 @@ namespace Penumbra
         public void Dispose()
         {
             if( IsEnabled )
+            {
                 Disable();
+            }
 
             // ReadSqpackHook.Disable();
             // GetResourceSyncHook.Disable();

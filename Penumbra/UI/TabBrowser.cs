@@ -12,7 +12,9 @@ namespace Penumbra.UI
             {
                 var ret = ImGui.BeginTabItem( "Available Mods" );
                 if( !ret )
+                {
                     return;
+                }
 
                 ImGui.Text( "woah" );
                 ImGui.EndTabItem();

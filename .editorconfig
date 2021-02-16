@@ -2,7 +2,7 @@
 [*]
 charset=utf-8
 end_of_line=lf
-trim_trailing_whitespace=false
+trim_trailing_whitespace=true
 insert_final_newline=false
 indent_style=space
 indent_size=4
@@ -10,6 +10,7 @@ indent_size=4
 # Microsoft .NET properties
 csharp_new_line_before_members_in_object_initializers=false
 csharp_preferred_modifier_order=public, private, protected, internal, new, abstract, virtual, sealed, override, static, readonly, extern, unsafe, volatile, async:suggestion
+csharp_prefer_braces=true:none
 csharp_space_after_cast=false
 csharp_space_after_keywords_in_control_flow_statements=false
 csharp_space_between_method_call_parameter_list_parentheses=true
@@ -30,9 +31,26 @@ dotnet_style_qualification_for_property=false:suggestion
 dotnet_style_require_accessibility_modifiers=for_non_interface_members:suggestion
 
 # ReSharper properties
+resharper_align_multiline_binary_expressions_chain=false
+resharper_align_multiline_calls_chain=false
 resharper_autodetect_indent_settings=true
+resharper_braces_redundant=true
+resharper_constructor_or_destructor_body=expression_body
+resharper_csharp_empty_block_style=together
+resharper_csharp_max_line_length=144
 resharper_csharp_space_within_array_access_brackets=true
 resharper_enforce_line_ending_style=true
+resharper_int_align_assignments=true
+resharper_int_align_comments=true
+resharper_int_align_fields=true
+resharper_int_align_invocations=false
+resharper_int_align_nested_ternary=true
+resharper_int_align_properties=false
+resharper_int_align_switch_expressions=true
+resharper_int_align_switch_sections=true
+resharper_int_align_variables=true
+resharper_local_function_body=expression_body
+resharper_method_or_operator_body=expression_body
 resharper_place_attribute_on_same_line=false
 resharper_space_after_cast=false
 resharper_space_within_checked_parentheses=true

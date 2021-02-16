@@ -18,7 +18,7 @@ namespace Penumbra
         public static Task< DialogResult > ShowDialogAsync( this CommonDialog form, IWin32Window owner )
         {
             var taskSource = new TaskCompletionSource< DialogResult >();
-            var th = new Thread( () => DialogThread( form, owner, taskSource ) );
+            var th         = new Thread( () => DialogThread( form, owner, taskSource ) );
             th.Start();
             return taskSource.Task;
         }
@@ -38,28 +38,25 @@ namespace Penumbra
         {
             public IntPtr Handle { get; set; }
 
-            public DialogHandle( IntPtr handle )
-            {
-                Handle = handle;
-            }
+            public DialogHandle( IntPtr handle ) => Handle = handle;
         }
 
         public class HiddenForm : Form
         {
-            private readonly CommonDialog _form;
-            private readonly IWin32Window _owner;
+            private readonly CommonDialog                         _form;
+            private readonly IWin32Window                         _owner;
             private readonly TaskCompletionSource< DialogResult > _taskSource;
 
             public HiddenForm( CommonDialog form, IWin32Window owner, TaskCompletionSource< DialogResult > taskSource )
             {
-                this._form = form;
-                this._owner = owner;
-                this._taskSource = taskSource;
+                _form       = form;
+                _owner      = owner;
+                _taskSource = taskSource;
 
-                Opacity = 0;
+                Opacity         = 0;
                 FormBorderStyle = FormBorderStyle.None;
-                ShowInTaskbar = false;
-                Size = new Size( 0, 0 );
+                ShowInTaskbar   = false;
+                Size            = new Size( 0, 0 );
 
                 Shown += HiddenForm_Shown;
             }

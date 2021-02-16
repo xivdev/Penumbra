@@ -8,16 +8,17 @@ namespace Penumbra.UI
         private class LaunchButton
         {
             // magic numbers
-            private const int     Padding         =  50;
-            private const int     Width           = 200;
-            private const int     Height          =  45;
-            private const string  MenuButtonsName = "Penumbra Menu Buttons";
-            private const string  MenuButtonLabel = "Manage Mods";
+            private const int    Padding         = 50;
+            private const int    Width           = 200;
+            private const int    Height          = 45;
+            private const string MenuButtonsName = "Penumbra Menu Buttons";
+            private const string MenuButtonLabel = "Manage Mods";
 
-            private static readonly Vector2 WindowSize      = new(Width, Height);
-            private static readonly Vector2 WindowPosOffset = new(Padding + Width, Padding + Height);
+            private static readonly Vector2 WindowSize      = new( Width, Height );
+            private static readonly Vector2 WindowPosOffset = new( Padding + Width, Padding + Height );
 
-            private readonly ImGuiWindowFlags ButtonFlags = ImGuiWindowFlags.AlwaysAutoResize
+            private const ImGuiWindowFlags ButtonFlags =
+                  ImGuiWindowFlags.AlwaysAutoResize
                 | ImGuiWindowFlags.NoBackground
                 | ImGuiWindowFlags.NoDecoration
                 | ImGuiWindowFlags.NoMove
@@ -28,28 +29,34 @@ namespace Penumbra.UI
             private readonly SettingsInterface                  _base;
             private readonly Dalamud.Game.ClientState.Condition _condition;
 
-            public LaunchButton(SettingsInterface ui)
+            public LaunchButton( SettingsInterface ui )
             {
                 _base      = ui;
                 _condition = ui._plugin.PluginInterface.ClientState.Condition;
             }
 
             public void Draw()
-            { 
-                if( !_condition.Any() && !_base._menu.Visible )
+            {
+                if( _condition.Any() || _base._menu.Visible )
                 {
-                    var ss = ImGui.GetIO().DisplaySize;
-
-                    ImGui.SetNextWindowPos( ss - WindowPosOffset, ImGuiCond.Always );
-
-                    if( ImGui.Begin(MenuButtonsName, ButtonFlags) )
-                    {
-                        if( ImGui.Button( MenuButtonLabel, WindowSize ) )
-                            _base.FlipVisibility();
-
-                        ImGui.End();
-                    }
+                    return;
                 }
+
+                var ss = ImGui.GetIO().DisplaySize;
+
+                ImGui.SetNextWindowPos( ss - WindowPosOffset, ImGuiCond.Always );
+
+                if( !ImGui.Begin( MenuButtonsName, ButtonFlags ) )
+                {
+                    return;
+                }
+
+                if( ImGui.Button( MenuButtonLabel, WindowSize ) )
+                {
+                    _base.FlipVisibility();
+                }
+
+                ImGui.End();
             }
         }
     }

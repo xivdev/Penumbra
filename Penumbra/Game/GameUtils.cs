@@ -14,11 +14,11 @@ namespace Penumbra.Game
         public unsafe delegate void* UnloadPlayerResourcesPrototype( IntPtr pResourceManager );
 
 
-        public LoadPlayerResourcesPrototype LoadPlayerResources { get; private set; }
-        public UnloadPlayerResourcesPrototype UnloadPlayerResources { get; private set; }
+        public LoadPlayerResourcesPrototype LoadPlayerResources { get; }
+        public UnloadPlayerResourcesPrototype UnloadPlayerResources { get; }
 
         // Object addresses
-        private IntPtr _playerResourceManagerAddress;
+        private readonly IntPtr _playerResourceManagerAddress;
         public IntPtr PlayerResourceManagerPtr => Marshal.ReadIntPtr( _playerResourceManagerAddress );
 
         public GameUtils( DalamudPluginInterface pluginInterface )
@@ -33,7 +33,7 @@ namespace Penumbra.Game
 
             _playerResourceManagerAddress = scanner.GetStaticAddressFromSig( "0F 44 FE 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 05" );
 
-            LoadPlayerResources = Marshal.GetDelegateForFunctionPointer< LoadPlayerResourcesPrototype >( loadPlayerResourcesAddress );
+            LoadPlayerResources   = Marshal.GetDelegateForFunctionPointer< LoadPlayerResourcesPrototype >( loadPlayerResourcesAddress );
             UnloadPlayerResources = Marshal.GetDelegateForFunctionPointer< UnloadPlayerResourcesPrototype >( unloadPlayerResourcesAddress );
         }
 

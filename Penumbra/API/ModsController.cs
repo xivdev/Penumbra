@@ -9,10 +9,7 @@ namespace Penumbra.API
     {
         private readonly Plugin _plugin;
 
-        public ModsController( Plugin plugin )
-        {
-            _plugin = plugin;
-        }
+        public ModsController( Plugin plugin ) => _plugin = plugin;
 
         [Route( HttpVerbs.Get, "/mods" )]
         public object GetMods()
@@ -24,7 +21,7 @@ namespace Penumbra.API
                 x.FolderName,
                 x.Mod.Meta,
                 BasePath = x.Mod.ModBasePath.FullName,
-                Files = x.Mod.ModFiles.Select( fi => fi.FullName )
+                Files    = x.Mod.ModFiles.Select( fi => fi.FullName )
             } );
         }
 

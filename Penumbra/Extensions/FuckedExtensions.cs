@@ -25,7 +25,8 @@ namespace Penumbra.Extensions
         /// <typeparam name="TField">The type of the underlying field</typeparam>
         /// <returns>A delegate that will return a reference to a particular field - zero copy</returns>
         /// <exception cref="MissingFieldException"></exception>
-        private static RefGet< TObject, TField > CreateRefGetter< TObject, TField >( string fieldName ) where TField : unmanaged
+        private static RefGet< TObject, TField > CreateRefGetter< TObject, TField >( string fieldName )
+            where TField : unmanaged
         {
             const BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
 

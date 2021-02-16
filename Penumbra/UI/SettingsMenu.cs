@@ -6,27 +6,27 @@ namespace Penumbra.UI
     public partial class SettingsInterface
     {
         private partial class SettingsMenu
-        { 
+        {
             private const string PenumbraSettingsLabel = "PenumbraSettings";
 
             private static readonly Vector2 MinSettingsSize = new( 800, 450 );
             private static readonly Vector2 MaxSettingsSize = new( 69420, 42069 );
 
             private readonly SettingsInterface _base;
-            public  readonly TabSettings       _settingsTab;
-            public  readonly TabImport         _importTab;
-            public  readonly TabBrowser        _browserTab;
-            public  readonly TabInstalled      _installedTab;
-            public  readonly TabEffective      _effectiveTab;
+            private readonly TabSettings       _settingsTab;
+            private readonly TabImport         _importTab;
+            private readonly TabBrowser        _browserTab;
+            public readonly  TabInstalled      InstalledTab;
+            public readonly  TabEffective      EffectiveTab;
 
-            public SettingsMenu(SettingsInterface ui)
+            public SettingsMenu( SettingsInterface ui )
             {
-                _base         = ui;
-                _settingsTab  = new(_base);
-                _importTab    = new(_base);
-                _browserTab   = new();
-                _installedTab = new(_base);
-                _effectiveTab = new(_base);
+                _base        = ui;
+                _settingsTab = new TabSettings( _base );
+                _importTab   = new TabImport( _base );
+                _browserTab  = new TabBrowser();
+                InstalledTab = new TabInstalled( _base );
+                EffectiveTab = new TabEffective( _base );
             }
 
 #if DEBUG
@@ -39,7 +39,9 @@ namespace Penumbra.UI
             public void Draw()
             {
                 if( !Visible )
+                {
                     return;
+                }
 
                 ImGui.SetNextWindowSizeConstraints( MinSettingsSize, MaxSettingsSize );
 #if DEBUG
@@ -48,7 +50,9 @@ namespace Penumbra.UI
                 var ret = ImGui.Begin( _base._plugin.Name, ref Visible );
 #endif
                 if( !ret )
+                {
                     return;
+                }
 
                 ImGui.BeginTabBar( PenumbraSettingsLabel );
 
@@ -58,10 +62,12 @@ namespace Penumbra.UI
                 if( !_importTab.IsImporting() )
                 {
                     _browserTab.Draw();
-                    _installedTab.Draw();
+                    InstalledTab.Draw();
 
                     if( _base._plugin.Configuration.ShowAdvanced )
-                        _effectiveTab.Draw();
+                    {
+                        EffectiveTab.Draw();
+                    }
                 }
 
                 ImGui.EndTabBar();

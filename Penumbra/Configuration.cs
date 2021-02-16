@@ -1,7 +1,7 @@
-﻿using Dalamud.Configuration;
-using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
+using Dalamud.Configuration;
+using Dalamud.Plugin;
 
 namespace Penumbra
 {
@@ -13,7 +13,7 @@ namespace Penumbra
         public bool IsEnabled { get; set; } = true;
 
         public bool ShowAdvanced { get; set; }
-        
+
         public bool DisableFileSystemNotifications { get; set; }
 
         public bool EnableHttpApi { get; set; }

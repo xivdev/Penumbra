@@ -57,6 +57,7 @@ namespace Penumbra
             GameUtils.ReloadPlayerResources();
 
             SettingsInterface = new SettingsInterface( this );
+
             PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
 
             PluginDebugTitleStr = $"{Name} - Debug Build";
@@ -70,7 +71,7 @@ namespace Penumbra
         public void CreateWebServer()
         {
             var prefix = "http://localhost:42069/";
-            
+
             ShutdownWebServer();
 
             _webServer = new WebServer( o => o
@@ -122,10 +123,15 @@ namespace Penumbra
                     }
                     case "redraw":
                     {
-                        if (args.Length > 1)
-                            RefreshActors.RedrawSpecific(PluginInterface.ClientState.Actors, string.Join(" ", args.Skip(1)));
+                        if( args.Length > 1 )
+                        {
+                            RefreshActors.RedrawSpecific( PluginInterface.ClientState.Actors, string.Join( " ", args.Skip( 1 ) ) );
+                        }
                         else
-                            RefreshActors.RedrawAll(PluginInterface.ClientState.Actors);
+                        {
+                            RefreshActors.RedrawAll( PluginInterface.ClientState.Actors );
+                        }
+
                         break;
                     }
                 }
