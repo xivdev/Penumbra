@@ -240,7 +240,7 @@ namespace Penumbra.Importer
             );
         }
 
-        private void AddMeta( DirectoryInfo baseFolder, DirectoryInfo groupFolder, ModGroup group, ModMeta meta )
+        private static void AddMeta( DirectoryInfo baseFolder, DirectoryInfo groupFolder, ModGroup group, ModMeta meta )
         {
             var Inf = new InstallerInfo
             {
@@ -257,7 +257,7 @@ namespace Penumbra.Importer
                     OptionFiles = new Dictionary< string, HashSet< string > >()
                 };
                 var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name.ReplaceInvalidPathSymbols() ) );
-                if( !optDir.Exists )
+                if( optDir.Exists )
                 {
                     foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
                     {
