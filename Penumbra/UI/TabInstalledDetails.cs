@@ -134,7 +134,7 @@ namespace Penumbra.UI
 
             private void DrawAboutTab()
             {
-                if( !_editMode && Meta.Description?.Length == 0 )
+                if( !_editMode && ( Meta.Description?.Length ?? 0 ) == 0 )
                 {
                     return;
                 }
