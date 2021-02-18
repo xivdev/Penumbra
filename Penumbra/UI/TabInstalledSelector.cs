@@ -49,7 +49,7 @@ namespace Penumbra.UI
 
             public void ResetModNamesLower()
             {
-                _modNamesLower = Mods.ModSettings.Select( I => I.Mod.Meta.Name.ToLowerInvariant() ).ToArray();
+                _modNamesLower = Mods?.ModSettings?.Select( I => I.Mod.Meta.Name.ToLowerInvariant() ).ToArray() ?? new string[]{};
             }
 
             private void DrawPriorityChangeButton( string iconString, bool up, int unavailableWhen )
