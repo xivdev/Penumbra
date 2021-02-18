@@ -18,7 +18,7 @@ jobs:
         run: dotnet restore
       - name: Download Dalamud
         run: |
-          Invoke-WebRequest -Uri https://goaaats.github.io/ffxiv/tools/launcher/addons/Hooks/latest.zip -OutFile latest.zip
+          Invoke-WebRequest -Uri https://goats.dev/ffxiv/tools/launcher/addons/Hooks/latest.zip -OutFile latest.zip
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\"
       - name: Build
         run: |
