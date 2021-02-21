@@ -72,4 +72,8 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="UI\Partials\Mod" />
+    </ItemGroup>
 </Project>
