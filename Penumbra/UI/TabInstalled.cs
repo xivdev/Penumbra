@@ -1,4 +1,5 @@
 using ImGuiNET;
+using Penumbra.Mods;
 
 namespace Penumbra.UI
 {
@@ -37,7 +38,7 @@ namespace Penumbra.UI
                     return;
                 }
 
-                if( _base._plugin.ModManager.Mods != null )
+                if( Service< ModManager >.Get().Mods != null )
                 {
                     Selector.Draw();
                     ImGui.SameLine();

@@ -32,7 +32,7 @@ namespace Penumbra.UI
             private static readonly string  ArrowDownString     = FontAwesomeIcon.ArrowDown.ToIconString();
 
             private readonly SettingsInterface _base;
-            private ModCollection Mods => _base._plugin.ModManager.Mods;
+            private ModCollection Mods => Service< ModManager >.Get().Mods;
 
             private ModInfo  _mod;
             private int      _index;
@@ -60,7 +60,7 @@ namespace Penumbra.UI
                     if( ImGui.Button( iconString, SelectorButtonSizes ) )
                     {
                         SetSelection( _index );
-                        _base._plugin.ModManager.ChangeModPriority( _mod, up );
+                        Service< ModManager >.Get().ChangeModPriority( _mod, up );
                         _modNamesLower.Swap( _index, _index + ( up ? 1 : -1 ) );
                         _index += up ? 1 : -1;
                     }
@@ -177,7 +177,7 @@ namespace Penumbra.UI
                 if( ImGui.Button( ButtonYesDelete ) )
                 {
                     ImGui.CloseCurrentPopup();
-                    _base._plugin.ModManager.DeleteMod( _mod.Mod );
+                    Service< ModManager >.Get().DeleteMod( _mod.Mod );
                     ClearSelection();
                     _base.ReloadMods();
                 }
@@ -321,7 +321,7 @@ namespace Penumbra.UI
                 }
 
                 _mod.Mod.RefreshModFiles();
-                _base._plugin.ModManager.CalculateEffectiveFileList();
+                Service< ModManager >.Get().CalculateEffectiveFileList();
                 _base._menu.EffectiveTab.RebuildFileList( _base._plugin.Configuration.ShowAdvanced );
                 ResetModNamesLower();
             }

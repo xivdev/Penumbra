@@ -4,6 +4,7 @@ using System.Numerics;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Penumbra.Models;
+using Penumbra.Mods;
 
 namespace Penumbra.UI
 {
@@ -184,8 +185,9 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelModEnabled, ref enabled ) )
                 {
                     Mod.Enabled = enabled;
-                    _base._plugin.ModManager.Mods.Save();
-                    _base._plugin.ModManager.CalculateEffectiveFileList();
+                    var modManager = Service< ModManager >.Get();
+                    modManager.Mods.Save();
+                    modManager.CalculateEffectiveFileList();
                     _base._menu.EffectiveTab.RebuildFileList( _base._plugin.Configuration.ShowAdvanced );
                 }
             }
@@ -241,7 +243,7 @@ namespace Penumbra.UI
                     new Deduplicator( Mod.Mod.ModBasePath, Meta ).Run();
                     _selector.SaveCurrentMod();
                     Mod.Mod.RefreshModFiles();
-                    _base._plugin.ModManager.CalculateEffectiveFileList();
+                    Service< ModManager >.Get().CalculateEffectiveFileList();
                     _base._menu.EffectiveTab.RebuildFileList( _base._plugin.Configuration.ShowAdvanced );
                 }
 

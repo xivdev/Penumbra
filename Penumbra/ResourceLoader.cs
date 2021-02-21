@@ -1,8 +1,10 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Plugin;
+using Penumbra.Mods;
 using Penumbra.Structs;
 using Penumbra.Util;
 using Reloaded.Hooks;
@@ -129,31 +131,35 @@ namespace Penumbra
                 PluginLog.Log( "[GetResourceHandler] {0}", gameFsPath );
             }
 
-            if( Plugin.Configuration.IsEnabled )
+            var modManager = Service< ModManager >.Get();
+
+            if( !Plugin.Configuration.IsEnabled || modManager == null )
             {
-                var replacementPath = Plugin.ModManager.ResolveSwappedOrReplacementFilePath( gameFsPath );
+                return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
+            }
 
-                // path must be < 260 because statically defined array length :(
-                if( replacementPath == null || replacementPath.Length >= 260 )
-                {
-                    return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
-                }
+            var replacementPath = modManager.ResolveSwappedOrReplacementFilePath( gameFsPath );
 
-                var cleanPath = replacementPath.Replace( '\\', '/' );
-                var path      = Encoding.ASCII.GetBytes( cleanPath );
+            // path must be < 260 because statically defined array length :(
+            if( replacementPath == null || replacementPath.Length >= 260 )
+            {
+                return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
+            }
 
-                var bPath = stackalloc byte[path.Length + 1];
-                Marshal.Copy( path, 0, new IntPtr( bPath ), path.Length );
-                pPath = ( char* )bPath;
+            var cleanPath = replacementPath.Replace( '\\', '/' );
+            var path      = Encoding.ASCII.GetBytes( cleanPath );
 
-                Crc32.Init();
-                Crc32.Update( path );
-                *pResourceHash = Crc32.Checksum;
+            var bPath = stackalloc byte[path.Length + 1];
+            Marshal.Copy( path, 0, new IntPtr( bPath ), path.Length );
+            pPath = ( char* )bPath;
+
+            Crc32.Init();
+            Crc32.Update( path );
+            *pResourceHash = Crc32.Checksum;
 
 #if DEBUG
-                PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, replacementPath );
+            PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, replacementPath );
 #endif
-            }
 
             return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }

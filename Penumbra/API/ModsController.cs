@@ -2,6 +2,7 @@ using System.Linq;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
+using Penumbra.Mods;
 
 namespace Penumbra.API
 {
@@ -14,7 +15,8 @@ namespace Penumbra.API
         [Route( HttpVerbs.Get, "/mods" )]
         public object GetMods()
         {
-            return _plugin.ModManager.Mods.ModSettings.Select( x => new
+            var modManager = Service< ModManager >.Get();
+            return modManager.Mods.ModSettings.Select( x => new
             {
                 x.Enabled,
                 x.Priority,
@@ -28,7 +30,8 @@ namespace Penumbra.API
         [Route( HttpVerbs.Get, "/files" )]
         public object CreateMod()
         {
-            return _plugin.ModManager.ResolvedFiles.ToDictionary(
+            var modManager = Service< ModManager >.Get();
+            return modManager.ResolvedFiles.ToDictionary(
                 o => o.Key,
                 o => o.Value.FullName
             );

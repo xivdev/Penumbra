@@ -1,5 +1,6 @@
 using System.IO;
 using System.Numerics;
+using Penumbra.Mods;
 
 namespace Penumbra.UI
 {
@@ -40,7 +41,8 @@ namespace Penumbra.UI
             // create the directory if it doesn't exist
             Directory.CreateDirectory( _plugin.Configuration.CurrentCollection );
 
-            _plugin.ModManager.DiscoverMods( _plugin.Configuration.CurrentCollection );
+            var modManager = Service< ModManager >.Get();
+            modManager.DiscoverMods( _plugin.Configuration.CurrentCollection );
             _menu.EffectiveTab.RebuildFileList( _plugin.Configuration.ShowAdvanced );
             _menu.InstalledTab.Selector.ResetModNamesLower();
         }

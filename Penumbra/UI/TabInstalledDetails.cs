@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ImGuiNET;
 using Penumbra.Models;
+using Penumbra.Mods;
 
 namespace Penumbra.UI
 {
@@ -127,8 +128,9 @@ namespace Penumbra.UI
 
             private void Save()
             {
-                _base._plugin.ModManager.Mods.Save();
-                _base._plugin.ModManager.CalculateEffectiveFileList();
+                var modManager = Service< ModManager >.Get();
+                modManager.Mods.Save();
+                modManager.CalculateEffectiveFileList();
                 _base._menu.EffectiveTab.RebuildFileList( _base._plugin.Configuration.ShowAdvanced );
             }
 

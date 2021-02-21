@@ -11,13 +11,12 @@ namespace Penumbra.UI
             private const string LabelTab        = "Effective File List";
             private const float  TextSizePadding = 5f;
 
-            private readonly ModManager         _mods;
+            private ModManager _mods => Service< ModManager >.Get();
             private          (string, string)[] _fileList;
             private          float              _maxGamePath;
 
             public TabEffective( SettingsInterface ui )
             {
-                _mods = ui._plugin.ModManager;
                 RebuildFileList( ui._plugin.Configuration.ShowAdvanced );
             }
 

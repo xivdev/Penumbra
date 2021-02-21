@@ -22,8 +22,6 @@ namespace Penumbra
 
         public ResourceLoader ResourceLoader { get; set; }
 
-        public ModManager ModManager { get; set; }
-
         public SettingsInterface SettingsInterface { get; set; }
 
         public GameUtils GameUtils { get; set; }
@@ -41,8 +39,8 @@ namespace Penumbra
 
             GameUtils = new GameUtils( PluginInterface );
 
-            ModManager = new ModManager( this );
-            ModManager.DiscoverMods( Configuration.CurrentCollection );
+            var modManager = Service< ModManager >.Set( this );
+            modManager.DiscoverMods( Configuration.CurrentCollection );
 
             ResourceLoader = new ResourceLoader( this );
 
@@ -94,7 +92,7 @@ namespace Penumbra
 
         public void Dispose()
         {
-            ModManager?.Dispose();
+            // ModManager?.Dispose();
 
             PluginInterface.UiBuilder.OnBuildUi -= SettingsInterface.Draw;
 
@@ -115,9 +113,9 @@ namespace Penumbra
                 {
                     case "reload":
                     {
-                        ModManager.DiscoverMods();
+                        Service< ModManager >.Get().DiscoverMods();
                         PluginInterface.Framework.Gui.Chat.Print(
-                            $"Reloaded Penumbra mods. You have {ModManager.Mods.ModSettings.Count} mods, {ModManager.Mods.EnabledMods.Length} of which are enabled."
+                            $"Reloaded Penumbra mods. You have {Service< ModManager >.Get().Mods.ModSettings.Count} mods, {Service< ModManager >.Get().Mods.EnabledMods.Length} of which are enabled."
                         );
                         break;
                     }

@@ -112,7 +112,7 @@ namespace Penumbra.Mods
                 if( settings.Conf == null )
                 {
                     settings.Conf = new Dictionary< string, int >();
-                    _plugin.ModManager.Mods.Save();
+                    Mods.Save();
                 }
 
                 ProcessModFiles( registeredFiles, mod, settings );
@@ -162,7 +162,7 @@ namespace Penumbra.Mods
                         && settings.Conf[ group.GroupName ] >= group.Options.Count )
                     {
                         settings.Conf[ group.GroupName ] = 0;
-                        _plugin.ModManager.Mods.Save();
+                        Mods.Save();
                         setting = 0;
                     }
 
