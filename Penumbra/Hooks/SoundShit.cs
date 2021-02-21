@@ -28,7 +28,7 @@ namespace Penumbra.Hooks
             _musicManager    = *( IntPtr* )( fw + fuckkk );
             StreamingEnabled = false;
 
-            PluginLog.Information("disabled streaming: {addr}", _musicManager);
+            // PluginLog.Information("disabled streaming: {addr}", _musicManager);
         }
 
         public bool StreamingEnabled
