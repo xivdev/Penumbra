@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -12,7 +11,7 @@ using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.X64;
 using FileMode = Penumbra.Structs.FileMode;
 
-namespace Penumbra
+namespace Penumbra.Hooks
 {
     public class ResourceLoader : IDisposable
     {

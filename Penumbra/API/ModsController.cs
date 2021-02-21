@@ -27,8 +27,14 @@ namespace Penumbra.API
             } );
         }
 
-        [Route( HttpVerbs.Get, "/files" )]
+        [Route( HttpVerbs.Post, "/mods" )]
         public object CreateMod()
+        {
+            return new { };
+        }
+
+        [Route( HttpVerbs.Get, "/files" )]
+        public object GetFiles()
         {
             var modManager = Service< ModManager >.Get();
             return modManager.ResolvedFiles.ToDictionary(

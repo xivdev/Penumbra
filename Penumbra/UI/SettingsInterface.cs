@@ -13,14 +13,14 @@ namespace Penumbra.UI
 
         private readonly Plugin _plugin;
 
-        private readonly LaunchButton _launchButton;
+        private readonly ManageModsButton _manageModsButton;
         private readonly MenuBar      _menuBar;
         private readonly SettingsMenu _menu;
 
         public SettingsInterface( Plugin plugin )
         {
             _plugin       = plugin;
-            _launchButton = new LaunchButton( this );
+            _manageModsButton = new ManageModsButton( this );
             _menuBar      = new MenuBar( this );
             _menu         = new SettingsMenu( this );
         }
@@ -30,7 +30,7 @@ namespace Penumbra.UI
         public void Draw()
         {
             _menuBar.Draw();
-            _launchButton.Draw();
+            _manageModsButton.Draw();
             _menu.Draw();
         }
 

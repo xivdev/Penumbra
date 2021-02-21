@@ -5,7 +5,7 @@ namespace Penumbra.UI
 {
     public partial class SettingsInterface
     {
-        private class LaunchButton
+        private class ManageModsButton
         {
             // magic numbers
             private const int    Padding         = 50;
@@ -29,7 +29,7 @@ namespace Penumbra.UI
             private readonly SettingsInterface                  _base;
             private readonly Dalamud.Game.ClientState.Condition _condition;
 
-            public LaunchButton( SettingsInterface ui )
+            public ManageModsButton( SettingsInterface ui )
             {
                 _base      = ui;
                 _condition = ui._plugin.PluginInterface.ClientState.Condition;

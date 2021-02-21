@@ -5,6 +5,7 @@ using EmbedIO;
 using EmbedIO.WebApi;
 using Penumbra.API;
 using Penumbra.Game;
+using Penumbra.Hooks;
 using Penumbra.Mods;
 using Penumbra.UI;
 
@@ -25,6 +26,7 @@ namespace Penumbra
         public SettingsInterface SettingsInterface { get; set; }
 
         public GameUtils GameUtils { get; set; }
+        public SoundShit SoundShit { get; set; }
 
         public string PluginDebugTitleStr { get; private set; }
 
@@ -37,6 +39,7 @@ namespace Penumbra
             Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize( PluginInterface );
 
+            SoundShit = new SoundShit( this );
             GameUtils = new GameUtils( PluginInterface );
 
             var modManager = Service< ModManager >.Set( this );
