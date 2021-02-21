@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dalamud.Plugin;
 using Penumbra.Models;
 
@@ -7,6 +8,12 @@ namespace Penumbra.Mods
 {
     public class ResourceMod
     {
+        public ResourceMod( ModMeta meta, DirectoryInfo dir )
+        {
+            Meta        = meta;
+            ModBasePath = dir;
+        }
+
         public ModMeta Meta { get; set; }
 
         public DirectoryInfo ModBasePath { get; set; }
@@ -17,26 +24,13 @@ namespace Penumbra.Mods
 
         public void RefreshModFiles()
         {
-            if( ModBasePath == null )
-            {
-                PluginLog.LogError( "no basepath has been set on {ResourceModName}", Meta.Name );
-                return;
-            }
-
             ModFiles.Clear();
             // we don't care about any _files_ in the root dir, but any folders should be a game folder/file combo
-            foreach( var dir in ModBasePath.EnumerateDirectories() )
+            foreach( var file in ModBasePath.EnumerateDirectories()
+                .SelectMany( dir => dir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) ) )
             {
-                foreach( var file in dir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
-                {
-                    ModFiles.Add( file );
-                }
+                ModFiles.Add( file );
             }
-
-            // Only add if not in a sub-folder, otherwise it was already added.
-            //foreach( var pair in Meta.Groups.FileToGameAndGroup )
-            //    if (pair.Key.IndexOfAny(new[]{'/', '\\'}) < 0)
-            //        ModFiles.Add( new FileInfo(Path.Combine(ModBasePath.FullName, pair.Key)) );
         }
 
         public void AddConflict( string modName, string path )

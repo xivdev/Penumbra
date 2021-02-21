@@ -48,15 +48,15 @@ namespace Penumbra.UI
                 _base           = ui;
                 _selector       = s;
                 Details         = new PluginDetails( _base, _selector );
-                _currentWebsite = Meta?.Website;
+                _currentWebsite = Meta?.Website ?? "";
             }
 
-            private ModInfo Mod => _selector.Mod();
-            private ModMeta Meta => Mod?.Mod.Meta;
+            private ModInfo? Mod => _selector.Mod();
+            private ModMeta? Meta => Mod?.Mod.Meta;
 
             private void DrawName()
             {
-                var name = Meta.Name;
+                var name = Meta!.Name;
                 if( ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 )
                     && name.Length > 0 && name != Meta.Name )
                 {
@@ -74,11 +74,11 @@ namespace Penumbra.UI
 
                     ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, ZeroVector );
                     ImGui.SameLine();
-                    var version = Meta.Version ?? "";
+                    var version = Meta!.Version;
                     if( ImGuiCustom.ResizingTextInput( LabelEditVersion, ref version, 16 )
                         && version != Meta.Version )
                     {
-                        Meta.Version = version.Length > 0 ? version : null;
+                        Meta.Version = version;
                         _selector.SaveCurrentMod();
                     }
 
@@ -87,7 +87,7 @@ namespace Penumbra.UI
                     ImGui.PopStyleVar();
                     ImGui.EndGroup();
                 }
-                else if( ( Meta.Version?.Length ?? 0 ) > 0 )
+                else if( Meta!.Version.Length > 0 )
                 {
                     ImGui.Text( $"(Version {Meta.Version})" );
                 }
@@ -99,11 +99,11 @@ namespace Penumbra.UI
                 ImGui.TextColored( GreyColor, "by" );
 
                 ImGui.SameLine();
-                var author = Meta.Author ?? "";
+                var author = Meta!.Author;
                 if( ImGuiCustom.InputOrText( _editMode, LabelEditAuthor, ref author, 64 )
                     && author != Meta.Author )
                 {
-                    Meta.Author = author.Length > 0 ? author : null;
+                    Meta.Author = author;
                     _selector.SaveCurrentMod();
                 }
 
@@ -117,15 +117,15 @@ namespace Penumbra.UI
                 {
                     ImGui.TextColored( GreyColor, "from" );
                     ImGui.SameLine();
-                    var website = Meta.Website ?? "";
+                    var website = Meta!.Website;
                     if( ImGuiCustom.ResizingTextInput( LabelEditWebsite, ref website, 512 )
                         && website != Meta.Website )
                     {
-                        Meta.Website = website.Length > 0 ? website : null;
+                        Meta.Website = website;
                         _selector.SaveCurrentMod();
                     }
                 }
-                else if( ( Meta.Website?.Length ?? 0 ) > 0 )
+                else if( Meta!.Website.Length > 0 )
                 {
                     if( _currentWebsite != Meta.Website )
                     {
@@ -181,14 +181,14 @@ namespace Penumbra.UI
 
             private void DrawEnabledMark()
             {
-                var enabled = Mod.Enabled;
+                var enabled = Mod!.Enabled;
                 if( ImGui.Checkbox( LabelModEnabled, ref enabled ) )
                 {
                     Mod.Enabled = enabled;
                     var modManager = Service< ModManager >.Get();
-                    modManager.Mods.Save();
+                    modManager.Mods!.Save();
                     modManager.CalculateEffectiveFileList();
-                    _base._menu.EffectiveTab.RebuildFileList( _base._plugin.Configuration.ShowAdvanced );
+                    _base._menu.EffectiveTab.RebuildFileList( _base._plugin!.Configuration!.ShowAdvanced );
                 }
             }
 
@@ -201,7 +201,7 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( ButtonOpenModFolder ) )
                 {
-                    Process.Start( Mod.Mod.ModBasePath.FullName );
+                    Process.Start( Mod!.Mod.ModBasePath.FullName );
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -240,11 +240,11 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( ButtonDeduplicate ) )
                 {
-                    new Deduplicator( Mod.Mod.ModBasePath, Meta ).Run();
+                    new Deduplicator( Mod!.Mod.ModBasePath, Meta! ).Run();
                     _selector.SaveCurrentMod();
                     Mod.Mod.RefreshModFiles();
                     Service< ModManager >.Get().CalculateEffectiveFileList();
-                    _base._menu.EffectiveTab.RebuildFileList( _base._plugin.Configuration.ShowAdvanced );
+                    _base._menu.EffectiveTab.RebuildFileList( _base._plugin!.Configuration!.ShowAdvanced );
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -285,7 +285,7 @@ namespace Penumbra.UI
                     ImGuiCustom.VerticalDistance( HeaderLineDistance );
 
                     DrawEnabledMark();
-                    if( _base._plugin.Configuration.ShowAdvanced )
+                    if( _base._plugin!.Configuration!.ShowAdvanced )
                     {
                         ImGui.SameLine();
                         DrawEditableMark();

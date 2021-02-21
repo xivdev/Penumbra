@@ -64,7 +64,7 @@ namespace Penumbra.UI
                     _browserTab.Draw();
                     InstalledTab.Draw();
 
-                    if( _base._plugin.Configuration.ShowAdvanced )
+                    if( _base._plugin!.Configuration!.ShowAdvanced )
                     {
                         EffectiveTab.Draw();
                     }

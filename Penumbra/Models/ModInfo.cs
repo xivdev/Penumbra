@@ -6,10 +6,13 @@ namespace Penumbra.Models
 {
     public class ModInfo
     {
-        public string FolderName { get; set; }
+        public ModInfo( ResourceMod mod )
+            => Mod = mod;
+
+        public string FolderName { get; set; } = "";
         public bool Enabled { get; set; }
         public int Priority { get; set; }
-        public Dictionary< string, int > Conf { get; set; }
+        public Dictionary< string, int > Conf { get; set; } = new();
 
         [JsonIgnore]
         public ResourceMod Mod { get; set; }

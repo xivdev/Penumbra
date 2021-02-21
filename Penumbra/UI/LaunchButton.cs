@@ -32,7 +32,7 @@ namespace Penumbra.UI
             public ManageModsButton( SettingsInterface ui )
             {
                 _base      = ui;
-                _condition = ui._plugin.PluginInterface.ClientState.Condition;
+                _condition = ui._plugin!.PluginInterface!.ClientState.Condition;
             }
 
             public void Draw()

@@ -13,10 +13,10 @@ namespace Penumbra.API
         public ModsController( Plugin plugin ) => _plugin = plugin;
 
         [Route( HttpVerbs.Get, "/mods" )]
-        public object GetMods()
+        public object? GetMods()
         {
             var modManager = Service< ModManager >.Get();
-            return modManager.Mods.ModSettings.Select( x => new
+            return modManager.Mods?.ModSettings.Select( x => new
             {
                 x.Enabled,
                 x.Priority,

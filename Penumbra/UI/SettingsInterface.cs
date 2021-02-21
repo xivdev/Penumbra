@@ -39,7 +39,7 @@ namespace Penumbra.UI
             _menu.InstalledTab.Selector.ResetModNamesLower();
             _menu.InstalledTab.Selector.ClearSelection();
             // create the directory if it doesn't exist
-            Directory.CreateDirectory( _plugin.Configuration.CurrentCollection );
+            Directory.CreateDirectory( _plugin!.Configuration!.CurrentCollection );
 
             var modManager = Service< ModManager >.Get();
             modManager.DiscoverMods( _plugin.Configuration.CurrentCollection );

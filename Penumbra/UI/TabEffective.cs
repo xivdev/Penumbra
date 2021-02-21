@@ -12,12 +12,12 @@ namespace Penumbra.UI
             private const float  TextSizePadding = 5f;
 
             private ModManager _mods => Service< ModManager >.Get();
-            private          (string, string)[] _fileList;
-            private          float              _maxGamePath;
+            private (string, string)[]? _fileList;
+            private float               _maxGamePath;
 
             public TabEffective( SettingsInterface ui )
             {
-                RebuildFileList( ui._plugin.Configuration.ShowAdvanced );
+                RebuildFileList( ui._plugin!.Configuration!.ShowAdvanced );
             }
 
             public void RebuildFileList( bool advanced )
@@ -54,7 +54,7 @@ namespace Penumbra.UI
 
                 if( ImGui.ListBoxHeader( "##effective_files", AutoFillSize ) )
                 {
-                    foreach( var file in _fileList )
+                    foreach( var file in _fileList ?? Enumerable.Empty<(string, string)>() )
                     {
                         DrawFileLine( file );
                     }

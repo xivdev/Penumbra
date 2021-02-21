@@ -14,7 +14,7 @@ namespace Penumbra.Models
         public string OptionName;
         public string OptionDesc;
 
-        [JsonProperty( ItemConverterType = typeof( SingleOrArrayConverter< string > ) )]
+        [JsonProperty( ItemConverterType = typeof( Util.SingleOrArrayConverter< string > ) )]
         public Dictionary< string, HashSet< string > > OptionFiles;
 
         public bool AddFile( string filePath, string gamePath )

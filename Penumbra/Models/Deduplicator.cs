@@ -12,14 +12,14 @@ namespace Penumbra.Models
         private readonly DirectoryInfo _baseDir;
         private readonly int           _baseDirLength;
         private readonly ModMeta       _mod;
-        private          SHA256        _hasher;
+        private          SHA256?       _hasher;
 
         private readonly Dictionary< long, List< FileInfo > > _filesBySize = new();
 
-        private ref SHA256 Sha()
+        private SHA256 Sha()
         {
             _hasher ??= SHA256.Create();
-            return ref _hasher;
+            return _hasher;
         }
 
         public Deduplicator( DirectoryInfo baseDir, ModMeta mod )

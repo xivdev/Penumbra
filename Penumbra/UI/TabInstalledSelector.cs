@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
+using ImGuiScene;
 using Newtonsoft.Json;
 using Penumbra.Models;
 using Penumbra.Mods;
@@ -32,13 +33,13 @@ namespace Penumbra.UI
             private static readonly string  ArrowDownString     = FontAwesomeIcon.ArrowDown.ToIconString();
 
             private readonly SettingsInterface _base;
-            private ModCollection Mods => Service< ModManager >.Get().Mods;
+            private ModCollection? Mods => Service< ModManager >.Get().Mods;
 
-            private ModInfo  _mod;
-            private int      _index;
-            private int?     _deleteIndex;
-            private string   _modFilter = "";
-            private string[] _modNamesLower;
+            private ModInfo?  _mod;
+            private int       _index;
+            private int?      _deleteIndex;
+            private string    _modFilter = "";
+            private string[]? _modNamesLower;
 
 
             public Selector( SettingsInterface ui )
@@ -49,7 +50,8 @@ namespace Penumbra.UI
 
             public void ResetModNamesLower()
             {
-                _modNamesLower = Mods?.ModSettings?.Select( I => I.Mod.Meta.Name.ToLowerInvariant() ).ToArray() ?? new string[]{};
+                _modNamesLower = Mods?.ModSettings?.Where(I => I.Mod != null)
+                    .Select( I => I.Mod!.Meta.Name.ToLowerInvariant() ).ToArray() ?? new string[]{};
             }
 
             private void DrawPriorityChangeButton( string iconString, bool up, int unavailableWhen )
@@ -60,8 +62,8 @@ namespace Penumbra.UI
                     if( ImGui.Button( iconString, SelectorButtonSizes ) )
                     {
                         SetSelection( _index );
-                        Service< ModManager >.Get().ChangeModPriority( _mod, up );
-                        _modNamesLower.Swap( _index, _index + ( up ? 1 : -1 ) );
+                        Service< ModManager >.Get().ChangeModPriority( _mod!, up );
+                        _modNamesLower!.Swap( _index, _index + ( up ? 1 : -1 ) );
                         _index += up ? 1 : -1;
                     }
                 }
@@ -77,7 +79,7 @@ namespace Penumbra.UI
                 if( ImGui.IsItemHovered() )
                 {
                     ImGui.SetTooltip(
-                        _base._plugin.Configuration.InvertModListOrder ^ up ? TooltipMoveDown : TooltipMoveUp
+                        _base._plugin!.Configuration!.InvertModListOrder ^ up ? TooltipMoveDown : TooltipMoveUp
                     );
                 }
             }
@@ -139,7 +141,7 @@ namespace Penumbra.UI
 
                 DrawPriorityChangeButton( ArrowUpString, false, 0 );
                 ImGui.SameLine();
-                DrawPriorityChangeButton( ArrowDownString, true, Mods?.ModSettings.Count - 1 ?? 0 );
+                DrawPriorityChangeButton( ArrowDownString, true, Mods?.ModSettings?.Count - 1 ?? 0 );
                 ImGui.SameLine();
                 DrawModTrashButton();
                 ImGui.SameLine();
@@ -177,7 +179,7 @@ namespace Penumbra.UI
                 if( ImGui.Button( ButtonYesDelete ) )
                 {
                     ImGui.CloseCurrentPopup();
-                    Service< ModManager >.Get().DeleteMod( _mod.Mod );
+                    Service< ModManager >.Get().DeleteMod( _mod?.Mod );
                     ClearSelection();
                     _base.ReloadMods();
                 }
@@ -210,44 +212,47 @@ namespace Penumbra.UI
                 // Inlay selector list
                 ImGui.BeginChild( LabelSelectorList, new Vector2( SelectorPanelWidth, -ImGui.GetFrameHeightWithSpacing() ), true );
 
-                for( var modIndex = 0; modIndex < Mods.ModSettings.Count; modIndex++ )
+                if( Mods.ModSettings != null )
                 {
-                    var settings = Mods.ModSettings[ modIndex ];
-                    var modName  = settings.Mod.Meta.Name;
-                    if( _modFilter.Length > 0 && !_modNamesLower[ modIndex ].Contains( _modFilter ) )
+                    for( var modIndex = 0; modIndex < Mods.ModSettings.Count; modIndex++ )
                     {
-                        continue;
-                    }
+                        var settings = Mods.ModSettings[ modIndex ];
+                        var modName  = settings.Mod.Meta.Name;
+                        if( _modFilter.Length > 0 && !_modNamesLower![ modIndex ].Contains( _modFilter ) )
+                        {
+                            continue;
+                        }
 
-                    var changedColour = false;
-                    if( !settings.Enabled )
-                    {
-                        ImGui.PushStyleColor( ImGuiCol.Text, DisabledModColor );
-                        changedColour = true;
-                    }
-                    else if( settings.Mod.FileConflicts.Any() )
-                    {
-                        ImGui.PushStyleColor( ImGuiCol.Text, ConflictingModColor );
-                        changedColour = true;
-                    }
+                        var changedColour = false;
+                        if( !settings.Enabled )
+                        {
+                            ImGui.PushStyleColor( ImGuiCol.Text, DisabledModColor );
+                            changedColour = true;
+                        }
+                        else if( settings.Mod.FileConflicts.Any() )
+                        {
+                            ImGui.PushStyleColor( ImGuiCol.Text, ConflictingModColor );
+                            changedColour = true;
+                        }
 
 #if DEBUG
-                    var selected = ImGui.Selectable(
-                        $"id={modIndex} {modName}",
-                        modIndex == _index
-                    );
+                        var selected = ImGui.Selectable(
+                            $"id={modIndex} {modName}",
+                            modIndex == _index
+                        );
 #else
-                    var selected = ImGui.Selectable( modName, modIndex == _index );
+                        var selected = ImGui.Selectable( modName, modIndex == _index );
 #endif
 
-                    if( changedColour )
-                    {
-                        ImGui.PopStyleColor();
-                    }
+                        if( changedColour )
+                        {
+                            ImGui.PopStyleColor();
+                        }
 
-                    if( selected )
-                    {
-                        SetSelection( modIndex, settings );
+                        if( selected )
+                        {
+                            SetSelection( modIndex, settings );
+                        }
                     }
                 }
 
@@ -259,9 +264,9 @@ namespace Penumbra.UI
                 DrawDeleteModal();
             }
 
-            public ModInfo Mod() => _mod;
+            public ModInfo? Mod() => _mod;
 
-            private void SetSelection( int idx, ModInfo info )
+            private void SetSelection( int idx, ModInfo? info )
             {
                 _mod = info;
                 if( idx != _index )
@@ -286,7 +291,7 @@ namespace Penumbra.UI
                 }
                 else
                 {
-                    SetSelection( idx, Mods.ModSettings[ idx ] );
+                    SetSelection( idx, Mods!.ModSettings![ idx ] );
                 }
             }
 
@@ -294,18 +299,8 @@ namespace Penumbra.UI
 
             public void SelectModByName( string name )
             {
-                for( var modIndex = 0; modIndex < Mods.ModSettings.Count; modIndex++ )
-                {
-                    var mod = Mods.ModSettings[ modIndex ];
-
-                    if( mod.Mod.Meta.Name != name )
-                    {
-                        continue;
-                    }
-
-                    SetSelection( modIndex, mod );
-                    return;
-                }
+                var idx = Mods?.ModSettings?.FindIndex( mod => mod.Mod.Meta.Name == name ) ?? -1;
+                SetSelection( idx );
             }
 
             private string GetCurrentModMetaFile()
@@ -316,18 +311,21 @@ namespace Penumbra.UI
                 var metaPath = GetCurrentModMetaFile();
                 if( metaPath.Length > 0 && File.Exists( metaPath ) )
                 {
-                    _mod.Mod.Meta = ModMeta.LoadFromFile( metaPath ) ?? _mod.Mod.Meta;
+                    _mod!.Mod.Meta = ModMeta.LoadFromFile( metaPath ) ?? _mod.Mod.Meta;
                     _base._menu.InstalledTab.ModPanel.Details.ResetState();
                 }
 
-                _mod.Mod.RefreshModFiles();
+                _mod!.Mod.RefreshModFiles();
                 Service< ModManager >.Get().CalculateEffectiveFileList();
-                _base._menu.EffectiveTab.RebuildFileList( _base._plugin.Configuration.ShowAdvanced );
+                _base._menu.EffectiveTab.RebuildFileList( _base._plugin!.Configuration!.ShowAdvanced );
                 ResetModNamesLower();
             }
 
             public string SaveCurrentMod()
             {
+                if( _mod == null )
+                    return "";
+
                 var metaPath = GetCurrentModMetaFile();
                 if( metaPath.Length > 0 )
                 {

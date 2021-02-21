@@ -9,13 +9,13 @@ namespace Penumbra.Models
     public class ModMeta
     {
         public uint FileVersion { get; set; }
-        public string Name { get; set; }
-        public string Author { get; set; }
-        public string Description { get; set; }
+        public string Name { get; set; } = "Mod";
+        public string Author { get; set; } = "";
+        public string Description { get; set; } = "";
 
-        public string Version { get; set; }
+        public string Version { get; set; } = "";
 
-        public string Website { get; set; }
+        public string Website { get; set; } = "";
 
         public List< string > ChangedItems { get; set; } = new();
 
@@ -26,14 +26,12 @@ namespace Penumbra.Models
         [JsonIgnore]
         public bool HasGroupWithConfig { get; set; } = false;
 
-        public static ModMeta LoadFromFile( string filePath )
+        public static ModMeta? LoadFromFile( string filePath )
         {
             try
             {
                 var meta = JsonConvert.DeserializeObject< ModMeta >( File.ReadAllText( filePath ) );
-                meta.HasGroupWithConfig =
-                    meta.Groups != null
-                    && meta.Groups.Count > 0
+                meta.HasGroupWithConfig = meta.Groups.Count > 0
                     && meta.Groups.Values.Any( G => G.SelectionType == SelectType.Multi || G.Options.Count > 1 );
 
                 return meta;

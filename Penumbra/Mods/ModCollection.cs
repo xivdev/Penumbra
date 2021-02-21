@@ -12,11 +12,12 @@ namespace Penumbra.Mods
     {
         private readonly DirectoryInfo _basePath;
 
-        public List< ModInfo > ModSettings { get; set; }
-        public ResourceMod[] EnabledMods { get; set; }
+        public List< ModInfo >? ModSettings { get; set; }
+        public ResourceMod[]? EnabledMods { get; set; }
 
 
-        public ModCollection( DirectoryInfo basePath ) => _basePath = basePath;
+        public ModCollection( DirectoryInfo basePath )
+            => _basePath = basePath;
 
         public void Load( bool invertOrder = false )
         {
@@ -61,20 +62,10 @@ namespace Penumbra.Mods
                     continue;
                 }
 
-                var meta = ModMeta.LoadFromFile( metaFile.FullName );
-                if( meta == null )
-                {
-                    PluginLog.LogError( "mod meta is invalid for resource mod: {ResourceModFile}", metaFile.FullName );
-                    continue;
-                }
+                var meta = ModMeta.LoadFromFile( metaFile.FullName ) ?? new ModMeta();
 
-                var mod = new ResourceMod
-                {
-                    Meta        = meta,
-                    ModBasePath = modDir
-                };
-
-                var modEntry = FindOrCreateModSettings( mod );
+                var mod = new ResourceMod( meta, modDir );
+                FindOrCreateModSettings( mod );
                 foundMods.Add( modDir.Name );
                 mod.RefreshModFiles();
             }
@@ -142,9 +133,9 @@ namespace Penumbra.Mods
         }
 
 
-        public ModInfo FindModSettings( string name )
+        public ModInfo? FindModSettings( string name )
         {
-            var settings = ModSettings.FirstOrDefault(
+            var settings = ModSettings?.FirstOrDefault(
                 x => string.Equals( x.FolderName, name, StringComparison.InvariantCultureIgnoreCase )
             );
 #if DEBUG
@@ -155,18 +146,17 @@ namespace Penumbra.Mods
 
         public ModInfo AddModSettings( ResourceMod mod )
         {
-            var entry = new ModInfo
+            var entry = new ModInfo(mod)
             {
-                Priority   = ModSettings.Count,
+                Priority   = ModSettings?.Count ?? 0,
                 FolderName = mod.ModBasePath.Name,
                 Enabled    = true,
-                Mod        = mod
             };
 
 #if DEBUG
             PluginLog.Information( "creating mod settings {ModName}", entry.FolderName );
 #endif
-
+            ModSettings ??= new List< ModInfo >();
             ModSettings.Add( entry );
             return entry;
         }
@@ -174,19 +164,20 @@ namespace Penumbra.Mods
         public ModInfo FindOrCreateModSettings( ResourceMod mod )
         {
             var settings = FindModSettings( mod.ModBasePath.Name );
-            if( settings != null )
+            if( settings == null )
             {
-                settings.Mod = mod;
-                return settings;
+                return AddModSettings( mod );
             }
 
-            return AddModSettings( mod );
+            settings.Mod = mod;
+            return settings;
+
         }
 
         public IEnumerable< ModInfo > GetOrderedAndEnabledModSettings( bool invertOrder = false )
         {
-            var query = ModSettings
-                .Where( x => x.Enabled );
+            var query = ModSettings?
+                .Where( x => x.Enabled ) ?? Enumerable.Empty<ModInfo>();
 
             if( !invertOrder )
             {

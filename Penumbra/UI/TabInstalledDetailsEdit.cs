@@ -36,7 +36,7 @@ namespace Penumbra.UI
             private bool DrawEditGroupSelector()
             {
                 ImGui.SetNextItemWidth( OptionSelectionWidth );
-                if( Meta.Groups.Count == 0 )
+                if( Meta!.Groups.Count == 0 )
                 {
                     ImGui.Combo( LabelGroupSelect, ref _selectedGroupIndex, TextNoOptionAvailable, 1 );
                     return false;
@@ -63,7 +63,7 @@ namespace Penumbra.UI
                     return false;
                 }
 
-                var group = ( InstallerInfo )_selectedGroup;
+                var group = ( InstallerInfo )_selectedGroup!;
                 if( ImGui.Combo( LabelOptionSelect, ref _selectedOptionIndex, group.Options.Select( O => O.OptionName ).ToArray(),
                     group.Options.Count ) )
                 {
@@ -86,7 +86,7 @@ namespace Penumbra.UI
                     ImGui.SetNextItemWidth( -1 );
                     if( ImGui.ListBoxHeader( LabelFileListHeader, AutoFillSize - new Vector2( 0, 1.5f * ImGui.GetTextLineHeight() ) ) )
                     {
-                        for( var i = 0; i < Mod.Mod.ModFiles.Count; ++i )
+                        for( var i = 0; i < Mod!.Mod.ModFiles.Count; ++i )
                         {
                             DrawFileAndGamePaths( i );
                         }
@@ -107,9 +107,9 @@ namespace Penumbra.UI
             {
                 var groupName = group.GroupName;
                 if( ImGuiCustom.BeginFramedGroupEdit( ref groupName )
-                    && groupName != group.GroupName && !Meta.Groups.ContainsKey( groupName ) )
+                    && groupName != group.GroupName && !Meta!.Groups.ContainsKey( groupName ) )
                 {
-                    var oldConf = Mod.Conf[ group.GroupName ];
+                    var oldConf = Mod!.Conf[ group.GroupName ];
                     Meta.Groups.Remove( group.GroupName );
                     Mod.Conf.Remove( group.GroupName );
                     if( groupName.Length > 0 )
@@ -142,7 +142,7 @@ namespace Penumbra.UI
             private void DrawMultiSelectorEdit( InstallerInfo group )
             {
                 var nameBoxStart = CheckMarkSize;
-                var flag         = Mod.Conf[ group.GroupName ];
+                var flag         = Mod!.Conf[ group.GroupName ];
 
                 var modChanged = DrawMultiSelectorEditBegin( group );
 
@@ -194,9 +194,9 @@ namespace Penumbra.UI
             {
                 var groupName = group.GroupName;
                 if( ImGui.InputText( $"##{groupName}_add", ref groupName, 64, ImGuiInputTextFlags.EnterReturnsTrue )
-                    && !Meta.Groups.ContainsKey( groupName ) )
+                    && !Meta!.Groups.ContainsKey( groupName ) )
                 {
-                    var oldConf = Mod.Conf[ group.GroupName ];
+                    var oldConf = Mod!.Conf[ group.GroupName ];
                     if( groupName != group.GroupName )
                     {
                         Meta.Groups.Remove( group.GroupName );
@@ -218,7 +218,7 @@ namespace Penumbra.UI
 
             private float DrawSingleSelectorEdit( InstallerInfo group )
             {
-                var code             = Mod.Conf[ group.GroupName ];
+                var code             = Mod!.Conf[ group.GroupName ];
                 var selectionChanged = false;
                 var modChanged       = false;
                 if( ImGuiCustom.RenameableCombo( $"##{group.GroupName}", ref code, out var newName,
@@ -283,7 +283,7 @@ namespace Penumbra.UI
 
             private void AddNewGroup( string newGroup, SelectType selectType )
             {
-                if( Meta.Groups.ContainsKey( newGroup ) || newGroup.Length <= 0 )
+                if( Meta!.Groups.ContainsKey( newGroup ) || newGroup.Length <= 0 )
                 {
                     return;
                 }

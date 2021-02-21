@@ -27,7 +27,7 @@ namespace Penumbra.UI
 
             private          bool              _isImportRunning = false;
             private          bool              _hasError        = false;
-            private          TexToolsImport    _texToolsImport  = null!;
+            private          TexToolsImport?   _texToolsImport;
             private readonly SettingsInterface _base;
 
             public TabImport( SettingsInterface ui ) => _base = ui;
@@ -59,7 +59,7 @@ namespace Penumbra.UI
 
                             try
                             {
-                                _texToolsImport = new TexToolsImport( new DirectoryInfo( _base._plugin.Configuration.CurrentCollection ) );
+                                _texToolsImport = new TexToolsImport( new DirectoryInfo( _base._plugin!.Configuration!.CurrentCollection ) );
                                 _texToolsImport.ImportModPack( new FileInfo( fileName ) );
 
                                 PluginLog.Log( $"-> {fileName} OK!" );

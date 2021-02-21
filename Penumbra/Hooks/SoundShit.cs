@@ -13,7 +13,7 @@ namespace Penumbra.Hooks
 
         public SoundShit( Plugin plugin )
         {
-            var scanner = plugin.PluginInterface.TargetModuleScanner;
+            var scanner = plugin!.PluginInterface!.TargetModuleScanner;
 
             var fw = plugin.PluginInterface.Framework.Address.BaseAddress;
 
