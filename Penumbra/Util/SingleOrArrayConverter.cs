@@ -24,11 +24,20 @@ namespace Penumbra.Util
                 : new HashSet< T >();
         }
 
-        public override bool CanWrite => false;
+        public override bool CanWrite => true;
 
         public override void WriteJson( JsonWriter writer, object? value, JsonSerializer serializer )
         {
-            throw new NotImplementedException();
+            writer.WriteStartArray();
+            if( value != null )
+            {
+                var v = ( HashSet< T > )value;
+                foreach( var val in v )
+                {
+                    serializer.Serialize( writer, val?.ToString() );
+                }
+            }
+            writer.WriteEndArray();
         }
     }
 }
