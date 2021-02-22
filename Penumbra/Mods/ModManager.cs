@@ -29,32 +29,6 @@ namespace Penumbra.Mods
             DiscoverMods( _basePath );
         }
 
-//         private void FileSystemWatcherOnChanged( object sender, FileSystemEventArgs e )
-//         {
-// #if DEBUG
-//             PluginLog.Verbose( "file changed: {FullPath}", e.FullPath );
-// #endif
-//
-//             if( _plugin.ImportInProgress )
-//             {
-//                 return;
-//             }
-//
-//             if( _plugin.Configuration.DisableFileSystemNotifications )
-//             {
-//                 return;
-//             }
-//
-//             var file = e.FullPath;
-//
-//             if( !ResolvedFiles.Any( x => x.Value.FullName == file ) )
-//             {
-//                 return;
-//             }
-//
-//             PluginLog.Log( "a loaded file has been modified - file: {FullPath}", file );
-//             _plugin.GameUtils.ReloadPlayerResources();
-//         }
 
         public void DiscoverMods( string basePath )
         {
@@ -76,21 +50,7 @@ namespace Penumbra.Mods
 
             _basePath = basePath;
 
-            // haha spaghet
-            // _fileSystemWatcher?.Dispose();
-            // _fileSystemWatcher = new FileSystemWatcher( _basePath.FullName )
-            // {
-            //     NotifyFilter = NotifyFilters.LastWrite |
-            //                    NotifyFilters.FileName |
-            //                    NotifyFilters.DirectoryName,
-            //     IncludeSubdirectories = true,
-            //     EnableRaisingEvents = true
-            // };
-            //
-            // _fileSystemWatcher.Changed += FileSystemWatcherOnChanged;
-            // _fileSystemWatcher.Created += FileSystemWatcherOnChanged;
-            // _fileSystemWatcher.Deleted += FileSystemWatcherOnChanged;
-            // _fileSystemWatcher.Renamed += FileSystemWatcherOnChanged;
+            // FileSystemPasta();
 
             Mods = new ModCollection( basePath );
             Mods.Load();
@@ -287,5 +247,51 @@ namespace Penumbra.Mods
         {
             // _fileSystemWatcher?.Dispose();
         }
+
+//         private void FileSystemWatcherOnChanged( object sender, FileSystemEventArgs e )
+//         {
+// #if DEBUG
+//             PluginLog.Verbose( "file changed: {FullPath}", e.FullPath );
+// #endif
+//
+//             if( _plugin.ImportInProgress )
+//             {
+//                 return;
+//             }
+//
+//             if( _plugin.Configuration.DisableFileSystemNotifications )
+//             {
+//                 return;
+//             }
+//
+//             var file = e.FullPath;
+//
+//             if( !ResolvedFiles.Any( x => x.Value.FullName == file ) )
+//             {
+//                 return;
+//             }
+//
+//             PluginLog.Log( "a loaded file has been modified - file: {FullPath}", file );
+//             _plugin.GameUtils.ReloadPlayerResources();
+//         }
+// 
+//         private void FileSystemPasta()
+//         {
+//              haha spaghet
+//              _fileSystemWatcher?.Dispose();
+//              _fileSystemWatcher = new FileSystemWatcher( _basePath.FullName )
+//              {
+//                  NotifyFilter = NotifyFilters.LastWrite |
+//                                 NotifyFilters.FileName |
+//                                 NotifyFilters.DirectoryName,
+//                  IncludeSubdirectories = true,
+//                  EnableRaisingEvents = true
+//              };
+//             
+//              _fileSystemWatcher.Changed += FileSystemWatcherOnChanged;
+//              _fileSystemWatcher.Created += FileSystemWatcherOnChanged;
+//              _fileSystemWatcher.Deleted += FileSystemWatcherOnChanged;
+//              _fileSystemWatcher.Renamed += FileSystemWatcherOnChanged;
+//         }
     }
 }
