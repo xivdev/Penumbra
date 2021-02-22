@@ -29,7 +29,7 @@ namespace Penumbra.Models
         }
     }
 
-    public struct InstallerInfo
+    public struct OptionGroup
     {
         public string GroupName;
 

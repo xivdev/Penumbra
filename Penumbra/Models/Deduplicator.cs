@@ -115,7 +115,7 @@ namespace Penumbra.Models
                 const string duplicates = "Duplicates";
                 if( !_mod.Groups.ContainsKey( duplicates ) )
                 {
-                    InstallerInfo info = new()
+                    OptionGroup info = new()
                     {
                         GroupName     = duplicates,
                         SelectionType = SelectType.Single,

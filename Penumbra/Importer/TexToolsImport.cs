@@ -21,7 +21,7 @@ namespace Penumbra.Importer
 
         public ImporterState State { get; private set; }
 
-        public long TotalProgress { get; private set; } = 0;
+        public long TotalProgress { get; private set; }
         public long CurrentProgress { get; private set; }
 
         public float Progress
@@ -249,7 +249,7 @@ namespace Penumbra.Importer
 
         private static void AddMeta( DirectoryInfo baseFolder, DirectoryInfo groupFolder, ModGroup group, ModMeta meta )
         {
-            var inf = new InstallerInfo
+            var inf = new OptionGroup
             {
                 SelectionType = group.SelectionType,
                 GroupName     = group.GroupName!,

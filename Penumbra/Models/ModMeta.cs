@@ -21,7 +21,7 @@ namespace Penumbra.Models
 
         public Dictionary< string, string > FileSwaps { get; } = new();
 
-        public Dictionary< string, InstallerInfo > Groups { get; set; } = new();
+        public Dictionary< string, OptionGroup > Groups { get; set; } = new();
 
         [JsonIgnore]
         public bool HasGroupWithConfig { get; set; } = false;

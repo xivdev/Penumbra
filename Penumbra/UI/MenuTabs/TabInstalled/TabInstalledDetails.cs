@@ -55,7 +55,7 @@ namespace Penumbra.UI
 
             private bool                           _editMode            = false;
             private int                            _selectedGroupIndex  = 0;
-            private InstallerInfo?                 _selectedGroup       = null;
+            private OptionGroup?                 _selectedGroup       = null;
             private int                            _selectedOptionIndex = 0;
             private Option?                        _selectedOption      = null;
             private (string label, string name)[]? _changedItemsList    = null;
@@ -99,7 +99,7 @@ namespace Penumbra.UI
 
                 if( _selectedGroup?.Options.Count > 0 )
                 {
-                    _selectedOption = ( ( InstallerInfo )_selectedGroup ).Options[ _selectedOptionIndex ];
+                    _selectedOption = ( ( OptionGroup )_selectedGroup ).Options[ _selectedOptionIndex ];
                 }
                 else
                 {
@@ -545,7 +545,7 @@ namespace Penumbra.UI
                 }
             }
 
-            private void DrawMultiSelectorCheckBox( InstallerInfo group, int idx, int flag, string label )
+            private void DrawMultiSelectorCheckBox( OptionGroup group, int idx, int flag, string label )
             {
                 var opt        = group.Options[ idx ];
                 var enabled    = ( flag & ( 1 << idx ) ) != 0;
@@ -557,7 +557,7 @@ namespace Penumbra.UI
                 }
             }
 
-            private void DrawMultiSelector( InstallerInfo group )
+            private void DrawMultiSelector( OptionGroup group )
             {
                 if( group.Options.Count == 0 )
                 {
@@ -574,7 +574,7 @@ namespace Penumbra.UI
                 ImGuiCustom.EndFramedGroup();
             }
 
-            private void DrawSingleSelector( InstallerInfo group )
+            private void DrawSingleSelector( OptionGroup group )
             {
                 if( group.Options.Count < 2 )
                 {

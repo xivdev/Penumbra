@@ -63,7 +63,7 @@ namespace Penumbra.UI
                     return false;
                 }
 
-                var group = ( InstallerInfo )_selectedGroup!;
+                var group = ( OptionGroup )_selectedGroup!;
                 if( ImGui.Combo( LabelOptionSelect, ref _selectedOptionIndex, group.Options.Select( O => O.OptionName ).ToArray(),
                     group.Options.Count ) )
                 {
@@ -103,7 +103,7 @@ namespace Penumbra.UI
                 }
             }
 
-            private bool DrawMultiSelectorEditBegin( InstallerInfo group )
+            private bool DrawMultiSelectorEditBegin( OptionGroup group )
             {
                 var groupName = group.GroupName;
                 if( ImGuiCustom.BeginFramedGroupEdit( ref groupName )
@@ -114,7 +114,7 @@ namespace Penumbra.UI
                     Mod.Conf.Remove( group.GroupName );
                     if( groupName.Length > 0 )
                     {
-                        Meta.Groups[ groupName ] = new InstallerInfo()
+                        Meta.Groups[ groupName ] = new OptionGroup()
                             { GroupName = groupName, SelectionType = SelectType.Multi, Options = group.Options };
                         Mod.Conf[ groupName ] = oldConf;
                     }
@@ -125,7 +125,7 @@ namespace Penumbra.UI
                 return false;
             }
 
-            private void DrawMultiSelectorEditAdd( InstallerInfo group, float nameBoxStart )
+            private void DrawMultiSelectorEditAdd( OptionGroup group, float nameBoxStart )
             {
                 var newOption = "";
                 ImGui.SetCursorPosX( nameBoxStart );
@@ -139,7 +139,7 @@ namespace Penumbra.UI
                 }
             }
 
-            private void DrawMultiSelectorEdit( InstallerInfo group )
+            private void DrawMultiSelectorEdit( OptionGroup group )
             {
                 var nameBoxStart = CheckMarkSize;
                 var flag         = Mod!.Conf[ group.GroupName ];
@@ -190,7 +190,7 @@ namespace Penumbra.UI
                 ImGuiCustom.EndFramedGroup();
             }
 
-            private bool DrawSingleSelectorEditGroup( InstallerInfo group )
+            private bool DrawSingleSelectorEditGroup( OptionGroup group )
             {
                 var groupName = group.GroupName;
                 if( ImGui.InputText( $"##{groupName}_add", ref groupName, 64, ImGuiInputTextFlags.EnterReturnsTrue )
@@ -206,7 +206,7 @@ namespace Penumbra.UI
                     if( groupName.Length > 0 )
                     {
                         Meta.Groups.Add( groupName,
-                            new InstallerInfo() { GroupName = groupName, Options = group.Options, SelectionType = SelectType.Single } );
+                            new OptionGroup() { GroupName = groupName, Options = group.Options, SelectionType = SelectType.Single } );
                         Mod.Conf[ groupName ] = oldConf;
                     }
 
@@ -216,7 +216,7 @@ namespace Penumbra.UI
                 return false;
             }
 
-            private float DrawSingleSelectorEdit( InstallerInfo group )
+            private float DrawSingleSelectorEdit( OptionGroup group )
             {
                 var code             = Mod!.Conf[ group.GroupName ];
                 var selectionChanged = false;
@@ -288,7 +288,7 @@ namespace Penumbra.UI
                     return;
                 }
 
-                Meta.Groups[ newGroup ] = new InstallerInfo()
+                Meta.Groups[ newGroup ] = new OptionGroup()
                 {
                     GroupName     = newGroup,
                     SelectionType = selectType,
