@@ -5,7 +5,7 @@ namespace Penumbra.UI
 {
     public partial class SettingsInterface
     {
-        private partial class SettingsMenu
+        private class SettingsMenu
         {
             private const string PenumbraSettingsLabel = "PenumbraSettings";
 

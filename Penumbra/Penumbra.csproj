@@ -52,7 +52,7 @@
             <Private>False</Private>
         </Reference>
     </ItemGroup>
-    
+
     <ItemGroup>
         <Reference Include="System.Windows.Forms" />
         <Reference Include="System.Data.DataSetExtensions" />
@@ -71,9 +71,5 @@
       <None Update="Penumbra.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="UI\Partials\Mod" />
     </ItemGroup>
 </Project>
