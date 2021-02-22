@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
 using Penumbra.Models;
+using Penumbra.Util;
 
 namespace Penumbra.Mods
 {
@@ -20,7 +20,7 @@ namespace Penumbra.Mods
 
         public List< FileInfo > ModFiles { get; } = new();
 
-        public Dictionary< string, List< string > > FileConflicts { get; } = new();
+        public Dictionary< string, List< GamePath > > FileConflicts { get; } = new();
 
         public void RefreshModFiles()
         {
@@ -33,7 +33,7 @@ namespace Penumbra.Mods
             }
         }
 
-        public void AddConflict( string modName, string path )
+        public void AddConflict( string modName, GamePath path )
         {
             if( FileConflicts.TryGetValue( modName, out var arr ) )
             {
@@ -45,10 +45,7 @@ namespace Penumbra.Mods
                 return;
             }
 
-            FileConflicts[ modName ] = new List< string >
-            {
-                path
-            };
+            FileConflicts[ modName ] = new List< GamePath > { path };
         }
     }
 }

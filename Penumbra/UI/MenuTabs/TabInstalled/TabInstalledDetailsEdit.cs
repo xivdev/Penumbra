@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using ImGuiNET;
 using Penumbra.Models;
+using Penumbra.Util;
 
 namespace Penumbra.UI
 {
@@ -134,7 +135,7 @@ namespace Penumbra.UI
                     && newOption.Length != 0 )
                 {
                     group.Options.Add( new Option()
-                        { OptionName = newOption, OptionDesc = "", OptionFiles = new Dictionary< string, HashSet< string > >() } );
+                        { OptionName = newOption, OptionDesc = "", OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >() } );
                     _selector.SaveCurrentMod();
                 }
             }
@@ -232,7 +233,7 @@ namespace Penumbra.UI
                             modChanged                  = true;
                             Mod.Conf[ group.GroupName ] = code;
                             group.Options.Add( new Option()
-                                { OptionName = newName, OptionDesc = "", OptionFiles = new Dictionary< string, HashSet< string > >() } );
+                                { OptionName = newName, OptionDesc = "", OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >() } );
                         }
                     }
                     else

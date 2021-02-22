@@ -110,6 +110,9 @@ namespace Penumbra.Util
         public static GamePath GenerateUnchecked( string path )
             => new( path, true );
 
+        public static GamePath GenerateUncheckedLower( string path )
+            => new( Lower(path), true );
+
         public static implicit operator bool( GamePath gamePath )
             => gamePath._path.Length > 0;
 

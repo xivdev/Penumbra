@@ -4,13 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using Dalamud.Plugin;
+using Penumbra.Util;
 
 namespace Penumbra.Models
 {
     public class Deduplicator
     {
         private readonly DirectoryInfo _baseDir;
-        private readonly int           _baseDirLength;
         private readonly ModMeta       _mod;
         private          SHA256?       _hasher;
 
@@ -24,10 +24,8 @@ namespace Penumbra.Models
 
         public Deduplicator( DirectoryInfo baseDir, ModMeta mod )
         {
-            _baseDir       = baseDir;
-            _baseDirLength = baseDir.FullName.Length;
-            _mod           = mod;
-
+            _baseDir = baseDir;
+            _mod     = mod;
             BuildDict();
         }
 
@@ -89,8 +87,8 @@ namespace Penumbra.Models
 
         private void ReplaceFile( FileInfo f1, FileInfo f2 )
         {
-            var relName1 = f1.FullName.Substring( _baseDirLength ).TrimStart( '\\' );
-            var relName2 = f2.FullName.Substring( _baseDirLength ).TrimStart( '\\' );
+            RelPath relName1 = new( f1, _baseDir );
+            RelPath relName2 = new( f2, _baseDir );
 
             var inOption = false;
             foreach( var group in _mod.Groups.Select( g => g.Value.Options ) )
@@ -125,15 +123,15 @@ namespace Penumbra.Models
                             {
                                 OptionName  = "Required",
                                 OptionDesc  = "",
-                                OptionFiles = new Dictionary< string, HashSet< string > >()
+                                OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >()
                             }
                         }
                     };
                     _mod.Groups.Add( duplicates, info );
                 }
 
-                _mod.Groups[ duplicates ].Options[ 0 ].AddFile( relName1, relName2.Replace( '\\', '/' ) );
-                _mod.Groups[ duplicates ].Options[ 0 ].AddFile( relName1, relName1.Replace( '\\', '/' ) );
+                _mod.Groups[ duplicates ].Options[ 0 ].AddFile( relName1, new GamePath( relName2 ) );
+                _mod.Groups[ duplicates ].Options[ 0 ].AddFile( relName1, new GamePath( relName1 ) );
             }
 
             PluginLog.Information( $"File {relName1} and {relName2} are identical. Deleting the second." );

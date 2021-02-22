@@ -1,6 +1,8 @@
+using System.IO;
 using System.Linq;
 using ImGuiNET;
 using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.UI
 {
@@ -12,8 +14,7 @@ namespace Penumbra.UI
             private const float  TextSizePadding = 5f;
 
             private ModManager _mods => Service< ModManager >.Get();
-            private (string, string)[]? _fileList;
-            private float               _maxGamePath;
+            private float _maxGamePath;
 
             public TabEffective( SettingsInterface ui )
             {
@@ -24,24 +25,24 @@ namespace Penumbra.UI
             {
                 if( advanced )
                 {
-                    _fileList    = _mods.ResolvedFiles.Select( P => ( P.Value.FullName, P.Key ) ).ToArray();
-                    _maxGamePath = ( _fileList.Length > 0 ? _fileList.Max( P => ImGui.CalcTextSize( P.Item2 ).X ) : 0f ) + TextSizePadding;
+                    _maxGamePath = TextSizePadding + ( _mods.ResolvedFiles.Count > 0
+                        ? _mods.ResolvedFiles.Keys.Max( f => ImGui.CalcTextSize( f ).X )
+                        : 0f );
                 }
                 else
                 {
-                    _fileList    = null;
                     _maxGamePath = 0f;
                 }
             }
 
-            private void DrawFileLine( (string, string) file )
+            private void DrawFileLine( FileInfo file, GamePath path )
             {
-                ImGui.Selectable( file.Item2 );
+                ImGui.Selectable( path );
                 ImGui.SameLine();
                 ImGui.SetCursorPosX( _maxGamePath );
                 ImGui.TextUnformatted( "  <-- " );
                 ImGui.SameLine();
-                ImGui.Selectable( file.Item1 );
+                ImGui.Selectable( file.FullName );
             }
 
             public void Draw()
@@ -54,9 +55,9 @@ namespace Penumbra.UI
 
                 if( ImGui.ListBoxHeader( "##effective_files", AutoFillSize ) )
                 {
-                    foreach( var file in _fileList ?? Enumerable.Empty<(string, string)>() )
+                    foreach( var file in _mods.ResolvedFiles )
                     {
-                        DrawFileLine( file );
+                        DrawFileLine( file.Value, file.Key );
                     }
 
                     ImGui.ListBoxFooter();

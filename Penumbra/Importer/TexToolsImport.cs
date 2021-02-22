@@ -9,6 +9,7 @@ using Lumina.Data;
 using Newtonsoft.Json;
 using Penumbra.Importer.Models;
 using Penumbra.Models;
+using Penumbra.Util;
 
 namespace Penumbra.Importer
 {
@@ -261,15 +262,14 @@ namespace Penumbra.Importer
                 {
                     OptionName  = opt.Name!,
                     OptionDesc  = string.IsNullOrEmpty( opt.Description ) ? "" : opt.Description!,
-                    OptionFiles = new Dictionary< string, HashSet< string > >()
+                    OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >()
                 };
                 var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name!.ReplaceInvalidPathSymbols() ) );
                 if( optDir.Exists )
                 {
                     foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
                     {
-                        option.AddFile( file.FullName.Substring( baseFolder.FullName.Length ).TrimStart( '\\' ),
-                            file.FullName.Substring( optDir.FullName.Length ).TrimStart( '\\' ).Replace( '\\', '/' ) );
+                        option.AddFile( new RelPath( file, baseFolder ), new GamePath( file, optDir ) );
                     }
                 }
 

@@ -114,16 +114,19 @@ namespace Penumbra.Hooks
             {
                 if( GetResourceSyncHook == null )
                 {
-                    PluginLog.Error("[GetResourceHandler] GetResourceSync is null."  );
+                    PluginLog.Error( "[GetResourceHandler] GetResourceSync is null." );
                     return null;
                 }
+
                 return GetResourceSyncHook.OriginalFunction( pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown );
             }
+
             if( GetResourceAsyncHook == null )
             {
-                PluginLog.Error("[GetResourceHandler] GetResourceAsync is null."  );
+                PluginLog.Error( "[GetResourceHandler] GetResourceAsync is null." );
                 return null;
             }
+
             return GetResourceAsyncHook.OriginalFunction( pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }
 
@@ -138,7 +141,7 @@ namespace Penumbra.Hooks
             bool isUnknown
         )
         {
-            var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pPath ) );
+            var gameFsPath = GamePath.GenerateUncheckedLower( Marshal.PtrToStringAnsi( new IntPtr( pPath ) )! );
 
             if( LogAllFiles )
             {
@@ -152,16 +155,15 @@ namespace Penumbra.Hooks
                 return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
             }
 
-            var replacementPath = modManager.ResolveSwappedOrReplacementFilePath( gameFsPath! );
+            var replacementPath = modManager.ResolveSwappedOrReplacementFilePath( gameFsPath );
 
             // path must be < 260 because statically defined array length :(
-            if( replacementPath == null || replacementPath.Length >= 260 )
+            if( replacementPath == null )
             {
                 return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
             }
 
-            var cleanPath = replacementPath.Replace( '\\', '/' );
-            var path      = Encoding.ASCII.GetBytes( cleanPath );
+            var path = Encoding.ASCII.GetBytes( replacementPath );
 
             var bPath = stackalloc byte[path.Length + 1];
             Marshal.Copy( path, 0, new IntPtr( bPath ), path.Length );
@@ -185,7 +187,7 @@ namespace Penumbra.Hooks
 
             var isRooted = Path.IsPathRooted( gameFsPath );
 
-            if( gameFsPath == null || gameFsPath.Length >= 260 || !isRooted || ReadFile == null)
+            if( gameFsPath == null || gameFsPath.Length >= 260 || !isRooted || ReadFile == null )
             {
                 return ReadSqpackHook?.OriginalFunction( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
             }
@@ -216,9 +218,9 @@ namespace Penumbra.Hooks
                 return;
             }
 
-            if( ReadSqpackHook == null || GetResourceSyncHook == null || GetResourceAsyncHook == null)
+            if( ReadSqpackHook == null || GetResourceSyncHook == null || GetResourceAsyncHook == null )
             {
-                PluginLog.Error("[GetResourceHandler] Could not activate hooks because at least one was not set."  );
+                PluginLog.Error( "[GetResourceHandler] Could not activate hooks because at least one was not set." );
                 return;
             }
 
@@ -229,7 +231,7 @@ namespace Penumbra.Hooks
             ReadSqpackHook.Enable();
             GetResourceSyncHook.Enable();
             GetResourceAsyncHook.Enable();
-            
+
             IsEnabled = true;
         }
 

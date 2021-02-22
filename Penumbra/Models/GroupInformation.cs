@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Penumbra.Util;
 
 namespace Penumbra.Models
 {
@@ -14,17 +15,17 @@ namespace Penumbra.Models
         public string OptionName;
         public string OptionDesc;
 
-        [JsonProperty( ItemConverterType = typeof( Util.SingleOrArrayConverter< string > ) )]
-        public Dictionary< string, HashSet< string > > OptionFiles;
+        [JsonProperty( ItemConverterType = typeof( SingleOrArrayConverter< GamePath > ) )]
+        public Dictionary< RelPath, HashSet< GamePath > > OptionFiles;
 
-        public bool AddFile( string filePath, string gamePath )
+        public bool AddFile( RelPath filePath, GamePath gamePath )
         {
             if( OptionFiles.TryGetValue( filePath, out var set ) )
             {
                 return set.Add( gamePath );
             }
 
-            OptionFiles[ filePath ] = new HashSet< string >() { gamePath };
+            OptionFiles[ filePath ] = new HashSet< GamePath >() { gamePath };
             return true;
         }
     }
