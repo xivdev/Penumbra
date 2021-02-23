@@ -64,7 +64,8 @@ namespace Penumbra.UI
 
             ImGui.PopStyleVar( 2 );
 
-            ImGui.SetWindowSize( new Vector2( ImGui.GetWindowSize().X - frameHeight, ImGui.GetWindowSize().Y ) );
+            // This seems wrong?
+            //ImGui.SetWindowSize( new Vector2( ImGui.GetWindowSize().X - frameHeight, ImGui.GetWindowSize().Y ) );
 
             var itemWidth = ImGui.CalcItemWidth();
             ImGui.PushItemWidth( Math.Max( 0f, itemWidth - frameHeight ) );
@@ -127,7 +128,8 @@ namespace Penumbra.UI
                 frameMax, borderColor, halfFrame.X );
 
             ImGui.PopStyleVar( 2 );
-            ImGui.SetWindowSize( new Vector2( ImGui.GetWindowSize().X + frameHeight, ImGui.GetWindowSize().Y ) );
+            // This seems wrong?
+            // ImGui.SetWindowSize( new Vector2( ImGui.GetWindowSize().X + frameHeight, ImGui.GetWindowSize().Y ) );
             ImGui.Dummy( ZeroVector );
 
             ImGui.EndGroup(); // Close first group

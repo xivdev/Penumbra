@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Dalamud.Plugin;
 using Penumbra.Models;
 using Penumbra.Util;
@@ -39,7 +38,6 @@ namespace Penumbra.Mods
 
             Mods = new ModCollection( basePath );
             Mods.Load();
-            Mods.Save();
 
             CalculateEffectiveFileList();
         }
@@ -54,15 +52,18 @@ namespace Penumbra.Mods
                 return;
             }
 
+            var changedSettings = false;
             var registeredFiles = new Dictionary< GamePath, string >();
-
             foreach( var (mod, settings) in Mods.GetOrderedAndEnabledModListWithSettings( _plugin!.Configuration!.InvertModListOrder ) )
             {
                 mod.FileConflicts.Clear();
 
-                ProcessModFiles( registeredFiles, mod, settings );
+                changedSettings |= ProcessModFiles( registeredFiles, mod, settings );
                 ProcessSwappedFiles( registeredFiles, mod, settings );
             }
+
+            if (changedSettings)
+                Mods.Save();
 
             _plugin!.GameUtils!.ReloadPlayerResources();
         }
@@ -84,76 +85,21 @@ namespace Penumbra.Mods
             }
         }
 
-        private void ProcessModFiles( Dictionary< GamePath, string > registeredFiles, ResourceMod mod, ModInfo settings )
+        private bool ProcessModFiles( Dictionary< GamePath, string > registeredFiles, ResourceMod mod, ModInfo settings )
         {
+            var changedConfig = settings.FixInvalidSettings();
             foreach( var file in mod.ModFiles )
             {
                 RelPath relativeFilePath = new( file, mod.ModBasePath );
-                var     doNotAdd         = false;
-                foreach( var group in mod.Meta.Groups.Values )
-                {
-                    if( !settings.Conf.TryGetValue( group.GroupName, out var setting )
-                        || group.SelectionType == SelectType.Single
-                        && settings.Conf[ group.GroupName ] >= group.Options.Count )
-                    {
-                        settings.Conf[ group.GroupName ] = 0;
-                        Mods!.Save();
-                        setting = 0;
-                    }
-
-                    if( group.Options.Count == 0 )
-                    {
-                        continue;
-                    }
-
-                    if( group.SelectionType == SelectType.Multi )
-                    {
-                        settings.Conf[ group.GroupName ] &= ( 1 << group.Options.Count ) - 1;
-                    }
-
-                    HashSet< GamePath > paths;
-                    switch( group.SelectionType )
-                    {
-                        case SelectType.Single:
-                            if( group.Options[ setting ].OptionFiles.TryGetValue( relativeFilePath, out paths ) )
-                            {
-                                doNotAdd |= AddFiles( paths, file, registeredFiles, mod );
-                            }
-                            else
-                            {
-                                doNotAdd |= group.Options.Where( ( o, i ) => i != setting )
-                                    .Any( option => option.OptionFiles.ContainsKey( relativeFilePath ) );
-                            }
-
-                            break;
-                        case SelectType.Multi:
-                            for( var i = 0; i < group.Options.Count; ++i )
-                            {
-                                if( ( setting & ( 1 << i ) ) != 0 )
-                                {
-                                    if( group.Options[ i ].OptionFiles.TryGetValue( relativeFilePath, out paths ) )
-                                    {
-                                        doNotAdd |= AddFiles( paths, file, registeredFiles, mod );
-                                    }
-                                }
-                                else
-                                {
-                                    doNotAdd |= group.Options[ i ].OptionFiles.ContainsKey( relativeFilePath );
-                                }
-                            }
-
-                            break;
-                    }
-                }
-
-                if( !doNotAdd )
-                {
-                    AddFiles( new GamePath[] { new( relativeFilePath ) }, file, registeredFiles, mod );
-                }
+                var (configChanged, gamePaths) =  mod.Meta.GetFilesForConfig( relativeFilePath, settings );
+                changedConfig                  |= configChanged;
+                AddFiles( gamePaths, file, registeredFiles, mod );
             }
+
+            return changedConfig;
         }
 
-        private bool AddFiles( IEnumerable< GamePath > gamePaths, FileInfo file, Dictionary< GamePath, string > registeredFiles,
+        private void AddFiles( IEnumerable< GamePath > gamePaths, FileInfo file, Dictionary< GamePath, string > registeredFiles,
             ResourceMod mod )
         {
             foreach( var gamePath in gamePaths )
@@ -168,7 +114,6 @@ namespace Penumbra.Mods
                     mod.AddConflict( modName, gamePath );
                 }
             }
-            return true;
         }
 
         public void ChangeModPriority( ModInfo info, bool up = false )

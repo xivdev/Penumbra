@@ -552,7 +552,7 @@ namespace Penumbra.UI
                 var oldEnabled = enabled;
                 if( ImGui.Checkbox( label, ref enabled ) && oldEnabled != enabled )
                 {
-                    Mod.Conf[ group.GroupName ] ^= 1 << idx;
+                    Mod.Settings[ group.GroupName ] ^= 1 << idx;
                     Save();
                 }
             }
@@ -567,7 +567,7 @@ namespace Penumbra.UI
                 ImGuiCustom.BeginFramedGroup( group.GroupName );
                 for( var i = 0; i < group.Options.Count; ++i )
                 {
-                    DrawMultiSelectorCheckBox( group, i, Mod.Conf[ group.GroupName ],
+                    DrawMultiSelectorCheckBox( group, i, Mod.Settings[ group.GroupName ],
                         $"{group.Options[ i ].OptionName}##{group.GroupName}" );
                 }
 
@@ -581,11 +581,11 @@ namespace Penumbra.UI
                     return;
                 }
 
-                var code = Mod.Conf[ group.GroupName ];
+                var code = Mod.Settings[ group.GroupName ];
                 if( ImGui.Combo( group.GroupName, ref code
                     , group.Options.Select( x => x.OptionName ).ToArray(), group.Options.Count ) )
                 {
-                    Mod.Conf[ group.GroupName ] = code;
+                    Mod.Settings[ group.GroupName ] = code;
                     Save();
                 }
             }

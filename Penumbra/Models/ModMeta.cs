@@ -43,5 +43,84 @@ namespace Penumbra.Models
                 // todo: handle broken mods properly
             }
         }
+
+        private static bool ApplySingleGroupFiles( OptionGroup group, RelPath relPath, int selection, HashSet< GamePath > paths )
+        {
+            if( group.Options[ selection ].OptionFiles.TryGetValue( relPath, out var groupPaths ) )
+            {
+                paths.UnionWith( groupPaths );
+                return true;
+            }
+
+            for( var i = 0; i < group.Options.Count; ++i )
+            {
+                if( i == selection )
+                {
+                    continue;
+                }
+
+                if( group.Options[ i ].OptionFiles.ContainsKey( relPath ) )
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool ApplyMultiGroupFiles( OptionGroup group, RelPath relPath, int selection, HashSet< GamePath > paths )
+        {
+            var doNotAdd = false;
+            for( var i = 0; i < group.Options.Count; ++i )
+            {
+                if( ( selection & ( 1 << i ) ) != 0 )
+                {
+                    if( group.Options[ i ].OptionFiles.TryGetValue( relPath, out var groupPaths ) )
+                    {
+                        paths.UnionWith( groupPaths );
+                    }
+                }
+                else if( group.Options[ i ].OptionFiles.ContainsKey( relPath ) )
+                {
+                    doNotAdd = true;
+                }
+            }
+
+            return doNotAdd;
+        }
+
+        public (bool configChanged, HashSet< GamePath > paths) GetFilesForConfig( RelPath relPath, ModSettings settings )
+        {
+            var doNotAdd      = false;
+            var configChanged = false;
+
+            HashSet< GamePath > paths = new();
+            foreach( var group in Groups.Values )
+            {
+                configChanged |= settings.FixSpecificSetting( this, group.GroupName );
+
+                if( group.Options.Count == 0 )
+                {
+                    continue;
+                }
+
+                switch( group.SelectionType )
+                {
+                    case SelectType.Single:
+                        doNotAdd |= ApplySingleGroupFiles( group, relPath, settings.Settings[ group.GroupName ], paths );
+                        break;
+                    case SelectType.Multi:
+                        doNotAdd |= ApplyMultiGroupFiles( group, relPath, settings.Settings[ group.GroupName ], paths );
+                        break;
+                }
+            }
+
+            if( !doNotAdd )
+            {
+                paths.Add( new GamePath( relPath ) );
+            }
+
+            return ( configChanged, paths );
+        }
     }
 }

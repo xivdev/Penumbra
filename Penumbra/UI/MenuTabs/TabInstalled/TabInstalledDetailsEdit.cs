@@ -110,14 +110,18 @@ namespace Penumbra.UI
                 if( ImGuiCustom.BeginFramedGroupEdit( ref groupName )
                     && groupName != group.GroupName && !Meta!.Groups.ContainsKey( groupName ) )
                 {
-                    var oldConf = Mod!.Conf[ group.GroupName ];
+                    var oldConf = Mod!.Settings[ group.GroupName ];
                     Meta.Groups.Remove( group.GroupName );
-                    Mod.Conf.Remove( group.GroupName );
+                    Mod.FixSpecificSetting( group.GroupName );
                     if( groupName.Length > 0 )
                     {
                         Meta.Groups[ groupName ] = new OptionGroup()
-                            { GroupName = groupName, SelectionType = SelectType.Multi, Options = group.Options };
-                        Mod.Conf[ groupName ] = oldConf;
+                        {
+                            GroupName     = groupName,
+                            SelectionType = SelectType.Multi,
+                            Options       = group.Options
+                        };
+                        Mod.Settings[ groupName ] = oldConf;
                     }
 
                     return true;
@@ -143,14 +147,13 @@ namespace Penumbra.UI
             private void DrawMultiSelectorEdit( OptionGroup group )
             {
                 var nameBoxStart = CheckMarkSize;
-                var flag         = Mod!.Conf[ group.GroupName ];
-
-                var modChanged = DrawMultiSelectorEditBegin( group );
+                var flag         = Mod!.Settings[ group.GroupName ];
+                var modChanged   = DrawMultiSelectorEditBegin( group );
 
                 for( var i = 0; i < group.Options.Count; ++i )
                 {
                     var opt   = group.Options[ i ];
-                    var label = $"##{opt.OptionName}_{group.GroupName}";
+                    var label = $"##{group.GroupName}_{i}";
                     DrawMultiSelectorCheckBox( group, i, flag, label );
 
                     ImGui.SameLine();
@@ -168,8 +171,9 @@ namespace Penumbra.UI
                         {
                             group.Options.RemoveAt( i );
                             var bitmaskFront = ( 1 << i ) - 1;
-                            Mod.Conf[ group.GroupName ] = ( flag & bitmaskFront ) | ( ( flag & ~bitmaskFront ) >> 1 );
-                            modChanged                  = true;
+                            var bitmaskBack  = ~( bitmaskFront | ( 1 << i ) );
+                            Mod.Settings[ group.GroupName ] = ( flag & bitmaskFront ) | ( ( flag & bitmaskBack ) >> 1 );
+                            modChanged                      = true;
                         }
                         else if( newName != opt.OptionName )
                         {
@@ -191,24 +195,28 @@ namespace Penumbra.UI
                 ImGuiCustom.EndFramedGroup();
             }
 
-            private bool DrawSingleSelectorEditGroup( OptionGroup group )
+            private bool DrawSingleSelectorEditGroup( OptionGroup group, ref bool selectionChanged )
             {
                 var groupName = group.GroupName;
                 if( ImGui.InputText( $"##{groupName}_add", ref groupName, 64, ImGuiInputTextFlags.EnterReturnsTrue )
                     && !Meta!.Groups.ContainsKey( groupName ) )
                 {
-                    var oldConf = Mod!.Conf[ group.GroupName ];
+                    var oldConf = Mod!.Settings[ group.GroupName ];
                     if( groupName != group.GroupName )
                     {
                         Meta.Groups.Remove( group.GroupName );
-                        Mod.Conf.Remove( group.GroupName );
+                        selectionChanged |= Mod.FixSpecificSetting( group.GroupName );
                     }
 
                     if( groupName.Length > 0 )
                     {
-                        Meta.Groups.Add( groupName,
-                            new OptionGroup() { GroupName = groupName, Options = group.Options, SelectionType = SelectType.Single } );
-                        Mod.Conf[ groupName ] = oldConf;
+                        Meta.Groups.Add( groupName, new OptionGroup()
+                        {
+                            GroupName     = groupName,
+                            Options       = group.Options,
+                            SelectionType = SelectType.Single
+                        } );
+                        Mod.Settings[ groupName ] = oldConf;
                     }
 
                     return true;
@@ -219,7 +227,7 @@ namespace Penumbra.UI
 
             private float DrawSingleSelectorEdit( OptionGroup group )
             {
-                var code             = Mod!.Conf[ group.GroupName ];
+                var code             = Mod!.Settings[ group.GroupName ];
                 var selectionChanged = false;
                 var modChanged       = false;
                 if( ImGuiCustom.RenameableCombo( $"##{group.GroupName}", ref code, out var newName,
@@ -229,11 +237,15 @@ namespace Penumbra.UI
                     {
                         if( newName.Length > 0 )
                         {
-                            selectionChanged            = true;
-                            modChanged                  = true;
-                            Mod.Conf[ group.GroupName ] = code;
+                            selectionChanged                = true;
+                            modChanged                      = true;
+                            Mod.Settings[ group.GroupName ] = code;
                             group.Options.Add( new Option()
-                                { OptionName = newName, OptionDesc = "", OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >() } );
+                            {
+                                OptionName  = newName,
+                                OptionDesc  = "",
+                                OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >()
+                            } );
                         }
                     }
                     else
@@ -242,32 +254,30 @@ namespace Penumbra.UI
                         {
                             modChanged = true;
                             group.Options.RemoveAt( code );
-                            if( code >= group.Options.Count )
-                            {
-                                code = 0;
-                            }
                         }
-                        else if( newName != group.Options[ code ].OptionName )
+                        else
                         {
-                            modChanged = true;
-                            group.Options[ code ] = new Option()
+                            if( newName != group.Options[ code ].OptionName )
                             {
-                                OptionName  = newName, OptionDesc = group.Options[ code ].OptionDesc,
-                                OptionFiles = group.Options[ code ].OptionFiles
-                            };
+                                modChanged = true;
+                                group.Options[ code ] = new Option()
+                                {
+                                    OptionName  = newName, OptionDesc = group.Options[ code ].OptionDesc,
+                                    OptionFiles = group.Options[ code ].OptionFiles
+                                };
+                            }
+
+                            selectionChanged                |= Mod.Settings[ group.GroupName ] != code;
+                            Mod.Settings[ group.GroupName ] =  code;
                         }
 
-                        if( Mod.Conf[ group.GroupName ] != code )
-                        {
-                            selectionChanged            = true;
-                            Mod.Conf[ group.GroupName ] = code;
-                        }
+                        selectionChanged |= Mod.FixSpecificSetting( group.GroupName );
                     }
                 }
 
                 ImGui.SameLine();
                 var labelEditPos = ImGui.GetCursorPosX();
-                modChanged |= DrawSingleSelectorEditGroup( group );
+                modChanged |= DrawSingleSelectorEditGroup( group, ref selectionChanged );
 
                 if( modChanged )
                 {
@@ -296,7 +306,7 @@ namespace Penumbra.UI
                     Options       = new List< Option >()
                 };
 
-                Mod.Conf[ newGroup ] = 0;
+                Mod.Settings[ newGroup ] = 0;
                 _selector.SaveCurrentMod();
                 Save();
             }
