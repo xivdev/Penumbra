@@ -27,11 +27,14 @@ namespace Penumbra.Models
         [JsonIgnore]
         public bool HasGroupWithConfig { get; set; } = false;
 
+        private static readonly JsonSerializerSettings JsonSettings
+            = new() { NullValueHandling = NullValueHandling.Ignore };
+
         public static ModMeta? LoadFromFile( string filePath )
         {
             try
             {
-                var meta = JsonConvert.DeserializeObject< ModMeta >( File.ReadAllText( filePath ) );
+                var meta = JsonConvert.DeserializeObject< ModMeta >( File.ReadAllText( filePath ), JsonSettings );
                 meta.HasGroupWithConfig = meta.Groups.Count > 0
                     && meta.Groups.Values.Any( G => G.SelectionType == SelectType.Multi || G.Options.Count > 1 );
 
