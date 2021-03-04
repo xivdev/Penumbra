@@ -6,6 +6,7 @@ using EmbedIO.WebApi;
 using Penumbra.API;
 using Penumbra.Game;
 using Penumbra.Hooks;
+using Penumbra.MetaData;
 using Penumbra.Mods;
 using Penumbra.UI;
 
@@ -44,6 +45,7 @@ namespace Penumbra
 
             var gameUtils = Service< GameResourceManagement >.Set( PluginInterface );
             var modManager = Service< ModManager >.Set( this );
+            Service< MetaDefaults >.Set( PluginInterface );
             modManager.DiscoverMods( Configuration.CurrentCollection );
 
             ResourceLoader = new ResourceLoader( this );
