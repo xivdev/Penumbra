@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Dalamud.Plugin;
+using Penumbra.Hooks;
 using Penumbra.Models;
 using Penumbra.Util;
 
@@ -65,7 +66,7 @@ namespace Penumbra.Mods
             if (changedSettings)
                 Mods.Save();
 
-            _plugin!.GameUtils!.ReloadPlayerResources();
+            Service<GameResourceManagement>.Get().ReloadPlayerResources();
         }
 
         private void ProcessSwappedFiles( Dictionary< GamePath, string > registeredFiles, ResourceMod mod, ModInfo settings )

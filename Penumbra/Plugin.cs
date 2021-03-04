@@ -28,7 +28,6 @@ namespace Penumbra
         public Configuration? Configuration { get; set; }
         public ResourceLoader? ResourceLoader { get; set; }
         public SettingsInterface? SettingsInterface { get; set; }
-        public GameUtils? GameUtils { get; set; }
         public SoundShit? SoundShit { get; set; }
 
         private WebServer? _webServer;
@@ -41,8 +40,9 @@ namespace Penumbra
             Configuration.Initialize( PluginInterface );
 
             SoundShit = new SoundShit( this );
-            GameUtils = new GameUtils( PluginInterface );
 
+
+            var gameUtils = Service< GameResourceManagement >.Set( PluginInterface );
             var modManager = Service< ModManager >.Set( this );
             modManager.DiscoverMods( Configuration.CurrentCollection );
 
@@ -56,7 +56,7 @@ namespace Penumbra
             ResourceLoader.Init();
             ResourceLoader.Enable();
 
-            GameUtils.ReloadPlayerResources();
+            gameUtils.ReloadPlayerResources();
 
             SettingsInterface = new SettingsInterface( this );
 

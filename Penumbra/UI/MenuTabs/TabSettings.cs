@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using ImGuiNET;
+using Penumbra.Hooks;
 
 namespace Penumbra.UI
 {
@@ -131,7 +132,7 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( LabelReloadResource ) )
                 {
-                    _base._plugin!.GameUtils!.ReloadPlayerResources();
+                    Service<GameResourceManagement>.Get().ReloadPlayerResources();
                 }
             }
 

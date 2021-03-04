@@ -35,9 +35,11 @@ namespace Penumbra.Models
             try
             {
                 var meta = JsonConvert.DeserializeObject< ModMeta >( File.ReadAllText( filePath ), JsonSettings );
-                meta.HasGroupWithConfig = meta.Groups.Count > 0
-                    && meta.Groups.Values.Any( G => G.SelectionType == SelectType.Multi || G.Options.Count > 1 );
-
+                if( meta != null )
+                {
+                    meta.HasGroupWithConfig = meta.Groups.Count > 0
+                        && meta.Groups.Values.Any( G => G.SelectionType == SelectType.Multi || G.Options.Count > 1 );
+                }
                 return meta;
             }
             catch( Exception )
