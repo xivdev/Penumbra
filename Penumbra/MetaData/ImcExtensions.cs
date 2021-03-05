@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using Lumina.Data.Files;
 using Penumbra.Game;
 using Penumbra.Mods;
@@ -76,6 +77,23 @@ namespace Penumbra.MetaData
             }
 
             return ref parts[ idx ].Variants[ imc.Variant - 1 ];
+        }
+
+        public static ImcFile Clone( this ImcFile file )
+        {
+            var ret = new ImcFile
+            {
+                Count    = file.Count,
+                PartMask = file.PartMask
+            };
+            var parts = file.GetParts().Select( P => new ImcFile.ImageChangeParts()
+            {
+                DefaultVariant = P.DefaultVariant,
+                Variants       = ( ImcFile.ImageChangeData[] )P.Variants.Clone()
+            } ).ToArray();
+            var prop = ret.GetType().GetField( "Parts", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance );
+            prop!.SetValue( ret, parts );
+            return ret;
         }
     }
 }

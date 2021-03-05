@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using Dalamud.Plugin;
 using Lumina.Data.Files;
-using Penumbra.Game;
 using Penumbra.Hooks;
 using Penumbra.Util;
 using Penumbra.MetaData;
@@ -77,6 +76,7 @@ namespace Penumbra.Mods
             _currentManipulations.Clear();
             _currentFiles.Clear();
             ClearDirectory();
+            _resourceManagement.ReloadPlayerResources();
         }
 
         private void ClearDirectory()

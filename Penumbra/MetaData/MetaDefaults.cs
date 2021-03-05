@@ -96,7 +96,7 @@ namespace Penumbra.MetaData
             => GetDefaultEstFile( type, equip, body )?.Clone();
 
         public ImcFile? GetNewImcFile( ObjectType type, ushort primarySetId, ushort secondarySetId = 0 )
-            => GetDefaultImcFile( type, primarySetId, secondarySetId ); // todo ?.Clone();
+            => GetDefaultImcFile( type, primarySetId, secondarySetId )?.Clone();
 
 
         public MetaDefaults( DalamudPluginInterface pi )
