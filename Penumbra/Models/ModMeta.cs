@@ -40,6 +40,7 @@ namespace Penumbra.Models
                     meta.HasGroupWithConfig = meta.Groups.Count > 0
                         && meta.Groups.Values.Any( G => G.SelectionType == SelectType.Multi || G.Options.Count > 1 );
                 }
+
                 return meta;
             }
             catch( Exception )

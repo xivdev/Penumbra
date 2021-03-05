@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dalamud.Plugin;
 using Penumbra.Hooks;
 using Penumbra.Models;
@@ -13,6 +14,7 @@ namespace Penumbra.Mods
         private readonly Plugin                           _plugin;
         public readonly  Dictionary< GamePath, FileInfo > ResolvedFiles = new();
         public readonly  Dictionary< GamePath, GamePath > SwappedFiles  = new();
+        public           MetaManager?                     MetaManipulations;
 
         public ModCollection? Mods { get; set; }
         private DirectoryInfo? _basePath;
@@ -47,11 +49,14 @@ namespace Penumbra.Mods
         {
             ResolvedFiles.Clear();
             SwappedFiles.Clear();
+            MetaManipulations?.Dispose();
 
             if( Mods == null )
             {
                 return;
             }
+
+            MetaManipulations = new MetaManager( ResolvedFiles, _basePath! );
 
             var changedSettings = false;
             var registeredFiles = new Dictionary< GamePath, string >();
@@ -63,10 +68,14 @@ namespace Penumbra.Mods
                 ProcessSwappedFiles( registeredFiles, mod, settings );
             }
 
-            if (changedSettings)
+            if( changedSettings )
+            {
                 Mods.Save();
+            }
 
-            Service<GameResourceManagement>.Get().ReloadPlayerResources();
+            MetaManipulations.WriteNewFiles();
+
+            Service< GameResourceManagement >.Get().ReloadPlayerResources();
         }
 
         private void ProcessSwappedFiles( Dictionary< GamePath, string > registeredFiles, ResourceMod mod, ModInfo settings )
@@ -94,7 +103,14 @@ namespace Penumbra.Mods
                 RelPath relativeFilePath = new( file, mod.ModBasePath );
                 var (configChanged, gamePaths) =  mod.Meta.GetFilesForConfig( relativeFilePath, settings );
                 changedConfig                  |= configChanged;
-                AddFiles( gamePaths, file, registeredFiles, mod );
+                if( file.Extension == ".meta" && gamePaths.Count > 0 )
+                {
+                    AddManipulations( file, mod );
+                }
+                else
+                {
+                    AddFiles( gamePaths, file, registeredFiles, mod );
+                }
             }
 
             return changedConfig;
@@ -114,6 +130,20 @@ namespace Penumbra.Mods
                 {
                     mod.AddConflict( modName, gamePath );
                 }
+            }
+        }
+
+        private void AddManipulations( FileInfo file, ResourceMod mod )
+        {
+            if( !mod.MetaManipulations.TryGetValue( file, out var meta ) )
+            {
+                PluginLog.Error( $"{file.FullName} is a TexTools Meta File without meta information." );
+                return;
+            }
+
+            foreach( var manipulation in meta.Manipulations )
+            {
+                MetaManipulations!.ApplyMod( manipulation );
             }
         }
 
@@ -165,6 +195,7 @@ namespace Penumbra.Mods
 
         public void Dispose()
         {
+            MetaManipulations?.Dispose();
             // _fileSystemWatcher?.Dispose();
         }
 
