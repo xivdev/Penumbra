@@ -160,7 +160,7 @@ namespace Penumbra.Mods
             => SwappedFiles.TryGetValue( gameResourcePath, out var swappedPath ) ? swappedPath : null;
 
         public string? ResolveSwappedOrReplacementFilePath( GamePath gameResourcePath )
-            => GetCandidateForGameFile( gameResourcePath )?.FullName ?? GetSwappedFilePath( gameResourcePath ) ?? null;
+            => GetCandidateForGameFile( gameResourcePath )?.FullName.Replace( '\\', '/' ) ?? GetSwappedFilePath( gameResourcePath ) ?? null;
 
 
         public void Dispose()
