@@ -30,7 +30,8 @@ namespace Penumbra.UI
 
             private static readonly string TooltipGamePathsEdit =
                 $"Enter all game paths to add or remove, separated by '{GamePathsSeparator}'.\n" +
-                $"Use '{TextDefaultGamePath}' to add the original file path.";
+                $"Use '{TextDefaultGamePath}' to add the original file path." +
+                $"Use '{TextDefaultGamePath}-#' to skip the first # relative directories.";
 
             private const float MultiEditBoxWidth = 300f;
 

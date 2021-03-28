@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 
 namespace Penumbra.Util
 {
@@ -89,8 +90,16 @@ namespace Penumbra.Util
         public GamePath( FileInfo file, DirectoryInfo baseDir )
             => _path = CheckPre( file, baseDir ) ? Lower( Trim( ReplaceSlash( Substring( file, baseDir ) ) ) ) : "";
 
-        public GamePath( RelPath relPath )
-            => _path = relPath ? Lower( ReplaceSlash( relPath ) ) : "";
+        public GamePath( RelPath relPath, int skipFolders )
+        {
+            string p = relPath;
+            if( skipFolders > 0 )
+            {
+                p = string.Join( "/", p.Split( '\\' ).Skip( skipFolders ) );
+            }
+
+            _path = Lower( ReplaceSlash( p ) );
+        }
 
         private static bool CheckPre( FileInfo file, DirectoryInfo baseDir )
             => file.FullName.StartsWith( baseDir.FullName ) && file.FullName.Length < MaxGamePathLength;
@@ -122,6 +131,11 @@ namespace Penumbra.Util
         public static explicit operator GamePath( string gamePath )
             => new( gamePath );
 
+        public string Filename()
+        {
+            var idx = _path.LastIndexOf( "/", StringComparison.Ordinal );
+            return idx == -1 ? _path : idx == _path.Length - 1 ? "" : _path.Substring( idx + 1 );
+        }
 
         public int CompareTo( object rhs )
         {
