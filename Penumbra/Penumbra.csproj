@@ -30,29 +30,29 @@
         <Reference Include="Dalamud">
             <HintPath>$(DALAMUD_ROOT)\Dalamud.dll</HintPath>
             <HintPath>..\libs\Dalamud.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\Dalamud.dll</HintPath>
+            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="ImGui.NET">
             <HintPath>$(DALAMUD_ROOT)\ImGui.NET.dll</HintPath>
             <HintPath>..\libs\ImGui.NET.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\ImGui.NET.dll</HintPath>
+            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="ImGuiScene">
             <HintPath>$(DALAMUD_ROOT)\ImGuiScene.dll</HintPath>
             <HintPath>..\libs\ImGuiScene.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\ImGuiScene.dll</HintPath>
+            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGuiScene.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Lumina">
             <HintPath>$(DALAMUD_ROOT)\Lumina.dll</HintPath>
             <HintPath>..\libs\Lumina.dll</HintPath>
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\Lumina.dll</HintPath>
+            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
             <Private>False</Private>
         </Reference>
     </ItemGroup>
-    
+
     <ItemGroup>
         <Reference Include="System.Windows.Forms" />
         <Reference Include="System.Data.DataSetExtensions" />
