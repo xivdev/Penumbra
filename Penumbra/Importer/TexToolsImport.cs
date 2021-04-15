@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -63,12 +64,28 @@ namespace Penumbra.Importer
             fs.Close();
         }
 
+        // You can in no way rely on any file paths in TTMPs so we need to just do this, sorry
+        private ZipEntry FindZipEntry( ZipFile file, string fileName )
+        {
+            for( var i = 0; i < file.Count; i++ )
+            {
+                var entry = file[ i ];
+
+                if( entry.Name.Contains( fileName ) )
+                    return entry;
+            }
+
+            return null;
+        }
+
         private PenumbraSqPackStream GetMagicSqPackDeleterStream( ZipFile file, string entryName )
         {
             State = ImporterState.WritingPackToDisk;
 
             // write shitty zip garbage to disk
-            var       entry = file.GetEntry( entryName );
+            var entry = FindZipEntry( file, entryName );
+            Debug.Assert( entry != null, $"Could not find in mod zip: {entryName}" );
+
             using var s     = file.GetInputStream( entry );
 
             WriteZipEntryToTempFile( s );
@@ -81,8 +98,11 @@ namespace Penumbra.Importer
         {
             using var zfs              = modPackFile.OpenRead();
             using var extractedModPack = new ZipFile( zfs );
-            var       mpl              = extractedModPack.GetEntry( "TTMPL.mpl" );
-            var       modRaw           = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 );
+
+            var mpl            = FindZipEntry( extractedModPack, "TTMPL.mpl" );
+            Debug.Assert( mpl != null, "Could not find mod meta in ZIP." );
+
+            var modRaw = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 );
 
             // At least a better validation than going by the extension.
             if( modRaw.Contains( "\"TTMPVersion\":" ) )
