@@ -42,8 +42,9 @@ namespace Penumbra.UI
                     return;
                 }
 
-                var ss = ImGui.GetIO().DisplaySize;
-
+                var ss = ImGui.GetMainViewport().Size + ImGui.GetMainViewport().Pos;
+                ImGui.SetNextWindowViewport(ImGui.GetMainViewport().ID);
+                
                 ImGui.SetNextWindowPos( ss - WindowPosOffset, ImGuiCond.Always );
 
                 if( !ImGui.Begin( MenuButtonsName, ButtonFlags ) )
