@@ -83,7 +83,7 @@ namespace Penumbra.Importer
             State = ImporterState.WritingPackToDisk;
 
             // write shitty zip garbage to disk
-            var entry = FindZipEntry( file, entryName );
+            var entry       = FindZipEntry( file, entryName );
             Debug.Assert( entry != null, $"Could not find in mod zip: {entryName}" );
 
             using var s     = file.GetInputStream( entry );
@@ -99,10 +99,10 @@ namespace Penumbra.Importer
             using var zfs              = modPackFile.OpenRead();
             using var extractedModPack = new ZipFile( zfs );
 
-            var mpl            = FindZipEntry( extractedModPack, "TTMPL.mpl" );
+            var mpl                    = FindZipEntry( extractedModPack, "TTMPL.mpl" );
             Debug.Assert( mpl != null, "Could not find mod meta in ZIP." );
 
-            var modRaw = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 );
+            var modRaw                 = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 );
 
             // At least a better validation than going by the extension.
             if( modRaw.Contains( "\"TTMPVersion\":" ) )
