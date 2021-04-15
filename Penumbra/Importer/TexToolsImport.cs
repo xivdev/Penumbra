@@ -9,6 +9,7 @@ using Lumina.Data;
 using Newtonsoft.Json;
 using Penumbra.Importer.Models;
 using Penumbra.Models;
+using Penumbra.Util;
 
 namespace Penumbra.Importer
 {
@@ -62,7 +63,7 @@ namespace Penumbra.Importer
             fs.Close();
         }
 
-        private SqPackStream GetMagicSqPackDeleterStream( ZipFile file, string entryName )
+        private PenumbraSqPackStream GetMagicSqPackDeleterStream( ZipFile file, string entryName )
         {
             State = ImporterState.WritingPackToDisk;
 
@@ -277,7 +278,7 @@ namespace Penumbra.Importer
             throw new NotImplementedException();
         }
 
-        private void ExtractSimpleModList( DirectoryInfo outDirectory, IEnumerable< SimpleMod > mods, SqPackStream dataStream )
+        private void ExtractSimpleModList( DirectoryInfo outDirectory, IEnumerable< SimpleMod > mods, PenumbraSqPackStream dataStream )
         {
             State = ImporterState.ExtractingModFiles;
 
@@ -294,13 +295,13 @@ namespace Penumbra.Importer
             }
         }
 
-        private void ExtractMod( DirectoryInfo outDirectory, SimpleMod mod, SqPackStream dataStream )
+        private void ExtractMod( DirectoryInfo outDirectory, SimpleMod mod, PenumbraSqPackStream dataStream )
         {
             PluginLog.Log( "        -> Extracting {0} at {1}", mod.FullPath, mod.ModOffset.ToString( "X" ) );
 
             try
             {
-                var data = dataStream.ReadFile< FileResource >( mod.ModOffset );
+                var data = dataStream.ReadFile< PenumbraSqPackStream.PenumbraFileResource >( mod.ModOffset );
 
                 var extractedFile = new FileInfo( Path.Combine( outDirectory.FullName, mod.FullPath ) );
                 extractedFile.Directory?.Create();
