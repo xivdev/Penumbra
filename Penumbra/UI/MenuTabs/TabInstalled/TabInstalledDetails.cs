@@ -215,7 +215,7 @@ namespace Penumbra.UI
                         if( _editMode )
                         {
                             ImGui.SetNextItemWidth( -1 );
-                            if( ImGui.InputText( LabelChangedItemNew, ref newItem, 128, flags )
+                            if( ImGui.InputTextWithHint( LabelChangedItemNew, "Enter new changed item...", ref newItem, 128, flags )
                              && newItem.Length > 0 )
                             {
                                 Meta.ChangedItems.Add( newItem );
@@ -483,7 +483,7 @@ namespace Penumbra.UI
                 ImGui.TextUnformatted( LabelGamePathsEdit );
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth( -1 );
-                ImGui.InputText( LabelGamePathsEditBox, ref _currentGamePaths, 128 );
+                ImGui.InputTextWithHint( LabelGamePathsEditBox, "Hover for help...", ref _currentGamePaths, 128 );
                 if( ImGui.IsItemHovered() )
                 {
                     ImGui.SetTooltip( TooltipGamePathsEdit );

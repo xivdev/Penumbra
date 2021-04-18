@@ -137,7 +137,8 @@ namespace Penumbra.UI
                 var newOption = "";
                 ImGui.SetCursorPosX( nameBoxStart );
                 ImGui.SetNextItemWidth( MultiEditBoxWidth );
-                if( ImGui.InputText( $"##new_{group.GroupName}_l", ref newOption, 64, ImGuiInputTextFlags.EnterReturnsTrue )
+                if( ImGui.InputTextWithHint( $"##new_{group.GroupName}_l", "Add new option...", ref newOption, 64,
+                        ImGuiInputTextFlags.EnterReturnsTrue )
                  && newOption.Length != 0 )
                 {
                     group.Options.Add( new Option()
@@ -315,12 +316,13 @@ namespace Penumbra.UI
 
             private void DrawAddSingleGroupField( float labelEditPos )
             {
-                var newGroup = "";
+                const string hint     = "Add new Single Group...";
+                var          newGroup = "";
                 if( labelEditPos == CheckMarkSize )
                 {
                     ImGui.SetCursorPosX( CheckMarkSize );
                     ImGui.SetNextItemWidth( MultiEditBoxWidth );
-                    if( ImGui.InputText( LabelNewSingleGroup, ref newGroup, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                    if( ImGui.InputTextWithHint( LabelNewSingleGroup, hint, ref newGroup, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
                     {
                         AddNewGroup( newGroup, SelectType.Single );
                     }
@@ -328,7 +330,7 @@ namespace Penumbra.UI
                 else
                 {
                     ImGuiCustom.RightJustifiedLabel( labelEditPos, LabelNewSingleGroup );
-                    if( ImGui.InputText( LabelNewSingleGroupEdit, ref newGroup, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                    if( ImGui.InputTextWithHint( LabelNewSingleGroupEdit, hint, ref newGroup, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
                     {
                         AddNewGroup( newGroup, SelectType.Single );
                     }
@@ -340,7 +342,7 @@ namespace Penumbra.UI
                 var newGroup = "";
                 ImGui.SetCursorPosX( CheckMarkSize );
                 ImGui.SetNextItemWidth( MultiEditBoxWidth );
-                if( ImGui.InputText( LabelNewMultiGroup, ref newGroup, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                if( ImGui.InputTextWithHint( LabelNewMultiGroup, "Add new Multi Group...", ref newGroup, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
                     AddNewGroup( newGroup, SelectType.Multi );
                 }
@@ -404,7 +406,7 @@ namespace Penumbra.UI
                                     _selector.SaveCurrentMod();
                                     if( Mod.Enabled )
                                     {
-                                        Save();
+                                        _selector.ReloadCurrentMod();
                                     }
                                 }
                             }
@@ -427,7 +429,7 @@ namespace Penumbra.UI
                                         _selector.SaveCurrentMod();
                                         if( Mod.Enabled )
                                         {
-                                            Save();
+                                            _selector.ReloadCurrentMod();
                                         }
                                     }
                                 }
