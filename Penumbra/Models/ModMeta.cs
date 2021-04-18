@@ -20,6 +20,8 @@ namespace Penumbra.Models
 
         public List< string > ChangedItems { get; set; } = new();
 
+
+        [JsonProperty( ItemConverterType = typeof( GamePathConverter ))]
         public Dictionary< GamePath, GamePath > FileSwaps { get; } = new();
 
         public Dictionary< string, OptionGroup > Groups { get; set; } = new();

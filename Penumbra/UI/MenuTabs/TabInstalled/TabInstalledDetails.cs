@@ -269,6 +269,12 @@ namespace Penumbra.UI
 
             private void DrawFileSwapTab()
             {
+                if( _editMode )
+                {
+                    DrawFileSwapTabEdit();
+                    return;
+                }
+
                 if( !Meta.FileSwaps.Any() )
                 {
                     return;

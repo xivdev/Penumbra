@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Penumbra.Util
 {
@@ -29,7 +31,7 @@ namespace Penumbra.Util
             => _path = CheckPre( file, baseDir ) ? Trim( Substring( file, baseDir ) ) : "";
 
         public RelPath( GamePath gamePath )
-            => _path = gamePath ? ReplaceSlash( gamePath ) : "";
+            => _path = ReplaceSlash( gamePath );
 
         private static bool CheckPre( FileInfo file, DirectoryInfo baseDir )
             => file.FullName.StartsWith( baseDir.FullName ) && file.FullName.Length < MaxRelPathLength;
@@ -43,9 +45,6 @@ namespace Penumbra.Util
         private static string Trim( string path )
             => path.TrimStart( '\\' );
 
-        public static implicit operator bool( RelPath relPath )
-            => relPath._path.Length > 0;
-
         public static implicit operator string( RelPath relPath )
             => relPath._path;
 
@@ -56,9 +55,9 @@ namespace Penumbra.Util
         {
             return rhs switch
             {
-                string       => string.Compare( _path, _path, StringComparison.InvariantCulture ),
+                string path  => string.Compare( _path, path, StringComparison.InvariantCulture ),
                 RelPath path => string.Compare( _path, path._path, StringComparison.InvariantCulture ),
-                _            => -1
+                _            => -1,
             };
         }
 
@@ -120,10 +119,7 @@ namespace Penumbra.Util
             => new( path, true );
 
         public static GamePath GenerateUncheckedLower( string path )
-            => new( Lower(path), true );
-
-        public static implicit operator bool( GamePath gamePath )
-            => gamePath._path.Length > 0;
+            => new( Lower( path ), true );
 
         public static implicit operator string( GamePath gamePath )
             => gamePath._path;
@@ -143,11 +139,35 @@ namespace Penumbra.Util
             {
                 string path   => string.Compare( _path, path, StringComparison.InvariantCulture ),
                 GamePath path => string.Compare( _path, path._path, StringComparison.InvariantCulture ),
-                _             => -1
+                _             => -1,
             };
         }
 
         public override string ToString()
             => _path;
+    }
+
+    public class GamePathConverter : JsonConverter
+    {
+        public override bool CanConvert( Type objectType )
+            => objectType == typeof( GamePath );
+
+        public override object ReadJson( JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer )
+        {
+            var token = JToken.Load( reader );
+            return token.ToObject< GamePath >();
+        }
+
+        public override bool CanWrite
+            => true;
+
+        public override void WriteJson( JsonWriter writer, object? value, JsonSerializer serializer )
+        {
+            if( value != null )
+            {
+                var v = ( GamePath) value;
+                serializer.Serialize( writer, v.ToString() );
+            }
+        }
     }
 }

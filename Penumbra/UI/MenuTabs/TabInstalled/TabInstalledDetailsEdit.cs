@@ -25,13 +25,13 @@ namespace Penumbra.UI
             private const char   GamePathsSeparator      = ';';
 
             private static readonly string TooltipFilesTabEdit =
-                $"{TooltipFilesTab}\n" +
-                $"Red Files are replaced in another group or a different option in this group, but not contained in the current option.";
+                $"{TooltipFilesTab}\n"
+              + $"Red Files are replaced in another group or a different option in this group, but not contained in the current option.";
 
             private static readonly string TooltipGamePathsEdit =
-                $"Enter all game paths to add or remove, separated by '{GamePathsSeparator}'.\n" +
-                $"Use '{TextDefaultGamePath}' to add the original file path." +
-                $"Use '{TextDefaultGamePath}-#' to skip the first # relative directories.";
+                $"Enter all game paths to add or remove, separated by '{GamePathsSeparator}'.\n"
+              + $"Use '{TextDefaultGamePath}' to add the original file path."
+              + $"Use '{TextDefaultGamePath}-#' to skip the first # relative directories.";
 
             private const float MultiEditBoxWidth = 300f;
 
@@ -109,7 +109,8 @@ namespace Penumbra.UI
             {
                 var groupName = group.GroupName;
                 if( ImGuiCustom.BeginFramedGroupEdit( ref groupName )
-                    && groupName != group.GroupName && !Meta!.Groups.ContainsKey( groupName ) )
+                 && groupName != group.GroupName
+                 && !Meta!.Groups.ContainsKey( groupName ) )
                 {
                     var oldConf = Mod!.Settings[ group.GroupName ];
                     Meta.Groups.Remove( group.GroupName );
@@ -120,7 +121,7 @@ namespace Penumbra.UI
                         {
                             GroupName     = groupName,
                             SelectionType = SelectType.Multi,
-                            Options       = group.Options
+                            Options       = group.Options,
                         };
                         Mod.Settings[ groupName ] = oldConf;
                     }
@@ -137,7 +138,7 @@ namespace Penumbra.UI
                 ImGui.SetCursorPosX( nameBoxStart );
                 ImGui.SetNextItemWidth( MultiEditBoxWidth );
                 if( ImGui.InputText( $"##new_{group.GroupName}_l", ref newOption, 64, ImGuiInputTextFlags.EnterReturnsTrue )
-                    && newOption.Length != 0 )
+                 && newOption.Length != 0 )
                 {
                     group.Options.Add( new Option()
                         { OptionName = newOption, OptionDesc = "", OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >() } );
@@ -200,7 +201,7 @@ namespace Penumbra.UI
             {
                 var groupName = group.GroupName;
                 if( ImGui.InputText( $"##{groupName}_add", ref groupName, 64, ImGuiInputTextFlags.EnterReturnsTrue )
-                    && !Meta!.Groups.ContainsKey( groupName ) )
+                 && !Meta!.Groups.ContainsKey( groupName ) )
                 {
                     var oldConf = Mod!.Settings[ group.GroupName ];
                     if( groupName != group.GroupName )
@@ -215,7 +216,7 @@ namespace Penumbra.UI
                         {
                             GroupName     = groupName,
                             Options       = group.Options,
-                            SelectionType = SelectType.Single
+                            SelectionType = SelectType.Single,
                         } );
                         Mod.Settings[ groupName ] = oldConf;
                     }
@@ -245,7 +246,7 @@ namespace Penumbra.UI
                             {
                                 OptionName  = newName,
                                 OptionDesc  = "",
-                                OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >()
+                                OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >(),
                             } );
                         }
                     }
@@ -264,7 +265,7 @@ namespace Penumbra.UI
                                 group.Options[ code ] = new Option()
                                 {
                                     OptionName  = newName, OptionDesc = group.Options[ code ].OptionDesc,
-                                    OptionFiles = group.Options[ code ].OptionFiles
+                                    OptionFiles = group.Options[ code ].OptionFiles,
                                 };
                             }
 
@@ -304,7 +305,7 @@ namespace Penumbra.UI
                 {
                     GroupName     = newGroup,
                     SelectionType = selectType,
-                    Options       = new List< Option >()
+                    Options       = new List< Option >(),
                 };
 
                 Mod.Settings[ newGroup ] = 0;
@@ -361,6 +362,87 @@ namespace Penumbra.UI
                 }
 
                 DrawAddMultiGroupField();
+            }
+
+            private void DrawFileSwapTabEdit()
+            {
+                const string arrow = "  -> ";
+
+                if( ImGui.BeginTabItem( LabelFileSwapTab ) )
+                {
+                    ImGui.SetNextItemWidth( -1 );
+                    if( ImGui.BeginListBox( LabelFileSwapHeader, AutoFillSize ) )
+                    {
+                        var swaps = Meta.FileSwaps.Keys.ToArray();
+
+                        var arrowWidth = ImGui.CalcTextSize( arrow ).X;
+                        var width      = ( ImGui.GetWindowWidth() - arrowWidth - 4 * ImGui.GetStyle().ItemSpacing.X ) / 2;
+                        for( var idx = 0; idx < swaps.Length + 1; ++idx )
+                        {
+                            var    key         = idx == swaps.Length ? GamePath.GenerateUnchecked( "" ) : swaps[ idx ];
+                            var    value       = idx == swaps.Length ? GamePath.GenerateUnchecked( "" ) : Meta.FileSwaps[ key ];
+                            string keyString   = key;
+                            string valueString = value;
+
+                            ImGui.SetNextItemWidth( width );
+                            if( ImGui.InputTextWithHint( $"##swapLhs_{idx}", "Enter new file to be replaced...", ref keyString,
+                                GamePath.MaxGamePathLength, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                            {
+                                var newKey = new GamePath( keyString );
+                                if( newKey.CompareTo( key ) != 0 )
+                                {
+                                    if( idx < swaps.Length )
+                                    {
+                                        Meta.FileSwaps.Remove( key );
+                                    }
+
+                                    if( newKey != string.Empty )
+                                    {
+                                        Meta.FileSwaps[ newKey ] = value;
+                                    }
+
+                                    _selector.SaveCurrentMod();
+                                    if( Mod.Enabled )
+                                    {
+                                        Save();
+                                    }
+                                }
+                            }
+
+                            if( idx < swaps.Length )
+                            {
+                                ImGui.SameLine();
+                                ImGui.TextUnformatted( arrow );
+                                ImGui.SameLine();
+
+                                ImGui.SetNextItemWidth( width );
+                                if( ImGui.InputTextWithHint( $"##swapRhs_{idx}", "Enter new replacement path...", ref valueString,
+                                    GamePath.MaxGamePathLength,
+                                    ImGuiInputTextFlags.EnterReturnsTrue ) )
+                                {
+                                    var newValue = new GamePath( valueString );
+                                    if( newValue.CompareTo( value ) != 0 )
+                                    {
+                                        Meta.FileSwaps[ key ] = newValue;
+                                        _selector.SaveCurrentMod();
+                                        if( Mod.Enabled )
+                                        {
+                                            Save();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        ImGui.EndListBox();
+                    }
+
+                    ImGui.EndTabItem();
+                }
+                else
+                {
+                    _fileSwapOffset = null;
+                }
             }
         }
     }
