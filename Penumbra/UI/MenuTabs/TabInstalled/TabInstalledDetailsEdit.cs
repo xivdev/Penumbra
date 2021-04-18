@@ -86,7 +86,7 @@ namespace Penumbra.UI
                     }
 
                     ImGui.SetNextItemWidth( -1 );
-                    if( ImGui.ListBoxHeader( LabelFileListHeader, AutoFillSize - new Vector2( 0, 1.5f * ImGui.GetTextLineHeight() ) ) )
+                    if( ImGui.BeginListBox( LabelFileListHeader, AutoFillSize - new Vector2( 0, 1.5f * ImGui.GetTextLineHeight() ) ) )
                     {
                         for( var i = 0; i < Mod!.Mod.ModFiles.Count; ++i )
                         {
@@ -94,7 +94,7 @@ namespace Penumbra.UI
                         }
                     }
 
-                    ImGui.ListBoxFooter();
+                    ImGui.EndListBox();
 
                     DrawGroupRow();
                     ImGui.EndTabItem();
