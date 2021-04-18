@@ -65,7 +65,7 @@ namespace Penumbra.Importer
         }
 
         // You can in no way rely on any file paths in TTMPs so we need to just do this, sorry
-        private ZipEntry FindZipEntry( ZipFile file, string fileName )
+        private static ZipEntry? FindZipEntry( ZipFile file, string fileName )
         {
             for( var i = 0; i < file.Count; i++ )
             {
@@ -84,7 +84,10 @@ namespace Penumbra.Importer
 
             // write shitty zip garbage to disk
             var entry       = FindZipEntry( file, entryName );
-            Debug.Assert( entry != null, $"Could not find in mod zip: {entryName}" );
+            if( entry == null )
+            {
+                throw new FileNotFoundException( $"ZIP does not contain a file named {entryName}." );
+            }
 
             using var s     = file.GetInputStream( entry );
 
@@ -100,7 +103,10 @@ namespace Penumbra.Importer
             using var extractedModPack = new ZipFile( zfs );
 
             var mpl                    = FindZipEntry( extractedModPack, "TTMPL.mpl" );
-            Debug.Assert( mpl != null, "Could not find mod meta in ZIP." );
+            if( mpl == null )
+            {
+                throw new FileNotFoundException( "ZIP does not contain a TTMPL.mpl file." );
+            }
 
             var modRaw                 = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 );
 
