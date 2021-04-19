@@ -67,7 +67,7 @@ namespace Penumbra.Game
 
         public static ObjectType PathToObjectType( GamePath path )
         {
-            if( !path )
+            if( path.Empty )
             {
                 return ObjectType.Unknown;
             }
