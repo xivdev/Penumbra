@@ -51,6 +51,9 @@ namespace Penumbra.Util
         public static explicit operator RelPath( string relPath )
             => new( relPath );
 
+        public bool Empty
+            => _path.Length == 0;
+
         public int CompareTo( object rhs )
         {
             return rhs switch
@@ -126,6 +129,9 @@ namespace Penumbra.Util
 
         public static explicit operator GamePath( string gamePath )
             => new( gamePath );
+
+        public bool Empty
+            => _path.Length == 0;
 
         public string Filename()
         {
