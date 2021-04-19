@@ -121,7 +121,7 @@ namespace Penumbra.UI
             {
                 ImGui.SetNextItemWidth( SelectorButtonSizes.X * 4 );
                 var tmp = _modFilter;
-                if( ImGui.InputText( LabelModFilter, ref tmp, 256 ) )
+                if( ImGui.InputTextWithHint( LabelModFilter, "Filter Mods...", ref tmp, 256 ) )
                 {
                     _modFilter = tmp.ToLowerInvariant();
                 }

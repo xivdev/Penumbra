@@ -53,14 +53,14 @@ namespace Penumbra.UI
                     return;
                 }
 
-                if( ImGui.ListBoxHeader( "##effective_files", AutoFillSize ) )
+                if( ImGui.BeginListBox( "##effective_files", AutoFillSize ) )
                 {
                     foreach( var file in _mods.ResolvedFiles )
                     {
                         DrawFileLine( file.Value, file.Key );
                     }
 
-                    ImGui.ListBoxFooter();
+                    ImGui.EndListBox();
                 }
 
                 ImGui.EndTabItem();

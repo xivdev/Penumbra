@@ -1,14 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 using Lumina;
-using Lumina.Data;
 using Lumina.Data.Structs;
 
 namespace Penumbra.Util
@@ -19,12 +15,14 @@ namespace Penumbra.Util
 
         protected BinaryReader Reader { get; set; }
 
-        public PenumbraSqPackStream( FileInfo file ) : this( file.OpenRead() ) {}
+        public PenumbraSqPackStream( FileInfo file )
+            : this( file.OpenRead() )
+        { }
 
         public PenumbraSqPackStream( Stream stream )
         {
             BaseStream = stream;
-            Reader = new BinaryReader( BaseStream );
+            Reader     = new BinaryReader( BaseStream );
         }
 
         public SqPackHeader GetSqPackHeader()
@@ -48,7 +46,7 @@ namespace Penumbra.Util
             BaseStream.Position = offset;
 
             var fileInfo = Reader.ReadStructure< SqPackFileInfo >();
-            var file = Activator.CreateInstance< T >();
+            var file     = Activator.CreateInstance< T >();
 
             // check if we need to read the extended model header or just default to the standard file header
             if( fileInfo.Type == FileType.Model )
@@ -59,32 +57,31 @@ namespace Penumbra.Util
 
                 file.FileInfo = new PenumbraFileInfo
                 {
-                    HeaderSize = modelFileInfo.Size,
-                    Type = modelFileInfo.Type,
-                    BlockCount = modelFileInfo.UsedNumberOfBlocks,
+                    HeaderSize  = modelFileInfo.Size,
+                    Type        = modelFileInfo.Type,
+                    BlockCount  = modelFileInfo.UsedNumberOfBlocks,
                     RawFileSize = modelFileInfo.RawFileSize,
-                    Offset = offset,
+                    Offset      = offset,
 
                     // todo: is this useful?
-                    ModelBlock = modelFileInfo
+                    ModelBlock = modelFileInfo,
                 };
             }
             else
             {
                 file.FileInfo = new PenumbraFileInfo
                 {
-                    HeaderSize = fileInfo.Size,
-                    Type = fileInfo.Type,
-                    BlockCount = fileInfo.NumberOfBlocks,
+                    HeaderSize  = fileInfo.Size,
+                    Type        = fileInfo.Type,
+                    BlockCount  = fileInfo.NumberOfBlocks,
                     RawFileSize = fileInfo.RawFileSize,
-                    Offset = offset
+                    Offset      = offset,
                 };
             }
 
             switch( fileInfo.Type )
             {
-                case FileType.Empty:
-                    throw new FileNotFoundException( $"The file located at 0x{offset:x} is empty." );
+                case FileType.Empty: throw new FileNotFoundException( $"The file located at 0x{offset:x} is empty." );
 
                 case FileType.Standard:
                     ReadStandardFile( file, ms );
@@ -98,16 +95,17 @@ namespace Penumbra.Util
                     ReadTextureFile( file, ms );
                     break;
 
-                default:
-                    throw new NotImplementedException( $"File Type {(UInt32)fileInfo.Type} is not implemented." );
+                default: throw new NotImplementedException( $"File Type {( uint )fileInfo.Type} is not implemented." );
             }
 
             file.Data = ms.ToArray();
             if( file.Data.Length != file.FileInfo.RawFileSize )
+            {
                 Debug.WriteLine( "Read data size does not match file size." );
+            }
 
-            file.FileStream = new MemoryStream( file.Data, false );
-            file.Reader = new BinaryReader( file.FileStream );
+            file.FileStream          = new MemoryStream( file.Data, false );
+            file.Reader              = new BinaryReader( file.FileStream );
             file.FileStream.Position = 0;
 
             file.LoadFile();
@@ -117,7 +115,7 @@ namespace Penumbra.Util
 
         private void ReadStandardFile( PenumbraFileResource resource, MemoryStream ms )
         {
-            var blocks = Reader.ReadStructures< DatStdFileBlockInfos >( (int)resource.FileInfo.BlockCount );
+            var blocks = Reader.ReadStructures< DatStdFileBlockInfos >( ( int )resource.FileInfo!.BlockCount );
 
             foreach( var block in blocks )
             {
@@ -128,9 +126,10 @@ namespace Penumbra.Util
             ms.Position = 0;
         }
 
-        private unsafe void ReadModelFile( PenumbraFileResource resource, MemoryStream ms ) {
-            var mdlBlock = resource.FileInfo.ModelBlock;
-            long baseOffset = resource.FileInfo.Offset + resource.FileInfo.HeaderSize;
+        private unsafe void ReadModelFile( PenumbraFileResource resource, MemoryStream ms )
+        {
+            var mdlBlock   = resource.FileInfo!.ModelBlock;
+            var baseOffset = resource.FileInfo.Offset + resource.FileInfo.HeaderSize;
 
             // 1/1/3/3/3 stack/runtime/vertex/egeo/index
             // TODO: consider testing if this is more reliable than the Explorer method
@@ -139,89 +138,111 @@ namespace Penumbra.Util
             // but it seems to work fine in explorer...
             int totalBlocks = mdlBlock.StackBlockNum;
             totalBlocks += mdlBlock.RuntimeBlockNum;
-            for( int i = 0; i < 3; i++ )
+            for( var i = 0; i < 3; i++ )
+            {
                 totalBlocks += mdlBlock.VertexBufferBlockNum[ i ];
-            for( int i = 0; i < 3; i++ )
-                totalBlocks += mdlBlock.EdgeGeometryVertexBufferBlockNum[ i ];
-            for( int i = 0; i < 3; i++ )
-                totalBlocks += mdlBlock.IndexBufferBlockNum[ i ];
+            }
 
-            var compressedBlockSizes = Reader.ReadStructures< UInt16 >( totalBlocks );
-            int currentBlock = 0;
-            int stackSize;
-            int runtimeSize;
-            int[] vertexDataOffsets = new int[3];
-            int[] indexDataOffsets = new int[3];
-            int[] vertexBufferSizes = new int[3];
-            int[] indexBufferSizes = new int[3];
+            for( var i = 0; i < 3; i++ )
+            {
+                totalBlocks += mdlBlock.EdgeGeometryVertexBufferBlockNum[ i ];
+            }
+
+            for( var i = 0; i < 3; i++ )
+            {
+                totalBlocks += mdlBlock.IndexBufferBlockNum[ i ];
+            }
+
+            var   compressedBlockSizes = Reader.ReadStructures< ushort >( totalBlocks );
+            var   currentBlock         = 0;
+            var vertexDataOffsets    = new int[3];
+            var indexDataOffsets     = new int[3];
+            var vertexBufferSizes    = new int[3];
+            var indexBufferSizes     = new int[3];
 
             ms.Seek( 0x44, SeekOrigin.Begin );
-            
+
             Reader.Seek( baseOffset + mdlBlock.StackOffset );
-            long stackStart = ms.Position;
-            for( int i = 0; i < mdlBlock.StackBlockNum; i++ ) {
-                long lastPos = Reader.BaseStream.Position;
+            var stackStart = ms.Position;
+            for( var i = 0; i < mdlBlock.StackBlockNum; i++ )
+            {
+                var lastPos = Reader.BaseStream.Position;
                 ReadFileBlock( ms );
                 Reader.Seek( lastPos + compressedBlockSizes[ currentBlock ] );
                 currentBlock++;
             }
 
-            long stackEnd = ms.Position;
-            stackSize = (int) ( stackEnd - stackStart );
+            var stackEnd  = ms.Position;
+            var stackSize = ( int )( stackEnd - stackStart );
 
             Reader.Seek( baseOffset + mdlBlock.RuntimeOffset );
-            long runtimeStart = ms.Position;
-            for( int i = 0; i < mdlBlock.RuntimeBlockNum; i++ ) {
-                long lastPos = Reader.BaseStream.Position;
+            var runtimeStart = ms.Position;
+            for( var i = 0; i < mdlBlock.RuntimeBlockNum; i++ )
+            {
+                var lastPos = Reader.BaseStream.Position;
                 ReadFileBlock( ms );
                 Reader.Seek( lastPos + compressedBlockSizes[ currentBlock ] );
                 currentBlock++;
             }
 
-            long runtimeEnd = ms.Position;
-            runtimeSize = (int) ( runtimeEnd - runtimeStart );
+            var runtimeEnd  = ms.Position;
+            var runtimeSize = ( int )( runtimeEnd - runtimeStart );
 
-            for( int i = 0; i < 3; i++ ) {
-
-                if( mdlBlock.VertexBufferBlockNum[ i ] != 0 ) {
-                    int currentVertexOffset = (int) ms.Position;
+            for( var i = 0; i < 3; i++ )
+            {
+                if( mdlBlock.VertexBufferBlockNum[ i ] != 0 )
+                {
+                    var currentVertexOffset = ( int )ms.Position;
                     if( i == 0 || currentVertexOffset != vertexDataOffsets[ i - 1 ] )
+                    {
                         vertexDataOffsets[ i ] = currentVertexOffset;
+                    }
                     else
+                    {
                         vertexDataOffsets[ i ] = 0;
+                    }
 
                     Reader.Seek( baseOffset + mdlBlock.VertexBufferOffset[ i ] );
 
-                    for( int j = 0; j < mdlBlock.VertexBufferBlockNum[ i ]; j++ ) {
-                        long lastPos = Reader.BaseStream.Position;
-                        vertexBufferSizes[ i ] += (int) ReadFileBlock( ms );
+                    for( var j = 0; j < mdlBlock.VertexBufferBlockNum[ i ]; j++ )
+                    {
+                        var lastPos = Reader.BaseStream.Position;
+                        vertexBufferSizes[ i ] += ( int )ReadFileBlock( ms );
                         Reader.Seek( lastPos + compressedBlockSizes[ currentBlock ] );
                         currentBlock++;
                     }
                 }
 
-                if( mdlBlock.EdgeGeometryVertexBufferBlockNum[ i ] != 0 ) {
-                    for( int j = 0; j < mdlBlock.EdgeGeometryVertexBufferBlockNum[ i ]; j++ ) {
-                        long lastPos = Reader.BaseStream.Position;
+                if( mdlBlock.EdgeGeometryVertexBufferBlockNum[ i ] != 0 )
+                {
+                    for( var j = 0; j < mdlBlock.EdgeGeometryVertexBufferBlockNum[ i ]; j++ )
+                    {
+                        var lastPos = Reader.BaseStream.Position;
                         ReadFileBlock( ms );
                         Reader.Seek( lastPos + compressedBlockSizes[ currentBlock ] );
                         currentBlock++;
                     }
                 }
 
-                if( mdlBlock.IndexBufferBlockNum[ i ] != 0 ) {
-                    int currentIndexOffset = (int) ms.Position;
+                if( mdlBlock.IndexBufferBlockNum[ i ] != 0 )
+                {
+                    var currentIndexOffset = ( int )ms.Position;
                     if( i == 0 || currentIndexOffset != indexDataOffsets[ i - 1 ] )
+                    {
                         indexDataOffsets[ i ] = currentIndexOffset;
+                    }
                     else
+                    {
                         indexDataOffsets[ i ] = 0;
+                    }
 
                     // i guess this is only needed in the vertex area, for i = 0
                     // Reader.Seek( baseOffset + mdlBlock.IndexBufferOffset[ i ] );
 
-                    for( int j = 0; j < mdlBlock.IndexBufferBlockNum[ i ]; j++ ) {
-                        long lastPos = Reader.BaseStream.Position;
-                        indexBufferSizes[ i ] += (int) ReadFileBlock( ms );
+                    for( var j = 0; j < mdlBlock.IndexBufferBlockNum[ i ]; j++ )
+                    {
+                        var lastPos = Reader.BaseStream.Position;
+                        indexBufferSizes[ i ] += ( int )ReadFileBlock( ms );
                         Reader.Seek( lastPos + compressedBlockSizes[ currentBlock ] );
                         currentBlock++;
                     }
@@ -234,33 +255,45 @@ namespace Penumbra.Util
             ms.Write( BitConverter.GetBytes( runtimeSize ) );
             ms.Write( BitConverter.GetBytes( mdlBlock.VertexDeclarationNum ) );
             ms.Write( BitConverter.GetBytes( mdlBlock.MaterialNum ) );
-            for( int i = 0; i < 3; i++ )
+            for( var i = 0; i < 3; i++ )
+            {
                 ms.Write( BitConverter.GetBytes( vertexDataOffsets[ i ] ) );
-            for( int i = 0; i < 3; i++ )
+            }
+
+            for( var i = 0; i < 3; i++ )
+            {
                 ms.Write( BitConverter.GetBytes( indexDataOffsets[ i ] ) );
-            for( int i = 0; i < 3; i++ )
+            }
+
+            for( var i = 0; i < 3; i++ )
+            {
                 ms.Write( BitConverter.GetBytes( vertexBufferSizes[ i ] ) );
-            for( int i = 0; i < 3; i++ )
+            }
+
+            for( var i = 0; i < 3; i++ )
+            {
                 ms.Write( BitConverter.GetBytes( indexBufferSizes[ i ] ) );
-            ms.Write( new [] {mdlBlock.NumLods} );
+            }
+
+            ms.Write( new[] { mdlBlock.NumLods } );
             ms.Write( BitConverter.GetBytes( mdlBlock.IndexBufferStreamingEnabled ) );
             ms.Write( BitConverter.GetBytes( mdlBlock.EdgeGeometryEnabled ) );
-            ms.Write( new byte[] {0} );
+            ms.Write( new byte[] { 0 } );
         }
 
         private void ReadTextureFile( PenumbraFileResource resource, MemoryStream ms )
         {
-            var blocks = Reader.ReadStructures< LodBlock >( (int)resource.FileInfo.BlockCount );
+            var blocks = Reader.ReadStructures< LodBlock >( ( int )resource.FileInfo!.BlockCount );
 
             // if there is a mipmap header, the comp_offset
             // will not be 0
-            uint mipMapSize = blocks[ 0 ].CompressedOffset;
+            var mipMapSize = blocks[ 0 ].CompressedOffset;
             if( mipMapSize != 0 )
             {
-                long originalPos = BaseStream.Position;
+                var originalPos = BaseStream.Position;
 
                 BaseStream.Position = resource.FileInfo.Offset + resource.FileInfo.HeaderSize;
-                ms.Write( Reader.ReadBytes( (int)mipMapSize ) );
+                ms.Write( Reader.ReadBytes( ( int )mipMapSize ) );
 
                 BaseStream.Position = originalPos;
             }
@@ -269,12 +302,12 @@ namespace Penumbra.Util
             for( byte i = 0; i < blocks.Count; i++ )
             {
                 // start from comp_offset
-                long runningBlockTotal = blocks[ i ].CompressedOffset + resource.FileInfo.Offset + resource.FileInfo.HeaderSize;
+                var runningBlockTotal = blocks[ i ].CompressedOffset + resource.FileInfo.Offset + resource.FileInfo.HeaderSize;
                 ReadFileBlock( runningBlockTotal, ms, true );
 
-                for( int j = 1; j < blocks[ i ].BlockCount; j++ )
+                for( var j = 1; j < blocks[ i ].BlockCount; j++ )
                 {
-                    runningBlockTotal += (UInt32)Reader.ReadInt16();
+                    runningBlockTotal += ( uint )Reader.ReadInt16();
                     ReadFileBlock( runningBlockTotal, ms, true );
                 }
 
@@ -283,25 +316,24 @@ namespace Penumbra.Util
             }
         }
 
-        protected uint ReadFileBlock( MemoryStream dest, bool resetPosition = false ) {
-            return ReadFileBlock( Reader.BaseStream.Position, dest, resetPosition );
-        }
+        protected uint ReadFileBlock( MemoryStream dest, bool resetPosition = false )
+            => ReadFileBlock( Reader.BaseStream.Position, dest, resetPosition );
 
         protected uint ReadFileBlock( long offset, MemoryStream dest, bool resetPosition = false )
         {
-            long originalPosition = BaseStream.Position;
+            var originalPosition = BaseStream.Position;
             BaseStream.Position = offset;
 
             var blockHeader = Reader.ReadStructure< DatBlockHeader >();
-            
+
             // uncompressed block
             if( blockHeader.CompressedSize == 32000 )
             {
-                dest.Write( Reader.ReadBytes( (int)blockHeader.UncompressedSize ) );
+                dest.Write( Reader.ReadBytes( ( int )blockHeader.UncompressedSize ) );
                 return blockHeader.UncompressedSize;
             }
 
-            var data = Reader.ReadBytes( (int)blockHeader.UncompressedSize );
+            var data = Reader.ReadBytes( ( int )blockHeader.UncompressedSize );
 
             using( var compressedStream = new MemoryStream( data ) )
             {
@@ -311,7 +343,9 @@ namespace Penumbra.Util
             }
 
             if( resetPosition )
+            {
                 BaseStream.Position = originalPosition;
+            }
 
             return blockHeader.UncompressedSize;
         }
@@ -323,10 +357,10 @@ namespace Penumbra.Util
 
         public class PenumbraFileInfo
         {
-            public UInt32   HeaderSize;
+            public uint     HeaderSize;
             public FileType Type;
-            public UInt32   RawFileSize;
-            public UInt32   BlockCount;
+            public uint     RawFileSize;
+            public uint     BlockCount;
 
             public long Offset { get; internal set; }
 
@@ -336,20 +370,20 @@ namespace Penumbra.Util
         public class PenumbraFileResource
         {
             public PenumbraFileResource()
-            {
-            }
+            { }
 
-            public PenumbraFileInfo FileInfo { get; internal set; }
+            public PenumbraFileInfo? FileInfo { get; internal set; }
 
-            public byte[] Data { get; internal set; }
+            public byte[] Data { get; internal set; } = new byte[0];
 
-            public Span< byte > DataSpan => Data.AsSpan();
+            public Span< byte > DataSpan
+                => Data.AsSpan();
 
-            public MemoryStream FileStream { get; internal set; }
+            public MemoryStream? FileStream { get; internal set; }
 
-            public BinaryReader Reader { get; internal set; }
+            public BinaryReader? Reader { get; internal set; }
 
-            public ParsedFilePath FilePath { get; internal set; }
+            public ParsedFilePath? FilePath { get; internal set; }
 
             /// <summary>
             /// Called once the files are read out from the dats. Used to further parse the file into usable data structures.
@@ -380,22 +414,22 @@ namespace Penumbra.Util
         }
 
         [StructLayout( LayoutKind.Sequential )]
-        struct DatBlockHeader
+        private struct DatBlockHeader
         {
-            public UInt32 Size;
-            public UInt32 unknown1;
-            public UInt32 CompressedSize;
-            public UInt32 UncompressedSize;
+            public uint Size;
+            public uint unknown1;
+            public uint CompressedSize;
+            public uint UncompressedSize;
         };
 
         [StructLayout( LayoutKind.Sequential )]
-        struct LodBlock
+        private struct LodBlock
         {
-            public UInt32 CompressedOffset;
-            public UInt32 CompressedSize;
-            public UInt32 DecompressedSize;
-            public UInt32 BlockOffset;
-            public UInt32 BlockCount;
+            public uint CompressedOffset;
+            public uint CompressedSize;
+            public uint DecompressedSize;
+            public uint BlockOffset;
+            public uint BlockCount;
         }
     }
 }
