@@ -41,7 +41,7 @@ namespace Penumbra.Mods
             {
                 foreach( var ms in ModSettings )
                 {
-                    PluginLog.Information(
+                    PluginLog.Debug(
                         "mod: {ModName} Enabled: {Enabled} Priority: {Priority}",
                         ms.FolderName, ms.Enabled, ms.Priority
                     );
@@ -61,7 +61,11 @@ namespace Penumbra.Mods
 
                 if( metaFile == null )
                 {
-                    PluginLog.LogError( "mod meta is missing for resource mod: {ResourceModLocation}", modDir );
+#if DEBUG
+                    PluginLog.Error( "mod meta is missing for resource mod: {ResourceModLocation}", modDir );
+#else
+                    PluginLog.Debug( "mod meta is missing for resource mod: {ResourceModLocation}", modDir );
+#endif
                     continue;
                 }
 
