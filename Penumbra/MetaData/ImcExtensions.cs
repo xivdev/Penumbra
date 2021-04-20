@@ -1,6 +1,8 @@
+using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using Dalamud.Plugin;
 using Lumina.Data.Files;
 using Penumbra.Game;
 using Penumbra.Mods;
@@ -9,9 +11,13 @@ namespace Penumbra.MetaData
 {
     public static class ImcExtensions
     {
-        public static bool Equal( this ImcFile.ImageChangeData lhs, ImcFile.ImageChangeData rhs ) =>
-            lhs.MaterialId == rhs.MaterialId && lhs.DecalId == rhs.DecalId && lhs.AttributeMask == rhs.AttributeMask
-            && lhs.SoundId == rhs.SoundId && lhs.VfxId == rhs.VfxId && lhs.MaterialAnimationId == rhs.MaterialAnimationId;
+        public static bool Equal( this ImcFile.ImageChangeData lhs, ImcFile.ImageChangeData rhs )
+            => lhs.MaterialId           == rhs.MaterialId
+             && lhs.DecalId             == rhs.DecalId
+             && lhs.AttributeMask       == rhs.AttributeMask
+             && lhs.SoundId             == rhs.SoundId
+             && lhs.VfxId               == rhs.VfxId
+             && lhs.MaterialAnimationId == rhs.MaterialAnimationId;
 
         private static void WriteBytes( this ImcFile.ImageChangeData variant, BinaryWriter bw )
         {
@@ -67,7 +73,7 @@ namespace Penumbra.MetaData
                     EquipSlot.RingR  => 3,
                     EquipSlot.Feet   => 4,
                     EquipSlot.RingL  => 4,
-                    _                => throw new InvalidEnumArgumentException()
+                    _                => throw new InvalidEnumArgumentException(),
                 };
             }
 
@@ -76,7 +82,16 @@ namespace Penumbra.MetaData
                 return ref parts[ idx ].DefaultVariant;
             }
 
-            return ref parts[ idx ].Variants[ imc.Variant - 1 ];
+            if( imc.Variant > parts[ idx ].Variants.Length )
+            {
+                PluginLog.Debug( "Trying to manipulate invalid variant {Variant} of {NumVariants} in file {FileName}.", imc.Variant,
+                    parts[ idx ].Variants.Length, file.FilePath.Path );
+                return ref parts[ idx ].Variants[ parts[ idx ].Variants.Length - 1 ];
+            }
+            else
+            {
+                return ref parts[ idx ].Variants[ imc.Variant - 1 ];
+            }
         }
 
         public static ImcFile Clone( this ImcFile file )
@@ -84,12 +99,12 @@ namespace Penumbra.MetaData
             var ret = new ImcFile
             {
                 Count    = file.Count,
-                PartMask = file.PartMask
+                PartMask = file.PartMask,
             };
             var parts = file.GetParts().Select( P => new ImcFile.ImageChangeParts()
             {
                 DefaultVariant = P.DefaultVariant,
-                Variants       = ( ImcFile.ImageChangeData[] )P.Variants.Clone()
+                Variants       = ( ImcFile.ImageChangeData[] )P.Variants.Clone(),
             } ).ToArray();
             var prop = ret.GetType().GetField( "Parts", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance );
             prop!.SetValue( ret, parts );

@@ -55,7 +55,7 @@ namespace Penumbra.Importer
                     ObjectType.Unknown       => false,
                     ObjectType.Weapon        => false,
                     ObjectType.World         => false,
-                    _                        => false
+                    _                        => false,
                 };
             }
 
@@ -93,32 +93,30 @@ namespace Penumbra.Importer
                 }
 
                 PrimaryId = ushort.Parse( match.Groups[ "PrimaryId" ].Value );
-                if( !match.Groups[ "Slot" ].Success )
+                if( match.Groups[ "Slot" ].Success )
                 {
-                    return;
-                }
+                    switch( PrimaryType )
+                    {
+                        case ObjectType.Equipment:
+                        case ObjectType.Accessory:
+                            if( GameData.SuffixToEquipSlot.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpSlot ) )
+                            {
+                                EquipSlot = tmpSlot;
+                            }
 
-                switch( PrimaryType )
-                {
-                    case ObjectType.Equipment:
-                    case ObjectType.Accessory:
-                        if( GameData.SuffixToEquipSlot.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpSlot ) )
-                        {
-                            EquipSlot = tmpSlot;
-                        }
+                            break;
+                        case ObjectType.Character:
+                            if( GameData.SuffixToCustomizationType.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpCustom ) )
+                            {
+                                CustomizationType = tmpCustom;
+                            }
 
-                        break;
-                    case ObjectType.Character:
-                        if( GameData.SuffixToCustomizationType.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpCustom ) )
-                        {
-                            CustomizationType = tmpCustom;
-                        }
-
-                        break;
+                            break;
+                    }
                 }
 
                 if( match.Groups[ "SecondaryType" ].Success
-                    && GameData.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
+                 && GameData.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
                 {
                     SecondaryId = ushort.Parse( match.Groups[ "SecondaryId" ].Value );
                 }
@@ -217,8 +215,8 @@ namespace Penumbra.Importer
                 var id    = reader.ReadUInt16();
                 var value = reader.ReadUInt16();
                 if( !gr.IsValid()
-                    || info.PrimaryType == ObjectType.Character && info.SecondaryType != BodySlot.Face && info.SecondaryType != BodySlot.Hair
-                    || info.PrimaryType == ObjectType.Equipment && info.EquipSlot != EquipSlot.Head && info.EquipSlot != EquipSlot.Body )
+                 || info.PrimaryType == ObjectType.Character && info.SecondaryType != BodySlot.Face  && info.SecondaryType != BodySlot.Hair
+                 || info.PrimaryType == ObjectType.Equipment && info.EquipSlot     != EquipSlot.Head && info.EquipSlot     != EquipSlot.Body )
                 {
                     continue;
                 }

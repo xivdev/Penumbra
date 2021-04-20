@@ -101,7 +101,7 @@ namespace Penumbra.MetaData
                 return 0;
             }
 
-            return !setDict.TryGetValue( setId, out var entry ) ? 0 : entry;
+            return !setDict.TryGetValue( setId, out var entry ) ? (ushort) 0 : entry;
         }
 
         public byte[] WriteBytes()

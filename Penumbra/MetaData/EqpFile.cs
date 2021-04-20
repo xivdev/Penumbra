@@ -108,7 +108,7 @@ namespace Penumbra.MetaData
         protected T GetEntry< T >( T[]?[] blocks, ushort idx, T defaultEntry )
         {
             // Skip the zeroth item.
-            idx = idx == 0 ? 1 : idx;
+            idx = idx == 0 ? ( ushort )1 : idx;
             var block = BlockIdx( idx );
             var array = block < blocks.Length ? blocks[ block ] : null;
             if( array == null )
@@ -122,7 +122,7 @@ namespace Penumbra.MetaData
         protected ref T GetTrueEntry< T >( T[]?[] blocks, ushort idx )
         {
             // Skip the zeroth item.
-            idx = idx == 0 ? 1 : idx;
+            idx = idx == 0 ? ( ushort )1 : idx;
             var block = BlockIdx( idx );
             if( block >= TotalBlockCount )
             {
@@ -141,7 +141,7 @@ namespace Penumbra.MetaData
             using var bw       = new BinaryWriter( mem );
 
             foreach( var parameter in blocks.Where( array => array != null )
-                .SelectMany( array => array ) )
+               .SelectMany( array => array ) )
             {
                 bw.Write( transform( parameter ) );
             }
