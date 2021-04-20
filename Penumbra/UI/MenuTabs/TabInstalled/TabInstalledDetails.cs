@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using Dalamud.Interface;
 using ImGuiNET;
 using Penumbra.Models;
 using Penumbra.Mods;
@@ -61,7 +62,6 @@ namespace Penumbra.UI
             private int                            _selectedOptionIndex;
             private Option?                        _selectedOption;
             private (string label, string name)[]? _changedItemsList;
-            private float?                         _fileSwapOffset;
             private string                         _currentGamePaths = "";
 
             private (FileInfo name, bool selected, uint color, RelPath relName)[]? _fullFilenameList;
@@ -116,7 +116,6 @@ namespace Penumbra.UI
             public void ResetState()
             {
                 _changedItemsList = null;
-                _fileSwapOffset   = null;
                 _fullFilenameList = null;
                 SelectGroup();
                 SelectOption();
@@ -141,7 +140,6 @@ namespace Penumbra.UI
                 var modManager = Service< ModManager >.Get();
                 modManager.Mods?.Save();
                 modManager.CalculateEffectiveFileList();
-                _base._menu.EffectiveTab.RebuildFileList( _base._plugin!.Configuration!.ShowAdvanced );
             }
 
             private void DrawAboutTab()
@@ -275,38 +273,36 @@ namespace Penumbra.UI
                     return;
                 }
 
-                if( !Meta.FileSwaps.Any() )
+                if( !Meta.FileSwaps.Any() || !ImGui.BeginTabItem( LabelFileSwapTab ) )
                 {
                     return;
                 }
 
-                if( ImGui.BeginTabItem( LabelFileSwapTab ) )
+                const ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
+
+                ImGui.SetNextItemWidth( -1 );
+                if( ImGui.BeginTable( LabelFileSwapHeader, 3, flags, AutoFillSize ) )
                 {
-                    _fileSwapOffset ??= Meta.FileSwaps
-                           .Max( P => ImGui.CalcTextSize( P.Key ).X )
-                      + TextSizePadding;
-
-                    ImGui.SetNextItemWidth( -1 );
-                    if( ImGui.BeginListBox( LabelFileSwapHeader, AutoFillSize ) )
+                    foreach( var file in Meta.FileSwaps )
                     {
-                        foreach( var file in Meta.FileSwaps )
-                        {
-                            ImGui.Selectable( file.Key );
-                            ImGui.SameLine( _fileSwapOffset ?? 0 );
-                            ImGui.TextUnformatted( "  -> " );
-                            ImGui.SameLine();
-                            ImGui.Selectable( file.Value );
-                        }
+                        ImGui.TableNextColumn();
+                        ImGuiCustom.CopyOnClickSelectable( file.Key );
 
-                        ImGui.EndListBox();
+                        ImGui.TableNextColumn();
+                        ImGui.PushFont( UiBuilder.IconFont );
+                        ImGui.TextUnformatted( $"{( char )FontAwesomeIcon.LongArrowAltRight}" );
+                        ImGui.PopFont();
+
+                        ImGui.TableNextColumn();
+                        ImGuiCustom.CopyOnClickSelectable( file.Value );
+
+                        ImGui.TableNextRow();
                     }
 
-                    ImGui.EndTabItem();
+                    ImGui.EndTable();
                 }
-                else
-                {
-                    _fileSwapOffset = null;
-                }
+
+                ImGui.EndTabItem();
             }
 
             private void UpdateFilenameList()
@@ -480,8 +476,6 @@ namespace Penumbra.UI
 
             private void DrawGamePathInput()
             {
-                ImGui.TextUnformatted( LabelGamePathsEdit );
-                ImGui.SameLine();
                 ImGui.SetNextItemWidth( -1 );
                 ImGui.InputTextWithHint( LabelGamePathsEditBox, "Hover for help...", ref _currentGamePaths, 128 );
                 if( ImGui.IsItemHovered() )

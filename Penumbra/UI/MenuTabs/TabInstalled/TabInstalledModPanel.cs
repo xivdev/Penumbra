@@ -188,7 +188,6 @@ namespace Penumbra.UI
                     var modManager = Service< ModManager >.Get();
                     modManager.Mods!.Save();
                     modManager.CalculateEffectiveFileList();
-                    _base._menu.EffectiveTab.RebuildFileList( _base._plugin!.Configuration!.ShowAdvanced );
                 }
             }
 
@@ -244,7 +243,6 @@ namespace Penumbra.UI
                     _selector.SaveCurrentMod();
                     Mod.Mod.RefreshModFiles();
                     Service< ModManager >.Get().CalculateEffectiveFileList();
-                    _base._menu.EffectiveTab.RebuildFileList( _base._plugin!.Configuration!.ShowAdvanced );
                 }
 
                 if( ImGui.IsItemHovered() )

@@ -1,7 +1,24 @@
+using System.Windows.Forms;
 using ImGuiNET;
 
 namespace Penumbra.UI
 {
+    public static partial class ImGuiCustom
+    {
+        public static void CopyOnClickSelectable( string text )
+        {
+            if( ImGui.Selectable( text ) )
+            {
+                Clipboard.SetText( text );
+            }
+
+            if( ImGui.IsItemHovered() )
+            {
+                ImGui.SetTooltip( "Click to copy to clipboard." );
+            }
+        }
+    }
+
     public static partial class ImGuiCustom
     {
         public static void VerticalDistance( float distance )

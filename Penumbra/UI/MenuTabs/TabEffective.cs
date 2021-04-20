@@ -1,5 +1,5 @@
 using System.IO;
-using System.Linq;
+using Dalamud.Interface;
 using ImGuiNET;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -13,36 +13,21 @@ namespace Penumbra.UI
             private const string LabelTab        = "Effective File List";
             private const float  TextSizePadding = 5f;
 
-            private ModManager _mods => Service< ModManager >.Get();
-            private float _maxGamePath;
+            private ModManager _mods
+                => Service< ModManager >.Get();
 
-            public TabEffective( SettingsInterface ui )
+            private static void DrawFileLine( FileInfo file, GamePath path )
             {
-                RebuildFileList( ui._plugin!.Configuration!.ShowAdvanced );
-            }
+                ImGui.TableNextColumn();
+                ImGuiCustom.CopyOnClickSelectable( path );
 
-            public void RebuildFileList( bool advanced )
-            {
-                if( advanced )
-                {
-                    _maxGamePath = TextSizePadding + ( _mods.ResolvedFiles.Count > 0
-                        ? _mods.ResolvedFiles.Keys.Max( f => ImGui.CalcTextSize( f ).X )
-                        : 0f );
-                }
-                else
-                {
-                    _maxGamePath = 0f;
-                }
-            }
+                ImGui.TableNextColumn();
+                ImGui.PushFont( UiBuilder.IconFont );
+                ImGui.TextUnformatted( $"{( char )FontAwesomeIcon.LongArrowAltLeft}" );
+                ImGui.PopFont();
 
-            private void DrawFileLine( FileInfo file, GamePath path )
-            {
-                ImGui.Selectable( path );
-                ImGui.SameLine();
-                ImGui.SetCursorPosX( _maxGamePath );
-                ImGui.TextUnformatted( "  <-- " );
-                ImGui.SameLine();
-                ImGui.Selectable( file.FullName );
+                ImGui.TableNextColumn();
+                ImGuiCustom.CopyOnClickSelectable( file.FullName );
             }
 
             public void Draw()
@@ -53,14 +38,17 @@ namespace Penumbra.UI
                     return;
                 }
 
-                if( ImGui.BeginListBox( "##effective_files", AutoFillSize ) )
+                const ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
+
+                if( ImGui.BeginTable( "##effective_files", 3, flags, AutoFillSize ) )
                 {
-                    foreach( var file in _mods.ResolvedFiles )
+                    foreach ( var file in _mods.ResolvedFiles )
                     {
                         DrawFileLine( file.Value, file.Key );
+                        ImGui.TableNextRow();
                     }
 
-                    ImGui.EndListBox();
+                    ImGui.EndTable();
                 }
 
                 ImGui.EndTabItem();

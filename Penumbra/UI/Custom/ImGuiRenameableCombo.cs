@@ -33,7 +33,7 @@ namespace Penumbra.UI
             }
 
             ImGui.SetNextItemWidth( -1 );
-            if( ImGui.InputText( $"##{label}_new", ref newOption, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
+            if( ImGui.InputTextWithHint( $"##{label}_new", "Add new item...", ref newOption, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
             {
                 currentItem = numItems;
                 newName     = newOption;

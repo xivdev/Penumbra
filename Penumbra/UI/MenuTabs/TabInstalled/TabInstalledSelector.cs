@@ -316,7 +316,6 @@ namespace Penumbra.UI
 
                 _mod!.Mod.RefreshModFiles();
                 Service< ModManager >.Get().CalculateEffectiveFileList();
-                _base._menu.EffectiveTab.RebuildFileList( _base._plugin!.Configuration!.ShowAdvanced );
                 ResetModNamesLower();
             }
 

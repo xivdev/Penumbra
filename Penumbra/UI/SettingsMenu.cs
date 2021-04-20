@@ -26,7 +26,7 @@ namespace Penumbra.UI
                 _importTab   = new TabImport( _base );
                 _browserTab  = new TabBrowser();
                 InstalledTab = new TabInstalled( _base );
-                EffectiveTab = new TabEffective( _base );
+                EffectiveTab = new TabEffective();
             }
 
 #if DEBUG

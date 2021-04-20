@@ -87,7 +87,6 @@ namespace Penumbra.UI
                 {
                     _config.ShowAdvanced = showAdvanced;
                     _configChanged       = true;
-                    _base._menu.EffectiveTab.RebuildFileList( showAdvanced );
                 }
             }
 
