@@ -140,10 +140,16 @@ namespace Penumbra.Importer
 
         private void AddIfNotDefault( MetaManipulation manipulation )
         {
-            if( !Service< MetaDefaults >.Get().CheckAgainstDefault( manipulation ) )
+            try
             {
-                Service< MetaDefaults >.Get().CheckAgainstDefault( manipulation );
-                Manipulations.Add( manipulation );
+                if( !Service< MetaDefaults >.Get().CheckAgainstDefault( manipulation ) )
+                {
+                    Manipulations.Add( manipulation );
+                }
+            }
+            catch( Exception e )
+            {
+                PluginLog.Debug("Skipped {Type}-manipulation:\n{e:l}", manipulation.Type, e  );
             }
         }
 

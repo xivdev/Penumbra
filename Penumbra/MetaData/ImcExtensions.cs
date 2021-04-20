@@ -9,6 +9,13 @@ using Penumbra.Mods;
 
 namespace Penumbra.MetaData
 {
+    public class InvalidImcVariantException : ArgumentOutOfRangeException
+    {
+        public InvalidImcVariantException()
+            : base("Trying to manipulate invalid variant.")
+        { }
+    }
+
     public static class ImcExtensions
     {
         public static bool Equal( this ImcFile.ImageChangeData lhs, ImcFile.ImageChangeData rhs )
@@ -84,14 +91,10 @@ namespace Penumbra.MetaData
 
             if( imc.Variant > parts[ idx ].Variants.Length )
             {
-                PluginLog.Debug( "Trying to manipulate invalid variant {Variant} of {NumVariants} in file {FileName}.", imc.Variant,
-                    parts[ idx ].Variants.Length, file.FilePath.Path );
-                return ref parts[ idx ].Variants[ parts[ idx ].Variants.Length - 1 ];
+                throw new InvalidImcVariantException();
             }
-            else
-            {
-                return ref parts[ idx ].Variants[ imc.Variant - 1 ];
-            }
+
+            return ref parts[ idx ].Variants[ imc.Variant - 1 ];
         }
 
         public static ImcFile Clone( this ImcFile file )
