@@ -54,6 +54,9 @@ namespace Penumbra.Mods
 
             foreach( var modDir in _basePath.EnumerateDirectories() )
             {
+                if( modDir.Name.ToLowerInvariant() == MetaManager.TmpDirectory )
+                    continue;
+
                 var metaFile = modDir.EnumerateFiles().FirstOrDefault( f => f.Name == "meta.json" );
 
                 if( metaFile == null )

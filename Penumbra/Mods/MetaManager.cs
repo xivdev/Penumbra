@@ -38,7 +38,7 @@ namespace Penumbra.Mods
             }
         }
 
-        private const string TmpDirectory = "penumbrametatmp";
+        public const string TmpDirectory = "penumbrametatmp";
 
         private readonly MetaDefaults                     _default;
         private readonly DirectoryInfo                    _dir;
