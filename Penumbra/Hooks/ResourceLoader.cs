@@ -66,7 +66,7 @@ namespace Penumbra.Hooks
                 scanner.ScanText( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3" );
 
             var getResourceSyncAddress =
-                scanner.ScanText( "E8 ?? ?? 00 00 48 8D 4F ?? 48 89 87 ?? ?? 00 00" );
+                scanner.ScanText( "E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00" );
 
             var getResourceAsyncAddress =
                 scanner.ScanText( "E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00" );
@@ -131,31 +131,35 @@ namespace Penumbra.Hooks
         }
 
         private unsafe void* GetResourceHandler(
-            bool isSync,
+            bool   isSync,
             IntPtr pFileManager,
-            uint* pCategoryId,
-            char* pResourceType,
-            uint* pResourceHash,
-            char* pPath,
-            void* pUnknown,
-            bool isUnknown
+            uint*  pCategoryId,
+            char*  pResourceType,
+            uint*  pResourceHash,
+            char*  pPath,
+            void*  pUnknown,
+            bool   isUnknown
         )
         {
-            var gameFsPath = GamePath.GenerateUncheckedLower( Marshal.PtrToStringAnsi( new IntPtr( pPath ) )! );
-
-            if( LogAllFiles )
-            {
-                PluginLog.Log( "[GetResourceHandler] {0}", gameFsPath );
-            }
-
             var modManager = Service< ModManager >.Get();
 
             if( !Plugin!.Configuration!.IsEnabled || modManager == null )
             {
+                if( LogAllFiles )
+                {
+                    PluginLog.Log( "[GetResourceHandler] {0}",
+                        GamePath.GenerateUncheckedLower( Marshal.PtrToStringAnsi( new IntPtr( pPath ) )! ) );
+                }
+
                 return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
             }
 
+            var gameFsPath      = GamePath.GenerateUncheckedLower( Marshal.PtrToStringAnsi( new IntPtr( pPath ) )! );
             var replacementPath = modManager.ResolveSwappedOrReplacementFilePath( gameFsPath );
+            if( LogAllFiles )
+            {
+                PluginLog.Log( "[GetResourceHandler] {0}", gameFsPath );
+            }
 
             // path must be < 260 because statically defined array length :(
             if( replacementPath == null )
