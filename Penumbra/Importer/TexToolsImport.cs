@@ -190,7 +190,7 @@ namespace Penumbra.Importer
         private DirectoryInfo CreateModFolder( string modListName )
         {
             var correctedPath = Path.Combine( _outDirectory.FullName,
-                Path.GetFileName( modListName ).RemoveInvalidPathSymbols() );
+                Path.GetFileName( modListName ).RemoveInvalidPathSymbols().RemoveNonAsciiSymbols() );
             var newModFolder = new DirectoryInfo( correctedPath );
             var i            = 2;
             while( newModFolder.Exists && i < 12 )

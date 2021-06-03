@@ -1,4 +1,6 @@
 using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace Penumbra
 {
@@ -11,5 +13,23 @@ namespace Penumbra
 
         public static string RemoveInvalidPathSymbols( this string s )
             => string.Concat( s.Split( _invalid ) );
+
+        public static string RemoveNonAsciiSymbols( this string s, string replacement = "_" )
+        {
+            StringBuilder sb = new( s.Length );
+            foreach( var c in s )
+            {
+                if( c < 128 )
+                {
+                    sb.Append( c );
+                }
+                else
+                {
+                    sb.Append( replacement );
+                }
+            }
+
+            return sb.ToString();
+        }
     }
 }
