@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Dalamud.Plugin;
 using Penumbra.Hooks;
 using Penumbra.Models;
@@ -117,7 +116,7 @@ namespace Penumbra.Mods
         }
 
         private void AddFiles( IEnumerable< GamePath > gamePaths, FileInfo file, Dictionary< GamePath, string > registeredFiles,
-            ResourceMod mod )
+            ResourceMod                                mod )
         {
             foreach( var gamePath in gamePaths )
             {
@@ -145,6 +144,12 @@ namespace Penumbra.Mods
             {
                 MetaManipulations!.ApplyMod( manipulation );
             }
+        }
+
+        public void ChangeModPriority( ModInfo info, int newPriority )
+        {
+            Mods!.ReorderMod( info, newPriority );
+            CalculateEffectiveFileList();
         }
 
         public void ChangeModPriority( ModInfo info, bool up = false )

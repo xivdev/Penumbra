@@ -55,7 +55,9 @@ namespace Penumbra.Mods
             foreach( var modDir in _basePath.EnumerateDirectories() )
             {
                 if( modDir.Name.ToLowerInvariant() == MetaManager.TmpDirectory )
+                {
                     continue;
+                }
 
                 var metaFile = modDir.EnumerateFiles().FirstOrDefault( f => f.Name == "meta.json" );
 
@@ -115,30 +117,47 @@ namespace Penumbra.Mods
             }
         }
 
-        public void ReorderMod( ModInfo info, bool up )
+        private int CleanPriority( int priority )
+            => priority < 0 ? 0 : priority >= ModSettings!.Count ? ModSettings.Count - 1 : priority;
+
+        public void ReorderMod( ModInfo info, int newPriority )
         {
-            // todo: certified fucked tier
-
-            var prio     = info.Priority;
-            var swapPrio = up ? prio + 1 : prio - 1;
-            var swapMeta = ModSettings.FirstOrDefault( x => x.Priority == swapPrio );
-
-            if( swapMeta == null )
+            if( ModSettings == null )
             {
                 return;
             }
 
-            info.Priority     = swapPrio;
-            swapMeta.Priority = prio;
+            var oldPriority = info.Priority;
+            newPriority = CleanPriority( newPriority );
+            if( oldPriority == newPriority )
+            {
+                return;
+            }
 
-            // reorder mods list
-            ModSettings = ModSettings.OrderBy( x => x.Priority ).ToList();
+            info.Priority = newPriority;
+            if( newPriority < oldPriority )
+            {
+                for( var i = oldPriority - 1; i >= newPriority; --i )
+                {
+                    ++ModSettings![ i ].Priority;
+                    ModSettings.Swap( i, i + 1 );
+                }
+            }
+            else
+            {
+                for( var i = oldPriority + 1; i <= newPriority; ++i )
+                {
+                    --ModSettings![ i ].Priority;
+                    ModSettings.Swap( i - 1, i );
+                }
+            }
+
             EnabledMods = GetOrderedAndEnabledModList().ToArray();
-
-            // save new prios
             Save();
         }
 
+        public void ReorderMod( ModInfo info, bool up )
+            => ReorderMod( info, info.Priority + ( up ? 1 : -1 ) );
 
         public ModInfo? FindModSettings( string name )
         {
@@ -157,7 +176,7 @@ namespace Penumbra.Mods
             {
                 Priority   = ModSettings?.Count ?? 0,
                 FolderName = mod.ModBasePath.Name,
-                Enabled    = true
+                Enabled    = true,
             };
             entry.FixInvalidSettings();
 #if DEBUG
@@ -184,7 +203,8 @@ namespace Penumbra.Mods
         public IEnumerable< ModInfo > GetOrderedAndEnabledModSettings( bool invertOrder = false )
         {
             var query = ModSettings?
-                .Where( x => x.Enabled ) ?? Enumerable.Empty< ModInfo >();
+                   .Where( x => x.Enabled )
+             ?? Enumerable.Empty< ModInfo >();
 
             if( !invertOrder )
             {
@@ -197,13 +217,13 @@ namespace Penumbra.Mods
         public IEnumerable< ResourceMod > GetOrderedAndEnabledModList( bool invertOrder = false )
         {
             return GetOrderedAndEnabledModSettings( invertOrder )
-                .Select( x => x.Mod );
+               .Select( x => x.Mod );
         }
 
         public IEnumerable< (ResourceMod, ModInfo) > GetOrderedAndEnabledModListWithSettings( bool invertOrder = false )
         {
             return GetOrderedAndEnabledModSettings( invertOrder )
-                .Select( x => ( x.Mod, x ) );
+               .Select( x => ( x.Mod, x ) );
         }
     }
 }

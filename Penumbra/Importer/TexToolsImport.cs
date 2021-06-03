@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using Dalamud.Plugin;
 using ICSharpCode.SharpZipLib.Zip;
-using Lumina.Data;
 using Newtonsoft.Json;
 using Penumbra.Importer.Models;
 using Penumbra.Models;
@@ -155,7 +153,7 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( Path.GetFileNameWithoutExtension( modPackFile.Name ) );
+            var newModFolder = CreateModFolder( _outDirectory, Path.GetFileNameWithoutExtension( modPackFile.Name ) );
 
             File.WriteAllText(
                 Path.Combine( newModFolder.FullName, "meta.json" ),
@@ -187,9 +185,9 @@ namespace Penumbra.Importer
             }
         }
 
-        private DirectoryInfo CreateModFolder( string modListName )
+        public static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName )
         {
-            var correctedPath = Path.Combine( _outDirectory.FullName,
+            var correctedPath = Path.Combine( outDirectory.FullName,
                 Path.GetFileName( modListName ).RemoveInvalidPathSymbols().RemoveNonAsciiSymbols() );
             var newModFolder = new DirectoryInfo( correctedPath );
             var i            = 2;
@@ -224,7 +222,7 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( modList.Name ?? "New Mod" );
+            var newModFolder = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
 
             File.WriteAllText( Path.Combine( newModFolder.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta ) );
@@ -252,7 +250,7 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( modList.Name ?? "New Mod" );
+            var newModFolder = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
 
             if( modList.SimpleModsList != null )
             {

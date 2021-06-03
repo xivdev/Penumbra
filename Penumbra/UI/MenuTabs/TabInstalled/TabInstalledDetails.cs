@@ -72,7 +72,7 @@ namespace Penumbra.UI
             private void SelectGroup( int idx )
             {
                 // Not using the properties here because we need it to be not null forgiving in this case.
-                var numGroups = _selector.Mod()?.Mod.Meta.Groups.Count ?? 0;
+                var numGroups = _selector.Mod?.Mod.Meta.Groups.Count ?? 0;
                 _selectedGroupIndex = idx;
                 if( _selectedGroupIndex >= numGroups )
                 {
@@ -130,7 +130,7 @@ namespace Penumbra.UI
 
             // This is only drawn when we have a mod selected, so we can forgive nulls.
             private ModInfo Mod
-                => _selector.Mod()!;
+                => _selector.Mod!;
 
             private ModMeta Meta
                 => Mod.Mod.Meta;

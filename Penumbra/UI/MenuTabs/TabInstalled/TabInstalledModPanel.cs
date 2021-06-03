@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Numerics;
 using Dalamud.Plugin;
 using ImGuiNET;
@@ -12,25 +13,28 @@ namespace Penumbra.UI
     {
         private class ModPanel
         {
-            private const string LabelModPanel        = "selectedModInfo";
-            private const string LabelEditName        = "##editName";
-            private const string LabelEditVersion     = "##editVersion";
-            private const string LabelEditAuthor      = "##editAuthor";
-            private const string LabelEditWebsite     = "##editWebsite";
-            private const string LabelModEnabled      = "Enabled";
-            private const string LabelEditingEnabled  = "Enable Editing";
-            private const string ButtonOpenWebsite    = "Open Website";
-            private const string ButtonOpenModFolder  = "Open Mod Folder";
-            private const string ButtonEditJson       = "Edit JSON";
-            private const string ButtonReloadJson     = "Reload JSON";
-            private const string ButtonDeduplicate    = "Deduplicate";
-            private const string TooltipOpenModFolder = "Open the directory containing this mod in your default file explorer.";
-            private const string TooltipEditJson      = "Open the JSON configuration file in your default application for .json.";
-            private const string TooltipReloadJson    = "Reload the configuration of all mods.";
+            private const string LabelModPanel          = "selectedModInfo";
+            private const string LabelEditName          = "##editName";
+            private const string LabelEditVersion       = "##editVersion";
+            private const string LabelEditAuthor        = "##editAuthor";
+            private const string LabelEditWebsite       = "##editWebsite";
+            private const string LabelModEnabled        = "Enabled";
+            private const string LabelEditingEnabled    = "Enable Editing";
+            private const string ButtonOpenWebsite      = "Open Website";
+            private const string ButtonOpenModFolder    = "Open Mod Folder";
+            private const string ButtonRenameModFolder  = "Rename Mod Folder";
+            private const string ButtonEditJson         = "Edit JSON";
+            private const string ButtonReloadJson       = "Reload JSON";
+            private const string ButtonDeduplicate      = "Deduplicate";
+            private const string TooltipOpenModFolder   = "Open the directory containing this mod in your default file explorer.";
+            private const string TooltipRenameModFolder = "Rename the directory containing this mod without opening another application.";
+            private const string TooltipEditJson        = "Open the JSON configuration file in your default application for .json.";
+            private const string TooltipReloadJson      = "Reload the configuration of all mods.";
+            private const string PopupRenameFolder      = "Rename Folder";
 
             private const string TooltipDeduplicate =
-                "Try to find identical files and remove duplicate occurences to reduce the mods disk size.\n" +
-                "Introduces an invisible single-option Group \"Duplicates\".";
+                "Try to find identical files and remove duplicate occurences to reduce the mods disk size.\n"
+              + "Introduces an invisible single-option Group \"Duplicates\".";
 
             private const           float   HeaderLineDistance = 10f;
             private static readonly Vector4 GreyColor          = new( 1f, 1f, 1f, 0.66f );
@@ -51,14 +55,18 @@ namespace Penumbra.UI
                 _currentWebsite = Meta?.Website ?? "";
             }
 
-            private ModInfo? Mod => _selector.Mod();
-            private ModMeta? Meta => Mod?.Mod.Meta;
+            private ModInfo? Mod
+                => _selector.Mod;
+
+            private ModMeta? Meta
+                => Mod?.Mod.Meta;
 
             private void DrawName()
             {
                 var name = Meta!.Name;
                 if( ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 )
-                    && name.Length > 0 && name != Meta.Name )
+                 && name.Length > 0
+                 && name        != Meta.Name )
                 {
                     Meta.Name = name;
                     _selector.SaveCurrentMod();
@@ -76,7 +84,7 @@ namespace Penumbra.UI
                     ImGui.SameLine();
                     var version = Meta!.Version;
                     if( ImGuiCustom.ResizingTextInput( LabelEditVersion, ref version, 16 )
-                        && version != Meta.Version )
+                     && version != Meta.Version )
                     {
                         Meta.Version = version;
                         _selector.SaveCurrentMod();
@@ -101,7 +109,7 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 var author = Meta!.Author;
                 if( ImGuiCustom.InputOrText( _editMode, LabelEditAuthor, ref author, 64 )
-                    && author != Meta.Author )
+                 && author != Meta.Author )
                 {
                     Meta.Author = author;
                     _selector.SaveCurrentMod();
@@ -119,7 +127,7 @@ namespace Penumbra.UI
                     ImGui.SameLine();
                     var website = Meta!.Website;
                     if( ImGuiCustom.ResizingTextInput( LabelEditWebsite, ref website, 512 )
-                        && website != Meta.Website )
+                     && website != Meta.Website )
                     {
                         Meta.Website = website;
                         _selector.SaveCurrentMod();
@@ -131,7 +139,7 @@ namespace Penumbra.UI
                     {
                         _currentWebsite = Meta.Website;
                         _validWebsite = Uri.TryCreate( Meta.Website, UriKind.Absolute, out var uriResult )
-                            && ( uriResult.Scheme == Uri.UriSchemeHttps || uriResult.Scheme == Uri.UriSchemeHttp );
+                         && ( uriResult.Scheme == Uri.UriSchemeHttps || uriResult.Scheme == Uri.UriSchemeHttp );
                     }
 
                     if( _validWebsite )
@@ -142,7 +150,7 @@ namespace Penumbra.UI
                             {
                                 var process = new ProcessStartInfo( Meta.Website )
                                 {
-                                    UseShellExecute = true
+                                    UseShellExecute = true,
                                 };
                                 Process.Start( process );
                             }
@@ -209,6 +217,148 @@ namespace Penumbra.UI
                 }
             }
 
+            private string _newName       = "";
+            private bool   _keyboardFocus = true;
+
+            private void DrawRenameModFolderButton()
+            {
+                var _ = true;
+                _keyboardFocus |= !ImGui.IsPopupOpen( PopupRenameFolder );
+
+                ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, new Vector2( 0.5f, 1f ) );
+                if( ImGui.BeginPopupModal( PopupRenameFolder, ref _, ImGuiWindowFlags.AlwaysAutoResize ) )
+                {
+                    if( ImGui.IsKeyPressed( ImGui.GetKeyIndex( ImGuiKey.Escape ) ) )
+                    {
+                        ImGui.CloseCurrentPopup();
+                    }
+
+                    var newName = Mod!.FolderName;
+
+                    if( _keyboardFocus )
+                    {
+                        PluginLog.Log( "Fuck you" );
+                        ImGui.SetKeyboardFocusHere();
+                        _keyboardFocus = false;
+                    }
+
+                    if( ImGui.InputText( "New Folder Name##RenameFolderInput", ref newName, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                    {
+                        _newName = newName.RemoveNonAsciiSymbols().RemoveInvalidPathSymbols();
+                        if( _newName.Length == 0 )
+                        {
+                            ImGui.CloseCurrentPopup();
+                        }
+                        else if( !string.Equals( _newName, Mod!.FolderName, StringComparison.InvariantCultureIgnoreCase ) )
+                        {
+                            DirectoryInfo dir    = Mod!.Mod.ModBasePath;
+                            DirectoryInfo newDir = new( Path.Combine( dir.Parent!.FullName, _newName ) );
+                            if( newDir.Exists )
+                            {
+                                PluginLog.Error( "GOTT" );
+                                ImGui.OpenPopup( "OverwriteDir" );
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    dir.MoveTo( newDir.FullName );
+                                }
+                                catch( Exception e )
+                                {
+                                    PluginLog.Error( $"Error while renaming directory {dir.FullName} to {newDir.FullName}:\n{e}" );
+                                }
+
+                                Mod!.FolderName      = _newName;
+                                Mod!.Mod.ModBasePath = newDir;
+                                _selector.ReloadCurrentMod();
+                                Service< ModManager >.Get()!.Mods!.Save();
+                                ImGui.CloseCurrentPopup();
+                            }
+                        }
+                    }
+
+                    ImGui.TextColored( GreyColor,
+                        "Please restrict yourself to ascii symbols that are valid in a windows path,\nother symbols will be replaced by underscores." );
+
+                    var closeParent = false;
+                    _ = true;
+                    ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, Vector2.One / 2 );
+                    if( ImGui.BeginPopupModal( "OverwriteDir", ref _, ImGuiWindowFlags.AlwaysAutoResize ) )
+                    {
+                        DirectoryInfo dir    = Mod!.Mod.ModBasePath;
+                        DirectoryInfo newDir = new( Path.Combine( dir.Parent!.FullName, _newName ) );
+                        ImGui.Text(
+                            $"The mod directory {newDir} already exists.\nDo you want to merge / overwrite both mods?\nThis may corrupt the resulting mod in irrecoverable ways." );
+                        var buttonSize = new Vector2( 120, 0 );
+                        if( ImGui.Button( "Yes", buttonSize ) )
+                        {
+                            try
+                            {
+                                foreach( var file in dir.EnumerateFiles( "*", SearchOption.AllDirectories ) )
+                                {
+                                    var target = new FileInfo( Path.Combine( newDir.FullName,
+                                        file.FullName.Substring( dir.FullName.Length ) ) );
+                                    if( target.Exists )
+                                    {
+                                        target.Delete();
+                                    }
+
+                                    target.Directory?.Create();
+                                    file.MoveTo( target.FullName );
+                                }
+
+                                dir.Delete( true );
+
+                                var mod = Service< ModManager >.Get()!.Mods!.ModSettings!
+                                   .RemoveAll( m => m.FolderName == _newName );
+
+                                Mod!.FolderName      = _newName;
+                                Mod!.Mod.ModBasePath = newDir;
+                                Service< ModManager >.Get()!.Mods!.Save();
+                                _base.ReloadMods();
+                                _selector.SelectModByDir( _newName );
+                            }
+                            catch( Exception e )
+                            {
+                                PluginLog.Error( $"Error while renaming directory {dir.FullName} to {newDir.FullName}:\n{e}" );
+                            }
+
+                            closeParent = true;
+                            ImGui.CloseCurrentPopup();
+                        }
+
+                        ImGui.SameLine();
+
+                        if( ImGui.Button( "Cancel", buttonSize ) )
+                        {
+                            PluginLog.Error( "FUCKFUCK" );
+                            _keyboardFocus = true;
+                            ImGui.CloseCurrentPopup();
+                        }
+
+                        ImGui.EndPopup();
+                    }
+
+                    if( closeParent )
+                    {
+                        ImGui.CloseCurrentPopup();
+                    }
+
+                    ImGui.EndPopup();
+                }
+
+                if( ImGui.Button( ButtonRenameModFolder ) )
+                {
+                    ImGui.OpenPopup( PopupRenameFolder );
+                }
+
+                if( ImGui.IsItemHovered() )
+                {
+                    ImGui.SetTooltip( TooltipRenameModFolder );
+                }
+            }
+
             private void DrawEditJsonButton()
             {
                 if( ImGui.Button( ButtonEditJson ) )
@@ -254,6 +404,8 @@ namespace Penumbra.UI
             private void DrawEditLine()
             {
                 DrawOpenModFolderButton();
+                ImGui.SameLine();
+                DrawRenameModFolderButton();
                 ImGui.SameLine();
                 DrawEditJsonButton();
                 ImGui.SameLine();
