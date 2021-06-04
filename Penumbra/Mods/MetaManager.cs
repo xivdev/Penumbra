@@ -30,7 +30,7 @@ namespace Penumbra.Mods
                     GmpFile gmp   => gmp.WriteBytes(),
                     EstFile est   => est.WriteBytes(),
                     ImcFile imc   => imc.WriteBytes(),
-                    _             => throw new NotImplementedException()
+                    _             => throw new NotImplementedException(),
                 };
                 DisposeFile( CurrentFile );
                 CurrentFile = TempFile.WriteNew( dir, data );
@@ -123,27 +123,34 @@ namespace Penumbra.Mods
             }
 
             var gamePath = m.CorrespondingFilename();
-            if( !_currentFiles.TryGetValue( gamePath, out var file ) )
+            try
             {
-                file = new FileInformation( _default.CreateNewFile( m ) ?? throw new IOException() )
+                if( !_currentFiles.TryGetValue( gamePath, out var file ) )
                 {
-                    Changed     = true,
-                    CurrentFile = null
+                    file = new FileInformation( _default.CreateNewFile( m ) ?? throw new IOException() )
+                    {
+                        Changed     = true,
+                        CurrentFile = null,
+                    };
+                    _currentFiles[ gamePath ] = file;
+                }
+
+                file.Changed |= m.Type switch
+                {
+                    MetaType.Eqp  => m.Apply( ( EqpFile )file.Data ),
+                    MetaType.Eqdp => m.Apply( ( EqdpFile )file.Data ),
+                    MetaType.Gmp  => m.Apply( ( GmpFile )file.Data ),
+                    MetaType.Est  => m.Apply( ( EstFile )file.Data ),
+                    MetaType.Imc  => m.Apply( ( ImcFile )file.Data ),
+                    _             => throw new NotImplementedException(),
                 };
-                _currentFiles[ gamePath ] = file;
+                return true;
             }
-
-            file.Changed |= m.Type switch
+            catch( Exception e )
             {
-                MetaType.Eqp  => m.Apply( ( EqpFile )file.Data ),
-                MetaType.Eqdp => m.Apply( ( EqdpFile )file.Data ),
-                MetaType.Gmp  => m.Apply( ( GmpFile )file.Data ),
-                MetaType.Est  => m.Apply( ( EstFile )file.Data ),
-                MetaType.Imc  => m.Apply( ( ImcFile )file.Data ),
-                _             => throw new NotImplementedException()
-            };
-
-            return true;
+                PluginLog.Error( $"Could not obtain default file for manipulation {m.CorrespondingFilename()}:\n{e}" );
+                return false;
+            }
         }
     }
 }

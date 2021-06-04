@@ -1,13 +1,17 @@
 using System;
 using Penumbra.Game;
+using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.MetaData
 {
     public static class MetaFileNames
     {
-        public static GamePath Eqp() => GamePath.GenerateUnchecked( "chara/xls/equipmentparameter/equipmentparameter.eqp" );
-        public static GamePath Gmp() => GamePath.GenerateUnchecked( "chara/xls/equipmentparameter/gimmickparameter.gmp" );
+        public static GamePath Eqp()
+            => GamePath.GenerateUnchecked( "chara/xls/equipmentparameter/equipmentparameter.eqp" );
+
+        public static GamePath Gmp()
+            => GamePath.GenerateUnchecked( "chara/xls/equipmentparameter/gimmickparameter.gmp" );
 
         public static GamePath Est( ObjectType type, EquipSlot equip, BodySlot slot )
         {
@@ -17,15 +21,15 @@ namespace Penumbra.MetaData
                 {
                     EquipSlot.Body => GamePath.GenerateUnchecked( "chara/xls/charadb/extra_top.est" ),
                     EquipSlot.Head => GamePath.GenerateUnchecked( "chara/xls/charadb/extra_met.est" ),
-                    _              => throw new NotImplementedException()
+                    _              => throw new NotImplementedException(),
                 },
                 ObjectType.Character => slot switch
                 {
                     BodySlot.Hair => GamePath.GenerateUnchecked( "chara/xls/charadb/hairskeletontemplate.est" ),
                     BodySlot.Face => GamePath.GenerateUnchecked( "chara/xls/charadb/faceskeletontemplate.est" ),
-                    _             => throw new NotImplementedException()
+                    _             => throw new NotImplementedException(),
                 },
-                _ => throw new NotImplementedException()
+                _ => throw new NotImplementedException(),
             };
         }
 
@@ -41,7 +45,7 @@ namespace Penumbra.MetaData
                     $"chara/monster/m{primaryId:D4}/obj/body/b{secondaryId:D4}/b{secondaryId:D4}.imc" ),
                 ObjectType.Weapon => GamePath.GenerateUnchecked(
                     $"chara/weapon/w{primaryId:D4}/obj/body/b{secondaryId:D4}/b{secondaryId:D4}.imc" ),
-                _ => throw new NotImplementedException()
+                _ => throw new NotImplementedException(),
             };
         }
 
@@ -51,7 +55,7 @@ namespace Penumbra.MetaData
             {
                 ObjectType.Accessory => GamePath.GenerateUnchecked( $"chara/xls/charadb/accessorydeformerparameter/c{gr.ToRaceCode()}.eqdp" ),
                 ObjectType.Equipment => GamePath.GenerateUnchecked( $"chara/xls/charadb/equipmentdeformerparameter/c{gr.ToRaceCode()}.eqdp" ),
-                _                    => throw new NotImplementedException()
+                _                    => throw new NotImplementedException(),
             };
         }
 
@@ -69,7 +73,7 @@ namespace Penumbra.MetaData
                 EquipSlot.Wrists => Eqdp( ObjectType.Accessory, gr ),
                 EquipSlot.RingL  => Eqdp( ObjectType.Accessory, gr ),
                 EquipSlot.RingR  => Eqdp( ObjectType.Accessory, gr ),
-                _                => throw new NotImplementedException()
+                _                => throw new NotImplementedException(),
             };
         }
     }

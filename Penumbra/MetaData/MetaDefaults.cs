@@ -98,7 +98,6 @@ namespace Penumbra.MetaData
         public ImcFile? GetNewImcFile( ObjectType type, ushort primarySetId, ushort secondarySetId = 0 )
             => GetDefaultImcFile( type, primarySetId, secondarySetId )?.Clone();
 
-
         public MetaDefaults( DalamudPluginInterface pi )
             => _pi = pi;
 

@@ -46,6 +46,7 @@ namespace Penumbra.Importer
                     ObjectType.DemiHuman     => true,
                     ObjectType.Housing       => true,
                     ObjectType.Monster       => true,
+                    ObjectType.Weapon        => true,
                     ObjectType.Icon          => false,
                     ObjectType.Font          => false,
                     ObjectType.Interface     => false,
@@ -53,7 +54,6 @@ namespace Penumbra.Importer
                     ObjectType.Map           => false,
                     ObjectType.Vfx           => false,
                     ObjectType.Unknown       => false,
-                    ObjectType.Weapon        => false,
                     ObjectType.World         => false,
                     _                        => false,
                 };
@@ -149,7 +149,7 @@ namespace Penumbra.Importer
             }
             catch( Exception e )
             {
-                PluginLog.Debug("Skipped {Type}-manipulation:\n{e:l}", manipulation.Type, e  );
+                PluginLog.Debug( "Skipped {Type}-manipulation:\n{e:l}", manipulation.Type, e );
             }
         }
 
