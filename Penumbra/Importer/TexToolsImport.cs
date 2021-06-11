@@ -272,7 +272,7 @@ namespace Penumbra.Importer
 
                 foreach( var group in page.ModGroups.Where( group => group.GroupName != null && group.OptionList != null ) )
                 {
-                    var groupFolder = new DirectoryInfo( Path.Combine( newModFolder.FullName, group.GroupName!.ReplaceInvalidPathSymbols() ) );
+                    var groupFolder = new DirectoryInfo( Path.Combine( newModFolder.FullName, group.GroupName!.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols( ) ) );
                     if( groupFolder.Exists )
                     {
                         groupFolder     =  new DirectoryInfo( groupFolder.FullName + $" ({page.PageIndex})" );
@@ -281,7 +281,7 @@ namespace Penumbra.Importer
 
                     foreach( var option in group.OptionList!.Where( option => option.Name != null && option.ModsJsons != null ) )
                     {
-                        var optionFolder = new DirectoryInfo( Path.Combine( groupFolder.FullName, option.Name!.ReplaceInvalidPathSymbols() ) );
+                        var optionFolder = new DirectoryInfo( Path.Combine( groupFolder.FullName, option.Name!.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols() ) );
                         ExtractSimpleModList( optionFolder, option.ModsJsons!, modData );
                     }
 
@@ -311,7 +311,7 @@ namespace Penumbra.Importer
                     OptionDesc  = string.IsNullOrEmpty( opt.Description ) ? "" : opt.Description!,
                     OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >(),
                 };
-                var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name!.ReplaceInvalidPathSymbols() ) );
+                var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name!.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols() ) );
                 if( optDir.Exists )
                 {
                     foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
