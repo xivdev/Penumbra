@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using Penumbra.Mods;
 using Penumbra.Structs;
@@ -30,12 +31,12 @@ namespace Penumbra.Hooks
         public unsafe delegate byte ReadSqpackPrototype( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync );
 
         [Function( CallingConventions.Microsoft )]
-        public unsafe delegate void* GetResourceSyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType,
-            uint* pResourceHash, char* pPath, void* pUnknown );
+        public unsafe delegate void* GetResourceSyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType
+            , uint* pResourceHash, char* pPath, void* pUnknown );
 
         [Function( CallingConventions.Microsoft )]
-        public unsafe delegate void* GetResourceAsyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType,
-            uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown );
+        public unsafe delegate void* GetResourceAsyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType
+            , uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown );
 
         // Hooks
         public IHook< GetResourceSyncPrototype >? GetResourceSyncHook { get; private set; }
@@ -46,7 +47,8 @@ namespace Penumbra.Hooks
         public ReadFilePrototype? ReadFile { get; private set; }
 
 
-        public bool LogAllFiles = false;
+        public bool   LogAllFiles   = false;
+        public Regex? LogFileFilter = null;
 
 
         public ResourceLoader( Plugin plugin )
@@ -87,7 +89,8 @@ namespace Penumbra.Hooks
             uint* pResourceHash,
             char* pPath,
             void* pUnknown
-        ) => GetResourceHandler( true, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, false );
+        )
+            => GetResourceHandler( true, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, false );
 
         private unsafe void* GetResourceAsyncHandler(
             IntPtr pFileManager,
@@ -97,7 +100,8 @@ namespace Penumbra.Hooks
             char* pPath,
             void* pUnknown,
             bool isUnknown
-        ) => GetResourceHandler( false, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
+        )
+            => GetResourceHandler( false, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
 
         private unsafe void* CallOriginalHandler(
             bool isSync,
@@ -131,34 +135,39 @@ namespace Penumbra.Hooks
         }
 
         private unsafe void* GetResourceHandler(
-            bool   isSync,
+            bool isSync,
             IntPtr pFileManager,
-            uint*  pCategoryId,
-            char*  pResourceType,
-            uint*  pResourceHash,
-            char*  pPath,
-            void*  pUnknown,
-            bool   isUnknown
+            uint* pCategoryId,
+            char* pResourceType,
+            uint* pResourceHash,
+            char* pPath,
+            void* pUnknown,
+            bool isUnknown
         )
         {
-            var modManager = Service< ModManager >.Get();
+            string file;
+            var    modManager = Service< ModManager >.Get();
 
             if( !Plugin!.Configuration!.IsEnabled || modManager == null )
             {
                 if( LogAllFiles )
                 {
-                    PluginLog.Log( "[GetResourceHandler] {0}",
-                        GamePath.GenerateUncheckedLower( Marshal.PtrToStringAnsi( new IntPtr( pPath ) )! ) );
+                    file = Marshal.PtrToStringAnsi( new IntPtr( pPath ) )!;
+                    if( LogFileFilter == null || LogFileFilter.IsMatch( file ) )
+                    {
+                        PluginLog.Log( "[GetResourceHandler] {0}", file );
+                    }
                 }
 
                 return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
             }
 
-            var gameFsPath      = GamePath.GenerateUncheckedLower( Marshal.PtrToStringAnsi( new IntPtr( pPath ) )! );
-            var replacementPath = modManager.ResolveSwappedOrReplacementFilePath( gameFsPath );
-            if( LogAllFiles )
+            file = Marshal.PtrToStringAnsi( new IntPtr( pPath ) )!;
+            var gameFsPath      = GamePath.GenerateUncheckedLower( file );
+            var replacementPath = modManager.CurrentCollection.ResolveSwappedOrReplacementPath( gameFsPath );
+            if( LogAllFiles && ( LogFileFilter == null || LogFileFilter.IsMatch( file ) ) )
             {
-                PluginLog.Log( "[GetResourceHandler] {0}", gameFsPath );
+                PluginLog.Log( "[GetResourceHandler] {0}", file );
             }
 
             // path must be < 260 because statically defined array length :(

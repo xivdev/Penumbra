@@ -30,11 +30,14 @@ namespace Penumbra.Hooks
 
         // Object addresses
         private readonly IntPtr _playerResourceManagerAddress;
-        public IntPtr PlayerResourceManagerPtr => Marshal.ReadIntPtr( _playerResourceManagerAddress );
+
+        public IntPtr PlayerResourceManagerPtr
+            => Marshal.ReadIntPtr( _playerResourceManagerAddress );
+
         private readonly IntPtr _characterResourceManagerAddress;
 
-        public unsafe CharacterResourceManager* CharacterResourceManagerPtr =>
-            ( CharacterResourceManager* )Marshal.ReadIntPtr( _characterResourceManagerAddress ).ToPointer();
+        public unsafe CharacterResourceManager* CharacterResourceManagerPtr
+            => ( CharacterResourceManager* )Marshal.ReadIntPtr( _characterResourceManagerAddress ).ToPointer();
 
         public GameResourceManagement( DalamudPluginInterface pluginInterface )
         {
@@ -70,7 +73,7 @@ namespace Penumbra.Hooks
         public unsafe string ResourceToPath( byte* resource )
             => Marshal.PtrToStringAnsi( new IntPtr( *( char** )( resource + 9 * 8 ) ) )!;
 
-        public unsafe void ReloadCharacterResources()
+        private unsafe void ReloadCharacterResources()
         {
             var oldResources = new IntPtr[NumResources];
             var resources    = new IntPtr( &CharacterResourceManagerPtr->Resources );
@@ -88,9 +91,9 @@ namespace Penumbra.Hooks
                     continue;
                 }
 
-                PluginLog.Debug( "Freeing " +
-                    $"{ResourceToPath( ( byte* )oldResources[ i ].ToPointer() )}, replaced with " +
-                    $"{ResourceToPath( ( byte* )pResources[ i ] )}" );
+                PluginLog.Debug( "Freeing "
+                  + $"{ResourceToPath( ( byte* )oldResources[ i ].ToPointer() )}, replaced with "
+                  + $"{ResourceToPath( ( byte* )pResources[ i ] )}" );
 
                 UnloadCharacterResource( oldResources[ i ] );
             }

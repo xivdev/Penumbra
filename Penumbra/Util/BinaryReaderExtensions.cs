@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Penumbra.Util
 {
@@ -38,10 +36,10 @@ namespace Penumbra.Util
 
             var list = new List< T >( count );
 
-            for( int i = 0; i < count; i++ )
+            for( var i = 0; i < count; i++ )
             {
                 var offset = size * i;
-                var span = new ReadOnlySpan< byte >( data, offset, size );
+                var span   = new ReadOnlySpan< byte >( data, offset, size );
 
                 list.Add( MemoryMarshal.Read< T >( span ) );
             }
@@ -55,12 +53,12 @@ namespace Penumbra.Util
             var data = br.ReadBytes( size * count );
 
             // im a pirate arr
-            var arr = new T[ count ];
+            var arr = new T[count];
 
-            for( int i = 0; i < count; i++ )
+            for( var i = 0; i < count; i++ )
             {
                 var offset = size * i;
-                var span = new ReadOnlySpan< byte >( data, offset, size );
+                var span   = new ReadOnlySpan< byte >( data, offset, size );
 
                 arr[ i ] = MemoryMarshal.Read< T >( span );
             }
@@ -76,9 +74,7 @@ namespace Penumbra.Util
         /// <param name="offset">The offset to read a string starting from.</param>
         /// <returns></returns>
         public static string ReadStringOffsetData( this BinaryReader br, long offset )
-        {
-            return Encoding.UTF8.GetString( ReadRawOffsetData( br, offset ) );
-        }
+            => Encoding.UTF8.GetString( ReadRawOffsetData( br, offset ) );
 
         /// <summary>
         /// Moves the BinaryReader position to offset, reads raw bytes until a null byte, then
@@ -91,9 +87,9 @@ namespace Penumbra.Util
         {
             var originalPosition = br.BaseStream.Position;
             br.BaseStream.Position = offset;
-            
+
             var chars = new List< byte >();
-            
+
             byte current;
             while( ( current = br.ReadByte() ) != 0 )
             {
@@ -108,7 +104,8 @@ namespace Penumbra.Util
         /// <summary>
         /// Seeks this BinaryReader's position to the given offset. Syntactic sugar.
         /// </summary>
-        public static void Seek( this BinaryReader br, long offset ) {
+        public static void Seek( this BinaryReader br, long offset )
+        {
             br.BaseStream.Position = offset;
         }
 

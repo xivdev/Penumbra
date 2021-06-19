@@ -1,134 +1,45 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
 using Penumbra.Game;
-using Penumbra.MetaData;
+using Penumbra.Game.Enums;
+using Penumbra.Meta.Files;
 using Penumbra.Util;
+using Swan;
 using ImcFile = Lumina.Data.Files.ImcFile;
 
-namespace Penumbra.Mods
+namespace Penumbra.Meta
 {
-    public enum MetaType : byte
+    public class MetaManipulationConverter : JsonConverter< MetaManipulation >
     {
-        Unknown = 0,
-        Imc     = 1,
-        Eqdp    = 2,
-        Eqp     = 3,
-        Est     = 4,
-        Gmp     = 5
-    };
-
-    [StructLayout( LayoutKind.Explicit )]
-    public struct EqpIdentifier
-    {
-        [FieldOffset( 0 )]
-        public ulong Value;
-
-        [FieldOffset( 0 )]
-        public MetaType Type;
-
-        [FieldOffset( 1 )]
-        public EquipSlot Slot;
-
-        [FieldOffset( 2 )]
-        public ushort SetId;
-    }
-
-    [StructLayout( LayoutKind.Explicit )]
-    public struct EqdpIdentifier
-    {
-        [FieldOffset( 0 )]
-        public ulong Value;
-
-        [FieldOffset( 0 )]
-        public MetaType Type;
-
-        [FieldOffset( 1 )]
-        public EquipSlot Slot;
-
-        [FieldOffset( 2 )]
-        public GenderRace GenderRace;
-
-        [FieldOffset( 4 )]
-        public ushort SetId;
-    }
-
-    [StructLayout( LayoutKind.Explicit )]
-    public struct GmpIdentifier
-    {
-        [FieldOffset( 0 )]
-        public ulong Value;
-
-        [FieldOffset( 0 )]
-        public MetaType Type;
-
-        [FieldOffset( 1 )]
-        public ushort SetId;
-    }
-
-    [StructLayout( LayoutKind.Explicit )]
-    public struct EstIdentifier
-    {
-        [FieldOffset( 0 )]
-        public ulong Value;
-
-        [FieldOffset( 0 )]
-        public MetaType Type;
-
-        [FieldOffset( 1 )]
-        public ObjectType ObjectType;
-
-        [FieldOffset( 2 )]
-        public EquipSlot EquipSlot;
-
-        [FieldOffset( 3 )]
-        public BodySlot BodySlot;
-
-        [FieldOffset( 4 )]
-        public GenderRace GenderRace;
-
-        [FieldOffset( 6 )]
-        public ushort PrimaryId;
-    }
-
-    [StructLayout( LayoutKind.Explicit )]
-    public struct ImcIdentifier
-    {
-        [FieldOffset( 0 )]
-        public ulong Value;
-
-        [FieldOffset( 0 )]
-        public MetaType Type;
-
-        [FieldOffset( 1 )]
-        public byte _objectAndBody;
-
-        public ObjectType ObjectType
+        public override void WriteJson( JsonWriter writer, MetaManipulation manip, JsonSerializer serializer )
         {
-            get => ( ObjectType )( _objectAndBody & 0b00011111 );
-            set => _objectAndBody = ( byte )( ( _objectAndBody & 0b11100000 ) | ( byte )value );
+            var s = Convert.ToBase64String( manip.ToBytes() );
+            writer.WriteValue( s );
         }
 
-        public BodySlot BodySlot
+        public override MetaManipulation ReadJson( JsonReader reader, Type objectType, MetaManipulation existingValue, bool hasExistingValue,
+            JsonSerializer serializer )
+
         {
-            get => ( BodySlot )( _objectAndBody & 0b11100000 );
-            set => _objectAndBody = ( byte )( ( _objectAndBody & 0b00011111 ) | ( byte )value );
+            if( reader.TokenType != JsonToken.String )
+            {
+                throw new JsonReaderException();
+            }
+
+            var                bytes = Convert.FromBase64String( ( string )reader.Value! );
+            using MemoryStream m     = new( bytes );
+            using BinaryReader br    = new( m );
+            var                i     = br.ReadUInt64();
+            var                v     = br.ReadUInt64();
+            return new MetaManipulation( i, v );
         }
-
-        [FieldOffset( 2 )]
-        public ushort PrimaryId;
-
-        [FieldOffset( 4 )]
-        public ushort Variant;
-
-        [FieldOffset( 6 )]
-        public ushort SecondaryId;
-
-        [FieldOffset( 6 )]
-        public EquipSlot EquipSlot;
     }
 
     [StructLayout( LayoutKind.Explicit )]
+    [JsonConverter( typeof( MetaManipulationConverter ) )]
     public struct MetaManipulation : IComparable
     {
         public static MetaManipulation Eqp( EquipSlot equipSlot, ushort setId, EqpEntry value )
@@ -138,9 +49,9 @@ namespace Penumbra.Mods
                 {
                     Type  = MetaType.Eqp,
                     Slot  = equipSlot,
-                    SetId = setId
+                    SetId = setId,
                 },
-                EqpValue = value
+                EqpValue = value,
             };
 
         public static MetaManipulation Eqdp( EquipSlot equipSlot, GenderRace gr, ushort setId, EqdpEntry value )
@@ -151,9 +62,9 @@ namespace Penumbra.Mods
                     Type       = MetaType.Eqdp,
                     Slot       = equipSlot,
                     GenderRace = gr,
-                    SetId      = setId
+                    SetId      = setId,
                 },
-                EqdpValue = value
+                EqdpValue = value,
             };
 
         public static MetaManipulation Gmp( ushort setId, GmpEntry value )
@@ -162,9 +73,9 @@ namespace Penumbra.Mods
                 GmpIdentifier = new GmpIdentifier()
                 {
                     Type  = MetaType.Gmp,
-                    SetId = setId
+                    SetId = setId,
                 },
-                GmpValue = value
+                GmpValue = value,
             };
 
         public static MetaManipulation Est( ObjectType type, EquipSlot equipSlot, GenderRace gr, BodySlot bodySlot, ushort setId,
@@ -178,9 +89,9 @@ namespace Penumbra.Mods
                     GenderRace = gr,
                     EquipSlot  = equipSlot,
                     BodySlot   = bodySlot,
-                    PrimaryId  = setId
+                    PrimaryId  = setId,
                 },
-                EstValue = value
+                EstValue = value,
             };
 
         public static MetaManipulation Imc( ObjectType type, BodySlot secondaryType, ushort primaryId, ushort secondaryId
@@ -194,9 +105,9 @@ namespace Penumbra.Mods
                     BodySlot    = secondaryType,
                     PrimaryId   = primaryId,
                     SecondaryId = secondaryId,
-                    Variant     = idx
+                    Variant     = idx,
                 },
-                ImcValue = value
+                ImcValue = value,
             };
 
         public static MetaManipulation Imc( EquipSlot slot, ushort primaryId, ushort idx, ImcFile.ImageChangeData value )
@@ -208,10 +119,17 @@ namespace Penumbra.Mods
                     ObjectType = slot.IsAccessory() ? ObjectType.Accessory : ObjectType.Equipment,
                     EquipSlot  = slot,
                     PrimaryId  = primaryId,
-                    Variant    = idx
+                    Variant    = idx,
                 },
-                ImcValue = value
+                ImcValue = value,
             };
+
+        internal MetaManipulation( ulong identifier, ulong value )
+            : this()
+        {
+            Identifier = identifier;
+            Value      = value;
+        }
 
         [FieldOffset( 0 )]
         public readonly ulong Identifier;
@@ -257,7 +175,7 @@ namespace Penumbra.Mods
             => Identifier.GetHashCode();
 
         public int CompareTo( object? rhs )
-            => Identifier.CompareTo( rhs );
+            => Identifier.CompareTo( rhs is MetaManipulation m ? m.Identifier : null );
 
         public GamePath CorrespondingFilename()
         {
@@ -268,7 +186,7 @@ namespace Penumbra.Mods
                 MetaType.Est  => MetaFileNames.Est( EstIdentifier.ObjectType, EstIdentifier.EquipSlot, EstIdentifier.BodySlot ),
                 MetaType.Gmp  => MetaFileNames.Gmp(),
                 MetaType.Imc  => MetaFileNames.Imc( ImcIdentifier.ObjectType, ImcIdentifier.PrimaryId, ImcIdentifier.SecondaryId ),
-                _             => throw new InvalidEnumArgumentException()
+                _             => throw new InvalidEnumArgumentException(),
             };
         }
 
@@ -295,6 +213,19 @@ namespace Penumbra.Mods
 
             value = ImcValue;
             return true;
+        }
+
+        public string IdentifierString()
+        {
+            return Type switch
+            {
+                MetaType.Eqp  => $"EQP - {EqpIdentifier}",
+                MetaType.Eqdp => $"EQDP - {EqdpIdentifier}",
+                MetaType.Est  => $"EST - {EstIdentifier}",
+                MetaType.Gmp  => $"GMP - {GmpIdentifier}",
+                MetaType.Imc  => $"IMC - {ImcIdentifier}",
+                _             => throw new InvalidEnumArgumentException(),
+            };
         }
     }
 }

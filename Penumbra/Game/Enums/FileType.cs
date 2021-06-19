@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Penumbra.Game
+namespace Penumbra.Game.Enums
 {
     public enum FileType : byte
     {
@@ -16,7 +16,7 @@ namespace Penumbra.Game
         Model,
         Shader,
         Font,
-        Environment
+        Environment,
     }
 
     public static partial class GameData
@@ -39,7 +39,7 @@ namespace Penumbra.Game
             { ".shpk", FileType.Shader },
             { ".shcd", FileType.Shader },
             { ".fdt", FileType.Font },
-            { ".envb", FileType.Environment }
+            { ".envb", FileType.Environment },
         };
     }
 }

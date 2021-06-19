@@ -6,16 +6,17 @@ using EmbedIO.WebApi;
 using Penumbra.API;
 using Penumbra.Game;
 using Penumbra.Hooks;
-using Penumbra.MetaData;
+using Penumbra.Meta.Files;
 using Penumbra.Mods;
 using Penumbra.UI;
+using Penumbra.Util;
 
 namespace Penumbra
 {
     public class Plugin : IDalamudPlugin
     {
         public string Name { get; }
-        public string PluginDebugTitleStr { get; } 
+        public string PluginDebugTitleStr { get; }
 
         public Plugin()
         {
@@ -25,34 +26,35 @@ namespace Penumbra
 
         private const string CommandName = "/penumbra";
 
-        public DalamudPluginInterface? PluginInterface { get; set; }
-        public Configuration? Configuration { get; set; }
-        public ResourceLoader? ResourceLoader { get; set; }
-        public SettingsInterface? SettingsInterface { get; set; }
-        public SoundShit? SoundShit { get; set; }
+        public DalamudPluginInterface PluginInterface { get; set; } = null!;
+        public Configuration Configuration { get; set; } = null!;
+        public ResourceLoader ResourceLoader { get; set; } = null!;
+        public SettingsInterface SettingsInterface { get; set; } = null!;
+        public MusicManager SoundShit { get; set; } = null!;
 
         private WebServer? _webServer;
 
         public void Initialize( DalamudPluginInterface pluginInterface )
         {
             PluginInterface = pluginInterface;
+            Service< DalamudPluginInterface >.Set( PluginInterface );
 
-            Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-            Configuration.Initialize( PluginInterface );
+            Configuration = Configuration.Load( PluginInterface );
 
-            SoundShit = new SoundShit( this );
-
+            SoundShit = new MusicManager( this );
+            SoundShit.DisableStreaming();
 
             var gameUtils = Service< GameResourceManagement >.Set( PluginInterface );
-            var modManager = Service< ModManager >.Set( this );
             Service< MetaDefaults >.Set( PluginInterface );
-            modManager.DiscoverMods( Configuration.CurrentCollection );
+            var modManager = Service< ModManager >.Set( this );
+
+            modManager.DiscoverMods();
 
             ResourceLoader = new ResourceLoader( this );
 
             PluginInterface.CommandManager.AddHandler( CommandName, new CommandInfo( OnCommand )
             {
-                HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods"
+                HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
             } );
 
             ResourceLoader.Init();
@@ -77,11 +79,11 @@ namespace Penumbra
             ShutdownWebServer();
 
             _webServer = new WebServer( o => o
-                    .WithUrlPrefix( prefix )
-                    .WithMode( HttpListenerMode.EmbedIO ) )
-                .WithCors( prefix )
-                .WithWebApi( "/api", m => m
-                    .WithController( () => new ModsController( this ) ) );
+                   .WithUrlPrefix( prefix )
+                   .WithMode( HttpListenerMode.EmbedIO ) )
+               .WithCors( prefix )
+               .WithWebApi( "/api", m => m
+                   .WithController( () => new ModsController( this ) ) );
 
             _webServer.StateChanged += ( s, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
 
@@ -96,14 +98,12 @@ namespace Penumbra
 
         public void Dispose()
         {
-            // ModManager?.Dispose();
-
-            PluginInterface!.UiBuilder.OnBuildUi -= SettingsInterface!.Draw;
+            PluginInterface.UiBuilder.OnBuildUi -= SettingsInterface.Draw;
 
             PluginInterface.CommandManager.RemoveHandler( CommandName );
             PluginInterface.Dispose();
 
-            ResourceLoader?.Dispose();
+            ResourceLoader.Dispose();
 
             ShutdownWebServer();
         }
@@ -118,8 +118,8 @@ namespace Penumbra
                     case "reload":
                     {
                         Service< ModManager >.Get().DiscoverMods();
-                        PluginInterface!.Framework.Gui.Chat.Print(
-                            $"Reloaded Penumbra mods. You have {Service< ModManager >.Get()?.Mods?.ModSettings?.Count ?? 0} mods, {Service< ModManager >.Get()?.Mods?.EnabledMods?.Length ?? 0} of which are enabled."
+                        PluginInterface.Framework.Gui.Chat.Print(
+                            $"Reloaded Penumbra mods. You have {Service< ModManager >.Get()?.Mods.Count} mods."
                         );
                         break;
                     }
@@ -127,11 +127,11 @@ namespace Penumbra
                     {
                         if( args.Length > 1 )
                         {
-                            RefreshActors.RedrawSpecific( PluginInterface!.ClientState.Actors, string.Join( " ", args.Skip( 1 ) ) );
+                            RefreshActors.RedrawSpecific( PluginInterface.ClientState.Actors, string.Join( " ", args.Skip( 1 ) ) );
                         }
                         else
                         {
-                            RefreshActors.RedrawAll( PluginInterface!.ClientState.Actors );
+                            RefreshActors.RedrawAll( PluginInterface.ClientState.Actors );
                         }
 
                         break;
@@ -141,7 +141,7 @@ namespace Penumbra
                 return;
             }
 
-            SettingsInterface!.FlipVisibility();
+            SettingsInterface.FlipVisibility();
         }
     }
 }

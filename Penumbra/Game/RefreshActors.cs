@@ -44,7 +44,7 @@ namespace Penumbra.Game
                 RedrawAll( actors );
             }
 
-            foreach( var actor in actors.Where( A => A.Name == name ) )
+            foreach( var actor in actors.Where( a => a.Name == name ) )
             {
                 Redraw( actor );
             }

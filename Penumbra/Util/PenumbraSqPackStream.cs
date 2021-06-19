@@ -153,8 +153,8 @@ namespace Penumbra.Util
                 totalBlocks += mdlBlock.IndexBufferBlockNum[ i ];
             }
 
-            var   compressedBlockSizes = Reader.ReadStructures< ushort >( totalBlocks );
-            var   currentBlock         = 0;
+            var compressedBlockSizes = Reader.ReadStructures< ushort >( totalBlocks );
+            var currentBlock         = 0;
             var vertexDataOffsets    = new int[3];
             var indexDataOffsets     = new int[3];
             var vertexBufferSizes    = new int[3];

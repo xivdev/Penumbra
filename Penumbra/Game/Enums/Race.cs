@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace Penumbra.Game
+namespace Penumbra.Game.Enums
 {
     public enum Gender : byte
     {
@@ -10,7 +10,7 @@ namespace Penumbra.Game
         Male,
         Female,
         MaleNpc,
-        FemaleNpc
+        FemaleNpc,
     }
 
     public enum Race : byte
@@ -24,7 +24,7 @@ namespace Penumbra.Game
         Roegadyn,
         AuRa,
         Hrothgar,
-        Viera
+        Viera,
     }
 
     public enum GenderRace : ushort
@@ -63,7 +63,7 @@ namespace Penumbra.Game
         VieraFemale         = 1801,
         VieraFemaleNpc      = 1804,
         UnknownMaleNpc      = 9104,
-        UnknownFemaleNpc    = 9204
+        UnknownFemaleNpc    = 9204,
     }
 
     public static class RaceEnumExtensions
@@ -118,7 +118,7 @@ namespace Penumbra.Game
                 GenderRace.VieraFemaleNpc      => ( Gender.FemaleNpc, Race.Viera ),
                 GenderRace.UnknownMaleNpc      => ( Gender.MaleNpc, Race.Unknown ),
                 GenderRace.UnknownFemaleNpc    => ( Gender.FemaleNpc, Race.Unknown ),
-                _                              => throw new InvalidEnumArgumentException()
+                _                              => throw new InvalidEnumArgumentException(),
             };
         }
 
@@ -163,7 +163,7 @@ namespace Penumbra.Game
                 GenderRace.VieraFemaleNpc      => "1804",
                 GenderRace.UnknownMaleNpc      => "9104",
                 GenderRace.UnknownFemaleNpc    => "9204",
-                _                              => throw new InvalidEnumArgumentException()
+                _                              => throw new InvalidEnumArgumentException(),
             };
         }
     }
@@ -208,7 +208,7 @@ namespace Penumbra.Game
                 "1804" => GenderRace.VieraFemaleNpc,
                 "9104" => GenderRace.UnknownMaleNpc,
                 "9204" => GenderRace.UnknownFemaleNpc,
-                _      => throw new KeyNotFoundException()
+                _      => throw new KeyNotFoundException(),
             };
         }
 
@@ -233,7 +233,7 @@ namespace Penumbra.Game
                     Race.Roegadyn   => GenderRace.RoegadynMale,
                     Race.AuRa       => GenderRace.AuRaMale,
                     Race.Hrothgar   => GenderRace.HrothgarMale,
-                    _               => GenderRace.Unknown
+                    _               => GenderRace.Unknown,
                 },
                 Gender.MaleNpc => race switch
                 {
@@ -245,7 +245,7 @@ namespace Penumbra.Game
                     Race.Roegadyn   => GenderRace.RoegadynMaleNpc,
                     Race.AuRa       => GenderRace.AuRaMaleNpc,
                     Race.Hrothgar   => GenderRace.HrothgarMaleNpc,
-                    _               => GenderRace.Unknown
+                    _               => GenderRace.Unknown,
                 },
                 Gender.Female => race switch
                 {
@@ -257,7 +257,7 @@ namespace Penumbra.Game
                     Race.Roegadyn   => GenderRace.RoegadynFemale,
                     Race.AuRa       => GenderRace.AuRaFemale,
                     Race.Viera      => GenderRace.VieraFemale,
-                    _               => GenderRace.Unknown
+                    _               => GenderRace.Unknown,
                 },
                 Gender.FemaleNpc => race switch
                 {
@@ -269,9 +269,9 @@ namespace Penumbra.Game
                     Race.Roegadyn   => GenderRace.RoegadynFemaleNpc,
                     Race.AuRa       => GenderRace.AuRaFemaleNpc,
                     Race.Viera      => GenderRace.VieraFemaleNpc,
-                    _               => GenderRace.Unknown
+                    _               => GenderRace.Unknown,
                 },
-                _ => GenderRace.Unknown
+                _ => GenderRace.Unknown,
             };
         }
     }

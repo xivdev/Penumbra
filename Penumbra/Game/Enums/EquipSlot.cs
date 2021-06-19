@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace Penumbra.Game
+namespace Penumbra.Game.Enums
 {
     public enum EquipSlot : byte
     {
@@ -27,7 +27,7 @@ namespace Penumbra.Game
         FullBody          = 19,
         BodyHands         = 20,
         BodyLegsFeet      = 21,
-        All               = 22
+        All               = 22,
     }
 
     public static class EquipSlotEnumExtension
@@ -46,7 +46,7 @@ namespace Penumbra.Game
                 EquipSlot.RingR  => "rir",
                 EquipSlot.RingL  => "ril",
                 EquipSlot.Wrists => "wrs",
-                _                => throw new InvalidEnumArgumentException()
+                _                => throw new InvalidEnumArgumentException(),
             };
         }
 
@@ -59,7 +59,7 @@ namespace Penumbra.Game
                 EquipSlot.Legs  => true,
                 EquipSlot.Feet  => true,
                 EquipSlot.Body  => true,
-                _               => false
+                _               => false,
             };
         }
 
@@ -72,7 +72,7 @@ namespace Penumbra.Game
                 EquipSlot.RingR  => true,
                 EquipSlot.RingL  => true,
                 EquipSlot.Wrists => true,
-                _                => false
+                _                => false,
             };
         }
     }
@@ -90,7 +90,7 @@ namespace Penumbra.Game
             { EquipSlot.Neck.ToSuffix(), EquipSlot.Neck },
             { EquipSlot.RingR.ToSuffix(), EquipSlot.RingR },
             { EquipSlot.RingL.ToSuffix(), EquipSlot.RingL },
-            { EquipSlot.Wrists.ToSuffix(), EquipSlot.Wrists }
+            { EquipSlot.Wrists.ToSuffix(), EquipSlot.Wrists },
         };
     }
 }

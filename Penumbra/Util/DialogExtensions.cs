@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Penumbra
+namespace Penumbra.Util
 {
     public static class DialogExtensions
     {
@@ -38,7 +38,8 @@ namespace Penumbra
         {
             public IntPtr Handle { get; set; }
 
-            public DialogHandle( IntPtr handle ) => Handle = handle;
+            public DialogHandle( IntPtr handle )
+                => Handle = handle;
         }
 
         public class HiddenForm : Form

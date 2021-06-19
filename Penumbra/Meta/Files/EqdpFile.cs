@@ -4,7 +4,7 @@ using System.Linq;
 using Lumina.Data;
 using Penumbra.Game;
 
-namespace Penumbra.MetaData
+namespace Penumbra.Meta.Files
 {
     // EQDP file structure:
     // [Identifier][BlockSize:ushort][BlockCount:ushort]
@@ -37,7 +37,8 @@ namespace Penumbra.MetaData
             }
         }
 
-        public ref EqdpEntry this[ ushort setId ] => ref GetTrueEntry( setId );
+        public ref EqdpEntry this[ ushort setId ]
+            => ref GetTrueEntry( setId );
 
 
         public EqdpFile Clone()
@@ -49,8 +50,11 @@ namespace Penumbra.MetaData
         private ushort ExpandedBlockCount { get; set; }
         private EqdpEntry[]?[] Blocks { get; }
 
-        private int BlockIdx( ushort id ) => ( ushort )( id / BlockSize );
-        private int SubIdx( ushort id ) => ( ushort )( id % BlockSize );
+        private int BlockIdx( ushort id )
+            => ( ushort )( id / BlockSize );
+
+        private int SubIdx( ushort id )
+            => ( ushort )( id % BlockSize );
 
         private bool ExpandBlock( int idx )
         {
@@ -156,7 +160,7 @@ namespace Penumbra.MetaData
         private void WriteBlocks( BinaryWriter bw )
         {
             foreach( var entry in Blocks.Where( block => block != null )
-                .SelectMany( block => block ) )
+               .SelectMany( block => block ) )
             {
                 bw.Write( ( ushort )entry );
             }

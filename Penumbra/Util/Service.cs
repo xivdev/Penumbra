@@ -1,6 +1,6 @@
 using System;
 
-namespace Penumbra
+namespace Penumbra.Util
 {
     /// <summary>
     /// Basic service locator
@@ -11,8 +11,7 @@ namespace Penumbra
         private static T? _object;
 
         static Service()
-        {
-        }
+        { }
 
         public static void Set( T obj )
         {

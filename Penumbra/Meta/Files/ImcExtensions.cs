@@ -2,22 +2,33 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
 using Lumina.Data.Files;
-using Penumbra.Game;
-using Penumbra.Mods;
+using Penumbra.Game.Enums;
 
-namespace Penumbra.MetaData
+namespace Penumbra.Meta.Files
 {
     public class InvalidImcVariantException : ArgumentOutOfRangeException
     {
         public InvalidImcVariantException()
-            : base("Trying to manipulate invalid variant.")
+            : base( "Trying to manipulate invalid variant." )
         { }
     }
 
     public static class ImcExtensions
     {
+        public static ulong ToInteger( this ImcFile.ImageChangeData imc )
+        {
+            ulong ret = imc.MaterialId;
+            ret |= ( ulong )imc.DecalId       << 8;
+            ret |= ( ulong )imc.AttributeMask << 16;
+            ret |= ( ulong )imc.SoundId       << 16;
+            ret |= ( ulong )imc.VfxId         << 32;
+            var tmp = imc.GetType().GetField( "_MaterialAnimationIdMask",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance );
+            ret |= ( ulong )( byte )tmp!.GetValue( imc ) << 40;
+            return ret;
+        }
+
         public static bool Equal( this ImcFile.ImageChangeData lhs, ImcFile.ImageChangeData rhs )
             => lhs.MaterialId           == rhs.MaterialId
              && lhs.DecalId             == rhs.DecalId
@@ -34,7 +45,6 @@ namespace Penumbra.MetaData
             bw.Write( variant.VfxId );
             bw.Write( variant.MaterialAnimationId );
         }
-
 
         public static byte[] WriteBytes( this ImcFile file )
         {
@@ -104,10 +114,10 @@ namespace Penumbra.MetaData
                 Count    = file.Count,
                 PartMask = file.PartMask,
             };
-            var parts = file.GetParts().Select( P => new ImcFile.ImageChangeParts()
+            var parts = file.GetParts().Select( p => new ImcFile.ImageChangeParts()
             {
-                DefaultVariant = P.DefaultVariant,
-                Variants       = ( ImcFile.ImageChangeData[] )P.Variants.Clone(),
+                DefaultVariant = p.DefaultVariant,
+                Variants       = ( ImcFile.ImageChangeData[] )p.Variants.Clone(),
             } ).ToArray();
             var prop = ret.GetType().GetField( "Parts", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance );
             prop!.SetValue( ret, parts );

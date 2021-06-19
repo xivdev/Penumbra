@@ -1,15 +1,16 @@
 using System;
 using System.IO;
-using Lumina.Data;
 using Penumbra.Util;
 
 namespace Penumbra.Importer
 {
-    public class MagicTempFileStreamManagerAndDeleterFuckery : PenumbraSqPackStream, IDisposable
+    public class MagicTempFileStreamManagerAndDeleter : PenumbraSqPackStream, IDisposable
     {
         private readonly FileStream _fileStream;
 
-        public MagicTempFileStreamManagerAndDeleterFuckery( FileStream stream ) : base( stream ) => _fileStream = stream;
+        public MagicTempFileStreamManagerAndDeleter( FileStream stream )
+            : base( stream )
+            => _fileStream = stream;
 
         public new void Dispose()
         {

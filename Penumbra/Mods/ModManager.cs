@@ -1,207 +1,267 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dalamud.Plugin;
-using Penumbra.Hooks;
-using Penumbra.Models;
+using Penumbra.Meta;
+using Penumbra.Mod;
 using Penumbra.Util;
 
 namespace Penumbra.Mods
 {
-    public class ModManager : IDisposable
+    public class ModManager
     {
-        private readonly Plugin                           _plugin;
-        public readonly  Dictionary< GamePath, FileInfo > ResolvedFiles = new();
-        public readonly  Dictionary< GamePath, GamePath > SwappedFiles  = new();
-        public           MetaManager?                     MetaManipulations;
+        private readonly Plugin _plugin;
+        public DirectoryInfo BasePath { get; private set; }
 
-        public ModCollection? Mods { get; set; }
-        private DirectoryInfo? _basePath;
+        public Dictionary< string, ModData > Mods { get; } = new();
+        public Dictionary< string, ModCollection > Collections { get; } = new();
+
+        public ModCollection CurrentCollection { get; private set; }
 
         public ModManager( Plugin plugin )
-            => _plugin = plugin;
-
-        public void DiscoverMods()
-            => DiscoverMods( _basePath );
-
-        public void DiscoverMods( string? basePath )
-            => DiscoverMods( basePath == null ? null : new DirectoryInfo( basePath ) );
-
-        public void DiscoverMods( DirectoryInfo? basePath )
         {
-            _basePath = basePath;
-            if( basePath == null || !basePath.Exists )
+            _plugin  = plugin;
+            BasePath = new DirectoryInfo( plugin.Configuration!.ModDirectory );
+            ReadCollections();
+            CurrentCollection = Collections.Values.First();
+            if( !SetCurrentCollection( plugin.Configuration!.CurrentCollection ) )
             {
-                Mods = null;
-                return;
-            }
+                PluginLog.Debug( "Last choice of collection {Name} is not available, reset to Default.",
+                    plugin.Configuration!.CurrentCollection );
 
-            // FileSystemPasta();
-
-            Mods = new ModCollection( basePath );
-            Mods.Load();
-
-            CalculateEffectiveFileList();
-        }
-
-        public void CalculateEffectiveFileList()
-        {
-            ResolvedFiles.Clear();
-            SwappedFiles.Clear();
-            MetaManipulations?.Dispose();
-
-            if( Mods == null )
-            {
-                return;
-            }
-
-            MetaManipulations = new MetaManager( ResolvedFiles, _basePath! );
-
-            var changedSettings = false;
-            var registeredFiles = new Dictionary< GamePath, string >();
-            foreach( var (mod, settings) in Mods.GetOrderedAndEnabledModListWithSettings( _plugin!.Configuration!.InvertModListOrder ) )
-            {
-                mod.FileConflicts.Clear();
-
-                changedSettings |= ProcessModFiles( registeredFiles, mod, settings );
-                ProcessSwappedFiles( registeredFiles, mod, settings );
-            }
-
-            if( changedSettings )
-            {
-                Mods.Save();
-            }
-
-            MetaManipulations.WriteNewFiles();
-
-            Service< GameResourceManagement >.Get().ReloadPlayerResources();
-        }
-
-        private void ProcessSwappedFiles( Dictionary< GamePath, string > registeredFiles, ResourceMod mod, ModInfo settings )
-        {
-            foreach( var swap in mod.Meta.FileSwaps )
-            {
-                // just assume people put not fucked paths in here lol
-                if( !SwappedFiles.ContainsKey( swap.Value ) )
+                if( SetCurrentCollection( ModCollection.DefaultCollection ) )
                 {
-                    SwappedFiles[ swap.Key ]    = swap.Value;
-                    registeredFiles[ swap.Key ] = mod.Meta.Name;
-                }
-                else if( registeredFiles.TryGetValue( swap.Key, out var modName ) )
-                {
-                    mod.AddConflict( modName, swap.Key );
+                    PluginLog.Error( "Could not load any collection. Default collection unavailable." );
+                    CurrentCollection = new ModCollection();
                 }
             }
         }
 
-        private bool ProcessModFiles( Dictionary< GamePath, string > registeredFiles, ResourceMod mod, ModInfo settings )
+        public bool SetCurrentCollection( string name )
         {
-            var changedConfig = settings.FixInvalidSettings();
-            foreach( var file in mod.ModFiles )
+            if( Collections.TryGetValue( name, out var collection ) )
             {
-                RelPath relativeFilePath = new( file, mod.ModBasePath );
-                var (configChanged, gamePaths) =  mod.Meta.GetFilesForConfig( relativeFilePath, settings );
-                changedConfig                  |= configChanged;
-                if( file.Extension == ".meta" && gamePaths.Count > 0 )
+                CurrentCollection = collection;
+                if( CurrentCollection.Cache == null )
                 {
-                    AddManipulations( file, mod );
+                    CurrentCollection.CreateCache( BasePath, Mods );
                 }
-                else
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public void ReadCollections()
+        {
+            var collectionDir = ModCollection.CollectionDir( _plugin.PluginInterface! );
+            if( collectionDir.Exists )
+            {
+                foreach( var file in collectionDir.EnumerateFiles( "*.json" ) )
                 {
-                    AddFiles( gamePaths, file, registeredFiles, mod );
+                    var collection = ModCollection.LoadFromFile( file );
+                    if( collection != null )
+                    {
+                        if( file.Name != $"{collection.Name.RemoveInvalidPathSymbols()}.json" )
+                        {
+                            PluginLog.Warning( $"Collection {file.Name} does not correspond to {collection.Name}." );
+                        }
+
+                        if( Collections.ContainsKey( collection.Name ) )
+                        {
+                            PluginLog.Warning( $"Duplicate collection found: {collection.Name} already exists." );
+                        }
+                        else
+                        {
+                            Collections.Add( collection.Name, collection );
+                        }
+                    }
                 }
             }
 
-            return changedConfig;
-        }
-
-        private void AddFiles( IEnumerable< GamePath > gamePaths, FileInfo file, Dictionary< GamePath, string > registeredFiles,
-            ResourceMod                                mod )
-        {
-            foreach( var gamePath in gamePaths )
+            if( !Collections.ContainsKey( ModCollection.DefaultCollection ) )
             {
-                if( !ResolvedFiles.ContainsKey( gamePath ) )
-                {
-                    ResolvedFiles[ gamePath ]   = file;
-                    registeredFiles[ gamePath ] = mod.Meta.Name;
-                }
-                else if( registeredFiles.TryGetValue( gamePath, out var modName ) )
-                {
-                    mod.AddConflict( modName, gamePath );
-                }
+                var defaultCollection = new ModCollection();
+                SaveCollection( defaultCollection );
+                Collections.Add( defaultCollection.Name, defaultCollection );
             }
         }
 
-        private void AddManipulations( FileInfo file, ResourceMod mod )
+        public void SaveCollection( ModCollection collection )
+            => collection.Save( _plugin.PluginInterface! );
+
+
+        public bool AddCollection( string name, Dictionary< string, ModSettings > settings )
         {
-            if( !mod.MetaManipulations.TryGetValue( file, out var meta ) )
+            var nameFixed = name.RemoveInvalidPathSymbols().ToLowerInvariant();
+            if( Collections.Values.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
             {
-                PluginLog.Error( $"{file.FullName} is a TexTools Meta File without meta information." );
-                return;
+                PluginLog.Warning( $"The new collection {name} would lead to the same path as one that already exists." );
+                return false;
             }
 
-            foreach( var manipulation in meta.Manipulations )
+            var newCollection = new ModCollection( name, settings );
+            Collections.Add( name, newCollection );
+            SaveCollection( newCollection );
+            CurrentCollection = newCollection;
+            return true;
+        }
+
+        public bool RemoveCollection( string name )
+        {
+            if( name == ModCollection.DefaultCollection )
             {
-                MetaManipulations!.ApplyMod( manipulation );
+                PluginLog.Error( "Can not remove the default collection." );
+                return false;
             }
-        }
 
-        public void ChangeModPriority( ModInfo info, int newPriority )
-        {
-            Mods!.ReorderMod( info, newPriority );
-            CalculateEffectiveFileList();
-        }
-
-        public void ChangeModPriority( ModInfo info, bool up = false )
-        {
-            Mods!.ReorderMod( info, up );
-            CalculateEffectiveFileList();
-        }
-
-        public void DeleteMod( ResourceMod? mod )
-        {
-            if( mod?.ModBasePath.Exists ?? false )
+            if( Collections.TryGetValue( name, out var collection ) )
             {
-                try
+                if( CurrentCollection == collection )
                 {
-                    Directory.Delete( mod.ModBasePath.FullName, true );
+                    SetCurrentCollection( ModCollection.DefaultCollection );
                 }
-                catch( Exception e )
-                {
-                    PluginLog.Error( $"Could not delete the mod {mod.ModBasePath.Name}:\n{e}" );
-                }
+
+                collection.Delete( _plugin.PluginInterface! );
+                Collections.Remove( name );
+                return true;
             }
 
+            return false;
+        }
+
+        public void DiscoverMods( DirectoryInfo basePath )
+        {
+            BasePath = basePath;
             DiscoverMods();
         }
 
-        public FileInfo? GetCandidateForGameFile( GamePath gameResourcePath )
+        public void DiscoverMods()
         {
-            var val = ResolvedFiles.TryGetValue( gameResourcePath, out var candidate );
-            if( !val )
+            Mods.Clear();
+            if( !BasePath.Exists )
             {
-                return null;
+                PluginLog.Debug( "The mod directory {Directory} does not exist.", BasePath.FullName );
+                try
+                {
+                    Directory.CreateDirectory( BasePath.FullName );
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"The mod directory {BasePath.FullName} does not exist and could not be created:\n{e}" );
+                    return;
+                }
             }
 
-            if( candidate.FullName.Length >= 260 || !candidate.Exists )
+            foreach( var modFolder in BasePath.EnumerateDirectories() )
             {
-                return null;
+                var mod = ModData.LoadMod( modFolder );
+                if( mod == null )
+                {
+                    continue;
+                }
+
+                Mods.Add( modFolder.Name, mod );
             }
 
-            return candidate;
+            foreach( var collection in Collections.Values.Where( c => c.Cache != null ) )
+            {
+                collection.CreateCache( BasePath, Mods );
+            }
         }
 
-        public GamePath? GetSwappedFilePath( GamePath gameResourcePath )
-            => SwappedFiles.TryGetValue( gameResourcePath, out var swappedPath ) ? swappedPath : null;
-
-        public string? ResolveSwappedOrReplacementFilePath( GamePath gameResourcePath )
-            => GetCandidateForGameFile( gameResourcePath )?.FullName.Replace( '\\', '/' ) ?? GetSwappedFilePath( gameResourcePath ) ?? null;
-
-
-        public void Dispose()
+        public void DeleteMod( DirectoryInfo modFolder )
         {
-            MetaManipulations?.Dispose();
-            // _fileSystemWatcher?.Dispose();
+            modFolder.Refresh();
+            if( modFolder.Exists )
+            {
+                try
+                {
+                    Directory.Delete( modFolder.FullName, true );
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not delete the mod {modFolder.Name}:\n{e}" );
+                }
+
+                Mods.Remove( modFolder.Name );
+                foreach( var collection in Collections.Values.Where( c => c.Cache != null ) )
+                {
+                    collection.Cache!.RemoveMod( modFolder );
+                }
+            }
+        }
+
+        public bool AddMod( DirectoryInfo modFolder )
+        {
+            var mod = ModData.LoadMod( modFolder );
+            if( mod == null )
+            {
+                return false;
+            }
+
+            if( Mods.ContainsKey( modFolder.Name ) )
+            {
+                return false;
+            }
+
+            Mods.Add( modFolder.Name, mod );
+            foreach( var collection in Collections.Values )
+            {
+                collection.AddMod( mod );
+            }
+
+            return true;
+        }
+
+
+        public bool UpdateMod( ModData mod, bool recomputeMeta = false )
+        {
+            var oldName     = mod.Meta.Name;
+            var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile );
+            var fileChanges = mod.Resources.RefreshModFiles( mod.BasePath );
+
+            if( !( recomputeMeta || metaChanges || fileChanges == 0 ) )
+            {
+                return false;
+            }
+
+            var nameChange = !string.Equals( oldName, mod.Meta.Name, StringComparison.InvariantCulture );
+
+            recomputeMeta |= fileChanges.HasFlag( ResourceChange.Meta );
+            if( recomputeMeta )
+            {
+                mod.Resources.MetaManipulations.Update( mod.Resources.MetaFiles, mod.BasePath, mod.Meta );
+                mod.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( mod.BasePath ) );
+            }
+
+            foreach( var collection in Collections.Values )
+            {
+                if( metaChanges )
+                {
+                    collection.UpdateSetting( mod );
+                    if( nameChange )
+                    {
+                        collection.Cache?.SortMods();
+                    }
+                }
+
+                if( fileChanges.HasFlag( ResourceChange.Files )
+                 && collection.Settings.TryGetValue( mod.BasePath.Name, out var settings )
+                 && settings.Enabled )
+                {
+                    collection.Cache?.CalculateEffectiveFileList();
+                }
+
+                if( recomputeMeta )
+                {
+                    collection.Cache?.UpdateMetaManipulations();
+                }
+            }
+
+            return true;
         }
 
 //         private void FileSystemWatcherOnChanged( object sender, FileSystemEventArgs e )

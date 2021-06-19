@@ -1,7 +1,7 @@
 using Lumina.Data;
 using Penumbra.Game;
 
-namespace Penumbra.MetaData
+namespace Penumbra.Meta.Files
 {
     // GmpFiles use the same structure as Eqp Files.
     // Entries are also one ulong.
@@ -22,19 +22,19 @@ namespace Penumbra.MetaData
         }
 
         public byte[] WriteBytes()
-            => WriteBytes( _entries, E => ( ulong )E );
+            => WriteBytes( _entries, e => ( ulong )e );
 
         public GmpFile Clone()
             => new( this );
 
         public GmpFile( FileResource file )
-            => ReadFile( _entries, file, I => ( GmpEntry )I );
+            => ReadFile( _entries, file, i => ( GmpEntry )i );
 
         public GmpEntry GetEntry( ushort setId )
             => GetEntry( _entries, setId, ( GmpEntry )0 );
 
         public bool SetEntry( ushort setId, GmpEntry entry )
-            => SetEntry( _entries, setId, entry, E => E == 0, ( E1, E2 ) => E1 == E2 );
+            => SetEntry( _entries, setId, entry, e => e == 0, ( e1, e2 ) => e1 == e2 );
 
         public ref GmpEntry this[ ushort setId ]
             => ref GetTrueEntry( _entries, setId );

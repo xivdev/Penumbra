@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
+using Penumbra.Game.Enums;
 using Penumbra.Util;
 
 namespace Penumbra.Game
@@ -61,7 +62,7 @@ namespace Penumbra.Game
             , { ObjectType.Monster,   new Regex[]{ new(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/b\k'id'\.imc") } }
             , { ObjectType.Equipment, new Regex[]{ new(@"chara/equipment/e(?'id'\d{4})/e\k'id'\.imc") } }
             , { ObjectType.DemiHuman, new Regex[]{ new(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/e\k'equip'\.imc") } }
-            , { ObjectType.Accessory, new Regex[]{ new(@"chara/accessory/a(?'id'\d{4})/a\k'id'\.imc") } } } }
+            , { ObjectType.Accessory, new Regex[]{ new(@"chara/accessory/a(?'id'\d{4})/a\k'id'\.imc") } } } },
         };
         // @formatter:on
 
@@ -90,7 +91,7 @@ namespace Penumbra.Game
                     DemiHumanFolder => ObjectType.DemiHuman,
                     MonsterFolder   => ObjectType.Monster,
                     CommonFolder    => ObjectType.Character,
-                    _               => ObjectType.Unknown
+                    _               => ObjectType.Unknown,
                 },
                 UiFolder => folders[ 1 ] switch
                 {
@@ -98,22 +99,22 @@ namespace Penumbra.Game
                     LoadingFolder   => ObjectType.LoadingScreen,
                     MapFolder       => ObjectType.Map,
                     InterfaceFolder => ObjectType.Interface,
-                    _               => ObjectType.Unknown
+                    _               => ObjectType.Unknown,
                 },
                 CommonFolder => folders[ 1 ] switch
                 {
                     FontFolder => ObjectType.Font,
-                    _          => ObjectType.Unknown
+                    _          => ObjectType.Unknown,
                 },
                 HousingFolder => ObjectType.Housing,
                 WorldFolder1 => folders[ 1 ] switch
                 {
                     HousingFolder => ObjectType.Housing,
-                    _             => ObjectType.World
+                    _             => ObjectType.World,
                 },
                 WorldFolder2 => ObjectType.World,
                 VfxFolder    => ObjectType.Vfx,
-                _            => ObjectType.Unknown
+                _            => ObjectType.Unknown,
             };
         }
 
@@ -257,8 +258,8 @@ namespace Penumbra.Game
                 var id = ushort.Parse( groups[ "id" ].Value );
                 if( groups[ "location" ].Success )
                 {
-                    var tmpType = groups[ "location" ].Value == "face" ? CustomizationType.DecalFace
-                        : groups[ "location" ].Value == "equip"        ? CustomizationType.DecalEquip : CustomizationType.Unknown;
+                    var tmpType = groups[ "location" ].Value == "face"  ? CustomizationType.DecalFace
+                        : groups[ "location" ].Value         == "equip" ? CustomizationType.DecalEquip : CustomizationType.Unknown;
                     return GameObjectInfo.Customization( fileType, tmpType, id );
                 }
 
@@ -297,7 +298,7 @@ namespace Penumbra.Game
                     "ja" => Dalamud.ClientLanguage.Japanese,
                     "de" => Dalamud.ClientLanguage.German,
                     "fr" => Dalamud.ClientLanguage.French,
-                    _    => Dalamud.ClientLanguage.English
+                    _    => Dalamud.ClientLanguage.English,
                 };
                 return GameObjectInfo.Icon( fileType, id, hq, language );
             }

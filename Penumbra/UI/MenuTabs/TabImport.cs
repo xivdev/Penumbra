@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Penumbra.Importer;
+using Penumbra.Util;
 
 namespace Penumbra.UI
 {
@@ -25,54 +26,63 @@ namespace Penumbra.UI
 
             private static readonly Vector2 ImportBarSize = new( -1, 0 );
 
-            private          bool              _isImportRunning = false;
-            private          bool              _hasError        = false;
+            private          bool              _isImportRunning;
+            private          bool              _hasError;
             private          TexToolsImport?   _texToolsImport;
             private readonly SettingsInterface _base;
 
-            public TabImport( SettingsInterface ui ) => _base = ui;
+            public TabImport( SettingsInterface ui )
+                => _base = ui;
 
-            public bool IsImporting() => _isImportRunning;
+            public bool IsImporting()
+                => _isImportRunning;
 
             private void RunImportTask()
             {
                 _isImportRunning = true;
                 Task.Run( async () =>
                 {
-                    var picker = new OpenFileDialog
+                    try
                     {
-                        Multiselect     = true,
-                        Filter          = FileTypeFilter,
-                        CheckFileExists = true,
-                        Title           = LabelFileDialog
-                    };
-
-                    var result = await picker.ShowDialogAsync();
-
-                    if( result == DialogResult.OK )
-                    {
-                        _hasError = false;
-
-                        foreach( var fileName in picker.FileNames )
+                        var picker = new OpenFileDialog
                         {
-                            PluginLog.Log( $"-> {fileName} START" );
+                            Multiselect     = true,
+                            Filter          = FileTypeFilter,
+                            CheckFileExists = true,
+                            Title           = LabelFileDialog,
+                        };
 
-                            try
-                            {
-                                _texToolsImport = new TexToolsImport( new DirectoryInfo( _base._plugin!.Configuration!.CurrentCollection ) );
-                                _texToolsImport.ImportModPack( new FileInfo( fileName ) );
+                        var result = await picker.ShowDialogAsync();
 
-                                PluginLog.Log( $"-> {fileName} OK!" );
-                            }
-                            catch( Exception ex )
+                        if( result == DialogResult.OK )
+                        {
+                            _hasError = false;
+
+                            foreach( var fileName in picker.FileNames )
                             {
-                                PluginLog.LogError( ex, "Failed to import modpack at {0}", fileName );
-                                _hasError = true;
+                                PluginLog.Log( $"-> {fileName} START" );
+
+                                try
+                                {
+                                    _texToolsImport = new TexToolsImport( new DirectoryInfo( _base._plugin!.Configuration!.ModDirectory ) );
+                                    _texToolsImport.ImportModPack( new FileInfo( fileName ) );
+
+                                    PluginLog.Log( $"-> {fileName} OK!" );
+                                }
+                                catch( Exception ex )
+                                {
+                                    PluginLog.LogError( ex, "Failed to import modpack at {0}", fileName );
+                                    _hasError = true;
+                                }
                             }
+
+                            _texToolsImport = null;
+                            _base.ReloadMods();
                         }
-
-                        _texToolsImport = null;
-                        _base.ReloadMods();
+                    }
+                    catch( Exception e )
+                    {
+                        PluginLog.Error( $"Error opening file picker dialogue:\n{e}" );
                     }
 
                     _isImportRunning = false;
@@ -98,8 +108,7 @@ namespace Penumbra.UI
 
                 switch( _texToolsImport.State )
                 {
-                    case ImporterState.None:
-                        break;
+                    case ImporterState.None: break;
                     case ImporterState.WritingPackToDisk:
                         ImGui.Text( TooltipModpack1 );
                         break;
@@ -111,10 +120,8 @@ namespace Penumbra.UI
                         ImGui.ProgressBar( _texToolsImport.Progress, ImportBarSize, str );
                         break;
                     }
-                    case ImporterState.Done:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                    case ImporterState.Done: break;
+                    default:                 throw new ArgumentOutOfRangeException();
                 }
             }
 

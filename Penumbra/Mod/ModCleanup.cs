@@ -6,9 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using Dalamud.Plugin;
+using Penumbra.Structs;
 using Penumbra.Util;
 
-namespace Penumbra.Models
+namespace Penumbra.Mod
 {
     public class ModCleanup
     {
@@ -202,7 +203,7 @@ namespace Penumbra.Models
         private static bool FileIsInAnyGroup( ModMeta meta, RelPath relPath, bool exceptDuplicates = false )
         {
             var groupEnumerator = exceptDuplicates
-                ? meta.Groups.Values.Where( G => G.GroupName != Duplicates )
+                ? meta.Groups.Values.Where( g => g.GroupName != Duplicates )
                 : meta.Groups.Values;
             return groupEnumerator.SelectMany( group => group.Options )
                .Any( option => option.OptionFiles.ContainsKey( relPath ) );
@@ -252,7 +253,7 @@ namespace Penumbra.Models
         };
 
         private static void RemoveFromGroups( ModMeta meta, RelPath relPath, GamePath gamePath, GroupType type = GroupType.Both,
-            bool                                      skipDuplicates = true )
+            bool skipDuplicates = true )
         {
             if( meta.Groups.Count == 0 )
             {
@@ -315,7 +316,8 @@ namespace Penumbra.Models
 
         private static void RemoveUselessGroups( ModMeta meta )
         {
-            meta.Groups = meta.Groups.Where( kvp => kvp.Value.Options.Any( o => o.OptionFiles.Count > 0  ) ).ToDictionary( kvp => kvp.Key, kvp => kvp.Value );
+            meta.Groups = meta.Groups.Where( kvp => kvp.Value.Options.Any( o => o.OptionFiles.Count > 0 ) )
+               .ToDictionary( kvp => kvp.Key, kvp => kvp.Value );
         }
 
         // Goes through all Single-Select options and checks if file links are in each of them.
@@ -356,7 +358,7 @@ namespace Penumbra.Models
                         var usedRelPath = new RelPath( usedGamePath );
                         required.AddFile( usedRelPath, gamePath );
                         required.AddFile( usedRelPath, usedGamePath );
-                        RemoveFromGroups( meta, relPath, gamePath, GroupType.Single, true );
+                        RemoveFromGroups( meta, relPath, gamePath, GroupType.Single );
                     }
                     else if( MoveFile( meta, baseDir.FullName, path, relPath ) )
                     {
@@ -366,7 +368,7 @@ namespace Penumbra.Models
                             FindOrCreateDuplicates( meta ).AddFile( relPath, gamePath );
                         }
 
-                        RemoveFromGroups( meta, relPath, gamePath, GroupType.Single, true );
+                        RemoveFromGroups( meta, relPath, gamePath, GroupType.Single );
                     }
                 }
             }

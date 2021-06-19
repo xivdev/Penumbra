@@ -4,10 +4,10 @@ using Dalamud.Plugin;
 using Lumina.Data;
 using Lumina.Data.Files;
 using Penumbra.Game;
-using Penumbra.Mods;
+using Penumbra.Game.Enums;
 using Penumbra.Util;
 
-namespace Penumbra.MetaData
+namespace Penumbra.Meta.Files
 {
     public class MetaDefaults
     {
@@ -112,14 +112,20 @@ namespace Penumbra.MetaData
             return m.Type switch
             {
                 MetaType.Imc => GetDefaultImcFile( m.ImcIdentifier.ObjectType, m.ImcIdentifier.PrimaryId, m.ImcIdentifier.SecondaryId )
-                    ?.GetValue( m ).Equal( m.ImcValue ) ?? false,
-                MetaType.Gmp => GetDefaultGmpFile()?.GetEntry( m.GmpIdentifier.SetId ) == m.GmpValue,
-                MetaType.Eqp => GetDefaultEqpFile()?.GetEntry( m.EqpIdentifier.SetId ).Reduce( m.EqpIdentifier.Slot ) == m.EqpValue,
+                      ?.GetValue( m ).Equal( m.ImcValue )
+                 ?? true,
+                MetaType.Gmp => GetDefaultGmpFile()?.GetEntry( m.GmpIdentifier.SetId )
+                 == m.GmpValue,
+                MetaType.Eqp => GetDefaultEqpFile()?.GetEntry( m.EqpIdentifier.SetId )
+                       .Reduce( m.EqpIdentifier.Slot )
+                 == m.EqpValue,
                 MetaType.Eqdp => GetDefaultEqdpFile( m.EqdpIdentifier.Slot, m.EqdpIdentifier.GenderRace )?.GetEntry( m.EqdpIdentifier.SetId )
-                    .Reduce( m.EqdpIdentifier.Slot ) == m.EqdpValue,
+                       .Reduce( m.EqdpIdentifier.Slot )
+                 == m.EqdpValue,
                 MetaType.Est => GetDefaultEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot )
-                    ?.GetEntry( m.EstIdentifier.GenderRace, m.EstIdentifier.PrimaryId ) == m.EstValue,
-                _ => throw new NotImplementedException()
+                      ?.GetEntry( m.EstIdentifier.GenderRace, m.EstIdentifier.PrimaryId )
+                 == m.EstValue,
+                _ => throw new NotImplementedException(),
             };
         }
 
@@ -132,7 +138,7 @@ namespace Penumbra.MetaData
                 MetaType.Eqp  => GetNewEqpFile(),
                 MetaType.Eqdp => GetNewEqdpFile( m.EqdpIdentifier.Slot, m.EqdpIdentifier.GenderRace ),
                 MetaType.Est  => GetNewEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot ),
-                _             => throw new NotImplementedException()
+                _             => throw new NotImplementedException(),
             };
         }
     }

@@ -7,7 +7,8 @@ namespace Penumbra.Util
 {
     public class SingleOrArrayConverter< T > : JsonConverter
     {
-        public override bool CanConvert( Type objectType ) => objectType == typeof( HashSet< T > );
+        public override bool CanConvert( Type objectType )
+            => objectType == typeof( HashSet< T > );
 
         public override object ReadJson( JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer )
         {
@@ -15,7 +16,7 @@ namespace Penumbra.Util
 
             if( token.Type == JTokenType.Array )
             {
-                return token.ToObject< HashSet< T > >() ?? new HashSet<T>();
+                return token.ToObject< HashSet< T > >() ?? new HashSet< T >();
             }
 
             var tmp = token.ToObject< T >();
@@ -24,7 +25,8 @@ namespace Penumbra.Util
                 : new HashSet< T >();
         }
 
-        public override bool CanWrite => true;
+        public override bool CanWrite
+            => true;
 
         public override void WriteJson( JsonWriter writer, object? value, JsonSerializer serializer )
         {
@@ -37,6 +39,7 @@ namespace Penumbra.Util
                     serializer.Serialize( writer, val?.ToString() );
                 }
             }
+
             writer.WriteEndArray();
         }
     }

@@ -5,9 +5,11 @@ using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using Lumina.Data.Files;
 using Penumbra.Game;
-using Penumbra.MetaData;
-using Penumbra.Mods;
+using Penumbra.Game.Enums;
+using Penumbra.Meta;
+using Penumbra.Meta.Files;
 using Penumbra.Util;
+using GameData = Penumbra.Game.Enums.GameData;
 
 namespace Penumbra.Importer
 {

@@ -1,9 +1,8 @@
 using System;
-using Penumbra.Game;
-using Penumbra.Mods;
+using Penumbra.Game.Enums;
 using Penumbra.Util;
 
-namespace Penumbra.MetaData
+namespace Penumbra.Meta.Files
 {
     public static class MetaFileNames
     {

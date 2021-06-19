@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
-using Penumbra.Mods;
+using Penumbra.Game.Enums;
+using Penumbra.Meta;
 
 namespace Penumbra.Game
 {
@@ -79,7 +80,7 @@ namespace Penumbra.Game
         _61                   = 0x20_00_00ul << 40,
         _62                   = 0x40_00_00ul << 40,
         _63                   = 0x80_00_00ul << 40,
-        HeadMask              = 0xFF_FF_FFul << 40
+        HeadMask              = 0xFF_FF_FFul << 40,
     }
 
     public static class Eqp
@@ -93,7 +94,7 @@ namespace Penumbra.Game
                 EquipSlot.Hands => ( 1, 3 ),
                 EquipSlot.Feet  => ( 1, 4 ),
                 EquipSlot.Head  => ( 3, 5 ),
-                _               => throw new InvalidEnumArgumentException()
+                _               => throw new InvalidEnumArgumentException(),
             };
         }
 
@@ -123,7 +124,7 @@ namespace Penumbra.Game
                 EquipSlot.Legs  => EqpEntry.LegsMask,
                 EquipSlot.Feet  => EqpEntry.FeetMask,
                 EquipSlot.Hands => EqpEntry.HandsMask,
-                _               => 0
+                _               => 0,
             };
         }
     }

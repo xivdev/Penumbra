@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
+using Penumbra.Structs;
 
-namespace Penumbra.Models
+namespace Penumbra.Mod
 {
     public class NamedModSettings
     {
@@ -11,7 +12,7 @@ namespace Penumbra.Models
         public void AddFromModSetting( ModSettings s, ModMeta meta )
         {
             Priority = s.Priority;
-            Settings = s.Settings.Keys.ToDictionary( K => K, K => new HashSet< string >() );
+            Settings = s.Settings.Keys.ToDictionary( k => k, _ => new HashSet< string >() );
 
             foreach( var kvp in Settings )
             {

@@ -3,15 +3,21 @@ using System.Collections.Generic;
 using System.Numerics;
 using ImGuiNET;
 
-namespace Penumbra.UI
+namespace Penumbra.UI.Custom
 {
     public static partial class ImGuiCustom
     {
-        public static void BeginFramedGroup( string label ) => BeginFramedGroupInternal( ref label, ZeroVector, false );
-        public static void BeginFramedGroup( string label, Vector2 minSize ) => BeginFramedGroupInternal( ref label, minSize, false );
+        public static void BeginFramedGroup( string label )
+            => BeginFramedGroupInternal( ref label, ZeroVector, false );
 
-        public static bool BeginFramedGroupEdit( ref string label ) => BeginFramedGroupInternal( ref label, ZeroVector, true );
-        public static bool BeginFramedGroupEdit( ref string label, Vector2 minSize ) => BeginFramedGroupInternal( ref label, minSize, true );
+        public static void BeginFramedGroup( string label, Vector2 minSize )
+            => BeginFramedGroupInternal( ref label, minSize, false );
+
+        public static bool BeginFramedGroupEdit( ref string label )
+            => BeginFramedGroupInternal( ref label, ZeroVector, true );
+
+        public static bool BeginFramedGroupEdit( ref string label, Vector2 minSize )
+            => BeginFramedGroupInternal( ref label, minSize, true );
 
         private static bool BeginFramedGroupInternal( ref string label, Vector2 minSize, bool edit )
         {

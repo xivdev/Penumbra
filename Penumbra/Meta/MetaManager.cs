@@ -5,10 +5,10 @@ using System.Linq;
 using Dalamud.Plugin;
 using Lumina.Data.Files;
 using Penumbra.Hooks;
+using Penumbra.Meta.Files;
 using Penumbra.Util;
-using Penumbra.MetaData;
 
-namespace Penumbra.Mods
+namespace Penumbra.Meta
 {
     public class MetaManager : IDisposable
     {
@@ -45,8 +45,14 @@ namespace Penumbra.Mods
         private readonly GameResourceManagement           _resourceManagement;
         private readonly Dictionary< GamePath, FileInfo > _resolvedFiles;
 
-        private readonly HashSet< MetaManipulation >             _currentManipulations = new();
+        private readonly Dictionary< MetaManipulation, Mod.Mod > _currentManipulations = new();
         private readonly Dictionary< GamePath, FileInformation > _currentFiles         = new();
+
+        public IEnumerable< (MetaManipulation, Mod.Mod) > Manipulations
+            => _currentManipulations.Select( kvp => ( kvp.Key, kvp.Value ) );
+
+        public bool TryGetValue( MetaManipulation manip, out Mod.Mod mod )
+            => _currentManipulations.TryGetValue( manip, out mod );
 
         private static void DisposeFile( FileInfo? file )
         {
@@ -65,7 +71,7 @@ namespace Penumbra.Mods
             }
         }
 
-        public void Dispose()
+        private void Reset( bool reload )
         {
             foreach( var file in _currentFiles )
             {
@@ -76,11 +82,26 @@ namespace Penumbra.Mods
             _currentManipulations.Clear();
             _currentFiles.Clear();
             ClearDirectory();
-            _resourceManagement.ReloadPlayerResources();
+            if( reload )
+            {
+                _resourceManagement.ReloadPlayerResources();
+            }
+        }
+
+        public void Reset()
+            => Reset( true );
+
+        public void Dispose()
+            => Reset();
+
+        ~MetaManager()
+        {
+            Reset( false );
         }
 
         private void ClearDirectory()
         {
+            _dir.Refresh();
             if( _dir.Exists )
             {
                 try
@@ -94,18 +115,18 @@ namespace Penumbra.Mods
             }
         }
 
-        public MetaManager( Dictionary< GamePath, FileInfo > resolvedFiles, DirectoryInfo modDir )
+        public MetaManager( string name, Dictionary< GamePath, FileInfo > resolvedFiles, DirectoryInfo modDir )
         {
-            _resolvedFiles      = resolvedFiles;
-            _default            = Service< MetaDefaults >.Get();
+            _resolvedFiles = resolvedFiles;
+            _default = Service< MetaDefaults >.Get();
             _resourceManagement = Service< GameResourceManagement >.Get();
-            _dir                = new DirectoryInfo( Path.Combine( modDir.FullName, TmpDirectory ) );
+            _dir = new DirectoryInfo( Path.Combine( modDir.FullName, TmpDirectory, name.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols() ) );
             ClearDirectory();
-            Directory.CreateDirectory( _dir.FullName );
         }
 
         public void WriteNewFiles()
         {
+            Directory.CreateDirectory( _dir.FullName );
             foreach( var kvp in _currentFiles.Where( kvp => kvp.Value.Changed ) )
             {
                 kvp.Value.Write( _dir );
@@ -115,13 +136,14 @@ namespace Penumbra.Mods
             _resourceManagement.ReloadPlayerResources();
         }
 
-        public bool ApplyMod( MetaManipulation m )
+        public bool ApplyMod( MetaManipulation m, Mod.Mod mod )
         {
-            if( !_currentManipulations.Add( m ) )
+            if( _currentManipulations.ContainsKey( m ) )
             {
                 return false;
             }
 
+            _currentManipulations.Add( m, mod );
             var gamePath = m.CorrespondingFilename();
             try
             {

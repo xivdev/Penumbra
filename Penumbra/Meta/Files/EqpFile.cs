@@ -4,7 +4,7 @@ using System.Linq;
 using Lumina.Data;
 using Penumbra.Game;
 
-namespace Penumbra.MetaData
+namespace Penumbra.Meta.Files
 {
     // EQP Structure:
     // 64 x [Block collapsed or not bit]
@@ -28,7 +28,7 @@ namespace Penumbra.MetaData
         }
 
         public byte[] WriteBytes()
-            => WriteBytes( _entries, E => ( ulong )E );
+            => WriteBytes( _entries, e => ( ulong )e );
 
         public EqpFile Clone()
             => new( this );
@@ -40,7 +40,7 @@ namespace Penumbra.MetaData
             => GetEntry( _entries, setId, ( EqpEntry )0 );
 
         public bool SetEntry( ushort setId, EqpEntry entry )
-            => SetEntry( _entries, setId, entry, E => E == 0, ( E1, E2 ) => E1 == E2 );
+            => SetEntry( _entries, setId, entry, e => e == 0, ( e1, e2 ) => e1 == e2 );
 
         public ref EqpEntry this[ ushort setId ]
             => ref GetTrueEntry( _entries, setId );

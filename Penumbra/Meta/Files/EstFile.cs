@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Lumina.Data;
-using Penumbra.Game;
+using Penumbra.Game.Enums;
 
-namespace Penumbra.MetaData
+namespace Penumbra.Meta.Files
 {
     // EST Structure:
     // 1x [NumEntries : UInt32]
@@ -101,7 +101,7 @@ namespace Penumbra.MetaData
                 return 0;
             }
 
-            return !setDict.TryGetValue( setId, out var entry ) ? (ushort) 0 : entry;
+            return !setDict.TryGetValue( setId, out var entry ) ? ( ushort )0 : entry;
         }
 
         public byte[] WriteBytes()
