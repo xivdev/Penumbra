@@ -68,7 +68,7 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged    = true;
-                    Game.RefreshActors.RedrawAll( _base._plugin!.PluginInterface!.ClientState.Actors );
+                    _base._plugin.ActorRefresher.RedrawAll( );
                 }
             }
 

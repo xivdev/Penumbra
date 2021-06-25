@@ -1,4 +1,5 @@
 using System.Linq;
+using Dalamud.Game.ClientState.Actors.Types;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using EmbedIO;
@@ -31,6 +32,7 @@ namespace Penumbra
         public ResourceLoader ResourceLoader { get; set; } = null!;
         public SettingsInterface SettingsInterface { get; set; } = null!;
         public MusicManager SoundShit { get; set; } = null!;
+        public ActorRefresher ActorRefresher { get; set; } = null!;
 
         private WebServer? _webServer;
 
@@ -49,6 +51,8 @@ namespace Penumbra
             var modManager = Service< ModManager >.Set( this );
 
             modManager.DiscoverMods();
+
+            ActorRefresher = new ActorRefresher( PluginInterface, modManager );
 
             ResourceLoader = new ResourceLoader( this );
 
@@ -98,6 +102,7 @@ namespace Penumbra
 
         public void Dispose()
         {
+            ActorRefresher.Dispose();
             PluginInterface.UiBuilder.OnBuildUi -= SettingsInterface.Draw;
 
             PluginInterface.CommandManager.RemoveHandler( CommandName );
@@ -110,7 +115,7 @@ namespace Penumbra
 
         private void OnCommand( string command, string rawArgs )
         {
-            var args = rawArgs.Split( ' ' );
+            var args = rawArgs.Split( new[] { ' ' }, 2 );
             if( args.Length > 0 && args[ 0 ].Length > 0 )
             {
                 switch( args[ 0 ] )
@@ -127,11 +132,11 @@ namespace Penumbra
                     {
                         if( args.Length > 1 )
                         {
-                            RefreshActors.RedrawSpecific( PluginInterface.ClientState.Actors, string.Join( " ", args.Skip( 1 ) ) );
+                            ActorRefresher.RedrawActor( args[ 1 ] );
                         }
                         else
                         {
-                            RefreshActors.RedrawAll( PluginInterface.ClientState.Actors );
+                            ActorRefresher.RedrawAll();
                         }
 
                         break;
