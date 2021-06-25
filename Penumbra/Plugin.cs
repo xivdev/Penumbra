@@ -6,7 +6,7 @@ using EmbedIO;
 using EmbedIO.WebApi;
 using Penumbra.API;
 using Penumbra.Game;
-using Penumbra.Hooks;
+using Penumbra.Interop;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
 using Penumbra.UI;
@@ -33,6 +33,7 @@ namespace Penumbra
         public SettingsInterface SettingsInterface { get; set; } = null!;
         public MusicManager SoundShit { get; set; } = null!;
         public ActorRefresher ActorRefresher { get; set; } = null!;
+        public PlayerWatcher PlayerWatcher { get; set; } = null!;
 
         private WebServer? _webServer;
 
@@ -53,6 +54,7 @@ namespace Penumbra
             modManager.DiscoverMods();
 
             ActorRefresher = new ActorRefresher( PluginInterface, modManager );
+            PlayerWatcher  = new PlayerWatcher( PluginInterface );
 
             ResourceLoader = new ResourceLoader( this );
 
@@ -73,6 +75,11 @@ namespace Penumbra
             if( Configuration.EnableHttpApi )
             {
                 CreateWebServer();
+            }
+
+            if( Configuration.EnableActorWatch )
+            {
+                PlayerWatcher.EnableActorWatch();
             }
         }
 
@@ -103,6 +110,7 @@ namespace Penumbra
         public void Dispose()
         {
             ActorRefresher.Dispose();
+            PlayerWatcher.Dispose();
             PluginInterface.UiBuilder.OnBuildUi -= SettingsInterface.Draw;
 
             PluginInterface.CommandManager.RemoveHandler( CommandName );

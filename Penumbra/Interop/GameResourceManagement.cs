@@ -4,7 +4,7 @@ using Dalamud.Plugin;
 using Penumbra.Structs;
 using Reloaded.Hooks.Definitions.X64;
 
-namespace Penumbra.Hooks
+namespace Penumbra.Interop
 {
     public class GameResourceManagement
     {

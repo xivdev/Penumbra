@@ -7,7 +7,7 @@ using Dalamud.Game.ClientState.Actors.Types;
 using Dalamud.Plugin;
 using Penumbra.Mods;
 
-namespace Penumbra.Game
+namespace Penumbra.Interop
 {
     public enum Redraw
     {

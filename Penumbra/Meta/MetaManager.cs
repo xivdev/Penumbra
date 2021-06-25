@@ -4,7 +4,7 @@ using System.IO;
 using System.Linq;
 using Dalamud.Plugin;
 using Lumina.Data.Files;
-using Penumbra.Hooks;
+using Penumbra.Interop;
 using Penumbra.Meta.Files;
 using Penumbra.Util;
 

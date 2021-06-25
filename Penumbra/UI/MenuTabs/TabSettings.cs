@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using ImGuiNET;
-using Penumbra.Hooks;
+using Penumbra.Interop;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -17,6 +17,7 @@ namespace Penumbra.UI
             private const string LabelRediscoverButton     = "Rediscover Mods";
             private const string LabelOpenFolder           = "Open Mods Folder";
             private const string LabelEnabled              = "Enable Mods";
+            private const string LabelEnabledPlayerWatch   = "Enable automatic Character Redraws";
             private const string LabelShowAdvanced         = "Show Advanced Settings";
             private const string LabelLogLoadedFiles       = "Log all loaded files";
             private const string LabelDisableNotifications = "Disable filesystem change notifications";
@@ -131,6 +132,17 @@ namespace Penumbra.UI
                 }
             }
 
+            private void DrawEnabledPlayerWatcher()
+            {
+                var enabled = _config.EnableActorWatch;
+                if( ImGui.Checkbox( LabelEnabledPlayerWatch, ref enabled ) )
+                {
+                    _config.EnableActorWatch = enabled;
+                    _configChanged           = true;
+                    _base._plugin.PlayerWatcher.SetActorWatch( enabled );
+                }
+            }
+
             private static void DrawReloadResourceButton()
             {
                 if( ImGui.Button( LabelReloadResource ) )
@@ -163,6 +175,7 @@ namespace Penumbra.UI
 
                 Custom.ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawEnabledBox();
+                DrawEnabledPlayerWatcher();
 
                 Custom.ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawShowAdvancedBox();

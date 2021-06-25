@@ -12,7 +12,7 @@ using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.X64;
 using FileMode = Penumbra.Structs.FileMode;
 
-namespace Penumbra.Hooks
+namespace Penumbra.Interop
 {
     public class ResourceLoader : IDisposable
     {

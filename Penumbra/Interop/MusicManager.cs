@@ -1,7 +1,7 @@
 using System;
 using Dalamud.Plugin;
 
-namespace Penumbra.Hooks
+namespace Penumbra.Interop
 {
     // Use this to disable streaming of specific soundfiles,
     // which will allow replacement of .scd files.
