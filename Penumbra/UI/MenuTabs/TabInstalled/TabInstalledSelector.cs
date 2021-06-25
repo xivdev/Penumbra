@@ -88,7 +88,7 @@ namespace Penumbra.UI
             {
                 _base          = ui;
                 _modNamesLower = Array.Empty< string >();
-                _modManager    = Service<ModManager>.Get();
+                _modManager    = Service< ModManager >.Get();
                 ResetModNamesLower();
             }
 

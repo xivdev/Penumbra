@@ -12,6 +12,7 @@ using ImcFile = Lumina.Data.Files.ImcFile;
 
 namespace Penumbra.Meta
 {
+    // Write a single meta manipulation as a Base64string of the 16 bytes defining it.
     public class MetaManipulationConverter : JsonConverter< MetaManipulation >
     {
         public override void WriteJson( JsonWriter writer, MetaManipulation manip, JsonSerializer serializer )
@@ -38,6 +39,10 @@ namespace Penumbra.Meta
         }
     }
 
+    // A MetaManipulation is a union of a type of Identifier (first 8 bytes, cf. Identifier.cs)
+    // and the appropriate Value to change the meta entry to (the other 8 bytes).
+    // Its comparison for sorting and hashes depends only on the identifier.
+    // The first byte is guaranteed to be a MetaType enum value in any case, so Type can always be read.
     [StructLayout( LayoutKind.Explicit )]
     [JsonConverter( typeof( MetaManipulationConverter ) )]
     public struct MetaManipulation : IComparable
@@ -219,11 +224,11 @@ namespace Penumbra.Meta
         {
             return Type switch
             {
-                MetaType.Eqp  => $"EQP - {EqpIdentifier}",
-                MetaType.Eqdp => $"EQDP - {EqdpIdentifier}",
-                MetaType.Est  => $"EST - {EstIdentifier}",
-                MetaType.Gmp  => $"GMP - {GmpIdentifier}",
-                MetaType.Imc  => $"IMC - {ImcIdentifier}",
+                MetaType.Eqp  => EqpIdentifier.ToString(),
+                MetaType.Eqdp => EqdpIdentifier.ToString(),
+                MetaType.Est  => EstIdentifier.ToString(),
+                MetaType.Gmp  => GmpIdentifier.ToString(),
+                MetaType.Imc  => ImcIdentifier.ToString(),
                 _             => throw new InvalidEnumArgumentException(),
             };
         }

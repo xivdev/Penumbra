@@ -5,6 +5,7 @@ using Penumbra.Structs;
 
 namespace Penumbra.Mod
 {
+    // Contains the settings for a given mod.
     public class ModSettings
     {
         public bool Enabled { get; set; }

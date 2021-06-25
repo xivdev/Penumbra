@@ -9,6 +9,11 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods
 {
+    // The ModManager handles the basic mods installed to the mod directory,
+    // as well as all saved collections.
+    // It also handles manual changes to mods that require changes in all collections,
+    // updating the state of a mod from the filesystem,
+    // and collection swapping.
     public class ModManager
     {
         private readonly Plugin _plugin;
@@ -215,7 +220,6 @@ namespace Penumbra.Mods
 
             return true;
         }
-
 
         public bool UpdateMod( ModData mod, bool recomputeMeta = false )
         {

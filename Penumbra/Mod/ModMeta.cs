@@ -58,7 +58,6 @@ namespace Penumbra.Mod
             return true;
         }
 
-
         public static ModMeta? LoadFromFile( FileInfo filePath )
         {
             try

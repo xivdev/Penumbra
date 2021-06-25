@@ -1,6 +1,10 @@
 using System.Runtime.InteropServices;
 using Penumbra.Game.Enums;
 
+
+// A struct for each type of meta change that contains all relevant information,
+// to uniquely identify the corresponding file and location for the change.
+// The first byte is guaranteed to be the MetaType enum for each case.
 namespace Penumbra.Meta
 {
     public enum MetaType : byte

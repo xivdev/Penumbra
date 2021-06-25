@@ -9,6 +9,10 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods
 {
+    // A ModCollection is a named set of ModSettings to all of the users' installed mods.
+    // It is meant to be local only, and thus should always contain settings for every mod, not just the enabled ones.
+    // Settings to mods that are not installed anymore are kept as long as no call to CleanUnavailableSettings is made.
+    // Active ModCollections build a cache of currently relevant data.
     public class ModCollection
     {
         public const string DefaultCollection = "Default";

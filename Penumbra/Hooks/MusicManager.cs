@@ -3,6 +3,8 @@ using Dalamud.Plugin;
 
 namespace Penumbra.Hooks
 {
+    // Use this to disable streaming of specific soundfiles,
+    // which will allow replacement of .scd files.
     public unsafe class MusicManager
     {
         private readonly IntPtr _musicManager;

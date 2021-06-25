@@ -9,6 +9,8 @@ using Penumbra.Util;
 
 namespace Penumbra.Meta.Files
 {
+    // This class manages the default meta files obtained via lumina from the game files themselves.
+    // On first call, the default version of any supported file will be cached and can be returned without reparsing.
     public class MetaDefaults
     {
         private readonly DalamudPluginInterface _pi;
@@ -107,6 +109,7 @@ namespace Penumbra.Meta.Files
         private FileResource FetchFile( string name )
             => _pi.Data.GetFile( name );
 
+        // Check that a given meta manipulation is an actual change to the default value. We don't need to keep changes to default.
         public bool CheckAgainstDefault( MetaManipulation m )
         {
             return m.Type switch
@@ -129,6 +132,7 @@ namespace Penumbra.Meta.Files
             };
         }
 
+        // Create a deep copy of a default file as a new file.
         public object? CreateNewFile( MetaManipulation m )
         {
             return m.Type switch

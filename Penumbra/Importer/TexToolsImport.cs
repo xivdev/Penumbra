@@ -21,6 +21,8 @@ namespace Penumbra.Importer
         private const    string TempFileName = "textools-import";
         private readonly string _resolvedTempFilePath;
 
+        public DirectoryInfo? ExtractedDirectory { get; private set; }
+
         public ImporterState State { get; private set; }
 
         public long TotalProgress { get; private set; }
@@ -161,14 +163,14 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( _outDirectory, Path.GetFileNameWithoutExtension( modPackFile.Name ) );
+            ExtractedDirectory = CreateModFolder( _outDirectory, Path.GetFileNameWithoutExtension( modPackFile.Name ) );
 
             File.WriteAllText(
-                Path.Combine( newModFolder.FullName, "meta.json" ),
+                Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta )
             );
 
-            ExtractSimpleModList( newModFolder, modList, modData );
+            ExtractSimpleModList( ExtractedDirectory, modList, modData );
         }
 
         private void ImportV2ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw )
@@ -228,12 +230,12 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
+            ExtractedDirectory = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
 
-            File.WriteAllText( Path.Combine( newModFolder.FullName, "meta.json" ),
+            File.WriteAllText( Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta ) );
 
-            ExtractSimpleModList( newModFolder, modList.SimpleModsList ?? Enumerable.Empty< SimpleMod >(), modData );
+            ExtractSimpleModList( ExtractedDirectory, modList.SimpleModsList ?? Enumerable.Empty< SimpleMod >(), modData );
         }
 
         private void ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
@@ -256,11 +258,11 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
+            ExtractedDirectory =  CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
 
             if( modList.SimpleModsList != null )
             {
-                ExtractSimpleModList( newModFolder, modList.SimpleModsList, modData );
+                ExtractSimpleModList( ExtractedDirectory, modList.SimpleModsList, modData );
             }
 
             if( modList.ModPackPages == null )
@@ -278,7 +280,7 @@ namespace Penumbra.Importer
 
                 foreach( var group in page.ModGroups.Where( group => group.GroupName != null && group.OptionList != null ) )
                 {
-                    var groupFolder = NewOptionDirectory( newModFolder, group.GroupName! );
+                    var groupFolder = NewOptionDirectory( ExtractedDirectory, group.GroupName! );
                     if( groupFolder.Exists )
                     {
                         groupFolder     =  new DirectoryInfo( groupFolder.FullName + $" ({page.PageIndex})" );
@@ -291,12 +293,12 @@ namespace Penumbra.Importer
                         ExtractSimpleModList( optionFolder, option.ModsJsons!, modData );
                     }
 
-                    AddMeta( newModFolder, groupFolder, group, modMeta );
+                    AddMeta( ExtractedDirectory, groupFolder, group, modMeta );
                 }
             }
 
             File.WriteAllText(
-                Path.Combine( newModFolder.FullName, "meta.json" ),
+                Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta, Formatting.Indented )
             );
         }

@@ -4,6 +4,9 @@ using Penumbra.Structs;
 
 namespace Penumbra.Mod
 {
+    // Contains settings with the option selections stored by names instead of index.
+    // This is meant to make them possibly more portable when we support importing collections from other users.
+    // Enabled does not exist, because disabled mods would not be exported in this way.
     public class NamedModSettings
     {
         public int Priority { get; set; }

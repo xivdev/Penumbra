@@ -9,6 +9,8 @@ using Penumbra.Structs;
 
 namespace Penumbra.Mods
 {
+    // Extracted to keep the main file a bit more clean.
+    // Contains all change functions on a specific mod that also require corresponding changes to collections.
     public static class ModManagerEditExtensions
     {
         public static bool RenameMod( this ModManager manager, string newName, ModData mod )

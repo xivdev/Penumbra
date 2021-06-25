@@ -6,6 +6,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Mod
 {
+    // Functions that do not really depend on only one component of a mod.
     public static class ModFunctions
     {
         public static bool CleanUpCollection( Dictionary< string, ModSettings > settings, IEnumerable< DirectoryInfo > modPaths )

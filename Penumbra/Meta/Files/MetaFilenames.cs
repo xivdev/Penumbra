@@ -4,6 +4,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Meta.Files
 {
+    // Contains all filenames for meta changes depending on their parameters.
     public static class MetaFileNames
     {
         public static GamePath Eqp()

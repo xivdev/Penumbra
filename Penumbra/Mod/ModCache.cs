@@ -5,6 +5,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Mod
 {
+    // The ModCache contains volatile information dependent on all current settings in a collection.
     public class ModCache
     {
         public Dictionary< Mod, (List< GamePath > Files, List< MetaManipulation > Manipulations) > Conflicts { get; private set; } = new();

@@ -62,6 +62,7 @@ namespace Penumbra.Hooks
                 Marshal.GetDelegateForFunctionPointer< UnloadCharacterResourcePrototype >( unloadCharacterResourceAddress );
         }
 
+        // Forces the reload of a specific set of 85 files, notably containing the eqp, eqdp, gmp and est tables, by filename.
         public unsafe void ReloadPlayerResources()
         {
             ReloadCharacterResources();

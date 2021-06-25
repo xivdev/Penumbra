@@ -76,7 +76,7 @@ namespace Penumbra.UI.Custom
             var itemWidth = ImGui.CalcItemWidth();
             ImGui.PushItemWidth( Math.Max( 0f, itemWidth - frameHeight ) );
 
-            labelStack.Add( ( labelMin, labelMax ) );
+            LabelStack.Add( ( labelMin, labelMax ) );
             return ret;
         }
 
@@ -111,8 +111,8 @@ namespace Penumbra.UI.Custom
 
             var itemMin = ImGui.GetItemRectMin();
             var itemMax = ImGui.GetItemRectMax();
-            var (currentLabelMin, currentLabelMax) = labelStack[ labelStack.Count - 1 ];
-            labelStack.RemoveAt( labelStack.Count - 1 );
+            var (currentLabelMin, currentLabelMax) = LabelStack[ LabelStack.Count - 1 ];
+            LabelStack.RemoveAt( LabelStack.Count - 1 );
 
             var halfFrame = new Vector2( frameHeight / 8, frameHeight / 2 );
             currentLabelMin.X -= itemSpacing.X;
@@ -143,6 +143,6 @@ namespace Penumbra.UI.Custom
 
         private static readonly Vector2 ZeroVector = new( 0, 0 );
 
-        private static readonly List< (Vector2, Vector2) > labelStack = new();
+        private static readonly List< (Vector2, Vector2) > LabelStack = new();
     }
 }

@@ -4,6 +4,8 @@ using Penumbra.Util;
 
 namespace Penumbra.Mod
 {
+    // A complete Mod containing settings (i.e. dependent on a collection)
+    // and the resulting cache.
     public class Mod
     {
         public ModSettings Settings { get; }

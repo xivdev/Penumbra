@@ -3,6 +3,9 @@ using Dalamud.Plugin;
 
 namespace Penumbra.Mod
 {
+    // ModData contains all permanent information about a mod,
+    // and is independent of collections or settings.
+    // It only changes when the user actively changes the mod or their filesystem.
     public class ModData
     {
         public DirectoryInfo BasePath;

@@ -14,6 +14,8 @@ namespace Penumbra.Meta.Files
         { }
     }
 
+    // Imc files are already supported in Lumina, but changing the provided data is not supported.
+    // We use reflection and extension methods to support changing the data of a given Imc file.
     public static class ImcExtensions
     {
         public static ulong ToInteger( this ImcFile.ImageChangeData imc )

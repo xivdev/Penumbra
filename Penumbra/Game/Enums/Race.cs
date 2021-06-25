@@ -27,6 +27,7 @@ namespace Penumbra.Game.Enums
         Viera,
     }
 
+    // The combined gender-race-npc numerical code as used by the game.
     public enum GenderRace : ushort
     {
         Unknown             = 0,

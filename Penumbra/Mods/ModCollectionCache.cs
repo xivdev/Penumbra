@@ -8,6 +8,8 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods
 {
+    // The ModCollectionCache contains all required temporary data to use a collection.
+    // It will only be setup if a collection gets activated in any way.
     public class ModCollectionCache
     {
         public readonly List< Mod.Mod > AvailableMods = new();

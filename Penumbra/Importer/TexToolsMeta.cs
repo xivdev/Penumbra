@@ -13,8 +13,18 @@ using GameData = Penumbra.Game.Enums.GameData;
 
 namespace Penumbra.Importer
 {
+    // TexTools provices custom generated *.meta files for its modpacks, that contain changes to
+    //     - imc files
+    //     - eqp files
+    //     - gmp files
+    //     - est files
+    //     - eqdp files
+    // made by the mod. The filename determines to what the changes are applied, and the binary file itself contains changes.
+    // We parse every *.meta file in a mod and combine all actual changes that do not keep data on default values and that can be applied to the game in a .json.
+    // TexTools may also generate files that contain non-existing changes, e.g. *.imc files for weapon offhands, which will be ignored.
     public class TexToolsMeta
     {
+        // The info class determines the files or table locations the changes need to apply to from the filename.
         public class Info
         {
             private const string Pt   = @"(?'PrimaryType'[a-z]*)";                                              // language=regex
@@ -28,6 +38,7 @@ namespace Penumbra.Importer
             private const string Slot = @"(_(?'Slot'[a-z]{3}))?";                                               // language=regex
             private const string Ext  = @"\.meta";
 
+            // These are the valid regexes for .meta files that we are able to support at the moment.
             private static readonly Regex HousingMeta = new( $"bgcommon/hou/{Pt}/general/{Pi}/{Pir}{Ext}" );
             private static readonly Regex CharaMeta   = new( $"chara/{Pt}/{Pp}{Pi}(/obj/{St}/{Sp}{Si})?/{File}{Slot}{Ext}" );
 

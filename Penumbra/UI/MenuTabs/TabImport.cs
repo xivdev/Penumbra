@@ -76,8 +76,13 @@ namespace Penumbra.UI
                                 }
                             }
 
+                            var directory = _texToolsImport?.ExtractedDirectory;
                             _texToolsImport = null;
                             _base.ReloadMods();
+                            if( directory != null )
+                            {
+                                _base._menu.InstalledTab.Selector.SelectModByDir( directory.Name );
+                            }
                         }
                     }
                     catch( Exception e )
