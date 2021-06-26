@@ -141,7 +141,7 @@ namespace Penumbra.UI
 
             private void Save()
             {
-                _modManager.CurrentCollection.Save( _base._plugin.PluginInterface! );
+                _modManager.Collections.CurrentCollection.Save( _base._plugin.PluginInterface! );
             }
 
             private void DrawAboutTab()
@@ -601,6 +601,12 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( label, ref enabled ) && oldEnabled != enabled )
                 {
                     Mod.Settings.Settings[ group.GroupName ] ^= 1 << idx;
+                    if( Mod.Settings.Enabled )
+                    {
+                        _modManager.Collections.CurrentCollection.CalculateEffectiveFileList( Mod.Data.BasePath,
+                            Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    }
+
                     Save();
                 }
             }
@@ -635,6 +641,12 @@ namespace Penumbra.UI
                  && code != Mod.Settings.Settings[ group.GroupName ] )
                 {
                     Mod.Settings.Settings[ group.GroupName ] = code;
+                    if( Mod.Settings.Enabled )
+                    {
+                        _modManager.Collections.CurrentCollection.CalculateEffectiveFileList( Mod.Data.BasePath,
+                            Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    }
+
                     Save();
                 }
             }
