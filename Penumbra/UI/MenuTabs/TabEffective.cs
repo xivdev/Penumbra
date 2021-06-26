@@ -59,7 +59,7 @@ namespace Penumbra.UI
 
                 if( ImGui.BeginTable( "##effective_changes", 3, flags, AutoFillSize ) )
                 {
-                    var currentCollection = _modManager.CurrentCollection.Cache!;
+                    var currentCollection = _modManager.Collections.CurrentCollection.Cache!;
                     foreach( var file in currentCollection.ResolvedFiles )
                     {
                         DrawFileLine( file.Value, file.Key );

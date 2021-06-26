@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
 using Penumbra.Util;
@@ -24,7 +25,8 @@ namespace Penumbra
         public string ModDirectory { get; set; } = @"D:/ffxiv/fs_mods/";
 
         public string CurrentCollection { get; set; } = "Default";
-
+        public string ForcedCollection { get; set; } = "";
+        public Dictionary< string, string > CharacterCollections { get; set; } = new();
         public bool InvertModListOrder { internal get; set; }
 
         public static Configuration Load( DalamudPluginInterface pi )

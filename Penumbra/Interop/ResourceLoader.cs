@@ -164,7 +164,7 @@ namespace Penumbra.Interop
 
             file = Marshal.PtrToStringAnsi( new IntPtr( pPath ) )!;
             var gameFsPath      = GamePath.GenerateUncheckedLower( file );
-            var replacementPath = modManager.CurrentCollection.ResolveSwappedOrReplacementPath( gameFsPath );
+            var replacementPath = modManager.ResolveSwappedOrReplacementPath( gameFsPath );
             if( LogAllFiles && ( LogFileFilter == null || LogFileFilter.IsMatch( file ) ) )
             {
                 PluginLog.Log( "[GetResourceHandler] {0}", file );

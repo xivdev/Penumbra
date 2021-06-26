@@ -69,7 +69,11 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged    = true;
-                    _base._plugin.ActorRefresher.RedrawAll( );
+                    _base._plugin.ActorRefresher.RedrawAll( enabled ? Redraw.WithSettings : Redraw.WithoutSettings );
+                    if( _config.EnableActorWatch )
+                    {
+                        _base._plugin.PlayerWatcher.SetActorWatch( enabled );
+                    }
                 }
             }
 

@@ -22,7 +22,7 @@ namespace Penumbra.Mods
 
             mod.Meta.Name = newName;
             mod.SaveMeta();
-            foreach( var collection in manager.Collections.Values.Where( c => c.Cache != null ) )
+            foreach( var collection in manager.Collections.Collections.Values.Where( c => c.Cache != null ) )
             {
                 collection.Cache!.SortMods();
             }
@@ -60,13 +60,13 @@ namespace Penumbra.Mods
             mod.MetaFile = ModData.MetaFileInfo( newDir );
             manager.UpdateMod( mod );
 
-            foreach( var collection in manager.Collections.Values )
+            foreach( var collection in manager.Collections.Collections.Values )
             {
                 if( collection.Settings.TryGetValue( oldBasePath.Name, out var settings ) )
                 {
                     collection.Settings[ newDir.Name ] = settings;
                     collection.Settings.Remove( oldBasePath.Name );
-                    manager.SaveCollection( collection );
+                    manager.Collections.SaveCollection( collection );
                 }
 
                 if( collection.Cache != null )
@@ -118,7 +118,7 @@ namespace Penumbra.Mods
 
             mod.SaveMeta();
 
-            foreach( var collection in manager.Collections.Values )
+            foreach( var collection in manager.Collections.Collections.Values )
             {
                 if( !collection.Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
                 {
@@ -131,7 +131,7 @@ namespace Penumbra.Mods
                 }
 
                 settings.Settings.Remove( oldGroupName );
-                manager.SaveCollection( collection );
+                manager.Collections.SaveCollection( collection );
             }
 
             return true;
@@ -154,7 +154,7 @@ namespace Penumbra.Mods
                 return ( oldSetting & bitmaskFront ) | ( ( oldSetting & bitmaskBack ) >> 1 );
             }
 
-            foreach( var collection in manager.Collections.Values )
+            foreach( var collection in manager.Collections.Collections.Values )
             {
                 if( !collection.Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
                 {
@@ -176,7 +176,7 @@ namespace Penumbra.Mods
                 if( newSetting != setting )
                 {
                     settings.Settings[ group.GroupName ] = newSetting;
-                    manager.SaveCollection( collection );
+                    manager.Collections.SaveCollection( collection );
                     if( collection.Cache != null && settings.Enabled )
                     {
                         collection.CalculateEffectiveFileList( manager.BasePath, mod.Resources.MetaManipulations.Count > 0 );

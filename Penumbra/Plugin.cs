@@ -48,13 +48,13 @@ namespace Penumbra
             SoundShit.DisableStreaming();
 
             var gameUtils = Service< GameResourceManagement >.Set( PluginInterface );
+            PlayerWatcher = new PlayerWatcher( PluginInterface );
             Service< MetaDefaults >.Set( PluginInterface );
             var modManager = Service< ModManager >.Set( this );
 
             modManager.DiscoverMods();
 
             ActorRefresher = new ActorRefresher( PluginInterface, modManager );
-            PlayerWatcher  = new PlayerWatcher( PluginInterface );
 
             ResourceLoader = new ResourceLoader( this );
 
@@ -77,10 +77,16 @@ namespace Penumbra
                 CreateWebServer();
             }
 
-            if( Configuration.EnableActorWatch )
+            if( Configuration.EnableActorWatch && Configuration.IsEnabled )
             {
                 PlayerWatcher.EnableActorWatch();
             }
+
+            PlayerWatcher.ActorChanged += a =>
+            {
+                PluginLog.Debug( "Triggered Redraw of {Actor}.", a.Name );
+                ActorRefresher.RedrawActor( a, Redraw.OnlyWithSettings );
+            };
         }
 
         public void CreateWebServer()

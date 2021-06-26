@@ -75,7 +75,7 @@ namespace Penumbra.UI
             private readonly ModManager        _modManager;
 
             private List< Mod.Mod >? Mods
-                => _modManager.CurrentCollection.Cache?.AvailableMods;
+                => _modManager.Collections.CurrentCollection.Cache?.AvailableMods;
 
             public Mod.Mod? Mod { get; private set; }
             private int       _index;
@@ -269,6 +269,7 @@ namespace Penumbra.UI
                 {
                     ImGui.CloseCurrentPopup();
                     _modManager.DeleteMod( Mod.Data.BasePath );
+                    ResetModNamesLower();
                     ClearSelection();
                 }
 

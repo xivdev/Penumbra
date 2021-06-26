@@ -90,6 +90,9 @@ namespace Penumbra.Mods
             CalculateEffectiveFileList( modDirectory, true );
         }
 
+        public void ClearCache()
+            => Cache = null;
+
         public void UpdateSetting( ModData mod )
         {
             if( !Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
@@ -236,5 +239,7 @@ namespace Penumbra.Mods
 
         public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )
             => Cache?.ResolveSwappedOrReplacementPath( gameResourcePath );
+
+        public static readonly ModCollection Empty = new(){ Name = "" };
     }
 }

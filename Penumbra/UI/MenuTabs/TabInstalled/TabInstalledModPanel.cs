@@ -200,7 +200,7 @@ namespace Penumbra.UI
                 if( ImGui.InputInt( "Priority", ref priority, 0 ) && priority != Mod!.Settings.Priority )
                 {
                     Mod.Settings.Priority = priority;
-                    var collection = _modManager.CurrentCollection;
+                    var collection = _modManager.Collections.CurrentCollection;
                     collection.Save( _base._plugin.PluginInterface! );
                     collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0 );
                 }
@@ -218,7 +218,7 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelModEnabled, ref enabled ) )
                 {
                     Mod.Settings.Enabled = enabled;
-                    var collection = _modManager.CurrentCollection;
+                    var collection = _modManager.Collections.CurrentCollection;
                     collection.Save( _base._plugin.PluginInterface! );
                     collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0 );
                 }

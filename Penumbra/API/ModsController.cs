@@ -19,7 +19,7 @@ namespace Penumbra.API
         public object? GetMods()
         {
             var modManager = Service< ModManager >.Get();
-            return modManager.CurrentCollection.Cache?.AvailableMods.Select( x => new
+            return modManager.Collections.CurrentCollection.Cache?.AvailableMods.Select( x => new
                 {
                     x.Settings.Enabled,
                     x.Settings.Priority,
@@ -39,7 +39,7 @@ namespace Penumbra.API
         public object GetFiles()
         {
             var modManager = Service< ModManager >.Get();
-            return modManager.CurrentCollection.Cache?.ResolvedFiles.ToDictionary(
+            return modManager.Collections.CurrentCollection.Cache?.ResolvedFiles.ToDictionary(
                     o => ( string )o.Key,
                     o => o.Value.FullName
                 )

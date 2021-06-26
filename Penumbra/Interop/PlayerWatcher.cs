@@ -9,7 +9,7 @@ namespace Penumbra.Interop
 {
     public class PlayerWatcher : IDisposable
     {
-        private const int ActorsPerFrame = 4;
+        private const int ActorsPerFrame = 8;
 
         private readonly DalamudPluginInterface              _pi;
         private readonly Dictionary< string, CharEquipment > _equip = new();
@@ -27,6 +27,11 @@ namespace Penumbra.Interop
             {
                 _equip[ playerName ] = new CharEquipment();
             }
+        }
+
+        public void RemovePlayerFromWatch( string playerName )
+        {
+            _equip.Remove( playerName );
         }
 
         public void SetActorWatch( bool on )
@@ -58,10 +63,10 @@ namespace Penumbra.Interop
         public void Dispose()
             => DisableActorWatch();
 
-        public void OnTerritoryChange( object _1, ushort _2 )
+        private void OnTerritoryChange( object _1, ushort _2 )
             => Clear();
 
-        public void OnLogout( object _1, object _2 )
+        private void OnLogout( object _1, object _2 )
             => Clear();
 
         public void Clear()
@@ -74,7 +79,7 @@ namespace Penumbra.Interop
             _frameTicker = 0;
         }
 
-        public void OnFrameworkUpdate( object framework )
+        private void OnFrameworkUpdate( object framework )
         {
             var actors = _pi.ClientState.Actors;
             for( var i = 0; i < ActorsPerFrame; ++i )
