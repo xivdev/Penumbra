@@ -74,6 +74,11 @@ namespace Penumbra.Mods
                     collection.Cache?.UpdateMetaManipulations();
                 }
             }
+
+            if( recomputeMeta )
+            {
+                Service<GameResourceManagement>.Get().ReloadPlayerResources();
+            }
         }
 
         public bool AddCollection( string name, Dictionary< string, ModSettings > settings )
@@ -168,11 +173,11 @@ namespace Penumbra.Mods
                 if( ActiveCollection == CurrentCollection )
                 {
                     ActiveCollection = c;
+                    var resourceManager = Service<GameResourceManagement>.Get();
+                    resourceManager.ReloadPlayerResources();
                 }
 
                 CurrentCollection = c;
-                var resourceManager = Service< GameResourceManagement >.Get();
-                resourceManager.ReloadPlayerResources();
             }, s => _plugin.Configuration.CurrentCollection = s );
 
         public void SetForcedCollection( ModCollection newCollection )

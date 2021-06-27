@@ -56,6 +56,7 @@ namespace Penumbra.Meta
 
         private static void DisposeFile( FileInfo? file )
         {
+            file?.Refresh();
             if( !( file?.Exists ?? false ) )
             {
                 return;
@@ -94,11 +95,6 @@ namespace Penumbra.Meta
         public void Dispose()
             => Reset();
 
-        ~MetaManager()
-        {
-            Reset( false );
-        }
-
         private void ClearDirectory()
         {
             _dir.Refresh();
@@ -132,8 +128,6 @@ namespace Penumbra.Meta
                 kvp.Value.Write( _dir );
                 _resolvedFiles[ kvp.Key ] = kvp.Value.CurrentFile!;
             }
-
-            _resourceManagement.ReloadPlayerResources();
         }
 
         public bool ApplyMod( MetaManipulation m, Mod.Mod mod )
