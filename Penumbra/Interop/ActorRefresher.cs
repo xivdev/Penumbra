@@ -24,6 +24,7 @@ namespace Penumbra.Interop
         private const int RenderModeOffset      = 0x0104;
         private const int ModelInvisibilityFlag = 0b10;
         private const int ModelIsLoadingFlag    = 0x800;
+        private const int SomeNpcRenderFlag     = 0x900;
         private const int UnloadAllRedrawDelay  = 250;
         private const int NpcActorId            = -536870912;
 
@@ -70,7 +71,8 @@ namespace Penumbra.Interop
         {
             if( renderPtr != IntPtr.Zero )
             {
-                return *( int* )renderPtr != 0;
+                var loadingFlags = *( int* )renderPtr;
+                return loadingFlags != 0 && loadingFlags != SomeNpcRenderFlag;
             }
 
             return false;
@@ -129,6 +131,7 @@ namespace Penumbra.Interop
             var actor = FindCurrentActor();
             if( actor == null )
             {
+                _currentFrame = 0;
                 return;
             }
 
