@@ -23,7 +23,7 @@ namespace Penumbra.Mods
 
         public void SortMods()
         {
-            AvailableMods.Sort( ( m1, m2 ) => string.Compare( m1.Data.Meta.Name, m2.Data.Meta.Name, StringComparison.InvariantCulture ) );
+            AvailableMods.Sort( ( m1, m2 ) => string.Compare( m1.Data.SortOrder, m2.Data.SortOrder, StringComparison.InvariantCultureIgnoreCase ) );
         }
 
         private void AddFiles( Dictionary< GamePath, Mod.Mod > registeredFiles, Mod.Mod mod )

@@ -6,6 +6,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Plugin;
 using ImGuiNET;
+using ImGuiScene;
 using Penumbra.Importer;
 using Penumbra.Mod;
 using Penumbra.Mods;
@@ -73,6 +74,7 @@ namespace Penumbra.UI
 
             private readonly SettingsInterface _base;
             private readonly ModManager        _modManager;
+            private          string            _currentModGroup = "";
 
             private List< Mod.Mod >? Mods
                 => _modManager.Collections.CurrentCollection.Cache?.AvailableMods;
@@ -301,17 +303,15 @@ namespace Penumbra.UI
                 return true;
             }
 
+            private bool CheckFilters( Mod.Mod mod, int modIndex )
+                => ( _modFilter.Length <= 0 || _modNamesLower[ modIndex ].Contains( _modFilter ) )
+                 && !CheckFlags( mod.Data.Resources.ModFiles.Count, ModFilter.HasNoFiles, ModFilter.HasFiles )
+                 && !CheckFlags( mod.Data.Meta.FileSwaps.Count, ModFilter.HasNoFileSwaps, ModFilter.HasFileSwaps )
+                 && !CheckFlags( mod.Data.Resources.MetaManipulations.Count, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations )
+                 && !CheckFlags( mod.Data.Meta.HasGroupsWithConfig ? 1 : 0, ModFilter.HasNoConfig, ModFilter.HasConfig );
+
             public void DrawMod( Mod.Mod mod, int modIndex )
             {
-                if( _modFilter.Length > 0 && !_modNamesLower[ modIndex ].Contains( _modFilter )
-                 || CheckFlags( mod.Data.Resources.ModFiles.Count, ModFilter.HasNoFiles, ModFilter.HasFiles )
-                 || CheckFlags( mod.Data.Meta.FileSwaps.Count, ModFilter.HasNoFileSwaps, ModFilter.HasFileSwaps )
-                 || CheckFlags( mod.Data.Resources.MetaManipulations.Count, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations )
-                 || CheckFlags( mod.Data.Meta.HasGroupsWithConfig ? 1 : 0, ModFilter.HasNoConfig, ModFilter.HasConfig ) )
-                {
-                    return;
-                }
-
                 var changedColour = false;
                 if( !mod.Settings.Enabled )
                 {
@@ -372,6 +372,59 @@ namespace Penumbra.UI
                 }
             }
 
+            private bool DrawModGroup( Mod.Mod mod, ref int modIndex )
+            {
+                if( !CheckFilters( mod, modIndex ) )
+                {
+                    return true;
+                }
+
+                if( !mod.Data.SortOrder.StartsWith( _currentModGroup ) )
+                {
+                    var count      = _currentModGroup.Length - 2;
+                    var lastFolder = _currentModGroup.LastIndexOf( '/', _currentModGroup.Length - 2 );
+                    _currentModGroup = lastFolder == -1 ? string.Empty : _currentModGroup.Substring( 0, lastFolder + 1 );
+                    ImGui.TreePop();
+                    return false;
+                }
+
+                var nextFolder = mod.Data.SortOrder.IndexOf( '/', _currentModGroup.Length );
+                if( nextFolder == -1 )
+                {
+                    DrawMod( mod, modIndex );
+                }
+                else
+                {
+                    var mods = Mods!;
+                    var folderLabel =
+                        $"{mod.Data.SortOrder.Substring( _currentModGroup.Length, nextFolder - _currentModGroup.Length )}##{modIndex}_{_currentModGroup.Length}";
+                    _currentModGroup = mod.Data.SortOrder.Substring( 0, nextFolder + 1 );
+                    if( ImGui.TreeNodeEx( folderLabel ) )
+                    {
+                        for( ; modIndex < mods.Count; ++modIndex )
+                        {
+                            if( !DrawModGroup( mods[ modIndex ], ref modIndex ) )
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ImGui.TreePush();
+                        for( ; modIndex < mods.Count; ++modIndex )
+                        {
+                            if( !mods[ modIndex ].Data.SortOrder.StartsWith( _currentModGroup ) )
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                }
+
+                return true;
+            }
+
             public void Draw()
             {
                 if( Mods == null )
@@ -387,10 +440,17 @@ namespace Penumbra.UI
                 // Inlay selector list
                 ImGui.BeginChild( LabelSelectorList, new Vector2( SelectorPanelWidth, -ImGui.GetFrameHeightWithSpacing() ), true );
 
-                for( var modIndex = 0; modIndex < Mods.Count; modIndex++ )
+                ImGui.PushStyleVar( ImGuiStyleVar.IndentSpacing, 10 );
+                for( var modIndex = 0; modIndex < Mods!.Count; )
                 {
-                    DrawMod( Mods[ modIndex ], modIndex );
+                    if( DrawModGroup( Mods[ modIndex ], ref modIndex ) )
+                    {
+                        ++modIndex;
+                    }
                 }
+
+                ImGui.PopStyleVar();
+
 
                 ImGui.EndChild();
 

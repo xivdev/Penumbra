@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
+using System.Windows.Forms;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Penumbra.Mod;
@@ -224,6 +225,17 @@ namespace Penumbra.UI
                 }
             }
 
+            private void DrawSortOrder()
+            {
+                var currentSortOrder = Mod!.Data.SortOrder;
+                ImGui.SetNextItemWidth( 300 );
+                if( ImGui.InputText( "Sort Order", ref currentSortOrder, 256, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                {
+                    _modManager.ChangeSortOrder( Mod.Data, currentSortOrder );
+                    _selector.SelectModByDir( Mod.Data.BasePath.Name );
+                }
+            }
+
             private void DrawEditableMark()
             {
                 ImGui.Checkbox( LabelEditingEnabled, ref _editMode );
@@ -262,7 +274,7 @@ namespace Penumbra.UI
                     {
                         ImGui.OpenPopup( LabelOverWriteDir );
                     }
-                    else if( Service< ModManager >.Get()!.RenameModFolder( Mod.Data, newDir ) )
+                    else if( _modManager.RenameModFolder( Mod.Data, newDir ) )
                     {
                         _selector.ReloadCurrentMod();
                         ImGui.CloseCurrentPopup();
@@ -478,6 +490,8 @@ namespace Penumbra.UI
                 DrawDeduplicateButton();
                 ImGui.SameLine();
                 DrawNormalizeButton();
+
+                DrawSortOrder();
             }
 
             public void Draw()

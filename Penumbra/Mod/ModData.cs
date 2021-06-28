@@ -11,6 +11,7 @@ namespace Penumbra.Mod
         public DirectoryInfo BasePath;
         public ModMeta       Meta;
         public ModResources  Resources;
+        public string        SortOrder;
 
         public FileInfo MetaFile { get; set; }
 
@@ -20,6 +21,7 @@ namespace Penumbra.Mod
             Meta      = meta;
             Resources = resources;
             MetaFile  = MetaFileInfo( basePath );
+            SortOrder = meta.Name;
         }
 
         public static FileInfo MetaFileInfo( DirectoryInfo basePath )

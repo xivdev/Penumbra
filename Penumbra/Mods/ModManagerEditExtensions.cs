@@ -30,6 +30,36 @@ namespace Penumbra.Mods
             return true;
         }
 
+        public static bool ChangeSortOrder( this ModManager manager, ModData mod, string newSortOrder )
+        {
+            newSortOrder = string.Join( "/", newSortOrder.Trim().Split( new[] { "/" }, StringSplitOptions.RemoveEmptyEntries ) );
+
+            if( mod.SortOrder == newSortOrder )
+            {
+                return false;
+            }
+
+            if( newSortOrder == string.Empty || newSortOrder == mod.Meta.Name )
+            {
+                mod.SortOrder = mod.Meta.Name;
+                manager.Config.ModSortOrder.Remove( mod.BasePath.Name );
+            }
+            else
+            {
+                mod.SortOrder                                    = newSortOrder;
+                manager.Config.ModSortOrder[ mod.BasePath.Name ] = newSortOrder;
+            }
+
+            manager.Config.Save();
+
+            foreach( var collection in manager.Collections.Collections.Values.Where( c => c.Cache != null ) )
+            {
+                collection.Cache!.SortMods();
+            }
+
+            return true;
+        }
+
         public static bool RenameModFolder( this ModManager manager, ModData mod, DirectoryInfo newDir, bool move = true )
         {
             if( move )
@@ -59,6 +89,13 @@ namespace Penumbra.Mods
             mod.BasePath = newDir;
             mod.MetaFile = ModData.MetaFileInfo( newDir );
             manager.UpdateMod( mod );
+
+            if( manager.Config.ModSortOrder.ContainsKey( oldBasePath.Name ) )
+            {
+                manager.Config.ModSortOrder[ newDir.Name ] = manager.Config.ModSortOrder[ oldBasePath.Name ];
+                manager.Config.ModSortOrder.Remove( oldBasePath.Name );
+                manager.Config.Save();
+            }
 
             foreach( var collection in manager.Collections.Collections.Values )
             {

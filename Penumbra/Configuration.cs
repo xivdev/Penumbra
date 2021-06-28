@@ -27,6 +27,8 @@ namespace Penumbra
         public string CurrentCollection { get; set; } = "Default";
         public string ForcedCollection { get; set; } = "";
         public Dictionary< string, string > CharacterCollections { get; set; } = new();
+        public Dictionary< string, string > ModSortOrder { get; set; } = new();
+
         public bool InvertModListOrder { internal get; set; }
 
         public static Configuration Load( DalamudPluginInterface pi )

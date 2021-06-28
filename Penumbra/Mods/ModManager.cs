@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dalamud.Plugin;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -12,13 +13,18 @@ namespace Penumbra.Mods
     // It also contains the CollectionManager that handles all collections.
     public class ModManager
     {
+        private readonly Plugin _plugin;
         public DirectoryInfo BasePath { get; private set; }
 
         public Dictionary< string, ModData > Mods { get; } = new();
         public CollectionManager Collections { get; }
 
+        public Configuration Config
+            => _plugin.Configuration;
+
         public ModManager( Plugin plugin )
         {
+            _plugin     = plugin;
             BasePath    = new DirectoryInfo( plugin.Configuration.ModDirectory );
             Collections = new CollectionManager( plugin, this );
         }
@@ -27,6 +33,28 @@ namespace Penumbra.Mods
         {
             BasePath = basePath;
             DiscoverMods();
+        }
+
+        private void SetModOrders( Configuration config )
+        {
+            var changes = false;
+            foreach( var kvp in config.ModSortOrder.ToArray() )
+            {
+                if( Mods.TryGetValue( kvp.Key, out var mod ) )
+                {
+                    mod.SortOrder = string.Join( "/", kvp.Value.Trim().Split( new[] { "/" }, StringSplitOptions.RemoveEmptyEntries ) );
+                }
+                else
+                {
+                    changes = true;
+                    config.ModSortOrder.Remove( kvp.Key );
+                }
+            }
+
+            if( changes )
+            {
+                config.Save();
+            }
         }
 
         public void DiscoverMods()
@@ -57,6 +85,7 @@ namespace Penumbra.Mods
                 Mods.Add( modFolder.Name, mod );
             }
 
+            SetModOrders( _plugin.Configuration );
             Collections.RecreateCaches();
         }
 
