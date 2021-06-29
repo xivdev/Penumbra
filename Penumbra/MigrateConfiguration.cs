@@ -64,7 +64,7 @@ namespace Penumbra
                     maxPriority = Math.Max( maxPriority, priority );
                 }
 
-                if( config.InvertModListOrder )
+                if( !config.InvertModListOrder )
                 {
                     foreach( var setting in defaultCollection.Settings.Values )
                     {
