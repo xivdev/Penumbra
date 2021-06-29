@@ -27,6 +27,27 @@ namespace Penumbra.Game.Enums
         Viera,
     }
 
+    public enum SubRace : byte
+    {
+        Unknown,
+        Midlander,
+        Highlander,
+        Wildwood,
+        Duskwright,
+        Plainsfolk,
+        Dunesfolk,
+        SeekerOfTheSun,
+        KeeperOfTheMoon,
+        Seawolf,
+        Hellsguard,
+        Raen,
+        Xaela,
+        Hellion,
+        Lost,
+        Rava,
+        Veena,
+    }
+
     // The combined gender-race-npc numerical code as used by the game.
     public enum GenderRace : ushort
     {
@@ -69,6 +90,58 @@ namespace Penumbra.Game.Enums
 
     public static class RaceEnumExtensions
     {
+        public static int ToRspIndex( this SubRace subRace )
+        {
+            return subRace switch
+            {
+                SubRace.Midlander       => 0,
+                SubRace.Highlander      => 1,
+                SubRace.Wildwood        => 10,
+                SubRace.Duskwright      => 11,
+                SubRace.Plainsfolk      => 20,
+                SubRace.Dunesfolk       => 21,
+                SubRace.SeekerOfTheSun  => 30,
+                SubRace.KeeperOfTheMoon => 31,
+                SubRace.Seawolf         => 40,
+                SubRace.Hellsguard      => 41,
+                SubRace.Raen            => 50,
+                SubRace.Xaela           => 51,
+                SubRace.Hellion         => 60,
+                SubRace.Lost            => 61,
+                SubRace.Rava            => 70,
+                SubRace.Veena           => 71,
+                _                       => throw new InvalidEnumArgumentException(),
+            };
+        }
+
+        public static Race ToRace( this SubRace subRace )
+        {
+            return subRace switch
+            {
+                SubRace.Unknown         => Race.Unknown,
+                SubRace.Midlander       => Race.Midlander,
+                SubRace.Highlander      => Race.Highlander,
+                SubRace.Wildwood        => Race.Elezen,
+                SubRace.Duskwright      => Race.Elezen,
+                SubRace.Plainsfolk      => Race.Lalafell,
+                SubRace.Dunesfolk       => Race.Lalafell,
+                SubRace.SeekerOfTheSun  => Race.Miqote,
+                SubRace.KeeperOfTheMoon => Race.Miqote,
+                SubRace.Seawolf         => Race.Roegadyn,
+                SubRace.Hellsguard      => Race.Roegadyn,
+                SubRace.Raen            => Race.AuRa,
+                SubRace.Xaela           => Race.AuRa,
+                SubRace.Hellion         => Race.Hrothgar,
+                SubRace.Lost            => Race.Hrothgar,
+                SubRace.Rava            => Race.Viera,
+                SubRace.Veena           => Race.Viera,
+                _                       => throw new InvalidEnumArgumentException(),
+            };
+        }
+
+        public static bool FitsRace( this SubRace subRace, Race race )
+            => subRace.ToRace() == race;
+
         public static byte ToByte( this Gender gender, Race race )
             => ( byte )( ( int )gender | ( ( int )race << 3 ) );
 

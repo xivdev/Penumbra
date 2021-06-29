@@ -57,13 +57,15 @@ namespace Penumbra.Mod
                .SelectMany( dir => dir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
                .OrderBy( f => f.FullName ) )
             {
-                if( file.Extension != ".meta" )
+                switch( file.Extension.ToLowerInvariant() )
                 {
-                    tmpFiles.Add( file );
-                }
-                else
-                {
-                    tmpMetas.Add( file );
+                    case ".meta":
+                    case ".rgsp":
+                        tmpMetas.Add( file );
+                        break;
+                    default:
+                        tmpFiles.Add( file );
+                        break;
                 }
             }
 

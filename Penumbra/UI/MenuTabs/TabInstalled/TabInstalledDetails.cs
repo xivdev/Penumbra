@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Dalamud.Interface;
@@ -774,10 +775,21 @@ namespace Penumbra.UI
                         ImGui.Text( manip.ImcIdentifier.Variant.ToString() );
                         break;
                     }
+                    case MetaType.Rsp:
+                    {
+                        ImGui.Text( manip.RspIdentifier.Attribute.ToUngenderedString() );
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+                        ImGui.Text( manip.RspIdentifier.SubRace.ToString() );
+                        ImGui.TableNextColumn();
+                        ImGui.Text( manip.RspIdentifier.Attribute.ToGender().ToString() );
+                        break;
+                    }
                 }
 
                 ImGui.TableSetColumnIndex( 9 );
-                ImGui.Text( manip.Value.ToString() );
+                ImGui.Text( manip.Type == MetaType.Rsp ? manip.RspValue.ToString( CultureInfo.InvariantCulture ) : manip.Value.ToString() );
                 ImGui.TableNextRow();
             }
 

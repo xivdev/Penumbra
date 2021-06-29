@@ -30,6 +30,7 @@ namespace Penumbra.Meta
                     GmpFile gmp   => gmp.WriteBytes(),
                     EstFile est   => est.WriteBytes(),
                     ImcFile imc   => imc.WriteBytes(),
+                    CmpFile cmp   => cmp.WriteBytes(),
                     _             => throw new NotImplementedException(),
                 };
                 DisposeFile( CurrentFile );
@@ -158,6 +159,7 @@ namespace Penumbra.Meta
                     MetaType.Gmp  => m.Apply( ( GmpFile )file.Data ),
                     MetaType.Est  => m.Apply( ( EstFile )file.Data ),
                     MetaType.Imc  => m.Apply( ( ImcFile )file.Data ),
+                    MetaType.Rsp  => m.Apply( ( CmpFile )file.Data ),
                     _             => throw new NotImplementedException(),
                 };
                 return true;

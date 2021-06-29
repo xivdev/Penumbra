@@ -316,5 +316,67 @@ namespace Penumbra.Importer
                 PluginLog.Error( $"Error while parsing .meta file:\n{e}" );
             }
         }
+
+        private TexToolsMeta( string filePath, uint version )
+        {
+            FilePath = filePath;
+            Version  = version;
+        }
+
+        public static TexToolsMeta Invalid = new( string.Empty, 0 );
+
+        public static TexToolsMeta FromRgspFile( string filePath, byte[] data )
+        {
+            if( data.Length != 45 && data.Length != 42 )
+            {
+                PluginLog.Error( "Error while parsing .rgsp file:\n\tInvalid number of bytes." );
+                return Invalid;
+            }
+
+            using var s       = new MemoryStream( data );
+            using var br      = new BinaryReader( s );
+            var       flag    = br.ReadByte();
+            var       version = flag != 255 ? ( uint )1 : br.ReadUInt16();
+
+            var ret = new TexToolsMeta( filePath, version );
+
+            var subRace = ( SubRace )( br.ReadByte() + 1 );
+            if( !Enum.IsDefined( typeof( SubRace ), subRace ) || subRace == SubRace.Unknown )
+            {
+                PluginLog.Error( $"Error while parsing .rgsp file:\n\t{subRace} is not a valid SubRace." );
+                return Invalid;
+            }
+
+            var gender = br.ReadByte();
+            if( gender != 1 && gender != 0 )
+            {
+                PluginLog.Error( $"Error while parsing .rgsp file:\n\t{gender} is neither Male nor Female." );
+                return Invalid;
+            }
+
+            if( gender == 1 )
+            {
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMinSize, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMaxSize, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMinTail, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMaxTail, br.ReadSingle() ) );
+
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinX, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinY, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinZ, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxX, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxY, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxZ, br.ReadSingle() ) );
+            }
+            else
+            {
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMinSize, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMaxSize, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMinTail, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMaxTail, br.ReadSingle() ) );
+            }
+
+            return ret;
+        }
     }
 }

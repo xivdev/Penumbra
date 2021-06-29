@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using Dalamud.Plugin;
 using Newtonsoft.Json;
 using Penumbra.Importer;
@@ -151,9 +152,16 @@ namespace Penumbra.Meta
         {
             DefaultData.Clear();
             GroupData.Clear();
-            foreach( var file in files.Where( f => f.Extension == ".meta" ) )
+            Count = 0;
+            foreach( var file in files )
             {
-                var metaData = new TexToolsMeta( File.ReadAllBytes( file.FullName ) );
+                TexToolsMeta metaData = file.Extension.ToLowerInvariant() switch
+                {
+                    ".meta" => new TexToolsMeta( File.ReadAllBytes( file.FullName ) ),
+                    ".rgsp" => TexToolsMeta.FromRgspFile( file.FullName, File.ReadAllBytes( file.FullName ) ),
+                    _       => TexToolsMeta.Invalid,
+                };
+
                 if( metaData.FilePath == string.Empty || metaData.Manipulations.Count == 0 )
                 {
                     continue;

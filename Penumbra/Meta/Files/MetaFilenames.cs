@@ -76,5 +76,8 @@ namespace Penumbra.Meta.Files
                 _                => throw new NotImplementedException(),
             };
         }
+
+        public static GamePath Cmp()
+            => GamePath.GenerateUnchecked( "chara/xls/charamake/human.cmp" );
     }
 }

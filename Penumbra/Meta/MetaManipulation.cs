@@ -129,6 +129,18 @@ namespace Penumbra.Meta
                 ImcValue = value,
             };
 
+        public static MetaManipulation Rsp( SubRace subRace, RspAttribute attribute, float value )
+            => new()
+            {
+                RspIdentifier = new RspIdentifier()
+                {
+                    Type      = MetaType.Rsp,
+                    SubRace   = subRace,
+                    Attribute = attribute,
+                },
+                RspValue = value,
+            };
+
         internal MetaManipulation( ulong identifier, ulong value )
             : this()
         {
@@ -160,6 +172,9 @@ namespace Penumbra.Meta
         [FieldOffset( 0 )]
         public ImcIdentifier ImcIdentifier;
 
+        [FieldOffset( 0 )]
+        public RspIdentifier RspIdentifier;
+
 
         [FieldOffset( 8 )]
         public EqpEntry EqpValue;
@@ -176,6 +191,9 @@ namespace Penumbra.Meta
         [FieldOffset( 8 )]
         public ImcFile.ImageChangeData ImcValue; // 6 bytes.
 
+        [FieldOffset( 8 )]
+        public float RspValue;
+
         public override int GetHashCode()
             => Identifier.GetHashCode();
 
@@ -191,6 +209,7 @@ namespace Penumbra.Meta
                 MetaType.Est  => MetaFileNames.Est( EstIdentifier.ObjectType, EstIdentifier.EquipSlot, EstIdentifier.BodySlot ),
                 MetaType.Gmp  => MetaFileNames.Gmp(),
                 MetaType.Imc  => MetaFileNames.Imc( ImcIdentifier.ObjectType, ImcIdentifier.PrimaryId, ImcIdentifier.SecondaryId ),
+                MetaType.Rsp  => MetaFileNames.Cmp(),
                 _             => throw new InvalidEnumArgumentException(),
             };
         }
@@ -220,6 +239,9 @@ namespace Penumbra.Meta
             return true;
         }
 
+        public bool Apply( CmpFile file )
+            => file.Set( RspIdentifier.SubRace, RspIdentifier.Attribute, RspValue );
+
         public string IdentifierString()
         {
             return Type switch
@@ -229,6 +251,7 @@ namespace Penumbra.Meta
                 MetaType.Est  => EstIdentifier.ToString(),
                 MetaType.Gmp  => GmpIdentifier.ToString(),
                 MetaType.Imc  => ImcIdentifier.ToString(),
+                MetaType.Rsp  => RspIdentifier.ToString(),
                 _             => throw new InvalidEnumArgumentException(),
             };
         }

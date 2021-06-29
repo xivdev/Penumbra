@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Penumbra.Game.Enums;
+using Penumbra.Meta.Files;
 
 
 // A struct for each type of meta change that contains all relevant information,
@@ -15,6 +16,7 @@ namespace Penumbra.Meta
         Eqp     = 3,
         Est     = 4,
         Gmp     = 5,
+        Rsp     = 6,
     };
 
     [StructLayout( LayoutKind.Explicit )]
@@ -149,5 +151,24 @@ namespace Penumbra.Meta
                 _                    => $"Imc - {PrimaryId} - {ObjectType} - {SecondaryId} - {BodySlot} - {Variant}",
             };
         }
+    }
+
+    [StructLayout( LayoutKind.Explicit )]
+    public struct RspIdentifier
+    {
+        [FieldOffset( 0 )]
+        public ulong Value;
+
+        [FieldOffset( 0 )]
+        public MetaType Type;
+
+        [FieldOffset( 1 )]
+        public SubRace SubRace;
+
+        [FieldOffset( 2 )]
+        public RspAttribute Attribute;
+
+        public override string ToString()
+            => $"Rsp - {SubRace} - {Attribute}";
     }
 }

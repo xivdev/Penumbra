@@ -45,6 +45,11 @@ namespace Penumbra.Meta.Files
                 return new EstFile( rawFile );
             }
 
+            if( path.EndsWith( ".cmp" ) )
+            {
+                return new CmpFile( rawFile.Data );
+            }
+
             throw new NotImplementedException();
         }
 
@@ -85,6 +90,9 @@ namespace Penumbra.Meta.Files
             => GetDefaultFile< ImcFile >( MetaFileNames.Imc( type, primarySetId, secondarySetId ),
                 $"Could not obtain Imc file for {type}, {primarySetId} {secondarySetId}:\n" );
 
+        private CmpFile? GetDefaultCmpFile()
+            => GetDefaultFile< CmpFile >( MetaFileNames.Cmp(), "Could not obtain Cmp file:\n" );
+
         public EqdpFile? GetNewEqdpFile( EquipSlot slot, GenderRace gr )
             => GetDefaultEqdpFile( slot, gr )?.Clone();
 
@@ -99,6 +107,9 @@ namespace Penumbra.Meta.Files
 
         public ImcFile? GetNewImcFile( ObjectType type, ushort primarySetId, ushort secondarySetId = 0 )
             => GetDefaultImcFile( type, primarySetId, secondarySetId )?.Clone();
+
+        public CmpFile? GetNewCmpFile()
+            => GetDefaultCmpFile()?.Clone();
 
         public MetaDefaults( DalamudPluginInterface pi )
             => _pi = pi;
@@ -128,6 +139,8 @@ namespace Penumbra.Meta.Files
                 MetaType.Est => GetDefaultEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot )
                       ?.GetEntry( m.EstIdentifier.GenderRace, m.EstIdentifier.PrimaryId )
                  == m.EstValue,
+                MetaType.Rsp => GetDefaultCmpFile()?[ m.RspIdentifier.SubRace ][ m.RspIdentifier.Attribute ]
+                 == m.RspValue,
                 _ => throw new NotImplementedException(),
             };
         }
@@ -142,6 +155,7 @@ namespace Penumbra.Meta.Files
                 MetaType.Eqp  => GetNewEqpFile(),
                 MetaType.Eqdp => GetNewEqdpFile( m.EqdpIdentifier.Slot, m.EqdpIdentifier.GenderRace ),
                 MetaType.Est  => GetNewEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot ),
+                MetaType.Rsp  => GetNewCmpFile(),
                 _             => throw new NotImplementedException(),
             };
         }
