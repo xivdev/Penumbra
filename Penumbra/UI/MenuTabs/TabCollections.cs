@@ -23,6 +23,7 @@ namespace Penumbra.UI
             private          ModCollection[]           _collections             = null!;
             private          int                       _currentCollectionIndex  = 0;
             private          int                       _currentForcedIndex      = 0;
+            private          int                       _currentDefaultIndex     = 0;
             private readonly Dictionary< string, int > _currentCharacterIndices = new();
             private          string                    _newCollectionName       = string.Empty;
             private          string                    _newCharacterName        = string.Empty;
@@ -54,6 +55,9 @@ namespace Penumbra.UI
             private void UpdateForcedIndex()
                 => _currentForcedIndex = GetIndex( _manager.Collections.ForcedCollection );
 
+            private void UpdateDefaultIndex()
+                => _currentDefaultIndex = GetIndex( _manager.Collections.DefaultCollection );
+
             private void UpdateCharacterIndices()
             {
                 _currentCharacterIndices.Clear();
@@ -66,6 +70,7 @@ namespace Penumbra.UI
             private void UpdateIndices()
             {
                 UpdateIndex();
+                UpdateDefaultIndex();
                 UpdateForcedIndex();
                 UpdateCharacterIndices();
             }
@@ -130,17 +135,41 @@ namespace Penumbra.UI
             private void DrawCurrentCollectionSelector()
             {
                 var index = _currentCollectionIndex;
-                if( !ImGui.Combo( "Current Collection", ref index, _collectionNames ) )
+                var combo = ImGui.Combo( "Current Collection", ref index, _collectionNames );
+                if( ImGui.IsItemHovered() )
                 {
-                    return;
+                    ImGui.SetTooltip(
+                        "This collection will be modified when using the Installed Mods tab and making changes. It does not apply to anything by itself." );
                 }
 
-                if( index != _currentCollectionIndex )
+                if( combo && index != _currentCollectionIndex )
                 {
                     _manager.Collections.SetCurrentCollection( _collections[ index + 1 ] );
                     _currentCollectionIndex = index;
                     _selector.ReloadSelection();
                 }
+            }
+
+            private void DrawDefaultCollectionSelector()
+            {
+                var index = _currentDefaultIndex;
+                if( ImGui.Combo( "##Default Collection", ref index, _collectionNamesWithNone ) && index != _currentDefaultIndex )
+                {
+                    _manager.Collections.SetDefaultCollection( _collections[ index ] );
+                    _currentDefaultIndex = index;
+                }
+
+                if( ImGui.IsItemHovered() )
+                {
+                    ImGui.SetTooltip(
+                        "Mods in the default collection are loaded for any character that is not explicitly named in the character collections below.\n"
+                      + "They also take precedence before the forced collection." );
+                }
+
+                ImGui.SameLine();
+                ImGui.Dummy( new Vector2( 24, 0 ) );
+                ImGui.SameLine();
+                ImGui.Text( "Default Collection" );
             }
 
             private void DrawForcedCollectionSelector()
@@ -181,6 +210,7 @@ namespace Penumbra.UI
                 {
                     _manager.Collections.CreateCharacterCollection( _newCharacterName );
                     _currentCharacterIndices[ _newCharacterName ] = 0;
+                    _newCharacterName                             = string.Empty;
                 }
 
                 if( changedStyle )
@@ -197,6 +227,7 @@ namespace Penumbra.UI
                     return;
                 }
 
+                DrawDefaultCollectionSelector();
                 DrawForcedCollectionSelector();
 
                 foreach( var name in _manager.Collections.CharacterCollection.Keys.ToArray() )

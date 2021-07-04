@@ -21,6 +21,7 @@ namespace Penumbra
 
             config.ModDirectory      = config.CurrentCollection;
             config.CurrentCollection = "Default";
+            config.DefaultCollection = "Default";
             config.Version           = 1;
             ResettleCollectionJson( config );
         }

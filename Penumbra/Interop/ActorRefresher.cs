@@ -55,7 +55,7 @@ namespace Penumbra.Interop
 
         private void RestoreSettings()
         {
-            _mods.Collections.ActiveCollection = _mods.Collections.CurrentCollection;
+            _mods.Collections.ActiveCollection = _mods.Collections.DefaultCollection;
             _changedSettings                   = false;
         }
 

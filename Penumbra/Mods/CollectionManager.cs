@@ -18,6 +18,7 @@ namespace Penumbra.Mods
         public Dictionary< string, ModCollection > Collections { get; } = new();
 
         public ModCollection CurrentCollection { get; private set; } = null!;
+        public ModCollection DefaultCollection { get; private set; } = null!;
         public ModCollection ForcedCollection { get; private set; } = ModCollection.Empty;
         public Dictionary< string, ModCollection > CharacterCollection { get; } = new();
 
@@ -30,7 +31,7 @@ namespace Penumbra.Mods
 
             ReadCollections();
             LoadConfigCollections( _plugin.Configuration );
-            ActiveCollection = CurrentCollection;
+            ActiveCollection = DefaultCollection;
         }
 
         public void RecreateCaches()
@@ -77,7 +78,7 @@ namespace Penumbra.Mods
 
             if( recomputeMeta )
             {
-                Service<GameResourceManagement>.Get().ReloadPlayerResources();
+                Service< GameResourceManagement >.Get().ReloadPlayerResources();
             }
         }
 
@@ -115,6 +116,11 @@ namespace Penumbra.Mods
                 if( ForcedCollection == collection )
                 {
                     SetForcedCollection( ModCollection.Empty );
+                }
+
+                if( DefaultCollection == collection )
+                {
+                    SetDefaultCollection( ModCollection.Empty );
                 }
 
                 foreach( var kvp in CharacterCollection.ToArray() )
@@ -170,10 +176,10 @@ namespace Penumbra.Mods
         public void SetCurrentCollection( ModCollection newCollection )
             => SetCollection( newCollection, CurrentCollection, c =>
             {
-                if( ActiveCollection == CurrentCollection )
+                if( ActiveCollection == DefaultCollection )
                 {
                     ActiveCollection = c;
-                    var resourceManager = Service<GameResourceManagement>.Get();
+                    var resourceManager = Service< GameResourceManagement >.Get();
                     resourceManager.ReloadPlayerResources();
                 }
 
@@ -182,6 +188,9 @@ namespace Penumbra.Mods
 
         public void SetForcedCollection( ModCollection newCollection )
             => SetCollection( newCollection, ForcedCollection, c => ForcedCollection = c, s => _plugin.Configuration.ForcedCollection = s );
+
+        public void SetDefaultCollection( ModCollection newCollection )
+            => SetCollection( newCollection, DefaultCollection, c => DefaultCollection = c, s => _plugin.Configuration.DefaultCollection = s );
 
         public void SetCharacterCollection( string characterName, ModCollection newCollection )
             => SetCollection( newCollection,
@@ -253,6 +262,27 @@ namespace Penumbra.Mods
             return true;
         }
 
+        private bool LoadDefaultCollection( Configuration config )
+        {
+            if( config.DefaultCollection == string.Empty )
+            {
+                DefaultCollection = ModCollection.Empty;
+                return false;
+            }
+
+            if( Collections.TryGetValue( config.DefaultCollection, out var defaultCollection ) )
+            {
+                DefaultCollection = defaultCollection;
+                AddCache( DefaultCollection );
+                return false;
+            }
+
+            PluginLog.Error( $"Last choice of DefaultCollection {config.DefaultCollection} is not available, reset to None." );
+            DefaultCollection        = ModCollection.Empty;
+            config.DefaultCollection = string.Empty;
+            return true;
+        }
+
         private bool LoadCharacterCollections( Configuration config )
         {
             var configChanged = false;
@@ -283,6 +313,7 @@ namespace Penumbra.Mods
         private void LoadConfigCollections( Configuration config )
         {
             var configChanged = LoadCurrentCollection( config );
+            configChanged |= LoadDefaultCollection( config );
             configChanged |= LoadForcedCollection( config );
             configChanged |= LoadCharacterCollections( config );
 
