@@ -45,7 +45,6 @@ namespace Penumbra.Mod
             }
         }
 
-
         // Update the current set of files used by the mod,
         // returns true if anything changed.
         public ResourceChange RefreshModFiles( DirectoryInfo basePath )
@@ -70,13 +69,13 @@ namespace Penumbra.Mod
             }
 
             ResourceChange changes = 0;
-            if( !tmpFiles.SequenceEqual( ModFiles ) )
+            if( !tmpFiles.Select( f => f.FullName ).SequenceEqual( ModFiles.Select( f => f.FullName ) ) )
             {
                 ModFiles =  tmpFiles;
                 changes  |= ResourceChange.Files;
             }
 
-            if( !tmpMetas.SequenceEqual( MetaFiles ) )
+            if( !tmpMetas.Select( f => f.FullName ).SequenceEqual( MetaFiles.Select( f => f.FullName ) ) )
             {
                 MetaFiles =  tmpMetas;
                 changes   |= ResourceChange.Meta;

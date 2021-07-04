@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using Penumbra.Game;
@@ -12,8 +11,8 @@ namespace Penumbra.Meta.Files
     {
         private const int RacialScalingStart = 0x2A800;
 
-        private readonly byte[]           _byteData = new byte[RacialScalingStart];
-        private readonly List< RspEntry > _rspEntries;
+        private readonly byte[]     _byteData = new byte[RacialScalingStart];
+        private readonly RspEntry[] _rspEntries;
 
         public CmpFile( byte[] bytes )
         {
@@ -24,11 +23,13 @@ namespace Penumbra.Meta.Files
 
             Array.Copy( bytes, _byteData, RacialScalingStart );
             var rspEntryNum = ( bytes.Length - RacialScalingStart ) / RspEntry.ByteSize;
-            _rspEntries = new List< RspEntry >( rspEntryNum );
+            var tmp         = new List< RspEntry >( rspEntryNum );
             for( var i = 0; i < rspEntryNum; ++i )
             {
-                _rspEntries.Add( new RspEntry( bytes, RacialScalingStart + i * RspEntry.ByteSize ) );
+                tmp.Add( new RspEntry( bytes, RacialScalingStart + i * RspEntry.ByteSize ) );
             }
+
+            _rspEntries = tmp.ToArray();
         }
 
         public RspEntry this[ SubRace subRace ]
@@ -49,7 +50,7 @@ namespace Penumbra.Meta.Files
 
         public byte[] WriteBytes()
         {
-            using var s = new MemoryStream( RacialScalingStart + _rspEntries.Count * RspEntry.ByteSize );
+            using var s = new MemoryStream( RacialScalingStart + _rspEntries.Length * RspEntry.ByteSize );
             s.Write( _byteData, 0, _byteData.Length );
             foreach( var entry in _rspEntries )
             {
@@ -60,10 +61,10 @@ namespace Penumbra.Meta.Files
             return s.ToArray();
         }
 
-        private CmpFile( byte[] data, List< RspEntry > entries )
+        private CmpFile( byte[] data, RspEntry[] entries )
         {
             _byteData   = data.ToArray();
-            _rspEntries = entries.ToList();
+            _rspEntries = entries.Select( e => new RspEntry( e ) ).ToArray();
         }
 
         public CmpFile Clone()

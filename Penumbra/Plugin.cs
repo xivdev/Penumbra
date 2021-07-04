@@ -1,5 +1,3 @@
-using System.Linq;
-using Dalamud.Game.ClientState.Actors.Types;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using EmbedIO;
@@ -41,6 +39,7 @@ namespace Penumbra
         {
             PluginInterface = pluginInterface;
             Service< DalamudPluginInterface >.Set( PluginInterface );
+            Service< ObjectIdentification >.Set( PluginInterface );
 
             Configuration = Configuration.Load( PluginInterface );
 

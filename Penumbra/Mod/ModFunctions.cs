@@ -39,6 +39,25 @@ namespace Penumbra.Mod
             return files;
         }
 
+        public static HashSet< GamePath > GetAllFiles( RelPath relPath, ModMeta meta )
+        {
+            var ret = new HashSet< GamePath >();
+            foreach( var option in meta.Groups.Values.SelectMany( g => g.Options ) )
+            {
+                if( option.OptionFiles.TryGetValue( relPath, out var files ) )
+                {
+                    ret.UnionWith( files );
+                }
+            }
+
+            if( ret.Count == 0 )
+            {
+                ret.Add( new GamePath( relPath, 0 ) );
+            }
+
+            return ret;
+        }
+
         public static ModSettings ConvertNamedSettings( NamedModSettings namedSettings, ModMeta meta )
         {
             ModSettings ret = new()

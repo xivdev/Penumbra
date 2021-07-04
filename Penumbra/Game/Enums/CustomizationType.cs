@@ -24,6 +24,7 @@ namespace Penumbra.Game.Enums
         {
             return value switch
             {
+                CustomizationType.Body      => "top",
                 CustomizationType.Face      => "fac",
                 CustomizationType.Iris      => "iri",
                 CustomizationType.Accessory => "acc",
@@ -39,6 +40,7 @@ namespace Penumbra.Game.Enums
     {
         public static readonly Dictionary< string, CustomizationType > SuffixToCustomizationType = new()
         {
+            { CustomizationType.Body.ToSuffix(), CustomizationType.Body },
             { CustomizationType.Face.ToSuffix(), CustomizationType.Face },
             { CustomizationType.Iris.ToSuffix(), CustomizationType.Iris },
             { CustomizationType.Accessory.ToSuffix(), CustomizationType.Accessory },

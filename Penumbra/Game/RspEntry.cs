@@ -13,6 +13,9 @@ namespace Penumbra.Game
 
         private readonly float[] Attributes;
 
+        public RspEntry( RspEntry copy )
+            => Attributes = ( float[] )copy.Attributes.Clone();
+
         public RspEntry( byte[] bytes, int offset )
         {
             if( offset < 0 || offset + ByteSize > bytes.Length )

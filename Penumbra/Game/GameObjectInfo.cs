@@ -53,8 +53,9 @@ namespace Penumbra.Game
                 Variant     = variant,
             };
 
-        public static GameObjectInfo DemiHuman( FileType type, ushort demiHumanId, ushort bodyId, byte variant = 0,
-            EquipSlot slot = EquipSlot.Unknown )
+        public static GameObjectInfo DemiHuman( FileType type, ushort demiHumanId, ushort bodyId, EquipSlot slot = EquipSlot.Unknown,
+            byte variant = 0
+        )
             => new()
             {
                 FileType    = type,
@@ -87,6 +88,7 @@ namespace Penumbra.Game
                 IconHq     = hq,
                 Language   = lang,
             };
+
 
         [FieldOffset( 0 )]
         public readonly ulong Identifier;

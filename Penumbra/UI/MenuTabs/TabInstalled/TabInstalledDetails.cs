@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.Game.Enums;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -37,8 +38,6 @@ namespace Penumbra.UI
             private const string LabelAboutTab           = "About";
             private const string LabelChangedItemsTab    = "Changed Items";
             private const string LabelChangedItemsHeader = "##changedItems";
-            private const string LabelChangedItemIdx     = "##citem_";
-            private const string LabelChangedItemNew     = "##citem_new";
             private const string LabelConflictsTab       = "Mod Conflicts";
             private const string LabelConflictsHeader    = "##conflicts";
             private const string LabelFileSwapTab        = "File Swaps";
@@ -59,13 +58,12 @@ namespace Penumbra.UI
             private const uint  ColorYellow          = 0xFF00C8C8;
             private const uint  ColorRed             = 0xFF0000C8;
 
-            private bool                           _editMode;
-            private int                            _selectedGroupIndex;
-            private OptionGroup?                   _selectedGroup;
-            private int                            _selectedOptionIndex;
-            private Option?                        _selectedOption;
-            private (string label, string name)[]? _changedItemsList;
-            private string                         _currentGamePaths = "";
+            private bool         _editMode;
+            private int          _selectedGroupIndex;
+            private OptionGroup? _selectedGroup;
+            private int          _selectedOptionIndex;
+            private Option?      _selectedOption;
+            private string       _currentGamePaths = "";
 
             private (FileInfo name, bool selected, uint color, RelPath relName)[]? _fullFilenameList;
 
@@ -119,7 +117,6 @@ namespace Penumbra.UI
 
             public void ResetState()
             {
-                _changedItemsList = null;
                 _fullFilenameList = null;
                 SelectGroup();
                 SelectOption();
@@ -186,62 +183,25 @@ namespace Penumbra.UI
 
             private void DrawChangedItemsTab()
             {
-                if( !_editMode && Meta.ChangedItems.Count == 0 )
+                if( Mod.Data.ChangedItems.Count == 0 || !ImGui.BeginTabItem( LabelChangedItemsTab ) )
                 {
                     return;
                 }
 
-                var flags = _editMode
-                    ? ImGuiInputTextFlags.EnterReturnsTrue
-                    : ImGuiInputTextFlags.ReadOnly;
-
-                if( ImGui.BeginTabItem( LabelChangedItemsTab ) )
+                if( ImGui.BeginListBox( LabelChangedItemsHeader, AutoFillSize ) )
                 {
-                    ImGui.SetNextItemWidth( -1 );
-                    var changedItems = false;
-                    if( ImGui.BeginListBox( LabelChangedItemsHeader, AutoFillSize ) )
+                    foreach( var item in Mod.Data.ChangedItems )
                     {
-                        _changedItemsList ??= Meta.ChangedItems
-                           .Select( ( I, index ) => ( $"{LabelChangedItemIdx}{index}", I ) ).ToArray();
-
-                        for( var i = 0; i < Meta.ChangedItems.Count; ++i )
+                        if( ImGui.Selectable( item.Key ) && item.Value is Item it )
                         {
-                            ImGui.SetNextItemWidth( -1 );
-                            if( ImGui.InputText( _changedItemsList[ i ].label, ref _changedItemsList[ i ].name, 128, flags ) )
-                            {
-                                Meta.ChangedItems.RemoveOrChange( _changedItemsList[ i ].name, i );
-                                changedItems = true;
-                                _selector.SaveCurrentMod();
-                            }
+                            ChatUtil.LinkItem( it );
                         }
-
-                        var newItem = "";
-                        if( _editMode )
-                        {
-                            ImGui.SetNextItemWidth( -1 );
-                            if( ImGui.InputTextWithHint( LabelChangedItemNew, "Enter new changed item...", ref newItem, 128, flags )
-                             && newItem.Length > 0 )
-                            {
-                                Meta.ChangedItems.Add( newItem );
-                                changedItems = true;
-                                _selector.SaveCurrentMod();
-                            }
-                        }
-
-                        if( changedItems )
-                        {
-                            _changedItemsList = null;
-                        }
-
-                        ImGui.EndListBox();
                     }
 
-                    ImGui.EndTabItem();
+                    ImGui.EndListBox();
                 }
-                else
-                {
-                    _changedItemsList = null;
-                }
+
+                ImGui.EndTabItem();
             }
 
             private void DrawConflictTab()

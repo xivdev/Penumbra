@@ -73,7 +73,7 @@ namespace Penumbra.Meta
             }
         }
 
-        private void Reset( bool reload )
+        public void Reset( bool reload = true )
         {
             foreach( var file in _currentFiles )
             {
@@ -89,9 +89,6 @@ namespace Penumbra.Meta
                 _resourceManagement.ReloadPlayerResources();
             }
         }
-
-        public void Reset()
-            => Reset( true );
 
         public void Dispose()
             => Reset();

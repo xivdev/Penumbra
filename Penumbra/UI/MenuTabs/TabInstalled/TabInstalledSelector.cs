@@ -6,7 +6,6 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Plugin;
 using ImGuiNET;
-using ImGuiScene;
 using Penumbra.Importer;
 using Penumbra.Mod;
 using Penumbra.Mods;
@@ -58,12 +57,15 @@ namespace Penumbra.UI
             private const string LabelSelectorList = "##availableModList";
             private const string LabelModFilter    = "##ModFilter";
             private const string LabelAddModPopup  = "AddMod";
-            private const string TooltipModFilter  = "Filter mods for those containing the given substring.";
-            private const string TooltipDelete     = "Delete the selected mod";
-            private const string TooltipAdd        = "Add an empty mod";
-            private const string DialogDeleteMod   = "PenumbraDeleteMod";
-            private const string ButtonYesDelete   = "Yes, delete it";
-            private const string ButtonNoDelete    = "No, keep it";
+
+            private const string TooltipModFilter =
+                "Filter mods for those containing the given substring.\nEnter c:[string] to filter for mods changing specific items.\n:Enter a:[string] to filter for mods by specific authors.";
+
+            private const string TooltipDelete   = "Delete the selected mod";
+            private const string TooltipAdd      = "Add an empty mod";
+            private const string DialogDeleteMod = "PenumbraDeleteMod";
+            private const string ButtonYesDelete = "Yes, delete it";
+            private const string ButtonNoDelete  = "No, keep it";
 
             private const float SelectorPanelWidth      = 240f;
             private const uint  DisabledModColor        = 0xFF666666;
@@ -82,7 +84,10 @@ namespace Penumbra.UI
             public Mod.Mod? Mod { get; private set; }
             private int       _index;
             private int?      _deleteIndex;
-            private string    _modFilter = "";
+            private string    _modFilterInput   = "";
+            private string    _modFilter        = "";
+            private string    _modFilterChanges = "";
+            private string    _modFilterAuthor  = "";
             private string[]  _modNamesLower;
             private ModFilter _stateFilter = UnfilteredStateMods;
 
@@ -191,10 +196,27 @@ namespace Penumbra.UI
             private void DrawModsSelectorFilter()
             {
                 ImGui.SetNextItemWidth( SelectorButtonSizes.X * 2 - 22 );
-                var tmp = _modFilter;
-                if( ImGui.InputTextWithHint( LabelModFilter, "Filter Mods...", ref tmp, 256 ) )
+                if( ImGui.InputTextWithHint( LabelModFilter, "Filter Mods...", ref _modFilterInput, 256 ) )
                 {
-                    _modFilter = tmp.ToLowerInvariant();
+                    var lower = _modFilterInput.ToLowerInvariant();
+                    if( lower.StartsWith( "c:" ) )
+                    {
+                        _modFilterChanges = lower.Substring( 2 );
+                        _modFilter        = string.Empty;
+                        _modFilterAuthor  = string.Empty;
+                    }
+                    else if( lower.StartsWith( "a:" ) )
+                    {
+                        _modFilterAuthor  = lower.Substring( 2 );
+                        _modFilter        = string.Empty;
+                        _modFilterChanges = string.Empty;
+                    }
+                    else
+                    {
+                        _modFilter        = lower;
+                        _modFilterAuthor  = string.Empty;
+                        _modFilterChanges = string.Empty;
+                    }
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -304,7 +326,10 @@ namespace Penumbra.UI
             }
 
             private bool CheckFilters( Mod.Mod mod, int modIndex )
-                => ( _modFilter.Length <= 0 || _modNamesLower[ modIndex ].Contains( _modFilter ) )
+                => ( _modFilter.Length        == 0 || _modNamesLower[ modIndex ].Contains( _modFilter ) )
+                 && ( _modFilterAuthor.Length == 0 || mod.Data.Meta.Author.ToLowerInvariant().Contains( _modFilterAuthor ) )
+                 && ( _modFilterChanges.Length == 0
+                     || mod.Data.ChangedItems.Any( s => s.Key.ToLowerInvariant().Contains( _modFilterChanges ) ) )
                  && !CheckFlags( mod.Data.Resources.ModFiles.Count, ModFilter.HasNoFiles, ModFilter.HasFiles )
                  && !CheckFlags( mod.Data.Meta.FileSwaps.Count, ModFilter.HasNoFileSwaps, ModFilter.HasFileSwaps )
                  && !CheckFlags( mod.Data.Resources.MetaManipulations.Count, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations )

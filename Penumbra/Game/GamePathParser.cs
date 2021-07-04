@@ -35,30 +35,30 @@ namespace Penumbra.Game
         , { FileType.Texture, new Dictionary< ObjectType, Regex[] >()
             { { ObjectType.Icon,      new Regex[]{ new(@"ui/icon/(?'group'\d*)(/(?'lang'[a-z]{2}))?(/(?'hq'hq))?/(?'id'\d*)\.tex") } }
             , { ObjectType.Map,       new Regex[]{ new(@"ui/map/(?'id'[a-z0-9]{4})/(?'variant'\d{2})/\k'id'\k'variant'(?'suffix'[a-z])?(_[a-z])?\.tex")  } }
-            , { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'weapon'\d{4})/obj/body/b(?'id'\d{4})/texture/v(?'variant'\d{2})_w\k'weapon'b\k'id'(_[a-z])?_[a-z]\.tex") } }
+            , { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/texture/v(?'variant'\d{2})_w\k'id'b\k'weapon'(_[a-z])?_[a-z]\.tex") } }
             , { ObjectType.Monster,   new Regex[]{ new(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/texture/v(?'variant'\d{2})_m\k'monster'b\k'id'(_[a-z])?_[a-z]\.tex") } }
             , { ObjectType.Equipment, new Regex[]{ new(@"chara/equipment/e(?'id'\d{4})/texture/v(?'variant'\d{2})_c(?'race'\d{4})e\k'id'_(?'slot'[a-z]{3})(_[a-z])?_[a-z]\.tex") } }
             , { ObjectType.DemiHuman, new Regex[]{ new(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/texture/v(?'variant'\d{2})_d\k'id'e\k'equip'_(?'slot'[a-z]{3})(_[a-z])?_[a-z]\.tex") } }
             , { ObjectType.Accessory, new Regex[]{ new(@"chara/accessory/a(?'id'\d{4})/texture/v(?'variant'\d{2})_c(?'race'\d{4})a\k'id'_(?'slot'[a-z]{3})_[a-z]\.tex") } }
-            , { ObjectType.Character, new Regex[]{ new(@"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/texture/(?'minus'(--)?)c\k'race'\k'typeabr'\k'id'_(?'slot'[a-z]{3})(_[a-z])?_[a-z]\.tex")
+            , { ObjectType.Character, new Regex[]{ new(@"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/texture/(?'minus'(--)?)(v(?'variant'\d{2})_)?c\k'race'\k'typeabr'\k'id'(_(?'slot'[a-z]{3}))?(_[a-z])?_[a-z]\.tex")
                                                  , new(@"chara/common/texture/skin(?'skin'.*)\.tex")
                                                  , new(@"chara/common/texture/decal_(?'location'[a-z]+)/[-_]?decal_(?'id'\d+).tex") } } } }
         , { FileType.Model, new Dictionary< ObjectType, Regex[] >()
-            { { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'weapon'\d{4})/obj/body/b(?'id'\d{4})/model/w\k'weapon'b\k'id'\.mdl") } }
+            { { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/model/w\k'id'b\k'weapon'\.mdl") } }
             , { ObjectType.Monster,   new Regex[]{ new(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/model/m\k'monster'b\k'id'\.mdl") } }
             , { ObjectType.Equipment, new Regex[]{ new(@"chara/equipment/e(?'id'\d{4})/model/c(?'race'\d{4})e\k'id'_(?'slot'[a-z]{3})\.mdl") } }
             , { ObjectType.DemiHuman, new Regex[]{ new(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/model/d\k'id'e\k'equip'_(?'slot'[a-z]{3})\.mdl") } }
             , { ObjectType.Accessory, new Regex[]{ new(@"chara/accessory/a(?'id'\d{4})/model/c(?'race'\d{4})a\k'id'_(?'slot'[a-z]{3})\.mdl") } }
             , { ObjectType.Character, new Regex[]{ new(@"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/model/c\k'race'\k'typeabr'\k'id'_(?'slot'[a-z]{3})\.mdl") } } } }
         , { FileType.Material, new Dictionary< ObjectType, Regex[] >()
-            { { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'weapon'\d{4})/obj/body/b(?'id'\d{4})/material/v(?'variant'\d{4})/mt_w\k'weapon'b\k'id'_[a-z]\.mtrl") } }
+            { { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/material/v(?'variant'\d{4})/mt_w\k'id'b\k'weapon'_[a-z]\.mtrl") } }
             , { ObjectType.Monster,   new Regex[]{ new(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/material/v(?'variant'\d{4})/mt_m\k'monster'b\k'id'_[a-z]\.mtrl") } }
             , { ObjectType.Equipment, new Regex[]{ new(@"chara/equipment/e(?'id'\d{4})/material/v(?'variant'\d{4})/mt_c(?'race'\d{4})e\k'id'_(?'slot'[a-z]{3})_[a-z]\.mtrl") } }
             , { ObjectType.DemiHuman, new Regex[]{ new(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/material/v(?'variant'\d{4})/mt_d\k'id'e\k'equip'_(?'slot'[a-z]{3})_[a-z]\.mtrl") } }
             , { ObjectType.Accessory, new Regex[]{ new(@"chara/accessory/a(?'id'\d{4})/material/v(?'variant'\d{4})/mt_c(?'race'\d{4})a\k'id'_(?'slot'[a-z]{3})_[a-z]\.mtrl") } }
             , { ObjectType.Character, new Regex[]{ new(@"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/material/v(?'variant'\d{4})/mt_c\k'race'\k'typeabr'\k'id'_(?'slot'[a-z]{3})_[a-z]\.mtrl") } } } }
         , { FileType.Imc, new Dictionary< ObjectType, Regex[] >()
-            { { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'weapon'\d{4})/obj/body/b(?'id'\d{4})/b\k'id'\.imc") } }
+            { { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/b\k'weapon'\.imc") } }
             , { ObjectType.Monster,   new Regex[]{ new(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/b\k'id'\.imc") } }
             , { ObjectType.Equipment, new Regex[]{ new(@"chara/equipment/e(?'id'\d{4})/e\k'id'\.imc") } }
             , { ObjectType.DemiHuman, new Regex[]{ new(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/e\k'equip'\.imc") } }
@@ -228,16 +228,21 @@ namespace Penumbra.Game
         {
             try
             {
-                var demiHumanId = ushort.Parse( groups[ "monster" ].Value );
-                var bodyId      = ushort.Parse( groups[ "id" ].Value );
+                var demiHumanId = ushort.Parse( groups[ "id" ].Value );
+                var equipId     = ushort.Parse( groups[ "equip" ].Value );
                 if( fileType == FileType.Imc )
                 {
-                    return GameObjectInfo.DemiHuman( fileType, demiHumanId, bodyId );
+                    return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId );
                 }
 
-                var slot    = GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+                var slot = GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+                if( fileType == FileType.Model )
+                {
+                    return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot );
+                }
+
                 var variant = byte.Parse( groups[ "variant" ].Value );
-                return GameObjectInfo.DemiHuman( fileType, demiHumanId, bodyId, variant, slot );
+                return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot, variant );
             }
             catch( Exception e )
             {
@@ -265,7 +270,7 @@ namespace Penumbra.Game
 
                 var gr       = GameData.GenderRaceFromCode( groups[ "race" ].Value );
                 var bodySlot = GameData.StringToBodySlot[ groups[ "type" ].Value ];
-                var type     = GameData.SuffixToCustomizationType[ groups[ "slot" ].Value ];
+                var type     = groups[ "slot" ].Success ? GameData.SuffixToCustomizationType[ groups[ "slot" ].Value ] : CustomizationType.Skin;
                 if( fileType == FileType.Material )
                 {
                     var variant = byte.Parse( groups[ "variant" ].Value );
@@ -361,24 +366,19 @@ namespace Penumbra.Game
             return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
         }
 
-        public static bool IsTailTexture( GameObjectInfo info )
+        private static readonly Regex VfxRegexTmb = new( @"chara/action/(?'key'[^\s]+?)\.tmb" );
+        private static readonly Regex VfxRegexPap = new( @"chara/human/c0101/animation/a0001/[^\s]+?/(?'key'[^\s]+?)\.pap" );
+
+        public static string VfxToKey( GamePath path )
         {
-            if( info.ObjectType != ObjectType.Character )
+            var match = VfxRegexTmb.Match( path );
+            if( match.Success )
             {
-                return false;
+                return match.Groups[ "key" ].Value.ToLowerInvariant();
             }
 
-            return info.BodySlot == BodySlot.Tail && info.FileType == FileType.Texture;
-        }
-
-        public static bool IsSkinTexture( GameObjectInfo info )
-        {
-            if( info.ObjectType != ObjectType.Character )
-            {
-                return false;
-            }
-
-            return info.FileType == FileType.Texture && info.CustomizationType == CustomizationType.Skin;
+            match = VfxRegexPap.Match( path );
+            return match.Success ? match.Groups[ "key" ].Value.ToLowerInvariant() : string.Empty;
         }
     }
 }

@@ -197,11 +197,12 @@ namespace Penumbra.Importer
 
         public static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName )
         {
-            var newModFolder = NewOptionDirectory( outDirectory, Path.GetFileName( modListName ) );
-            var i            = 2;
+            var newModFolderBase = NewOptionDirectory( outDirectory, Path.GetFileName( modListName ) );
+            var newModFolder     = newModFolderBase;
+            var i                = 2;
             while( newModFolder.Exists && i < 12 )
             {
-                newModFolder = new DirectoryInfo( newModFolder.FullName + $" ({i++})" );
+                newModFolder = new DirectoryInfo( newModFolderBase.FullName + $" ({i++})" );
             }
 
             if( newModFolder.Exists )
@@ -258,7 +259,7 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            ExtractedDirectory =  CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
+            ExtractedDirectory = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
 
             if( modList.SimpleModsList != null )
             {
@@ -349,7 +350,7 @@ namespace Penumbra.Importer
             TotalProgress += wtf.LongCount();
 
             // Extract each SimpleMod into the new mod folder
-            foreach( var simpleMod in wtf.Where( M => M != null ) )
+            foreach( var simpleMod in wtf.Where( m => m != null ) )
             {
                 ExtractMod( outDirectory, simpleMod, dataStream );
                 CurrentProgress++;

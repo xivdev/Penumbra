@@ -18,7 +18,6 @@ namespace Penumbra.Mod
         public string Description { get; set; } = "";
         public string Version { get; set; } = "";
         public string Website { get; set; } = "";
-        public List< string > ChangedItems { get; set; } = new();
 
         [JsonProperty( ItemConverterType = typeof( GamePathConverter ) )]
         public Dictionary< GamePath, GamePath > FileSwaps { get; set; } = new();
@@ -50,7 +49,6 @@ namespace Penumbra.Mod
             Description         = newMeta.Description;
             Version             = newMeta.Version;
             Website             = newMeta.Website;
-            ChangedItems        = newMeta.ChangedItems;
             FileSwaps           = newMeta.FileSwaps;
             Groups              = newMeta.Groups;
             FileHash            = newMeta.FileHash;

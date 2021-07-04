@@ -141,6 +141,11 @@ namespace Penumbra.Mods
                 return false;
             }
 
+            if( metaChanges || fileChanges.HasFlag( ResourceChange.Files ) )
+            {
+                mod.ComputeChangedItems();
+            }
+
             var nameChange = !string.Equals( oldName, mod.Meta.Name, StringComparison.InvariantCulture );
 
             recomputeMeta |= fileChanges.HasFlag( ResourceChange.Meta );

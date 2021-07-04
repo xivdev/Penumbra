@@ -23,7 +23,8 @@ namespace Penumbra.Mods
 
         public void SortMods()
         {
-            AvailableMods.Sort( ( m1, m2 ) => string.Compare( m1.Data.SortOrder, m2.Data.SortOrder, StringComparison.InvariantCultureIgnoreCase ) );
+            AvailableMods.Sort( ( m1, m2 )
+                => string.Compare( m1.Data.SortOrder, m2.Data.SortOrder, StringComparison.InvariantCultureIgnoreCase ) );
         }
 
         private void AddFiles( Dictionary< GamePath, Mod.Mod > registeredFiles, Mod.Mod mod )
@@ -79,7 +80,7 @@ namespace Penumbra.Mods
 
         public void UpdateMetaManipulations()
         {
-            MetaManipulations.Reset();
+            MetaManipulations.Reset( false );
 
             foreach( var mod in AvailableMods.Where( m => m.Settings.Enabled && m.Data.Resources.MetaManipulations.Count > 0 )
                .OrderByDescending( m => m.Settings.Priority ) )

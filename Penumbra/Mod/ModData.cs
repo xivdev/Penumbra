@@ -1,5 +1,9 @@
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dalamud.Plugin;
+using Penumbra.Game;
+using Penumbra.Util;
 
 namespace Penumbra.Mod
 {
@@ -12,7 +16,7 @@ namespace Penumbra.Mod
         public ModMeta       Meta;
         public ModResources  Resources;
         public string        SortOrder;
-
+        public SortedList< string, object? > ChangedItems { get; } = new();
         public FileInfo MetaFile { get; set; }
 
         private ModData( DirectoryInfo basePath, ModMeta meta, ModResources resources )
@@ -22,6 +26,26 @@ namespace Penumbra.Mod
             Resources = resources;
             MetaFile  = MetaFileInfo( basePath );
             SortOrder = meta.Name;
+            ComputeChangedItems();
+        }
+
+        public void ComputeChangedItems()
+        {
+            var ident = Service< ObjectIdentification >.Get();
+
+            ChangedItems.Clear();
+            foreach( var file in Resources.ModFiles.Select( f => new RelPath( f, BasePath ) ) )
+            {
+                foreach( var path in ModFunctions.GetAllFiles( file, Meta ) )
+                {
+                    ident.Identify( ChangedItems, path );
+                }
+            }
+
+            foreach( var path in Meta.FileSwaps.Keys )
+            {
+                ident.Identify( ChangedItems, path );
+            }
         }
 
         public static FileInfo MetaFileInfo( DirectoryInfo basePath )
