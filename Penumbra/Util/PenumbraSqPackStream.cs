@@ -333,13 +333,12 @@ namespace Penumbra.Util
                 return blockHeader.UncompressedSize;
             }
 
-            var data = Reader.ReadBytes( ( int )blockHeader.UncompressedSize );
+            var data = Reader.ReadBytes( ( int )blockHeader.CompressedSize );
 
             using( var compressedStream = new MemoryStream( data ) )
             {
                 using var zlibStream = new DeflateStream( compressedStream, CompressionMode.Decompress );
                 zlibStream.CopyTo( dest );
-                zlibStream.Close();
             }
 
             if( resetPosition )
