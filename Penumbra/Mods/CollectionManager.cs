@@ -151,6 +151,7 @@ namespace Penumbra.Mods
         {
             if( collection.Name != ForcedCollection.Name
              && collection.Name != CurrentCollection.Name
+             && collection.Name != DefaultCollection.Name
              && CharacterCollection.All( kvp => kvp.Value.Name != collection.Name ) )
             {
                 collection.ClearCache();
