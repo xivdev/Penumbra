@@ -21,12 +21,17 @@ namespace Penumbra.Interop
 
     public class ActorRefresher : IDisposable
     {
-        private const int RenderModeOffset      = 0x0104;
-        private const int ModelInvisibilityFlag = 0b10;
-        private const int ModelIsLoadingFlag    = 0x800;
-        private const int SomeNpcRenderFlag     = 0x900;
-        private const int UnloadAllRedrawDelay  = 250;
-        private const int NpcActorId            = -536870912;
+        [Flags]
+        private enum LoadingFlags : int
+        {
+            Invisibility = 0x00_02,
+            IsLoading    = 0x08_00,
+            SomeNpcFlag  = 0x01_00,
+        }
+
+        private const int RenderModeOffset     = 0x0104;
+        private const int UnloadAllRedrawDelay = 250;
+        private const int NpcActorId           = -536870912;
 
         private readonly DalamudPluginInterface                        _pi;
         private readonly ModManager                                    _mods;
@@ -63,7 +68,7 @@ namespace Penumbra.Interop
         {
             if( renderPtr != IntPtr.Zero )
             {
-                *( int* )renderPtr |= ModelInvisibilityFlag;
+                *( LoadingFlags* )renderPtr |= LoadingFlags.Invisibility;
             }
         }
 
@@ -71,8 +76,8 @@ namespace Penumbra.Interop
         {
             if( renderPtr != IntPtr.Zero )
             {
-                var loadingFlags = *( int* )renderPtr;
-                return loadingFlags != 0 && loadingFlags != SomeNpcRenderFlag;
+                var loadingFlags = *( LoadingFlags* )renderPtr;
+                return loadingFlags != 0 && !loadingFlags.HasFlag( LoadingFlags.SomeNpcFlag );
             }
 
             return false;
@@ -82,7 +87,7 @@ namespace Penumbra.Interop
         {
             if( renderPtr != IntPtr.Zero )
             {
-                *( int* )renderPtr &= ~ModelInvisibilityFlag;
+                *( LoadingFlags* )renderPtr &= ~LoadingFlags.Invisibility;
             }
         }
 
@@ -275,6 +280,7 @@ namespace Penumbra.Interop
 
         public void RedrawAll( Redraw settings = Redraw.WithSettings )
         {
+            Clear();
             foreach( var actor in _pi.ClientState.Actors )
             {
                 RedrawActor( actor, settings );
@@ -283,6 +289,7 @@ namespace Penumbra.Interop
 
         private void UnloadAll()
         {
+            Clear();
             foreach( var a in _pi.ClientState.Actors )
             {
                 WriteInvisible( a.Address + RenderModeOffset );
@@ -291,6 +298,7 @@ namespace Penumbra.Interop
 
         private void RedrawAllWithoutSettings()
         {
+            Clear();
             foreach( var a in _pi.ClientState.Actors )
             {
                 WriteVisible( a.Address + RenderModeOffset );
@@ -299,6 +307,7 @@ namespace Penumbra.Interop
 
         public async void UnloadAtOnceRedrawWithSettings()
         {
+            Clear();
             UnloadAll();
             await Task.Delay( UnloadAllRedrawDelay );
             RedrawAll( Redraw.RedrawWithSettings );
@@ -306,9 +315,16 @@ namespace Penumbra.Interop
 
         public async void UnloadAtOnceRedrawWithoutSettings()
         {
+            Clear();
             UnloadAll();
             await Task.Delay( UnloadAllRedrawDelay );
             RedrawAllWithoutSettings();
+        }
+
+        public void Clear()
+        {
+            RestoreSettings();
+            _currentFrame = 0;
         }
 
         public void Dispose()
