@@ -85,7 +85,7 @@ namespace Penumbra.Mods
         public bool AddCollection( string name, Dictionary< string, ModSettings > settings )
         {
             var nameFixed = name.RemoveInvalidPathSymbols().ToLowerInvariant();
-            if( Collections.Values.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
+            if( nameFixed == string.Empty || Collections.Values.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
             {
                 PluginLog.Warning( $"The new collection {name} would lead to the same path as one that already exists." );
                 return false;

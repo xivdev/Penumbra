@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Plugin;
 using ImGuiNET;
-using Penumbra.Interop;
 using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -31,7 +29,7 @@ namespace Penumbra.UI
             private void UpdateNames()
             {
                 _collections             = _manager.Collections.Collections.Values.Prepend( ModCollection.Empty ).ToArray();
-                _collectionNames         = string.Join( "\0", _collections.Skip( 1 ).Select( c => c.Name ) );
+                _collectionNames         = string.Join( "\0", _collections.Skip( 1 ).Select( c => c.Name ) ) + '\0';
                 _collectionNamesWithNone = "None\0" + _collectionNames;
                 UpdateIndices();
             }
