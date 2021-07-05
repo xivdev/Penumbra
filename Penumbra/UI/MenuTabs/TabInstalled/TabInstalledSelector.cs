@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing.Configuration;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -406,7 +407,6 @@ namespace Penumbra.UI
 
                 if( !mod.Data.SortOrder.StartsWith( _currentModGroup ) )
                 {
-                    var count      = _currentModGroup.Length - 2;
                     var lastFolder = _currentModGroup.LastIndexOf( '/', _currentModGroup.Length - 2 );
                     _currentModGroup = lastFolder == -1 ? string.Empty : _currentModGroup.Substring( 0, lastFolder + 1 );
                     ImGui.TreePop();
@@ -422,8 +422,9 @@ namespace Penumbra.UI
                 {
                     var mods = Mods!;
                     var folderLabel =
-                        $"{mod.Data.SortOrder.Substring( _currentModGroup.Length, nextFolder - _currentModGroup.Length )}##{modIndex}_{_currentModGroup.Length}";
+                        $"{mod.Data.SortOrder.Substring( _currentModGroup.Length, nextFolder - _currentModGroup.Length )}##{_currentModGroup}";
                     _currentModGroup = mod.Data.SortOrder.Substring( 0, nextFolder + 1 );
+
                     if( ImGui.TreeNodeEx( folderLabel ) )
                     {
                         for( ; modIndex < mods.Count; ++modIndex )
@@ -450,6 +451,17 @@ namespace Penumbra.UI
                 return true;
             }
 
+            private void CleanUpLastGroup()
+            {
+                var numFolders = _currentModGroup.Count( c => c == '/' );
+                while( numFolders-- > 0 )
+                {
+                    ImGui.TreePop();
+                }
+
+                _currentModGroup = string.Empty;
+            }
+
             public void Draw()
             {
                 if( Mods == null )
@@ -474,8 +486,8 @@ namespace Penumbra.UI
                     }
                 }
 
+                CleanUpLastGroup();
                 ImGui.PopStyleVar();
-
 
                 ImGui.EndChild();
 
