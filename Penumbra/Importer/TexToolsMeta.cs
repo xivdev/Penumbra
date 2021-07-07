@@ -340,7 +340,7 @@ namespace Penumbra.Importer
 
             var ret = new TexToolsMeta( filePath, version );
 
-            var subRace = ( SubRace )( br.ReadByte() + 1 );
+            var subRace = ( SubRace )( version == 1 ? flag + 1 : br.ReadByte() + 1 );
             if( !Enum.IsDefined( typeof( SubRace ), subRace ) || subRace == SubRace.Unknown )
             {
                 PluginLog.Error( $"Error while parsing .rgsp file:\n\t{subRace} is not a valid SubRace." );
