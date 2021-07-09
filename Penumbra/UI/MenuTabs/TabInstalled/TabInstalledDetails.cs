@@ -562,7 +562,7 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( label, ref enabled ) && oldEnabled != enabled )
                 {
                     Mod.Settings.Settings[ group.GroupName ] ^= 1 << idx;
-                    if( Mod.Settings.Enabled )
+                    if( Mod.Settings.Enabled && _modManager.Collections.CurrentCollection.Cache != null )
                     {
                         _modManager.Collections.CurrentCollection.CalculateEffectiveFileList( Mod.Data.BasePath,
                             Mod.Data.Resources.MetaManipulations.Count > 0 );
@@ -602,7 +602,7 @@ namespace Penumbra.UI
                  && code != Mod.Settings.Settings[ group.GroupName ] )
                 {
                     Mod.Settings.Settings[ group.GroupName ] = code;
-                    if( Mod.Settings.Enabled )
+                    if( Mod.Settings.Enabled && _modManager.Collections.CurrentCollection.Cache != null )
                     {
                         _modManager.Collections.CurrentCollection.CalculateEffectiveFileList( Mod.Data.BasePath,
                             Mod.Data.Resources.MetaManipulations.Count > 0 );

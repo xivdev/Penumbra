@@ -203,7 +203,10 @@ namespace Penumbra.UI
                     Mod.Settings.Priority = priority;
                     var collection = _modManager.Collections.CurrentCollection;
                     collection.Save( _base._plugin.PluginInterface! );
-                    collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    if( collection.Cache != null )
+                    {
+                        collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    }
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -221,7 +224,10 @@ namespace Penumbra.UI
                     Mod.Settings.Enabled = enabled;
                     var collection = _modManager.Collections.CurrentCollection;
                     collection.Save( _base._plugin.PluginInterface! );
-                    collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    if( collection.Cache != null )
+                    {
+                        collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    }
                 }
             }
 
