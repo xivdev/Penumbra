@@ -22,11 +22,14 @@ namespace Penumbra.Interop
     public class ActorRefresher : IDisposable
     {
         [Flags]
-        private enum LoadingFlags : int
+        public enum LoadingFlags : int
         {
-            Invisibility = 0x00_02,
-            IsLoading    = 0x08_00,
-            SomeNpcFlag  = 0x01_00,
+            Invisibility      = 0x00_00_00_02,
+            IsLoading         = 0x00_00_08_00,
+            SomeNpcFlag       = 0x00_00_01_00,
+            MaybeCulled       = 0x00_00_04_00,
+            MaybeHiddenMinion = 0x00_00_80_00,
+            MaybeHiddenSummon = 0x00_80_00_00,
         }
 
         private const int RenderModeOffset     = 0x0104;
@@ -42,6 +45,9 @@ namespace Penumbra.Interop
         private int     _currentActorId     = -1;
         private string? _currentActorName   = null;
         private Redraw  _currentActorRedraw = Redraw.Unload;
+
+        public static IntPtr RenderPtr( Actor actor )
+            => actor.Address + RenderModeOffset;
 
         public ActorRefresher( DalamudPluginInterface pi, ModManager mods )
         {
@@ -74,10 +80,16 @@ namespace Penumbra.Interop
 
         private static unsafe bool StillLoading( IntPtr renderPtr )
         {
+            const LoadingFlags stillLoadingFlags = LoadingFlags.SomeNpcFlag
+              | LoadingFlags.MaybeCulled
+              | LoadingFlags.MaybeHiddenMinion
+              | LoadingFlags.MaybeHiddenSummon;
+
             if( renderPtr != IntPtr.Zero )
             {
                 var loadingFlags = *( LoadingFlags* )renderPtr;
-                return loadingFlags != 0 && !loadingFlags.HasFlag( LoadingFlags.SomeNpcFlag );
+
+                return !( loadingFlags == 0 || ( loadingFlags & stillLoadingFlags ) != 0 );
             }
 
             return false;
@@ -140,7 +152,7 @@ namespace Penumbra.Interop
                 return;
             }
 
-            if( StillLoading( actor.Address + RenderModeOffset ) )
+            if( StillLoading( RenderPtr( actor ) ) )
             {
                 return;
             }
@@ -148,7 +160,7 @@ namespace Penumbra.Interop
             switch( _currentActorRedraw )
             {
                 case Redraw.Unload:
-                    WriteInvisible( actor.Address + RenderModeOffset );
+                    WriteInvisible( RenderPtr( actor ) );
                     _currentFrame = 0;
                     break;
                 case Redraw.RedrawWithSettings:
@@ -156,16 +168,16 @@ namespace Penumbra.Interop
                     ++_currentFrame;
                     break;
                 case Redraw.RedrawWithoutSettings:
-                    WriteVisible( actor.Address + RenderModeOffset );
+                    WriteVisible( RenderPtr( actor ) );
                     _currentFrame = 0;
                     break;
                 case Redraw.WithoutSettings:
-                    WriteInvisible( actor.Address + RenderModeOffset );
+                    WriteInvisible( RenderPtr( actor ) );
                     ++_currentFrame;
                     break;
                 case Redraw.WithSettings:
                     ChangeSettings();
-                    WriteInvisible( actor.Address + RenderModeOffset );
+                    WriteInvisible( RenderPtr( actor ) );
                     ++_currentFrame;
                     break;
                 case Redraw.OnlyWithSettings:
@@ -175,7 +187,7 @@ namespace Penumbra.Interop
                         return;
                     }
 
-                    WriteInvisible( actor.Address + RenderModeOffset );
+                    WriteInvisible( RenderPtr( actor ) );
                     ++_currentFrame;
                     break;
                 default: throw new InvalidEnumArgumentException();
@@ -191,7 +203,7 @@ namespace Penumbra.Interop
                 return;
             }
 
-            WriteVisible( actor.Address + RenderModeOffset );
+            WriteVisible( RenderPtr( actor ) );
             _currentFrame = _changedSettings ? _currentFrame + 1 : 0;
         }
 
@@ -200,7 +212,7 @@ namespace Penumbra.Interop
             var actor = FindCurrentActor();
             if( actor != null )
             {
-                if( !StillLoading( actor.Address + RenderModeOffset ) )
+                if( !StillLoading( RenderPtr( actor ) ) )
                 {
                     RestoreSettings();
                     _currentFrame = 0;
@@ -292,7 +304,7 @@ namespace Penumbra.Interop
             Clear();
             foreach( var a in _pi.ClientState.Actors )
             {
-                WriteInvisible( a.Address + RenderModeOffset );
+                WriteInvisible( RenderPtr( a ) );
             }
         }
 
@@ -301,7 +313,7 @@ namespace Penumbra.Interop
             Clear();
             foreach( var a in _pi.ClientState.Actors )
             {
-                WriteVisible( a.Address + RenderModeOffset );
+                WriteVisible( RenderPtr( a ) );
             }
         }
 

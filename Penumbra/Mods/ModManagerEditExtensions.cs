@@ -216,7 +216,8 @@ namespace Penumbra.Mods
                     manager.Collections.SaveCollection( collection );
                     if( collection.Cache != null && settings.Enabled )
                     {
-                        collection.CalculateEffectiveFileList( manager.BasePath, mod.Resources.MetaManipulations.Count > 0 );
+                        collection.CalculateEffectiveFileList( manager.BasePath, mod.Resources.MetaManipulations.Count > 0,
+                            collection == manager.Collections.ActiveCollection );
                     }
                 }
             }

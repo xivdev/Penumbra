@@ -205,7 +205,8 @@ namespace Penumbra.UI
                     collection.Save( _base._plugin.PluginInterface! );
                     if( collection.Cache != null )
                     {
-                        collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0 );
+                        collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0,
+                            collection == _modManager.Collections.ActiveCollection );
                     }
                 }
 
@@ -226,7 +227,8 @@ namespace Penumbra.UI
                     collection.Save( _base._plugin.PluginInterface! );
                     if( collection.Cache != null )
                     {
-                        collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0 );
+                        collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0,
+                            collection == _modManager.Collections.ActiveCollection );
                     }
                 }
             }

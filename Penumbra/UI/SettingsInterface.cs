@@ -29,6 +29,9 @@ namespace Penumbra.UI
         public void FlipVisibility()
             => _menu.Visible = !_menu.Visible;
 
+        public void MakeDebugTabVisible()
+            => _menu.DebugTabVisible = true;
+
         public void Draw()
         {
             _menuBar.Draw();

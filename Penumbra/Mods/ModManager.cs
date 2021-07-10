@@ -24,8 +24,10 @@ namespace Penumbra.Mods
 
         public ModManager( Plugin plugin )
         {
-            _plugin     = plugin;
-            BasePath    = new DirectoryInfo( plugin.Configuration.ModDirectory );
+            _plugin  = plugin;
+            BasePath = new DirectoryInfo( plugin.Configuration.ModDirectory );
+            MetaManager.ClearBaseDirectory( BasePath );
+
             Collections = new CollectionManager( plugin, this );
         }
 

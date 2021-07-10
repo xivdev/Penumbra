@@ -10,7 +10,7 @@ namespace Penumbra.Game
     public class CharEquipment
     {
         [StructLayout( LayoutKind.Sequential, Pack = 1 )]
-        private readonly struct Weapon
+        internal readonly struct Weapon
         {
             public readonly ushort _1;
             public readonly ushort _2;
@@ -22,7 +22,7 @@ namespace Penumbra.Game
         }
 
         [StructLayout( LayoutKind.Sequential, Pack = 1 )]
-        private readonly struct Equip
+        internal readonly struct Equip
         {
             public readonly ushort _1;
             public readonly byte   _2;
@@ -39,18 +39,18 @@ namespace Penumbra.Game
         private const int WeaponSlots      = 2;
 
         private readonly ushort IsSet; // Also fills struct size to 56, a multiple of 8.
-        private readonly Weapon Mainhand;
-        private readonly Weapon Offhand;
-        private readonly Equip  Head;
-        private readonly Equip  Body;
-        private readonly Equip  Hands;
-        private readonly Equip  Legs;
-        private readonly Equip  Feet;
-        private readonly Equip  Ear;
-        private readonly Equip  Neck;
-        private readonly Equip  Wrist;
-        private readonly Equip  LFinger;
-        private readonly Equip  RFinger;
+        internal readonly Weapon Mainhand;
+        internal readonly Weapon Offhand;
+        internal readonly Equip  Head;
+        internal readonly Equip  Body;
+        internal readonly Equip  Hands;
+        internal readonly Equip  Legs;
+        internal readonly Equip  Feet;
+        internal readonly Equip  Ear;
+        internal readonly Equip  Neck;
+        internal readonly Equip  Wrist;
+        internal readonly Equip  LFinger;
+        internal readonly Equip  RFinger;
 
         public CharEquipment()
             => Clear();

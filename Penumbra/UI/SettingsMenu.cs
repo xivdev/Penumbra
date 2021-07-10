@@ -36,7 +36,8 @@ namespace Penumbra.UI
 #else
             private const bool DefaultVisibility = false;
 #endif
-            public bool Visible = DefaultVisibility;
+            public bool Visible         = DefaultVisibility;
+            public bool DebugTabVisible = DefaultVisibility;
 
             public void Draw()
             {
@@ -71,6 +72,11 @@ namespace Penumbra.UI
                     {
                         _effectiveTab.Draw();
                     }
+                }
+
+                if( DebugTabVisible )
+                {
+                    _base.DrawDebugTab();
                 }
 
                 ImGui.EndTabBar();

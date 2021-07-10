@@ -174,8 +174,8 @@ namespace Penumbra.Mods
             _plugin.Configuration.Save();
         }
 
-        public void SetCurrentCollection( ModCollection newCollection )
-            => SetCollection( newCollection, CurrentCollection, c =>
+        public void SetDefaultCollection( ModCollection newCollection )
+            => SetCollection( newCollection, DefaultCollection, c =>
             {
                 if( ActiveCollection == DefaultCollection )
                 {
@@ -184,19 +184,30 @@ namespace Penumbra.Mods
                     resourceManager.ReloadPlayerResources();
                 }
 
-                CurrentCollection = c;
-            }, s => _plugin.Configuration.CurrentCollection = s );
+                DefaultCollection = c;
+            }, s => _plugin.Configuration.DefaultCollection = s );
 
         public void SetForcedCollection( ModCollection newCollection )
             => SetCollection( newCollection, ForcedCollection, c => ForcedCollection = c, s => _plugin.Configuration.ForcedCollection = s );
 
-        public void SetDefaultCollection( ModCollection newCollection )
-            => SetCollection( newCollection, DefaultCollection, c => DefaultCollection = c, s => _plugin.Configuration.DefaultCollection = s );
+        public void SetCurrentCollection( ModCollection newCollection )
+            => SetCollection( newCollection, CurrentCollection, c => CurrentCollection = c, s => _plugin.Configuration.CurrentCollection = s );
 
         public void SetCharacterCollection( string characterName, ModCollection newCollection )
             => SetCollection( newCollection,
                 CharacterCollection.TryGetValue( characterName, out var oldCollection ) ? oldCollection : ModCollection.Empty,
-                c => CharacterCollection[ characterName ] = c, s => _plugin.Configuration.CharacterCollections[ characterName ] = s );
+                c =>
+                {
+                    if( CharacterCollection.TryGetValue( characterName, out var collection )
+                     && ActiveCollection == collection )
+                    {
+                        ActiveCollection = c;
+                        var resourceManager = Service< GameResourceManagement >.Get();
+                        resourceManager.ReloadPlayerResources();
+                    }
+
+                    CharacterCollection[ characterName ] = c;
+                }, s => _plugin.Configuration.CharacterCollections[ characterName ] = s );
 
         public bool CreateCharacterCollection( string characterName )
         {

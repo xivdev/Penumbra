@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Penumbra.Interop;
 using Penumbra.Mod;
 using Penumbra.Util;
 
@@ -87,7 +88,7 @@ namespace Penumbra.Mods
             }
 
             Cache.SortMods();
-            CalculateEffectiveFileList( modDirectory, true );
+            CalculateEffectiveFileList( modDirectory, true, false );
         }
 
         public void ClearCache()
@@ -125,7 +126,7 @@ namespace Penumbra.Mods
             }
         }
 
-        public void CalculateEffectiveFileList( DirectoryInfo modDir, bool withMetaManipulations )
+        public void CalculateEffectiveFileList( DirectoryInfo modDir, bool withMetaManipulations, bool activeCollection )
         {
             Cache ??= new ModCollectionCache( Name, modDir );
             UpdateSettings();
@@ -133,6 +134,10 @@ namespace Penumbra.Mods
             if( withMetaManipulations )
             {
                 Cache.UpdateMetaManipulations();
+                if( activeCollection )
+                {
+                    Service< GameResourceManagement >.Get().ReloadPlayerResources();
+                }
             }
         }
 
@@ -240,6 +245,6 @@ namespace Penumbra.Mods
         public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )
             => Cache?.ResolveSwappedOrReplacementPath( gameResourcePath );
 
-        public static readonly ModCollection Empty = new(){ Name = "" };
+        public static readonly ModCollection Empty = new() { Name = "" };
     }
 }

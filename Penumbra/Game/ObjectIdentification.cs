@@ -286,5 +286,23 @@ namespace Penumbra.Game
                 IdentifyParsed( set, info );
             }
         }
+
+        public Item? Identify( ushort a, ushort b, ushort c, EquipSlot slot )
+        {
+            switch( slot )
+            {
+                case EquipSlot.MainHand:
+                case EquipSlot.Offhand:
+                {
+                    var (begin, _) = FindIndexRange( _weapons, ( ( ulong )a << 32 ) | ( ( ulong )b << 16 ) | c, 0xFFFFFFFFFFFF );
+                    return begin >= 0 ? _weapons[ begin ].Item2.FirstOrDefault() : null;
+                }
+                default:
+                {
+                    var (begin, _) = FindIndexRange( _equipment, ( ( ulong )a << 32 ) | ( ( ulong )slot.ToSlot() << 16 ) | b, 0xFFFFFFFFFFFF );
+                    return begin >= 0 ? _equipment[ begin ].Item2.FirstOrDefault() : null;
+                }
+            }
+        }
     }
 }

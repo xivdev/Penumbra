@@ -21,9 +21,9 @@ namespace Penumbra.Meta
             public FileInformation( object data )
                 => Data = data;
 
-            public void Write( DirectoryInfo dir )
+            public void Write( DirectoryInfo dir, GamePath originalPath )
             {
-                byte[] data = Data switch
+                var data = Data switch
                 {
                     EqdpFile eqdp => eqdp.WriteBytes(),
                     EqpFile eqp   => eqp.WriteBytes(),
@@ -34,7 +34,7 @@ namespace Penumbra.Meta
                     _             => throw new NotImplementedException(),
                 };
                 DisposeFile( CurrentFile );
-                CurrentFile = TempFile.WriteNew( dir, data );
+                CurrentFile = TempFile.WriteNew( dir, data, $"_{originalPath.Filename()}" );
                 Changed     = false;
             }
         }
@@ -93,21 +93,27 @@ namespace Penumbra.Meta
         public void Dispose()
             => Reset();
 
-        private void ClearDirectory()
+        private static void ClearDirectory( DirectoryInfo modDir )
         {
-            _dir.Refresh();
-            if( _dir.Exists )
+            modDir.Refresh();
+            if( modDir.Exists )
             {
                 try
                 {
-                    Directory.Delete( _dir.FullName, true );
+                    Directory.Delete( modDir.FullName, true );
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Could not clear temporary metafile directory \"{_dir.FullName}\":\n{e}" );
+                    PluginLog.Error( $"Could not clear temporary metafile directory \"{modDir.FullName}\":\n{e}" );
                 }
             }
         }
+
+        private void ClearDirectory()
+            => ClearDirectory( _dir );
+
+        public static void ClearBaseDirectory( DirectoryInfo modDir )
+            => ClearDirectory( new DirectoryInfo( Path.Combine( modDir.FullName, TmpDirectory ) ) );
 
         public MetaManager( string name, Dictionary< GamePath, FileInfo > resolvedFiles, DirectoryInfo modDir )
         {
@@ -123,7 +129,7 @@ namespace Penumbra.Meta
             Directory.CreateDirectory( _dir.FullName );
             foreach( var kvp in _currentFiles.Where( kvp => kvp.Value.Changed ) )
             {
-                kvp.Value.Write( _dir );
+                kvp.Value.Write( _dir, kvp.Key );
                 _resolvedFiles[ kvp.Key ] = kvp.Value.CurrentFile!;
             }
         }

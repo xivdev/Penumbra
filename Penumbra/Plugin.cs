@@ -5,6 +5,7 @@ using EmbedIO.WebApi;
 using Penumbra.API;
 using Penumbra.Game;
 using Penumbra.Interop;
+using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
 using Penumbra.UI;
@@ -152,6 +153,11 @@ namespace Penumbra
                             ActorRefresher.RedrawAll();
                         }
 
+                        break;
+                    }
+                    case "debug":
+                    {
+                        SettingsInterface.MakeDebugTabVisible();
                         break;
                     }
                 }
