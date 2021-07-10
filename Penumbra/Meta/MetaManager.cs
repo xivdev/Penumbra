@@ -12,7 +12,7 @@ namespace Penumbra.Meta
 {
     public class MetaManager : IDisposable
     {
-        private class FileInformation
+        internal class FileInformation
         {
             public readonly object    Data;
             public          bool      Changed;
