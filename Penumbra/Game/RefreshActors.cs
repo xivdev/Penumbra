@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Actors;
 using Dalamud.Game.ClientState.Actors.Types;
+using Penumbra.Util;
 
 namespace Penumbra.Game
 {
@@ -21,9 +22,11 @@ namespace Penumbra.Game
 
             async void DrawObject( int delay )
             {
+                var oldPermissions = MemoryPermissions.ChangePermission( renderModePtr, 4, MemoryPermissions.MemoryProtection.ReadWrite );
                 Marshal.WriteInt32( renderModePtr, renderStatus | ModelInvisibilityFlag );
                 await Task.Delay( delay );
                 Marshal.WriteInt32( renderModePtr, renderStatus & ~ModelInvisibilityFlag );
+                MemoryPermissions.ChangePermission( renderModePtr, 4, oldPermissions );
             }
 
             if( actor.ObjectKind == ObjectKind.Player )

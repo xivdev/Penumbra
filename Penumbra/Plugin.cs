@@ -102,7 +102,7 @@ namespace Penumbra
 
             PluginInterface.CommandManager.RemoveHandler( CommandName );
             PluginInterface.Dispose();
-
+            SoundShit?.Dispose();
             ResourceLoader?.Dispose();
 
             ShutdownWebServer();
