@@ -58,6 +58,10 @@ namespace Penumbra.UI
                     
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
+                    if (actor.Value.IsSet == 0)
+                    {
+                        ImGui.Text( "(not set)" );
+                    }
                     ImGui.TableNextColumn();
                     ImGui.Text( identifier.Identify( actor.Value.Mainhand._1, actor.Value.Mainhand._2, actor.Value.Mainhand._3, EquipSlot.MainHand )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();

@@ -38,7 +38,6 @@ namespace Penumbra.Game
         private const int EquipmentSlots   = 10;
         private const int WeaponSlots      = 2;
 
-        private readonly ushort IsSet; // Also fills struct size to 56, a multiple of 8.
         internal readonly Weapon Mainhand;
         internal readonly Weapon Offhand;
         internal readonly Equip  Head;
@@ -51,6 +50,7 @@ namespace Penumbra.Game
         internal readonly Equip  Wrist;
         internal readonly Equip  LFinger;
         internal readonly Equip  RFinger;
+        internal readonly ushort IsSet; // Also fills struct size to 56, a multiple of 8.
 
         public CharEquipment()
             => Clear();
@@ -97,7 +97,7 @@ namespace Penumbra.Game
         {
             fixed( Weapon* main = &Mainhand )
             {
-                var structSizeEights = ( EquipmentSlots * sizeof( Equip ) + WeaponSlots * sizeof( Weapon ) ) / 8;
+                var structSizeEights = ( 2 + EquipmentSlots * sizeof( Equip ) + WeaponSlots * sizeof( Weapon ) ) / 8;
                 for( ulong* ptr = ( ulong* )main, end = ptr + structSizeEights; ptr != end; ++ptr )
                 {
                     *ptr = 0;
@@ -107,13 +107,13 @@ namespace Penumbra.Game
 
         private unsafe bool CompareAndOverwrite( CharEquipment rhs )
         {
-            var structSizeHalf = ( EquipmentSlots * sizeof( Equip ) + WeaponSlots * sizeof( Weapon ) ) / 8;
-            var ret            = true;
+            var structSizeEights = ( 2 + EquipmentSlots * sizeof( Equip ) + WeaponSlots * sizeof( Weapon ) ) / 8;
+            var ret              = true;
             fixed( Weapon* data1 = &Mainhand, data2 = &rhs.Mainhand )
             {
                 var ptr1 = ( ulong* )data1;
                 var ptr2 = ( ulong* )data2;
-                for( var end = ptr1 + structSizeHalf; ptr1 != end; ++ptr1, ++ptr2 )
+                for( var end = ptr1 + structSizeEights; ptr1 != end; ++ptr1, ++ptr2 )
                 {
                     if( *ptr1 != *ptr2 )
                     {
@@ -128,12 +128,12 @@ namespace Penumbra.Game
 
         private unsafe bool CompareData( CharEquipment rhs )
         {
-            var structSizeHalf = ( EquipmentSlots * sizeof( Equip ) + WeaponSlots * sizeof( Weapon ) ) / 8;
+            var structSizeEights = ( 2 + EquipmentSlots * sizeof( Equip ) + WeaponSlots * sizeof( Weapon ) ) / 8;
             fixed( Weapon* data1 = &Mainhand, data2 = &rhs.Mainhand )
             {
                 var ptr1 = ( ulong* )data1;
                 var ptr2 = ( ulong* )data2;
-                for( var end = ptr1 + structSizeHalf; ptr1 != end; ++ptr1, ++ptr2 )
+                for( var end = ptr1 + structSizeEights; ptr1 != end; ++ptr1, ++ptr2 )
                 {
                     if( *ptr1 != *ptr2 )
                     {
