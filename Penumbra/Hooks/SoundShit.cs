@@ -27,7 +27,7 @@ namespace Penumbra.Hooks
             var fuckkk = *( int* )( shit + 3 );
             _musicManager = *( IntPtr* )( fw + fuckkk );
 
-            _oldPermission     = MemoryPermissions.ChangePermission( _musicManager, 4, MemoryPermissions.MemoryProtection.ReadWrite );
+            _oldPermission     = MemoryPermissions.ChangePermission( _musicManager, 4, MemoryPermissions.MemoryProtection.ExecuteReadWrite );
             _oldStreamingState = StreamingEnabled;
 
             StreamingEnabled = false;

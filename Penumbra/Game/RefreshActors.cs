@@ -22,7 +22,7 @@ namespace Penumbra.Game
 
             async void DrawObject( int delay )
             {
-                var oldPermissions = MemoryPermissions.ChangePermission( renderModePtr, 4, MemoryPermissions.MemoryProtection.ReadWrite );
+                var oldPermissions = MemoryPermissions.ChangePermission( renderModePtr, 4, MemoryPermissions.MemoryProtection.ExecuteReadWrite );
                 Marshal.WriteInt32( renderModePtr, renderStatus | ModelInvisibilityFlag );
                 await Task.Delay( delay );
                 Marshal.WriteInt32( renderModePtr, renderStatus & ~ModelInvisibilityFlag );
