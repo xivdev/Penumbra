@@ -196,7 +196,7 @@ namespace Penumbra.Interop
 
         private unsafe byte ReadSqpackHandler( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync )
         {
-            if( ( IntPtr )pFileDesc == IntPtr.Zero || ( IntPtr )pFileDesc->FileDescriptor == IntPtr.Zero )
+            if( ReadFile == null || pFileDesc == null || pFileDesc->ResourceHandle == null )
             {
                 return ReadSqpackHook?.OriginalFunction( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
             }
@@ -205,7 +205,7 @@ namespace Penumbra.Interop
 
             var isRooted = Path.IsPathRooted( gameFsPath );
 
-            if( gameFsPath == null || gameFsPath.Length >= 260 || !isRooted || ReadFile == null )
+            if( gameFsPath == null || gameFsPath.Length >= 260 || !isRooted )
             {
                 return ReadSqpackHook?.OriginalFunction( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
             }
