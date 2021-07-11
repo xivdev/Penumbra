@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using ImGuiNET;
@@ -58,6 +59,11 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( LabelOpenFolder ) )
                 {
+                    if( !Directory.Exists( _config.ModDirectory ) )
+                    {
+                        return;
+                    }
+
                     Process.Start( _config.ModDirectory );
                 }
             }
