@@ -24,11 +24,6 @@ namespace Penumbra.UI
             private static void DrawNoModsAvailable()
             {
                 ImGui.Text( "You don't have any mods :(" );
-                Custom.ImGuiCustom.VerticalDistance( 20f );
-                ImGui.Text( "You'll need to install them first by creating a folder close to the root of your drive (preferably an SSD)." );
-                ImGui.Text( "For example: D:/ffxiv/mods/" );
-                ImGui.Text( "And pasting that path into the settings tab and clicking the 'Rediscover Mods' button." );
-                ImGui.Text( "You can return to this tab once you've done that." );
             }
 
             public void Draw()

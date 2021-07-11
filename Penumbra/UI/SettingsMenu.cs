@@ -1,5 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
+using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.UI
 {
@@ -63,7 +65,7 @@ namespace Penumbra.UI
                 _collectionsTab.Draw();
                 _importTab.Draw();
 
-                if( !_importTab.IsImporting() )
+                if( Service<ModManager>.Get().Valid && !_importTab.IsImporting() )
                 {
                     _browserTab.Draw();
                     InstalledTab.Draw();

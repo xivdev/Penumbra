@@ -126,7 +126,11 @@ namespace Penumbra.Meta
 
         public void WriteNewFiles()
         {
-            Directory.CreateDirectory( _dir.FullName );
+            if( _currentFiles.Any() )
+            {
+                Directory.CreateDirectory( _dir.FullName );
+            }
+
             foreach( var kvp in _currentFiles.Where( kvp => kvp.Value.Changed ) )
             {
                 kvp.Value.Write( _dir, kvp.Key );

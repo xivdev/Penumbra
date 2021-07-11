@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Penumbra.Importer;
+using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -22,7 +23,8 @@ namespace Penumbra.UI
             private const string TooltipModpack1        = "Writing modpack to disk before extracting...";
             private const string FailedImport           = "One or more of your modpacks failed to import.\nPlease submit a bug report.";
 
-            private const uint ColorRed = 0xFF0000C8;
+            private const uint ColorRed    = 0xFF0000C8;
+            private const uint ColorYellow = 0xFF00C8C8;
 
             private static readonly Vector2 ImportBarSize = new( -1, 0 );
 
@@ -30,9 +32,13 @@ namespace Penumbra.UI
             private          bool              _hasError;
             private          TexToolsImport?   _texToolsImport;
             private readonly SettingsInterface _base;
+            private readonly ModManager        _manager;
 
             public TabImport( SettingsInterface ui )
-                => _base = ui;
+            {
+                _base    = ui;
+                _manager = Service< ModManager >.Get();
+            }
 
             public bool IsImporting()
                 => _isImportRunning;
@@ -64,7 +70,7 @@ namespace Penumbra.UI
 
                                 try
                                 {
-                                    _texToolsImport = new TexToolsImport( new DirectoryInfo( _base._plugin!.Configuration!.ModDirectory ) );
+                                    _texToolsImport = new TexToolsImport( _manager.BasePath );
                                     _texToolsImport.ImportModPack( new FileInfo( fileName ) );
 
                                     PluginLog.Log( $"-> {fileName} OK!" );
@@ -96,7 +102,25 @@ namespace Penumbra.UI
 
             private void DrawImportButton()
             {
-                if( ImGui.Button( LabelImportButton ) )
+                if( !_manager.Valid )
+                {
+                    ImGui.PushStyleVar( ImGuiStyleVar.Alpha, 0.5f );
+                    ImGui.Button( LabelImportButton );
+                    ImGui.PopStyleVar();
+
+                    ImGui.PushStyleColor( ImGuiCol.Text, ColorRed );
+                    ImGui.Text( "Can not import since the mod directory path is not valid." );
+                    ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeightWithSpacing() );
+                    ImGui.PopStyleColor();
+
+                    ImGui.Text( "Please set the mod directory in the settings tab." );
+                    ImGui.Text( "This folder should preferably be close to the root directory of your (preferably SSD) drive, for example" );
+                    ImGui.PushStyleColor( ImGuiCol.Text, ColorYellow );
+                    ImGui.Text( "        D:\\ffxivmods" );
+                    ImGui.PopStyleColor();
+                    ImGui.Text( "You can return to this tab once you've done that." );
+                }
+                else if( ImGui.Button( LabelImportButton ) )
                 {
                     RunImportTask();
                 }

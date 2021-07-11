@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Penumbra.Interop;
+using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -39,10 +40,13 @@ namespace Penumbra.UI
             private void DrawRootFolder()
             {
                 var basePath = _config.ModDirectory;
-                if( ImGui.InputText( LabelRootFolder, ref basePath, 255 ) && _config.ModDirectory != basePath )
+                if( ImGui.InputText( LabelRootFolder, ref basePath, 255, ImGuiInputTextFlags.EnterReturnsTrue )
+                 && _config.ModDirectory != basePath )
                 {
                     _config.ModDirectory = basePath;
                     _configChanged       = true;
+                    _base.ReloadMods();
+                    _base._menu.InstalledTab.Selector.ClearSelection();
                 }
             }
 
@@ -59,7 +63,7 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( LabelOpenFolder ) )
                 {
-                    if( !Directory.Exists( _config.ModDirectory ) )
+                    if( !Directory.Exists( _config.ModDirectory ) || !Service< ModManager >.Get().Valid )
                     {
                         return;
                     }

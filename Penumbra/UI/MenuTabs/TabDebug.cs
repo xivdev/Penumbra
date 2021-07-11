@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -111,6 +112,15 @@ namespace Penumbra.UI
             }
         }
 
+        private static void PrintValue( string name, string value )
+        {
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+            ImGui.Text( name );
+            ImGui.TableNextColumn();
+            ImGui.Text( value );
+        }
+
         private void DrawDebugTabGeneral()
         {
             if( !ImGui.CollapsingHeader( "General##Debug" ) )
@@ -124,15 +134,16 @@ namespace Penumbra.UI
                 return;
             }
 
-            ImGui.TableNextRow();
-            ImGui.TableNextColumn();
+            var manager = Service< ModManager >.Get();
+            PrintValue( "Active Collection", manager.Collections.ActiveCollection.Name );
+            PrintValue( "Mod Manager BasePath", manager.BasePath.Name );
+            PrintValue( "Mod Manager BasePath-Full", manager.BasePath.FullName );
+            PrintValue( "Mod Manager BasePath IsRooted", Path.IsPathRooted( _plugin.Configuration.ModDirectory ).ToString() );
+            PrintValue( "Mod Manager BasePath Exists", Directory.Exists( manager.BasePath.FullName ).ToString() );
+            PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
 
-            ImGui.Text( "Active Collection" );
-            ImGui.TableNextColumn();
-            ImGui.Text( Service< ModManager >.Get().Collections.ActiveCollection.Name );
             ImGui.EndTable();
         }
-
 
         private void DrawDebugTabRedraw()
         {

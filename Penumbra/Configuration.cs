@@ -22,7 +22,7 @@ namespace Penumbra
         public bool EnableHttpApi { get; set; }
         public bool EnableActorWatch { get; set; } = false;
 
-        public string ModDirectory { get; set; } = @"D:/ffxiv/fs_mods/";
+        public string ModDirectory { get; set; } = string.Empty;
 
         public string CurrentCollection { get; set; } = "Default";
         public string DefaultCollection { get; set; } = "Default";

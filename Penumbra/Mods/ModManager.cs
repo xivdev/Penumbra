@@ -14,26 +14,42 @@ namespace Penumbra.Mods
     public class ModManager
     {
         private readonly Plugin _plugin;
-        public DirectoryInfo BasePath { get; private set; }
+        public DirectoryInfo BasePath { get; private set; } = null!;
 
         public Dictionary< string, ModData > Mods { get; } = new();
         public CollectionManager Collections { get; }
 
+        public bool Valid { get; private set; }
+
         public Configuration Config
             => _plugin.Configuration;
 
+        private void SetBaseDirectory( string basePath )
+        {
+            if( basePath.Any() )
+            {
+                BasePath = new DirectoryInfo( basePath );
+                Valid    = Path.IsPathRooted( basePath );
+            }
+            else
+            {
+                BasePath = new DirectoryInfo( "." );
+                Valid    = false;
+            }
+        }
+
         public ModManager( Plugin plugin )
         {
-            _plugin  = plugin;
-            BasePath = new DirectoryInfo( plugin.Configuration.ModDirectory );
-            MetaManager.ClearBaseDirectory( BasePath );
+            _plugin = plugin;
+            SetBaseDirectory( plugin.Configuration.ModDirectory );
+            MetaManager.ClearBaseDirectory( BasePath! );
 
             Collections = new CollectionManager( plugin, this );
         }
 
-        public void DiscoverMods( DirectoryInfo basePath )
+        public void DiscoverMods( string basePath )
         {
-            BasePath = basePath;
+            SetBaseDirectory( basePath );
             DiscoverMods();
         }
 
@@ -62,7 +78,7 @@ namespace Penumbra.Mods
         public void DiscoverMods()
         {
             Mods.Clear();
-            if( !BasePath.Exists )
+            if( Valid && !BasePath.Exists )
             {
                 PluginLog.Debug( "The mod directory {Directory} does not exist.", BasePath.FullName );
                 try
@@ -72,22 +88,26 @@ namespace Penumbra.Mods
                 catch( Exception e )
                 {
                     PluginLog.Error( $"The mod directory {BasePath.FullName} does not exist and could not be created:\n{e}" );
-                    return;
+                    Valid = false;
                 }
             }
 
-            foreach( var modFolder in BasePath.EnumerateDirectories() )
+            if( Valid )
             {
-                var mod = ModData.LoadMod( modFolder );
-                if( mod == null )
+                foreach( var modFolder in BasePath.EnumerateDirectories() )
                 {
-                    continue;
+                    var mod = ModData.LoadMod( modFolder );
+                    if( mod == null )
+                    {
+                        continue;
+                    }
+
+                    Mods.Add( modFolder.Name, mod );
                 }
 
-                Mods.Add( modFolder.Name, mod );
+                SetModOrders( _plugin.Configuration );
             }
 
-            SetModOrders( _plugin.Configuration );
             Collections.RecreateCaches();
         }
 
