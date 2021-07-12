@@ -40,11 +40,12 @@ namespace Penumbra.Interop
         private readonly ModManager                                    _mods;
         private readonly Queue< (int actorId, string name, Redraw s) > _actorIds = new();
 
-        private int     _currentFrame       = 0;
-        private bool    _changedSettings    = false;
-        private int     _currentActorId     = -1;
-        private string? _currentActorName   = null;
-        private Redraw  _currentActorRedraw = Redraw.Unload;
+        private int          _currentFrame           = 0;
+        private bool         _changedSettings        = false;
+        private int          _currentActorId         = -1;
+        private string?      _currentActorName       = null;
+        private LoadingFlags _currentActorStartState = 0;
+        private Redraw       _currentActorRedraw     = Redraw.Unload;
 
         public static IntPtr RenderPtr( Actor actor )
             => actor.Address + RenderModeOffset;
@@ -70,15 +71,16 @@ namespace Penumbra.Interop
             _changedSettings                   = false;
         }
 
-        private static unsafe void WriteInvisible( IntPtr renderPtr )
+        private unsafe void WriteInvisible( IntPtr renderPtr )
         {
             if( renderPtr != IntPtr.Zero )
             {
+                _currentActorStartState     =  *( LoadingFlags* )renderPtr;
                 *( LoadingFlags* )renderPtr |= LoadingFlags.Invisibility;
             }
         }
 
-        private static unsafe bool StillLoading( IntPtr renderPtr )
+        private unsafe bool StillLoading( IntPtr renderPtr )
         {
             const LoadingFlags stillLoadingFlags = LoadingFlags.SomeNpcFlag
               | LoadingFlags.MaybeCulled
@@ -88,6 +90,10 @@ namespace Penumbra.Interop
             if( renderPtr != IntPtr.Zero )
             {
                 var loadingFlags = *( LoadingFlags* )renderPtr;
+                if( loadingFlags == _currentActorStartState )
+                {
+                    return false;
+                }
 
                 return !( loadingFlags == 0 || ( loadingFlags & stillLoadingFlags ) != 0 );
             }
@@ -149,11 +155,6 @@ namespace Penumbra.Interop
             if( actor == null )
             {
                 _currentFrame = 0;
-                return;
-            }
-
-            if( StillLoading( RenderPtr( actor ) ) )
-            {
                 return;
             }
 

@@ -173,6 +173,10 @@ namespace Penumbra.UI
                .GetField( "_currentActorName", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( _plugin.ActorRefresher );
 
+            var currentActorStartState = ( ActorRefresher.LoadingFlags? )_plugin.ActorRefresher.GetType()
+               .GetField( "_currentActorStartState", BindingFlags.Instance | BindingFlags.NonPublic )
+              ?.GetValue( _plugin.ActorRefresher );
+
             var currentActorRedraw = ( Redraw? )_plugin.ActorRefresher.GetType()
                .GetField( "_currentActorRedraw", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( _plugin.ActorRefresher );
@@ -188,41 +192,14 @@ namespace Penumbra.UI
             if( ImGui.BeginTable( "##RedrawData", 2, ImGuiTableFlags.SizingFixedFit,
                 new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 7 ) ) )
             {
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( "Current Frame" );
-                ImGui.TableNextColumn();
-                ImGui.Text( currentFrame?.ToString() ?? "null" );
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( "Current Changed Settings" );
-                ImGui.TableNextColumn();
-                ImGui.Text( changedSettings?.ToString() ?? "null" );
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( "Current Actor Id" );
-                ImGui.TableNextColumn();
-                ImGui.Text( currentActorId?.ToString( "X8" ) ?? "null" );
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( "Current Actor Name" );
-                ImGui.TableNextColumn();
-                ImGui.Text( currentActorName ?? "null" );
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( "Current Actor Redraw" );
-                ImGui.TableNextColumn();
-                ImGui.Text( currentActorRedraw?.ToString() ?? "null" );
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( "Current Actor Address" );
-                ImGui.TableNextColumn();
-                ImGui.Text( currentActor?.Address.ToString( "X16" ) ?? "null" );
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( "Current Actor Render Flags" );
-                ImGui.TableNextColumn();
-                ImGui.Text( ( ( int? )currentRender )?.ToString( "X8" ) ?? "null" );
+                PrintValue( "Current Frame", currentFrame?.ToString()                                         ?? "null" );
+                PrintValue( "Current Changed Settings", changedSettings?.ToString()                           ?? "null" );
+                PrintValue( "Current Actor Id", currentActorId?.ToString( "X8" )                              ?? "null" );
+                PrintValue( "Current Actor Name", currentActorName                                            ?? "null" );
+                PrintValue( "Current Actor Start State", ( ( int? )currentActorStartState )?.ToString( "X8" ) ?? "null" );
+                PrintValue( "Current Actor Redraw", currentActorRedraw?.ToString()                            ?? "null" );
+                PrintValue( "Current Actor Address", currentActor?.Address.ToString( "X16" )                  ?? "null" );
+                PrintValue( "Current Actor Render Flags", ( ( int? )currentRender )?.ToString( "X8" )         ?? "null" );
                 ImGui.EndTable();
             }
 
@@ -242,6 +219,13 @@ namespace Penumbra.UI
                 }
 
                 ImGui.EndTable();
+            }
+
+            if( queue.Any() && ImGui.Button( "Clear" ) )
+            {
+                queue.Clear();
+                _plugin.ActorRefresher.GetType()
+                   .GetField( "_currentFrame", BindingFlags.Instance | BindingFlags.NonPublic )?.SetValue( _plugin.ActorRefresher, 0 );
             }
         }
 
