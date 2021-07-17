@@ -201,7 +201,7 @@ namespace Penumbra.Interop
                 return ReadSqpackHook?.OriginalFunction( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
             }
 
-            var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pFileDesc->ResourceHandle->FileName ) );
+            var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pFileDesc->ResourceHandle->FileName() ) );
 
             var isRooted = Path.IsPathRooted( gameFsPath );
 
