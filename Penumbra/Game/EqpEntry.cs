@@ -32,7 +32,7 @@ namespace Penumbra.Game
         LegsHideBootsM   = 0x08ul << 16,
         _20              = 0x10ul << 16,
         LegsShowFoot     = 0x20ul << 16,
-        _22              = 0x40ul << 16,
+        LegsShowTail     = 0x40ul << 16,
         _23              = 0x80ul << 16,
         LegsMask         = 0xFFul << 16,
 

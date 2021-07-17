@@ -430,7 +430,7 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( ButtonReloadJson ) )
                 {
-                    _selector.ReloadCurrentMod();
+                    _selector.ReloadCurrentMod( true, false );
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -443,13 +443,13 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( "Recompute Metadata" ) )
                 {
-                    _selector.ReloadCurrentMod( true );
+                    _selector.ReloadCurrentMod( true, true );
                 }
 
                 if( ImGui.IsItemHovered() )
                 {
                     ImGui.SetTooltip(
-                        "Force a recomputation of the metadata_manipulations.json file from all .meta files in the folder.\nAlso reloads the mod." );
+                        "Force a recomputation of the metadata_manipulations.json file from all .meta files in the folder.\nAlso reloads the mod.\nBe aware that this removes all manually added metadata changes." );
                 }
             }
 

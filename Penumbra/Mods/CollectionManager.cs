@@ -50,7 +50,7 @@ namespace Penumbra.Mods
             }
         }
 
-        internal void UpdateCollections( ModData mod, bool metaChanges, ResourceChange fileChanges, bool nameChange, bool recomputeMeta )
+        internal void UpdateCollections( ModData mod, bool metaChanges, ResourceChange fileChanges, bool nameChange, bool reloadMeta )
         {
             foreach( var collection in Collections.Values )
             {
@@ -70,13 +70,13 @@ namespace Penumbra.Mods
                     collection.Cache?.CalculateEffectiveFileList();
                 }
 
-                if( recomputeMeta )
+                if( reloadMeta )
                 {
                     collection.Cache?.UpdateMetaManipulations();
                 }
             }
 
-            if( recomputeMeta )
+            if( reloadMeta && ActiveCollection.Settings.TryGetValue( mod.BasePath.Name, out var config ) && config.Enabled )
             {
                 Service< GameResourceManagement >.Get().ReloadPlayerResources();
             }

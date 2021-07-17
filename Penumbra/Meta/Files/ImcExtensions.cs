@@ -21,13 +21,35 @@ namespace Penumbra.Meta.Files
         public static ulong ToInteger( this ImcFile.ImageChangeData imc )
         {
             ulong ret = imc.MaterialId;
-            ret |= ( ulong )imc.DecalId       << 8;
-            ret |= ( ulong )imc.AttributeMask << 16;
-            ret |= ( ulong )imc.SoundId       << 16;
-            ret |= ( ulong )imc.VfxId         << 32;
+            ret |= ( ulong )imc.DecalId                     << 8;
+            ret |= ( ulong )imc.AttributeMask               << 16;
+            ret |= ( ulong )imc.SoundId                     << 16;
+            ret |= ( ulong )imc.VfxId                       << 32;
+            ret |= ( ulong )imc.ActualMaterialAnimationId() << 40;
+            return ret;
+        }
+
+        public static byte ActualMaterialAnimationId( this ImcFile.ImageChangeData imc )
+        {
             var tmp = imc.GetType().GetField( "_MaterialAnimationIdMask",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance );
-            ret |= ( ulong )( byte )tmp!.GetValue( imc ) << 40;
+            return ( byte )( tmp?.GetValue( imc ) ?? 0 );
+        }
+
+        public static ImcFile.ImageChangeData FromValues( byte materialId, byte decalId, ushort attributeMask, byte soundId, byte vfxId,
+            byte materialAnimationId )
+        {
+            var ret = new ImcFile.ImageChangeData()
+            {
+                DecalId    = decalId,
+                MaterialId = materialId,
+                VfxId      = vfxId,
+            };
+            ret.GetType().GetField( "_AttributeAndSound",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance )!
+               .SetValue( ret, ( ushort )( ( attributeMask & 0x3FF ) | ( soundId << 10 ) ) );
+            ret.GetType().GetField( "_AttributeAndSound",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance )!.SetValue( ret, materialAnimationId );
             return ret;
         }
 
@@ -45,7 +67,7 @@ namespace Penumbra.Meta.Files
             bw.Write( variant.DecalId );
             bw.Write( ( ushort )( variant.AttributeMask | variant.SoundId ) );
             bw.Write( variant.VfxId );
-            bw.Write( variant.MaterialAnimationId );
+            bw.Write( variant.ActualMaterialAnimationId() );
         }
 
         public static byte[] WriteBytes( this ImcFile file )

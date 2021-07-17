@@ -145,6 +145,24 @@ namespace Penumbra.Meta.Files
             };
         }
 
+        public object? GetDefaultValue( MetaManipulation m )
+        {
+            return m.Type switch
+            {
+                MetaType.Imc => GetDefaultImcFile( m.ImcIdentifier.ObjectType, m.ImcIdentifier.PrimaryId, m.ImcIdentifier.SecondaryId )
+                  ?.GetValue( m ),
+                MetaType.Gmp => GetDefaultGmpFile()?.GetEntry( m.GmpIdentifier.SetId ),
+                MetaType.Eqp => GetDefaultEqpFile()?.GetEntry( m.EqpIdentifier.SetId )
+                   .Reduce( m.EqpIdentifier.Slot ),
+                MetaType.Eqdp => GetDefaultEqdpFile( m.EqdpIdentifier.Slot, m.EqdpIdentifier.GenderRace )?.GetEntry( m.EqdpIdentifier.SetId )
+                   .Reduce( m.EqdpIdentifier.Slot ),
+                MetaType.Est => GetDefaultEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot )
+                  ?.GetEntry( m.EstIdentifier.GenderRace, m.EstIdentifier.PrimaryId ),
+                MetaType.Rsp => GetDefaultCmpFile()?[ m.RspIdentifier.SubRace ][ m.RspIdentifier.Attribute ],
+                _            => throw new NotImplementedException(),
+            };
+        }
+
         // Create a deep copy of a default file as a new file.
         public object? CreateNewFile( MetaManipulation m )
         {

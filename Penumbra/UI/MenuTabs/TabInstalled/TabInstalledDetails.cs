@@ -54,9 +54,12 @@ namespace Penumbra.UI
 
             private const float OptionSelectionWidth = 140f;
             private const float CheckMarkSize        = 50f;
+            private const uint  ColorDarkGreen       = 0xFF00A000;
             private const uint  ColorGreen           = 0xFF00C800;
             private const uint  ColorYellow          = 0xFF00C8C8;
+            private const uint  ColorDarkRed         = 0xFF0000A0;
             private const uint  ColorRed             = 0xFF0000C8;
+
 
             private bool         _editMode;
             private int          _selectedGroupIndex;
@@ -649,149 +652,6 @@ namespace Penumbra.UI
                 }
             }
 
-            private static void DrawManipulationRow( MetaManipulation manip )
-            {
-                ImGui.TableNextColumn();
-                ImGui.Text( manip.Type.ToString() );
-                ImGui.TableNextColumn();
-
-                switch( manip.Type )
-                {
-                    case MetaType.Eqp:
-                    {
-                        ImGui.Text( manip.EqpIdentifier.Slot.IsAccessory()
-                            ? ObjectType.Accessory.ToString()
-                            : ObjectType.Equipment.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.EqpIdentifier.SetId.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.EqpIdentifier.Slot.ToString() );
-                        break;
-                    }
-                    case MetaType.Gmp:
-                    {
-                        ImGui.Text( ObjectType.Equipment.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.GmpIdentifier.SetId.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( EquipSlot.Head.ToString() );
-                        break;
-                    }
-                    case MetaType.Eqdp:
-                    {
-                        ImGui.Text( manip.EqpIdentifier.Slot.IsAccessory()
-                            ? ObjectType.Accessory.ToString()
-                            : ObjectType.Equipment.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.EqdpIdentifier.SetId.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.EqpIdentifier.Slot.ToString() );
-                        ImGui.TableNextColumn();
-                        var (gender, race) = manip.EqdpIdentifier.GenderRace.Split();
-                        ImGui.Text( race.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( gender.ToString() );
-                        break;
-                    }
-                    case MetaType.Est:
-                    {
-                        ImGui.Text( manip.EstIdentifier.ObjectType.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.EstIdentifier.PrimaryId.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.EstIdentifier.ObjectType == ObjectType.Equipment
-                            ? manip.EstIdentifier.EquipSlot.ToString()
-                            : manip.EstIdentifier.BodySlot.ToString() );
-                        ImGui.TableNextColumn();
-                        var (gender, race) = manip.EstIdentifier.GenderRace.Split();
-                        ImGui.Text( race.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( gender.ToString() );
-                        break;
-                    }
-                    case MetaType.Imc:
-                    {
-                        ImGui.Text( manip.ImcIdentifier.ObjectType.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.ImcIdentifier.PrimaryId.ToString() );
-                        ImGui.TableNextColumn();
-                        if( manip.ImcIdentifier.ObjectType == ObjectType.Accessory
-                         || manip.ImcIdentifier.ObjectType == ObjectType.Equipment )
-                        {
-                            ImGui.Text( manip.ImcIdentifier.ObjectType == ObjectType.Equipment
-                             || manip.ImcIdentifier.ObjectType         == ObjectType.Accessory
-                                    ? manip.ImcIdentifier.EquipSlot.ToString()
-                                    : manip.ImcIdentifier.BodySlot.ToString() );
-                        }
-
-                        ImGui.TableNextColumn();
-                        ImGui.TableNextColumn();
-                        ImGui.TableNextColumn();
-                        if( manip.ImcIdentifier.ObjectType != ObjectType.Equipment
-                         && manip.ImcIdentifier.ObjectType != ObjectType.Accessory )
-                        {
-                            ImGui.Text( manip.ImcIdentifier.SecondaryId.ToString() );
-                        }
-
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.ImcIdentifier.Variant.ToString() );
-                        break;
-                    }
-                    case MetaType.Rsp:
-                    {
-                        ImGui.Text( manip.RspIdentifier.Attribute.ToUngenderedString() );
-                        ImGui.TableNextColumn();
-                        ImGui.TableNextColumn();
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.RspIdentifier.SubRace.ToString() );
-                        ImGui.TableNextColumn();
-                        ImGui.Text( manip.RspIdentifier.Attribute.ToGender().ToString() );
-                        break;
-                    }
-                }
-
-                ImGui.TableSetColumnIndex( 9 );
-                ImGui.Text( manip.Type == MetaType.Rsp ? manip.RspValue.ToString( CultureInfo.InvariantCulture ) : manip.Value.ToString() );
-                ImGui.TableNextRow();
-            }
-
-            private static void DrawMetaManipulationsTable( string label, List< MetaManipulation > list )
-            {
-                if( list.Count == 0
-                 || !ImGui.BeginTable( label, 10,
-                        ImGuiTableFlags.BordersInner | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit ) )
-                {
-                    return;
-                }
-
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Type##{label}" );
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Object Type##{label}" );
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Set##{label}" );
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Slot##{label}" );
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Race##{label}" );
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Gender##{label}" );
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Secondary ID##{label}" );
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Variant##{label}" );
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableHeader( $"Value##{label}" );
-                ImGui.TableNextRow();
-                foreach( var manip in list )
-                {
-                    DrawManipulationRow( manip );
-                }
-
-                ImGui.EndTable();
-            }
-
             private void DrawMetaManipulationsTab()
             {
                 if( Mod.Data.Resources.MetaManipulations.Count == 0 )
@@ -806,24 +666,31 @@ namespace Penumbra.UI
 
                 if( ImGui.BeginListBox( "##MetaManipulations", AutoFillSize ) )
                 {
-                    var manips = Mod.Data.Resources.MetaManipulations;
-                    if( manips.DefaultData.Count > 0 )
+                    var manips  = Mod.Data.Resources.MetaManipulations;
+                    var changes = false;
+                    if( _editMode || manips.DefaultData.Count > 0 )
                     {
                         if( ImGui.CollapsingHeader( "Default" ) )
                         {
-                            DrawMetaManipulationsTable( "##DefaultManips", manips.DefaultData );
+                            changes = DrawMetaManipulationsTable( "##DefaultManips", manips.DefaultData );
                         }
                     }
 
                     foreach( var group in manips.GroupData )
                     {
-                        foreach( var option in @group.Value )
+                        foreach( var option in group.Value )
                         {
-                            if( ImGui.CollapsingHeader( $"{@group.Key} - {option.Key}" ) )
+                            if( ImGui.CollapsingHeader( $"{group.Key} - {option.Key}" ) )
                             {
-                                DrawMetaManipulationsTable( $"##{@group.Key}{option.Key}manips", option.Value );
+                                changes |= DrawMetaManipulationsTable( $"##{group.Key}{option.Key}manips", option.Value );
                             }
                         }
+                    }
+
+                    if( changes )
+                    {
+                        Mod.Data.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( Mod.Data.BasePath ) );
+                        _selector.ReloadCurrentMod( true, false );
                     }
 
                     ImGui.EndListBox();

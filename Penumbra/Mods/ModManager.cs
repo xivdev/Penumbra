@@ -152,7 +152,7 @@ namespace Penumbra.Mods
             return true;
         }
 
-        public bool UpdateMod( ModData mod, bool recomputeMeta = false )
+        public bool UpdateMod( ModData mod, bool reloadMeta = false, bool recomputeMeta = false )
         {
             var oldName     = mod.Meta.Name;
             var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile );
@@ -177,7 +177,7 @@ namespace Penumbra.Mods
                 mod.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( mod.BasePath ) );
             }
 
-            Collections.UpdateCollections( mod, metaChanges, fileChanges, nameChange, recomputeMeta );
+            Collections.UpdateCollections( mod, metaChanges, fileChanges, nameChange, reloadMeta );
 
             return true;
         }
