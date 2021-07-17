@@ -1,5 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
+using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.UI
 {
@@ -16,17 +18,19 @@ namespace Penumbra.UI
             private readonly TabSettings       _settingsTab;
             private readonly TabImport         _importTab;
             private readonly TabBrowser        _browserTab;
+            private readonly TabCollections    _collectionsTab;
             public readonly  TabInstalled      InstalledTab;
-            public readonly  TabEffective      EffectiveTab;
+            private readonly TabEffective      _effectiveTab;
 
             public SettingsMenu( SettingsInterface ui )
             {
-                _base        = ui;
-                _settingsTab = new TabSettings( _base );
-                _importTab   = new TabImport( _base );
-                _browserTab  = new TabBrowser();
-                InstalledTab = new TabInstalled( _base );
-                EffectiveTab = new TabEffective();
+                _base           = ui;
+                _settingsTab    = new TabSettings( _base );
+                _importTab      = new TabImport( _base );
+                _browserTab     = new TabBrowser();
+                InstalledTab    = new TabInstalled( _base );
+                _collectionsTab = new TabCollections( InstalledTab.Selector );
+                _effectiveTab   = new TabEffective();
             }
 
 #if DEBUG
@@ -34,7 +38,8 @@ namespace Penumbra.UI
 #else
             private const bool DefaultVisibility = false;
 #endif
-            public bool Visible = DefaultVisibility;
+            public bool Visible         = DefaultVisibility;
+            public bool DebugTabVisible = DefaultVisibility;
 
             public void Draw()
             {
@@ -57,17 +62,23 @@ namespace Penumbra.UI
                 ImGui.BeginTabBar( PenumbraSettingsLabel );
 
                 _settingsTab.Draw();
+                _collectionsTab.Draw();
                 _importTab.Draw();
 
-                if( !_importTab.IsImporting() )
+                if( Service<ModManager>.Get().Valid && !_importTab.IsImporting() )
                 {
                     _browserTab.Draw();
                     InstalledTab.Draw();
 
                     if( _base._plugin!.Configuration!.ShowAdvanced )
                     {
-                        EffectiveTab.Draw();
+                        _effectiveTab.Draw();
                     }
+                }
+
+                if( DebugTabVisible )
+                {
+                    _base.DrawDebugTab();
                 }
 
                 ImGui.EndTabBar();

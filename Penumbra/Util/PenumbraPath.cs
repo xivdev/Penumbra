@@ -171,7 +171,7 @@ namespace Penumbra.Util
         {
             if( value != null )
             {
-                var v = ( GamePath) value;
+                var v = ( GamePath )value;
                 serializer.Serialize( writer, v.ToString() );
             }
         }

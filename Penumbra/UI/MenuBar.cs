@@ -19,7 +19,9 @@ namespace Penumbra.UI
 #endif
 
             private readonly SettingsInterface _base;
-            public MenuBar( SettingsInterface ui ) => _base = ui;
+
+            public MenuBar( SettingsInterface ui )
+                => _base = ui;
 
             public void Draw()
             {

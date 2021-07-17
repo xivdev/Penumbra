@@ -5,6 +5,6 @@ namespace Penumbra.Importer
         None,
         WritingPackToDisk,
         ExtractingModFiles,
-        Done
+        Done,
     }
 }

@@ -7,8 +7,10 @@ using Dalamud.Plugin;
 using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
 using Penumbra.Importer.Models;
-using Penumbra.Models;
+using Penumbra.Mod;
+using Penumbra.Structs;
 using Penumbra.Util;
+using FileMode = System.IO.FileMode;
 
 namespace Penumbra.Importer
 {
@@ -18,6 +20,8 @@ namespace Penumbra.Importer
 
         private const    string TempFileName = "textools-import";
         private readonly string _resolvedTempFilePath;
+
+        public DirectoryInfo? ExtractedDirectory { get; private set; }
 
         public ImporterState State { get; private set; }
 
@@ -45,6 +49,12 @@ namespace Penumbra.Importer
             _outDirectory         = outDirectory;
             _resolvedTempFilePath = Path.Combine( _outDirectory.FullName, TempFileName );
         }
+
+        private static string ReplaceBadXivSymbols( string source )
+            => source.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols();
+
+        private static DirectoryInfo NewOptionDirectory( DirectoryInfo baseDir, string optionName )
+            => new( Path.Combine( baseDir.FullName, ReplaceBadXivSymbols( optionName ) ) );
 
         public void ImportModPack( FileInfo modPackFile )
         {
@@ -94,7 +104,7 @@ namespace Penumbra.Importer
             WriteZipEntryToTempFile( s );
 
             var fs = new FileStream( _resolvedTempFilePath, FileMode.Open );
-            return new MagicTempFileStreamManagerAndDeleterFuckery( fs );
+            return new MagicTempFileStreamManagerAndDeleter( fs );
         }
 
         private void VerifyVersionAndImport( FileInfo modPackFile )
@@ -153,14 +163,14 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( _outDirectory, Path.GetFileNameWithoutExtension( modPackFile.Name ) );
+            ExtractedDirectory = CreateModFolder( _outDirectory, Path.GetFileNameWithoutExtension( modPackFile.Name ) );
 
             File.WriteAllText(
-                Path.Combine( newModFolder.FullName, "meta.json" ),
+                Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta )
             );
 
-            ExtractSimpleModList( newModFolder, modList, modData );
+            ExtractSimpleModList( ExtractedDirectory, modList, modData );
         }
 
         private void ImportV2ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw )
@@ -187,13 +197,12 @@ namespace Penumbra.Importer
 
         public static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName )
         {
-            var correctedPath = Path.Combine( outDirectory.FullName,
-                Path.GetFileName( modListName ).RemoveInvalidPathSymbols().RemoveNonAsciiSymbols() );
-            var newModFolder = new DirectoryInfo( correctedPath );
-            var i            = 2;
+            var newModFolderBase = NewOptionDirectory( outDirectory, Path.GetFileName( modListName ) );
+            var newModFolder     = newModFolderBase;
+            var i                = 2;
             while( newModFolder.Exists && i < 12 )
             {
-                newModFolder = new DirectoryInfo( correctedPath + $" ({i++})" );
+                newModFolder = new DirectoryInfo( newModFolderBase.FullName + $" ({i++})" );
             }
 
             if( newModFolder.Exists )
@@ -222,12 +231,12 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
+            ExtractedDirectory = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
 
-            File.WriteAllText( Path.Combine( newModFolder.FullName, "meta.json" ),
+            File.WriteAllText( Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta ) );
 
-            ExtractSimpleModList( newModFolder, modList.SimpleModsList ?? Enumerable.Empty< SimpleMod >(), modData );
+            ExtractSimpleModList( ExtractedDirectory, modList.SimpleModsList ?? Enumerable.Empty< SimpleMod >(), modData );
         }
 
         private void ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
@@ -250,11 +259,11 @@ namespace Penumbra.Importer
             // Open the mod data file from the modpack as a SqPackStream
             using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
-            var newModFolder = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
+            ExtractedDirectory = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
 
             if( modList.SimpleModsList != null )
             {
-                ExtractSimpleModList( newModFolder, modList.SimpleModsList, modData );
+                ExtractSimpleModList( ExtractedDirectory, modList.SimpleModsList, modData );
             }
 
             if( modList.ModPackPages == null )
@@ -272,7 +281,7 @@ namespace Penumbra.Importer
 
                 foreach( var group in page.ModGroups.Where( group => group.GroupName != null && group.OptionList != null ) )
                 {
-                    var groupFolder = new DirectoryInfo( Path.Combine( newModFolder.FullName, group.GroupName!.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols( ) ) );
+                    var groupFolder = NewOptionDirectory( ExtractedDirectory, group.GroupName! );
                     if( groupFolder.Exists )
                     {
                         groupFolder     =  new DirectoryInfo( groupFolder.FullName + $" ({page.PageIndex})" );
@@ -281,16 +290,16 @@ namespace Penumbra.Importer
 
                     foreach( var option in group.OptionList!.Where( option => option.Name != null && option.ModsJsons != null ) )
                     {
-                        var optionFolder = new DirectoryInfo( Path.Combine( groupFolder.FullName, option.Name!.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols() ) );
+                        var optionFolder = NewOptionDirectory( groupFolder, option.Name! );
                         ExtractSimpleModList( optionFolder, option.ModsJsons!, modData );
                     }
 
-                    AddMeta( newModFolder, groupFolder, group, modMeta );
+                    AddMeta( ExtractedDirectory, groupFolder, group, modMeta );
                 }
             }
 
             File.WriteAllText(
-                Path.Combine( newModFolder.FullName, "meta.json" ),
+                Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta, Formatting.Indented )
             );
         }
@@ -311,7 +320,7 @@ namespace Penumbra.Importer
                     OptionDesc  = string.IsNullOrEmpty( opt.Description ) ? "" : opt.Description!,
                     OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >(),
                 };
-                var optDir = new DirectoryInfo( Path.Combine( groupFolder.FullName, opt.Name!.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols() ) );
+                var optDir = NewOptionDirectory( groupFolder, opt.Name! );
                 if( optDir.Exists )
                 {
                     foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
@@ -341,7 +350,7 @@ namespace Penumbra.Importer
             TotalProgress += wtf.LongCount();
 
             // Extract each SimpleMod into the new mod folder
-            foreach( var simpleMod in wtf.Where( M => M != null ) )
+            foreach( var simpleMod in wtf.Where( m => m != null ) )
             {
                 ExtractMod( outDirectory, simpleMod, dataStream );
                 CurrentProgress++;

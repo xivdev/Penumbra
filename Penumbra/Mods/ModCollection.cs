@@ -1,229 +1,250 @@
+using Dalamud.Plugin;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
-using Newtonsoft.Json;
-using Penumbra.Models;
+using Penumbra.Interop;
+using Penumbra.Mod;
+using Penumbra.Util;
 
 namespace Penumbra.Mods
 {
+    // A ModCollection is a named set of ModSettings to all of the users' installed mods.
+    // It is meant to be local only, and thus should always contain settings for every mod, not just the enabled ones.
+    // Settings to mods that are not installed anymore are kept as long as no call to CleanUnavailableSettings is made.
+    // Active ModCollections build a cache of currently relevant data.
     public class ModCollection
     {
-        private readonly DirectoryInfo _basePath;
+        public const string DefaultCollection = "Default";
 
-        public List< ModInfo >? ModSettings { get; set; }
-        public ResourceMod[]? EnabledMods { get; set; }
+        public string Name { get; set; }
 
+        public Dictionary< string, ModSettings > Settings { get; }
 
-        public ModCollection( DirectoryInfo basePath )
-            => _basePath = basePath;
-
-        public void Load( bool invertOrder = false )
+        public ModCollection()
         {
-            // find the collection json
-            var collectionPath = Path.Combine( _basePath.FullName, "collection.json" );
-            if( File.Exists( collectionPath ) )
-            {
-                try
-                {
-                    ModSettings = JsonConvert.DeserializeObject< List< ModInfo > >( File.ReadAllText( collectionPath ) );
-                    ModSettings = ModSettings.OrderBy( x => x.Priority ).ToList();
-                }
-                catch( Exception e )
-                {
-                    PluginLog.Error( $"failed to read log collection information, failed path: {collectionPath}, err: {e.Message}" );
-                }
-            }
-
-#if DEBUG
-            if( ModSettings != null )
-            {
-                foreach( var ms in ModSettings )
-                {
-                    PluginLog.Debug(
-                        "mod: {ModName} Enabled: {Enabled} Priority: {Priority}",
-                        ms.FolderName, ms.Enabled, ms.Priority
-                    );
-                }
-            }
-#endif
-
-            ModSettings ??= new List< ModInfo >();
-            var foundMods = new List< string >();
-
-            foreach( var modDir in _basePath.EnumerateDirectories() )
-            {
-                if( modDir.Name.ToLowerInvariant() == MetaManager.TmpDirectory )
-                {
-                    continue;
-                }
-
-                var metaFile = modDir.EnumerateFiles().FirstOrDefault( f => f.Name == "meta.json" );
-
-                if( metaFile == null )
-                {
-#if DEBUG
-                    PluginLog.Error( "mod meta is missing for resource mod: {ResourceModLocation}", modDir );
-#else
-                    PluginLog.Debug( "mod meta is missing for resource mod: {ResourceModLocation}", modDir );
-#endif
-                    continue;
-                }
-
-                var meta = ModMeta.LoadFromFile( metaFile.FullName ) ?? new ModMeta();
-
-                var mod = new ResourceMod( meta, modDir );
-                FindOrCreateModSettings( mod );
-                foundMods.Add( modDir.Name );
-                mod.RefreshModFiles();
-            }
-
-            // remove any mods from the collection we didn't find
-            ModSettings = ModSettings.Where(
-                x =>
-                    foundMods.Any(
-                        fm => string.Equals( x.FolderName, fm, StringComparison.InvariantCultureIgnoreCase )
-                    )
-            ).ToList();
-
-            // if anything gets removed above, the priority ordering gets fucked, so we need to resort and reindex them otherwise BAD THINGS HAPPEN
-            ModSettings = ModSettings.OrderBy( x => x.Priority ).ToList();
-            var p = 0;
-            foreach( var modSetting in ModSettings )
-            {
-                modSetting.Priority = p++;
-            }
-
-            // reorder the resourcemods list so we can just directly iterate
-            EnabledMods = GetOrderedAndEnabledModList( invertOrder ).ToArray();
-
-            // write the collection metadata back to disk
-            Save();
+            Name     = DefaultCollection;
+            Settings = new Dictionary< string, ModSettings >();
         }
 
-        public void Save()
+        public ModCollection( string name, Dictionary< string, ModSettings > settings )
         {
-            var collectionPath = Path.Combine( _basePath.FullName, "collection.json" );
+            Name     = name;
+            Settings = settings.ToDictionary( kvp => kvp.Key, kvp => kvp.Value.DeepCopy() );
+        }
+
+        private bool CleanUnavailableSettings( Dictionary< string, ModData > data )
+        {
+            if( Settings.Count <= data.Count )
+            {
+                return false;
+            }
+
+            List< string > removeList = new();
+            foreach( var settingKvp in Settings )
+            {
+                if( !data.ContainsKey( settingKvp.Key ) )
+                {
+                    removeList.Add( settingKvp.Key );
+                }
+            }
+
+            foreach( var s in removeList )
+            {
+                Settings.Remove( s );
+            }
+
+            return removeList.Count > 0;
+        }
+
+        public void CreateCache( DirectoryInfo modDirectory, Dictionary< string, ModData > data, bool cleanUnavailable = false )
+        {
+            Cache = new ModCollectionCache( Name, modDirectory );
+            var changedSettings = false;
+            foreach( var modKvp in data )
+            {
+                if( Settings.TryGetValue( modKvp.Key, out var settings ) )
+                {
+                    Cache.AvailableMods.Add( new Mod.Mod( settings, modKvp.Value ) );
+                }
+                else
+                {
+                    changedSettings = true;
+                    var newSettings = ModSettings.DefaultSettings( modKvp.Value.Meta );
+                    Settings.Add( modKvp.Key, newSettings );
+                    Cache.AvailableMods.Add( new Mod.Mod( newSettings, modKvp.Value ) );
+                }
+            }
+
+            if( cleanUnavailable )
+            {
+                changedSettings |= CleanUnavailableSettings( data );
+            }
+
+            if( changedSettings )
+            {
+                Save( Service< DalamudPluginInterface >.Get() );
+            }
+
+            Cache.SortMods();
+            CalculateEffectiveFileList( modDirectory, true, false );
+        }
+
+        public void ClearCache()
+            => Cache = null;
+
+        public void UpdateSetting( ModData mod )
+        {
+            if( !Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
+            {
+                return;
+            }
+
+            if( settings.FixInvalidSettings( mod.Meta ) )
+            {
+                Save( Service< DalamudPluginInterface >.Get() );
+            }
+        }
+
+        public void UpdateSettings()
+        {
+            if( Cache == null )
+            {
+                return;
+            }
+
+            var changes = false;
+            foreach( var mod in Cache.AvailableMods )
+            {
+                changes |= mod.FixSettings();
+            }
+
+            if( changes )
+            {
+                Save( Service< DalamudPluginInterface >.Get() );
+            }
+        }
+
+        public void CalculateEffectiveFileList( DirectoryInfo modDir, bool withMetaManipulations, bool activeCollection )
+        {
+            Cache ??= new ModCollectionCache( Name, modDir );
+            UpdateSettings();
+            Cache.CalculateEffectiveFileList();
+            if( withMetaManipulations )
+            {
+                Cache.UpdateMetaManipulations();
+                if( activeCollection )
+                {
+                    Service< GameResourceManagement >.Get().ReloadPlayerResources();
+                }
+            }
+        }
+
+
+        [JsonIgnore]
+        public ModCollectionCache? Cache { get; private set; }
+
+        public static ModCollection? LoadFromFile( FileInfo file )
+        {
+            if( !file.Exists )
+            {
+                PluginLog.Error( $"Could not read collection because {file.FullName} does not exist." );
+                return null;
+            }
 
             try
             {
-                var data = JsonConvert.SerializeObject( ModSettings.OrderBy( x => x.Priority ).ToList() );
-                File.WriteAllText( collectionPath, data );
+                var collection = JsonConvert.DeserializeObject< ModCollection >( File.ReadAllText( file.FullName ) );
+                return collection;
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"failed to write log collection information, failed path: {collectionPath}, err: {e.Message}" );
+                PluginLog.Error( $"Could not read collection information from {file.FullName}:\n{e}" );
+            }
+
+            return null;
+        }
+
+        private void SaveToFile( FileInfo file )
+        {
+            try
+            {
+                File.WriteAllText( file.FullName, JsonConvert.SerializeObject( this, Formatting.Indented ) );
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not write collection {Name} to {file.FullName}:\n{e}" );
             }
         }
 
-        private int CleanPriority( int priority )
-            => priority < 0 ? 0 : priority >= ModSettings!.Count ? ModSettings.Count - 1 : priority;
+        public static DirectoryInfo CollectionDir( DalamudPluginInterface pi )
+            => new( Path.Combine( pi.GetPluginConfigDirectory(), "collections" ) );
 
-        public void ReorderMod( ModInfo info, int newPriority )
+        private static FileInfo FileName( DirectoryInfo collectionDir, string name )
+            => new( Path.Combine( collectionDir.FullName, $"{name.RemoveInvalidPathSymbols()}.json" ) );
+
+        public FileInfo FileName()
+            => new( Path.Combine( Service< DalamudPluginInterface >.Get().GetPluginConfigDirectory(),
+                $"{Name.RemoveInvalidPathSymbols()}.json" ) );
+
+        public void Save( DalamudPluginInterface pi )
         {
-            if( ModSettings == null )
+            try
             {
-                return;
+                var dir = CollectionDir( pi );
+                dir.Create();
+                var file = FileName( dir, Name );
+                SaveToFile( file );
             }
-
-            var oldPriority = info.Priority;
-            newPriority = CleanPriority( newPriority );
-            if( oldPriority == newPriority )
+            catch( Exception e )
             {
-                return;
+                PluginLog.Error( $"Could not save collection {Name}:\n{e}" );
             }
+        }
 
-            info.Priority = newPriority;
-            if( newPriority < oldPriority )
+        public static ModCollection? Load( string name, DalamudPluginInterface pi )
+        {
+            var file = FileName( CollectionDir( pi ), name );
+            return file.Exists ? LoadFromFile( file ) : null;
+        }
+
+        public void Delete( DalamudPluginInterface pi )
+        {
+            var file = FileName( CollectionDir( pi ), Name );
+            if( file.Exists )
             {
-                for( var i = oldPriority - 1; i >= newPriority; --i )
+                try
                 {
-                    ++ModSettings![ i ].Priority;
-                    ModSettings.Swap( i, i + 1 );
+                    file.Delete();
                 }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not delete collection file {file} for {Name}:\n{e}" );
+                }
+            }
+        }
+
+        public void AddMod( ModData data )
+        {
+            if( Cache == null )
+            {
+                return;
+            }
+
+            if( Settings.TryGetValue( data.BasePath.Name, out var settings ) )
+            {
+                Cache.AddMod( settings, data );
             }
             else
             {
-                for( var i = oldPriority + 1; i <= newPriority; ++i )
-                {
-                    --ModSettings![ i ].Priority;
-                    ModSettings.Swap( i - 1, i );
-                }
+                Cache.AddMod( ModSettings.DefaultSettings( data.Meta ), data );
             }
-
-            EnabledMods = GetOrderedAndEnabledModList().ToArray();
-            Save();
         }
 
-        public void ReorderMod( ModInfo info, bool up )
-            => ReorderMod( info, info.Priority + ( up ? 1 : -1 ) );
+        public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )
+            => Cache?.ResolveSwappedOrReplacementPath( gameResourcePath );
 
-        public ModInfo? FindModSettings( string name )
-        {
-            var settings = ModSettings?.FirstOrDefault(
-                x => string.Equals( x.FolderName, name, StringComparison.InvariantCultureIgnoreCase )
-            );
-#if DEBUG
-            PluginLog.Information( "finding mod {ModName} - found: {ModSettingsExist}", name, settings != null );
-#endif
-            return settings;
-        }
-
-        public ModInfo AddModSettings( ResourceMod mod )
-        {
-            var entry = new ModInfo( mod )
-            {
-                Priority   = ModSettings?.Count ?? 0,
-                FolderName = mod.ModBasePath.Name,
-                Enabled    = true,
-            };
-            entry.FixInvalidSettings();
-#if DEBUG
-            PluginLog.Information( "creating mod settings {ModName}", entry.FolderName );
-#endif
-            ModSettings ??= new List< ModInfo >();
-            ModSettings.Add( entry );
-            return entry;
-        }
-
-        public ModInfo FindOrCreateModSettings( ResourceMod mod )
-        {
-            var settings = FindModSettings( mod.ModBasePath.Name );
-            if( settings == null )
-            {
-                return AddModSettings( mod );
-            }
-
-            settings.Mod = mod;
-            settings.FixInvalidSettings();
-            return settings;
-        }
-
-        public IEnumerable< ModInfo > GetOrderedAndEnabledModSettings( bool invertOrder = false )
-        {
-            var query = ModSettings?
-                   .Where( x => x.Enabled )
-             ?? Enumerable.Empty< ModInfo >();
-
-            if( !invertOrder )
-            {
-                return query.OrderBy( x => x.Priority );
-            }
-
-            return query.OrderByDescending( x => x.Priority );
-        }
-
-        public IEnumerable< ResourceMod > GetOrderedAndEnabledModList( bool invertOrder = false )
-        {
-            return GetOrderedAndEnabledModSettings( invertOrder )
-               .Select( x => x.Mod );
-        }
-
-        public IEnumerable< (ResourceMod, ModInfo) > GetOrderedAndEnabledModListWithSettings( bool invertOrder = false )
-        {
-            return GetOrderedAndEnabledModSettings( invertOrder )
-               .Select( x => ( x.Mod, x ) );
-        }
+        public static readonly ModCollection Empty = new() { Name = "" };
     }
 }

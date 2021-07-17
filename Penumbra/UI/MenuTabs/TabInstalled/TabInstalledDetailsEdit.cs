@@ -3,7 +3,8 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
-using Penumbra.Models;
+using Penumbra.Mods;
+using Penumbra.Structs;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -44,7 +45,7 @@ namespace Penumbra.UI
                 }
 
                 if( ImGui.Combo( LabelGroupSelect, ref _selectedGroupIndex
-                    , Meta.Groups.Values.Select( G => G.GroupName ).ToArray()
+                    , Meta.Groups.Values.Select( g => g.GroupName ).ToArray()
                     , Meta.Groups.Count ) )
                 {
                     SelectGroup();
@@ -65,7 +66,7 @@ namespace Penumbra.UI
                 }
 
                 var group = ( OptionGroup )_selectedGroup!;
-                if( ImGui.Combo( LabelOptionSelect, ref _selectedOptionIndex, group.Options.Select( O => O.OptionName ).ToArray(),
+                if( ImGui.Combo( LabelOptionSelect, ref _selectedOptionIndex, group.Options.Select( o => o.OptionName ).ToArray(),
                     group.Options.Count ) )
                 {
                     SelectOption();
@@ -87,7 +88,7 @@ namespace Penumbra.UI
                     ImGui.SetNextItemWidth( -1 );
                     if( ImGui.BeginListBox( LabelFileListHeader, AutoFillSize - new Vector2( 0, 1.5f * ImGui.GetTextLineHeight() ) ) )
                     {
-                        for( var i = 0; i < Mod!.Mod.ModFiles.Count; ++i )
+                        for( var i = 0; i < Mod!.Data.Resources.ModFiles.Count; ++i )
                         {
                             DrawFileAndGamePaths( i );
                         }
@@ -104,31 +105,13 @@ namespace Penumbra.UI
                 }
             }
 
-            private bool DrawMultiSelectorEditBegin( OptionGroup group )
+            private void DrawMultiSelectorEditBegin( OptionGroup group )
             {
                 var groupName = group.GroupName;
-                if( ImGuiCustom.BeginFramedGroupEdit( ref groupName )
-                 && groupName != group.GroupName
-                 && !Meta!.Groups.ContainsKey( groupName ) )
+                if( Custom.ImGuiCustom.BeginFramedGroupEdit( ref groupName ) )
                 {
-                    var oldConf = Mod!.Settings[ group.GroupName ];
-                    Meta.Groups.Remove( group.GroupName );
-                    Mod.FixSpecificSetting( group.GroupName );
-                    if( groupName.Length > 0 )
-                    {
-                        Meta.Groups[ groupName ] = new OptionGroup()
-                        {
-                            GroupName     = groupName,
-                            SelectionType = SelectType.Multi,
-                            Options       = group.Options,
-                        };
-                        Mod.Settings[ groupName ] = oldConf;
-                    }
-
-                    return true;
+                    _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data );
                 }
-
-                return false;
             }
 
             private void DrawMultiSelectorEditAdd( OptionGroup group, float nameBoxStart )
@@ -149,9 +132,9 @@ namespace Penumbra.UI
             private void DrawMultiSelectorEdit( OptionGroup group )
             {
                 var nameBoxStart = CheckMarkSize;
-                var flag         = Mod!.Settings[ group.GroupName ];
-                var modChanged   = DrawMultiSelectorEditBegin( group );
+                var flag         = Mod!.Settings.Settings[ group.GroupName ];
 
+                DrawMultiSelectorEditBegin( group );
                 for( var i = 0; i < group.Options.Count; ++i )
                 {
                     var opt   = group.Options[ i ];
@@ -171,11 +154,7 @@ namespace Penumbra.UI
                     {
                         if( newName.Length == 0 )
                         {
-                            group.Options.RemoveAt( i );
-                            var bitmaskFront = ( 1 << i ) - 1;
-                            var bitmaskBack  = ~( bitmaskFront | ( 1 << i ) );
-                            Mod.Settings[ group.GroupName ] = ( flag & bitmaskFront ) | ( ( flag & bitmaskBack ) >> 1 );
-                            modChanged                      = true;
+                            _modManager.RemoveModOption( i, group, Mod.Data );
                         }
                         else if( newName != opt.OptionName )
                         {
@@ -188,144 +167,85 @@ namespace Penumbra.UI
 
                 DrawMultiSelectorEditAdd( group, nameBoxStart );
 
-                if( modChanged )
-                {
-                    _selector.SaveCurrentMod();
-                    Save();
-                }
-
-                ImGuiCustom.EndFramedGroup();
+                Custom.ImGuiCustom.EndFramedGroup();
             }
 
-            private bool DrawSingleSelectorEditGroup( OptionGroup group, ref bool selectionChanged )
+            private void DrawSingleSelectorEditGroup( OptionGroup group )
             {
                 var groupName = group.GroupName;
-                if( ImGui.InputText( $"##{groupName}_add", ref groupName, 64, ImGuiInputTextFlags.EnterReturnsTrue )
-                 && !Meta!.Groups.ContainsKey( groupName ) )
+                if( ImGui.InputText( $"##{groupName}_add", ref groupName, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
-                    var oldConf = Mod!.Settings[ group.GroupName ];
-                    if( groupName != group.GroupName )
-                    {
-                        Meta.Groups.Remove( group.GroupName );
-                        selectionChanged |= Mod.FixSpecificSetting( group.GroupName );
-                    }
-
-                    if( groupName.Length > 0 )
-                    {
-                        Meta.Groups.Add( groupName, new OptionGroup()
-                        {
-                            GroupName     = groupName,
-                            Options       = group.Options,
-                            SelectionType = SelectType.Single,
-                        } );
-                        Mod.Settings[ groupName ] = oldConf;
-                    }
-
-                    return true;
+                    _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data );
                 }
-
-                return false;
             }
 
             private float DrawSingleSelectorEdit( OptionGroup group )
             {
-                var code             = Mod!.Settings[ group.GroupName ];
-                var selectionChanged = false;
-                var modChanged       = false;
-                if( ImGuiCustom.RenameableCombo( $"##{group.GroupName}", ref code, out var newName,
+                var oldSetting = Mod!.Settings.Settings[ group.GroupName ];
+                var code       = oldSetting;
+                if( Custom.ImGuiCustom.RenameableCombo( $"##{group.GroupName}", ref code, out var newName,
                     group.Options.Select( x => x.OptionName ).ToArray(), group.Options.Count ) )
                 {
                     if( code == group.Options.Count )
                     {
                         if( newName.Length > 0 )
                         {
-                            selectionChanged                = true;
-                            modChanged                      = true;
-                            Mod.Settings[ group.GroupName ] = code;
+                            Mod.Settings.Settings[ group.GroupName ] = code;
                             group.Options.Add( new Option()
                             {
                                 OptionName  = newName,
                                 OptionDesc  = "",
                                 OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >(),
                             } );
+                            _selector.SaveCurrentMod();
                         }
                     }
                     else
                     {
                         if( newName.Length == 0 )
                         {
-                            modChanged = true;
-                            group.Options.RemoveAt( code );
+                            _modManager.RemoveModOption( code, group, Mod.Data );
                         }
                         else
                         {
                             if( newName != group.Options[ code ].OptionName )
                             {
-                                modChanged = true;
                                 group.Options[ code ] = new Option()
                                 {
                                     OptionName  = newName, OptionDesc = group.Options[ code ].OptionDesc,
                                     OptionFiles = group.Options[ code ].OptionFiles,
                                 };
+                                _selector.SaveCurrentMod();
                             }
-
-                            selectionChanged                |= Mod.Settings[ group.GroupName ] != code;
-                            Mod.Settings[ group.GroupName ] =  code;
                         }
-
-                        selectionChanged |= Mod.FixSpecificSetting( group.GroupName );
                     }
                 }
 
-                ImGui.SameLine();
-                var labelEditPos = ImGui.GetCursorPosX();
-                modChanged |= DrawSingleSelectorEditGroup( group, ref selectionChanged );
-
-                if( modChanged )
-                {
-                    _selector.SaveCurrentMod();
-                }
-
-                if( selectionChanged )
+                if( code != oldSetting )
                 {
                     Save();
                 }
 
+                ImGui.SameLine();
+                var labelEditPos = ImGui.GetCursorPosX();
+                DrawSingleSelectorEditGroup( group );
+
                 return labelEditPos;
-            }
-
-            private void AddNewGroup( string newGroup, SelectType selectType )
-            {
-                if( Meta!.Groups.ContainsKey( newGroup ) || newGroup.Length <= 0 )
-                {
-                    return;
-                }
-
-                Meta.Groups[ newGroup ] = new OptionGroup()
-                {
-                    GroupName     = newGroup,
-                    SelectionType = selectType,
-                    Options       = new List< Option >(),
-                };
-
-                Mod.Settings[ newGroup ] = 0;
-                _selector.SaveCurrentMod();
-                Save();
             }
 
             private void DrawAddSingleGroupField( float labelEditPos )
             {
-                const string hint     = "Add new Single Group...";
-                var          newGroup = "";
+                var newGroup = "";
                 ImGui.SetCursorPosX( labelEditPos );
                 if( labelEditPos == CheckMarkSize )
                 {
                     ImGui.SetNextItemWidth( MultiEditBoxWidth );
                 }
 
-                if( ImGui.InputTextWithHint( LabelNewSingleGroupEdit, hint, ref newGroup, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                if( ImGui.InputTextWithHint( LabelNewSingleGroupEdit, "Add new Single Group...", ref newGroup, 64,
+                    ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
-                    AddNewGroup( newGroup, SelectType.Single );
+                    _modManager.ChangeModGroup( "", newGroup, Mod.Data, SelectType.Single );
                 }
             }
 
@@ -337,21 +257,22 @@ namespace Penumbra.UI
                 if( ImGui.InputTextWithHint( LabelNewMultiGroup, "Add new Multi Group...", ref newGroup, 64,
                     ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
-                    AddNewGroup( newGroup, SelectType.Multi );
+                    _modManager.ChangeModGroup( "", newGroup, Mod.Data, SelectType.Multi );
                 }
             }
 
             private void DrawGroupSelectorsEdit()
             {
                 var labelEditPos = CheckMarkSize;
-                foreach( var g in Meta.Groups.Values.Where( g => g.SelectionType == SelectType.Single ) )
+                var groups       = Meta.Groups.Values.ToArray();
+                foreach( var g in groups.Where( g => g.SelectionType == SelectType.Single ) )
                 {
                     labelEditPos = DrawSingleSelectorEdit( g );
                 }
 
                 DrawAddSingleGroupField( labelEditPos );
 
-                foreach( var g in Meta.Groups.Values.Where( g => g.SelectionType == SelectType.Multi ) )
+                foreach( var g in groups.Where( g => g.SelectionType == SelectType.Multi ) )
                 {
                     DrawMultiSelectorEdit( g );
                 }
@@ -403,7 +324,7 @@ namespace Penumbra.UI
                                 }
 
                                 _selector.SaveCurrentMod();
-                                if( Mod.Enabled )
+                                if( Mod.Settings.Enabled )
                                 {
                                     _selector.ReloadCurrentMod();
                                 }
@@ -428,7 +349,7 @@ namespace Penumbra.UI
                                 {
                                     Meta.FileSwaps[ key ] = newValue;
                                     _selector.SaveCurrentMod();
-                                    if( Mod.Enabled )
+                                    if( Mod.Settings.Enabled )
                                     {
                                         _selector.ReloadCurrentMod();
                                     }

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace Penumbra.Game
+namespace Penumbra.Game.Enums
 {
     public enum Gender : byte
     {
@@ -10,7 +10,7 @@ namespace Penumbra.Game
         Male,
         Female,
         MaleNpc,
-        FemaleNpc
+        FemaleNpc,
     }
 
     public enum Race : byte
@@ -24,9 +24,31 @@ namespace Penumbra.Game
         Roegadyn,
         AuRa,
         Hrothgar,
-        Viera
+        Viera,
     }
 
+    public enum SubRace : byte
+    {
+        Unknown,
+        Midlander,
+        Highlander,
+        Wildwood,
+        Duskwright,
+        Plainsfolk,
+        Dunesfolk,
+        SeekerOfTheSun,
+        KeeperOfTheMoon,
+        Seawolf,
+        Hellsguard,
+        Raen,
+        Xaela,
+        Hellion,
+        Lost,
+        Rava,
+        Veena,
+    }
+
+    // The combined gender-race-npc numerical code as used by the game.
     public enum GenderRace : ushort
     {
         Unknown             = 0,
@@ -42,18 +64,18 @@ namespace Penumbra.Game
         ElezenMaleNpc       = 0504,
         ElezenFemale        = 0601,
         ElezenFemaleNpc     = 0604,
-        LalafellMale        = 0701,
-        LalafellMaleNpc     = 0704,
-        LalafellFemale      = 0801,
-        LalafellFemaleNpc   = 0804,
-        MiqoteMale          = 0901,
-        MiqoteMaleNpc       = 0904,
-        MiqoteFemale        = 1001,
-        MiqoteFemaleNpc     = 1004,
-        RoegadynMale        = 1101,
-        RoegadynMaleNpc     = 1104,
-        RoegadynFemale      = 1201,
-        RoegadynFemaleNpc   = 1204,
+        MiqoteMale          = 0701,
+        MiqoteMaleNpc       = 0704,
+        MiqoteFemale        = 0801,
+        MiqoteFemaleNpc     = 0804,
+        RoegadynMale        = 0901,
+        RoegadynMaleNpc     = 0904,
+        RoegadynFemale      = 1001,
+        RoegadynFemaleNpc   = 1004,
+        LalafellMale        = 1101,
+        LalafellMaleNpc     = 1104,
+        LalafellFemale      = 1201,
+        LalafellFemaleNpc   = 1204,
         AuRaMale            = 1301,
         AuRaMaleNpc         = 1304,
         AuRaFemale          = 1401,
@@ -63,11 +85,63 @@ namespace Penumbra.Game
         VieraFemale         = 1801,
         VieraFemaleNpc      = 1804,
         UnknownMaleNpc      = 9104,
-        UnknownFemaleNpc    = 9204
+        UnknownFemaleNpc    = 9204,
     }
 
     public static class RaceEnumExtensions
     {
+        public static int ToRspIndex( this SubRace subRace )
+        {
+            return subRace switch
+            {
+                SubRace.Midlander       => 0,
+                SubRace.Highlander      => 1,
+                SubRace.Wildwood        => 10,
+                SubRace.Duskwright      => 11,
+                SubRace.Plainsfolk      => 20,
+                SubRace.Dunesfolk       => 21,
+                SubRace.SeekerOfTheSun  => 30,
+                SubRace.KeeperOfTheMoon => 31,
+                SubRace.Seawolf         => 40,
+                SubRace.Hellsguard      => 41,
+                SubRace.Raen            => 50,
+                SubRace.Xaela           => 51,
+                SubRace.Hellion         => 60,
+                SubRace.Lost            => 61,
+                SubRace.Rava            => 70,
+                SubRace.Veena           => 71,
+                _                       => throw new InvalidEnumArgumentException(),
+            };
+        }
+
+        public static Race ToRace( this SubRace subRace )
+        {
+            return subRace switch
+            {
+                SubRace.Unknown         => Race.Unknown,
+                SubRace.Midlander       => Race.Midlander,
+                SubRace.Highlander      => Race.Highlander,
+                SubRace.Wildwood        => Race.Elezen,
+                SubRace.Duskwright      => Race.Elezen,
+                SubRace.Plainsfolk      => Race.Lalafell,
+                SubRace.Dunesfolk       => Race.Lalafell,
+                SubRace.SeekerOfTheSun  => Race.Miqote,
+                SubRace.KeeperOfTheMoon => Race.Miqote,
+                SubRace.Seawolf         => Race.Roegadyn,
+                SubRace.Hellsguard      => Race.Roegadyn,
+                SubRace.Raen            => Race.AuRa,
+                SubRace.Xaela           => Race.AuRa,
+                SubRace.Hellion         => Race.Hrothgar,
+                SubRace.Lost            => Race.Hrothgar,
+                SubRace.Rava            => Race.Viera,
+                SubRace.Veena           => Race.Viera,
+                _                       => throw new InvalidEnumArgumentException(),
+            };
+        }
+
+        public static bool FitsRace( this SubRace subRace, Race race )
+            => subRace.ToRace() == race;
+
         public static byte ToByte( this Gender gender, Race race )
             => ( byte )( ( int )gender | ( ( int )race << 3 ) );
 
@@ -84,6 +158,7 @@ namespace Penumbra.Game
         {
             return value switch
             {
+                GenderRace.Unknown             => ( Gender.Unknown, Race.Unknown ),
                 GenderRace.MidlanderMale       => ( Gender.Male, Race.Midlander ),
                 GenderRace.MidlanderMaleNpc    => ( Gender.MaleNpc, Race.Midlander ),
                 GenderRace.MidlanderFemale     => ( Gender.Female, Race.Midlander ),
@@ -118,7 +193,7 @@ namespace Penumbra.Game
                 GenderRace.VieraFemaleNpc      => ( Gender.FemaleNpc, Race.Viera ),
                 GenderRace.UnknownMaleNpc      => ( Gender.MaleNpc, Race.Unknown ),
                 GenderRace.UnknownFemaleNpc    => ( Gender.FemaleNpc, Race.Unknown ),
-                _                              => throw new InvalidEnumArgumentException()
+                _                              => throw new InvalidEnumArgumentException(),
             };
         }
 
@@ -141,18 +216,18 @@ namespace Penumbra.Game
                 GenderRace.ElezenMaleNpc       => "0504",
                 GenderRace.ElezenFemale        => "0601",
                 GenderRace.ElezenFemaleNpc     => "0604",
-                GenderRace.LalafellMale        => "0701",
-                GenderRace.LalafellMaleNpc     => "0704",
-                GenderRace.LalafellFemale      => "0801",
-                GenderRace.LalafellFemaleNpc   => "0804",
-                GenderRace.MiqoteMale          => "0901",
-                GenderRace.MiqoteMaleNpc       => "0904",
-                GenderRace.MiqoteFemale        => "1001",
-                GenderRace.MiqoteFemaleNpc     => "1004",
-                GenderRace.RoegadynMale        => "1101",
-                GenderRace.RoegadynMaleNpc     => "1104",
-                GenderRace.RoegadynFemale      => "1201",
-                GenderRace.RoegadynFemaleNpc   => "1204",
+                GenderRace.MiqoteMale          => "0701",
+                GenderRace.MiqoteMaleNpc       => "0704",
+                GenderRace.MiqoteFemale        => "0801",
+                GenderRace.MiqoteFemaleNpc     => "0804",
+                GenderRace.RoegadynMale        => "0901",
+                GenderRace.RoegadynMaleNpc     => "0904",
+                GenderRace.RoegadynFemale      => "1001",
+                GenderRace.RoegadynFemaleNpc   => "1004",
+                GenderRace.LalafellMale        => "1101",
+                GenderRace.LalafellMaleNpc     => "1104",
+                GenderRace.LalafellFemale      => "1201",
+                GenderRace.LalafellFemaleNpc   => "1204",
                 GenderRace.AuRaMale            => "1301",
                 GenderRace.AuRaMaleNpc         => "1304",
                 GenderRace.AuRaFemale          => "1401",
@@ -163,7 +238,7 @@ namespace Penumbra.Game
                 GenderRace.VieraFemaleNpc      => "1804",
                 GenderRace.UnknownMaleNpc      => "9104",
                 GenderRace.UnknownFemaleNpc    => "9204",
-                _                              => throw new InvalidEnumArgumentException()
+                _                              => throw new InvalidEnumArgumentException(),
             };
         }
     }
@@ -186,18 +261,18 @@ namespace Penumbra.Game
                 "0504" => GenderRace.ElezenMaleNpc,
                 "0601" => GenderRace.ElezenFemale,
                 "0604" => GenderRace.ElezenFemaleNpc,
-                "0701" => GenderRace.LalafellMale,
-                "0704" => GenderRace.LalafellMaleNpc,
-                "0801" => GenderRace.LalafellFemale,
-                "0804" => GenderRace.LalafellFemaleNpc,
-                "0901" => GenderRace.MiqoteMale,
-                "0904" => GenderRace.MiqoteMaleNpc,
-                "1001" => GenderRace.MiqoteFemale,
-                "1004" => GenderRace.MiqoteFemaleNpc,
-                "1101" => GenderRace.RoegadynMale,
-                "1104" => GenderRace.RoegadynMaleNpc,
-                "1201" => GenderRace.RoegadynFemale,
-                "1204" => GenderRace.RoegadynFemaleNpc,
+                "0701" => GenderRace.MiqoteMale,
+                "0704" => GenderRace.MiqoteMaleNpc,
+                "0801" => GenderRace.MiqoteFemale,
+                "0804" => GenderRace.MiqoteFemaleNpc,
+                "0901" => GenderRace.RoegadynMale,
+                "0904" => GenderRace.RoegadynMaleNpc,
+                "1001" => GenderRace.RoegadynFemale,
+                "1004" => GenderRace.RoegadynFemaleNpc,
+                "1101" => GenderRace.LalafellMale,
+                "1104" => GenderRace.LalafellMaleNpc,
+                "1201" => GenderRace.LalafellFemale,
+                "1204" => GenderRace.LalafellFemaleNpc,
                 "1301" => GenderRace.AuRaMale,
                 "1304" => GenderRace.AuRaMaleNpc,
                 "1401" => GenderRace.AuRaFemale,
@@ -208,7 +283,7 @@ namespace Penumbra.Game
                 "1804" => GenderRace.VieraFemaleNpc,
                 "9104" => GenderRace.UnknownMaleNpc,
                 "9204" => GenderRace.UnknownFemaleNpc,
-                _      => throw new KeyNotFoundException()
+                _      => throw new KeyNotFoundException(),
             };
         }
 
@@ -233,7 +308,7 @@ namespace Penumbra.Game
                     Race.Roegadyn   => GenderRace.RoegadynMale,
                     Race.AuRa       => GenderRace.AuRaMale,
                     Race.Hrothgar   => GenderRace.HrothgarMale,
-                    _               => GenderRace.Unknown
+                    _               => GenderRace.Unknown,
                 },
                 Gender.MaleNpc => race switch
                 {
@@ -245,7 +320,7 @@ namespace Penumbra.Game
                     Race.Roegadyn   => GenderRace.RoegadynMaleNpc,
                     Race.AuRa       => GenderRace.AuRaMaleNpc,
                     Race.Hrothgar   => GenderRace.HrothgarMaleNpc,
-                    _               => GenderRace.Unknown
+                    _               => GenderRace.Unknown,
                 },
                 Gender.Female => race switch
                 {
@@ -257,7 +332,7 @@ namespace Penumbra.Game
                     Race.Roegadyn   => GenderRace.RoegadynFemale,
                     Race.AuRa       => GenderRace.AuRaFemale,
                     Race.Viera      => GenderRace.VieraFemale,
-                    _               => GenderRace.Unknown
+                    _               => GenderRace.Unknown,
                 },
                 Gender.FemaleNpc => race switch
                 {
@@ -269,9 +344,9 @@ namespace Penumbra.Game
                     Race.Roegadyn   => GenderRace.RoegadynFemaleNpc,
                     Race.AuRa       => GenderRace.AuRaFemaleNpc,
                     Race.Viera      => GenderRace.VieraFemaleNpc,
-                    _               => GenderRace.Unknown
+                    _               => GenderRace.Unknown,
                 },
-                _ => GenderRace.Unknown
+                _ => GenderRace.Unknown,
             };
         }
     }

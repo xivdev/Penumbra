@@ -153,8 +153,8 @@ namespace Penumbra.Util
                 totalBlocks += mdlBlock.IndexBufferBlockNum[ i ];
             }
 
-            var   compressedBlockSizes = Reader.ReadStructures< ushort >( totalBlocks );
-            var   currentBlock         = 0;
+            var compressedBlockSizes = Reader.ReadStructures< ushort >( totalBlocks );
+            var currentBlock         = 0;
             var vertexDataOffsets    = new int[3];
             var indexDataOffsets     = new int[3];
             var vertexBufferSizes    = new int[3];
@@ -333,13 +333,12 @@ namespace Penumbra.Util
                 return blockHeader.UncompressedSize;
             }
 
-            var data = Reader.ReadBytes( ( int )blockHeader.UncompressedSize );
+            var data = Reader.ReadBytes( ( int )blockHeader.CompressedSize );
 
             using( var compressedStream = new MemoryStream( data ) )
             {
                 using var zlibStream = new DeflateStream( compressedStream, CompressionMode.Decompress );
                 zlibStream.CopyTo( dest );
-                zlibStream.Close();
             }
 
             if( resetPosition )

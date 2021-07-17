@@ -1,6 +1,12 @@
+using System;
 using System.Diagnostics;
+using System.IO;
+using System.Text.RegularExpressions;
+using Dalamud.Plugin;
 using ImGuiNET;
-using Penumbra.Hooks;
+using Penumbra.Interop;
+using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.UI
 {
@@ -13,7 +19,7 @@ namespace Penumbra.UI
             private const string LabelRediscoverButton     = "Rediscover Mods";
             private const string LabelOpenFolder           = "Open Mods Folder";
             private const string LabelEnabled              = "Enable Mods";
-            private const string LabelInvertModOrder       = "Invert mod load order (mods are loaded bottom up)";
+            private const string LabelEnabledPlayerWatch   = "Enable automatic Character Redraws";
             private const string LabelShowAdvanced         = "Show Advanced Settings";
             private const string LabelLogLoadedFiles       = "Log all loaded files";
             private const string LabelDisableNotifications = "Disable filesystem change notifications";
@@ -21,7 +27,7 @@ namespace Penumbra.UI
             private const string LabelReloadResource       = "Reload Player Resource";
 
             private readonly SettingsInterface _base;
-            private readonly Configuration    _config;
+            private readonly Configuration     _config;
             private          bool              _configChanged;
 
             public TabSettings( SettingsInterface ui )
@@ -33,11 +39,14 @@ namespace Penumbra.UI
 
             private void DrawRootFolder()
             {
-                var basePath = _config.CurrentCollection;
-                if( ImGui.InputText( LabelRootFolder, ref basePath, 255 ) && _config.CurrentCollection != basePath )
+                var basePath = _config.ModDirectory;
+                if( ImGui.InputText( LabelRootFolder, ref basePath, 255, ImGuiInputTextFlags.EnterReturnsTrue )
+                 && _config.ModDirectory != basePath )
                 {
-                    _config.CurrentCollection = basePath;
-                    _configChanged            = true;
+                    _config.ModDirectory = basePath;
+                    _configChanged       = true;
+                    _base.ReloadMods();
+                    _base._menu.InstalledTab.Selector.ClearSelection();
                 }
             }
 
@@ -54,7 +63,12 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( LabelOpenFolder ) )
                 {
-                    Process.Start( _config.CurrentCollection );
+                    if( !Directory.Exists( _config.ModDirectory ) || !Service< ModManager >.Get().Valid )
+                    {
+                        return;
+                    }
+
+                    Process.Start( _config.ModDirectory );
                 }
             }
 
@@ -65,18 +79,11 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged    = true;
-                    Game.RefreshActors.RedrawAll( _base._plugin!.PluginInterface!.ClientState.Actors );
-                }
-            }
-
-            private void DrawInvertModOrderBox()
-            {
-                var invertOrder = _config.InvertModListOrder;
-                if( ImGui.Checkbox( LabelInvertModOrder, ref invertOrder ) )
-                {
-                    _config.InvertModListOrder = invertOrder;
-                    _base.ReloadMods();
-                    _configChanged = true;
+                    _base._plugin.ActorRefresher.RedrawAll( enabled ? Redraw.WithSettings : Redraw.WithoutSettings );
+                    if( _config.EnableActorWatch )
+                    {
+                        _base._plugin.PlayerWatcher.SetActorWatch( enabled );
+                    }
                 }
             }
 
@@ -92,9 +99,21 @@ namespace Penumbra.UI
 
             private void DrawLogLoadedFilesBox()
             {
-                if( _base._plugin.ResourceLoader != null )
+                ImGui.Checkbox( LabelLogLoadedFiles, ref _base._plugin.ResourceLoader.LogAllFiles );
+                ImGui.SameLine();
+                var regex = _base._plugin.ResourceLoader.LogFileFilter?.ToString() ?? string.Empty;
+                var tmp   = regex;
+                if( ImGui.InputTextWithHint( "##LogFilter", "Matching this Regex...", ref tmp, 64 ) && tmp != regex )
                 {
-                    ImGui.Checkbox( LabelLogLoadedFiles, ref _base._plugin.ResourceLoader.LogAllFiles );
+                    try
+                    {
+                        var newRegex = tmp.Length > 0 ? new Regex( tmp, RegexOptions.Compiled ) : null;
+                        _base._plugin.ResourceLoader.LogFileFilter = newRegex;
+                    }
+                    catch( Exception e )
+                    {
+                        PluginLog.Debug( "Could not create regex:\n{Exception}", e );
+                    }
                 }
             }
 
@@ -127,11 +146,22 @@ namespace Penumbra.UI
                 }
             }
 
-            private void DrawReloadResourceButton()
+            private void DrawEnabledPlayerWatcher()
+            {
+                var enabled = _config.EnableActorWatch;
+                if( ImGui.Checkbox( LabelEnabledPlayerWatch, ref enabled ) )
+                {
+                    _config.EnableActorWatch = enabled;
+                    _configChanged           = true;
+                    _base._plugin.PlayerWatcher.SetActorWatch( enabled );
+                }
+            }
+
+            private static void DrawReloadResourceButton()
             {
                 if( ImGui.Button( LabelReloadResource ) )
                 {
-                    Service<GameResourceManagement>.Get().ReloadPlayerResources();
+                    Service< GameResourceManagement >.Get().ReloadPlayerResources();
                 }
             }
 
@@ -157,13 +187,11 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawOpenModsButton();
 
-                ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
+                Custom.ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawEnabledBox();
+                DrawEnabledPlayerWatcher();
 
-                ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
-                DrawInvertModOrderBox();
-
-                ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
+                Custom.ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawShowAdvancedBox();
 
                 if( _config.ShowAdvanced )

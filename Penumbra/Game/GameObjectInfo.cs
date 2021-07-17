@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Dalamud;
+using Penumbra.Game.Enums;
 
 namespace Penumbra.Game
 {
@@ -16,7 +17,7 @@ namespace Penumbra.Game
                 PrimaryId  = setId,
                 GenderRace = gr,
                 Variant    = variant,
-                EquipSlot  = slot
+                EquipSlot  = slot,
             };
 
         public static GameObjectInfo Weapon( FileType type, ushort setId, ushort weaponId, byte variant = 0 )
@@ -26,7 +27,7 @@ namespace Penumbra.Game
                 ObjectType  = ObjectType.Weapon,
                 PrimaryId   = setId,
                 SecondaryId = weaponId,
-                Variant     = variant
+                Variant     = variant,
             };
 
         public static GameObjectInfo Customization( FileType type, CustomizationType customizationType, ushort id = 0
@@ -39,7 +40,7 @@ namespace Penumbra.Game
                 GenderRace        = gr,
                 BodySlot          = bodySlot,
                 Variant           = variant,
-                CustomizationType = customizationType
+                CustomizationType = customizationType,
             };
 
         public static GameObjectInfo Monster( FileType type, ushort monsterId, ushort bodyId, byte variant = 0 )
@@ -49,11 +50,12 @@ namespace Penumbra.Game
                 ObjectType  = ObjectType.Monster,
                 PrimaryId   = monsterId,
                 SecondaryId = bodyId,
-                Variant     = variant
+                Variant     = variant,
             };
 
-        public static GameObjectInfo DemiHuman( FileType type, ushort demiHumanId, ushort bodyId, byte variant = 0,
-            EquipSlot slot = EquipSlot.Unknown )
+        public static GameObjectInfo DemiHuman( FileType type, ushort demiHumanId, ushort bodyId, EquipSlot slot = EquipSlot.Unknown,
+            byte variant = 0
+        )
             => new()
             {
                 FileType    = type,
@@ -61,7 +63,7 @@ namespace Penumbra.Game
                 PrimaryId   = demiHumanId,
                 SecondaryId = bodyId,
                 Variant     = variant,
-                EquipSlot   = slot
+                EquipSlot   = slot,
             };
 
         public static GameObjectInfo Map( FileType type, byte c1, byte c2, byte c3, byte c4, byte variant, byte suffix = 0 )
@@ -74,7 +76,7 @@ namespace Penumbra.Game
                 MapC3      = c3,
                 MapC4      = c4,
                 MapSuffix  = suffix,
-                Variant    = variant
+                Variant    = variant,
             };
 
         public static GameObjectInfo Icon( FileType type, uint iconId, bool hq, ClientLanguage lang = ClientLanguage.English )
@@ -84,8 +86,9 @@ namespace Penumbra.Game
                 ObjectType = ObjectType.Map,
                 IconId     = iconId,
                 IconHq     = hq,
-                Language   = lang
+                Language   = lang,
             };
+
 
         [FieldOffset( 0 )]
         public readonly ulong Identifier;

@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace Penumbra.Game
+namespace Penumbra.Game.Enums
 {
     public enum BodySlot : byte
     {
@@ -10,7 +10,7 @@ namespace Penumbra.Game
         Face,
         Tail,
         Body,
-        Zear
+        Zear,
     }
 
     public static class BodySlotEnumExtension
@@ -24,7 +24,7 @@ namespace Penumbra.Game
                 BodySlot.Hair => "hair",
                 BodySlot.Body => "body",
                 BodySlot.Tail => "tail",
-                _             => throw new InvalidEnumArgumentException()
+                _             => throw new InvalidEnumArgumentException(),
             };
         }
     }
@@ -37,7 +37,7 @@ namespace Penumbra.Game
             { BodySlot.Face.ToSuffix(), BodySlot.Face },
             { BodySlot.Hair.ToSuffix(), BodySlot.Hair },
             { BodySlot.Body.ToSuffix(), BodySlot.Body },
-            { BodySlot.Tail.ToSuffix(), BodySlot.Tail }
+            { BodySlot.Tail.ToSuffix(), BodySlot.Tail },
         };
     }
 }

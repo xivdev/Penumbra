@@ -1,6 +1,7 @@
 using System.IO;
 using System.Numerics;
 using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.UI
 {
@@ -14,18 +15,22 @@ namespace Penumbra.UI
         private readonly Plugin _plugin;
 
         private readonly ManageModsButton _manageModsButton;
-        private readonly MenuBar      _menuBar;
-        private readonly SettingsMenu _menu;
+        private readonly MenuBar          _menuBar;
+        private readonly SettingsMenu     _menu;
 
         public SettingsInterface( Plugin plugin )
         {
-            _plugin       = plugin;
+            _plugin           = plugin;
             _manageModsButton = new ManageModsButton( this );
-            _menuBar      = new MenuBar( this );
-            _menu         = new SettingsMenu( this );
+            _menuBar          = new MenuBar( this );
+            _menu             = new SettingsMenu( this );
         }
 
-        public void FlipVisibility() => _menu.Visible = !_menu.Visible;
+        public void FlipVisibility()
+            => _menu.Visible = !_menu.Visible;
+
+        public void MakeDebugTabVisible()
+            => _menu.DebugTabVisible = true;
 
         public void Draw()
         {
@@ -38,11 +43,9 @@ namespace Penumbra.UI
         {
             _menu.InstalledTab.Selector.ResetModNamesLower();
             _menu.InstalledTab.Selector.ClearSelection();
-            // create the directory if it doesn't exist
-            Directory.CreateDirectory( _plugin!.Configuration!.CurrentCollection );
 
             var modManager = Service< ModManager >.Get();
-            modManager.DiscoverMods( _plugin.Configuration.CurrentCollection );
+            modManager.DiscoverMods( _plugin.Configuration.ModDirectory );
             _menu.InstalledTab.Selector.ResetModNamesLower();
         }
     }

@@ -1,4 +1,4 @@
-namespace Penumbra.Game
+namespace Penumbra.Game.Enums
 {
     public enum ObjectType : byte
     {
@@ -16,6 +16,6 @@ namespace Penumbra.Game
         Equipment,
         Character,
         Weapon,
-        Font
+        Font,
     }
 }

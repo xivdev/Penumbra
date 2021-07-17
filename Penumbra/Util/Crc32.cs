@@ -22,7 +22,8 @@ namespace Penumbra.Util
                 return k;
             } ).ToArray();
 
-        public uint Checksum => ~_crc32;
+        public uint Checksum
+            => ~_crc32;
 
         private uint _crc32 = 0xFFFFFFFF;
 
@@ -50,8 +51,7 @@ namespace Penumbra.Util
         [MethodImpl( MethodImplOptions.AggressiveInlining )]
         public void Update( byte b )
         {
-            _crc32 = CrcArray[ ( _crc32 ^ b ) & 0xFF ] ^
-                ( ( _crc32 >> 8 ) & 0x00FFFFFF );
+            _crc32 = CrcArray[ ( _crc32 ^ b ) & 0xFF ] ^ ( ( _crc32 >> 8 ) & 0x00FFFFFF );
         }
     }
 }

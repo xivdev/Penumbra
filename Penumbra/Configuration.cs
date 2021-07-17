@@ -2,13 +2,16 @@ using System;
 using System.Collections.Generic;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
+using Penumbra.Util;
 
 namespace Penumbra
 {
     [Serializable]
     public class Configuration : IPluginConfiguration
     {
-        public int Version { get; set; } = 0;
+        private const int CurrentVersion = 1;
+
+        public int Version { get; set; } = CurrentVersion;
 
         public bool IsEnabled { get; set; } = true;
 
@@ -17,26 +20,45 @@ namespace Penumbra
         public bool DisableFileSystemNotifications { get; set; }
 
         public bool EnableHttpApi { get; set; }
+        public bool EnableActorWatch { get; set; } = false;
 
-        public string CurrentCollection { get; set; } = @"D:/ffxiv/fs_mods/";
+        public string ModDirectory { get; set; } = string.Empty;
 
-        public List< string > ModCollections { get; set; } = new();
+        public string CurrentCollection { get; set; } = "Default";
+        public string DefaultCollection { get; set; } = "Default";
+        public string ForcedCollection { get; set; } = "";
+        public Dictionary< string, string > CharacterCollections { get; set; } = new();
+        public Dictionary< string, string > ModSortOrder { get; set; } = new();
 
-        public bool InvertModListOrder { get; set; }
+        public bool InvertModListOrder { internal get; set; }
 
-        // the below exist just to make saving less cumbersome
-
-        [NonSerialized]
-        private DalamudPluginInterface? _pluginInterface;
-
-        public void Initialize( DalamudPluginInterface pluginInterface )
+        public static Configuration Load( DalamudPluginInterface pi )
         {
-            _pluginInterface = pluginInterface;
+            var configuration = pi.GetPluginConfig() as Configuration ?? new Configuration();
+            if( configuration.Version == CurrentVersion )
+            {
+                return configuration;
+            }
+
+            MigrateConfiguration.Version0To1( configuration );
+            configuration.Save( pi );
+
+            return configuration;
+        }
+
+        public void Save( DalamudPluginInterface pi )
+        {
+            try
+            {
+                pi.SavePluginConfig( this );
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not save plugin configuration:\n{e}" );
+            }
         }
 
         public void Save()
-        {
-            _pluginInterface?.SavePluginConfig( this );
-        }
+            => Save( Service< DalamudPluginInterface >.Get() );
     }
 }

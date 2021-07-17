@@ -5,14 +5,26 @@ using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using Lumina.Data.Files;
 using Penumbra.Game;
-using Penumbra.MetaData;
-using Penumbra.Mods;
+using Penumbra.Game.Enums;
+using Penumbra.Meta;
+using Penumbra.Meta.Files;
 using Penumbra.Util;
+using GameData = Penumbra.Game.Enums.GameData;
 
 namespace Penumbra.Importer
 {
+    // TexTools provices custom generated *.meta files for its modpacks, that contain changes to
+    //     - imc files
+    //     - eqp files
+    //     - gmp files
+    //     - est files
+    //     - eqdp files
+    // made by the mod. The filename determines to what the changes are applied, and the binary file itself contains changes.
+    // We parse every *.meta file in a mod and combine all actual changes that do not keep data on default values and that can be applied to the game in a .json.
+    // TexTools may also generate files that contain non-existing changes, e.g. *.imc files for weapon offhands, which will be ignored.
     public class TexToolsMeta
     {
+        // The info class determines the files or table locations the changes need to apply to from the filename.
         public class Info
         {
             private const string Pt   = @"(?'PrimaryType'[a-z]*)";                                              // language=regex
@@ -26,6 +38,7 @@ namespace Penumbra.Importer
             private const string Slot = @"(_(?'Slot'[a-z]{3}))?";                                               // language=regex
             private const string Ext  = @"\.meta";
 
+            // These are the valid regexes for .meta files that we are able to support at the moment.
             private static readonly Regex HousingMeta = new( $"bgcommon/hou/{Pt}/general/{Pi}/{Pir}{Ext}" );
             private static readonly Regex CharaMeta   = new( $"chara/{Pt}/{Pp}{Pi}(/obj/{St}/{Sp}{Si})?/{File}{Slot}{Ext}" );
 
@@ -302,6 +315,68 @@ namespace Penumbra.Importer
                 FilePath = "";
                 PluginLog.Error( $"Error while parsing .meta file:\n{e}" );
             }
+        }
+
+        private TexToolsMeta( string filePath, uint version )
+        {
+            FilePath = filePath;
+            Version  = version;
+        }
+
+        public static TexToolsMeta Invalid = new( string.Empty, 0 );
+
+        public static TexToolsMeta FromRgspFile( string filePath, byte[] data )
+        {
+            if( data.Length != 45 && data.Length != 42 )
+            {
+                PluginLog.Error( "Error while parsing .rgsp file:\n\tInvalid number of bytes." );
+                return Invalid;
+            }
+
+            using var s       = new MemoryStream( data );
+            using var br      = new BinaryReader( s );
+            var       flag    = br.ReadByte();
+            var       version = flag != 255 ? ( uint )1 : br.ReadUInt16();
+
+            var ret = new TexToolsMeta( filePath, version );
+
+            var subRace = ( SubRace )( version == 1 ? flag + 1 : br.ReadByte() + 1 );
+            if( !Enum.IsDefined( typeof( SubRace ), subRace ) || subRace == SubRace.Unknown )
+            {
+                PluginLog.Error( $"Error while parsing .rgsp file:\n\t{subRace} is not a valid SubRace." );
+                return Invalid;
+            }
+
+            var gender = br.ReadByte();
+            if( gender != 1 && gender != 0 )
+            {
+                PluginLog.Error( $"Error while parsing .rgsp file:\n\t{gender} is neither Male nor Female." );
+                return Invalid;
+            }
+
+            if( gender == 1 )
+            {
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMinSize, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMaxSize, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMinTail, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMaxTail, br.ReadSingle() ) );
+
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinX, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinY, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinZ, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxX, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxY, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxZ, br.ReadSingle() ) );
+            }
+            else
+            {
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMinSize, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMaxSize, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMinTail, br.ReadSingle() ) );
+                ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMaxTail, br.ReadSingle() ) );
+            }
+
+            return ret;
         }
     }
 }

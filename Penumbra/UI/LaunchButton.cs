@@ -18,13 +18,13 @@ namespace Penumbra.UI
             private static readonly Vector2 WindowPosOffset = new( Padding + Width, Padding + Height );
 
             private const ImGuiWindowFlags ButtonFlags =
-                  ImGuiWindowFlags.AlwaysAutoResize
-                | ImGuiWindowFlags.NoBackground
-                | ImGuiWindowFlags.NoDecoration
-                | ImGuiWindowFlags.NoMove
-                | ImGuiWindowFlags.NoScrollbar
-                | ImGuiWindowFlags.NoResize
-                | ImGuiWindowFlags.NoSavedSettings;
+                ImGuiWindowFlags.AlwaysAutoResize
+              | ImGuiWindowFlags.NoBackground
+              | ImGuiWindowFlags.NoDecoration
+              | ImGuiWindowFlags.NoMove
+              | ImGuiWindowFlags.NoScrollbar
+              | ImGuiWindowFlags.NoResize
+              | ImGuiWindowFlags.NoSavedSettings;
 
             private readonly SettingsInterface                  _base;
             private readonly Dalamud.Game.ClientState.Condition _condition;
@@ -43,8 +43,8 @@ namespace Penumbra.UI
                 }
 
                 var ss = ImGui.GetMainViewport().Size + ImGui.GetMainViewport().Pos;
-                ImGui.SetNextWindowViewport(ImGui.GetMainViewport().ID);
-                
+                ImGui.SetNextWindowViewport( ImGui.GetMainViewport().ID );
+
                 ImGui.SetNextWindowPos( ss - WindowPosOffset, ImGuiCond.Always );
 
                 if( !ImGui.Begin( MenuButtonsName, ButtonFlags ) )

@@ -1,6 +1,7 @@
 using System.IO;
 using Dalamud.Interface;
 using ImGuiNET;
+using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Util;
 
@@ -10,24 +11,40 @@ namespace Penumbra.UI
     {
         private class TabEffective
         {
-            private const string LabelTab        = "Effective File List";
-            private const float  TextSizePadding = 5f;
+            private const           string     LabelTab      = "Effective Changes";
+            private static readonly string     LongArrowLeft = $"{( char )FontAwesomeIcon.LongArrowAltLeft}";
+            private readonly        ModManager _modManager;
 
-            private ModManager _mods
-                => Service< ModManager >.Get();
+            public TabEffective()
+                => _modManager = Service< ModManager >.Get();
+
 
             private static void DrawFileLine( FileInfo file, GamePath path )
             {
                 ImGui.TableNextColumn();
-                ImGuiCustom.CopyOnClickSelectable( path );
+                Custom.ImGuiCustom.CopyOnClickSelectable( path );
 
                 ImGui.TableNextColumn();
                 ImGui.PushFont( UiBuilder.IconFont );
-                ImGui.TextUnformatted( $"{( char )FontAwesomeIcon.LongArrowAltLeft}" );
+                ImGui.TextUnformatted( LongArrowLeft );
                 ImGui.PopFont();
 
                 ImGui.TableNextColumn();
-                ImGuiCustom.CopyOnClickSelectable( file.FullName );
+                Custom.ImGuiCustom.CopyOnClickSelectable( file.FullName );
+            }
+
+            private static void DrawManipulationLine( MetaManipulation manip, Mod.Mod mod )
+            {
+                ImGui.TableNextColumn();
+                ImGui.Selectable( manip.IdentifierString() );
+
+                ImGui.TableNextColumn();
+                ImGui.PushFont( UiBuilder.IconFont );
+                ImGui.TextUnformatted( LongArrowLeft );
+                ImGui.PopFont();
+
+                ImGui.TableNextColumn();
+                ImGui.Selectable( mod.Data.Meta.Name );
             }
 
             public void Draw()
@@ -40,11 +57,18 @@ namespace Penumbra.UI
 
                 const ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
 
-                if( ImGui.BeginTable( "##effective_files", 3, flags, AutoFillSize ) )
+                if( ImGui.BeginTable( "##effective_changes", 3, flags, AutoFillSize ) )
                 {
-                    foreach ( var file in _mods.ResolvedFiles )
+                    var currentCollection = _modManager.Collections.CurrentCollection.Cache!;
+                    foreach( var file in currentCollection.ResolvedFiles )
                     {
                         DrawFileLine( file.Value, file.Key );
+                        ImGui.TableNextRow();
+                    }
+
+                    foreach( var (manip, mod) in currentCollection.MetaManipulations.Manipulations )
+                    {
+                        DrawManipulationLine( manip, mod );
                         ImGui.TableNextRow();
                     }
 

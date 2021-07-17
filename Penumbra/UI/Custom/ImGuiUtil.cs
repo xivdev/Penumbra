@@ -1,7 +1,7 @@
 using System.Windows.Forms;
 using ImGuiNET;
 
-namespace Penumbra.UI
+namespace Penumbra.UI.Custom
 {
     public static partial class ImGuiCustom
     {

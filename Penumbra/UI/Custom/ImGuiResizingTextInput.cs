@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using ImGuiNET;
 
-namespace Penumbra.UI
+namespace Penumbra.UI.Custom
 {
     public static partial class ImGuiCustom
     {
@@ -16,8 +16,8 @@ namespace Penumbra.UI
             return false;
         }
 
-        public static bool ResizingTextInput( string label, ref string input, uint maxLength ) =>
-            ResizingTextInputIntern( label, ref input, maxLength ).Item1;
+        public static bool ResizingTextInput( string label, ref string input, uint maxLength )
+            => ResizingTextInputIntern( label, ref input, maxLength ).Item1;
 
         public static bool ResizingTextInput( ref string input, uint maxLength )
         {

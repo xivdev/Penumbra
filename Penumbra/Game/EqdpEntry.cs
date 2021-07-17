@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
-using Penumbra.Mods;
+using Penumbra.Game.Enums;
+using Penumbra.Meta;
 
 namespace Penumbra.Game
 {
@@ -46,7 +47,7 @@ namespace Penumbra.Game
 
         RingL1    = 0b0100000000,
         RingL2    = 0b1000000000,
-        RingLMask = 0b1100000000
+        RingLMask = 0b1100000000,
     }
 
     public static class Eqdp
@@ -65,7 +66,7 @@ namespace Penumbra.Game
                 EquipSlot.Wrists => 4,
                 EquipSlot.RingR  => 6,
                 EquipSlot.RingL  => 8,
-                _                => throw new InvalidEnumArgumentException()
+                _                => throw new InvalidEnumArgumentException(),
             };
         }
 
@@ -100,7 +101,7 @@ namespace Penumbra.Game
                 EquipSlot.Wrists => EqdpEntry.WristsMask,
                 EquipSlot.RingR  => EqdpEntry.RingRMask,
                 EquipSlot.RingL  => EqdpEntry.RingLMask,
-                _                => 0
+                _                => 0,
             };
         }
     }

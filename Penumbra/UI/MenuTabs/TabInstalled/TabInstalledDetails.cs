@@ -1,10 +1,15 @@
 using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
-using Penumbra.Models;
+using Lumina.Excel.GeneratedSheets;
+using Penumbra.Game.Enums;
+using Penumbra.Meta;
+using Penumbra.Mod;
 using Penumbra.Mods;
+using Penumbra.Structs;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -33,9 +38,7 @@ namespace Penumbra.UI
             private const string LabelAboutTab           = "About";
             private const string LabelChangedItemsTab    = "Changed Items";
             private const string LabelChangedItemsHeader = "##changedItems";
-            private const string LabelChangedItemIdx     = "##citem_";
-            private const string LabelChangedItemNew     = "##citem_new";
-            private const string LabelConflictsTab       = "File Conflicts";
+            private const string LabelConflictsTab       = "Mod Conflicts";
             private const string LabelConflictsHeader    = "##conflicts";
             private const string LabelFileSwapTab        = "File Swaps";
             private const string LabelFileSwapHeader     = "##fileSwaps";
@@ -49,30 +52,32 @@ namespace Penumbra.UI
                 "Green files replace their standard game path counterpart (not in any option) or are in all options of a Single-Select option.\n"
               + "Yellow files are restricted to some options.";
 
-            private const float TextSizePadding      = 5f;
             private const float OptionSelectionWidth = 140f;
             private const float CheckMarkSize        = 50f;
+            private const uint  ColorDarkGreen       = 0xFF00A000;
             private const uint  ColorGreen           = 0xFF00C800;
             private const uint  ColorYellow          = 0xFF00C8C8;
+            private const uint  ColorDarkRed         = 0xFF0000A0;
             private const uint  ColorRed             = 0xFF0000C8;
 
-            private bool                           _editMode;
-            private int                            _selectedGroupIndex;
-            private OptionGroup?                   _selectedGroup;
-            private int                            _selectedOptionIndex;
-            private Option?                        _selectedOption;
-            private (string label, string name)[]? _changedItemsList;
-            private string                         _currentGamePaths = "";
+
+            private bool         _editMode;
+            private int          _selectedGroupIndex;
+            private OptionGroup? _selectedGroup;
+            private int          _selectedOptionIndex;
+            private Option?      _selectedOption;
+            private string       _currentGamePaths = "";
 
             private (FileInfo name, bool selected, uint color, RelPath relName)[]? _fullFilenameList;
 
             private readonly Selector          _selector;
             private readonly SettingsInterface _base;
+            private readonly ModManager        _modManager;
 
             private void SelectGroup( int idx )
             {
                 // Not using the properties here because we need it to be not null forgiving in this case.
-                var numGroups = _selector.Mod?.Mod.Meta.Groups.Count ?? 0;
+                var numGroups = _selector.Mod?.Data.Meta.Groups.Count ?? 0;
                 _selectedGroupIndex = idx;
                 if( _selectedGroupIndex >= numGroups )
                 {
@@ -115,7 +120,6 @@ namespace Penumbra.UI
 
             public void ResetState()
             {
-                _changedItemsList = null;
                 _fullFilenameList = null;
                 SelectGroup();
                 SelectOption();
@@ -126,20 +130,19 @@ namespace Penumbra.UI
                 _base     = ui;
                 _selector = s;
                 ResetState();
+                _modManager = Service< ModManager >.Get();
             }
 
             // This is only drawn when we have a mod selected, so we can forgive nulls.
-            private ModInfo Mod
+            private Mod.Mod Mod
                 => _selector.Mod!;
 
             private ModMeta Meta
-                => Mod.Mod.Meta;
+                => Mod.Data.Meta;
 
             private void Save()
             {
-                var modManager = Service< ModManager >.Get();
-                modManager.Mods?.Save();
-                modManager.CalculateEffectiveFileList();
+                _modManager.Collections.CurrentCollection.Save( _base._plugin.PluginInterface! );
             }
 
             private void DrawAboutTab()
@@ -161,7 +164,8 @@ namespace Penumbra.UI
 
                 if( _editMode )
                 {
-                    if( ImGui.InputTextMultiline( LabelDescEdit, ref desc, 1 << 16, AutoFillSize, flags ) )
+                    if( ImGui.InputTextMultiline( LabelDescEdit, ref desc, 1 << 16,
+                        AutoFillSize, flags ) )
                     {
                         Meta.Description = desc;
                         _selector.SaveCurrentMod();
@@ -182,59 +186,30 @@ namespace Penumbra.UI
 
             private void DrawChangedItemsTab()
             {
-                if( !_editMode && Meta.ChangedItems.Count == 0 )
+                if( Mod.Data.ChangedItems.Count == 0 || !ImGui.BeginTabItem( LabelChangedItemsTab ) )
                 {
                     return;
                 }
 
-                var flags = _editMode
-                    ? ImGuiInputTextFlags.EnterReturnsTrue
-                    : ImGuiInputTextFlags.ReadOnly;
-
-                if( ImGui.BeginTabItem( LabelChangedItemsTab ) )
+                if( ImGui.BeginListBox( LabelChangedItemsHeader, AutoFillSize ) )
                 {
-                    ImGui.SetNextItemWidth( -1 );
-                    if( ImGui.BeginListBox( LabelChangedItemsHeader, AutoFillSize ) )
+                    foreach( var item in Mod.Data.ChangedItems )
                     {
-                        _changedItemsList ??= Meta.ChangedItems
-                           .Select( ( I, index ) => ( $"{LabelChangedItemIdx}{index}", I ) ).ToArray();
-
-                        for( var i = 0; i < Meta.ChangedItems.Count; ++i )
+                        if( ImGui.Selectable( item.Key ) && item.Value is Item it )
                         {
-                            ImGui.SetNextItemWidth( -1 );
-                            if( ImGui.InputText( _changedItemsList[ i ].label, ref _changedItemsList[ i ].name, 128, flags ) )
-                            {
-                                Meta.ChangedItems.RemoveOrChange( _changedItemsList[ i ].name, i );
-                                _selector.SaveCurrentMod();
-                            }
+                            ChatUtil.LinkItem( it );
                         }
-
-                        var newItem = "";
-                        if( _editMode )
-                        {
-                            ImGui.SetNextItemWidth( -1 );
-                            if( ImGui.InputTextWithHint( LabelChangedItemNew, "Enter new changed item...", ref newItem, 128, flags )
-                             && newItem.Length > 0 )
-                            {
-                                Meta.ChangedItems.Add( newItem );
-                                _selector.SaveCurrentMod();
-                            }
-                        }
-
-                        ImGui.EndListBox();
                     }
 
-                    ImGui.EndTabItem();
+                    ImGui.EndListBox();
                 }
-                else
-                {
-                    _changedItemsList = null;
-                }
+
+                ImGui.EndTabItem();
             }
 
             private void DrawConflictTab()
             {
-                if( !Mod.Mod.FileConflicts.Any() || !ImGui.BeginTabItem( LabelConflictsTab ) )
+                if( !Mod.Cache.Conflicts.Any() || !ImGui.BeginTabItem( LabelConflictsTab ) )
                 {
                     return;
                 }
@@ -242,18 +217,26 @@ namespace Penumbra.UI
                 ImGui.SetNextItemWidth( -1 );
                 if( ImGui.BeginListBox( LabelConflictsHeader, AutoFillSize ) )
                 {
-                    foreach( var kv in Mod.Mod.FileConflicts )
+                    foreach( var kv in Mod.Cache.Conflicts )
                     {
                         var mod = kv.Key;
-                        if( ImGui.Selectable( mod ) )
+                        if( ImGui.Selectable( mod.Data.Meta.Name ) )
                         {
-                            _selector.SelectModByName( mod );
+                            _selector.SelectModByName( mod.Data.Meta.Name );
                         }
 
+                        ImGui.SameLine();
+                        ImGui.Text( $"(Priority {mod.Settings.Priority})" );
+
                         ImGui.Indent( 15 );
-                        foreach( var file in kv.Value )
+                        foreach( var file in kv.Value.Files )
                         {
                             ImGui.Selectable( file );
+                        }
+
+                        foreach( var manip in kv.Value.Manipulations )
+                        {
+                            ImGui.Text( manip.IdentifierString() );
                         }
 
                         ImGui.Unindent( 15 );
@@ -286,7 +269,7 @@ namespace Penumbra.UI
                     foreach( var file in Meta.FileSwaps )
                     {
                         ImGui.TableNextColumn();
-                        ImGuiCustom.CopyOnClickSelectable( file.Key );
+                        Custom.ImGuiCustom.CopyOnClickSelectable( file.Key );
 
                         ImGui.TableNextColumn();
                         ImGui.PushFont( UiBuilder.IconFont );
@@ -294,7 +277,7 @@ namespace Penumbra.UI
                         ImGui.PopFont();
 
                         ImGui.TableNextColumn();
-                        ImGuiCustom.CopyOnClickSelectable( file.Value );
+                        Custom.ImGuiCustom.CopyOnClickSelectable( file.Value );
 
                         ImGui.TableNextRow();
                     }
@@ -312,16 +295,15 @@ namespace Penumbra.UI
                     return;
                 }
 
-                var len = Mod.Mod.ModBasePath.FullName.Length;
-                _fullFilenameList = Mod.Mod.ModFiles
-                   .Select( F => ( F, false, ColorGreen, new RelPath( F, Mod.Mod.ModBasePath ) ) ).ToArray();
+                _fullFilenameList = Mod.Data.Resources.ModFiles
+                   .Select( f => ( f, false, ColorGreen, new RelPath( f, Mod.Data.BasePath ) ) ).ToArray();
 
                 if( Meta.Groups.Count == 0 )
                 {
                     return;
                 }
 
-                for( var i = 0; i < Mod.Mod.ModFiles.Count; ++i )
+                for( var i = 0; i < Mod.Data.Resources.ModFiles.Count; ++i )
                 {
                     foreach( var group in Meta.Groups.Values )
                     {
@@ -362,10 +344,10 @@ namespace Penumbra.UI
                 if( ImGui.BeginListBox( LabelFileListHeader, AutoFillSize ) )
                 {
                     UpdateFilenameList();
-                    foreach( var file in _fullFilenameList! )
+                    foreach( var (name, _, color, _) in _fullFilenameList! )
                     {
-                        ImGui.PushStyleColor( ImGuiCol.Text, file.color );
-                        ImGui.Selectable( file.name.FullName );
+                        ImGui.PushStyleColor( ImGuiCol.Text, color );
+                        ImGui.Selectable( name.FullName );
                         ImGui.PopStyleColor();
                     }
 
@@ -379,10 +361,11 @@ namespace Penumbra.UI
                 ImGui.EndTabItem();
             }
 
-            private int HandleDefaultString( GamePath[] gamePaths, out int removeFolders )
+            private static int HandleDefaultString( GamePath[] gamePaths, out int removeFolders )
             {
                 removeFolders = 0;
-                var defaultIndex = gamePaths.IndexOf( p => ( ( string )p ).StartsWith( TextDefaultGamePath ) );
+                var defaultIndex =
+                    gamePaths.IndexOf( p => ( ( string )p ).StartsWith( TextDefaultGamePath ) );
                 if( defaultIndex < 0 )
                 {
                     return defaultIndex;
@@ -412,7 +395,7 @@ namespace Penumbra.UI
 
                 var option = ( Option )_selectedOption;
 
-                var gamePaths = _currentGamePaths.Split( ';' ).Select( P => new GamePath( P ) ).ToArray();
+                var gamePaths = _currentGamePaths.Split( ';' ).Select( p => new GamePath( p ) ).ToArray();
                 if( gamePaths.Length == 0 || ( ( string )gamePaths[ 0 ] ).Length == 0 )
                 {
                     return;
@@ -420,7 +403,7 @@ namespace Penumbra.UI
 
                 var defaultIndex = HandleDefaultString( gamePaths, out var removeFolders );
                 var changed      = false;
-                for( var i = 0; i < Mod.Mod.ModFiles.Count; ++i )
+                for( var i = 0; i < Mod.Data.Resources.ModFiles.Count; ++i )
                 {
                     if( !_fullFilenameList![ i ].selected )
                     {
@@ -435,7 +418,7 @@ namespace Penumbra.UI
 
                     if( remove && option.OptionFiles.TryGetValue( relName, out var setPaths ) )
                     {
-                        if( setPaths.RemoveWhere( P => gamePaths.Contains( P ) ) > 0 )
+                        if( setPaths.RemoveWhere( p => gamePaths.Contains( p ) ) > 0 )
                         {
                             changed = true;
                         }
@@ -477,7 +460,8 @@ namespace Penumbra.UI
             private void DrawGamePathInput()
             {
                 ImGui.SetNextItemWidth( -1 );
-                ImGui.InputTextWithHint( LabelGamePathsEditBox, "Hover for help...", ref _currentGamePaths, 128 );
+                ImGui.InputTextWithHint( LabelGamePathsEditBox, "Hover for help...", ref _currentGamePaths,
+                    128 );
                 if( ImGui.IsItemHovered() )
                 {
                     ImGui.SetTooltip( TooltipGamePathsEdit );
@@ -580,7 +564,14 @@ namespace Penumbra.UI
                 var oldEnabled = enabled;
                 if( ImGui.Checkbox( label, ref enabled ) && oldEnabled != enabled )
                 {
-                    Mod.Settings[ group.GroupName ] ^= 1 << idx;
+                    Mod.Settings.Settings[ group.GroupName ] ^= 1 << idx;
+                    if( Mod.Settings.Enabled && _modManager.Collections.CurrentCollection.Cache != null )
+                    {
+                        _modManager.Collections.CurrentCollection.CalculateEffectiveFileList( Mod.Data.BasePath,
+                            Mod.Data.Resources.MetaManipulations.Count > 0,
+                            _modManager.Collections.CurrentCollection  == _modManager.Collections.ActiveCollection );
+                    }
+
                     Save();
                 }
             }
@@ -592,14 +583,14 @@ namespace Penumbra.UI
                     return;
                 }
 
-                ImGuiCustom.BeginFramedGroup( group.GroupName );
+                Custom.ImGuiCustom.BeginFramedGroup( group.GroupName );
                 for( var i = 0; i < group.Options.Count; ++i )
                 {
-                    DrawMultiSelectorCheckBox( group, i, Mod.Settings[ group.GroupName ],
+                    DrawMultiSelectorCheckBox( group, i, Mod.Settings.Settings[ group.GroupName ],
                         $"{group.Options[ i ].OptionName}##{group.GroupName}" );
                 }
 
-                ImGuiCustom.EndFramedGroup();
+                Custom.ImGuiCustom.EndFramedGroup();
             }
 
             private void DrawSingleSelector( OptionGroup group )
@@ -609,11 +600,19 @@ namespace Penumbra.UI
                     return;
                 }
 
-                var code = Mod.Settings[ group.GroupName ];
+                var code = Mod.Settings.Settings[ group.GroupName ];
                 if( ImGui.Combo( group.GroupName, ref code
-                    , group.Options.Select( x => x.OptionName ).ToArray(), group.Options.Count ) )
+                        , group.Options.Select( x => x.OptionName ).ToArray(), group.Options.Count )
+                 && code != Mod.Settings.Settings[ group.GroupName ] )
                 {
-                    Mod.Settings[ group.GroupName ] = code;
+                    Mod.Settings.Settings[ group.GroupName ] = code;
+                    if( Mod.Settings.Enabled && _modManager.Collections.CurrentCollection.Cache != null )
+                    {
+                        _modManager.Collections.CurrentCollection.CalculateEffectiveFileList( Mod.Data.BasePath,
+                            Mod.Data.Resources.MetaManipulations.Count > 0,
+                            _modManager.Collections.CurrentCollection  == _modManager.Collections.ActiveCollection );
+                    }
+
                     Save();
                 }
             }
@@ -633,7 +632,7 @@ namespace Penumbra.UI
 
             private void DrawConfigurationTab()
             {
-                if( !_editMode && !Meta.HasGroupWithConfig )
+                if( !_editMode && !Meta.HasGroupsWithConfig )
                 {
                     return;
                 }
@@ -653,6 +652,53 @@ namespace Penumbra.UI
                 }
             }
 
+            private void DrawMetaManipulationsTab()
+            {
+                if( Mod.Data.Resources.MetaManipulations.Count == 0 )
+                {
+                    return;
+                }
+
+                if( !ImGui.BeginTabItem( "Meta Manipulations" ) )
+                {
+                    return;
+                }
+
+                if( ImGui.BeginListBox( "##MetaManipulations", AutoFillSize ) )
+                {
+                    var manips  = Mod.Data.Resources.MetaManipulations;
+                    var changes = false;
+                    if( _editMode || manips.DefaultData.Count > 0 )
+                    {
+                        if( ImGui.CollapsingHeader( "Default" ) )
+                        {
+                            changes = DrawMetaManipulationsTable( "##DefaultManips", manips.DefaultData );
+                        }
+                    }
+
+                    foreach( var group in manips.GroupData )
+                    {
+                        foreach( var option in group.Value )
+                        {
+                            if( ImGui.CollapsingHeader( $"{group.Key} - {option.Key}" ) )
+                            {
+                                changes |= DrawMetaManipulationsTable( $"##{group.Key}{option.Key}manips", option.Value );
+                            }
+                        }
+                    }
+
+                    if( changes )
+                    {
+                        Mod.Data.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( Mod.Data.BasePath ) );
+                        _selector.ReloadCurrentMod( true, false );
+                    }
+
+                    ImGui.EndListBox();
+                }
+
+                ImGui.EndTabItem();
+            }
+
             public void Draw( bool editMode )
             {
                 _editMode = editMode;
@@ -660,6 +706,7 @@ namespace Penumbra.UI
 
                 DrawAboutTab();
                 DrawChangedItemsTab();
+
                 DrawConfigurationTab();
                 if( _editMode )
                 {
@@ -671,8 +718,8 @@ namespace Penumbra.UI
                 }
 
                 DrawFileSwapTab();
+                DrawMetaManipulationsTab();
                 DrawConflictTab();
-
                 ImGui.EndTabBar();
             }
         }

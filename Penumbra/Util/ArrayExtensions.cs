@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Penumbra
+namespace Penumbra.Util
 {
     public static class ArrayExtensions
     {

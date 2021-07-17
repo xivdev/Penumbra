@@ -1,18 +1,17 @@
 using System.IO;
-using System.Linq;
 using System.Text;
 
-namespace Penumbra
+namespace Penumbra.Util
 {
     public static class StringPathExtensions
     {
-        private static readonly char[] _invalid = Path.GetInvalidFileNameChars();
+        private static readonly char[] Invalid = Path.GetInvalidFileNameChars();
 
         public static string ReplaceInvalidPathSymbols( this string s, string replacement = "_" )
-            => string.Join( replacement, s.Split( _invalid ) );
+            => string.Join( replacement, s.Split( Invalid ) );
 
         public static string RemoveInvalidPathSymbols( this string s )
-            => string.Concat( s.Split( _invalid ) );
+            => string.Concat( s.Split( Invalid ) );
 
         public static string RemoveNonAsciiSymbols( this string s, string replacement = "_" )
         {
