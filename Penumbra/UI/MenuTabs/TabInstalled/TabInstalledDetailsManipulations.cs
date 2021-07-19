@@ -140,23 +140,23 @@ namespace Penumbra.UI
 
             private static readonly (string, Race)[] Races = new[]
             {
-                ( "Midlander", Race.Midlander ),
-                ( "Highlander", Race.Highlander ),
-                ( "Elezen", Race.Elezen ),
-                ( "Miqo'te", Race.Miqote ),
-                ( "Roegadyn", Race.Roegadyn ),
-                ( "Lalafell", Race.Lalafell ),
-                ( "Au Ra", Race.AuRa ),
-                ( "Viera", Race.Viera ),
-                ( "Hrothgar", Race.Hrothgar ),
+                ( Race.Midlander.ToName(), Race.Midlander ),
+                ( Race.Highlander.ToName(), Race.Highlander ),
+                ( Race.Elezen.ToName(), Race.Elezen ),
+                ( Race.Miqote.ToName(), Race.Miqote ),
+                ( Race.Roegadyn.ToName(), Race.Roegadyn ),
+                ( Race.Lalafell.ToName(), Race.Lalafell ),
+                ( Race.AuRa.ToName(), Race.AuRa ),
+                ( Race.Viera.ToName(), Race.Viera ),
+                ( Race.Hrothgar.ToName(), Race.Hrothgar ),
             };
 
             private static readonly (string, Gender)[] Genders = new[]
             {
-                ( "Male", Gender.Male ),
-                ( "Female", Gender.Female ),
-                ( "Male (NPC)", Gender.MaleNpc ),
-                ( "Female (NPC)", Gender.FemaleNpc ),
+                ( Gender.Male.ToName(), Gender.Male ),
+                ( Gender.Female.ToName(), Gender.Female ),
+                ( Gender.MaleNpc.ToName(), Gender.MaleNpc ),
+                ( Gender.FemaleNpc.ToName(), Gender.FemaleNpc ),
             };
 
             private static readonly (string, ObjectType)[] ObjectTypes = new[]
@@ -179,22 +179,22 @@ namespace Penumbra.UI
 
             private static readonly (string, SubRace)[] Subraces = new[]
             {
-                ( "Midlander", SubRace.Midlander ),
-                ( "Highlander", SubRace.Highlander ),
-                ( "Wildwood", SubRace.Wildwood ),
-                ( "Duskwright", SubRace.Duskwright ),
-                ( "Seeker Of The Sun", SubRace.SeekerOfTheSun ),
-                ( "Keeper Of The Moon", SubRace.KeeperOfTheMoon ),
-                ( "Seawolf", SubRace.Seawolf ),
-                ( "Hellsguard", SubRace.Hellsguard ),
-                ( "Plainsfolk", SubRace.Plainsfolk ),
-                ( "Dunesfolk", SubRace.Dunesfolk ),
-                ( "Raen", SubRace.Raen ),
-                ( "Xaela", SubRace.Xaela ),
-                ( "Rava", SubRace.Rava ),
-                ( "Veena", SubRace.Veena ),
-                ( "Hellion", SubRace.Hellion ),
-                ( "Lost", SubRace.Lost ),
+                ( SubRace.Midlander.ToName(), SubRace.Midlander ),
+                ( SubRace.Highlander.ToName(), SubRace.Highlander ),
+                ( SubRace.Wildwood.ToName(), SubRace.Wildwood ),
+                ( SubRace.Duskwright.ToName(), SubRace.Duskwright ),
+                ( SubRace.SeekerOfTheSun.ToName(), SubRace.SeekerOfTheSun ),
+                ( SubRace.KeeperOfTheMoon.ToName(), SubRace.KeeperOfTheMoon ),
+                ( SubRace.Seawolf.ToName(), SubRace.Seawolf ),
+                ( SubRace.Hellsguard.ToName(), SubRace.Hellsguard ),
+                ( SubRace.Plainsfolk.ToName(), SubRace.Plainsfolk ),
+                ( SubRace.Dunesfolk.ToName(), SubRace.Dunesfolk ),
+                ( SubRace.Raen.ToName(), SubRace.Raen ),
+                ( SubRace.Xaela.ToName(), SubRace.Xaela ),
+                ( SubRace.Rava.ToName(), SubRace.Rava ),
+                ( SubRace.Veena.ToName(), SubRace.Veena ),
+                ( SubRace.Hellion.ToName(), SubRace.Hellion ),
+                ( SubRace.Lost.ToName(), SubRace.Lost ),
             };
 
             private static readonly (string, RspAttribute)[] RspAttributes = new[]

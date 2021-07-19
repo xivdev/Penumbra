@@ -6,6 +6,7 @@ using Lumina.Excel.GeneratedSheets;
 using Penumbra.Game.Enums;
 using Penumbra.Util;
 using Action = Lumina.Excel.GeneratedSheets.Action;
+using Race = Penumbra.Game.Enums.Race;
 
 namespace Penumbra.Game
 {
@@ -242,15 +243,17 @@ namespace Penumbra.Game
                     FindWeapon( set, info );
                     break;
                 case ObjectType.Character:
+                    var (gender, race) = info.GenderRace.Split();
+                    var raceString   = race   != Race.Unknown ? race.ToName()     + " " : "";
+                    var genderString = gender != Gender.Unknown ? gender.ToName() + " " : "Player ";
                     if( info.CustomizationType == CustomizationType.Skin )
                     {
-                        set[ "Customization: Player Skin" ] = null;
+                        set[ $"Customization: {raceString}{genderString}Skin Textures" ] = null;
                     }
                     else
                     {
-                        var (gender, race) = info.GenderRace.Split();
                         var customizationString =
-                            $"Customization: {race} {gender}s {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
+                            $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
                         set[ customizationString ] = null;
                     }
 

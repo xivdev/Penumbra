@@ -139,6 +139,59 @@ namespace Penumbra.Game.Enums
             };
         }
 
+        public static string ToName( this Race race )
+        {
+            return race switch
+            {
+                Race.Midlander  => "Midlander",
+                Race.Highlander => "Highlander",
+                Race.Elezen     => "Elezen",
+                Race.Lalafell   => "Lalafell",
+                Race.Miqote     => "Miqo'te",
+                Race.Roegadyn   => "Roegadyn",
+                Race.AuRa       => "Au Ra",
+                Race.Hrothgar   => "Hrothgar",
+                Race.Viera      => "Viera",
+                _               => throw new InvalidEnumArgumentException(),
+            };
+        }
+
+        public static string ToName( this Gender gender )
+        {
+            return gender switch
+            {
+                Gender.Male      => "Male",
+                Gender.Female    => "Female",
+                Gender.MaleNpc   => "Male (NPC)",
+                Gender.FemaleNpc => "Female (NPC)",
+                _                => throw new InvalidEnumArgumentException(),
+            };
+        }
+
+        public static string ToName( this SubRace subRace )
+        {
+            return subRace switch
+            {
+                SubRace.Midlander       => "Midlander",
+                SubRace.Highlander      => "Highlander",
+                SubRace.Wildwood        => "Wildwood",
+                SubRace.Duskwright      => "Duskwright",
+                SubRace.Plainsfolk      => "Plainsfolk",
+                SubRace.Dunesfolk       => "Dunesfolk",
+                SubRace.SeekerOfTheSun  => "Seeker Of The Sun",
+                SubRace.KeeperOfTheMoon => "Keeper Of The Moon",
+                SubRace.Seawolf         => "Seawolf",
+                SubRace.Hellsguard      => "Hellsguard",
+                SubRace.Raen            => "Raen",
+                SubRace.Xaela           => "Xaela",
+                SubRace.Hellion         => "Hellion",
+                SubRace.Lost            => "Lost",
+                SubRace.Rava            => "Rava",
+                SubRace.Veena           => "Veena",
+                _                       => throw new InvalidEnumArgumentException(),
+            };
+        }
+
         public static bool FitsRace( this SubRace subRace, Race race )
             => subRace.ToRace() == race;
 
