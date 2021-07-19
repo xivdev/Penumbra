@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Actors.Types;
 using Dalamud.Plugin;
@@ -21,6 +22,8 @@ namespace Penumbra.Interop
 
     public class ActorRefresher : IDisposable
     {
+        private delegate void ManipulateDraw( IntPtr actor );
+
         [Flags]
         public enum LoadingFlags : int
         {
@@ -35,6 +38,7 @@ namespace Penumbra.Interop
         private const int RenderModeOffset     = 0x0104;
         private const int UnloadAllRedrawDelay = 250;
         private const int NpcActorId           = -536870912;
+        public const  int GPosePlayerActorIdx  = 201;
 
         private readonly DalamudPluginInterface                        _pi;
         private readonly ModManager                                    _mods;
@@ -71,12 +75,22 @@ namespace Penumbra.Interop
             _changedSettings                   = false;
         }
 
-        private unsafe void WriteInvisible( IntPtr renderPtr )
+        private unsafe void WriteInvisible( Actor actor, int actorIdx )
         {
-            if( renderPtr != IntPtr.Zero )
+            var renderPtr = RenderPtr( actor );
+            if( renderPtr == IntPtr.Zero )
             {
-                _currentActorStartState     =  *( LoadingFlags* )renderPtr;
-                *( LoadingFlags* )renderPtr |= LoadingFlags.Invisibility;
+                return;
+            }
+
+            _currentActorStartState     =  *( LoadingFlags* )renderPtr;
+            *( LoadingFlags* )renderPtr |= LoadingFlags.Invisibility;
+
+            if( actorIdx == GPosePlayerActorIdx )
+            {
+                var ptr         = ( void*** )actor.Address;
+                var disableDraw = Marshal.GetDelegateForFunctionPointer< ManipulateDraw >( new IntPtr( ptr[ 0 ][ 17 ] ) );
+                disableDraw( actor.Address );
             }
         }
 
@@ -101,11 +115,16 @@ namespace Penumbra.Interop
             return false;
         }
 
-        private static unsafe void WriteVisible( IntPtr renderPtr )
+        private static unsafe void WriteVisible( Actor actor, int actorIdx )
         {
-            if( renderPtr != IntPtr.Zero )
+            var renderPtr = RenderPtr( actor );
+            *( LoadingFlags* )renderPtr &= ~LoadingFlags.Invisibility;
+
+            if( actorIdx == GPosePlayerActorIdx )
             {
-                *( LoadingFlags* )renderPtr &= ~LoadingFlags.Invisibility;
+                var ptr        = ( void*** )actor.Address;
+                var enableDraw = Marshal.GetDelegateForFunctionPointer< ManipulateDraw >( new IntPtr( ptr[ 0 ][ 16 ] ) );
+                enableDraw( actor.Address );
             }
         }
 
@@ -124,8 +143,19 @@ namespace Penumbra.Interop
             return _currentActorName == actor.Name;
         }
 
-        private Actor? FindCurrentActor()
-            => _pi.ClientState.Actors.FirstOrDefault( CheckActor );
+        private (Actor?, int) FindCurrentActor()
+        {
+            for( var i = 0; i < _pi.ClientState.Actors.Length; ++i )
+            {
+                var actor = _pi.ClientState.Actors[ i ];
+                if( actor != null && CheckActor( actor ) )
+                {
+                    return ( actor, i );
+                }
+            }
+
+            return ( null, -1 );
+        }
 
         private void PopActor()
         {
@@ -135,7 +165,7 @@ namespace Penumbra.Interop
                 _currentActorName   = name;
                 _currentActorId     = id;
                 _currentActorRedraw = s;
-                var actor = FindCurrentActor();
+                var (actor, idx)    = FindCurrentActor();
                 if( actor == null )
                 {
                     return;
@@ -151,7 +181,7 @@ namespace Penumbra.Interop
 
         private void ApplySettingsOrRedraw()
         {
-            var actor = FindCurrentActor();
+            var (actor, idx) = FindCurrentActor();
             if( actor == null )
             {
                 _currentFrame = 0;
@@ -161,7 +191,8 @@ namespace Penumbra.Interop
             switch( _currentActorRedraw )
             {
                 case Redraw.Unload:
-                    WriteInvisible( RenderPtr( actor ) );
+                    WriteInvisible( actor, idx );
+
                     _currentFrame = 0;
                     break;
                 case Redraw.RedrawWithSettings:
@@ -169,16 +200,16 @@ namespace Penumbra.Interop
                     ++_currentFrame;
                     break;
                 case Redraw.RedrawWithoutSettings:
-                    WriteVisible( RenderPtr( actor ) );
+                    WriteVisible( actor, idx );
                     _currentFrame = 0;
                     break;
                 case Redraw.WithoutSettings:
-                    WriteInvisible( RenderPtr( actor ) );
+                    WriteInvisible( actor, idx );
                     ++_currentFrame;
                     break;
                 case Redraw.WithSettings:
                     ChangeSettings();
-                    WriteInvisible( RenderPtr( actor ) );
+                    WriteInvisible( actor, idx );
                     ++_currentFrame;
                     break;
                 case Redraw.OnlyWithSettings:
@@ -188,7 +219,7 @@ namespace Penumbra.Interop
                         return;
                     }
 
-                    WriteInvisible( RenderPtr( actor ) );
+                    WriteInvisible( actor, idx );
                     ++_currentFrame;
                     break;
                 default: throw new InvalidEnumArgumentException();
@@ -197,20 +228,20 @@ namespace Penumbra.Interop
 
         private void StartRedrawAndWait()
         {
-            var actor = FindCurrentActor();
+            var (actor, idx) = FindCurrentActor();
             if( actor == null )
             {
                 RevertSettings();
                 return;
             }
 
-            WriteVisible( RenderPtr( actor ) );
+            WriteVisible( actor, idx );
             _currentFrame = _changedSettings ? _currentFrame + 1 : 0;
         }
 
         private void RevertSettings()
         {
-            var actor = FindCurrentActor();
+            var (actor, idx) = FindCurrentActor();
             if( actor != null )
             {
                 if( !StillLoading( RenderPtr( actor ) ) )
@@ -269,14 +300,20 @@ namespace Penumbra.Interop
             }
         }
 
+        private Actor? GetLocalPlayer()
+        {
+            var gPoseActor = _pi.ClientState.Actors[ GPosePlayerActorIdx ];
+            return gPoseActor ?? _pi.ClientState.Actors[ 0 ];
+        }
+
         private Actor? GetName( string name )
         {
             var lowerName = name.ToLowerInvariant();
             return lowerName switch
             {
                 ""          => null,
-                "<me>"      => _pi.ClientState.Actors[ 0 ],
-                "self"      => _pi.ClientState.Actors[ 0 ],
+                "<me>"      => GetLocalPlayer(),
+                "self"      => GetLocalPlayer(),
                 "<t>"       => _pi.ClientState.Targets.CurrentTarget,
                 "target"    => _pi.ClientState.Targets.CurrentTarget,
                 "<f>"       => _pi.ClientState.Targets.FocusTarget,
@@ -303,18 +340,18 @@ namespace Penumbra.Interop
         private void UnloadAll()
         {
             Clear();
-            foreach( var a in _pi.ClientState.Actors )
+            foreach( var (actor, index) in _pi.ClientState.Actors.Select( ( a, i ) => ( a, i ) ) )
             {
-                WriteInvisible( RenderPtr( a ) );
+                WriteInvisible( actor, index );
             }
         }
 
         private void RedrawAllWithoutSettings()
         {
             Clear();
-            foreach( var a in _pi.ClientState.Actors )
+            foreach( var (actor, index) in _pi.ClientState.Actors.Select( ( a, i ) => ( a, i ) ) )
             {
-                WriteVisible( RenderPtr( a ) );
+                WriteVisible( actor, index );
             }
         }
 

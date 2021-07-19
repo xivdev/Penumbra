@@ -1,3 +1,4 @@
+using System;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using EmbedIO;
@@ -70,7 +71,8 @@ namespace Penumbra
 
             SettingsInterface = new SettingsInterface( this );
 
-            PluginInterface.UiBuilder.OnBuildUi += SettingsInterface.Draw;
+            PluginInterface.UiBuilder.DisableGposeUiHide =  true;
+            PluginInterface.UiBuilder.OnBuildUi             += SettingsInterface.Draw;
 
             if( Configuration.EnableHttpApi )
             {

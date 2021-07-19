@@ -181,9 +181,9 @@ namespace Penumbra.UI
                .GetField( "_currentActorRedraw", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( _plugin.ActorRefresher );
 
-            var currentActor = ( Actor? )_plugin.ActorRefresher.GetType()
+            var (currentActor, currentActorIdx) = ( (Actor?, int) )_plugin.ActorRefresher.GetType()
                .GetMethod( "FindCurrentActor", BindingFlags.NonPublic | BindingFlags.Instance )?
-               .Invoke( _plugin.ActorRefresher, Array.Empty< object >() );
+               .Invoke( _plugin.ActorRefresher, Array.Empty< object >() )!;
 
             var currentRender = currentActor != null
                 ? ( ActorRefresher.LoadingFlags? )Marshal.ReadInt32( ActorRefresher.RenderPtr( currentActor ) )
@@ -199,7 +199,8 @@ namespace Penumbra.UI
                 PrintValue( "Current Actor Start State", ( ( int? )currentActorStartState )?.ToString( "X8" ) ?? "null" );
                 PrintValue( "Current Actor Redraw", currentActorRedraw?.ToString()                            ?? "null" );
                 PrintValue( "Current Actor Address", currentActor?.Address.ToString( "X16" )                  ?? "null" );
-                PrintValue( "Current Actor Render Flags", ( ( int? )currentRender )?.ToString( "X8" )         ?? "null" );
+                PrintValue( "Current Actor Index", currentActorIdx >= 0 ? currentActorIdx.ToString() : "null" );
+                PrintValue( "Current Actor Render Flags", ( ( int? )currentRender )?.ToString( "X8" ) ?? "null" );
                 ImGui.EndTable();
             }
 

@@ -14,6 +14,7 @@ namespace Penumbra.Interop
         private readonly DalamudPluginInterface              _pi;
         private readonly Dictionary< string, CharEquipment > _equip = new();
         private          int                                 _frameTicker;
+        private          IntPtr                              _lastGPoseAddress = IntPtr.Zero;
 
         public PlayerWatcher( DalamudPluginInterface pi )
             => _pi = pi;
@@ -81,7 +82,18 @@ namespace Penumbra.Interop
 
         private void OnFrameworkUpdate( object framework )
         {
-            var actors = _pi.ClientState.Actors;
+            var actors     = _pi.ClientState.Actors;
+            var gPoseActor = actors[ ActorRefresher.GPosePlayerActorIdx ];
+            if( gPoseActor == null )
+            {
+                _lastGPoseAddress = IntPtr.Zero;
+            }
+            else if( gPoseActor.Address != _lastGPoseAddress )
+            {
+                _lastGPoseAddress = gPoseActor.Address;
+                ActorChanged?.Invoke( gPoseActor );
+            }
+
             for( var i = 0; i < ActorsPerFrame; ++i )
             {
                 _frameTicker = _frameTicker < actors.Length - 2
