@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
 using Penumbra.Meta;
@@ -15,6 +16,9 @@ namespace Penumbra.UI
             private static readonly string     LongArrowLeft = $"{( char )FontAwesomeIcon.LongArrowAltLeft}";
             private readonly        ModManager _modManager;
 
+            private readonly float _leftTextLength =
+                ImGui.CalcTextSize( "chara/human/c0000/obj/body/b0000/material/v0000/mt_c0000b0000_b.mtrl" ).X + 40;
+
             public TabEffective()
                 => _modManager = Service< ModManager >.Get();
 
@@ -28,8 +32,7 @@ namespace Penumbra.UI
                 ImGui.PushFont( UiBuilder.IconFont );
                 ImGui.TextUnformatted( LongArrowLeft );
                 ImGui.PopFont();
-
-                ImGui.TableNextColumn();
+                ImGui.SameLine();
                 Custom.ImGuiCustom.CopyOnClickSelectable( file.FullName );
             }
 
@@ -42,8 +45,7 @@ namespace Penumbra.UI
                 ImGui.PushFont( UiBuilder.IconFont );
                 ImGui.TextUnformatted( LongArrowLeft );
                 ImGui.PopFont();
-
-                ImGui.TableNextColumn();
+                ImGui.SameLine();
                 ImGui.Selectable( mod.Data.Meta.Name );
             }
 
@@ -55,21 +57,38 @@ namespace Penumbra.UI
                     return;
                 }
 
-                const ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
+                const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
 
-                if( ImGui.BeginTable( "##effective_changes", 3, flags, AutoFillSize ) )
+                var                 activeCollection = _modManager.Collections.ActiveCollection.Cache!;
+                var                 lines            = activeCollection.ResolvedFiles.Count + activeCollection.MetaManipulations.Count;
+                ImGuiListClipperPtr clipper;
+                unsafe
                 {
-                    var currentCollection = _modManager.Collections.CurrentCollection.Cache!;
-                    foreach( var file in currentCollection.ResolvedFiles )
-                    {
-                        DrawFileLine( file.Value, file.Key );
-                        ImGui.TableNextRow();
-                    }
+                    clipper = new ImGuiListClipperPtr( ImGuiNative.ImGuiListClipper_ImGuiListClipper() );
+                }
 
-                    foreach( var (manip, mod) in currentCollection.MetaManipulations.Manipulations )
+                clipper.Begin( lines );
+
+                if( ImGui.BeginTable( "##effective_changes", 2, flags, AutoFillSize ) )
+                {
+                    ImGui.TableSetupColumn( "##tableGamePathCol", ImGuiTableColumnFlags.None, _leftTextLength );
+                    while( clipper.Step() )
                     {
-                        DrawManipulationLine( manip, mod );
-                        ImGui.TableNextRow();
+                        for( var row = clipper.DisplayStart; row < clipper.DisplayEnd; row++ )
+                        {
+                            ImGui.TableNextRow();
+                            if( row < activeCollection.ResolvedFiles.Count )
+                            {
+                                var file = activeCollection.ResolvedFiles.ElementAt( row );
+                                DrawFileLine( file.Value, file.Key );
+                            }
+                            else
+                            {
+                                var manip = activeCollection.MetaManipulations.Manipulations.ElementAt(
+                                    row - activeCollection.ResolvedFiles.Count );
+                                DrawManipulationLine( manip.Item1, manip.Item2 );
+                            }
+                        }
                     }
 
                     ImGui.EndTable();

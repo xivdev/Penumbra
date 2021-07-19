@@ -52,6 +52,9 @@ namespace Penumbra.Meta
         public IEnumerable< (MetaManipulation, Mod.Mod) > Manipulations
             => _currentManipulations.Select( kvp => ( kvp.Key, kvp.Value ) );
 
+        public int Count
+            => _currentManipulations.Count;
+
         public bool TryGetValue( MetaManipulation manip, out Mod.Mod mod )
             => _currentManipulations.TryGetValue( manip, out mod );
 
