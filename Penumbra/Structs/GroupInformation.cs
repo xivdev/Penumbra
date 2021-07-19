@@ -74,6 +74,7 @@ namespace Penumbra.Structs
                     if( Options[ i ].OptionFiles.TryGetValue( relPath, out var groupPaths ) )
                     {
                         paths.UnionWith( groupPaths );
+                        doNotAdd = true;
                     }
                 }
                 else if( Options[ i ].OptionFiles.ContainsKey( relPath ) )
