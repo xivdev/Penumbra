@@ -12,6 +12,7 @@ namespace Penumbra.Game.Enums
         Iris,
         Accessory,
         Hair,
+        Zear,
         DecalFace,
         DecalEquip,
         Skin,
@@ -30,6 +31,7 @@ namespace Penumbra.Game.Enums
                 CustomizationType.Accessory => "acc",
                 CustomizationType.Hair      => "hir",
                 CustomizationType.Tail      => "til",
+                CustomizationType.Zear      => "zer",
                 CustomizationType.Etc       => "etc",
                 _                           => throw new InvalidEnumArgumentException(),
             };
@@ -46,6 +48,7 @@ namespace Penumbra.Game.Enums
             { CustomizationType.Accessory.ToSuffix(), CustomizationType.Accessory },
             { CustomizationType.Hair.ToSuffix(), CustomizationType.Hair },
             { CustomizationType.Tail.ToSuffix(), CustomizationType.Tail },
+            { CustomizationType.Zear.ToSuffix(), CustomizationType.Zear },
             { CustomizationType.Etc.ToSuffix(), CustomizationType.Etc },
         };
     }
