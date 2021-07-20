@@ -158,182 +158,126 @@ namespace Penumbra.Game
 
         private static GameObjectInfo HandleEquipment( FileType fileType, ObjectType objectType, GroupCollection groups )
         {
-            try
+            var setId = ushort.Parse( groups[ "id" ].Value );
+            if( fileType == FileType.Imc )
             {
-                var setId = ushort.Parse( groups[ "id" ].Value );
-                if( fileType == FileType.Imc )
-                {
-                    return GameObjectInfo.Equipment( fileType, setId );
-                }
-
-                var gr   = GameData.GenderRaceFromCode( groups[ "race" ].Value );
-                var slot = GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
-                if( fileType == FileType.Model )
-                {
-                    return GameObjectInfo.Equipment( fileType, setId, gr, slot );
-                }
-
-                var variant = byte.Parse( groups[ "variant" ].Value );
-                return GameObjectInfo.Equipment( fileType, setId, gr, slot, variant );
+                return GameObjectInfo.Equipment( fileType, setId );
             }
-            catch( Exception e )
+
+            var gr   = GameData.GenderRaceFromCode( groups[ "race" ].Value );
+            var slot = GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+            if( fileType == FileType.Model )
             {
-                PluginLog.Error( $"Parsing game path failed:\n{e}" );
-                return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
+                return GameObjectInfo.Equipment( fileType, setId, gr, slot );
             }
+
+            var variant = byte.Parse( groups[ "variant" ].Value );
+            return GameObjectInfo.Equipment( fileType, setId, gr, slot, variant );
         }
 
         private static GameObjectInfo HandleWeapon( FileType fileType, ObjectType objectType, GroupCollection groups )
         {
-            try
+            var weaponId = ushort.Parse( groups[ "weapon" ].Value );
+            var setId    = ushort.Parse( groups[ "id" ].Value );
+            if( fileType == FileType.Imc || fileType == FileType.Model )
             {
-                var weaponId = ushort.Parse( groups[ "weapon" ].Value );
-                var setId    = ushort.Parse( groups[ "id" ].Value );
-                if( fileType == FileType.Imc || fileType == FileType.Model )
-                {
-                    return GameObjectInfo.Weapon( fileType, setId, weaponId );
-                }
+                return GameObjectInfo.Weapon( fileType, setId, weaponId );
+            }
 
-                var variant = byte.Parse( groups[ "variant" ].Value );
-                return GameObjectInfo.Weapon( fileType, setId, weaponId, variant );
-            }
-            catch( Exception e )
-            {
-                PluginLog.Error( $"Parsing game path failed:\n{e}" );
-                return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
-            }
+            var variant = byte.Parse( groups[ "variant" ].Value );
+            return GameObjectInfo.Weapon( fileType, setId, weaponId, variant );
         }
 
         private static GameObjectInfo HandleMonster( FileType fileType, ObjectType objectType, GroupCollection groups )
         {
-            try
+            var monsterId = ushort.Parse( groups[ "monster" ].Value );
+            var bodyId    = ushort.Parse( groups[ "id" ].Value );
+            if( fileType == FileType.Imc || fileType == FileType.Model )
             {
-                var monsterId = ushort.Parse( groups[ "monster" ].Value );
-                var bodyId    = ushort.Parse( groups[ "id" ].Value );
-                if( fileType == FileType.Imc || fileType == FileType.Model )
-                {
-                    return GameObjectInfo.Monster( fileType, monsterId, bodyId );
-                }
+                return GameObjectInfo.Monster( fileType, monsterId, bodyId );
+            }
 
-                var variant = byte.Parse( groups[ "variant" ].Value );
-                return GameObjectInfo.Monster( fileType, monsterId, bodyId, variant );
-            }
-            catch( Exception e )
-            {
-                PluginLog.Error( $"Parsing game path failed:\n{e}" );
-                return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
-            }
+            var variant = byte.Parse( groups[ "variant" ].Value );
+            return GameObjectInfo.Monster( fileType, monsterId, bodyId, variant );
         }
 
         private static GameObjectInfo HandleDemiHuman( FileType fileType, ObjectType objectType, GroupCollection groups )
         {
-            try
+            var demiHumanId = ushort.Parse( groups[ "id" ].Value );
+            var equipId     = ushort.Parse( groups[ "equip" ].Value );
+            if( fileType == FileType.Imc )
             {
-                var demiHumanId = ushort.Parse( groups[ "id" ].Value );
-                var equipId     = ushort.Parse( groups[ "equip" ].Value );
-                if( fileType == FileType.Imc )
-                {
-                    return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId );
-                }
-
-                var slot = GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
-                if( fileType == FileType.Model )
-                {
-                    return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot );
-                }
-
-                var variant = byte.Parse( groups[ "variant" ].Value );
-                return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot, variant );
+                return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId );
             }
-            catch( Exception e )
+
+            var slot = GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+            if( fileType == FileType.Model )
             {
-                PluginLog.Error( $"Parsing game path failed:\n{e}" );
-                return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
+                return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot );
             }
+
+            var variant = byte.Parse( groups[ "variant" ].Value );
+            return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot, variant );
         }
 
         private static GameObjectInfo HandleCustomization( FileType fileType, ObjectType objectType, GroupCollection groups )
         {
-            try
+            if( groups[ "skin" ].Success )
             {
-                if( groups[ "skin" ].Success )
-                {
-                    return GameObjectInfo.Customization( fileType, CustomizationType.Skin );
-                }
-
-                var id = ushort.Parse( groups[ "id" ].Value );
-                if( groups[ "location" ].Success )
-                {
-                    var tmpType = groups[ "location" ].Value == "face"  ? CustomizationType.DecalFace
-                        : groups[ "location" ].Value         == "equip" ? CustomizationType.DecalEquip : CustomizationType.Unknown;
-                    return GameObjectInfo.Customization( fileType, tmpType, id );
-                }
-
-                var gr       = GameData.GenderRaceFromCode( groups[ "race" ].Value );
-                var bodySlot = GameData.StringToBodySlot[ groups[ "type" ].Value ];
-                var type     = groups[ "slot" ].Success ? GameData.SuffixToCustomizationType[ groups[ "slot" ].Value ] : CustomizationType.Skin;
-                if( fileType == FileType.Material )
-                {
-                    var variant = byte.Parse( groups[ "variant" ].Value );
-                    return GameObjectInfo.Customization( fileType, type, id, gr, bodySlot, variant );
-                }
-
-                return GameObjectInfo.Customization( fileType, type, id, gr, bodySlot );
+                return GameObjectInfo.Customization( fileType, CustomizationType.Skin );
             }
-            catch( Exception e )
+
+            var id = ushort.Parse( groups[ "id" ].Value );
+            if( groups[ "location" ].Success )
             {
-                PluginLog.Error( $"Parsing game path failed:\n{e}" );
-                return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
+                var tmpType = groups[ "location" ].Value == "face"  ? CustomizationType.DecalFace
+                    : groups[ "location" ].Value         == "equip" ? CustomizationType.DecalEquip : CustomizationType.Unknown;
+                return GameObjectInfo.Customization( fileType, tmpType, id );
             }
+
+            var gr       = GameData.GenderRaceFromCode( groups[ "race" ].Value );
+            var bodySlot = GameData.StringToBodySlot[ groups[ "type" ].Value ];
+            var type     = groups[ "slot" ].Success ? GameData.SuffixToCustomizationType[ groups[ "slot" ].Value ] : CustomizationType.Skin;
+            if( fileType == FileType.Material )
+            {
+                var variant = byte.Parse( groups[ "variant" ].Value );
+                return GameObjectInfo.Customization( fileType, type, id, gr, bodySlot, variant );
+            }
+
+            return GameObjectInfo.Customization( fileType, type, id, gr, bodySlot );
         }
 
         private static GameObjectInfo HandleIcon( FileType fileType, ObjectType objectType, GroupCollection groups )
         {
-            try
+            var hq = groups[ "hq" ].Success;
+            var id = uint.Parse( groups[ "id" ].Value );
+            if( !groups[ "lang" ].Success )
             {
-                var hq = groups[ "hq" ].Success;
-                var id = uint.Parse( groups[ "id" ].Value );
-                if( !groups[ "lang" ].Success )
-                {
-                    return GameObjectInfo.Icon( fileType, id, hq );
-                }
+                return GameObjectInfo.Icon( fileType, id, hq );
+            }
 
-                var language = groups[ "lang" ].Value switch
-                {
-                    "en" => Dalamud.ClientLanguage.English,
-                    "ja" => Dalamud.ClientLanguage.Japanese,
-                    "de" => Dalamud.ClientLanguage.German,
-                    "fr" => Dalamud.ClientLanguage.French,
-                    _    => Dalamud.ClientLanguage.English,
-                };
-                return GameObjectInfo.Icon( fileType, id, hq, language );
-            }
-            catch( Exception e )
+            var language = groups[ "lang" ].Value switch
             {
-                PluginLog.Error( $"Parsing game path failed:\n{e}" );
-                return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
-            }
+                "en" => Dalamud.ClientLanguage.English,
+                "ja" => Dalamud.ClientLanguage.Japanese,
+                "de" => Dalamud.ClientLanguage.German,
+                "fr" => Dalamud.ClientLanguage.French,
+                _    => Dalamud.ClientLanguage.English,
+            };
+            return GameObjectInfo.Icon( fileType, id, hq, language );
         }
 
         private static GameObjectInfo HandleMap( FileType fileType, ObjectType objectType, GroupCollection groups )
         {
-            try
+            var map     = Encoding.ASCII.GetBytes( groups[ "id" ].Value );
+            var variant = byte.Parse( groups[ "variant" ].Value );
+            if( groups[ "suffix" ].Success )
             {
-                var map     = Encoding.ASCII.GetBytes( groups[ "id" ].Value );
-                var variant = byte.Parse( groups[ "variant" ].Value );
-                if( groups[ "suffix" ].Success )
-                {
-                    var suffix = Encoding.ASCII.GetBytes( groups[ "suffix" ].Value )[ 0 ];
-                    return GameObjectInfo.Map( fileType, map[ 0 ], map[ 1 ], map[ 2 ], map[ 3 ], variant, suffix );
-                }
+                var suffix = Encoding.ASCII.GetBytes( groups[ "suffix" ].Value )[ 0 ];
+                return GameObjectInfo.Map( fileType, map[ 0 ], map[ 1 ], map[ 2 ], map[ 3 ], variant, suffix );
+            }
 
-                return GameObjectInfo.Map( fileType, map[ 0 ], map[ 1 ], map[ 2 ], map[ 3 ], variant );
-            }
-            catch( Exception e )
-            {
-                PluginLog.Error( $"Parsing game path failed:\n{e}" );
-                return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
-            }
+            return GameObjectInfo.Map( fileType, map[ 0 ], map[ 1 ], map[ 2 ], map[ 3 ], variant );
         }
 
         public static GameObjectInfo GetFileInfo( GamePath path )
