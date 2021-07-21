@@ -233,15 +233,18 @@ namespace Penumbra.UI
                 }
             }
 
-            private void DrawSortOrder()
+            public static bool DrawSortOrder(ModData mod, ModManager manager, Selector selector)
             {
-                var currentSortOrder = Mod!.Data.SortOrder;
+                var currentSortOrder = mod.SortOrder;
                 ImGui.SetNextItemWidth( 300 );
                 if( ImGui.InputText( "Sort Order", ref currentSortOrder, 256, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
-                    _modManager.ChangeSortOrder( Mod.Data, currentSortOrder );
-                    _selector.SelectModByDir( Mod.Data.BasePath.Name );
+                    manager.ChangeSortOrder( mod, currentSortOrder );
+                    selector.SelectModByDir( mod.BasePath.Name );
+                    return true;
                 }
+
+                return false;
             }
 
             private void DrawEditableMark()
@@ -499,7 +502,7 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawNormalizeButton();
 
-                DrawSortOrder();
+                DrawSortOrder(Mod!.Data, _modManager, _selector);
             }
 
             public void Draw()

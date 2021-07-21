@@ -155,6 +155,12 @@ namespace Penumbra.UI
                     _configChanged           = true;
                     _base._plugin.PlayerWatcher.SetActorWatch( enabled );
                 }
+
+                if( ImGui.IsItemHovered() )
+                {
+                    ImGui.SetTooltip( "If this setting is enabled, penumbra will keep tabs on characters that have a corresponding collection setup in the Collections tab.\n"
+                      + "Penumbra will try to automatically redraw those characters using their collection when they first appear in an instance, or when they change their current equip." );
+                }
             }
 
             private static void DrawReloadResourceButton()

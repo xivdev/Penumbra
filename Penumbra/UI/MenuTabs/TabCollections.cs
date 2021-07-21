@@ -211,6 +211,12 @@ namespace Penumbra.UI
                     _newCharacterName                             = string.Empty;
                 }
 
+                if( ImGui.IsItemHovered() )
+                {
+                    ImGui.SetTooltip( "A character collection will be used whenever you manually redraw a character with the Name you have set up.\n"
+                      + "If you enable automatic character redraws in the Settings tab, penumbra will try to use Character collections for corresponding characters automatically.\n" );
+                }
+
                 if( changedStyle )
                 {
                     ImGui.PopStyleVar();

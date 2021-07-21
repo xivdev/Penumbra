@@ -58,6 +58,7 @@ namespace Penumbra.UI
             private const string LabelSelectorList = "##availableModList";
             private const string LabelModFilter    = "##ModFilter";
             private const string LabelAddModPopup  = "AddMod";
+            private const string LabelModHelpPopup = "Help##Selector";
 
             private const string TooltipModFilter =
                 "Filter mods for those containing the given substring.\nEnter c:[string] to filter for mods changing specific items.\n:Enter a:[string] to filter for mods by specific authors.";
@@ -73,7 +74,8 @@ namespace Penumbra.UI
             private const uint  ConflictingModColor     = 0xFFAAAAFF;
             private const uint  HandledConflictModColor = 0xFF88DDDD;
 
-            private static readonly Vector2 SelectorButtonSizes = new( 120, 0 );
+            private static readonly Vector2 SelectorButtonSizes = new( 100, 0 );
+            private static readonly Vector2 HelpButtonSizes     = new( 40, 0 );
 
             private readonly SettingsInterface _base;
             private readonly ModManager        _modManager;
@@ -194,9 +196,78 @@ namespace Penumbra.UI
                 }
             }
 
+            private void DrawModHelpButton()
+            {
+                ImGui.PushFont( UiBuilder.IconFont );
+                if( ImGui.Button( FontAwesomeIcon.QuestionCircle.ToIconString(), HelpButtonSizes ) )
+                {
+                    ImGui.OpenPopup( LabelModHelpPopup );
+                }
+
+                ImGui.PopFont();
+            }
+
+            private void DrawModHelpPopup()
+            {
+                ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, Vector2.One / 2 );
+                ImGui.SetNextWindowSize( new Vector2( 5 * SelectorPanelWidth, 29 * ImGui.GetTextLineHeightWithSpacing() ), ImGuiCond.Appearing );
+                var _ = true;
+                if( !ImGui.BeginPopupModal( LabelModHelpPopup, ref _, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove ) )
+                {
+                    return;
+                }
+
+                ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
+                ImGui.Text( "Mod Selector" );
+                ImGui.BulletText( "Select a mod to obtain more information." );
+                ImGui.BulletText( "Mod names are colored according to their current state in the collection:"  );
+                ImGui.Indent();
+                ImGui.Bullet();
+                ImGui.SameLine();
+                ImGui.Text( "Enabled in the current collection." );
+                ImGui.Bullet();
+                ImGui.SameLine();
+                ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( DisabledModColor ), "Disabled in the current collection." );
+                ImGui.Bullet();
+                ImGui.SameLine();
+                ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( HandledConflictModColor ), "Enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved)." );
+                ImGui.Bullet();
+                ImGui.SameLine();
+                ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( ConflictingModColor ), "Enabled and conflicting with another enabled Mod on the same priority." );
+                ImGui.Unindent();
+                ImGui.BulletText( "Right-click a mod to enter its sort order, which is its name by default."  );
+                ImGui.Indent();
+                ImGui.BulletText( "A sort order differing from the mods name will not be displayed, it will just be used for ordering."  );
+                ImGui.BulletText( "If the sort order string contains Forward-Slashes ('/'), the preceding substring will be turned into collapsible folders that can group mods."  );
+                ImGui.BulletText( "Collapsible folders can contain further collapsible folders, so \"folder1/folder2/folder3/1\" will produce 3 folders\n\t\t[folder1] -> [folder2] -> [folder3] -> [ModName],\nwhere ModName will be sorted as if it was the string '1'."  );
+                ImGui.Unindent();
+                ImGui.BulletText( "Use the Filter Mods... input at the top to filter the list for mods with names containing the text." );
+                ImGui.Indent();
+                ImGui.BulletText( "You can enter c:[string] to filter for Changed Items instead." );
+                ImGui.BulletText( "You can enter a:[string] to filter for Mod Authors instead." );
+                ImGui.Unindent();
+                ImGui.BulletText( "Use the expandable menu beside the input to filter for mods fulfilling specific criteria." );
+                ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
+                ImGui.Text( "Mod Management"  );
+                ImGui.BulletText( "You can delete the currently selected mod with the trashcan button." );
+                ImGui.BulletText( "You can add a completely empty mod with the plus button." );
+                ImGui.BulletText( "You can import TTMP-based mods in the import tab." );
+                ImGui.BulletText( "You can import penumbra-based mods by moving the corresponding folder into your mod directory in a file explorer, then rediscovering mods." );
+                ImGui.BulletText( "If you enable Advanced Options in the Settings tab, you can toggle Edit Mode to manipulate your selected mod even further."  );
+                ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight()  );
+                ImGui.Dummy( Vector2.UnitX * 2 * SelectorPanelWidth  );
+                ImGui.SameLine();
+                if( ImGui.Button( "Understood", Vector2.UnitX * SelectorPanelWidth ) )
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+
+                ImGui.EndPopup();
+            }
+
             private void DrawModsSelectorFilter()
             {
-                ImGui.SetNextItemWidth( SelectorButtonSizes.X * 2 - 22 );
+                ImGui.SetNextItemWidth( SelectorPanelWidth - 22 );
                 if( ImGui.InputTextWithHint( LabelModFilter, "Filter Mods...", ref _modFilterInput, 256 ) )
                 {
                     var lower = _modFilterInput.ToLowerInvariant();
@@ -254,9 +325,14 @@ namespace Penumbra.UI
 
                 DrawModTrashButton();
                 ImGui.SameLine();
+                DrawModHelpButton();
+                ImGui.SameLine();
                 DrawModAddButton();
+                
 
                 ImGui.PopStyleVar( 3 );
+
+                DrawModHelpPopup();
             }
 
             private void DrawDeleteModal()
@@ -336,7 +412,27 @@ namespace Penumbra.UI
                  && !CheckFlags( mod.Data.Resources.MetaManipulations.Count, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations )
                  && !CheckFlags( mod.Data.Meta.HasGroupsWithConfig ? 1 : 0, ModFilter.HasNoConfig, ModFilter.HasConfig );
 
-            public void DrawMod( Mod.Mod mod, int modIndex )
+            private void DrawModOrderPopup( string popupName, Mod.Mod mod, int modIndex, bool firstOpen )
+            {
+                if( !ImGui.BeginPopup( popupName ) )
+                {
+                    return;
+                }
+
+                if( ModPanel.DrawSortOrder( mod.Data, _modManager, this ) )
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+
+                if( firstOpen )
+                {
+                    ImGui.SetKeyboardFocusHere( mod.Data.SortOrder.Length - 1 );
+                }
+
+                ImGui.EndPopup();
+            }
+
+            private void DrawMod( Mod.Mod mod, int modIndex )
             {
                 var changedColour = false;
                 if( !mod.Settings.Enabled )
@@ -392,6 +488,16 @@ namespace Penumbra.UI
                     ImGui.PopStyleColor();
                 }
 
+                var popupName = $"##SortOrderPopup{modIndex}";
+                var firstOpen = false;
+                if( ImGui.IsItemClicked( ImGuiMouseButton.Right ) )
+                {
+                    ImGui.OpenPopup( popupName );
+                    firstOpen = true;
+                }
+
+                DrawModOrderPopup( popupName, mod, modIndex, firstOpen );
+
                 if( selected )
                 {
                     SetSelection( modIndex, mod );
@@ -446,6 +552,9 @@ namespace Penumbra.UI
                             }
                         }
                     }
+
+                    if( ImGui.IsItemClicked( ImGuiMouseButton.Right ) )
+                    { }
                 }
 
                 return true;
