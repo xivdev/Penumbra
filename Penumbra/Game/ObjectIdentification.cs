@@ -146,12 +146,7 @@ namespace Penumbra.Game
                 idx = ~idx;
             }
             var endIdx = idx + 1;
-            if( endIdx == list.Count )
-            {
-                return ( idx, endIdx );
-            }
-
-            while( maskedKey == ( list[ endIdx ].Item1 & mask ) )
+            while( endIdx < list.Count && maskedKey == ( list[endIdx].Item1 & mask ) )
             {
                 ++endIdx;
             }
