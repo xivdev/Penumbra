@@ -112,7 +112,8 @@ namespace Penumbra.Game
             }
 
             _actions = new Dictionary< string, HashSet< Action > >();
-            foreach( var action in plugin.Data.GetExcelSheet< Action >( plugin.ClientState.ClientLanguage ) )
+            foreach( var action in plugin.Data.GetExcelSheet< Action >( plugin.ClientState.ClientLanguage )
+               .Where( a => a.Name.ToString().Any() ) )
             {
                 var startKey = action.AnimationStart?.Value?.Name?.Value?.Key.ToString() ?? string.Empty;
                 var endKey   = action.AnimationEnd?.Value?.Key.ToString()                ?? string.Empty;
