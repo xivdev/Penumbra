@@ -86,12 +86,20 @@ namespace Penumbra.Interop
             var gPoseActor = actors[ ActorRefresher.GPosePlayerActorIdx ];
             if( gPoseActor == null )
             {
+                if( _lastGPoseAddress != IntPtr.Zero && actors[ 0 ] != null && _equip.ContainsKey( actors[ 0 ].Name ) )
+                {
+                    ActorChanged?.Invoke( actors[ 0 ] );
+                }
+
                 _lastGPoseAddress = IntPtr.Zero;
             }
             else if( gPoseActor.Address != _lastGPoseAddress )
             {
                 _lastGPoseAddress = gPoseActor.Address;
-                ActorChanged?.Invoke( gPoseActor );
+                if( _equip.ContainsKey( gPoseActor.Name ) )
+                {
+                    ActorChanged?.Invoke( gPoseActor );
+                }
             }
 
             for( var i = 0; i < ActorsPerFrame; ++i )
@@ -100,7 +108,7 @@ namespace Penumbra.Interop
                     ? _frameTicker + 2
                     : 0;
 
-                var actor = actors[ _frameTicker ];
+                var actor = _frameTicker == 0 && gPoseActor != null ? gPoseActor : actors[ _frameTicker ];
                 if( actor             == null
                  || actor.ObjectKind  != ObjectKind.Player
                  || actor.Name        == null

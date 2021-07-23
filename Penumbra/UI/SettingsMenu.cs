@@ -65,7 +65,7 @@ namespace Penumbra.UI
                 _collectionsTab.Draw();
                 _importTab.Draw();
 
-                if( Service<ModManager>.Get().Valid && !_importTab.IsImporting() )
+                if( Service< ModManager >.Get().Valid && !_importTab.IsImporting() )
                 {
                     _browserTab.Draw();
                     InstalledTab.Draw();

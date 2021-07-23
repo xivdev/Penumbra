@@ -146,8 +146,9 @@ namespace Penumbra.Game
 
                 idx = ~idx;
             }
+
             var endIdx = idx + 1;
-            while( endIdx < list.Count && maskedKey == ( list[endIdx].Item1 & mask ) )
+            while( endIdx < list.Count && maskedKey == ( list[ endIdx ].Item1 & mask ) )
             {
                 ++endIdx;
             }
@@ -290,19 +291,21 @@ namespace Penumbra.Game
             }
         }
 
-        public Item? Identify( ushort a, ushort b, ushort c, EquipSlot slot )
+        public Item? Identify( ushort setId, ushort weaponType, ushort variant, EquipSlot slot )
         {
             switch( slot )
             {
                 case EquipSlot.MainHand:
                 case EquipSlot.Offhand:
                 {
-                    var (begin, _) = FindIndexRange( _weapons, ( ( ulong )a << 32 ) | ( ( ulong )b << 16 ) | c, 0xFFFFFFFFFFFF );
+                    var (begin, _) = FindIndexRange( _weapons, ( ( ulong )setId << 32 ) | ( ( ulong )weaponType << 16 ) | variant,
+                        0xFFFFFFFFFFFF );
                     return begin >= 0 ? _weapons[ begin ].Item2.FirstOrDefault() : null;
                 }
                 default:
                 {
-                    var (begin, _) = FindIndexRange( _equipment, ( ( ulong )a << 32 ) | ( ( ulong )slot.ToSlot() << 16 ) | b, 0xFFFFFFFFFFFF );
+                    var (begin, _) = FindIndexRange( _equipment, ( ( ulong )setId << 32 ) | ( ( ulong )slot.ToSlot() << 16 ) | weaponType,
+                        0xFFFFFFFFFFFF );
                     return begin >= 0 ? _equipment[ begin ].Item2.FirstOrDefault() : null;
                 }
             }

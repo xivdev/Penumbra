@@ -12,24 +12,24 @@ namespace Penumbra.Game
         [StructLayout( LayoutKind.Sequential, Pack = 1 )]
         internal readonly struct Weapon
         {
-            public readonly ushort _1;
-            public readonly ushort _2;
-            public readonly ushort _3;
-            public readonly byte   _4;
+            public readonly ushort Set;
+            public readonly ushort Type;
+            public readonly ushort Variant;
+            public readonly byte   Stain;
 
             public override string ToString()
-                => $"{_1},{_2},{_3},{_4}";
+                => $"{Set},{Type},{Variant},{Stain}";
         }
 
         [StructLayout( LayoutKind.Sequential, Pack = 1 )]
         internal readonly struct Equip
         {
-            public readonly ushort _1;
-            public readonly byte   _2;
-            public readonly byte   _3;
+            public readonly ushort Set;
+            public readonly byte   Variant;
+            public readonly byte   Stain;
 
             public override string ToString()
-                => $"{_1},{_2},{_3}";
+                => $"{Set},{Variant},{Stain}";
         }
 
         private const int MainWeaponOffset = 0x0F08;
@@ -48,8 +48,8 @@ namespace Penumbra.Game
         internal readonly Equip  Ear;
         internal readonly Equip  Neck;
         internal readonly Equip  Wrist;
-        internal readonly Equip  LFinger;
         internal readonly Equip  RFinger;
+        internal readonly Equip  LFinger;
         internal readonly ushort IsSet; // Also fills struct size to 56, a multiple of 8.
 
         public CharEquipment()
