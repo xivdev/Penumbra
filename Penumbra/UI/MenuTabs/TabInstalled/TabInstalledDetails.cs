@@ -195,9 +195,21 @@ namespace Penumbra.UI
                 {
                     foreach( var item in Mod.Data.ChangedItems )
                     {
-                        if( ImGui.Selectable( item.Key ) && item.Value is Item it )
+                        var ret = ImGui.Selectable( item.Key );
+                        var it  = item.Value as Item;
+                        if( it == null )
+                        {
+                            continue;
+                        }
+
+                        if( ret )
                         {
                             ChatUtil.LinkItem( it );
+                        }
+                        
+                        if( ImGui.IsItemHovered() )
+                        {
+                            ImGui.SetTooltip( "Left click to create link in chat." );
                         }
                     }
 
