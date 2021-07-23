@@ -20,6 +20,7 @@ namespace Penumbra.UI
             private const string LabelOpenFolder           = "Open Mods Folder";
             private const string LabelEnabled              = "Enable Mods";
             private const string LabelEnabledPlayerWatch   = "Enable automatic Character Redraws";
+            private const string LabelScaleModSelector     = "Scale Mod Selector With Window Size";
             private const string LabelShowAdvanced         = "Show Advanced Settings";
             private const string LabelLogLoadedFiles       = "Log all loaded files";
             private const string LabelDisableNotifications = "Disable filesystem change notifications";
@@ -97,6 +98,16 @@ namespace Penumbra.UI
                 }
             }
 
+            private void DrawScaleModSelectorBox()
+            {
+                var scaleModSelector = _config.ScaleModSelector;
+                if( ImGui.Checkbox( LabelScaleModSelector, ref scaleModSelector ) )
+                {
+                    _config.ScaleModSelector = scaleModSelector;
+                    _configChanged           = true;
+                }
+            }
+
             private void DrawLogLoadedFilesBox()
             {
                 ImGui.Checkbox( LabelLogLoadedFiles, ref _base._plugin.ResourceLoader.LogAllFiles );
@@ -158,7 +169,8 @@ namespace Penumbra.UI
 
                 if( ImGui.IsItemHovered() )
                 {
-                    ImGui.SetTooltip( "If this setting is enabled, penumbra will keep tabs on characters that have a corresponding collection setup in the Collections tab.\n"
+                    ImGui.SetTooltip(
+                        "If this setting is enabled, penumbra will keep tabs on characters that have a corresponding collection setup in the Collections tab.\n"
                       + "Penumbra will try to automatically redraw those characters using their collection when they first appear in an instance, or when they change their current equip." );
                 }
             }
@@ -198,6 +210,7 @@ namespace Penumbra.UI
                 DrawEnabledPlayerWatcher();
 
                 Custom.ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
+                DrawScaleModSelectorBox();
                 DrawShowAdvancedBox();
 
                 if( _config.ShowAdvanced )

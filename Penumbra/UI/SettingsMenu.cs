@@ -11,8 +11,8 @@ namespace Penumbra.UI
         {
             private const string PenumbraSettingsLabel = "PenumbraSettings";
 
-            private static readonly Vector2 MinSettingsSize = new( 800, 450 );
-            private static readonly Vector2 MaxSettingsSize = new( 69420, 42069 );
+            public static readonly Vector2 MinSettingsSize = new( 800, 450 );
+            public static readonly Vector2 MaxSettingsSize = new( 69420, 42069 );
 
             private readonly SettingsInterface _base;
             private readonly TabSettings       _settingsTab;

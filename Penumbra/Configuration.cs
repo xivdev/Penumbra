@@ -15,6 +15,7 @@ namespace Penumbra
 
         public bool IsEnabled { get; set; } = true;
 
+        public bool ScaleModSelector { get; set; } = false;
         public bool ShowAdvanced { get; set; }
 
         public bool DisableFileSystemNotifications { get; set; }
