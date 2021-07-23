@@ -332,11 +332,11 @@ namespace Penumbra.UI
                 ImGui.PushStyleVar( ImGuiStyleVar.WindowPadding, ZeroVector );
                 ImGui.PushStyleVar( ImGuiStyleVar.FrameRounding, 0 );
 
-                DrawModTrashButton();
+                DrawModAddButton();
                 ImGui.SameLine();
                 DrawModHelpButton();
                 ImGui.SameLine();
-                DrawModAddButton();
+                DrawModTrashButton(); 
 
 
                 ImGui.PopStyleVar( 3 );
