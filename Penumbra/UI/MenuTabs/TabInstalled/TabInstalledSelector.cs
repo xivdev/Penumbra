@@ -586,7 +586,7 @@ namespace Penumbra.UI
                 // Inlay selector list
                 ImGui.BeginChild( LabelSelectorList, new Vector2( SelectorPanelWidth, -ImGui.GetFrameHeightWithSpacing() ), true );
 
-                ImGui.PushStyleVar( ImGuiStyleVar.IndentSpacing, 10 );
+                ImGui.PushStyleVar( ImGuiStyleVar.IndentSpacing, 12.5f );
                 for( var modIndex = 0; modIndex < Mods!.Count; )
                 {
                     if( DrawModGroup( Mods[ modIndex ], ref modIndex ) )
