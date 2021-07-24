@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Actors.Types;
 using Dalamud.Plugin;
 using Penumbra.Mods;
@@ -192,7 +193,6 @@ namespace Penumbra.Interop
             {
                 case Redraw.Unload:
                     WriteInvisible( actor, idx );
-
                     _currentFrame = 0;
                     break;
                 case Redraw.RedrawWithSettings:
@@ -258,6 +258,11 @@ namespace Penumbra.Interop
 
         private void OnUpdateEvent( object framework )
         {
+            if( _pi.ClientState.Condition[ ConditionFlag.BetweenAreas51 ] || _pi.ClientState.Condition[ ConditionFlag.BetweenAreas ] )
+            {
+                return;
+            }
+
             switch( _currentFrame )
             {
                 case 0:
