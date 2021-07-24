@@ -254,7 +254,8 @@ namespace Penumbra.UI
 
             private void DrawOpenModFolderButton()
             {
-                if( ImGui.Button( ButtonOpenModFolder ) )
+                Mod!.Data.BasePath.Refresh();
+                if( ImGui.Button( ButtonOpenModFolder ) && Mod.Data.BasePath.Exists )
                 {
                     Process.Start( Mod!.Data.BasePath.FullName );
                 }
@@ -270,7 +271,7 @@ namespace Penumbra.UI
 
             private void RenameModFolder( string newName )
             {
-                _newName = newName.RemoveNonAsciiSymbols().RemoveInvalidPathSymbols();
+                _newName = newName.ReplaceBadXivSymbols();
                 if( _newName.Length == 0 )
                 {
                     PluginLog.Debug( "New Directory name {NewName} was empty after removing invalid symbols.", newName );

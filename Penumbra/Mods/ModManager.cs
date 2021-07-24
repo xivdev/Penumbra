@@ -138,6 +138,11 @@ namespace Penumbra.Mods
                 return false;
             }
 
+            if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
+            {
+                mod.SortOrder = sortOrder;
+            }
+
             if( Mods.ContainsKey( modFolder.Name ) )
             {
                 return false;
@@ -166,6 +171,14 @@ namespace Penumbra.Mods
             if( metaChanges || fileChanges.HasFlag( ResourceChange.Files ) )
             {
                 mod.ComputeChangedItems();
+                if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
+                {
+                    mod.SortOrder = sortOrder;
+                }
+                else
+                {
+                    mod.SortOrder = mod.Meta.Name.Replace( '/', '\\' );
+                }
             }
 
             var nameChange = !string.Equals( oldName, mod.Meta.Name, StringComparison.InvariantCulture );

@@ -50,11 +50,8 @@ namespace Penumbra.Importer
             _resolvedTempFilePath = Path.Combine( _outDirectory.FullName, TempFileName );
         }
 
-        private static string ReplaceBadXivSymbols( string source )
-            => source.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols();
-
         private static DirectoryInfo NewOptionDirectory( DirectoryInfo baseDir, string optionName )
-            => new( Path.Combine( baseDir.FullName, ReplaceBadXivSymbols( optionName ) ) );
+            => new( Path.Combine( baseDir.FullName, optionName.ReplaceBadXivSymbols() ) );
 
         public void ImportModPack( FileInfo modPackFile )
         {
@@ -197,7 +194,12 @@ namespace Penumbra.Importer
 
         public static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName )
         {
-            var newModFolderBase = NewOptionDirectory( outDirectory, Path.GetFileName( modListName ) );
+            var name             = Path.GetFileName( modListName );
+            if( !name.Any() )
+            {
+                name = "_";
+            }
+            var newModFolderBase = NewOptionDirectory( outDirectory, name );
             var newModFolder     = newModFolderBase;
             var i                = 2;
             while( newModFolder.Exists && i < 12 )

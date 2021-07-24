@@ -123,7 +123,7 @@ namespace Penumbra.Meta
             _resolvedFiles = resolvedFiles;
             _default = Service< MetaDefaults >.Get();
             _resourceManagement = Service< GameResourceManagement >.Get();
-            _dir = new DirectoryInfo( Path.Combine( modDir.FullName, TmpDirectory, name.ReplaceInvalidPathSymbols().RemoveNonAsciiSymbols() ) );
+            _dir = new DirectoryInfo( Path.Combine( modDir.FullName, TmpDirectory, name.ReplaceBadXivSymbols() ) );
             ClearDirectory();
         }
 

@@ -157,7 +157,7 @@ namespace Penumbra.UI
                             var modMeta = new ModMeta
                             {
                                 Author      = "Unknown",
-                                Name        = newName,
+                                Name        = newName.Replace('/', '\\'),
                                 Description = string.Empty,
                             };
 

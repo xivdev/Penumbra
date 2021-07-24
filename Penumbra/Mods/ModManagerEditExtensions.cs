@@ -39,9 +39,10 @@ namespace Penumbra.Mods
                 return false;
             }
 
-            if( newSortOrder == string.Empty || newSortOrder == mod.Meta.Name )
+            var modName = mod.Meta.Name.Replace( '/', '\\' );
+            if( newSortOrder == string.Empty || newSortOrder == modName )
             {
-                mod.SortOrder = mod.Meta.Name;
+                mod.SortOrder = modName;
                 manager.Config.ModSortOrder.Remove( mod.BasePath.Name );
             }
             else

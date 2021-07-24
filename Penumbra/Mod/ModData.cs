@@ -25,7 +25,7 @@ namespace Penumbra.Mod
             Meta      = meta;
             Resources = resources;
             MetaFile  = MetaFileInfo( basePath );
-            SortOrder = meta.Name;
+            SortOrder = meta.Name.Replace( '/', '\\' );
             ComputeChangedItems();
         }
 
