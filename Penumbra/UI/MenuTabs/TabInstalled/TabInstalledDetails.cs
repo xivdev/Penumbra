@@ -206,7 +206,7 @@ namespace Penumbra.UI
                         {
                             ChatUtil.LinkItem( it );
                         }
-                        
+
                         if( ImGui.IsItemHovered() )
                         {
                             ImGui.SetTooltip( "Left click to create link in chat." );
@@ -425,7 +425,7 @@ namespace Penumbra.UI
                     var relName = _fullFilenameList[ i ].relName;
                     if( defaultIndex >= 0 )
                     {
-                        gamePaths[ defaultIndex ] = new GamePath( relName, removeFolders );
+                        gamePaths[ defaultIndex ] = relName.ToGamePath( removeFolders );
                     }
 
                     if( remove && option.OptionFiles.TryGetValue( relName, out var setPaths ) )

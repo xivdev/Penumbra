@@ -160,12 +160,12 @@ namespace Penumbra.Mod
                 var duplicates = FindOrCreateDuplicates( _mod );
                 if( !inOption1 )
                 {
-                    duplicates.AddFile( relName1, new GamePath( relName2, 0 ) );
+                    duplicates.AddFile( relName2, relName2.ToGamePath() );
                 }
 
                 if( !inOption2 )
                 {
-                    duplicates.AddFile( relName1, new GamePath( relName1, 0 ) );
+                    duplicates.AddFile( relName1, relName1.ToGamePath() );
                 }
             }
 
@@ -227,7 +227,7 @@ namespace Penumbra.Mod
                         continue;
                     }
 
-                    if( kvp.Value.Count == 0 || kvp.Value.First().CompareTo( new GamePath( kvp.Key, 0 ) ) == 0 )
+                    if( kvp.Value.Count == 0 || kvp.Value.First().CompareTo( kvp.Key.ToGamePath() ) == 0 )
                     {
                         required.OptionFiles.Remove( kvp.Key );
                     }
