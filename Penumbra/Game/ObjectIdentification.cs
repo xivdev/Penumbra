@@ -291,7 +291,7 @@ namespace Penumbra.Game
             }
         }
 
-        public Item? Identify( ushort setId, ushort weaponType, ushort variant, EquipSlot slot )
+        public Item? Identify( SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot )
         {
             switch( slot )
             {
@@ -304,7 +304,8 @@ namespace Penumbra.Game
                 }
                 default:
                 {
-                    var (begin, _) = FindIndexRange( _equipment, ( ( ulong )setId << 32 ) | ( ( ulong )slot.ToSlot() << 16 ) | weaponType,
+                    var (begin, _) = FindIndexRange( _equipment,
+                        ( ( ulong )setId << 32 ) | ( ( ulong )slot.ToSlot() << 16 ) | ( ulong )weaponType,
                         0xFFFFFFFFFFFF );
                     return begin >= 0 ? _equipment[ begin ].Item2.FirstOrDefault() : null;
                 }
