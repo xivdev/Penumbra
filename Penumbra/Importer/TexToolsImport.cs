@@ -6,6 +6,7 @@ using System.Text;
 using Dalamud.Plugin;
 using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
+using Penumbra.GameData.Util;
 using Penumbra.Importer.Models;
 using Penumbra.Mod;
 using Penumbra.Structs;
@@ -194,11 +195,12 @@ namespace Penumbra.Importer
 
         public static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName )
         {
-            var name             = Path.GetFileName( modListName );
+            var name = Path.GetFileName( modListName );
             if( !name.Any() )
             {
                 name = "_";
             }
+
             var newModFolderBase = NewOptionDirectory( outDirectory, name );
             var newModFolder     = newModFolderBase;
             var i                = 2;

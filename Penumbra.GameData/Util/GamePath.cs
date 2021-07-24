@@ -69,9 +69,9 @@ namespace Penumbra.GameData.Util
         {
             return rhs switch
             {
-                string path   => string.Compare( _path, path, StringComparison.InvariantCulture ),
+                string path => string.Compare( _path, path, StringComparison.InvariantCulture ),
                 GamePath path => string.Compare( _path, path._path, StringComparison.InvariantCulture ),
-                _             => -1,
+                _ => -1,
             };
         }
 
@@ -87,7 +87,7 @@ namespace Penumbra.GameData.Util
         public override object ReadJson( JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer )
         {
             var token = JToken.Load( reader );
-            return token.ToObject< GamePath >();
+            return token.ToObject<GamePath>();
         }
 
         public override bool CanWrite

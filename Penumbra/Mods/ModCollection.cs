@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Penumbra.GameData.Util;
 using Penumbra.Interop;
 using Penumbra.Mod;
 using Penumbra.Util;

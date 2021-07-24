@@ -74,6 +74,10 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
       <None Update="Penumbra.json">
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>

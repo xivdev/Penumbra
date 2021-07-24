@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Penumbra.Game;
 using Penumbra.Game.Enums;
+using Penumbra.GameData.Util;
 using Penumbra.Meta.Files;
 using Penumbra.Util;
 using Swan;

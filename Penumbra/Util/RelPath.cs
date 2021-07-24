@@ -1,6 +1,9 @@
 using System;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Penumbra.GameData.Util;
 
 namespace Penumbra.Util
 {

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
+using Penumbra.GameData.Util;
 using Penumbra.Mods;
 using Penumbra.Structs;
 using Penumbra.Util;

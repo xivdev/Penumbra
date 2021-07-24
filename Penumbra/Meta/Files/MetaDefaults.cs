@@ -5,6 +5,7 @@ using Lumina.Data;
 using Lumina.Data.Files;
 using Penumbra.Game;
 using Penumbra.Game.Enums;
+using Penumbra.GameData.Util;
 using Penumbra.Util;
 
 namespace Penumbra.Meta.Files

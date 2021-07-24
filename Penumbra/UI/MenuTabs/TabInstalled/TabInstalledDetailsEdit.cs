@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
+using Penumbra.GameData.Util;
 using Penumbra.Mods;
 using Penumbra.Structs;
 using Penumbra.Util;

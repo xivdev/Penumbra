@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using Newtonsoft.Json;
+using Penumbra.GameData.Util;
 using Penumbra.Util;
 
 namespace Penumbra.Structs

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using Dalamud.Plugin;
+using Penumbra.GameData.Util;
 using Penumbra.Structs;
 using Penumbra.Util;
 
