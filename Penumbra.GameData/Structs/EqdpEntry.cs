@@ -1,9 +1,8 @@
 using System;
 using System.ComponentModel;
 using Penumbra.GameData.Enums;
-using Penumbra.Meta;
 
-namespace Penumbra.Game
+namespace Penumbra.GameData.Structs
 {
     [Flags]
     public enum EqdpEntry : ushort
@@ -104,25 +103,5 @@ namespace Penumbra.Game
                 _                => 0,
             };
         }
-    }
-
-    public static class EqdpEntryExtension
-    {
-        public static bool Apply( this ref EqdpEntry entry, MetaManipulation manipulation )
-        {
-            if( manipulation.Type != MetaType.Eqdp )
-            {
-                return false;
-            }
-
-            var mask   = Eqdp.Mask( manipulation.EqdpIdentifier.Slot );
-            var result = ( entry & ~mask ) | manipulation.EqdpValue;
-            var ret    = result == entry;
-            entry = result;
-            return ret;
-        }
-
-        public static EqdpEntry Reduce( this EqdpEntry entry, EquipSlot slot )
-            => entry & Eqdp.Mask( slot );
     }
 }

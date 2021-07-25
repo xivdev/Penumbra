@@ -1,7 +1,6 @@
 using System.IO;
-using Penumbra.Meta;
 
-namespace Penumbra.Game
+namespace Penumbra.GameData.Structs
 {
     public struct GmpEntry
     {
@@ -89,16 +88,5 @@ namespace Penumbra.Game
 
         public static explicit operator GmpEntry( ulong entry )
             => new() { Value = entry };
-
-        public GmpEntry Apply( MetaManipulation manipulation )
-        {
-            if( manipulation.Type != MetaType.Gmp )
-            {
-                return this;
-            }
-
-            Value = manipulation.GmpValue.Value;
-            return this;
-        }
     }
 }

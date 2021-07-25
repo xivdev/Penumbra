@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Lumina.Data;
 using Penumbra.Game;
+using Penumbra.GameData.Structs;
 
 namespace Penumbra.Meta.Files
 {

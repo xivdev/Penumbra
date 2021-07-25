@@ -1,9 +1,8 @@
 using System;
 using System.ComponentModel;
 using Penumbra.GameData.Enums;
-using Penumbra.Meta;
 
-namespace Penumbra.Game
+namespace Penumbra.GameData.Structs
 {
     [Flags]
     public enum EqpEntry : ulong
@@ -127,25 +126,5 @@ namespace Penumbra.Game
                 _               => 0,
             };
         }
-    }
-
-    public static class EqpEntryExtension
-    {
-        public static bool Apply( this ref EqpEntry entry, MetaManipulation manipulation )
-        {
-            if( manipulation.Type != MetaType.Eqp )
-            {
-                return false;
-            }
-
-            var mask   = Eqp.Mask( manipulation.EqpIdentifier.Slot );
-            var result = ( entry & ~mask ) | manipulation.EqpValue;
-            var ret    = result != entry;
-            entry = result;
-            return ret;
-        }
-
-        public static EqpEntry Reduce( this EqpEntry entry, EquipSlot slot )
-            => entry & Eqp.Mask( slot );
     }
 }

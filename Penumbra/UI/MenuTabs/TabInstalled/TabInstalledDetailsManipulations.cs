@@ -8,6 +8,7 @@ using ImGuiNET;
 using Lumina.Data.Files;
 using Penumbra.Game;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Util;

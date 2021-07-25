@@ -6,6 +6,7 @@ using Dalamud.Plugin;
 using Lumina.Data.Files;
 using Penumbra.Game;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
