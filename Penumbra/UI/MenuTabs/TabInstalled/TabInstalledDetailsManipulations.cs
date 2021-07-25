@@ -6,7 +6,6 @@ using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
 using Lumina.Data.Files;
-using Penumbra.Game;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;

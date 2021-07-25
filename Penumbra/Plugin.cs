@@ -4,7 +4,7 @@ using Dalamud.Plugin;
 using EmbedIO;
 using EmbedIO.WebApi;
 using Penumbra.API;
-using Penumbra.Game;
+using Penumbra.GameData;
 using Penumbra.Interop;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
@@ -41,7 +41,7 @@ namespace Penumbra
         {
             PluginInterface = pluginInterface;
             Service< DalamudPluginInterface >.Set( PluginInterface );
-            Service< ObjectIdentification >.Set( PluginInterface );
+            ObjectIdentifier.Initialize( PluginInterface );
 
             Configuration = Configuration.Load( PluginInterface );
 

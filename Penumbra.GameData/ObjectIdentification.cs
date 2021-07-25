@@ -6,13 +6,12 @@ using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
-using Penumbra.Util;
 using Action = Lumina.Excel.GeneratedSheets.Action;
 using Race = Penumbra.GameData.Enums.Race;
 
-namespace Penumbra.Game
+namespace Penumbra.GameData
 {
-    public class ObjectIdentification
+    internal class ObjectIdentification
     {
         private readonly List< (ulong, HashSet< Item >) >        _weapons;
         private readonly List< (ulong, HashSet< Item >) >        _equipment;

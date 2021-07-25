@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Dalamud.Plugin;
 using Lumina.Data;
 using Lumina.Data.Files;
-using Penumbra.Game;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 

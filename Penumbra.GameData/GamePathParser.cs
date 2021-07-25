@@ -4,10 +4,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
-using Penumbra.Util;
 
-namespace Penumbra.Game
+namespace Penumbra.GameData
 {
     public static class GamePathParser
     {

@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Plugin;
-using Penumbra.Game;
+using Penumbra.GameData;
 using Penumbra.Util;
 
 namespace Penumbra.Mod
@@ -31,20 +31,18 @@ namespace Penumbra.Mod
 
         public void ComputeChangedItems()
         {
-            var ident = Service< ObjectIdentification >.Get();
-
             ChangedItems.Clear();
             foreach( var file in Resources.ModFiles.Select( f => new RelPath( f, BasePath ) ) )
             {
                 foreach( var path in ModFunctions.GetAllFiles( file, Meta ) )
                 {
-                    ident.Identify( ChangedItems, path );
+                    ObjectIdentifier.Identify( ChangedItems, path );
                 }
             }
 
             foreach( var path in Meta.FileSwaps.Keys )
             {
-                ident.Identify( ChangedItems, path );
+                ObjectIdentifier.Identify( ChangedItems, path );
             }
         }
 

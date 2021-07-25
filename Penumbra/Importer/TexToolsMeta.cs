@@ -4,7 +4,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using Lumina.Data.Files;
-using Penumbra.Game;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;

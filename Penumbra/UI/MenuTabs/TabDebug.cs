@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Actors.Types;
 using ImGuiNET;
-using Penumbra.Game;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
@@ -39,7 +39,6 @@ namespace Penumbra.UI
             if( ImGui.BeginTable( "##ActorTable", 13, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.ScrollX,
                 new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 4 * actors.Count ) ) )
             {
-                var identifier = Service< ObjectIdentification >.Get();
                 foreach( var actor in actors )
                 {
                     // @formatter:off
@@ -66,17 +65,17 @@ namespace Penumbra.UI
                         ImGui.Text( "(not set)" );
                     }
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Mainhand.Set, actor.Value.Mainhand.Type, actor.Value.Mainhand.Variant, EquipSlot.MainHand )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Mainhand.Set, actor.Value.Mainhand.Type, actor.Value.Mainhand.Variant, EquipSlot.MainHand )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Head.Set, actor.Value.Head.Variant, 0, EquipSlot.Head )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Head.Set, actor.Value.Head.Variant, 0, EquipSlot.Head )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Body.Set, actor.Value.Body.Variant, 0, EquipSlot.Body )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Body.Set, actor.Value.Body.Variant, 0, EquipSlot.Body )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Hands.Set, actor.Value.Hands.Variant, 0, EquipSlot.Hands )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Hands.Set, actor.Value.Hands.Variant, 0, EquipSlot.Hands )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Legs.Set, actor.Value.Legs.Variant, 0, EquipSlot.Legs )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Legs.Set, actor.Value.Legs.Variant, 0, EquipSlot.Legs )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Feet.Set, actor.Value.Feet.Variant, 0, EquipSlot.Feet )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Feet.Set, actor.Value.Feet.Variant, 0, EquipSlot.Feet )?.Name.ToString() ?? "Unknown" );
 
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
@@ -96,17 +95,17 @@ namespace Penumbra.UI
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Offhand.Set, actor.Value.Offhand.Type, actor.Value.Offhand.Variant, EquipSlot.Offhand )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Offhand.Set, actor.Value.Offhand.Type, actor.Value.Offhand.Variant, EquipSlot.Offhand )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Ear.Set, actor.Value.Ear.Variant, 0, EquipSlot.Ears )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Ear.Set, actor.Value.Ear.Variant, 0, EquipSlot.Ears )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Neck.Set, actor.Value.Neck.Variant, 0, EquipSlot.Neck )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Neck.Set, actor.Value.Neck.Variant, 0, EquipSlot.Neck )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Wrist.Set, actor.Value.Wrist.Variant, 0, EquipSlot.Wrists )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.Wrist.Set, actor.Value.Wrist.Variant, 0, EquipSlot.Wrists )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.LFinger.Set, actor.Value.LFinger.Variant, 0, EquipSlot.RingL )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.LFinger.Set, actor.Value.LFinger.Variant, 0, EquipSlot.RingL )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.RFinger.Set, actor.Value.RFinger.Variant, 0, EquipSlot.RingL )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( ObjectIdentifier.Identify( actor.Value.RFinger.Set, actor.Value.RFinger.Variant, 0, EquipSlot.RingL )?.Name.ToString() ?? "Unknown" );
                     // @formatter:on
                 }
 

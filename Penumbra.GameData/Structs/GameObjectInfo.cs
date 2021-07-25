@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using Dalamud;
 using Penumbra.GameData.Enums;
 
-namespace Penumbra.Game
+namespace Penumbra.GameData.Structs
 {
     [StructLayout( LayoutKind.Explicit )]
     public struct GameObjectInfo : IComparable
