@@ -106,7 +106,7 @@ namespace Penumbra.GameData.Enums
         }
     }
 
-    public static partial class GameData
+    public static partial class Names
     {
         public static readonly Dictionary< string, EquipSlot > SuffixToEquipSlot = new()
         {

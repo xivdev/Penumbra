@@ -53,7 +53,7 @@ namespace Penumbra.Mod
 
             if( ret.Count == 0 )
             {
-                ret.Add( relPath.ToGamePath( ) );
+                ret.Add( relPath.ToGamePath() );
             }
 
             return ret;

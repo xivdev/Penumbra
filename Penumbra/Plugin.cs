@@ -1,12 +1,9 @@
-using System;
 using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using EmbedIO;
 using EmbedIO.WebApi;
 using Penumbra.API;
-using Penumbra.GameData;
 using Penumbra.Interop;
-using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
 using Penumbra.UI;
@@ -41,7 +38,7 @@ namespace Penumbra
         {
             PluginInterface = pluginInterface;
             Service< DalamudPluginInterface >.Set( PluginInterface );
-            ObjectIdentifier.Initialize( PluginInterface );
+            GameData.GameData.GetIdentifier( PluginInterface );
 
             Configuration = Configuration.Load( PluginInterface );
 
@@ -72,7 +69,7 @@ namespace Penumbra
             SettingsInterface = new SettingsInterface( this );
 
             PluginInterface.UiBuilder.DisableGposeUiHide =  true;
-            PluginInterface.UiBuilder.OnBuildUi             += SettingsInterface.Draw;
+            PluginInterface.UiBuilder.OnBuildUi          += SettingsInterface.Draw;
 
             if( Configuration.EnableHttpApi )
             {

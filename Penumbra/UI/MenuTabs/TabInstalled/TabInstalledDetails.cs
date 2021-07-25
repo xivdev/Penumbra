@@ -13,22 +13,6 @@ using Penumbra.Util;
 
 namespace Penumbra.UI
 {
-    internal static class ListRemoveExtension
-    {
-        // Remove the entry at idx from the list if the new string is empty, otherwise replace it.
-        public static void RemoveOrChange( this List< string > list, string newString, int idx )
-        {
-            if( newString.Length == 0 )
-            {
-                list.RemoveAt( idx );
-            }
-            else
-            {
-                list[ idx ] = newString;
-            }
-        }
-    }
-
     public partial class SettingsInterface
     {
         private partial class PluginDetails

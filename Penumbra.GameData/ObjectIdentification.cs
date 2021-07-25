@@ -11,7 +11,7 @@ using Race = Penumbra.GameData.Enums.Race;
 
 namespace Penumbra.GameData
 {
-    internal class ObjectIdentification
+    internal class ObjectIdentification : IObjectIdentifier
     {
         private readonly List< (ulong, HashSet< Item >) >        _weapons;
         private readonly List< (ulong, HashSet< Item >) >        _equipment;
@@ -267,7 +267,7 @@ namespace Penumbra.GameData
 
         private void IdentifyVfx( IDictionary< string, object? > set, GamePath path )
         {
-            var key = GamePathParser.VfxToKey( path );
+            var key = GameData.GamePathParser.VfxToKey( path );
             if( key.Length == 0 || !_actions.TryGetValue( key, out var actions ) )
             {
                 return;
@@ -287,9 +287,16 @@ namespace Penumbra.GameData
             }
             else
             {
-                var info = GamePathParser.GetFileInfo( path );
+                var info = GameData.GamePathParser.GetFileInfo( path );
                 IdentifyParsed( set, info );
             }
+        }
+
+        public Dictionary< string, object? > Identify( GamePath path )
+        {
+            Dictionary< string, object? > ret = new();
+            Identify( ret, path );
+            return ret;
         }
 
         public Item? Identify( SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot )

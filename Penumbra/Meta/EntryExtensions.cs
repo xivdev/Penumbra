@@ -46,7 +46,7 @@ namespace Penumbra.Meta
 
     public static class GmpEntryExtension
     {
-        public static GmpEntry Apply( this GmpEntry entry, MetaManipulation manipulation )
+        public static GmpEntry Apply( this ref GmpEntry entry, MetaManipulation manipulation )
         {
             if( manipulation.Type != MetaType.Gmp )
             {

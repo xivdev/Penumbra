@@ -31,18 +31,19 @@ namespace Penumbra.Mod
 
         public void ComputeChangedItems()
         {
+            var identifier = GameData.GameData.GetIdentifier();
             ChangedItems.Clear();
             foreach( var file in Resources.ModFiles.Select( f => new RelPath( f, BasePath ) ) )
             {
                 foreach( var path in ModFunctions.GetAllFiles( file, Meta ) )
                 {
-                    ObjectIdentifier.Identify( ChangedItems, path );
+                    identifier.Identify( ChangedItems, path );
                 }
             }
 
             foreach( var path in Meta.FileSwaps.Keys )
             {
-                ObjectIdentifier.Identify( ChangedItems, path );
+                identifier.Identify( ChangedItems, path );
             }
         }
 

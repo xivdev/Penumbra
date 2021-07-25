@@ -123,7 +123,7 @@ namespace Penumbra.GameData.Structs
 
         public GenderRace GenderRace
         {
-            get => GameData.Enums.GameData.GenderRaceFromByte( _genderRaceByte );
+            get => Names.GenderRaceFromByte( _genderRaceByte );
             set => _genderRaceByte = value.ToByte();
         }
 

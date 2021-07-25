@@ -19,7 +19,7 @@ namespace Penumbra.GameData.Enums
         Environment,
     }
 
-    public static partial class GameData
+    public static partial class Names
     {
         public static readonly Dictionary< string, FileType > ExtensionToFileType = new()
         {

@@ -161,7 +161,7 @@ namespace Penumbra.Mod
                 var duplicates = FindOrCreateDuplicates( _mod );
                 if( !inOption1 )
                 {
-                    duplicates.AddFile( relName2, relName2.ToGamePath() );
+                    duplicates.AddFile( relName1, relName2.ToGamePath() );
                 }
 
                 if( !inOption2 )

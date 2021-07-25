@@ -9,7 +9,7 @@ using Penumbra.GameData.Util;
 
 namespace Penumbra.GameData
 {
-    public static class GamePathParser
+    internal class GamePathParser : IGamePathParser
     {
         private const string CharacterFolder = "chara";
         private const string EquipmentFolder = "equipment";
@@ -31,7 +31,7 @@ namespace Penumbra.GameData
         private const string WorldFolder2    = "bg";
 
         // @formatter:off
-        private static readonly Dictionary<FileType, Dictionary<ObjectType, Regex[]>> Regexes = new()
+        private readonly Dictionary<FileType, Dictionary<ObjectType, Regex[]>> _regexes = new()
         { { FileType.Font, new Dictionary< ObjectType, Regex[] >(){ { ObjectType.Font, new Regex[]{ new(@"common/font/(?'fontname'.*)_(?'id'\d\d)(_lobby)?\.fdt") } } } }
         , { FileType.Texture, new Dictionary< ObjectType, Regex[] >()
             { { ObjectType.Icon,      new Regex[]{ new(@"ui/icon/(?'group'\d*)(/(?'lang'[a-z]{2}))?(/(?'hq'hq))?/(?'id'\d*)\.tex") } }
@@ -68,7 +68,7 @@ namespace Penumbra.GameData
         };
         // @formatter:on
 
-        public static ObjectType PathToObjectType( GamePath path )
+        public ObjectType PathToObjectType( GamePath path )
         {
             if( path.Empty )
             {
@@ -120,16 +120,16 @@ namespace Penumbra.GameData
             };
         }
 
-        private static (FileType, ObjectType, Match?) ParseGamePath( GamePath path )
+        private (FileType, ObjectType, Match?) ParseGamePath( GamePath path )
         {
-            if( !GameData.Enums.GameData.ExtensionToFileType.TryGetValue( Extension( path ), out var fileType ) )
+            if( !Enums.Names.ExtensionToFileType.TryGetValue( Extension( path ), out var fileType ) )
             {
                 fileType = FileType.Unknown;
             }
 
             var objectType = PathToObjectType( path );
 
-            if( !Regexes.TryGetValue( fileType, out var objectDict ) )
+            if( !_regexes.TryGetValue( fileType, out var objectDict ) )
             {
                 return ( fileType, objectType, null );
             }
@@ -157,7 +157,7 @@ namespace Penumbra.GameData
             return extIdx < 0 ? "" : filename.Substring( extIdx );
         }
 
-        private static GameObjectInfo HandleEquipment( FileType fileType, ObjectType objectType, GroupCollection groups )
+        private static GameObjectInfo HandleEquipment( FileType fileType, GroupCollection groups )
         {
             var setId = ushort.Parse( groups[ "id" ].Value );
             if( fileType == FileType.Imc )
@@ -165,8 +165,8 @@ namespace Penumbra.GameData
                 return GameObjectInfo.Equipment( fileType, setId );
             }
 
-            var gr   = GameData.Enums.GameData.GenderRaceFromCode( groups[ "race" ].Value );
-            var slot = GameData.Enums.GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+            var gr   = Enums.Names.GenderRaceFromCode( groups[ "race" ].Value );
+            var slot = Enums.Names.SuffixToEquipSlot[ groups[ "slot" ].Value ];
             if( fileType == FileType.Model )
             {
                 return GameObjectInfo.Equipment( fileType, setId, gr, slot );
@@ -176,7 +176,7 @@ namespace Penumbra.GameData
             return GameObjectInfo.Equipment( fileType, setId, gr, slot, variant );
         }
 
-        private static GameObjectInfo HandleWeapon( FileType fileType, ObjectType objectType, GroupCollection groups )
+        private static GameObjectInfo HandleWeapon( FileType fileType, GroupCollection groups )
         {
             var weaponId = ushort.Parse( groups[ "weapon" ].Value );
             var setId    = ushort.Parse( groups[ "id" ].Value );
@@ -189,7 +189,7 @@ namespace Penumbra.GameData
             return GameObjectInfo.Weapon( fileType, setId, weaponId, variant );
         }
 
-        private static GameObjectInfo HandleMonster( FileType fileType, ObjectType objectType, GroupCollection groups )
+        private static GameObjectInfo HandleMonster( FileType fileType, GroupCollection groups )
         {
             var monsterId = ushort.Parse( groups[ "monster" ].Value );
             var bodyId    = ushort.Parse( groups[ "id" ].Value );
@@ -202,7 +202,7 @@ namespace Penumbra.GameData
             return GameObjectInfo.Monster( fileType, monsterId, bodyId, variant );
         }
 
-        private static GameObjectInfo HandleDemiHuman( FileType fileType, ObjectType objectType, GroupCollection groups )
+        private static GameObjectInfo HandleDemiHuman( FileType fileType, GroupCollection groups )
         {
             var demiHumanId = ushort.Parse( groups[ "id" ].Value );
             var equipId     = ushort.Parse( groups[ "equip" ].Value );
@@ -211,7 +211,7 @@ namespace Penumbra.GameData
                 return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId );
             }
 
-            var slot = GameData.Enums.GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+            var slot = Enums.Names.SuffixToEquipSlot[ groups[ "slot" ].Value ];
             if( fileType == FileType.Model )
             {
                 return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot );
@@ -221,7 +221,7 @@ namespace Penumbra.GameData
             return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot, variant );
         }
 
-        private static GameObjectInfo HandleCustomization( FileType fileType, ObjectType objectType, GroupCollection groups )
+        private static GameObjectInfo HandleCustomization( FileType fileType, GroupCollection groups )
         {
             if( groups[ "skin" ].Success )
             {
@@ -236,9 +236,11 @@ namespace Penumbra.GameData
                 return GameObjectInfo.Customization( fileType, tmpType, id );
             }
 
-            var gr       = GameData.Enums.GameData.GenderRaceFromCode( groups[ "race" ].Value );
-            var bodySlot = GameData.Enums.GameData.StringToBodySlot[ groups[ "type" ].Value ];
-            var type     = groups[ "slot" ].Success ? GameData.Enums.GameData.SuffixToCustomizationType[ groups[ "slot" ].Value ] : CustomizationType.Skin;
+            var gr       = Enums.Names.GenderRaceFromCode( groups[ "race" ].Value );
+            var bodySlot = Enums.Names.StringToBodySlot[ groups[ "type" ].Value ];
+            var type = groups[ "slot" ].Success
+                ? Enums.Names.SuffixToCustomizationType[ groups[ "slot" ].Value ]
+                : CustomizationType.Skin;
             if( fileType == FileType.Material )
             {
                 var variant = byte.Parse( groups[ "variant" ].Value );
@@ -248,7 +250,7 @@ namespace Penumbra.GameData
             return GameObjectInfo.Customization( fileType, type, id, gr, bodySlot );
         }
 
-        private static GameObjectInfo HandleIcon( FileType fileType, ObjectType objectType, GroupCollection groups )
+        private static GameObjectInfo HandleIcon( FileType fileType, GroupCollection groups )
         {
             var hq = groups[ "hq" ].Success;
             var id = uint.Parse( groups[ "id" ].Value );
@@ -268,7 +270,7 @@ namespace Penumbra.GameData
             return GameObjectInfo.Icon( fileType, id, hq, language );
         }
 
-        private static GameObjectInfo HandleMap( FileType fileType, ObjectType objectType, GroupCollection groups )
+        private static GameObjectInfo HandleMap( FileType fileType, GroupCollection groups )
         {
             var map     = Encoding.ASCII.GetBytes( groups[ "id" ].Value );
             var variant = byte.Parse( groups[ "variant" ].Value );
@@ -281,7 +283,7 @@ namespace Penumbra.GameData
             return GameObjectInfo.Map( fileType, map[ 0 ], map[ 1 ], map[ 2 ], map[ 3 ], variant );
         }
 
-        public static GameObjectInfo GetFileInfo( GamePath path )
+        public GameObjectInfo GetFileInfo( GamePath path )
         {
             var (fileType, objectType, match) = ParseGamePath( path );
             if( match == null || !match.Success )
@@ -294,14 +296,14 @@ namespace Penumbra.GameData
                 var groups = match.Groups;
                 switch( objectType )
                 {
-                    case ObjectType.Accessory: return HandleEquipment( fileType, objectType, groups );
-                    case ObjectType.Equipment: return HandleEquipment( fileType, objectType, groups );
-                    case ObjectType.Weapon:    return HandleWeapon( fileType, objectType, groups );
-                    case ObjectType.Map:       return HandleMap( fileType, objectType, groups );
-                    case ObjectType.Monster:   return HandleMonster( fileType, objectType, groups );
-                    case ObjectType.DemiHuman: return HandleDemiHuman( fileType, objectType, groups );
-                    case ObjectType.Character: return HandleCustomization( fileType, objectType, groups );
-                    case ObjectType.Icon:      return HandleIcon( fileType, objectType, groups );
+                    case ObjectType.Accessory: return HandleEquipment( fileType, groups );
+                    case ObjectType.Equipment: return HandleEquipment( fileType, groups );
+                    case ObjectType.Weapon:    return HandleWeapon( fileType, groups );
+                    case ObjectType.Map:       return HandleMap( fileType, groups );
+                    case ObjectType.Monster:   return HandleMonster( fileType, groups );
+                    case ObjectType.DemiHuman: return HandleDemiHuman( fileType, groups );
+                    case ObjectType.Character: return HandleCustomization( fileType, groups );
+                    case ObjectType.Icon:      return HandleIcon( fileType, groups );
                 }
             }
             catch( Exception e )
@@ -312,18 +314,18 @@ namespace Penumbra.GameData
             return new GameObjectInfo { FileType = fileType, ObjectType = objectType };
         }
 
-        private static readonly Regex VfxRegexTmb = new( @"chara/action/(?'key'[^\s]+?)\.tmb" );
-        private static readonly Regex VfxRegexPap = new( @"chara/human/c0101/animation/a0001/[^\s]+?/(?'key'[^\s]+?)\.pap" );
+        private readonly Regex _vfxRegexTmb = new( @"chara/action/(?'key'[^\s]+?)\.tmb" );
+        private readonly Regex _vfxRegexPap = new( @"chara/human/c0101/animation/a0001/[^\s]+?/(?'key'[^\s]+?)\.pap" );
 
-        public static string VfxToKey( GamePath path )
+        public string VfxToKey( GamePath path )
         {
-            var match = VfxRegexTmb.Match( path );
+            var match = _vfxRegexTmb.Match( path );
             if( match.Success )
             {
                 return match.Groups[ "key" ].Value.ToLowerInvariant();
             }
 
-            match = VfxRegexPap.Match( path );
+            match = _vfxRegexPap.Match( path );
             return match.Success ? match.Groups[ "key" ].Value.ToLowerInvariant() : string.Empty;
         }
     }

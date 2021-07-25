@@ -79,7 +79,7 @@ namespace Penumbra.Importer
 
             public Info( GamePath fileName )
             {
-                PrimaryType   = GamePathParser.PathToObjectType( fileName );
+                PrimaryType   = GameData.GameData.GetGamePathParser().PathToObjectType( fileName );
                 PrimaryId     = 0;
                 SecondaryType = BodySlot.Unknown;
                 SecondaryId   = 0;
@@ -113,14 +113,14 @@ namespace Penumbra.Importer
                     {
                         case ObjectType.Equipment:
                         case ObjectType.Accessory:
-                            if( GameData.Enums.GameData.SuffixToEquipSlot.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpSlot ) )
+                            if( GameData.Enums.Names.SuffixToEquipSlot.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpSlot ) )
                             {
                                 EquipSlot = tmpSlot;
                             }
 
                             break;
                         case ObjectType.Character:
-                            if( GameData.Enums.GameData.SuffixToCustomizationType.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpCustom ) )
+                            if( GameData.Enums.Names.SuffixToCustomizationType.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpCustom ) )
                             {
                                 CustomizationType = tmpCustom;
                             }
@@ -130,7 +130,7 @@ namespace Penumbra.Importer
                 }
 
                 if( match.Groups[ "SecondaryType" ].Success
-                 && GameData.Enums.GameData.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
+                 && GameData.Enums.Names.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
                 {
                     SecondaryId = ushort.Parse( match.Groups[ "SecondaryId" ].Value );
                 }
