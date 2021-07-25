@@ -9,6 +9,7 @@ using Dalamud.Game.ClientState.Actors.Types;
 using ImGuiNET;
 using Penumbra.Game;
 using Penumbra.Game.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Penumbra.Interop;
 using Penumbra.Meta;

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Dalamud.Game.ClientState.Actors;
 using Dalamud.Game.ClientState.Actors.Types;
 using Dalamud.Plugin;
-using Penumbra.Game;
+using Penumbra.GameData.Structs;
 
 namespace Penumbra.Interop
 {

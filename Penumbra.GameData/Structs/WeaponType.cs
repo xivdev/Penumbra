@@ -1,6 +1,6 @@
 using System;
 
-namespace Penumbra.Game
+namespace Penumbra.GameData.Structs
 {
     public readonly struct WeaponType : IEquatable<WeaponType>
     {

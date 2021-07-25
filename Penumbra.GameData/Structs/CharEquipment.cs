@@ -4,7 +4,7 @@ using Dalamud.Game.ClientState.Actors.Types;
 
 // Read the customization data regarding weapons and displayable equipment from an actor struct.
 // Stores the data in a 56 bytes, i.e. 7 longs for easier comparison.
-namespace Penumbra.Game
+namespace Penumbra.GameData.Structs
 {
     [StructLayout( LayoutKind.Sequential, Pack = 1 )]
     public class CharEquipment
