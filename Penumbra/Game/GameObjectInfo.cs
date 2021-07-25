@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Dalamud;
-using Penumbra.Game.Enums;
+using Penumbra.GameData.Enums;
 
 namespace Penumbra.Game
 {
@@ -123,7 +123,7 @@ namespace Penumbra.Game
 
         public GenderRace GenderRace
         {
-            get => Penumbra.Game.Enums.GameData.GenderRaceFromByte( _genderRaceByte );
+            get => GameData.Enums.GameData.GenderRaceFromByte( _genderRaceByte );
             set => _genderRaceByte = value.ToByte();
         }
 

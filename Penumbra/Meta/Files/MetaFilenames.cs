@@ -1,7 +1,6 @@
 using System;
-using Penumbra.Game.Enums;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
-using Penumbra.Util;
 
 namespace Penumbra.Meta.Files
 {

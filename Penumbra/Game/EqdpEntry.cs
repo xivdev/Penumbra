@@ -1,6 +1,6 @@
 using System;
 using System.ComponentModel;
-using Penumbra.Game.Enums;
+using Penumbra.GameData.Enums;
 using Penumbra.Meta;
 
 namespace Penumbra.Game

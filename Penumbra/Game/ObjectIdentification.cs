@@ -3,12 +3,12 @@ using System.ComponentModel;
 using System.Linq;
 using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
-using Penumbra.Game.Enums;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Penumbra.Util;
 using Action = Lumina.Excel.GeneratedSheets.Action;
-using Race = Penumbra.Game.Enums.Race;
+using Race = Penumbra.GameData.Enums.Race;
 
 namespace Penumbra.Game
 {

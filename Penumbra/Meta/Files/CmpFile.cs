@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Penumbra.Game;
-using Penumbra.Game.Enums;
+using Penumbra.GameData.Enums;
 
 namespace Penumbra.Meta.Files
 {

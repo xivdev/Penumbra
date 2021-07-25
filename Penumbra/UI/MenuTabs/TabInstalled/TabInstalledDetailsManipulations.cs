@@ -7,11 +7,11 @@ using Dalamud.Interface;
 using ImGuiNET;
 using Lumina.Data.Files;
 using Penumbra.Game;
-using Penumbra.Game.Enums;
+using Penumbra.GameData.Enums;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Util;
-using ObjectType = Penumbra.Game.Enums.ObjectType;
+using ObjectType = Penumbra.GameData.Enums.ObjectType;
 
 namespace Penumbra.UI
 {
@@ -742,7 +742,7 @@ namespace Penumbra.UI
                             CustomCombo( "Equipment Slot", EqdpEquipSlots, out var equipSlot, ref _newManipEquipSlot );
                             CustomCombo( "Race", Races, out var race, ref _newManipRace );
                             CustomCombo( "Gender", Genders, out var gender, ref _newManipGender );
-                            newManip = MetaManipulation.Eqdp( equipSlot, Penumbra.Game.Enums.GameData.CombinedRace( gender, race ), ( ushort )_newManipSetId,
+                            newManip = MetaManipulation.Eqdp( equipSlot, GameData.Enums.GameData.CombinedRace( gender, race ), ( ushort )_newManipSetId,
                                 new EqdpEntry() );
                             break;
                         }
@@ -771,7 +771,7 @@ namespace Penumbra.UI
 
                             CustomCombo( "Race", Races, out var race, ref _newManipRace );
                             CustomCombo( "Gender", Genders, out var gender, ref _newManipGender );
-                            newManip = MetaManipulation.Est( objectType, equipSlot, Penumbra.Game.Enums.GameData.CombinedRace( gender, race ), bodySlot,
+                            newManip = MetaManipulation.Est( objectType, equipSlot, GameData.Enums.GameData.CombinedRace( gender, race ), bodySlot,
                                 ( ushort )_newManipSetId, 0 );
                             break;
                         }

@@ -1,7 +1,5 @@
 using System.Runtime.InteropServices;
-using Penumbra.Game.Enums;
-using Penumbra.Meta.Files;
-
+using Penumbra.GameData.Enums;
 
 // A struct for each type of meta change that contains all relevant information,
 // to uniquely identify the corresponding file and location for the change.

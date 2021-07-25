@@ -5,13 +5,11 @@ using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using Lumina.Data.Files;
 using Penumbra.Game;
-using Penumbra.Game.Enums;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Util;
-using static Penumbra.Game.Enums.GameData;
-using GameData = Penumbra.Game.Enums.GameData;
 
 namespace Penumbra.Importer
 {
@@ -114,14 +112,14 @@ namespace Penumbra.Importer
                     {
                         case ObjectType.Equipment:
                         case ObjectType.Accessory:
-                            if( Penumbra.Game.Enums.GameData.SuffixToEquipSlot.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpSlot ) )
+                            if( GameData.Enums.GameData.SuffixToEquipSlot.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpSlot ) )
                             {
                                 EquipSlot = tmpSlot;
                             }
 
                             break;
                         case ObjectType.Character:
-                            if( Penumbra.Game.Enums.GameData.SuffixToCustomizationType.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpCustom ) )
+                            if( GameData.Enums.GameData.SuffixToCustomizationType.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpCustom ) )
                             {
                                 CustomizationType = tmpCustom;
                             }
@@ -131,7 +129,7 @@ namespace Penumbra.Importer
                 }
 
                 if( match.Groups[ "SecondaryType" ].Success
-                 && Penumbra.Game.Enums.GameData.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
+                 && GameData.Enums.GameData.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
                 {
                     SecondaryId = ushort.Parse( match.Groups[ "SecondaryId" ].Value );
                 }

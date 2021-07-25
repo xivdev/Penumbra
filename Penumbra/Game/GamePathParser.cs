@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
-using Penumbra.Game.Enums;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Util;
 
@@ -122,7 +122,7 @@ namespace Penumbra.Game
 
         private static (FileType, ObjectType, Match?) ParseGamePath( GamePath path )
         {
-            if( !Penumbra.Game.Enums.GameData.ExtensionToFileType.TryGetValue( Extension( path ), out var fileType ) )
+            if( !GameData.Enums.GameData.ExtensionToFileType.TryGetValue( Extension( path ), out var fileType ) )
             {
                 fileType = FileType.Unknown;
             }
@@ -165,8 +165,8 @@ namespace Penumbra.Game
                 return GameObjectInfo.Equipment( fileType, setId );
             }
 
-            var gr   = Penumbra.Game.Enums.GameData.GenderRaceFromCode( groups[ "race" ].Value );
-            var slot = Penumbra.Game.Enums.GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+            var gr   = GameData.Enums.GameData.GenderRaceFromCode( groups[ "race" ].Value );
+            var slot = GameData.Enums.GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
             if( fileType == FileType.Model )
             {
                 return GameObjectInfo.Equipment( fileType, setId, gr, slot );
@@ -211,7 +211,7 @@ namespace Penumbra.Game
                 return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId );
             }
 
-            var slot = Penumbra.Game.Enums.GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+            var slot = GameData.Enums.GameData.SuffixToEquipSlot[ groups[ "slot" ].Value ];
             if( fileType == FileType.Model )
             {
                 return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot );
@@ -236,9 +236,9 @@ namespace Penumbra.Game
                 return GameObjectInfo.Customization( fileType, tmpType, id );
             }
 
-            var gr       = Penumbra.Game.Enums.GameData.GenderRaceFromCode( groups[ "race" ].Value );
-            var bodySlot = Penumbra.Game.Enums.GameData.StringToBodySlot[ groups[ "type" ].Value ];
-            var type     = groups[ "slot" ].Success ? Penumbra.Game.Enums.GameData.SuffixToCustomizationType[ groups[ "slot" ].Value ] : CustomizationType.Skin;
+            var gr       = GameData.Enums.GameData.GenderRaceFromCode( groups[ "race" ].Value );
+            var bodySlot = GameData.Enums.GameData.StringToBodySlot[ groups[ "type" ].Value ];
+            var type     = groups[ "slot" ].Success ? GameData.Enums.GameData.SuffixToCustomizationType[ groups[ "slot" ].Value ] : CustomizationType.Skin;
             if( fileType == FileType.Material )
             {
                 var variant = byte.Parse( groups[ "variant" ].Value );

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace Penumbra.Game.Enums
+namespace Penumbra.GameData.Enums
 {
     public enum Gender : byte
     {
