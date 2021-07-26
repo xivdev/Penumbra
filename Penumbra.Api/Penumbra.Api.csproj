@@ -34,8 +34,4 @@
             <Private>False</Private>
         </Reference>
     </ItemGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
-    </ItemGroup>
 </Project>
