@@ -55,7 +55,7 @@ namespace Penumbra.Meta
         public ushort SetId;
 
         public override string ToString()
-            => $"Eqdp - {SetId} - {Slot} - {GenderRace.Split().Item2} {GenderRace.Split().Item1}";
+            => $"Eqdp - {SetId} - {Slot} - {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()}";
     }
 
     [StructLayout( LayoutKind.Explicit )]
@@ -100,8 +100,8 @@ namespace Penumbra.Meta
 
         public override string ToString()
             => ObjectType == ObjectType.Equipment
-                ? $"Est - {PrimaryId} - {EquipSlot} - {GenderRace.Split().Item2} {GenderRace.Split().Item1}"
-                : $"Est - {PrimaryId} - {BodySlot} - {GenderRace.Split().Item2} {GenderRace.Split().Item1}";
+                ? $"Est - {PrimaryId} - {EquipSlot} - {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()}"
+                : $"Est - {PrimaryId} - {BodySlot} - {GenderRace.Split().Item2.ToName()} {GenderRace.Split().Item1.ToName()}";
     }
 
     [StructLayout( LayoutKind.Explicit )]
@@ -167,6 +167,6 @@ namespace Penumbra.Meta
         public RspAttribute Attribute;
 
         public override string ToString()
-            => $"Rsp - {SubRace} - {Attribute}";
+            => $"Rsp - {SubRace.ToName()} - {Attribute.ToFullString()}";
     }
 }
