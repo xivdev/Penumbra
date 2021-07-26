@@ -313,7 +313,7 @@ namespace Penumbra.GameData
                 default:
                 {
                     var (begin, _) = FindIndexRange( _equipment,
-                        ( ( ulong )setId << 32 ) | ( ( ulong )slot.ToSlot() << 16 ) | ( ulong )weaponType,
+                        ( ( ulong )setId << 32 ) | ( ( ulong )slot.ToSlot() << 16 ) | variant,
                         0xFFFFFFFFFFFF );
                     return begin >= 0 ? _equipment[ begin ].Item2.FirstOrDefault() : null;
                 }
