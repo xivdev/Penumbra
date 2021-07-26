@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Plugin;
-using Penumbra.GameData;
 using Penumbra.Util;
 
 namespace Penumbra.Mod

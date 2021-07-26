@@ -5,7 +5,6 @@ using System.Linq;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
-using Penumbra.Util;
 
 namespace Penumbra.Mods
 {

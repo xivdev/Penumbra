@@ -122,7 +122,7 @@ namespace Penumbra.GameData
 
         private (FileType, ObjectType, Match?) ParseGamePath( GamePath path )
         {
-            if( !Enums.Names.ExtensionToFileType.TryGetValue( Extension( path ), out var fileType ) )
+            if( !Names.ExtensionToFileType.TryGetValue( Extension( path ), out var fileType ) )
             {
                 fileType = FileType.Unknown;
             }
@@ -165,8 +165,8 @@ namespace Penumbra.GameData
                 return GameObjectInfo.Equipment( fileType, setId );
             }
 
-            var gr   = Enums.Names.GenderRaceFromCode( groups[ "race" ].Value );
-            var slot = Enums.Names.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+            var gr   = Names.GenderRaceFromCode( groups[ "race" ].Value );
+            var slot = Names.SuffixToEquipSlot[ groups[ "slot" ].Value ];
             if( fileType == FileType.Model )
             {
                 return GameObjectInfo.Equipment( fileType, setId, gr, slot );
@@ -211,7 +211,7 @@ namespace Penumbra.GameData
                 return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId );
             }
 
-            var slot = Enums.Names.SuffixToEquipSlot[ groups[ "slot" ].Value ];
+            var slot = Names.SuffixToEquipSlot[ groups[ "slot" ].Value ];
             if( fileType == FileType.Model )
             {
                 return GameObjectInfo.DemiHuman( fileType, demiHumanId, equipId, slot );
@@ -236,10 +236,10 @@ namespace Penumbra.GameData
                 return GameObjectInfo.Customization( fileType, tmpType, id );
             }
 
-            var gr       = Enums.Names.GenderRaceFromCode( groups[ "race" ].Value );
-            var bodySlot = Enums.Names.StringToBodySlot[ groups[ "type" ].Value ];
+            var gr       = Names.GenderRaceFromCode( groups[ "race" ].Value );
+            var bodySlot = Names.StringToBodySlot[ groups[ "type" ].Value ];
             var type = groups[ "slot" ].Success
-                ? Enums.Names.SuffixToCustomizationType[ groups[ "slot" ].Value ]
+                ? Names.SuffixToCustomizationType[ groups[ "slot" ].Value ]
                 : CustomizationType.Skin;
             if( fileType == FileType.Material )
             {

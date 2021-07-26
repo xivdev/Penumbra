@@ -31,91 +31,8 @@ namespace Penumbra.UI
             private int    _newManipBodySlot    = 0;
             private ushort _newManipVariant     = 0;
 
-            private static readonly (string, EqpEntry)[] EqpAttributesBody =
-            {
-                ( "Enabled", EqpEntry.BodyEnabled ),
-                ( "Hide Waist", EqpEntry.BodyHideWaist ),
-                ( "Hide Small Gloves", EqpEntry.BodyHideGlovesS ),
-                ( "Hide Medium Gloves", EqpEntry.BodyHideGlovesM ),
-                ( "Hide Large Gloves", EqpEntry.BodyHideGlovesL ),
-                ( "Hide Gorget", EqpEntry.BodyHideGorget ),
-                ( "Show Legs", EqpEntry.BodyShowLeg ),
-                ( "Show Hands", EqpEntry.BodyShowHand ),
-                ( "Show Head", EqpEntry.BodyShowHead ),
-                ( "Show Necklace", EqpEntry.BodyShowNecklace ),
-                ( "Show Bracelet", EqpEntry.BodyShowBracelet ),
-                ( "Show Tail", EqpEntry.BodyShowTail ),
-                ( "Unknown  2", EqpEntry._2 ),
-                ( "Unknown  4", EqpEntry._4 ),
-                ( "Unknown 14", EqpEntry._14 ),
-                ( "Unknown 15", EqpEntry._15 ),
-            };
 
-            private static readonly (string, EqpEntry)[] EqpAttributesLegs =
-            {
-                ( "Enabled", EqpEntry.LegsEnabled ),
-                ( "Hide Kneepads", EqpEntry.LegsHideKneePads ),
-                ( "Hide Small Boots", EqpEntry.LegsHideBootsS ),
-                ( "Hide Medium Boots", EqpEntry.LegsHideBootsM ),
-                ( "Hide Show Foot", EqpEntry.LegsShowFoot ),
-                ( "Hide Show Tail", EqpEntry.LegsShowTail ),
-                ( "Unknown 20", EqpEntry._20 ),
-                ( "Unknown 23", EqpEntry._23 ),
-            };
-
-            private static readonly (string, EqpEntry)[] EqpAttributesHands =
-            {
-                ( "Enabled", EqpEntry.HandsEnabled ),
-                ( "Hide Elbow", EqpEntry.HandsHideElbow ),
-                ( "Hide Forearm", EqpEntry.HandsHideForearm ),
-                ( "Show Bracelet", EqpEntry.HandShowBracelet ),
-                ( "Show Left Ring", EqpEntry.HandShowRingL ),
-                ( "Show Right Ring", EqpEntry.HandShowRingR ),
-                ( "Unknown 27", EqpEntry._27 ),
-                ( "Unknown 31", EqpEntry._31 ),
-            };
-
-            private static readonly (string, EqpEntry)[] EqpAttributesFeet =
-            {
-                ( "Enabled", EqpEntry.FeetEnabled ),
-                ( "Hide Knees", EqpEntry.FeetHideKnee ),
-                ( "Hide Calfs", EqpEntry.FeetHideCalf ),
-                ( "Hide Ankles", EqpEntry.FeetHideAnkle ),
-                ( "Unknown 36", EqpEntry._36 ),
-                ( "Unknown 37", EqpEntry._37 ),
-                ( "Unknown 38", EqpEntry._38 ),
-                ( "Unknown 39", EqpEntry._39 ),
-            };
-
-            private static readonly (string, EqpEntry)[] EqpAttributesHead =
-            {
-                ( "Enabled", EqpEntry.HeadEnabled ),
-                ( "Hide Scalp", EqpEntry.HeadHideScalp ),
-                ( "Hide Hair", EqpEntry.HeadHideHair ),
-                ( "Show Hair Override", EqpEntry.HeadShowHairOverride ),
-                ( "Hide Neck", EqpEntry.HeadHideNeck ),
-                ( "Show Necklace", EqpEntry.HeadShowNecklace ),
-                ( "Show Earrings", EqpEntry.HeadShowEarrings ),
-                ( "Show Earrings (Human)", EqpEntry.HeadShowEarringsHuman ),
-                ( "Show Earrings (Au Ra)", EqpEntry.HeadShowEarringsAura ),
-                ( "Show Ears (Human)", EqpEntry.HeadShowEarHuman ),
-                ( "Show Ears (Miqo'te)", EqpEntry.HeadShowEarMiqote ),
-                ( "Show Ears (Au Ra)", EqpEntry.HeadShowEarAuRa ),
-                ( "Show Ears (Viera)", EqpEntry.HeadShowEarViera ),
-                ( "Show on Hrothgar", EqpEntry.HeadShowHrothgarHat ),
-                ( "Show on Viera", EqpEntry.HeadShowVieraHat ),
-                ( "Unknown 46", EqpEntry._46 ),
-                ( "Unknown 54", EqpEntry._54 ),
-                ( "Unknown 55", EqpEntry._55 ),
-                ( "Unknown 58", EqpEntry._58 ),
-                ( "Unknown 59", EqpEntry._59 ),
-                ( "Unknown 60", EqpEntry._60 ),
-                ( "Unknown 61", EqpEntry._61 ),
-                ( "Unknown 62", EqpEntry._62 ),
-                ( "Unknown 63", EqpEntry._63 ),
-            };
-
-            private static readonly (string, EquipSlot)[] EqpEquipSlots = new[]
+            private static readonly (string, EquipSlot)[] EqpEquipSlots =
             {
                 ( "Head", EquipSlot.Head ),
                 ( "Body", EquipSlot.Body ),
@@ -124,7 +41,7 @@ namespace Penumbra.UI
                 ( "Feet", EquipSlot.Feet ),
             };
 
-            private static readonly (string, EquipSlot)[] EqdpEquipSlots = new[]
+            private static readonly (string, EquipSlot)[] EqdpEquipSlots =
             {
                 EqpEquipSlots[ 0 ],
                 EqpEquipSlots[ 1 ],
@@ -138,7 +55,7 @@ namespace Penumbra.UI
                 ( "Right Finger", EquipSlot.RingR ),
             };
 
-            private static readonly (string, Race)[] Races = new[]
+            private static readonly (string, Race)[] Races =
             {
                 ( Race.Midlander.ToName(), Race.Midlander ),
                 ( Race.Highlander.ToName(), Race.Highlander ),
@@ -151,7 +68,7 @@ namespace Penumbra.UI
                 ( Race.Hrothgar.ToName(), Race.Hrothgar ),
             };
 
-            private static readonly (string, Gender)[] Genders = new[]
+            private static readonly (string, Gender)[] Genders =
             {
                 ( Gender.Male.ToName(), Gender.Male ),
                 ( Gender.Female.ToName(), Gender.Female ),
@@ -159,25 +76,25 @@ namespace Penumbra.UI
                 ( Gender.FemaleNpc.ToName(), Gender.FemaleNpc ),
             };
 
-            private static readonly (string, ObjectType)[] ObjectTypes = new[]
+            private static readonly (string, ObjectType)[] ObjectTypes =
             {
                 ( "Equipment", ObjectType.Equipment ),
                 ( "Customization", ObjectType.Character ),
             };
 
-            private static readonly (string, EquipSlot)[] EstEquipSlots = new[]
+            private static readonly (string, EquipSlot)[] EstEquipSlots =
             {
                 EqpEquipSlots[ 0 ],
                 EqpEquipSlots[ 1 ],
             };
 
-            private static readonly (string, BodySlot)[] EstBodySlots = new[]
+            private static readonly (string, BodySlot)[] EstBodySlots =
             {
                 ( "Hair", BodySlot.Hair ),
                 ( "Face", BodySlot.Face ),
             };
 
-            private static readonly (string, SubRace)[] Subraces = new[]
+            private static readonly (string, SubRace)[] Subraces =
             {
                 ( SubRace.Midlander.ToName(), SubRace.Midlander ),
                 ( SubRace.Highlander.ToName(), SubRace.Highlander ),
@@ -197,25 +114,25 @@ namespace Penumbra.UI
                 ( SubRace.Lost.ToName(), SubRace.Lost ),
             };
 
-            private static readonly (string, RspAttribute)[] RspAttributes = new[]
+            private static readonly (string, RspAttribute)[] RspAttributes =
             {
-                ( "Male Minimum Size", RspAttribute.MaleMinSize ),
-                ( "Male Maximum Size", RspAttribute.MaleMaxSize ),
-                ( "Female Minimum Size", RspAttribute.FemaleMinSize ),
-                ( "Female Maximum Size", RspAttribute.FemaleMaxSize ),
-                ( "Bust Minimum X-Axis", RspAttribute.BustMinX ),
-                ( "Bust Maximum X-Axis", RspAttribute.BustMaxX ),
-                ( "Bust Minimum Y-Axis", RspAttribute.BustMinY ),
-                ( "Bust Maximum Y-Axis", RspAttribute.BustMaxY ),
-                ( "Bust Minimum Z-Axis", RspAttribute.BustMinZ ),
-                ( "Bust Maximum Z-Axis", RspAttribute.BustMaxZ ),
-                ( "Male Minimum Tail Length", RspAttribute.MaleMinTail ),
-                ( "Male Maximum Tail Length", RspAttribute.MaleMaxTail ),
-                ( "Female Minimum Tail Length", RspAttribute.FemaleMinTail ),
-                ( "Female Maximum Tail Length", RspAttribute.FemaleMaxTail ),
+                ( RspAttribute.MaleMinSize.ToFullString(), RspAttribute.MaleMinSize ),
+                ( RspAttribute.MaleMaxSize.ToFullString(), RspAttribute.MaleMaxSize ),
+                ( RspAttribute.FemaleMinSize.ToFullString(), RspAttribute.FemaleMinSize ),
+                ( RspAttribute.FemaleMaxSize.ToFullString(), RspAttribute.FemaleMaxSize ),
+                ( RspAttribute.BustMinX.ToFullString(), RspAttribute.BustMinX ),
+                ( RspAttribute.BustMaxX.ToFullString(), RspAttribute.BustMaxX ),
+                ( RspAttribute.BustMinY.ToFullString(), RspAttribute.BustMinY ),
+                ( RspAttribute.BustMaxY.ToFullString(), RspAttribute.BustMaxY ),
+                ( RspAttribute.BustMinZ.ToFullString(), RspAttribute.BustMinZ ),
+                ( RspAttribute.BustMaxZ.ToFullString(), RspAttribute.BustMaxZ ),
+                ( RspAttribute.MaleMinTail.ToFullString(), RspAttribute.MaleMinTail ),
+                ( RspAttribute.MaleMaxTail.ToFullString(), RspAttribute.MaleMaxTail ),
+                ( RspAttribute.FemaleMinTail.ToFullString(), RspAttribute.FemaleMinTail ),
+                ( RspAttribute.FemaleMaxTail.ToFullString(), RspAttribute.FemaleMaxTail ),
             };
 
-            private static readonly (string, ObjectType)[] ImcObjectType = new[]
+            private static readonly (string, ObjectType)[] ImcObjectType =
             {
                 ObjectTypes[ 0 ],
                 ( "Weapon", ObjectType.Weapon ),
@@ -223,7 +140,7 @@ namespace Penumbra.UI
                 ( "Monster", ObjectType.Monster ),
             };
 
-            private static readonly (string, BodySlot)[] ImcBodySlots = new[]
+            private static readonly (string, BodySlot)[] ImcBodySlots =
             {
                 EstBodySlots[ 0 ],
                 EstBodySlots[ 1 ],
@@ -310,20 +227,13 @@ namespace Penumbra.UI
 
                 if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
                 {
-                    var defaults = ( EqpEntry )Service< MetaDefaults >.Get().GetDefaultValue( list[ manipIdx ] )!;
-                    var attributes = id.Slot switch
-                    {
-                        EquipSlot.Head  => EqpAttributesHead,
-                        EquipSlot.Body  => EqpAttributesBody,
-                        EquipSlot.Hands => EqpAttributesHands,
-                        EquipSlot.Legs  => EqpAttributesLegs,
-                        EquipSlot.Feet  => EqpAttributesFeet,
-                        _               => Array.Empty< (string, EqpEntry) >(),
-                    };
+                    var defaults   = ( EqpEntry )Service< MetaDefaults >.Get().GetDefaultValue( list[ manipIdx ] )!;
+                    var attributes = Eqp.EqpAttributes[ id.Slot ];
 
-                    foreach( var (name, flag) in attributes )
+                    foreach( var flag in attributes )
                     {
-                        var tmp = val.HasFlag( flag );
+                        var name = flag.ToLocalName();
+                        var tmp  = val.HasFlag( flag );
                         if( PrintCheckBox( $"{name}##manip", ref tmp, defaults.HasFlag( flag ) ) && _editMode && tmp != val.HasFlag( flag ) )
                         {
                             list[ manipIdx ] = MetaManipulation.Eqp( id.Slot, id.SetId, tmp ? val | flag : val & ~flag );
@@ -593,9 +503,6 @@ namespace Penumbra.UI
 
                 if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
                 {
-                    var color = defaults < val ? ColorDarkGreen :
-                        defaults > val ? ColorDarkRed : ImGui.ColorConvertFloat4ToU32( ImGui.GetStyle().Colors[ ( int )ImGuiCol.Button ] );
-
                     if( DefaultButton(
                             $"{( _editMode ? "Set to " : "" )}Default: {defaults:F3}##scaleManip", ref val, defaults )
                      && _editMode )
@@ -742,7 +649,7 @@ namespace Penumbra.UI
                             CustomCombo( "Equipment Slot", EqdpEquipSlots, out var equipSlot, ref _newManipEquipSlot );
                             CustomCombo( "Race", Races, out var race, ref _newManipRace );
                             CustomCombo( "Gender", Genders, out var gender, ref _newManipGender );
-                            newManip = MetaManipulation.Eqdp( equipSlot, GameData.Enums.Names.CombinedRace( gender, race ), ( ushort )_newManipSetId,
+                            newManip = MetaManipulation.Eqdp( equipSlot, Names.CombinedRace( gender, race ), ( ushort )_newManipSetId,
                                 new EqdpEntry() );
                             break;
                         }
@@ -771,7 +678,7 @@ namespace Penumbra.UI
 
                             CustomCombo( "Race", Races, out var race, ref _newManipRace );
                             CustomCombo( "Gender", Genders, out var gender, ref _newManipGender );
-                            newManip = MetaManipulation.Est( objectType, equipSlot, GameData.Enums.Names.CombinedRace( gender, race ), bodySlot,
+                            newManip = MetaManipulation.Est( objectType, equipSlot, Names.CombinedRace( gender, race ), bodySlot,
                                 ( ushort )_newManipSetId, 0 );
                             break;
                         }

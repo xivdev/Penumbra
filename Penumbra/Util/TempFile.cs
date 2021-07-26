@@ -5,13 +5,14 @@ namespace Penumbra.Util
 {
     public static class TempFile
     {
-        public static FileInfo TempFileName( DirectoryInfo baseDir, string suffix = "")
+        public static FileInfo TempFileName( DirectoryInfo baseDir, string suffix = "" )
         {
             const uint maxTries = 15;
             for( var i = 0; i < maxTries; ++i )
             {
                 var name = Path.GetRandomFileName();
-                var path = new FileInfo( Path.Combine( baseDir.FullName, suffix.Any() ? name.Substring( 0, name.LastIndexOf( '.' ) ) + suffix : name ) );
+                var path = new FileInfo( Path.Combine( baseDir.FullName,
+                    suffix.Any() ? name.Substring( 0, name.LastIndexOf( '.' ) ) + suffix : name ) );
                 if( !path.Exists )
                 {
                     return path;

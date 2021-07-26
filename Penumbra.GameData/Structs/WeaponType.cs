@@ -2,14 +2,15 @@ using System;
 
 namespace Penumbra.GameData.Structs
 {
-    public readonly struct WeaponType : IEquatable<WeaponType>
+    public readonly struct WeaponType : IEquatable< WeaponType >
     {
         public readonly ushort Value;
 
         public WeaponType( ushort value )
             => Value = value;
 
-        public static implicit operator WeaponType( ushort id ) => new( id );
+        public static implicit operator WeaponType( ushort id )
+            => new( id );
 
         public static explicit operator ushort( WeaponType id )
             => id.Value;

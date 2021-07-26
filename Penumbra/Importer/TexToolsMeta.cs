@@ -4,7 +4,6 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using Lumina.Data.Files;
-using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
@@ -113,14 +112,14 @@ namespace Penumbra.Importer
                     {
                         case ObjectType.Equipment:
                         case ObjectType.Accessory:
-                            if( GameData.Enums.Names.SuffixToEquipSlot.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpSlot ) )
+                            if( Names.SuffixToEquipSlot.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpSlot ) )
                             {
                                 EquipSlot = tmpSlot;
                             }
 
                             break;
                         case ObjectType.Character:
-                            if( GameData.Enums.Names.SuffixToCustomizationType.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpCustom ) )
+                            if( Names.SuffixToCustomizationType.TryGetValue( match.Groups[ "Slot" ].Value, out var tmpCustom ) )
                             {
                                 CustomizationType = tmpCustom;
                             }
@@ -130,7 +129,7 @@ namespace Penumbra.Importer
                 }
 
                 if( match.Groups[ "SecondaryType" ].Success
-                 && GameData.Enums.Names.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
+                 && Names.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
                 {
                     SecondaryId = ushort.Parse( match.Groups[ "SecondaryId" ].Value );
                 }

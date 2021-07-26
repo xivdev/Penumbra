@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Actors.Types;
 using ImGuiNET;
 using Penumbra.Api;
-using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;

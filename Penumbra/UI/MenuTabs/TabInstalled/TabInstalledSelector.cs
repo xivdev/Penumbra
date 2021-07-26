@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing.Configuration;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -157,7 +156,7 @@ namespace Penumbra.UI
                             var modMeta = new ModMeta
                             {
                                 Author      = "Unknown",
-                                Name        = newName.Replace('/', '\\'),
+                                Name        = newName.Replace( '/', '\\' ),
                                 Description = string.Empty,
                             };
 
@@ -336,7 +335,7 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawModHelpButton();
                 ImGui.SameLine();
-                DrawModTrashButton(); 
+                DrawModTrashButton();
 
 
                 ImGui.PopStyleVar( 3 );
@@ -371,7 +370,7 @@ namespace Penumbra.UI
                 ImGui.Text( "Are you sure you want to delete the following mod:" );
                 // todo: why the fuck does this become null??????
                 ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-                ImGui.TextColored( new Vector4( 0.7f, 0.1f, 0.1f, 1 ), Mod.Data.Meta.Name ?? "Unknown" );
+                ImGui.TextColored( new Vector4( 0.7f, 0.1f, 0.1f, 1 ), Mod.Data.Meta.Name );
                 ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() ) / 2 );
 
                 var buttonSize = new Vector2( 120, 0 );
@@ -421,7 +420,7 @@ namespace Penumbra.UI
                  && !CheckFlags( mod.Data.Resources.MetaManipulations.Count, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations )
                  && !CheckFlags( mod.Data.Meta.HasGroupsWithConfig ? 1 : 0, ModFilter.HasNoConfig, ModFilter.HasConfig );
 
-            private void DrawModOrderPopup( string popupName, Mod.Mod mod, int modIndex, bool firstOpen )
+            private void DrawModOrderPopup( string popupName, Mod.Mod mod, bool firstOpen )
             {
                 if( !ImGui.BeginPopup( popupName ) )
                 {
@@ -505,7 +504,7 @@ namespace Penumbra.UI
                     firstOpen = true;
                 }
 
-                DrawModOrderPopup( popupName, mod, modIndex, firstOpen );
+                DrawModOrderPopup( popupName, mod, firstOpen );
 
                 if( selected )
                 {

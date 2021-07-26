@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.ComponentModel;
 using Penumbra.GameData.Enums;
 
@@ -126,5 +128,181 @@ namespace Penumbra.GameData.Structs
                 _               => 0,
             };
         }
+
+        public static EquipSlot ToEquipSlot( this EqpEntry entry )
+        {
+            return entry switch
+            {
+                EqpEntry.BodyEnabled      => EquipSlot.Body,
+                EqpEntry.BodyHideWaist    => EquipSlot.Body,
+                EqpEntry._2               => EquipSlot.Body,
+                EqpEntry.BodyHideGlovesS  => EquipSlot.Body,
+                EqpEntry._4               => EquipSlot.Body,
+                EqpEntry.BodyHideGlovesM  => EquipSlot.Body,
+                EqpEntry.BodyHideGlovesL  => EquipSlot.Body,
+                EqpEntry.BodyHideGorget   => EquipSlot.Body,
+                EqpEntry.BodyShowLeg      => EquipSlot.Body,
+                EqpEntry.BodyShowHand     => EquipSlot.Body,
+                EqpEntry.BodyShowHead     => EquipSlot.Body,
+                EqpEntry.BodyShowNecklace => EquipSlot.Body,
+                EqpEntry.BodyShowBracelet => EquipSlot.Body,
+                EqpEntry.BodyShowTail     => EquipSlot.Body,
+                EqpEntry._14              => EquipSlot.Body,
+                EqpEntry._15              => EquipSlot.Body,
+
+                EqpEntry.LegsEnabled      => EquipSlot.Legs,
+                EqpEntry.LegsHideKneePads => EquipSlot.Legs,
+                EqpEntry.LegsHideBootsS   => EquipSlot.Legs,
+                EqpEntry.LegsHideBootsM   => EquipSlot.Legs,
+                EqpEntry._20              => EquipSlot.Legs,
+                EqpEntry.LegsShowFoot     => EquipSlot.Legs,
+                EqpEntry.LegsShowTail     => EquipSlot.Legs,
+                EqpEntry._23              => EquipSlot.Legs,
+
+                EqpEntry.HandsEnabled     => EquipSlot.Hands,
+                EqpEntry.HandsHideElbow   => EquipSlot.Hands,
+                EqpEntry.HandsHideForearm => EquipSlot.Hands,
+                EqpEntry._27              => EquipSlot.Hands,
+                EqpEntry.HandShowBracelet => EquipSlot.Hands,
+                EqpEntry.HandShowRingL    => EquipSlot.Hands,
+                EqpEntry.HandShowRingR    => EquipSlot.Hands,
+                EqpEntry._31              => EquipSlot.Hands,
+
+                EqpEntry.FeetEnabled   => EquipSlot.Feet,
+                EqpEntry.FeetHideKnee  => EquipSlot.Feet,
+                EqpEntry.FeetHideCalf  => EquipSlot.Feet,
+                EqpEntry.FeetHideAnkle => EquipSlot.Feet,
+                EqpEntry._36           => EquipSlot.Feet,
+                EqpEntry._37           => EquipSlot.Feet,
+                EqpEntry._38           => EquipSlot.Feet,
+                EqpEntry._39           => EquipSlot.Feet,
+
+                EqpEntry.HeadEnabled           => EquipSlot.Head,
+                EqpEntry.HeadHideScalp         => EquipSlot.Head,
+                EqpEntry.HeadHideHair          => EquipSlot.Head,
+                EqpEntry.HeadShowHairOverride  => EquipSlot.Head,
+                EqpEntry.HeadHideNeck          => EquipSlot.Head,
+                EqpEntry.HeadShowNecklace      => EquipSlot.Head,
+                EqpEntry._46                   => EquipSlot.Head,
+                EqpEntry.HeadShowEarrings      => EquipSlot.Head,
+                EqpEntry.HeadShowEarringsHuman => EquipSlot.Head,
+                EqpEntry.HeadShowEarringsAura  => EquipSlot.Head,
+                EqpEntry.HeadShowEarHuman      => EquipSlot.Head,
+                EqpEntry.HeadShowEarMiqote     => EquipSlot.Head,
+                EqpEntry.HeadShowEarAuRa       => EquipSlot.Head,
+                EqpEntry.HeadShowEarViera      => EquipSlot.Head,
+                EqpEntry._54                   => EquipSlot.Head,
+                EqpEntry._55                   => EquipSlot.Head,
+                EqpEntry.HeadShowHrothgarHat   => EquipSlot.Head,
+                EqpEntry.HeadShowVieraHat      => EquipSlot.Head,
+                EqpEntry._58                   => EquipSlot.Head,
+                EqpEntry._59                   => EquipSlot.Head,
+                EqpEntry._60                   => EquipSlot.Head,
+                EqpEntry._61                   => EquipSlot.Head,
+                EqpEntry._62                   => EquipSlot.Head,
+                EqpEntry._63                   => EquipSlot.Head,
+
+                _ => EquipSlot.Unknown,
+            };
+        }
+
+        public static string ToLocalName( this EqpEntry entry )
+        {
+            return entry switch
+            {
+                EqpEntry.BodyEnabled      => "Enabled",
+                EqpEntry.BodyHideWaist    => "Hide Waist",
+                EqpEntry._2               => "Unknown 2",
+                EqpEntry.BodyHideGlovesS  => "Hide Small Gloves",
+                EqpEntry._4               => "Unknown 4",
+                EqpEntry.BodyHideGlovesM  => "Hide Medium Gloves",
+                EqpEntry.BodyHideGlovesL  => "Hide Large Gloves",
+                EqpEntry.BodyHideGorget   => "Hide Gorget",
+                EqpEntry.BodyShowLeg      => "Show Legs",
+                EqpEntry.BodyShowHand     => "Show Hands",
+                EqpEntry.BodyShowHead     => "Show Head",
+                EqpEntry.BodyShowNecklace => "Show Necklace",
+                EqpEntry.BodyShowBracelet => "Show Bracelet",
+                EqpEntry.BodyShowTail     => "Show Tail",
+                EqpEntry._14              => "Unknown 14",
+                EqpEntry._15              => "Unknown 15",
+
+                EqpEntry.LegsEnabled      => "Enabled",
+                EqpEntry.LegsHideKneePads => "Hide Knee Pads",
+                EqpEntry.LegsHideBootsS   => "Hide Small Boots",
+                EqpEntry.LegsHideBootsM   => "Hide Medium Boots",
+                EqpEntry._20              => "Unknown 20",
+                EqpEntry.LegsShowFoot     => "Show Foot",
+                EqpEntry.LegsShowTail     => "Show Tail",
+                EqpEntry._23              => "Unknown 23",
+
+                EqpEntry.HandsEnabled     => "Enabled",
+                EqpEntry.HandsHideElbow   => "Hide Elbow",
+                EqpEntry.HandsHideForearm => "Hide Forearm",
+                EqpEntry._27              => "Unknown 27",
+                EqpEntry.HandShowBracelet => "Show Bracelet",
+                EqpEntry.HandShowRingL    => "Show Left Ring",
+                EqpEntry.HandShowRingR    => "Show Right Ring",
+                EqpEntry._31              => "Unknown 31",
+
+                EqpEntry.FeetEnabled   => "Enabled",
+                EqpEntry.FeetHideKnee  => "Hide Knees",
+                EqpEntry.FeetHideCalf  => "Hide Calves",
+                EqpEntry.FeetHideAnkle => "Hide Ankles",
+                EqpEntry._36           => "Unknown 36",
+                EqpEntry._37           => "Unknown 37",
+                EqpEntry._38           => "Unknown 38",
+                EqpEntry._39           => "Unknown 39",
+
+                EqpEntry.HeadEnabled           => "Enabled",
+                EqpEntry.HeadHideScalp         => "Hide Scalp",
+                EqpEntry.HeadHideHair          => "Hide Hair",
+                EqpEntry.HeadShowHairOverride  => "Show Hair Override",
+                EqpEntry.HeadHideNeck          => "Hide Neck",
+                EqpEntry.HeadShowNecklace      => "Show Necklace",
+                EqpEntry._46                   => "Unknown 46",
+                EqpEntry.HeadShowEarrings      => "Show Earrings",
+                EqpEntry.HeadShowEarringsHuman => "Show Earrings (Human)",
+                EqpEntry.HeadShowEarringsAura  => "Show Earrings (Au Ra)",
+                EqpEntry.HeadShowEarHuman      => "Show Ears (Human)",
+                EqpEntry.HeadShowEarMiqote     => "Show Ears (Miqo'te)",
+                EqpEntry.HeadShowEarAuRa       => "Show Ears (Au Ra)",
+                EqpEntry.HeadShowEarViera      => "Show Ears (Viera)",
+                EqpEntry._54                   => "Unknown 54",
+                EqpEntry._55                   => "Unknown 55",
+                EqpEntry.HeadShowHrothgarHat   => "Show on Hrothgar",
+                EqpEntry.HeadShowVieraHat      => "Show on Viera",
+                EqpEntry._58                   => "Unknown 58",
+                EqpEntry._59                   => "Unknown 59",
+                EqpEntry._60                   => "Unknown 60",
+                EqpEntry._61                   => "Unknown 61",
+                EqpEntry._62                   => "Unknown 62",
+                EqpEntry._63                   => "Unknown 63",
+
+                _ => throw new InvalidEnumArgumentException(),
+            };
+        }
+
+        private static EqpEntry[] GetEntriesForSlot( EquipSlot slot )
+        {
+            return ( ( EqpEntry[] )Enum.GetValues( typeof( EqpEntry ) ) )
+               .Where( e => e.ToEquipSlot() == slot )
+               .ToArray();
+        }
+
+        public static readonly EqpEntry[] EqpAttributesBody  = GetEntriesForSlot( EquipSlot.Body );
+        public static readonly EqpEntry[] EqpAttributesLegs  = GetEntriesForSlot( EquipSlot.Legs );
+        public static readonly EqpEntry[] EqpAttributesHands = GetEntriesForSlot( EquipSlot.Hands );
+        public static readonly EqpEntry[] EqpAttributesFeet  = GetEntriesForSlot( EquipSlot.Feet );
+        public static readonly EqpEntry[] EqpAttributesHead  = GetEntriesForSlot( EquipSlot.Head );
+
+        public static IReadOnlyDictionary< EquipSlot, EqpEntry[] > EqpAttributes = new Dictionary< EquipSlot, EqpEntry[] >()
+        {
+            [ EquipSlot.Body ]  = EqpAttributesBody,
+            [ EquipSlot.Legs ]  = EqpAttributesLegs,
+            [ EquipSlot.Hands ] = EqpAttributesHands,
+            [ EquipSlot.Feet ]  = EqpAttributesFeet,
+            [ EquipSlot.Head ]  = EqpAttributesHead,
+        };
     }
 }

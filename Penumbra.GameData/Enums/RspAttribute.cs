@@ -1,3 +1,5 @@
+using System.ComponentModel;
+
 namespace Penumbra.GameData.Enums
 {
     public enum RspAttribute : byte
@@ -62,6 +64,28 @@ namespace Penumbra.GameData.Enums
                 RspAttribute.BustMaxY      => "BustMaxY",
                 RspAttribute.BustMaxZ      => "BustMaxZ",
                 _                          => "",
+            };
+        }
+
+        public static string ToFullString( this RspAttribute attribute )
+        {
+            return attribute switch
+            {
+                RspAttribute.MaleMinSize   => "Male Minimum Size",
+                RspAttribute.MaleMaxSize   => "Male Maximum Size",
+                RspAttribute.FemaleMinSize => "Female Minimum Size",
+                RspAttribute.FemaleMaxSize => "Female Maximum Size",
+                RspAttribute.BustMinX      => "Bust Minimum X-Axis",
+                RspAttribute.BustMaxX      => "Bust Maximum X-Axis",
+                RspAttribute.BustMinY      => "Bust Minimum Y-Axis",
+                RspAttribute.BustMaxY      => "Bust Maximum Y-Axis",
+                RspAttribute.BustMinZ      => "Bust Minimum Z-Axis",
+                RspAttribute.BustMaxZ      => "Bust Maximum Z-Axis",
+                RspAttribute.MaleMinTail   => "Male Minimum Tail Length",
+                RspAttribute.MaleMaxTail   => "Male Maximum Tail Length",
+                RspAttribute.FemaleMinTail => "Female Minimum Tail Length",
+                RspAttribute.FemaleMaxTail => "Female Maximum Tail Length",
+                _                          => throw new InvalidEnumArgumentException(),
             };
         }
     }

@@ -6,7 +6,6 @@ using Dalamud.Plugin;
 using Newtonsoft.Json;
 using Penumbra.GameData.Util;
 using Penumbra.Structs;
-using Penumbra.Util;
 
 namespace Penumbra.Mod
 {

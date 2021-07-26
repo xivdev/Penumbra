@@ -1,27 +1,23 @@
 using System;
-using System.Linq;
 using Dalamud.Game.ClientState.Actors.Types;
-using ImGuiNET;
 
 namespace Penumbra.Api
 {
     public class PenumbraApi : IDisposable, IPenumbraApi
     {
         public int ApiVersion { get; } = 1;
-        private          bool   _initialized = false;
         private readonly Plugin _plugin;
+        public bool Valid { get; private set; } = false;
 
         public PenumbraApi( Plugin penumbra )
         {
-            _plugin = penumbra;
-            //_plugin.SettingsInterface.ChangedItemClicked += TriggerChangedItemClicked;
-            _initialized = true;
+            _plugin      = penumbra;
+            Valid = true;
         }
 
         public void Dispose()
         {
-            //_plugin.SettingsInterface.ChangedItemClicked -= TriggerChangedItemClicked;
-            _initialized = false;
+            Valid = false;
         }
 
         public event ChangedItemClick? ChangedItemClicked;
@@ -39,7 +35,7 @@ namespace Penumbra.Api
 
         private void CheckInitialized()
         {
-            if( !_initialized )
+            if( !Valid )
             {
                 throw new Exception( "PluginShare is not initialized." );
             }
@@ -65,8 +61,5 @@ namespace Penumbra.Api
 
             _plugin.ActorRefresher.RedrawAll( setting );
         }
-
-        public bool Valid
-            => _initialized;
     }
 }

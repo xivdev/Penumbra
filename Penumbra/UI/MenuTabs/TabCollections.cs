@@ -30,7 +30,7 @@ namespace Penumbra.UI
             {
                 _collections             = _manager.Collections.Collections.Values.Prepend( ModCollection.Empty ).ToArray();
                 _collectionNames         = string.Join( "\0", _collections.Skip( 1 ).Select( c => c.Name ) ) + '\0';
-                _collectionNamesWithNone = "None\0" + _collectionNames;
+                _collectionNamesWithNone = "None\0"                                                          + _collectionNames;
                 UpdateIndices();
             }
 
@@ -213,7 +213,8 @@ namespace Penumbra.UI
 
                 if( ImGui.IsItemHovered() )
                 {
-                    ImGui.SetTooltip( "A character collection will be used whenever you manually redraw a character with the Name you have set up.\n"
+                    ImGui.SetTooltip(
+                        "A character collection will be used whenever you manually redraw a character with the Name you have set up.\n"
                       + "If you enable automatic character redraws in the Settings tab, penumbra will try to use Character collections for corresponding characters automatically.\n" );
                 }
 

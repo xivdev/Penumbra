@@ -2,7 +2,6 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
-using System.Windows.Forms;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Penumbra.Mod;
@@ -233,7 +232,7 @@ namespace Penumbra.UI
                 }
             }
 
-            public static bool DrawSortOrder(ModData mod, ModManager manager, Selector selector)
+            public static bool DrawSortOrder( ModData mod, ModManager manager, Selector selector )
             {
                 var currentSortOrder = mod.SortOrder;
                 ImGui.SetNextItemWidth( 300 );
@@ -503,7 +502,7 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawNormalizeButton();
 
-                DrawSortOrder(Mod!.Data, _modManager, _selector);
+                DrawSortOrder( Mod!.Data, _modManager, _selector );
             }
 
             public void Draw()

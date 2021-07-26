@@ -2,14 +2,15 @@ using System;
 
 namespace Penumbra.GameData.Structs
 {
-    public readonly struct StainId : IEquatable<StainId>
+    public readonly struct StainId : IEquatable< StainId >
     {
         public readonly byte Value;
 
         public StainId( byte value )
             => Value = value;
 
-        public static implicit operator StainId( byte id ) => new( id );
+        public static implicit operator StainId( byte id )
+            => new( id );
 
         public static explicit operator byte( StainId id )
             => id.Value;

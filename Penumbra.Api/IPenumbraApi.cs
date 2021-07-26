@@ -1,4 +1,3 @@
-using System;
 using Dalamud.Game.ClientState.Actors.Types;
 
 namespace Penumbra.Api

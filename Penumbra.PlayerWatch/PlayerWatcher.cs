@@ -5,7 +5,7 @@ using Penumbra.GameData.Structs;
 
 namespace Penumbra.PlayerWatch
 {
-    public class PlayerWatcher : IDisposable, IPlayerWatcher
+    public class PlayerWatcher : IPlayerWatcher
     {
         public int Version { get; } = 1;
 

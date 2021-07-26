@@ -1,4 +1,3 @@
-using System.IO;
 using System.Numerics;
 using Penumbra.Mods;
 using Penumbra.Util;

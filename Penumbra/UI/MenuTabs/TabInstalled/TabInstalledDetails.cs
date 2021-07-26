@@ -1,9 +1,7 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.Api;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;

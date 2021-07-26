@@ -32,8 +32,8 @@ namespace Penumbra.Interop
         private const int NpcActorId           = -536870912;
         public const  int GPosePlayerActorIdx  = 201;
 
-        private readonly DalamudPluginInterface                        _pi;
-        private readonly ModManager                                    _mods;
+        private readonly DalamudPluginInterface                            _pi;
+        private readonly ModManager                                        _mods;
         private readonly Queue< (int actorId, string name, RedrawType s) > _actorIds = new();
 
         private int          _currentFrame           = 0;
@@ -41,7 +41,7 @@ namespace Penumbra.Interop
         private int          _currentActorId         = -1;
         private string?      _currentActorName       = null;
         private LoadingFlags _currentActorStartState = 0;
-        private RedrawType       _currentActorRedrawType     = RedrawType.Unload;
+        private RedrawType   _currentActorRedrawType = RedrawType.Unload;
 
         public static IntPtr RenderPtr( Actor actor )
             => actor.Address + RenderModeOffset;
@@ -153,11 +153,11 @@ namespace Penumbra.Interop
         {
             if( _actorIds.Count > 0 )
             {
-                var (id, name, s)   = _actorIds.Dequeue();
-                _currentActorName   = name;
-                _currentActorId     = id;
+                var (id, name, s)       = _actorIds.Dequeue();
+                _currentActorName       = name;
+                _currentActorId         = id;
                 _currentActorRedrawType = s;
-                var (actor, idx)    = FindCurrentActor();
+                var (actor, _)          = FindCurrentActor();
                 if( actor == null )
                 {
                     return;
@@ -232,7 +232,7 @@ namespace Penumbra.Interop
 
         private void RevertSettings()
         {
-            var (actor, idx) = FindCurrentActor();
+            var (actor, _) = FindCurrentActor();
             if( actor != null )
             {
                 if( !StillLoading( RenderPtr( actor ) ) )

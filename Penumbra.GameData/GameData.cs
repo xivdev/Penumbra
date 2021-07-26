@@ -19,12 +19,13 @@ namespace Penumbra.GameData
             return Identification;
         }
 
-        public static IObjectIdentifier GetIdentifier( )
+        public static IObjectIdentifier GetIdentifier()
         {
             if( Identification == null )
             {
                 throw new Exception( "Object Identification was not initialized." );
             }
+
             return Identification;
         }
 
