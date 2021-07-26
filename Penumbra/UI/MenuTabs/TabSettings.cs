@@ -21,6 +21,7 @@ namespace Penumbra.UI
             private const string LabelOpenFolder           = "Open Mods Folder";
             private const string LabelEnabled              = "Enable Mods";
             private const string LabelEnabledPlayerWatch   = "Enable automatic Character Redraws";
+            private const string LabelWaitFrames           = "Wait Frames";
             private const string LabelScaleModSelector     = "Scale Mod Selector With Window Size";
             private const string LabelShowAdvanced         = "Show Advanced Settings";
             private const string LabelLogLoadedFiles       = "Log all loaded files";
@@ -173,6 +174,31 @@ namespace Penumbra.UI
                     ImGui.SetTooltip(
                         "If this setting is enabled, penumbra will keep tabs on characters that have a corresponding collection setup in the Collections tab.\n"
                       + "Penumbra will try to automatically redraw those characters using their collection when they first appear in an instance, or when they change their current equip." );
+                }
+
+                if( _config.EnableActorWatch && _config.ShowAdvanced )
+                {
+                    var waitFrames = _config.WaitFrames;
+                    ImGui.SameLine();
+                    ImGui.SetNextItemWidth( 50 );
+                    if( ImGui.InputInt( LabelWaitFrames, ref waitFrames, 0, 0 )
+                     && waitFrames != _config.WaitFrames
+                     && waitFrames > 0
+                     && waitFrames < 3000 )
+                    {
+                        _base._plugin.ActorRefresher.DefaultWaitFrames = waitFrames;
+                        _config.WaitFrames                             = waitFrames;
+                        _configChanged                                 = true;
+                    }
+
+                    if( ImGui.IsItemHovered() )
+                    {
+                        ImGui.SetTooltip(
+                            "The number of frames penumbra waits after some events (like zone changes) until it starts trying to redraw actors again, in a range of [1, 3001].\n"
+                          + "Keep this as low as possible while producing stable results." );
+                    }
+
+                    ;
                 }
             }
 

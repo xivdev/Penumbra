@@ -57,7 +57,7 @@ namespace Penumbra
 
             modManager.DiscoverMods();
 
-            ActorRefresher = new ActorRefresher( PluginInterface, modManager );
+            ActorRefresher = new ActorRefresher( PluginInterface, modManager, Configuration.WaitFrames );
 
             ResourceLoader = new ResourceLoader( this );
 

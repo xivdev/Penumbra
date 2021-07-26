@@ -22,6 +22,7 @@ namespace Penumbra
 
         public bool EnableHttpApi { get; set; }
         public bool EnableActorWatch { get; set; } = false;
+        public int WaitFrames { get; set; } = 30;
 
         public string ModDirectory { get; set; } = string.Empty;
 

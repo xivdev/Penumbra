@@ -36,6 +36,9 @@ namespace Penumbra.Interop
         private readonly ModManager                                        _mods;
         private readonly Queue< (int actorId, string name, RedrawType s) > _actorIds = new();
 
+        internal int DefaultWaitFrames;
+
+        private int          _waitFrames             = 0;
         private int          _currentFrame           = 0;
         private bool         _changedSettings        = false;
         private int          _currentActorId         = -1;
@@ -46,10 +49,11 @@ namespace Penumbra.Interop
         public static IntPtr RenderPtr( Actor actor )
             => actor.Address + RenderModeOffset;
 
-        public ActorRefresher( DalamudPluginInterface pi, ModManager mods )
+        public ActorRefresher( DalamudPluginInterface pi, ModManager mods, int defaultWaitFrames )
         {
-            _pi   = pi;
-            _mods = mods;
+            _pi               = pi;
+            _mods             = mods;
+            DefaultWaitFrames = defaultWaitFrames;
         }
 
         private void ChangeSettings()
@@ -251,6 +255,13 @@ namespace Penumbra.Interop
         {
             if( _pi.ClientState.Condition[ ConditionFlag.BetweenAreas51 ] || _pi.ClientState.Condition[ ConditionFlag.BetweenAreas ] )
             {
+                _waitFrames = DefaultWaitFrames;
+                return;
+            }
+
+            if( _waitFrames > 0 )
+            {
+                --_waitFrames;
                 return;
             }
 
