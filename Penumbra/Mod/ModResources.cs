@@ -9,6 +9,7 @@ namespace Penumbra.Mod
     [Flags]
     public enum ResourceChange
     {
+        None  = 0,
         Files = 1,
         Meta  = 2,
     }
