@@ -7,20 +7,11 @@ using System.Threading.Tasks;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Actors.Types;
 using Dalamud.Plugin;
+using Penumbra.Api;
 using Penumbra.Mods;
 
 namespace Penumbra.Interop
 {
-    public enum Redraw
-    {
-        WithoutSettings,
-        WithSettings,
-        OnlyWithSettings,
-        Unload,
-        RedrawWithoutSettings,
-        RedrawWithSettings,
-    }
-
     public class ActorRefresher : IDisposable
     {
         private delegate void ManipulateDraw( IntPtr actor );
@@ -43,14 +34,14 @@ namespace Penumbra.Interop
 
         private readonly DalamudPluginInterface                        _pi;
         private readonly ModManager                                    _mods;
-        private readonly Queue< (int actorId, string name, Redraw s) > _actorIds = new();
+        private readonly Queue< (int actorId, string name, RedrawType s) > _actorIds = new();
 
         private int          _currentFrame           = 0;
         private bool         _changedSettings        = false;
         private int          _currentActorId         = -1;
         private string?      _currentActorName       = null;
         private LoadingFlags _currentActorStartState = 0;
-        private Redraw       _currentActorRedraw     = Redraw.Unload;
+        private RedrawType       _currentActorRedrawType     = RedrawType.Unload;
 
         public static IntPtr RenderPtr( Actor actor )
             => actor.Address + RenderModeOffset;
@@ -165,7 +156,7 @@ namespace Penumbra.Interop
                 var (id, name, s)   = _actorIds.Dequeue();
                 _currentActorName   = name;
                 _currentActorId     = id;
-                _currentActorRedraw = s;
+                _currentActorRedrawType = s;
                 var (actor, idx)    = FindCurrentActor();
                 if( actor == null )
                 {
@@ -189,30 +180,30 @@ namespace Penumbra.Interop
                 return;
             }
 
-            switch( _currentActorRedraw )
+            switch( _currentActorRedrawType )
             {
-                case Redraw.Unload:
+                case RedrawType.Unload:
                     WriteInvisible( actor, idx );
                     _currentFrame = 0;
                     break;
-                case Redraw.RedrawWithSettings:
+                case RedrawType.RedrawWithSettings:
                     ChangeSettings();
                     ++_currentFrame;
                     break;
-                case Redraw.RedrawWithoutSettings:
+                case RedrawType.RedrawWithoutSettings:
                     WriteVisible( actor, idx );
                     _currentFrame = 0;
                     break;
-                case Redraw.WithoutSettings:
+                case RedrawType.WithoutSettings:
                     WriteInvisible( actor, idx );
                     ++_currentFrame;
                     break;
-                case Redraw.WithSettings:
+                case RedrawType.WithSettings:
                     ChangeSettings();
                     WriteInvisible( actor, idx );
                     ++_currentFrame;
                     break;
-                case Redraw.OnlyWithSettings:
+                case RedrawType.OnlyWithSettings:
                     ChangeSettings();
                     if( !_changedSettings )
                     {
@@ -283,7 +274,7 @@ namespace Penumbra.Interop
             }
         }
 
-        private void RedrawActorIntern( int actorId, string actorName, Redraw settings )
+        private void RedrawActorIntern( int actorId, string actorName, RedrawType settings )
         {
             if( _actorIds.Contains( ( actorId, actorName, settings ) ) )
             {
@@ -297,7 +288,7 @@ namespace Penumbra.Interop
             }
         }
 
-        public void RedrawActor( Actor? actor, Redraw settings = Redraw.WithSettings )
+        public void RedrawActor( Actor? actor, RedrawType settings = RedrawType.WithSettings )
         {
             if( actor != null )
             {
@@ -330,10 +321,10 @@ namespace Penumbra.Interop
             };
         }
 
-        public void RedrawActor( string name, Redraw settings = Redraw.WithSettings )
+        public void RedrawActor( string name, RedrawType settings = RedrawType.WithSettings )
             => RedrawActor( GetName( name ), settings );
 
-        public void RedrawAll( Redraw settings = Redraw.WithSettings )
+        public void RedrawAll( RedrawType settings = RedrawType.WithSettings )
         {
             Clear();
             foreach( var actor in _pi.ClientState.Actors )
@@ -365,7 +356,7 @@ namespace Penumbra.Interop
             Clear();
             UnloadAll();
             await Task.Delay( UnloadAllRedrawDelay );
-            RedrawAll( Redraw.RedrawWithSettings );
+            RedrawAll( RedrawType.RedrawWithSettings );
         }
 
         public async void UnloadAtOnceRedrawWithoutSettings()

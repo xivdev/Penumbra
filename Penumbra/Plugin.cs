@@ -2,7 +2,9 @@ using Dalamud.Game.Command;
 using Dalamud.Plugin;
 using EmbedIO;
 using EmbedIO.WebApi;
-using Penumbra.API;
+using ImGuiNET;
+using Lumina.Excel.GeneratedSheets;
+using Penumbra.Api;
 using Penumbra.Interop;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
@@ -32,6 +34,8 @@ namespace Penumbra
         public MusicManager SoundShit { get; set; } = null!;
         public ActorRefresher ActorRefresher { get; set; } = null!;
         public IPlayerWatcher PlayerWatcher { get; set; } = null!;
+        public PenumbraApi Api { get; set; } = null!;
+
 
         private WebServer? _webServer;
 
@@ -85,7 +89,28 @@ namespace Penumbra
             PlayerWatcher.ActorChanged += a =>
             {
                 PluginLog.Debug( "Triggered Redraw of {Actor}.", a.Name );
-                ActorRefresher.RedrawActor( a, Redraw.OnlyWithSettings );
+                ActorRefresher.RedrawActor( a, RedrawType.OnlyWithSettings );
+            };
+
+            Api = new PenumbraApi( this );
+            SubscribeItemLinks();
+        }
+
+        private void SubscribeItemLinks()
+        {
+            Api.ChangedItemTooltip += it =>
+            {
+                if( it is Item )
+                {
+                    ImGui.Text( "Left Click to create an item link in chat." );
+                }
+            };
+            Api.ChangedItemClicked += ( button, it ) =>
+            {
+                if( button == MouseButton.Left && it is Item item )
+                {
+                    ChatUtil.LinkItem( item );
+                }
             };
         }
 

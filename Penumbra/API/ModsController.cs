@@ -6,7 +6,7 @@ using EmbedIO.WebApi;
 using Penumbra.Mods;
 using Penumbra.Util;
 
-namespace Penumbra.API
+namespace Penumbra.Api
 {
     public class ModsController : WebApiController
     {

@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Actors.Types;
 using ImGuiNET;
+using Penumbra.Api;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -155,10 +156,10 @@ namespace Penumbra.UI
                 return;
             }
 
-            var queue = ( Queue< (int, string, Redraw) >? )_plugin.ActorRefresher.GetType()
+            var queue = ( Queue< (int, string, RedrawType) >? )_plugin.ActorRefresher.GetType()
                    .GetField( "_actorIds", BindingFlags.Instance | BindingFlags.NonPublic )
                   ?.GetValue( _plugin.ActorRefresher )
-             ?? new Queue< (int, string, Redraw) >();
+             ?? new Queue< (int, string, RedrawType) >();
 
             var currentFrame = ( int? )_plugin.ActorRefresher.GetType()
                .GetField( "_currentFrame", BindingFlags.Instance | BindingFlags.NonPublic )
@@ -180,7 +181,7 @@ namespace Penumbra.UI
                .GetField( "_currentActorStartState", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( _plugin.ActorRefresher );
 
-            var currentActorRedraw = ( Redraw? )_plugin.ActorRefresher.GetType()
+            var currentActorRedraw = ( RedrawType? )_plugin.ActorRefresher.GetType()
                .GetField( "_currentActorRedraw", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( _plugin.ActorRefresher );
 

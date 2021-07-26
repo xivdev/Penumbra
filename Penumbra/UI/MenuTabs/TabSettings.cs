@@ -4,6 +4,7 @@ using System.IO;
 using System.Text.RegularExpressions;
 using Dalamud.Plugin;
 using ImGuiNET;
+using Penumbra.Api;
 using Penumbra.Interop;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -80,7 +81,7 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged    = true;
-                    _base._plugin.ActorRefresher.RedrawAll( enabled ? Redraw.WithSettings : Redraw.WithoutSettings );
+                    _base._plugin.ActorRefresher.RedrawAll( enabled ? RedrawType.WithSettings : RedrawType.WithoutSettings );
                     if( _config.EnableActorWatch )
                     {
                         _base._plugin.PlayerWatcher.SetStatus( enabled );

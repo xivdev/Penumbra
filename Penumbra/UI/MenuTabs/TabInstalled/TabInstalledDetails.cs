@@ -4,6 +4,7 @@ using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
+using Penumbra.Api;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -178,21 +179,20 @@ namespace Penumbra.UI
                 {
                     foreach( var item in Mod.Data.ChangedItems )
                     {
-                        var ret = ImGui.Selectable( item.Key );
-                        var it  = item.Value as Item;
-                        if( it == null )
+                        var ret = ImGui.Selectable( item.Key ) ? MouseButton.Left : MouseButton.None;
+                        ret = ImGui.IsItemClicked( ImGuiMouseButton.Right ) ? MouseButton.Right : ret;
+                        ret = ImGui.IsItemClicked( ImGuiMouseButton.Middle ) ? MouseButton.Middle : ret;
+
+                        if( ret != MouseButton.None )
                         {
-                            continue;
+                            _base._plugin.Api.InvokeClick( ret, item.Value );
                         }
 
-                        if( ret )
+                        if( _base._plugin.Api.HasTooltip && ImGui.IsItemHovered() )
                         {
-                            ChatUtil.LinkItem( it );
-                        }
-
-                        if( ImGui.IsItemHovered() )
-                        {
-                            ImGui.SetTooltip( "Left click to create link in chat." );
+                            ImGui.BeginTooltip();
+                            _base._plugin.Api.InvokeTooltip( item.Value );
+                            ImGui.EndTooltip();
                         }
                     }
 
