@@ -22,8 +22,8 @@ namespace Penumbra.Meta
 
 
         // Store total number of manipulations for some ease of access.
-        [JsonProperty]
-        public int Count { get; private set; } = 0;
+        [JsonIgnore]
+        internal int Count = 0;
 
 
         // Return an enumeration of all active meta manipulations for a given mod with given settings.
@@ -215,6 +215,12 @@ namespace Penumbra.Meta
 
                 var collection = JsonConvert.DeserializeObject< MetaCollection >( text,
                     new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore } );
+
+                if( collection != null )
+                {
+                    collection.Count = collection.DefaultData.Count
+                      + collection.GroupData.Values.SelectMany( kvp => kvp.Values ).Sum( l => l.Count );
+                }
 
                 return collection;
             }

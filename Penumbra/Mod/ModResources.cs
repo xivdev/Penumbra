@@ -29,7 +29,7 @@ namespace Penumbra.Mod
             MetaManipulations.SaveToFile( MetaCollection.FileName( basePath ) );
         }
 
-        public void SetManipulations( ModMeta meta, DirectoryInfo basePath )
+        public void SetManipulations( ModMeta meta, DirectoryInfo basePath, bool validate = true )
         {
             var newManipulations = MetaCollection.LoadFromFile( MetaCollection.FileName( basePath ) );
             if( newManipulations == null )
@@ -39,7 +39,7 @@ namespace Penumbra.Mod
             else
             {
                 MetaManipulations = newManipulations;
-                if( !MetaManipulations.Validate( meta ) )
+                if( validate && !MetaManipulations.Validate( meta ) )
                 {
                     ForceManipulationsUpdate( meta, basePath );
                 }

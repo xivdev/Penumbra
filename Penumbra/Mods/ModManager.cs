@@ -163,7 +163,7 @@ namespace Penumbra.Mods
             var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile );
             var fileChanges = mod.Resources.RefreshModFiles( mod.BasePath );
 
-            if( !recomputeMeta && !metaChanges && fileChanges == 0 )
+            if( !recomputeMeta && !reloadMeta && !metaChanges && fileChanges == 0 )
             {
                 return false;
             }

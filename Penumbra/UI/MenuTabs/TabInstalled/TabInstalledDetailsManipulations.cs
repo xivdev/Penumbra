@@ -535,7 +535,7 @@ namespace Penumbra.UI
                 return ret;
             }
 
-            private bool DrawManipulationRow( ref int manipIdx, IList< MetaManipulation > list )
+            private bool DrawManipulationRow( ref int manipIdx, IList< MetaManipulation > list, ref int count )
             {
                 var type = list[ manipIdx ].Type;
 
@@ -549,6 +549,7 @@ namespace Penumbra.UI
                         ImGui.PopFont();
                         ImGui.TableNextRow();
                         --manipIdx;
+                        --count;
                         return true;
                     }
 
@@ -609,7 +610,7 @@ namespace Penumbra.UI
                 return ( MetaType )_newManipTypeIdx;
             }
 
-            private bool DrawNewManipulationPopup( string popupName, IList< MetaManipulation > list )
+            private bool DrawNewManipulationPopup( string popupName, IList< MetaManipulation > list, ref int count )
             {
                 var change = false;
                 if( ImGui.BeginPopup( popupName ) )
@@ -714,7 +715,9 @@ namespace Penumbra.UI
                             };
                             list.Add( manip );
                             change = true;
+                            ++count;
                         }
+                        ImGui.CloseCurrentPopup();
                     }
 
                     ImGui.EndPopup();
@@ -723,7 +726,7 @@ namespace Penumbra.UI
                 return change;
             }
 
-            private bool DrawMetaManipulationsTable( string label, IList< MetaManipulation > list )
+            private bool DrawMetaManipulationsTable( string label, IList< MetaManipulation > list, ref int count )
             {
                 var numRows = _editMode ? 11 : 10;
                 var changes = false;
@@ -759,7 +762,7 @@ namespace Penumbra.UI
 
                     for( var i = 0; i < list.Count; ++i )
                     {
-                        changes |= DrawManipulationRow( ref i, list );
+                        changes |= DrawManipulationRow( ref i, list, ref count );
                     }
 
                     ImGui.EndTable();
@@ -768,7 +771,7 @@ namespace Penumbra.UI
                 var popupName = $"##newManip{label}";
                 if( _editMode )
                 {
-                    changes |= DrawNewManipulationPopup( $"##newManip{label}", list );
+                    changes |= DrawNewManipulationPopup( $"##newManip{label}", list, ref count );
                     if( ImGui.Button( $"Add New Manipulation##{label}", Vector2.UnitX * -1 ) )
                     {
                         ImGui.OpenPopup( popupName );

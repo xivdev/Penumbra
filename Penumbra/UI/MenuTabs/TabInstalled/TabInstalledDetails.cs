@@ -647,7 +647,7 @@ namespace Penumbra.UI
 
             private void DrawMetaManipulationsTab()
             {
-                if( Mod.Data.Resources.MetaManipulations.Count == 0 )
+                if( !_editMode && Mod.Data.Resources.MetaManipulations.Count == 0 )
                 {
                     return;
                 }
@@ -665,7 +665,7 @@ namespace Penumbra.UI
                     {
                         if( ImGui.CollapsingHeader( "Default" ) )
                         {
-                            changes = DrawMetaManipulationsTable( "##DefaultManips", manips.DefaultData );
+                            changes = DrawMetaManipulationsTable( "##DefaultManips", manips.DefaultData, ref manips.Count );
                         }
                     }
 
@@ -675,7 +675,7 @@ namespace Penumbra.UI
                         {
                             if( ImGui.CollapsingHeader( $"{group.Key} - {option.Key}" ) )
                             {
-                                changes |= DrawMetaManipulationsTable( $"##{group.Key}{option.Key}manips", option.Value );
+                                changes |= DrawMetaManipulationsTable( $"##{group.Key}{option.Key}manips", option.Value, ref manips.Count );
                             }
                         }
                     }
@@ -683,6 +683,7 @@ namespace Penumbra.UI
                     if( changes )
                     {
                         Mod.Data.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( Mod.Data.BasePath ) );
+                        Mod.Data.Resources.SetManipulations( Meta, Mod.Data.BasePath, false );
                         _selector.ReloadCurrentMod( true, false );
                     }
 
