@@ -83,7 +83,7 @@ namespace Penumbra.UI
                     _base._plugin.ActorRefresher.RedrawAll( enabled ? Redraw.WithSettings : Redraw.WithoutSettings );
                     if( _config.EnableActorWatch )
                     {
-                        _base._plugin.PlayerWatcher.SetActorWatch( enabled );
+                        _base._plugin.PlayerWatcher.SetStatus( enabled );
                     }
                 }
             }
@@ -164,7 +164,7 @@ namespace Penumbra.UI
                 {
                     _config.EnableActorWatch = enabled;
                     _configChanged           = true;
-                    _base._plugin.PlayerWatcher.SetActorWatch( enabled );
+                    _base._plugin.PlayerWatcher.SetStatus( enabled );
                 }
 
                 if( ImGui.IsItemHovered() )

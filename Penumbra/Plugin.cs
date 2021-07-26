@@ -6,6 +6,7 @@ using Penumbra.API;
 using Penumbra.Interop;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
+using Penumbra.PlayerWatch;
 using Penumbra.UI;
 using Penumbra.Util;
 
@@ -30,7 +31,7 @@ namespace Penumbra
         public SettingsInterface SettingsInterface { get; set; } = null!;
         public MusicManager SoundShit { get; set; } = null!;
         public ActorRefresher ActorRefresher { get; set; } = null!;
-        public PlayerWatcher PlayerWatcher { get; set; } = null!;
+        public IPlayerWatcher PlayerWatcher { get; set; } = null!;
 
         private WebServer? _webServer;
 
@@ -46,7 +47,7 @@ namespace Penumbra
             SoundShit.DisableStreaming();
 
             var gameUtils = Service< GameResourceManagement >.Set( PluginInterface );
-            PlayerWatcher = new PlayerWatcher( PluginInterface );
+            PlayerWatcher = PlayerWatchFactory.Create( PluginInterface );
             Service< MetaDefaults >.Set( PluginInterface );
             var modManager = Service< ModManager >.Set( this );
 
@@ -78,7 +79,7 @@ namespace Penumbra
 
             if( Configuration.EnableActorWatch && Configuration.IsEnabled )
             {
-                PlayerWatcher.EnableActorWatch();
+                PlayerWatcher.Enable();
             }
 
             PlayerWatcher.ActorChanged += a =>

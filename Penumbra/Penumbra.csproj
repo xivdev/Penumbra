@@ -75,6 +75,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
+      <ProjectReference Include="..\Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj" />
     </ItemGroup>
 
     <ItemGroup>
