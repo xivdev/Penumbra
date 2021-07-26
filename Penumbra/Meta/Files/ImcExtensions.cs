@@ -111,9 +111,9 @@ namespace Penumbra.Meta.Files
                     EquipSlot.Hands  => 2,
                     EquipSlot.Wrists => 2,
                     EquipSlot.Legs   => 3,
-                    EquipSlot.RingR  => 3,
+                    EquipSlot.RFinger  => 3,
                     EquipSlot.Feet   => 4,
-                    EquipSlot.RingL  => 4,
+                    EquipSlot.LFinger  => 4,
                     _                => throw new InvalidEnumArgumentException(),
                 };
             }

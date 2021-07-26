@@ -7,7 +7,7 @@ namespace Penumbra.GameData.Enums
     {
         Unknown           = 0,
         MainHand          = 1,
-        Offhand           = 2,
+        OffHand           = 2,
         Head              = 3,
         Body              = 4,
         Hands             = 5,
@@ -17,9 +17,9 @@ namespace Penumbra.GameData.Enums
         Ears              = 9,
         Neck              = 10,
         Wrists            = 11,
-        RingR             = 12,
+        RFinger           = 12,
         BothHand          = 13,
-        RingL             = 14, // Not officially existing, means "weapon could be equipped in either hand" for the game.
+        LFinger           = 14, // Not officially existing, means "weapon could be equipped in either hand" for the game.
         HeadBody          = 15,
         BodyHandsLegsFeet = 16,
         SoulCrystal       = 17,
@@ -36,17 +36,17 @@ namespace Penumbra.GameData.Enums
         {
             return value switch
             {
-                EquipSlot.Head   => "met",
-                EquipSlot.Hands  => "glv",
-                EquipSlot.Legs   => "dwn",
-                EquipSlot.Feet   => "sho",
-                EquipSlot.Body   => "top",
-                EquipSlot.Ears   => "ear",
-                EquipSlot.Neck   => "nek",
-                EquipSlot.RingR  => "rir",
-                EquipSlot.RingL  => "ril",
-                EquipSlot.Wrists => "wrs",
-                _                => throw new InvalidEnumArgumentException(),
+                EquipSlot.Head    => "met",
+                EquipSlot.Hands   => "glv",
+                EquipSlot.Legs    => "dwn",
+                EquipSlot.Feet    => "sho",
+                EquipSlot.Body    => "top",
+                EquipSlot.Ears    => "ear",
+                EquipSlot.Neck    => "nek",
+                EquipSlot.RFinger => "rir",
+                EquipSlot.LFinger => "ril",
+                EquipSlot.Wrists  => "wrs",
+                _                 => throw new InvalidEnumArgumentException(),
             };
         }
 
@@ -55,7 +55,7 @@ namespace Penumbra.GameData.Enums
             return value switch
             {
                 EquipSlot.MainHand          => EquipSlot.MainHand,
-                EquipSlot.Offhand           => EquipSlot.Offhand,
+                EquipSlot.OffHand           => EquipSlot.OffHand,
                 EquipSlot.Head              => EquipSlot.Head,
                 EquipSlot.Body              => EquipSlot.Body,
                 EquipSlot.Hands             => EquipSlot.Hands,
@@ -65,9 +65,9 @@ namespace Penumbra.GameData.Enums
                 EquipSlot.Ears              => EquipSlot.Ears,
                 EquipSlot.Neck              => EquipSlot.Neck,
                 EquipSlot.Wrists            => EquipSlot.Wrists,
-                EquipSlot.RingR             => EquipSlot.RingR,
+                EquipSlot.RFinger           => EquipSlot.RFinger,
                 EquipSlot.BothHand          => EquipSlot.MainHand,
-                EquipSlot.RingL             => EquipSlot.RingR,
+                EquipSlot.LFinger           => EquipSlot.RFinger,
                 EquipSlot.HeadBody          => EquipSlot.Body,
                 EquipSlot.BodyHandsLegsFeet => EquipSlot.Body,
                 EquipSlot.SoulCrystal       => EquipSlot.SoulCrystal,
@@ -96,12 +96,12 @@ namespace Penumbra.GameData.Enums
         {
             return value switch
             {
-                EquipSlot.Ears   => true,
-                EquipSlot.Neck   => true,
-                EquipSlot.RingR  => true,
-                EquipSlot.RingL  => true,
-                EquipSlot.Wrists => true,
-                _                => false,
+                EquipSlot.Ears    => true,
+                EquipSlot.Neck    => true,
+                EquipSlot.RFinger => true,
+                EquipSlot.LFinger => true,
+                EquipSlot.Wrists  => true,
+                _                 => false,
             };
         }
     }
@@ -117,8 +117,8 @@ namespace Penumbra.GameData.Enums
             { EquipSlot.Body.ToSuffix(), EquipSlot.Body },
             { EquipSlot.Ears.ToSuffix(), EquipSlot.Ears },
             { EquipSlot.Neck.ToSuffix(), EquipSlot.Neck },
-            { EquipSlot.RingR.ToSuffix(), EquipSlot.RingR },
-            { EquipSlot.RingL.ToSuffix(), EquipSlot.RingL },
+            { EquipSlot.RFinger.ToSuffix(), EquipSlot.RFinger },
+            { EquipSlot.LFinger.ToSuffix(), EquipSlot.LFinger },
             { EquipSlot.Wrists.ToSuffix(), EquipSlot.Wrists },
         };
     }

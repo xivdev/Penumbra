@@ -63,8 +63,8 @@ namespace Penumbra.GameData.Structs
                 EquipSlot.Ears   => 0,
                 EquipSlot.Neck   => 2,
                 EquipSlot.Wrists => 4,
-                EquipSlot.RingR  => 6,
-                EquipSlot.RingL  => 8,
+                EquipSlot.RFinger  => 6,
+                EquipSlot.LFinger  => 8,
                 _                => throw new InvalidEnumArgumentException(),
             };
         }
@@ -98,8 +98,8 @@ namespace Penumbra.GameData.Structs
                 EquipSlot.Ears   => EqdpEntry.EarsMask,
                 EquipSlot.Neck   => EqdpEntry.NeckMask,
                 EquipSlot.Wrists => EqdpEntry.WristsMask,
-                EquipSlot.RingR  => EqdpEntry.RingRMask,
-                EquipSlot.RingL  => EqdpEntry.RingLMask,
+                EquipSlot.RFinger  => EqdpEntry.RingRMask,
+                EquipSlot.LFinger  => EqdpEntry.RingLMask,
                 _                => 0,
             };
         }

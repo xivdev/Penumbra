@@ -23,6 +23,6 @@ namespace Penumbra.PlayerWatch
 
         public void          AddPlayerToWatch( string name );
         public void          RemovePlayerFromWatch( string playerName );
-        public CharEquipment UpdateActorWithoutEvent( Actor actor );
+        public ActorEquipment UpdateActorWithoutEvent( Actor actor );
     }
 }

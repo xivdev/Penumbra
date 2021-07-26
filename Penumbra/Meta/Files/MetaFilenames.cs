@@ -71,8 +71,8 @@ namespace Penumbra.Meta.Files
                 EquipSlot.Neck   => Eqdp( ObjectType.Accessory, gr ),
                 EquipSlot.Ears   => Eqdp( ObjectType.Accessory, gr ),
                 EquipSlot.Wrists => Eqdp( ObjectType.Accessory, gr ),
-                EquipSlot.RingL  => Eqdp( ObjectType.Accessory, gr ),
-                EquipSlot.RingR  => Eqdp( ObjectType.Accessory, gr ),
+                EquipSlot.LFinger  => Eqdp( ObjectType.Accessory, gr ),
+                EquipSlot.RFinger  => Eqdp( ObjectType.Accessory, gr ),
                 _                => throw new NotImplementedException(),
             };
         }

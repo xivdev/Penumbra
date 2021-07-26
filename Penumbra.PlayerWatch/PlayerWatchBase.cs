@@ -15,7 +15,7 @@ namespace Penumbra.PlayerWatch
 
         private readonly  DalamudPluginInterface                                          _pi;
         internal readonly HashSet< PlayerWatcher >                                        RegisteredWatchers = new();
-        private readonly  Dictionary< string, (CharEquipment, HashSet< PlayerWatcher >) > _equip             = new();
+        private readonly  Dictionary< string, (ActorEquipment, HashSet< PlayerWatcher >) > _equip             = new();
         private           int                                                             _frameTicker;
         private           IntPtr                                                          _lastGPoseAddress = IntPtr.Zero;
 
@@ -41,9 +41,9 @@ namespace Penumbra.PlayerWatch
             }
         }
 
-        internal CharEquipment UpdateActorWithoutEvent( Actor actor )
+        internal ActorEquipment UpdateActorWithoutEvent( Actor actor )
         {
-            var equipment = new CharEquipment( actor );
+            var equipment = new ActorEquipment( actor );
             if( _equip.ContainsKey( actor.Name ) )
             {
                 _equip[ actor.Name ] = ( equipment, _equip[ actor.Name ].Item2 );
@@ -60,7 +60,7 @@ namespace Penumbra.PlayerWatch
             }
             else
             {
-                _equip[ playerName ] = ( new CharEquipment(), new HashSet< PlayerWatcher > { watcher } );
+                _equip[ playerName ] = ( new ActorEquipment(), new HashSet< PlayerWatcher > { watcher } );
             }
         }
 

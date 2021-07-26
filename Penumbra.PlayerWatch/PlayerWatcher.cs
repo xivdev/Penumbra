@@ -73,7 +73,7 @@ namespace Penumbra.PlayerWatch
             _playerWatch!.RemovePlayerFromWatch( playerName, this );
         }
 
-        public CharEquipment UpdateActorWithoutEvent( Actor actor )
+        public ActorEquipment UpdateActorWithoutEvent( Actor actor )
         {
             CheckValidity();
             return _playerWatch!.UpdateActorWithoutEvent( actor );

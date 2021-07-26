@@ -74,7 +74,7 @@ namespace Penumbra.GameData
                 switch( ( EquipSlot )item.EquipSlotCategory.Row )
                 {
                     case EquipSlot.MainHand:
-                    case EquipSlot.Offhand:
+                    case EquipSlot.OffHand:
                     case EquipSlot.BothHand:
                         if( item.ModelMain != 0 )
                         {
@@ -88,7 +88,7 @@ namespace Penumbra.GameData
 
                         break;
                     // Accessories
-                    case EquipSlot.RingR:
+                    case EquipSlot.RFinger:
                     case EquipSlot.Wrists:
                     case EquipSlot.Ears:
                     case EquipSlot.Neck:
@@ -304,7 +304,7 @@ namespace Penumbra.GameData
             switch( slot )
             {
                 case EquipSlot.MainHand:
-                case EquipSlot.Offhand:
+                case EquipSlot.OffHand:
                 {
                     var (begin, _) = FindIndexRange( _weapons, ( ( ulong )setId << 32 ) | ( ( ulong )weaponType << 16 ) | variant,
                         0xFFFFFFFFFFFF );

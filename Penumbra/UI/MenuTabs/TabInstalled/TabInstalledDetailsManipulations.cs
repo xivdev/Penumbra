@@ -51,8 +51,8 @@ namespace Penumbra.UI
                 ( "Ears", EquipSlot.Ears ),
                 ( "Neck", EquipSlot.Neck ),
                 ( "Wrist", EquipSlot.Wrists ),
-                ( "Left Finger", EquipSlot.RingL ),
-                ( "Right Finger", EquipSlot.RingR ),
+                ( "Left Finger", EquipSlot.LFinger ),
+                ( "Right Finger", EquipSlot.RFinger ),
             };
 
             private static readonly (string, Race)[] Races =
@@ -308,8 +308,8 @@ namespace Penumbra.UI
                     EquipSlot.Neck   => ( entry.HasFlag( EqdpEntry.Neck1 ), entry.HasFlag( EqdpEntry.Neck2 ) ),
                     EquipSlot.Ears   => ( entry.HasFlag( EqdpEntry.Ears1 ), entry.HasFlag( EqdpEntry.Ears2 ) ),
                     EquipSlot.Wrists => ( entry.HasFlag( EqdpEntry.Wrists1 ), entry.HasFlag( EqdpEntry.Wrists2 ) ),
-                    EquipSlot.RingR  => ( entry.HasFlag( EqdpEntry.RingR1 ), entry.HasFlag( EqdpEntry.RingR2 ) ),
-                    EquipSlot.RingL  => ( entry.HasFlag( EqdpEntry.RingL1 ), entry.HasFlag( EqdpEntry.RingL2 ) ),
+                    EquipSlot.RFinger  => ( entry.HasFlag( EqdpEntry.RingR1 ), entry.HasFlag( EqdpEntry.RingR2 ) ),
+                    EquipSlot.LFinger  => ( entry.HasFlag( EqdpEntry.RingL1 ), entry.HasFlag( EqdpEntry.RingL2 ) ),
                     _                => ( false, false ),
                 };
             }
@@ -350,11 +350,11 @@ namespace Penumbra.UI
                         value = bit1 ? value | EqdpEntry.Wrists1 : value & ~EqdpEntry.Wrists1;
                         value = bit2 ? value | EqdpEntry.Wrists2 : value & ~EqdpEntry.Wrists2;
                         return value;
-                    case EquipSlot.RingR:
+                    case EquipSlot.RFinger:
                         value = bit1 ? value | EqdpEntry.RingR1 : value & ~EqdpEntry.RingR1;
                         value = bit2 ? value | EqdpEntry.RingR2 : value & ~EqdpEntry.RingR2;
                         return value;
-                    case EquipSlot.RingL:
+                    case EquipSlot.LFinger:
                         value = bit1 ? value | EqdpEntry.RingL1 : value & ~EqdpEntry.RingL1;
                         value = bit2 ? value | EqdpEntry.RingL2 : value & ~EqdpEntry.RingL2;
                         return value;
