@@ -52,16 +52,24 @@ namespace Penumbra.UI
 
             public void Draw()
             {
-                var ret = ImGui.BeginTabItem( LabelTab );
-                if( !ret )
+                if( !ImGui.BeginTabItem( LabelTab ) )
                 {
                     return;
                 }
 
                 const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
 
-                var                 activeCollection = _modManager.Collections.ActiveCollection.Cache!;
-                var                 lines            = activeCollection.ResolvedFiles.Count + activeCollection.MetaManipulations.Count;
+                var activeCollection    = _modManager.Collections.ActiveCollection.Cache;
+                var forcedCollection    = _modManager.Collections.ForcedCollection.Cache;
+
+                var (activeResolved, activeMeta) = activeCollection != null
+                    ? ( activeCollection.ResolvedFiles.Count, activeCollection.MetaManipulations.Count )
+                    : ( 0, 0 );
+                var (forcedResolved, forcedMeta) = forcedCollection != null
+                    ? (forcedCollection.ResolvedFiles.Count, forcedCollection.MetaManipulations.Count)
+                    : (0, 0);
+
+                var                 lines = activeResolved + forcedResolved + activeMeta + forcedMeta;
                 ImGuiListClipperPtr clipper;
                 unsafe
                 {
@@ -75,18 +83,29 @@ namespace Penumbra.UI
                     ImGui.TableSetupColumn( "##tableGamePathCol", ImGuiTableColumnFlags.None, _leftTextLength );
                     while( clipper.Step() )
                     {
-                        for( var row = clipper.DisplayStart; row < clipper.DisplayEnd; row++ )
+                        for( var actualRow = clipper.DisplayStart; actualRow < clipper.DisplayEnd; actualRow++ )
                         {
+                            var row = actualRow;
                             ImGui.TableNextRow();
-                            if( row < activeCollection.ResolvedFiles.Count )
+                            if( row < activeResolved )
                             {
-                                var file = activeCollection.ResolvedFiles.ElementAt( row );
+                                var file = activeCollection!.ResolvedFiles.ElementAt( row );
                                 DrawFileLine( file.Value, file.Key );
+                            }
+                            else if( ( row -= activeResolved ) < forcedResolved )
+                            {
+                                var file = forcedCollection!.ResolvedFiles.ElementAt( row );
+                                DrawFileLine( file.Value, file.Key );
+                            }
+                            else if( ( row -= forcedResolved ) < activeMeta )
+                            {
+                                var manip = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
+                                DrawManipulationLine( manip.Item1, manip.Item2 );
                             }
                             else
                             {
-                                var manip = activeCollection.MetaManipulations.Manipulations.ElementAt(
-                                    row - activeCollection.ResolvedFiles.Count );
+                                row -= activeMeta;
+                                var manip = forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
                                 DrawManipulationLine( manip.Item1, manip.Item2 );
                             }
                         }
