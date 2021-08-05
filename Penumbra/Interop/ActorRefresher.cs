@@ -253,7 +253,9 @@ namespace Penumbra.Interop
 
         private void OnUpdateEvent( object framework )
         {
-            if( _pi.ClientState.Condition[ ConditionFlag.BetweenAreas51 ] || _pi.ClientState.Condition[ ConditionFlag.BetweenAreas ] )
+            if( _pi.ClientState.Condition[ ConditionFlag.BetweenAreas51 ]
+             || _pi.ClientState.Condition[ ConditionFlag.BetweenAreas ]
+             || _pi.ClientState.Condition[ ConditionFlag.OccupiedInCutSceneEvent ] )
             {
                 _waitFrames = DefaultWaitFrames;
                 return;
