@@ -99,7 +99,7 @@ namespace Penumbra.UI
                 ( SubRace.Midlander.ToName(), SubRace.Midlander ),
                 ( SubRace.Highlander.ToName(), SubRace.Highlander ),
                 ( SubRace.Wildwood.ToName(), SubRace.Wildwood ),
-                ( SubRace.Duskwright.ToName(), SubRace.Duskwright ),
+                ( SubRace.Duskwight.ToName(), SubRace.Duskwight ),
                 ( SubRace.SeekerOfTheSun.ToName(), SubRace.SeekerOfTheSun ),
                 ( SubRace.KeeperOfTheMoon.ToName(), SubRace.KeeperOfTheMoon ),
                 ( SubRace.Seawolf.ToName(), SubRace.Seawolf ),
@@ -110,7 +110,7 @@ namespace Penumbra.UI
                 ( SubRace.Xaela.ToName(), SubRace.Xaela ),
                 ( SubRace.Rava.ToName(), SubRace.Rava ),
                 ( SubRace.Veena.ToName(), SubRace.Veena ),
-                ( SubRace.Hellion.ToName(), SubRace.Hellion ),
+                ( SubRace.Helion.ToName(), SubRace.Helion ),
                 ( SubRace.Lost.ToName(), SubRace.Lost ),
             };
 
