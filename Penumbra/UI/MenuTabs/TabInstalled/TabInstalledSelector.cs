@@ -121,7 +121,7 @@ namespace Penumbra.UI
             {
                 ImGui.PushFont( UiBuilder.IconFont );
 
-                if( ImGui.Button( FontAwesomeIcon.Trash.ToIconString(), SelectorButtonSizes * _selectorFactor ) )
+                if( ImGui.Button( FontAwesomeIcon.Trash.ToIconString(), SelectorButtonSizes * _selectorFactor ) && _index >= 0  )
                 {
                     _deleteIndex = _index;
                 }
@@ -362,6 +362,7 @@ namespace Penumbra.UI
 
                 if( Mod == null )
                 {
+                    _deleteIndex = null;
                     ImGui.CloseCurrentPopup();
                     ImGui.EndPopup();
                     return;
