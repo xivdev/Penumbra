@@ -16,19 +16,19 @@ namespace Penumbra.GameData.Structs
         public const int EquipmentSlots   = 10;
         public const int WeaponSlots      = 2;
 
-        public ActorWeapon    MainHand;
-        public ActorWeapon    OffHand;
-        public ActorArmor     Head;
-        public ActorArmor     Body;
-        public ActorArmor     Hands;
-        public ActorArmor     Legs;
-        public ActorArmor     Feet;
-        public ActorArmor     Ears;
-        public ActorArmor     Neck;
-        public ActorArmor     Wrists;
-        public ActorArmor     RFinger;
-        public ActorArmor     LFinger;
-        public ushort         IsSet; // Also fills struct size to 56, a multiple of 8.
+        public ActorWeapon MainHand;
+        public ActorWeapon OffHand;
+        public ActorArmor  Head;
+        public ActorArmor  Body;
+        public ActorArmor  Hands;
+        public ActorArmor  Legs;
+        public ActorArmor  Feet;
+        public ActorArmor  Ears;
+        public ActorArmor  Neck;
+        public ActorArmor  Wrists;
+        public ActorArmor  RFinger;
+        public ActorArmor  LFinger;
+        public ushort      IsSet; // Also fills struct size to 56, a multiple of 8.
 
         public ActorEquipment()
             => Clear();
@@ -122,6 +122,29 @@ namespace Penumbra.GameData.Structs
             }
 
             return true;
+        }
+
+        public unsafe void WriteBytes( byte[] array, int offset = 0 )
+        {
+            fixed( ActorWeapon* data = &MainHand )
+            {
+                Marshal.Copy( new IntPtr( data ), array, offset, 56 );
+            }
+        }
+
+        public byte[] ToBytes()
+        {
+            var ret = new byte[56];
+            WriteBytes( ret );
+            return ret;
+        }
+
+        public unsafe void FromBytes( byte[] array, int offset = 0 )
+        {
+            fixed( ActorWeapon* data = &MainHand )
+            {
+                Marshal.Copy( array, offset, new IntPtr( data ), 56 );
+            }
         }
     }
 }
