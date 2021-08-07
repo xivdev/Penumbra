@@ -168,7 +168,7 @@ namespace Penumbra.Interop
                     return;
                 }
 
-                _wasTarget = actor.Address == _pi.ClientState.Targets.CurrentTarget.Address;
+                _wasTarget = actor.Address == _pi.ClientState.Targets.CurrentTarget?.Address;
 
                 ++_currentFrame;
             }
