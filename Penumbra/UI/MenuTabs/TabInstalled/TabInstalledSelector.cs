@@ -56,7 +56,7 @@ namespace Penumbra.UI
 
             private const string LabelSelectorList = "##availableModList";
             private const string LabelModFilter    = "##ModFilter";
-            private const string LabelAddModPopup  = "AddMod";
+            private const string LabelAddModPopup  = "AddModPopup";
             private const string LabelModHelpPopup = "Help##Selector";
 
             private const string TooltipModFilter =
@@ -138,7 +138,7 @@ namespace Penumbra.UI
 
             private void DrawModAddButton()
             {
-                if( ImGui.BeginPopupContextItem( LabelAddModPopup ) )
+                if( ImGui.BeginPopup( LabelAddModPopup ) )
                 {
                     if( _keyboardFocus )
                     {
