@@ -45,6 +45,7 @@ namespace Penumbra.Interop
         private string?      _currentActorName       = null;
         private LoadingFlags _currentActorStartState = 0;
         private RedrawType   _currentActorRedrawType = RedrawType.Unload;
+        private bool         _wasTarget              = false;
 
         public static IntPtr RenderPtr( Actor actor )
             => actor.Address + RenderModeOffset;
@@ -167,6 +168,8 @@ namespace Penumbra.Interop
                     return;
                 }
 
+                _wasTarget = actor.Address == _pi.ClientState.Targets.CurrentTarget.Address;
+
                 ++_currentFrame;
             }
             else
@@ -231,7 +234,7 @@ namespace Penumbra.Interop
             }
 
             WriteVisible( actor, idx );
-            _currentFrame = _changedSettings ? _currentFrame + 1 : 0;
+            _currentFrame = _changedSettings || _wasTarget ? _currentFrame + 1 : 0;
         }
 
         private void RevertSettings()
@@ -242,6 +245,8 @@ namespace Penumbra.Interop
                 if( !StillLoading( RenderPtr( actor ) ) )
                 {
                     RestoreSettings();
+                    if (_wasTarget && _pi.ClientState.Targets.CurrentTarget == null)
+                        _pi.ClientState.Targets.SetCurrentTarget( actor );
                     _currentFrame = 0;
                 }
             }
