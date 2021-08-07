@@ -120,7 +120,7 @@ namespace Penumbra.GameData.Enums
             {
                 SubRace.Unknown         => Race.Unknown,
                 SubRace.Midlander       => Race.Midlander,
-                SubRace.Highlander      => Race.Highlander,
+                SubRace.Highlander      => Race.Midlander,
                 SubRace.Wildwood        => Race.Elezen,
                 SubRace.Duskwight      => Race.Elezen,
                 SubRace.Plainsfolk      => Race.Lalafell,
