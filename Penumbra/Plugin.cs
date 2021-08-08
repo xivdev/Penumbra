@@ -39,13 +39,20 @@ namespace Penumbra
 
         private WebServer? _webServer;
 
+        public static void SaveConfiguration()
+        {
+            var pi     = Service< DalamudPluginInterface >.Get();
+            var config = Service< Configuration >.Get();
+            pi.SavePluginConfig( config );
+        }
+
         public void Initialize( DalamudPluginInterface pluginInterface )
         {
             PluginInterface = pluginInterface;
             Service< DalamudPluginInterface >.Set( PluginInterface );
             GameData.GameData.GetIdentifier( PluginInterface );
-
-            Configuration = Configuration.Load( PluginInterface );
+            Configuration    = Configuration.Load( PluginInterface );
+            Service< Configuration >.Set( Configuration );
 
             SoundShit = new MusicManager( this );
             SoundShit.DisableStreaming();

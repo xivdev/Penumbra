@@ -22,6 +22,7 @@ namespace Penumbra.UI
             private const string LabelEnabled              = "Enable Mods";
             private const string LabelEnabledPlayerWatch   = "Enable automatic Character Redraws";
             private const string LabelWaitFrames           = "Wait Frames";
+            private const string LabelSortFoldersFirst     = "Sort Mod Folders Before Mods";
             private const string LabelScaleModSelector     = "Scale Mod Selector With Window Size";
             private const string LabelShowAdvanced         = "Show Advanced Settings";
             private const string LabelLogLoadedFiles       = "Log all loaded files";
@@ -97,6 +98,17 @@ namespace Penumbra.UI
                 {
                     _config.ShowAdvanced = showAdvanced;
                     _configChanged       = true;
+                }
+            }
+
+            private void DrawSortFoldersFirstBox()
+            {
+                var foldersFirst = _config.SortFoldersFirst;
+                if( ImGui.Checkbox( LabelSortFoldersFirst, ref foldersFirst ) )
+                {
+                    _config.SortFoldersFirst = foldersFirst;
+                    _base._menu.InstalledTab.Selector.Cache.ResetModList();
+                    _configChanged           = true;
                 }
             }
 
@@ -238,6 +250,7 @@ namespace Penumbra.UI
 
                 Custom.ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawScaleModSelectorBox();
+                DrawSortFoldersFirstBox();
                 DrawShowAdvancedBox();
 
                 if( _config.ShowAdvanced )

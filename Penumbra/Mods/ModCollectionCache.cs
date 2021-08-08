@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Lumina.Data.Parsing;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -12,7 +13,7 @@ namespace Penumbra.Mods
     // It will only be setup if a collection gets activated in any way.
     public class ModCollectionCache
     {
-        public readonly List< Mod.Mod > AvailableMods = new();
+        public readonly List<Mod.Mod> AvailableMods = new();
 
         public readonly Dictionary< GamePath, FileInfo > ResolvedFiles = new();
         public readonly Dictionary< GamePath, GamePath > SwappedFiles  = new();
@@ -20,12 +21,6 @@ namespace Penumbra.Mods
 
         public ModCollectionCache( string collectionName, DirectoryInfo modDir )
             => MetaManipulations = new MetaManager( collectionName, ResolvedFiles, modDir );
-
-        public void SortMods()
-        {
-            AvailableMods.Sort( ( m1, m2 )
-                => string.Compare( m1.Data.SortOrder, m2.Data.SortOrder, StringComparison.InvariantCultureIgnoreCase ) );
-        }
 
         private void AddFiles( Dictionary< GamePath, Mod.Mod > registeredFiles, Mod.Mod mod )
         {
@@ -82,8 +77,7 @@ namespace Penumbra.Mods
         {
             MetaManipulations.Reset( false );
 
-            foreach( var mod in AvailableMods.Where( m => m.Settings.Enabled && m.Data.Resources.MetaManipulations.Count > 0 )
-               .OrderByDescending( m => m.Settings.Priority ) )
+            foreach( var mod in AvailableMods.Where( m => m.Settings.Enabled && m.Data.Resources.MetaManipulations.Count > 0 ) )
             {
                 mod.Cache.ClearMetaConflicts();
                 AddManipulations( mod );
@@ -98,7 +92,7 @@ namespace Penumbra.Mods
             SwappedFiles.Clear();
 
             var registeredFiles = new Dictionary< GamePath, Mod.Mod >();
-            foreach( var mod in AvailableMods.Where( m => m.Settings.Enabled ).OrderByDescending( m => m.Settings.Priority ) )
+            foreach( var mod in AvailableMods.Where( m => m.Settings.Enabled ) )
             {
                 mod.Cache.ClearFileConflicts();
                 AddFiles( registeredFiles, mod );
@@ -131,10 +125,20 @@ namespace Penumbra.Mods
             }
         }
 
+        private class PriorityComparer : IComparer< Mod.Mod >
+        {
+            public int Compare( Mod.Mod x, Mod.Mod y )
+                => x.Settings.Priority.CompareTo( y.Settings.Priority );
+        }
+
+        private static readonly PriorityComparer Comparer = new();
+
         public void AddMod( ModSettings settings, ModData data )
         {
-            AvailableMods.Add( new Mod.Mod( settings, data ) );
-            SortMods();
+            var newMod = new Mod.Mod( settings, data );
+            var idx = AvailableMods.BinarySearch( newMod, Comparer );
+            idx = idx < 0 ? ~idx : idx;
+            AvailableMods.Insert( idx, newMod );
             if( settings.Enabled )
             {
                 CalculateEffectiveFileList();

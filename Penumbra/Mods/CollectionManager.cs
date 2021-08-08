@@ -38,7 +38,7 @@ namespace Penumbra.Mods
         {
             foreach( var collection in Collections.Values.Where( c => c.Cache != null ) )
             {
-                collection.CreateCache( _manager.BasePath, _manager.Mods, false );
+                collection.CreateCache( _manager.BasePath, _manager.StructuredMods.AllMods(_manager.Config.SortFoldersFirst) );
             }
         }
 
@@ -57,10 +57,6 @@ namespace Penumbra.Mods
                 if( metaChanges )
                 {
                     collection.UpdateSetting( mod );
-                    if( nameChange )
-                    {
-                        collection.Cache?.SortMods();
-                    }
                 }
 
                 if( fileChanges.HasFlag( ResourceChange.Files )
@@ -143,7 +139,7 @@ namespace Penumbra.Mods
         {
             if( collection.Cache == null && collection.Name != string.Empty )
             {
-                collection.CreateCache( _manager.BasePath, _manager.Mods, false );
+                collection.CreateCache( _manager.BasePath, _manager.StructuredMods.AllMods(_manager.Config.SortFoldersFirst) );
             }
         }
 

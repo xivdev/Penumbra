@@ -14,23 +14,23 @@ namespace Penumbra.UI
             public static readonly Vector2 MinSettingsSize = new( 800, 450 );
             public static readonly Vector2 MaxSettingsSize = new( 69420, 42069 );
 
-            private readonly SettingsInterface _base;
-            private readonly TabSettings       _settingsTab;
-            private readonly TabImport         _importTab;
-            private readonly TabBrowser        _browserTab;
-            private readonly TabCollections    _collectionsTab;
-            public readonly  TabInstalled      InstalledTab;
-            private readonly TabEffective      _effectiveTab;
+            private readonly  SettingsInterface _base;
+            private readonly  TabSettings       _settingsTab;
+            private readonly  TabImport         _importTab;
+            private readonly  TabBrowser        _browserTab;
+            internal readonly TabCollections    CollectionsTab;
+            internal readonly TabInstalled      InstalledTab;
+            private readonly  TabEffective      _effectiveTab;
 
             public SettingsMenu( SettingsInterface ui )
             {
-                _base           = ui;
-                _settingsTab    = new TabSettings( _base );
-                _importTab      = new TabImport( _base );
-                _browserTab     = new TabBrowser();
-                InstalledTab    = new TabInstalled( _base );
-                _collectionsTab = new TabCollections( InstalledTab.Selector );
-                _effectiveTab   = new TabEffective();
+                _base          = ui;
+                _settingsTab   = new TabSettings( _base );
+                _importTab     = new TabImport( _base );
+                _browserTab    = new TabBrowser();
+                InstalledTab   = new TabInstalled( _base );
+                CollectionsTab = new TabCollections( InstalledTab.Selector );
+                _effectiveTab  = new TabEffective();
             }
 
 #if DEBUG
@@ -62,7 +62,7 @@ namespace Penumbra.UI
                 ImGui.BeginTabBar( PenumbraSettingsLabel );
 
                 _settingsTab.Draw();
-                _collectionsTab.Draw();
+                CollectionsTab.Draw();
                 _importTab.Draw();
 
                 if( Service< ModManager >.Get().Valid && !_importTab.IsImporting() )

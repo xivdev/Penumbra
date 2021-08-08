@@ -13,8 +13,37 @@ namespace Penumbra.Mod
     public class ModMeta
     {
         public uint FileVersion { get; set; }
-        public string Name { get; set; } = "Mod";
-        public string Author { get; set; } = "";
+
+        public string Name
+        {
+            get => _name;
+            set
+            {
+                _name     = value;
+                LowerName = value.ToLowerInvariant();
+            }
+        }
+
+        private string _name = "Mod";
+
+        [JsonIgnore]
+        public string LowerName { get; private set; } = "mod";
+
+        private string _author = "";
+
+        public string Author
+        {
+            get => _author;
+            set
+            {
+                _author     = value;
+                LowerAuthor = value.ToLowerInvariant();
+            }
+        }
+
+        [JsonIgnore]
+        public string LowerAuthor { get; private set; } = "";
+
         public string Description { get; set; } = "";
         public string Version { get; set; } = "";
         public string Website { get; set; } = "";
@@ -66,8 +95,8 @@ namespace Penumbra.Mod
                     new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore } );
                 if( meta != null )
                 {
-                    meta.FileHash            = text.GetHashCode();
-                    meta.HasGroupsWithConfig = meta.Groups.Values.Any( g => g.SelectionType == SelectType.Multi || g.Options.Count > 1 );
+                    meta.FileHash = text.GetHashCode();
+                    meta.RefreshHasGroupsWithConfig();
                 }
 
                 return meta;
@@ -78,6 +107,14 @@ namespace Penumbra.Mod
                 return null;
             }
         }
+
+        public bool RefreshHasGroupsWithConfig()
+        {
+            var oldValue = HasGroupsWithConfig;
+            HasGroupsWithConfig = Groups.Values.Any( g => g.Options.Count > 1 || g.SelectionType == SelectType.Multi && g.Options.Count == 1 );
+            return oldValue != HasGroupsWithConfig;
+        }
+
 
         public void SaveToFile( FileInfo filePath )
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Plugin;
+using ImGuiScene;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -17,6 +18,8 @@ namespace Penumbra.Mods
         public DirectoryInfo BasePath { get; private set; } = null!;
 
         public Dictionary< string, ModData > Mods { get; } = new();
+        public ModFolder StructuredMods { get; } = ModFileSystem.Root;
+
         public CollectionManager Collections { get; }
 
         public bool Valid { get; private set; }
@@ -53,25 +56,45 @@ namespace Penumbra.Mods
             DiscoverMods();
         }
 
-        private void SetModOrders( Configuration config )
+        private bool SetSortOrderPath( ModData mod, string path )
+        {
+            mod.Move( path );
+            var fixedPath = mod.SortOrder.FullPath;
+            if( !fixedPath.Any() || string.Equals( fixedPath, mod.Meta.Name, StringComparison.InvariantCultureIgnoreCase ) )
+            {
+                Config.ModSortOrder.Remove( mod.BasePath.Name );
+                return true;
+            }
+
+            if( path != fixedPath )
+            {
+                Config.ModSortOrder[ mod.BasePath.Name ] = fixedPath;
+                return true;
+            }
+
+            return false;
+        }
+
+        private void SetModStructure()
         {
             var changes = false;
-            foreach( var kvp in config.ModSortOrder.ToArray() )
+
+            foreach( var kvp in Config.ModSortOrder.ToArray() )
             {
-                if( Mods.TryGetValue( kvp.Key, out var mod ) )
+                if( kvp.Value.Any() && Mods.TryGetValue( kvp.Key, out var mod ) )
                 {
-                    mod.SortOrder = string.Join( "/", kvp.Value.Trim().Split( new[] { "/" }, StringSplitOptions.RemoveEmptyEntries ) );
+                    changes |= SetSortOrderPath( mod, kvp.Value );
                 }
                 else
                 {
                     changes = true;
-                    config.ModSortOrder.Remove( kvp.Key );
+                    Config.ModSortOrder.Remove( kvp.Key );
                 }
             }
 
             if( changes )
             {
-                config.Save();
+                Config.Save();
             }
         }
 
@@ -96,7 +119,7 @@ namespace Penumbra.Mods
             {
                 foreach( var modFolder in BasePath.EnumerateDirectories() )
                 {
-                    var mod = ModData.LoadMod( modFolder );
+                    var mod = ModData.LoadMod( StructuredMods, modFolder );
                     if( mod == null )
                     {
                         continue;
@@ -105,7 +128,7 @@ namespace Penumbra.Mods
                     Mods.Add( modFolder.Name, mod );
                 }
 
-                SetModOrders( _plugin.Configuration );
+                SetModStructure();
             }
 
             Collections.RecreateCaches();
@@ -132,7 +155,7 @@ namespace Penumbra.Mods
 
         public bool AddMod( DirectoryInfo modFolder )
         {
-            var mod = ModData.LoadMod( modFolder );
+            var mod = ModData.LoadMod( StructuredMods, modFolder );
             if( mod == null )
             {
                 return false;
@@ -140,7 +163,10 @@ namespace Penumbra.Mods
 
             if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
             {
-                mod.SortOrder = sortOrder;
+                if( SetSortOrderPath( mod, sortOrder ) )
+                {
+                    Config.Save();
+                }
             }
 
             if( Mods.ContainsKey( modFolder.Name ) )
@@ -173,11 +199,17 @@ namespace Penumbra.Mods
                 mod.ComputeChangedItems();
                 if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
                 {
-                    mod.SortOrder = sortOrder;
+                    mod.Move( sortOrder );
+                    var path = mod.SortOrder.FullPath;
+                    if( path != sortOrder )
+                    {
+                        Config.ModSortOrder[ mod.BasePath.Name ] = path;
+                        Config.Save();
+                    }
                 }
                 else
                 {
-                    mod.SortOrder = mod.Meta.Name.Replace( '/', '\\' );
+                    mod.SortOrder = new SortOrder( StructuredMods, mod.Meta.Name );
                 }
             }
 

@@ -431,6 +431,19 @@ namespace Penumbra.UI
                 if( changed )
                 {
                     _selector.SaveCurrentMod();
+                    // Since files may have changed, we need to recompute effective files.
+                    foreach( var collection in _modManager.Collections.Collections.Values
+                       .Where( c => c.Cache != null && c.Settings[ Mod!.Data.BasePath.Name ].Enabled ) )
+                    {
+                        collection.CalculateEffectiveFileList( _modManager.BasePath, false,
+                            collection == _modManager.Collections.ActiveCollection );
+                    }
+
+                    // If the mod is enabled in the current collection, its conflicts may have changed.
+                    if( Mod!.Settings.Enabled )
+                    {
+                        _selector.Cache.ResetFilters();
+                    }
                 }
             }
 
@@ -558,14 +571,12 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( label, ref enabled ) && oldEnabled != enabled )
                 {
                     Mod.Settings.Settings[ group.GroupName ] ^= 1 << idx;
-                    if( Mod.Settings.Enabled && _modManager.Collections.CurrentCollection.Cache != null )
-                    {
-                        _modManager.Collections.CurrentCollection.CalculateEffectiveFileList( Mod.Data.BasePath,
-                            Mod.Data.Resources.MetaManipulations.Count > 0,
-                            _modManager.Collections.CurrentCollection  == _modManager.Collections.ActiveCollection );
-                    }
-
                     Save();
+                    // If the mod is enabled, recalculate files and filters.
+                    if( Mod.Settings.Enabled )
+                    {
+                        _base.RecalculateCurrent( Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    }
                 }
             }
 
@@ -599,14 +610,12 @@ namespace Penumbra.UI
                  && code != Mod.Settings.Settings[ group.GroupName ] )
                 {
                     Mod.Settings.Settings[ group.GroupName ] = code;
-                    if( Mod.Settings.Enabled && _modManager.Collections.CurrentCollection.Cache != null )
-                    {
-                        _modManager.Collections.CurrentCollection.CalculateEffectiveFileList( Mod.Data.BasePath,
-                            Mod.Data.Resources.MetaManipulations.Count > 0,
-                            _modManager.Collections.CurrentCollection  == _modManager.Collections.ActiveCollection );
-                    }
-
                     Save();
+                    // If the mod is enabled, recalculate files and filters.
+                    if( Mod.Settings.Enabled )
+                    {
+                        _base.RecalculateCurrent( Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    }
                 }
             }
 

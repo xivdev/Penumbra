@@ -1,11 +1,51 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Plugin;
+using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.Mod
 {
+    public struct SortOrder : IComparable<SortOrder>
+    {
+        public ModFolder ParentFolder { get; set; }
+
+        private string _sortOrderName;
+
+        public string SortOrderName
+        {
+            get => _sortOrderName;
+            set => _sortOrderName = value.Replace( '/', '\\' );
+        }
+
+        public string SortOrderPath
+            => ParentFolder.FullName;
+
+        public string FullName
+        {
+            get
+            {
+                var path = SortOrderPath;
+                return path.Any() ? $"{path}/{SortOrderName}" : SortOrderName;
+            }
+        }
+        
+
+        public SortOrder( ModFolder parentFolder, string name )
+        {
+            ParentFolder  = parentFolder;
+            _sortOrderName = name.Replace( '/', '\\' );
+        }
+
+        public string FullPath
+            => SortOrderPath.Any() ? $"{SortOrderPath}/{SortOrderName}" : SortOrderName;
+
+        public int CompareTo( SortOrder other )
+            => string.Compare(FullPath, other.FullPath, StringComparison.InvariantCultureIgnoreCase );
+    }
+
     // ModData contains all permanent information about a mod,
     // and is independent of collections or settings.
     // It only changes when the user actively changes the mod or their filesystem.
@@ -14,17 +54,22 @@ namespace Penumbra.Mod
         public DirectoryInfo BasePath;
         public ModMeta       Meta;
         public ModResources  Resources;
-        public string        SortOrder;
+
+        public SortOrder SortOrder;
+
         public SortedList< string, object? > ChangedItems { get; } = new();
+        public string LowerChangedItemsString { get; private set; } = string.Empty;
         public FileInfo MetaFile { get; set; }
 
-        private ModData( DirectoryInfo basePath, ModMeta meta, ModResources resources )
+        private ModData( ModFolder parentFolder, DirectoryInfo basePath, ModMeta meta, ModResources resources )
         {
             BasePath  = basePath;
             Meta      = meta;
             Resources = resources;
             MetaFile  = MetaFileInfo( basePath );
-            SortOrder = meta.Name.Replace( '/', '\\' );
+            SortOrder = new SortOrder( parentFolder, Meta.Name );
+            SortOrder.ParentFolder.AddMod( this );
+
             ComputeChangedItems();
         }
 
@@ -44,12 +89,14 @@ namespace Penumbra.Mod
             {
                 identifier.Identify( ChangedItems, path );
             }
+
+            LowerChangedItemsString = string.Join( "\0", ChangedItems.Keys.Select( k => k.ToLowerInvariant() ) );
         }
 
         public static FileInfo MetaFileInfo( DirectoryInfo basePath )
             => new( Path.Combine( basePath.FullName, "meta.json" ) );
 
-        public static ModData? LoadMod( DirectoryInfo basePath )
+        public static ModData? LoadMod( ModFolder parentFolder, DirectoryInfo basePath )
         {
             basePath.Refresh();
             if( !basePath.Exists )
@@ -77,10 +124,13 @@ namespace Penumbra.Mod
                 data.SetManipulations( meta, basePath );
             }
 
-            return new ModData( basePath, meta, data );
+            return new ModData( parentFolder, basePath, meta, data );
         }
 
         public void SaveMeta()
             => Meta.SaveToFile( MetaFile );
+
+        public override string ToString()
+            => SortOrder.FullPath;
     }
 }

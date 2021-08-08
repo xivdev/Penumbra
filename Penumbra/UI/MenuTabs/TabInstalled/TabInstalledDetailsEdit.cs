@@ -111,7 +111,10 @@ namespace Penumbra.UI
                 var groupName = group.GroupName;
                 if( Custom.ImGuiCustom.BeginFramedGroupEdit( ref groupName ) )
                 {
-                    _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data );
+                    if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
+                    {
+                        _selector.Cache.ResetFilters();
+                    }
                 }
             }
 
@@ -127,6 +130,10 @@ namespace Penumbra.UI
                     group.Options.Add( new Option()
                         { OptionName = newOption, OptionDesc = "", OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >() } );
                     _selector.SaveCurrentMod();
+                    if( Mod!.Data.Meta.RefreshHasGroupsWithConfig() )
+                    {
+                        _selector.Cache.ResetFilters();
+                    }
                 }
             }
 
@@ -163,6 +170,11 @@ namespace Penumbra.UI
                                 { OptionName = newName, OptionDesc = opt.OptionDesc, OptionFiles = opt.OptionFiles };
                             _selector.SaveCurrentMod();
                         }
+
+                        if( Mod!.Data.Meta.RefreshHasGroupsWithConfig() )
+                        {
+                            _selector.Cache.ResetFilters();
+                        }
                     }
                 }
 
@@ -176,7 +188,10 @@ namespace Penumbra.UI
                 var groupName = group.GroupName;
                 if( ImGui.InputText( $"##{groupName}_add", ref groupName, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
-                    _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data );
+                    if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
+                    {
+                        _selector.Cache.ResetFilters();
+                    }
                 }
             }
 
@@ -220,6 +235,11 @@ namespace Penumbra.UI
                             }
                         }
                     }
+
+                    if( Mod.Data.Meta.RefreshHasGroupsWithConfig() )
+                    {
+                        _selector.Cache.ResetFilters();
+                    }
                 }
 
                 if( code != oldSetting )
@@ -247,6 +267,7 @@ namespace Penumbra.UI
                     ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
                     _modManager.ChangeModGroup( "", newGroup, Mod.Data, SelectType.Single );
+                    // Adds empty group, so can not change filters.
                 }
             }
 
@@ -259,6 +280,7 @@ namespace Penumbra.UI
                     ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
                     _modManager.ChangeModGroup( "", newGroup, Mod.Data, SelectType.Multi );
+                    // Adds empty group, so can not change filters.
                 }
             }
 
@@ -298,7 +320,6 @@ namespace Penumbra.UI
                     var arrowWidth = ImGui.CalcTextSize( arrow ).X;
                     ImGui.PopFont();
 
-
                     var width = ( ImGui.GetWindowWidth() - arrowWidth - 4 * ImGui.GetStyle().ItemSpacing.X ) / 2;
                     for( var idx = 0; idx < swaps.Length + 1; ++idx )
                     {
@@ -325,10 +346,8 @@ namespace Penumbra.UI
                                 }
 
                                 _selector.SaveCurrentMod();
-                                if( Mod.Settings.Enabled )
-                                {
-                                    _selector.ReloadCurrentMod();
-                                }
+                                _selector.ReloadCurrentMod();
+                                _selector.Cache.ResetModList();
                             }
                         }
 
@@ -350,10 +369,8 @@ namespace Penumbra.UI
                                 {
                                     Meta.FileSwaps[ key ] = newValue;
                                     _selector.SaveCurrentMod();
-                                    if( Mod.Settings.Enabled )
-                                    {
-                                        _selector.ReloadCurrentMod();
-                                    }
+                                    _selector.ReloadCurrentMod();
+                                    _selector.Cache.ResetModList();
                                 }
                             }
                         }

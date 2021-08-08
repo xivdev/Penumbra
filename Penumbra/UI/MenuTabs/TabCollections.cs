@@ -14,6 +14,7 @@ namespace Penumbra.UI
     {
         private class TabCollections
         {
+            public const     string                    LabelCurrentCollection = "Current Collection";
             private readonly Selector                  _selector;
             private readonly ModManager                _manager;
             private          string                    _collectionNames         = null!;
@@ -130,11 +131,11 @@ namespace Penumbra.UI
                 }
             }
 
-            private void DrawCurrentCollectionSelector()
+            public void DrawCurrentCollectionSelector(bool tooltip)
             {
                 var index = _currentCollectionIndex;
-                var combo = ImGui.Combo( "Current Collection", ref index, _collectionNames );
-                if( ImGui.IsItemHovered() )
+                var combo = ImGui.Combo( LabelCurrentCollection, ref index, _collectionNames );
+                if( tooltip && ImGui.IsItemHovered() )
                 {
                     ImGui.SetTooltip(
                         "This collection will be modified when using the Installed Mods tab and making changes. It does not apply to anything by itself." );
@@ -145,6 +146,7 @@ namespace Penumbra.UI
                     _manager.Collections.SetCurrentCollection( _collections[ index + 1 ] );
                     _currentCollectionIndex = index;
                     _selector.ReloadSelection();
+                    _selector.Cache.ResetModList();
                 }
             }
 
@@ -277,7 +279,7 @@ namespace Penumbra.UI
                     return;
                 }
 
-                DrawCurrentCollectionSelector();
+                DrawCurrentCollectionSelector(true);
 
                 ImGui.Dummy( new Vector2( 0, 10 ) );
                 DrawNewCollectionInput();

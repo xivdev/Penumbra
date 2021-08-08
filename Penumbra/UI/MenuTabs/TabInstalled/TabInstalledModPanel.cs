@@ -74,8 +74,11 @@ namespace Penumbra.UI
                 var name = Meta!.Name;
                 if( Custom.ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && _modManager.RenameMod( name, Mod!.Data ) )
                 {
-                    _selector.RenameCurrentModLower( name );
                     _selector.SelectModByDir( Mod.Data.BasePath.Name );
+                    if( !_modManager.Config.ModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) && Mod.Data.Rename( name ) )
+                    {
+                        _selector.Cache.ResetModList();
+                    }
                 }
             }
 
@@ -119,6 +122,7 @@ namespace Penumbra.UI
                 {
                     Meta.Author = author;
                     _selector.SaveCurrentMod();
+                    _selector.Cache.ResetFilters();
                 }
 
                 ImGui.EndGroup();
@@ -200,13 +204,8 @@ namespace Penumbra.UI
                 if( ImGui.InputInt( "Priority", ref priority, 0 ) && priority != Mod!.Settings.Priority )
                 {
                     Mod.Settings.Priority = priority;
-                    var collection = _modManager.Collections.CurrentCollection;
-                    collection.Save( _base._plugin.PluginInterface! );
-                    if( collection.Cache != null )
-                    {
-                        collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0,
-                            collection == _modManager.Collections.ActiveCollection );
-                    }
+                    _selector.Cache.ResetFilters();
+                    _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -222,23 +221,19 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelModEnabled, ref enabled ) )
                 {
                     Mod.Settings.Enabled = enabled;
-                    var collection = _modManager.Collections.CurrentCollection;
-                    collection.Save( _base._plugin.PluginInterface! );
-                    if( collection.Cache != null )
-                    {
-                        collection.CalculateEffectiveFileList( _modManager.BasePath, Mod.Data.Resources.MetaManipulations.Count > 0,
-                            collection == _modManager.Collections.ActiveCollection );
-                    }
+                    _selector.Cache.ResetFilters();
+                    _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
                 }
             }
 
             public static bool DrawSortOrder( ModData mod, ModManager manager, Selector selector )
             {
-                var currentSortOrder = mod.SortOrder;
+                var currentSortOrder = mod.SortOrder.FullPath;
                 ImGui.SetNextItemWidth( 300 );
                 if( ImGui.InputText( "Sort Order", ref currentSortOrder, 256, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
                     manager.ChangeSortOrder( mod, currentSortOrder );
+                    selector.Cache.ResetModList();
                     selector.SelectModByDir( mod.BasePath.Name );
                     return true;
                 }
@@ -337,7 +332,6 @@ namespace Penumbra.UI
                         {
                             Service< ModManager >.Get()!.RenameModFolder( Mod.Data, newDir, false );
 
-                            _selector.ResetModNamesLower();
                             _selector.SelectModByDir( _newName );
 
                             closeParent = true;
@@ -400,7 +394,6 @@ namespace Penumbra.UI
                 }
             }
 
-
             private void DrawRenameModFolderButton()
             {
                 DrawRenameModFolderPopup();
@@ -452,7 +445,9 @@ namespace Penumbra.UI
                 if( ImGui.IsItemHovered() )
                 {
                     ImGui.SetTooltip(
-                        "Force a recomputation of the metadata_manipulations.json file from all .meta files in the folder.\nAlso reloads the mod.\nBe aware that this removes all manually added metadata changes." );
+                        "Force a recomputation of the metadata_manipulations.json file from all .meta files in the folder.\n"
+                      + "Also reloads the mod.\n"
+                      + "Be aware that this removes all manually added metadata changes." );
                 }
             }
 
@@ -507,16 +502,17 @@ namespace Penumbra.UI
 
             public void Draw()
             {
-                if( Mod == null )
-                {
-                    return;
-                }
-
                 try
                 {
                     var ret = ImGui.BeginChild( LabelModPanel, AutoFillSize, true );
                     if( !ret )
                     {
+                        return;
+                    }
+
+                    if( Mod == null )
+                    {
+                        ImGui.EndChild();
                         return;
                     }
 

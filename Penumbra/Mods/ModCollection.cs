@@ -35,52 +35,48 @@ namespace Penumbra.Mods
             Settings = settings.ToDictionary( kvp => kvp.Key, kvp => kvp.Value.DeepCopy() );
         }
 
-        private bool CleanUnavailableSettings( Dictionary< string, ModData > data )
+        public Mod.Mod GetMod( ModData mod )
         {
-            if( Settings.Count <= data.Count )
+            if( Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
             {
-                return false;
+                return new Mod.Mod( settings, mod );
             }
 
-            List< string > removeList = new();
-            foreach( var settingKvp in Settings )
-            {
-                if( !data.ContainsKey( settingKvp.Key ) )
-                {
-                    removeList.Add( settingKvp.Key );
-                }
-            }
+            var newSettings = ModSettings.DefaultSettings( mod.Meta );
+            Settings.Add( mod.BasePath.Name, newSettings );
+            Save( Service< DalamudPluginInterface >.Get() );
+            return new Mod.Mod( newSettings, mod );
+        }
+
+        private bool CleanUnavailableSettings( Dictionary< string, ModData > data )
+        {
+            var removeList = Settings.Where( settingKvp => !data.ContainsKey( settingKvp.Key ) ).ToArray();
 
             foreach( var s in removeList )
             {
-                Settings.Remove( s );
+                Settings.Remove( s.Key );
             }
 
-            return removeList.Count > 0;
+            return removeList.Length > 0;
         }
 
-        public void CreateCache( DirectoryInfo modDirectory, Dictionary< string, ModData > data, bool cleanUnavailable = false )
+        public void CreateCache( DirectoryInfo modDirectory, IEnumerable< ModData > data )
         {
             Cache = new ModCollectionCache( Name, modDirectory );
             var changedSettings = false;
-            foreach( var modKvp in data )
+            foreach( var mod in data )
             {
-                if( Settings.TryGetValue( modKvp.Key, out var settings ) )
+                if( Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
                 {
-                    Cache.AvailableMods.Add( new Mod.Mod( settings, modKvp.Value ) );
+                    Cache.AddMod( settings, mod );
                 }
                 else
                 {
                     changedSettings = true;
-                    var newSettings = ModSettings.DefaultSettings( modKvp.Value.Meta );
-                    Settings.Add( modKvp.Key, newSettings );
-                    Cache.AvailableMods.Add( new Mod.Mod( newSettings, modKvp.Value ) );
+                    var newSettings = ModSettings.DefaultSettings( mod.Meta );
+                    Settings.Add( mod.BasePath.Name, newSettings );
+                    Cache.AddMod( newSettings, mod );
                 }
-            }
-
-            if( cleanUnavailable )
-            {
-                changedSettings |= CleanUnavailableSettings( data );
             }
 
             if( changedSettings )
@@ -88,7 +84,6 @@ namespace Penumbra.Mods
                 Save( Service< DalamudPluginInterface >.Get() );
             }
 
-            Cache.SortMods();
             CalculateEffectiveFileList( modDirectory, true, false );
         }
 
@@ -129,6 +124,8 @@ namespace Penumbra.Mods
 
         public void CalculateEffectiveFileList( DirectoryInfo modDir, bool withMetaManipulations, bool activeCollection )
         {
+            PluginLog.Verbose( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{IsActiveCollection}]", Name,
+                withMetaManipulations, activeCollection );
             Cache ??= new ModCollectionCache( Name, modDir );
             UpdateSettings();
             Cache.CalculateEffectiveFileList();
@@ -233,14 +230,10 @@ namespace Penumbra.Mods
                 return;
             }
 
-            if( Settings.TryGetValue( data.BasePath.Name, out var settings ) )
-            {
-                Cache.AddMod( settings, data );
-            }
-            else
-            {
-                Cache.AddMod( ModSettings.DefaultSettings( data.Meta ), data );
-            }
+            Cache.AddMod( Settings.TryGetValue( data.BasePath.Name, out var settings )
+                    ? settings
+                    : ModSettings.DefaultSettings( data.Meta ),
+                data );
         }
 
         public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )

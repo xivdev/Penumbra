@@ -22,41 +22,30 @@ namespace Penumbra.Mods
 
             mod.Meta.Name = newName;
             mod.SaveMeta();
-            foreach( var collection in manager.Collections.Collections.Values.Where( c => c.Cache != null ) )
-            {
-                collection.Cache!.SortMods();
-            }
 
             return true;
         }
 
         public static bool ChangeSortOrder( this ModManager manager, ModData mod, string newSortOrder )
         {
-            newSortOrder = string.Join( "/", newSortOrder.Trim().Split( new[] { "/" }, StringSplitOptions.RemoveEmptyEntries ) );
-
-            if( mod.SortOrder == newSortOrder )
+            if( string.Equals(mod.SortOrder.FullPath, newSortOrder, StringComparison.InvariantCultureIgnoreCase ) )
             {
                 return false;
             }
 
-            var modName = mod.Meta.Name.Replace( '/', '\\' );
-            if( newSortOrder == string.Empty || newSortOrder == modName )
+            var inRoot  = new SortOrder( manager.StructuredMods, mod.Meta.Name );
+            if( newSortOrder == string.Empty || newSortOrder == inRoot.SortOrderName )
             {
-                mod.SortOrder = modName;
+                mod.SortOrder = inRoot;
                 manager.Config.ModSortOrder.Remove( mod.BasePath.Name );
             }
             else
             {
-                mod.SortOrder                                    = newSortOrder;
-                manager.Config.ModSortOrder[ mod.BasePath.Name ] = newSortOrder;
+                mod.Move( newSortOrder );
+                manager.Config.ModSortOrder[ mod.BasePath.Name ] = mod.SortOrder.FullPath;
             }
 
             manager.Config.Save();
-
-            foreach( var collection in manager.Collections.Collections.Values.Where( c => c.Cache != null ) )
-            {
-                collection.Cache!.SortMods();
-            }
 
             return true;
         }
