@@ -11,13 +11,14 @@ namespace Penumbra.PlayerWatch
     internal class PlayerWatchBase : IDisposable
     {
         public const  int GPosePlayerActorIdx = 201;
+        public const  int GPoseActorEnd       = GPosePlayerActorIdx + 48;
         private const int ActorsPerFrame      = 8;
 
-        private readonly  DalamudPluginInterface                                          _pi;
-        internal readonly HashSet< PlayerWatcher >                                        RegisteredWatchers = new();
+        private readonly  DalamudPluginInterface                                           _pi;
+        internal readonly HashSet< PlayerWatcher >                                         RegisteredWatchers = new();
         private readonly  Dictionary< string, (ActorEquipment, HashSet< PlayerWatcher >) > _equip             = new();
-        private           int                                                             _frameTicker;
-        private           IntPtr                                                          _lastGPoseAddress = IntPtr.Zero;
+        private           int                                                              _frameTicker;
+        private           bool                                                             _inGPose = false;
 
         internal PlayerWatchBase( DalamudPluginInterface pi )
         {
@@ -117,26 +118,61 @@ namespace Penumbra.PlayerWatch
             }
         }
 
-        private void OnFrameworkUpdate( object framework )
+        internal void TriggerGPose()
         {
-            var actors     = _pi.ClientState.Actors;
-            var gPoseActor = actors[ GPosePlayerActorIdx ];
-            if( gPoseActor == null )
+            for( var i = GPosePlayerActorIdx; i < GPoseActorEnd; ++i )
             {
-                if( _lastGPoseAddress != IntPtr.Zero && actors[ 0 ] != null && _equip.TryGetValue( actors[ 0 ].Name, out var player ) )
+                var actor = _pi.ClientState.Actors[ i ];
+                if( actor == null )
                 {
-                    TriggerEvents( player.Item2, actors[ 0 ] );
+                    return;
                 }
 
-                _lastGPoseAddress = IntPtr.Zero;
-            }
-            else if( gPoseActor.Address != _lastGPoseAddress )
-            {
-                _lastGPoseAddress = gPoseActor.Address;
-                if( _equip.TryGetValue( gPoseActor.Name, out var gPose ) )
+                if( _equip.TryGetValue( actor.Name, out var watcher ) )
                 {
-                    TriggerEvents( gPose.Item2, gPoseActor );
+                    TriggerEvents( watcher.Item2, actor );
                 }
+            }
+        }
+
+        private Actor CheckGPoseActor( Actor actor )
+        {
+            if( !_inGPose )
+            {
+                return actor;
+            }
+
+            for( var i = GPosePlayerActorIdx; i < GPoseActorEnd; ++i )
+            {
+                var a = _pi.ClientState.Actors[ i ];
+                if( a == null )
+                {
+                    return actor;
+                }
+
+                if( a.Name == actor.Name )
+                {
+                    return a;
+                }
+            }
+
+            return actor;
+        }
+
+        private void OnFrameworkUpdate( object framework )
+        {
+            var actors = _pi.ClientState.Actors;
+
+            var newInGPose = actors[ GPosePlayerActorIdx ] != null;
+
+            if( newInGPose != _inGPose )
+            {
+                if( newInGPose )
+                {
+                    TriggerGPose();
+                }
+
+                _inGPose = newInGPose;
             }
 
             for( var i = 0; i < ActorsPerFrame; ++i )
@@ -145,16 +181,19 @@ namespace Penumbra.PlayerWatch
                     ? _frameTicker + 2
                     : 0;
 
-                var actor = _frameTicker == 0 && gPoseActor != null ? gPoseActor : actors[ _frameTicker ];
+                var actor = actors[ _frameTicker ];
                 if( actor             == null
                  || actor.ObjectKind  != ObjectKind.Player
                  || actor.Name        == null
-                 || actor.Name.Length == 0 )
+                 || actor.Name.Length == 0
+                 || !_equip.TryGetValue( actor.Name, out var equip ) )
                 {
                     continue;
                 }
 
-                if( _equip.TryGetValue( actor.Name, out var equip ) && !equip.Item1.CompareAndUpdate( actor ) )
+                actor = CheckGPoseActor( actor );
+
+                if( !equip.Item1.CompareAndUpdate( actor ) )
                 {
                     TriggerEvents( equip.Item2, actor );
                 }
