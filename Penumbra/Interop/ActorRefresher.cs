@@ -31,6 +31,7 @@ namespace Penumbra.Interop
         private const int UnloadAllRedrawDelay = 250;
         private const int NpcActorId           = -536870912;
         public const  int GPosePlayerActorIdx  = 201;
+        public const  int GPoseEndIdx          = GPosePlayerActorIdx + 48;
 
         private readonly DalamudPluginInterface                            _pi;
         private readonly ModManager                                        _mods;
@@ -46,6 +47,7 @@ namespace Penumbra.Interop
         private LoadingFlags _currentActorStartState = 0;
         private RedrawType   _currentActorRedrawType = RedrawType.Unload;
         private bool         _wasTarget              = false;
+        private bool         _inGPose                = false;
 
         public static IntPtr RenderPtr( Actor actor )
             => actor.Address + RenderModeOffset;
@@ -83,7 +85,7 @@ namespace Penumbra.Interop
             _currentActorStartState     =  *( LoadingFlags* )renderPtr;
             *( LoadingFlags* )renderPtr |= LoadingFlags.Invisibility;
 
-            if( actorIdx == GPosePlayerActorIdx )
+            if( _inGPose )
             {
                 var ptr         = ( void*** )actor.Address;
                 var disableDraw = Marshal.GetDelegateForFunctionPointer< ManipulateDraw >( new IntPtr( ptr[ 0 ][ 17 ] ) );
@@ -112,12 +114,12 @@ namespace Penumbra.Interop
             return false;
         }
 
-        private static unsafe void WriteVisible( Actor actor, int actorIdx )
+        private unsafe void WriteVisible( Actor actor, int actorIdx )
         {
             var renderPtr = RenderPtr( actor );
             *( LoadingFlags* )renderPtr &= ~LoadingFlags.Invisibility;
 
-            if( actorIdx == GPosePlayerActorIdx )
+            if( _inGPose )
             {
                 var ptr        = ( void*** )actor.Address;
                 var enableDraw = Marshal.GetDelegateForFunctionPointer< ManipulateDraw >( new IntPtr( ptr[ 0 ][ 16 ] ) );
@@ -140,10 +142,35 @@ namespace Penumbra.Interop
             return _currentActorName == actor.Name;
         }
 
+        private bool CheckActorGPose( Actor actor )
+            => actor.ActorId == NpcActorId && _currentActorName == actor.Name;
+
         private (Actor?, int) FindCurrentActor()
         {
+            if( _inGPose )
+            {
+                for( var i = GPosePlayerActorIdx; i < GPoseEndIdx; ++i )
+                {
+                    var actor = _pi.ClientState.Actors[ i ];
+                    if( actor == null )
+                    {
+                        break;
+                    }
+
+                    if( CheckActorGPose( actor ) )
+                    {
+                        return ( actor, i );
+                    }
+                }
+            }
+
             for( var i = 0; i < _pi.ClientState.Actors.Length; ++i )
             {
+                if( i == GPosePlayerActorIdx )
+                {
+                    i = GPoseEndIdx;
+                }
+
                 var actor = _pi.ClientState.Actors[ i ];
                 if( actor != null && CheckActor( actor ) )
                 {
@@ -245,8 +272,11 @@ namespace Penumbra.Interop
                 if( !StillLoading( RenderPtr( actor ) ) )
                 {
                     RestoreSettings();
-                    if (_wasTarget && _pi.ClientState.Targets.CurrentTarget == null)
+                    if( _wasTarget && _pi.ClientState.Targets.CurrentTarget == null )
+                    {
                         _pi.ClientState.Targets.SetCurrentTarget( actor );
+                    }
+
                     _currentFrame = 0;
                 }
             }
@@ -271,6 +301,8 @@ namespace Penumbra.Interop
                 --_waitFrames;
                 return;
             }
+
+            _inGPose = _pi.ClientState.Actors[ GPosePlayerActorIdx ] != null;
 
             switch( _currentFrame )
             {
