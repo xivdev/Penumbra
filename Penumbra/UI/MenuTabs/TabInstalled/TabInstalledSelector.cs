@@ -331,9 +331,11 @@ namespace Penumbra.UI
 
             private void DrawModsSelectorFilter()
             {
+                ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, ZeroVector );
                 DrawTextFilter();
                 ImGui.SameLine();
                 DrawToggleFilter();
+                ImGui.PopStyleVar();
             }
         }
 
@@ -611,16 +613,43 @@ namespace Penumbra.UI
                 Cache       = new ModListCache( _modManager );
             }
 
+            private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection collection )
+            {
+                if( collection == ModCollection.Empty
+                 || collection == _modManager.Collections.CurrentCollection )
+                {
+                    ImGui.PushStyleVar( ImGuiStyleVar.Alpha, 0.5f );
+                    ImGui.Button( label, Vector2.UnitX * size );
+                    ImGui.PopStyleVar();
+                }
+                else if( ImGui.Button( label, Vector2.UnitX * size ) )
+                {
+                    _base._menu.CollectionsTab.SetCurrentCollection( collection );
+                }
+                if( ImGui.IsItemHovered() )
+                    ImGui.SetTooltip( $"Switches to the currently set {tooltipLabel} collection, if it is not set to None and it is not the current collection already." );
+            }
+
             private void DrawHeaderBar()
             {
-                const float size = 200;
+                const float size       = 200;
                 DrawModsSelectorFilter();
                 var textSize  = ImGui.CalcTextSize( TabCollections.LabelCurrentCollection ).X + ImGui.GetStyle().ItemInnerSpacing.X;
                 var comboSize = size * ImGui.GetIO().FontGlobalScale;
-                var offset    = comboSize                           + textSize;
-                ImGui.SameLine( ImGui.GetWindowContentRegionWidth() - offset );
+                var offset    = comboSize + textSize;
+
+                var buttonSize = (ImGui.GetWindowContentRegionWidth() - offset - SelectorPanelWidth * _selectorScalingFactor - 4 * ImGui.GetStyle().ItemSpacing.X) / 2;
+                ImGui.SameLine();
+                DrawCollectionButton("Default", "default", buttonSize, _modManager.Collections.DefaultCollection );
+
+                ImGui.SameLine();
+                DrawCollectionButton( "Forced", "forced", buttonSize, _modManager.Collections.ForcedCollection );
+
+                ImGui.SameLine();
                 ImGui.SetNextItemWidth( comboSize );
+                ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
                 _base._menu.CollectionsTab.DrawCurrentCollectionSelector( false );
+                ImGui.PopStyleVar();
             }
 
             private void DrawFolderContent( ModFolder folder, ref int idx )
@@ -720,7 +749,6 @@ namespace Penumbra.UI
                     return;
                 }
 
-                ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, ZeroVector );
                 try
                 {
                     _selectorScalingFactor = _base._plugin.Configuration.ScaleModSelector
@@ -728,6 +756,7 @@ namespace Penumbra.UI
                         : 1f;
                     // Selector pane
                     DrawHeaderBar();
+                    ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
                     ImGui.BeginGroup();
                     // Inlay selector list
                     ImGui.BeginChild( LabelSelectorList,

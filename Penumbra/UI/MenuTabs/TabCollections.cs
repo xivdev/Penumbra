@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -131,7 +132,35 @@ namespace Penumbra.UI
                 }
             }
 
-            public void DrawCurrentCollectionSelector(bool tooltip)
+            private void SetCurrentCollection( int idx )
+            {
+                if( idx == _currentCollectionIndex )
+                {
+                    return;
+                }
+
+                _manager.Collections.SetCurrentCollection( _collections[ idx + 1 ] );
+                _currentCollectionIndex = idx;
+                _selector.ReloadSelection();
+                _selector.Cache.ResetModList();
+            }
+
+            public void SetCurrentCollection( ModCollection collection )
+            {
+                var idx = Array.IndexOf( _collections, collection ) - 1;
+                if( idx >= 0 && idx != _currentCollectionIndex )
+                {
+                    _manager.Collections.SetCurrentCollection( _collections[ idx + 1 ] );
+                    _currentCollectionIndex = idx;
+                    _selector.Cache.ResetModList();
+                    if( _selector.Mod != null )
+                    {
+                        _selector.SelectModByDir( _selector.Mod.Data.BasePath.Name );
+                    }
+                }
+            }
+
+            public void DrawCurrentCollectionSelector( bool tooltip )
             {
                 var index = _currentCollectionIndex;
                 var combo = ImGui.Combo( LabelCurrentCollection, ref index, _collectionNames );
@@ -141,12 +170,9 @@ namespace Penumbra.UI
                         "This collection will be modified when using the Installed Mods tab and making changes. It does not apply to anything by itself." );
                 }
 
-                if( combo && index != _currentCollectionIndex )
+                if( combo )
                 {
-                    _manager.Collections.SetCurrentCollection( _collections[ index + 1 ] );
-                    _currentCollectionIndex = index;
-                    _selector.ReloadSelection();
-                    _selector.Cache.ResetModList();
+                    SetCurrentCollection( index );
                 }
             }
 
@@ -279,7 +305,7 @@ namespace Penumbra.UI
                     return;
                 }
 
-                DrawCurrentCollectionSelector(true);
+                DrawCurrentCollectionSelector( true );
 
                 ImGui.Dummy( new Vector2( 0, 10 ) );
                 DrawNewCollectionInput();
