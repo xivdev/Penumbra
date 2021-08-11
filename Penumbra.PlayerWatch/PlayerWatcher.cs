@@ -25,13 +25,16 @@ namespace Penumbra.PlayerWatch
         }
 
         public void Enable()
-            => Active = Valid;
+            => SetStatus( true );
 
         public void Disable()
-            => Active = false;
+            => SetStatus( false );
 
         public void SetStatus( bool enabled )
-            => Active = enabled && Valid;
+        {
+            Active = enabled && Valid;
+            _playerWatch?.CheckActiveStatus();
+        }
 
         internal void Trigger( Actor actor )
             => ActorChanged?.Invoke( actor );

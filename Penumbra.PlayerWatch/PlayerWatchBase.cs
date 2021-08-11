@@ -19,16 +19,19 @@ namespace Penumbra.PlayerWatch
         private readonly  Dictionary< string, (ActorEquipment, HashSet< PlayerWatcher >) > _equip             = new();
         private           int                                                              _frameTicker;
         private           bool                                                             _inGPose = false;
+        private           bool                                                             _enabled = false;
+        private           bool                                                             _cancel  = false;
 
         internal PlayerWatchBase( DalamudPluginInterface pi )
-        {
-            _pi = pi;
-            EnableActorWatch();
-        }
+            => _pi = pi;
 
         internal void RegisterWatcher( PlayerWatcher watcher )
         {
             RegisteredWatchers.Add( watcher );
+            if( watcher.Active )
+            {
+                EnableActorWatch();
+            }
         }
 
         internal void UnregisterWatcher( PlayerWatcher watcher )
@@ -39,6 +42,20 @@ namespace Penumbra.PlayerWatch
                 {
                     items.Item2.Remove( watcher );
                 }
+            }
+
+            CheckActiveStatus();
+        }
+
+        internal void CheckActiveStatus()
+        {
+            if( RegisteredWatchers.Any( w => w.Active ) )
+            {
+                EnableActorWatch();
+            }
+            else
+            {
+                DisableActorWatch();
             }
         }
 
@@ -79,16 +96,24 @@ namespace Penumbra.PlayerWatch
 
         internal void EnableActorWatch()
         {
-            _pi.Framework.OnUpdateEvent      += OnFrameworkUpdate;
-            _pi.ClientState.TerritoryChanged += OnTerritoryChange;
-            _pi.ClientState.OnLogout         += OnLogout;
+            if( !_enabled )
+            {
+                _enabled                         =  true;
+                _pi.Framework.OnUpdateEvent      += OnFrameworkUpdate;
+                _pi.ClientState.TerritoryChanged += OnTerritoryChange;
+                _pi.ClientState.OnLogout         += OnLogout;
+            }
         }
 
         internal void DisableActorWatch()
         {
-            _pi.Framework.OnUpdateEvent      -= OnFrameworkUpdate;
-            _pi.ClientState.TerritoryChanged -= OnTerritoryChange;
-            _pi.ClientState.OnLogout         -= OnLogout;
+            if( _enabled )
+            {
+                _enabled                         =  false;
+                _pi.Framework.OnUpdateEvent      -= OnFrameworkUpdate;
+                _pi.ClientState.TerritoryChanged -= OnTerritoryChange;
+                _pi.ClientState.OnLogout         -= OnLogout;
+            }
         }
 
         public void Dispose()
@@ -102,6 +127,7 @@ namespace Penumbra.PlayerWatch
 
         internal void Clear()
         {
+            _cancel = true;
             foreach( var kvp in _equip )
             {
                 kvp.Value.Item1.Clear();
@@ -192,6 +218,12 @@ namespace Penumbra.PlayerWatch
                 }
 
                 actor = CheckGPoseActor( actor );
+
+                if( _cancel )
+                {
+                    _cancel = false;
+                    return;
+                }
 
                 if( !equip.Item1.CompareAndUpdate( actor ) )
                 {
