@@ -127,6 +127,7 @@ namespace Penumbra.PlayerWatch
 
         internal void Clear()
         {
+            PluginLog.Verbose( "Clearing PlayerWatcher Store." );
             _cancel = true;
             foreach( var kvp in _equip )
             {
@@ -138,6 +139,7 @@ namespace Penumbra.PlayerWatch
 
         private static void TriggerEvents( IEnumerable< PlayerWatcher > watchers, Actor actor )
         {
+            PluginLog.Verbose( "Triggering events for {ActorName} at 0x{Address:X16}.", actor.Name, actor.Address );
             foreach( var watcher in watchers.Where( w => w.Active ) )
             {
                 watcher.Trigger( actor );
@@ -225,6 +227,7 @@ namespace Penumbra.PlayerWatch
                     return;
                 }
 
+                PluginLog.Verbose( "Comparing Gear for {ActorName}...", actor.Name );
                 if( !equip.Item1.CompareAndUpdate( actor ) )
                 {
                     TriggerEvents( equip.Item2, actor );
