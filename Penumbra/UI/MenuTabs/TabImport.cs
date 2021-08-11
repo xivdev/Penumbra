@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -21,7 +22,6 @@ namespace Penumbra.UI
             private const string LabelFileImportRunning = "Import in progress...";
             private const string FileTypeFilter         = "TexTools TTMP Modpack (*.ttmp2)|*.ttmp*|All files (*.*)|*.*";
             private const string TooltipModpack1        = "Writing modpack to disk before extracting...";
-            private const string FailedImport           = "One or more of your modpacks failed to import.\nPlease submit a bug report.";
 
             private const uint ColorRed    = 0xFF0000C8;
             private const uint ColorYellow = 0xFF00C8C8;
@@ -29,7 +29,7 @@ namespace Penumbra.UI
             private static readonly Vector2 ImportBarSize = new( -1, 0 );
 
             private          bool              _isImportRunning;
-            private          bool              _hasError;
+            private          string            _errorMessage = string.Empty;
             private          TexToolsImport?   _texToolsImport;
             private readonly SettingsInterface _base;
             private readonly ModManager        _manager;
@@ -62,7 +62,7 @@ namespace Penumbra.UI
 
                         if( result == DialogResult.OK )
                         {
-                            _hasError = false;
+                            _errorMessage = string.Empty;
 
                             foreach( var fileName in picker.FileNames )
                             {
@@ -78,7 +78,7 @@ namespace Penumbra.UI
                                 catch( Exception ex )
                                 {
                                     PluginLog.LogError( ex, "Failed to import modpack at {0}", fileName );
-                                    _hasError = true;
+                                    _errorMessage = ex.Message;
                                 }
                             }
 
@@ -154,10 +154,10 @@ namespace Penumbra.UI
                 }
             }
 
-            private static void DrawFailedImportMessage()
+            private void DrawFailedImportMessage()
             {
                 ImGui.PushStyleColor( ImGuiCol.Text, ColorRed );
-                ImGui.Text( FailedImport );
+                ImGui.Text( $"One or more of your modpacks failed to import:\n\t\t{_errorMessage}" );
                 ImGui.PopStyleColor();
             }
 
@@ -178,7 +178,7 @@ namespace Penumbra.UI
                     DrawImportProgress();
                 }
 
-                if( _hasError )
+                if( _errorMessage.Any() )
                 {
                     DrawFailedImportMessage();
                 }
