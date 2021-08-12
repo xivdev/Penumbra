@@ -92,7 +92,9 @@ namespace Penumbra.Mods
             SwappedFiles.Clear();
 
             var registeredFiles = new Dictionary< GamePath, Mod.Mod >();
-            foreach( var mod in AvailableMods.Values.Where( m => m.Settings.Enabled ) )
+            foreach( var mod in AvailableMods.Values
+               .Where( m => m.Settings.Enabled )
+               .OrderByDescending( m => m.Settings.Priority ) )
             {
                 mod.Cache.ClearFileConflicts();
                 AddFiles( registeredFiles, mod );
