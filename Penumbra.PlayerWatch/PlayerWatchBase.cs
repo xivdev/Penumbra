@@ -199,6 +199,10 @@ namespace Penumbra.PlayerWatch
                 {
                     TriggerGPose();
                 }
+                else
+                {
+                    Clear();
+                }
 
                 _inGPose = newInGPose;
             }
