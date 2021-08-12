@@ -56,6 +56,15 @@ namespace Penumbra.UI
             }
         }
 
+        private void SetFolderAndParentsVisible( ModFolder? folder )
+        {
+            while( folder != null && (!_visibleFolders.TryGetValue(folder, out var state) || !state.visible) )
+            {
+                _visibleFolders[ folder ] = ( true, true );
+                folder                    = folder.Parent;
+            }
+        }
+
         private void UpdateFolders()
         {
             _visibleFolders.Clear();
@@ -64,7 +73,7 @@ namespace Penumbra.UI
             {
                 if( _visibleMods[ i ].visible )
                 {
-                    _visibleFolders[ _modsInOrder[ i ].Data.SortOrder.ParentFolder ] = ( true, true );
+                    SetFolderAndParentsVisible( _modsInOrder[ i ].Data.SortOrder.ParentFolder );
                 }
             }
         }
@@ -255,7 +264,7 @@ namespace Penumbra.UI
             }
 
             ret.Item1                                          = true;
-            _visibleFolders[ mod.Data.SortOrder.ParentFolder ] = ( true, true );
+            SetFolderAndParentsVisible( mod.Data.SortOrder.ParentFolder );
             return ret;
         }
     }

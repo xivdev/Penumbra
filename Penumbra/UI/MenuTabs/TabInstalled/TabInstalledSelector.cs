@@ -96,7 +96,9 @@ namespace Penumbra.UI
                 if( ImGui.Button( ButtonYesDelete, buttonSize ) )
                 {
                     ImGui.CloseCurrentPopup();
-                    _modManager.DeleteMod( Mod.Data.BasePath );
+                    var mod = Mod;
+                    Cache.RemoveMod( mod );
+                    _modManager.DeleteMod( mod.Data.BasePath );
                     ClearSelection();
                 }
 
