@@ -19,7 +19,7 @@ namespace Penumbra.Api
         public object? GetMods()
         {
             var modManager = Service< ModManager >.Get();
-            return modManager.Collections.CurrentCollection.Cache?.AvailableMods.Select( x => new
+            return modManager.Collections.CurrentCollection.Cache?.AvailableMods.Values.Select( x => new
                 {
                     x.Settings.Enabled,
                     x.Settings.Priority,

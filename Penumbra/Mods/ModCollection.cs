@@ -37,6 +37,11 @@ namespace Penumbra.Mods
 
         public Mod.Mod GetMod( ModData mod )
         {
+            if( Cache != null && Cache.AvailableMods.TryGetValue( mod.BasePath.Name, out var ret ))
+            {
+                return ret;
+            }
+
             if( Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
             {
                 return new Mod.Mod( settings, mod );
@@ -111,7 +116,7 @@ namespace Penumbra.Mods
             }
 
             var changes = false;
-            foreach( var mod in Cache.AvailableMods )
+            foreach( var mod in Cache.AvailableMods.Values )
             {
                 changes |= mod.FixSettings();
             }

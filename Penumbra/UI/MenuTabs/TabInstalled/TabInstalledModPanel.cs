@@ -204,8 +204,8 @@ namespace Penumbra.UI
                 if( ImGui.InputInt( "Priority", ref priority, 0 ) && priority != Mod!.Settings.Priority )
                 {
                     Mod.Settings.Priority = priority;
-                    _selector.Cache.ResetFilters();
                     _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    _selector.Cache.ResetFilters();
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -221,8 +221,8 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelModEnabled, ref enabled ) )
                 {
                     Mod.Settings.Enabled = enabled;
-                    _selector.Cache.ResetFilters();
                     _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    _selector.Cache.ResetFilters();
                 }
             }
 

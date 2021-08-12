@@ -13,7 +13,7 @@ namespace Penumbra.Mods
     // It will only be setup if a collection gets activated in any way.
     public class ModCollectionCache
     {
-        public readonly List<Mod.Mod> AvailableMods = new();
+        public readonly Dictionary< string, Mod.Mod > AvailableMods = new();
 
         public readonly Dictionary< GamePath, FileInfo > ResolvedFiles = new();
         public readonly Dictionary< GamePath, GamePath > SwappedFiles  = new();
@@ -77,7 +77,7 @@ namespace Penumbra.Mods
         {
             MetaManipulations.Reset( false );
 
-            foreach( var mod in AvailableMods.Where( m => m.Settings.Enabled && m.Data.Resources.MetaManipulations.Count > 0 ) )
+            foreach( var mod in AvailableMods.Values.Where( m => m.Settings.Enabled && m.Data.Resources.MetaManipulations.Count > 0 ) )
             {
                 mod.Cache.ClearMetaConflicts();
                 AddManipulations( mod );
@@ -92,7 +92,7 @@ namespace Penumbra.Mods
             SwappedFiles.Clear();
 
             var registeredFiles = new Dictionary< GamePath, Mod.Mod >();
-            foreach( var mod in AvailableMods.Where( m => m.Settings.Enabled ) )
+            foreach( var mod in AvailableMods.Values.Where( m => m.Settings.Enabled ) )
             {
                 mod.Cache.ClearFileConflicts();
                 AddFiles( registeredFiles, mod );
@@ -102,25 +102,16 @@ namespace Penumbra.Mods
 
         public void RemoveMod( DirectoryInfo basePath )
         {
-            var hadMeta    = false;
-            var wasEnabled = false;
-            AvailableMods.RemoveAll( m =>
+            if( AvailableMods.TryGetValue( basePath.Name, out var mod ) )
             {
-                if( m.Settings.Enabled )
+                AvailableMods.Remove( basePath.Name );
+                if( mod.Settings.Enabled )
                 {
-                    wasEnabled =  true;
-                    hadMeta    |= m.Data.Resources.MetaManipulations.Count > 0;
-                }
-
-                return m.Data.BasePath.Name == basePath.Name;
-            } );
-
-            if( wasEnabled )
-            {
-                CalculateEffectiveFileList();
-                if( hadMeta )
-                {
-                    UpdateMetaManipulations();
+                    CalculateEffectiveFileList();
+                    if( mod.Data.Resources.MetaManipulations.Count > 0 )
+                    {
+                        UpdateMetaManipulations();
+                    }
                 }
             }
         }
@@ -135,16 +126,18 @@ namespace Penumbra.Mods
 
         public void AddMod( ModSettings settings, ModData data )
         {
-            var newMod = new Mod.Mod( settings, data );
-            var idx = AvailableMods.BinarySearch( newMod, Comparer );
-            idx = idx < 0 ? ~idx : idx;
-            AvailableMods.Insert( idx, newMod );
-            if( settings.Enabled )
+            if( !AvailableMods.TryGetValue( data.BasePath.Name, out var existingMod ) )
             {
-                CalculateEffectiveFileList();
-                if( data.Resources.MetaManipulations.Count > 0 )
+                var newMod = new Mod.Mod( settings, data );
+                AvailableMods[ data.BasePath.Name ] = newMod;
+
+                if( settings.Enabled )
                 {
-                    UpdateMetaManipulations();
+                    CalculateEffectiveFileList();
+                    if( data.Resources.MetaManipulations.Count > 0 )
+                    {
+                        UpdateMetaManipulations();
+                    }
                 }
             }
         }
