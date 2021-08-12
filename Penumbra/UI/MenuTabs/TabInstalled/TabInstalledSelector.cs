@@ -166,6 +166,7 @@ namespace Penumbra.UI
                         var metaFile = new FileInfo( Path.Combine( newDir.FullName, "meta.json" ) );
                         modMeta.SaveToFile( metaFile );
                         _modManager.AddMod( newDir );
+                        Cache.ResetModList();
                         SelectModByDir( newDir.Name );
                     }
                     catch( Exception e )
