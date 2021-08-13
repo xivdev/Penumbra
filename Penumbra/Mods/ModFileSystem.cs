@@ -5,10 +5,18 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods
 {
+    public delegate void OnModFileSystemChange();
+
     public static partial class ModFileSystem
     {
         // The root folder that should be used as the base for all structured mods.
         public static ModFolder Root = ModFolder.CreateRoot();
+
+        // Gets invoked every time the file system changes.
+        public static event OnModFileSystemChange? ModFileSystemChanged;
+
+        internal static void InvokeChange()
+            => ModFileSystemChanged?.Invoke();
 
         // Find a specific mod folder by its path from Root.
         // Returns true if the folder was found, and false if not.
@@ -69,7 +77,6 @@ namespace Penumbra.Mods
 
         // Move a mod to the filesystem location specified by sortOrder and rename its SortOrderName.
         // Creates all necessary Subfolders.
-        // Does NOT save.
         public static void Move( this ModData mod, string sortOrder )
         {
             var split  = sortOrder.Split( new[] { '/' }, StringSplitOptions.RemoveEmptyEntries );
@@ -79,8 +86,10 @@ namespace Penumbra.Mods
                 folder = folder.FindOrCreateSubFolder( split[ i ] ).Item1;
             }
 
-            MoveNoSave( mod, folder );
-            RenameNoSave( mod, split.Last() );
+            if( MoveNoSave( mod, folder ) || RenameNoSave( mod, split.Last() ) )
+            {
+                SaveMod( mod );
+            }
         }
 
         // Moves folder to target.
@@ -126,6 +135,7 @@ namespace Penumbra.Mods
             }
 
             config.Save();
+            InvokeChange();
         }
 
         // Sets and saves the sort order of a single mod, removing the entry if it is unnecessary.
@@ -143,6 +153,7 @@ namespace Penumbra.Mods
             }
 
             config.Save();
+            InvokeChange();
         }
 
         private static bool RenameNoSave( this ModFolder target, string newName )

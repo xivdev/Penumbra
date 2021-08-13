@@ -75,9 +75,9 @@ namespace Penumbra.UI
                 if( Custom.ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && _modManager.RenameMod( name, Mod!.Data ) )
                 {
                     _selector.SelectModByDir( Mod.Data.BasePath.Name );
-                    if( !_modManager.Config.ModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) && Mod.Data.Rename( name ) )
+                    if( !_modManager.Config.ModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) )
                     {
-                        _selector.Cache.ResetModList();
+                        Mod.Data.Rename( name );
                     }
                 }
             }
@@ -122,7 +122,7 @@ namespace Penumbra.UI
                 {
                     Meta.Author = author;
                     _selector.SaveCurrentMod();
-                    _selector.Cache.ResetFilters();
+                    _selector.Cache.TriggerFilterReset();
                 }
 
                 ImGui.EndGroup();
@@ -205,7 +205,7 @@ namespace Penumbra.UI
                 {
                     Mod.Settings.Priority = priority;
                     _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
-                    _selector.Cache.ResetFilters();
+                    _selector.Cache.TriggerFilterReset();
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -222,7 +222,7 @@ namespace Penumbra.UI
                 {
                     Mod.Settings.Enabled = enabled;
                     _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
-                    _selector.Cache.ResetFilters();
+                    _selector.Cache.TriggerFilterReset();
                 }
             }
 
@@ -233,7 +233,6 @@ namespace Penumbra.UI
                 if( ImGui.InputText( "Sort Order", ref currentSortOrder, 256, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
                     manager.ChangeSortOrder( mod, currentSortOrder );
-                    selector.Cache.ResetModList();
                     selector.SelectModByDir( mod.BasePath.Name );
                     return true;
                 }

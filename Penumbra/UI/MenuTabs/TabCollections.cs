@@ -141,22 +141,19 @@ namespace Penumbra.UI
 
                 _manager.Collections.SetCurrentCollection( _collections[ idx + 1 ] );
                 _currentCollectionIndex = idx;
-                _selector.ReloadSelection();
-                _selector.Cache.ResetModList();
+                _selector.Cache.TriggerListReset();
+                if( _selector.Mod != null )
+                {
+                    _selector.SelectModByDir( _selector.Mod.Data.BasePath.Name );
+                }
             }
 
             public void SetCurrentCollection( ModCollection collection )
             {
                 var idx = Array.IndexOf( _collections, collection ) - 1;
-                if( idx >= 0 && idx != _currentCollectionIndex )
+                if( idx >= 0 )
                 {
-                    _manager.Collections.SetCurrentCollection( _collections[ idx + 1 ] );
-                    _currentCollectionIndex = idx;
-                    _selector.Cache.ResetModList();
-                    if( _selector.Mod != null )
-                    {
-                        _selector.SelectModByDir( _selector.Mod.Data.BasePath.Name );
-                    }
+                    SetCurrentCollection( idx );
                 }
             }
 

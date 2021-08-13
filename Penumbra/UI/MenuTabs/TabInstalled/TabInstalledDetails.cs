@@ -442,7 +442,7 @@ namespace Penumbra.UI
                     // If the mod is enabled in the current collection, its conflicts may have changed.
                     if( Mod!.Settings.Enabled )
                     {
-                        _selector.Cache.ResetFilters();
+                        _selector.Cache.TriggerFilterReset();
                     }
                 }
             }

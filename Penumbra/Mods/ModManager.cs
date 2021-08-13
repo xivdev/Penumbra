@@ -148,8 +148,12 @@ namespace Penumbra.Mods
                     PluginLog.Error( $"Could not delete the mod {modFolder.Name}:\n{e}" );
                 }
 
-                Mods.Remove( modFolder.Name );
-                Collections.RemoveModFromCaches( modFolder );
+                if( Mods.TryGetValue( modFolder.Name, out var mod ) )
+                {
+                    mod.SortOrder.ParentFolder.RemoveMod( mod );
+                    Mods.Remove( modFolder.Name );
+                    Collections.RemoveModFromCaches( modFolder );
+                }
             }
         }
 

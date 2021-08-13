@@ -99,6 +99,7 @@ namespace Penumbra.UI
                     var mod = Mod;
                     Cache.RemoveMod( mod );
                     _modManager.DeleteMod( mod.Data.BasePath );
+                    ModFileSystem.InvokeChange();
                     ClearSelection();
                 }
 
@@ -166,7 +167,7 @@ namespace Penumbra.UI
                         var metaFile = new FileInfo( Path.Combine( newDir.FullName, "meta.json" ) );
                         modMeta.SaveToFile( metaFile );
                         _modManager.AddMod( newDir );
-                        Cache.ResetModList();
+                        ModFileSystem.InvokeChange();
                         SelectModByDir( newDir.Name );
                     }
                     catch( Exception e )
@@ -367,10 +368,7 @@ namespace Penumbra.UI
                     var mod      = Cache.GetMod( modIndex ).Item1;
                     if( mod != null )
                     {
-                        if( mod.Data.Move( folder ) )
-                        {
-                            Cache.ResetModList();
-                        }
+                        mod.Data.Move( folder );
                     }
                 }
                 else if( IsDropping( DraggedFolderLabel ) )
@@ -381,10 +379,7 @@ namespace Penumbra.UI
                      && !ReferenceEquals( droppedFolder, folder )
                      && !folder.FullName.StartsWith( folderName, StringComparison.InvariantCultureIgnoreCase ) )
                     {
-                        if( droppedFolder.Move( folder ) )
-                        {
-                            Cache.ResetModList();
-                        }
+                        droppedFolder.Move( folder );
                     }
                 }
 
@@ -484,7 +479,6 @@ namespace Penumbra.UI
 
                 if( _index >= 0 && _modManager.UpdateMod( Mod.Data, reloadMeta, recomputeMeta ) )
                 {
-                    Cache.ResetModList();
                     SelectModByDir( Mod.Data.BasePath.Name );
                     _base._menu.InstalledTab.ModPanel.Details.ResetState();
                 }
@@ -541,7 +535,7 @@ namespace Penumbra.UI
                     return;
                 }
 
-                Cache.ResetFilters();
+                Cache.TriggerFilterReset();
                 var collection = _modManager.Collections.CurrentCollection;
                 if( collection.Cache != null )
                 {
@@ -561,21 +555,15 @@ namespace Penumbra.UI
                     return;
                 }
 
-                bool changes;
                 if( _newFolderName.Any() )
                 {
-                    changes        = folder.Rename( _newFolderName );
-                    _newFolderName = string.Empty;
+                    folder.Rename( _newFolderName );
                 }
                 else
                 {
-                    changes = folder.Merge( folder.Parent! );
+                    folder.Merge( folder.Parent! );
                 }
-
-                if( changes )
-                {
-                    Cache.ResetModList();
-                }
+                _newFolderName = string.Empty;
             }
 
             private void DrawFolderContextMenu( ModFolder folder, int currentIdx, string treeName )
@@ -629,21 +617,29 @@ namespace Penumbra.UI
                 {
                     _base._menu.CollectionsTab.SetCurrentCollection( collection );
                 }
+
                 if( ImGui.IsItemHovered() )
-                    ImGui.SetTooltip( $"Switches to the currently set {tooltipLabel} collection, if it is not set to None and it is not the current collection already." );
+                {
+                    ImGui.SetTooltip(
+                        $"Switches to the currently set {tooltipLabel} collection, if it is not set to None and it is not the current collection already." );
+                }
             }
 
             private void DrawHeaderBar()
             {
-                const float size       = 200;
+                const float size = 200;
                 DrawModsSelectorFilter();
                 var textSize  = ImGui.CalcTextSize( TabCollections.LabelCurrentCollection ).X + ImGui.GetStyle().ItemInnerSpacing.X;
                 var comboSize = size * ImGui.GetIO().FontGlobalScale;
                 var offset    = comboSize + textSize;
 
-                var buttonSize = (ImGui.GetWindowContentRegionWidth() - offset - SelectorPanelWidth * _selectorScalingFactor - 4 * ImGui.GetStyle().ItemSpacing.X) / 2;
+                var buttonSize = ( ImGui.GetWindowContentRegionWidth()
+                      - offset
+                      - SelectorPanelWidth * _selectorScalingFactor
+                      - 4                  * ImGui.GetStyle().ItemSpacing.X )
+                  / 2;
                 ImGui.SameLine();
-                DrawCollectionButton("Default", "default", buttonSize, _modManager.Collections.DefaultCollection );
+                DrawCollectionButton( "Default", "default", buttonSize, _modManager.Collections.DefaultCollection );
 
                 ImGui.SameLine();
                 DrawCollectionButton( "Forced", "forced", buttonSize, _modManager.Collections.ForcedCollection );
@@ -767,6 +763,11 @@ namespace Penumbra.UI
                         true, ImGuiWindowFlags.HorizontalScrollbar );
 
                     ImGui.PushStyleVar( ImGuiStyleVar.IndentSpacing, 12.5f );
+                    if( Cache.Update() && Mod != null )
+                    {
+                        SelectModByDir( Mod.Data.BasePath.Name );
+                    }
+
                     var modIndex = 0;
                     DrawFolderContent( _modManager.StructuredMods, ref modIndex );
                     ImGui.PopStyleVar();

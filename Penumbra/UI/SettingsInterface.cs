@@ -1,10 +1,11 @@
+using System;
 using System.Numerics;
 using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.UI
 {
-    public partial class SettingsInterface
+    public partial class SettingsInterface : IDisposable
     {
         private const float DefaultVerticalSpace = 20f;
 
@@ -25,7 +26,21 @@ namespace Penumbra.UI
             _menuBar          = new MenuBar( this );
             _menu             = new SettingsMenu( this );
             _modManager       = Service< ModManager >.Get();
+
+            _plugin.PluginInterface.UiBuilder.DisableGposeUiHide =  true;
+            _plugin.PluginInterface.UiBuilder.OnBuildUi          += Draw;
+            _plugin.PluginInterface.UiBuilder.OnOpenConfigUi     += OpenConfig;
         }
+
+        public void Dispose()
+        {
+            _menu.InstalledTab.Selector.Cache.Dispose();
+            _plugin.PluginInterface.UiBuilder.OnBuildUi      -= Draw;
+            _plugin.PluginInterface.UiBuilder.OnOpenConfigUi -= OpenConfig;
+        }
+
+        private void OpenConfig( object _1, EventArgs _2 )
+            => _menu.Visible = true;
 
         public void FlipVisibility()
             => _menu.Visible = !_menu.Visible;
@@ -44,7 +59,7 @@ namespace Penumbra.UI
         {
             _menu.InstalledTab.Selector.ClearSelection();
             _modManager.DiscoverMods( _plugin.Configuration.ModDirectory );
-            _menu.InstalledTab.Selector.Cache.ResetModList();
+            _menu.InstalledTab.Selector.Cache.TriggerListReset();
         }
 
         private void SaveCurrentCollection( bool recalculateMeta )
@@ -61,7 +76,7 @@ namespace Penumbra.UI
             {
                 current.CalculateEffectiveFileList( _modManager.BasePath, recalculateMeta,
                     current == _modManager.Collections.ActiveCollection );
-                _menu.InstalledTab.Selector.Cache.ResetFilters();
+                _menu.InstalledTab.Selector.Cache.TriggerFilterReset();
             }
         }
     }

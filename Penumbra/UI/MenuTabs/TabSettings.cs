@@ -107,7 +107,7 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelSortFoldersFirst, ref foldersFirst ) )
                 {
                     _config.SortFoldersFirst = foldersFirst;
-                    _base._menu.InstalledTab.Selector.Cache.ResetModList();
+                    _base._menu.InstalledTab.Selector.Cache.TriggerListReset();
                     _configChanged           = true;
                 }
             }

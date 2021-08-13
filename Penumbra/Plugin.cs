@@ -80,9 +80,6 @@ namespace Penumbra
 
             SettingsInterface = new SettingsInterface( this );
 
-            PluginInterface.UiBuilder.DisableGposeUiHide =  true;
-            PluginInterface.UiBuilder.OnBuildUi          += SettingsInterface.Draw;
-
             if( Configuration.EnableHttpApi )
             {
                 CreateWebServer();
@@ -147,9 +144,9 @@ namespace Penumbra
 
         public void Dispose()
         {
+            SettingsInterface.Dispose();
             ActorRefresher.Dispose();
             PlayerWatcher.Dispose();
-            PluginInterface.UiBuilder.OnBuildUi -= SettingsInterface.Draw;
 
             PluginInterface.CommandManager.RemoveHandler( CommandName );
             PluginInterface.Dispose();

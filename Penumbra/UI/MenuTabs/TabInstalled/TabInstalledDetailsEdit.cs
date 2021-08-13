@@ -113,7 +113,7 @@ namespace Penumbra.UI
                 {
                     if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
                     {
-                        _selector.Cache.ResetFilters();
+                        _selector.Cache.TriggerFilterReset();
                     }
                 }
             }
@@ -132,7 +132,7 @@ namespace Penumbra.UI
                     _selector.SaveCurrentMod();
                     if( Mod!.Data.Meta.RefreshHasGroupsWithConfig() )
                     {
-                        _selector.Cache.ResetFilters();
+                        _selector.Cache.TriggerFilterReset();
                     }
                 }
             }
@@ -173,7 +173,7 @@ namespace Penumbra.UI
 
                         if( Mod!.Data.Meta.RefreshHasGroupsWithConfig() )
                         {
-                            _selector.Cache.ResetFilters();
+                            _selector.Cache.TriggerFilterReset();
                         }
                     }
                 }
@@ -190,7 +190,7 @@ namespace Penumbra.UI
                 {
                     if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
                     {
-                        _selector.Cache.ResetFilters();
+                        _selector.Cache.TriggerFilterReset();
                     }
                 }
             }
@@ -238,7 +238,7 @@ namespace Penumbra.UI
 
                     if( Mod.Data.Meta.RefreshHasGroupsWithConfig() )
                     {
-                        _selector.Cache.ResetFilters();
+                        _selector.Cache.TriggerFilterReset();
                     }
                 }
 
@@ -347,7 +347,6 @@ namespace Penumbra.UI
 
                                 _selector.SaveCurrentMod();
                                 _selector.ReloadCurrentMod();
-                                _selector.Cache.ResetModList();
                             }
                         }
 
@@ -369,8 +368,7 @@ namespace Penumbra.UI
                                 {
                                     Meta.FileSwaps[ key ] = newValue;
                                     _selector.SaveCurrentMod();
-                                    _selector.ReloadCurrentMod();
-                                    _selector.Cache.ResetModList();
+                                    _selector.Cache.TriggerListReset();
                                 }
                             }
                         }

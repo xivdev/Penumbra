@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Plugin;
@@ -5,7 +6,7 @@ using Penumbra.Mods;
 
 namespace Penumbra.UI
 {
-    public class ModListCache
+    public class ModListCache : IDisposable
     {
         public const uint DisabledModColor        = 0xFF666666u;
         public const uint ConflictingModColor     = 0xFFAAAAFFu;
@@ -17,10 +18,13 @@ namespace Penumbra.UI
         private readonly List< (bool visible, uint color) >                    _visibleMods    = new();
         private readonly Dictionary< ModFolder, (bool visible, bool enabled) > _visibleFolders = new();
 
-        private string    _modFilter        = "";
-        private string    _modFilterChanges = "";
-        private string    _modFilterAuthor  = "";
-        private ModFilter _stateFilter      = ModFilterExtensions.UnfilteredStateMods;
+        private string    _modFilter            = "";
+        private string    _modFilterChanges     = "";
+        private string    _modFilterAuthor      = "";
+        private ModFilter _stateFilter          = ModFilterExtensions.UnfilteredStateMods;
+        private bool      _listResetNecessary   = false;
+        private bool      _filterResetNecessary = false;
+
 
         public ModFilter StateFilter
         {
@@ -31,7 +35,7 @@ namespace Penumbra.UI
                 _stateFilter = value;
                 if( diff )
                 {
-                    ResetFilters();
+                    TriggerFilterReset();
                 }
             }
         }
@@ -40,10 +44,40 @@ namespace Penumbra.UI
         {
             _manager = manager;
             ResetModList();
+            ModFileSystem.ModFileSystemChanged += TriggerListReset;
+        }
+
+        public void Dispose()
+        {
+            ModFileSystem.ModFileSystemChanged -= TriggerListReset;
         }
 
         public int Count
             => _modsInOrder.Count;
+
+
+        public bool Update()
+        {
+            if( _listResetNecessary )
+            {
+                ResetModList();
+                return true;
+            }
+
+            if( _filterResetNecessary )
+            {
+                ResetFilters();
+                return true;
+            }
+
+            return false;
+        }
+
+        public void TriggerListReset()
+            => _listResetNecessary = true;
+
+        public void TriggerFilterReset()
+            => _filterResetNecessary = true;
 
         public void RemoveMod( Mod.Mod mod )
         {
@@ -58,7 +92,7 @@ namespace Penumbra.UI
 
         private void SetFolderAndParentsVisible( ModFolder? folder )
         {
-            while( folder != null && (!_visibleFolders.TryGetValue(folder, out var state) || !state.visible) )
+            while( folder != null && ( !_visibleFolders.TryGetValue( folder, out var state ) || !state.visible ) )
             {
                 _visibleFolders[ folder ] = ( true, true );
                 folder                    = folder.Parent;
@@ -103,7 +137,7 @@ namespace Penumbra.UI
             ResetFilters();
         }
 
-        public void ResetModList()
+        private void ResetModList()
         {
             _modsInOrder.Clear();
             _visibleMods.Clear();
@@ -119,9 +153,12 @@ namespace Penumbra.UI
                     _visibleMods.Add( CheckFilters( mod ) );
                 }
             }
+
+            _listResetNecessary   = false;
+            _filterResetNecessary = false;
         }
 
-        public void ResetFilters()
+        private void ResetFilters()
         {
             _visibleMods.Clear();
             _visibleFolders.Clear();
@@ -130,6 +167,7 @@ namespace Penumbra.UI
             {
                 _visibleMods.Add( CheckFilters( mod ) );
             }
+            _filterResetNecessary = false;
         }
 
         public (Mod.Mod? mod, int idx) GetModByName( string name )
@@ -263,7 +301,7 @@ namespace Penumbra.UI
                 return ret;
             }
 
-            ret.Item1                                          = true;
+            ret.Item1 = true;
             SetFolderAndParentsVisible( mod.Data.SortOrder.ParentFolder );
             return ret;
         }
