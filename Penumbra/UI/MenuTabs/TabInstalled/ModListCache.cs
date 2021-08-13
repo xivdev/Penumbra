@@ -109,7 +109,7 @@ namespace Penumbra.UI
             _visibleMods.Clear();
             _visibleFolders.Clear();
 
-            PluginLog.Verbose( "Resetting mod selector list..." );
+            PluginLog.Debug( "Resetting mod selector list..." );
             if( !_modsInOrder.Any() )
             {
                 foreach( var modData in _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) )
@@ -125,7 +125,7 @@ namespace Penumbra.UI
         {
             _visibleMods.Clear();
             _visibleFolders.Clear();
-            PluginLog.Verbose( "Resetting mod selector filters..." );
+            PluginLog.Debug( "Resetting mod selector filters..." );
             foreach( var mod in _modsInOrder )
             {
                 _visibleMods.Add( CheckFilters( mod ) );

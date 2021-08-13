@@ -37,7 +37,7 @@ namespace Penumbra.Mods
 
         public Mod.Mod GetMod( ModData mod )
         {
-            if( Cache != null && Cache.AvailableMods.TryGetValue( mod.BasePath.Name, out var ret ))
+            if( Cache != null && Cache.AvailableMods.TryGetValue( mod.BasePath.Name, out var ret ) )
             {
                 return ret;
             }
@@ -129,7 +129,7 @@ namespace Penumbra.Mods
 
         public void CalculateEffectiveFileList( DirectoryInfo modDir, bool withMetaManipulations, bool activeCollection )
         {
-            PluginLog.Verbose( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{IsActiveCollection}]", Name,
+            PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{IsActiveCollection}]", Name,
                 withMetaManipulations, activeCollection );
             Cache ??= new ModCollectionCache( Name, modDir );
             UpdateSettings();
