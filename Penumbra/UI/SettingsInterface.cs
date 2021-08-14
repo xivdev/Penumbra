@@ -74,7 +74,7 @@ namespace Penumbra.UI
             var current = _modManager.Collections.CurrentCollection;
             if( current.Cache != null )
             {
-                current.CalculateEffectiveFileList( _modManager.BasePath, recalculateMeta,
+                current.CalculateEffectiveFileList( _modManager.TempPath, recalculateMeta,
                     current == _modManager.Collections.ActiveCollection );
                 _menu.InstalledTab.Selector.Cache.TriggerFilterReset();
             }

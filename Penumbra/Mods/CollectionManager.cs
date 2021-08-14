@@ -36,9 +36,15 @@ namespace Penumbra.Mods
 
         public void RecreateCaches()
         {
+            if( !_manager.TempWritable )
+            {
+                PluginLog.Error( "No temporary directory available." );
+                return;
+            }
+
             foreach( var collection in Collections.Values.Where( c => c.Cache != null ) )
             {
-                collection.CreateCache( _manager.BasePath, _manager.StructuredMods.AllMods(_manager.Config.SortFoldersFirst) );
+                collection.CreateCache( _manager.TempPath, _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) );
             }
         }
 
@@ -137,9 +143,15 @@ namespace Penumbra.Mods
 
         private void AddCache( ModCollection collection )
         {
+            if( !_manager.TempWritable )
+            {
+                PluginLog.Error( "No tmp directory available." );
+                return;
+            }
+
             if( collection.Cache == null && collection.Name != string.Empty )
             {
-                collection.CreateCache( _manager.BasePath, _manager.StructuredMods.AllMods(_manager.Config.SortFoldersFirst) );
+                collection.CreateCache( _manager.TempPath, _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) );
             }
         }
 

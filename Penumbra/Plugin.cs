@@ -85,9 +85,9 @@ namespace Penumbra
                 CreateWebServer();
             }
 
-            if( Configuration.EnableActorWatch && Configuration.IsEnabled )
+            if( !Configuration.EnableActorWatch || !Configuration.IsEnabled )
             {
-                PlayerWatcher.Enable();
+                PlayerWatcher.Disable();
             }
 
             PlayerWatcher.ActorChanged += a =>

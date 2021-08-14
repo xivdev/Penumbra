@@ -19,8 +19,8 @@ namespace Penumbra.Mods
         public readonly Dictionary< GamePath, GamePath > SwappedFiles  = new();
         public readonly MetaManager                      MetaManipulations;
 
-        public ModCollectionCache( string collectionName, DirectoryInfo modDir )
-            => MetaManipulations = new MetaManager( collectionName, ResolvedFiles, modDir );
+        public ModCollectionCache( string collectionName, DirectoryInfo tempDir )
+            => MetaManipulations = new MetaManager( collectionName, ResolvedFiles, tempDir );
 
         private void AddFiles( Dictionary< GamePath, Mod.Mod > registeredFiles, Mod.Mod mod )
         {

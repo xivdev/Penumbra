@@ -16,6 +16,7 @@ namespace Penumbra.Mods
     {
         private readonly Plugin _plugin;
         public DirectoryInfo BasePath { get; private set; } = null!;
+        public DirectoryInfo TempPath { get; private set; } = null!;
 
         public Dictionary< string, ModData > Mods { get; } = new();
         public ModFolder StructuredMods { get; } = ModFileSystem.Root;
@@ -23,37 +24,155 @@ namespace Penumbra.Mods
         public CollectionManager Collections { get; }
 
         public bool Valid { get; private set; }
+        public bool TempWritable { get; private set; }
 
         public Configuration Config
             => _plugin.Configuration;
 
-        private void SetBaseDirectory( string basePath )
+        public void DiscoverMods( string newDir )
         {
-            if( basePath.Any() )
+            SetBaseDirectory( newDir, false );
+            DiscoverMods();
+        }
+
+        private void ClearOldTmpDir()
+        {
+            TempPath.Refresh();
+            if( TempWritable && TempPath.Exists )
             {
-                BasePath = new DirectoryInfo( basePath );
-                Valid    = Path.IsPathRooted( basePath );
+                try
+                {
+                    TempPath.Delete( true );
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not delete temporary directory {TempPath.FullName}:\n{e}" );
+                }
+            }
+        }
+
+        private static bool CheckTmpDir( string newPath, out DirectoryInfo tmpDir )
+        {
+            tmpDir = new DirectoryInfo( Path.Combine( newPath, MetaManager.TmpDirectory ) );
+            try
+            {
+                if( tmpDir.Exists )
+                {
+                    tmpDir.Delete( true );
+                    tmpDir.Refresh();
+                }
+
+                Directory.CreateDirectory( tmpDir.FullName );
+                tmpDir.Refresh();
+                return true;
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not create temporary directory {tmpDir.FullName}:\n{e}" );
+                return false;
+            }
+        }
+
+        private void SetBaseDirectory( string newPath, bool firstTime )
+        {
+            if( !firstTime && string.Equals( newPath, Config.ModDirectory, StringComparison.InvariantCultureIgnoreCase ) )
+            {
+                return;
+            }
+
+            if( !newPath.Any() )
+            {
+                Valid    = false;
+                BasePath = new DirectoryInfo( "." );
             }
             else
             {
-                BasePath = new DirectoryInfo( "." );
-                Valid    = false;
+                var newDir = new DirectoryInfo( newPath );
+                if( !newDir.Exists )
+                {
+                    try
+                    {
+                        Directory.CreateDirectory( newDir.FullName );
+                        newDir.Refresh();
+                    }
+                    catch( Exception e )
+                    {
+                        PluginLog.Error( $"Could not create specified mod directory {newDir.FullName}:\n{e}" );
+                    }
+                }
+
+                BasePath = newDir;
+                Valid    = true;
+                if( Config.ModDirectory != BasePath.FullName )
+                {
+                    Config.ModDirectory = BasePath.FullName;
+                    Config.Save();
+                }
+
+                if( !Config.TempDirectory.Any() )
+                {
+                    if( CheckTmpDir( BasePath.FullName, out var newTmpDir ) )
+                    {
+                        if( !firstTime )
+                        {
+                            ClearOldTmpDir();
+                        }
+
+                        TempPath     = newTmpDir;
+                        TempWritable = true;
+                    }
+                    else
+                    {
+                        TempWritable = false;
+                    }
+                }
             }
         }
+
+        private void SetTempDirectory( string newPath, bool firstTime )
+        {
+            if( !Valid || !firstTime && string.Equals( newPath, Config.TempDirectory, StringComparison.InvariantCultureIgnoreCase ) )
+            {
+                return;
+            }
+
+            if( !newPath.Any() && CheckTmpDir( BasePath.FullName, out var newTmpDir )
+             || newPath.Any()  && CheckTmpDir( newPath, out newTmpDir ) )
+            {
+                if( !firstTime )
+                {
+                    ClearOldTmpDir();
+                }
+
+                TempPath     = newTmpDir;
+                TempWritable = true;
+                var newName = newPath.Any() ? TempPath.Parent!.FullName : string.Empty;
+                if( Config.TempDirectory != newName )
+                {
+                    Config.TempDirectory = newName;
+                    Config.Save();
+                }
+
+                if( !firstTime )
+                {
+                    Collections.RecreateCaches();
+                }
+            }
+            else
+            {
+                TempWritable = false;
+            }
+        }
+
+        public void SetTempDirectory( string newPath )
+            => SetTempDirectory( newPath, false );
 
         public ModManager( Plugin plugin )
         {
             _plugin = plugin;
-            SetBaseDirectory( plugin.Configuration.ModDirectory );
-            MetaManager.ClearBaseDirectory( BasePath! );
-
+            SetBaseDirectory( Config.ModDirectory, true );
+            SetTempDirectory( Config.TempDirectory, true );
             Collections = new CollectionManager( plugin, this );
-        }
-
-        public void DiscoverMods( string basePath )
-        {
-            SetBaseDirectory( basePath );
-            DiscoverMods();
         }
 
         private bool SetSortOrderPath( ModData mod, string path )
@@ -101,21 +220,11 @@ namespace Penumbra.Mods
         public void DiscoverMods()
         {
             Mods.Clear();
-            if( Valid && !BasePath.Exists )
-            {
-                PluginLog.Debug( "The mod directory {Directory} does not exist.", BasePath.FullName );
-                try
-                {
-                    Directory.CreateDirectory( BasePath.FullName );
-                }
-                catch( Exception e )
-                {
-                    PluginLog.Error( $"The mod directory {BasePath.FullName} does not exist and could not be created:\n{e}" );
-                    Valid = false;
-                }
-            }
+            BasePath.Refresh();
 
-            if( Valid )
+            StructuredMods.SubFolders.Clear();
+            StructuredMods.Mods.Clear();
+            if( Valid && BasePath.Exists )
             {
                 foreach( var modFolder in BasePath.EnumerateDirectories() )
                 {

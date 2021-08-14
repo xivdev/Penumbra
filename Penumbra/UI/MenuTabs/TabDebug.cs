@@ -144,6 +144,11 @@ namespace Penumbra.UI
             PrintValue( "Mod Manager BasePath IsRooted", Path.IsPathRooted( _plugin.Configuration.ModDirectory ).ToString() );
             PrintValue( "Mod Manager BasePath Exists", Directory.Exists( manager.BasePath.FullName ).ToString() );
             PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
+            PrintValue( "Mod Manager Temp Path", manager.TempPath.FullName );
+            PrintValue( "Mod Manager Temp Path IsRooted",
+                ( !_plugin.Configuration.TempDirectory.Any() || Path.IsPathRooted( _plugin.Configuration.TempDirectory ) ).ToString() );
+            PrintValue( "Mod Manager Temp Path Exists", Directory.Exists( manager.TempPath.FullName ).ToString() );
+            PrintValue( "Mod Manager Temp Path IsWritable", manager.TempWritable.ToString() );
 
             ImGui.EndTable();
         }

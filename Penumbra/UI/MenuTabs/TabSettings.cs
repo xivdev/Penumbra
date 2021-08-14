@@ -17,8 +17,10 @@ namespace Penumbra.UI
         {
             private const string LabelTab                  = "Settings";
             private const string LabelRootFolder           = "Root Folder";
+            private const string LabelTempFolder           = "Temporary Folder";
             private const string LabelRediscoverButton     = "Rediscover Mods";
             private const string LabelOpenFolder           = "Open Mods Folder";
+            private const string LabelOpenTempFolder       = "Open Temporary Folder";
             private const string LabelEnabled              = "Enable Mods";
             private const string LabelEnabledPlayerWatch   = "Enable automatic Character Redraws";
             private const string LabelWaitFrames           = "Wait Frames";
@@ -47,10 +49,39 @@ namespace Penumbra.UI
                 if( ImGui.InputText( LabelRootFolder, ref basePath, 255, ImGuiInputTextFlags.EnterReturnsTrue )
                  && _config.ModDirectory != basePath )
                 {
-                    _config.ModDirectory = basePath;
-                    _configChanged       = true;
-                    _base.ReloadMods();
                     _base._menu.InstalledTab.Selector.ClearSelection();
+                    _base._modManager.DiscoverMods( basePath );
+                    _base._menu.InstalledTab.Selector.Cache.TriggerListReset();
+                }
+            }
+
+            private void DrawTempFolder()
+            {
+                var tempPath = _config.TempDirectory;
+                ImGui.SetNextItemWidth( 400 );
+                if( ImGui.InputText( LabelTempFolder, ref tempPath, 255, ImGuiInputTextFlags.EnterReturnsTrue )
+                 && _config.TempDirectory != tempPath )
+                {
+                    _base._modManager.SetTempDirectory( tempPath );
+                }
+
+                if( ImGui.IsItemHovered() )
+                {
+                    ImGui.SetTooltip( "The folder used to store temporary meta manipulation files.\n"
+                      + "Leave this blank if you have no reason not to.\n"
+                      + "A folder 'penumbrametatmp' will be created as a subdirectory to the specified directory.\n"
+                      + "If none is specified (i.e. this is blank) this folder will be created in the root folder instead." );
+                }
+
+                ImGui.SameLine();
+                if( ImGui.Button( LabelOpenTempFolder ) )
+                {
+                    if( !Directory.Exists( _base._modManager.TempPath.FullName ) || !_base._modManager.TempWritable )
+                    {
+                        return;
+                    }
+
+                    Process.Start( _base._modManager.TempPath.FullName );
                 }
             }
 
@@ -58,8 +89,9 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( LabelRediscoverButton ) )
                 {
-                    _base.ReloadMods();
                     _base._menu.InstalledTab.Selector.ClearSelection();
+                    _base._modManager.DiscoverMods();
+                    _base._menu.InstalledTab.Selector.Cache.TriggerListReset();
                 }
             }
 
@@ -108,7 +140,7 @@ namespace Penumbra.UI
                 {
                     _config.SortFoldersFirst = foldersFirst;
                     _base._menu.InstalledTab.Selector.Cache.TriggerListReset();
-                    _configChanged           = true;
+                    _configChanged = true;
                 }
             }
 
@@ -224,6 +256,7 @@ namespace Penumbra.UI
 
             private void DrawAdvancedSettings()
             {
+                DrawTempFolder();
                 DrawLogLoadedFilesBox();
                 DrawDisableNotificationsBox();
                 DrawEnableHttpApiBox();

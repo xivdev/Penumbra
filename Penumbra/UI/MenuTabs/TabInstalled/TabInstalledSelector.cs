@@ -539,7 +539,7 @@ namespace Penumbra.UI
                 var collection = _modManager.Collections.CurrentCollection;
                 if( collection.Cache != null )
                 {
-                    collection.CalculateEffectiveFileList( _modManager.BasePath, metaManips,
+                    collection.CalculateEffectiveFileList( _modManager.TempPath, metaManips,
                         collection == _modManager.Collections.ActiveCollection );
                 }
 
@@ -563,6 +563,7 @@ namespace Penumbra.UI
                 {
                     folder.Merge( folder.Parent! );
                 }
+
                 _newFolderName = string.Empty;
             }
 

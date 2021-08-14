@@ -435,7 +435,7 @@ namespace Penumbra.UI
                     foreach( var collection in _modManager.Collections.Collections.Values
                        .Where( c => c.Cache != null && c.Settings[ Mod!.Data.BasePath.Name ].Enabled ) )
                     {
-                        collection.CalculateEffectiveFileList( _modManager.BasePath, false,
+                        collection.CalculateEffectiveFileList( _modManager.TempPath, false,
                             collection == _modManager.Collections.ActiveCollection );
                     }
 

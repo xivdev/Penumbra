@@ -116,15 +116,12 @@ namespace Penumbra.Meta
         private void ClearDirectory()
             => ClearDirectory( _dir );
 
-        public static void ClearBaseDirectory( DirectoryInfo modDir )
-            => ClearDirectory( new DirectoryInfo( Path.Combine( modDir.FullName, TmpDirectory ) ) );
-
-        public MetaManager( string name, Dictionary< GamePath, FileInfo > resolvedFiles, DirectoryInfo modDir )
+        public MetaManager( string name, Dictionary< GamePath, FileInfo > resolvedFiles, DirectoryInfo tempDir )
         {
             _resolvedFiles      = resolvedFiles;
             _default            = Service< MetaDefaults >.Get();
             _resourceManagement = Service< GameResourceManagement >.Get();
-            _dir                = new DirectoryInfo( Path.Combine( modDir.FullName, TmpDirectory, name.ReplaceBadXivSymbols() ) );
+            _dir                = new DirectoryInfo( Path.Combine( tempDir.FullName, name.ReplaceBadXivSymbols() ) );
             ClearDirectory();
         }
 
