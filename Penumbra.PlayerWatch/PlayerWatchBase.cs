@@ -189,6 +189,11 @@ namespace Penumbra.PlayerWatch
 
         private void OnFrameworkUpdate( object framework )
         {
+            if( _pi.ClientState.LocalPlayer == null )
+            {
+                return;
+            }
+
             var actors = _pi.ClientState.Actors;
 
             var newInGPose = actors[ GPosePlayerActorIdx ] != null;
