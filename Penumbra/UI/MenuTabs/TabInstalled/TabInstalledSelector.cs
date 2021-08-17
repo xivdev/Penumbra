@@ -744,9 +744,9 @@ namespace Penumbra.UI
 
             public void Draw()
             {
-                if( Cache.Count == 0 )
+                if( Cache.Update() && Mod != null )
                 {
-                    return;
+                    SelectModByDir( Mod.Data.BasePath.Name );
                 }
 
                 try
@@ -764,10 +764,6 @@ namespace Penumbra.UI
                         true, ImGuiWindowFlags.HorizontalScrollbar );
 
                     ImGui.PushStyleVar( ImGuiStyleVar.IndentSpacing, 12.5f );
-                    if( Cache.Update() && Mod != null )
-                    {
-                        SelectModByDir( Mod.Data.BasePath.Name );
-                    }
 
                     var modIndex = 0;
                     DrawFolderContent( _modManager.StructuredMods, ref modIndex );

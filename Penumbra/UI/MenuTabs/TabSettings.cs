@@ -241,8 +241,6 @@ namespace Penumbra.UI
                             "The number of frames penumbra waits after some events (like zone changes) until it starts trying to redraw actors again, in a range of [1, 3001].\n"
                           + "Keep this as low as possible while producing stable results." );
                     }
-
-                    ;
                 }
             }
 
