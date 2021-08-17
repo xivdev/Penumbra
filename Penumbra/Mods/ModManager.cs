@@ -194,7 +194,7 @@ namespace Penumbra.Mods
             return false;
         }
 
-        private void SetModStructure()
+        private void SetModStructure(bool removeOldPaths = false )
         {
             var changes = false;
 
@@ -204,7 +204,7 @@ namespace Penumbra.Mods
                 {
                     changes |= SetSortOrderPath( mod, kvp.Value );
                 }
-                else
+                else if (removeOldPaths)
                 {
                     changes = true;
                     Config.ModSortOrder.Remove( kvp.Key );
