@@ -214,6 +214,11 @@ namespace Penumbra.PlayerWatch
 
             for( var i = 0; i < ActorsPerFrame; ++i )
             {
+                if( _pi.ClientState.LocalPlayer == null )
+                {
+                    return;
+                }
+
                 _frameTicker = _frameTicker < actors.Length - 2
                     ? _frameTicker + 2
                     : 0;
