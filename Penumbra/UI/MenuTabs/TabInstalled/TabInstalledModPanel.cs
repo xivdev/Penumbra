@@ -74,7 +74,7 @@ namespace Penumbra.UI
                 var name = Meta!.Name;
                 if( Custom.ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && _modManager.RenameMod( name, Mod!.Data ) )
                 {
-                    _selector.SelectModByDir( Mod.Data.BasePath.Name );
+                    _selector.SelectModOnUpdate( Mod.Data.BasePath.Name );
                     if( !_modManager.Config.ModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) )
                     {
                         Mod.Data.Rename( name );
@@ -233,7 +233,7 @@ namespace Penumbra.UI
                 if( ImGui.InputText( "Sort Order", ref currentSortOrder, 256, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
                     manager.ChangeSortOrder( mod, currentSortOrder );
-                    selector.SelectModByDir( mod.BasePath.Name );
+                    selector.SelectModOnUpdate( mod.BasePath.Name );
                     return true;
                 }
 
@@ -331,7 +331,7 @@ namespace Penumbra.UI
                         {
                             Service< ModManager >.Get()!.RenameModFolder( Mod.Data, newDir, false );
 
-                            _selector.SelectModByDir( _newName );
+                            _selector.SelectModOnUpdate( _newName );
 
                             closeParent = true;
                             ImGui.CloseCurrentPopup();

@@ -215,7 +215,7 @@ namespace Penumbra.UI
                         var mod = kv.Key;
                         if( ImGui.Selectable( mod.Data.Meta.Name ) )
                         {
-                            _selector.SelectModByName( mod.Data.Meta.Name );
+                            _selector.SelectModByDir( mod.Data.BasePath.Name );
                         }
 
                         ImGui.SameLine();

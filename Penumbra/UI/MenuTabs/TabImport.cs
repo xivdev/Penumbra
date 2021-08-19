@@ -87,7 +87,7 @@ namespace Penumbra.UI
                             _base.ReloadMods();
                             if( directory != null )
                             {
-                                _base._menu.InstalledTab.Selector.SelectModByDir( directory.Name );
+                                _base._menu.InstalledTab.Selector.SelectModOnUpdate( directory.Name );
                             }
                         }
                     }

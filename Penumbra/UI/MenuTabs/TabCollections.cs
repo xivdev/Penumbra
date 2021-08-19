@@ -144,7 +144,7 @@ namespace Penumbra.UI
                 _selector.Cache.TriggerListReset();
                 if( _selector.Mod != null )
                 {
-                    _selector.SelectModByDir( _selector.Mod.Data.BasePath.Name );
+                    _selector.SelectModOnUpdate( _selector.Mod.Data.BasePath.Name );
                 }
             }
 

@@ -168,7 +168,7 @@ namespace Penumbra.UI
                         modMeta.SaveToFile( metaFile );
                         _modManager.AddMod( newDir );
                         ModFileSystem.InvokeChange();
-                        SelectModByDir( newDir.Name );
+                        SelectModOnUpdate( newDir.Name );
                     }
                     catch( Exception e )
                     {
@@ -421,7 +421,8 @@ namespace Penumbra.UI
         private partial class Selector
         {
             public Mod.Mod? Mod { get; private set; }
-            private int _index;
+            private int    _index;
+            private string _nextDir = string.Empty;
 
             private void SetSelection( int idx, Mod.Mod? info )
             {
@@ -458,11 +459,8 @@ namespace Penumbra.UI
             public void ClearSelection()
                 => SetSelection( -1 );
 
-            public void SelectModByName( string name )
-            {
-                var (mod, idx) = Cache.GetModByName( name );
-                SetSelection( idx, mod );
-            }
+            public void SelectModOnUpdate( string directory )
+                => _nextDir = directory;
 
             public void SelectModByDir( string name )
             {
@@ -479,7 +477,7 @@ namespace Penumbra.UI
 
                 if( _index >= 0 && _modManager.UpdateMod( Mod.Data, reloadMeta, recomputeMeta ) )
                 {
-                    SelectModByDir( Mod.Data.BasePath.Name );
+                    SelectModOnUpdate( Mod.Data.BasePath.Name );
                     _base._menu.InstalledTab.ModPanel.Details.ResetState();
                 }
             }
@@ -744,9 +742,17 @@ namespace Penumbra.UI
 
             public void Draw()
             {
-                if( Cache.Update() && Mod != null )
+                if( Cache.Update() )
                 {
-                    SelectModByDir( Mod.Data.BasePath.Name );
+                    if( _nextDir.Any() )
+                    {
+                        SelectModByDir( _nextDir );
+                        _nextDir = string.Empty;
+                    }
+                    else if( Mod != null )
+                    {
+                        SelectModByDir( Mod.Data.BasePath.Name );
+                    }
                 }
 
                 try
