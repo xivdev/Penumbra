@@ -86,7 +86,7 @@ namespace Penumbra.Mods
                 folder = folder.FindOrCreateSubFolder( split[ i ] ).Item1;
             }
 
-            if( MoveNoSave( mod, folder ) || RenameNoSave( mod, split.Last() ) )
+            if( MoveNoSave( mod, folder ) | RenameNoSave( mod, split.Last() ) )
             {
                 SaveMod( mod );
             }
