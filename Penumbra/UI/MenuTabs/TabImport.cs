@@ -66,14 +66,14 @@ namespace Penumbra.UI
 
                             foreach( var fileName in picker.FileNames )
                             {
-                                PluginLog.Log( $"-> {fileName} START" );
+                                PluginLog.Information( $"-> {fileName} START" );
 
                                 try
                                 {
                                     _texToolsImport = new TexToolsImport( _manager.BasePath );
                                     _texToolsImport.ImportModPack( new FileInfo( fileName ) );
 
-                                    PluginLog.Log( $"-> {fileName} OK!" );
+                                    PluginLog.Information( $"-> {fileName} OK!" );
                                 }
                                 catch( Exception ex )
                                 {

@@ -156,7 +156,7 @@ namespace Penumbra.Interop
                     file = Marshal.PtrToStringAnsi( new IntPtr( pPath ) )!;
                     if( LogFileFilter == null || LogFileFilter.IsMatch( file ) )
                     {
-                        PluginLog.Log( "[GetResourceHandler] {0}", file );
+                        PluginLog.Information( "[GetResourceHandler] {0}", file );
                     }
                 }
 
@@ -168,7 +168,7 @@ namespace Penumbra.Interop
             var replacementPath = modManager.ResolveSwappedOrReplacementPath( gameFsPath );
             if( LogAllFiles && ( LogFileFilter == null || LogFileFilter.IsMatch( file ) ) )
             {
-                PluginLog.Log( "[GetResourceHandler] {0}", file );
+                PluginLog.Information( "[GetResourceHandler] {0}", file );
             }
 
             // path must be < 260 because statically defined array length :(
@@ -187,9 +187,7 @@ namespace Penumbra.Interop
             Crc32.Update( path );
             *pResourceHash = Crc32.Checksum;
 
-#if DEBUG
-            PluginLog.Log( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, replacementPath );
-#endif
+            PluginLog.Verbose( "[GetResourceHandler] resolved {GamePath} to {NewPath}", gameFsPath, replacementPath );
 
             return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }
@@ -211,9 +209,7 @@ namespace Penumbra.Interop
                 return ReadSqpackHook?.OriginalFunction( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
             }
 
-#if DEBUG
-            PluginLog.Log( "loading modded file: {GameFsPath}", gameFsPath );
-#endif
+            PluginLog.Debug( "loading modded file: {GameFsPath}", gameFsPath );
 
             pFileDesc->FileMode = FileMode.LoadUnpackedResource;
 
