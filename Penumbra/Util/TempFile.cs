@@ -24,8 +24,9 @@ namespace Penumbra.Util
 
         public static FileInfo WriteNew( DirectoryInfo baseDir, byte[] data, string suffix = "" )
         {
-            var fileName = TempFileName( baseDir, suffix );
-            File.WriteAllBytes( fileName.FullName, data );
+            var       fileName = TempFileName( baseDir, suffix );
+            using var stream   = fileName.OpenWrite();
+            stream.Write( data, 0, data.Length );
             fileName.Refresh();
             return fileName;
         }
