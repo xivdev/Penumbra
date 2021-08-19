@@ -247,6 +247,21 @@ namespace Penumbra.Interop
                     WriteInvisible( actor, idx );
                     ++_currentFrame;
                     break;
+                case RedrawType.AfterGPoseWithSettings:
+                case RedrawType.AfterGPoseWithoutSettings:
+                    if( _inGPose )
+                    {
+                        _actorIds.Enqueue( ( _currentActorId, _currentActorName!, _currentActorRedrawType ) );
+                        _currentFrame = 0;
+                    }
+                    else
+                    {
+                        _currentActorRedrawType = _currentActorRedrawType == RedrawType.AfterGPoseWithSettings
+                            ? RedrawType.WithSettings
+                            : RedrawType.WithoutSettings;
+                    }
+
+                    break;
                 default: throw new InvalidEnumArgumentException();
             }
         }

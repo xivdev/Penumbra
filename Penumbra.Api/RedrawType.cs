@@ -8,5 +8,7 @@ namespace Penumbra.Api
         Unload,
         RedrawWithoutSettings,
         RedrawWithSettings,
+        AfterGPoseWithSettings,
+        AfterGPoseWithoutSettings,
     }
 }
