@@ -55,17 +55,17 @@ namespace Penumbra.UI
                 ( "Right Finger", EquipSlot.RFinger ),
             };
 
-            private static readonly (string, Race)[] Races =
+            private static readonly (string, ModelRace)[] Races =
             {
-                ( Race.Midlander.ToName(), Race.Midlander ),
-                ( Race.Highlander.ToName(), Race.Highlander ),
-                ( Race.Elezen.ToName(), Race.Elezen ),
-                ( Race.Miqote.ToName(), Race.Miqote ),
-                ( Race.Roegadyn.ToName(), Race.Roegadyn ),
-                ( Race.Lalafell.ToName(), Race.Lalafell ),
-                ( Race.AuRa.ToName(), Race.AuRa ),
-                ( Race.Viera.ToName(), Race.Viera ),
-                ( Race.Hrothgar.ToName(), Race.Hrothgar ),
+                ( ModelRace.Midlander.ToName(), ModelRace.Midlander ),
+                ( ModelRace.Highlander.ToName(), ModelRace.Highlander ),
+                ( ModelRace.Elezen.ToName(), ModelRace.Elezen ),
+                ( ModelRace.Miqote.ToName(), ModelRace.Miqote ),
+                ( ModelRace.Roegadyn.ToName(), ModelRace.Roegadyn ),
+                ( ModelRace.Lalafell.ToName(), ModelRace.Lalafell ),
+                ( ModelRace.AuRa.ToName(), ModelRace.AuRa ),
+                ( ModelRace.Viera.ToName(), ModelRace.Viera ),
+                ( ModelRace.Hrothgar.ToName(), ModelRace.Hrothgar ),
             };
 
             private static readonly (string, Gender)[] Genders =

@@ -4,6 +4,19 @@ using System.ComponentModel;
 
 namespace Penumbra.GameData.Enums
 {
+    public enum Race : byte
+    {
+        Unknown,
+        Hyur,
+        Elezen,
+        Lalafell,
+        Miqote,
+        Roegadyn,
+        AuRa,
+        Hrothgar,
+        Viera,
+    }
+
     public enum Gender : byte
     {
         Unknown,
@@ -13,7 +26,7 @@ namespace Penumbra.GameData.Enums
         FemaleNpc,
     }
 
-    public enum Race : byte
+    public enum ModelRace : byte
     {
         Unknown,
         Midlander,
@@ -97,7 +110,7 @@ namespace Penumbra.GameData.Enums
                 SubRace.Midlander       => 0,
                 SubRace.Highlander      => 1,
                 SubRace.Wildwood        => 10,
-                SubRace.Duskwight      => 11,
+                SubRace.Duskwight       => 11,
                 SubRace.Plainsfolk      => 20,
                 SubRace.Dunesfolk       => 21,
                 SubRace.SeekerOfTheSun  => 30,
@@ -106,11 +119,29 @@ namespace Penumbra.GameData.Enums
                 SubRace.Hellsguard      => 41,
                 SubRace.Raen            => 50,
                 SubRace.Xaela           => 51,
-                SubRace.Helion         => 60,
+                SubRace.Helion          => 60,
                 SubRace.Lost            => 61,
                 SubRace.Rava            => 70,
                 SubRace.Veena           => 71,
-                _                       => throw new InvalidEnumArgumentException(),
+                _                       => throw new ArgumentOutOfRangeException( nameof( subRace ), subRace, null ),
+            };
+        }
+
+        public static Race ToRace( this ModelRace race )
+        {
+            return race switch
+            {
+                ModelRace.Unknown    => Race.Unknown,
+                ModelRace.Midlander  => Race.Hyur,
+                ModelRace.Highlander => Race.Hyur,
+                ModelRace.Elezen     => Race.Elezen,
+                ModelRace.Lalafell   => Race.Lalafell,
+                ModelRace.Miqote     => Race.Miqote,
+                ModelRace.Roegadyn   => Race.Roegadyn,
+                ModelRace.AuRa       => Race.AuRa,
+                ModelRace.Hrothgar   => Race.Hrothgar,
+                ModelRace.Viera      => Race.Viera,
+                _                    => throw new ArgumentOutOfRangeException( nameof( race ), race, null ),
             };
         }
 
@@ -119,10 +150,10 @@ namespace Penumbra.GameData.Enums
             return subRace switch
             {
                 SubRace.Unknown         => Race.Unknown,
-                SubRace.Midlander       => Race.Midlander,
-                SubRace.Highlander      => Race.Midlander,
+                SubRace.Midlander       => Race.Hyur,
+                SubRace.Highlander      => Race.Hyur,
                 SubRace.Wildwood        => Race.Elezen,
-                SubRace.Duskwight      => Race.Elezen,
+                SubRace.Duskwight       => Race.Elezen,
                 SubRace.Plainsfolk      => Race.Lalafell,
                 SubRace.Dunesfolk       => Race.Lalafell,
                 SubRace.SeekerOfTheSun  => Race.Miqote,
@@ -131,11 +162,28 @@ namespace Penumbra.GameData.Enums
                 SubRace.Hellsguard      => Race.Roegadyn,
                 SubRace.Raen            => Race.AuRa,
                 SubRace.Xaela           => Race.AuRa,
-                SubRace.Helion         => Race.Hrothgar,
+                SubRace.Helion          => Race.Hrothgar,
                 SubRace.Lost            => Race.Hrothgar,
                 SubRace.Rava            => Race.Viera,
                 SubRace.Veena           => Race.Viera,
-                _                       => throw new InvalidEnumArgumentException(),
+                _                       => throw new ArgumentOutOfRangeException( nameof( subRace ), subRace, null ),
+            };
+        }
+
+        public static string ToName( this ModelRace modelRace )
+        {
+            return modelRace switch
+            {
+                ModelRace.Midlander  => SubRace.Midlander.ToName(),
+                ModelRace.Highlander => SubRace.Highlander.ToName(),
+                ModelRace.Elezen     => Race.Elezen.ToName(),
+                ModelRace.Lalafell   => Race.Lalafell.ToName(),
+                ModelRace.Miqote     => Race.Miqote.ToName(),
+                ModelRace.Roegadyn   => Race.Roegadyn.ToName(),
+                ModelRace.AuRa       => Race.AuRa.ToName(),
+                ModelRace.Hrothgar   => Race.Hrothgar.ToName(),
+                ModelRace.Viera      => Race.Viera.ToName(),
+                _                    => throw new ArgumentOutOfRangeException( nameof( modelRace ), modelRace, null ),
             };
         }
 
@@ -143,16 +191,15 @@ namespace Penumbra.GameData.Enums
         {
             return race switch
             {
-                Race.Midlander  => "Midlander",
-                Race.Highlander => "Highlander",
-                Race.Elezen     => "Elezen",
-                Race.Lalafell   => "Lalafell",
-                Race.Miqote     => "Miqo'te",
-                Race.Roegadyn   => "Roegadyn",
-                Race.AuRa       => "Au Ra",
-                Race.Hrothgar   => "Hrothgar",
-                Race.Viera      => "Viera",
-                _               => throw new InvalidEnumArgumentException(),
+                Race.Hyur     => "Hyur",
+                Race.Elezen   => "Elezen",
+                Race.Lalafell => "Lalafell",
+                Race.Miqote   => "Miqo'te",
+                Race.Roegadyn => "Roegadyn",
+                Race.AuRa     => "Au Ra",
+                Race.Hrothgar => "Hrothgar",
+                Race.Viera    => "Viera",
+                _             => throw new ArgumentOutOfRangeException( nameof( race ), race, null ),
             };
         }
 
@@ -175,7 +222,7 @@ namespace Penumbra.GameData.Enums
                 SubRace.Midlander       => "Midlander",
                 SubRace.Highlander      => "Highlander",
                 SubRace.Wildwood        => "Wildwood",
-                SubRace.Duskwight      => "Duskwright",
+                SubRace.Duskwight       => "Duskwright",
                 SubRace.Plainsfolk      => "Plainsfolk",
                 SubRace.Dunesfolk       => "Dunesfolk",
                 SubRace.SeekerOfTheSun  => "Seeker Of The Sun",
@@ -184,7 +231,7 @@ namespace Penumbra.GameData.Enums
                 SubRace.Hellsguard      => "Hellsguard",
                 SubRace.Raen            => "Raen",
                 SubRace.Xaela           => "Xaela",
-                SubRace.Helion         => "Hellion",
+                SubRace.Helion          => "Hellion",
                 SubRace.Lost            => "Lost",
                 SubRace.Rava            => "Rava",
                 SubRace.Veena           => "Veena",
@@ -195,11 +242,11 @@ namespace Penumbra.GameData.Enums
         public static bool FitsRace( this SubRace subRace, Race race )
             => subRace.ToRace() == race;
 
-        public static byte ToByte( this Gender gender, Race race )
-            => ( byte )( ( int )gender | ( ( int )race << 3 ) );
+        public static byte ToByte( this Gender gender, ModelRace modelRace )
+            => ( byte )( ( int )gender | ( ( int )modelRace << 3 ) );
 
-        public static byte ToByte( this Race race, Gender gender )
-            => gender.ToByte( race );
+        public static byte ToByte( this ModelRace modelRace, Gender gender )
+            => gender.ToByte( modelRace );
 
         public static byte ToByte( this GenderRace value )
         {
@@ -207,45 +254,45 @@ namespace Penumbra.GameData.Enums
             return gender.ToByte( race );
         }
 
-        public static (Gender, Race) Split( this GenderRace value )
+        public static (Gender, ModelRace) Split( this GenderRace value )
         {
             return value switch
             {
-                GenderRace.Unknown             => ( Gender.Unknown, Race.Unknown ),
-                GenderRace.MidlanderMale       => ( Gender.Male, Race.Midlander ),
-                GenderRace.MidlanderMaleNpc    => ( Gender.MaleNpc, Race.Midlander ),
-                GenderRace.MidlanderFemale     => ( Gender.Female, Race.Midlander ),
-                GenderRace.MidlanderFemaleNpc  => ( Gender.FemaleNpc, Race.Midlander ),
-                GenderRace.HighlanderMale      => ( Gender.Male, Race.Highlander ),
-                GenderRace.HighlanderMaleNpc   => ( Gender.MaleNpc, Race.Highlander ),
-                GenderRace.HighlanderFemale    => ( Gender.Female, Race.Highlander ),
-                GenderRace.HighlanderFemaleNpc => ( Gender.FemaleNpc, Race.Highlander ),
-                GenderRace.ElezenMale          => ( Gender.Male, Race.Elezen ),
-                GenderRace.ElezenMaleNpc       => ( Gender.MaleNpc, Race.Elezen ),
-                GenderRace.ElezenFemale        => ( Gender.Female, Race.Elezen ),
-                GenderRace.ElezenFemaleNpc     => ( Gender.FemaleNpc, Race.Elezen ),
-                GenderRace.LalafellMale        => ( Gender.Male, Race.Lalafell ),
-                GenderRace.LalafellMaleNpc     => ( Gender.MaleNpc, Race.Lalafell ),
-                GenderRace.LalafellFemale      => ( Gender.Female, Race.Lalafell ),
-                GenderRace.LalafellFemaleNpc   => ( Gender.FemaleNpc, Race.Lalafell ),
-                GenderRace.MiqoteMale          => ( Gender.Male, Race.Miqote ),
-                GenderRace.MiqoteMaleNpc       => ( Gender.MaleNpc, Race.Miqote ),
-                GenderRace.MiqoteFemale        => ( Gender.Female, Race.Miqote ),
-                GenderRace.MiqoteFemaleNpc     => ( Gender.FemaleNpc, Race.Miqote ),
-                GenderRace.RoegadynMale        => ( Gender.Male, Race.Roegadyn ),
-                GenderRace.RoegadynMaleNpc     => ( Gender.MaleNpc, Race.Roegadyn ),
-                GenderRace.RoegadynFemale      => ( Gender.Female, Race.Roegadyn ),
-                GenderRace.RoegadynFemaleNpc   => ( Gender.FemaleNpc, Race.Roegadyn ),
-                GenderRace.AuRaMale            => ( Gender.Male, Race.AuRa ),
-                GenderRace.AuRaMaleNpc         => ( Gender.MaleNpc, Race.AuRa ),
-                GenderRace.AuRaFemale          => ( Gender.Female, Race.AuRa ),
-                GenderRace.AuRaFemaleNpc       => ( Gender.FemaleNpc, Race.AuRa ),
-                GenderRace.HrothgarMale        => ( Gender.Male, Race.Hrothgar ),
-                GenderRace.HrothgarMaleNpc     => ( Gender.MaleNpc, Race.Hrothgar ),
-                GenderRace.VieraFemale         => ( Gender.Female, Race.Viera ),
-                GenderRace.VieraFemaleNpc      => ( Gender.FemaleNpc, Race.Viera ),
-                GenderRace.UnknownMaleNpc      => ( Gender.MaleNpc, Race.Unknown ),
-                GenderRace.UnknownFemaleNpc    => ( Gender.FemaleNpc, Race.Unknown ),
+                GenderRace.Unknown             => ( Gender.Unknown, ModelRace.Unknown ),
+                GenderRace.MidlanderMale       => ( Gender.Male, ModelRace.Midlander ),
+                GenderRace.MidlanderMaleNpc    => ( Gender.MaleNpc, ModelRace.Midlander ),
+                GenderRace.MidlanderFemale     => ( Gender.Female, ModelRace.Midlander ),
+                GenderRace.MidlanderFemaleNpc  => ( Gender.FemaleNpc, ModelRace.Midlander ),
+                GenderRace.HighlanderMale      => ( Gender.Male, ModelRace.Highlander ),
+                GenderRace.HighlanderMaleNpc   => ( Gender.MaleNpc, ModelRace.Highlander ),
+                GenderRace.HighlanderFemale    => ( Gender.Female, ModelRace.Highlander ),
+                GenderRace.HighlanderFemaleNpc => ( Gender.FemaleNpc, ModelRace.Highlander ),
+                GenderRace.ElezenMale          => ( Gender.Male, ModelRace.Elezen ),
+                GenderRace.ElezenMaleNpc       => ( Gender.MaleNpc, ModelRace.Elezen ),
+                GenderRace.ElezenFemale        => ( Gender.Female, ModelRace.Elezen ),
+                GenderRace.ElezenFemaleNpc     => ( Gender.FemaleNpc, ModelRace.Elezen ),
+                GenderRace.LalafellMale        => ( Gender.Male, ModelRace.Lalafell ),
+                GenderRace.LalafellMaleNpc     => ( Gender.MaleNpc, ModelRace.Lalafell ),
+                GenderRace.LalafellFemale      => ( Gender.Female, ModelRace.Lalafell ),
+                GenderRace.LalafellFemaleNpc   => ( Gender.FemaleNpc, ModelRace.Lalafell ),
+                GenderRace.MiqoteMale          => ( Gender.Male, ModelRace.Miqote ),
+                GenderRace.MiqoteMaleNpc       => ( Gender.MaleNpc, ModelRace.Miqote ),
+                GenderRace.MiqoteFemale        => ( Gender.Female, ModelRace.Miqote ),
+                GenderRace.MiqoteFemaleNpc     => ( Gender.FemaleNpc, ModelRace.Miqote ),
+                GenderRace.RoegadynMale        => ( Gender.Male, ModelRace.Roegadyn ),
+                GenderRace.RoegadynMaleNpc     => ( Gender.MaleNpc, ModelRace.Roegadyn ),
+                GenderRace.RoegadynFemale      => ( Gender.Female, ModelRace.Roegadyn ),
+                GenderRace.RoegadynFemaleNpc   => ( Gender.FemaleNpc, ModelRace.Roegadyn ),
+                GenderRace.AuRaMale            => ( Gender.Male, ModelRace.AuRa ),
+                GenderRace.AuRaMaleNpc         => ( Gender.MaleNpc, ModelRace.AuRa ),
+                GenderRace.AuRaFemale          => ( Gender.Female, ModelRace.AuRa ),
+                GenderRace.AuRaFemaleNpc       => ( Gender.FemaleNpc, ModelRace.AuRa ),
+                GenderRace.HrothgarMale        => ( Gender.Male, ModelRace.Hrothgar ),
+                GenderRace.HrothgarMaleNpc     => ( Gender.MaleNpc, ModelRace.Hrothgar ),
+                GenderRace.VieraFemale         => ( Gender.Female, ModelRace.Viera ),
+                GenderRace.VieraFemaleNpc      => ( Gender.FemaleNpc, ModelRace.Viera ),
+                GenderRace.UnknownMaleNpc      => ( Gender.MaleNpc, ModelRace.Unknown ),
+                GenderRace.UnknownFemaleNpc    => ( Gender.FemaleNpc, ModelRace.Unknown ),
                 _                              => throw new InvalidEnumArgumentException(),
             };
         }
@@ -343,61 +390,61 @@ namespace Penumbra.GameData.Enums
         public static GenderRace GenderRaceFromByte( byte value )
         {
             var gender = ( Gender )( value & 0b111 );
-            var race   = ( Race )( value >> 3 );
+            var race   = ( ModelRace )( value >> 3 );
             return CombinedRace( gender, race );
         }
 
-        public static GenderRace CombinedRace( Gender gender, Race race )
+        public static GenderRace CombinedRace( Gender gender, ModelRace modelRace )
         {
             return gender switch
             {
-                Gender.Male => race switch
+                Gender.Male => modelRace switch
                 {
-                    Race.Midlander  => GenderRace.MidlanderMale,
-                    Race.Highlander => GenderRace.HighlanderMale,
-                    Race.Elezen     => GenderRace.ElezenMale,
-                    Race.Lalafell   => GenderRace.LalafellMale,
-                    Race.Miqote     => GenderRace.MiqoteMale,
-                    Race.Roegadyn   => GenderRace.RoegadynMale,
-                    Race.AuRa       => GenderRace.AuRaMale,
-                    Race.Hrothgar   => GenderRace.HrothgarMale,
-                    _               => GenderRace.Unknown,
+                    ModelRace.Midlander  => GenderRace.MidlanderMale,
+                    ModelRace.Highlander => GenderRace.HighlanderMale,
+                    ModelRace.Elezen     => GenderRace.ElezenMale,
+                    ModelRace.Lalafell   => GenderRace.LalafellMale,
+                    ModelRace.Miqote     => GenderRace.MiqoteMale,
+                    ModelRace.Roegadyn   => GenderRace.RoegadynMale,
+                    ModelRace.AuRa       => GenderRace.AuRaMale,
+                    ModelRace.Hrothgar   => GenderRace.HrothgarMale,
+                    _                    => GenderRace.Unknown,
                 },
-                Gender.MaleNpc => race switch
+                Gender.MaleNpc => modelRace switch
                 {
-                    Race.Midlander  => GenderRace.MidlanderMaleNpc,
-                    Race.Highlander => GenderRace.HighlanderMaleNpc,
-                    Race.Elezen     => GenderRace.ElezenMaleNpc,
-                    Race.Lalafell   => GenderRace.LalafellMaleNpc,
-                    Race.Miqote     => GenderRace.MiqoteMaleNpc,
-                    Race.Roegadyn   => GenderRace.RoegadynMaleNpc,
-                    Race.AuRa       => GenderRace.AuRaMaleNpc,
-                    Race.Hrothgar   => GenderRace.HrothgarMaleNpc,
-                    _               => GenderRace.Unknown,
+                    ModelRace.Midlander  => GenderRace.MidlanderMaleNpc,
+                    ModelRace.Highlander => GenderRace.HighlanderMaleNpc,
+                    ModelRace.Elezen     => GenderRace.ElezenMaleNpc,
+                    ModelRace.Lalafell   => GenderRace.LalafellMaleNpc,
+                    ModelRace.Miqote     => GenderRace.MiqoteMaleNpc,
+                    ModelRace.Roegadyn   => GenderRace.RoegadynMaleNpc,
+                    ModelRace.AuRa       => GenderRace.AuRaMaleNpc,
+                    ModelRace.Hrothgar   => GenderRace.HrothgarMaleNpc,
+                    _                    => GenderRace.Unknown,
                 },
-                Gender.Female => race switch
+                Gender.Female => modelRace switch
                 {
-                    Race.Midlander  => GenderRace.MidlanderFemale,
-                    Race.Highlander => GenderRace.HighlanderFemale,
-                    Race.Elezen     => GenderRace.ElezenFemale,
-                    Race.Lalafell   => GenderRace.LalafellFemale,
-                    Race.Miqote     => GenderRace.MiqoteFemale,
-                    Race.Roegadyn   => GenderRace.RoegadynFemale,
-                    Race.AuRa       => GenderRace.AuRaFemale,
-                    Race.Viera      => GenderRace.VieraFemale,
-                    _               => GenderRace.Unknown,
+                    ModelRace.Midlander  => GenderRace.MidlanderFemale,
+                    ModelRace.Highlander => GenderRace.HighlanderFemale,
+                    ModelRace.Elezen     => GenderRace.ElezenFemale,
+                    ModelRace.Lalafell   => GenderRace.LalafellFemale,
+                    ModelRace.Miqote     => GenderRace.MiqoteFemale,
+                    ModelRace.Roegadyn   => GenderRace.RoegadynFemale,
+                    ModelRace.AuRa       => GenderRace.AuRaFemale,
+                    ModelRace.Viera      => GenderRace.VieraFemale,
+                    _                    => GenderRace.Unknown,
                 },
-                Gender.FemaleNpc => race switch
+                Gender.FemaleNpc => modelRace switch
                 {
-                    Race.Midlander  => GenderRace.MidlanderFemaleNpc,
-                    Race.Highlander => GenderRace.HighlanderFemaleNpc,
-                    Race.Elezen     => GenderRace.ElezenFemaleNpc,
-                    Race.Lalafell   => GenderRace.LalafellFemaleNpc,
-                    Race.Miqote     => GenderRace.MiqoteFemaleNpc,
-                    Race.Roegadyn   => GenderRace.RoegadynFemaleNpc,
-                    Race.AuRa       => GenderRace.AuRaFemaleNpc,
-                    Race.Viera      => GenderRace.VieraFemaleNpc,
-                    _               => GenderRace.Unknown,
+                    ModelRace.Midlander  => GenderRace.MidlanderFemaleNpc,
+                    ModelRace.Highlander => GenderRace.HighlanderFemaleNpc,
+                    ModelRace.Elezen     => GenderRace.ElezenFemaleNpc,
+                    ModelRace.Lalafell   => GenderRace.LalafellFemaleNpc,
+                    ModelRace.Miqote     => GenderRace.MiqoteFemaleNpc,
+                    ModelRace.Roegadyn   => GenderRace.RoegadynFemaleNpc,
+                    ModelRace.AuRa       => GenderRace.AuRaFemaleNpc,
+                    ModelRace.Viera      => GenderRace.VieraFemaleNpc,
+                    _                    => GenderRace.Unknown,
                 },
                 _ => GenderRace.Unknown,
             };

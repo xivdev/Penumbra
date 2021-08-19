@@ -7,7 +7,6 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Action = Lumina.Excel.GeneratedSheets.Action;
-using Race = Penumbra.GameData.Enums.Race;
 
 namespace Penumbra.GameData
 {
@@ -246,7 +245,7 @@ namespace Penumbra.GameData
                     break;
                 case ObjectType.Character:
                     var (gender, race) = info.GenderRace.Split();
-                    var raceString   = race   != Race.Unknown ? race.ToName()     + " " : "";
+                    var raceString   = race   != ModelRace.Unknown ? race.ToName()     + " " : "";
                     var genderString = gender != Gender.Unknown ? gender.ToName() + " " : "Player ";
                     if( info.CustomizationType == CustomizationType.Skin )
                     {
