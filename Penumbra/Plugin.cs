@@ -144,6 +144,7 @@ namespace Penumbra
 
         public void Dispose()
         {
+            Api.Dispose();
             SettingsInterface.Dispose();
             ActorRefresher.Dispose();
             PlayerWatcher.Dispose();
