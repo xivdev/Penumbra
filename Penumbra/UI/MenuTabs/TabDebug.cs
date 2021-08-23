@@ -27,87 +27,84 @@ namespace Penumbra.UI
                 return;
             }
 
-            var actors = ( Dictionary< string, ActorEquipment >? )_plugin.PlayerWatcher.GetType()
-                   .GetField( "_equip", BindingFlags.Instance | BindingFlags.NonPublic )
-                  ?.GetValue( _plugin.PlayerWatcher )
-             ?? new Dictionary< string, ActorEquipment >();
+            var actors = _plugin.PlayerWatcher.WatchedPlayers().ToArray();
             if( !actors.Any() )
             {
                 return;
             }
 
             if( ImGui.BeginTable( "##ActorTable", 13, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.ScrollX,
-                new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 4 * actors.Count ) ) )
+                new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 4 * actors.Length ) ) )
             {
                 var identifier = GameData.GameData.GetIdentifier( _plugin.PluginInterface );
 
-                foreach( var actor in actors )
+                foreach( var (actor, equip) in actors )
                 {
                     // @formatter:off
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGui.Text( actor.Key );
+                    ImGui.Text( actor );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.MainHand}" );
+                    ImGui.Text( $"{equip.MainHand}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.Head}" );
+                    ImGui.Text( $"{equip.Head}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.Body}" );
+                    ImGui.Text( $"{equip.Body}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.Hands}" );
+                    ImGui.Text( $"{equip.Hands}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.Legs}" );
+                    ImGui.Text( $"{equip.Legs}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.Feet}" );
+                    ImGui.Text( $"{equip.Feet}" );
                     
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    if (actor.Value.IsSet == 0)
+                    if (equip.IsSet == 0)
                     {
                         ImGui.Text( "(not set)" );
                     }
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.MainHand.Set, actor.Value.MainHand.Type, actor.Value.MainHand.Variant, EquipSlot.MainHand )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.MainHand.Set, equip.MainHand.Type, equip.MainHand.Variant, EquipSlot.MainHand )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Head.Set, actor.Value.Head.Variant, 0, EquipSlot.Head )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.Head.Set, 0, equip.Head.Variant, EquipSlot.Head )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Body.Set, actor.Value.Body.Variant, 0, EquipSlot.Body )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.Body.Set, 0, equip.Body.Variant, EquipSlot.Body )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Hands.Set, actor.Value.Hands.Variant, 0, EquipSlot.Hands )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.Hands.Set, 0, equip.Hands.Variant, EquipSlot.Hands )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Legs.Set, actor.Value.Legs.Variant, 0, EquipSlot.Legs )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.Legs.Set, 0, equip.Legs.Variant, EquipSlot.Legs )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Feet.Set, actor.Value.Feet.Variant, 0, EquipSlot.Feet )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.Feet.Set, 0, equip.Feet.Variant, EquipSlot.Feet )?.Name.ToString() ?? "Unknown" );
 
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.OffHand}" );
+                    ImGui.Text( $"{equip.OffHand}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.Ears}" );
+                    ImGui.Text( $"{equip.Ears}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.Neck}" );
+                    ImGui.Text( $"{equip.Neck}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.Wrists}" );
+                    ImGui.Text( $"{equip.Wrists}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.LFinger}" );
+                    ImGui.Text( $"{equip.LFinger}" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( $"{actor.Value.RFinger}" );
+                    ImGui.Text( $"{equip.RFinger}" );
 
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.OffHand.Set, actor.Value.OffHand.Type, actor.Value.OffHand.Variant, EquipSlot.OffHand )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.OffHand.Set, equip.OffHand.Type, equip.OffHand.Variant, EquipSlot.OffHand )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Ears.Set, actor.Value.Ears.Variant, 0, EquipSlot.Ears )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.Ears.Set, 0, equip.Ears.Variant, EquipSlot.Ears )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Neck.Set, actor.Value.Neck.Variant, 0, EquipSlot.Neck )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.Neck.Set, 0, equip.Neck.Variant, EquipSlot.Neck )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.Wrists.Set, actor.Value.Wrists.Variant, 0, EquipSlot.Wrists )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.Wrists.Set, 0, equip.Wrists.Variant, EquipSlot.Wrists )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.LFinger.Set, actor.Value.LFinger.Variant, 0, EquipSlot.LFinger )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.LFinger.Set, 0, equip.LFinger.Variant, EquipSlot.LFinger )?.Name.ToString() ?? "Unknown" );
                     ImGui.TableNextColumn();
-                    ImGui.Text( identifier.Identify( actor.Value.RFinger.Set, actor.Value.RFinger.Variant, 0, EquipSlot.LFinger )?.Name.ToString() ?? "Unknown" );
+                    ImGui.Text( identifier.Identify( equip.RFinger.Set, 0, equip.RFinger.Variant, EquipSlot.LFinger )?.Name.ToString() ?? "Unknown" );
                     // @formatter:on
                 }
 
@@ -197,14 +194,29 @@ namespace Penumbra.UI
                 ? ( ActorRefresher.LoadingFlags? )Marshal.ReadInt32( ActorRefresher.RenderPtr( currentActor ) )
                 : null;
 
+            var waitFrames = ( int? )_plugin.ActorRefresher.GetType()
+               .GetField( "_waitFrames", BindingFlags.Instance | BindingFlags.NonPublic )
+              ?.GetValue( _plugin.ActorRefresher );
+
+            var wasTarget = ( bool? )_plugin.ActorRefresher.GetType()
+               .GetField( "_wasTarget", BindingFlags.Instance | BindingFlags.NonPublic )
+              ?.GetValue( _plugin.ActorRefresher );
+
+            var gPose = ( bool? )_plugin.ActorRefresher.GetType()
+               .GetField( "_inGPose", BindingFlags.Instance | BindingFlags.NonPublic )
+              ?.GetValue( _plugin.ActorRefresher );
+
             if( ImGui.BeginTable( "##RedrawData", 2, ImGuiTableFlags.SizingFixedFit,
                 new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 7 ) ) )
             {
+                PrintValue( "Current Wait Frame", waitFrames?.ToString()                                      ?? "null" );
                 PrintValue( "Current Frame", currentFrame?.ToString()                                         ?? "null" );
+                PrintValue( "Currently in GPose", gPose?.ToString()                                           ?? "null" );
                 PrintValue( "Current Changed Settings", changedSettings?.ToString()                           ?? "null" );
                 PrintValue( "Current Actor Id", currentActorId?.ToString( "X8" )                              ?? "null" );
                 PrintValue( "Current Actor Name", currentActorName                                            ?? "null" );
                 PrintValue( "Current Actor Start State", ( ( int? )currentActorStartState )?.ToString( "X8" ) ?? "null" );
+                PrintValue( "Current Actor Was Target", wasTarget?.ToString()                                 ?? "null" );
                 PrintValue( "Current Actor Redraw", currentActorRedraw?.ToString()                            ?? "null" );
                 PrintValue( "Current Actor Address", currentActor?.Address.ToString( "X16" )                  ?? "null" );
                 PrintValue( "Current Actor Index", currentActorIdx >= 0 ? currentActorIdx.ToString() : "null" );
