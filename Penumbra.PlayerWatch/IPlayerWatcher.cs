@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Dalamud.Game.ClientState.Actors.Types;
 using Penumbra.GameData.Structs;
 
@@ -21,8 +22,10 @@ namespace Penumbra.PlayerWatch
         public void Disable();
         public void SetStatus( bool enabled );
 
-        public void          AddPlayerToWatch( string name );
-        public void          RemovePlayerFromWatch( string playerName );
+        public void           AddPlayerToWatch( string playerName );
+        public void           RemovePlayerFromWatch( string playerName );
         public ActorEquipment UpdateActorWithoutEvent( Actor actor );
+
+        public IEnumerable< (string, ActorEquipment) > WatchedPlayers();
     }
 }

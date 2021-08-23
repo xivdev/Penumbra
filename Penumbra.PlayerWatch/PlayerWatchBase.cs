@@ -16,7 +16,7 @@ namespace Penumbra.PlayerWatch
 
         private readonly  DalamudPluginInterface                                           _pi;
         internal readonly HashSet< PlayerWatcher >                                         RegisteredWatchers = new();
-        private readonly  Dictionary< string, (ActorEquipment, HashSet< PlayerWatcher >) > _equip             = new();
+        internal readonly Dictionary< string, (ActorEquipment, HashSet< PlayerWatcher >) > Equip              = new();
         private           int                                                              _frameTicker;
         private           bool                                                             _inGPose = false;
         private           bool                                                             _enabled = false;
@@ -38,7 +38,7 @@ namespace Penumbra.PlayerWatch
         {
             if( RegisteredWatchers.Remove( watcher ) )
             {
-                foreach( var items in _equip.Values )
+                foreach( var items in Equip.Values )
                 {
                     items.Item2.Remove( watcher );
                 }
@@ -62,9 +62,9 @@ namespace Penumbra.PlayerWatch
         internal ActorEquipment UpdateActorWithoutEvent( Actor actor )
         {
             var equipment = new ActorEquipment( actor );
-            if( _equip.ContainsKey( actor.Name ) )
+            if( Equip.ContainsKey( actor.Name ) )
             {
-                _equip[ actor.Name ] = ( equipment, _equip[ actor.Name ].Item2 );
+                Equip[ actor.Name ] = ( equipment, Equip[ actor.Name ].Item2 );
             }
 
             return equipment;
@@ -72,24 +72,24 @@ namespace Penumbra.PlayerWatch
 
         internal void AddPlayerToWatch( string playerName, PlayerWatcher watcher )
         {
-            if( _equip.TryGetValue( playerName, out var items ) )
+            if( Equip.TryGetValue( playerName, out var items ) )
             {
                 items.Item2.Add( watcher );
             }
             else
             {
-                _equip[ playerName ] = ( new ActorEquipment(), new HashSet< PlayerWatcher > { watcher } );
+                Equip[ playerName ] = ( new ActorEquipment(), new HashSet< PlayerWatcher > { watcher } );
             }
         }
 
         public void RemovePlayerFromWatch( string playerName, PlayerWatcher watcher )
         {
-            if( _equip.TryGetValue( playerName, out var items ) )
+            if( Equip.TryGetValue( playerName, out var items ) )
             {
                 items.Item2.Remove( watcher );
                 if( items.Item2.Count == 0 )
                 {
-                    _equip.Remove( playerName );
+                    Equip.Remove( playerName );
                 }
             }
         }
@@ -129,7 +129,7 @@ namespace Penumbra.PlayerWatch
         {
             PluginLog.Debug( "Clearing PlayerWatcher Store." );
             _cancel = true;
-            foreach( var kvp in _equip )
+            foreach( var kvp in Equip )
             {
                 kvp.Value.Item1.Clear();
             }
@@ -156,7 +156,7 @@ namespace Penumbra.PlayerWatch
                     return;
                 }
 
-                if( _equip.TryGetValue( actor.Name, out var watcher ) )
+                if( Equip.TryGetValue( actor.Name, out var watcher ) )
                 {
                     TriggerEvents( watcher.Item2, actor );
                 }
@@ -228,7 +228,7 @@ namespace Penumbra.PlayerWatch
                  || actor.ObjectKind  != ObjectKind.Player
                  || actor.Name        == null
                  || actor.Name.Length == 0
-                 || !_equip.TryGetValue( actor.Name, out var equip ) )
+                 || !Equip.TryGetValue( actor.Name, out var equip ) )
                 {
                     continue;
                 }

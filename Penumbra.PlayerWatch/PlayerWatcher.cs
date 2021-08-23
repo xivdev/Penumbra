@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Game.ClientState.Actors.Types;
 using Dalamud.Plugin;
 using Penumbra.GameData.Structs;
@@ -80,6 +82,14 @@ namespace Penumbra.PlayerWatch
         {
             CheckValidity();
             return _playerWatch!.UpdateActorWithoutEvent( actor );
+        }
+
+        public IEnumerable< (string, ActorEquipment) > WatchedPlayers()
+        {
+            CheckValidity();
+            return _playerWatch!.Equip
+               .Where( kvp => kvp.Value.Item2.Contains( this ) )
+               .Select( kvp => ( kvp.Key, kvp.Value.Item1 ) );
         }
     }
 
