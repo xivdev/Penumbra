@@ -4,7 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Importer;
 using Penumbra.Mods;

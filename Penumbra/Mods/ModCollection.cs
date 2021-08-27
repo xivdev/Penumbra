@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Dalamud.Logging;
 using Penumbra.GameData.Util;
 using Penumbra.Interop;
 using Penumbra.Mod;
@@ -49,7 +50,7 @@ namespace Penumbra.Mods
 
             var newSettings = ModSettings.DefaultSettings( mod.Meta );
             Settings.Add( mod.BasePath.Name, newSettings );
-            Save( Service< DalamudPluginInterface >.Get() );
+            Save();
             return new Mod.Mod( newSettings, mod );
         }
 
@@ -86,7 +87,7 @@ namespace Penumbra.Mods
 
             if( changedSettings )
             {
-                Save( Service< DalamudPluginInterface >.Get() );
+                Save();
             }
 
             CalculateEffectiveFileList( modDirectory, true, false );
@@ -104,7 +105,7 @@ namespace Penumbra.Mods
 
             if( settings.FixInvalidSettings( mod.Meta ) )
             {
-                Save( Service< DalamudPluginInterface >.Get() );
+                Save();
             }
         }
 
@@ -123,7 +124,7 @@ namespace Penumbra.Mods
 
             if( changes )
             {
-                Save( Service< DalamudPluginInterface >.Get() );
+                Save();
             }
         }
 
@@ -181,8 +182,8 @@ namespace Penumbra.Mods
             }
         }
 
-        public static DirectoryInfo CollectionDir( DalamudPluginInterface pi )
-            => new( Path.Combine( pi.GetPluginConfigDirectory(), "collections" ) );
+        public static DirectoryInfo CollectionDir()
+            => new( Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(), "collections" ) );
 
         private static FileInfo FileName( DirectoryInfo collectionDir, string name )
             => new( Path.Combine( collectionDir.FullName, $"{name.RemoveInvalidPathSymbols()}.json" ) );
@@ -191,11 +192,11 @@ namespace Penumbra.Mods
             => new( Path.Combine( Service< DalamudPluginInterface >.Get().GetPluginConfigDirectory(),
                 $"{Name.RemoveInvalidPathSymbols()}.json" ) );
 
-        public void Save( DalamudPluginInterface pi )
+        public void Save()
         {
             try
             {
-                var dir = CollectionDir( pi );
+                var dir = CollectionDir();
                 dir.Create();
                 var file = FileName( dir, Name );
                 SaveToFile( file );
@@ -206,15 +207,15 @@ namespace Penumbra.Mods
             }
         }
 
-        public static ModCollection? Load( string name, DalamudPluginInterface pi )
+        public static ModCollection? Load( string name )
         {
-            var file = FileName( CollectionDir( pi ), name );
+            var file = FileName( CollectionDir(), name );
             return file.Exists ? LoadFromFile( file ) : null;
         }
 
-        public void Delete( DalamudPluginInterface pi )
+        public void Delete()
         {
-            var file = FileName( CollectionDir( pi ), Name );
+            var file = FileName( CollectionDir(), Name );
             if( file.Exists )
             {
                 try

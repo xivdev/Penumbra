@@ -4,15 +4,14 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using Dalamud.Game.ClientState;
-using Dalamud.Game.ClientState.Actors.Types;
-using Dalamud.Plugin;
-using Penumbra.Api;
+using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.Types;
+using Penumbra.GameData.Enums;
 using Penumbra.Mods;
 
 namespace Penumbra.Interop
 {
-    public class ActorRefresher : IDisposable
+    public class ObjectReloader : IDisposable
     {
         private delegate void ManipulateDraw( IntPtr actor );
 
@@ -27,41 +26,39 @@ namespace Penumbra.Interop
             MaybeHiddenSummon = 0x00_80_00_00,
         }
 
-        private const int RenderModeOffset     = 0x0104;
-        private const int UnloadAllRedrawDelay = 250;
-        private const int NpcActorId           = -536870912;
-        public const  int GPosePlayerActorIdx  = 201;
-        public const  int GPoseEndIdx          = GPosePlayerActorIdx + 48;
+        private const int  RenderModeOffset     = 0x0104;
+        private const int  UnloadAllRedrawDelay = 250;
+        private const uint NpcObjectId          = unchecked( ( uint )-536870912 );
+        public const  int  GPosePlayerIdx       = 201;
+        public const  int  GPoseEndIdx          = GPosePlayerIdx + 48;
 
-        private readonly DalamudPluginInterface                            _pi;
-        private readonly ModManager                                        _mods;
-        private readonly Queue< (int actorId, string name, RedrawType s) > _actorIds = new();
+        private readonly ModManager                                         _mods;
+        private readonly Queue< (uint actorId, string name, RedrawType s) > _actorIds = new();
 
         internal int DefaultWaitFrames;
 
-        private int          _waitFrames             = 0;
-        private int          _currentFrame           = 0;
-        private bool         _changedSettings        = false;
-        private int          _currentActorId         = -1;
-        private string?      _currentActorName       = null;
-        private LoadingFlags _currentActorStartState = 0;
-        private RedrawType   _currentActorRedrawType = RedrawType.Unload;
-        private bool         _wasTarget              = false;
-        private bool         _inGPose                = false;
+        private int          _waitFrames;
+        private int          _currentFrame;
+        private bool         _changedSettings;
+        private uint         _currentObjectId         = uint.MaxValue;
+        private LoadingFlags _currentObjectStartState = 0;
+        private RedrawType   _currentRedrawType       = RedrawType.Unload;
+        private string?      _currentObjectName;
+        private bool         _wasTarget;
+        private bool         _inGPose;
 
-        public static IntPtr RenderPtr( Actor actor )
+        public static IntPtr RenderPtr( GameObject actor )
             => actor.Address + RenderModeOffset;
 
-        public ActorRefresher( DalamudPluginInterface pi, ModManager mods, int defaultWaitFrames )
+        public ObjectReloader( ModManager mods, int defaultWaitFrames )
         {
-            _pi               = pi;
             _mods             = mods;
             DefaultWaitFrames = defaultWaitFrames;
         }
 
         private void ChangeSettings()
         {
-            if( _currentActorName != null && _mods.Collections.CharacterCollection.TryGetValue( _currentActorName, out var collection ) )
+            if( _currentObjectName != null && _mods.Collections.CharacterCollection.TryGetValue( _currentObjectName, out var collection ) )
             {
                 _changedSettings                   = true;
                 _mods.Collections.ActiveCollection = collection;
@@ -74,7 +71,7 @@ namespace Penumbra.Interop
             _changedSettings                   = false;
         }
 
-        private unsafe void WriteInvisible( Actor actor, int actorIdx )
+        private unsafe void WriteInvisible( GameObject actor, int actorIdx )
         {
             var renderPtr = RenderPtr( actor );
             if( renderPtr == IntPtr.Zero )
@@ -82,7 +79,7 @@ namespace Penumbra.Interop
                 return;
             }
 
-            _currentActorStartState     =  *( LoadingFlags* )renderPtr;
+            _currentObjectStartState    =  *( LoadingFlags* )renderPtr;
             *( LoadingFlags* )renderPtr |= LoadingFlags.Invisibility;
 
             if( _inGPose )
@@ -103,7 +100,7 @@ namespace Penumbra.Interop
             if( renderPtr != IntPtr.Zero )
             {
                 var loadingFlags = *( LoadingFlags* )renderPtr;
-                if( loadingFlags == _currentActorStartState )
+                if( loadingFlags == _currentObjectStartState )
                 {
                     return false;
                 }
@@ -114,7 +111,7 @@ namespace Penumbra.Interop
             return false;
         }
 
-        private unsafe void WriteVisible( Actor actor, int actorIdx )
+        private unsafe void WriteVisible( GameObject actor, int actorIdx )
         {
             var renderPtr = RenderPtr( actor );
             *( LoadingFlags* )renderPtr &= ~LoadingFlags.Invisibility;
@@ -127,52 +124,52 @@ namespace Penumbra.Interop
             }
         }
 
-        private bool CheckActor( Actor actor )
+        private bool CheckObject( GameObject actor )
         {
-            if( _currentActorId != actor.ActorId )
+            if( _currentObjectId != actor.ObjectId )
             {
                 return false;
             }
 
-            if( _currentActorId != NpcActorId )
+            if( _currentObjectId != NpcObjectId )
             {
                 return true;
             }
 
-            return _currentActorName == actor.Name;
+            return _currentObjectName == actor.Name.ToString();
         }
 
-        private bool CheckActorGPose( Actor actor )
-            => actor.ActorId == NpcActorId && _currentActorName == actor.Name;
+        private bool CheckObjectGPose( GameObject actor )
+            => actor.ObjectId == NpcObjectId && _currentObjectName == actor.Name.ToString();
 
-        private (Actor?, int) FindCurrentActor()
+        private (GameObject?, int) FindCurrentObject()
         {
             if( _inGPose )
             {
-                for( var i = GPosePlayerActorIdx; i < GPoseEndIdx; ++i )
+                for( var i = GPosePlayerIdx; i < GPoseEndIdx; ++i )
                 {
-                    var actor = _pi.ClientState.Actors[ i ];
+                    var actor = Dalamud.Objects[ i ];
                     if( actor == null )
                     {
                         break;
                     }
 
-                    if( CheckActorGPose( actor ) )
+                    if( CheckObjectGPose( actor ) )
                     {
                         return ( actor, i );
                     }
                 }
             }
 
-            for( var i = 0; i < _pi.ClientState.Actors.Length; ++i )
+            for( var i = 0; i < Dalamud.Objects.Length; ++i )
             {
-                if( i == GPosePlayerActorIdx )
+                if( i == GPosePlayerIdx )
                 {
                     i = GPoseEndIdx;
                 }
 
-                var actor = _pi.ClientState.Actors[ i ];
-                if( actor != null && CheckActor( actor ) )
+                var actor = Dalamud.Objects[ i ];
+                if( actor != null && CheckObject( actor ) )
                 {
                     return ( actor, i );
                 }
@@ -181,40 +178,40 @@ namespace Penumbra.Interop
             return ( null, -1 );
         }
 
-        private void PopActor()
+        private void PopObject()
         {
             if( _actorIds.Count > 0 )
             {
-                var (id, name, s)       = _actorIds.Dequeue();
-                _currentActorName       = name;
-                _currentActorId         = id;
-                _currentActorRedrawType = s;
-                var (actor, _)          = FindCurrentActor();
+                var (id, name, s)  = _actorIds.Dequeue();
+                _currentObjectName = name;
+                _currentObjectId   = id;
+                _currentRedrawType = s;
+                var (actor, _)     = FindCurrentObject();
                 if( actor == null )
                 {
                     return;
                 }
 
-                _wasTarget = actor.Address == _pi.ClientState.Targets.CurrentTarget?.Address;
+                _wasTarget = actor.Address == Dalamud.Targets.Target?.Address;
 
                 ++_currentFrame;
             }
             else
             {
-                _pi.Framework.OnUpdateEvent -= OnUpdateEvent;
+                Dalamud.Framework.Update -= OnUpdateEvent;
             }
         }
 
         private void ApplySettingsOrRedraw()
         {
-            var (actor, idx) = FindCurrentActor();
+            var (actor, idx) = FindCurrentObject();
             if( actor == null )
             {
                 _currentFrame = 0;
                 return;
             }
 
-            switch( _currentActorRedrawType )
+            switch( _currentRedrawType )
             {
                 case RedrawType.Unload:
                     WriteInvisible( actor, idx );
@@ -251,12 +248,12 @@ namespace Penumbra.Interop
                 case RedrawType.AfterGPoseWithoutSettings:
                     if( _inGPose )
                     {
-                        _actorIds.Enqueue( ( _currentActorId, _currentActorName!, _currentActorRedrawType ) );
+                        _actorIds.Enqueue( ( _currentObjectId, _currentObjectName!, _currentRedrawType ) );
                         _currentFrame = 0;
                     }
                     else
                     {
-                        _currentActorRedrawType = _currentActorRedrawType == RedrawType.AfterGPoseWithSettings
+                        _currentRedrawType = _currentRedrawType == RedrawType.AfterGPoseWithSettings
                             ? RedrawType.WithSettings
                             : RedrawType.WithoutSettings;
                     }
@@ -268,7 +265,7 @@ namespace Penumbra.Interop
 
         private void StartRedrawAndWait()
         {
-            var (actor, idx) = FindCurrentActor();
+            var (actor, idx) = FindCurrentObject();
             if( actor == null )
             {
                 RevertSettings();
@@ -281,15 +278,15 @@ namespace Penumbra.Interop
 
         private void RevertSettings()
         {
-            var (actor, _) = FindCurrentActor();
+            var (actor, _) = FindCurrentObject();
             if( actor != null )
             {
                 if( !StillLoading( RenderPtr( actor ) ) )
                 {
                     RestoreSettings();
-                    if( _wasTarget && _pi.ClientState.Targets.CurrentTarget == null )
+                    if( _wasTarget && Dalamud.Targets.Target == null )
                     {
-                        _pi.ClientState.Targets.SetCurrentTarget( actor );
+                        Dalamud.Targets.SetTarget( actor );
                     }
 
                     _currentFrame = 0;
@@ -303,9 +300,9 @@ namespace Penumbra.Interop
 
         private void OnUpdateEvent( object framework )
         {
-            if( _pi.ClientState.Condition[ ConditionFlag.BetweenAreas51 ]
-             || _pi.ClientState.Condition[ ConditionFlag.BetweenAreas ]
-             || _pi.ClientState.Condition[ ConditionFlag.OccupiedInCutSceneEvent ] )
+            if( Dalamud.Conditions[ ConditionFlag.BetweenAreas51 ]
+             || Dalamud.Conditions[ ConditionFlag.BetweenAreas ]
+             || Dalamud.Conditions[ ConditionFlag.OccupiedInCutSceneEvent ] )
             {
                 _waitFrames = DefaultWaitFrames;
                 return;
@@ -317,12 +314,12 @@ namespace Penumbra.Interop
                 return;
             }
 
-            _inGPose = _pi.ClientState.Actors[ GPosePlayerActorIdx ] != null;
+            _inGPose = Dalamud.Objects[ GPosePlayerIdx ] != null;
 
             switch( _currentFrame )
             {
                 case 0:
-                    PopActor();
+                    PopObject();
                     break;
                 case 1:
                     ApplySettingsOrRedraw();
@@ -339,35 +336,35 @@ namespace Penumbra.Interop
             }
         }
 
-        private void RedrawActorIntern( int actorId, string actorName, RedrawType settings )
+        private void RedrawObjectIntern( uint objectId, string actorName, RedrawType settings )
         {
-            if( _actorIds.Contains( ( actorId, actorName, settings ) ) )
+            if( _actorIds.Contains( ( objectId, actorName, settings ) ) )
             {
                 return;
             }
 
-            _actorIds.Enqueue( ( actorId, actorName, settings ) );
+            _actorIds.Enqueue( ( objectId, actorName, settings ) );
             if( _actorIds.Count == 1 )
             {
-                _pi.Framework.OnUpdateEvent += OnUpdateEvent;
+                Dalamud.Framework.Update += OnUpdateEvent;
             }
         }
 
-        public void RedrawActor( Actor? actor, RedrawType settings = RedrawType.WithSettings )
+        public void RedrawObject( GameObject? actor, RedrawType settings = RedrawType.WithSettings )
         {
             if( actor != null )
             {
-                RedrawActorIntern( actor.ActorId, actor.Name, settings );
+                RedrawObjectIntern( actor.ObjectId, actor.Name.ToString(), settings );
             }
         }
 
-        private Actor? GetLocalPlayer()
+        private GameObject? GetLocalPlayer()
         {
-            var gPoseActor = _pi.ClientState.Actors[ GPosePlayerActorIdx ];
-            return gPoseActor ?? _pi.ClientState.Actors[ 0 ];
+            var gPosePlayer = Dalamud.Objects[ GPosePlayerIdx ];
+            return gPosePlayer ?? Dalamud.Objects[ 0 ];
         }
 
-        private Actor? GetName( string name )
+        private GameObject? GetName( string name )
         {
             var lowerName = name.ToLowerInvariant();
             return lowerName switch
@@ -375,33 +372,33 @@ namespace Penumbra.Interop
                 ""          => null,
                 "<me>"      => GetLocalPlayer(),
                 "self"      => GetLocalPlayer(),
-                "<t>"       => _pi.ClientState.Targets.CurrentTarget,
-                "target"    => _pi.ClientState.Targets.CurrentTarget,
-                "<f>"       => _pi.ClientState.Targets.FocusTarget,
-                "focus"     => _pi.ClientState.Targets.FocusTarget,
-                "<mo>"      => _pi.ClientState.Targets.MouseOverTarget,
-                "mouseover" => _pi.ClientState.Targets.MouseOverTarget,
-                _ => _pi.ClientState.Actors.FirstOrDefault(
-                    a => string.Equals( a.Name, lowerName, StringComparison.InvariantCultureIgnoreCase ) ),
+                "<t>"       => Dalamud.Targets.Target,
+                "target"    => Dalamud.Targets.Target,
+                "<f>"       => Dalamud.Targets.FocusTarget,
+                "focus"     => Dalamud.Targets.FocusTarget,
+                "<mo>"      => Dalamud.Targets.MouseOverTarget,
+                "mouseover" => Dalamud.Targets.MouseOverTarget,
+                _ => Dalamud.Objects.FirstOrDefault(
+                    a => string.Equals( a.Name.ToString(), lowerName, StringComparison.InvariantCultureIgnoreCase ) ),
             };
         }
 
-        public void RedrawActor( string name, RedrawType settings = RedrawType.WithSettings )
-            => RedrawActor( GetName( name ), settings );
+        public void RedrawObject( string name, RedrawType settings = RedrawType.WithSettings )
+            => RedrawObject( GetName( name ), settings );
 
         public void RedrawAll( RedrawType settings = RedrawType.WithSettings )
         {
             Clear();
-            foreach( var actor in _pi.ClientState.Actors )
+            foreach( var actor in Dalamud.Objects )
             {
-                RedrawActor( actor, settings );
+                RedrawObject( actor, settings );
             }
         }
 
         private void UnloadAll()
         {
             Clear();
-            foreach( var (actor, index) in _pi.ClientState.Actors.Select( ( a, i ) => ( a, i ) ) )
+            foreach( var (actor, index) in Dalamud.Objects.Select( ( a, i ) => ( a, i ) ) )
             {
                 WriteInvisible( actor, index );
             }
@@ -410,7 +407,7 @@ namespace Penumbra.Interop
         private void RedrawAllWithoutSettings()
         {
             Clear();
-            foreach( var (actor, index) in _pi.ClientState.Actors.Select( ( a, i ) => ( a, i ) ) )
+            foreach( var (actor, index) in Dalamud.Objects.Select( ( a, i ) => ( a, i ) ) )
             {
                 WriteVisible( actor, index );
             }
@@ -442,7 +439,7 @@ namespace Penumbra.Interop
         {
             RevertSettings();
             _actorIds.Clear();
-            _pi.Framework.OnUpdateEvent -= OnUpdateEvent;
+            Dalamud.Framework.Update -= OnUpdateEvent;
         }
     }
 }

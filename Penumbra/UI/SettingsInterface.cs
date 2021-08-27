@@ -12,34 +12,34 @@ namespace Penumbra.UI
         private static readonly Vector2 AutoFillSize = new( -1, -1 );
         private static readonly Vector2 ZeroVector   = new( 0, 0 );
 
-        private readonly Plugin _plugin;
+        private readonly Penumbra _penumbra;
 
         private readonly ManageModsButton _manageModsButton;
         private readonly MenuBar          _menuBar;
         private readonly SettingsMenu     _menu;
         private readonly ModManager       _modManager;
 
-        public SettingsInterface( Plugin plugin )
+        public SettingsInterface( Penumbra penumbra )
         {
-            _plugin           = plugin;
+            _penumbra         = penumbra;
             _manageModsButton = new ManageModsButton( this );
             _menuBar          = new MenuBar( this );
             _menu             = new SettingsMenu( this );
             _modManager       = Service< ModManager >.Get();
 
-            _plugin.PluginInterface.UiBuilder.DisableGposeUiHide =  true;
-            _plugin.PluginInterface.UiBuilder.OnBuildUi          += Draw;
-            _plugin.PluginInterface.UiBuilder.OnOpenConfigUi     += OpenConfig;
+            Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide =  true;
+            Dalamud.PluginInterface.UiBuilder.Draw               += Draw;
+            Dalamud.PluginInterface.UiBuilder.OpenConfigUi       += OpenConfig;
         }
 
         public void Dispose()
         {
             _menu.InstalledTab.Selector.Cache.Dispose();
-            _plugin.PluginInterface.UiBuilder.OnBuildUi      -= Draw;
-            _plugin.PluginInterface.UiBuilder.OnOpenConfigUi -= OpenConfig;
+            Dalamud.PluginInterface.UiBuilder.Draw         -= Draw;
+            Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= OpenConfig;
         }
 
-        private void OpenConfig( object _1, EventArgs _2 )
+        private void OpenConfig()
             => _menu.Visible = true;
 
         public void FlipVisibility()
@@ -58,14 +58,14 @@ namespace Penumbra.UI
         private void ReloadMods()
         {
             _menu.InstalledTab.Selector.ClearSelection();
-            _modManager.DiscoverMods( _plugin.Configuration.ModDirectory );
+            _modManager.DiscoverMods( Penumbra.Config.ModDirectory );
             _menu.InstalledTab.Selector.Cache.TriggerListReset();
         }
 
         private void SaveCurrentCollection( bool recalculateMeta )
         {
             var current = _modManager.Collections.CurrentCollection;
-            current.Save( _plugin.PluginInterface );
+            current.Save();
             RecalculateCurrent( recalculateMeta );
         }
 

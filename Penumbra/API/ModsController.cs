@@ -10,10 +10,10 @@ namespace Penumbra.Api
 {
     public class ModsController : WebApiController
     {
-        private readonly Plugin _plugin;
+        private readonly Penumbra _penumbra;
 
-        public ModsController( Plugin plugin )
-            => _plugin = plugin;
+        public ModsController( Penumbra penumbra )
+            => _penumbra = penumbra;
 
         [Route( HttpVerbs.Get, "/mods" )]
         public object? GetMods()

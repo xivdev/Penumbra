@@ -10,9 +10,6 @@ namespace Penumbra.Util
     {
         private static T? _object;
 
-        static Service()
-        { }
-
         public static void Set( T obj )
         {
             // ReSharper disable once JoinNullCheckWithUsage

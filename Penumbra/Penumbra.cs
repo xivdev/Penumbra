@@ -1,10 +1,12 @@
 using Dalamud.Game.Command;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using EmbedIO;
 using EmbedIO.WebApi;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.Api;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop;
 using Penumbra.Meta.Files;
 using Penumbra.Mods;
@@ -14,61 +16,47 @@ using Penumbra.Util;
 
 namespace Penumbra
 {
-    public class Plugin : IDalamudPlugin
+    public class Penumbra : IDalamudPlugin
     {
-        public string Name { get; }
-        public string PluginDebugTitleStr { get; }
-
-        public Plugin()
-        {
-            Name                = "Penumbra";
-            PluginDebugTitleStr = $"{Name} - Debug Build";
-        }
+        public string Name { get; } = "Penumbra";
+        public string PluginDebugTitleStr { get; } = "Penumbra - Debug Build";
 
         private const string CommandName = "/penumbra";
 
-        public DalamudPluginInterface PluginInterface { get; set; } = null!;
-        public Configuration Configuration { get; set; } = null!;
-        public ResourceLoader ResourceLoader { get; set; } = null!;
-        public SettingsInterface SettingsInterface { get; set; } = null!;
-        public MusicManager SoundShit { get; set; } = null!;
-        public ActorRefresher ActorRefresher { get; set; } = null!;
-        public IPlayerWatcher PlayerWatcher { get; set; } = null!;
-        public PenumbraApi Api { get; set; } = null!;
+        public static Configuration Config { get; private set; } = null!;
+        public static IPlayerWatcher PlayerWatcher { get; private set; } = null!;
 
+        public ResourceLoader ResourceLoader { get; }
+        public SettingsInterface SettingsInterface { get; }
+        public MusicManager SoundShit { get; }
+        public ObjectReloader ObjectReloader { get; }
+
+        public PenumbraApi Api { get; }
+        public PenumbraIpc Ipc { get; }
 
         private WebServer? _webServer;
 
-        public static void SaveConfiguration()
+        public Penumbra( DalamudPluginInterface pluginInterface )
         {
-            var pi     = Service< DalamudPluginInterface >.Get();
-            var config = Service< Configuration >.Get();
-            pi.SavePluginConfig( config );
-        }
+            Dalamud.Initialize( pluginInterface );
+            GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
+            Config = Configuration.Load();
 
-        public void Initialize( DalamudPluginInterface pluginInterface )
-        {
-            PluginInterface = pluginInterface;
-            Service< DalamudPluginInterface >.Set( PluginInterface );
-            GameData.GameData.GetIdentifier( PluginInterface );
-            Configuration    = Configuration.Load( PluginInterface );
-            Service< Configuration >.Set( Configuration );
-
-            SoundShit = new MusicManager( this );
+            SoundShit = new MusicManager();
             SoundShit.DisableStreaming();
 
-            var gameUtils = Service< GameResourceManagement >.Set( PluginInterface );
-            PlayerWatcher = PlayerWatchFactory.Create( PluginInterface );
-            Service< MetaDefaults >.Set( PluginInterface );
-            var modManager = Service< ModManager >.Set( this );
+            var gameUtils = Service< GameResourceManagement >.Set();
+            PlayerWatcher = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
+            Service< MetaDefaults >.Set();
+            var modManager = Service< ModManager >.Set();
 
             modManager.DiscoverMods();
 
-            ActorRefresher = new ActorRefresher( PluginInterface, modManager, Configuration.WaitFrames );
+            ObjectReloader = new ObjectReloader( modManager, Config.WaitFrames );
 
             ResourceLoader = new ResourceLoader( this );
 
-            PluginInterface.CommandManager.AddHandler( CommandName, new CommandInfo( OnCommand )
+            Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
             {
                 HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
             } );
@@ -80,24 +68,25 @@ namespace Penumbra
 
             SettingsInterface = new SettingsInterface( this );
 
-            if( Configuration.EnableHttpApi )
+            if( Config.EnableHttpApi )
             {
                 CreateWebServer();
             }
 
-            if( !Configuration.EnableActorWatch || !Configuration.IsEnabled )
+            if( !Config.EnablePlayerWatch || !Config.IsEnabled )
             {
                 PlayerWatcher.Disable();
             }
 
-            PlayerWatcher.ActorChanged += a =>
+            PlayerWatcher.PlayerChanged += p =>
             {
-                PluginLog.Debug( "Triggered Redraw of {Actor}.", a.Name );
-                ActorRefresher.RedrawActor( a, RedrawType.OnlyWithSettings );
+                PluginLog.Debug( "Triggered Redraw of {Player}.", p.Name );
+                ObjectReloader.RedrawObject( p, RedrawType.OnlyWithSettings );
             };
 
             Api = new PenumbraApi( this );
             SubscribeItemLinks();
+            Ipc = new PenumbraIpc( pluginInterface, Api );
         }
 
         private void SubscribeItemLinks()
@@ -120,7 +109,7 @@ namespace Penumbra
 
         public void CreateWebServer()
         {
-            var prefix = "http://localhost:42069/";
+            const string prefix = "http://localhost:42069/";
 
             ShutdownWebServer();
 
@@ -146,11 +135,10 @@ namespace Penumbra
         {
             Api.Dispose();
             SettingsInterface.Dispose();
-            ActorRefresher.Dispose();
+            ObjectReloader.Dispose();
             PlayerWatcher.Dispose();
 
-            PluginInterface.CommandManager.RemoveHandler( CommandName );
-            PluginInterface.Dispose();
+            Dalamud.Commands.RemoveHandler( CommandName );
 
             ResourceLoader.Dispose();
 
@@ -167,7 +155,7 @@ namespace Penumbra
                     case "reload":
                     {
                         Service< ModManager >.Get().DiscoverMods();
-                        PluginInterface.Framework.Gui.Chat.Print(
+                        Dalamud.Chat.Print(
                             $"Reloaded Penumbra mods. You have {Service< ModManager >.Get()?.Mods.Count} mods."
                         );
                         break;
@@ -176,11 +164,11 @@ namespace Penumbra
                     {
                         if( args.Length > 1 )
                         {
-                            ActorRefresher.RedrawActor( args[ 1 ] );
+                            ObjectReloader.RedrawObject( args[ 1 ] );
                         }
                         else
                         {
-                            ActorRefresher.RedrawAll();
+                            ObjectReloader.RedrawAll();
                         }
 
                         break;

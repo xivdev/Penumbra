@@ -141,18 +141,17 @@ namespace Penumbra.Mods
         // Sets and saves the sort order of a single mod, removing the entry if it is unnecessary.
         private static void SaveMod( ModData mod )
         {
-            var config = Service< Configuration >.Get();
             if( ReferenceEquals( mod.SortOrder.ParentFolder, Root )
              && string.Equals( mod.SortOrder.SortOrderName, mod.Meta.Name.Replace( '/', '\\' ), StringComparison.InvariantCultureIgnoreCase ) )
             {
-                config.ModSortOrder.Remove( mod.BasePath.Name );
+                Penumbra.Config.ModSortOrder.Remove( mod.BasePath.Name );
             }
             else
             {
-                config.ModSortOrder[ mod.BasePath.Name ] = mod.SortOrder.FullName;
+                Penumbra.Config.ModSortOrder[ mod.BasePath.Name ] = mod.SortOrder.FullName;
             }
 
-            config.Save();
+            Penumbra.Config.Save();
             InvokeChange();
         }
 

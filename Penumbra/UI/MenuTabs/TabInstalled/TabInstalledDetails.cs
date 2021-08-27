@@ -3,6 +3,7 @@ using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
 using Penumbra.Api;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -124,7 +125,7 @@ namespace Penumbra.UI
 
             private void Save()
             {
-                _modManager.Collections.CurrentCollection.Save( _base._plugin.PluginInterface! );
+                _modManager.Collections.CurrentCollection.Save();
             }
 
             private void DrawAboutTab()
@@ -183,13 +184,13 @@ namespace Penumbra.UI
 
                         if( ret != MouseButton.None )
                         {
-                            _base._plugin.Api.InvokeClick( ret, item.Value );
+                            _base._penumbra.Api.InvokeClick( ret, item.Value );
                         }
 
-                        if( _base._plugin.Api.HasTooltip && ImGui.IsItemHovered() )
+                        if( _base._penumbra.Api.HasTooltip && ImGui.IsItemHovered() )
                         {
                             ImGui.BeginTooltip();
-                            _base._plugin.Api.InvokeTooltip( item.Value );
+                            _base._penumbra.Api.InvokeTooltip( item.Value );
                             ImGui.EndTooltip();
                         }
                     }

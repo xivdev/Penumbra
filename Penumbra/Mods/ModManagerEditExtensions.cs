@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using Penumbra.Mod;
 using Penumbra.Structs;
@@ -93,7 +94,7 @@ namespace Penumbra.Mods
                 {
                     collection.Settings[ newDir.Name ] = settings;
                     collection.Settings.Remove( oldBasePath.Name );
-                    manager.Collections.SaveCollection( collection );
+                    collection.Save();
                 }
 
                 if( collection.Cache != null )
@@ -158,7 +159,7 @@ namespace Penumbra.Mods
                 }
 
                 settings.Settings.Remove( oldGroupName );
-                manager.Collections.SaveCollection( collection );
+                collection.Save();
             }
 
             return true;
@@ -203,7 +204,7 @@ namespace Penumbra.Mods
                 if( newSetting != setting )
                 {
                     settings.Settings[ group.GroupName ] = newSetting;
-                    manager.Collections.SaveCollection( collection );
+                    collection.Save();
                     if( collection.Cache != null && settings.Enabled )
                     {
                         collection.CalculateEffectiveFileList( manager.TempPath, mod.Resources.MetaManipulations.Count > 0,

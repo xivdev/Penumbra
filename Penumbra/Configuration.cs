@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dalamud.Configuration;
-using Dalamud.Plugin;
-using Penumbra.Util;
+using Dalamud.Logging;
 
 namespace Penumbra
 {
@@ -21,7 +20,7 @@ namespace Penumbra
         public bool DisableFileSystemNotifications { get; set; }
 
         public bool EnableHttpApi { get; set; }
-        public bool EnableActorWatch { get; set; } = false;
+        public bool EnablePlayerWatch { get; set; } = false;
         public int WaitFrames { get; set; } = 30;
 
         public string ModDirectory { get; set; } = string.Empty;
@@ -38,33 +37,30 @@ namespace Penumbra
 
         public bool InvertModListOrder { internal get; set; }
 
-        public static Configuration Load( DalamudPluginInterface pi )
+        public static Configuration Load()
         {
-            var configuration = pi.GetPluginConfig() as Configuration ?? new Configuration();
+            var configuration = Dalamud.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             if( configuration.Version == CurrentVersion )
             {
                 return configuration;
             }
 
             MigrateConfiguration.Version0To1( configuration );
-            configuration.Save( pi );
+            configuration.Save();
 
             return configuration;
         }
 
-        public void Save( DalamudPluginInterface pi )
+        public void Save()
         {
             try
             {
-                pi.SavePluginConfig( this );
+                Dalamud.PluginInterface.SavePluginConfig( this );
             }
             catch( Exception e )
             {
                 PluginLog.Error( $"Could not save plugin configuration:\n{e}" );
             }
         }
-
-        public void Save()
-            => Save( Service< DalamudPluginInterface >.Get() );
     }
 }

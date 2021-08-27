@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Mod;
 using Penumbra.Mods;
@@ -523,7 +523,7 @@ namespace Penumbra.UI
                     DrawEnabledMark();
                     ImGui.SameLine();
                     DrawPriority();
-                    if( _base._plugin!.Configuration!.ShowAdvanced )
+                    if( Penumbra.Config.ShowAdvanced )
                     {
                         ImGui.SameLine();
                         DrawEditableMark();

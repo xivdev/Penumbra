@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using Lumina.Data;
 using Lumina.Data.Files;
@@ -12,8 +13,6 @@ namespace Penumbra.Meta.Files
     // On first call, the default version of any supported file will be cached and can be returned without reparsing.
     public class MetaDefaults
     {
-        private readonly DalamudPluginInterface _pi;
-
         private readonly Dictionary< GamePath, object > _defaultFiles = new();
 
         private object CreateNewFile( string path )
@@ -110,14 +109,11 @@ namespace Penumbra.Meta.Files
         public CmpFile? GetNewCmpFile()
             => GetDefaultCmpFile()?.Clone();
 
-        public MetaDefaults( DalamudPluginInterface pi )
-            => _pi = pi;
+        private static ImcFile GetImcFile( string path )
+            => Dalamud.GameData.GetFile< ImcFile >( path )!;
 
-        private ImcFile GetImcFile( string path )
-            => _pi.Data.GetFile< ImcFile >( path );
-
-        private FileResource FetchFile( string name )
-            => _pi.Data.GetFile( name );
+        private static FileResource FetchFile( string name )
+            => Dalamud.GameData.GetFile( name )!;
 
         // Check that a given meta manipulation is an actual change to the default value. We don't need to keep changes to default.
         public bool CheckAgainstDefault( MetaManipulation m )

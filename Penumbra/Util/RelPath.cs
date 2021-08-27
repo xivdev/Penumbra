@@ -65,7 +65,7 @@ namespace Penumbra.Util
         public bool Empty
             => _path.Length == 0;
 
-        public int CompareTo( object rhs )
+        public int CompareTo( object? rhs )
         {
             return rhs switch
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
@@ -363,7 +364,7 @@ namespace Penumbra.Importer
 
         private void ExtractMod( DirectoryInfo outDirectory, SimpleMod mod, PenumbraSqPackStream dataStream )
         {
-            PluginLog.Log( "        -> Extracting {0} at {1}", mod.FullPath, mod.ModOffset.ToString( "X" ) );
+            PluginLog.Log( "        -> Extracting {0} at {1}", mod.FullPath!, mod.ModOffset.ToString( "X" ) );
 
             try
             {

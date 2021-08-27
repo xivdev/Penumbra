@@ -27,17 +27,13 @@ namespace Penumbra.UI
               | ImGuiWindowFlags.NoSavedSettings;
 
             private readonly SettingsInterface                  _base;
-            private readonly Dalamud.Game.ClientState.Condition _condition;
 
             public ManageModsButton( SettingsInterface ui )
-            {
-                _base      = ui;
-                _condition = ui._plugin!.PluginInterface!.ClientState.Condition;
-            }
+                => _base      = ui;
 
             public void Draw()
             {
-                if( _condition.Any() || _base._menu.Visible )
+                if( Dalamud.Conditions.Any() || _base._menu.Visible )
                 {
                     return;
                 }

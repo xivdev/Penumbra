@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Penumbra.Interop;
 using Penumbra.Mod;
 using Penumbra.Util;
@@ -12,7 +12,6 @@ namespace Penumbra.Mods
     // Contains all collections and respective functions, as well as the collection settings.
     public class CollectionManager
     {
-        private readonly Plugin     _plugin;
         private readonly ModManager _manager;
 
         public Dictionary< string, ModCollection > Collections { get; } = new();
@@ -24,13 +23,12 @@ namespace Penumbra.Mods
 
         public ModCollection ActiveCollection { get; set; }
 
-        public CollectionManager( Plugin plugin, ModManager manager )
+        public CollectionManager( ModManager manager )
         {
-            _plugin  = plugin;
             _manager = manager;
 
             ReadCollections();
-            LoadConfigCollections( _plugin.Configuration );
+            LoadConfigCollections( Penumbra.Config );
             ActiveCollection = DefaultCollection;
         }
 
@@ -95,7 +93,7 @@ namespace Penumbra.Mods
 
             var newCollection = new ModCollection( name, settings );
             Collections.Add( name, newCollection );
-            SaveCollection( newCollection );
+            newCollection.Save();
             SetCurrentCollection( newCollection );
             return true;
         }
@@ -133,7 +131,7 @@ namespace Penumbra.Mods
                     }
                 }
 
-                collection.Delete( _plugin.PluginInterface! );
+                collection.Delete();
                 Collections.Remove( name );
                 return true;
             }
@@ -179,7 +177,7 @@ namespace Penumbra.Mods
             setter( newCollection );
             RemoveCache( oldCollection );
             configSetter( newCollection.Name );
-            _plugin.Configuration.Save();
+            Penumbra.Config.Save();
         }
 
         public void SetDefaultCollection( ModCollection newCollection )
@@ -193,13 +191,13 @@ namespace Penumbra.Mods
                 }
 
                 DefaultCollection = c;
-            }, s => _plugin.Configuration.DefaultCollection = s );
+            }, s => Penumbra.Config.DefaultCollection = s );
 
         public void SetForcedCollection( ModCollection newCollection )
-            => SetCollection( newCollection, ForcedCollection, c => ForcedCollection = c, s => _plugin.Configuration.ForcedCollection = s );
+            => SetCollection( newCollection, ForcedCollection, c => ForcedCollection = c, s => Penumbra.Config.ForcedCollection = s );
 
         public void SetCurrentCollection( ModCollection newCollection )
-            => SetCollection( newCollection, CurrentCollection, c => CurrentCollection = c, s => _plugin.Configuration.CurrentCollection = s );
+            => SetCollection( newCollection, CurrentCollection, c => CurrentCollection = c, s => Penumbra.Config.CurrentCollection = s );
 
         public void SetCharacterCollection( string characterName, ModCollection newCollection )
             => SetCollection( newCollection,
@@ -215,16 +213,16 @@ namespace Penumbra.Mods
                     }
 
                     CharacterCollection[ characterName ] = c;
-                }, s => _plugin.Configuration.CharacterCollections[ characterName ] = s );
+                }, s => Penumbra.Config.CharacterCollections[ characterName ] = s );
 
         public bool CreateCharacterCollection( string characterName )
         {
             if( !CharacterCollection.ContainsKey( characterName ) )
             {
-                CharacterCollection[ characterName ]                        = ModCollection.Empty;
-                _plugin.Configuration.CharacterCollections[ characterName ] = string.Empty;
-                _plugin.Configuration.Save();
-                _plugin.PlayerWatcher.AddPlayerToWatch( characterName );
+                CharacterCollection[ characterName ]                  = ModCollection.Empty;
+                Penumbra.Config.CharacterCollections[ characterName ] = string.Empty;
+                Penumbra.Config.Save();
+                Penumbra.PlayerWatcher.AddPlayerToWatch( characterName );
                 return true;
             }
 
@@ -237,12 +235,12 @@ namespace Penumbra.Mods
             {
                 RemoveCache( collection );
                 CharacterCollection.Remove( characterName );
-                _plugin.PlayerWatcher.RemovePlayerFromWatch( characterName );
+                Penumbra.PlayerWatcher.RemovePlayerFromWatch( characterName );
             }
 
-            if( _plugin.Configuration.CharacterCollections.Remove( characterName ) )
+            if( Penumbra.Config.CharacterCollections.Remove( characterName ) )
             {
-                _plugin.Configuration.Save();
+                Penumbra.Config.Save();
             }
         }
 
@@ -308,7 +306,7 @@ namespace Penumbra.Mods
             var configChanged = false;
             foreach( var kvp in config.CharacterCollections.ToArray() )
             {
-                _plugin.PlayerWatcher.AddPlayerToWatch( kvp.Key );
+                Penumbra.PlayerWatcher.AddPlayerToWatch( kvp.Key );
                 if( kvp.Value == string.Empty )
                 {
                     CharacterCollection.Add( kvp.Key, ModCollection.Empty );
@@ -345,7 +343,7 @@ namespace Penumbra.Mods
 
         private void ReadCollections()
         {
-            var collectionDir = ModCollection.CollectionDir( _plugin.PluginInterface! );
+            var collectionDir = ModCollection.CollectionDir();
             if( collectionDir.Exists )
             {
                 foreach( var file in collectionDir.EnumerateFiles( "*.json" ) )
@@ -373,12 +371,9 @@ namespace Penumbra.Mods
             if( !Collections.ContainsKey( ModCollection.DefaultCollection ) )
             {
                 var defaultCollection = new ModCollection();
-                SaveCollection( defaultCollection );
+                defaultCollection.Save();
                 Collections.Add( defaultCollection.Name, defaultCollection );
             }
         }
-
-        public void SaveCollection( ModCollection collection )
-            => collection.Save( _plugin.PluginInterface! );
     }
 }

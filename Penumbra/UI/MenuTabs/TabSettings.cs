@@ -2,9 +2,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using ImGuiNET;
-using Penumbra.Api;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -39,7 +39,7 @@ namespace Penumbra.UI
             public TabSettings( SettingsInterface ui )
             {
                 _base          = ui;
-                _config        = _base._plugin.Configuration!;
+                _config        = Penumbra.Config;
                 _configChanged = false;
             }
 
@@ -115,10 +115,10 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged    = true;
-                    _base._plugin.ActorRefresher.RedrawAll( enabled ? RedrawType.WithSettings : RedrawType.WithoutSettings );
-                    if( _config.EnableActorWatch )
+                    _base._penumbra.ObjectReloader.RedrawAll( enabled ? RedrawType.WithSettings : RedrawType.WithoutSettings );
+                    if( _config.EnablePlayerWatch )
                     {
-                        _base._plugin.PlayerWatcher.SetStatus( enabled );
+                        Penumbra.PlayerWatcher.SetStatus( enabled );
                     }
                 }
             }
@@ -156,16 +156,16 @@ namespace Penumbra.UI
 
             private void DrawLogLoadedFilesBox()
             {
-                ImGui.Checkbox( LabelLogLoadedFiles, ref _base._plugin.ResourceLoader.LogAllFiles );
+                ImGui.Checkbox( LabelLogLoadedFiles, ref _base._penumbra.ResourceLoader.LogAllFiles );
                 ImGui.SameLine();
-                var regex = _base._plugin.ResourceLoader.LogFileFilter?.ToString() ?? string.Empty;
+                var regex = _base._penumbra.ResourceLoader.LogFileFilter?.ToString() ?? string.Empty;
                 var tmp   = regex;
                 if( ImGui.InputTextWithHint( "##LogFilter", "Matching this Regex...", ref tmp, 64 ) && tmp != regex )
                 {
                     try
                     {
                         var newRegex = tmp.Length > 0 ? new Regex( tmp, RegexOptions.Compiled ) : null;
-                        _base._plugin.ResourceLoader.LogFileFilter = newRegex;
+                        _base._penumbra.ResourceLoader.LogFileFilter = newRegex;
                     }
                     catch( Exception e )
                     {
@@ -191,11 +191,11 @@ namespace Penumbra.UI
                 {
                     if( http )
                     {
-                        _base._plugin.CreateWebServer();
+                        _base._penumbra.CreateWebServer();
                     }
                     else
                     {
-                        _base._plugin.ShutdownWebServer();
+                        _base._penumbra.ShutdownWebServer();
                     }
 
                     _config.EnableHttpApi = http;
@@ -205,12 +205,12 @@ namespace Penumbra.UI
 
             private void DrawEnabledPlayerWatcher()
             {
-                var enabled = _config.EnableActorWatch;
+                var enabled = _config.EnablePlayerWatch;
                 if( ImGui.Checkbox( LabelEnabledPlayerWatch, ref enabled ) )
                 {
-                    _config.EnableActorWatch = enabled;
+                    _config.EnablePlayerWatch = enabled;
                     _configChanged           = true;
-                    _base._plugin.PlayerWatcher.SetStatus( enabled );
+                    Penumbra.PlayerWatcher.SetStatus( enabled );
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -220,7 +220,7 @@ namespace Penumbra.UI
                       + "Penumbra will try to automatically redraw those characters using their collection when they first appear in an instance, or when they change their current equip." );
                 }
 
-                if( _config.EnableActorWatch && _config.ShowAdvanced )
+                if( _config.EnablePlayerWatch && _config.ShowAdvanced )
                 {
                     var waitFrames = _config.WaitFrames;
                     ImGui.SameLine();
@@ -230,9 +230,9 @@ namespace Penumbra.UI
                      && waitFrames > 0
                      && waitFrames < 3000 )
                     {
-                        _base._plugin.ActorRefresher.DefaultWaitFrames = waitFrames;
-                        _config.WaitFrames                             = waitFrames;
-                        _configChanged                                 = true;
+                        _base._penumbra.ObjectReloader.DefaultWaitFrames = waitFrames;
+                        _config.WaitFrames                               = waitFrames;
+                        _configChanged                                   = true;
                     }
 
                     if( ImGui.IsItemHovered() )

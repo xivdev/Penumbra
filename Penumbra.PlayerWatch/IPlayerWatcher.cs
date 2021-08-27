@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Game.ClientState.Actors.Types;
+using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Structs;
 
 namespace Penumbra.PlayerWatch
 {
-    public delegate void ActorChange( Actor actor );
+    public delegate void PlayerChange( Character actor );
 
     public interface IPlayerWatcherBase : IDisposable
     {
@@ -15,7 +15,7 @@ namespace Penumbra.PlayerWatch
 
     public interface IPlayerWatcher : IPlayerWatcherBase
     {
-        public event ActorChange? ActorChanged;
+        public event PlayerChange? PlayerChanged;
         public bool Active { get; }
 
         public void Enable();
@@ -24,8 +24,8 @@ namespace Penumbra.PlayerWatch
 
         public void           AddPlayerToWatch( string playerName );
         public void           RemovePlayerFromWatch( string playerName );
-        public ActorEquipment UpdateActorWithoutEvent( Actor actor );
+        public CharacterEquipment UpdatePlayerWithoutEvent( Character actor );
 
-        public IEnumerable< (string, ActorEquipment) > WatchedPlayers();
+        public IEnumerable< (string, CharacterEquipment) > WatchedPlayers();
     }
 }

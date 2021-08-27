@@ -160,7 +160,7 @@ namespace Penumbra.Meta.Files
         private void WriteBlocks( BinaryWriter bw )
         {
             foreach( var entry in Blocks.Where( block => block != null )
-               .SelectMany( block => block ) )
+               .SelectMany( block => block! ) )
             {
                 bw.Write( ( ushort )entry );
             }

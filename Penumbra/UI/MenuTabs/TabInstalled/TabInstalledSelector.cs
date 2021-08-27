@@ -1,11 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Dalamud.Interface;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Importer;
 using Penumbra.Mod;
@@ -155,7 +154,7 @@ namespace Penumbra.UI
                 {
                     try
                     {
-                        var newDir = TexToolsImport.CreateModFolder( new DirectoryInfo( _base._plugin.Configuration!.ModDirectory ),
+                        var newDir = TexToolsImport.CreateModFolder( new DirectoryInfo( Penumbra.Config!.ModDirectory ),
                             newName );
                         var modMeta = new ModMeta
                         {
@@ -377,7 +376,7 @@ namespace Penumbra.UI
                     var folderName = Marshal.PtrToStringUni( payload.Data );
                     if( ModFileSystem.Find( folderName!, out var droppedFolder )
                      && !ReferenceEquals( droppedFolder, folder )
-                     && !folder.FullName.StartsWith( folderName, StringComparison.InvariantCultureIgnoreCase ) )
+                     && !folder.FullName.StartsWith( folderName!, StringComparison.InvariantCultureIgnoreCase ) )
                     {
                         droppedFolder.Move( folder );
                     }
@@ -541,7 +540,7 @@ namespace Penumbra.UI
                         collection == _modManager.Collections.ActiveCollection );
                 }
 
-                collection.Save( _base._plugin.PluginInterface );
+                collection.Save();
             }
 
             private void DrawRenameFolderInput( ModFolder folder )
@@ -657,7 +656,7 @@ namespace Penumbra.UI
                 {
                     if( item is ModFolder sub )
                     {
-                        var (visible, enabled) = Cache.GetFolder( sub );
+                        var (visible, _) = Cache.GetFolder( sub );
                         if( visible )
                         {
                             DrawModFolder( sub, ref idx );
@@ -757,7 +756,7 @@ namespace Penumbra.UI
 
                 try
                 {
-                    _selectorScalingFactor = _base._plugin.Configuration.ScaleModSelector
+                    _selectorScalingFactor = Penumbra.Config.ScaleModSelector
                         ? ImGui.GetWindowWidth() / SettingsMenu.MinSettingsSize.X
                         : 1f;
                     // Selector pane

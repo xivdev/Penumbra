@@ -5,7 +5,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Penumbra.GameData.Util;
 using Penumbra.Structs;
 using Penumbra.Util;

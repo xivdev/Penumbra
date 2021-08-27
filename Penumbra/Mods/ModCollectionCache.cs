@@ -120,8 +120,8 @@ namespace Penumbra.Mods
 
         private class PriorityComparer : IComparer< Mod.Mod >
         {
-            public int Compare( Mod.Mod x, Mod.Mod y )
-                => x.Settings.Priority.CompareTo( y.Settings.Priority );
+            public int Compare( Mod.Mod? x, Mod.Mod? y )
+                => (x?.Settings.Priority ?? 0).CompareTo( y?.Settings.Priority ?? 0 );
         }
 
         private static readonly PriorityComparer Comparer = new();

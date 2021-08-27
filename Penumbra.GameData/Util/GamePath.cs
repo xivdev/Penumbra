@@ -65,7 +65,7 @@ namespace Penumbra.GameData.Util
             return idx == -1 ? _path : idx == _path.Length - 1 ? "" : _path.Substring( idx + 1 );
         }
 
-        public int CompareTo( object rhs )
+        public int CompareTo( object? rhs )
         {
             return rhs switch
             {

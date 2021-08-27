@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
-using ImGuiScene;
+using Dalamud.Logging;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -14,7 +13,6 @@ namespace Penumbra.Mods
     // It also contains the CollectionManager that handles all collections.
     public class ModManager
     {
-        private readonly Plugin _plugin;
         public DirectoryInfo BasePath { get; private set; } = null!;
         public DirectoryInfo TempPath { get; private set; } = null!;
 
@@ -27,7 +25,7 @@ namespace Penumbra.Mods
         public bool TempWritable { get; private set; }
 
         public Configuration Config
-            => _plugin.Configuration;
+            => Penumbra.Config;
 
         public void DiscoverMods( string newDir )
         {
@@ -167,12 +165,11 @@ namespace Penumbra.Mods
         public void SetTempDirectory( string newPath )
             => SetTempDirectory( newPath, false );
 
-        public ModManager( Plugin plugin )
+        public ModManager()
         {
-            _plugin = plugin;
             SetBaseDirectory( Config.ModDirectory, true );
             SetTempDirectory( Config.TempDirectory, true );
-            Collections = new CollectionManager( plugin, this );
+            Collections = new CollectionManager( this );
         }
 
         private bool SetSortOrderPath( ModData mod, string path )
@@ -194,7 +191,7 @@ namespace Penumbra.Mods
             return false;
         }
 
-        private void SetModStructure(bool removeOldPaths = false )
+        private void SetModStructure( bool removeOldPaths = false )
         {
             var changes = false;
 
@@ -204,7 +201,7 @@ namespace Penumbra.Mods
                 {
                     changes |= SetSortOrderPath( mod, kvp.Value );
                 }
-                else if (removeOldPaths)
+                else if( removeOldPaths )
                 {
                     changes = true;
                     Config.ModSortOrder.Remove( kvp.Key );

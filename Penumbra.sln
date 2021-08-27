@@ -12,8 +12,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.GameData", "Penumbra.GameData\Penumbra.GameData.csproj", "{EE551E87-FDB3-4612-B500-DC870C07C605}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.Api", "Penumbra.API\Penumbra.Api.csproj", "{EE8C148E-BF59-43FB-89FC-4CADC9047FDF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.PlayerWatch", "Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj", "{01685BD8-8847-4B49-BF90-1683B4C76B0E}"
 EndProject
 Global
@@ -30,10 +28,6 @@ Global
 		{EE551E87-FDB3-4612-B500-DC870C07C605}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EE551E87-FDB3-4612-B500-DC870C07C605}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EE551E87-FDB3-4612-B500-DC870C07C605}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EE8C148E-BF59-43FB-89FC-4CADC9047FDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EE8C148E-BF59-43FB-89FC-4CADC9047FDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EE8C148E-BF59-43FB-89FC-4CADC9047FDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EE8C148E-BF59-43FB-89FC-4CADC9047FDF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{01685BD8-8847-4B49-BF90-1683B4C76B0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{01685BD8-8847-4B49-BF90-1683B4C76B0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01685BD8-8847-4B49-BF90-1683B4C76B0E}.Release|Any CPU.ActiveCfg = Release|Any CPU

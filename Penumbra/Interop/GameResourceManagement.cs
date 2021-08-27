@@ -1,8 +1,9 @@
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using Penumbra.Structs;
-using Reloaded.Hooks.Definitions.X64;
 
 namespace Penumbra.Interop
 {
@@ -10,16 +11,16 @@ namespace Penumbra.Interop
     {
         private const int NumResources = 85;
 
-        [Function( CallingConventions.Microsoft )]
+        [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
         public unsafe delegate void* LoadPlayerResourcesPrototype( IntPtr pResourceManager );
 
-        [Function( CallingConventions.Microsoft )]
+        [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
         public unsafe delegate void* UnloadPlayerResourcesPrototype( IntPtr pResourceManager );
 
-        [Function( CallingConventions.Microsoft )]
+        [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
         public unsafe delegate void* LoadCharacterResourcesPrototype( CharacterResourceManager* pCharacterResourceManager );
 
-        [Function( CallingConventions.Microsoft )]
+        [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
         public unsafe delegate void* UnloadCharacterResourcePrototype( IntPtr resource );
 
 
@@ -39,21 +40,19 @@ namespace Penumbra.Interop
         public unsafe CharacterResourceManager* CharacterResourceManagerPtr
             => ( CharacterResourceManager* )Marshal.ReadIntPtr( _characterResourceManagerAddress ).ToPointer();
 
-        public GameResourceManagement( DalamudPluginInterface pluginInterface )
+        public GameResourceManagement( )
         {
-            var scanner = pluginInterface.TargetModuleScanner;
-
             var loadPlayerResourcesAddress =
-                scanner.ScanText(
+                Dalamud.SigScanner.ScanText(
                     "E8 ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? BA ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? 48 8B 48 30 48 8B 01 FF 50 10 48 85 C0 74 0A " );
             var unloadPlayerResourcesAddress =
-                scanner.ScanText( "41 55 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B E9 48 83 C1 08" );
-            var loadCharacterResourcesAddress  = scanner.ScanText( "E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2" );
-            var unloadCharacterResourceAddress = scanner.ScanText( "E8 ?? ?? ?? FF 4C 89 37 48 83 C7 08 48 83 ED 01 75 ?? 48 8B CB" );
+                Dalamud.SigScanner.ScanText( "41 55 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 4C 8B E9 48 83 C1 08" );
+            var loadCharacterResourcesAddress  = Dalamud.SigScanner.ScanText( "E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2" );
+            var unloadCharacterResourceAddress = Dalamud.SigScanner.ScanText( "E8 ?? ?? ?? FF 4C 89 37 48 83 C7 08 48 83 ED 01 75 ?? 48 8B CB" );
 
-            _playerResourceManagerAddress = scanner.GetStaticAddressFromSig( "0F 44 FE 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 05" );
+            _playerResourceManagerAddress = Dalamud.SigScanner.GetStaticAddressFromSig( "0F 44 FE 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 05" );
             _characterResourceManagerAddress =
-                scanner.GetStaticAddressFromSig( "48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2" );
+                Dalamud.SigScanner.GetStaticAddressFromSig( "48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2" );
 
             LoadPlayerResources    = Marshal.GetDelegateForFunctionPointer< LoadPlayerResourcesPrototype >( loadPlayerResourcesAddress );
             UnloadPlayerResources  = Marshal.GetDelegateForFunctionPointer< UnloadPlayerResourcesPrototype >( unloadPlayerResourcesAddress );

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Lumina.Data.Files;
 using Penumbra.GameData.Util;
 using Penumbra.Interop;
@@ -57,7 +57,7 @@ namespace Penumbra.Meta
             => _currentManipulations.Count;
 
         public bool TryGetValue( MetaManipulation manip, out Mod.Mod mod )
-            => _currentManipulations.TryGetValue( manip, out mod );
+            => _currentManipulations.TryGetValue( manip, out mod! );
 
         private static void DisposeFile( FileInfo? file )
         {

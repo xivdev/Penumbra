@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Newtonsoft.Json;
 using Penumbra.GameData.Util;
 using Penumbra.Structs;

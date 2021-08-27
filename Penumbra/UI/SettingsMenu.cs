@@ -50,12 +50,13 @@ namespace Penumbra.UI
 
                 ImGui.SetNextWindowSizeConstraints( MinSettingsSize, MaxSettingsSize );
 #if DEBUG
-                var ret = ImGui.Begin( _base._plugin.PluginDebugTitleStr, ref Visible );
+                var ret = ImGui.Begin( _base._penumbra.PluginDebugTitleStr, ref Visible );
 #else
                 var ret = ImGui.Begin( _base._plugin.Name, ref Visible );
 #endif
                 if( !ret )
                 {
+                    ImGui.End();
                     return;
                 }
 
@@ -70,7 +71,7 @@ namespace Penumbra.UI
                     _browserTab.Draw();
                     InstalledTab.Draw();
 
-                    if( _base._plugin!.Configuration!.ShowAdvanced )
+                    if( Penumbra.Config.ShowAdvanced )
                     {
                         _effectiveTab.Draw();
                     }
