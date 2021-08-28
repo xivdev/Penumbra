@@ -6,7 +6,9 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Plugin;
 using ImGuiNET;
+using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Interop;
@@ -288,6 +290,37 @@ namespace Penumbra.UI
             ImGui.EndTable();
         }
 
+        private void DrawDebugTabIpc()
+        {
+
+            if( !ImGui.CollapsingHeader( "IPC##Debug" ) )
+            {
+                return;
+            }
+
+            var ipc = _penumbra.Ipc;
+            ImGui.Text($"API Version: {ipc.Api.ApiVersion}"  );
+            ImGui.Text("Available subscriptions:"  );
+            ImGui.Indent();
+            if (ipc.ProviderApiVersion != null)
+                ImGui.Text( PenumbraIpc.LabelProviderApiVersion );
+            if( ipc.ProviderRedrawName != null )
+                ImGui.Text( PenumbraIpc.LabelProviderRedrawName );
+            if( ipc.ProviderRedrawObject != null )
+                ImGui.Text( PenumbraIpc.LabelProviderRedrawObject );
+            if( ipc.ProviderRedrawAll != null )
+                ImGui.Text( PenumbraIpc.LabelProviderRedrawAll );
+            if( ipc.ProviderResolveDefault != null )
+                ImGui.Text( PenumbraIpc.LabelProviderResolveDefault );
+            if( ipc.ProviderResolveCharacter != null )
+                ImGui.Text( PenumbraIpc.LabelProviderResolveCharacter );
+            if( ipc.ProviderChangedItemTooltip != null )
+                ImGui.Text( PenumbraIpc.LabelProviderChangedItemTooltip );
+            if( ipc.ProviderChangedItemClick != null )
+                ImGui.Text( PenumbraIpc.LabelProviderChangedItemClick );
+            ImGui.Unindent();
+        }
+
         private void DrawDebugTab()
         {
             if( !ImGui.BeginTabItem( "Debug Tab" ) )
@@ -302,6 +335,8 @@ namespace Penumbra.UI
             DrawDebugTabPlayers();
             ImGui.NewLine();
             DrawDebugTabTempFiles();
+            ImGui.NewLine();
+            DrawDebugTabIpc();
             ImGui.NewLine();
 
             ImGui.EndTabItem();
