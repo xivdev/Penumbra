@@ -27,7 +27,7 @@ namespace Penumbra.Api
         internal ICallGateProvider< object?, object >?         ProviderChangedItemTooltip;
         internal ICallGateProvider< int, object?, object >?    ProviderChangedItemClick;
 
-        internal readonly IPenumbraApi _api;
+        internal readonly IPenumbraApi Api;
 
         private static RedrawType CheckRedrawType( int value )
         {
@@ -46,7 +46,7 @@ namespace Penumbra.Api
 
         public PenumbraIpc( DalamudPluginInterface pi, IPenumbraApi api )
         {
-            _api = api;
+            Api = api;
 
             try
             {
