@@ -126,14 +126,14 @@ namespace Penumbra.Mods
 
         private static readonly PriorityComparer Comparer = new();
 
-        public void AddMod( ModSettings settings, ModData data )
+        public void AddMod( ModSettings settings, ModData data, bool updateFileList = true )
         {
             if( !AvailableMods.TryGetValue( data.BasePath.Name, out var existingMod ) )
             {
                 var newMod = new Mod.Mod( settings, data );
                 AvailableMods[ data.BasePath.Name ] = newMod;
 
-                if( settings.Enabled )
+                if( updateFileList && settings.Enabled )
                 {
                     CalculateEffectiveFileList();
                     if( data.Resources.MetaManipulations.Count > 0 )

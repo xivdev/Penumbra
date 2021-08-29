@@ -74,14 +74,14 @@ namespace Penumbra.Mods
             {
                 if( Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
                 {
-                    Cache.AddMod( settings, mod );
+                    Cache.AddMod( settings, mod, false );
                 }
                 else
                 {
                     changedSettings = true;
                     var newSettings = ModSettings.DefaultSettings( mod.Meta );
                     Settings.Add( mod.BasePath.Name, newSettings );
-                    Cache.AddMod( newSettings, mod );
+                    Cache.AddMod( newSettings, mod, false );
                 }
             }
 
