@@ -13,6 +13,7 @@ namespace Penumbra.GameData
 {
     internal class ObjectIdentification : IObjectIdentifier
     {
+        public static    DataManager?                            DataManager = null!;
         private readonly List< (ulong, HashSet< Item >) >        _weapons;
         private readonly List< (ulong, HashSet< Item >) >        _equipment;
         private readonly Dictionary< string, HashSet< Action > > _actions;
@@ -66,6 +67,7 @@ namespace Penumbra.GameData
 
         public ObjectIdentification( DataManager dataManager, ClientLanguage clientLanguage )
         {
+            DataManager = dataManager;
             var                                  items     = dataManager.GetExcelSheet< Item >( clientLanguage )!;
             SortedList< ulong, HashSet< Item > > weapons   = new();
             SortedList< ulong, HashSet< Item > > equipment = new();

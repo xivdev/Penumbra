@@ -2,6 +2,7 @@ using System;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Ipc;
 using Penumbra.GameData.Enums;
 
 namespace Penumbra.Api
@@ -18,14 +19,14 @@ namespace Penumbra.Api
         public const string LabelProviderChangedItemTooltip = "Penumbra.ChangedItemTooltip";
         public const string LabelProviderChangedItemClick   = "Penumbra.ChangedItemClick";
 
-        internal ICallGateProvider< int >?                     ProviderApiVersion;
-        internal ICallGateProvider< string, int, object >?     ProviderRedrawName;
-        internal ICallGateProvider< GameObject, int, object >? ProviderRedrawObject;
-        internal ICallGateProvider< int, object >?             ProviderRedrawAll;
-        internal ICallGateProvider< string, string >?          ProviderResolveDefault;
-        internal ICallGateProvider< string, string, string >?  ProviderResolveCharacter;
-        internal ICallGateProvider< object?, object >?         ProviderChangedItemTooltip;
-        internal ICallGateProvider< int, object?, object >?    ProviderChangedItemClick;
+        internal ICallGateProvider< int >?                                        ProviderApiVersion;
+        internal ICallGateProvider< string, int, object >?                        ProviderRedrawName;
+        internal ICallGateProvider< GameObject, int, object >?                    ProviderRedrawObject;
+        internal ICallGateProvider< int, object >?                                ProviderRedrawAll;
+        internal ICallGateProvider< string, string >?                             ProviderResolveDefault;
+        internal ICallGateProvider< string, string, string >?                     ProviderResolveCharacter;
+        internal ICallGateProvider< ChangedItemType, uint, object >?              ProviderChangedItemTooltip;
+        internal ICallGateProvider< MouseButton, ChangedItemType, uint, object >? ProviderChangedItemClick;
 
         internal readonly IPenumbraApi Api;
 
@@ -41,7 +42,16 @@ namespace Penumbra.Api
         }
 
         private void OnClick( MouseButton click, object? item )
-            => ProviderChangedItemClick?.SendMessage( ( int )click, item );
+        {
+            var (type, id) = ChangedItemExtensions.ChangedItemToTypeAndId( item );
+            ProviderChangedItemClick?.SendMessage( click, type, id );
+        }
+
+        private void OnTooltip( object? item )
+        {
+            var (type, id) = ChangedItemExtensions.ChangedItemToTypeAndId( item );
+            ProviderChangedItemTooltip?.SendMessage( type, id );
+        }
 
 
         public PenumbraIpc( DalamudPluginInterface pi, IPenumbraApi api )
@@ -114,8 +124,8 @@ namespace Penumbra.Api
 
             try
             {
-                ProviderChangedItemTooltip =  pi.GetIpcProvider< object?, object >( LabelProviderChangedItemTooltip );
-                api.ChangedItemTooltip     += ProviderChangedItemTooltip.SendMessage;
+                ProviderChangedItemTooltip =  pi.GetIpcProvider< ChangedItemType, uint, object >( LabelProviderChangedItemTooltip );
+                api.ChangedItemTooltip     += OnTooltip;
             }
             catch( Exception e )
             {
@@ -124,7 +134,7 @@ namespace Penumbra.Api
 
             try
             {
-                ProviderChangedItemClick =  pi.GetIpcProvider< int, object?, object >( LabelProviderChangedItemClick );
+                ProviderChangedItemClick =  pi.GetIpcProvider< MouseButton, ChangedItemType, uint, object >( LabelProviderChangedItemClick );
                 api.ChangedItemClicked   += OnClick;
             }
             catch( Exception e )
