@@ -27,35 +27,30 @@
 	</PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="ILRepack" Version="2.0.18" GeneratePathProperty="true" />
         <Reference Include="Dalamud">
-            <HintPath>$(DALAMUD_ROOT)\Dalamud.dll</HintPath>
-            <HintPath>..\libs\Dalamud.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="ImGui.NET">
-            <HintPath>$(DALAMUD_ROOT)\ImGui.NET.dll</HintPath>
-            <HintPath>..\libs\ImGui.NET.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="ImGuiScene">
-            <HintPath>$(DALAMUD_ROOT)\ImGuiScene.dll</HintPath>
-            <HintPath>..\libs\ImGuiScene.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGuiScene.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Lumina">
-            <HintPath>$(DALAMUD_ROOT)\Lumina.dll</HintPath>
-            <HintPath>..\libs\Lumina.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Lumina.Excel">
-            <HintPath>$(DALAMUD_ROOT)\Lumina.Excel.dll</HintPath>
-            <HintPath>..\libs\Lumina.Excel.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
             <Private>False</Private>
+        </Reference>
+        <Reference Include="FFXIVClientStructs">
+            <HintPath>..\FFXIVClientStructs.dll</HintPath>
+            <Private>true</Private>
         </Reference>
     </ItemGroup>
 
@@ -66,6 +61,14 @@
         <Reference Include="System.Net.Http" />
     </ItemGroup>
 
+    <Target Name="ILRepack" AfterTargets="Build">
+        <ItemGroup>
+            <InputAssemblies Include="$(TargetPath)"/>
+            <InputAssemblies Include="$(TargetDir)Penumbra.dll $(TargetDir)FFXIVClientStructs.dll" Exclude="$(TargetPath)"/>
+        </ItemGroup>
+        <Exec Command="$(ILRepack) /lib:$(TargetDir) /lib:$(AppData)\XIVLauncher\addon\Hooks\dev /out:$(TargetDir)$(TargetFileName) @(InputAssemblies, ' ')"/>
+    </Target>
+
     <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.4.3" />
         <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
@@ -74,9 +77,9 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Penumbra.API\Penumbra.Api.csproj" />
-      <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
-      <ProjectReference Include="..\Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj" />
+        <ProjectReference Include="..\Penumbra.API\Penumbra.Api.csproj" />
+        <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
+        <ProjectReference Include="..\Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj" />
     </ItemGroup>
 
     <ItemGroup>

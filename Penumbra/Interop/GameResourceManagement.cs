@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Dalamud.Plugin;
 using Penumbra.Structs;
 using Reloaded.Hooks.Definitions.X64;
+using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
 namespace Penumbra.Interop
 {
@@ -86,9 +87,11 @@ namespace Penumbra.Interop
 
             for( var i = 0; i < NumResources; i++ )
             {
+                var handle = ( ResourceHandle* )oldResources[ i ];
                 if( oldResources[ i ].ToPointer() == pResources[ i ] )
                 {
                     PluginLog.Debug( $"Unchanged resource: {ResourceToPath( ( byte* )oldResources[ i ].ToPointer() )}" );
+                    ( ( ResourceHandle* )oldResources[ i ] )->DecRef();
                     continue;
                 }
 
@@ -97,6 +100,13 @@ namespace Penumbra.Interop
                   + $"{ResourceToPath( ( byte* )pResources[ i ] )}" );
 
                 UnloadCharacterResource( oldResources[ i ] );
+                // Temporary fix against crashes?
+                if( handle->RefCount <= 0 )
+                {
+                    handle->RefCount = 1;
+                    handle->IncRef();
+                    handle->RefCount = 1;
+                }
             }
         }
     }

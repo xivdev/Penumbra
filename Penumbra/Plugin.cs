@@ -48,6 +48,7 @@ namespace Penumbra
 
         public void Initialize( DalamudPluginInterface pluginInterface )
         {
+            FFXIVClientStructs.Resolver.Initialize();
             PluginInterface = pluginInterface;
             Service< DalamudPluginInterface >.Set( PluginInterface );
             GameData.GameData.GetIdentifier( PluginInterface );
