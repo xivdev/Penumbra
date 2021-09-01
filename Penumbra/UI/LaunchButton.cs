@@ -26,10 +26,10 @@ namespace Penumbra.UI
               | ImGuiWindowFlags.NoResize
               | ImGuiWindowFlags.NoSavedSettings;
 
-            private readonly SettingsInterface                  _base;
+            private readonly SettingsInterface _base;
 
             public ManageModsButton( SettingsInterface ui )
-                => _base      = ui;
+                => _base = ui;
 
             public void Draw()
             {
@@ -43,12 +43,8 @@ namespace Penumbra.UI
 
                 ImGui.SetNextWindowPos( ss - WindowPosOffset, ImGuiCond.Always );
 
-                if( !ImGui.Begin( MenuButtonsName, ButtonFlags ) )
-                {
-                    return;
-                }
-
-                if( ImGui.Button( MenuButtonLabel, WindowSize ) )
+                if( ImGui.Begin( MenuButtonsName, ButtonFlags )
+                 && ImGui.Button( MenuButtonLabel, WindowSize ) )
                 {
                     _base.FlipVisibility();
                 }

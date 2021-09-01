@@ -764,15 +764,16 @@ namespace Penumbra.UI
                     ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
                     ImGui.BeginGroup();
                     // Inlay selector list
-                    ImGui.BeginChild( LabelSelectorList,
+                    if( ImGui.BeginChild( LabelSelectorList,
                         new Vector2( SelectorPanelWidth * _selectorScalingFactor, -ImGui.GetFrameHeightWithSpacing() ),
-                        true, ImGuiWindowFlags.HorizontalScrollbar );
+                        true, ImGuiWindowFlags.HorizontalScrollbar ) )
+                    {
+                        ImGui.PushStyleVar( ImGuiStyleVar.IndentSpacing, 12.5f );
 
-                    ImGui.PushStyleVar( ImGuiStyleVar.IndentSpacing, 12.5f );
-
-                    var modIndex = 0;
-                    DrawFolderContent( _modManager.StructuredMods, ref modIndex );
-                    ImGui.PopStyleVar();
+                        var modIndex = 0;
+                        DrawFolderContent( _modManager.StructuredMods, ref modIndex );
+                        ImGui.PopStyleVar();
+                    }
 
                     ImGui.EndChild();
 

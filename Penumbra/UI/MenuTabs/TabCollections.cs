@@ -254,6 +254,7 @@ namespace Penumbra.UI
             {
                 if( !ImGui.BeginChild( "##CollectionChild", AutoFillSize, true ) )
                 {
+                    ImGui.EndChild();
                     return;
                 }
 
@@ -285,7 +286,6 @@ namespace Penumbra.UI
                 }
 
                 DrawNewCharacterCollection();
-
                 ImGui.EndChild();
             }
 
@@ -296,20 +296,17 @@ namespace Penumbra.UI
                     return;
                 }
 
-                if( !ImGui.BeginChild( "##CollectionHandling", new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 6 ), true ) )
+                if( ImGui.BeginChild( "##CollectionHandling", new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 6 ), true ) )
                 {
-                    ImGui.EndTabItem();
-                    return;
+                    DrawCurrentCollectionSelector( true );
+
+                    ImGui.Dummy( new Vector2( 0, 10 ) );
+                    DrawNewCollectionInput();
                 }
 
-                DrawCurrentCollectionSelector( true );
-
-                ImGui.Dummy( new Vector2( 0, 10 ) );
-                DrawNewCollectionInput();
                 ImGui.EndChild();
 
                 DrawCharacterCollectionSelectors();
-
 
                 ImGui.EndTabItem();
             }

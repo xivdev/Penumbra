@@ -504,12 +504,8 @@ namespace Penumbra.UI
                 try
                 {
                     var ret = ImGui.BeginChild( LabelModPanel, AutoFillSize, true );
-                    if( !ret )
-                    {
-                        return;
-                    }
 
-                    if( Mod == null )
+                    if( !ret || Mod == null )
                     {
                         ImGui.EndChild();
                         return;
