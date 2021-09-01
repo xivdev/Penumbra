@@ -61,13 +61,13 @@ namespace Penumbra.Interop
             if( _currentObjectName != null && _mods.Collections.CharacterCollection.TryGetValue( _currentObjectName, out var collection ) )
             {
                 _changedSettings                   = true;
-                _mods.Collections.ActiveCollection = collection;
+                _mods.Collections.SetActiveCollection( collection, _currentObjectName );
             }
         }
 
         private void RestoreSettings()
         {
-            _mods.Collections.ActiveCollection = _mods.Collections.DefaultCollection;
+            _mods.Collections.ResetActiveCollection();
             _changedSettings                   = false;
         }
 

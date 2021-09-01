@@ -14,6 +14,7 @@ namespace Penumbra.Mods
     {
         private readonly ModManager _manager;
 
+        public string CollectionChangedTo { get; private set; }= string.Empty;
         public Dictionary< string, ModCollection > Collections { get; } = new();
 
         public ModCollection CurrentCollection { get; private set; } = null!;
@@ -21,7 +22,7 @@ namespace Penumbra.Mods
         public ModCollection ForcedCollection { get; private set; } = ModCollection.Empty;
         public Dictionary< string, ModCollection > CharacterCollection { get; } = new();
 
-        public ModCollection ActiveCollection { get; set; }
+        public ModCollection ActiveCollection { get; private set; }
 
         public CollectionManager( ModManager manager )
         {
@@ -31,6 +32,27 @@ namespace Penumbra.Mods
             LoadConfigCollections( Penumbra.Config );
             ActiveCollection = DefaultCollection;
         }
+
+        public bool SetActiveCollection( ModCollection newActive, string name )
+        {
+            CollectionChangedTo = name;
+            if( newActive == ActiveCollection )
+            {
+                return false;
+            }
+
+            if( ActiveCollection.Cache?.MetaManipulations.Count > 0 || newActive.Cache?.MetaManipulations.Count > 0 )
+            {
+                var resourceManager = Service<ResidentResources>.Get();
+                resourceManager.ReloadPlayerResources();
+            }
+
+            ActiveCollection    = newActive;
+            return true;
+        }
+
+        public bool ResetActiveCollection()
+            => SetActiveCollection( DefaultCollection, string.Empty );
 
         public void RecreateCaches()
         {
@@ -183,7 +205,7 @@ namespace Penumbra.Mods
         public void SetDefaultCollection( ModCollection newCollection )
             => SetCollection( newCollection, DefaultCollection, c =>
             {
-                if( ActiveCollection == DefaultCollection )
+                if( !CollectionChangedTo.Any() )
                 {
                     ActiveCollection = c;
                     var resourceManager = Service< ResidentResources >.Get();
@@ -204,8 +226,7 @@ namespace Penumbra.Mods
                 CharacterCollection.TryGetValue( characterName, out var oldCollection ) ? oldCollection : ModCollection.Empty,
                 c =>
                 {
-                    if( CharacterCollection.TryGetValue( characterName, out var collection )
-                     && ActiveCollection == collection )
+                    if( CollectionChangedTo == characterName && CharacterCollection.TryGetValue( characterName, out var collection ) )
                     {
                         ActiveCollection = c;
                         var resourceManager = Service< ResidentResources >.Get();
