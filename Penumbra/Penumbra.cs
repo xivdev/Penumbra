@@ -28,7 +28,7 @@ namespace Penumbra
 
         public ResourceLoader ResourceLoader { get; }
         public SettingsInterface SettingsInterface { get; }
-        public MusicManager SoundShit { get; }
+        public MusicManager MusicManager { get; }
         public ObjectReloader ObjectReloader { get; }
 
         public PenumbraApi Api { get; }
@@ -43,8 +43,8 @@ namespace Penumbra
             GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
             Config = Configuration.Load();
 
-            SoundShit = new MusicManager();
-            SoundShit.DisableStreaming();
+            MusicManager = new MusicManager();
+            MusicManager.DisableStreaming();
 
             var gameUtils = Service< GameResourceManagement >.Set();
             PlayerWatcher = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
