@@ -91,7 +91,7 @@ namespace Penumbra.UI
                 return;
             }
 
-            var resourceHandler = *( ResourceManager** )( _plugin.PluginInterface.TargetModuleScanner.Module.BaseAddress + 0x1D93AC0 );
+            var resourceHandler = *( ResourceManager** )( Dalamud.SigScanner.Module.BaseAddress + 0x1D93AC0 );
 
             if( resourceHandler == null )
             {

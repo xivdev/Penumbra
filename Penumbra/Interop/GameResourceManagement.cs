@@ -1,10 +1,7 @@
 using System;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Logging;
-using Dalamud.Plugin;
 using Penumbra.Structs;
-using Reloaded.Hooks.Definitions.X64;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
 namespace Penumbra.Interop
