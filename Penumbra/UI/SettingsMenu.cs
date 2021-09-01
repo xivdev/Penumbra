@@ -80,6 +80,7 @@ namespace Penumbra.UI
                 if( DebugTabVisible )
                 {
                     _base.DrawDebugTab();
+                    _base.DrawResourceManagerTab();
                 }
 
                 ImGui.EndTabBar();
