@@ -140,7 +140,7 @@ namespace Penumbra.Mods
                 Cache.UpdateMetaManipulations();
                 if( activeCollection )
                 {
-                    Service< GameResourceManagement >.Get().ReloadPlayerResources();
+                    Service< ResidentResources >.Get().ReloadPlayerResources();
                 }
             }
         }

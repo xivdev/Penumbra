@@ -1,9 +1,8 @@
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using ImGuiNET;
-using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
-using ResourceManager = FFXIVClientStructs.FFXIV.Client.System.Resource.ResourceManager;
 
 namespace Penumbra.UI
 {

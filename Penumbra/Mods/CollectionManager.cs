@@ -78,7 +78,7 @@ namespace Penumbra.Mods
 
             if( reloadMeta && ActiveCollection.Settings.TryGetValue( mod.BasePath.Name, out var config ) && config.Enabled )
             {
-                Service< GameResourceManagement >.Get().ReloadPlayerResources();
+                Service< ResidentResources >.Get().ReloadPlayerResources();
             }
         }
 
@@ -186,7 +186,7 @@ namespace Penumbra.Mods
                 if( ActiveCollection == DefaultCollection )
                 {
                     ActiveCollection = c;
-                    var resourceManager = Service< GameResourceManagement >.Get();
+                    var resourceManager = Service< ResidentResources >.Get();
                     resourceManager.ReloadPlayerResources();
                 }
 
@@ -208,7 +208,7 @@ namespace Penumbra.Mods
                      && ActiveCollection == collection )
                     {
                         ActiveCollection = c;
-                        var resourceManager = Service< GameResourceManagement >.Get();
+                        var resourceManager = Service< ResidentResources >.Get();
                         resourceManager.ReloadPlayerResources();
                     }
 

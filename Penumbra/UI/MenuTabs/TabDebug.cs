@@ -6,7 +6,6 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Plugin;
 using ImGuiNET;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;

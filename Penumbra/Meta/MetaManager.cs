@@ -44,7 +44,7 @@ namespace Penumbra.Meta
 
         private readonly MetaDefaults                     _default;
         private readonly DirectoryInfo                    _dir;
-        private readonly GameResourceManagement           _resourceManagement;
+        private readonly ResidentResources           _resourceManagement;
         private readonly Dictionary< GamePath, FileInfo > _resolvedFiles;
 
         private readonly Dictionary< MetaManipulation, Mod.Mod > _currentManipulations = new();
@@ -120,7 +120,7 @@ namespace Penumbra.Meta
         {
             _resolvedFiles      = resolvedFiles;
             _default            = Service< MetaDefaults >.Get();
-            _resourceManagement = Service< GameResourceManagement >.Get();
+            _resourceManagement = Service< ResidentResources >.Get();
             _dir                = new DirectoryInfo( Path.Combine( tempDir.FullName, name.ReplaceBadXivSymbols() ) );
             ClearDirectory();
         }

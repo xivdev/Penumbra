@@ -248,7 +248,7 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( LabelReloadResource ) )
                 {
-                    Service< GameResourceManagement >.Get().ReloadPlayerResources();
+                    Service< ResidentResources >.Get().ReloadPlayerResources();
                 }
             }
 

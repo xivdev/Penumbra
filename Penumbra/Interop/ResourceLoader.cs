@@ -53,22 +53,26 @@ namespace Penumbra.Interop
         public ResourceLoader( Penumbra penumbra )
         {
             Penumbra = penumbra;
-            Crc32  = new Crc32();
+            Crc32    = new Crc32();
         }
 
         public unsafe void Init()
         {
             var readFileAddress =
                 Dalamud.SigScanner.ScanText( "E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3 BA 05" );
+            GeneralUtil.PrintDebugAddress( "ReadFile", readFileAddress );
 
             var readSqpackAddress =
                 Dalamud.SigScanner.ScanText( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3" );
+            GeneralUtil.PrintDebugAddress( "ReadSqPack", readSqpackAddress );
 
             var getResourceSyncAddress =
                 Dalamud.SigScanner.ScanText( "E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00" );
+            GeneralUtil.PrintDebugAddress( "GetResourceSync", getResourceSyncAddress );
 
             var getResourceAsyncAddress =
                 Dalamud.SigScanner.ScanText( "E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00" );
+            GeneralUtil.PrintDebugAddress( "GetResourceAsync", getResourceAsyncAddress );
 
 
             ReadSqpackHook       = new Hook< ReadSqpackPrototype >( readSqpackAddress, ReadSqpackHandler );
@@ -193,6 +197,7 @@ namespace Penumbra.Interop
         {
             if( ReadFile == null || pFileDesc == null || pFileDesc->ResourceHandle == null )
             {
+                PluginLog.Error( "THIS SHOULD NOT HAPPEN" );
                 return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
             }
 

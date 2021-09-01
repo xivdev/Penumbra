@@ -46,7 +46,7 @@ namespace Penumbra
             MusicManager = new MusicManager();
             MusicManager.DisableStreaming();
 
-            var gameUtils = Service< GameResourceManagement >.Set();
+            var gameUtils = Service< ResidentResources >.Set();
             PlayerWatcher = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
             Service< MetaDefaults >.Set();
             var modManager = Service< ModManager >.Set();
