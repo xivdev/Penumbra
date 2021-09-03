@@ -480,6 +480,22 @@ namespace Penumbra.UI
                 }
             }
 
+            private void DrawSplitButton()
+            {
+                if( ImGui.Button( "Split Mod" ) )
+                {
+                    ModCleanup.SplitMod( Mod!.Data );
+                }
+
+                if( ImGui.IsItemHovered() )
+                {
+                    ImGui.SetTooltip(
+                        "Split off all options of a mod into single mods that are placed in a collective folder.\n"
+                      + "Does not remove or change the mod itself, just create (potentially inefficient) copies.\n"
+                      + "Experimental - Use at own risk!" );
+                }
+            }
+
             private void DrawEditLine()
             {
                 DrawOpenModFolderButton();
@@ -495,6 +511,8 @@ namespace Penumbra.UI
                 DrawDeduplicateButton();
                 ImGui.SameLine();
                 DrawNormalizeButton();
+                ImGui.SameLine();
+                DrawSplitButton();
 
                 DrawSortOrder( Mod!.Data, _modManager, _selector );
             }
