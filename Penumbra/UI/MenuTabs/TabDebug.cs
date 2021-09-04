@@ -171,7 +171,7 @@ namespace Penumbra.UI
                .GetField( "_changedSettings", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( _penumbra.ObjectReloader );
 
-            var currentObjectId = ( int? )_penumbra.ObjectReloader.GetType()
+            var currentObjectId = ( uint? )_penumbra.ObjectReloader.GetType()
                .GetField( "_currentObjectId", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( _penumbra.ObjectReloader );
 

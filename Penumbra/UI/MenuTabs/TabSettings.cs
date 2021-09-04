@@ -115,6 +115,7 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged    = true;
+                    Service<ResidentResources>.Get().ReloadPlayerResources();
                     _base._penumbra.ObjectReloader.RedrawAll( enabled ? RedrawType.WithSettings : RedrawType.WithoutSettings );
                     if( _config.EnablePlayerWatch )
                     {

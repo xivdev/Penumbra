@@ -111,12 +111,17 @@ namespace Penumbra.Interop
                   + $"{ResourceToPath( ( byte* )pResources[ i ] )}" );
 
                 UnloadCharacterResource( oldResources[ i ] );
-                // Temporary fix against crashes?
+
+                // Easiest way to actually remove a file from the resource manager.
+                // Not doing this keeps them in memory for some reason,
+                // and then corrupts the state when entering a loading screen that is not a teleport.
+                // This increases the references of all loaded files by one temporarily, but there is extra logic for 0-references,
+                // and they get loaded anew with GetResourceAsync, but this gets redirected and thus the modded resource reference is increased twice.
+                // Then it reduces the refcount of all reduces by 1 again, but this time for real, so the resource gets ref count -1, leading to problems.
                 if( handle->RefCount <= 0 )
                 {
                     handle->RefCount = 1;
-                    handle->IncRef();
-                    handle->RefCount = 1;
+                    handle->DecRef();
                 }
             }
         }
