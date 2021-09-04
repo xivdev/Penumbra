@@ -52,7 +52,7 @@ namespace Penumbra.UI
 #if DEBUG
                 var ret = ImGui.Begin( _base._penumbra.PluginDebugTitleStr, ref Visible );
 #else
-                var ret = ImGui.Begin( _base._plugin.Name, ref Visible );
+                var ret = ImGui.Begin( _base._penumbra.Name, ref Visible );
 #endif
                 if( !ret )
                 {
