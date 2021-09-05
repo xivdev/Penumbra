@@ -250,7 +250,7 @@ namespace Penumbra.UI
                 Mod!.Data.BasePath.Refresh();
                 if( ImGui.Button( ButtonOpenModFolder ) && Mod.Data.BasePath.Exists )
                 {
-                    Process.Start( Mod!.Data.BasePath.FullName );
+                    Process.Start( new ProcessStartInfo( Mod!.Data.BasePath.FullName ) { UseShellExecute = true } );
                 }
 
                 if( ImGui.IsItemHovered() )
@@ -412,7 +412,7 @@ namespace Penumbra.UI
                 if( ImGui.Button( ButtonEditJson ) )
                 {
                     _selector.SaveCurrentMod();
-                    Process.Start( Mod!.Data.MetaFile.FullName );
+                    Process.Start( new ProcessStartInfo( Mod!.Data.MetaFile.FullName ) { UseShellExecute = true } );
                 }
 
                 if( ImGui.IsItemHovered() )
