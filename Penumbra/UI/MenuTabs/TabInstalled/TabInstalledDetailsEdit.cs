@@ -6,6 +6,7 @@ using ImGuiNET;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
 using Penumbra.Structs;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -38,7 +39,7 @@ namespace Penumbra.UI
 
             private bool DrawEditGroupSelector()
             {
-                ImGui.SetNextItemWidth( OptionSelectionWidth );
+                ImGui.SetNextItemWidth( OptionSelectionWidth * ImGuiHelpers.GlobalScale );
                 if( Meta!.Groups.Count == 0 )
                 {
                     ImGui.Combo( LabelGroupSelect, ref _selectedGroupIndex, TextNoOptionAvailable, 1 );
@@ -87,7 +88,7 @@ namespace Penumbra.UI
                     }
 
                     ImGui.SetNextItemWidth( -1 );
-                    if( ImGui.BeginListBox( LabelFileListHeader, AutoFillSize - new Vector2( 0, 1.5f * ImGui.GetTextLineHeight() ) ) )
+                    if( ImGui.BeginListBox( LabelFileListHeader, AutoFillSize - Vector2.UnitY * 1.5f * ImGui.GetTextLineHeight() ) )
                     {
                         for( var i = 0; i < Mod!.Data.Resources.ModFiles.Count; ++i )
                         {
@@ -106,23 +107,27 @@ namespace Penumbra.UI
                 }
             }
 
-            private void DrawMultiSelectorEditBegin( OptionGroup group )
+            private ImGuiRaii.EndStack DrawMultiSelectorEditBegin( OptionGroup group )
             {
                 var groupName = group.GroupName;
-                if( Custom.ImGuiCustom.BeginFramedGroupEdit( ref groupName ) )
+                if( !ImGuiCustom.BeginFramedGroupEdit( ref groupName ) )
                 {
-                    if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
-                    {
-                        _selector.Cache.TriggerFilterReset();
-                    }
+                    return new ImGuiRaii.EndStack();
                 }
+
+                if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
+                {
+                    _selector.Cache.TriggerFilterReset();
+                }
+
+                return ImGuiRaii.DeferredEnd( ImGuiCustom.EndFramedGroup );
             }
 
             private void DrawMultiSelectorEditAdd( OptionGroup group, float nameBoxStart )
             {
                 var newOption = "";
                 ImGui.SetCursorPosX( nameBoxStart );
-                ImGui.SetNextItemWidth( MultiEditBoxWidth );
+                ImGui.SetNextItemWidth( MultiEditBoxWidth * ImGuiHelpers.GlobalScale );
                 if( ImGui.InputTextWithHint( $"##new_{group.GroupName}_l", "Add new option...", ref newOption, 64,
                         ImGuiInputTextFlags.EnterReturnsTrue )
                  && newOption.Length != 0 )
@@ -142,7 +147,7 @@ namespace Penumbra.UI
                 var nameBoxStart = CheckMarkSize;
                 var flag         = Mod!.Settings.Settings[ group.GroupName ];
 
-                DrawMultiSelectorEditBegin( group );
+                using var raii = DrawMultiSelectorEditBegin( group );
                 for( var i = 0; i < group.Options.Count; ++i )
                 {
                     var opt   = group.Options[ i ];
@@ -157,7 +162,7 @@ namespace Penumbra.UI
                         nameBoxStart = ImGui.GetCursorPosX();
                     }
 
-                    ImGui.SetNextItemWidth( MultiEditBoxWidth );
+                    ImGui.SetNextItemWidth( MultiEditBoxWidth * ImGuiHelpers.GlobalScale );
                     if( ImGui.InputText( $"{label}_l", ref newName, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
                     {
                         if( newName.Length == 0 )
@@ -179,8 +184,6 @@ namespace Penumbra.UI
                 }
 
                 DrawMultiSelectorEditAdd( group, nameBoxStart );
-
-                Custom.ImGuiCustom.EndFramedGroup();
             }
 
             private void DrawSingleSelectorEditGroup( OptionGroup group )
@@ -199,7 +202,7 @@ namespace Penumbra.UI
             {
                 var oldSetting = Mod!.Settings.Settings[ group.GroupName ];
                 var code       = oldSetting;
-                if( Custom.ImGuiCustom.RenameableCombo( $"##{group.GroupName}", ref code, out var newName,
+                if( ImGuiCustom.RenameableCombo( $"##{group.GroupName}", ref code, out var newName,
                     group.Options.Select( x => x.OptionName ).ToArray(), group.Options.Count ) )
                 {
                     if( code == group.Options.Count )
@@ -260,7 +263,7 @@ namespace Penumbra.UI
                 ImGui.SetCursorPosX( labelEditPos );
                 if( labelEditPos == CheckMarkSize )
                 {
-                    ImGui.SetNextItemWidth( MultiEditBoxWidth );
+                    ImGui.SetNextItemWidth( MultiEditBoxWidth * ImGuiHelpers.GlobalScale );
                 }
 
                 if( ImGui.InputTextWithHint( LabelNewSingleGroupEdit, "Add new Single Group...", ref newGroup, 64,
@@ -275,7 +278,7 @@ namespace Penumbra.UI
             {
                 var newGroup = "";
                 ImGui.SetCursorPosX( CheckMarkSize );
-                ImGui.SetNextItemWidth( MultiEditBoxWidth );
+                ImGui.SetNextItemWidth( MultiEditBoxWidth * ImGuiHelpers.GlobalScale );
                 if( ImGui.InputTextWithHint( LabelNewMultiGroup, "Add new Multi Group...", ref newGroup, 64,
                     ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
@@ -310,74 +313,75 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+
                 ImGui.SetNextItemWidth( -1 );
-                if( ImGui.BeginListBox( LabelFileSwapHeader, AutoFillSize ) )
+                if( !ImGui.BeginListBox( LabelFileSwapHeader, AutoFillSize ) )
                 {
-                    var swaps = Meta.FileSwaps.Keys.ToArray();
+                    return;
+                }
 
-                    var arrow = $"{( char )FontAwesomeIcon.LongArrowAltRight}";
-                    ImGui.PushFont( UiBuilder.IconFont );
-                    var arrowWidth = ImGui.CalcTextSize( arrow ).X;
-                    ImGui.PopFont();
+                raii.Push( ImGui.EndListBox );
 
-                    var width = ( ImGui.GetWindowWidth() - arrowWidth - 4 * ImGui.GetStyle().ItemSpacing.X ) / 2;
-                    for( var idx = 0; idx < swaps.Length + 1; ++idx )
+                var swaps = Meta.FileSwaps.Keys.ToArray();
+
+                ImGui.PushFont( UiBuilder.IconFont );
+                var arrowWidth = ImGui.CalcTextSize( FontAwesomeIcon.LongArrowAltRight.ToIconString() ).X;
+                ImGui.PopFont();
+
+                var width = ( ImGui.GetWindowWidth() - arrowWidth - 4 * ImGui.GetStyle().ItemSpacing.X ) / 2;
+                for( var idx = 0; idx < swaps.Length + 1; ++idx )
+                {
+                    var    key         = idx == swaps.Length ? GamePath.GenerateUnchecked( "" ) : swaps[ idx ];
+                    var    value       = idx == swaps.Length ? GamePath.GenerateUnchecked( "" ) : Meta.FileSwaps[ key ];
+                    string keyString   = key;
+                    string valueString = value;
+
+                    ImGui.SetNextItemWidth( width );
+                    if( ImGui.InputTextWithHint( $"##swapLhs_{idx}", "Enter new file to be replaced...", ref keyString,
+                        GamePath.MaxGamePathLength, ImGuiInputTextFlags.EnterReturnsTrue ) )
                     {
-                        var    key         = idx == swaps.Length ? GamePath.GenerateUnchecked( "" ) : swaps[ idx ];
-                        var    value       = idx == swaps.Length ? GamePath.GenerateUnchecked( "" ) : Meta.FileSwaps[ key ];
-                        string keyString   = key;
-                        string valueString = value;
-
-                        ImGui.SetNextItemWidth( width );
-                        if( ImGui.InputTextWithHint( $"##swapLhs_{idx}", "Enter new file to be replaced...", ref keyString,
-                            GamePath.MaxGamePathLength, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                        var newKey = new GamePath( keyString );
+                        if( newKey.CompareTo( key ) != 0 )
                         {
-                            var newKey = new GamePath( keyString );
-                            if( newKey.CompareTo( key ) != 0 )
+                            if( idx < swaps.Length )
                             {
-                                if( idx < swaps.Length )
-                                {
-                                    Meta.FileSwaps.Remove( key );
-                                }
-
-                                if( newKey != string.Empty )
-                                {
-                                    Meta.FileSwaps[ newKey ] = value;
-                                }
-
-                                _selector.SaveCurrentMod();
-                                _selector.ReloadCurrentMod();
+                                Meta.FileSwaps.Remove( key );
                             }
-                        }
 
-                        if( idx < swaps.Length )
-                        {
-                            ImGui.SameLine();
-                            ImGui.PushFont( UiBuilder.IconFont );
-                            ImGui.TextUnformatted( arrow );
-                            ImGui.PopFont();
-                            ImGui.SameLine();
-
-                            ImGui.SetNextItemWidth( width );
-                            if( ImGui.InputTextWithHint( $"##swapRhs_{idx}", "Enter new replacement path...", ref valueString,
-                                GamePath.MaxGamePathLength,
-                                ImGuiInputTextFlags.EnterReturnsTrue ) )
+                            if( newKey != string.Empty )
                             {
-                                var newValue = new GamePath( valueString );
-                                if( newValue.CompareTo( value ) != 0 )
-                                {
-                                    Meta.FileSwaps[ key ] = newValue;
-                                    _selector.SaveCurrentMod();
-                                    _selector.Cache.TriggerListReset();
-                                }
+                                Meta.FileSwaps[ newKey ] = value;
                             }
+
+                            _selector.SaveCurrentMod();
+                            _selector.ReloadCurrentMod();
                         }
                     }
 
-                    ImGui.EndListBox();
-                }
+                    if( idx >= swaps.Length )
+                    {
+                        continue;
+                    }
 
-                ImGui.EndTabItem();
+                    ImGui.SameLine();
+                    ImGuiCustom.PrintIcon( FontAwesomeIcon.LongArrowAltRight );
+                    ImGui.SameLine();
+
+                    ImGui.SetNextItemWidth( width );
+                    if( ImGui.InputTextWithHint( $"##swapRhs_{idx}", "Enter new replacement path...", ref valueString,
+                        GamePath.MaxGamePathLength,
+                        ImGuiInputTextFlags.EnterReturnsTrue ) )
+                    {
+                        var newValue = new GamePath( valueString );
+                        if( newValue.CompareTo( value ) != 0 )
+                        {
+                            Meta.FileSwaps[ key ] = newValue;
+                            _selector.SaveCurrentMod();
+                            _selector.Cache.TriggerListReset();
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,6 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -54,13 +55,14 @@ namespace Penumbra.UI
 #else
                 var ret = ImGui.Begin( _base._penumbra.Name, ref Visible );
 #endif
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.End );
                 if( !ret )
                 {
-                    ImGui.End();
                     return;
                 }
 
                 ImGui.BeginTabBar( PenumbraSettingsLabel );
+                raii.Push( ImGui.EndTabBar );
 
                 _settingsTab.Draw();
                 CollectionsTab.Draw();
@@ -82,9 +84,6 @@ namespace Penumbra.UI
                     _base.DrawDebugTab();
                     _base.DrawResourceManagerTab();
                 }
-
-                ImGui.EndTabBar();
-                ImGui.End();
             }
         }
     }

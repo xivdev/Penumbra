@@ -1,5 +1,6 @@
 using ImGuiNET;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -34,6 +35,8 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+
                 if( _modManager.Mods.Count > 0 )
                 {
                     Selector.Draw();
@@ -44,8 +47,6 @@ namespace Penumbra.UI
                 {
                     DrawNoModsAvailable();
                 }
-
-                ImGui.EndTabItem();
             }
         }
     }

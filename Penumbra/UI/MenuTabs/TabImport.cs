@@ -8,6 +8,7 @@ using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Importer;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -104,20 +105,20 @@ namespace Penumbra.UI
             {
                 if( !_manager.Valid )
                 {
-                    ImGui.PushStyleVar( ImGuiStyleVar.Alpha, 0.5f );
+                    using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f );
                     ImGui.Button( LabelImportButton );
-                    ImGui.PopStyleVar();
+                    style.Pop();
 
-                    ImGui.PushStyleColor( ImGuiCol.Text, ColorRed );
+                    using var color = ImGuiRaii.PushColor( ImGuiCol.Text, ColorRed );
                     ImGui.Text( "Can not import since the mod directory path is not valid." );
                     ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeightWithSpacing() );
-                    ImGui.PopStyleColor();
+                    color.Pop();
 
                     ImGui.Text( "Please set the mod directory in the settings tab." );
                     ImGui.Text( "This folder should preferably be close to the root directory of your (preferably SSD) drive, for example" );
-                    ImGui.PushStyleColor( ImGuiCol.Text, ColorYellow );
+                    color.Push( ImGuiCol.Text, ColorYellow );
                     ImGui.Text( "        D:\\ffxivmods" );
-                    ImGui.PopStyleColor();
+                    color.Pop();
                     ImGui.Text( "You can return to this tab once you've done that." );
                 }
                 else if( ImGui.Button( LabelImportButton ) )
@@ -156,18 +157,18 @@ namespace Penumbra.UI
 
             private void DrawFailedImportMessage()
             {
-                ImGui.PushStyleColor( ImGuiCol.Text, ColorRed );
+                using var color = ImGuiRaii.PushColor( ImGuiCol.Text, ColorRed );
                 ImGui.Text( $"One or more of your modpacks failed to import:\n\t\t{_errorMessage}" );
-                ImGui.PopStyleColor();
             }
 
             public void Draw()
             {
-                var ret = ImGui.BeginTabItem( LabelTab );
-                if( !ret )
+                if( !ImGui.BeginTabItem( LabelTab ) )
                 {
                     return;
                 }
+
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
                 if( !_isImportRunning )
                 {
@@ -182,8 +183,6 @@ namespace Penumbra.UI
                 {
                     DrawFailedImportMessage();
                 }
-
-                ImGui.EndTabItem();
             }
         }
     }

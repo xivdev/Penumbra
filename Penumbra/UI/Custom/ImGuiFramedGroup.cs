@@ -8,13 +8,13 @@ namespace Penumbra.UI.Custom
     public static partial class ImGuiCustom
     {
         public static void BeginFramedGroup( string label )
-            => BeginFramedGroupInternal( ref label, ZeroVector, false );
+            => BeginFramedGroupInternal( ref label, Vector2.Zero, false );
 
         public static void BeginFramedGroup( string label, Vector2 minSize )
             => BeginFramedGroupInternal( ref label, minSize, false );
 
         public static bool BeginFramedGroupEdit( ref string label )
-            => BeginFramedGroupInternal( ref label, ZeroVector, true );
+            => BeginFramedGroupInternal( ref label, Vector2.Zero, true );
 
         public static bool BeginFramedGroupEdit( ref string label, Vector2 minSize )
             => BeginFramedGroupInternal( ref label, minSize, true );
@@ -27,8 +27,8 @@ namespace Penumbra.UI.Custom
 
             ImGui.BeginGroup(); // First group
 
-            ImGui.PushStyleVar( ImGuiStyleVar.FramePadding, ZeroVector );
-            ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, ZeroVector );
+            ImGui.PushStyleVar( ImGuiStyleVar.FramePadding, Vector2.Zero );
+            ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
 
             ImGui.BeginGroup(); // Second group
 
@@ -39,7 +39,7 @@ namespace Penumbra.UI.Custom
             }
 
             // Ensure width.
-            ImGui.Dummy( new Vector2( effectiveSize.X, 0 ) );
+            ImGui.Dummy( Vector2.UnitX * effectiveSize.X );
             // Ensure left half boundary width/distance.
             ImGui.Dummy( halfFrameHeight );
 
@@ -64,7 +64,7 @@ namespace Penumbra.UI.Custom
             var labelMax = ImGui.GetItemRectMax();
             ImGui.SameLine();
             // Ensure height and distance to label.
-            ImGui.Dummy( new Vector2( 0, frameHeight + itemSpacing.Y ) );
+            ImGui.Dummy( Vector2.UnitX * ( frameHeight + itemSpacing.Y ) );
 
             ImGui.BeginGroup(); // Fourth Group.
 
@@ -96,8 +96,8 @@ namespace Penumbra.UI.Custom
 
             ImGui.PopItemWidth();
 
-            ImGui.PushStyleVar( ImGuiStyleVar.FramePadding, ZeroVector );
-            ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, ZeroVector );
+            ImGui.PushStyleVar( ImGuiStyleVar.FramePadding, Vector2.Zero );
+            ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
 
             ImGui.EndGroup(); // Close fourth group
             ImGui.EndGroup(); // Close third group
@@ -106,19 +106,19 @@ namespace Penumbra.UI.Custom
             // Ensure right distance.
             ImGui.Dummy( halfFrameHeight );
             // Ensure bottom distance
-            ImGui.Dummy( new Vector2( 0, frameHeight / 2 - itemSpacing.Y ) );
+            ImGui.Dummy( Vector2.UnitX * ( frameHeight / 2 - itemSpacing.Y ) );
             ImGui.EndGroup(); // Close second group
 
             var itemMin = ImGui.GetItemRectMin();
             var itemMax = ImGui.GetItemRectMax();
-            var (currentLabelMin, currentLabelMax) = LabelStack[ LabelStack.Count - 1 ];
+            var (currentLabelMin, currentLabelMax) = LabelStack[ ^1 ];
             LabelStack.RemoveAt( LabelStack.Count - 1 );
 
             var halfFrame = new Vector2( frameHeight / 8, frameHeight / 2 );
             currentLabelMin.X -= itemSpacing.X;
             currentLabelMax.X += itemSpacing.X;
             var frameMin = itemMin + halfFrame;
-            var frameMax = itemMax - new Vector2( halfFrame.X, 0 );
+            var frameMax = itemMax - Vector2.UnitX * halfFrame.X;
 
             // Left
             DrawClippedRect( new Vector2( -float.MaxValue, -float.MaxValue ), new Vector2( currentLabelMin.X, float.MaxValue ), frameMin,
@@ -136,12 +136,10 @@ namespace Penumbra.UI.Custom
             ImGui.PopStyleVar( 2 );
             // This seems wrong?
             // ImGui.SetWindowSize( new Vector2( ImGui.GetWindowSize().X + frameHeight, ImGui.GetWindowSize().Y ) );
-            ImGui.Dummy( ZeroVector );
+            ImGui.Dummy( Vector2.Zero );
 
             ImGui.EndGroup(); // Close first group
         }
-
-        private static readonly Vector2 ZeroVector = new( 0, 0 );
 
         private static readonly List< (Vector2, Vector2) > LabelStack = new();
     }

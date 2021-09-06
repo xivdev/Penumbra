@@ -7,6 +7,7 @@ using ImGuiNET;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -65,13 +66,10 @@ namespace Penumbra.UI
                     _base._modManager.SetTempDirectory( tempPath );
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( "The folder used to store temporary meta manipulation files.\n"
-                      + "Leave this blank if you have no reason not to.\n"
-                      + "A folder 'penumbrametatmp' will be created as a subdirectory to the specified directory.\n"
-                      + "If none is specified (i.e. this is blank) this folder will be created in the root folder instead." );
-                }
+                ImGuiCustom.HoverTooltip( "The folder used to store temporary meta manipulation files.\n"
+                  + "Leave this blank if you have no reason not to.\n"
+                  + "A folder 'penumbrametatmp' will be created as a subdirectory to the specified directory.\n"
+                  + "If none is specified (i.e. this is blank) this folder will be created in the root folder instead." );
 
                 ImGui.SameLine();
                 if( ImGui.Button( LabelOpenTempFolder ) )
@@ -115,7 +113,7 @@ namespace Penumbra.UI
                 {
                     _config.IsEnabled = enabled;
                     _configChanged    = true;
-                    Service<ResidentResources>.Get().ReloadPlayerResources();
+                    Service< ResidentResources >.Get().ReloadPlayerResources();
                     _base._penumbra.ObjectReloader.RedrawAll( enabled ? RedrawType.WithSettings : RedrawType.WithoutSettings );
                     if( _config.EnablePlayerWatch )
                     {
@@ -177,10 +175,10 @@ namespace Penumbra.UI
 
             private void DrawDisableNotificationsBox()
             {
-                var fswatch = _config.DisableFileSystemNotifications;
-                if( ImGui.Checkbox( LabelDisableNotifications, ref fswatch ) )
+                var fsWatch = _config.DisableFileSystemNotifications;
+                if( ImGui.Checkbox( LabelDisableNotifications, ref fsWatch ) )
                 {
-                    _config.DisableFileSystemNotifications = fswatch;
+                    _config.DisableFileSystemNotifications = fsWatch;
                     _configChanged                         = true;
                 }
             }
@@ -210,39 +208,35 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelEnabledPlayerWatch, ref enabled ) )
                 {
                     _config.EnablePlayerWatch = enabled;
-                    _configChanged           = true;
+                    _configChanged            = true;
                     Penumbra.PlayerWatcher.SetStatus( enabled );
                 }
 
-                if( ImGui.IsItemHovered() )
+                ImGuiCustom.HoverTooltip(
+                    "If this setting is enabled, penumbra will keep tabs on characters that have a corresponding collection setup in the Collections tab.\n"
+                  + "Penumbra will try to automatically redraw those characters using their collection when they first appear in an instance, or when they change their current equip." );
+
+                if( !_config.EnablePlayerWatch || !_config.ShowAdvanced )
                 {
-                    ImGui.SetTooltip(
-                        "If this setting is enabled, penumbra will keep tabs on characters that have a corresponding collection setup in the Collections tab.\n"
-                      + "Penumbra will try to automatically redraw those characters using their collection when they first appear in an instance, or when they change their current equip." );
+                    return;
                 }
 
-                if( _config.EnablePlayerWatch && _config.ShowAdvanced )
+                var waitFrames = _config.WaitFrames;
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth( 50 );
+                if( ImGui.InputInt( LabelWaitFrames, ref waitFrames, 0, 0 )
+                 && waitFrames != _config.WaitFrames
+                 && waitFrames > 0
+                 && waitFrames < 3000 )
                 {
-                    var waitFrames = _config.WaitFrames;
-                    ImGui.SameLine();
-                    ImGui.SetNextItemWidth( 50 );
-                    if( ImGui.InputInt( LabelWaitFrames, ref waitFrames, 0, 0 )
-                     && waitFrames != _config.WaitFrames
-                     && waitFrames > 0
-                     && waitFrames < 3000 )
-                    {
-                        _base._penumbra.ObjectReloader.DefaultWaitFrames = waitFrames;
-                        _config.WaitFrames                               = waitFrames;
-                        _configChanged                                   = true;
-                    }
-
-                    if( ImGui.IsItemHovered() )
-                    {
-                        ImGui.SetTooltip(
-                            "The number of frames penumbra waits after some events (like zone changes) until it starts trying to redraw actors again, in a range of [1, 3001].\n"
-                          + "Keep this as low as possible while producing stable results." );
-                    }
+                    _base._penumbra.ObjectReloader.DefaultWaitFrames = waitFrames;
+                    _config.WaitFrames                               = waitFrames;
+                    _configChanged                                   = true;
                 }
+
+                ImGuiCustom.HoverTooltip(
+                    "The number of frames penumbra waits after some events (like zone changes) until it starts trying to redraw actors again, in a range of [1, 3001].\n"
+                  + "Keep this as low as possible while producing stable results." );
             }
 
             private static void DrawReloadResourceButton()
@@ -264,11 +258,12 @@ namespace Penumbra.UI
 
             public void Draw()
             {
-                var ret = ImGui.BeginTabItem( LabelTab );
-                if( !ret )
+                if( !ImGui.BeginTabItem( LabelTab ) )
                 {
                     return;
                 }
+
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
                 DrawRootFolder();
 
@@ -276,11 +271,11 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawOpenModsButton();
 
-                Custom.ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
+                ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawEnabledBox();
                 DrawEnabledPlayerWatcher();
 
-                Custom.ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
+                ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawScaleModSelectorBox();
                 DrawSortFoldersFirstBox();
                 DrawShowAdvancedBox();
@@ -295,8 +290,6 @@ namespace Penumbra.UI
                     _config.Save();
                     _configChanged = false;
                 }
-
-                ImGui.EndTabItem();
             }
         }
     }

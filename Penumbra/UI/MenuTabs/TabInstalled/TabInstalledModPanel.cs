@@ -2,10 +2,12 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
+using Dalamud.Interface;
 using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Mod;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -72,7 +74,7 @@ namespace Penumbra.UI
             private void DrawName()
             {
                 var name = Meta!.Name;
-                if( Custom.ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && _modManager.RenameMod( name, Mod!.Data ) )
+                if( ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && _modManager.RenameMod( name, Mod!.Data ) )
                 {
                     _selector.SelectModOnUpdate( Mod.Data.BasePath.Name );
                     if( !_modManager.Config.ModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) )
@@ -87,12 +89,13 @@ namespace Penumbra.UI
                 if( _editMode )
                 {
                     ImGui.BeginGroup();
+                    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndGroup );
                     ImGui.Text( "(Version " );
 
-                    ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, ZeroVector );
+                    using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ZeroVector );
                     ImGui.SameLine();
                     var version = Meta!.Version;
-                    if( Custom.ImGuiCustom.ResizingTextInput( LabelEditVersion, ref version, 16 )
+                    if( ImGuiCustom.ResizingTextInput( LabelEditVersion, ref version, 16 )
                      && version != Meta.Version )
                     {
                         Meta.Version = version;
@@ -101,8 +104,6 @@ namespace Penumbra.UI
 
                     ImGui.SameLine();
                     ImGui.Text( ")" );
-                    ImGui.PopStyleVar();
-                    ImGui.EndGroup();
                 }
                 else if( Meta!.Version.Length > 0 )
                 {
@@ -117,7 +118,7 @@ namespace Penumbra.UI
 
                 ImGui.SameLine();
                 var author = Meta!.Author;
-                if( Custom.ImGuiCustom.InputOrText( _editMode, LabelEditAuthor, ref author, 64 )
+                if( ImGuiCustom.InputOrText( _editMode, LabelEditAuthor, ref author, 64 )
                  && author != Meta.Author )
                 {
                     Meta.Author = author;
@@ -131,12 +132,13 @@ namespace Penumbra.UI
             private void DrawWebsite()
             {
                 ImGui.BeginGroup();
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndGroup );
                 if( _editMode )
                 {
                     ImGui.TextColored( GreyColor, "from" );
                     ImGui.SameLine();
                     var website = Meta!.Website;
-                    if( Custom.ImGuiCustom.ResizingTextInput( LabelEditWebsite, ref website, 512 )
+                    if( ImGuiCustom.ResizingTextInput( LabelEditWebsite, ref website, 512 )
                      && website != Meta.Website )
                     {
                         Meta.Website = website;
@@ -170,10 +172,7 @@ namespace Penumbra.UI
                             }
                         }
 
-                        if( ImGui.IsItemHovered() )
-                        {
-                            ImGui.SetTooltip( Meta.Website );
-                        }
+                        ImGuiCustom.HoverTooltip( Meta.Website );
                     }
                     else
                     {
@@ -182,8 +181,6 @@ namespace Penumbra.UI
                         ImGui.Text( Meta.Website );
                     }
                 }
-
-                ImGui.EndGroup();
             }
 
             private void DrawHeaderLine()
@@ -200,7 +197,7 @@ namespace Penumbra.UI
             private void DrawPriority()
             {
                 var priority = Mod!.Settings.Priority;
-                ImGui.SetNextItemWidth( 50 );
+                ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
                 if( ImGui.InputInt( "Priority", ref priority, 0 ) && priority != Mod!.Settings.Priority )
                 {
                     Mod.Settings.Priority = priority;
@@ -208,11 +205,9 @@ namespace Penumbra.UI
                     _selector.Cache.TriggerFilterReset();
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( "Higher priority mods take precedence over other mods in the case of file conflicts.\n"
-                      + "In case of identical priority, the alphabetically first mod takes precedence." );
-                }
+                ImGuiCustom.HoverTooltip(
+                    "Higher priority mods take precedence over other mods in the case of file conflicts.\n"
+                  + "In case of identical priority, the alphabetically first mod takes precedence." );
             }
 
             private void DrawEnabledMark()
@@ -229,7 +224,7 @@ namespace Penumbra.UI
             public static bool DrawSortOrder( ModData mod, ModManager manager, Selector selector )
             {
                 var currentSortOrder = mod.SortOrder.FullPath;
-                ImGui.SetNextItemWidth( 300 );
+                ImGui.SetNextItemWidth( 300 * ImGuiHelpers.GlobalScale );
                 if( ImGui.InputText( "Sort Order", ref currentSortOrder, 256, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
                     manager.ChangeSortOrder( mod, currentSortOrder );
@@ -253,10 +248,7 @@ namespace Penumbra.UI
                     Process.Start( new ProcessStartInfo( Mod!.Data.BasePath.FullName ) { UseShellExecute = true } );
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipOpenModFolder );
-                }
+                ImGuiCustom.HoverTooltip( TooltipOpenModFolder );
             }
 
             private string _newName       = "";
@@ -318,35 +310,37 @@ namespace Penumbra.UI
             {
                 var closeParent = false;
                 var _           = true;
-                if( ImGui.BeginPopupModal( LabelOverWriteDir, ref _, ImGuiWindowFlags.AlwaysAutoResize ) )
+                if( !ImGui.BeginPopupModal( LabelOverWriteDir, ref _, ImGuiWindowFlags.AlwaysAutoResize ) )
                 {
-                    DirectoryInfo dir    = Mod!.Data.BasePath;
-                    DirectoryInfo newDir = new( Path.Combine( dir.Parent!.FullName, _newName ) );
-                    ImGui.Text(
-                        $"The mod directory {newDir} already exists.\nDo you want to merge / overwrite both mods?\nThis may corrupt the resulting mod in irrecoverable ways." );
-                    var buttonSize = new Vector2( 120, 0 );
-                    if( ImGui.Button( "Yes", buttonSize ) )
+                    return closeParent;
+                }
+
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+
+                DirectoryInfo dir    = Mod!.Data.BasePath;
+                DirectoryInfo newDir = new( Path.Combine( dir.Parent!.FullName, _newName ) );
+                ImGui.Text(
+                    $"The mod directory {newDir} already exists.\nDo you want to merge / overwrite both mods?\nThis may corrupt the resulting mod in irrecoverable ways." );
+                var buttonSize = ImGuiHelpers.ScaledVector2( 120, 0 );
+                if( ImGui.Button( "Yes", buttonSize ) )
+                {
+                    if( MergeFolderInto( dir, newDir ) )
                     {
-                        if( MergeFolderInto( dir, newDir ) )
-                        {
-                            Service< ModManager >.Get()!.RenameModFolder( Mod.Data, newDir, false );
+                        Service< ModManager >.Get()!.RenameModFolder( Mod.Data, newDir, false );
 
-                            _selector.SelectModOnUpdate( _newName );
+                        _selector.SelectModOnUpdate( _newName );
 
-                            closeParent = true;
-                            ImGui.CloseCurrentPopup();
-                        }
-                    }
-
-                    ImGui.SameLine();
-
-                    if( ImGui.Button( "Cancel", buttonSize ) )
-                    {
-                        _keyboardFocus = true;
+                        closeParent = true;
                         ImGui.CloseCurrentPopup();
                     }
+                }
 
-                    ImGui.EndPopup();
+                ImGui.SameLine();
+
+                if( ImGui.Button( "Cancel", buttonSize ) )
+                {
+                    _keyboardFocus = true;
+                    ImGui.CloseCurrentPopup();
                 }
 
                 return closeParent;
@@ -358,38 +352,40 @@ namespace Penumbra.UI
                 _keyboardFocus |= !ImGui.IsPopupOpen( PopupRenameFolder );
 
                 ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, new Vector2( 0.5f, 1f ) );
-                if( ImGui.BeginPopupModal( PopupRenameFolder, ref _, ImGuiWindowFlags.AlwaysAutoResize ) )
+                if( !ImGui.BeginPopupModal( PopupRenameFolder, ref _, ImGuiWindowFlags.AlwaysAutoResize ) )
                 {
-                    if( ImGui.IsKeyPressed( ImGui.GetKeyIndex( ImGuiKey.Escape ) ) )
-                    {
-                        ImGui.CloseCurrentPopup();
-                    }
+                    return;
+                }
 
-                    var newName = Mod!.Data.BasePath.Name;
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
 
-                    if( _keyboardFocus )
-                    {
-                        ImGui.SetKeyboardFocusHere();
-                        _keyboardFocus = false;
-                    }
+                if( ImGui.IsKeyPressed( ImGui.GetKeyIndex( ImGuiKey.Escape ) ) )
+                {
+                    ImGui.CloseCurrentPopup();
+                }
 
-                    if( ImGui.InputText( "New Folder Name##RenameFolderInput", ref newName, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
-                    {
-                        RenameModFolder( newName );
-                    }
+                var newName = Mod!.Data.BasePath.Name;
 
-                    ImGui.TextColored( GreyColor,
-                        "Please restrict yourself to ascii symbols that are valid in a windows path,\nother symbols will be replaced by underscores." );
+                if( _keyboardFocus )
+                {
+                    ImGui.SetKeyboardFocusHere();
+                    _keyboardFocus = false;
+                }
 
-                    ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, Vector2.One / 2 );
+                if( ImGui.InputText( "New Folder Name##RenameFolderInput", ref newName, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
+                {
+                    RenameModFolder( newName );
+                }
+
+                ImGui.TextColored( GreyColor,
+                    "Please restrict yourself to ascii symbols that are valid in a windows path,\nother symbols will be replaced by underscores." );
+
+                ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, Vector2.One / 2 );
 
 
-                    if( OverwriteDirPopup() )
-                    {
-                        ImGui.CloseCurrentPopup();
-                    }
-
-                    ImGui.EndPopup();
+                if( OverwriteDirPopup() )
+                {
+                    ImGui.CloseCurrentPopup();
                 }
             }
 
@@ -401,10 +397,7 @@ namespace Penumbra.UI
                     ImGui.OpenPopup( PopupRenameFolder );
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipRenameModFolder );
-                }
+                ImGuiCustom.HoverTooltip( TooltipRenameModFolder );
             }
 
             private void DrawEditJsonButton()
@@ -415,10 +408,7 @@ namespace Penumbra.UI
                     Process.Start( new ProcessStartInfo( Mod!.Data.MetaFile.FullName ) { UseShellExecute = true } );
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipEditJson );
-                }
+                ImGuiCustom.HoverTooltip( TooltipEditJson );
             }
 
             private void DrawReloadJsonButton()
@@ -428,10 +418,7 @@ namespace Penumbra.UI
                     _selector.ReloadCurrentMod( true, false );
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipReloadJson );
-                }
+                ImGuiCustom.HoverTooltip( TooltipReloadJson );
             }
 
             private void DrawResetMetaButton()
@@ -441,13 +428,10 @@ namespace Penumbra.UI
                     _selector.ReloadCurrentMod( true, true );
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip(
-                        "Force a recomputation of the metadata_manipulations.json file from all .meta files in the folder.\n"
-                      + "Also reloads the mod.\n"
-                      + "Be aware that this removes all manually added metadata changes." );
-                }
+                ImGuiCustom.HoverTooltip(
+                    "Force a recomputation of the metadata_manipulations.json file from all .meta files in the folder.\n"
+                  + "Also reloads the mod.\n"
+                  + "Be aware that this removes all manually added metadata changes." );
             }
 
             private void DrawDeduplicateButton()
@@ -459,10 +443,7 @@ namespace Penumbra.UI
                     _selector.ReloadCurrentMod();
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipDeduplicate );
-                }
+                ImGuiCustom.HoverTooltip( TooltipDeduplicate );
             }
 
             private void DrawNormalizeButton()
@@ -474,10 +455,7 @@ namespace Penumbra.UI
                     _selector.ReloadCurrentMod();
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipNormalize );
-                }
+                ImGuiCustom.HoverTooltip( TooltipNormalize );
             }
 
             private void DrawSplitButton()
@@ -487,13 +465,10 @@ namespace Penumbra.UI
                     ModCleanup.SplitMod( Mod!.Data );
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip(
-                        "Split off all options of a mod into single mods that are placed in a collective folder.\n"
-                      + "Does not remove or change the mod itself, just create (potentially inefficient) copies.\n"
-                      + "Experimental - Use at own risk!" );
-                }
+                ImGuiCustom.HoverTooltip(
+                    "Split off all options of a mod into single mods that are placed in a collective folder.\n"
+                  + "Does not remove or change the mod itself, just create (potentially inefficient) copies.\n"
+                  + "Experimental - Use at own risk!" );
             }
 
             private void DrawEditLine()
@@ -521,18 +496,18 @@ namespace Penumbra.UI
             {
                 try
                 {
-                    var ret = ImGui.BeginChild( LabelModPanel, AutoFillSize, true );
-
+                    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndChild );
+                    var       ret  = ImGui.BeginChild( LabelModPanel, AutoFillSize, true );
+                    
                     if( !ret || Mod == null )
                     {
-                        ImGui.EndChild();
                         return;
                     }
 
                     DrawHeaderLine();
 
                     // Next line with fixed distance.
-                    Custom.ImGuiCustom.VerticalDistance( HeaderLineDistance );
+                    ImGuiCustom.VerticalDistance( HeaderLineDistance );
 
                     DrawEnabledMark();
                     ImGui.SameLine();
@@ -550,12 +525,10 @@ namespace Penumbra.UI
                     }
 
                     Details.Draw( _editMode );
-
-                    ImGui.EndChild();
                 }
                 catch( Exception ex )
                 {
-                    PluginLog.LogError( ex, "fuck" );
+                    PluginLog.LogError( ex, "Oh no" );
                 }
             }
         }

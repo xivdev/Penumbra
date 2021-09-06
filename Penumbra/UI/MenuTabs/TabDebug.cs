@@ -13,6 +13,7 @@ using Penumbra.GameData.Util;
 using Penumbra.Interop;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -37,6 +38,8 @@ namespace Penumbra.UI
             {
                 return;
             }
+
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
             var identifier = GameData.GameData.GetIdentifier();
 
@@ -109,8 +112,6 @@ namespace Penumbra.UI
                 ImGui.Text( identifier.Identify( equip.RFinger.Set, 0, equip.RFinger.Variant, EquipSlot.LFinger )?.Name.ToString() ?? "Unknown" );
                 // @formatter:on
             }
-
-            ImGui.EndTable();
         }
 
         private static void PrintValue( string name, string value )
@@ -135,6 +136,8 @@ namespace Penumbra.UI
                 return;
             }
 
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
+
             var manager = Service< ModManager >.Get();
             PrintValue( "Active Collection", manager.Collections.ActiveCollection.Name );
             PrintValue( "Mod Manager BasePath", manager.BasePath.Name );
@@ -147,8 +150,6 @@ namespace Penumbra.UI
                 ( !Penumbra.Config.TempDirectory.Any() || Path.IsPathRooted( Penumbra.Config.TempDirectory ) ).ToString() );
             PrintValue( "Mod Manager Temp Path Exists", Directory.Exists( manager.TempPath.FullName ).ToString() );
             PrintValue( "Mod Manager Temp Path IsWritable", manager.TempWritable.ToString() );
-
-            ImGui.EndTable();
         }
 
         private void DrawDebugTabRedraw()
@@ -207,9 +208,11 @@ namespace Penumbra.UI
                .GetField( "_inGPose", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( _penumbra.ObjectReloader );
 
+            using var raii = new ImGuiRaii.EndStack();
             if( ImGui.BeginTable( "##RedrawData", 2, ImGuiTableFlags.SizingFixedFit,
                 new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 7 ) ) )
             {
+                raii.Push( ImGui.EndTable );
                 PrintValue( "Current Wait Frame", waitFrames?.ToString()                                        ?? "null" );
                 PrintValue( "Current Frame", currentFrame?.ToString()                                           ?? "null" );
                 PrintValue( "Currently in GPose", gPose?.ToString()                                             ?? "null" );
@@ -222,13 +225,13 @@ namespace Penumbra.UI
                 PrintValue( "Current Object Address", currentObject?.Address.ToString( "X16" )                  ?? "null" );
                 PrintValue( "Current Object Index", currentObjectIdx >= 0 ? currentObjectIdx.ToString() : "null" );
                 PrintValue( "Current Object Render Flags", ( ( int? )currentRender )?.ToString( "X8" ) ?? "null" );
-                ImGui.EndTable();
             }
 
             if( queue.Any()
              && ImGui.BeginTable( "##RedrawTable", 3, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.ScrollX,
                     new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * queue.Count ) ) )
             {
+                raii.Push( ImGui.EndTable );
                 foreach( var (objectId, objectName, redraw) in queue )
                 {
                     ImGui.TableNextRow();
@@ -239,8 +242,6 @@ namespace Penumbra.UI
                     ImGui.TableNextColumn();
                     ImGui.Text( redraw.ToString() );
                 }
-
-                ImGui.EndTable();
             }
 
             if( queue.Any() && ImGui.Button( "Clear" ) )
@@ -262,6 +263,8 @@ namespace Penumbra.UI
             {
                 return;
             }
+
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
             foreach( var collection in Service< ModManager >.Get().Collections.Collections.Values.Where( c => c.Cache != null ) )
             {
@@ -285,39 +288,58 @@ namespace Penumbra.UI
                     ImGui.Text( info.Changed ? "Data Changed" : "Unchanged" );
                 }
             }
-
-            ImGui.EndTable();
         }
 
         private void DrawDebugTabIpc()
         {
-
             if( !ImGui.CollapsingHeader( "IPC##Debug" ) )
             {
                 return;
             }
 
             var ipc = _penumbra.Ipc;
-            ImGui.Text($"API Version: {ipc.Api.ApiVersion}"  );
-            ImGui.Text("Available subscriptions:"  );
-            ImGui.Indent();
-            if (ipc.ProviderApiVersion != null)
+            ImGui.Text( $"API Version: {ipc.Api.ApiVersion}" );
+            ImGui.Text( "Available subscriptions:" );
+            using var indent = ImGuiRaii.PushIndent();
+            if( ipc.ProviderApiVersion != null )
+            {
                 ImGui.Text( PenumbraIpc.LabelProviderApiVersion );
+            }
+
             if( ipc.ProviderRedrawName != null )
+            {
                 ImGui.Text( PenumbraIpc.LabelProviderRedrawName );
+            }
+
             if( ipc.ProviderRedrawObject != null )
+            {
                 ImGui.Text( PenumbraIpc.LabelProviderRedrawObject );
+            }
+
             if( ipc.ProviderRedrawAll != null )
+            {
                 ImGui.Text( PenumbraIpc.LabelProviderRedrawAll );
+            }
+
             if( ipc.ProviderResolveDefault != null )
+            {
                 ImGui.Text( PenumbraIpc.LabelProviderResolveDefault );
+            }
+
             if( ipc.ProviderResolveCharacter != null )
+            {
                 ImGui.Text( PenumbraIpc.LabelProviderResolveCharacter );
+            }
+
             if( ipc.ProviderChangedItemTooltip != null )
+            {
                 ImGui.Text( PenumbraIpc.LabelProviderChangedItemTooltip );
+            }
+
             if( ipc.ProviderChangedItemClick != null )
+            {
                 ImGui.Text( PenumbraIpc.LabelProviderChangedItemClick );
-            ImGui.Unindent();
+            }
         }
 
         private void DrawDebugTab()
@@ -326,6 +348,8 @@ namespace Penumbra.UI
             {
                 return;
             }
+
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
             DrawDebugTabGeneral();
             ImGui.NewLine();
@@ -337,8 +361,6 @@ namespace Penumbra.UI
             ImGui.NewLine();
             DrawDebugTabIpc();
             ImGui.NewLine();
-
-            ImGui.EndTabItem();
         }
     }
 }
