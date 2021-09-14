@@ -35,8 +35,13 @@ namespace Penumbra.Mods
 
         private void ClearOldTmpDir()
         {
+            if (!TempWritable)
+            {
+                return;
+            }
+
             TempPath.Refresh();
-            if( TempWritable && TempPath.Exists )
+            if( TempPath.Exists )
             {
                 try
                 {

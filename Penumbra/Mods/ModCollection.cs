@@ -189,7 +189,7 @@ namespace Penumbra.Mods
             => new( Path.Combine( collectionDir.FullName, $"{name.RemoveInvalidPathSymbols()}.json" ) );
 
         public FileInfo FileName()
-            => new( Path.Combine( Service< DalamudPluginInterface >.Get().GetPluginConfigDirectory(),
+            => new( Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(),
                 $"{Name.RemoveInvalidPathSymbols()}.json" ) );
 
         public void Save()
