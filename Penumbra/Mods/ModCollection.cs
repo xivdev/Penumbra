@@ -109,7 +109,7 @@ namespace Penumbra.Mods
             }
         }
 
-        public void UpdateSettings()
+        public void UpdateSettings( bool forceSave )
         {
             if( Cache == null )
             {
@@ -122,7 +122,7 @@ namespace Penumbra.Mods
                 changes |= mod.FixSettings();
             }
 
-            if( changes )
+            if( forceSave || changes )
             {
                 Save();
             }
@@ -133,7 +133,7 @@ namespace Penumbra.Mods
             PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{IsActiveCollection}]", Name,
                 withMetaManipulations, activeCollection );
             Cache ??= new ModCollectionCache( Name, modDir );
-            UpdateSettings();
+            UpdateSettings( false );
             Cache.CalculateEffectiveFileList();
             if( withMetaManipulations )
             {

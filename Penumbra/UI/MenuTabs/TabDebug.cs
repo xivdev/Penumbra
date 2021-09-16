@@ -342,6 +342,34 @@ namespace Penumbra.UI
             }
         }
 
+        private void DrawDebugTabMissingFiles()
+        {
+            if( !ImGui.CollapsingHeader( "Missing Files##Debug" ) )
+            {
+                return;
+            }
+
+            var manager = Service<ModManager>.Get();
+            var cache   = manager.Collections.CurrentCollection.Cache;
+            if( cache == null || !ImGui.BeginTable( "##MissingFilesDebugList", 1, ImGuiTableFlags.RowBg, -Vector2.UnitX))
+            {
+                return;
+            }
+
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
+
+            foreach( var file in cache.MissingFiles )
+            {
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                if( ImGui.Selectable( file.FullName ) )
+                {
+                    ImGui.SetClipboardText( file.FullName );
+                }
+                ImGuiCustom.HoverTooltip( "Click to copy to clipboard." );
+            }
+        }
+
         private void DrawDebugTab()
         {
             if( !ImGui.BeginTabItem( "Debug Tab" ) )
@@ -352,6 +380,8 @@ namespace Penumbra.UI
             using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
             DrawDebugTabGeneral();
+            ImGui.NewLine();
+            DrawDebugTabMissingFiles();
             ImGui.NewLine();
             DrawDebugTabRedraw();
             ImGui.NewLine();

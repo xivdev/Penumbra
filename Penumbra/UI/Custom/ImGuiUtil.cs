@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using Dalamud.Interface;
@@ -50,6 +51,15 @@ namespace Penumbra.UI.Custom
             {
                 ImGui.SetTooltip( text );
             }
+        }
+    }
+
+    public static partial class ImGuiCustom
+    {
+        public static bool DisableButton( string label, bool condition )
+        {
+            using var alpha = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, !condition );
+            return ImGui.Button( label ) && condition;
         }
     }
 

@@ -44,7 +44,7 @@ namespace Penumbra.Meta
 
         private readonly MetaDefaults                     _default;
         private readonly DirectoryInfo                    _dir;
-        private readonly ResidentResources           _resourceManagement;
+        private readonly ResidentResources                _resourceManagement;
         private readonly Dictionary< GamePath, FileInfo > _resolvedFiles;
 
         private readonly Dictionary< MetaManipulation, Mod.Mod > _currentManipulations = new();
@@ -52,6 +52,10 @@ namespace Penumbra.Meta
 
         public IEnumerable< (MetaManipulation, Mod.Mod) > Manipulations
             => _currentManipulations.Select( kvp => ( kvp.Key, kvp.Value ) );
+
+        public IEnumerable< (GamePath, FileInfo) > Files
+            => _currentFiles.Where( kvp => kvp.Value.CurrentFile != null )
+               .Select( kvp => ( kvp.Key, kvp.Value.CurrentFile! ) );
 
         public int Count
             => _currentManipulations.Count;

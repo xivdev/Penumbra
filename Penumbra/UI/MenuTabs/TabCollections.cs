@@ -87,11 +87,23 @@ namespace Penumbra.UI
             {
                 if( _manager.Collections.AddCollection( _newCollectionName, settings ) )
                 {
-                    _manager.Collections.SetCurrentCollection( _manager.Collections.Collections[ _newCollectionName ] );
                     UpdateNames();
+                    SetCurrentCollection( _manager.Collections.Collections[_newCollectionName], true );
                 }
 
                 _newCollectionName = string.Empty;
+            }
+
+            private void DrawCleanCollectionButton()
+            {
+                if( ImGui.Button( "Clean Settings" ) )
+                {
+                    var changes = ModFunctions.CleanUpCollection( _manager.Collections.CurrentCollection.Settings,
+                        _manager.BasePath.EnumerateDirectories() );
+                    _manager.Collections.CurrentCollection.UpdateSettings( forceSave: changes );
+                }
+
+                ImGuiCustom.HoverTooltip( "Remove all stored settings for mods not currently available and fix invalid settings.\nUse at own risk." );
             }
 
             private void DrawNewCollectionInput()
@@ -113,26 +125,31 @@ namespace Penumbra.UI
 
                 style.Pop();
 
-                if( _manager.Collections.Collections.Count      > 1
-                 && _manager.Collections.CurrentCollection.Name != ModCollection.DefaultCollection )
+                var deleteCondition = _manager.Collections.Collections.Count > 1
+                 && _manager.Collections.CurrentCollection.Name              != ModCollection.DefaultCollection;
+                ImGui.SameLine();
+                if( ImGuiCustom.DisableButton( "Delete Current Collection",  deleteCondition) )
+                {
+                    _manager.Collections.RemoveCollection( _manager.Collections.CurrentCollection.Name );
+                    SetCurrentCollection( _manager.Collections.CurrentCollection, true );
+                    UpdateNames();
+                }
+
+                if( Penumbra.Config.ShowAdvanced )
                 {
                     ImGui.SameLine();
-                    if( ImGui.Button( "Delete Current Collection" ) )
-                    {
-                        _manager.Collections.RemoveCollection( _manager.Collections.CurrentCollection.Name );
-                        UpdateNames();
-                    }
+                    DrawCleanCollectionButton();
                 }
             }
 
-            private void SetCurrentCollection( int idx )
+            private void SetCurrentCollection( int idx, bool force )
             {
-                if( idx == _currentCollectionIndex )
+                if( !force && idx == _currentCollectionIndex )
                 {
                     return;
                 }
 
-                _manager.Collections.SetCurrentCollection( _collections[ idx + 1 ] );
+                _manager.Collections.SetCurrentCollection( _collections[idx + 1] );
                 _currentCollectionIndex = idx;
                 _selector.Cache.TriggerListReset();
                 if( _selector.Mod != null )
@@ -141,12 +158,12 @@ namespace Penumbra.UI
                 }
             }
 
-            public void SetCurrentCollection( ModCollection collection )
+            public void SetCurrentCollection( ModCollection collection, bool force = false )
             {
                 var idx = Array.IndexOf( _collections, collection ) - 1;
                 if( idx >= 0 )
                 {
-                    SetCurrentCollection( idx );
+                    SetCurrentCollection( idx, force );
                 }
             }
 
@@ -159,7 +176,7 @@ namespace Penumbra.UI
 
                 if( combo )
                 {
-                    SetCurrentCollection( index );
+                    SetCurrentCollection( index, false );
                 }
             }
 
@@ -205,17 +222,13 @@ namespace Penumbra.UI
             {
                 ImGui.InputTextWithHint( "##New Character", "New Character Name", ref _newCharacterName, 32 );
 
-                using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, _newCharacterName.Length == 0 );
-
                 ImGui.SameLine();
-                if( ImGui.Button( "Create New Character Collection" ) && _newCharacterName.Length > 0 )
+                if( ImGuiCustom.DisableButton( "Create New Character Collection", _newCharacterName.Length > 0 ))
                 {
                     _manager.Collections.CreateCharacterCollection( _newCharacterName );
                     _currentCharacterIndices[ _newCharacterName ] = 0;
                     _newCharacterName                             = string.Empty;
                 }
-
-                style.Pop();
 
                 ImGuiCustom.HoverTooltip(
                     "A character collection will be used whenever you manually redraw a character with the Name you have set up.\n"
