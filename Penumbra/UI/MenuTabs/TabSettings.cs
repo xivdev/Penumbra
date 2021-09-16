@@ -79,7 +79,10 @@ namespace Penumbra.UI
                         return;
                     }
 
-                    Process.Start( _base._modManager.TempPath.FullName );
+                    Process.Start( new ProcessStartInfo( _base._modManager.TempPath.FullName )
+                    {
+                        UseShellExecute = true,
+                    } );
                 }
             }
 
@@ -102,7 +105,10 @@ namespace Penumbra.UI
                         return;
                     }
 
-                    Process.Start( _config.ModDirectory );
+                    Process.Start( new ProcessStartInfo( _config.ModDirectory )
+                    {
+                        UseShellExecute = true,
+                    } );
                 }
             }
 
