@@ -88,7 +88,7 @@ namespace Penumbra.UI
                 if( _manager.Collections.AddCollection( _newCollectionName, settings ) )
                 {
                     UpdateNames();
-                    SetCurrentCollection( _manager.Collections.Collections[_newCollectionName], true );
+                    SetCurrentCollection( _manager.Collections.Collections[ _newCollectionName ], true );
                 }
 
                 _newCollectionName = string.Empty;
@@ -100,10 +100,11 @@ namespace Penumbra.UI
                 {
                     var changes = ModFunctions.CleanUpCollection( _manager.Collections.CurrentCollection.Settings,
                         _manager.BasePath.EnumerateDirectories() );
-                    _manager.Collections.CurrentCollection.UpdateSettings( forceSave: changes );
+                    _manager.Collections.CurrentCollection.UpdateSettings( changes );
                 }
 
-                ImGuiCustom.HoverTooltip( "Remove all stored settings for mods not currently available and fix invalid settings.\nUse at own risk." );
+                ImGuiCustom.HoverTooltip(
+                    "Remove all stored settings for mods not currently available and fix invalid settings.\nUse at own risk." );
             }
 
             private void DrawNewCollectionInput()
@@ -128,7 +129,7 @@ namespace Penumbra.UI
                 var deleteCondition = _manager.Collections.Collections.Count > 1
                  && _manager.Collections.CurrentCollection.Name              != ModCollection.DefaultCollection;
                 ImGui.SameLine();
-                if( ImGuiCustom.DisableButton( "Delete Current Collection",  deleteCondition) )
+                if( ImGuiCustom.DisableButton( "Delete Current Collection", deleteCondition ) )
                 {
                     _manager.Collections.RemoveCollection( _manager.Collections.CurrentCollection.Name );
                     SetCurrentCollection( _manager.Collections.CurrentCollection, true );
@@ -149,7 +150,7 @@ namespace Penumbra.UI
                     return;
                 }
 
-                _manager.Collections.SetCurrentCollection( _collections[idx + 1] );
+                _manager.Collections.SetCurrentCollection( _collections[ idx + 1 ] );
                 _currentCollectionIndex = idx;
                 _selector.Cache.TriggerListReset();
                 if( _selector.Mod != null )
@@ -223,7 +224,7 @@ namespace Penumbra.UI
                 ImGui.InputTextWithHint( "##New Character", "New Character Name", ref _newCharacterName, 32 );
 
                 ImGui.SameLine();
-                if( ImGuiCustom.DisableButton( "Create New Character Collection", _newCharacterName.Length > 0 ))
+                if( ImGuiCustom.DisableButton( "Create New Character Collection", _newCharacterName.Length > 0 ) )
                 {
                     _manager.Collections.CreateCharacterCollection( _newCharacterName );
                     _currentCharacterIndices[ _newCharacterName ] = 0;

@@ -14,7 +14,7 @@ namespace Penumbra.Mods
     {
         private readonly ModManager _manager;
 
-        public string CollectionChangedTo { get; private set; }= string.Empty;
+        public string CollectionChangedTo { get; private set; } = string.Empty;
         public Dictionary< string, ModCollection > Collections { get; } = new();
 
         public ModCollection CurrentCollection { get; private set; } = null!;
@@ -43,11 +43,11 @@ namespace Penumbra.Mods
 
             if( ActiveCollection.Cache?.MetaManipulations.Count > 0 || newActive.Cache?.MetaManipulations.Count > 0 )
             {
-                var resourceManager = Service<ResidentResources>.Get();
+                var resourceManager = Service< ResidentResources >.Get();
                 resourceManager.ReloadPlayerResources();
             }
 
-            ActiveCollection    = newActive;
+            ActiveCollection = newActive;
             return true;
         }
 

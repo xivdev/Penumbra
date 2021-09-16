@@ -35,7 +35,7 @@ namespace Penumbra.Mods
 
         private void ClearOldTmpDir()
         {
-            if (!TempWritable)
+            if( !TempWritable )
             {
                 return;
             }

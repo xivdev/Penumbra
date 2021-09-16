@@ -349,9 +349,9 @@ namespace Penumbra.UI
                 return;
             }
 
-            var manager = Service<ModManager>.Get();
+            var manager = Service< ModManager >.Get();
             var cache   = manager.Collections.CurrentCollection.Cache;
-            if( cache == null || !ImGui.BeginTable( "##MissingFilesDebugList", 1, ImGuiTableFlags.RowBg, -Vector2.UnitX))
+            if( cache == null || !ImGui.BeginTable( "##MissingFilesDebugList", 1, ImGuiTableFlags.RowBg, -Vector2.UnitX ) )
             {
                 return;
             }
@@ -366,6 +366,7 @@ namespace Penumbra.UI
                 {
                     ImGui.SetClipboardText( file.FullName );
                 }
+
                 ImGuiCustom.HoverTooltip( "Click to copy to clipboard." );
             }
         }
