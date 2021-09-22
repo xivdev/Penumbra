@@ -64,7 +64,7 @@ namespace Penumbra.UI.Custom
             var labelMax = ImGui.GetItemRectMax();
             ImGui.SameLine();
             // Ensure height and distance to label.
-            ImGui.Dummy( Vector2.UnitX * ( frameHeight + itemSpacing.Y ) );
+            ImGui.Dummy( Vector2.UnitY * ( frameHeight + itemSpacing.Y ) );
 
             ImGui.BeginGroup(); // Fourth Group.
 
@@ -106,7 +106,7 @@ namespace Penumbra.UI.Custom
             // Ensure right distance.
             ImGui.Dummy( halfFrameHeight );
             // Ensure bottom distance
-            ImGui.Dummy( Vector2.UnitX * ( frameHeight / 2 - itemSpacing.Y ) );
+            ImGui.Dummy( Vector2.UnitY * ( frameHeight / 2 - itemSpacing.Y ) );
             ImGui.EndGroup(); // Close second group
 
             var itemMin = ImGui.GetItemRectMin();

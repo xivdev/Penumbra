@@ -110,14 +110,12 @@ namespace Penumbra.UI
             private ImGuiRaii.EndStack DrawMultiSelectorEditBegin( OptionGroup group )
             {
                 var groupName = group.GroupName;
-                if( !ImGuiCustom.BeginFramedGroupEdit( ref groupName ) )
+                if( ImGuiCustom.BeginFramedGroupEdit( ref groupName ) )
                 {
-                    return new ImGuiRaii.EndStack();
-                }
-
-                if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
-                {
-                    _selector.Cache.TriggerFilterReset();
+                    if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
+                    {
+                        _selector.Cache.TriggerFilterReset();
+                    }
                 }
 
                 return ImGuiRaii.DeferredEnd( ImGuiCustom.EndFramedGroup );
