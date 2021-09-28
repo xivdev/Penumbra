@@ -18,7 +18,7 @@ jobs:
         run: dotnet restore
       - name: Download Dalamud
         run: |
-          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
+          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/stg/latest.zip -OutFile latest.zip
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
       - name: Build
         run: |
@@ -27,17 +27,17 @@ jobs:
       - name: write version into json
         run: |
           $ver = '${{ github.ref }}' -replace 'refs/tags/',''
-          $path = './Penumbra/bin/Release/net472/Penumbra.json'
+          $path = './Penumbra/bin/Release/net5.0-windows/Penumbra.json'
           $content = get-content -path $path
           $content = $content -replace '1.0.0.0',$ver
           set-content -Path $path -Value $content
       - name: Archive
-        run: Compress-Archive -Path Penumbra/bin/Release/net472/* -DestinationPath Penumbra.zip
+        run: Compress-Archive -Path Penumbra/bin/Release/net5.0-windows/* -DestinationPath Penumbra.zip
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.2.1
         with:
           path: |
-            ./Penumbra/bin/Release/net472/*
+            ./Penumbra/bin/Release/net5.0-windows/*
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
