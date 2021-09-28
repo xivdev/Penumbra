@@ -128,13 +128,12 @@ namespace Penumbra.Mods
         // Assumes that it is not called on Root, and thus does not remove unnecessary SortOrder entries.
         private static void SaveModChildren( ModFolder target )
         {
-            var config = Service< Configuration >.Get();
             foreach( var mod in target.AllMods( true ) )
             {
-                config.ModSortOrder[ mod.BasePath.Name ] = mod.SortOrder.FullName;
+                Penumbra.Config.ModSortOrder[ mod.BasePath.Name ] = mod.SortOrder.FullName;
             }
 
-            config.Save();
+            Penumbra.Config.Save();
             InvokeChange();
         }
 
