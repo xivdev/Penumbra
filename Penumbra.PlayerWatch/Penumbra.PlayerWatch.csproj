@@ -29,8 +29,6 @@
 
     <ItemGroup>
         <Reference Include="Dalamud">
-            <HintPath>$(DALAMUD_ROOT)\Dalamud.dll</HintPath>
-            <HintPath>..\libs\Dalamud.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
             <Private>False</Private>
         </Reference>

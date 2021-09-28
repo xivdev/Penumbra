@@ -52,7 +52,7 @@
         </Reference>
         <Reference Include="FFXIVClientStructs">
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\FFXIVClientStructs.dll</HintPath>
-            <Private>true</Private>
+            <Private>False</Private>
         </Reference>
     </ItemGroup>
 

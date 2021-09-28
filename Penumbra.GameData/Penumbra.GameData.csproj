@@ -29,26 +29,20 @@
 
     <ItemGroup>
         <Reference Include="Dalamud">
-            <HintPath>$(DALAMUD_ROOT)\Dalamud.dll</HintPath>
-            <HintPath>..\libs\Dalamud.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Lumina">
-            <HintPath>$(DALAMUD_ROOT)\Lumina.dll</HintPath>
-            <HintPath>..\libs\Lumina.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Lumina.Excel">
-            <HintPath>$(DALAMUD_ROOT)\Lumina.Excel.dll</HintPath>
-            <HintPath>..\libs\Lumina.Excel.dll</HintPath>
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
             <Private>False</Private>
         </Reference>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+        <PackageReference Include="Newtonsoft.Json" Version="12.0.3"/>
     </ItemGroup>
 </Project>
