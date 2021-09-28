@@ -62,7 +62,7 @@ namespace Penumbra.Util
                 Shown += HiddenForm_Shown;
             }
 
-            private void HiddenForm_Shown( object sender, EventArgs _ )
+            private void HiddenForm_Shown( object? sender, EventArgs _ )
             {
                 Hide();
                 try

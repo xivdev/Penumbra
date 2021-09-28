@@ -26,18 +26,14 @@ namespace Penumbra.UI
               | ImGuiWindowFlags.NoResize
               | ImGuiWindowFlags.NoSavedSettings;
 
-            private readonly SettingsInterface                  _base;
-            private readonly Dalamud.Game.ClientState.Condition _condition;
+            private readonly SettingsInterface _base;
 
             public ManageModsButton( SettingsInterface ui )
-            {
-                _base      = ui;
-                _condition = ui._plugin!.PluginInterface!.ClientState.Condition;
-            }
+                => _base = ui;
 
             public void Draw()
             {
-                if( _condition.Any() || _base._menu.Visible )
+                if( Dalamud.Conditions.Any() || _base._menu.Visible )
                 {
                     return;
                 }
@@ -47,12 +43,8 @@ namespace Penumbra.UI
 
                 ImGui.SetNextWindowPos( ss - WindowPosOffset, ImGuiCond.Always );
 
-                if( !ImGui.Begin( MenuButtonsName, ButtonFlags ) )
-                {
-                    return;
-                }
-
-                if( ImGui.Button( MenuButtonLabel, WindowSize ) )
+                if( ImGui.Begin( MenuButtonsName, ButtonFlags )
+                 && ImGui.Button( MenuButtonLabel, WindowSize ) )
                 {
                     _base.FlipVisibility();
                 }

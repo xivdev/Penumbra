@@ -1,15 +1,16 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Windows.Forms.VisualStyles;
 using Dalamud.Interface;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Importer;
 using Penumbra.Mod;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -37,6 +38,8 @@ namespace Penumbra.UI
 
             private static readonly Vector2 SelectorButtonSizes = new( 100, 0 );
             private static readonly Vector2 HelpButtonSizes     = new( 40, 0 );
+
+            private static readonly Vector4 DeleteModNameColor = new( 0.7f, 0.1f, 0.1f, 1 );
         }
 
         // Buttons
@@ -47,19 +50,16 @@ namespace Penumbra.UI
 
             private void DrawModTrashButton()
             {
-                ImGui.PushFont( UiBuilder.IconFont );
+                using var raii = ImGuiRaii.PushFont( UiBuilder.IconFont );
 
                 if( ImGui.Button( FontAwesomeIcon.Trash.ToIconString(), SelectorButtonSizes * _selectorScalingFactor ) && _index >= 0 )
                 {
                     _deleteIndex = _index;
                 }
 
-                ImGui.PopFont();
+                raii.Pop();
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipDelete );
-                }
+                ImGuiCustom.HoverTooltip( TooltipDelete );
             }
 
             private void DrawDeleteModal()
@@ -79,20 +79,22 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+
                 if( Mod == null )
                 {
                     _deleteIndex = null;
                     ImGui.CloseCurrentPopup();
-                    ImGui.EndPopup();
                     return;
                 }
 
                 ImGui.Text( "Are you sure you want to delete the following mod:" );
-                ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-                ImGui.TextColored( new Vector4( 0.7f, 0.1f, 0.1f, 1 ), Mod.Data.Meta.Name );
-                ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() ) / 2 );
+                var halfLine = new Vector2( ImGui.GetTextLineHeight() / 2 );
+                ImGui.Dummy( halfLine );
+                ImGui.TextColored( DeleteModNameColor, Mod.Data.Meta.Name );
+                ImGui.Dummy( halfLine );
 
-                var buttonSize = new Vector2( 120, 0 );
+                var buttonSize = ImGuiHelpers.ScaledVector2( 120, 0 );
                 if( ImGui.Button( ButtonYesDelete, buttonSize ) )
                 {
                     ImGui.CloseCurrentPopup();
@@ -110,8 +112,6 @@ namespace Penumbra.UI
                     ImGui.CloseCurrentPopup();
                     _deleteIndex = null;
                 }
-
-                ImGui.EndPopup();
             }
 
             // === Add ===
@@ -119,7 +119,7 @@ namespace Penumbra.UI
 
             private void DrawModAddButton()
             {
-                ImGui.PushFont( UiBuilder.IconFont );
+                using var raii = ImGuiRaii.PushFont( UiBuilder.IconFont );
 
                 if( ImGui.Button( FontAwesomeIcon.Plus.ToIconString(), SelectorButtonSizes * _selectorScalingFactor ) )
                 {
@@ -127,12 +127,9 @@ namespace Penumbra.UI
                     ImGui.OpenPopup( LabelAddModPopup );
                 }
 
-                ImGui.PopFont();
+                raii.Pop();
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipAdd );
-                }
+                ImGuiCustom.HoverTooltip( TooltipAdd );
 
                 DrawModAddPopup();
             }
@@ -143,6 +140,8 @@ namespace Penumbra.UI
                 {
                     return;
                 }
+
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
 
                 if( _modAddKeyboardFocus )
                 {
@@ -155,7 +154,7 @@ namespace Penumbra.UI
                 {
                     try
                     {
-                        var newDir = TexToolsImport.CreateModFolder( new DirectoryInfo( _base._plugin.Configuration!.ModDirectory ),
+                        var newDir = TexToolsImport.CreateModFolder( new DirectoryInfo( Penumbra.Config!.ModDirectory ),
                             newName );
                         var modMeta = new ModMeta
                         {
@@ -182,20 +181,16 @@ namespace Penumbra.UI
                 {
                     ImGui.CloseCurrentPopup();
                 }
-
-                ImGui.EndPopup();
             }
 
             // === Help ===
             private void DrawModHelpButton()
             {
-                ImGui.PushFont( UiBuilder.IconFont );
+                using var raii = ImGuiRaii.PushFont( UiBuilder.IconFont );
                 if( ImGui.Button( FontAwesomeIcon.QuestionCircle.ToIconString(), HelpButtonSizes * _selectorScalingFactor ) )
                 {
                     ImGui.OpenPopup( LabelModHelpPopup );
                 }
-
-                ImGui.PopFont();
             }
 
             private static void DrawModHelpPopup()
@@ -208,6 +203,8 @@ namespace Penumbra.UI
                 {
                     return;
                 }
+
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
 
                 ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
                 ImGui.Text( "Mod Selector" );
@@ -269,24 +266,20 @@ namespace Penumbra.UI
                 {
                     ImGui.CloseCurrentPopup();
                 }
-
-                ImGui.EndPopup();
             }
 
             // === Main ===
             private void DrawModsSelectorButtons()
             {
                 // Selector controls
-                ImGui.PushStyleVar( ImGuiStyleVar.WindowPadding, ZeroVector );
-                ImGui.PushStyleVar( ImGuiStyleVar.FrameRounding, 0 );
+                using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.WindowPadding, ZeroVector )
+                   .Push( ImGuiStyleVar.FrameRounding, 0 );
 
                 DrawModAddButton();
                 ImGui.SameLine();
                 DrawModHelpButton();
                 ImGui.SameLine();
                 DrawModTrashButton();
-
-                ImGui.PopStyleVar( 2 );
             }
         }
 
@@ -297,7 +290,7 @@ namespace Penumbra.UI
 
             private void DrawTextFilter()
             {
-                ImGui.SetNextItemWidth( SelectorPanelWidth * _selectorScalingFactor - 22 );
+                ImGui.SetNextItemWidth( SelectorPanelWidth * _selectorScalingFactor - 22 * ImGuiHelpers.GlobalScale );
                 var tmp = _modFilterInput;
                 if( ImGui.InputTextWithHint( LabelModFilter, "Filter Mods...", ref tmp, 256 ) && _modFilterInput != tmp )
                 {
@@ -305,10 +298,7 @@ namespace Penumbra.UI
                     _modFilterInput = tmp;
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipModFilter );
-                }
+                ImGuiCustom.HoverTooltip( TooltipModFilter );
             }
 
             private void DrawToggleFilter()
@@ -316,30 +306,25 @@ namespace Penumbra.UI
                 if( ImGui.BeginCombo( "##ModStateFilter", "",
                     ImGuiComboFlags.NoPreview | ImGuiComboFlags.PopupAlignLeft | ImGuiComboFlags.HeightLargest ) )
                 {
-                    var flags = ( int )Cache.StateFilter;
+                    using var raii  = ImGuiRaii.DeferredEnd( ImGui.EndCombo );
+                    var       flags = ( int )Cache.StateFilter;
                     foreach( ModFilter flag in Enum.GetValues( typeof( ModFilter ) ) )
                     {
                         ImGui.CheckboxFlags( flag.ToName(), ref flags, ( int )flag );
                     }
 
                     Cache.StateFilter = ( ModFilter )flags;
-
-                    ImGui.EndCombo();
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( "Filter mods for their activation status." );
-                }
+                ImGuiCustom.HoverTooltip( "Filter mods for their activation status." );
             }
 
             private void DrawModsSelectorFilter()
             {
-                ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, ZeroVector );
+                using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ZeroVector );
                 DrawTextFilter();
                 ImGui.SameLine();
                 DrawToggleFilter();
-                ImGui.PopStyleVar();
             }
         }
 
@@ -361,15 +346,14 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndDragDropTarget );
+
                 if( IsDropping( DraggedModLabel ) )
                 {
                     var payload  = ImGui.GetDragDropPayload();
                     var modIndex = Marshal.ReadInt32( payload.Data );
                     var mod      = Cache.GetMod( modIndex ).Item1;
-                    if( mod != null )
-                    {
-                        mod.Data.Move( folder );
-                    }
+                    mod?.Data.Move( folder );
                 }
                 else if( IsDropping( DraggedFolderLabel ) )
                 {
@@ -377,13 +361,11 @@ namespace Penumbra.UI
                     var folderName = Marshal.PtrToStringUni( payload.Data );
                     if( ModFileSystem.Find( folderName!, out var droppedFolder )
                      && !ReferenceEquals( droppedFolder, folder )
-                     && !folder.FullName.StartsWith( folderName, StringComparison.InvariantCultureIgnoreCase ) )
+                     && !folder.FullName.StartsWith( folderName!, StringComparison.InvariantCultureIgnoreCase ) )
                     {
                         droppedFolder.Move( folder );
                     }
                 }
-
-                ImGui.EndDragDropTarget();
             }
 
             private void DragDropSourceFolder( ModFolder folder )
@@ -393,11 +375,12 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndDragDropSource );
+
                 var folderName = folder.FullName;
                 var ptr        = Marshal.StringToHGlobalUni( folderName );
                 ImGui.SetDragDropPayload( DraggedFolderLabel, ptr, ( uint )( folderName.Length + 1 ) * 2 );
                 ImGui.Text( $"Moving {folderName}..." );
-                ImGui.EndDragDropSource();
             }
 
             private void DragDropSourceMod( int modIndex, string modName )
@@ -407,10 +390,11 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndDragDropSource );
+
                 Marshal.WriteInt32( _dragDropPayload, modIndex );
                 ImGui.SetDragDropPayload( "ModIndex", _dragDropPayload, 4 );
                 ImGui.Text( $"Moving {modName}..." );
-                ImGui.EndDragDropSource();
             }
 
             ~Selector()
@@ -497,6 +481,8 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+
                 if( ModPanel.DrawSortOrder( mod.Data, _modManager, this ) )
                 {
                     ImGui.CloseCurrentPopup();
@@ -506,8 +492,6 @@ namespace Penumbra.UI
                 {
                     ImGui.SetKeyboardFocusHere( mod.Data.SortOrder.FullPath.Length - 1 );
                 }
-
-                ImGui.EndPopup();
             }
 
             // === Folder ===
@@ -541,12 +525,12 @@ namespace Penumbra.UI
                         collection == _modManager.Collections.ActiveCollection );
                 }
 
-                collection.Save( _base._plugin.PluginInterface );
+                collection.Save();
             }
 
             private void DrawRenameFolderInput( ModFolder folder )
             {
-                ImGui.SetNextItemWidth( 150 );
+                ImGui.SetNextItemWidth( 150 * ImGuiHelpers.GlobalScale );
                 if( !ImGui.InputTextWithHint( "##NewFolderName", "Rename Folder...", ref _newFolderName, 64,
                     ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
@@ -567,23 +551,25 @@ namespace Penumbra.UI
 
             private void DrawFolderContextMenu( ModFolder folder, int currentIdx, string treeName )
             {
-                if( ImGui.BeginPopup( treeName ) )
+                if( !ImGui.BeginPopup( treeName ) )
                 {
-                    if( ImGui.MenuItem( "Enable All Descendants" ) )
-                    {
-                        ChangeStatusOfChildren( folder, currentIdx, true );
-                    }
-
-                    if( ImGui.MenuItem( "Disable All Descendants" ) )
-                    {
-                        ChangeStatusOfChildren( folder, currentIdx, false );
-                    }
-
-                    ImGui.Dummy( Vector2.UnitY * 10 );
-                    DrawRenameFolderInput( folder );
-
-                    ImGui.EndPopup();
+                    return;
                 }
+
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+
+                if( ImGui.MenuItem( "Enable All Descendants" ) )
+                {
+                    ChangeStatusOfChildren( folder, currentIdx, true );
+                }
+
+                if( ImGui.MenuItem( "Disable All Descendants" ) )
+                {
+                    ChangeStatusOfChildren( folder, currentIdx, false );
+                }
+
+                ImGuiHelpers.ScaledDummy( 0, 10 );
+                DrawRenameFolderInput( folder );
             }
         }
 
@@ -608,35 +594,32 @@ namespace Penumbra.UI
                 if( collection == ModCollection.Empty
                  || collection == _modManager.Collections.CurrentCollection )
                 {
-                    ImGui.PushStyleVar( ImGuiStyleVar.Alpha, 0.5f );
+                    using var _ = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f );
                     ImGui.Button( label, Vector2.UnitX * size );
-                    ImGui.PopStyleVar();
                 }
                 else if( ImGui.Button( label, Vector2.UnitX * size ) )
                 {
                     _base._menu.CollectionsTab.SetCurrentCollection( collection );
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip(
-                        $"Switches to the currently set {tooltipLabel} collection, if it is not set to None and it is not the current collection already." );
-                }
+                ImGuiCustom.HoverTooltip(
+                    $"Switches to the currently set {tooltipLabel} collection, if it is not set to None and it is not the current collection already." );
             }
 
             private void DrawHeaderBar()
             {
                 const float size = 200;
+
                 DrawModsSelectorFilter();
                 var textSize  = ImGui.CalcTextSize( TabCollections.LabelCurrentCollection ).X + ImGui.GetStyle().ItemInnerSpacing.X;
                 var comboSize = size * ImGui.GetIO().FontGlobalScale;
                 var offset    = comboSize + textSize;
 
-                var buttonSize = ( ImGui.GetWindowContentRegionWidth()
+                var buttonSize = Math.Max( ( ImGui.GetWindowContentRegionWidth()
                       - offset
                       - SelectorPanelWidth * _selectorScalingFactor
                       - 4                  * ImGui.GetStyle().ItemSpacing.X )
-                  / 2;
+                  / 2, 5f );
                 ImGui.SameLine();
                 DrawCollectionButton( "Default", "default", buttonSize, _modManager.Collections.DefaultCollection );
 
@@ -645,9 +628,8 @@ namespace Penumbra.UI
 
                 ImGui.SameLine();
                 ImGui.SetNextItemWidth( comboSize );
-                ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
+                using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
                 _base._menu.CollectionsTab.DrawCurrentCollectionSelector( false );
-                ImGui.PopStyleVar();
             }
 
             private void DrawFolderContent( ModFolder folder, ref int idx )
@@ -657,7 +639,7 @@ namespace Penumbra.UI
                 {
                     if( item is ModFolder sub )
                     {
-                        var (visible, enabled) = Cache.GetFolder( sub );
+                        var (visible, _) = Cache.GetFolder( sub );
                         if( visible )
                         {
                             DrawModFolder( sub, ref idx );
@@ -684,8 +666,9 @@ namespace Penumbra.UI
 
             private void DrawModFolder( ModFolder folder, ref int idx )
             {
-                var treeName = $"{folder.Name}##{folder.FullName}";
-                var open     = ImGui.TreeNodeEx( treeName );
+                var       treeName = $"{folder.Name}##{folder.FullName}";
+                var       open     = ImGui.TreeNodeEx( treeName );
+                using var raii     = ImGuiRaii.DeferredEnd( ImGui.TreePop, open );
                 if( ImGui.IsItemClicked( ImGuiMouseButton.Right ) )
                 {
                     _newFolderName = string.Empty;
@@ -699,7 +682,6 @@ namespace Penumbra.UI
                 if( open )
                 {
                     DrawFolderContent( folder, ref idx );
-                    ImGui.TreePop();
                 }
                 else
                 {
@@ -709,17 +691,10 @@ namespace Penumbra.UI
 
             private void DrawMod( Mod.Mod mod, int modIndex, uint color )
             {
-                if( color != 0 )
-                {
-                    ImGui.PushStyleColor( ImGuiCol.Text, color );
-                }
+                using var colorRaii = ImGuiRaii.PushColor( ImGuiCol.Text, color, color != 0 );
 
                 var selected = ImGui.Selectable( $"{mod.Data.Meta.Name}##{modIndex}", modIndex == _index );
-
-                if( color != 0 )
-                {
-                    ImGui.PopStyleColor();
-                }
+                colorRaii.Pop();
 
                 var popupName = $"##SortOrderPopup{modIndex}";
                 var firstOpen = false;
@@ -755,36 +730,33 @@ namespace Penumbra.UI
                     }
                 }
 
-                try
-                {
-                    _selectorScalingFactor = _base._plugin.Configuration.ScaleModSelector
+                _selectorScalingFactor = ImGuiHelpers.GlobalScale
+                  * ( Penumbra.Config.ScaleModSelector
                         ? ImGui.GetWindowWidth() / SettingsMenu.MinSettingsSize.X
-                        : 1f;
-                    // Selector pane
-                    DrawHeaderBar();
-                    ImGui.PushStyleVar( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
-                    ImGui.BeginGroup();
-                    // Inlay selector list
-                    ImGui.BeginChild( LabelSelectorList,
-                        new Vector2( SelectorPanelWidth * _selectorScalingFactor, -ImGui.GetFrameHeightWithSpacing() ),
-                        true, ImGuiWindowFlags.HorizontalScrollbar );
-
-                    ImGui.PushStyleVar( ImGuiStyleVar.IndentSpacing, 12.5f );
+                        : 1f );
+                // Selector pane
+                DrawHeaderBar();
+                using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
+                ImGui.BeginGroup();
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndGroup )
+                   .Push( ImGui.EndChild );
+                // Inlay selector list
+                if( ImGui.BeginChild( LabelSelectorList,
+                    new Vector2( SelectorPanelWidth * _selectorScalingFactor, -ImGui.GetFrameHeightWithSpacing() ),
+                    true, ImGuiWindowFlags.HorizontalScrollbar ) )
+                {
+                    style.Push( ImGuiStyleVar.IndentSpacing, 12.5f );
 
                     var modIndex = 0;
                     DrawFolderContent( _modManager.StructuredMods, ref modIndex );
-                    ImGui.PopStyleVar();
-
-                    ImGui.EndChild();
-
-                    DrawModsSelectorButtons();
-                    ImGui.EndGroup();
-                }
-                finally
-                {
-                    ImGui.PopStyleVar();
+                    style.Pop();
                 }
 
+                raii.Pop();
+
+                DrawModsSelectorButtons();
+
+                style.Pop();
                 DrawModHelpPopup();
 
                 DrawDeleteModal();

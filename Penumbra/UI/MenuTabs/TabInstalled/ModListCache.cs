@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Penumbra.Mods;
 
 namespace Penumbra.UI
@@ -18,12 +18,12 @@ namespace Penumbra.UI
         private readonly List< (bool visible, uint color) >                    _visibleMods    = new();
         private readonly Dictionary< ModFolder, (bool visible, bool enabled) > _visibleFolders = new();
 
-        private string    _modFilter            = "";
-        private string    _modFilterChanges     = "";
-        private string    _modFilterAuthor      = "";
-        private ModFilter _stateFilter          = ModFilterExtensions.UnfilteredStateMods;
-        private bool      _listResetNecessary   = false;
-        private bool      _filterResetNecessary = false;
+        private string    _modFilter        = string.Empty;
+        private string    _modFilterChanges = string.Empty;
+        private string    _modFilterAuthor  = string.Empty;
+        private ModFilter _stateFilter      = ModFilterExtensions.UnfilteredStateMods;
+        private bool      _listResetNecessary;
+        private bool      _filterResetNecessary;
 
 
         public ModFilter StateFilter
@@ -167,6 +167,7 @@ namespace Penumbra.UI
             {
                 _visibleMods.Add( CheckFilters( mod ) );
             }
+
             _filterResetNecessary = false;
         }
 

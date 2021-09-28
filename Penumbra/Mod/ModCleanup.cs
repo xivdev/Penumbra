@@ -5,8 +5,10 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Penumbra.GameData.Util;
+using Penumbra.Importer;
+using Penumbra.Mods;
 using Penumbra.Structs;
 using Penumbra.Util;
 
@@ -51,6 +53,105 @@ namespace Penumbra.Mod
                     _filesBySize[ fileLength ] = new List< FileInfo >() { file };
                 }
             }
+        }
+
+        private static DirectoryInfo CreateNewModDir( ModData mod, string optionGroup, string option )
+        {
+            var newName = $"{mod.BasePath.Name}_{optionGroup}_{option}";
+            var newDir  = TexToolsImport.CreateModFolder( new DirectoryInfo( Penumbra.Config!.ModDirectory ), newName );
+            return newDir;
+        }
+
+        private static ModData CreateNewMod( DirectoryInfo newDir, string newSortOrder )
+        {
+            var manager = Service< ModManager >.Get();
+            manager.AddMod( newDir );
+            var newMod = manager.Mods[ newDir.Name ];
+            newMod.Move( newSortOrder );
+            newMod.ComputeChangedItems();
+            ModFileSystem.InvokeChange();
+            return newMod;
+        }
+
+        private static ModMeta CreateNewMeta( DirectoryInfo newDir, ModData mod, string name, string optionGroup, string option )
+        {
+            var newMeta = new ModMeta
+            {
+                Author      = mod.Meta.Author,
+                Name        = name,
+                Description = $"Split from {mod.Meta.Name} Group {optionGroup} Option {option}.",
+            };
+            var metaFile = new FileInfo( Path.Combine( newDir.FullName, "meta.json" ) );
+            newMeta.SaveToFile( metaFile );
+            return newMeta;
+        }
+
+        private static void CreateModSplit( HashSet< string > unseenPaths, ModData mod, OptionGroup group, Option option )
+        {
+            try
+            {
+                var newDir  = CreateNewModDir( mod, group.GroupName!, option.OptionName );
+                var newName = group.SelectionType == SelectType.Multi ? $"{group.GroupName} - {option.OptionName}" : option.OptionName;
+                var newMeta = CreateNewMeta( newDir, mod, newName, group.GroupName!, option.OptionName );
+                foreach( var (fileName, paths) in option.OptionFiles )
+                {
+                    var oldPath = Path.Combine( mod.BasePath.FullName, fileName );
+                    unseenPaths.Remove( oldPath );
+                    if( File.Exists( oldPath ) )
+                    {
+                        foreach( var path in paths )
+                        {
+                            var newPath = Path.Combine( newDir.FullName, path );
+                            Directory.CreateDirectory( Path.GetDirectoryName( newPath )! );
+                            File.Copy( oldPath, newPath, true );
+                        }
+                    }
+                }
+
+                var newSortOrder = group.SelectionType == SelectType.Single
+                    ? $"{mod.SortOrder.ParentFolder.FullName}/{mod.Meta.Name}/{group.GroupName}/{option.OptionName}"
+                    : $"{mod.SortOrder.ParentFolder.FullName}/{mod.Meta.Name}/{group.GroupName} - {option.OptionName}";
+                CreateNewMod( newDir, newSortOrder );
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not split Mod:\n{e}" );
+            }
+        }
+
+        public static void SplitMod( ModData mod )
+        {
+            if( !mod.Meta.Groups.Any() )
+            {
+                return;
+            }
+
+            var unseenPaths = mod.Resources.ModFiles.Select( f => f.FullName ).ToHashSet();
+            foreach( var group in mod.Meta.Groups.Values )
+            {
+                foreach( var option in group.Options )
+                {
+                    CreateModSplit( unseenPaths, mod, group, option );
+                }
+            }
+
+            if( !unseenPaths.Any() )
+            {
+                return;
+            }
+
+            var defaultGroup = new OptionGroup()
+            {
+                GroupName     = "Default",
+                SelectionType = SelectType.Multi,
+            };
+            var defaultOption = new Option()
+            {
+                OptionName = "Files",
+                OptionFiles = unseenPaths.ToDictionary( p => new RelPath( new FileInfo( p ), mod.BasePath ),
+                    p => new HashSet< GamePath >() { new( new FileInfo( p ), mod.BasePath ) } ),
+            };
+            CreateModSplit( unseenPaths, mod, defaultGroup, defaultOption );
         }
 
         private static Option FindOrCreateDuplicates( ModMeta meta )

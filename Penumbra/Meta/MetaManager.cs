@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Lumina.Data.Files;
 using Penumbra.GameData.Util;
 using Penumbra.Interop;
@@ -44,7 +44,7 @@ namespace Penumbra.Meta
 
         private readonly MetaDefaults                     _default;
         private readonly DirectoryInfo                    _dir;
-        private readonly GameResourceManagement           _resourceManagement;
+        private readonly ResidentResources                _resourceManagement;
         private readonly Dictionary< GamePath, FileInfo > _resolvedFiles;
 
         private readonly Dictionary< MetaManipulation, Mod.Mod > _currentManipulations = new();
@@ -53,11 +53,15 @@ namespace Penumbra.Meta
         public IEnumerable< (MetaManipulation, Mod.Mod) > Manipulations
             => _currentManipulations.Select( kvp => ( kvp.Key, kvp.Value ) );
 
+        public IEnumerable< (GamePath, FileInfo) > Files
+            => _currentFiles.Where( kvp => kvp.Value.CurrentFile != null )
+               .Select( kvp => ( kvp.Key, kvp.Value.CurrentFile! ) );
+
         public int Count
             => _currentManipulations.Count;
 
         public bool TryGetValue( MetaManipulation manip, out Mod.Mod mod )
-            => _currentManipulations.TryGetValue( manip, out mod );
+            => _currentManipulations.TryGetValue( manip, out mod! );
 
         private static void DisposeFile( FileInfo? file )
         {
@@ -120,7 +124,7 @@ namespace Penumbra.Meta
         {
             _resolvedFiles      = resolvedFiles;
             _default            = Service< MetaDefaults >.Get();
-            _resourceManagement = Service< GameResourceManagement >.Get();
+            _resourceManagement = Service< ResidentResources >.Get();
             _dir                = new DirectoryInfo( Path.Combine( tempDir.FullName, name.ReplaceBadXivSymbols() ) );
             ClearDirectory();
         }

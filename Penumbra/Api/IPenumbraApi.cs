@@ -1,5 +1,6 @@
-using Dalamud.Game.ClientState.Actors.Types;
+using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
+using Penumbra.GameData.Enums;
 
 namespace Penumbra.Api
 {
@@ -7,14 +8,6 @@ namespace Penumbra.Api
     {
         public int ApiVersion { get; }
         public bool Valid { get; }
-    }
-
-    public enum MouseButton
-    {
-        None,
-        Left,
-        Right,
-        Middle,
     }
 
     public delegate void ChangedItemHover( object? item );
@@ -27,12 +20,12 @@ namespace Penumbra.Api
         public event ChangedItemHover? ChangedItemTooltip;
         // Triggered when the user clicks a listed changed object in a mod tab.
         public event ChangedItemClick? ChangedItemClicked;
-
+        
         // Queue redrawing of all actors of the given name with the given RedrawType.
-        public void RedrawActor( string name, RedrawType setting );
+        public void RedrawObject( string name, RedrawType setting );
 
         // Queue redrawing of the specific actor with the given RedrawType. Should only be used when the actor is sure to be valid.
-        public void RedrawActor( Actor actor, RedrawType setting );
+        public void RedrawObject( GameObject gameObject, RedrawType setting );
 
         // Queue redrawing of all currently available actors with the given RedrawType.
         public void RedrawAll( RedrawType setting );

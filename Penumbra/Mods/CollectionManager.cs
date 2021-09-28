@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Penumbra.Interop;
 using Penumbra.Mod;
 using Penumbra.Util;
@@ -12,9 +12,9 @@ namespace Penumbra.Mods
     // Contains all collections and respective functions, as well as the collection settings.
     public class CollectionManager
     {
-        private readonly Plugin     _plugin;
         private readonly ModManager _manager;
 
+        public string CollectionChangedTo { get; private set; } = string.Empty;
         public Dictionary< string, ModCollection > Collections { get; } = new();
 
         public ModCollection CurrentCollection { get; private set; } = null!;
@@ -22,17 +22,37 @@ namespace Penumbra.Mods
         public ModCollection ForcedCollection { get; private set; } = ModCollection.Empty;
         public Dictionary< string, ModCollection > CharacterCollection { get; } = new();
 
-        public ModCollection ActiveCollection { get; set; }
+        public ModCollection ActiveCollection { get; private set; }
 
-        public CollectionManager( Plugin plugin, ModManager manager )
+        public CollectionManager( ModManager manager )
         {
-            _plugin  = plugin;
             _manager = manager;
 
             ReadCollections();
-            LoadConfigCollections( _plugin.Configuration );
+            LoadConfigCollections( Penumbra.Config );
             ActiveCollection = DefaultCollection;
         }
+
+        public bool SetActiveCollection( ModCollection newActive, string name )
+        {
+            CollectionChangedTo = name;
+            if( newActive == ActiveCollection )
+            {
+                return false;
+            }
+
+            if( ActiveCollection.Cache?.MetaManipulations.Count > 0 || newActive.Cache?.MetaManipulations.Count > 0 )
+            {
+                var resourceManager = Service< ResidentResources >.Get();
+                resourceManager.ReloadPlayerResources();
+            }
+
+            ActiveCollection = newActive;
+            return true;
+        }
+
+        public bool ResetActiveCollection()
+            => SetActiveCollection( DefaultCollection, string.Empty );
 
         public void RecreateCaches()
         {
@@ -80,7 +100,7 @@ namespace Penumbra.Mods
 
             if( reloadMeta && ActiveCollection.Settings.TryGetValue( mod.BasePath.Name, out var config ) && config.Enabled )
             {
-                Service< GameResourceManagement >.Get().ReloadPlayerResources();
+                Service< ResidentResources >.Get().ReloadPlayerResources();
             }
         }
 
@@ -95,7 +115,7 @@ namespace Penumbra.Mods
 
             var newCollection = new ModCollection( name, settings );
             Collections.Add( name, newCollection );
-            SaveCollection( newCollection );
+            newCollection.Save();
             SetCurrentCollection( newCollection );
             return true;
         }
@@ -133,7 +153,7 @@ namespace Penumbra.Mods
                     }
                 }
 
-                collection.Delete( _plugin.PluginInterface! );
+                collection.Delete();
                 Collections.Remove( name );
                 return true;
             }
@@ -179,52 +199,51 @@ namespace Penumbra.Mods
             setter( newCollection );
             RemoveCache( oldCollection );
             configSetter( newCollection.Name );
-            _plugin.Configuration.Save();
+            Penumbra.Config.Save();
         }
 
         public void SetDefaultCollection( ModCollection newCollection )
             => SetCollection( newCollection, DefaultCollection, c =>
             {
-                if( ActiveCollection == DefaultCollection )
+                if( !CollectionChangedTo.Any() )
                 {
                     ActiveCollection = c;
-                    var resourceManager = Service< GameResourceManagement >.Get();
+                    var resourceManager = Service< ResidentResources >.Get();
                     resourceManager.ReloadPlayerResources();
                 }
 
                 DefaultCollection = c;
-            }, s => _plugin.Configuration.DefaultCollection = s );
+            }, s => Penumbra.Config.DefaultCollection = s );
 
         public void SetForcedCollection( ModCollection newCollection )
-            => SetCollection( newCollection, ForcedCollection, c => ForcedCollection = c, s => _plugin.Configuration.ForcedCollection = s );
+            => SetCollection( newCollection, ForcedCollection, c => ForcedCollection = c, s => Penumbra.Config.ForcedCollection = s );
 
         public void SetCurrentCollection( ModCollection newCollection )
-            => SetCollection( newCollection, CurrentCollection, c => CurrentCollection = c, s => _plugin.Configuration.CurrentCollection = s );
+            => SetCollection( newCollection, CurrentCollection, c => CurrentCollection = c, s => Penumbra.Config.CurrentCollection = s );
 
         public void SetCharacterCollection( string characterName, ModCollection newCollection )
             => SetCollection( newCollection,
                 CharacterCollection.TryGetValue( characterName, out var oldCollection ) ? oldCollection : ModCollection.Empty,
                 c =>
                 {
-                    if( CharacterCollection.TryGetValue( characterName, out var collection )
-                     && ActiveCollection == collection )
+                    if( CollectionChangedTo == characterName && CharacterCollection.TryGetValue( characterName, out var collection ) )
                     {
                         ActiveCollection = c;
-                        var resourceManager = Service< GameResourceManagement >.Get();
+                        var resourceManager = Service< ResidentResources >.Get();
                         resourceManager.ReloadPlayerResources();
                     }
 
                     CharacterCollection[ characterName ] = c;
-                }, s => _plugin.Configuration.CharacterCollections[ characterName ] = s );
+                }, s => Penumbra.Config.CharacterCollections[ characterName ] = s );
 
         public bool CreateCharacterCollection( string characterName )
         {
             if( !CharacterCollection.ContainsKey( characterName ) )
             {
-                CharacterCollection[ characterName ]                        = ModCollection.Empty;
-                _plugin.Configuration.CharacterCollections[ characterName ] = string.Empty;
-                _plugin.Configuration.Save();
-                _plugin.PlayerWatcher.AddPlayerToWatch( characterName );
+                CharacterCollection[ characterName ]                  = ModCollection.Empty;
+                Penumbra.Config.CharacterCollections[ characterName ] = string.Empty;
+                Penumbra.Config.Save();
+                Penumbra.PlayerWatcher.AddPlayerToWatch( characterName );
                 return true;
             }
 
@@ -237,12 +256,12 @@ namespace Penumbra.Mods
             {
                 RemoveCache( collection );
                 CharacterCollection.Remove( characterName );
-                _plugin.PlayerWatcher.RemovePlayerFromWatch( characterName );
+                Penumbra.PlayerWatcher.RemovePlayerFromWatch( characterName );
             }
 
-            if( _plugin.Configuration.CharacterCollections.Remove( characterName ) )
+            if( Penumbra.Config.CharacterCollections.Remove( characterName ) )
             {
-                _plugin.Configuration.Save();
+                Penumbra.Config.Save();
             }
         }
 
@@ -308,7 +327,7 @@ namespace Penumbra.Mods
             var configChanged = false;
             foreach( var kvp in config.CharacterCollections.ToArray() )
             {
-                _plugin.PlayerWatcher.AddPlayerToWatch( kvp.Key );
+                Penumbra.PlayerWatcher.AddPlayerToWatch( kvp.Key );
                 if( kvp.Value == string.Empty )
                 {
                     CharacterCollection.Add( kvp.Key, ModCollection.Empty );
@@ -345,7 +364,7 @@ namespace Penumbra.Mods
 
         private void ReadCollections()
         {
-            var collectionDir = ModCollection.CollectionDir( _plugin.PluginInterface! );
+            var collectionDir = ModCollection.CollectionDir();
             if( collectionDir.Exists )
             {
                 foreach( var file in collectionDir.EnumerateFiles( "*.json" ) )
@@ -373,12 +392,9 @@ namespace Penumbra.Mods
             if( !Collections.ContainsKey( ModCollection.DefaultCollection ) )
             {
                 var defaultCollection = new ModCollection();
-                SaveCollection( defaultCollection );
+                defaultCollection.Save();
                 Collections.Add( defaultCollection.Name, defaultCollection );
             }
         }
-
-        public void SaveCollection( ModCollection collection )
-            => collection.Save( _plugin.PluginInterface! );
     }
 }

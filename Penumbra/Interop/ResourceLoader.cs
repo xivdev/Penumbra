@@ -3,21 +3,19 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
-using Dalamud.Plugin;
+using Dalamud.Hooking;
+using Dalamud.Logging;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
 using Penumbra.Structs;
 using Penumbra.Util;
-using Reloaded.Hooks;
-using Reloaded.Hooks.Definitions;
-using Reloaded.Hooks.Definitions.X64;
 using FileMode = Penumbra.Structs.FileMode;
 
 namespace Penumbra.Interop
 {
     public class ResourceLoader : IDisposable
     {
-        public Plugin Plugin { get; set; }
+        public Penumbra Penumbra { get; set; }
 
         public bool IsEnabled { get; set; }
 
@@ -25,24 +23,24 @@ namespace Penumbra.Interop
 
 
         // Delegate prototypes
-        [Function( CallingConventions.Microsoft )]
+        [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
         public unsafe delegate byte ReadFilePrototype( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync );
 
-        [Function( CallingConventions.Microsoft )]
+        [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
         public unsafe delegate byte ReadSqpackPrototype( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync );
 
-        [Function( CallingConventions.Microsoft )]
+        [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
         public unsafe delegate void* GetResourceSyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType
             , uint* pResourceHash, char* pPath, void* pUnknown );
 
-        [Function( CallingConventions.Microsoft )]
+        [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
         public unsafe delegate void* GetResourceAsyncPrototype( IntPtr pFileManager, uint* pCategoryId, char* pResourceType
             , uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown );
 
         // Hooks
-        public IHook< GetResourceSyncPrototype >? GetResourceSyncHook { get; private set; }
-        public IHook< GetResourceAsyncPrototype >? GetResourceAsyncHook { get; private set; }
-        public IHook< ReadSqpackPrototype >? ReadSqpackHook { get; private set; }
+        public Hook< GetResourceSyncPrototype >? GetResourceSyncHook { get; private set; }
+        public Hook< GetResourceAsyncPrototype >? GetResourceAsyncHook { get; private set; }
+        public Hook< ReadSqpackPrototype >? ReadSqpackHook { get; private set; }
 
         // Unmanaged functions
         public ReadFilePrototype? ReadFile { get; private set; }
@@ -52,32 +50,34 @@ namespace Penumbra.Interop
         public Regex? LogFileFilter = null;
 
 
-        public ResourceLoader( Plugin plugin )
+        public ResourceLoader( Penumbra penumbra )
         {
-            Plugin = plugin;
-            Crc32  = new Crc32();
+            Penumbra = penumbra;
+            Crc32    = new Crc32();
         }
 
         public unsafe void Init()
         {
-            var scanner = Plugin!.PluginInterface!.TargetModuleScanner;
-
             var readFileAddress =
-                scanner.ScanText( "E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3 BA 05" );
+                Dalamud.SigScanner.ScanText( "E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3 BA 05" );
+            GeneralUtil.PrintDebugAddress( "ReadFile", readFileAddress );
 
             var readSqpackAddress =
-                scanner.ScanText( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3" );
+                Dalamud.SigScanner.ScanText( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3" );
+            GeneralUtil.PrintDebugAddress( "ReadSqPack", readSqpackAddress );
 
             var getResourceSyncAddress =
-                scanner.ScanText( "E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00" );
+                Dalamud.SigScanner.ScanText( "E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00" );
+            GeneralUtil.PrintDebugAddress( "GetResourceSync", getResourceSyncAddress );
 
             var getResourceAsyncAddress =
-                scanner.ScanText( "E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00" );
+                Dalamud.SigScanner.ScanText( "E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00" );
+            GeneralUtil.PrintDebugAddress( "GetResourceAsync", getResourceAsyncAddress );
 
 
-            ReadSqpackHook       = new Hook< ReadSqpackPrototype >( ReadSqpackHandler, ( long )readSqpackAddress );
-            GetResourceSyncHook  = new Hook< GetResourceSyncPrototype >( GetResourceSyncHandler, ( long )getResourceSyncAddress );
-            GetResourceAsyncHook = new Hook< GetResourceAsyncPrototype >( GetResourceAsyncHandler, ( long )getResourceAsyncAddress );
+            ReadSqpackHook       = new Hook< ReadSqpackPrototype >( readSqpackAddress, ReadSqpackHandler );
+            GetResourceSyncHook  = new Hook< GetResourceSyncPrototype >( getResourceSyncAddress, GetResourceSyncHandler );
+            GetResourceAsyncHook = new Hook< GetResourceAsyncPrototype >( getResourceAsyncAddress, GetResourceAsyncHandler );
 
             ReadFile = Marshal.GetDelegateForFunctionPointer< ReadFilePrototype >( readFileAddress );
         }
@@ -123,7 +123,7 @@ namespace Penumbra.Interop
                     return null;
                 }
 
-                return GetResourceSyncHook.OriginalFunction( pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown );
+                return GetResourceSyncHook.Original( pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown );
             }
 
             if( GetResourceAsyncHook == null )
@@ -132,7 +132,7 @@ namespace Penumbra.Interop
                 return null;
             }
 
-            return GetResourceAsyncHook.OriginalFunction( pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
+            return GetResourceAsyncHook.Original( pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }
 
         private unsafe void* GetResourceHandler(
@@ -149,7 +149,7 @@ namespace Penumbra.Interop
             string file;
             var    modManager = Service< ModManager >.Get();
 
-            if( !Plugin!.Configuration!.IsEnabled || modManager == null )
+            if( !Penumbra.Config.IsEnabled || modManager == null )
             {
                 if( LogAllFiles )
                 {
@@ -197,7 +197,8 @@ namespace Penumbra.Interop
         {
             if( ReadFile == null || pFileDesc == null || pFileDesc->ResourceHandle == null )
             {
-                return ReadSqpackHook?.OriginalFunction( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
+                PluginLog.Error( "THIS SHOULD NOT HAPPEN" );
+                return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
             }
 
             var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pFileDesc->ResourceHandle->FileName() ) );
@@ -206,7 +207,7 @@ namespace Penumbra.Interop
 
             if( gameFsPath == null || gameFsPath.Length >= 260 || !isRooted )
             {
-                return ReadSqpackHook?.OriginalFunction( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
+                return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
             }
 
             PluginLog.Debug( "loading modded file: {GameFsPath}", gameFsPath );
@@ -239,10 +240,6 @@ namespace Penumbra.Interop
                 return;
             }
 
-            ReadSqpackHook.Activate();
-            GetResourceSyncHook.Activate();
-            GetResourceAsyncHook.Activate();
-
             ReadSqpackHook.Enable();
             GetResourceSyncHook.Enable();
             GetResourceAsyncHook.Enable();
@@ -267,6 +264,9 @@ namespace Penumbra.Interop
         public void Dispose()
         {
             Disable();
+            ReadSqpackHook?.Dispose();
+            GetResourceSyncHook?.Dispose();
+            GetResourceAsyncHook?.Dispose();
         }
     }
 }

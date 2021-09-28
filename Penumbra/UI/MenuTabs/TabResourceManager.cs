@@ -1,9 +1,10 @@
 using System.Numerics;
+using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using ImGuiNET;
-using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
-using ResourceManager = FFXIVClientStructs.FFXIV.Client.System.Resource.ResourceManager;
+using Penumbra.UI.Custom;
 
 namespace Penumbra.UI
 {
@@ -27,17 +28,19 @@ namespace Penumbra.UI
                 return;
             }
 
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.TreePop );
 
             if( typeMap->Count == 0 || !ImGui.BeginTable( $"##{label}_table", 4, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg ) )
             {
-                ImGui.TreePop();
                 return;
             }
 
-            ImGui.TableSetupColumn( "Hash", ImGuiTableColumnFlags.WidthFixed, 100 );
-            ImGui.TableSetupColumn( "Ptr", ImGuiTableColumnFlags.WidthFixed, 100 );
-            ImGui.TableSetupColumn( "Path", ImGuiTableColumnFlags.WidthFixed, ImGui.GetWindowContentRegionWidth() - 300 );
-            ImGui.TableSetupColumn( "Refs", ImGuiTableColumnFlags.WidthFixed, 30 );
+            raii.Push( ImGui.EndTable );
+
+            ImGui.TableSetupColumn( "Hash", ImGuiTableColumnFlags.WidthFixed, 100 * ImGuiHelpers.GlobalScale );
+            ImGui.TableSetupColumn( "Ptr", ImGuiTableColumnFlags.WidthFixed, 100  * ImGuiHelpers.GlobalScale );
+            ImGui.TableSetupColumn( "Path", ImGuiTableColumnFlags.WidthFixed, ImGui.GetWindowContentRegionWidth() - 300 * ImGuiHelpers.GlobalScale );
+            ImGui.TableSetupColumn( "Refs", ImGuiTableColumnFlags.WidthFixed, 30 * ImGuiHelpers.GlobalScale );
             ImGui.TableHeadersRow();
 
             var node = typeMap->SmallestValue;
@@ -60,9 +63,6 @@ namespace Penumbra.UI
                 ImGui.Text( node->KeyValuePair.Item2.Value->RefCount.ToString() );
                 node = node->Next();
             }
-
-            ImGui.EndTable();
-            ImGui.TreePop();
         }
 
         private unsafe void DrawCategoryContainer( string label, ResourceGraph.CategoryContainer container )
@@ -73,6 +73,8 @@ namespace Penumbra.UI
                 return;
             }
 
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.TreePop );
+
             var node = map->SmallestValue;
             while( !node->IsNil )
             {
@@ -80,8 +82,6 @@ namespace Penumbra.UI
                     node->KeyValuePair.Item2.Value );
                 node = node->Next();
             }
-
-            ImGui.TreePop();
         }
 
         private unsafe void DrawResourceManagerTab()
@@ -91,35 +91,36 @@ namespace Penumbra.UI
                 return;
             }
 
-            var resourceHandler = *( ResourceManager** )( _plugin.PluginInterface.TargetModuleScanner.Module.BaseAddress + 0x1D93AC0 );
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+
+            var resourceHandler = *( ResourceManager** )( Dalamud.SigScanner.Module.BaseAddress + 0x1D93AC0 );
 
             if( resourceHandler == null )
             {
                 return;
             }
 
-            if( ImGui.BeginChild( "##ResourceManagerChild", -Vector2.One, true ) )
+            raii.Push( ImGui.EndChild );
+            if( !ImGui.BeginChild( "##ResourceManagerChild", -Vector2.One, true ) )
             {
-                DrawCategoryContainer( "Common", resourceHandler->ResourceGraph->CommonContainer );
-                DrawCategoryContainer( "BgCommon", resourceHandler->ResourceGraph->BgCommonContainer );
-                DrawCategoryContainer( "Bg", resourceHandler->ResourceGraph->BgContainer );
-                DrawCategoryContainer( "Cut", resourceHandler->ResourceGraph->CutContainer );
-                DrawCategoryContainer( "Chara", resourceHandler->ResourceGraph->CharaContainer );
-                DrawCategoryContainer( "Shader", resourceHandler->ResourceGraph->ShaderContainer );
-                DrawCategoryContainer( "Ui", resourceHandler->ResourceGraph->UiContainer );
-                DrawCategoryContainer( "Sound", resourceHandler->ResourceGraph->SoundContainer );
-                DrawCategoryContainer( "Vfx", resourceHandler->ResourceGraph->VfxContainer );
-                DrawCategoryContainer( "UiScript", resourceHandler->ResourceGraph->UiScriptContainer );
-                DrawCategoryContainer( "Exd", resourceHandler->ResourceGraph->ExdContainer );
-                DrawCategoryContainer( "GameScript", resourceHandler->ResourceGraph->GameScriptContainer );
-                DrawCategoryContainer( "Music", resourceHandler->ResourceGraph->MusicContainer );
-                DrawCategoryContainer( "SqpackTest", resourceHandler->ResourceGraph->SqpackTestContainer );
-                DrawCategoryContainer( "Debug", resourceHandler->ResourceGraph->DebugContainer );
+                return;
             }
 
-            ImGui.EndChild();
-
-            ImGui.EndTabItem();
+            DrawCategoryContainer( "Common", resourceHandler->ResourceGraph->CommonContainer );
+            DrawCategoryContainer( "BgCommon", resourceHandler->ResourceGraph->BgCommonContainer );
+            DrawCategoryContainer( "Bg", resourceHandler->ResourceGraph->BgContainer );
+            DrawCategoryContainer( "Cut", resourceHandler->ResourceGraph->CutContainer );
+            DrawCategoryContainer( "Chara", resourceHandler->ResourceGraph->CharaContainer );
+            DrawCategoryContainer( "Shader", resourceHandler->ResourceGraph->ShaderContainer );
+            DrawCategoryContainer( "Ui", resourceHandler->ResourceGraph->UiContainer );
+            DrawCategoryContainer( "Sound", resourceHandler->ResourceGraph->SoundContainer );
+            DrawCategoryContainer( "Vfx", resourceHandler->ResourceGraph->VfxContainer );
+            DrawCategoryContainer( "UiScript", resourceHandler->ResourceGraph->UiScriptContainer );
+            DrawCategoryContainer( "Exd", resourceHandler->ResourceGraph->ExdContainer );
+            DrawCategoryContainer( "GameScript", resourceHandler->ResourceGraph->GameScriptContainer );
+            DrawCategoryContainer( "Music", resourceHandler->ResourceGraph->MusicContainer );
+            DrawCategoryContainer( "SqpackTest", resourceHandler->ResourceGraph->SqpackTestContainer );
+            DrawCategoryContainer( "Debug", resourceHandler->ResourceGraph->DebugContainer );
         }
     }
 }

@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Mod;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -21,9 +22,9 @@ namespace Penumbra.UI
             private          string                    _collectionNames         = null!;
             private          string                    _collectionNamesWithNone = null!;
             private          ModCollection[]           _collections             = null!;
-            private          int                       _currentCollectionIndex  = 0;
-            private          int                       _currentForcedIndex      = 0;
-            private          int                       _currentDefaultIndex     = 0;
+            private          int                       _currentCollectionIndex;
+            private          int                       _currentForcedIndex;
+            private          int                       _currentDefaultIndex;
             private readonly Dictionary< string, int > _currentCharacterIndices = new();
             private          string                    _newCollectionName       = string.Empty;
             private          string                    _newCharacterName        = string.Empty;
@@ -86,23 +87,31 @@ namespace Penumbra.UI
             {
                 if( _manager.Collections.AddCollection( _newCollectionName, settings ) )
                 {
-                    _manager.Collections.SetCurrentCollection( _manager.Collections.Collections[ _newCollectionName ] );
                     UpdateNames();
+                    SetCurrentCollection( _manager.Collections.Collections[ _newCollectionName ], true );
                 }
 
                 _newCollectionName = string.Empty;
+            }
+
+            private void DrawCleanCollectionButton()
+            {
+                if( ImGui.Button( "Clean Settings" ) )
+                {
+                    var changes = ModFunctions.CleanUpCollection( _manager.Collections.CurrentCollection.Settings,
+                        _manager.BasePath.EnumerateDirectories() );
+                    _manager.Collections.CurrentCollection.UpdateSettings( changes );
+                }
+
+                ImGuiCustom.HoverTooltip(
+                    "Remove all stored settings for mods not currently available and fix invalid settings.\nUse at own risk." );
             }
 
             private void DrawNewCollectionInput()
             {
                 ImGui.InputTextWithHint( "##New Collection", "New Collection", ref _newCollectionName, 64 );
 
-                var changedStyle = false;
-                if( _newCollectionName.Length == 0 )
-                {
-                    changedStyle = true;
-                    ImGui.PushStyleVar( ImGuiStyleVar.Alpha, 0.5f );
-                }
+                using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, _newCollectionName.Length == 0 );
 
                 if( ImGui.Button( "Create New Empty Collection" ) && _newCollectionName.Length > 0 )
                 {
@@ -115,26 +124,28 @@ namespace Penumbra.UI
                     CreateNewCollection( _manager.Collections.CurrentCollection.Settings );
                 }
 
-                if( changedStyle )
+                style.Pop();
+
+                var deleteCondition = _manager.Collections.Collections.Count > 1
+                 && _manager.Collections.CurrentCollection.Name              != ModCollection.DefaultCollection;
+                ImGui.SameLine();
+                if( ImGuiCustom.DisableButton( "Delete Current Collection", deleteCondition ) )
                 {
-                    ImGui.PopStyleVar();
+                    _manager.Collections.RemoveCollection( _manager.Collections.CurrentCollection.Name );
+                    SetCurrentCollection( _manager.Collections.CurrentCollection, true );
+                    UpdateNames();
                 }
 
-                if( _manager.Collections.Collections.Count      > 1
-                 && _manager.Collections.CurrentCollection.Name != ModCollection.DefaultCollection )
+                if( Penumbra.Config.ShowAdvanced )
                 {
                     ImGui.SameLine();
-                    if( ImGui.Button( "Delete Current Collection" ) )
-                    {
-                        _manager.Collections.RemoveCollection( _manager.Collections.CurrentCollection.Name );
-                        UpdateNames();
-                    }
+                    DrawCleanCollectionButton();
                 }
             }
 
-            private void SetCurrentCollection( int idx )
+            private void SetCurrentCollection( int idx, bool force )
             {
-                if( idx == _currentCollectionIndex )
+                if( !force && idx == _currentCollectionIndex )
                 {
                     return;
                 }
@@ -148,12 +159,12 @@ namespace Penumbra.UI
                 }
             }
 
-            public void SetCurrentCollection( ModCollection collection )
+            public void SetCurrentCollection( ModCollection collection, bool force = false )
             {
                 var idx = Array.IndexOf( _collections, collection ) - 1;
                 if( idx >= 0 )
                 {
-                    SetCurrentCollection( idx );
+                    SetCurrentCollection( idx, force );
                 }
             }
 
@@ -161,15 +172,12 @@ namespace Penumbra.UI
             {
                 var index = _currentCollectionIndex;
                 var combo = ImGui.Combo( LabelCurrentCollection, ref index, _collectionNames );
-                if( tooltip && ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip(
-                        "This collection will be modified when using the Installed Mods tab and making changes. It does not apply to anything by itself." );
-                }
+                ImGuiCustom.HoverTooltip(
+                    "This collection will be modified when using the Installed Mods tab and making changes. It does not apply to anything by itself." );
 
                 if( combo )
                 {
-                    SetCurrentCollection( index );
+                    SetCurrentCollection( index, false );
                 }
             }
 
@@ -182,15 +190,12 @@ namespace Penumbra.UI
                     _currentDefaultIndex = index;
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip(
-                        "Mods in the default collection are loaded for any character that is not explicitly named in the character collections below.\n"
-                      + "They also take precedence before the forced collection." );
-                }
+                ImGuiCustom.HoverTooltip(
+                    "Mods in the default collection are loaded for any character that is not explicitly named in the character collections below.\n"
+                  + "They also take precedence before the forced collection." );
 
                 ImGui.SameLine();
-                ImGui.Dummy( new Vector2( 24, 0 ) );
+                ImGuiHelpers.ScaledDummy( 24, 0 );
                 ImGui.SameLine();
                 ImGui.Text( "Default Collection" );
             }
@@ -204,15 +209,12 @@ namespace Penumbra.UI
                     _currentForcedIndex = index;
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip(
-                        "Mods in the forced collection are always loaded if not overwritten by anything in the current or character-based collection.\n"
-                      + "Please avoid mixing meta-manipulating mods in Forced and other collections, as this will probably not work correctly." );
-                }
+                ImGuiCustom.HoverTooltip(
+                    "Mods in the forced collection are always loaded if not overwritten by anything in the current or character-based collection.\n"
+                  + "Please avoid mixing meta-manipulating mods in Forced and other collections, as this will probably not work correctly." );
 
                 ImGui.SameLine();
-                ImGui.Dummy( new Vector2( 24, 0 ) );
+                ImGuiHelpers.ScaledDummy( 24, 0 );
                 ImGui.SameLine();
                 ImGui.Text( "Forced Collection" );
             }
@@ -221,37 +223,23 @@ namespace Penumbra.UI
             {
                 ImGui.InputTextWithHint( "##New Character", "New Character Name", ref _newCharacterName, 32 );
 
-                var changedStyle = false;
-                if( _newCharacterName.Length == 0 )
-                {
-                    changedStyle = true;
-                    ImGui.PushStyleVar( ImGuiStyleVar.Alpha, 0.5f );
-                }
-
                 ImGui.SameLine();
-                if( ImGui.Button( "Create New Character Collection" ) && _newCharacterName.Length > 0 )
+                if( ImGuiCustom.DisableButton( "Create New Character Collection", _newCharacterName.Length > 0 ) )
                 {
                     _manager.Collections.CreateCharacterCollection( _newCharacterName );
                     _currentCharacterIndices[ _newCharacterName ] = 0;
                     _newCharacterName                             = string.Empty;
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip(
-                        "A character collection will be used whenever you manually redraw a character with the Name you have set up.\n"
-                      + "If you enable automatic character redraws in the Settings tab, penumbra will try to use Character collections for corresponding characters automatically.\n" );
-                }
-
-                if( changedStyle )
-                {
-                    ImGui.PopStyleVar();
-                }
+                ImGuiCustom.HoverTooltip(
+                    "A character collection will be used whenever you manually redraw a character with the Name you have set up.\n"
+                  + "If you enable automatic character redraws in the Settings tab, penumbra will try to use Character collections for corresponding characters automatically.\n" );
             }
 
 
             private void DrawCharacterCollectionSelectors()
             {
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndChild );
                 if( !ImGui.BeginChild( "##CollectionChild", AutoFillSize, true ) )
                 {
                     return;
@@ -271,22 +259,20 @@ namespace Penumbra.UI
                     }
 
                     ImGui.SameLine();
-                    ImGui.PushFont( UiBuilder.IconFont );
 
+                    using var font = ImGuiRaii.PushFont( UiBuilder.IconFont );
                     if( ImGui.Button( $"{FontAwesomeIcon.Trash.ToIconString()}##{name}" ) )
                     {
                         _manager.Collections.RemoveCharacterCollection( name );
                     }
 
-                    ImGui.PopFont();
+                    font.Pop();
 
                     ImGui.SameLine();
                     ImGui.Text( name );
                 }
 
                 DrawNewCharacterCollection();
-
-                ImGui.EndChild();
             }
 
             public void Draw()
@@ -296,22 +282,20 @@ namespace Penumbra.UI
                     return;
                 }
 
-                if( !ImGui.BeginChild( "##CollectionHandling", new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 6 ), true ) )
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem )
+                   .Push( ImGui.EndChild );
+
+                if( ImGui.BeginChild( "##CollectionHandling", new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 6 ), true ) )
                 {
-                    ImGui.EndTabItem();
-                    return;
+                    DrawCurrentCollectionSelector( true );
+
+                    ImGuiHelpers.ScaledDummy( 0, 10 );
+                    DrawNewCollectionInput();
                 }
 
-                DrawCurrentCollectionSelector( true );
-
-                ImGui.Dummy( new Vector2( 0, 10 ) );
-                DrawNewCollectionInput();
-                ImGui.EndChild();
+                raii.Pop();
 
                 DrawCharacterCollectionSelectors();
-
-
-                ImGui.EndTabItem();
             }
         }
     }

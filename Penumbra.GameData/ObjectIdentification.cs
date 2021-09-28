@@ -1,7 +1,8 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud;
+using Dalamud.Data;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -12,6 +13,7 @@ namespace Penumbra.GameData
 {
     internal class ObjectIdentification : IObjectIdentifier
     {
+        public static    DataManager?                            DataManager = null!;
         private readonly List< (ulong, HashSet< Item >) >        _weapons;
         private readonly List< (ulong, HashSet< Item >) >        _equipment;
         private readonly Dictionary< string, HashSet< Action > > _actions;
@@ -63,9 +65,10 @@ namespace Penumbra.GameData
             }
         }
 
-        public ObjectIdentification( DalamudPluginInterface plugin )
+        public ObjectIdentification( DataManager dataManager, ClientLanguage clientLanguage )
         {
-            var                                  items     = plugin.Data.GetExcelSheet< Item >( plugin.ClientState.ClientLanguage );
+            DataManager = dataManager;
+            var                                  items     = dataManager.GetExcelSheet< Item >( clientLanguage )!;
             SortedList< ulong, HashSet< Item > > weapons   = new();
             SortedList< ulong, HashSet< Item > > equipment = new();
             foreach( var item in items )
@@ -112,7 +115,7 @@ namespace Penumbra.GameData
             }
 
             _actions = new Dictionary< string, HashSet< Action > >();
-            foreach( var action in plugin.Data.GetExcelSheet< Action >( plugin.ClientState.ClientLanguage )
+            foreach( var action in dataManager.GetExcelSheet< Action >( clientLanguage )!
                .Where( a => a.Name.ToString().Any() ) )
             {
                 var startKey = action.AnimationStart?.Value?.Name?.Value?.Key.ToString() ?? string.Empty;

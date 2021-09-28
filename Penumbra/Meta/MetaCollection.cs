@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Newtonsoft.Json;
 using Penumbra.Importer;
 using Penumbra.Meta.Files;
@@ -23,7 +23,7 @@ namespace Penumbra.Meta
 
         // Store total number of manipulations for some ease of access.
         [JsonIgnore]
-        internal int Count = 0;
+        internal int Count;
 
 
         // Return an enumeration of all active meta manipulations for a given mod with given settings.

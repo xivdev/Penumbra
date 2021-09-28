@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Dalamud.Logging;
 using Penumbra.GameData.Util;
 using Penumbra.Interop;
 using Penumbra.Mod;
@@ -49,7 +50,7 @@ namespace Penumbra.Mods
 
             var newSettings = ModSettings.DefaultSettings( mod.Meta );
             Settings.Add( mod.BasePath.Name, newSettings );
-            Save( Service< DalamudPluginInterface >.Get() );
+            Save();
             return new Mod.Mod( newSettings, mod );
         }
 
@@ -86,7 +87,7 @@ namespace Penumbra.Mods
 
             if( changedSettings )
             {
-                Save( Service< DalamudPluginInterface >.Get() );
+                Save();
             }
 
             CalculateEffectiveFileList( modDirectory, true, false );
@@ -104,11 +105,11 @@ namespace Penumbra.Mods
 
             if( settings.FixInvalidSettings( mod.Meta ) )
             {
-                Save( Service< DalamudPluginInterface >.Get() );
+                Save();
             }
         }
 
-        public void UpdateSettings()
+        public void UpdateSettings( bool forceSave )
         {
             if( Cache == null )
             {
@@ -121,9 +122,9 @@ namespace Penumbra.Mods
                 changes |= mod.FixSettings();
             }
 
-            if( changes )
+            if( forceSave || changes )
             {
-                Save( Service< DalamudPluginInterface >.Get() );
+                Save();
             }
         }
 
@@ -132,14 +133,14 @@ namespace Penumbra.Mods
             PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{IsActiveCollection}]", Name,
                 withMetaManipulations, activeCollection );
             Cache ??= new ModCollectionCache( Name, modDir );
-            UpdateSettings();
+            UpdateSettings( false );
             Cache.CalculateEffectiveFileList();
             if( withMetaManipulations )
             {
                 Cache.UpdateMetaManipulations();
                 if( activeCollection )
                 {
-                    Service< GameResourceManagement >.Get().ReloadPlayerResources();
+                    Service< ResidentResources >.Get().ReloadPlayerResources();
                 }
             }
         }
@@ -181,21 +182,21 @@ namespace Penumbra.Mods
             }
         }
 
-        public static DirectoryInfo CollectionDir( DalamudPluginInterface pi )
-            => new( Path.Combine( pi.GetPluginConfigDirectory(), "collections" ) );
+        public static DirectoryInfo CollectionDir()
+            => new( Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(), "collections" ) );
 
         private static FileInfo FileName( DirectoryInfo collectionDir, string name )
             => new( Path.Combine( collectionDir.FullName, $"{name.RemoveInvalidPathSymbols()}.json" ) );
 
         public FileInfo FileName()
-            => new( Path.Combine( Service< DalamudPluginInterface >.Get().GetPluginConfigDirectory(),
+            => new( Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(),
                 $"{Name.RemoveInvalidPathSymbols()}.json" ) );
 
-        public void Save( DalamudPluginInterface pi )
+        public void Save()
         {
             try
             {
-                var dir = CollectionDir( pi );
+                var dir = CollectionDir();
                 dir.Create();
                 var file = FileName( dir, Name );
                 SaveToFile( file );
@@ -206,15 +207,15 @@ namespace Penumbra.Mods
             }
         }
 
-        public static ModCollection? Load( string name, DalamudPluginInterface pi )
+        public static ModCollection? Load( string name )
         {
-            var file = FileName( CollectionDir( pi ), name );
+            var file = FileName( CollectionDir(), name );
             return file.Exists ? LoadFromFile( file ) : null;
         }
 
-        public void Delete( DalamudPluginInterface pi )
+        public void Delete()
         {
-            var file = FileName( CollectionDir( pi ), Name );
+            var file = FileName( CollectionDir(), Name );
             if( file.Exists )
             {
                 try

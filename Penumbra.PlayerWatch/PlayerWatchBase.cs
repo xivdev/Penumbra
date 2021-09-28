@@ -1,36 +1,45 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Game.ClientState.Actors;
-using Dalamud.Game.ClientState.Actors.Types;
-using Dalamud.Plugin;
+using Dalamud.Game;
+using Dalamud.Game.ClientState;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Logging;
 using Penumbra.GameData.Structs;
 
 namespace Penumbra.PlayerWatch
 {
     internal class PlayerWatchBase : IDisposable
     {
-        public const  int GPosePlayerActorIdx = 201;
-        public const  int GPoseActorEnd       = GPosePlayerActorIdx + 48;
-        private const int ActorsPerFrame      = 8;
+        public const  int GPosePlayerIdx  = 201;
+        public const  int GPoseTableEnd   = GPosePlayerIdx + 48;
+        private const int ObjectsPerFrame = 8;
 
-        private readonly  DalamudPluginInterface                                           _pi;
-        internal readonly HashSet< PlayerWatcher >                                         RegisteredWatchers = new();
-        internal readonly Dictionary< string, (ActorEquipment, HashSet< PlayerWatcher >) > Equip              = new();
-        private           int                                                              _frameTicker;
-        private           bool                                                             _inGPose = false;
-        private           bool                                                             _enabled = false;
-        private           bool                                                             _cancel  = false;
+        private readonly  Framework                                                            _framework;
+        private readonly  ClientState                                                          _clientState;
+        private readonly  ObjectTable                                                          _objects;
+        internal readonly HashSet< PlayerWatcher >                                             RegisteredWatchers = new();
+        internal readonly Dictionary< string, (CharacterEquipment, HashSet< PlayerWatcher >) > Equip              = new();
+        private           int                                                                  _frameTicker;
+        private           bool                                                                 _inGPose;
+        private           bool                                                                 _enabled;
+        private           bool                                                                 _cancel;
 
-        internal PlayerWatchBase( DalamudPluginInterface pi )
-            => _pi = pi;
+        internal PlayerWatchBase( Framework framework, ClientState clientState, ObjectTable objects )
+        {
+            _framework   = framework;
+            _clientState = clientState;
+            _objects     = objects;
+        }
 
         internal void RegisterWatcher( PlayerWatcher watcher )
         {
             RegisteredWatchers.Add( watcher );
             if( watcher.Active )
             {
-                EnableActorWatch();
+                EnablePlayerWatch();
             }
         }
 
@@ -51,20 +60,20 @@ namespace Penumbra.PlayerWatch
         {
             if( RegisteredWatchers.Any( w => w.Active ) )
             {
-                EnableActorWatch();
+                EnablePlayerWatch();
             }
             else
             {
-                DisableActorWatch();
+                DisablePlayerWatch();
             }
         }
 
-        internal ActorEquipment UpdateActorWithoutEvent( Actor actor )
+        internal CharacterEquipment UpdatePlayerWithoutEvent( Character actor )
         {
-            var equipment = new ActorEquipment( actor );
-            if( Equip.ContainsKey( actor.Name ) )
+            var equipment = new CharacterEquipment( actor );
+            if( Equip.ContainsKey( actor.Name.ToString() ) )
             {
-                Equip[ actor.Name ] = ( equipment, Equip[ actor.Name ].Item2 );
+                Equip[ actor.Name.ToString() ] = ( equipment, Equip[ actor.Name.ToString() ].Item2 );
             }
 
             return equipment;
@@ -78,7 +87,7 @@ namespace Penumbra.PlayerWatch
             }
             else
             {
-                Equip[ playerName ] = ( new ActorEquipment(), new HashSet< PlayerWatcher > { watcher } );
+                Equip[ playerName ] = ( new CharacterEquipment(), new HashSet< PlayerWatcher > { watcher } );
             }
         }
 
@@ -94,35 +103,35 @@ namespace Penumbra.PlayerWatch
             }
         }
 
-        internal void EnableActorWatch()
+        internal void EnablePlayerWatch()
         {
             if( !_enabled )
             {
-                _enabled                         =  true;
-                _pi.Framework.OnUpdateEvent      += OnFrameworkUpdate;
-                _pi.ClientState.TerritoryChanged += OnTerritoryChange;
-                _pi.ClientState.OnLogout         += OnLogout;
+                _enabled                      =  true;
+                _framework.Update             += OnFrameworkUpdate;
+                _clientState.TerritoryChanged += OnTerritoryChange;
+                _clientState.Logout           += OnLogout;
             }
         }
 
-        internal void DisableActorWatch()
+        internal void DisablePlayerWatch()
         {
             if( _enabled )
             {
-                _enabled                         =  false;
-                _pi.Framework.OnUpdateEvent      -= OnFrameworkUpdate;
-                _pi.ClientState.TerritoryChanged -= OnTerritoryChange;
-                _pi.ClientState.OnLogout         -= OnLogout;
+                _enabled                      =  false;
+                _framework.Update             -= OnFrameworkUpdate;
+                _clientState.TerritoryChanged -= OnTerritoryChange;
+                _clientState.Logout           -= OnLogout;
             }
         }
 
         public void Dispose()
-            => DisableActorWatch();
+            => DisablePlayerWatch();
 
-        private void OnTerritoryChange( object _1, ushort _2 )
+        private void OnTerritoryChange( object? _1, ushort _2 )
             => Clear();
 
-        private void OnLogout( object _1, object _2 )
+        private void OnLogout( object? _1, object? _2 )
             => Clear();
 
         internal void Clear()
@@ -137,66 +146,66 @@ namespace Penumbra.PlayerWatch
             _frameTicker = 0;
         }
 
-        private static void TriggerEvents( IEnumerable< PlayerWatcher > watchers, Actor actor )
+        private static void TriggerEvents( IEnumerable< PlayerWatcher > watchers, Character player )
         {
-            PluginLog.Debug( "Triggering events for {ActorName} at {Address}.", actor.Name, actor.Address );
+            PluginLog.Debug( "Triggering events for {PlayerName} at {Address}.", player.Name, player.Address );
             foreach( var watcher in watchers.Where( w => w.Active ) )
             {
-                watcher.Trigger( actor );
+                watcher.Trigger( player );
             }
         }
 
         internal void TriggerGPose()
         {
-            for( var i = GPosePlayerActorIdx; i < GPoseActorEnd; ++i )
+            for( var i = GPosePlayerIdx; i < GPoseTableEnd; ++i )
             {
-                var actor = _pi.ClientState.Actors[ i ];
-                if( actor == null )
+                var player = _objects[ i ];
+                if( player == null )
                 {
                     return;
                 }
 
-                if( Equip.TryGetValue( actor.Name, out var watcher ) )
+                if( Equip.TryGetValue( player.Name.ToString(), out var watcher ) )
                 {
-                    TriggerEvents( watcher.Item2, actor );
+                    TriggerEvents( watcher.Item2, ( Character )player );
                 }
             }
         }
 
-        private Actor CheckGPoseActor( Actor actor )
+        private Character CheckGPoseObject( GameObject player )
         {
             if( !_inGPose )
             {
-                return actor;
+                return ( Character )player;
             }
 
-            for( var i = GPosePlayerActorIdx; i < GPoseActorEnd; ++i )
+            for( var i = GPosePlayerIdx; i < GPoseTableEnd; ++i )
             {
-                var a = _pi.ClientState.Actors[ i ];
+                var a = _objects[ i ];
                 if( a == null )
                 {
-                    return actor;
+                    return ( Character )player;
                 }
 
-                if( a.Name == actor.Name )
+                if( a.Name == player.Name )
                 {
-                    return a;
+                    return ( Character )a;
                 }
             }
 
-            return actor;
+            return ( Character )player;
+        }
+
+        private bool TryGetPlayer( GameObject gameObject, out (CharacterEquipment, HashSet< PlayerWatcher >) equip )
+        {
+            equip = default;
+            var name = gameObject.Name.ToString();
+            return name.Length != 0 && Equip.TryGetValue( name, out equip );
         }
 
         private void OnFrameworkUpdate( object framework )
         {
-            if( _pi.ClientState.LocalPlayer == null )
-            {
-                return;
-            }
-
-            var actors = _pi.ClientState.Actors;
-
-            var newInGPose = actors[ GPosePlayerActorIdx ] != null;
+            var newInGPose = _objects[ GPosePlayerIdx ] != null;
 
             if( newInGPose != _inGPose )
             {
@@ -212,28 +221,21 @@ namespace Penumbra.PlayerWatch
                 _inGPose = newInGPose;
             }
 
-            for( var i = 0; i < ActorsPerFrame; ++i )
+            for( var i = 0; i < ObjectsPerFrame; ++i )
             {
-                if( _pi.ClientState.LocalPlayer == null )
-                {
-                    return;
-                }
-
-                _frameTicker = _frameTicker < actors.Length - 2
+                _frameTicker = _frameTicker < GPosePlayerIdx - 2
                     ? _frameTicker + 2
                     : 0;
 
-                var actor = actors[ _frameTicker ];
-                if( actor             == null
-                 || actor.ObjectKind  != ObjectKind.Player
-                 || actor.Name        == null
-                 || actor.Name.Length == 0
-                 || !Equip.TryGetValue( actor.Name, out var equip ) )
+                var actor = _objects[ _frameTicker ];
+                if( actor            == null
+                 || actor.ObjectKind != ObjectKind.Player
+                 || !TryGetPlayer( actor, out var equip ) )
                 {
                     continue;
                 }
 
-                actor = CheckGPoseActor( actor );
+                var character = CheckGPoseObject( actor );
 
                 if( _cancel )
                 {
@@ -241,10 +243,10 @@ namespace Penumbra.PlayerWatch
                     return;
                 }
 
-                PluginLog.Verbose( "Comparing Gear for {ActorName} at {Address}...", actor.Name, actor.Address );
-                if( !equip.Item1.CompareAndUpdate( actor ) )
+                PluginLog.Verbose( "Comparing Gear for {PlayerName} at {Address}...", character.Name, character.Address );
+                if( !equip.Item1.CompareAndUpdate( character ) )
                 {
-                    TriggerEvents( equip.Item2, actor );
+                    TriggerEvents( equip.Item2, character );
                 }
             }
         }

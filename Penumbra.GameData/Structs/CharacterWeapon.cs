@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Penumbra.GameData.Structs
 {
     [StructLayout( LayoutKind.Sequential, Pack = 1 )]
-    public readonly struct ActorWeapon
+    public readonly struct CharacterWeapon
     {
         public readonly SetId      Set;
         public readonly WeaponType Type;

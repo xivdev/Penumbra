@@ -1,14 +1,13 @@
 using System;
 using System.Runtime.InteropServices;
-using Dalamud.Game.ClientState.Actors.Types;
-using Penumbra.GameData.Enums;
+using Dalamud.Game.ClientState.Objects.Types;
 
 // Read the customization data regarding weapons and displayable equipment from an actor struct.
 // Stores the data in a 56 bytes, i.e. 7 longs for easier comparison.
 namespace Penumbra.GameData.Structs
 {
     [StructLayout( LayoutKind.Sequential, Pack = 1 )]
-    public class ActorEquipment
+    public class CharacterEquipment
     {
         public const int MainWeaponOffset = 0x0F08;
         public const int OffWeaponOffset  = 0x0F70;
@@ -16,24 +15,24 @@ namespace Penumbra.GameData.Structs
         public const int EquipmentSlots   = 10;
         public const int WeaponSlots      = 2;
 
-        public ActorWeapon MainHand;
-        public ActorWeapon OffHand;
-        public ActorArmor  Head;
-        public ActorArmor  Body;
-        public ActorArmor  Hands;
-        public ActorArmor  Legs;
-        public ActorArmor  Feet;
-        public ActorArmor  Ears;
-        public ActorArmor  Neck;
-        public ActorArmor  Wrists;
-        public ActorArmor  RFinger;
-        public ActorArmor  LFinger;
+        public CharacterWeapon MainHand;
+        public CharacterWeapon OffHand;
+        public CharacterArmor  Head;
+        public CharacterArmor  Body;
+        public CharacterArmor  Hands;
+        public CharacterArmor  Legs;
+        public CharacterArmor  Feet;
+        public CharacterArmor  Ears;
+        public CharacterArmor  Neck;
+        public CharacterArmor  Wrists;
+        public CharacterArmor  RFinger;
+        public CharacterArmor  LFinger;
         public ushort      IsSet; // Also fills struct size to 56, a multiple of 8.
 
-        public ActorEquipment()
+        public CharacterEquipment()
             => Clear();
 
-        public ActorEquipment( Actor actor )
+        public CharacterEquipment( Character actor )
             : this( actor.Address )
         { }
 
@@ -43,40 +42,40 @@ namespace Penumbra.GameData.Structs
                 : $"({MainHand}) | ({OffHand}) | ({Head}) | ({Body}) | ({Hands}) | ({Legs}) | "
               + $"({Feet}) | ({Ears}) | ({Neck}) | ({Wrists}) | ({LFinger}) | ({RFinger})";
 
-        public bool Equal( Actor rhs )
-            => CompareData( new ActorEquipment( rhs ) );
+        public bool Equal( Character rhs )
+            => CompareData( new CharacterEquipment( rhs ) );
 
-        public bool Equal( ActorEquipment rhs )
+        public bool Equal( CharacterEquipment rhs )
             => CompareData( rhs );
 
-        public bool CompareAndUpdate( Actor rhs )
-            => CompareAndOverwrite( new ActorEquipment( rhs ) );
+        public bool CompareAndUpdate( Character rhs )
+            => CompareAndOverwrite( new CharacterEquipment( rhs ) );
 
-        public bool CompareAndUpdate( ActorEquipment rhs )
+        public bool CompareAndUpdate( CharacterEquipment rhs )
             => CompareAndOverwrite( rhs );
 
-        private unsafe ActorEquipment( IntPtr actorAddress )
+        private unsafe CharacterEquipment( IntPtr actorAddress )
         {
             IsSet = 1;
             var actorPtr = ( byte* )actorAddress.ToPointer();
-            fixed( ActorWeapon* main = &MainHand, off = &OffHand )
+            fixed( CharacterWeapon* main = &MainHand, off = &OffHand )
             {
-                Buffer.MemoryCopy( actorPtr + MainWeaponOffset, main, sizeof( ActorWeapon ), sizeof( ActorWeapon ) );
-                Buffer.MemoryCopy( actorPtr + OffWeaponOffset, off, sizeof( ActorWeapon ), sizeof( ActorWeapon ) );
+                Buffer.MemoryCopy( actorPtr + MainWeaponOffset, main, sizeof( CharacterWeapon ), sizeof( CharacterWeapon ) );
+                Buffer.MemoryCopy( actorPtr + OffWeaponOffset, off, sizeof( CharacterWeapon ), sizeof( CharacterWeapon ) );
             }
 
-            fixed( ActorArmor* equipment = &Head )
+            fixed( CharacterArmor* equipment = &Head )
             {
-                Buffer.MemoryCopy( actorPtr + EquipmentOffset, equipment, EquipmentSlots * sizeof( ActorArmor ),
-                    EquipmentSlots                                                       * sizeof( ActorArmor ) );
+                Buffer.MemoryCopy( actorPtr + EquipmentOffset, equipment, EquipmentSlots * sizeof( CharacterArmor ),
+                    EquipmentSlots                                                       * sizeof( CharacterArmor ) );
             }
         }
 
         public unsafe void Clear()
         {
-            fixed( ActorWeapon* main = &MainHand )
+            fixed( CharacterWeapon* main = &MainHand )
             {
-                var structSizeEights = ( 2 + EquipmentSlots * sizeof( ActorArmor ) + WeaponSlots * sizeof( ActorWeapon ) ) / 8;
+                var structSizeEights = ( 2 + EquipmentSlots * sizeof( CharacterArmor ) + WeaponSlots * sizeof( CharacterWeapon ) ) / 8;
                 for( ulong* ptr = ( ulong* )main, end = ptr + structSizeEights; ptr != end; ++ptr )
                 {
                     *ptr = 0;
@@ -84,11 +83,11 @@ namespace Penumbra.GameData.Structs
             }
         }
 
-        private unsafe bool CompareAndOverwrite( ActorEquipment rhs )
+        private unsafe bool CompareAndOverwrite( CharacterEquipment rhs )
         {
-            var structSizeEights = ( 2 + EquipmentSlots * sizeof( ActorArmor ) + WeaponSlots * sizeof( ActorWeapon ) ) / 8;
+            var structSizeEights = ( 2 + EquipmentSlots * sizeof( CharacterArmor ) + WeaponSlots * sizeof( CharacterWeapon ) ) / 8;
             var ret              = true;
-            fixed( ActorWeapon* data1 = &MainHand, data2 = &rhs.MainHand )
+            fixed( CharacterWeapon* data1 = &MainHand, data2 = &rhs.MainHand )
             {
                 var ptr1 = ( ulong* )data1;
                 var ptr2 = ( ulong* )data2;
@@ -105,10 +104,10 @@ namespace Penumbra.GameData.Structs
             return ret;
         }
 
-        private unsafe bool CompareData( ActorEquipment rhs )
+        private unsafe bool CompareData( CharacterEquipment rhs )
         {
-            var structSizeEights = ( 2 + EquipmentSlots * sizeof( ActorArmor ) + WeaponSlots * sizeof( ActorWeapon ) ) / 8;
-            fixed( ActorWeapon* data1 = &MainHand, data2 = &rhs.MainHand )
+            var structSizeEights = ( 2 + EquipmentSlots * sizeof( CharacterArmor ) + WeaponSlots * sizeof( CharacterWeapon ) ) / 8;
+            fixed( CharacterWeapon* data1 = &MainHand, data2 = &rhs.MainHand )
             {
                 var ptr1 = ( ulong* )data1;
                 var ptr2 = ( ulong* )data2;
@@ -126,7 +125,7 @@ namespace Penumbra.GameData.Structs
 
         public unsafe void WriteBytes( byte[] array, int offset = 0 )
         {
-            fixed( ActorWeapon* data = &MainHand )
+            fixed( CharacterWeapon* data = &MainHand )
             {
                 Marshal.Copy( new IntPtr( data ), array, offset, 56 );
             }
@@ -141,7 +140,7 @@ namespace Penumbra.GameData.Structs
 
         public unsafe void FromBytes( byte[] array, int offset = 0 )
         {
-            fixed( ActorWeapon* data = &MainHand )
+            fixed( CharacterWeapon* data = &MainHand )
             {
                 Marshal.Copy( array, offset, new IntPtr( data ), 56 );
             }

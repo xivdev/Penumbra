@@ -43,12 +43,14 @@ namespace Penumbra.Structs
 
         private bool ApplySingleGroupFiles( RelPath relPath, int selection, HashSet< GamePath > paths )
         {
+            // Selection contains the path, merge all GamePaths for this config.
             if( Options[ selection ].OptionFiles.TryGetValue( relPath, out var groupPaths ) )
             {
                 paths.UnionWith( groupPaths );
                 return true;
             }
 
+            // If the group contains the file in another selection, return true to skip it for default files.
             for( var i = 0; i < Options.Count; ++i )
             {
                 if( i == selection )

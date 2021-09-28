@@ -5,6 +5,7 @@ using ImGuiNET;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -13,9 +14,8 @@ namespace Penumbra.UI
     {
         private class TabEffective
         {
-            private const           string     LabelTab      = "Effective Changes";
-            private static readonly string     LongArrowLeft = $"{( char )FontAwesomeIcon.LongArrowAltLeft}";
-            private readonly        ModManager _modManager;
+            private const    string     LabelTab = "Effective Changes";
+            private readonly ModManager _modManager;
 
             private readonly float _leftTextLength =
                 ImGui.CalcTextSize( "chara/human/c0000/obj/body/b0000/material/v0000/mt_c0000b0000_b.mtrl" ).X + 40;
@@ -27,14 +27,12 @@ namespace Penumbra.UI
             private static void DrawFileLine( FileInfo file, GamePath path )
             {
                 ImGui.TableNextColumn();
-                Custom.ImGuiCustom.CopyOnClickSelectable( path );
+                ImGuiCustom.CopyOnClickSelectable( path );
 
                 ImGui.TableNextColumn();
-                ImGui.PushFont( UiBuilder.IconFont );
-                ImGui.TextUnformatted( LongArrowLeft );
-                ImGui.PopFont();
+                ImGuiCustom.PrintIcon( FontAwesomeIcon.LongArrowAltLeft );
                 ImGui.SameLine();
-                Custom.ImGuiCustom.CopyOnClickSelectable( file.FullName );
+                ImGuiCustom.CopyOnClickSelectable( file.FullName );
             }
 
             private static void DrawManipulationLine( MetaManipulation manip, Mod.Mod mod )
@@ -43,9 +41,7 @@ namespace Penumbra.UI
                 ImGui.Selectable( manip.IdentifierString() );
 
                 ImGui.TableNextColumn();
-                ImGui.PushFont( UiBuilder.IconFont );
-                ImGui.TextUnformatted( LongArrowLeft );
-                ImGui.PopFont();
+                ImGuiCustom.PrintIcon( FontAwesomeIcon.LongArrowAltLeft );
                 ImGui.SameLine();
                 ImGui.Selectable( mod.Data.Meta.Name );
             }
@@ -57,17 +53,19 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+
                 const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
 
-                var activeCollection    = _modManager.Collections.ActiveCollection.Cache;
-                var forcedCollection    = _modManager.Collections.ForcedCollection.Cache;
+                var activeCollection = _modManager.Collections.ActiveCollection.Cache;
+                var forcedCollection = _modManager.Collections.ForcedCollection.Cache;
 
                 var (activeResolved, activeMeta) = activeCollection != null
                     ? ( activeCollection.ResolvedFiles.Count, activeCollection.MetaManipulations.Count )
                     : ( 0, 0 );
                 var (forcedResolved, forcedMeta) = forcedCollection != null
-                    ? (forcedCollection.ResolvedFiles.Count, forcedCollection.MetaManipulations.Count)
-                    : (0, 0);
+                    ? ( forcedCollection.ResolvedFiles.Count, forcedCollection.MetaManipulations.Count )
+                    : ( 0, 0 );
 
                 var                 lines = activeResolved + forcedResolved + activeMeta + forcedMeta;
                 ImGuiListClipperPtr clipper;
@@ -80,6 +78,7 @@ namespace Penumbra.UI
 
                 if( ImGui.BeginTable( "##effective_changes", 2, flags, AutoFillSize ) )
                 {
+                    raii.Push( ImGui.EndTable );
                     ImGui.TableSetupColumn( "##tableGamePathCol", ImGuiTableColumnFlags.None, _leftTextLength );
                     while( clipper.Step() )
                     {
@@ -89,32 +88,28 @@ namespace Penumbra.UI
                             ImGui.TableNextRow();
                             if( row < activeResolved )
                             {
-                                var file = activeCollection!.ResolvedFiles.ElementAt( row );
-                                DrawFileLine( file.Value, file.Key );
+                                var (gamePath, file) = activeCollection!.ResolvedFiles.ElementAt( row );
+                                DrawFileLine( file, gamePath );
                             }
                             else if( ( row -= activeResolved ) < forcedResolved )
                             {
-                                var file = forcedCollection!.ResolvedFiles.ElementAt( row );
-                                DrawFileLine( file.Value, file.Key );
+                                var (gamePath, file) = forcedCollection!.ResolvedFiles.ElementAt( row );
+                                DrawFileLine( file, gamePath );
                             }
                             else if( ( row -= forcedResolved ) < activeMeta )
                             {
-                                var manip = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                                DrawManipulationLine( manip.Item1, manip.Item2 );
+                                var (manip, mod) = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
+                                DrawManipulationLine( manip, mod );
                             }
                             else
                             {
-                                row -= activeMeta;
-                                var manip = forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                                DrawManipulationLine( manip.Item1, manip.Item2 );
+                                row              -= activeMeta;
+                                var (manip, mod) =  forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
+                                DrawManipulationLine( manip, mod );
                             }
                         }
                     }
-
-                    ImGui.EndTable();
                 }
-
-                ImGui.EndTabItem();
             }
         }
     }

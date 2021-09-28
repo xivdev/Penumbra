@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace Penumbra.Structs
 {
     [StructLayout( LayoutKind.Sequential )]
-    public unsafe struct CharacterResourceManager
+    public unsafe struct CharacterUtility
     {
         public void* VTable;
 

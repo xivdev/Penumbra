@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Plugin;
+using Dalamud;
+using Dalamud.Data;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -13,9 +14,9 @@ namespace Penumbra.GameData
         internal static          ObjectIdentification? Identification;
         internal static readonly GamePathParser        GamePathParser = new();
 
-        public static IObjectIdentifier GetIdentifier( DalamudPluginInterface pi )
+        public static IObjectIdentifier GetIdentifier( DataManager dataManager, ClientLanguage clientLanguage )
         {
-            Identification ??= new ObjectIdentification( pi );
+            Identification ??= new ObjectIdentification( dataManager, clientLanguage );
             return Identification;
         }
 

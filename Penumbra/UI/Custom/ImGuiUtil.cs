@@ -1,4 +1,7 @@
+using System.Numerics;
+using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
+using Dalamud.Interface;
 using ImGuiNET;
 
 namespace Penumbra.UI.Custom
@@ -23,7 +26,7 @@ namespace Penumbra.UI.Custom
     {
         public static void VerticalDistance( float distance )
         {
-            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + distance );
+            ImGui.SetCursorPosY( ImGui.GetCursorPosY() + distance * ImGuiHelpers.GlobalScale );
         }
 
         public static void RightJustifiedText( float pos, string text )
@@ -37,6 +40,36 @@ namespace Penumbra.UI.Custom
             ImGui.SetCursorPosX( pos - ImGui.CalcTextSize( text ).X - ImGui.GetStyle().ItemSpacing.X / 2 );
             ImGui.Text( text );
             ImGui.SameLine( pos );
+        }
+    }
+
+    public static partial class ImGuiCustom
+    {
+        public static void HoverTooltip( string text )
+        {
+            if( ImGui.IsItemHovered() )
+            {
+                ImGui.SetTooltip( text );
+            }
+        }
+    }
+
+    public static partial class ImGuiCustom
+    {
+        public static bool DisableButton( string label, bool condition )
+        {
+            using var alpha = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, !condition );
+            return ImGui.Button( label ) && condition;
+        }
+    }
+
+    public static partial class ImGuiCustom
+    {
+        public static void PrintIcon( FontAwesomeIcon icon )
+        {
+            ImGui.PushFont( UiBuilder.IconFont );
+            ImGui.TextUnformatted( icon.ToIconString() );
+            ImGui.PopFont();
         }
     }
 }

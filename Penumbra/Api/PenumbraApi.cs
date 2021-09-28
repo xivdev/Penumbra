@@ -1,9 +1,10 @@
 using System;
 using System.IO;
 using System.Reflection;
-using Dalamud.Game.ClientState.Actors.Types;
-using Dalamud.Plugin;
+using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Logging;
 using Lumina.Data;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -12,18 +13,18 @@ namespace Penumbra.Api
 {
     public class PenumbraApi : IDisposable, IPenumbraApi
     {
-        public int ApiVersion { get; } = 2;
-        private readonly Plugin           _plugin;
+        public int ApiVersion { get; } = 3;
+        private readonly Penumbra           _penumbra;
         private readonly Lumina.GameData? _lumina;
         public bool Valid { get; private set; } = false;
 
-        public PenumbraApi( Plugin penumbra )
+        public PenumbraApi( Penumbra penumbra )
         {
-            _plugin = penumbra;
+            _penumbra = penumbra;
             Valid   = true;
-            _lumina = ( Lumina.GameData? )_plugin.PluginInterface.Data.GetType()
+            _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
                .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
-              ?.GetValue( _plugin.PluginInterface.Data );
+              ?.GetValue( Dalamud.GameData );
         }
 
         public void Dispose()
@@ -52,30 +53,30 @@ namespace Penumbra.Api
             }
         }
 
-        public void RedrawActor( string name, RedrawType setting )
+        public void RedrawObject( string name, RedrawType setting )
         {
             CheckInitialized();
 
-            _plugin.ActorRefresher.RedrawActor( name, setting );
+            _penumbra.ObjectReloader.RedrawObject( name, setting );
         }
 
-        public void RedrawActor( Actor? actor, RedrawType setting )
+        public void RedrawObject( GameObject? gameObject, RedrawType setting )
         {
             CheckInitialized();
 
-            _plugin.ActorRefresher.RedrawActor( actor, setting );
+            _penumbra.ObjectReloader.RedrawObject( gameObject, setting );
         }
 
         public void RedrawAll( RedrawType setting )
         {
             CheckInitialized();
 
-            _plugin.ActorRefresher.RedrawAll( setting );
+            _penumbra.ObjectReloader.RedrawAll( setting );
         }
 
-        private string ResolvePath( string path, ModManager manager, ModCollection collection )
+        private static string ResolvePath( string path, ModManager manager, ModCollection collection )
         {
-            if( !_plugin.Configuration.IsEnabled )
+            if( !Penumbra.Config.IsEnabled )
             {
                 return path;
             }
@@ -110,7 +111,7 @@ namespace Penumbra.Api
                     return _lumina?.GetFileFromDisk< T >( resolvedPath );
                 }
 
-                return _plugin.PluginInterface.Data.GetFile< T >( resolvedPath );
+                return Dalamud.GameData.GetFile< T >( resolvedPath );
             }
             catch( Exception e)
             {

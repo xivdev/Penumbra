@@ -2,13 +2,15 @@ using System.IO;
 using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
-using Penumbra.Api;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.Structs;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
+using ImGui = ImGuiNET.ImGui;
 
 namespace Penumbra.UI
 {
@@ -124,7 +126,7 @@ namespace Penumbra.UI
 
             private void Save()
             {
-                _modManager.Collections.CurrentCollection.Save( _base._plugin.PluginInterface! );
+                _modManager.Collections.CurrentCollection.Save();
             }
 
             private void DrawAboutTab()
@@ -138,6 +140,8 @@ namespace Penumbra.UI
                 {
                     return;
                 }
+
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
                 var desc = Meta.Description;
                 var flags = _editMode
@@ -153,17 +157,12 @@ namespace Penumbra.UI
                         _selector.SaveCurrentMod();
                     }
 
-                    if( ImGui.IsItemHovered() )
-                    {
-                        ImGui.SetTooltip( TooltipAboutEdit );
-                    }
+                    ImGuiCustom.HoverTooltip( TooltipAboutEdit );
                 }
                 else
                 {
                     ImGui.TextWrapped( desc );
                 }
-
-                ImGui.EndTabItem();
             }
 
             private void DrawChangedItemsTab()
@@ -173,31 +172,33 @@ namespace Penumbra.UI
                     return;
                 }
 
-                if( ImGui.BeginListBox( LabelChangedItemsHeader, AutoFillSize ) )
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+
+                if( !ImGui.BeginListBox( LabelChangedItemsHeader, AutoFillSize ) )
                 {
-                    foreach( var item in Mod.Data.ChangedItems )
-                    {
-                        var ret = ImGui.Selectable( item.Key ) ? MouseButton.Left : MouseButton.None;
-                        ret = ImGui.IsItemClicked( ImGuiMouseButton.Right ) ? MouseButton.Right : ret;
-                        ret = ImGui.IsItemClicked( ImGuiMouseButton.Middle ) ? MouseButton.Middle : ret;
-
-                        if( ret != MouseButton.None )
-                        {
-                            _base._plugin.Api.InvokeClick( ret, item.Value );
-                        }
-
-                        if( _base._plugin.Api.HasTooltip && ImGui.IsItemHovered() )
-                        {
-                            ImGui.BeginTooltip();
-                            _base._plugin.Api.InvokeTooltip( item.Value );
-                            ImGui.EndTooltip();
-                        }
-                    }
-
-                    ImGui.EndListBox();
+                    return;
                 }
 
-                ImGui.EndTabItem();
+                raii.Push( ImGui.EndListBox );
+                foreach( var (name, data) in Mod.Data.ChangedItems )
+                {
+                    var ret = ImGui.Selectable( name ) ? MouseButton.Left : MouseButton.None;
+                    ret = ImGui.IsItemClicked( ImGuiMouseButton.Right ) ? MouseButton.Right : ret;
+                    ret = ImGui.IsItemClicked( ImGuiMouseButton.Middle ) ? MouseButton.Middle : ret;
+
+                    if( ret != MouseButton.None )
+                    {
+                        _base._penumbra.Api.InvokeClick( ret, data );
+                    }
+
+                    if( _base._penumbra.Api.HasTooltip && ImGui.IsItemHovered() )
+                    {
+                        ImGui.BeginTooltip();
+                        raii.Push( ImGui.EndTooltip );
+                        _base._penumbra.Api.InvokeTooltip( data );
+                        raii.Pop();
+                    }
+                }
             }
 
             private void DrawConflictTab()
@@ -207,38 +208,39 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+
                 ImGui.SetNextItemWidth( -1 );
-                if( ImGui.BeginListBox( LabelConflictsHeader, AutoFillSize ) )
+                if( !ImGui.BeginListBox( LabelConflictsHeader, AutoFillSize ) )
                 {
-                    foreach( var kv in Mod.Cache.Conflicts )
-                    {
-                        var mod = kv.Key;
-                        if( ImGui.Selectable( mod.Data.Meta.Name ) )
-                        {
-                            _selector.SelectModByDir( mod.Data.BasePath.Name );
-                        }
-
-                        ImGui.SameLine();
-                        ImGui.Text( $"(Priority {mod.Settings.Priority})" );
-
-                        ImGui.Indent( 15 );
-                        foreach( var file in kv.Value.Files )
-                        {
-                            ImGui.Selectable( file );
-                        }
-
-                        foreach( var manip in kv.Value.Manipulations )
-                        {
-                            ImGui.Text( manip.IdentifierString() );
-                        }
-
-                        ImGui.Unindent( 15 );
-                    }
-
-                    ImGui.EndListBox();
+                    return;
                 }
 
-                ImGui.EndTabItem();
+                raii.Push( ImGui.EndListBox );
+                using var indent = ImGuiRaii.PushIndent( 0 );
+                foreach( var (mod, (files, manipulations)) in Mod.Cache.Conflicts )
+                {
+                    if( ImGui.Selectable( mod.Data.Meta.Name ) )
+                    {
+                        _selector.SelectModByDir( mod.Data.BasePath.Name );
+                    }
+
+                    ImGui.SameLine();
+                    ImGui.Text( $"(Priority {mod.Settings.Priority})" );
+
+                    indent.Push( 15f );
+                    foreach( var file in files )
+                    {
+                        ImGui.Selectable( file );
+                    }
+
+                    foreach( var manip in manipulations )
+                    {
+                        ImGui.Text( manip.IdentifierString() );
+                    }
+
+                    indent.Pop( 15f );
+                }
             }
 
             private void DrawFileSwapTab()
@@ -254,31 +256,31 @@ namespace Penumbra.UI
                     return;
                 }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+
                 const ImGuiTableFlags flags = ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
 
                 ImGui.SetNextItemWidth( -1 );
-                if( ImGui.BeginTable( LabelFileSwapHeader, 3, flags, AutoFillSize ) )
+                if( !ImGui.BeginTable( LabelFileSwapHeader, 3, flags, AutoFillSize ) )
                 {
-                    foreach( var file in Meta.FileSwaps )
-                    {
-                        ImGui.TableNextColumn();
-                        Custom.ImGuiCustom.CopyOnClickSelectable( file.Key );
-
-                        ImGui.TableNextColumn();
-                        ImGui.PushFont( UiBuilder.IconFont );
-                        ImGui.TextUnformatted( $"{( char )FontAwesomeIcon.LongArrowAltRight}" );
-                        ImGui.PopFont();
-
-                        ImGui.TableNextColumn();
-                        Custom.ImGuiCustom.CopyOnClickSelectable( file.Value );
-
-                        ImGui.TableNextRow();
-                    }
-
-                    ImGui.EndTable();
+                    return;
                 }
 
-                ImGui.EndTabItem();
+                raii.Push( ImGui.EndTable );
+
+                foreach( var (source, target) in Meta.FileSwaps )
+                {
+                    ImGui.TableNextColumn();
+                    ImGuiCustom.CopyOnClickSelectable( source );
+
+                    ImGui.TableNextColumn();
+                    ImGuiCustom.PrintIcon( FontAwesomeIcon.LongArrowAltRight );
+
+                    ImGui.TableNextColumn();
+                    ImGuiCustom.CopyOnClickSelectable( target );
+
+                    ImGui.TableNextRow();
+                }
             }
 
             private void UpdateFilenameList()
@@ -328,30 +330,26 @@ namespace Penumbra.UI
                     return;
                 }
 
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipFilesTab );
-                }
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+                ImGuiCustom.HoverTooltip( TooltipFilesTab );
 
                 ImGui.SetNextItemWidth( -1 );
                 if( ImGui.BeginListBox( LabelFileListHeader, AutoFillSize ) )
                 {
+                    raii.Push( ImGui.EndListBox );
                     UpdateFilenameList();
+                    using var colorRaii = new ImGuiRaii.Color();
                     foreach( var (name, _, color, _) in _fullFilenameList! )
                     {
-                        ImGui.PushStyleColor( ImGuiCol.Text, color );
+                        colorRaii.Push( ImGuiCol.Text, color );
                         ImGui.Selectable( name.FullName );
-                        ImGui.PopStyleColor();
+                        colorRaii.Pop();
                     }
-
-                    ImGui.EndListBox();
                 }
                 else
                 {
                     _fullFilenameList = null;
                 }
-
-                ImGui.EndTabItem();
             }
 
             private static int HandleDefaultString( GamePath[] gamePaths, out int removeFolders )
@@ -468,10 +466,7 @@ namespace Penumbra.UI
                 ImGui.SetNextItemWidth( -1 );
                 ImGui.InputTextWithHint( LabelGamePathsEditBox, "Hover for help...", ref _currentGamePaths,
                     128 );
-                if( ImGui.IsItemHovered() )
-                {
-                    ImGui.SetTooltip( TooltipGamePathsEdit );
-                }
+                ImGuiCustom.HoverTooltip( TooltipGamePathsEdit );
             }
 
             private void DrawGroupRow()
@@ -515,12 +510,11 @@ namespace Penumbra.UI
                         loc = colorReplace;
                     }
 
-                    ImGui.PushStyleColor( ImGuiCol.Text, loc );
+                    using var colors = ImGuiRaii.PushColor( ImGuiCol.Text, loc );
                     ImGui.Selectable( _fullFilenameList[ idx ].name.FullName, ref _fullFilenameList[ idx ].selected );
-                    ImGui.PopStyleColor();
                 }
 
-                const float indent = 30f;
+                const float indentWidth = 30f;
                 if( _selectedOption == null )
                 {
                     Selectable( 0, ColorGreen );
@@ -533,8 +527,8 @@ namespace Penumbra.UI
                 {
                     Selectable( 0, ColorGreen );
 
-                    ImGui.Indent( indent );
-                    var tmpPaths = gamePaths.ToArray();
+                    using var indent   = ImGuiRaii.PushIndent( indentWidth );
+                    var       tmpPaths = gamePaths.ToArray();
                     foreach( var gamePath in tmpPaths )
                     {
                         string tmp = gamePath;
@@ -555,8 +549,6 @@ namespace Penumbra.UI
                             _selector.ReloadCurrentMod();
                         }
                     }
-
-                    ImGui.Unindent( indent );
                 }
                 else
                 {
@@ -587,14 +579,13 @@ namespace Penumbra.UI
                     return;
                 }
 
-                Custom.ImGuiCustom.BeginFramedGroup( group.GroupName );
+                ImGuiCustom.BeginFramedGroup( group.GroupName );
+                using var raii = ImGuiRaii.DeferredEnd( ImGuiCustom.EndFramedGroup );
                 for( var i = 0; i < group.Options.Count; ++i )
                 {
                     DrawMultiSelectorCheckBox( group, i, Mod.Settings.Settings[ group.GroupName ],
                         $"{group.Options[ i ].OptionName}##{group.GroupName}" );
                 }
-
-                Custom.ImGuiCustom.EndFramedGroup();
             }
 
             private void DrawSingleSelector( OptionGroup group )
@@ -634,79 +625,76 @@ namespace Penumbra.UI
 
             private void DrawConfigurationTab()
             {
-                if( !_editMode && !Meta.HasGroupsWithConfig )
+                if( !_editMode && !Meta.HasGroupsWithConfig || !ImGui.BeginTabItem( LabelConfigurationTab ) )
                 {
                     return;
                 }
 
-                if( ImGui.BeginTabItem( LabelConfigurationTab ) )
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+                if( _editMode )
                 {
-                    if( _editMode )
-                    {
-                        DrawGroupSelectorsEdit();
-                    }
-                    else
-                    {
-                        DrawGroupSelectors();
-                    }
-
-                    ImGui.EndTabItem();
+                    DrawGroupSelectorsEdit();
+                }
+                else
+                {
+                    DrawGroupSelectors();
                 }
             }
 
             private void DrawMetaManipulationsTab()
             {
-                if( !_editMode && Mod.Data.Resources.MetaManipulations.Count == 0 )
+                if( !_editMode && Mod.Data.Resources.MetaManipulations.Count == 0 || !ImGui.BeginTabItem( "Meta Manipulations" ) )
                 {
                     return;
                 }
 
-                if( !ImGui.BeginTabItem( "Meta Manipulations" ) )
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
+
+                if( !ImGui.BeginListBox( "##MetaManipulations", AutoFillSize ) )
                 {
                     return;
                 }
 
-                if( ImGui.BeginListBox( "##MetaManipulations", AutoFillSize ) )
+                raii.Push( ImGui.EndListBox );
+
+                var manips  = Mod.Data.Resources.MetaManipulations;
+                var changes = false;
+                if( _editMode || manips.DefaultData.Count > 0 )
                 {
-                    var manips  = Mod.Data.Resources.MetaManipulations;
-                    var changes = false;
-                    if( _editMode || manips.DefaultData.Count > 0 )
+                    if( ImGui.CollapsingHeader( "Default" ) )
                     {
-                        if( ImGui.CollapsingHeader( "Default" ) )
-                        {
-                            changes = DrawMetaManipulationsTable( "##DefaultManips", manips.DefaultData, ref manips.Count );
-                        }
+                        changes = DrawMetaManipulationsTable( "##DefaultManips", manips.DefaultData, ref manips.Count );
                     }
-
-                    foreach( var group in manips.GroupData )
-                    {
-                        foreach( var option in group.Value )
-                        {
-                            if( ImGui.CollapsingHeader( $"{group.Key} - {option.Key}" ) )
-                            {
-                                changes |= DrawMetaManipulationsTable( $"##{group.Key}{option.Key}manips", option.Value, ref manips.Count );
-                            }
-                        }
-                    }
-
-                    if( changes )
-                    {
-                        Mod.Data.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( Mod.Data.BasePath ) );
-                        Mod.Data.Resources.SetManipulations( Meta, Mod.Data.BasePath, false );
-                        _selector.ReloadCurrentMod( true, false );
-                    }
-
-                    ImGui.EndListBox();
                 }
 
-                ImGui.EndTabItem();
+                foreach( var (groupName, group) in manips.GroupData )
+                {
+                    foreach( var (optionName, option) in group )
+                    {
+                        if( ImGui.CollapsingHeader( $"{groupName} - {optionName}" ) )
+                        {
+                            changes |= DrawMetaManipulationsTable( $"##{groupName}{optionName}manips", option, ref manips.Count );
+                        }
+                    }
+                }
+
+                if( changes )
+                {
+                    Mod.Data.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( Mod.Data.BasePath ) );
+                    Mod.Data.Resources.SetManipulations( Meta, Mod.Data.BasePath, false );
+                    _selector.ReloadCurrentMod( true, false );
+                }
             }
 
             public void Draw( bool editMode )
             {
                 _editMode = editMode;
-                ImGui.BeginTabBar( LabelPluginDetails );
+                if( !ImGui.BeginTabBar( LabelPluginDetails ) )
+                {
+                    return;
+                }
 
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabBar );
                 DrawAboutTab();
                 DrawChangedItemsTab();
 
@@ -723,7 +711,6 @@ namespace Penumbra.UI
                 DrawFileSwapTab();
                 DrawMetaManipulationsTab();
                 DrawConflictTab();
-                ImGui.EndTabBar();
             }
         }
     }

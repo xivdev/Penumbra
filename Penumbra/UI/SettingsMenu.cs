@@ -1,6 +1,7 @@
 using System.Numerics;
 using ImGuiNET;
 using Penumbra.Mods;
+using Penumbra.UI.Custom;
 using Penumbra.Util;
 
 namespace Penumbra.UI
@@ -50,16 +51,18 @@ namespace Penumbra.UI
 
                 ImGui.SetNextWindowSizeConstraints( MinSettingsSize, MaxSettingsSize );
 #if DEBUG
-                var ret = ImGui.Begin( _base._plugin.PluginDebugTitleStr, ref Visible );
+                var ret = ImGui.Begin( _base._penumbra.PluginDebugTitleStr, ref Visible );
 #else
-                var ret = ImGui.Begin( _base._plugin.Name, ref Visible );
+                var ret = ImGui.Begin( _base._penumbra.Name, ref Visible );
 #endif
+                using var raii = ImGuiRaii.DeferredEnd( ImGui.End );
                 if( !ret )
                 {
                     return;
                 }
 
                 ImGui.BeginTabBar( PenumbraSettingsLabel );
+                raii.Push( ImGui.EndTabBar );
 
                 _settingsTab.Draw();
                 CollectionsTab.Draw();
@@ -70,7 +73,7 @@ namespace Penumbra.UI
                     _browserTab.Draw();
                     InstalledTab.Draw();
 
-                    if( _base._plugin!.Configuration!.ShowAdvanced )
+                    if( Penumbra.Config.ShowAdvanced )
                     {
                         _effectiveTab.Draw();
                     }
@@ -81,9 +84,6 @@ namespace Penumbra.UI
                     _base.DrawDebugTab();
                     _base.DrawResourceManagerTab();
                 }
-
-                ImGui.EndTabBar();
-                ImGui.End();
             }
         }
     }

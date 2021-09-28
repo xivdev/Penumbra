@@ -149,30 +149,30 @@ namespace Penumbra.Mods
         internal class ModFolderComparer : IComparer< ModFolder >
         {
             // Compare only the direct folder names since this is only used inside an enumeration of subfolders of one folder.
-            public int Compare( ModFolder x, ModFolder y )
+            public int Compare( ModFolder? x, ModFolder? y )
                 => ReferenceEquals( x, y )
                     ? 0
-                    : string.Compare( x.Name, y.Name, StringComparison.InvariantCultureIgnoreCase );
+                    : string.Compare( x?.Name ?? string.Empty, y?.Name ?? string.Empty, StringComparison.InvariantCultureIgnoreCase );
         }
 
         internal class ModDataComparer : IComparer< ModData >
         {
             // Compare only the direct SortOrderNames since this is only used inside an enumeration of direct mod children of one folder.
             // Since mod SortOrderNames do not have to be unique inside a folder, also compare their BasePaths (and thus their identity) if necessary.
-            public int Compare( ModData x, ModData y )
+            public int Compare( ModData? x, ModData? y )
             {
                 if( ReferenceEquals( x, y ) )
                 {
                     return 0;
                 }
 
-                var cmp = string.Compare( x.SortOrder.SortOrderName, y.SortOrder.SortOrderName, StringComparison.InvariantCultureIgnoreCase );
+                var cmp = string.Compare( x?.SortOrder.SortOrderName, y?.SortOrder.SortOrderName, StringComparison.InvariantCultureIgnoreCase );
                 if( cmp != 0 )
                 {
                     return cmp;
                 }
 
-                return string.Compare( x.BasePath.Name, y.BasePath.Name, StringComparison.InvariantCulture );
+                return string.Compare( x?.BasePath.Name, y?.BasePath.Name, StringComparison.InvariantCulture );
             }
         }
 

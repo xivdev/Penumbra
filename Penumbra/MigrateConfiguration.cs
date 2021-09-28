@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Dalamud.Logging;
 using Dalamud.Plugin;
 using Newtonsoft.Json.Linq;
 using Penumbra.Mod;
@@ -73,7 +74,7 @@ namespace Penumbra
                     }
                 }
 
-                defaultCollection.Save( Service< DalamudPluginInterface >.Get() );
+                defaultCollection.Save();
             }
             catch( Exception e )
             {

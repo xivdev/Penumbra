@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Lumina.Data.Files;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;

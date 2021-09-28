@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
+using Dalamud.Logging;
 using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.Mod
 {
-    public struct SortOrder : IComparable<SortOrder>
+    public struct SortOrder : IComparable< SortOrder >
     {
         public ModFolder ParentFolder { get; set; }
 
@@ -31,11 +31,11 @@ namespace Penumbra.Mod
                 return path.Any() ? $"{path}/{SortOrderName}" : SortOrderName;
             }
         }
-        
+
 
         public SortOrder( ModFolder parentFolder, string name )
         {
-            ParentFolder  = parentFolder;
+            ParentFolder   = parentFolder;
             _sortOrderName = name.Replace( '/', '\\' );
         }
 
@@ -43,7 +43,7 @@ namespace Penumbra.Mod
             => SortOrderPath.Any() ? $"{SortOrderPath}/{SortOrderName}" : SortOrderName;
 
         public int CompareTo( SortOrder other )
-            => string.Compare(FullPath, other.FullPath, StringComparison.InvariantCultureIgnoreCase );
+            => string.Compare( FullPath, other.FullPath, StringComparison.InvariantCultureIgnoreCase );
     }
 
     // ModData contains all permanent information about a mod,
