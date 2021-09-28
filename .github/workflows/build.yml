@@ -30,4 +30,4 @@ jobs:
         uses: actions/upload-artifact@v2.2.1
         with:
           path: |
-            ./Penumbra/bin/Release/net472/*
+            ./Penumbra/bin/Release/net5.0-windows/*
