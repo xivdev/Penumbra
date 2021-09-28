@@ -96,4 +96,4 @@ jobs:
           git add repo.json
           git commit -m "[CI] Updating repo.json for ${{ github.ref }}" || true
 
-          git push origin main || true
+          git push origin master || true
