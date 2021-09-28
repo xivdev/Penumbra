@@ -58,3 +58,42 @@ jobs:
           asset_path: ./Penumbra.zip
           asset_name: Penumbra.zip
           asset_content_type: application/zip
+          
+      - name: Write out repo.json
+        run: |
+          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
+
+          $json = '['
+          $json += '	{'
+          $json += '		"Author": "Adam",'
+          $json += '		"Name": "Penumbra",'
+          $json += '		"Description": "Runtime mod loader and manager.",'
+          $json += '		"InternalName": "Penumbra",'
+          $json += '		"AssemblyVersion": "1.0.0.0",'
+          $json += '		"TestingAssemblyVersion": "1.0.0.0",'
+          $json += '		"RepoUrl": "https://github.com/xivdev/Penumbra",'
+          $json += '		"ApplicableVersion": "any",'
+          $json += '		"DalamudApiLevel": 4,'
+          $json += '		"IsHide": "False",'
+          $json += '		"IsTestingExclusive": "False",'
+          $json += '		"DownloadCount": 0,'
+          $json += '		"LastUpdate": 0,'
+          $json += '		"DownloadLinkInstall": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",'
+          $json += '		"DownloadLinkTesting": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",'
+          $json += '		"DownloadLinkUpdate": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",'
+          $json += '		"IconUrl": "https://github.com/Ottermandias/DalamudRepos/raw/master/images/icon.png"'
+          $json += '	}'
+          $json += ']'
+
+          $json = $json -replace '1.0.0.0',$ver
+          set-content -Path "./repo.json" -Value $json
+          
+      - name: Commit repo.json
+        run: |
+          git config --global user.name "Actions User"
+          git config --global user.email "actions@github.com"
+
+          git add repo.json
+          git commit -m "[CI] Updating repo.json for ${{ github.ref }}" || true
+
+          git push origin main || true
