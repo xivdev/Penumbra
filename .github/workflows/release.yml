@@ -93,6 +93,7 @@ jobs:
           git config --global user.name "Actions User"
           git config --global user.email "actions@github.com"
 
+          git fetch origin master && git checkout master
           git add repo.json
           git commit -m "[CI] Updating repo.json for ${{ github.ref }}" || true
 
