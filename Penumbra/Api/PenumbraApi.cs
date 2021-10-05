@@ -14,14 +14,15 @@ namespace Penumbra.Api
     public class PenumbraApi : IDisposable, IPenumbraApi
     {
         public int ApiVersion { get; } = 3;
-        private readonly Penumbra           _penumbra;
-        private readonly Lumina.GameData? _lumina;
-        public bool Valid { get; private set; } = false;
+        private Penumbra?        _penumbra;
+        private Lumina.GameData? _lumina;
+
+        public bool Valid
+            => _penumbra != null;
 
         public PenumbraApi( Penumbra penumbra )
         {
             _penumbra = penumbra;
-            Valid   = true;
             _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
                .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
               ?.GetValue( Dalamud.GameData );
@@ -29,7 +30,8 @@ namespace Penumbra.Api
 
         public void Dispose()
         {
-            Valid = false;
+            _penumbra = null;
+            _lumina   = null;
         }
 
         public event ChangedItemClick? ChangedItemClicked;
@@ -57,21 +59,21 @@ namespace Penumbra.Api
         {
             CheckInitialized();
 
-            _penumbra.ObjectReloader.RedrawObject( name, setting );
+            _penumbra!.ObjectReloader.RedrawObject( name, setting );
         }
 
         public void RedrawObject( GameObject? gameObject, RedrawType setting )
         {
             CheckInitialized();
 
-            _penumbra.ObjectReloader.RedrawObject( gameObject, setting );
+            _penumbra!.ObjectReloader.RedrawObject( gameObject, setting );
         }
 
         public void RedrawAll( RedrawType setting )
         {
             CheckInitialized();
 
-            _penumbra.ObjectReloader.RedrawAll( setting );
+            _penumbra!.ObjectReloader.RedrawAll( setting );
         }
 
         private static string ResolvePath( string path, ModManager manager, ModCollection collection )
@@ -80,6 +82,7 @@ namespace Penumbra.Api
             {
                 return path;
             }
+
             var gamePath = new GamePath( path );
             var ret      = collection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
             ret ??= manager.Collections.ForcedCollection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
@@ -89,12 +92,14 @@ namespace Penumbra.Api
 
         public string ResolvePath( string path )
         {
+            CheckInitialized();
             var modManager = Service< ModManager >.Get();
             return ResolvePath( path, modManager, modManager.Collections.DefaultCollection );
         }
 
         public string ResolvePath( string path, string characterName )
         {
+            CheckInitialized();
             var modManager = Service< ModManager >.Get();
             return ResolvePath( path, modManager,
                 modManager.Collections.CharacterCollection.TryGetValue( characterName, out var collection )
@@ -104,6 +109,7 @@ namespace Penumbra.Api
 
         private T? GetFileIntern< T >( string resolvedPath ) where T : FileResource
         {
+            CheckInitialized();
             try
             {
                 if( Path.IsPathRooted( resolvedPath ) )
@@ -113,7 +119,7 @@ namespace Penumbra.Api
 
                 return Dalamud.GameData.GetFile< T >( resolvedPath );
             }
-            catch( Exception e)
+            catch( Exception e )
             {
                 PluginLog.Warning( $"Could not load file {resolvedPath}:\n{e}" );
                 return null;

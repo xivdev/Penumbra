@@ -7,7 +7,7 @@ using Penumbra.GameData.Enums;
 
 namespace Penumbra.Api
 {
-    public class PenumbraIpc
+    public class PenumbraIpc : IDisposable
     {
         public const string LabelProviderApiVersion       = "Penumbra.ApiVersion";
         public const string LabelProviderRedrawName       = "Penumbra.RedrawObjectByName";
@@ -91,11 +91,7 @@ namespace Penumbra.Api
             try
             {
                 ProviderRedrawAll = pi.GetIpcProvider< int, object >( LabelProviderRedrawAll );
-                ProviderRedrawAll.RegisterFunc( i =>
-                {
-                    api.RedrawAll( CheckRedrawType( i ) );
-                    return null!;
-                } );
+                ProviderRedrawAll.RegisterAction( i => api.RedrawAll( CheckRedrawType( i ) ) );
             }
             catch( Exception e )
             {
@@ -141,6 +137,18 @@ namespace Penumbra.Api
             {
                 PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
             }
+        }
+
+        public void Dispose()
+        {
+            ProviderApiVersion?.UnregisterFunc();
+            ProviderRedrawName?.UnregisterAction();
+            ProviderRedrawObject?.UnregisterAction();
+            ProviderRedrawAll?.UnregisterAction();
+            ProviderResolveDefault?.UnregisterFunc();
+            ProviderResolveCharacter?.UnregisterFunc();
+            Api.ChangedItemClicked -= OnClick;
+            Api.ChangedItemTooltip -= OnTooltip;
         }
     }
 }

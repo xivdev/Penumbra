@@ -134,6 +134,7 @@ namespace Penumbra
 
         public void Dispose()
         {
+            Ipc.Dispose();
             Api.Dispose();
             SettingsInterface.Dispose();
             ObjectReloader.Dispose();
