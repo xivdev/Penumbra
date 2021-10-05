@@ -58,7 +58,7 @@ jobs:
           asset_path: ./Penumbra.zip
           asset_name: Penumbra.zip
           asset_content_type: application/zip
-          
+
       - name: Write out repo.json
         run: |
           $ver = '${{ github.ref }}' -replace 'refs/tags/',''
@@ -78,6 +78,7 @@ jobs:
           $json += '		"IsTestingExclusive": "False",'
           $json += '		"DownloadCount": 0,'
           $json += '		"LastUpdate": 0,'
+          $json += '		"LoadPriority": 69420,'
           $json += '		"DownloadLinkInstall": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",'
           $json += '		"DownloadLinkTesting": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",'
           $json += '		"DownloadLinkUpdate": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",'
@@ -87,7 +88,7 @@ jobs:
 
           $json = $json -replace '1.0.0.0',$ver
           set-content -Path "./repo.json" -Value $json
-          
+
       - name: Commit repo.json
         run: |
           git config --global user.name "Actions User"
