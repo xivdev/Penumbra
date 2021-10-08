@@ -8,5 +8,6 @@
     "ApplicableVersion": "any",
     "Tags": [ "modding" ],
     "DalamudApiLevel": 69420,
-    "LoadPriority": 69420
+    "LoadPriority": 69420,
+    "IconUrl": "https://raw.githubusercontent.com/xivdev/Penumbra/master/images/icon.png"
 }
