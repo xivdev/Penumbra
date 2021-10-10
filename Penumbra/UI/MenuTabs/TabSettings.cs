@@ -1,7 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Numerics;
 using System.Text.RegularExpressions;
+using Dalamud.Interface;
 using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.GameData.Enums;
@@ -44,11 +46,26 @@ namespace Penumbra.UI
                 _configChanged = false;
             }
 
+            private static bool DrawPressEnterWarning( float? width = null )
+            {
+                const uint red = 0xFF202080;
+                using var color = ImGuiRaii.PushColor( ImGuiCol.Button, red )
+                   .Push( ImGuiCol.ButtonActive, red )
+                   .Push( ImGuiCol.ButtonHovered, red );
+                var w = Vector2.UnitX * ( width ?? ImGui.CalcItemWidth() );
+                return ImGui.Button( "Press Enter to Save", w );
+            }
+
             private void DrawRootFolder()
             {
                 var basePath = _config.ModDirectory;
-                if( ImGui.InputText( LabelRootFolder, ref basePath, 255, ImGuiInputTextFlags.EnterReturnsTrue )
-                 && _config.ModDirectory != basePath )
+                var save     = ImGui.InputText( LabelRootFolder, ref basePath, 255, ImGuiInputTextFlags.EnterReturnsTrue );
+                if( _config.ModDirectory == basePath )
+                {
+                    return;
+                }
+
+                if( save || DrawPressEnterWarning() )
                 {
                     _base._menu.InstalledTab.Selector.ClearSelection();
                     _base._modManager.DiscoverMods( basePath );
@@ -58,13 +75,10 @@ namespace Penumbra.UI
 
             private void DrawTempFolder()
             {
-                var tempPath = _config.TempDirectory;
-                ImGui.SetNextItemWidth( 400 );
-                if( ImGui.InputText( LabelTempFolder, ref tempPath, 255, ImGuiInputTextFlags.EnterReturnsTrue )
-                 && _config.TempDirectory != tempPath )
-                {
-                    _base._modManager.SetTempDirectory( tempPath );
-                }
+                var tempPath    = _config.TempDirectory;
+                ImGui.SetNextItemWidth( 400 * ImGuiHelpers.GlobalScale );
+                ImGui.BeginGroup();
+                var save = ImGui.InputText( LabelTempFolder, ref tempPath, 255, ImGuiInputTextFlags.EnterReturnsTrue );
 
                 ImGuiCustom.HoverTooltip( "The folder used to store temporary meta manipulation files.\n"
                   + "Leave this blank if you have no reason not to.\n"
@@ -83,6 +97,17 @@ namespace Penumbra.UI
                     {
                         UseShellExecute = true,
                     } );
+                }
+
+                ImGui.EndGroup();
+                if( tempPath == _config.TempDirectory )
+                {
+                    return;
+                }
+
+                if( save || DrawPressEnterWarning( 400 ) )
+                {
+                    _base._modManager.SetTempDirectory( tempPath );
                 }
             }
 
