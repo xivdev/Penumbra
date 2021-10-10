@@ -62,32 +62,11 @@ jobs:
       - name: Write out repo.json
         run: |
           $ver = '${{ github.ref }}' -replace 'refs/tags/',''
-
-          $json = '[' + '\n'
-          $json += '	{' + '\n'
-          $json += '		"Author": "Adam",' + '\n'
-          $json += '		"Name": "Penumbra",' + '\n'
-          $json += '		"Description": "Runtime mod loader and manager.",' + '\n'
-          $json += '		"InternalName": "Penumbra",' + '\n'
-          $json += '		"AssemblyVersion": "1.0.0.0",' + '\n'
-          $json += '		"TestingAssemblyVersion": "1.0.0.0",' + '\n'
-          $json += '		"RepoUrl": "https://github.com/xivdev/Penumbra",' + '\n'
-          $json += '		"ApplicableVersion": "any",' + '\n'
-          $json += '		"DalamudApiLevel": 4,' + '\n'
-          $json += '		"IsHide": "False",' + '\n'
-          $json += '		"IsTestingExclusive": "False",' + '\n'
-          $json += '		"DownloadCount": 0,' + '\n'
-          $json += '		"LastUpdate": 0,' + '\n'
-          $json += '		"LoadPriority": 69420,' + '\n'
-          $json += '		"DownloadLinkInstall": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",' + '\n'
-          $json += '		"DownloadLinkTesting": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",' + '\n'
-          $json += '		"DownloadLinkUpdate": "https://github.com/xivdev/Penumbra/releases/download/1.0.0.0/Penumbra.zip",' + '\n'
-          $json += '		"IconUrl": "https://raw.githubusercontent.com/xivdev/Penumbra/master/images/icon.png"' + '\n'
-          $json += '	}' + '\n'
-          $json += ']' + '\n'
-
-          $json = $json -replace '1.0.0.0',$ver
-          set-content -Path "./repo.json" -Value $json
+          $path = './base_repo.json'
+          $new_path = './repo.json'
+          $content = get-content -path $path
+          $content = $content -replace '1.0.0.0',$ver
+          set-content -Path $new_path -Value $content
 
       - name: Commit repo.json
         run: |
