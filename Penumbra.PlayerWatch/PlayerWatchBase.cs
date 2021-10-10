@@ -15,7 +15,7 @@ namespace Penumbra.PlayerWatch
     {
         public const  int GPosePlayerIdx  = 201;
         public const  int GPoseTableEnd   = GPosePlayerIdx + 48;
-        private const int ObjectsPerFrame = 8;
+        private const int ObjectsPerFrame = 32;
 
         private readonly  Framework                                                            _framework;
         private readonly  ClientState                                                          _clientState;
@@ -172,11 +172,11 @@ namespace Penumbra.PlayerWatch
             }
         }
 
-        private Character CheckGPoseObject( GameObject player )
+        private Character? CheckGPoseObject( GameObject player )
         {
             if( !_inGPose )
             {
-                return ( Character )player;
+                return CharacterFactory.Convert( player );
             }
 
             for( var i = GPosePlayerIdx; i < GPoseTableEnd; ++i )
@@ -184,16 +184,16 @@ namespace Penumbra.PlayerWatch
                 var a = _objects[ i ];
                 if( a == null )
                 {
-                    return ( Character )player;
+                    return CharacterFactory.Convert( player);
                 }
 
                 if( a.Name == player.Name )
                 {
-                    return ( Character )a;
+                    return CharacterFactory.Convert( a );
                 }
             }
 
-            return ( Character )player;
+            return CharacterFactory.Convert(player)!;
         }
 
         private bool TryGetPlayer( GameObject gameObject, out (CharacterEquipment, HashSet< PlayerWatcher >) equip )
@@ -201,6 +201,29 @@ namespace Penumbra.PlayerWatch
             equip = default;
             var name = gameObject.Name.ToString();
             return name.Length != 0 && Equip.TryGetValue( name, out equip );
+        }
+
+        private static bool InvalidObjectKind( ObjectKind kind )
+        {
+            return kind switch
+            {
+                ObjectKind.BattleNpc => false,
+                ObjectKind.EventNpc  => false,
+                ObjectKind.Player    => false,
+                _                    => true,
+            };
+        }
+
+        private GameObject? GetNextObject()
+        {
+            if( _frameTicker == GPosePlayerIdx - 1 )
+                _frameTicker = GPoseTableEnd;
+            else if( _frameTicker == _objects.Length - 1 )
+                _frameTicker = 0;
+            else
+                ++_frameTicker;
+
+            return _objects[ _frameTicker ];
         }
 
         private void OnFrameworkUpdate( object framework )
@@ -223,24 +246,24 @@ namespace Penumbra.PlayerWatch
 
             for( var i = 0; i < ObjectsPerFrame; ++i )
             {
-                _frameTicker = _frameTicker < GPosePlayerIdx - 2
-                    ? _frameTicker + 2
-                    : 0;
-
-                var actor = _objects[ _frameTicker ];
+                var actor = GetNextObject();
                 if( actor            == null
-                 || actor.ObjectKind != ObjectKind.Player
+                 || InvalidObjectKind(actor.ObjectKind)
                  || !TryGetPlayer( actor, out var equip ) )
                 {
                     continue;
                 }
 
                 var character = CheckGPoseObject( actor );
-
                 if( _cancel )
                 {
                     _cancel = false;
                     return;
+                }
+
+                if( character == null || character.ModelType() != 0 )
+                {
+                    continue;
                 }
 
                 PluginLog.Verbose( "Comparing Gear for {PlayerName} at {Address}...", character.Name, character.Address );
