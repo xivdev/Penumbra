@@ -5,19 +5,21 @@ using System.Threading.Tasks;
 using Dalamud.Logging;
 using EmbedIO;
 using EmbedIO.Routing;
-using EmbedIO.Utilities;
 using EmbedIO.WebApi;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Api
 {
     public class ModsController : WebApiController
     {
-        private readonly Penumbra _penumbra;
+        private readonly Penumbra   _penumbra;
+        private readonly ModManager _modManager;
 
-        public ModsController( Penumbra penumbra )
-            => _penumbra = penumbra;
+        public ModsController( Penumbra penumbra, ModManager modManager )
+        {
+            _penumbra   = penumbra;
+            _modManager = modManager;
+        }
 
         [Route( HttpVerbs.Get, "/mods" )]
         public object? GetMods()
@@ -26,16 +28,15 @@ namespace Penumbra.Api
             var activeOnly          = Convert.ToBoolean( Request.QueryString[ "activeOnly" ] );
             var requestedCollection = Request.QueryString[ "collection" ];
 
-            var modManager = Service< ModManager >.Get();
-            var collection = modManager.Collections.CurrentCollection;
+            var collection = _modManager.Collections.CurrentCollection;
 
             if( !string.IsNullOrWhiteSpace(requestedCollection) )
             {
-                collection = modManager.Collections.Collections[ requestedCollection ];
+                collection = _modManager.Collections.Collections[ requestedCollection ];
                 if( collection.Cache is null )
                 {
                     PluginLog.Log($"Collection {requestedCollection} has been requested but cash is null. Generating cache now....");
-                    modManager.Collections.AddCache(collection);
+                    _modManager.Collections.AddCache(collection);
                 }
             }
 
@@ -58,8 +59,10 @@ namespace Penumbra.Api
         }
 
         [Route( HttpVerbs.Post, "/mods" )]
-        public object CreateMod()
-            => new { };
+        public object? CreateMod()
+        {
+            return null;
+        }
 
         [Route(HttpVerbs.Post, "/mods/delete")]
         public async Task< bool > DeleteMod()
@@ -73,17 +76,15 @@ namespace Penumbra.Api
             }
 
             PluginLog.Log($"Attempting to delete mod: {modName}");
-            var modManager = Service< ModManager >.Get();
-            var mod        = modManager.Mods[ modName ];
-            modManager.DeleteMod(mod.BasePath);
+            var mod = _modManager.Mods[ modName ];
+            _modManager.DeleteMod(mod.BasePath);
             return true;
         }
 
         [Route( HttpVerbs.Get, "/files" )]
         public object GetFiles()
         {
-            var modManager = Service< ModManager >.Get();
-            return modManager.Collections.CurrentCollection.Cache?.ResolvedFiles.ToDictionary(
+            return _modManager.Collections.CurrentCollection.Cache?.ResolvedFiles.ToDictionary(
                     o => ( string )o.Key,
                     o => o.Value.FullName
                 )

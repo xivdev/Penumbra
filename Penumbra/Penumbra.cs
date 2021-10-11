@@ -119,7 +119,7 @@ namespace Penumbra
                    .WithMode( HttpListenerMode.EmbedIO ) )
                .WithCors( prefix )
                .WithWebApi( "/api", m => m
-                   .WithController( () => new ModsController( this ) ) );
+                   .WithController( () => new ModsController( this, Service< ModManager >.Get() ) ) );
 
             _webServer.StateChanged += ( s, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
 
