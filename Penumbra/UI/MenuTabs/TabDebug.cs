@@ -9,6 +9,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using ImGuiNET;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Penumbra.Interop;
 using Penumbra.Meta;
@@ -28,13 +29,14 @@ namespace Penumbra.UI
             }
 
             var players = Penumbra.PlayerWatcher.WatchedPlayers().ToArray();
-            if( !players.Any() )
+            var count   = players.Sum( s => Math.Max(1, s.Item2.Length) );
+            if( count == 0 )
             {
                 return;
             }
 
             if( !ImGui.BeginTable( "##ObjectTable", 13, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.ScrollX,
-                new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 4 * players.Length ) ) )
+                new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 4 * count ) ) )
             {
                 return;
             }
@@ -43,7 +45,10 @@ namespace Penumbra.UI
 
             var identifier = GameData.GameData.GetIdentifier();
 
-            foreach( var (actor, equip) in players )
+            foreach( var (actor, equip) in players.SelectMany( kvp => kvp.Item2.Any()
+                ? kvp.Item2
+                   .Select( x => ( $"{kvp.Item1} ({x.Item1})", x.Item2 ) )
+                : new[] { ( kvp.Item1, new CharacterEquipment() ) } ) )
             {
                 // @formatter:off
                 ImGui.TableNextRow();

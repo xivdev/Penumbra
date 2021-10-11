@@ -26,6 +26,6 @@ namespace Penumbra.PlayerWatch
         public void           RemovePlayerFromWatch( string playerName );
         public CharacterEquipment UpdatePlayerWithoutEvent( Character actor );
 
-        public IEnumerable< (string, CharacterEquipment) > WatchedPlayers();
+        public IEnumerable< (string, (uint, CharacterEquipment)[]) > WatchedPlayers();
     }
 }
