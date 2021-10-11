@@ -1,0 +1,96 @@
+{
+	"info": {
+		"_postman_id": "791e3480-5ea2-4366-a39a-8b8126305691",
+		"name": "Penumbra API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get Mods",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:42069/api/mods?activeOnly=true",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "42069",
+					"path": [
+						"api",
+						"mods"
+					],
+					"query": [
+						{
+							"key": "activeOnly",
+							"value": "true"
+						},
+						{
+							"key": "collection",
+							"value": "sfdgd",
+							"disabled": true
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Mod",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:42069/api/mods/delete?name=Hello World",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "42069",
+					"path": [
+						"api",
+						"mods",
+						"delete"
+					],
+					"query": [
+						{
+							"key": "name",
+							"value": "Hello World"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create Mod",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"name\": \"Hello World\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:42069/api/mods",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "42069",
+					"path": [
+						"api",
+						"mods"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
