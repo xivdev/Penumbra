@@ -11,21 +11,33 @@ using Penumbra.GameData.Structs;
 
 namespace Penumbra.PlayerWatch
 {
+    internal readonly struct WatchedPlayer
+    {
+        public readonly Dictionary< uint, CharacterEquipment > FoundActors;
+        public readonly HashSet< PlayerWatcher >               RegisteredWatchers;
+
+        public WatchedPlayer( PlayerWatcher watcher )
+        {
+            FoundActors        = new Dictionary< uint, CharacterEquipment >(4);
+            RegisteredWatchers = new HashSet< PlayerWatcher >{ watcher };
+        }
+    }
+
     internal class PlayerWatchBase : IDisposable
     {
         public const  int GPosePlayerIdx  = 201;
         public const  int GPoseTableEnd   = GPosePlayerIdx + 48;
         private const int ObjectsPerFrame = 32;
 
-        private readonly  Framework                                                            _framework;
-        private readonly  ClientState                                                          _clientState;
-        private readonly  ObjectTable                                                          _objects;
-        internal readonly HashSet< PlayerWatcher >                                             RegisteredWatchers = new();
-        internal readonly Dictionary< string, (CharacterEquipment, HashSet< PlayerWatcher >) > Equip              = new();
-        private           int                                                                  _frameTicker;
-        private           bool                                                                 _inGPose;
-        private           bool                                                                 _enabled;
-        private           bool                                                                 _cancel;
+        private readonly  Framework                           _framework;
+        private readonly  ClientState                         _clientState;
+        private readonly  ObjectTable                         _objects;
+        internal readonly HashSet< PlayerWatcher >            RegisteredWatchers = new();
+        internal readonly Dictionary< string, WatchedPlayer > Equip              = new();
+        private           int                                 _frameTicker;
+        private           bool                                _inGPose;
+        private           bool                                _enabled;
+        private           bool                                _cancel;
 
         internal PlayerWatchBase( Framework framework, ClientState clientState, ObjectTable objects )
         {
@@ -47,9 +59,12 @@ namespace Penumbra.PlayerWatch
         {
             if( RegisteredWatchers.Remove( watcher ) )
             {
-                foreach( var items in Equip.Values )
+                foreach( var (key, value) in Equip.ToArray() )
                 {
-                    items.Item2.Remove( watcher );
+                    if( value.RegisteredWatchers.Remove( watcher ) && value.RegisteredWatchers.Count == 0 )
+                    {
+                        Equip.Remove( key );
+                    }
                 }
             }
 
@@ -68,12 +83,16 @@ namespace Penumbra.PlayerWatch
             }
         }
 
+        private static uint GetId( GameObject actor )
+            => actor.ObjectId ^ actor.OwnerId;
+
         internal CharacterEquipment UpdatePlayerWithoutEvent( Character actor )
         {
+            var name      = actor.Name.ToString();
             var equipment = new CharacterEquipment( actor );
-            if( Equip.ContainsKey( actor.Name.ToString() ) )
+            if (Equip.TryGetValue( name, out var watched ))
             {
-                Equip[ actor.Name.ToString() ] = ( equipment, Equip[ actor.Name.ToString() ].Item2 );
+                watched.FoundActors[ GetId( actor ) ] = equipment;
             }
 
             return equipment;
@@ -83,11 +102,11 @@ namespace Penumbra.PlayerWatch
         {
             if( Equip.TryGetValue( playerName, out var items ) )
             {
-                items.Item2.Add( watcher );
+                items.RegisteredWatchers.Add( watcher );
             }
             else
             {
-                Equip[ playerName ] = ( new CharacterEquipment(), new HashSet< PlayerWatcher > { watcher } );
+                Equip[ playerName ] = new WatchedPlayer( watcher );
             }
         }
 
@@ -95,8 +114,7 @@ namespace Penumbra.PlayerWatch
         {
             if( Equip.TryGetValue( playerName, out var items ) )
             {
-                items.Item2.Remove( watcher );
-                if( items.Item2.Count == 0 )
+                if( items.RegisteredWatchers.Remove( watcher ) && items.RegisteredWatchers.Count == 0 )
                 {
                     Equip.Remove( playerName );
                 }
@@ -140,7 +158,7 @@ namespace Penumbra.PlayerWatch
             _cancel = true;
             foreach( var kvp in Equip )
             {
-                kvp.Value.Item1.Clear();
+                kvp.Value.FoundActors.Clear();
             }
 
             _frameTicker = 0;
@@ -167,7 +185,7 @@ namespace Penumbra.PlayerWatch
 
                 if( Equip.TryGetValue( player.Name.ToString(), out var watcher ) )
                 {
-                    TriggerEvents( watcher.Item2, ( Character )player );
+                    TriggerEvents( watcher.RegisteredWatchers, ( Character )player );
                 }
             }
         }
@@ -184,7 +202,7 @@ namespace Penumbra.PlayerWatch
                 var a = _objects[ i ];
                 if( a == null )
                 {
-                    return CharacterFactory.Convert( player);
+                    return CharacterFactory.Convert( player );
                 }
 
                 if( a.Name == player.Name )
@@ -193,14 +211,14 @@ namespace Penumbra.PlayerWatch
                 }
             }
 
-            return CharacterFactory.Convert(player)!;
+            return CharacterFactory.Convert( player )!;
         }
 
-        private bool TryGetPlayer( GameObject gameObject, out (CharacterEquipment, HashSet< PlayerWatcher >) equip )
+        private bool TryGetPlayer( GameObject gameObject, out WatchedPlayer watch )
         {
-            equip = default;
+            watch = default;
             var name = gameObject.Name.ToString();
-            return name.Length != 0 && Equip.TryGetValue( name, out equip );
+            return name.Length != 0 && Equip.TryGetValue( name, out watch );
         }
 
         private static bool InvalidObjectKind( ObjectKind kind )
@@ -217,11 +235,17 @@ namespace Penumbra.PlayerWatch
         private GameObject? GetNextObject()
         {
             if( _frameTicker == GPosePlayerIdx - 1 )
+            {
                 _frameTicker = GPoseTableEnd;
+            }
             else if( _frameTicker == _objects.Length - 1 )
+            {
                 _frameTicker = 0;
+            }
             else
+            {
                 ++_frameTicker;
+            }
 
             return _objects[ _frameTicker ];
         }
@@ -247,9 +271,9 @@ namespace Penumbra.PlayerWatch
             for( var i = 0; i < ObjectsPerFrame; ++i )
             {
                 var actor = GetNextObject();
-                if( actor            == null
-                 || InvalidObjectKind(actor.ObjectKind)
-                 || !TryGetPlayer( actor, out var equip ) )
+                if( actor == null
+                 || InvalidObjectKind( actor.ObjectKind )
+                 || !TryGetPlayer( actor, out var watch ) )
                 {
                     continue;
                 }
@@ -266,11 +290,20 @@ namespace Penumbra.PlayerWatch
                     continue;
                 }
 
-                PluginLog.Verbose( "Comparing Gear for {PlayerName} at {Address}...", character.Name, character.Address );
-                if( !equip.Item1.CompareAndUpdate( character ) )
+                var id = GetId( character );
+                PluginLog.Verbose( "Comparing Gear for {PlayerName} ({Id}) at {Address}...", character.Name, id, character.Address);
+                if( !watch.FoundActors.TryGetValue( id, out var equip ) )
                 {
-                    TriggerEvents( equip.Item2, character );
+                    equip                   = new CharacterEquipment( character );
+                    watch.FoundActors[ id ] = equip;
+                    TriggerEvents( watch.RegisteredWatchers, character );
                 }
+                else if (!equip.CompareAndUpdate( character ))
+                {
+                    TriggerEvents( watch.RegisteredWatchers, character );
+                }
+
+                break; // Only one comparison per frame.
             }
         }
     }

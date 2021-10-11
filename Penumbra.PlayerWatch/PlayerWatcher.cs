@@ -86,12 +86,12 @@ namespace Penumbra.PlayerWatch
             return _playerWatch!.UpdatePlayerWithoutEvent( actor );
         }
 
-        public IEnumerable< (string, CharacterEquipment) > WatchedPlayers()
+        public IEnumerable< (string, (uint, CharacterEquipment)[]) > WatchedPlayers()
         {
             CheckValidity();
             return _playerWatch!.Equip
-               .Where( kvp => kvp.Value.Item2.Contains( this ) )
-               .Select( kvp => ( kvp.Key, kvp.Value.Item1 ) );
+               .Where( kvp => kvp.Value.RegisteredWatchers.Contains( this ) )
+               .Select( kvp => ( kvp.Key, kvp.Value.FoundActors.Select( kvp2 => ( kvp2.Key, kvp2.Value ) ).ToArray() ) );
         }
     }
 
