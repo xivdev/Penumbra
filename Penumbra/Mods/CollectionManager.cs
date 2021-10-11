@@ -161,7 +161,7 @@ namespace Penumbra.Mods
             return false;
         }
 
-        private void AddCache( ModCollection collection )
+        public void AddCache( ModCollection collection )
         {
             if( !_manager.TempWritable )
             {
