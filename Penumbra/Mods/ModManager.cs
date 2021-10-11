@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.Util;
+using Penumbra.Importer;
 using Penumbra.Meta;
 using Penumbra.Mod;
 
@@ -268,6 +269,24 @@ namespace Penumbra.Mods
             }
         }
 
+        public DirectoryInfo GenerateEmptyMod(string name)
+        {
+            var newDir = TexToolsImport.CreateModFolder( new DirectoryInfo( Penumbra.Config!.ModDirectory ),
+                name );
+            var modMeta = new ModMeta
+            {
+                Author      = "Unknown",
+                Name        = name.Replace( '/', '\\' ),
+                Description = string.Empty,
+            };
+
+            var metaFile = new FileInfo( Path.Combine( newDir.FullName, "meta.json" ) );
+            modMeta.SaveToFile( metaFile );
+            AddMod( newDir );
+            ModFileSystem.InvokeChange();
+            return newDir;
+        }
+
         public bool AddMod( DirectoryInfo modFolder )
         {
             var mod = ModData.LoadMod( StructuredMods, modFolder );
@@ -375,7 +394,7 @@ namespace Penumbra.Mods
         //             PluginLog.Log( "a loaded file has been modified - file: {FullPath}", file );
         //             _plugin.GameUtils.ReloadPlayerResources();
         //         }
-        // 
+        //
         //         private void FileSystemPasta()
         //         {
         //              haha spaghet
@@ -388,7 +407,7 @@ namespace Penumbra.Mods
         //                  IncludeSubdirectories = true,
         //                  EnableRaisingEvents = true
         //              };
-        //             
+        //
         //              _fileSystemWatcher.Changed += FileSystemWatcherOnChanged;
         //              _fileSystemWatcher.Created += FileSystemWatcherOnChanged;
         //              _fileSystemWatcher.Deleted += FileSystemWatcherOnChanged;

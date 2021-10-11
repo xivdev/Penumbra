@@ -6,6 +6,7 @@ using Dalamud.Logging;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
+using Penumbra.Api.Models;
 using Penumbra.Mods;
 
 namespace Penumbra.Api
@@ -59,9 +60,15 @@ namespace Penumbra.Api
         }
 
         [Route( HttpVerbs.Post, "/mods" )]
-        public object? CreateMod()
+        public async Task< string > CreateMod()
         {
-            return null;
+            var requestData = await HttpContext.GetRequestDataAsync<NewMod>();
+            PluginLog.Log($"Attempting to create mod: {requestData.name}");
+            var newModDir = _modManager.GenerateEmptyMod( requestData.name );
+            return _modManager.Mods
+                .Where( m => m.Value.BasePath.Name == newModDir.Name )
+                .FirstOrDefault()
+                .Value.BasePath.Name;
         }
 
         [Route(HttpVerbs.Post, "/mods/delete")]
@@ -76,9 +83,18 @@ namespace Penumbra.Api
             }
 
             PluginLog.Log($"Attempting to delete mod: {modName}");
-            var mod = _modManager.Mods[ modName ];
-            _modManager.DeleteMod(mod.BasePath);
-            return true;
+            try
+            {
+                var mod = _modManager.Mods[ modName ];
+                _modManager.DeleteMod( mod.BasePath );
+                ModFileSystem.InvokeChange();
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         [Route( HttpVerbs.Get, "/files" )]

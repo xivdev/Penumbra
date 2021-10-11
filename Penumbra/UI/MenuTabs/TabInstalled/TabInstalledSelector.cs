@@ -154,19 +154,7 @@ namespace Penumbra.UI
                 {
                     try
                     {
-                        var newDir = TexToolsImport.CreateModFolder( new DirectoryInfo( Penumbra.Config!.ModDirectory ),
-                            newName );
-                        var modMeta = new ModMeta
-                        {
-                            Author      = "Unknown",
-                            Name        = newName.Replace( '/', '\\' ),
-                            Description = string.Empty,
-                        };
-
-                        var metaFile = new FileInfo( Path.Combine( newDir.FullName, "meta.json" ) );
-                        modMeta.SaveToFile( metaFile );
-                        _modManager.AddMod( newDir );
-                        ModFileSystem.InvokeChange();
+                        var newDir = _modManager.GenerateEmptyMod(newName);
                         SelectModOnUpdate( newDir.Name );
                     }
                     catch( Exception e )
