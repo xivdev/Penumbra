@@ -42,6 +42,7 @@ namespace Penumbra.PlayerWatch
                 {
                     ObjectKind.BattleNpc => Character( actor.Address ),
                     ObjectKind.Companion => Character( actor.Address ),
+                    ObjectKind.Retainer  => Character( actor.Address ),
                     ObjectKind.EventNpc  => Character( actor.Address ),
                     _                    => null,
                 },

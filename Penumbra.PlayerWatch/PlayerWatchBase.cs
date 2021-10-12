@@ -228,6 +228,7 @@ namespace Penumbra.PlayerWatch
                 ObjectKind.BattleNpc => false,
                 ObjectKind.EventNpc  => false,
                 ObjectKind.Player    => false,
+                ObjectKind.Retainer  => false,
                 _                    => true,
             };
         }
