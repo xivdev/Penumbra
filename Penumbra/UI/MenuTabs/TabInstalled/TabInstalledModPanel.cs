@@ -216,6 +216,11 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelModEnabled, ref enabled ) )
                 {
                     Mod.Settings.Enabled = enabled;
+                    if( !enabled )
+                    {
+                        Mod.Cache.ClearConflicts();
+                    }
+
                     _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
                     _selector.Cache.TriggerFilterReset();
                 }
@@ -425,7 +430,7 @@ namespace Penumbra.UI
             {
                 if( ImGui.Button( "Recompute Metadata" ) )
                 {
-                    _selector.ReloadCurrentMod( true, true );
+                    _selector.ReloadCurrentMod( true, true, true );
                 }
 
                 ImGuiCustom.HoverTooltip(
@@ -440,7 +445,7 @@ namespace Penumbra.UI
                 {
                     ModCleanup.Deduplicate( Mod!.Data.BasePath, Meta! );
                     _selector.SaveCurrentMod();
-                    _selector.ReloadCurrentMod();
+                    _selector.ReloadCurrentMod( true, true, true );
                 }
 
                 ImGuiCustom.HoverTooltip( TooltipDeduplicate );
@@ -452,10 +457,26 @@ namespace Penumbra.UI
                 {
                     ModCleanup.Normalize( Mod!.Data.BasePath, Meta! );
                     _selector.SaveCurrentMod();
-                    _selector.ReloadCurrentMod();
+                    _selector.ReloadCurrentMod( true, true, true );
                 }
 
                 ImGuiCustom.HoverTooltip( TooltipNormalize );
+            }
+
+            private void DrawAutoGenerateGroupsButton()
+            {
+                if( ImGui.Button( "Auto-Generate Groups" ) )
+                {
+                    ModCleanup.AutoGenerateGroups( Mod!.Data.BasePath, Meta! );
+                    _selector.SaveCurrentMod();
+                    _selector.ReloadCurrentMod( true, true );
+                }
+
+                ImGuiCustom.HoverTooltip( "Automatically generate single-select groups from all folders (clears existing groups):\n"
+                  + "First subdirectory: Option Group\n"
+                  + "Second subdirectory: Option Name\n"
+                  + "Afterwards: Relative file paths.\n"
+                  + "Experimental - Use at own risk!" );
             }
 
             private void DrawSplitButton()
@@ -487,6 +508,8 @@ namespace Penumbra.UI
                 ImGui.SameLine();
                 DrawNormalizeButton();
                 ImGui.SameLine();
+                DrawAutoGenerateGroupsButton();
+                ImGui.SameLine();
                 DrawSplitButton();
 
                 DrawSortOrder( Mod!.Data, _modManager, _selector );
@@ -498,7 +521,7 @@ namespace Penumbra.UI
                 {
                     using var raii = ImGuiRaii.DeferredEnd( ImGui.EndChild );
                     var       ret  = ImGui.BeginChild( LabelModPanel, AutoFillSize, true );
-                    
+
                     if( !ret || Mod == null )
                     {
                         return;
