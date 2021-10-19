@@ -146,14 +146,7 @@ namespace Penumbra.UI
                 var enabled = _config.IsEnabled;
                 if( ImGui.Checkbox( LabelEnabled, ref enabled ) )
                 {
-                    _config.IsEnabled = enabled;
-                    _configChanged    = true;
-                    Service< ResidentResources >.Get().ReloadPlayerResources();
-                    _base._penumbra.ObjectReloader.RedrawAll( enabled ? RedrawType.WithSettings : RedrawType.WithoutSettings );
-                    if( _config.EnablePlayerWatch )
-                    {
-                        Penumbra.PlayerWatcher.SetStatus( enabled );
-                    }
+                    _base._penumbra.SetEnabled( enabled );
                 }
             }
 

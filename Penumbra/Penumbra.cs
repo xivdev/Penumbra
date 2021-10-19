@@ -90,6 +90,47 @@ namespace Penumbra
             Ipc = new PenumbraIpc( pluginInterface, Api );
         }
 
+        public bool Enable()
+        {
+            if( Config.IsEnabled )
+            {
+                return false;
+            }
+
+            Config.IsEnabled = true;
+            Service< ResidentResources >.Get().ReloadPlayerResources();
+            if( Config.EnablePlayerWatch )
+            {
+                PlayerWatcher.SetStatus( true );
+            }
+
+            Config.Save();
+            ObjectReloader.RedrawAll( RedrawType.WithSettings );
+            return true;
+        }
+
+        public bool Disable()
+        {
+            if( !Config.IsEnabled )
+            {
+                return false;
+            }
+
+            Config.IsEnabled = false;
+            Service< ResidentResources >.Get().ReloadPlayerResources();
+            if( Config.EnablePlayerWatch )
+            {
+                PlayerWatcher.SetStatus( false );
+            }
+
+            Config.Save();
+            ObjectReloader.RedrawAll( RedrawType.WithoutSettings );
+            return true;
+        }
+
+        public bool SetEnabled( bool enabled )
+            => enabled ? Enable() : Disable();
+
         private void SubscribeItemLinks()
         {
             Api.ChangedItemTooltip += it =>
@@ -149,6 +190,9 @@ namespace Penumbra
 
         private void OnCommand( string command, string rawArgs )
         {
+            const string modsEnabled  = "Your mods have now been enabled.";
+            const string modsDisabled = "Your mods have now been disabled.";
+
             var args = rawArgs.Split( new[] { ' ' }, 2 );
             if( args.Length > 0 && args[ 0 ].Length > 0 )
             {
@@ -182,40 +226,24 @@ namespace Penumbra
                     }
                     case "enable":
                     {
-                        if( Config.IsEnabled )
-                        {
-                            Dalamud.Chat.Print("Your mods are already enabled. To disable your mods, please run the following command instead: /penumbra disable");
-                        }
-                        else
-                        {
-                            Config.IsEnabled = true;
-                            ObjectReloader.RedrawAll( RedrawType.WithSettings );
-                            if( Config.EnablePlayerWatch )
-                            {
-                                Penumbra.PlayerWatcher.SetStatus( true );
-                            }
-                            Config.Save();
-                            Dalamud.Chat.Print("Your mods have now been enabled.");
-                        }
+                        Dalamud.Chat.Print( Enable()
+                            ? "Your mods are already enabled. To disable your mods, please run the following command instead: /penumbra disable"
+                            : modsEnabled );
                         break;
                     }
                     case "disable":
                     {
-                        if( !Config.IsEnabled )
-                        {
-                            Dalamud.Chat.Print("Your mods are already disabled. To enable your mods, please run the following command instead: /penumbra enable");
-                        }
-                        else
-                        {
-                            Config.IsEnabled = false;
-                            ObjectReloader.RedrawAll( RedrawType.WithoutSettings );
-                            if( Config.EnablePlayerWatch )
-                            {
-                                Penumbra.PlayerWatcher.SetStatus( false );
-                            }
-                            Config.Save();
-                            Dalamud.Chat.Print("Your mods have now been disabled.");
-                        }
+                        Dalamud.Chat.Print( Disable()
+                            ? "Your mods are already disabled. To enable your mods, please run the following command instead: /penumbra enable"
+                            : modsDisabled );
+                        break;
+                    }
+                    case "toggle":
+                    {
+                        SetEnabled( !Config.IsEnabled );
+                        Dalamud.Chat.Print( Config.IsEnabled
+                            ? modsEnabled
+                            : modsDisabled );
                         break;
                     }
                 }
