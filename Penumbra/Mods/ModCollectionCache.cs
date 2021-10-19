@@ -97,6 +97,10 @@ namespace Penumbra.Mods
             else
             {
                 mod.Cache.AddConflict( oldMod, gamePath );
+                if( !ReferenceEquals( mod, oldMod ) && mod.Settings.Priority == oldMod.Settings.Priority)
+                {
+                    oldMod.Cache.AddConflict( mod, gamePath );
+                }
             }
         }
 
@@ -223,6 +227,10 @@ namespace Penumbra.Mods
                 else
                 {
                     mod.Cache.AddConflict( oldMod, swap.Key );
+                    if( !ReferenceEquals( mod, oldMod ) && mod.Settings.Priority == oldMod.Settings.Priority )
+                    {
+                        oldMod.Cache.AddConflict( mod, swap.Key );
+                    }
                 }
             }
         }
@@ -231,13 +239,17 @@ namespace Penumbra.Mods
         {
             foreach( var manip in mod.Data.Resources.MetaManipulations.GetManipulationsForConfig( mod.Settings, mod.Data.Meta ) )
             {
-                if( MetaManipulations.TryGetValue( manip, out var precedingMod ) )
+                if( !MetaManipulations.TryGetValue( manip, out var oldMod ) )
                 {
-                    mod.Cache.AddConflict( precedingMod, manip );
+                    MetaManipulations.ApplyMod( manip, mod );
                 }
                 else
                 {
-                    MetaManipulations.ApplyMod( manip, mod );
+                    mod.Cache.AddConflict( oldMod, manip );
+                    if( !ReferenceEquals( mod, oldMod ) && mod.Settings.Priority == oldMod.Settings.Priority )
+                    {
+                        oldMod.Cache.AddConflict( mod, manip );
+                    }
                 }
             }
         }

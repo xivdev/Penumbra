@@ -701,7 +701,7 @@ namespace Penumbra.UI
                         {
                             MetaType.Est  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
                             MetaType.Eqp  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
-                            MetaType.Eqdp => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
+                            MetaType.Eqdp => new MetaManipulation( newManip.Value.Identifier, (ushort) def ),
                             MetaType.Gmp  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
                             MetaType.Imc => new MetaManipulation( newManip.Value.Identifier,
                                 ( ( ImcFile.ImageChangeData )def ).ToInteger() ),

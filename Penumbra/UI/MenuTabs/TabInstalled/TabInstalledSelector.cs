@@ -440,14 +440,14 @@ namespace Penumbra.UI
                 SetSelection( idx, mod );
             }
 
-            public void ReloadCurrentMod( bool reloadMeta = false, bool recomputeMeta = false )
+            public void ReloadCurrentMod( bool reloadMeta = false, bool recomputeMeta = false, bool force = false )
             {
                 if( Mod == null )
                 {
                     return;
                 }
 
-                if( _index >= 0 && _modManager.UpdateMod( Mod.Data, reloadMeta, recomputeMeta ) )
+                if( _index >= 0 && _modManager.UpdateMod( Mod.Data, reloadMeta, recomputeMeta, force ) )
                 {
                     SelectModOnUpdate( Mod.Data.BasePath.Name );
                     _base._menu.InstalledTab.ModPanel.Details.ResetState();

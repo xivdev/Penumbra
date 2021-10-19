@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
@@ -477,6 +478,47 @@ namespace Penumbra.Mod
 
             RemoveUselessGroups( meta );
             ClearEmptySubDirectories( baseDir );
+        }
+
+        public static void AutoGenerateGroups( DirectoryInfo baseDir, ModMeta meta )
+        {
+            meta.Groups.Clear();
+            ClearEmptySubDirectories( baseDir );
+            foreach( var groupDir in baseDir.EnumerateDirectories() )
+            {
+                var group = new OptionGroup
+                {
+                    GroupName     = groupDir.Name,
+                    SelectionType = SelectType.Single,
+                    Options       = new List< Option >(),
+                };
+
+                foreach( var optionDir in groupDir.EnumerateDirectories() )
+                {
+                    var option = new Option
+                    {
+                        OptionDesc  = string.Empty,
+                        OptionName  = optionDir.Name,
+                        OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >(),
+                    };
+                    foreach( var file in optionDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
+                    {
+                        var relPath  = new RelPath( file, baseDir );
+                        var gamePath = new GamePath( file, optionDir );
+                        option.OptionFiles[ relPath ] = new HashSet< GamePath > { gamePath };
+                    }
+
+                    if( option.OptionFiles.Any() )
+                    {
+                        group.Options.Add( option );
+                    }
+                }
+
+                if( group.Options.Any() )
+                {
+                    meta.Groups.Add( groupDir.Name, @group );
+                }
+            }
         }
     }
 }

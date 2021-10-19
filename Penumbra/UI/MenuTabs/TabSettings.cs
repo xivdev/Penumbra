@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Text.RegularExpressions;
 using Dalamud.Interface;
@@ -38,47 +39,49 @@ namespace Penumbra.UI
             private readonly SettingsInterface _base;
             private readonly Configuration     _config;
             private          bool              _configChanged;
+            private          string            _newModDirectory;
+            private          string            _newTempDirectory;
+
 
             public TabSettings( SettingsInterface ui )
             {
-                _base          = ui;
-                _config        = Penumbra.Config;
-                _configChanged = false;
+                _base             = ui;
+                _config           = Penumbra.Config;
+                _configChanged    = false;
+                _newModDirectory  = _config.ModDirectory;
+                _newTempDirectory = _config.TempDirectory;
             }
 
-            private static bool DrawPressEnterWarning( float? width = null )
+            private static bool DrawPressEnterWarning( string old, float? width = null )
             {
-                const uint red = 0xFF202080;
-                using var color = ImGuiRaii.PushColor( ImGuiCol.Button, red )
-                   .Push( ImGuiCol.ButtonActive, red )
-                   .Push( ImGuiCol.ButtonHovered, red );
-                var w = Vector2.UnitX * ( width ?? ImGui.CalcItemWidth() );
-                return ImGui.Button( "Press Enter to Save", w );
+                const uint red   = 0xFF202080;
+                using var  color = ImGuiRaii.PushColor( ImGuiCol.Button, red );
+                var        w     = Vector2.UnitX * ( width ?? ImGui.CalcItemWidth() );
+                return ImGui.Button( $"Press Enter or Click Here to Save (Current Directory: {old})", w );
             }
 
             private void DrawRootFolder()
             {
-                var basePath = _config.ModDirectory;
-                var save     = ImGui.InputText( LabelRootFolder, ref basePath, 255, ImGuiInputTextFlags.EnterReturnsTrue );
-                if( _config.ModDirectory == basePath )
+                var save = ImGui.InputText( LabelRootFolder, ref _newModDirectory, 255, ImGuiInputTextFlags.EnterReturnsTrue );
+                if( _config.ModDirectory == _newModDirectory || !_newModDirectory.Any() )
                 {
                     return;
                 }
 
-                if( save || DrawPressEnterWarning() )
+                if( save || DrawPressEnterWarning( _config.ModDirectory ) )
                 {
                     _base._menu.InstalledTab.Selector.ClearSelection();
-                    _base._modManager.DiscoverMods( basePath );
+                    _base._modManager.DiscoverMods( _newModDirectory );
                     _base._menu.InstalledTab.Selector.Cache.TriggerListReset();
+                    _newModDirectory = _config.ModDirectory;
                 }
             }
 
             private void DrawTempFolder()
             {
-                var tempPath    = _config.TempDirectory;
                 ImGui.SetNextItemWidth( 400 * ImGuiHelpers.GlobalScale );
                 ImGui.BeginGroup();
-                var save = ImGui.InputText( LabelTempFolder, ref tempPath, 255, ImGuiInputTextFlags.EnterReturnsTrue );
+                var save = ImGui.InputText( LabelTempFolder, ref _newTempDirectory, 255, ImGuiInputTextFlags.EnterReturnsTrue );
 
                 ImGuiCustom.HoverTooltip( "The folder used to store temporary meta manipulation files.\n"
                   + "Leave this blank if you have no reason not to.\n"
@@ -100,14 +103,15 @@ namespace Penumbra.UI
                 }
 
                 ImGui.EndGroup();
-                if( tempPath == _config.TempDirectory )
+                if( _newTempDirectory == _config.TempDirectory )
                 {
                     return;
                 }
 
-                if( save || DrawPressEnterWarning( 400 ) )
+                if( save || DrawPressEnterWarning( _config.TempDirectory, 400 ) )
                 {
-                    _base._modManager.SetTempDirectory( tempPath );
+                    _base._modManager.SetTempDirectory( _newTempDirectory );
+                    _newTempDirectory = _config.TempDirectory;
                 }
             }
 

@@ -1,7 +1,10 @@
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
+using Lumina.Data.Parsing;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
@@ -197,6 +200,14 @@ namespace Penumbra.UI
                         raii.Push( ImGui.EndTooltip );
                         _base._penumbra.Api.InvokeTooltip( data );
                         raii.Pop();
+                    }
+
+                    if( data is Item it )
+                    {
+                        var modelId = $"({( ( Quad )it.ModelMain ).A})";
+                        var offset  = ImGui.CalcTextSize( modelId ).X - ImGui.GetStyle().ItemInnerSpacing.X;
+                        ImGui.SameLine(ImGui.GetWindowContentRegionWidth() - offset);
+                        ImGui.TextColored( new Vector4(0.5f, 0.5f, 0.5f, 1  ), modelId );
                     }
                 }
             }
@@ -401,6 +412,7 @@ namespace Penumbra.UI
                         continue;
                     }
 
+                    _fullFilenameList![ i ].selected = false;
                     var relName = _fullFilenameList[ i ].relName;
                     if( defaultIndex >= 0 )
                     {
@@ -428,6 +440,7 @@ namespace Penumbra.UI
 
                 if( changed )
                 {
+                    _fullFilenameList = null;
                     _selector.SaveCurrentMod();
                     // Since files may have changed, we need to recompute effective files.
                     foreach( var collection in _modManager.Collections.Collections.Values

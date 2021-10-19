@@ -317,10 +317,10 @@ namespace Penumbra.Mods
             return true;
         }
 
-        public bool UpdateMod( ModData mod, bool reloadMeta = false, bool recomputeMeta = false )
+        public bool UpdateMod( ModData mod, bool reloadMeta = false, bool recomputeMeta = false, bool force = false )
         {
             var oldName     = mod.Meta.Name;
-            var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile );
+            var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile ) || force;
             var fileChanges = mod.Resources.RefreshModFiles( mod.BasePath );
 
             if( !recomputeMeta && !reloadMeta && !metaChanges && fileChanges == 0 )
