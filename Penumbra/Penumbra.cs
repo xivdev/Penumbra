@@ -180,6 +180,44 @@ namespace Penumbra
                         SettingsInterface.MakeDebugTabVisible();
                         break;
                     }
+                    case "enable":
+                    {
+                        if( Config.IsEnabled )
+                        {
+                            Dalamud.Chat.Print("Your mods are already enabled. To disable your mods, please run the following command instead: /penumbra disable");
+                        }
+                        else
+                        {
+                            Config.IsEnabled = true;
+                            ObjectReloader.RedrawAll( RedrawType.WithSettings );
+                            if( Config.EnablePlayerWatch )
+                            {
+                                Penumbra.PlayerWatcher.SetStatus( true );
+                            }
+                            Config.Save();
+                            Dalamud.Chat.Print("Your mods have now been enabled.");
+                        }
+                        break;
+                    }
+                    case "disable":
+                    {
+                        if( !Config.IsEnabled )
+                        {
+                            Dalamud.Chat.Print("Your mods are already disabled. To enable your mods, please run the following command instead: /penumbra enable");
+                        }
+                        else
+                        {
+                            Config.IsEnabled = false;
+                            ObjectReloader.RedrawAll( RedrawType.WithoutSettings );
+                            if( Config.EnablePlayerWatch )
+                            {
+                                Penumbra.PlayerWatcher.SetStatus( false );
+                            }
+                            Config.Save();
+                            Dalamud.Chat.Print("Your mods have now been disabled.");
+                        }
+                        break;
+                    }
                 }
 
                 return;
