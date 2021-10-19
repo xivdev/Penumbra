@@ -19,9 +19,10 @@ namespace Penumbra.UI
             private readonly  TabSettings       _settingsTab;
             private readonly  TabImport         _importTab;
             private readonly  TabBrowser        _browserTab;
+            private readonly  TabEffective      _effectiveTab;
+            private readonly  TabChangedItems   _changedItems;
             internal readonly TabCollections    CollectionsTab;
             internal readonly TabInstalled      InstalledTab;
-            private readonly  TabEffective      _effectiveTab;
 
             public SettingsMenu( SettingsInterface ui )
             {
@@ -32,6 +33,7 @@ namespace Penumbra.UI
                 InstalledTab   = new TabInstalled( _base );
                 CollectionsTab = new TabCollections( InstalledTab.Selector );
                 _effectiveTab  = new TabEffective();
+                _changedItems  = new TabChangedItems( _base );
             }
 
 #if DEBUG
@@ -72,7 +74,7 @@ namespace Penumbra.UI
                 {
                     _browserTab.Draw();
                     InstalledTab.Draw();
-
+                    _changedItems.Draw();
                     if( Penumbra.Config.ShowAdvanced )
                     {
                         _effectiveTab.Draw();

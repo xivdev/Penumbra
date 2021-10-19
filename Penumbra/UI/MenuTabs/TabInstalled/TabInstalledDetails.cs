@@ -185,30 +185,7 @@ namespace Penumbra.UI
                 raii.Push( ImGui.EndListBox );
                 foreach( var (name, data) in Mod.Data.ChangedItems )
                 {
-                    var ret = ImGui.Selectable( name ) ? MouseButton.Left : MouseButton.None;
-                    ret = ImGui.IsItemClicked( ImGuiMouseButton.Right ) ? MouseButton.Right : ret;
-                    ret = ImGui.IsItemClicked( ImGuiMouseButton.Middle ) ? MouseButton.Middle : ret;
-
-                    if( ret != MouseButton.None )
-                    {
-                        _base._penumbra.Api.InvokeClick( ret, data );
-                    }
-
-                    if( _base._penumbra.Api.HasTooltip && ImGui.IsItemHovered() )
-                    {
-                        ImGui.BeginTooltip();
-                        raii.Push( ImGui.EndTooltip );
-                        _base._penumbra.Api.InvokeTooltip( data );
-                        raii.Pop();
-                    }
-
-                    if( data is Item it )
-                    {
-                        var modelId = $"({( ( Quad )it.ModelMain ).A})";
-                        var offset  = ImGui.CalcTextSize( modelId ).X - ImGui.GetStyle().ItemInnerSpacing.X;
-                        ImGui.SameLine(ImGui.GetWindowContentRegionWidth() - offset);
-                        ImGui.TextColored( new Vector4(0.5f, 0.5f, 0.5f, 1  ), modelId );
-                    }
+                    _base.DrawChangedItem( name, data );
                 }
             }
 

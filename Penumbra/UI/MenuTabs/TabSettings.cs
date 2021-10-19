@@ -7,7 +7,6 @@ using System.Text.RegularExpressions;
 using Dalamud.Interface;
 using Dalamud.Logging;
 using ImGuiNET;
-using Penumbra.GameData.Enums;
 using Penumbra.Interop;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;

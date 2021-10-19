@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -24,10 +25,20 @@ namespace Penumbra.Mods
 
         public readonly Dictionary< string, Mod.Mod > AvailableMods = new();
 
-        public readonly Dictionary< GamePath, FileInfo > ResolvedFiles = new();
-        public readonly Dictionary< GamePath, GamePath > SwappedFiles  = new();
-        public readonly HashSet< FileInfo >              MissingFiles  = new();
-        public readonly MetaManager                      MetaManipulations;
+        private readonly SortedList< string, object? >    _changedItems = new();
+        public readonly  Dictionary< GamePath, FileInfo > ResolvedFiles = new();
+        public readonly  Dictionary< GamePath, GamePath > SwappedFiles  = new();
+        public readonly  HashSet< FileInfo >              MissingFiles  = new();
+        public readonly  MetaManager                      MetaManipulations;
+
+        public IReadOnlyDictionary< string, object? > ChangedItems
+        {
+            get
+            {
+                SetChangedItems();
+                return _changedItems;
+            }
+        }
 
         public ModCollectionCache( string collectionName, DirectoryInfo tempDir )
             => MetaManipulations = new MetaManager( collectionName, ResolvedFiles, tempDir );
@@ -52,6 +63,7 @@ namespace Penumbra.Mods
             SwappedFiles.Clear();
             MissingFiles.Clear();
             RegisteredFiles.Clear();
+            _changedItems.Clear();
 
             foreach( var mod in AvailableMods.Values
                .Where( m => m.Settings.Enabled )
@@ -63,6 +75,35 @@ namespace Penumbra.Mods
             }
 
             AddMetaFiles();
+        }
+
+        private void SetChangedItems()
+        {
+            if( _changedItems.Count > 0 || ResolvedFiles.Count + SwappedFiles.Count + MetaManipulations.Count == 0 )
+            {
+                return;
+            }
+
+            try
+            {
+                // Skip meta files because IMCs would result in far too many false-positive items,
+                // since they are per set instead of per item-slot/item/variant.
+                var metaFiles  = MetaManipulations.Files.Select( p => p.Item1 ).ToHashSet();
+                var identifier = GameData.GameData.GetIdentifier();
+                foreach( var resolved in ResolvedFiles.Keys.Where( file => !metaFiles.Contains( file ) ) )
+                {
+                    identifier.Identify( _changedItems, resolved );
+                }
+
+                foreach( var swapped in SwappedFiles.Keys )
+                {
+                    identifier.Identify( _changedItems, swapped );
+                }
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Unknown Error:\n{e}" );
+            }
         }
 
 
@@ -97,7 +138,7 @@ namespace Penumbra.Mods
             else
             {
                 mod.Cache.AddConflict( oldMod, gamePath );
-                if( !ReferenceEquals( mod, oldMod ) && mod.Settings.Priority == oldMod.Settings.Priority)
+                if( !ReferenceEquals( mod, oldMod ) && mod.Settings.Priority == oldMod.Settings.Priority )
                 {
                     oldMod.Cache.AddConflict( mod, gamePath );
                 }

@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Lumina.Data;
+using Lumina.Data.Parsing;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
@@ -131,5 +135,32 @@ namespace Penumbra.Api
 
         public T? GetFile< T >( string gamePath, string characterName ) where T : FileResource
             => GetFileIntern< T >( ResolvePath( gamePath, characterName ) );
+
+        public IReadOnlyDictionary< string, object? > GetChangedItemsForCollection( string collectionName )
+        {
+            CheckInitialized();
+            try
+            {
+                var modManager = Service< ModManager >.Get();
+                if( !modManager.Collections.Collections.TryGetValue( collectionName, out var collection ) )
+                {
+                    collection = ModCollection.Empty;
+                }
+
+                if( collection.Cache != null )
+                {
+                    return collection.Cache.ChangedItems;
+                }
+
+                PluginLog.Warning( $"Collection {collectionName} does not exist or is not loaded." );
+                return new Dictionary< string, object? >();
+
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not obtain Changed Items for {collectionName}:\n{e}" );
+                throw;
+            }
+        }
     }
 }
