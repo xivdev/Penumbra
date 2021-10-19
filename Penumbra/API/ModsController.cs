@@ -13,35 +13,33 @@ namespace Penumbra.Api
 {
     public class ModsController : WebApiController
     {
-        private readonly Penumbra   _penumbra;
-        private readonly ModManager _modManager;
+        private readonly Penumbra    _penumbra;
+        private readonly ModManager  _modManager;
 
-        public ModsController( Penumbra penumbra, ModManager modManager )
+        public ModsController( Penumbra penumbra, ModManager modManager)
         {
             _penumbra   = penumbra;
             _modManager = modManager;
         }
 
+        /// <summary>
+        /// Returns a list of all mods. Query params can be supplied to refine this list
+        /// </summary>
+        /// <param name="activeOnly">Returns only enabled mods if true</param>
+        /// <param name="collection">Restricts the results to the specified collection if not null</param>
         [Route( HttpVerbs.Get, "/mods" )]
-        public object? GetMods()
+        public object? GetMods([QueryField] string collection, [QueryField] bool activeOnly)
         {
-            // Obtain Query Data
-            var activeOnly          = Convert.ToBoolean( Request.QueryString[ "activeOnly" ] );
-            var requestedCollection = Request.QueryString[ "collection" ];
-
-            var collection = _modManager.Collections.CurrentCollection;
-
-            if( !string.IsNullOrWhiteSpace(requestedCollection) )
+            var requestedCollection = string.IsNullOrWhiteSpace(collection)
+                ? _modManager.Collections.CurrentCollection
+                : _modManager.GetModCollection(collection);
+            if( requestedCollection is null )
             {
-                collection = _modManager.Collections.Collections[ requestedCollection ];
-                if( collection.Cache is null )
-                {
-                    PluginLog.Log($"Collection {requestedCollection} has been requested but cash is null. Generating cache now....");
-                    _modManager.Collections.AddCache(collection);
-                }
+                PluginLog.LogError("Unable to find any collections. Please ensure penumbra has at least one collection.");
+                return false;
             }
 
-            var mods = collection.Cache?.AvailableMods.Values.Select( x => new
+            var mods = requestedCollection.Cache?.AvailableMods.Values.Select( x => new
             {
                 x.Settings.Enabled,
                 x.Settings.Priority,
@@ -51,7 +49,7 @@ namespace Penumbra.Api
                 Files    = x.Data.Resources.ModFiles.Select( fi => fi.FullName ),
             } );
 
-            if( Convert.ToBoolean( Request.QueryString[ "activeOnly" ] ) )
+            if( activeOnly )
             {
                 mods = mods?.Where( m => m.Enabled );
             }
@@ -59,6 +57,10 @@ namespace Penumbra.Api
             return mods;
         }
 
+        /// <summary>
+        /// Creates an empty mod based on the form data posted to this endpoint
+        /// </summary>
+        /// <returns>Name of the created mod</returns>
         [Route( HttpVerbs.Post, "/mods" )]
         public async Task< string > CreateMod()
         {
@@ -71,24 +73,25 @@ namespace Penumbra.Api
                 .Value.BasePath.Name;
         }
 
+        /// <summary>
+        /// Deletes a mod from the user's mod folder
+        /// </summary>
+        /// <param name="name">Name of the mod to be deleted</param>
+        /// <returns>Boolean reflecting if the mod was deleted successfully</returns>
         [Route(HttpVerbs.Post, "/mods/delete")]
-        public async Task< bool > DeleteMod()
+        public bool DeleteMod([QueryField] string name)
         {
-            var requestData = await HttpContext.GetRequestFormDataAsync();
-            var modName     = Request.QueryString[ "name" ];
-
-            if( string.IsNullOrWhiteSpace(modName) )
+            if( string.IsNullOrWhiteSpace(name) )
             {
                 return false;
             }
 
-            PluginLog.Log($"Attempting to delete mod: {modName}");
+            PluginLog.Log($"Attempting to delete mod: {name}");
             try
             {
-                var mod = _modManager.Mods[ modName ];
+                var mod = _modManager.Mods[ name ];
                 _modManager.DeleteMod( mod.BasePath );
                 ModFileSystem.InvokeChange();
-
                 return true;
             }
             catch
@@ -97,6 +100,9 @@ namespace Penumbra.Api
             }
         }
 
+        /// <summary>
+        /// Get a list of files that have been modified by Penumbra
+        /// </summary>
         [Route( HttpVerbs.Get, "/files" )]
         public object GetFiles()
         {

@@ -1,6 +1,7 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
 using Penumbra.GameData.Enums;
+using Penumbra.Mods;
 
 namespace Penumbra.Api
 {
@@ -20,7 +21,7 @@ namespace Penumbra.Api
         public event ChangedItemHover? ChangedItemTooltip;
         // Triggered when the user clicks a listed changed object in a mod tab.
         public event ChangedItemClick? ChangedItemClicked;
-        
+
         // Queue redrawing of all actors of the given name with the given RedrawType.
         public void RedrawObject( string name, RedrawType setting );
 

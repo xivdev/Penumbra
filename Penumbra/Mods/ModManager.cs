@@ -361,6 +361,24 @@ namespace Penumbra.Mods
             return true;
         }
 
+        public ModCollection? GetModCollection( string collectionName )
+        {
+            if ( Collections.Collections.ContainsKey(collectionName) )
+            {
+                var requestedCollection = Collections.Collections[ collectionName ];
+                if( requestedCollection.Cache is null )
+                {
+                    PluginLog.Log($"Collection {collectionName} has been requested but cache is null. Generating cache now....");
+                    Collections.AddCache(requestedCollection);
+                }
+                return requestedCollection;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )
         {
             var ret = Collections.ActiveCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
