@@ -11,7 +11,7 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "http://localhost:42069/api/mods?activeOnly=true",
+					"raw": "http://localhost:42069/api/mods?activeOnly=true&collection=Khal",
 					"protocol": "http",
 					"host": [
 						"localhost"
@@ -28,8 +28,54 @@
 						},
 						{
 							"key": "collection",
-							"value": "sfdgd",
-							"disabled": true
+							"value": "Khal"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Affected Files",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:42069/api/files",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "42069",
+					"path": [
+						"api",
+						"files"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Affected Items",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:42069/api/mods/items?collections=all",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "42069",
+					"path": [
+						"api",
+						"mods",
+						"items"
+					],
+					"query": [
+						{
+							"key": "collections",
+							"value": "all"
 						}
 					]
 				}
