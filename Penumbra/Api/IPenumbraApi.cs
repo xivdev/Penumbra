@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
 using Penumbra.GameData.Enums;
@@ -44,5 +45,8 @@ namespace Penumbra.Api
 
         // Try to load a given gamePath with the resolved path from Penumbra.
         public T? GetFile<T>( string gamePath, string characterName ) where T : FileResource;
+
+        // Gets a dictionary of effected items from a collection
+        public Dictionary< string, ushort > GetChangedItemsForCollection(ModCollection collection);
     }
 }

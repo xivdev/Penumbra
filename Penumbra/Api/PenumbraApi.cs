@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Lumina.Data;
+using Lumina.Data.Parsing;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
@@ -131,5 +135,38 @@ namespace Penumbra.Api
 
         public T? GetFile< T >( string gamePath, string characterName ) where T : FileResource
             => GetFileIntern< T >( ResolvePath( gamePath, characterName ) );
+
+        public Dictionary< string, ushort > GetChangedItemsForCollection(ModCollection collection)
+        {
+            var modList = collection.Cache?.AvailableMods
+                .Where(mod => mod.Value.Data.ChangedItems.Count > 0 && mod.Value.Settings.Enabled)
+                .Select( mod => mod.Value );
+
+            var changedItems = new Dictionary< string, ushort >();
+            if(modList is not null && modList.Count() > 0)
+            {
+                foreach( var mod in modList.Select(mod => mod.Data) )
+                {
+                    foreach( var (name, data) in mod.ChangedItems.Where( item => item.Value?.GetType() == typeof(Item)) )
+                    {
+                        PluginLog.Log($"Found item {name}");
+                        if( !changedItems.ContainsKey( name ) )
+                        {
+                            try
+                            {
+                                changedItems.Add(name, ( ( Quad )(data as Item).ModelMain ).A);
+                                PluginLog.Log("Added");
+                            }
+                            catch( Exception e )
+                            {
+                                PluginLog.Error(e, "Unable to add item");
+                            }
+                        }
+                    }
+                }
+            }
+
+            return changedItems;
+        }
     }
 }

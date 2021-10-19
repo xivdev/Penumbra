@@ -6,6 +6,8 @@ using Dalamud.Logging;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
+using Lumina.Data.Parsing;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.Api.Models;
 using Penumbra.Mods;
 
@@ -14,12 +16,14 @@ namespace Penumbra.Api
     public class ModsController : WebApiController
     {
         private readonly Penumbra    _penumbra;
+        private readonly PenumbraApi _api;
         private readonly ModManager  _modManager;
 
-        public ModsController( Penumbra penumbra, ModManager modManager)
+        public ModsController( Penumbra penumbra, ModManager modManager, PenumbraApi api )
         {
             _penumbra   = penumbra;
             _modManager = modManager;
+            _api   = api;
         }
 
         /// <summary>
@@ -98,6 +102,58 @@ namespace Penumbra.Api
             {
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Obtains a list of items that have been modded. By default this will search the active collections only.
+        /// </summary>
+        /// <param name="collections">
+        /// Name of the collection(s) you would like to limit the search to. Search multiple collections by adding commas
+        /// </param>
+        [Route( HttpVerbs.Get, "/mods/items" )]
+        public object? GetChangedItems([QueryField] string collections)
+        {
+            Dictionary< string, ushort > changedItems         = new ();
+            List< string >               requestedCollections = new ();
+
+            if( string.IsNullOrWhiteSpace( collections ) )
+            {
+                requestedCollections.Add(_modManager.Collections.CurrentCollection.Name);
+            }
+            else if( collections.Contains( "," ) )
+            {
+                requestedCollections = collections.Split( ',' ).ToList();
+            }
+            else if( collections == "all" )
+            {
+                foreach( var collection in _modManager.Collections.Collections )
+                {
+                    requestedCollections.Add(collection.Key);
+                }
+            }
+            else
+            {
+                requestedCollections.Add(collections);
+            }
+
+            foreach( var collection in requestedCollections )
+            {
+                ModCollection? requestedCollection = _modManager.GetModCollection( collection.Trim() );
+                if( requestedCollection is null )
+                {
+                    continue;
+                }
+
+                var items = _api.GetChangedItemsForCollection( requestedCollection );
+                foreach( var item in items )
+                {
+                    if( !changedItems.ContainsKey( item.Key ) )
+                    {
+                        changedItems.Add( item.Key, item.Value );
+                    }
+                }
+            }
+            return changedItems;
         }
 
         /// <summary>
