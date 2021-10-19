@@ -9,7 +9,7 @@ namespace Penumbra.UI
 {
     public partial class SettingsInterface
     {
-        internal void DrawChangedItem( string name, object? data )
+        internal void DrawChangedItem( string name, object? data, float itemIdOffset = 0)
         {
             var ret = ImGui.Selectable( name ) ? MouseButton.Left : MouseButton.None;
             ret = ImGui.IsItemClicked( ImGuiMouseButton.Right ) ? MouseButton.Right : ret;
@@ -30,7 +30,8 @@ namespace Penumbra.UI
             if( data is Item it )
             {
                 var modelId = $"({( ( Quad )it.ModelMain ).A})";
-                var offset  = ImGui.CalcTextSize( modelId ).X       - ImGui.GetStyle().ItemInnerSpacing.X;
+                var offset  = ImGui.CalcTextSize( modelId ).X - ImGui.GetStyle().ItemInnerSpacing.X + itemIdOffset;
+
                 ImGui.SameLine( ImGui.GetWindowContentRegionWidth() - offset );
                 ImGui.TextColored( new Vector4( 0.5f, 0.5f, 0.5f, 1 ), modelId );
             }

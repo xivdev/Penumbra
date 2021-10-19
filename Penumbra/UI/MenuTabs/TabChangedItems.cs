@@ -42,7 +42,7 @@ namespace Penumbra.UI
                     _filterLower = _filter.ToLowerInvariant();
                 }
 
-                if( !ImGui.BeginTable( "##ChangedItemsTable", 1, ImGuiTableFlags.RowBg, AutoFillSize ) )
+                if( !ImGui.BeginTable( "##ChangedItemsTable", 1, ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollY, AutoFillSize ) )
                 {
                     return;
                 }
@@ -64,7 +64,7 @@ namespace Penumbra.UI
                 {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    _base.DrawChangedItem( name, data );
+                    _base.DrawChangedItem( name, data, ImGui.GetStyle().ScrollbarSize );
                 }
             }
         }
