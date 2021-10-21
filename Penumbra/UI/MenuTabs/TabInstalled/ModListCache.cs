@@ -8,6 +8,7 @@ namespace Penumbra.UI
 {
     public class ModListCache : IDisposable
     {
+        public const uint NewModColor             = 0xFF66DD66u;
         public const uint DisabledModColor        = 0xFF666666u;
         public const uint ConflictingModColor     = 0xFFAAAAFFu;
         public const uint HandledConflictModColor = 0xFF88DDDDu;
@@ -17,6 +18,7 @@ namespace Penumbra.UI
         private readonly List< Mod.Mod >                                       _modsInOrder    = new();
         private readonly List< (bool visible, uint color) >                    _visibleMods    = new();
         private readonly Dictionary< ModFolder, (bool visible, bool enabled) > _visibleFolders = new();
+        private readonly IReadOnlySet< string >                                _newMods;
 
         private string    _modFilter        = string.Empty;
         private string    _modFilterChanges = string.Empty;
@@ -40,9 +42,10 @@ namespace Penumbra.UI
             }
         }
 
-        public ModListCache( ModManager manager )
+        public ModListCache( ModManager manager, IReadOnlySet< string > newMods )
         {
             _manager = manager;
+            _newMods = newMods;
             ResetModList();
             ModFileSystem.ModFileSystemChanged += TriggerListReset;
         }
@@ -225,6 +228,7 @@ namespace Penumbra.UI
         private (bool, uint) CheckFilters( Mod.Mod mod )
         {
             var ret = ( false, 0u );
+
             if( _modFilter.Any() && !mod.Data.Meta.LowerName.Contains( _modFilter ) )
             {
                 return ret;
@@ -257,6 +261,12 @@ namespace Penumbra.UI
             }
 
             if( CheckFlags( mod.Data.Meta.HasGroupsWithConfig ? 1 : 0, ModFilter.HasNoConfig, ModFilter.HasConfig ) )
+            {
+                return ret;
+            }
+
+            var isNew = _newMods.Contains( mod.Data.BasePath.Name );
+            if( CheckFlags( isNew ? 1 : 0, ModFilter.IsNew, ModFilter.NotNew ) )
             {
                 return ret;
             }
@@ -303,6 +313,11 @@ namespace Penumbra.UI
             }
 
             ret.Item1 = true;
+            if( isNew )
+            {
+                ret.Item2 = NewModColor;
+            }
+
             SetFolderAndParentsVisible( mod.Data.SortOrder.ParentFolder );
             return ret;
         }

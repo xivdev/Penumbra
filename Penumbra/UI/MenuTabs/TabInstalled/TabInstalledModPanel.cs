@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -50,16 +51,18 @@ namespace Penumbra.UI
             private readonly SettingsInterface _base;
             private readonly Selector          _selector;
             private readonly ModManager        _modManager;
+            private readonly HashSet< string > _newMods;
             public readonly  PluginDetails     Details;
 
             private bool   _editMode;
             private string _currentWebsite;
             private bool   _validWebsite;
 
-            public ModPanel( SettingsInterface ui, Selector s )
+            public ModPanel( SettingsInterface ui, Selector s, HashSet< string > newMods )
             {
                 _base           = ui;
                 _selector       = s;
+                _newMods        = newMods;
                 Details         = new PluginDetails( _base, _selector );
                 _currentWebsite = Meta?.Website ?? "";
                 _modManager     = Service< ModManager >.Get();
@@ -216,7 +219,11 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelModEnabled, ref enabled ) )
                 {
                     Mod.Settings.Enabled = enabled;
-                    if( !enabled )
+                    if( enabled )
+                    {
+                        _newMods.Remove( Mod.Data.BasePath.Name );
+                    }
+                    else
                     {
                         Mod.Cache.ClearConflicts();
                     }

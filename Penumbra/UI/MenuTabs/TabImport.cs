@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -34,6 +35,8 @@ namespace Penumbra.UI
             private          TexToolsImport?   _texToolsImport;
             private readonly SettingsInterface _base;
             private readonly ModManager        _manager;
+
+            public readonly HashSet< string > NewMods = new();
 
             public TabImport( SettingsInterface ui )
             {
@@ -72,7 +75,11 @@ namespace Penumbra.UI
                                 try
                                 {
                                     _texToolsImport = new TexToolsImport( _manager.BasePath );
-                                    _texToolsImport.ImportModPack( new FileInfo( fileName ) );
+                                    var dir = _texToolsImport.ImportModPack( new FileInfo( fileName ) );
+                                    if( dir.Name.Any() )
+                                    {
+                                        NewMods.Add( dir.Name );
+                                    }
 
                                     PluginLog.Information( $"-> {fileName} OK!" );
                                 }

@@ -30,7 +30,7 @@ namespace Penumbra.UI
                 _settingsTab   = new TabSettings( _base );
                 _importTab     = new TabImport( _base );
                 _browserTab    = new TabBrowser();
-                InstalledTab   = new TabInstalled( _base );
+                InstalledTab   = new TabInstalled( _base, _importTab.NewMods );
                 CollectionsTab = new TabCollections( InstalledTab.Selector );
                 _effectiveTab  = new TabEffective();
                 _changedItems  = new TabChangedItems( _base );

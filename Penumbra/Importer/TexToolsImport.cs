@@ -55,13 +55,14 @@ namespace Penumbra.Importer
         private static DirectoryInfo NewOptionDirectory( DirectoryInfo baseDir, string optionName )
             => new( Path.Combine( baseDir.FullName, optionName.ReplaceBadXivSymbols() ) );
 
-        public void ImportModPack( FileInfo modPackFile )
+        public DirectoryInfo ImportModPack( FileInfo modPackFile )
         {
             CurrentModPack = modPackFile.Name;
 
-            VerifyVersionAndImport( modPackFile );
+            var dir = VerifyVersionAndImport( modPackFile );
 
             State = ImporterState.Done;
+            return dir;
         }
 
         private void WriteZipEntryToTempFile( Stream s )
@@ -106,7 +107,7 @@ namespace Penumbra.Importer
             return new MagicTempFileStreamManagerAndDeleter( fs );
         }
 
-        private void VerifyVersionAndImport( FileInfo modPackFile )
+        private DirectoryInfo VerifyVersionAndImport( FileInfo modPackFile )
         {
             using var zfs              = modPackFile.OpenRead();
             using var extractedModPack = new ZipFile( zfs );
@@ -127,7 +128,7 @@ namespace Penumbra.Importer
                     PluginLog.Warning( $"File {modPackFile.FullName} seems to be a V2 TTMP, but has the wrong extension." );
                 }
 
-                ImportV2ModPack( modPackFile, extractedModPack, modRaw );
+                return ImportV2ModPack( modPackFile, extractedModPack, modRaw );
             }
             else
             {
@@ -136,11 +137,11 @@ namespace Penumbra.Importer
                     PluginLog.Warning( $"File {modPackFile.FullName} seems to be a V1 TTMP, but has the wrong extension." );
                 }
 
-                ImportV1ModPack( modPackFile, extractedModPack, modRaw );
+                return ImportV1ModPack( modPackFile, extractedModPack, modRaw );
             }
         }
 
-        private void ImportV1ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw )
+        private DirectoryInfo ImportV1ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw )
         {
             PluginLog.Log( "    -> Importing V1 ModPack" );
 
@@ -170,28 +171,31 @@ namespace Penumbra.Importer
             );
 
             ExtractSimpleModList( ExtractedDirectory, modList, modData );
+
+            return ExtractedDirectory;
         }
 
-        private void ImportV2ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw )
+        private DirectoryInfo ImportV2ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw )
         {
             var modList = JsonConvert.DeserializeObject< SimpleModPack >( modRaw );
 
             if( modList?.TTMPVersion == null )
             {
                 PluginLog.Error( "Could not extract V2 Modpack. No version given." );
-                return;
+                return new DirectoryInfo( "" );
             }
 
             if( modList.TTMPVersion.EndsWith( "s" ) )
             {
-                ImportSimpleV2ModPack( extractedModPack, modList );
-                return;
+                return ImportSimpleV2ModPack( extractedModPack, modList );
             }
 
             if( modList.TTMPVersion.EndsWith( "w" ) )
             {
-                ImportExtendedV2ModPack( extractedModPack, modRaw );
+                return ImportExtendedV2ModPack( extractedModPack, modRaw );
             }
+
+            return new DirectoryInfo( "" );
         }
 
         public static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName )
@@ -219,7 +223,7 @@ namespace Penumbra.Importer
             return newModFolder;
         }
 
-        private void ImportSimpleV2ModPack( ZipFile extractedModPack, SimpleModPack modList )
+        private DirectoryInfo ImportSimpleV2ModPack( ZipFile extractedModPack, SimpleModPack modList )
         {
             PluginLog.Log( "    -> Importing Simple V2 ModPack" );
 
@@ -242,9 +246,10 @@ namespace Penumbra.Importer
                 JsonConvert.SerializeObject( modMeta ) );
 
             ExtractSimpleModList( ExtractedDirectory, modList.SimpleModsList ?? Enumerable.Empty< SimpleMod >(), modData );
+            return ExtractedDirectory;
         }
 
-        private void ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
+        private DirectoryInfo ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
         {
             PluginLog.Log( "    -> Importing Extended V2 ModPack" );
 
@@ -273,7 +278,7 @@ namespace Penumbra.Importer
 
             if( modList.ModPackPages == null )
             {
-                return;
+                return ExtractedDirectory;
             }
 
             // Iterate through all pages
@@ -307,6 +312,7 @@ namespace Penumbra.Importer
                 Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
                 JsonConvert.SerializeObject( modMeta, Formatting.Indented )
             );
+            return ExtractedDirectory;
         }
 
         private static void AddMeta( DirectoryInfo baseFolder, DirectoryInfo groupFolder, ModGroup group, ModMeta meta )

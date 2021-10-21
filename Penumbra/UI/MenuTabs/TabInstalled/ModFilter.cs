@@ -18,11 +18,13 @@ namespace Penumbra.UI
         HasNoConfig            = 1 << 10,
         HasNoFiles             = 1 << 11,
         HasFiles               = 1 << 12,
+        IsNew                  = 1 << 13,
+        NotNew                 = 1 << 14,
     };
 
     public static class ModFilterExtensions
     {
-        public const ModFilter UnfilteredStateMods = ( ModFilter )( ( 1 << 13 ) - 1 );
+        public const ModFilter UnfilteredStateMods = ( ModFilter )( ( 1 << 15 ) - 1 );
 
         public static string ToName( this ModFilter filter )
             => filter switch
@@ -40,6 +42,8 @@ namespace Penumbra.UI
                 ModFilter.HasConfig              => "Configuration",
                 ModFilter.HasNoFiles             => "No Files",
                 ModFilter.HasFiles               => "Files",
+                ModFilter.IsNew                  => "Newly Imported",
+                ModFilter.NotNew                 => "Not Newly Imported",
                 _                                => throw new ArgumentOutOfRangeException( nameof( filter ), filter, null ),
             };
     }

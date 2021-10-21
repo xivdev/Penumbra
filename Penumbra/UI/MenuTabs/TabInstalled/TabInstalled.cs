@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ImGuiNET;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
@@ -15,10 +16,10 @@ namespace Penumbra.UI
             public readonly  Selector   Selector;
             public readonly  ModPanel   ModPanel;
 
-            public TabInstalled( SettingsInterface ui )
+            public TabInstalled( SettingsInterface ui, HashSet< string > newMods )
             {
-                Selector    = new Selector( ui );
-                ModPanel    = new ModPanel( ui, Selector );
+                Selector    = new Selector( ui, newMods );
+                ModPanel    = new ModPanel( ui, Selector, newMods );
                 _modManager = Service< ModManager >.Get();
             }
 

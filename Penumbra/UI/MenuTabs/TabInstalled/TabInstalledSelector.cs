@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -196,7 +197,7 @@ namespace Penumbra.UI
             private static void DrawModHelpPopup()
             {
                 ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Appearing, Vector2.One / 2 );
-                ImGui.SetNextWindowSize( new Vector2( 5 * SelectorPanelWidth, 33 * ImGui.GetTextLineHeightWithSpacing() ),
+                ImGui.SetNextWindowSize( new Vector2( 5 * SelectorPanelWidth, 34 * ImGui.GetTextLineHeightWithSpacing() ),
                     ImGuiCond.Appearing );
                 var _ = true;
                 if( !ImGui.BeginPopupModal( LabelModHelpPopup, ref _, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove ) )
@@ -217,6 +218,10 @@ namespace Penumbra.UI
                 ImGui.Bullet();
                 ImGui.SameLine();
                 ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( ModListCache.DisabledModColor ), "Disabled in the current collection." );
+                ImGui.Bullet();
+                ImGui.SameLine();
+                ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( ModListCache.NewModColor ),
+                    "Newly imported during this session. Will go away when first enabling a mod or when Penumbra is reloaded." );
                 ImGui.Bullet();
                 ImGui.SameLine();
                 ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( ModListCache.HandledConflictModColor ),
@@ -582,11 +587,11 @@ namespace Penumbra.UI
 
             private float _selectorScalingFactor = 1;
 
-            public Selector( SettingsInterface ui )
+            public Selector( SettingsInterface ui, IReadOnlySet< string > newMods )
             {
                 _base       = ui;
                 _modManager = Service< ModManager >.Get();
-                Cache       = new ModListCache( _modManager );
+                Cache       = new ModListCache( _modManager, newMods );
             }
 
             private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection collection )
