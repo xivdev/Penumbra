@@ -26,13 +26,12 @@ namespace Penumbra.UI
 
             public void Draw()
             {
-                var items  = _modManager.Collections.ActiveCollection.Cache?.ChangedItems ?? new Dictionary< string, object? >();
-                var forced = _modManager.Collections.ForcedCollection.Cache?.ChangedItems ?? new Dictionary< string, object? >();
-                var count  = items.Count + forced.Count;
-                if( count > 0 && !ImGui.BeginTabItem( LabelTab ) )
+                if( !ImGui.BeginTabItem( LabelTab ) )
                 {
                     return;
                 }
+                var items  = _modManager.Collections.ActiveCollection.Cache?.ChangedItems ?? new Dictionary<string, object?>();
+                var forced = _modManager.Collections.ForcedCollection.Cache?.ChangedItems ?? new Dictionary<string, object?>();
 
                 using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
