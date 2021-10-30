@@ -195,6 +195,8 @@ namespace Penumbra.Interop
 
         private unsafe byte ReadSqpackHandler( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync )
         {
+            var modManager = Service<ModManager>.Get();
+
             if( ReadFile == null || pFileDesc == null || pFileDesc->ResourceHandle == null )
             {
                 PluginLog.Error( "THIS SHOULD NOT HAPPEN" );
@@ -204,6 +206,18 @@ namespace Penumbra.Interop
             var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pFileDesc->ResourceHandle->FileName() ) );
 
             var isRooted = Path.IsPathRooted( gameFsPath );
+
+            // check if there is a file which is being refreshed
+            if( gameFsPath != null && !isRooted )
+            {
+                var replacementPath = modManager.ResolveSwappedOrReplacementPath( GamePath.GenerateUncheckedLower( gameFsPath ) );
+
+                if( replacementPath != null && Path.IsPathRooted( replacementPath ) && replacementPath.Length < 260 )
+                {
+                    gameFsPath = replacementPath;
+                    isRooted = Path.IsPathRooted( gameFsPath );
+                }
+            }
 
             if( gameFsPath == null || gameFsPath.Length >= 260 || !isRooted )
             {
