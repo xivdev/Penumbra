@@ -118,44 +118,64 @@ namespace Penumbra.Meta.Files
         // Check that a given meta manipulation is an actual change to the default value. We don't need to keep changes to default.
         public bool CheckAgainstDefault( MetaManipulation m )
         {
-            return m.Type switch
+            try
             {
-                MetaType.Imc => GetDefaultImcFile( m.ImcIdentifier.ObjectType, m.ImcIdentifier.PrimaryId, m.ImcIdentifier.SecondaryId )
-                      ?.GetValue( m ).Equal( m.ImcValue )
-                 ?? true,
-                MetaType.Gmp => GetDefaultGmpFile()?.GetEntry( m.GmpIdentifier.SetId )
-                 == m.GmpValue,
-                MetaType.Eqp => GetDefaultEqpFile()?.GetEntry( m.EqpIdentifier.SetId )
-                       .Reduce( m.EqpIdentifier.Slot )
-                 == m.EqpValue,
-                MetaType.Eqdp => GetDefaultEqdpFile( m.EqdpIdentifier.Slot, m.EqdpIdentifier.GenderRace )?.GetEntry( m.EqdpIdentifier.SetId )
-                       .Reduce( m.EqdpIdentifier.Slot )
-                 == m.EqdpValue,
-                MetaType.Est => GetDefaultEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot )
-                      ?.GetEntry( m.EstIdentifier.GenderRace, m.EstIdentifier.PrimaryId )
-                 == m.EstValue,
-                MetaType.Rsp => GetDefaultCmpFile()?[ m.RspIdentifier.SubRace ][ m.RspIdentifier.Attribute ]
-                 == m.RspValue,
-                _ => throw new NotImplementedException(),
-            };
+                return m.Type switch
+                {
+                    MetaType.Imc => GetDefaultImcFile( m.ImcIdentifier.ObjectType, m.ImcIdentifier.PrimaryId, m.ImcIdentifier.SecondaryId )
+                          ?.GetValue( m ).Equal( m.ImcValue )
+                     ?? true,
+                    MetaType.Gmp => GetDefaultGmpFile()?.GetEntry( m.GmpIdentifier.SetId )
+                     == m.GmpValue,
+                    MetaType.Eqp => GetDefaultEqpFile()?.GetEntry( m.EqpIdentifier.SetId )
+                           .Reduce( m.EqpIdentifier.Slot )
+                     == m.EqpValue,
+                    MetaType.Eqdp => GetDefaultEqdpFile( m.EqdpIdentifier.Slot, m.EqdpIdentifier.GenderRace )
+                          ?.GetEntry( m.EqdpIdentifier.SetId )
+                           .Reduce( m.EqdpIdentifier.Slot )
+                     == m.EqdpValue,
+                    MetaType.Est => GetDefaultEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot )
+                          ?.GetEntry( m.EstIdentifier.GenderRace, m.EstIdentifier.PrimaryId )
+                     == m.EstValue,
+                    MetaType.Rsp => GetDefaultCmpFile()?[ m.RspIdentifier.SubRace ][ m.RspIdentifier.Attribute ]
+                     == m.RspValue,
+                    _ => false,
+                };
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not obtain default value for {m.CorrespondingFilename()} - {m.IdentifierString()}:\n{e}" );
+            }
+
+            return false;
         }
 
         public object? GetDefaultValue( MetaManipulation m )
         {
-            return m.Type switch
+            try
             {
-                MetaType.Imc => GetDefaultImcFile( m.ImcIdentifier.ObjectType, m.ImcIdentifier.PrimaryId, m.ImcIdentifier.SecondaryId )
-                  ?.GetValue( m ),
-                MetaType.Gmp => GetDefaultGmpFile()?.GetEntry( m.GmpIdentifier.SetId ),
-                MetaType.Eqp => GetDefaultEqpFile()?.GetEntry( m.EqpIdentifier.SetId )
-                   .Reduce( m.EqpIdentifier.Slot ),
-                MetaType.Eqdp => GetDefaultEqdpFile( m.EqdpIdentifier.Slot, m.EqdpIdentifier.GenderRace )?.GetEntry( m.EqdpIdentifier.SetId )
-                   .Reduce( m.EqdpIdentifier.Slot ),
-                MetaType.Est => GetDefaultEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot )
-                  ?.GetEntry( m.EstIdentifier.GenderRace, m.EstIdentifier.PrimaryId ),
-                MetaType.Rsp => GetDefaultCmpFile()?[ m.RspIdentifier.SubRace ][ m.RspIdentifier.Attribute ],
-                _            => throw new NotImplementedException(),
-            };
+                return m.Type switch
+                {
+                    MetaType.Imc => GetDefaultImcFile( m.ImcIdentifier.ObjectType, m.ImcIdentifier.PrimaryId, m.ImcIdentifier.SecondaryId )
+                      ?.GetValue( m ),
+                    MetaType.Gmp => GetDefaultGmpFile()?.GetEntry( m.GmpIdentifier.SetId ),
+                    MetaType.Eqp => GetDefaultEqpFile()?.GetEntry( m.EqpIdentifier.SetId )
+                       .Reduce( m.EqpIdentifier.Slot ),
+                    MetaType.Eqdp => GetDefaultEqdpFile( m.EqdpIdentifier.Slot, m.EqdpIdentifier.GenderRace )
+                      ?.GetEntry( m.EqdpIdentifier.SetId )
+                       .Reduce( m.EqdpIdentifier.Slot ),
+                    MetaType.Est => GetDefaultEstFile( m.EstIdentifier.ObjectType, m.EstIdentifier.EquipSlot, m.EstIdentifier.BodySlot )
+                      ?.GetEntry( m.EstIdentifier.GenderRace, m.EstIdentifier.PrimaryId ),
+                    MetaType.Rsp => GetDefaultCmpFile()?[ m.RspIdentifier.SubRace ][ m.RspIdentifier.Attribute ],
+                    _            => false,
+                };
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not obtain default value for {m.CorrespondingFilename()} - {m.IdentifierString()}:\n{e}" );
+            }
+
+            return false;
         }
 
         // Create a deep copy of a default file as a new file.
