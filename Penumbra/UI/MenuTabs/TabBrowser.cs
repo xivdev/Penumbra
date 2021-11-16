@@ -7,7 +7,7 @@ namespace Penumbra.UI
     {
         private class TabBrowser
         {
-            [Conditional( "DEBUG" )]
+            [Conditional( "LEAVEMEALONE" )]
             public void Draw()
             {
                 var ret = ImGui.BeginTabItem( "Available Mods" );
