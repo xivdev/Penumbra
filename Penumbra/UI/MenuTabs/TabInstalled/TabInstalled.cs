@@ -23,11 +23,6 @@ namespace Penumbra.UI
                 _modManager = Service< ModManager >.Get();
             }
 
-            private static void DrawNoModsAvailable()
-            {
-                ImGui.Text( "You don't have any mods :(" );
-            }
-
             public void Draw()
             {
                 var ret = ImGui.BeginTabItem( LabelTab );
@@ -38,16 +33,9 @@ namespace Penumbra.UI
 
                 using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
-                if( _modManager.Mods.Count > 0 )
-                {
-                    Selector.Draw();
-                    ImGui.SameLine();
-                    ModPanel.Draw();
-                }
-                else
-                {
-                    DrawNoModsAvailable();
-                }
+                Selector.Draw();
+                ImGui.SameLine();
+                ModPanel.Draw();
             }
         }
     }
