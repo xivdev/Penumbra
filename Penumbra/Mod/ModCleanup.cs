@@ -519,6 +519,10 @@ namespace Penumbra.Mod
                     meta.Groups.Add( groupDir.Name, @group );
                 }
             }
+
+            foreach(var collection in Service<ModManager>.Get().Collections.Collections.Values)
+                collection.UpdateSetting(baseDir, meta, true);
+            
         }
     }
 }

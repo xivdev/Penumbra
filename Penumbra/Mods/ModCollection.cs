@@ -96,18 +96,23 @@ namespace Penumbra.Mods
         public void ClearCache()
             => Cache = null;
 
-        public void UpdateSetting( ModData mod )
+        public void UpdateSetting( DirectoryInfo modPath, ModMeta meta, bool clear )
         {
-            if( !Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
+            if( !Settings.TryGetValue( modPath.Name, out var settings ) )
             {
                 return;
             }
 
-            if( settings.FixInvalidSettings( mod.Meta ) )
+            if (clear)
+                settings.Settings.Clear();
+            if( settings.FixInvalidSettings( meta ) )
             {
                 Save();
             }
         }
+
+        public void UpdateSetting( ModData mod )
+            => UpdateSetting( mod.BasePath, mod.Meta, false );
 
         public void UpdateSettings( bool forceSave )
         {
