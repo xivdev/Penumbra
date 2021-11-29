@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using Dalamud.Configuration;
 using Dalamud.Logging;
 
@@ -36,6 +37,7 @@ namespace Penumbra
         public Dictionary< string, string > ModSortOrder { get; set; } = new();
 
         public bool InvertModListOrder { internal get; set; }
+        public Vector2 ManageModsButtonOffset { get; set; } = Vector2.Zero;
 
         public static Configuration Load()
         {

@@ -41,7 +41,7 @@ namespace Penumbra.UI
                 var ss = ImGui.GetMainViewport().Size + ImGui.GetMainViewport().Pos;
                 ImGui.SetNextWindowViewport( ImGui.GetMainViewport().ID );
 
-                ImGui.SetNextWindowPos( ss - WindowPosOffset, ImGuiCond.Always );
+                ImGui.SetNextWindowPos( ss - WindowPosOffset + Penumbra.Config.ManageModsButtonOffset, ImGuiCond.Always );
 
                 if( ImGui.Begin( MenuButtonsName, ButtonFlags )
                  && ImGui.Button( MenuButtonLabel, WindowSize ) )

@@ -34,6 +34,7 @@ namespace Penumbra.UI
             private const string LabelDisableNotifications = "Disable filesystem change notifications";
             private const string LabelEnableHttpApi        = "Enable HTTP API";
             private const string LabelReloadResource       = "Reload Player Resource";
+            private const string LabelManageModsOffset     = "\"Manage mods\" title screen button offset";
 
             private readonly SettingsInterface _base;
             private readonly Configuration     _config;
@@ -155,7 +156,18 @@ namespace Penumbra.UI
                 if( ImGui.Checkbox( LabelShowAdvanced, ref showAdvanced ) )
                 {
                     _config.ShowAdvanced = showAdvanced;
-                    _configChanged       = true;
+                    _configChanged = true;
+                }
+            }
+
+            private void DrawManageModsButtonOffset()
+            {
+                var manageModsButtonOffset = _config.ManageModsButtonOffset;
+                ImGui.SetNextItemWidth( 150f );
+                if( ImGui.DragFloat2( LabelManageModsOffset, ref manageModsButtonOffset, 1f ) )
+                {
+                    _config.ManageModsButtonOffset = manageModsButtonOffset;
+                    _configChanged = true;
                 }
             }
 
@@ -305,6 +317,7 @@ namespace Penumbra.UI
                 ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
                 DrawScaleModSelectorBox();
                 DrawSortFoldersFirstBox();
+                DrawManageModsButtonOffset();
                 DrawShowAdvancedBox();
 
                 if( _config.ShowAdvanced )
