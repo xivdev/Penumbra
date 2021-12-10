@@ -45,7 +45,7 @@ namespace Penumbra.Interop
             var module = Dalamud.SigScanner.Module.BaseAddress.ToInt64();
             var loadPlayerResourcesAddress =
                 Dalamud.SigScanner.ScanText(
-                    "E8 ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? BA ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? 48 8B 48 30 48 8B 01 FF 50 10 48 85 C0 74 0A " );
+                    "E8 ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? BA ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? 48 8B 48 30 48 8B 01 FF 50 10 48 85 C0 74 0A" );
             GeneralUtil.PrintDebugAddress( "LoadPlayerResources", loadPlayerResourcesAddress );
 
             var unloadPlayerResourcesAddress =

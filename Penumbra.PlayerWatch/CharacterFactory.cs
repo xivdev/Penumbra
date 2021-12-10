@@ -8,7 +8,7 @@ namespace Penumbra.PlayerWatch
 {
     public static class CharacterFactory
     {
-        private static ConstructorInfo? _characterConstructor = null;
+        private static ConstructorInfo? _characterConstructor;
 
         private static void Initialize()
         {

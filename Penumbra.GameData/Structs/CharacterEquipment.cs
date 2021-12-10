@@ -9,9 +9,9 @@ namespace Penumbra.GameData.Structs
     [StructLayout( LayoutKind.Sequential, Pack = 1 )]
     public class CharacterEquipment
     {
-        public const int MainWeaponOffset = 0x0F08;
-        public const int OffWeaponOffset  = 0x0F70;
-        public const int EquipmentOffset  = 0x1040;
+        public const int MainWeaponOffset = 0x0C78;
+        public const int OffWeaponOffset  = 0x0CE0;
+        public const int EquipmentOffset  = 0xDB0;
         public const int EquipmentSlots   = 10;
         public const int WeaponSlots      = 2;
 
