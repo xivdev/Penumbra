@@ -145,15 +145,22 @@ namespace Penumbra.UI
 
             var manager = Service< ModManager >.Get();
             PrintValue( "Active Collection", manager.Collections.ActiveCollection.Name );
-            PrintValue( "Mod Manager BasePath", manager.BasePath.Name );
-            PrintValue( "Mod Manager BasePath-Full", manager.BasePath.FullName );
+            PrintValue( "    has Cache", (manager.Collections.ActiveCollection.Cache != null).ToString() );
+            PrintValue( "Current Collection", manager.Collections.CurrentCollection.Name );
+            PrintValue( "    has Cache", ( manager.Collections.CurrentCollection.Cache != null ).ToString() );
+            PrintValue( "Default Collection", manager.Collections.DefaultCollection.Name );
+            PrintValue( "    has Cache", ( manager.Collections.DefaultCollection.Cache != null ).ToString() );
+            PrintValue( "Forced Collection", manager.Collections.ForcedCollection.Name );
+            PrintValue( "    has Cache", ( manager.Collections.ForcedCollection.Cache != null ).ToString() );
+            PrintValue( "Mod Manager BasePath", manager.BasePath?.Name ?? "NULL" );
+            PrintValue( "Mod Manager BasePath-Full", manager.BasePath?.FullName ?? "NULL" );
             PrintValue( "Mod Manager BasePath IsRooted", Path.IsPathRooted( Penumbra.Config.ModDirectory ).ToString() );
-            PrintValue( "Mod Manager BasePath Exists", Directory.Exists( manager.BasePath.FullName ).ToString() );
+            PrintValue( "Mod Manager BasePath Exists", manager.BasePath != null ? Directory.Exists( manager.BasePath.FullName ).ToString() : false.ToString() );
             PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
-            PrintValue( "Mod Manager Temp Path", manager.TempPath.FullName );
+            PrintValue( "Mod Manager Temp Path", manager.TempPath?.FullName ?? "NULL" );
             PrintValue( "Mod Manager Temp Path IsRooted",
                 ( !Penumbra.Config.TempDirectory.Any() || Path.IsPathRooted( Penumbra.Config.TempDirectory ) ).ToString() );
-            PrintValue( "Mod Manager Temp Path Exists", Directory.Exists( manager.TempPath.FullName ).ToString() );
+            PrintValue( "Mod Manager Temp Path Exists", manager.TempPath != null ? Directory.Exists( manager.TempPath.FullName ).ToString() : false.ToString() );
             PrintValue( "Mod Manager Temp Path IsWritable", manager.TempWritable.ToString() );
         }
 

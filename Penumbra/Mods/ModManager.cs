@@ -129,6 +129,8 @@ namespace Penumbra.Mods
                         TempWritable = false;
                     }
                 }
+
+                Collections?.RecreateCaches();
             }
         }
 
