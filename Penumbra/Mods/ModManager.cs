@@ -130,7 +130,10 @@ namespace Penumbra.Mods
                     }
                 }
 
-                Collections?.RecreateCaches();
+                if( !firstTime )
+                {
+                    Collections.RecreateCaches();
+                }
             }
         }
 
