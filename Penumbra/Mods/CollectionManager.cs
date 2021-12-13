@@ -62,13 +62,13 @@ namespace Penumbra.Mods
                 return;
             }
 
-            if( DefaultCollection.Cache == null )
+            if( DefaultCollection.Name != ModCollection.Empty.Name &&  DefaultCollection.Cache == null )
                 DefaultCollection.CreateCache( _manager.TempPath, _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst  ));
 
-            if( ForcedCollection.Cache == null )
+            if( ForcedCollection.Name != ModCollection.Empty.Name && ForcedCollection.Cache == null )
                 ForcedCollection.CreateCache( _manager.TempPath, _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) );
 
-            foreach (var (_, collection) in CharacterCollection.Where( kvp => kvp.Value.Cache == null ))
+            foreach (var (_, collection) in CharacterCollection.Where( kvp => kvp.Value.Name != ModCollection.Empty.Name && kvp.Value.Cache == null ))
                 collection.CreateCache( _manager.TempPath, _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) );
         }
 
