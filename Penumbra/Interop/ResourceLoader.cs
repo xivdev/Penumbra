@@ -5,7 +5,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Hooking;
 using Dalamud.Logging;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
 using Penumbra.Structs;
@@ -19,10 +18,10 @@ public class ResourceLoader : IDisposable
     public Penumbra Penumbra { get; set; }
 
     public bool IsEnabled { get; set; }
-    public bool HacksEnabled { get; set; }
 
     public Crc32 Crc32 { get; }
 
+    public static readonly IntPtr CustomFileFlag = new(0xDEADBEEF);
 
     // Delegate prototypes
     [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
@@ -40,7 +39,7 @@ public class ResourceLoader : IDisposable
         , uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown );
 
     [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
-    public delegate bool CheckFileStatePrototype( IntPtr unk1, ulong unk2 );
+    public delegate IntPtr CheckFileStatePrototype( IntPtr unk1, ulong crc );
 
     [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
     public delegate byte LoadTexFileExternPrototype( IntPtr resourceHandle, int unk1, IntPtr unk2, bool unk3, IntPtr unk4 );
@@ -64,7 +63,6 @@ public class ResourceLoader : IDisposable
 
     // Unmanaged functions
     public ReadFilePrototype? ReadFile { get; private set; }
-    public CheckFileStatePrototype? CheckFileState { get; private set; }
     public LoadTexFileLocalPrototype? LoadTexFileLocal { get; private set; }
     public LoadMdlFileLocalPrototype? LoadMdlFileLocal { get; private set; }
 
@@ -128,37 +126,21 @@ public class ResourceLoader : IDisposable
         LoadMdlFileExternHook = new Hook< LoadMdlFileExternPrototype >( loadMdlFileExternAddress, LoadMdlFileExternDetour );
     }
 
-    private bool CheckForTerritory()
+    private IntPtr CheckFileStateDetour( IntPtr ptr, ulong crc64 )
     {
-        var territory = Dalamud.GameData.GetExcelSheet< TerritoryType >()?.GetRow( Dalamud.ClientState.TerritoryType );
-        var bad       = territory?.Unknown40 ?? false;
-        switch( bad )
-        {
-            case true when HacksEnabled:
-                CheckFileStateHook?.Disable();
-                LoadTexFileExternHook?.Disable();
-                LoadMdlFileExternHook?.Disable();
-                HacksEnabled = false;
-                return bad;
-            case false when Penumbra.Config.IsEnabled && !HacksEnabled:
-                CheckFileStateHook?.Enable();
-                LoadTexFileExternHook?.Enable();
-                LoadMdlFileExternHook?.Enable();
-                HacksEnabled = true;
-                break;
-        }
-
-        return bad;
+        var modManager = Service< ModManager >.Get();
+        return modManager.CheckCrc64( crc64 ) ? CustomFileFlag : CheckFileStateHook!.Original( ptr, crc64 );
     }
 
-    private static bool CheckFileStateDetour( IntPtr _, ulong _2 )
-        => true;
+    private byte LoadTexFileExternDetour( IntPtr resourceHandle, int unk1, IntPtr unk2, bool unk3, IntPtr ptr )
+        => ptr.Equals( CustomFileFlag )
+            ? LoadTexFileLocal!.Invoke( resourceHandle, unk1, unk2, unk3 )
+            : LoadTexFileExternHook!.Original( resourceHandle, unk1, unk2, unk3, ptr );
 
-    private byte LoadTexFileExternDetour( IntPtr resourceHandle, int unk1, IntPtr unk2, bool unk3, IntPtr _ )
-        => LoadTexFileLocal!.Invoke( resourceHandle, unk1, unk2, unk3 );
-
-    private byte LoadMdlFileExternDetour( IntPtr resourceHandle, IntPtr unk1, bool unk2, IntPtr _ )
-        => LoadMdlFileLocal!.Invoke( resourceHandle, unk1, unk2 );
+    private byte LoadMdlFileExternDetour( IntPtr resourceHandle, IntPtr unk1, bool unk2, IntPtr ptr )
+        => ptr.Equals( CustomFileFlag )
+            ? LoadMdlFileLocal!.Invoke( resourceHandle, unk1, unk2 )
+            : LoadMdlFileExternHook!.Original( resourceHandle, unk1, unk2, ptr );
 
     private unsafe void* GetResourceSyncHandler(
         IntPtr pFileManager,
@@ -223,11 +205,6 @@ public class ResourceLoader : IDisposable
         bool isUnknown
     )
     {
-        if( CheckForTerritory() )
-        {
-            return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
-        }
-
         string file;
         var    modManager = Service< ModManager >.Get();
 
@@ -277,11 +254,6 @@ public class ResourceLoader : IDisposable
 
     private unsafe byte ReadSqpackHandler( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync )
     {
-        if( CheckForTerritory() )
-        {
-            return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
-        }
-
         if( ReadFile == null || pFileDesc == null || pFileDesc->ResourceHandle == null )
         {
             PluginLog.Error( "THIS SHOULD NOT HAPPEN" );
@@ -340,7 +312,6 @@ public class ResourceLoader : IDisposable
         LoadMdlFileExternHook.Enable();
 
         IsEnabled    = true;
-        HacksEnabled = true;
     }
 
     public void Disable()
@@ -357,7 +328,6 @@ public class ResourceLoader : IDisposable
         LoadTexFileExternHook?.Disable();
         LoadMdlFileExternHook?.Disable();
         IsEnabled    = false;
-        HacksEnabled = false;
     }
 
     public void Dispose()

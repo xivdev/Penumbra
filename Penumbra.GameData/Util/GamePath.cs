@@ -22,7 +22,7 @@ namespace Penumbra.GameData.Util
             }
             else
             {
-                _path = "";
+                _path = string.Empty;
             }
         }
 

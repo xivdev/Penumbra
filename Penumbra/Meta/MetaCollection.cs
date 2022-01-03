@@ -147,7 +147,7 @@ namespace Penumbra.Meta
 
         // Update the whole meta collection by reading all TexTools .meta files in a mod directory anew,
         // combining them with the given ModMeta.
-        public void Update( IEnumerable< FileInfo > files, DirectoryInfo basePath, ModMeta modMeta )
+        public void Update( IEnumerable< FullPath > files, DirectoryInfo basePath, ModMeta modMeta )
         {
             DefaultData.Clear();
             GroupData.Clear();

@@ -55,7 +55,7 @@ namespace Penumbra.UI
             private Option?      _selectedOption;
             private string       _currentGamePaths = "";
 
-            private (FileInfo name, bool selected, uint color, RelPath relName)[]? _fullFilenameList;
+            private (FullPath name, bool selected, uint color, RelPath relName)[]? _fullFilenameList;
 
             private readonly Selector          _selector;
             private readonly SettingsInterface _base;

@@ -5,7 +5,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using Dalamud.Logging;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
@@ -26,9 +25,10 @@ namespace Penumbra.Mods
         public readonly Dictionary< string, Mod.Mod > AvailableMods = new();
 
         private readonly SortedList< string, object? >    _changedItems = new();
-        public readonly  Dictionary< GamePath, FileInfo > ResolvedFiles = new();
+        public readonly  Dictionary< GamePath, FullPath > ResolvedFiles = new();
         public readonly  Dictionary< GamePath, GamePath > SwappedFiles  = new();
-        public readonly  HashSet< FileInfo >              MissingFiles  = new();
+        public readonly  HashSet< FullPath >              MissingFiles  = new();
+        public readonly  HashSet< ulong >                 Checksums     = new();
         public readonly  MetaManager                      MetaManipulations;
 
         public IReadOnlyDictionary< string, object? > ChangedItems
@@ -75,6 +75,9 @@ namespace Penumbra.Mods
             }
 
             AddMetaFiles();
+            Checksums.Clear();
+            foreach( var file in ResolvedFiles )
+                Checksums.Add( file.Value.Crc64 );
         }
 
         private void SetChangedItems()
@@ -128,7 +131,7 @@ namespace Penumbra.Mods
             AddRemainingFiles( mod );
         }
 
-        private void AddFile( Mod.Mod mod, GamePath gamePath, FileInfo file )
+        private void AddFile( Mod.Mod mod, GamePath gamePath, FullPath file )
         {
             if( !RegisteredFiles.TryGetValue( gamePath, out var oldMod ) )
             {
@@ -145,7 +148,7 @@ namespace Penumbra.Mods
             }
         }
 
-        private void AddMissingFile( FileInfo file )
+        private void AddMissingFile( FullPath file )
         {
             switch( file.Extension.ToLowerInvariant() )
             {
@@ -162,16 +165,15 @@ namespace Penumbra.Mods
         {
             foreach( var (file, paths) in option.OptionFiles )
             {
-                var fullPath = Path.Combine( mod.Data.BasePath.FullName, file );
-                var idx      = mod.Data.Resources.ModFiles.IndexOf( f => f.FullName == fullPath );
+                var fullPath = new FullPath(mod.Data.BasePath, file);
+                var idx      = mod.Data.Resources.ModFiles.IndexOf( f => f.Equals(fullPath) );
                 if( idx < 0 )
                 {
-                    AddMissingFile( new FileInfo( fullPath ) );
+                    AddMissingFile( fullPath );
                     continue;
                 }
 
                 var registeredFile = mod.Data.Resources.ModFiles[ idx ];
-                registeredFile.Refresh();
                 if( !registeredFile.Exists )
                 {
                     AddMissingFile( registeredFile );
@@ -230,10 +232,9 @@ namespace Penumbra.Mods
                 }
 
                 var file = mod.Data.Resources.ModFiles[ i ];
-                file.Refresh();
                 if( file.Exists )
                 {
-                    AddFile( mod, new GamePath( file, mod.Data.BasePath ), file );
+                    AddFile( mod, file.ToGamePath( mod.Data.BasePath ), file );
                 }
                 else
                 {
@@ -350,14 +351,13 @@ namespace Penumbra.Mods
             }
         }
 
-        public FileInfo? GetCandidateForGameFile( GamePath gameResourcePath )
+        public FullPath? GetCandidateForGameFile( GamePath gameResourcePath )
         {
             if( !ResolvedFiles.TryGetValue( gameResourcePath, out var candidate ) )
             {
                 return null;
             }
 
-            candidate.Refresh();
             if( candidate.FullName.Length >= 260 || !candidate.Exists )
             {
                 return null;

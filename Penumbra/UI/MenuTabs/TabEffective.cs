@@ -64,7 +64,7 @@ namespace Penumbra.UI
                 }
             }
 
-            private bool CheckFilters( KeyValuePair< GamePath, FileInfo > kvp )
+            private bool CheckFilters( KeyValuePair< GamePath, FullPath > kvp )
             {
                 if( _gamePathFilter.Any() && !kvp.Key.ToString().Contains( _gamePathFilterLower ) )
                 {

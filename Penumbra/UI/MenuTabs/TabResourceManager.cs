@@ -94,7 +94,7 @@ public partial class SettingsInterface
 
         using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
-        var resourceHandler = *( ResourceManager** )( Dalamud.SigScanner.Module.BaseAddress + 0x1E5B440 );
+        var resourceHandler = *( ResourceManager** )( Dalamud.SigScanner.Module.BaseAddress + 0x1E603C0 );
 
         if( resourceHandler == null )
         {

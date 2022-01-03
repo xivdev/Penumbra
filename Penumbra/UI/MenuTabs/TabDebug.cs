@@ -165,7 +165,6 @@ public partial class SettingsInterface
             manager.TempPath != null ? Directory.Exists( manager.TempPath.FullName ).ToString() : false.ToString() );
         PrintValue( "Mod Manager Temp Path IsWritable", manager.TempWritable.ToString() );
         PrintValue( "Resource Loader Enabled", _penumbra.ResourceLoader.IsEnabled.ToString() );
-        PrintValue( "Resource Loader Hacks Enabled", _penumbra.ResourceLoader.HacksEnabled.ToString() );
     }
 
     private void DrawDebugTabRedraw()
@@ -298,7 +297,6 @@ public partial class SettingsInterface
                 ImGui.TableNextColumn();
                 ImGui.Text( file );
                 ImGui.TableNextColumn();
-                info.CurrentFile?.Refresh();
                 ImGui.Text( info.CurrentFile?.Exists ?? false ? "Exists" : "Missing" );
                 ImGui.TableNextColumn();
                 ImGui.Text( info.Changed ? "Data Changed" : "Unchanged" );

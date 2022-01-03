@@ -347,6 +347,14 @@ namespace Penumbra.Mods
             return true;
         }
 
+        public bool CheckCrc64( ulong crc )
+        {
+            if( Collections.ActiveCollection.Cache?.Checksums.Contains( crc ) ?? false )
+                return true;
+
+            return Collections.ForcedCollection.Cache?.Checksums.Contains( crc ) ?? false;
+        }
+
         public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )
         {
             var ret = Collections.ActiveCollection.ResolveSwappedOrReplacementPath( gameResourcePath );

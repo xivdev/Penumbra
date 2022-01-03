@@ -17,7 +17,7 @@ namespace Penumbra.Meta
         {
             public readonly object    Data;
             public          bool      Changed;
-            public          FileInfo? CurrentFile;
+            public          FullPath? CurrentFile;
 
             public FileInformation( object data )
                 => Data = data;
@@ -35,7 +35,7 @@ namespace Penumbra.Meta
                     _             => throw new NotImplementedException(),
                 };
                 DisposeFile( CurrentFile );
-                CurrentFile = TempFile.WriteNew( dir, data, $"_{originalPath.Filename()}" );
+                CurrentFile = new FullPath(TempFile.WriteNew( dir, data, $"_{originalPath.Filename()}" ));
                 Changed     = false;
             }
         }
@@ -45,7 +45,7 @@ namespace Penumbra.Meta
         private readonly MetaDefaults                     _default;
         private readonly DirectoryInfo                    _dir;
         private readonly ResidentResources                _resourceManagement;
-        private readonly Dictionary< GamePath, FileInfo > _resolvedFiles;
+        private readonly Dictionary< GamePath, FullPath > _resolvedFiles;
 
         private readonly Dictionary< MetaManipulation, Mod.Mod > _currentManipulations = new();
         private readonly Dictionary< GamePath, FileInformation > _currentFiles         = new();
@@ -53,9 +53,9 @@ namespace Penumbra.Meta
         public IEnumerable< (MetaManipulation, Mod.Mod) > Manipulations
             => _currentManipulations.Select( kvp => ( kvp.Key, kvp.Value ) );
 
-        public IEnumerable< (GamePath, FileInfo) > Files
+        public IEnumerable< (GamePath, FullPath) > Files
             => _currentFiles.Where( kvp => kvp.Value.CurrentFile != null )
-               .Select( kvp => ( kvp.Key, kvp.Value.CurrentFile! ) );
+               .Select( kvp => ( kvp.Key, kvp.Value.CurrentFile!.Value ) );
 
         public int Count
             => _currentManipulations.Count;
@@ -63,9 +63,8 @@ namespace Penumbra.Meta
         public bool TryGetValue( MetaManipulation manip, out Mod.Mod mod )
             => _currentManipulations.TryGetValue( manip, out mod! );
 
-        private static void DisposeFile( FileInfo? file )
+        private static void DisposeFile( FullPath? file )
         {
-            file?.Refresh();
             if( !( file?.Exists ?? false ) )
             {
                 return;
@@ -73,11 +72,11 @@ namespace Penumbra.Meta
 
             try
             {
-                file.Delete();
+                File.Delete( file.Value.FullName );
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not delete temporary file \"{file.FullName}\":\n{e}" );
+                PluginLog.Error( $"Could not delete temporary file \"{file.Value.FullName}\":\n{e}" );
             }
         }
 
@@ -120,7 +119,7 @@ namespace Penumbra.Meta
         private void ClearDirectory()
             => ClearDirectory( _dir );
 
-        public MetaManager( string name, Dictionary< GamePath, FileInfo > resolvedFiles, DirectoryInfo tempDir )
+        public MetaManager( string name, Dictionary< GamePath, FullPath > resolvedFiles, DirectoryInfo tempDir )
         {
             _resolvedFiles      = resolvedFiles;
             _default            = Service< MetaDefaults >.Get();
@@ -139,7 +138,7 @@ namespace Penumbra.Meta
             foreach( var kvp in _currentFiles.Where( kvp => kvp.Value.Changed ) )
             {
                 kvp.Value.Write( _dir, kvp.Key );
-                _resolvedFiles[ kvp.Key ] = kvp.Value.CurrentFile!;
+                _resolvedFiles[ kvp.Key ] = kvp.Value.CurrentFile!.Value;
             }
         }
 
