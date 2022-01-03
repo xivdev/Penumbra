@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Hooking;
 using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
 using Penumbra.Structs;
@@ -18,6 +19,7 @@ public class ResourceLoader : IDisposable
     public Penumbra Penumbra { get; set; }
 
     public bool IsEnabled { get; set; }
+    public bool HacksEnabled { get; set; }
 
     public Crc32 Crc32 { get; }
 
@@ -126,6 +128,29 @@ public class ResourceLoader : IDisposable
         LoadMdlFileExternHook = new Hook< LoadMdlFileExternPrototype >( loadMdlFileExternAddress, LoadMdlFileExternDetour );
     }
 
+    private bool CheckForTerritory()
+    {
+        var territory = Dalamud.GameData.GetExcelSheet< TerritoryType >()?.GetRow( Dalamud.ClientState.TerritoryType );
+        var bad       = territory?.Unknown40 ?? false;
+        switch( bad )
+        {
+            case true when HacksEnabled:
+                CheckFileStateHook?.Disable();
+                LoadTexFileExternHook?.Disable();
+                LoadMdlFileExternHook?.Disable();
+                HacksEnabled = false;
+                return bad;
+            case false when Penumbra.Config.IsEnabled && !HacksEnabled:
+                CheckFileStateHook?.Enable();
+                LoadTexFileExternHook?.Enable();
+                LoadMdlFileExternHook?.Enable();
+                HacksEnabled = true;
+                break;
+        }
+
+        return bad;
+    }
+
     private static bool CheckFileStateDetour( IntPtr _, ulong _2 )
         => true;
 
@@ -198,6 +223,11 @@ public class ResourceLoader : IDisposable
         bool isUnknown
     )
     {
+        if( CheckForTerritory() )
+        {
+            return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
+        }
+
         string file;
         var    modManager = Service< ModManager >.Get();
 
@@ -247,6 +277,11 @@ public class ResourceLoader : IDisposable
 
     private unsafe byte ReadSqpackHandler( IntPtr pFileHandler, SeFileDescriptor* pFileDesc, int priority, bool isSync )
     {
+        if( CheckForTerritory() )
+        {
+            return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
+        }
+
         if( ReadFile == null || pFileDesc == null || pFileDesc->ResourceHandle == null )
         {
             PluginLog.Error( "THIS SHOULD NOT HAPPEN" );
@@ -286,7 +321,12 @@ public class ResourceLoader : IDisposable
             return;
         }
 
-        if( ReadSqpackHook == null || GetResourceSyncHook == null || GetResourceAsyncHook == null || CheckFileStateHook == null || LoadTexFileExternHook == null || LoadMdlFileExternHook == null)
+        if( ReadSqpackHook       == null
+        || GetResourceSyncHook   == null
+        || GetResourceAsyncHook  == null
+        || CheckFileStateHook    == null
+        || LoadTexFileExternHook == null
+        || LoadMdlFileExternHook == null )
         {
             PluginLog.Error( "[GetResourceHandler] Could not activate hooks because at least one was not set." );
             return;
@@ -299,7 +339,8 @@ public class ResourceLoader : IDisposable
         LoadTexFileExternHook.Enable();
         LoadMdlFileExternHook.Enable();
 
-        IsEnabled = true;
+        IsEnabled    = true;
+        HacksEnabled = true;
     }
 
     public void Disable()
@@ -315,7 +356,8 @@ public class ResourceLoader : IDisposable
         CheckFileStateHook?.Disable();
         LoadTexFileExternHook?.Disable();
         LoadMdlFileExternHook?.Disable();
-        IsEnabled = false;
+        IsEnabled    = false;
+        HacksEnabled = false;
     }
 
     public void Dispose()
