@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Lumina.Misc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -11,23 +12,47 @@ namespace Penumbra.GameData.Util
 
         private readonly string _path;
 
+        private readonly ulong _crc64;
+
         private GamePath( string path, bool _ )
-            => _path = path;
+        {
+            _path  = path;
+            _crc64 = CalculateCrc64( path );
+        }
 
         public GamePath( string? path )
         {
             if( path != null && path.Length < MaxGamePathLength )
             {
-                _path = Lower( Trim( ReplaceSlash( path ) ) );
+                _path  = Lower( Trim( ReplaceSlash( path ) ) );
+                _crc64 = CalculateCrc64( path );
             }
             else
             {
-                _path = "";
+                _path  = "";
+                _crc64 = 0L;
             }
         }
 
         public GamePath( FileInfo file, DirectoryInfo baseDir )
-            => _path = CheckPre( file, baseDir ) ? Lower( Trim( ReplaceSlash( Substring( file, baseDir ) ) ) ) : "";
+        {
+            _path  = CheckPre( file, baseDir ) ? Lower( Trim( ReplaceSlash( Substring( file, baseDir ) ) ) ) : "";
+            _crc64 = _path != "" ? CalculateCrc64( _path ) : 0L;
+        }
+
+        public GamePath( ulong crc64 )
+        {
+            _path  = "";
+            _crc64 = crc64;
+        }
+
+        private static ulong CalculateCrc64( string path )
+        {
+            var lastSlash = path.LastIndexOf( '/' );
+            var folder    = path[ ..lastSlash ];
+            var file      = path[ (lastSlash+1).. ];
+            return (ulong)Crc32.Get( folder ) << 32 | Crc32.Get( file );
+        }
 
         private static bool CheckPre( FileInfo file, DirectoryInfo baseDir )
             => file.FullName.StartsWith( baseDir.FullName ) && file.FullName.Length < MaxGamePathLength;
@@ -65,12 +90,18 @@ namespace Penumbra.GameData.Util
             return idx == -1 ? _path : idx == _path.Length - 1 ? "" : _path.Substring( idx + 1 );
         }
 
+        public int CompareTo( GamePath rhs )
+        {
+            return (_path == "" || rhs._path == "") ? _crc64.CompareTo(rhs._crc64) :
+                string.Compare( _path, rhs._path, StringComparison.InvariantCulture );
+        }
+
         public int CompareTo( object? rhs )
         {
             return rhs switch
             {
                 string path   => string.Compare( _path, path, StringComparison.InvariantCulture ),
-                GamePath path => string.Compare( _path, path._path, StringComparison.InvariantCulture ),
+                GamePath path => CompareTo( path ),
                 _             => -1,
             };
         }

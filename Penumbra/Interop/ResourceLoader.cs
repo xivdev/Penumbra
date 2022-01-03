@@ -21,6 +21,8 @@ public class ResourceLoader : IDisposable
 
     public Crc32 Crc32 { get; }
 
+    protected static readonly IntPtr FLAG_POINTER = new( 0xDEADBEEF );
+
 
     // Delegate prototypes
     [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
@@ -38,7 +40,7 @@ public class ResourceLoader : IDisposable
         , uint* pResourceHash, char* pPath, void* pUnknown, bool isUnknown );
 
     [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
-    public delegate bool CheckFileStatePrototype( IntPtr unk1, ulong unk2 );
+    public delegate IntPtr CheckFileStatePrototype( IntPtr unk1, ulong unk2 );
 
     [UnmanagedFunctionPointer( CallingConvention.ThisCall )]
     public delegate byte LoadTexFileExternPrototype( IntPtr resourceHandle, int unk1, IntPtr unk2, bool unk3, IntPtr unk4 );
@@ -126,14 +128,28 @@ public class ResourceLoader : IDisposable
         LoadMdlFileExternHook = new Hook< LoadMdlFileExternPrototype >( loadMdlFileExternAddress, LoadMdlFileExternDetour );
     }
 
-    private static bool CheckFileStateDetour( IntPtr _, ulong _2 )
-        => true;
+    private IntPtr CheckFileStateDetour( IntPtr ptr, ulong crc64 )
+    {
+        var modManager      = Service< ModManager >.Get();
+        var gamePath        = new GamePath( crc64 );
+        var replacementPath = modManager.ResolveSwappedOrReplacementPath( gamePath );
 
-    private byte LoadTexFileExternDetour( IntPtr resourceHandle, int unk1, IntPtr unk2, bool unk3, IntPtr _ )
-        => LoadTexFileLocal!.Invoke( resourceHandle, unk1, unk2, unk3 );
+        return replacementPath == null ? CheckFileStateHook!.Original( ptr, crc64 ) : FLAG_POINTER;
+    }
 
-    private byte LoadMdlFileExternDetour( IntPtr resourceHandle, IntPtr unk1, bool unk2, IntPtr _ )
-        => LoadMdlFileLocal!.Invoke( resourceHandle, unk1, unk2 );
+    private byte LoadTexFileExternDetour( IntPtr resourceHandle, int unk1, IntPtr unk2, bool unk3, IntPtr ptr )
+    {
+        return ptr.Equals( FLAG_POINTER ) ?
+            LoadTexFileLocal!.Invoke( resourceHandle, unk1, unk2, unk3 ) :
+            LoadTexFileExternHook!.Original( resourceHandle, unk1, unk2, unk3, ptr );
+    }
+
+    private byte LoadMdlFileExternDetour( IntPtr resourceHandle, IntPtr unk1, bool unk2, IntPtr ptr )
+    {
+        return ptr.Equals( FLAG_POINTER ) ?
+            LoadMdlFileLocal!.Invoke( resourceHandle, unk1, unk2 ) :
+            LoadMdlFileExternHook!.Original( resourceHandle, unk1, unk2, ptr );
+    }
 
     private unsafe void* GetResourceSyncHandler(
         IntPtr pFileManager,
