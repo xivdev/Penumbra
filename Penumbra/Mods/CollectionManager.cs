@@ -43,10 +43,14 @@ public class CollectionManager
         if( ActiveCollection.Cache?.MetaManipulations.Count > 0 || newActive.Cache?.MetaManipulations.Count > 0 )
         {
             var resourceManager = Service< ResidentResources >.Get();
+            ActiveCollection = newActive;
             resourceManager.ReloadResidentResources();
         }
+        else
+        {
+            ActiveCollection = newActive;
+        }
 
-        ActiveCollection = newActive;
         return true;
     }
 
@@ -170,7 +174,6 @@ public class CollectionManager
         collection.Delete();
         Collections.Remove( name );
         return true;
-
     }
 
     private void AddCache( ModCollection collection )

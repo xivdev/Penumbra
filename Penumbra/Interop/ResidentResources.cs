@@ -101,7 +101,7 @@ namespace Penumbra.Interop
                 var handle = ( ResourceHandle* )oldResources[ i ];
                 if( oldResources[ i ].ToPointer() == pResources[ i ] )
                 {
-                    PluginLog.Debug( $"Unchanged resource: {ResourceToPath( ( byte* )oldResources[ i ].ToPointer() )}" );
+                    PluginLog.Verbose( $"Unchanged resource: {ResourceToPath( ( byte* )oldResources[ i ].ToPointer() )}" );
                     ( ( ResourceHandle* )oldResources[ i ] )->DecRef();
                     continue;
                 }
