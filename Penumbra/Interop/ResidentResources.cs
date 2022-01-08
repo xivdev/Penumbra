@@ -75,7 +75,7 @@ namespace Penumbra.Interop
         }
 
         // Forces the reload of a specific set of 85 files, notably containing the eqp, eqdp, gmp and est tables, by filename.
-        public unsafe void ReloadPlayerResources()
+        public unsafe void ReloadResidentResources()
         {
             ReloadCharacterResources();
 

@@ -43,7 +43,7 @@ public class CollectionManager
         if( ActiveCollection.Cache?.MetaManipulations.Count > 0 || newActive.Cache?.MetaManipulations.Count > 0 )
         {
             var resourceManager = Service< ResidentResources >.Get();
-            resourceManager.ReloadPlayerResources();
+            resourceManager.ReloadResidentResources();
         }
 
         ActiveCollection = newActive;
@@ -111,7 +111,7 @@ public class CollectionManager
 
         if( reloadMeta && ActiveCollection.Settings.TryGetValue( mod.BasePath.Name, out var config ) && config.Enabled )
         {
-            Service< ResidentResources >.Get().ReloadPlayerResources();
+            Service< ResidentResources >.Get().ReloadResidentResources();
         }
     }
 
@@ -221,7 +221,7 @@ public class CollectionManager
             {
                 ActiveCollection = c;
                 var resourceManager = Service< ResidentResources >.Get();
-                resourceManager.ReloadPlayerResources();
+                resourceManager.ReloadResidentResources();
             }
 
             DefaultCollection = c;
@@ -242,7 +242,7 @@ public class CollectionManager
                 {
                     ActiveCollection = c;
                     var resourceManager = Service< ResidentResources >.Get();
-                    resourceManager.ReloadPlayerResources();
+                    resourceManager.ReloadResidentResources();
                 }
 
                 CharacterCollection[ characterName ] = c;

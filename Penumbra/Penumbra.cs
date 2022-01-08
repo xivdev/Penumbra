@@ -65,7 +65,7 @@ namespace Penumbra
             ResourceLoader.Init();
             ResourceLoader.Enable();
 
-            gameUtils.ReloadPlayerResources();
+            gameUtils.ReloadResidentResources();
 
             SettingsInterface = new SettingsInterface( this );
 
@@ -98,7 +98,7 @@ namespace Penumbra
             }
 
             Config.IsEnabled = true;
-            Service< ResidentResources >.Get().ReloadPlayerResources();
+            Service< ResidentResources >.Get().ReloadResidentResources();
             if( Config.EnablePlayerWatch )
             {
                 PlayerWatcher.SetStatus( true );
@@ -117,7 +117,7 @@ namespace Penumbra
             }
 
             Config.IsEnabled = false;
-            Service< ResidentResources >.Get().ReloadPlayerResources();
+            Service< ResidentResources >.Get().ReloadResidentResources();
             if( Config.EnablePlayerWatch )
             {
                 PlayerWatcher.SetStatus( false );

@@ -32,6 +32,7 @@ namespace Penumbra
         public string ForcedCollection { get; set; } = "";
 
         public bool SortFoldersFirst { get; set; } = false;
+        public bool HasReadCharacterCollectionDesc { get; set; } = false;
 
         public Dictionary< string, string > CharacterCollections { get; set; } = new();
         public Dictionary< string, string > ModSortOrder { get; set; } = new();

@@ -93,7 +93,7 @@ namespace Penumbra.Meta
             ClearDirectory();
             if( reload )
             {
-                _resourceManagement.ReloadPlayerResources();
+                _resourceManagement.ReloadResidentResources();
             }
         }
 

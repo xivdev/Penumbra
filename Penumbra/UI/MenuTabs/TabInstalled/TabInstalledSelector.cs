@@ -616,7 +616,7 @@ namespace Penumbra.UI
                 const float size = 200;
 
                 DrawModsSelectorFilter();
-                var textSize  = ImGui.CalcTextSize( TabCollections.LabelCurrentCollection ).X + ImGui.GetStyle().ItemInnerSpacing.X;
+                var textSize  = ImGui.CalcTextSize( "Current Collection" ).X + ImGui.GetStyle().ItemInnerSpacing.X;
                 var comboSize = size * ImGui.GetIO().FontGlobalScale;
                 var offset    = comboSize + textSize;
 
