@@ -19,5 +19,5 @@ Contributions are welcome, but please make an issue first before writing any cod
 Penumbra has support for most TexTools modpacks however this is provided on a best-effort basis and support is not guaranteed. Built in tooling will be added to Penumbra over time to avoid many common TexTools use cases.
 
 ## Installing 
-While this project is still a work in progress, you can use it by including the below custom repository URL in the custom plugin repository list in XIVLauncher. Please don't install it manually in cause there is a bug to be fixed in future versions and you won't get updates automatically.
+While this project is still a work in progress, you can use it by including the below custom repository URL in the custom plugin repository list in XIVLauncher. Please don't install it manually in case there is a bug to be fixed in future versions and you won't get updates automatically.
 - https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json
