@@ -20,6 +20,7 @@ namespace Penumbra
 
         public bool DisableFileSystemNotifications { get; set; }
 
+        public bool DisableSoundStreaming { get; set; } = true;
         public bool EnableHttpApi { get; set; }
         public bool EnablePlayerWatch { get; set; } = false;
         public int WaitFrames { get; set; } = 30;

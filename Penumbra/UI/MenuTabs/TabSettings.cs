@@ -194,6 +194,33 @@ public partial class SettingsInterface
                 "Instead of keeping the mod-selector in the Installed Mods tab a fixed width, this will let it scale with the total size of the Penumbra window." );
         }
 
+        private void DrawDisableSoundStreamingBox()
+        {
+            var tmp = Penumbra.Config.DisableSoundStreaming;
+            if( ImGui.Checkbox( "Disable Audio Streaming", ref tmp ) && tmp != Penumbra.Config.DisableSoundStreaming )
+            {
+                Penumbra.Config.DisableSoundStreaming = tmp;
+                _configChanged                        = true;
+                if( tmp )
+                {
+                    _base._penumbra.MusicManager.DisableStreaming();
+                }
+                else
+                {
+                    _base._penumbra.MusicManager.EnableStreaming();
+                }
+
+                _base.ReloadMods();
+            }
+
+            ImGui.SameLine();
+            ImGuiComponents.HelpMarker(
+                "Disable streaming in the games audio engine.\n"
+              + "If you do not disable streaming, you can not replace sound files in the game (*.scd files), they will be ignored by Penumbra.\n\n"
+              + "Only touch this if you experience sound problems.\n"
+              + "If you toggle this, make sure no modified or to-be-modified sound file is currently playing or was recently playing, else you might crash." );
+        }
+
         private void DrawLogLoadedFilesBox()
         {
             ImGui.Checkbox( "Log Loaded Files", ref _base._penumbra.ResourceLoader.LogAllFiles );
@@ -306,6 +333,7 @@ public partial class SettingsInterface
         private void DrawAdvancedSettings()
         {
             DrawTempFolder();
+            DrawDisableSoundStreamingBox();
             DrawLogLoadedFilesBox();
             DrawDisableNotificationsBox();
             DrawEnableHttpApiBox();
