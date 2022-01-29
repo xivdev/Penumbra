@@ -39,8 +39,8 @@ namespace Penumbra.Importer
             private const string Ext  = @"\.meta";
 
             // These are the valid regexes for .meta files that we are able to support at the moment.
-            private static readonly Regex HousingMeta = new( $"bgcommon/hou/{Pt}/general/{Pi}/{Pir}{Ext}" );
-            private static readonly Regex CharaMeta   = new( $"chara/{Pt}/{Pp}{Pi}(/obj/{St}/{Sp}{Si})?/{File}{Slot}{Ext}" );
+            private static readonly Regex HousingMeta = new($"bgcommon/hou/{Pt}/general/{Pi}/{Pir}{Ext}");
+            private static readonly Regex CharaMeta   = new($"chara/{Pt}/{Pp}{Pi}(/obj/{St}/{Sp}{Si})?/{File}{Slot}{Ext}");
 
             public readonly ObjectType        PrimaryType;
             public readonly BodySlot          SecondaryType;
@@ -129,7 +129,7 @@ namespace Penumbra.Importer
                 }
 
                 if( match.Groups[ "SecondaryType" ].Success
-                 && Names.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
+                && Names.StringToBodySlot.TryGetValue( match.Groups[ "SecondaryType" ].Value, out SecondaryType ) )
                 {
                     SecondaryId = ushort.Parse( match.Groups[ "SecondaryId" ].Value );
                 }
@@ -234,8 +234,8 @@ namespace Penumbra.Importer
                 var id    = reader.ReadUInt16();
                 var value = reader.ReadUInt16();
                 if( !gr.IsValid()
-                 || info.PrimaryType == ObjectType.Character && info.SecondaryType != BodySlot.Face  && info.SecondaryType != BodySlot.Hair
-                 || info.PrimaryType == ObjectType.Equipment && info.EquipSlot     != EquipSlot.Head && info.EquipSlot     != EquipSlot.Body )
+                || info.PrimaryType == ObjectType.Character && info.SecondaryType != BodySlot.Face  && info.SecondaryType != BodySlot.Hair
+                || info.PrimaryType == ObjectType.Equipment && info.EquipSlot     != EquipSlot.Head && info.EquipSlot     != EquipSlot.Body )
                 {
                     continue;
                 }
@@ -323,7 +323,7 @@ namespace Penumbra.Importer
             Version  = version;
         }
 
-        public static TexToolsMeta Invalid = new( string.Empty, 0 );
+        public static TexToolsMeta Invalid = new(string.Empty, 0);
 
         public static TexToolsMeta FromRgspFile( string filePath, byte[] data )
         {

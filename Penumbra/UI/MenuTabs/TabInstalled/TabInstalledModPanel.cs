@@ -499,6 +499,42 @@ namespace Penumbra.UI
                   + "Experimental - Use at own risk!" );
             }
 
+            private void DrawMaterialChangeButtons()
+            {
+                if( ImGui.Button( "Skin Material B to D" ) )
+                {
+                    ModelChanger.ChangeMtrlBToD( Mod!.Data );
+                }
+                ImGuiCustom.HoverTooltip( "Change the skin material all models in this mod reference from B to D.\n"
+                  + "This is usually to convert Bibo+ models to T&F3 skins.\n"
+                  + "This overwrites .mdl files, use at your own risk!" );
+
+                ImGui.SameLine();
+                if( ImGui.Button( "Skin Material D to B" ) )
+                {
+                    ModelChanger.ChangeMtrlDToB( Mod!.Data );
+                }
+                ImGuiCustom.HoverTooltip( "Change the skin material all models in this mod reference from D to B.\n"
+                  + "This is usually to convert T&F3 models to Bibo+ skins.\n"
+                  + "This overwrites .mdl files, use at your own risk!" );
+
+                ImGui.SameLine();
+                if( ImGui.Button( "Skin Material A to E" ) )
+                {
+                    ModelChanger.ChangeMtrlAToE( Mod!.Data );
+                }
+                ImGuiCustom.HoverTooltip( "Change the material all models in this mod reference from A to E.\n"
+                  + "This overwrites .mdl files, use at your own risk!" );
+
+                ImGui.SameLine();
+                if( ImGui.Button( "Skin Material E to A" ) )
+                {
+                    ModelChanger.ChangeMtrlEToA( Mod!.Data );
+                }
+                ImGuiCustom.HoverTooltip( "Change the material all models in this mod reference from E to A.\n"
+                  + "This overwrites .mdl files, use at your own risk!" );
+            }
+
             private void DrawEditLine()
             {
                 DrawOpenModFolderButton();
@@ -518,6 +554,8 @@ namespace Penumbra.UI
                 DrawAutoGenerateGroupsButton();
                 ImGui.SameLine();
                 DrawSplitButton();
+
+                DrawMaterialChangeButtons();
 
                 DrawSortOrder( Mod!.Data, _modManager, _selector );
             }
