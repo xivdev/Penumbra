@@ -150,21 +150,6 @@ public partial class SettingsInterface
               + "This is required to enable manually editing any mod information." );
         }
 
-        private void DrawManageModsButtonOffsetButton()
-        {
-            var manageModsButtonOffset = _config.ManageModsButtonOffset;
-            ImGui.SetNextItemWidth( 150 * ImGuiHelpers.GlobalScale );
-            if( ImGui.DragFloat2( "\"Manage Mods\"-Button Offset", ref manageModsButtonOffset, 1f ) )
-            {
-                _config.ManageModsButtonOffset = manageModsButtonOffset;
-                _configChanged                 = true;
-            }
-
-            _base._manageModsButton.ForceDraw = ImGui.IsItemActive();
-            ImGuiComponents.HelpMarker(
-                "Shift the \"Manage Mods\"-Button displayed in the login-lobby by the given amount of pixels in X/Y-direction." );
-        }
-
         private void DrawSortFoldersFirstBox()
         {
             var foldersFirst = _config.SortFoldersFirst;
@@ -360,7 +345,6 @@ public partial class SettingsInterface
             ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
             DrawScaleModSelectorBox();
             DrawSortFoldersFirstBox();
-            DrawManageModsButtonOffsetButton();
             DrawShowAdvancedBox();
 
             if( _config.ShowAdvanced )

@@ -34,6 +34,7 @@ namespace Penumbra.UI
 
         public void Dispose()
         {
+            _manageModsButton.Dispose();
             _menu.InstalledTab.Selector.Cache.Dispose();
             Dalamud.PluginInterface.UiBuilder.Draw         -= Draw;
             Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= OpenConfig;
@@ -51,7 +52,6 @@ namespace Penumbra.UI
         public void Draw()
         {
             _menuBar.Draw();
-            _manageModsButton.Draw();
             _menu.Draw();
         }
 

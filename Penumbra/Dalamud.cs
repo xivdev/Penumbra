@@ -5,6 +5,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
+using Dalamud.Interface;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
@@ -27,6 +28,7 @@ namespace Penumbra
         [PluginService][RequiredVersion("1.0")] public static Condition              Conditions      { get; private set; } = null!;
         [PluginService][RequiredVersion("1.0")] public static TargetManager          Targets         { get; private set; } = null!;
         [PluginService][RequiredVersion("1.0")] public static ObjectTable            Objects         { get; private set; } = null!;
+        [PluginService][RequiredVersion("1.0")] public static TitleScreenMenu        TitleScreenMenu { get; private set; } = null!;
         // @formatter:on
     }
 }
