@@ -70,6 +70,10 @@ public class Penumbra : IDalamudPlugin
 
         gameUtils.ReloadResidentResources();
 
+        Api = new PenumbraApi( this );
+        Ipc = new PenumbraIpc( pluginInterface, Api );
+        SubscribeItemLinks();
+
         SettingsInterface = new SettingsInterface( this );
 
         if( Config.EnableHttpApi )
@@ -87,10 +91,6 @@ public class Penumbra : IDalamudPlugin
             PluginLog.Debug( "Triggered Redraw of {Player}.", p.Name );
             ObjectReloader.RedrawObject( p, RedrawType.OnlyWithSettings );
         };
-
-        Api = new PenumbraApi( this );
-        SubscribeItemLinks();
-        Ipc = new PenumbraIpc( pluginInterface, Api );
     }
 
     public bool Enable()

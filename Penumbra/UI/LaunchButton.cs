@@ -1,9 +1,7 @@
 using System;
 using System.IO;
 using Dalamud.Interface;
-using ImGuiNET;
 using ImGuiScene;
-using Penumbra.UI.Custom;
 
 namespace Penumbra.UI;
 
@@ -11,12 +9,9 @@ public partial class SettingsInterface
 {
     private class ManageModsButton : IDisposable
     {
-        // magic numbers
-        private const string MenuButtonLabel = "Manage Mods";
-
-        private readonly SettingsInterface                    _base;
-        private readonly TextureWrap                          _icon;
-        private readonly TitleScreenMenu.TitleScreenMenuEntry _entry;
+        private readonly SettingsInterface                     _base;
+        private readonly TextureWrap?                          _icon;
+        private readonly TitleScreenMenu.TitleScreenMenuEntry? _entry;
 
         public ManageModsButton( SettingsInterface ui )
         {
@@ -24,10 +19,10 @@ public partial class SettingsInterface
 
             _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
                 "tsmLogo.png" ) );
-            if( _icon == null )
-                throw new Exception( "Could not load title screen icon." );
-
-            _entry = Dalamud.TitleScreenMenu.AddEntry( MenuButtonLabel, _icon, OnTriggered );
+            if( _icon != null )
+            {
+                _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
+            }
         }
 
         private void OnTriggered()
@@ -37,8 +32,11 @@ public partial class SettingsInterface
 
         public void Dispose()
         {
-            _icon.Dispose();
-            Dalamud.TitleScreenMenu.RemoveEntry( _entry );
+            _icon?.Dispose();
+            if( _entry != null )
+            {
+                Dalamud.TitleScreenMenu.RemoveEntry( _entry );
+            }
         }
     }
 }
