@@ -39,7 +39,6 @@ namespace Penumbra
         public Dictionary< string, string > ModSortOrder { get; set; } = new();
 
         public bool InvertModListOrder { internal get; set; }
-        public Vector2 ManageModsButtonOffset { get; set; } = 50 * Vector2.One;
 
         public static Configuration Load()
         {

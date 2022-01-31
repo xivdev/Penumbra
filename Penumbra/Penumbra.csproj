@@ -30,6 +30,12 @@
 	</PropertyGroup>
 
     <ItemGroup>
+        <Content Include="tsmLogo.png">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </Content>
+    </ItemGroup>
+
+    <ItemGroup>
         <Reference Include="Dalamud">
             <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
             <Private>False</Private>
