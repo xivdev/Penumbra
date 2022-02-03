@@ -1,3 +1,4 @@
+using System;
 using Dalamud.Game.Command;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -38,7 +39,6 @@ public class Penumbra : IDalamudPlugin
     private WebServer? _webServer;
 
     private readonly ModManager _modManager;
-    private readonly ModCollection[] _collections;
 
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
@@ -95,8 +95,6 @@ public class Penumbra : IDalamudPlugin
             PluginLog.Debug( "Triggered Redraw of {Player}.", p.Name );
             ObjectReloader.RedrawObject( p, RedrawType.OnlyWithSettings );
         };
-
-        _collections = _modManager.Collections.Collections.Values.ToArray(); 
     }
 
     public bool Enable()
@@ -171,7 +169,7 @@ public class Penumbra : IDalamudPlugin
            .WithWebApi( "/api", m => m
                .WithController( () => new ModsController( this ) ) );
 
-        _webServer.StateChanged += ( s, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
+        _webServer.StateChanged += ( _, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
 
         _webServer.RunAsync();
     }
@@ -197,45 +195,50 @@ public class Penumbra : IDalamudPlugin
         ShutdownWebServer();
     }
 
-    public bool SetCollection(string type, string collection)
+    public bool SetCollection( string type, string collectionName )
     {
-        type = type.ToLower();
-        collection = collection.ToLower();
+        type           = type.ToLowerInvariant();
+        collectionName = collectionName.ToLowerInvariant();
 
-        if( type != "default" && type != "forced" )
-        {
-            Dalamud.Chat.Print( "Second command argument is not default or forced, the correct command format is: /penumbra collection {default|forced} <collectionName>" );
-            return false;
-        }
-
-        var currentCollection = ( type == "default" ) ? _modManager.Collections.DefaultCollection : _modManager.Collections.ForcedCollection;
-
-        if( collection == currentCollection.Name.ToLower() )
-        {
-            Dalamud.Chat.Print( $"{currentCollection.Name} is already the active collection." );
-            return false;
-        }
-
-        var newCollection = ( collection == "none" ) ? ModCollection.Empty : _collections.FirstOrDefault( c => c.Name.ToLower() == collection );
-
-        if ( newCollection == null )
+        var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
+            ? ModCollection.Empty
+            : _modManager.Collections.Collections.Values.FirstOrDefault( c
+                => string.Equals( c.Name, collectionName, StringComparison.InvariantCultureIgnoreCase ) );
+        if( collection == null )
         {
             Dalamud.Chat.Print( $"The collection {collection} does not exist." );
             return false;
         }
 
-        if( type == "default" )
+        switch( type )
         {
-            _modManager.Collections.SetDefaultCollection( newCollection );
-            Dalamud.Chat.Print( $"Set { newCollection.Name } as default collection." );
-        } 
-        else if ( type == "forced" )
-        {
-            _modManager.Collections.SetForcedCollection( newCollection );
-            Dalamud.Chat.Print( $"Set { newCollection.Name } as forced collection." );
-        }
+            case "default":
+                if( collection == _modManager.Collections.DefaultCollection )
+                {
+                    Dalamud.Chat.Print( $"{collection.Name} already is the default collection." );
+                    return false;
+                }
 
-        return true;
+                _modManager.Collections.SetDefaultCollection( collection );
+                Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
+                SettingsInterface.ResetDefaultCollection();
+                return true;
+            case "forced":
+                if( collection == _modManager.Collections.ForcedCollection )
+                {
+                    Dalamud.Chat.Print( $"{collection.Name} already is the forced collection." );
+                    return false;
+                }
+
+                _modManager.Collections.SetForcedCollection( collection );
+                Dalamud.Chat.Print( $"Set {collection.Name} as forced collection." );
+                SettingsInterface.ResetForcedCollection();
+                return true;
+            default:
+                Dalamud.Chat.Print(
+                    "Second command argument is not default or forced, the correct command format is: /penumbra collection {default|forced} <collectionName>" );
+                return false;
+        }
     }
 
     private void OnCommand( string command, string rawArgs )
@@ -252,7 +255,7 @@ public class Penumbra : IDalamudPlugin
                 {
                     Service< ModManager >.Get().DiscoverMods();
                     Dalamud.Chat.Print(
-                        $"Reloaded Penumbra mods. You have {Service< ModManager >.Get()?.Mods.Count} mods."
+                        $"Reloaded Penumbra mods. You have {_modManager.Mods.Count} mods."
                     );
                     break;
                 }
@@ -300,11 +303,14 @@ public class Penumbra : IDalamudPlugin
                 {
                     if( args.Length == 3 )
                     {
-                        SetCollection(args[ 1 ], args[ 2 ]);
-                    } else
-                    {
-                            Dalamud.Chat.Print( "Missing arguments, the correct command format is: /penumbra collection {default|forced} <collectionName>" );
+                        SetCollection( args[ 1 ], args[ 2 ] );
                     }
+                    else
+                    {
+                        Dalamud.Chat.Print( "Missing arguments, the correct command format is:"
+                          + " /penumbra collection {default|forced} <collectionName>" );
+                    }
+
                     break;
                 }
             }
