@@ -1,3 +1,4 @@
+using System;
 using Dalamud.Game.Command;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -13,6 +14,7 @@ using Penumbra.Mods;
 using Penumbra.PlayerWatch;
 using Penumbra.UI;
 using Penumbra.Util;
+using System.Linq;
 
 namespace Penumbra;
 
@@ -36,6 +38,8 @@ public class Penumbra : IDalamudPlugin
 
     private WebServer? _webServer;
 
+    private readonly ModManager _modManager;
+
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
         FFXIVClientStructs.Resolver.Initialize();
@@ -52,11 +56,11 @@ public class Penumbra : IDalamudPlugin
         var gameUtils = Service< ResidentResources >.Set();
         PlayerWatcher = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
         Service< MetaDefaults >.Set();
-        var modManager = Service< ModManager >.Set();
+        _modManager = Service< ModManager >.Set();
 
-        modManager.DiscoverMods();
+        _modManager.DiscoverMods();
 
-        ObjectReloader = new ObjectReloader( modManager, Config.WaitFrames );
+        ObjectReloader = new ObjectReloader( _modManager, Config.WaitFrames );
 
         ResourceLoader = new ResourceLoader( this );
 
@@ -165,7 +169,7 @@ public class Penumbra : IDalamudPlugin
            .WithWebApi( "/api", m => m
                .WithController( () => new ModsController( this ) ) );
 
-        _webServer.StateChanged += ( s, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
+        _webServer.StateChanged += ( _, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
 
         _webServer.RunAsync();
     }
@@ -191,12 +195,58 @@ public class Penumbra : IDalamudPlugin
         ShutdownWebServer();
     }
 
+    public bool SetCollection( string type, string collectionName )
+    {
+        type           = type.ToLowerInvariant();
+        collectionName = collectionName.ToLowerInvariant();
+
+        var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
+            ? ModCollection.Empty
+            : _modManager.Collections.Collections.Values.FirstOrDefault( c
+                => string.Equals( c.Name, collectionName, StringComparison.InvariantCultureIgnoreCase ) );
+        if( collection == null )
+        {
+            Dalamud.Chat.Print( $"The collection {collection} does not exist." );
+            return false;
+        }
+
+        switch( type )
+        {
+            case "default":
+                if( collection == _modManager.Collections.DefaultCollection )
+                {
+                    Dalamud.Chat.Print( $"{collection.Name} already is the default collection." );
+                    return false;
+                }
+
+                _modManager.Collections.SetDefaultCollection( collection );
+                Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
+                SettingsInterface.ResetDefaultCollection();
+                return true;
+            case "forced":
+                if( collection == _modManager.Collections.ForcedCollection )
+                {
+                    Dalamud.Chat.Print( $"{collection.Name} already is the forced collection." );
+                    return false;
+                }
+
+                _modManager.Collections.SetForcedCollection( collection );
+                Dalamud.Chat.Print( $"Set {collection.Name} as forced collection." );
+                SettingsInterface.ResetForcedCollection();
+                return true;
+            default:
+                Dalamud.Chat.Print(
+                    "Second command argument is not default or forced, the correct command format is: /penumbra collection {default|forced} <collectionName>" );
+                return false;
+        }
+    }
+
     private void OnCommand( string command, string rawArgs )
     {
         const string modsEnabled  = "Your mods have now been enabled.";
         const string modsDisabled = "Your mods have now been disabled.";
 
-        var args = rawArgs.Split( new[] { ' ' }, 2 );
+        var args = rawArgs.Split( new[] { ' ' }, 3 );
         if( args.Length > 0 && args[ 0 ].Length > 0 )
         {
             switch( args[ 0 ] )
@@ -205,7 +255,7 @@ public class Penumbra : IDalamudPlugin
                 {
                     Service< ModManager >.Get().DiscoverMods();
                     Dalamud.Chat.Print(
-                        $"Reloaded Penumbra mods. You have {Service< ModManager >.Get()?.Mods.Count} mods."
+                        $"Reloaded Penumbra mods. You have {_modManager.Mods.Count} mods."
                     );
                     break;
                 }
@@ -247,6 +297,20 @@ public class Penumbra : IDalamudPlugin
                     Dalamud.Chat.Print( Config.IsEnabled
                         ? modsEnabled
                         : modsDisabled );
+                    break;
+                }
+                case "collection":
+                {
+                    if( args.Length == 3 )
+                    {
+                        SetCollection( args[ 1 ], args[ 2 ] );
+                    }
+                    else
+                    {
+                        Dalamud.Chat.Print( "Missing arguments, the correct command format is:"
+                          + " /penumbra collection {default|forced} <collectionName>" );
+                    }
+
                     break;
                 }
             }

@@ -54,10 +54,10 @@ public partial class SettingsInterface
         private void UpdateIndex()
             => _currentCollectionIndex = GetIndex( _manager.Collections.CurrentCollection ) - 1;
 
-        private void UpdateForcedIndex()
+        public void UpdateForcedIndex()
             => _currentForcedIndex = GetIndex( _manager.Collections.ForcedCollection );
 
-        private void UpdateDefaultIndex()
+        public void UpdateDefaultIndex()
             => _currentDefaultIndex = GetIndex( _manager.Collections.DefaultCollection );
 
         private void UpdateCharacterIndices()
