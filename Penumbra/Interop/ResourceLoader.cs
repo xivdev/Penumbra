@@ -129,7 +129,7 @@ public class ResourceLoader : IDisposable
     private IntPtr CheckFileStateDetour( IntPtr ptr, ulong crc64 )
     {
         var modManager = Service< ModManager >.Get();
-        return modManager.CheckCrc64( crc64 ) ? CustomFileFlag : CheckFileStateHook!.Original( ptr, crc64 );
+        return true || modManager.CheckCrc64( crc64 ) ? CustomFileFlag : CheckFileStateHook!.Original( ptr, crc64 );
     }
 
     private byte LoadTexFileExternDetour( IntPtr resourceHandle, int unk1, IntPtr unk2, bool unk3, IntPtr ptr )
@@ -282,8 +282,8 @@ public class ResourceLoader : IDisposable
         Marshal.Copy( utfPath, 0, new IntPtr( fd + 0x21 ), utfPath.Length );
 
         pFileDesc->FileDescriptor = fd;
-
-        return ReadFile( pFileHandler, pFileDesc, priority, isSync );
+        var ret = ReadFile( pFileHandler, pFileDesc, priority, isSync );
+        return ret;
     }
 
     public void Enable()
@@ -311,7 +311,7 @@ public class ResourceLoader : IDisposable
         LoadTexFileExternHook.Enable();
         LoadMdlFileExternHook.Enable();
 
-        IsEnabled    = true;
+        IsEnabled = true;
     }
 
     public void Disable()
@@ -327,7 +327,7 @@ public class ResourceLoader : IDisposable
         CheckFileStateHook?.Disable();
         LoadTexFileExternHook?.Disable();
         LoadMdlFileExternHook?.Disable();
-        IsEnabled    = false;
+        IsEnabled = false;
     }
 
     public void Dispose()

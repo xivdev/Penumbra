@@ -29,6 +29,7 @@ public class Penumbra : IDalamudPlugin
     public static IPlayerWatcher PlayerWatcher { get; private set; } = null!;
 
     public ResourceLoader ResourceLoader { get; }
+    public PathResolver PathResolver { get; }
     public SettingsInterface SettingsInterface { get; }
     public MusicManager MusicManager { get; }
     public ObjectReloader ObjectReloader { get; }
@@ -53,6 +54,7 @@ public class Penumbra : IDalamudPlugin
         }
 
         var gameUtils = Service< ResidentResources >.Set();
+        PathResolver  = new PathResolver();
         PlayerWatcher = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
         Service< MetaDefaults >.Set();
         _modManager = Service< ModManager >.Set();
@@ -190,6 +192,7 @@ public class Penumbra : IDalamudPlugin
 
         Dalamud.Commands.RemoveHandler( CommandName );
 
+        PathResolver.Dispose();
         ResourceLoader.Dispose();
 
         ShutdownWebServer();
