@@ -576,7 +576,7 @@ namespace Penumbra.UI
                 }
 
                 ImGui.TableSetColumnIndex( 9 );
-                if( ImGui.Selectable( $"{list[ manipIdx ].Value}##{manipIdx}" ) )
+                if( ImGui.Selectable( $"{list[ manipIdx ].Value:X}##{manipIdx}" ) )
                 {
                     ImGui.OpenPopup( $"##MetaPopup{manipIdx}" );
                 }

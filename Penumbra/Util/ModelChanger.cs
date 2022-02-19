@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -37,11 +38,11 @@ public static class ModelChanger
     }
 
     public static bool ValidStrings( string from, string to )
-        => from.Length                          != 0
-         && to.Length                           != 0
-         && from.Length                         < 16
-         && to.Length                           < 16
-         && from                                != to
+        => from.Length                         != 0
+         && to.Length                          != 0
+         && from.Length                        < 16
+         && to.Length                          < 16
+         && from                               != to
          && Encoding.UTF8.GetByteCount( from ) == from.Length
          && Encoding.UTF8.GetByteCount( to )   == to.Length;
 
@@ -75,6 +76,17 @@ public static class ModelChanger
         return replacements;
     }
 
+    private static void ReplaceStringSize( byte[] main, int sizeDiff )
+    {
+        var stackSize           = BitConverter.ToUInt32( main, 4 );
+        var runtimeBegin        = stackSize    + 0x44;
+        var stringsLengthOffset = runtimeBegin + 4;
+        var stringsLength       = BitConverter.ToUInt32( main, ( int )stringsLengthOffset );
+        var newLength           = stringsLength + sizeDiff;
+        Debug.Assert( newLength > 0 );
+        BitConverter.TryWriteBytes( main.AsSpan( ( int )stringsLengthOffset ), ( uint )newLength );
+    }
+
     private static int ReplaceSubSequences( ref byte[] main, byte[] subLhs, byte[] subRhs )
     {
         if( subLhs.Length == subRhs.Length )
@@ -88,7 +100,8 @@ public static class ModelChanger
             replacements.Add( i );
         }
 
-        var ret = new byte[main.Length + ( subRhs.Length - subLhs.Length ) * replacements.Count];
+        var sizeDiff = ( subRhs.Length - subLhs.Length ) * replacements.Count;
+        var ret      = new byte[main.Length + sizeDiff];
 
         var last        = 0;
         var totalLength = 0;
@@ -103,7 +116,7 @@ public static class ModelChanger
         }
 
         main.AsSpan( last ).CopyTo( ret.AsSpan( totalLength ) );
-
+        ReplaceStringSize( ret, sizeDiff );
         main = ret;
         return replacements.Count;
     }
