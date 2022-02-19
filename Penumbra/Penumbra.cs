@@ -245,7 +245,7 @@ public class Penumbra : IDalamudPlugin
         const string modsEnabled  = "Your mods have now been enabled.";
         const string modsDisabled = "Your mods have now been disabled.";
 
-        var args = rawArgs.Split( new[] { ' ' }, 3 );
+        var args = rawArgs.Split( new[] { ' ' }, 2 );
         if( args.Length > 0 && args[ 0 ].Length > 0 )
         {
             switch( args[ 0 ] )
@@ -300,9 +300,13 @@ public class Penumbra : IDalamudPlugin
                 }
                 case "collection":
                 {
-                    if( args.Length == 3 )
+                    if( args.Length == 2 )
                     {
-                        SetCollection( args[ 1 ], args[ 2 ] );
+                        args = args[ 1 ].Split( new[] { ' ' }, 2 );
+                        if( args.Length == 2 )
+                        {
+                            SetCollection( args[ 0 ], args[ 1 ] );
+                        }
                     }
                     else
                     {
