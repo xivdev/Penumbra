@@ -76,15 +76,21 @@ public static class ModelChanger
         return replacements;
     }
 
-    private static void ReplaceStringSize( byte[] main, int sizeDiff )
+    private static void ReplaceOffsetsAndSizes( byte[] main, int sizeDiff )
     {
         var stackSize           = BitConverter.ToUInt32( main, 4 );
         var runtimeBegin        = stackSize    + 0x44;
         var stringsLengthOffset = runtimeBegin + 4;
         var stringsLength       = BitConverter.ToUInt32( main, ( int )stringsLengthOffset );
-        var newLength           = stringsLength + sizeDiff;
-        Debug.Assert( newLength > 0 );
-        BitConverter.TryWriteBytes( main.AsSpan( ( int )stringsLengthOffset ), ( uint )newLength );
+
+        BitConverter.TryWriteBytes( main.AsSpan( 8 ), ( uint )( BitConverter.ToUInt32( main, 8 )       + sizeDiff ) ); // RuntimeSize
+        BitConverter.TryWriteBytes( main.AsSpan( 16 ), ( uint )( BitConverter.ToUInt32( main, 16 )     + sizeDiff ) ); // VertexOffset 1 
+        BitConverter.TryWriteBytes( main.AsSpan( 20 ), ( uint )( BitConverter.ToUInt32( main, 20 )     + sizeDiff ) ); // VertexOffset 2
+        BitConverter.TryWriteBytes( main.AsSpan( 24 ), ( uint )( BitConverter.ToUInt32( main, 24 )     + sizeDiff ) ); // VertexOffset 3
+        BitConverter.TryWriteBytes( main.AsSpan( 28 ), ( uint )( BitConverter.ToUInt32( main, 28 )     + sizeDiff ) ); // IndexOffset 1
+        BitConverter.TryWriteBytes( main.AsSpan( 32 ), ( uint )( BitConverter.ToUInt32( main, 32 )     + sizeDiff ) ); // IndexOffset 2
+        BitConverter.TryWriteBytes( main.AsSpan( 36 ), ( uint )( BitConverter.ToUInt32( main, 36 )     + sizeDiff ) ); // IndexOffset 3
+        BitConverter.TryWriteBytes( main.AsSpan( ( int )stringsLengthOffset ), ( uint )( stringsLength + sizeDiff ) ); 
     }
 
     private static int ReplaceSubSequences( ref byte[] main, byte[] subLhs, byte[] subRhs )
@@ -116,7 +122,7 @@ public static class ModelChanger
         }
 
         main.AsSpan( last ).CopyTo( ret.AsSpan( totalLength ) );
-        ReplaceStringSize( ret, sizeDiff );
+        ReplaceOffsetsAndSizes( ret, sizeDiff );
         main = ret;
         return replacements.Count;
     }
