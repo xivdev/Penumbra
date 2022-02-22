@@ -292,6 +292,31 @@ public partial class SettingsInterface
                     ImGui.CloseCurrentPopup();
                 }
             }
+            else if( !string.Equals( _newName, Mod!.Data.BasePath.Name, StringComparison.InvariantCulture ) )
+            {
+                var           dir       = Mod!.Data.BasePath;
+                DirectoryInfo newDir    = new(Path.Combine( dir.Parent!.FullName, _newName ));
+                var           sourceUri = new Uri( dir.FullName );
+                var           targetUri = new Uri( newDir.FullName );
+                if( sourceUri.Equals( targetUri ) )
+                {
+                    var tmpFolder = new DirectoryInfo(TempFile.TempFileName( dir.Parent! ).FullName);
+                    if( _modManager.RenameModFolder( Mod.Data, tmpFolder ) )
+                    {
+                        if( !_modManager.RenameModFolder( Mod.Data, newDir ) )
+                        {
+                            PluginLog.Error("Could not recapitalize folder after renaming, reverting rename."  );
+                            _modManager.RenameModFolder( Mod.Data, dir );
+                        }
+                        _selector.ReloadCurrentMod();
+                    }
+                    ImGui.CloseCurrentPopup();
+                }
+                else
+                {
+                    ImGui.OpenPopup( LabelOverWriteDir );
+                }
+            }
         }
 
         private static bool MergeFolderInto( DirectoryInfo source, DirectoryInfo target )
