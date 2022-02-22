@@ -24,7 +24,7 @@ namespace Penumbra.Interop
             PluginLog.Debug( "Found MusicInitCall location at 0x{Location:X16}. Framework offset for MusicManager is 0x{Offset:X8}",
                 musicInitCallLocation.ToInt64(), musicManagerOffset );
             _musicManager = *( IntPtr* )( framework + musicManagerOffset );
-            PluginLog.Debug( "MusicManager found at 0x{Location:X16}", _musicManager );
+            PluginLog.Debug( "MusicManager found at 0x{Location:X16}", _musicManager.ToInt64() );
         }
 
         public bool StreamingEnabled
