@@ -148,15 +148,19 @@ namespace Penumbra.Mods
 
         internal class ModFolderComparer : IComparer< ModFolder >
         {
+            public StringComparison CompareType = StringComparison.InvariantCultureIgnoreCase;
+
             // Compare only the direct folder names since this is only used inside an enumeration of subfolders of one folder.
             public int Compare( ModFolder? x, ModFolder? y )
                 => ReferenceEquals( x, y )
                     ? 0
-                    : string.Compare( x?.Name ?? string.Empty, y?.Name ?? string.Empty, StringComparison.InvariantCultureIgnoreCase );
+                    : string.Compare( x?.Name ?? string.Empty, y?.Name ?? string.Empty, CompareType );
         }
 
         internal class ModDataComparer : IComparer< ModData >
         {
+            public StringComparison CompareType = StringComparison.InvariantCultureIgnoreCase;
+
             // Compare only the direct SortOrderNames since this is only used inside an enumeration of direct mod children of one folder.
             // Since mod SortOrderNames do not have to be unique inside a folder, also compare their BasePaths (and thus their identity) if necessary.
             public int Compare( ModData? x, ModData? y )
@@ -166,7 +170,7 @@ namespace Penumbra.Mods
                     return 0;
                 }
 
-                var cmp = string.Compare( x?.SortOrder.SortOrderName, y?.SortOrder.SortOrderName, StringComparison.InvariantCultureIgnoreCase );
+                var cmp = string.Compare( x?.SortOrder.SortOrderName, y?.SortOrder.SortOrderName, CompareType );
                 if( cmp != 0 )
                 {
                     return cmp;
@@ -176,8 +180,8 @@ namespace Penumbra.Mods
             }
         }
 
-        private static readonly ModFolderComparer FolderComparer = new();
-        private static readonly ModDataComparer   ModComparer    = new();
+        internal static readonly ModFolderComparer FolderComparer = new();
+        internal static readonly ModDataComparer   ModComparer    = new();
 
         // Get an enumerator for actually sorted objects instead of folder-first objects.
         private IEnumerable< object > GetSortedEnumerator()

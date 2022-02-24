@@ -300,16 +300,18 @@ public partial class SettingsInterface
                 var           targetUri = new Uri( newDir.FullName );
                 if( sourceUri.Equals( targetUri ) )
                 {
-                    var tmpFolder = new DirectoryInfo(TempFile.TempFileName( dir.Parent! ).FullName);
+                    var tmpFolder = new DirectoryInfo( TempFile.TempFileName( dir.Parent! ).FullName );
                     if( _modManager.RenameModFolder( Mod.Data, tmpFolder ) )
                     {
                         if( !_modManager.RenameModFolder( Mod.Data, newDir ) )
                         {
-                            PluginLog.Error("Could not recapitalize folder after renaming, reverting rename."  );
+                            PluginLog.Error( "Could not recapitalize folder after renaming, reverting rename." );
                             _modManager.RenameModFolder( Mod.Data, dir );
                         }
+
                         _selector.ReloadCurrentMod();
                     }
+
                     ImGui.CloseCurrentPopup();
                 }
                 else
