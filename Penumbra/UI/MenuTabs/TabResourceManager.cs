@@ -58,8 +58,21 @@ public partial class SettingsInterface
                 ImGui.SetClipboardText( address );
             }
 
+            ref var name = ref node->KeyValuePair.Item2.Value->FileName;
             ImGui.TableNextColumn();
-            ImGui.Text( node->KeyValuePair.Item2.Value->FileName.ToString() );
+            if( name.Capacity > 15 )
+            {
+                ImGuiNative.igTextUnformatted( name.BufferPtr, name.BufferPtr + name.Length );
+            }
+            else
+            {
+                fixed( byte* ptr = name.Buffer )
+                {
+                    ImGuiNative.igTextUnformatted( ptr, ptr + name.Length );
+                }
+            }
+
+            //ImGui.Text( node->KeyValuePair.Item2.Value->FileName.ToString() );
             ImGui.TableNextColumn();
             ImGui.Text( node->KeyValuePair.Item2.Value->RefCount.ToString() );
             node = node->Next();

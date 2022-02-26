@@ -5,6 +5,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Hooking;
 using Dalamud.Logging;
+using ImGuiNET;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
 using Penumbra.Structs;
@@ -223,8 +224,10 @@ public class ResourceLoader : IDisposable
         }
 
         file = Marshal.PtrToStringAnsi( new IntPtr( pPath ) )!;
-        var gameFsPath      = GamePath.GenerateUncheckedLower( file );
-        var replacementPath = modManager.ResolveSwappedOrReplacementPath( gameFsPath );
+        var gameFsPath = GamePath.GenerateUncheckedLower( file );
+        var replacementPath = PathResolver.Dict.TryGetValue( file, out var collection )
+            ? collection.ResolveSwappedOrReplacementPath( gameFsPath )
+            : modManager.ResolveSwappedOrReplacementPath( gameFsPath );
         if( LogAllFiles && ( LogFileFilter == null || LogFileFilter.IsMatch( file ) ) )
         {
             PluginLog.Information( "[GetResourceHandler] {0}", file );
@@ -236,6 +239,8 @@ public class ResourceLoader : IDisposable
             return CallOriginalHandler( isSync, pFileManager, pCategoryId, pResourceType, pResourceHash, pPath, pUnknown, isUnknown );
         }
 
+        if (collection != null)
+            PathResolver.Dict[ replacementPath ] = collection;
         var path = Encoding.ASCII.GetBytes( replacementPath );
 
         var bPath = stackalloc byte[path.Length + 1];
@@ -261,15 +266,42 @@ public class ResourceLoader : IDisposable
         }
 
         var gameFsPath = Marshal.PtrToStringAnsi( new IntPtr( pFileDesc->ResourceHandle->FileName() ) );
-
-        var isRooted = Path.IsPathRooted( gameFsPath );
-
-        if( gameFsPath == null || gameFsPath.Length >= 260 || !isRooted )
+        if( gameFsPath is not { Length: < 260 } )
         {
             return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
         }
 
-        PluginLog.Debug( "loading modded file: {GameFsPath}", gameFsPath );
+
+        //var collection = gameFsPath.StartsWith( '|' );
+        //if( collection )
+        //{
+        //    var end = gameFsPath.IndexOf( '|', 1 );
+        //    if( end < 0 )
+        //    {
+        //        PluginLog.Error( $"Unterminated Collection Name {gameFsPath}" );
+        //        return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
+        //    }
+        //
+        //    var name = gameFsPath[ 1..end ];
+        //    gameFsPath = gameFsPath[ ( end + 1 ).. ];
+        //    PluginLog.Debug( "Loading file for {Name}: {GameFsPath}", name, gameFsPath );
+        //
+        //    if( !Path.IsPathRooted( gameFsPath ) )
+        //    {
+        //        var encoding = Encoding.UTF8.GetBytes( gameFsPath );
+        //        Marshal.Copy( encoding, 0, new IntPtr( pFileDesc->ResourceHandle->FileName() ), encoding.Length );
+        //        pFileDesc->ResourceHandle->FileName()[ encoding.Length ] =  0;
+        //        pFileDesc->ResourceHandle->FileNameLength                -= name.Length + 2;
+        //        return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
+        //    }
+        //}
+        //else
+        if( !Path.IsPathRooted( gameFsPath ) )
+        {
+            return ReadSqpackHook?.Original( pFileHandler, pFileDesc, priority, isSync ) ?? 0;
+        }
+
+        PluginLog.Debug( "Loading modded file: {GameFsPath}", gameFsPath );
 
         pFileDesc->FileMode = FileMode.LoadUnpackedResource;
 
@@ -282,8 +314,7 @@ public class ResourceLoader : IDisposable
         Marshal.Copy( utfPath, 0, new IntPtr( fd + 0x21 ), utfPath.Length );
 
         pFileDesc->FileDescriptor = fd;
-        var ret = ReadFile( pFileHandler, pFileDesc, priority, isSync );
-        return ret;
+        return ReadFile( pFileHandler, pFileDesc, priority, isSync );
     }
 
     public void Enable()
