@@ -1,13 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Types;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using FFXIVClientStructs.FFXIV.Client.System.String;
 using ImGuiNET;
 using Penumbra.Api;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
@@ -16,6 +20,8 @@ using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
+using ResourceHandle = Penumbra.Interop.Structs.ResourceHandle;
+using Utf8String = Penumbra.GameData.ByteString.Utf8String;
 
 namespace Penumbra.UI;
 
@@ -143,7 +149,7 @@ public partial class SettingsInterface
 
         using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
-        var manager = Service< ModManager >.Get();
+        var manager = Penumbra.ModManager;
         PrintValue( "Active Collection", manager.Collections.ActiveCollection.Name );
         PrintValue( "    has Cache", ( manager.Collections.ActiveCollection.Cache != null ).ToString() );
         PrintValue( "Current Collection", manager.Collections.CurrentCollection.Name );
@@ -164,7 +170,7 @@ public partial class SettingsInterface
         PrintValue( "Mod Manager Temp Path Exists",
             manager.TempPath != null ? Directory.Exists( manager.TempPath.FullName ).ToString() : false.ToString() );
         PrintValue( "Mod Manager Temp Path IsWritable", manager.TempWritable.ToString() );
-        PrintValue( "Resource Loader Enabled", _penumbra.ResourceLoader.IsEnabled.ToString() );
+        //PrintValue( "Resource Loader Enabled", _penumbra.ResourceLoader.IsEnabled.ToString() );
     }
 
     private void DrawDebugTabRedraw()
@@ -281,7 +287,7 @@ public partial class SettingsInterface
 
         using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
-        foreach( var collection in Service< ModManager >.Get().Collections.Collections.Values.Where( c => c.Cache != null ) )
+        foreach( var collection in Penumbra.ModManager.Collections.Collections.Values.Where( c => c.Cache != null ) )
         {
             var manip = collection.Cache!.MetaManipulations;
             var files = ( Dictionary< GamePath, MetaManager.FileInformation >? )manip.GetType()
@@ -363,8 +369,7 @@ public partial class SettingsInterface
             return;
         }
 
-        var manager = Service< ModManager >.Get();
-        var cache   = manager.Collections.CurrentCollection.Cache;
+        var cache   = Penumbra.ModManager.Collections.CurrentCollection.Cache;
         if( cache == null || !ImGui.BeginTable( "##MissingFilesDebugList", 1, ImGuiTableFlags.RowBg, -Vector2.UnitX ) )
         {
             return;
@@ -385,6 +390,86 @@ public partial class SettingsInterface
         }
     }
 
+    private unsafe void DrawDebugTabReplacedResources()
+    {
+        if( !ImGui.CollapsingHeader( "Replaced Resources##Debug" ) )
+        {
+            return;
+        }
+
+        _penumbra.ResourceLoader.UpdateDebugInfo();
+
+        if( _penumbra.ResourceLoader.DebugList.Count == 0
+        || !ImGui.BeginTable( "##ReplacedResourcesDebugList", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.UnitX ) )
+        {
+            return;
+        }
+
+        using var end = ImGuiRaii.DeferredEnd( ImGui.EndTable );
+
+        foreach( var data in _penumbra.ResourceLoader.DebugList.Values.ToArray() )
+        {
+            var refCountManip = data.ManipulatedResource == null ? 0 : data.ManipulatedResource->RefCount;
+            var refCountOrig  = data.OriginalResource    == null ? 0 : data.OriginalResource->RefCount;
+            ImGui.TableNextColumn();
+            ImGui.Text( data.ManipulatedPath.ToString() );
+            ImGui.TableNextColumn();
+            ImGui.Text( ( ( ulong )data.ManipulatedResource ).ToString( "X" ) );
+            ImGui.TableNextColumn();
+            ImGui.Text( refCountManip.ToString() );
+            ImGui.TableNextColumn();
+            ImGui.Text( data.OriginalPath.ToString() );
+            ImGui.TableNextColumn();
+            ImGui.Text( ( ( ulong )data.OriginalResource ).ToString( "X" ) );
+            ImGui.TableNextColumn();
+            ImGui.Text( refCountOrig.ToString() );
+        }
+    }
+
+    private unsafe void DrawPathResolverDebug()
+    {
+        if( !ImGui.CollapsingHeader( "Path Resolver##Debug" ) )
+        {
+            return;
+        }
+
+        //if( ImGui.TreeNodeEx( "Draw Object to Object" ) )
+        //{
+        //    using var end = ImGuiRaii.DeferredEnd( ImGui.TreePop );
+        //    if( ImGui.BeginTable( "###DrawObjectResolverTable", 4, ImGuiTableFlags.SizingFixedFit ) )
+        //    {
+        //        end.Push( ImGui.EndTable );
+        //        foreach( var (ptr, idx) in _penumbra.PathResolver._drawObjectToObject )
+        //        {
+        //            ImGui.TableNextColumn();
+        //            ImGui.Text( ptr.ToString( "X" ) );
+        //            ImGui.TableNextColumn();
+        //            ImGui.Text( idx.ToString() );
+        //            ImGui.TableNextColumn();
+        //            ImGui.Text( Dalamud.Objects[ idx ]?.Address.ToString() ?? "NULL" );
+        //            ImGui.TableNextColumn();
+        //            ImGui.Text( Dalamud.Objects[ idx ]?.Name.ToString() ?? "NULL" );
+        //        }
+        //    }
+        //}
+        //
+        //if( ImGui.TreeNodeEx( "Path Collections" ) )
+        //{
+        //    using var end = ImGuiRaii.DeferredEnd( ImGui.TreePop );
+        //    if( ImGui.BeginTable( "###PathCollectionResolverTable", 2, ImGuiTableFlags.SizingFixedFit ) )
+        //    {
+        //        end.Push( ImGui.EndTable );
+        //        foreach( var (path, collection) in _penumbra.PathResolver._pathCollections )
+        //        {
+        //            ImGui.TableNextColumn();
+        //            ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
+        //            ImGui.TableNextColumn();
+        //            ImGui.Text( collection.Name );
+        //        }
+        //    }
+        //}
+    }
+
     private void DrawDebugTab()
     {
         if( !ImGui.BeginTabItem( "Debug Tab" ) )
@@ -396,7 +481,15 @@ public partial class SettingsInterface
 
         DrawDebugTabGeneral();
         ImGui.NewLine();
+        DrawDebugTabReplacedResources();
+        ImGui.NewLine();
+        DrawResourceProblems();
+        ImGui.NewLine();
         DrawDebugTabMissingFiles();
+        ImGui.NewLine();
+        DrawPlayerModelInfo();
+        ImGui.NewLine();
+        DrawPathResolverDebug();
         ImGui.NewLine();
         DrawDebugTabRedraw();
         ImGui.NewLine();

@@ -65,9 +65,8 @@ namespace Penumbra.Mod
 
         private static ModData CreateNewMod( DirectoryInfo newDir, string newSortOrder )
         {
-            var manager = Service< ModManager >.Get();
-            manager.AddMod( newDir );
-            var newMod = manager.Mods[ newDir.Name ];
+            Penumbra.ModManager.AddMod( newDir );
+            var newMod = Penumbra.ModManager.Mods[ newDir.Name ];
             newMod.Move( newSortOrder );
             newMod.ComputeChangedItems();
             ModFileSystem.InvokeChange();
@@ -516,11 +515,11 @@ namespace Penumbra.Mod
 
                 if( group.Options.Any() )
                 {
-                    meta.Groups.Add( groupDir.Name, @group );
+                    meta.Groups.Add( groupDir.Name, group );
                 }
             }
 
-            foreach(var collection in Service<ModManager>.Get().Collections.Collections.Values)
+            foreach(var collection in Penumbra.ModManager.Collections.Collections.Values)
                 collection.UpdateSetting(baseDir, meta, true);
             
         }

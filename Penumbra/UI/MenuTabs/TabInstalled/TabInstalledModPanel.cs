@@ -50,7 +50,6 @@ public partial class SettingsInterface
 
         private readonly SettingsInterface _base;
         private readonly Selector          _selector;
-        private readonly ModManager        _modManager;
         private readonly HashSet< string > _newMods;
         public readonly  PluginDetails     Details;
 
@@ -68,7 +67,6 @@ public partial class SettingsInterface
             _newMods        = newMods;
             Details         = new PluginDetails( _base, _selector );
             _currentWebsite = Meta?.Website ?? "";
-            _modManager     = Service< ModManager >.Get();
         }
 
         private Mod.Mod? Mod
@@ -79,11 +77,12 @@ public partial class SettingsInterface
 
         private void DrawName()
         {
-            var name = Meta!.Name;
-            if( ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && _modManager.RenameMod( name, Mod!.Data ) )
+            var name       = Meta!.Name;
+            var modManager = Penumbra.ModManager;
+            if( ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && modManager.RenameMod( name, Mod!.Data ) )
             {
                 _selector.SelectModOnUpdate( Mod.Data.BasePath.Name );
-                if( !_modManager.Config.ModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) )
+                if( !modManager.Config.ModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) )
                 {
                     Mod.Data.Rename( name );
                 }
@@ -286,7 +285,7 @@ public partial class SettingsInterface
                 {
                     ImGui.OpenPopup( LabelOverWriteDir );
                 }
-                else if( _modManager.RenameModFolder( Mod.Data, newDir ) )
+                else if( Penumbra.ModManager.RenameModFolder( Mod.Data, newDir ) )
                 {
                     _selector.ReloadCurrentMod();
                     ImGui.CloseCurrentPopup();
@@ -301,12 +300,12 @@ public partial class SettingsInterface
                 if( sourceUri.Equals( targetUri ) )
                 {
                     var tmpFolder = new DirectoryInfo( TempFile.TempFileName( dir.Parent! ).FullName );
-                    if( _modManager.RenameModFolder( Mod.Data, tmpFolder ) )
+                    if( Penumbra.ModManager.RenameModFolder( Mod.Data, tmpFolder ) )
                     {
-                        if( !_modManager.RenameModFolder( Mod.Data, newDir ) )
+                        if( !Penumbra.ModManager.RenameModFolder( Mod.Data, newDir ) )
                         {
                             PluginLog.Error( "Could not recapitalize folder after renaming, reverting rename." );
-                            _modManager.RenameModFolder( Mod.Data, dir );
+                            Penumbra.ModManager.RenameModFolder( Mod.Data, dir );
                         }
 
                         _selector.ReloadCurrentMod();
@@ -364,17 +363,14 @@ public partial class SettingsInterface
             ImGui.Text(
                 $"The mod directory {newDir} already exists.\nDo you want to merge / overwrite both mods?\nThis may corrupt the resulting mod in irrecoverable ways." );
             var buttonSize = ImGuiHelpers.ScaledVector2( 120, 0 );
-            if( ImGui.Button( "Yes", buttonSize ) )
+            if( ImGui.Button( "Yes", buttonSize ) && MergeFolderInto( dir, newDir ) )
             {
-                if( MergeFolderInto( dir, newDir ) )
-                {
-                    Service< ModManager >.Get()!.RenameModFolder( Mod.Data, newDir, false );
+                Penumbra.ModManager.RenameModFolder( Mod.Data, newDir, false );
 
-                    _selector.SelectModOnUpdate( _newName );
+                _selector.SelectModOnUpdate( _newName );
 
-                    closeParent = true;
-                    ImGui.CloseCurrentPopup();
-                }
+                closeParent = true;
+                ImGui.CloseCurrentPopup();
             }
 
             ImGui.SameLine();
@@ -580,7 +576,7 @@ public partial class SettingsInterface
 
             DrawMaterialChangeRow();
 
-            DrawSortOrder( Mod!.Data, _modManager, _selector );
+            DrawSortOrder( Mod!.Data, Penumbra.ModManager, _selector );
         }
 
         public void Draw()

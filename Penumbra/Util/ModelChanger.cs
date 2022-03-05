@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Dalamud.Logging;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Files;
 using Penumbra.Mod;
 

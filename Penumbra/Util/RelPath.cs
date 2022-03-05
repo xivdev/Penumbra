@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
 
 namespace Penumbra.Util;

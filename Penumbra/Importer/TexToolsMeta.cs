@@ -155,7 +155,7 @@ namespace Penumbra.Importer
         {
             try
             {
-                if( !Service< MetaDefaults >.Get().CheckAgainstDefault( manipulation ) )
+                if( Penumbra.MetaDefaults.CheckAgainstDefault( manipulation ) )
                 {
                     Manipulations.Add( manipulation );
                 }

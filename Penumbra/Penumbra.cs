@@ -18,18 +18,44 @@ using System.Linq;
 
 namespace Penumbra;
 
+public class Penumbra2 // : IDalamudPlugin
+{
+    public string Name
+        => "Penumbra";
+
+    private const string CommandName = "/penumbra";
+
+    public static Configuration Config { get; private set; } = null!;
+    public static ResourceLoader ResourceLoader { get; private set; } = null!;
+
+    public void Dispose()
+    {
+        ResourceLoader.Dispose();
+    }
+}
+
 public class Penumbra : IDalamudPlugin
 {
-    public string Name { get; } = "Penumbra";
-    public string PluginDebugTitleStr { get; } = "Penumbra - Debug Build";
+    public string Name
+        => "Penumbra";
+
+    public string PluginDebugTitleStr
+        => "Penumbra - Debug Build";
 
     private const string CommandName = "/penumbra";
 
     public static Configuration Config { get; private set; } = null!;
     public static IPlayerWatcher PlayerWatcher { get; private set; } = null!;
 
+    public static ResidentResourceManager ResidentResources { get; private set; } = null!;
+    public static CharacterUtility CharacterUtility { get; private set; } = null!;
+    public static MetaDefaults MetaDefaults { get; private set; } = null!;
+    public static ModManager ModManager { get; private set; } = null!;
+
+
     public ResourceLoader ResourceLoader { get; }
-    public PathResolver PathResolver { get; }
+
+    //public PathResolver PathResolver { get; }
     public SettingsInterface SettingsInterface { get; }
     public MusicManager MusicManager { get; }
     public ObjectReloader ObjectReloader { get; }
@@ -38,8 +64,6 @@ public class Penumbra : IDalamudPlugin
     public PenumbraIpc Ipc { get; }
 
     private WebServer? _webServer;
-
-    private readonly ModManager _modManager;
 
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
@@ -53,27 +77,29 @@ public class Penumbra : IDalamudPlugin
             MusicManager.DisableStreaming();
         }
 
-        var gameUtils = Service< ResidentResources >.Set();
-        PathResolver  = new PathResolver();
-        PlayerWatcher = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
-        Service< MetaDefaults >.Set();
-        _modManager = Service< ModManager >.Set();
-
-        _modManager.DiscoverMods();
-
-        ObjectReloader = new ObjectReloader( _modManager, Config.WaitFrames );
-
-        ResourceLoader = new ResourceLoader( this );
+        ResidentResources = new ResidentResourceManager();
+        CharacterUtility  = new CharacterUtility();
+        MetaDefaults      = new MetaDefaults();
+        ResourceLoader    = new ResourceLoader( this );
+        ModManager        = new ModManager();
+        ModManager.DiscoverMods();
+        //PathResolver   = new PathResolver( ResourceLoader, gameUtils );
+        PlayerWatcher  = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
+        ObjectReloader = new ObjectReloader( ModManager, Config.WaitFrames );
 
         Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
         {
             HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
         } );
 
-        ResourceLoader.Init();
-        ResourceLoader.Enable();
+        ResourceLoader.EnableReplacements();
+        ResourceLoader.EnableLogging();
+        if( Config.DebugMode )
+        {
+            ResourceLoader.EnableDebug();
+        }
 
-        gameUtils.ReloadResidentResources();
+        ResidentResources.Reload();
 
         Api = new PenumbraApi( this );
         Ipc = new PenumbraIpc( pluginInterface, Api );
@@ -106,7 +132,7 @@ public class Penumbra : IDalamudPlugin
         }
 
         Config.IsEnabled = true;
-        Service< ResidentResources >.Get().ReloadResidentResources();
+        ResidentResources.Reload();
         if( Config.EnablePlayerWatch )
         {
             PlayerWatcher.SetStatus( true );
@@ -125,7 +151,7 @@ public class Penumbra : IDalamudPlugin
         }
 
         Config.IsEnabled = false;
-        Service< ResidentResources >.Get().ReloadResidentResources();
+        ResidentResources.Reload();
         if( Config.EnablePlayerWatch )
         {
             PlayerWatcher.SetStatus( false );
@@ -192,7 +218,7 @@ public class Penumbra : IDalamudPlugin
 
         Dalamud.Commands.RemoveHandler( CommandName );
 
-        PathResolver.Dispose();
+        //PathResolver.Dispose();
         ResourceLoader.Dispose();
 
         ShutdownWebServer();
@@ -205,7 +231,7 @@ public class Penumbra : IDalamudPlugin
 
         var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
             ? ModCollection.Empty
-            : _modManager.Collections.Collections.Values.FirstOrDefault( c
+            : ModManager.Collections.Collections.Values.FirstOrDefault( c
                 => string.Equals( c.Name, collectionName, StringComparison.InvariantCultureIgnoreCase ) );
         if( collection == null )
         {
@@ -216,24 +242,24 @@ public class Penumbra : IDalamudPlugin
         switch( type )
         {
             case "default":
-                if( collection == _modManager.Collections.DefaultCollection )
+                if( collection == ModManager.Collections.DefaultCollection )
                 {
                     Dalamud.Chat.Print( $"{collection.Name} already is the default collection." );
                     return false;
                 }
 
-                _modManager.Collections.SetDefaultCollection( collection );
+                ModManager.Collections.SetDefaultCollection( collection );
                 Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
                 SettingsInterface.ResetDefaultCollection();
                 return true;
             case "forced":
-                if( collection == _modManager.Collections.ForcedCollection )
+                if( collection == ModManager.Collections.ForcedCollection )
                 {
                     Dalamud.Chat.Print( $"{collection.Name} already is the forced collection." );
                     return false;
                 }
 
-                _modManager.Collections.SetForcedCollection( collection );
+                ModManager.Collections.SetForcedCollection( collection );
                 Dalamud.Chat.Print( $"Set {collection.Name} as forced collection." );
                 SettingsInterface.ResetForcedCollection();
                 return true;
@@ -256,9 +282,9 @@ public class Penumbra : IDalamudPlugin
             {
                 case "reload":
                 {
-                    Service< ModManager >.Get().DiscoverMods();
+                    ModManager.DiscoverMods();
                     Dalamud.Chat.Print(
-                        $"Reloaded Penumbra mods. You have {_modManager.Mods.Count} mods."
+                        $"Reloaded Penumbra mods. You have {ModManager.Mods.Count} mods."
                     );
                     break;
                 }

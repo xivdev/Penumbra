@@ -3,12 +3,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Text.RegularExpressions;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using Dalamud.Logging;
 using ImGuiNET;
+using Penumbra.GameData.ByteString;
 using Penumbra.Interop;
+using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
 
@@ -71,7 +71,8 @@ public partial class SettingsInterface
               + "It should also be placed near the root of a logical drive - the shorter the total path to this folder, the better.\n"
               + "Definitely do not place it in your Dalamud directory or any sub-directory thereof." );
             ImGui.SameLine();
-            DrawOpenDirectoryButton( 0, _base._modManager.BasePath, _base._modManager.Valid );
+            var modManager = Penumbra.ModManager;
+            DrawOpenDirectoryButton( 0, modManager.BasePath, modManager.Valid );
             ImGui.EndGroup();
 
             if( _config.ModDirectory == _newModDirectory || !_newModDirectory.Any() )
@@ -82,7 +83,7 @@ public partial class SettingsInterface
             if( save || DrawPressEnterWarning( _config.ModDirectory ) )
             {
                 _base._menu.InstalledTab.Selector.ClearSelection();
-                _base._modManager.DiscoverMods( _newModDirectory );
+                modManager.DiscoverMods( _newModDirectory );
                 _base._menu.InstalledTab.Selector.Cache.TriggerListReset();
                 _newModDirectory = _config.ModDirectory;
             }
@@ -99,7 +100,8 @@ public partial class SettingsInterface
               + "A directory 'penumbrametatmp' will be created as a sub-directory to the specified directory.\n"
               + "If none is specified (i.e. this is blank) this directory will be created in the root directory instead.\n" );
             ImGui.SameLine();
-            DrawOpenDirectoryButton( 1, _base._modManager.TempPath, _base._modManager.TempWritable );
+            var modManager = Penumbra.ModManager;
+            DrawOpenDirectoryButton( 1, modManager.TempPath, modManager.TempWritable );
             ImGui.EndGroup();
 
             if( _newTempDirectory == _config.TempDirectory )
@@ -109,7 +111,7 @@ public partial class SettingsInterface
 
             if( save || DrawPressEnterWarning( _config.TempDirectory ) )
             {
-                _base._modManager.SetTempDirectory( _newTempDirectory );
+                modManager.SetTempDirectory( _newTempDirectory );
                 _newTempDirectory = _config.TempDirectory;
             }
         }
@@ -119,7 +121,7 @@ public partial class SettingsInterface
             if( ImGui.Button( "Rediscover Mods" ) )
             {
                 _base._menu.InstalledTab.Selector.ClearSelection();
-                _base._modManager.DiscoverMods();
+                Penumbra.ModManager.DiscoverMods();
                 _base._menu.InstalledTab.Selector.Cache.TriggerListReset();
             }
 
@@ -208,26 +210,26 @@ public partial class SettingsInterface
 
         private void DrawLogLoadedFilesBox()
         {
-            ImGui.Checkbox( "Log Loaded Files", ref _base._penumbra.ResourceLoader.LogAllFiles );
-            ImGui.SameLine();
-            var regex = _base._penumbra.ResourceLoader.LogFileFilter?.ToString() ?? string.Empty;
-            var tmp   = regex;
-            ImGui.SetNextItemWidth( SettingsMenu.InputTextWidth );
-            if( ImGui.InputTextWithHint( "##LogFilter", "Matching this Regex...", ref tmp, 64 ) && tmp != regex )
-            {
-                try
-                {
-                    var newRegex = tmp.Length > 0 ? new Regex( tmp, RegexOptions.Compiled ) : null;
-                    _base._penumbra.ResourceLoader.LogFileFilter = newRegex;
-                }
-                catch( Exception e )
-                {
-                    PluginLog.Debug( "Could not create regex:\n{Exception}", e );
-                }
-            }
-
-            ImGui.SameLine();
-            ImGuiComponents.HelpMarker( "Log all loaded files that match the given Regex to the PluginLog." );
+            //ImGui.Checkbox( "Log Loaded Files", ref _base._penumbra.ResourceLoader.LogAllFiles );
+            //ImGui.SameLine();
+            //var regex = _base._penumbra.ResourceLoader.LogFileFilter?.ToString() ?? string.Empty;
+            //var tmp   = regex;
+            //ImGui.SetNextItemWidth( SettingsMenu.InputTextWidth );
+            //if( ImGui.InputTextWithHint( "##LogFilter", "Matching this Regex...", ref tmp, 64 ) && tmp != regex )
+            //{
+            //    try
+            //    {
+            //        var newRegex = tmp.Length > 0 ? new Regex( tmp, RegexOptions.Compiled ) : null;
+            //        _base._penumbra.ResourceLoader.LogFileFilter = newRegex;
+            //    }
+            //    catch( Exception e )
+            //    {
+            //        PluginLog.Debug( "Could not create regex:\n{Exception}", e );
+            //    }
+            //}
+            //
+            //ImGui.SameLine();
+            //ImGuiComponents.HelpMarker( "Log all loaded files that match the given Regex to the PluginLog." );
         }
 
         private void DrawDisableNotificationsBox()
@@ -307,7 +309,7 @@ public partial class SettingsInterface
         {
             if( ImGui.Button( "Reload Resident Resources" ) )
             {
-                Service< ResidentResources >.Get().ReloadResidentResources();
+                Penumbra.ResidentResources.Reload();
             }
 
             ImGui.SameLine();
@@ -323,6 +325,11 @@ public partial class SettingsInterface
             DrawDisableNotificationsBox();
             DrawEnableHttpApiBox();
             DrawReloadResourceButton();
+        }
+
+        public static unsafe void Text( Utf8String s )
+        {
+            ImGuiNative.igTextUnformatted( ( byte* )s.Path, ( byte* )s.Path + s.Length );
         }
 
         public void Draw()

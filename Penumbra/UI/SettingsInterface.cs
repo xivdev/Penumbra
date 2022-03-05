@@ -1,7 +1,5 @@
 using System;
 using System.Numerics;
-using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -15,17 +13,13 @@ public partial class SettingsInterface : IDisposable
     private readonly Penumbra _penumbra;
 
     private readonly ManageModsButton _manageModsButton;
-    private readonly MenuBar          _menuBar;
     private readonly SettingsMenu     _menu;
-    private readonly ModManager       _modManager;
 
     public SettingsInterface( Penumbra penumbra )
     {
         _penumbra         = penumbra;
         _manageModsButton = new ManageModsButton( this );
-        _menuBar          = new MenuBar( this );
         _menu             = new SettingsMenu( this );
-        _modManager       = Service< ModManager >.Get();
 
         Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide =  true;
         Dalamud.PluginInterface.UiBuilder.Draw               += Draw;
@@ -51,31 +45,31 @@ public partial class SettingsInterface : IDisposable
 
     public void Draw()
     {
-        _menuBar.Draw();
         _menu.Draw();
     }
 
     private void ReloadMods()
     {
         _menu.InstalledTab.Selector.ClearSelection();
-        _modManager.DiscoverMods( Penumbra.Config.ModDirectory );
+        Penumbra.ModManager.DiscoverMods( Penumbra.Config.ModDirectory );
         _menu.InstalledTab.Selector.Cache.TriggerListReset();
     }
 
     private void SaveCurrentCollection( bool recalculateMeta )
     {
-        var current = _modManager.Collections.CurrentCollection;
+        var current = Penumbra.ModManager.Collections.CurrentCollection;
         current.Save();
         RecalculateCurrent( recalculateMeta );
     }
 
     private void RecalculateCurrent( bool recalculateMeta )
     {
-        var current = _modManager.Collections.CurrentCollection;
+        var modManager = Penumbra.ModManager;
+        var current    = modManager.Collections.CurrentCollection;
         if( current.Cache != null )
         {
-            current.CalculateEffectiveFileList( _modManager.TempPath, recalculateMeta,
-                current == _modManager.Collections.ActiveCollection );
+            current.CalculateEffectiveFileList( modManager.TempPath, recalculateMeta,
+                current == modManager.Collections.ActiveCollection );
             _menu.InstalledTab.Selector.Cache.TriggerFilterReset();
         }
     }

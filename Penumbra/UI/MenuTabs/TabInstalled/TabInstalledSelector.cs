@@ -101,7 +101,7 @@ public partial class SettingsInterface
                 ImGui.CloseCurrentPopup();
                 var mod = Mod;
                 Cache.RemoveMod( mod );
-                _modManager.DeleteMod( mod.Data.BasePath );
+                Penumbra.ModManager.DeleteMod( mod.Data.BasePath );
                 ModFileSystem.InvokeChange();
                 ClearSelection();
             }
@@ -166,7 +166,7 @@ public partial class SettingsInterface
 
                     var metaFile = new FileInfo( Path.Combine( newDir.FullName, "meta.json" ) );
                     modMeta.SaveToFile( metaFile );
-                    _modManager.AddMod( newDir );
+                    Penumbra.ModManager.AddMod( newDir );
                     ModFileSystem.InvokeChange();
                     SelectModOnUpdate( newDir.Name );
                 }
@@ -464,7 +464,7 @@ public partial class SettingsInterface
                 return;
             }
 
-            if( _index >= 0 && _modManager.UpdateMod( Mod.Data, reloadMeta, recomputeMeta, force ) )
+            if( _index >= 0 && Penumbra.ModManager.UpdateMod( Mod.Data, reloadMeta, recomputeMeta, force ) )
             {
                 SelectModOnUpdate( Mod.Data.BasePath.Name );
                 _base._menu.InstalledTab.ModPanel.Details.ResetState();
@@ -526,11 +526,11 @@ public partial class SettingsInterface
             }
 
             Cache.TriggerFilterReset();
-            var collection = _modManager.Collections.CurrentCollection;
+            var collection = Penumbra.ModManager.Collections.CurrentCollection;
             if( collection.Cache != null )
             {
-                collection.CalculateEffectiveFileList( _modManager.TempPath, metaManips,
-                    collection == _modManager.Collections.ActiveCollection );
+                collection.CalculateEffectiveFileList( Penumbra.ModManager.TempPath, metaManips,
+                    collection == Penumbra.ModManager.Collections.ActiveCollection );
             }
 
             collection.Save();
@@ -597,7 +597,6 @@ public partial class SettingsInterface
     private partial class Selector
     {
         private readonly SettingsInterface _base;
-        private readonly ModManager        _modManager;
         public readonly  ModListCache      Cache;
 
         private float _selectorScalingFactor = 1;
@@ -605,14 +604,13 @@ public partial class SettingsInterface
         public Selector( SettingsInterface ui, IReadOnlySet< string > newMods )
         {
             _base       = ui;
-            _modManager = Service< ModManager >.Get();
-            Cache       = new ModListCache( _modManager, newMods );
+            Cache       = new ModListCache( Penumbra.ModManager, newMods );
         }
 
         private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection collection )
         {
             if( collection == ModCollection.Empty
-            || collection  == _modManager.Collections.CurrentCollection )
+            || collection  == Penumbra.ModManager.Collections.CurrentCollection )
             {
                 using var _ = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f );
                 ImGui.Button( label, Vector2.UnitX * size );
@@ -641,10 +639,10 @@ public partial class SettingsInterface
                   - 4                  * ImGui.GetStyle().ItemSpacing.X )
               / 2, 5f );
             ImGui.SameLine();
-            DrawCollectionButton( "Default", "default", buttonSize, _modManager.Collections.DefaultCollection );
+            DrawCollectionButton( "Default", "default", buttonSize, Penumbra.ModManager.Collections.DefaultCollection );
 
             ImGui.SameLine();
-            DrawCollectionButton( "Forced", "forced", buttonSize, _modManager.Collections.ForcedCollection );
+            DrawCollectionButton( "Forced", "forced", buttonSize, Penumbra.ModManager.Collections.ForcedCollection );
 
             ImGui.SameLine();
             ImGui.SetNextItemWidth( comboSize );
@@ -655,7 +653,7 @@ public partial class SettingsInterface
         private void DrawFolderContent( ModFolder folder, ref int idx )
         {
             // Collection may be manipulated.
-            foreach( var item in folder.GetItems( _modManager.Config.SortFoldersFirst ).ToArray() )
+            foreach( var item in folder.GetItems( Penumbra.ModManager.Config.SortFoldersFirst ).ToArray() )
             {
                 if( item is ModFolder sub )
                 {
@@ -785,7 +783,7 @@ public partial class SettingsInterface
                 style.Push( ImGuiStyleVar.IndentSpacing, 12.5f );
 
                 var modIndex = 0;
-                DrawFolderContent( _modManager.StructuredMods, ref modIndex );
+                DrawFolderContent( Penumbra.ModManager.StructuredMods, ref modIndex );
                 style.Pop();
             }
 

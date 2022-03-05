@@ -354,7 +354,7 @@ namespace Penumbra.Interop
         {
             if( actor != null )
             {
-                RedrawObjectIntern( actor.ObjectId, actor.Name.ToString(), settings );
+                RedrawObjectIntern( actor.ObjectId, actor.Name.ToString(), RedrawType.WithoutSettings ); // TODO settings );
             }
         }
 

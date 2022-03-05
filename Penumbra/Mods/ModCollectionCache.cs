@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -186,8 +187,9 @@ public class ModCollectionCache
     {
         foreach( var (file, paths) in option.OptionFiles )
         {
-            var fullPath = new FullPath( mod.Data.BasePath, file );
-            var idx      = mod.Data.Resources.ModFiles.IndexOf( f => f.Equals( fullPath ) );
+            var fullPath = new FullPath( mod.Data.BasePath,
+                NewRelPath.FromString( file.ToString(), out var p ) ? p : NewRelPath.Empty ); // TODO
+            var idx = mod.Data.Resources.ModFiles.IndexOf( f => f.Equals( fullPath ) );
             if( idx < 0 )
             {
                 AddMissingFile( fullPath );
@@ -255,7 +257,14 @@ public class ModCollectionCache
             var file = mod.Data.Resources.ModFiles[ i ];
             if( file.Exists )
             {
-                AddFile( mod, file.ToGamePath( mod.Data.BasePath ), file );
+                if( file.ToGamePath( mod.Data.BasePath, out var gamePath ) )
+                {
+                    AddFile( mod, new GamePath( gamePath.ToString() ), file ); // TODO
+                }
+                else
+                {
+                    PluginLog.Warning( $"Could not convert {file} in {mod.Data.BasePath.FullName} to GamePath." );
+                }
             }
             else
             {

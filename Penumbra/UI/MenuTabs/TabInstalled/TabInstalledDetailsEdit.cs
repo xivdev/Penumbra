@@ -112,7 +112,7 @@ namespace Penumbra.UI
                 var groupName = group.GroupName;
                 if( ImGuiCustom.BeginFramedGroupEdit( ref groupName ) )
                 {
-                    if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
+                    if( Penumbra.ModManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
                     {
                         _selector.Cache.TriggerFilterReset();
                     }
@@ -165,7 +165,7 @@ namespace Penumbra.UI
                     {
                         if( newName.Length == 0 )
                         {
-                            _modManager.RemoveModOption( i, group, Mod.Data );
+                            Penumbra.ModManager.RemoveModOption( i, group, Mod.Data );
                         }
                         else if( newName != opt.OptionName )
                         {
@@ -189,7 +189,7 @@ namespace Penumbra.UI
                 var groupName = group.GroupName;
                 if( ImGui.InputText( $"##{groupName}_add", ref groupName, 64, ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
-                    if( _modManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
+                    if( Penumbra.ModManager.ChangeModGroup( group.GroupName, groupName, Mod.Data ) && Mod.Data.Meta.RefreshHasGroupsWithConfig() )
                     {
                         _selector.Cache.TriggerFilterReset();
                     }
@@ -221,7 +221,7 @@ namespace Penumbra.UI
                     {
                         if( newName.Length == 0 )
                         {
-                            _modManager.RemoveModOption( code, group, Mod.Data );
+                            Penumbra.ModManager.RemoveModOption( code, group, Mod.Data );
                         }
                         else
                         {
@@ -267,7 +267,7 @@ namespace Penumbra.UI
                 if( ImGui.InputTextWithHint( LabelNewSingleGroupEdit, "Add new Single Group...", ref newGroup, 64,
                     ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
-                    _modManager.ChangeModGroup( "", newGroup, Mod.Data, SelectType.Single );
+                    Penumbra.ModManager.ChangeModGroup( "", newGroup, Mod.Data, SelectType.Single );
                     // Adds empty group, so can not change filters.
                 }
             }
@@ -280,7 +280,7 @@ namespace Penumbra.UI
                 if( ImGui.InputTextWithHint( LabelNewMultiGroup, "Add new Multi Group...", ref newGroup, 64,
                     ImGuiInputTextFlags.EnterReturnsTrue ) )
                 {
-                    _modManager.ChangeModGroup( "", newGroup, Mod.Data, SelectType.Multi );
+                    Penumbra.ModManager.ChangeModGroup( "", newGroup, Mod.Data, SelectType.Multi );
                     // Adds empty group, so can not change filters.
                 }
             }

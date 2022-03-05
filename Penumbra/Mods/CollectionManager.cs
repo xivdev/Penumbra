@@ -42,9 +42,8 @@ public class CollectionManager
 
         if( ActiveCollection.Cache?.MetaManipulations.Count > 0 || newActive.Cache?.MetaManipulations.Count > 0 )
         {
-            var resourceManager = Service< ResidentResources >.Get();
             ActiveCollection = newActive;
-            resourceManager.ReloadResidentResources();
+            Penumbra.ResidentResources.Reload();
         }
         else
         {
@@ -115,7 +114,7 @@ public class CollectionManager
 
         if( reloadMeta && ActiveCollection.Settings.TryGetValue( mod.BasePath.Name, out var config ) && config.Enabled )
         {
-            Service< ResidentResources >.Get().ReloadResidentResources();
+            Penumbra.ResidentResources.Reload();
         }
     }
 
@@ -223,8 +222,7 @@ public class CollectionManager
             if( !CollectionChangedTo.Any() )
             {
                 ActiveCollection = c;
-                var resourceManager = Service< ResidentResources >.Get();
-                resourceManager.ReloadResidentResources();
+                Penumbra.ResidentResources.Reload();
             }
 
             DefaultCollection = c;
@@ -244,8 +242,7 @@ public class CollectionManager
                 if( CollectionChangedTo == characterName && CharacterCollection.TryGetValue( characterName, out var collection ) )
                 {
                     ActiveCollection = c;
-                    var resourceManager = Service< ResidentResources >.Get();
-                    resourceManager.ReloadResidentResources();
+                    Penumbra.ResidentResources.Reload();
                 }
 
                 CharacterCollection[ characterName ] = c;

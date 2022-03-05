@@ -74,7 +74,7 @@ public partial class SettingsInterface
             CollectionsTab.Draw();
             _importTab.Draw();
 
-            if( Service< ModManager >.Get().Valid && !_importTab.IsImporting() )
+            if( Penumbra.ModManager.Valid && !_importTab.IsImporting() )
             {
                 _browserTab.Draw();
                 InstalledTab.Draw();

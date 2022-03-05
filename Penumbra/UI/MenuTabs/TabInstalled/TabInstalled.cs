@@ -1,42 +1,37 @@
 using System.Collections.Generic;
 using ImGuiNET;
-using Penumbra.Mods;
 using Penumbra.UI.Custom;
-using Penumbra.Util;
 
-namespace Penumbra.UI
+namespace Penumbra.UI;
+
+public partial class SettingsInterface
 {
-    public partial class SettingsInterface
+    private class TabInstalled
     {
-        private class TabInstalled
+        private const string LabelTab = "Installed Mods";
+
+        public readonly Selector Selector;
+        public readonly ModPanel ModPanel;
+
+        public TabInstalled( SettingsInterface ui, HashSet< string > newMods )
         {
-            private const string LabelTab = "Installed Mods";
+            Selector = new Selector( ui, newMods );
+            ModPanel = new ModPanel( ui, Selector, newMods );
+        }
 
-            private readonly ModManager _modManager;
-            public readonly  Selector   Selector;
-            public readonly  ModPanel   ModPanel;
-
-            public TabInstalled( SettingsInterface ui, HashSet< string > newMods )
+        public void Draw()
+        {
+            var ret = ImGui.BeginTabItem( LabelTab );
+            if( !ret )
             {
-                Selector    = new Selector( ui, newMods );
-                ModPanel    = new ModPanel( ui, Selector, newMods );
-                _modManager = Service< ModManager >.Get();
+                return;
             }
 
-            public void Draw()
-            {
-                var ret = ImGui.BeginTabItem( LabelTab );
-                if( !ret )
-                {
-                    return;
-                }
+            using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
-                using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
-
-                Selector.Draw();
-                ImGui.SameLine();
-                ModPanel.Draw();
-            }
+            Selector.Draw();
+            ImGui.SameLine();
+            ModPanel.Draw();
         }
     }
 }
