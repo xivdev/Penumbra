@@ -10,7 +10,6 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
-using Penumbra.Structs;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
@@ -20,17 +19,16 @@ namespace Penumbra.Mods;
 public class ModCollectionCache
 {
     // Shared caches to avoid allocations.
-    private static readonly BitArray                        FileSeen        = new(256);
-    private static readonly Dictionary< GamePath, Mod.Mod > RegisteredFiles = new(256);
+    private static readonly BitArray                            FileSeen        = new(256);
+    private static readonly Dictionary< Utf8GamePath, Mod.Mod > RegisteredFiles = new(256);
 
     public readonly Dictionary< string, Mod.Mod > AvailableMods = new();
 
-    private readonly SortedList< string, object? >    _changedItems = new();
-    public readonly  Dictionary< GamePath, FullPath > ResolvedFiles = new();
-    public readonly  Dictionary< GamePath, GamePath > SwappedFiles  = new();
-    public readonly  HashSet< FullPath >              MissingFiles  = new();
-    public readonly  HashSet< ulong >                 Checksums     = new();
-    public readonly  MetaManager                      MetaManipulations;
+    private readonly SortedList< string, object? >        _changedItems = new();
+    public readonly  Dictionary< Utf8GamePath, FullPath > ResolvedFiles = new();
+    public readonly  HashSet< FullPath >                  MissingFiles  = new();
+    public readonly  HashSet< ulong >                     Checksums     = new();
+    public readonly  MetaManager                          MetaManipulations;
 
     public IReadOnlyDictionary< string, object? > ChangedItems
     {
@@ -61,7 +59,6 @@ public class ModCollectionCache
     public void CalculateEffectiveFileList()
     {
         ResolvedFiles.Clear();
-        SwappedFiles.Clear();
         MissingFiles.Clear();
         RegisteredFiles.Clear();
         _changedItems.Clear();
@@ -85,7 +82,7 @@ public class ModCollectionCache
 
     private void SetChangedItems()
     {
-        if( _changedItems.Count > 0 || ResolvedFiles.Count + SwappedFiles.Count + MetaManipulations.Count == 0 )
+        if( _changedItems.Count > 0 || ResolvedFiles.Count + MetaManipulations.Count == 0 )
         {
             return;
         }
@@ -98,12 +95,7 @@ public class ModCollectionCache
             var identifier = GameData.GameData.GetIdentifier();
             foreach( var resolved in ResolvedFiles.Keys.Where( file => !metaFiles.Contains( file ) ) )
             {
-                identifier.Identify( _changedItems, resolved );
-            }
-
-            foreach( var swapped in SwappedFiles.Keys )
-            {
-                identifier.Identify( _changedItems, swapped );
+                identifier.Identify( _changedItems, resolved.ToGamePath() );
             }
         }
         catch( Exception e )
@@ -134,12 +126,12 @@ public class ModCollectionCache
         AddRemainingFiles( mod );
     }
 
-    private bool FilterFile( GamePath gamePath )
+    private static bool FilterFile( Utf8GamePath gamePath )
     {
         // If audio streaming is not disabled, replacing .scd files crashes the game,
         // so only add those files if it is disabled.
         if( !Penumbra.Config.DisableSoundStreaming
-        && gamePath.ToString().EndsWith( ".scd", StringComparison.InvariantCultureIgnoreCase ) )
+        && gamePath.Path.EndsWith( '.', 's', 'c', 'd' ) )
         {
             return true;
         }
@@ -148,7 +140,7 @@ public class ModCollectionCache
     }
 
 
-    private void AddFile( Mod.Mod mod, GamePath gamePath, FullPath file )
+    private void AddFile( Mod.Mod mod, Utf8GamePath gamePath, FullPath file )
     {
         if( FilterFile( gamePath ) )
         {
@@ -187,9 +179,8 @@ public class ModCollectionCache
     {
         foreach( var (file, paths) in option.OptionFiles )
         {
-            var fullPath = new FullPath( mod.Data.BasePath,
-                NewRelPath.FromString( file.ToString(), out var p ) ? p : NewRelPath.Empty ); // TODO
-            var idx = mod.Data.Resources.ModFiles.IndexOf( f => f.Equals( fullPath ) );
+            var fullPath = new FullPath( mod.Data.BasePath, file );
+            var idx      = mod.Data.Resources.ModFiles.IndexOf( f => f.Equals( fullPath ) );
             if( idx < 0 )
             {
                 AddMissingFile( fullPath );
@@ -259,7 +250,7 @@ public class ModCollectionCache
             {
                 if( file.ToGamePath( mod.Data.BasePath, out var gamePath ) )
                 {
-                    AddFile( mod, new GamePath( gamePath.ToString() ), file ); // TODO
+                    AddFile( mod, gamePath, file );
                 }
                 else
                 {
@@ -294,7 +285,7 @@ public class ModCollectionCache
             if( !RegisteredFiles.TryGetValue( key, out var oldMod ) )
             {
                 RegisteredFiles.Add( key, mod );
-                SwappedFiles.Add( key, value );
+                ResolvedFiles.Add( key, value );
             }
             else
             {
@@ -341,54 +332,54 @@ public class ModCollectionCache
 
     public void RemoveMod( DirectoryInfo basePath )
     {
-        if( AvailableMods.TryGetValue( basePath.Name, out var mod ) )
+        if( !AvailableMods.TryGetValue( basePath.Name, out var mod ) )
         {
-            AvailableMods.Remove( basePath.Name );
-            if( mod.Settings.Enabled )
-            {
-                CalculateEffectiveFileList();
-                if( mod.Data.Resources.MetaManipulations.Count > 0 )
-                {
-                    UpdateMetaManipulations();
-                }
-            }
+            return;
+        }
+
+        AvailableMods.Remove( basePath.Name );
+        if( !mod.Settings.Enabled )
+        {
+            return;
+        }
+
+        CalculateEffectiveFileList();
+        if( mod.Data.Resources.MetaManipulations.Count > 0 )
+        {
+            UpdateMetaManipulations();
         }
     }
-
-    private class PriorityComparer : IComparer< Mod.Mod >
-    {
-        public int Compare( Mod.Mod? x, Mod.Mod? y )
-            => ( x?.Settings.Priority ?? 0 ).CompareTo( y?.Settings.Priority ?? 0 );
-    }
-
-    private static readonly PriorityComparer Comparer = new();
 
     public void AddMod( ModSettings settings, ModData data, bool updateFileList = true )
     {
-        if( !AvailableMods.TryGetValue( data.BasePath.Name, out var existingMod ) )
+        if( AvailableMods.ContainsKey( data.BasePath.Name ) )
         {
-            var newMod = new Mod.Mod( settings, data );
-            AvailableMods[ data.BasePath.Name ] = newMod;
+            return;
+        }
 
-            if( updateFileList && settings.Enabled )
-            {
-                CalculateEffectiveFileList();
-                if( data.Resources.MetaManipulations.Count > 0 )
-                {
-                    UpdateMetaManipulations();
-                }
-            }
+        AvailableMods[ data.BasePath.Name ] = new Mod.Mod( settings, data );
+
+        if( !updateFileList || !settings.Enabled )
+        {
+            return;
+        }
+
+        CalculateEffectiveFileList();
+        if( data.Resources.MetaManipulations.Count > 0 )
+        {
+            UpdateMetaManipulations();
         }
     }
 
-    public FullPath? GetCandidateForGameFile( GamePath gameResourcePath )
+    public FullPath? GetCandidateForGameFile( Utf8GamePath gameResourcePath )
     {
         if( !ResolvedFiles.TryGetValue( gameResourcePath, out var candidate ) )
         {
             return null;
         }
 
-        if( candidate.FullName.Length >= 260 || !candidate.Exists )
+        if( candidate.InternalName.Length > Utf8GamePath.MaxGamePathLength
+        || candidate.IsRooted && !candidate.Exists )
         {
             return null;
         }
@@ -396,9 +387,6 @@ public class ModCollectionCache
         return candidate;
     }
 
-    public GamePath? GetSwappedFilePath( GamePath gameResourcePath )
-        => SwappedFiles.TryGetValue( gameResourcePath, out var swappedPath ) ? swappedPath : null;
-
-    public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )
-        => GetCandidateForGameFile( gameResourcePath )?.FullName.Replace( '\\', '/' ) ?? GetSwappedFilePath( gameResourcePath ) ?? null;
+    public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
+        => GetCandidateForGameFile( gameResourcePath );
 }

@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Numerics;
 using Dalamud.Configuration;
 using Dalamud.Logging;
 
@@ -14,13 +12,19 @@ public class Configuration : IPluginConfiguration
 
     public int Version { get; set; } = CurrentVersion;
 
-    public bool IsEnabled { get; set; } = true;
+    public bool EnableMods { get; set; } = true;
 #if DEBUG
     public bool DebugMode { get; set; } = true;
 #else
     public bool DebugMode { get; set; } = false;
 #endif
+
+    public bool EnableFullResourceLogging { get; set; } = false;
+    public bool EnableResourceLogging { get; set; } = false;
+    public string ResourceLoggingFilter { get; set; } = string.Empty;
+
     public bool ScaleModSelector { get; set; } = false;
+
     public bool ShowAdvanced { get; set; }
 
     public bool DisableFileSystemNotifications { get; set; }

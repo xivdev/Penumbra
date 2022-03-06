@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using Penumbra.Structs;
 
 namespace Penumbra.Interop.Structs;
 

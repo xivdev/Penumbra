@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
-using Penumbra.Interop;
 using Penumbra.Mod;
 using Penumbra.Util;
 
@@ -250,16 +249,16 @@ public class CollectionManager
 
     public bool CreateCharacterCollection( string characterName )
     {
-        if( !CharacterCollection.ContainsKey( characterName ) )
+        if( CharacterCollection.ContainsKey( characterName ) )
         {
-            CharacterCollection[ characterName ]                  = ModCollection.Empty;
-            Penumbra.Config.CharacterCollections[ characterName ] = string.Empty;
-            Penumbra.Config.Save();
-            Penumbra.PlayerWatcher.AddPlayerToWatch( characterName );
-            return true;
+            return false;
         }
 
-        return false;
+        CharacterCollection[ characterName ]                  = ModCollection.Empty;
+        Penumbra.Config.CharacterCollections[ characterName ] = string.Empty;
+        Penumbra.Config.Save();
+        Penumbra.PlayerWatcher.AddPlayerToWatch( characterName );
+        return true;
     }
 
     public void RemoveCharacterCollection( string characterName )
@@ -299,7 +298,7 @@ public class CollectionManager
 
     private bool LoadForcedCollection( Configuration config )
     {
-        if( config.ForcedCollection == string.Empty )
+        if( config.ForcedCollection.Length == 0 )
         {
             ForcedCollection = ModCollection.Empty;
             return false;
@@ -320,7 +319,7 @@ public class CollectionManager
 
     private bool LoadDefaultCollection( Configuration config )
     {
-        if( config.DefaultCollection == string.Empty )
+        if( config.DefaultCollection.Length == 0 )
         {
             DefaultCollection = ModCollection.Empty;
             return false;
@@ -345,7 +344,7 @@ public class CollectionManager
         foreach( var (player, collectionName) in config.CharacterCollections.ToArray() )
         {
             Penumbra.PlayerWatcher.AddPlayerToWatch( player );
-            if( collectionName == string.Empty )
+            if( collectionName.Length == 0 )
             {
                 CharacterCollection.Add( player, ModCollection.Empty );
             }

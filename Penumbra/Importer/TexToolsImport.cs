@@ -6,10 +6,10 @@ using System.Text;
 using Dalamud.Logging;
 using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
 using Penumbra.Importer.Models;
 using Penumbra.Mod;
-using Penumbra.Structs;
 using Penumbra.Util;
 using FileMode = System.IO.FileMode;
 
@@ -336,14 +336,18 @@ internal class TexToolsImport
             {
                 OptionName  = opt.Name!,
                 OptionDesc  = string.IsNullOrEmpty( opt.Description ) ? "" : opt.Description!,
-                OptionFiles = new Dictionary< RelPath, HashSet< GamePath > >(),
+                OptionFiles = new Dictionary< Utf8RelPath, HashSet< Utf8GamePath > >(),
             };
             var optDir = NewOptionDirectory( groupFolder, opt.Name! );
             if( optDir.Exists )
             {
                 foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
                 {
-                    option.AddFile( new RelPath( file, baseFolder ), new GamePath( file, optDir ) );
+                    if( Utf8RelPath.FromFile( file, baseFolder, out var rel )
+                    && Utf8GamePath.FromFile( file, optDir, out var game, true ) )
+                    {
+                        option.AddFile( rel, game );
+                    }
                 }
             }
 

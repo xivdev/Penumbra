@@ -8,7 +8,6 @@ using Penumbra.GameData.ByteString;
 using Penumbra.Importer;
 using Penumbra.Meta.Files;
 using Penumbra.Mod;
-using Penumbra.Structs;
 using Penumbra.Util;
 
 namespace Penumbra.Meta;
@@ -167,14 +166,14 @@ public class MetaCollection
                 continue;
             }
 
-            var path     = new RelPath( file, basePath );
+            Utf8RelPath.FromFile( file, basePath, out var path );
             var foundAny = false;
-            foreach( var group in modMeta.Groups )
+            foreach( var (name, group) in modMeta.Groups )
             {
-                foreach( var option in group.Value.Options.Where( o => o.OptionFiles.ContainsKey( path ) ) )
+                foreach( var option in group.Options.Where( o => o.OptionFiles.ContainsKey( path ) ) )
                 {
                     foundAny = true;
-                    AddMeta( group.Key, option.OptionName, metaData );
+                    AddMeta( name, option.OptionName, metaData );
                 }
             }
 

@@ -21,10 +21,20 @@ public partial class SettingsInterface
         private string _filePathFilter      = string.Empty;
         private string _filePathFilterLower = string.Empty;
 
-        private readonly float _leftTextLength =
-            ImGui.CalcTextSize( "chara/human/c0000/obj/body/b0000/material/v0000/mt_c0000b0000_b.mtrl" ).X / ImGuiHelpers.GlobalScale + 40;
+        private const float LeftTextLength = 600;
 
         private float _arrowLength = 0;
+
+        private static void DrawLine( Utf8GamePath path, FullPath name )
+        {
+            ImGui.TableNextColumn();
+            ImGuiCustom.CopyOnClickSelectable( path.Path );
+
+            ImGui.TableNextColumn();
+            ImGuiCustom.PrintIcon( FontAwesomeIcon.LongArrowAltLeft );
+            ImGui.SameLine();
+            ImGuiCustom.CopyOnClickSelectable( name.InternalName );
+        }
 
         private static void DrawLine( string path, string name )
         {
@@ -45,13 +55,13 @@ public partial class SettingsInterface
                 _arrowLength = ImGui.CalcTextSize( FontAwesomeIcon.LongArrowAltLeft.ToIconString() ).X / ImGuiHelpers.GlobalScale;
             }
 
-            ImGui.SetNextItemWidth( _leftTextLength * ImGuiHelpers.GlobalScale );
+            ImGui.SetNextItemWidth( LeftTextLength * ImGuiHelpers.GlobalScale );
             if( ImGui.InputTextWithHint( "##effective_changes_gfilter", "Filter game path...", ref _gamePathFilter, 256 ) )
             {
                 _gamePathFilterLower = _gamePathFilter.ToLowerInvariant();
             }
 
-            ImGui.SameLine( ( _leftTextLength + _arrowLength ) * ImGuiHelpers.GlobalScale + 3 * ImGui.GetStyle().ItemSpacing.X );
+            ImGui.SameLine( ( LeftTextLength + _arrowLength ) * ImGuiHelpers.GlobalScale + 3 * ImGui.GetStyle().ItemSpacing.X );
             ImGui.SetNextItemWidth( -1 );
             if( ImGui.InputTextWithHint( "##effective_changes_ffilter", "Filter file path...", ref _filePathFilter, 256 ) )
             {
@@ -59,7 +69,7 @@ public partial class SettingsInterface
             }
         }
 
-        private bool CheckFilters( KeyValuePair< GamePath, FullPath > kvp )
+        private bool CheckFilters( KeyValuePair< Utf8GamePath, FullPath > kvp )
         {
             if( _gamePathFilter.Any() && !kvp.Key.ToString().Contains( _gamePathFilterLower ) )
             {
@@ -69,7 +79,7 @@ public partial class SettingsInterface
             return !_filePathFilter.Any() || kvp.Value.FullName.ToLowerInvariant().Contains( _filePathFilterLower );
         }
 
-        private bool CheckFilters( KeyValuePair< GamePath, GamePath > kvp )
+        private bool CheckFilters( KeyValuePair< Utf8GamePath, Utf8GamePath > kvp )
         {
             if( _gamePathFilter.Any() && !kvp.Key.ToString().Contains( _gamePathFilterLower ) )
             {
@@ -94,11 +104,6 @@ public partial class SettingsInterface
             void DrawFileLines( ModCollectionCache cache )
             {
                 foreach( var (gp, fp) in cache.ResolvedFiles.Where( CheckFilters ) )
-                {
-                    DrawLine( gp, fp.FullName );
-                }
-
-                foreach( var (gp, fp) in cache.SwappedFiles.Where( CheckFilters ) )
                 {
                     DrawLine( gp, fp );
                 }
@@ -139,75 +144,67 @@ public partial class SettingsInterface
             var activeCollection = modManager.Collections.ActiveCollection.Cache;
             var forcedCollection = modManager.Collections.ForcedCollection.Cache;
 
-            var (activeResolved, activeSwap, activeMeta) = activeCollection != null
-                ? ( activeCollection.ResolvedFiles.Count, activeCollection.SwappedFiles.Count, activeCollection.MetaManipulations.Count )
-                : ( 0, 0, 0 );
-            var (forcedResolved, forcedSwap, forcedMeta) = forcedCollection != null
-                ? ( forcedCollection.ResolvedFiles.Count, forcedCollection.SwappedFiles.Count, forcedCollection.MetaManipulations.Count )
-                : ( 0, 0, 0 );
-            var totalLines = activeResolved + forcedResolved + activeSwap + forcedSwap + activeMeta + forcedMeta;
+            var (activeResolved, activeMeta) = activeCollection != null
+                ? ( activeCollection.ResolvedFiles.Count, activeCollection.MetaManipulations.Count )
+                : ( 0, 0 );
+            var (forcedResolved, forcedMeta) = forcedCollection != null
+                ? ( forcedCollection.ResolvedFiles.Count, forcedCollection.MetaManipulations.Count )
+                : ( 0, 0 );
+            var totalLines = activeResolved + forcedResolved + activeMeta + forcedMeta;
             if( totalLines == 0 )
             {
                 return;
             }
 
-            if( ImGui.BeginTable( "##effective_changes", 2, flags, AutoFillSize ) )
+            if( !ImGui.BeginTable( "##effective_changes", 2, flags, AutoFillSize ) )
             {
-                raii.Push( ImGui.EndTable );
-                ImGui.TableSetupColumn( "##tableGamePathCol", ImGuiTableColumnFlags.None, _leftTextLength * ImGuiHelpers.GlobalScale );
+                return;
+            }
 
-                if( _filePathFilter.Any() || _gamePathFilter.Any() )
+            raii.Push( ImGui.EndTable );
+            ImGui.TableSetupColumn( "##tableGamePathCol", ImGuiTableColumnFlags.None, LeftTextLength * ImGuiHelpers.GlobalScale );
+
+            if( _filePathFilter.Length > 0 || _gamePathFilter.Length > 0 )
+            {
+                DrawFilteredRows( activeCollection, forcedCollection );
+            }
+            else
+            {
+                ImGuiListClipperPtr clipper;
+                unsafe
                 {
-                    DrawFilteredRows( activeCollection, forcedCollection );
+                    clipper = new ImGuiListClipperPtr( ImGuiNative.ImGuiListClipper_ImGuiListClipper() );
                 }
-                else
+
+                clipper.Begin( totalLines );
+
+
+                while( clipper.Step() )
                 {
-                    ImGuiListClipperPtr clipper;
-                    unsafe
+                    for( var actualRow = clipper.DisplayStart; actualRow < clipper.DisplayEnd; actualRow++ )
                     {
-                        clipper = new ImGuiListClipperPtr( ImGuiNative.ImGuiListClipper_ImGuiListClipper() );
-                    }
-
-                    clipper.Begin( totalLines );
-
-
-                    while( clipper.Step() )
-                    {
-                        for( var actualRow = clipper.DisplayStart; actualRow < clipper.DisplayEnd; actualRow++ )
+                        var row = actualRow;
+                        ImGui.TableNextRow();
+                        if( row < activeResolved )
                         {
-                            var row = actualRow;
-                            ImGui.TableNextRow();
-                            if( row < activeResolved )
-                            {
-                                var (gamePath, file) = activeCollection!.ResolvedFiles.ElementAt( row );
-                                DrawLine( gamePath, file.FullName );
-                            }
-                            else if( ( row -= activeResolved ) < activeSwap )
-                            {
-                                var (gamePath, swap) = activeCollection!.SwappedFiles.ElementAt( row );
-                                DrawLine( gamePath, swap );
-                            }
-                            else if( ( row -= activeSwap ) < activeMeta )
-                            {
-                                var (manip, mod) = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                                DrawLine( manip.IdentifierString(), mod.Data.Meta.Name );
-                            }
-                            else if( ( row -= activeMeta ) < forcedResolved )
-                            {
-                                var (gamePath, file) = forcedCollection!.ResolvedFiles.ElementAt( row );
-                                DrawLine( gamePath, file.FullName );
-                            }
-                            else if( ( row -= forcedResolved ) < forcedSwap )
-                            {
-                                var (gamePath, swap) = forcedCollection!.SwappedFiles.ElementAt( row );
-                                DrawLine( gamePath, swap );
-                            }
-                            else
-                            {
-                                row              -= forcedSwap;
-                                var (manip, mod) =  forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                                DrawLine( manip.IdentifierString(), mod.Data.Meta.Name );
-                            }
+                            var (gamePath, file) = activeCollection!.ResolvedFiles.ElementAt( row );
+                            DrawLine( gamePath, file );
+                        }
+                        else if( ( row -= activeResolved ) < activeMeta )
+                        {
+                            var (manip, mod) = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
+                            DrawLine( manip.IdentifierString(), mod.Data.Meta.Name );
+                        }
+                        else if( ( row -= activeMeta ) < forcedResolved )
+                        {
+                            var (gamePath, file) = forcedCollection!.ResolvedFiles.ElementAt( row );
+                            DrawLine( gamePath, file );
+                        }
+                        else
+                        {
+                            row              -= forcedResolved;
+                            var (manip, mod) =  forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
+                            DrawLine( manip.IdentifierString(), mod.Data.Meta.Name );
                         }
                     }
                 }

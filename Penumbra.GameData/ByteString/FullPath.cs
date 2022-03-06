@@ -1,17 +1,21 @@
 using System;
 using System.IO;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Util;
 
 namespace Penumbra.GameData.ByteString;
 
+[JsonConverter( typeof( FullPathConverter ) )]
 public readonly struct FullPath : IComparable, IEquatable< FullPath >
 {
     public readonly string     FullName;
     public readonly Utf8String InternalName;
     public readonly ulong      Crc64;
 
+    public static readonly FullPath Empty = new(string.Empty);
 
-    public FullPath( DirectoryInfo baseDir, NewRelPath relPath )
+    public FullPath( DirectoryInfo baseDir, Utf8RelPath relPath )
         : this( Path.Combine( baseDir.FullName, relPath.ToString() ) )
     { }
 
@@ -19,10 +23,11 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
         : this( file.FullName )
     { }
 
+
     public FullPath( string s )
     {
         FullName     = s;
-        InternalName = Utf8String.FromString( FullName, out var name, true ) ? name : Utf8String.Empty;
+        InternalName = Utf8String.FromString( FullName, out var name, true ) ? name.Replace( ( byte )'\\', ( byte )'/' ) : Utf8String.Empty;
         Crc64        = Functions.ComputeCrc64( InternalName.Span );
     }
 
@@ -35,9 +40,9 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
     public string Name
         => Path.GetFileName( FullName );
 
-    public bool ToGamePath( DirectoryInfo dir, out NewGamePath path )
+    public bool ToGamePath( DirectoryInfo dir, out Utf8GamePath path )
     {
-        path = NewGamePath.Empty;
+        path = Utf8GamePath.Empty;
         if( !InternalName.IsAscii || !FullName.StartsWith( dir.FullName ) )
         {
             return false;
@@ -45,13 +50,13 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
 
         var substring = InternalName.Substring( dir.FullName.Length + 1 );
 
-        path = new NewGamePath( substring.Replace( ( byte )'\\', ( byte )'/' ) );
+        path = new Utf8GamePath( substring );
         return true;
     }
 
-    public bool ToRelPath( DirectoryInfo dir, out NewRelPath path )
+    public bool ToRelPath( DirectoryInfo dir, out Utf8RelPath path )
     {
-        path = NewRelPath.Empty;
+        path = Utf8RelPath.Empty;
         if( !FullName.StartsWith( dir.FullName ) )
         {
             return false;
@@ -59,7 +64,7 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
 
         var substring = InternalName.Substring( dir.FullName.Length + 1 );
 
-        path = new NewRelPath( substring );
+        path = new Utf8RelPath( substring.Replace( ( byte )'/', ( byte )'\\' ) );
         return true;
     }
 
@@ -88,9 +93,35 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
         return InternalName.Equals( other.InternalName );
     }
 
+    public bool IsRooted
+        => new Utf8GamePath( InternalName ).IsRooted();
+
     public override int GetHashCode()
         => InternalName.Crc32;
 
     public override string ToString()
         => FullName;
+
+    public class FullPathConverter : JsonConverter
+    {
+        public override bool CanConvert( Type objectType )
+            => objectType == typeof( FullPath );
+
+        public override object ReadJson( JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer )
+        {
+            var token = JToken.Load( reader ).ToString();
+            return new FullPath( token );
+        }
+
+        public override bool CanWrite
+            => true;
+
+        public override void WriteJson( JsonWriter writer, object? value, JsonSerializer serializer )
+        {
+            if( value is FullPath p )
+            {
+                serializer.Serialize( writer, p.ToString() );
+            }
+        }
+    }
 }

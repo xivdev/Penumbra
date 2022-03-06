@@ -6,7 +6,6 @@ using Dalamud.Logging;
 using Lumina.Data.Files;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
-using Penumbra.Interop;
 using Penumbra.Meta.Files;
 using Penumbra.Util;
 
@@ -24,7 +23,7 @@ public class MetaManager : IDisposable
         public FileInformation( object data )
             => Data = data;
 
-        public void Write( DirectoryInfo dir, GamePath originalPath )
+        public void Write( DirectoryInfo dir, Utf8GamePath originalPath )
         {
             ByteData = Data switch
             {
@@ -44,16 +43,16 @@ public class MetaManager : IDisposable
 
     public const string TmpDirectory = "penumbrametatmp";
 
-    private readonly DirectoryInfo                    _dir;
-    private readonly Dictionary< GamePath, FullPath > _resolvedFiles;
+    private readonly DirectoryInfo                        _dir;
+    private readonly Dictionary< Utf8GamePath, FullPath > _resolvedFiles;
 
-    private readonly Dictionary< MetaManipulation, Mod.Mod > _currentManipulations = new();
-    private readonly Dictionary< GamePath, FileInformation > _currentFiles         = new();
+    private readonly Dictionary< MetaManipulation, Mod.Mod >     _currentManipulations = new();
+    private readonly Dictionary< Utf8GamePath, FileInformation > _currentFiles         = new();
 
     public IEnumerable< (MetaManipulation, Mod.Mod) > Manipulations
         => _currentManipulations.Select( kvp => ( kvp.Key, kvp.Value ) );
 
-    public IEnumerable< (GamePath, FullPath) > Files
+    public IEnumerable< (Utf8GamePath, FullPath) > Files
         => _currentFiles.Where( kvp => kvp.Value.CurrentFile != null )
            .Select( kvp => ( kvp.Key, kvp.Value.CurrentFile!.Value ) );
 
@@ -121,7 +120,7 @@ public class MetaManager : IDisposable
     private void ClearDirectory()
         => ClearDirectory( _dir );
 
-    public MetaManager( string name, Dictionary< GamePath, FullPath > resolvedFiles, DirectoryInfo tempDir )
+    public MetaManager( string name, Dictionary< Utf8GamePath, FullPath > resolvedFiles, DirectoryInfo tempDir )
     {
         _resolvedFiles = resolvedFiles;
         _dir           = new DirectoryInfo( Path.Combine( tempDir.FullName, name.ReplaceBadXivSymbols() ) );
@@ -135,13 +134,13 @@ public class MetaManager : IDisposable
             Directory.CreateDirectory( _dir.FullName );
         }
 
-        foreach( var kvp in _currentFiles.Where( kvp => kvp.Value.Changed ) )
+        foreach( var (key, value) in _currentFiles.Where( kvp => kvp.Value.Changed ) )
         {
-            kvp.Value.Write( _dir, kvp.Key );
-            _resolvedFiles[ kvp.Key ] = kvp.Value.CurrentFile!.Value;
-            if( kvp.Value.Data is EqpFile )
+            value.Write( _dir, key );
+            _resolvedFiles[ key ] = value.CurrentFile!.Value;
+            if( value.Data is EqpFile )
             {
-                EqpData = kvp.Value.ByteData;
+                EqpData = value.ByteData;
             }
         }
     }
@@ -154,7 +153,7 @@ public class MetaManager : IDisposable
         }
 
         _currentManipulations.Add( m, mod );
-        var gamePath = m.CorrespondingFilename();
+        var gamePath = Utf8GamePath.FromString(m.CorrespondingFilename(), out var p, false) ? p : Utf8GamePath.Empty; // TODO
         try
         {
             if( !_currentFiles.TryGetValue( gamePath, out var file ) )

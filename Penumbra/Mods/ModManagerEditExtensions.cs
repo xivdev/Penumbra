@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.IO;
 using Dalamud.Logging;
 using Penumbra.Mod;
-using Penumbra.Structs;
 
 namespace Penumbra.Mods;
 

@@ -11,7 +11,6 @@ using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
 using Penumbra.Mods;
-using Penumbra.Structs;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
 using ImGui = ImGuiNET.ImGui;
@@ -56,7 +55,7 @@ public partial class SettingsInterface
         private Option?      _selectedOption;
         private string       _currentGamePaths = "";
 
-        private (FullPath name, bool selected, uint color, RelPath relName)[]? _fullFilenameList;
+        private (FullPath name, bool selected, uint color, Utf8RelPath relName)[]? _fullFilenameList;
 
         private readonly Selector          _selector;
         private readonly SettingsInterface _base;
@@ -218,7 +217,10 @@ public partial class SettingsInterface
                 indent.Push( 15f );
                 foreach( var file in files )
                 {
-                    ImGui.Selectable( file );
+                    unsafe
+                    {
+                        ImGuiNative.igSelectable_Bool( file.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero );
+                    }
                 }
 
                 foreach( var manip in manipulations )
@@ -258,13 +260,13 @@ public partial class SettingsInterface
             foreach( var (source, target) in Meta.FileSwaps )
             {
                 ImGui.TableNextColumn();
-                ImGuiCustom.CopyOnClickSelectable( source );
+                ImGuiCustom.CopyOnClickSelectable( source.Path );
 
                 ImGui.TableNextColumn();
                 ImGuiCustom.PrintIcon( FontAwesomeIcon.LongArrowAltRight );
 
                 ImGui.TableNextColumn();
-                ImGuiCustom.CopyOnClickSelectable( target );
+                ImGuiCustom.CopyOnClickSelectable( target.InternalName );
 
                 ImGui.TableNextRow();
             }
@@ -278,7 +280,8 @@ public partial class SettingsInterface
             }
 
             _fullFilenameList = Mod.Data.Resources.ModFiles
-               .Select( f => ( f, false, ColorGreen, new RelPath( f, Mod.Data.BasePath ) ) ).ToArray();
+               .Select( f => ( f, false, ColorGreen, Utf8RelPath.FromFile( f, Mod.Data.BasePath, out var p ) ? p : Utf8RelPath.Empty ) )
+               .ToArray();
 
             if( Meta.Groups.Count == 0 )
             {
@@ -339,24 +342,23 @@ public partial class SettingsInterface
             }
         }
 
-        private static int HandleDefaultString( GamePath[] gamePaths, out int removeFolders )
+        private static int HandleDefaultString( Utf8GamePath[] gamePaths, out int removeFolders )
         {
             removeFolders = 0;
-            var defaultIndex =
-                gamePaths.IndexOf( p => ( ( string )p ).StartsWith( TextDefaultGamePath ) );
+            var defaultIndex = gamePaths.IndexOf( p => p.Path.StartsWith( DefaultUtf8GamePath ) );
             if( defaultIndex < 0 )
             {
                 return defaultIndex;
             }
 
-            string path = gamePaths[ defaultIndex ];
+            var path = gamePaths[ defaultIndex ].Path;
             if( path.Length == TextDefaultGamePath.Length )
             {
                 return defaultIndex;
             }
 
-            if( path[ TextDefaultGamePath.Length ] != '-'
-            || !int.TryParse( path.Substring( TextDefaultGamePath.Length + 1 ), out removeFolders ) )
+            if( path[ TextDefaultGamePath.Length ] != ( byte )'-'
+            || !int.TryParse( path.Substring( TextDefaultGamePath.Length + 1 ).ToString(), out removeFolders ) )
             {
                 return -1;
             }
@@ -373,8 +375,9 @@ public partial class SettingsInterface
 
             var option = ( Option )_selectedOption;
 
-            var gamePaths = _currentGamePaths.Split( ';' ).Select( p => new GamePath( p ) ).ToArray();
-            if( gamePaths.Length == 0 || ( ( string )gamePaths[ 0 ] ).Length == 0 )
+            var gamePaths = _currentGamePaths.Split( ';' )
+               .Select( p => Utf8GamePath.FromString( p, out var path, false ) ? path : Utf8GamePath.Empty ).Where( p => !p.IsEmpty ).ToArray();
+            if( gamePaths.Length == 0 )
             {
                 return;
             }
@@ -517,18 +520,18 @@ public partial class SettingsInterface
             {
                 Selectable( 0, ColorGreen );
 
-                using var indent   = ImGuiRaii.PushIndent( indentWidth );
-                var       tmpPaths = gamePaths.ToArray();
-                foreach( var gamePath in tmpPaths )
+                using var indent = ImGuiRaii.PushIndent( indentWidth );
+                foreach( var gamePath in gamePaths.ToArray() )
                 {
-                    string tmp = gamePath;
+                    var tmp = gamePath.ToString();
+                    var old = tmp;
                     if( ImGui.InputText( $"##{fileName}_{gamePath}", ref tmp, 128, ImGuiInputTextFlags.EnterReturnsTrue )
-                    && tmp != gamePath )
+                    && tmp != old )
                     {
                         gamePaths.Remove( gamePath );
-                        if( tmp.Length > 0 )
+                        if( tmp.Length > 0 && Utf8GamePath.FromString( tmp, out var p, true ) )
                         {
-                            gamePaths.Add( new GamePath( tmp ) );
+                            gamePaths.Add( p );
                         }
                         else if( gamePaths.Count == 0 )
                         {

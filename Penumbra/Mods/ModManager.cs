@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
@@ -347,15 +348,7 @@ namespace Penumbra.Mods
             return true;
         }
 
-        public bool CheckCrc64( ulong crc )
-        {
-            if( Collections.ActiveCollection.Cache?.Checksums.Contains( crc ) ?? false )
-                return true;
-
-            return Collections.ForcedCollection.Cache?.Checksums.Contains( crc ) ?? false;
-        }
-
-        public string? ResolveSwappedOrReplacementPath( GamePath gameResourcePath )
+        public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
         {
             var ret = Collections.ActiveCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
             ret ??= Collections.ForcedCollection.ResolveSwappedOrReplacementPath( gameResourcePath );

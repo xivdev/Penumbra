@@ -18,22 +18,6 @@ using System.Linq;
 
 namespace Penumbra;
 
-public class Penumbra2 // : IDalamudPlugin
-{
-    public string Name
-        => "Penumbra";
-
-    private const string CommandName = "/penumbra";
-
-    public static Configuration Config { get; private set; } = null!;
-    public static ResourceLoader ResourceLoader { get; private set; } = null!;
-
-    public void Dispose()
-    {
-        ResourceLoader.Dispose();
-    }
-}
-
 public class Penumbra : IDalamudPlugin
 {
     public string Name
@@ -54,6 +38,7 @@ public class Penumbra : IDalamudPlugin
 
 
     public ResourceLoader ResourceLoader { get; }
+    public ResourceLogger ResourceLogger { get; }
 
     //public PathResolver PathResolver { get; }
     public SettingsInterface SettingsInterface { get; }
@@ -81,19 +66,18 @@ public class Penumbra : IDalamudPlugin
         CharacterUtility  = new CharacterUtility();
         MetaDefaults      = new MetaDefaults();
         ResourceLoader    = new ResourceLoader( this );
+        ResourceLogger    = new ResourceLogger( ResourceLoader );
+        PlayerWatcher     = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
         ModManager        = new ModManager();
         ModManager.DiscoverMods();
-        //PathResolver   = new PathResolver( ResourceLoader, gameUtils );
-        PlayerWatcher  = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
         ObjectReloader = new ObjectReloader( ModManager, Config.WaitFrames );
+        //PathResolver   = new PathResolver( ResourceLoader, gameUtils );
 
         Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
         {
             HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
         } );
 
-        ResourceLoader.EnableReplacements();
-        ResourceLoader.EnableLogging();
         if( Config.DebugMode )
         {
             ResourceLoader.EnableDebug();
@@ -112,7 +96,7 @@ public class Penumbra : IDalamudPlugin
             CreateWebServer();
         }
 
-        if( !Config.EnablePlayerWatch || !Config.IsEnabled )
+        if( !Config.EnablePlayerWatch || !Config.EnableMods )
         {
             PlayerWatcher.Disable();
         }
@@ -122,16 +106,25 @@ public class Penumbra : IDalamudPlugin
             PluginLog.Debug( "Triggered Redraw of {Player}.", p.Name );
             ObjectReloader.RedrawObject( p, RedrawType.OnlyWithSettings );
         };
+
+        ResourceLoader.EnableHooks();
+        if (Config.EnableMods)
+            ResourceLoader.EnableReplacements();
+        if (Config.DebugMode)
+            ResourceLoader.EnableDebug();
+        if (Config.EnableFullResourceLogging)
+            ResourceLoader.EnableFullLogging();
     }
 
     public bool Enable()
     {
-        if( Config.IsEnabled )
+        if( Config.EnableMods )
         {
             return false;
         }
 
-        Config.IsEnabled = true;
+        Config.EnableMods = true;
+        ResourceLoader.EnableReplacements();
         ResidentResources.Reload();
         if( Config.EnablePlayerWatch )
         {
@@ -145,12 +138,13 @@ public class Penumbra : IDalamudPlugin
 
     public bool Disable()
     {
-        if( !Config.IsEnabled )
+        if( !Config.EnableMods )
         {
             return false;
         }
 
-        Config.IsEnabled = false;
+        Config.EnableMods = false;
+        ResourceLoader.DisableReplacements();
         ResidentResources.Reload();
         if( Config.EnablePlayerWatch )
         {
@@ -219,7 +213,9 @@ public class Penumbra : IDalamudPlugin
         Dalamud.Commands.RemoveHandler( CommandName );
 
         //PathResolver.Dispose();
+        ResourceLogger.Dispose();
         ResourceLoader.Dispose();
+        
 
         ShutdownWebServer();
     }
@@ -322,8 +318,8 @@ public class Penumbra : IDalamudPlugin
                 }
                 case "toggle":
                 {
-                    SetEnabled( !Config.IsEnabled );
-                    Dalamud.Chat.Print( Config.IsEnabled
+                    SetEnabled( !Config.EnableMods );
+                    Dalamud.Chat.Print( Config.EnableMods
                         ? modsEnabled
                         : modsDisabled );
                     break;

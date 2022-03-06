@@ -4,8 +4,6 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
-using Penumbra.Util;
 
 namespace Penumbra.Interop;
 
@@ -69,7 +67,7 @@ public unsafe partial class ResourceLoader
             : LoadMdlFileExternHook.Original( resourceHandle, unk1, unk2, ptr );
 
 
-    private void AddCrc( NewGamePath _, FullPath? path, object? _2 )
+    private void AddCrc( Utf8GamePath _, FullPath? path, object? _2 )
     {
         if( path is { Extension: ".mdl" or ".tex" } p )
         {

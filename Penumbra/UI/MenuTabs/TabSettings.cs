@@ -3,8 +3,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Text.RegularExpressions;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.GameData.ByteString;
 using Penumbra.Interop;
@@ -131,7 +133,7 @@ public partial class SettingsInterface
 
         private void DrawEnabledBox()
         {
-            var enabled = _config.IsEnabled;
+            var enabled = _config.EnableMods;
             if( ImGui.Checkbox( "Enable Mods", ref enabled ) )
             {
                 _base._penumbra.SetEnabled( enabled );
@@ -317,14 +319,84 @@ public partial class SettingsInterface
               + "You usually should not need to do this." );
         }
 
+        private void DrawEnableFullResourceLoggingBox()
+        {
+            var tmp = _config.EnableFullResourceLogging;
+            if( ImGui.Checkbox( "Enable Full Resource Logging", ref tmp ) && tmp != _config.EnableFullResourceLogging )
+            {
+                if( tmp )
+                {
+                    _base._penumbra.ResourceLoader.EnableFullLogging();
+                }
+                else
+                {
+                    _base._penumbra.ResourceLoader.DisableFullLogging();
+                }
+
+                _config.EnableFullResourceLogging = tmp;
+                _configChanged                    = true;
+            }
+
+            ImGui.SameLine();
+            ImGuiComponents.HelpMarker( "[DEBUG] Enable the logging of all ResourceLoader events indiscriminately." );
+        }
+
+        private void DrawEnableDebugModeBox()
+        {
+            var tmp = _config.DebugMode;
+            if( ImGui.Checkbox( "Enable Debug Mode", ref tmp ) && tmp != _config.DebugMode )
+            {
+                if( tmp )
+                {
+                    _base._penumbra.ResourceLoader.EnableDebug();
+                }
+                else
+                {
+                    _base._penumbra.ResourceLoader.DisableDebug();
+                }
+
+                _config.DebugMode = tmp;
+                _configChanged    = true;
+            }
+
+            ImGui.SameLine();
+            ImGuiComponents.HelpMarker( "[DEBUG] Enable the Debug Tab and Resource Manager Tab as well as some additional data collection." );
+        }
+
+        private void DrawRequestedResourceLogging()
+        {
+            var tmp = _config.EnableResourceLogging;
+            if( ImGui.Checkbox( "Enable Requested Resource Logging", ref tmp ) )
+            {
+                _base._penumbra.ResourceLogger.SetState( tmp );
+            }
+
+            ImGui.SameLine();
+            ImGuiComponents.HelpMarker( "Log all game paths FFXIV requests to the plugin log.\n"
+              + "You can filter the logged paths for those containing the entered string or matching the regex, if the entered string compiles to a valid regex.\n"
+              + "Red boundary indicates invalid regex." );
+            ImGui.SameLine();
+            var       tmpString = Penumbra.Config.ResourceLoggingFilter;
+            using var color     = ImGuiRaii.PushColor( ImGuiCol.Border, 0xFF0000B0, !_base._penumbra.ResourceLogger.ValidRegex );
+            using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale,
+                !_base._penumbra.ResourceLogger.ValidRegex );
+            if( ImGui.InputTextWithHint( "##ResourceLogFilter", "Filter...", ref tmpString, Utf8GamePath.MaxGamePathLength ) )
+            {
+                _base._penumbra.ResourceLogger.SetFilter( tmpString );
+            }
+        }
+
         private void DrawAdvancedSettings()
         {
             DrawTempFolder();
+            DrawRequestedResourceLogging();
             DrawDisableSoundStreamingBox();
             DrawLogLoadedFilesBox();
             DrawDisableNotificationsBox();
             DrawEnableHttpApiBox();
             DrawReloadResourceButton();
+            DrawEnableDebugModeBox();
+            DrawEnableFullResourceLoggingBox();
         }
 
         public static unsafe void Text( Utf8String s )

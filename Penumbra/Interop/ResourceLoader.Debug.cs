@@ -21,7 +21,7 @@ public unsafe partial class ResourceLoader
     {
         public ResourceHandle*  OriginalResource;
         public ResourceHandle*  ManipulatedResource;
-        public NewGamePath      OriginalPath;
+        public Utf8GamePath      OriginalPath;
         public FullPath         ManipulatedPath;
         public ResourceCategory Category;
         public object?          ResolverInfo;
@@ -44,7 +44,7 @@ public unsafe partial class ResourceLoader
         ResourceLoaded -= AddModifiedDebugInfo;
     }
 
-    private void AddModifiedDebugInfo( ResourceHandle* handle, NewGamePath originalPath, FullPath? manipulatedPath, object? resolverInfo )
+    private void AddModifiedDebugInfo( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath, object? resolverInfo )
     {
         if( manipulatedPath == null )
         {
@@ -188,11 +188,11 @@ public unsafe partial class ResourceLoader
         }
     }
 
-    // Logging functions for EnableLogging.
-    private static void LogPath( NewGamePath path, bool synchronous )
-        => PluginLog.Information( $"Requested {path} {( synchronous ? "synchronously." : "asynchronously." )}" );
+    // Logging functions for EnableFullLogging.
+    private static void LogPath( Utf8GamePath path, bool synchronous )
+        => PluginLog.Information( $"[ResourceLoader] Requested {path} {( synchronous ? "synchronously." : "asynchronously." )}" );
 
-    private static void LogResource( ResourceHandle* handle, NewGamePath path, FullPath? manipulatedPath, object? _ )
+    private static void LogResource( ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, object? _ )
     {
         var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
         PluginLog.Information( $"[ResourceLoader] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
@@ -200,6 +200,6 @@ public unsafe partial class ResourceLoader
 
     private static void LogLoadedFile( Utf8String path, bool success, bool custom )
         => PluginLog.Information( success
-            ? $"Loaded {path} from {( custom ? "local files" : "SqPack" )}"
-            : $"Failed to load {path} from {( custom ? "local files" : "SqPack" )}." );
+            ? $"[ResourceLoader] Loaded {path} from {( custom ? "local files" : "SqPack" )}"
+            : $"[ResourceLoader] Failed to load {path} from {( custom ? "local files" : "SqPack" )}." );
 }

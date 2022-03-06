@@ -75,6 +75,19 @@ public sealed unsafe partial class Utf8String : IEquatable< Utf8String >, ICompa
         return ByteStringFunctions.AsciiCaselessCompare( _path, Length, other._path, other.Length );
     }
 
+    public bool StartsWith( Utf8String other )
+    {
+        var otherLength = other.Length;
+        return otherLength <= Length && ByteStringFunctions.Equals( other.Path, otherLength, Path, otherLength );
+    }
+
+    public bool EndsWith( Utf8String other )
+    {
+        var otherLength = other.Length;
+        var offset      = Length - otherLength;
+        return offset >= 0 && ByteStringFunctions.Equals( other.Path, otherLength, Path + offset, otherLength );
+    }
+
     public bool StartsWith( params char[] chars )
     {
         if( chars.Length > Length )

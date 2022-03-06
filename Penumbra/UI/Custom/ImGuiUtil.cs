@@ -1,8 +1,8 @@
 using System.Numerics;
-using System.Security.Cryptography.X509Certificates;
 using System.Windows.Forms;
 using Dalamud.Interface;
 using ImGuiNET;
+using Penumbra.GameData.ByteString;
 
 namespace Penumbra.UI.Custom
 {
@@ -13,6 +13,19 @@ namespace Penumbra.UI.Custom
             if( ImGui.Selectable( text ) )
             {
                 Clipboard.SetText( text );
+            }
+
+            if( ImGui.IsItemHovered() )
+            {
+                ImGui.SetTooltip( "Click to copy to clipboard." );
+            }
+        }
+
+        public static unsafe void CopyOnClickSelectable( Utf8String text )
+        {
+            if( ImGuiNative.igSelectable_Bool( text.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero ) != 0 )
+            {
+                ImGuiNative.igSetClipboardText( text.Path );
             }
 
             if( ImGui.IsItemHovered() )

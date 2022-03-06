@@ -17,7 +17,7 @@ public unsafe partial class ResourceLoader : IDisposable
     // Events can be used to make smarter logging.
     public bool IsLoggingEnabled { get; private set; }
 
-    public void EnableLogging()
+    public void EnableFullLogging()
     {
         if( IsLoggingEnabled )
         {
@@ -31,7 +31,7 @@ public unsafe partial class ResourceLoader : IDisposable
         EnableHooks();
     }
 
-    public void DisableLogging()
+    public void DisableFullLogging()
     {
         if( !IsLoggingEnabled )
         {
@@ -99,13 +99,13 @@ public unsafe partial class ResourceLoader : IDisposable
     }
 
     // Event fired whenever a resource is requested.
-    public delegate void ResourceRequestedDelegate( NewGamePath path, bool synchronous );
+    public delegate void ResourceRequestedDelegate( Utf8GamePath path, bool synchronous );
     public event ResourceRequestedDelegate? ResourceRequested;
 
     // Event fired whenever a resource is returned.
     // If the path was manipulated by penumbra, manipulatedPath will be the file path of the loaded resource.
     // resolveData is additional data returned by the current ResolvePath function and is user-defined.
-    public delegate void ResourceLoadedDelegate( ResourceHandle* handle, NewGamePath originalPath, FullPath? manipulatedPath,
+    public delegate void ResourceLoadedDelegate( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
         object? resolveData );
 
     public event ResourceLoadedDelegate? ResourceLoaded;
@@ -118,10 +118,11 @@ public unsafe partial class ResourceLoader : IDisposable
     public event FileLoadedDelegate? FileLoaded;
 
     // Customization point to control how path resolving is handled.
-    public Func< NewGamePath, (FullPath?, object?) > ResolvePath { get; set; } = DefaultReplacer;
+    public Func< Utf8GamePath, (FullPath?, object?) > ResolvePath { get; set; } = DefaultReplacer;
 
     public void Dispose()
     {
+        DisableFullLogging();
         DisposeHooks();
         DisposeTexMdlTreatment();
     }

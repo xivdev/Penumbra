@@ -46,7 +46,7 @@ public unsafe partial class ResourceLoader
 
 
     [Conditional( "DEBUG" )]
-    private static void CompareHash( int local, int game, NewGamePath path )
+    private static void CompareHash( int local, int game, Utf8GamePath path )
     {
         if( local != game )
         {
@@ -54,12 +54,12 @@ public unsafe partial class ResourceLoader
         }
     }
 
-    private event Action< NewGamePath, FullPath?, object? >? PathResolved;
+    private event Action< Utf8GamePath, FullPath?, object? >? PathResolved;
 
     private ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId, uint* resourceType,
         int* resourceHash, byte* path, void* unk, bool isUnk )
     {
-        if( !NewGamePath.FromPointer( path, out var gamePath ) )
+        if( !Utf8GamePath.FromPointer( path, out var gamePath ) )
         {
             PluginLog.Error( "Could not create GamePath from resource path." );
             return CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, unk, isUnk );
@@ -114,7 +114,7 @@ public unsafe partial class ResourceLoader
             return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
 
-        var  valid = NewGamePath.FromSpan( fileDescriptor->ResourceHandle->FileNameSpan(), out var gamePath, false );
+        var  valid = Utf8GamePath.FromSpan( fileDescriptor->ResourceHandle->FileNameSpan(), out var gamePath, false );
         byte ret;
         // The internal buffer size does not allow for more than 260 characters.
         // We use the IsRooted check to signify paths replaced by us pointing to the local filesystem instead of an SqPack.
@@ -151,11 +151,10 @@ public unsafe partial class ResourceLoader
     }
 
     // Use the default method of path replacement.
-    public static (FullPath?, object?) DefaultReplacer( NewGamePath path )
+    public static (FullPath?, object?) DefaultReplacer( Utf8GamePath path )
     {
-        var gamePath = new GamePath( path.ToString() );
-        var resolved = Penumbra.ModManager.ResolveSwappedOrReplacementPath( gamePath );
-        return resolved != null ? ( new FullPath( resolved ), null ) : ( null, null );
+        var resolved = Penumbra.ModManager.ResolveSwappedOrReplacementPath( path );
+        return( resolved, null );
     }
 
     private void DisposeHooks()

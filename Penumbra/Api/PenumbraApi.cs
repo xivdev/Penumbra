@@ -5,6 +5,7 @@ using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Lumina.Data;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
@@ -78,16 +79,15 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     private static string ResolvePath( string path, ModManager manager, ModCollection collection )
     {
-        if( !Penumbra.Config.IsEnabled )
+        if( !Penumbra.Config.EnableMods )
         {
             return path;
         }
 
-        var gamePath = new GamePath( path );
+        var gamePath = Utf8GamePath.FromString( path, out var p, true ) ? p : Utf8GamePath.Empty;
         var ret      = collection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
         ret ??= manager.Collections.ForcedCollection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
-        ret ??= path;
-        return ret;
+        return ret?.ToString() ?? path;
     }
 
     public string ResolvePath( string path )

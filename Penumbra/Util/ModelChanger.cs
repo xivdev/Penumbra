@@ -16,7 +16,6 @@ public static class ModelChanger
     public const           string MaterialFormat = "/mt_c0201b0001_{0}.mtrl";
     public static readonly Regex  MaterialRegex  = new(@"/mt_c0201b0001_.*?\.mtrl", RegexOptions.Compiled);
 
-
     public static bool ValidStrings( string from, string to )
         => from.Length                         != 0
          && to.Length                          != 0
@@ -40,8 +39,8 @@ public static class ModelChanger
 
         try
         {
-            var data    = File.ReadAllBytes( file.FullName );
-            var mdlFile = new MdlFile( data );
+            var                  data    = File.ReadAllBytes( file.FullName );
+            var                  mdlFile = new MdlFile( data );
             Func< string, bool > compare = MaterialRegex.IsMatch;
             if( from.Length > 0 )
             {
@@ -53,9 +52,9 @@ public static class ModelChanger
             var replaced = 0;
             for( var i = 0; i < mdlFile.Materials.Length; ++i )
             {
-                if( compare(mdlFile.Materials[i]) )
+                if( compare( mdlFile.Materials[ i ] ) )
                 {
-                    mdlFile.Materials[i] = to;
+                    mdlFile.Materials[ i ] = to;
                     ++replaced;
                 }
             }

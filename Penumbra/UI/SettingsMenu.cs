@@ -1,9 +1,7 @@
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
-using Penumbra.Mods;
 using Penumbra.UI.Custom;
-using Penumbra.Util;
 
 namespace Penumbra.UI;
 

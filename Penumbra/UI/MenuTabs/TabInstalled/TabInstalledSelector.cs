@@ -488,7 +488,7 @@ public partial class SettingsInterface
 
             using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
 
-            if( ModPanel.DrawSortOrder( mod.Data, _modManager, this ) )
+            if( ModPanel.DrawSortOrder( mod.Data, Penumbra.ModManager, this ) )
             {
                 ImGui.CloseCurrentPopup();
             }
@@ -509,7 +509,7 @@ public partial class SettingsInterface
         {
             var change     = false;
             var metaManips = false;
-            foreach( var _ in folder.AllMods( _modManager.Config.SortFoldersFirst ) )
+            foreach( var _ in folder.AllMods( Penumbra.ModManager.Config.SortFoldersFirst ) )
             {
                 var (mod, _, _) = Cache.GetMod( currentIdx++ );
                 if( mod != null )
