@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Files;
@@ -12,7 +13,9 @@ namespace Penumbra.Util;
 
 public static class ModelChanger
 {
-    public const string MaterialFormat = "/mt_c0201b0001_{0}.mtrl";
+    public const           string MaterialFormat = "/mt_c0201b0001_{0}.mtrl";
+    public static readonly Regex  MaterialRegex  = new(@"/mt_c0201b0001_.*?\.mtrl", RegexOptions.Compiled);
+
 
     public static bool ValidStrings( string from, string to )
         => from.Length                         != 0
@@ -39,15 +42,20 @@ public static class ModelChanger
         {
             var data    = File.ReadAllBytes( file.FullName );
             var mdlFile = new MdlFile( data );
-            from = string.Format( MaterialFormat, from );
-            to   = string.Format( MaterialFormat, to );
+            Func< string, bool > compare = MaterialRegex.IsMatch;
+            if( from.Length > 0 )
+            {
+                from    = string.Format( MaterialFormat, from );
+                compare = s => s == from;
+            }
 
+            to = string.Format( MaterialFormat, to );
             var replaced = 0;
             for( var i = 0; i < mdlFile.Materials.Length; ++i )
             {
-                if( mdlFile.Materials[ i ] == @from )
+                if( compare(mdlFile.Materials[i]) )
                 {
-                    mdlFile.Materials[ i ] = to;
+                    mdlFile.Materials[i] = to;
                     ++replaced;
                 }
             }
