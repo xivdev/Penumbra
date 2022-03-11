@@ -5,11 +5,272 @@ using System.Linq;
 using Dalamud.Logging;
 using Lumina.Data.Files;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
+using Penumbra.GameData.Enums;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Util;
 
 namespace Penumbra.Meta;
+
+public struct TemporaryImcFile : IDisposable
+{
+
+    public void Dispose()
+    {
+
+    }
+}
+
+public class MetaManager2 : IDisposable
+{
+    public readonly List< MetaBaseFile > ChangedData = new(7 + CharacterUtility.NumEqdpFiles);
+
+    public ExpandedEqpFile?    EqpFile;
+    public ExpandedGmpFile?    GmpFile;
+    public ExpandedEqdpFile?[] EqdpFile = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles];
+    public EstFile?            FaceEstFile;
+    public EstFile?            HairEstFile;
+    public EstFile?            BodyEstFile;
+    public EstFile?            HeadEstFile;
+    public CmpFile?            CmpFile;
+
+    public readonly Dictionary< EqpManipulation, Mod.Mod >  EqpManipulations  = new();
+    public readonly Dictionary< EstManipulation, Mod.Mod >  EstManipulations  = new();
+    public readonly Dictionary< GmpManipulation, Mod.Mod >  GmpManipulations  = new();
+    public readonly Dictionary< RspManipulation, Mod.Mod >  RspManipulations  = new();
+    public readonly Dictionary< EqdpManipulation, Mod.Mod > EqdpManipulations = new();
+
+    public readonly Dictionary< ImcManipulation, Mod.Mod > ImcManipulations = new();
+    public readonly List< TemporaryImcFile >               ImcFiles         = new();
+
+    public void ResetEqp()
+    {
+        if( EqpFile != null )
+        {
+            EqpFile.Reset( EqpManipulations.Keys.Select( m => ( int )m.SetId ) );
+            EqpManipulations.Clear();
+            ChangedData.Remove( EqpFile );
+        }
+    }
+
+    public void ResetGmp()
+    {
+        if( GmpFile != null )
+        {
+            GmpFile.Reset( GmpManipulations.Keys.Select( m => ( int )m.SetId ) );
+            GmpManipulations.Clear();
+            ChangedData.Remove( GmpFile );
+        }
+    }
+
+    public void ResetCmp()
+    {
+        if( CmpFile != null )
+        {
+            CmpFile.Reset( RspManipulations.Keys.Select( m => ( m.SubRace, m.Attribute ) ) );
+            RspManipulations.Clear();
+            ChangedData.Remove( CmpFile );
+        }
+    }
+
+    public void ResetEst()
+    {
+        FaceEstFile?.Reset();
+        HairEstFile?.Reset();
+        BodyEstFile?.Reset();
+        HeadEstFile?.Reset();
+        RspManipulations.Clear();
+        ChangedData.RemoveAll( f => f is EstFile );
+    }
+
+    public void ResetEqdp()
+    {
+        foreach( var file in EqdpFile )
+        {
+            file?.Reset( EqdpManipulations.Keys.Where( m => m.FileIndex() == file.Index ).Select( m => ( int )m.SetId ) );
+        }
+
+        ChangedData.RemoveAll( f => f is ExpandedEqdpFile );
+        EqdpManipulations.Clear();
+    }
+
+    public void ResetImc()
+    {
+        foreach( var file in ImcFiles )
+            file.Dispose();
+        ImcFiles.Clear();
+        ImcManipulations.Clear();
+    }
+
+    public void Reset()
+    {
+        ChangedData.Clear();
+        ResetEqp();
+        ResetGmp();
+        ResetCmp();
+        ResetEst();
+        ResetEqdp();
+        ResetImc();
+    }
+
+    private static void Dispose< T >( ref T? file ) where T : class, IDisposable
+    {
+        if( file != null )
+        {
+            file.Dispose();
+            file = null;
+        }
+    }
+
+    public void Dispose()
+    {
+        ChangedData.Clear();
+        EqpManipulations.Clear();
+        EstManipulations.Clear();
+        GmpManipulations.Clear();
+        RspManipulations.Clear();
+        EqdpManipulations.Clear();
+        Dispose( ref EqpFile );
+        Dispose( ref GmpFile );
+        Dispose( ref FaceEstFile );
+        Dispose( ref HairEstFile );
+        Dispose( ref BodyEstFile );
+        Dispose( ref HeadEstFile );
+        Dispose( ref CmpFile );
+        for( var i = 0; i < CharacterUtility.NumEqdpFiles; ++i )
+        {
+            Dispose( ref EqdpFile[ i ] );
+        }
+
+        ResetImc();
+    }
+
+    private void AddFile( MetaBaseFile file )
+    {
+        if( !ChangedData.Contains( file ) )
+        {
+            ChangedData.Add( file );
+        }
+    }
+
+
+    public bool ApplyMod( EqpManipulation m, Mod.Mod mod )
+    {
+        if( !EqpManipulations.TryAdd( m, mod ) )
+        {
+            return false;
+        }
+
+        EqpFile ??= new ExpandedEqpFile();
+        if( !m.Apply( EqpFile ) )
+        {
+            return false;
+        }
+
+        AddFile( EqpFile );
+        return true;
+    }
+
+    public bool ApplyMod( GmpManipulation m, Mod.Mod mod )
+    {
+        if( !GmpManipulations.TryAdd( m, mod ) )
+        {
+            return false;
+        }
+
+        GmpFile ??= new ExpandedGmpFile();
+        if( !m.Apply( GmpFile ) )
+        {
+            return false;
+        }
+
+        AddFile( GmpFile );
+        return true;
+    }
+
+    public bool ApplyMod( EstManipulation m, Mod.Mod mod )
+    {
+        if( !EstManipulations.TryAdd( m, mod ) )
+        {
+            return false;
+        }
+
+        var file = m.Type switch
+        {
+            EstManipulation.EstType.Hair => HairEstFile ??= new EstFile( EstManipulation.EstType.Hair ),
+            EstManipulation.EstType.Face => FaceEstFile ??= new EstFile( EstManipulation.EstType.Face ),
+            EstManipulation.EstType.Body => BodyEstFile ??= new EstFile( EstManipulation.EstType.Body ),
+            EstManipulation.EstType.Head => HeadEstFile ??= new EstFile( EstManipulation.EstType.Head ),
+            _                            => throw new ArgumentOutOfRangeException(),
+        };
+        if( !m.Apply( file ) )
+        {
+            return false;
+        }
+
+        AddFile( file );
+        return true;
+    }
+
+    public bool ApplyMod( RspManipulation m, Mod.Mod mod )
+    {
+        if( !RspManipulations.TryAdd( m, mod ) )
+        {
+            return false;
+        }
+
+        CmpFile ??= new CmpFile();
+        if( !m.Apply( CmpFile ) )
+        {
+            return false;
+        }
+
+        AddFile( CmpFile );
+        return true;
+    }
+
+    public bool ApplyMod( EqdpManipulation m, Mod.Mod mod )
+    {
+        if( !EqdpManipulations.TryAdd( m, mod ) )
+        {
+            return false;
+        }
+
+        var file = EqdpFile[ m.FileIndex() - 2 ] ??= new ExpandedEqdpFile( Names.CombinedRace( m.Gender, m.Race ), m.Slot.IsAccessory() );
+        if( !m.Apply( file ) )
+        {
+            return false;
+        }
+
+        AddFile( file );
+        return true;
+    }
+
+    public bool ApplyMod( ImcManipulation m, Mod.Mod mod )
+    {
+        if( !ImcManipulations.TryAdd( m, mod ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    public bool ApplyMod( MetaManipulation m, Mod.Mod mod )
+    {
+        return m.ManipulationType switch
+        {
+            MetaManipulation.Type.Eqp  => ApplyMod( m.Eqp, mod ),
+            MetaManipulation.Type.Gmp  => ApplyMod( m.Gmp, mod ),
+            MetaManipulation.Type.Eqdp => ApplyMod( m.Eqdp, mod ),
+            MetaManipulation.Type.Est  => ApplyMod( m.Est, mod ),
+            MetaManipulation.Type.Rsp  => ApplyMod( m.Rsp, mod ),
+            MetaManipulation.Type.Imc  => ApplyMod( m.Imc, mod ),
+            _                          => throw new ArgumentOutOfRangeException()
+        };
+    }
+}
 
 public class MetaManager : IDisposable
 {
@@ -27,12 +288,7 @@ public class MetaManager : IDisposable
         {
             ByteData = Data switch
             {
-                EqdpFile eqdp => eqdp.WriteBytes(),
-                EqpFile eqp   => eqp.WriteBytes(),
-                GmpFile gmp   => gmp.WriteBytes(),
-                EstFile est   => est.WriteBytes(),
                 ImcFile imc   => imc.WriteBytes(),
-                CmpFile cmp   => cmp.WriteBytes(),
                 _             => throw new NotImplementedException(),
             };
             DisposeFile( CurrentFile );
@@ -138,50 +394,6 @@ public class MetaManager : IDisposable
         {
             value.Write( _dir, key );
             _resolvedFiles[ key ] = value.CurrentFile!.Value;
-            if( value.Data is EqpFile )
-            {
-                EqpData = value.ByteData;
-            }
-        }
-    }
-
-    public bool ApplyMod( MetaManipulation m, Mod.Mod mod )
-    {
-        if( _currentManipulations.ContainsKey( m ) )
-        {
-            return false;
-        }
-
-        _currentManipulations.Add( m, mod );
-        var gamePath = Utf8GamePath.FromString(m.CorrespondingFilename(), out var p, false) ? p : Utf8GamePath.Empty; // TODO
-        try
-        {
-            if( !_currentFiles.TryGetValue( gamePath, out var file ) )
-            {
-                file = new FileInformation( Penumbra.MetaDefaults.CreateNewFile( m ) ?? throw new IOException() )
-                {
-                    Changed     = true,
-                    CurrentFile = null,
-                };
-                _currentFiles[ gamePath ] = file;
-            }
-
-            file.Changed |= m.Type switch
-            {
-                MetaType.Eqp  => m.Apply( ( EqpFile )file.Data ),
-                MetaType.Eqdp => m.Apply( ( EqdpFile )file.Data ),
-                MetaType.Gmp  => m.Apply( ( GmpFile )file.Data ),
-                MetaType.Est  => m.Apply( ( EstFile )file.Data ),
-                MetaType.Imc  => m.Apply( ( ImcFile )file.Data ),
-                MetaType.Rsp  => m.Apply( ( CmpFile )file.Data ),
-                _             => throw new NotImplementedException(),
-            };
-            return true;
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not obtain default file for manipulation {m.CorrespondingFilename()}:\n{e}" );
-            return false;
         }
     }
 }

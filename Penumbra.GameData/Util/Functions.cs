@@ -137,15 +137,21 @@ public static class Functions
 
 
     [DllImport( "msvcrt.dll", EntryPoint = "memcmp", CallingConvention = CallingConvention.Cdecl, SetLastError = false )]
-    private static extern unsafe int memcmp( byte* b1, byte* b2, int count );
+    private static extern unsafe int memcmp( void* b1, void* b2, int count );
 
-    public static unsafe int MemCmpUnchecked( byte* ptr1, byte* ptr2, int count )
+    public static unsafe int MemCmpUnchecked( void* ptr1, void* ptr2, int count )
         => memcmp( ptr1, ptr2, count );
 
 
     [DllImport( "msvcrt.dll", EntryPoint = "_memicmp", CallingConvention = CallingConvention.Cdecl, SetLastError = false )]
-    private static extern unsafe int memicmp( byte* b1, byte* b2, int count );
+    private static extern unsafe int memicmp( void* b1, void* b2, int count );
 
-    public static unsafe int MemCmpCaseInsensitiveUnchecked( byte* ptr1, byte* ptr2, int count )
+    public static unsafe int MemCmpCaseInsensitiveUnchecked( void* ptr1, void* ptr2, int count )
         => memicmp( ptr1, ptr2, count );
+
+    [DllImport( "msvcrt.dll", EntryPoint = "memset", CallingConvention = CallingConvention.Cdecl, SetLastError = false )]
+    private static extern unsafe void* memset( void* dest, int c, int count );
+
+    public static unsafe void* MemSet( void* dest, byte value, int count )
+        => memset( dest, value, count );
 }

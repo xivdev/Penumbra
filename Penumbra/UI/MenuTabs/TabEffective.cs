@@ -108,12 +108,12 @@ public partial class SettingsInterface
                     DrawLine( gp, fp );
                 }
 
-                foreach( var (mp, mod, _) in cache.MetaManipulations.Manipulations
-                           .Select( p => ( p.Item1.IdentifierString(), p.Item2.Data.Meta.Name, p.Item2.Data.Meta.LowerName ) )
-                           .Where( CheckFilters ) )
-                {
-                    DrawLine( mp, mod );
-                }
+                //foreach( var (mp, mod, _) in cache.MetaManipulations.Manipulations
+                //           .Select( p => ( p.Item1.IdentifierString(), p.Item2.Data.Meta.Name, p.Item2.Data.Meta.LowerName ) )
+                //           .Where( CheckFilters ) )
+                //{
+                //    DrawLine( mp, mod );
+                //}
             }
 
             if( active != null )
@@ -193,7 +193,7 @@ public partial class SettingsInterface
                         else if( ( row -= activeResolved ) < activeMeta )
                         {
                             var (manip, mod) = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                            DrawLine( manip.IdentifierString(), mod.Data.Meta.Name );
+                            DrawLine( manip.ToString(), mod.Data.Meta.Name );
                         }
                         else if( ( row -= activeMeta ) < forcedResolved )
                         {
@@ -204,7 +204,7 @@ public partial class SettingsInterface
                         {
                             row              -= forcedResolved;
                             var (manip, mod) =  forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                            DrawLine( manip.IdentifierString(), mod.Data.Meta.Name );
+                            DrawLine( manip.ToString(), mod.Data.Meta.Name );
                         }
                     }
                 }

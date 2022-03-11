@@ -9,6 +9,9 @@ public unsafe struct ResourceHandle
     [StructLayout( LayoutKind.Explicit )]
     public struct DataIndirection
     {
+        [FieldOffset( 0x00 )]
+        public void** VTable;
+
         [FieldOffset( 0x10 )]
         public byte* DataPtr;
 

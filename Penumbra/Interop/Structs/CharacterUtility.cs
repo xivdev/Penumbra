@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using Penumbra.GameData.Enums;
 
 namespace Penumbra.Interop.Structs;
 
@@ -14,10 +15,11 @@ public unsafe struct CharacterUtility
     public const int HairEstIdx   = 65;
     public const int BodyEstIdx   = 66;
     public const int HeadEstIdx   = 67;
+    public const int NumEqdpFiles = 2 * 28;
 
-    public static int EqdpIdx( ushort raceCode, bool accessory )
+    public static int EqdpIdx( GenderRace raceCode, bool accessory )
         => ( accessory ? 28 : 0 )
-          + raceCode switch
+          + ( int )raceCode switch
             {
                 0101 => 2,
                 0201 => 3,
@@ -65,7 +67,7 @@ public unsafe struct CharacterUtility
     public ResourceHandle* Resource( int idx )
         => ( ResourceHandle* )Resources[ idx ];
 
-    public ResourceHandle* EqdpResource( ushort raceCode, bool accessory )
+    public ResourceHandle* EqdpResource( GenderRace raceCode, bool accessory )
         => Resource( EqdpIdx( raceCode, accessory ) );
 
     [FieldOffset( 8 + HumanCmpIdx * 8 )]

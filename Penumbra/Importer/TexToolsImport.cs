@@ -7,7 +7,6 @@ using Dalamud.Logging;
 using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
 using Penumbra.Importer.Models;
 using Penumbra.Mod;
 using Penumbra.Util;

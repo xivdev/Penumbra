@@ -304,7 +304,7 @@ public class ModCollectionCache
         {
             if( !MetaManipulations.TryGetValue( manip, out var oldMod ) )
             {
-                MetaManipulations.ApplyMod( manip, mod );
+                //MetaManipulations.ApplyMod( manip, mod );
             }
             else
             {

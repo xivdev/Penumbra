@@ -15,9 +15,13 @@ using Penumbra.PlayerWatch;
 using Penumbra.UI;
 using Penumbra.Util;
 using System.Linq;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra;
+public class MetaDefaults
+{
 
+}
 public class Penumbra : IDalamudPlugin
 {
     public string Name
@@ -33,6 +37,7 @@ public class Penumbra : IDalamudPlugin
 
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
+
     public static MetaDefaults MetaDefaults { get; private set; } = null!;
     public static ModManager ModManager { get; private set; } = null!;
 
@@ -114,6 +119,17 @@ public class Penumbra : IDalamudPlugin
             ResourceLoader.EnableDebug();
         if (Config.EnableFullResourceLogging)
             ResourceLoader.EnableFullLogging();
+
+        unsafe
+        {
+            PluginLog.Information( $"MetaManipulation: {sizeof( MetaManipulation )}" );
+            PluginLog.Information( $"EqpManipulation: {sizeof( EqpManipulation )}" );
+            PluginLog.Information( $"GmpManipulation: {sizeof( GmpManipulation )}" );
+            PluginLog.Information( $"EqdpManipulation: {sizeof( EqdpManipulation )}" );
+            PluginLog.Information( $"EstManipulation: {sizeof( EstManipulation )}" );
+            PluginLog.Information( $"RspManipulation: {sizeof( RspManipulation )}" );
+            PluginLog.Information( $"ImcManipulation: {sizeof( ImcManipulation )}" );
+        }
     }
 
     public bool Enable()

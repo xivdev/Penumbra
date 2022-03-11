@@ -225,7 +225,7 @@ public partial class SettingsInterface
 
                 foreach( var manip in manipulations )
                 {
-                    ImGui.Text( manip.IdentifierString() );
+                    //ImGui.Text( manip.IdentifierString() );
                 }
 
                 indent.Pop( 15f );

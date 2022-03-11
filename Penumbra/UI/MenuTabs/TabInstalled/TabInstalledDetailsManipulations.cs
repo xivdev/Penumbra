@@ -10,6 +10,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
+using Penumbra.Meta.Manipulations;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
 using ObjectType = Penumbra.GameData.Enums.ObjectType;
@@ -223,32 +224,32 @@ namespace Penumbra.UI
             private bool DrawEqpRow( int manipIdx, IList< MetaManipulation > list )
             {
                 var ret = false;
-                var id  = list[ manipIdx ].EqpIdentifier;
-                var val = list[ manipIdx ].EqpValue;
-
-                if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
-                {
-                    using var raii       = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
-                    var       defaults   = ( EqpEntry )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
-                    var       attributes = Eqp.EqpAttributes[ id.Slot ];
-
-                    foreach( var flag in attributes )
-                    {
-                        var name = flag.ToLocalName();
-                        var tmp  = val.HasFlag( flag );
-                        if( PrintCheckBox( $"{name}##manip", ref tmp, defaults.HasFlag( flag ) ) && _editMode && tmp != val.HasFlag( flag ) )
-                        {
-                            list[ manipIdx ] = MetaManipulation.Eqp( id.Slot, id.SetId, tmp ? val | flag : val & ~flag );
-                            ret              = true;
-                        }
-                    }
-                }
-
-                ImGui.Text( ObjectType.Equipment.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.SetId.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.Slot.ToString() );
+                //var id  = list[ manipIdx ].EqpIdentifier;
+                //var val = list[ manipIdx ].EqpValue;
+                //
+                //if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
+                //{
+                //    using var raii       = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+                //    var       defaults   = ( EqpEntry )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
+                //    var       attributes = Eqp.EqpAttributes[ id.Slot ];
+                //
+                //    foreach( var flag in attributes )
+                //    {
+                //        var name = flag.ToLocalName();
+                //        var tmp  = val.HasFlag( flag );
+                //        if( PrintCheckBox( $"{name}##manip", ref tmp, defaults.HasFlag( flag ) ) && _editMode && tmp != val.HasFlag( flag ) )
+                //        {
+                //            list[ manipIdx ] = MetaManipulation.Eqp( id.Slot, id.SetId, tmp ? val | flag : val & ~flag );
+                //            ret              = true;
+                //        }
+                //    }
+                //}
+                //
+                //ImGui.Text( ObjectType.Equipment.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.SetId.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.Slot.ToString() );
                 return ret;
             }
 
@@ -256,42 +257,42 @@ namespace Penumbra.UI
             {
                 var defaults = ( GmpEntry )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
-                var id       = list[ manipIdx ].GmpIdentifier;
-                var val      = list[ manipIdx ].GmpValue;
-
-                if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
-                {
-                    using var raii      = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
-                    var       enabled   = val.Enabled;
-                    var       animated  = val.Animated;
-                    var       rotationA = val.RotationA;
-                    var       rotationB = val.RotationB;
-                    var       rotationC = val.RotationC;
-                    ushort    unk       = val.UnknownTotal;
-
-                    ret |= PrintCheckBox( "Visor Enabled##manip", ref enabled, defaults.Enabled ) && enabled != val.Enabled;
-                    ret |= PrintCheckBox( "Visor Animated##manip", ref animated, defaults.Animated );
-                    ret |= DrawInputWithDefault( "Rotation A##manip", ref rotationA, defaults.RotationA, 0x3FF );
-                    ret |= DrawInputWithDefault( "Rotation B##manip", ref rotationB, defaults.RotationB, 0x3FF );
-                    ret |= DrawInputWithDefault( "Rotation C##manip", ref rotationC, defaults.RotationC, 0x3FF );
-                    ret |= DrawInputWithDefault( "Unknown Byte##manip", ref unk, defaults.UnknownTotal, 0xFF );
-
-                    if( ret && _editMode )
-                    {
-                        list[ manipIdx ] = MetaManipulation.Gmp( id.SetId,
-                            new GmpEntry
-                            {
-                                Animated  = animated, Enabled    = enabled, UnknownTotal = ( byte )unk,
-                                RotationA = rotationA, RotationB = rotationB, RotationC  = rotationC,
-                            } );
-                    }
-                }
-
-                ImGui.Text( ObjectType.Equipment.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.SetId.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( EquipSlot.Head.ToString() );
+                //var id       = list[ manipIdx ].GmpIdentifier;
+                //var val      = list[ manipIdx ].GmpValue;
+                //
+                //if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
+                //{
+                //    using var raii      = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+                //    var       enabled   = val.Enabled;
+                //    var       animated  = val.Animated;
+                //    var       rotationA = val.RotationA;
+                //    var       rotationB = val.RotationB;
+                //    var       rotationC = val.RotationC;
+                //    ushort    unk       = val.UnknownTotal;
+                //
+                //    ret |= PrintCheckBox( "Visor Enabled##manip", ref enabled, defaults.Enabled ) && enabled != val.Enabled;
+                //    ret |= PrintCheckBox( "Visor Animated##manip", ref animated, defaults.Animated );
+                //    ret |= DrawInputWithDefault( "Rotation A##manip", ref rotationA, defaults.RotationA, 0x3FF );
+                //    ret |= DrawInputWithDefault( "Rotation B##manip", ref rotationB, defaults.RotationB, 0x3FF );
+                //    ret |= DrawInputWithDefault( "Rotation C##manip", ref rotationC, defaults.RotationC, 0x3FF );
+                //    ret |= DrawInputWithDefault( "Unknown Byte##manip", ref unk, defaults.UnknownTotal, 0xFF );
+                //
+                //    if( ret && _editMode )
+                //    {
+                //        list[ manipIdx ] = MetaManipulation.Gmp( id.SetId,
+                //            new GmpEntry
+                //            {
+                //                Animated  = animated, Enabled    = enabled, UnknownTotal = ( byte )unk,
+                //                RotationA = rotationA, RotationB = rotationB, RotationC  = rotationC,
+                //            } );
+                //    }
+                //}
+                //
+                //ImGui.Text( ObjectType.Equipment.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.SetId.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( EquipSlot.Head.ToString() );
                 return ret;
             }
 
@@ -366,36 +367,36 @@ namespace Penumbra.UI
             {
                 var defaults = ( EqdpEntry )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
-                var id       = list[ manipIdx ].EqdpIdentifier;
-                var val      = list[ manipIdx ].EqdpValue;
-
-                if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
-                {
-                    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
-                    var (bit1, bit2)       = GetEqdpBits( id.Slot, val );
-                    var (defBit1, defBit2) = GetEqdpBits( id.Slot, defaults );
-
-                    ret |= PrintCheckBox( "Bit 1##manip", ref bit1, defBit1 );
-                    ret |= PrintCheckBox( "Bit 2##manip", ref bit2, defBit2 );
-
-                    if( ret && _editMode )
-                    {
-                        list[ manipIdx ] = MetaManipulation.Eqdp( id.Slot, id.GenderRace, id.SetId, SetEqdpBits( id.Slot, val, bit1, bit2 ) );
-                    }
-                }
-
-                ImGui.Text( id.Slot.IsAccessory()
-                    ? ObjectType.Accessory.ToString()
-                    : ObjectType.Equipment.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.SetId.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.Slot.ToString() );
-                ImGui.TableNextColumn();
-                var (gender, race) = id.GenderRace.Split();
-                ImGui.Text( race.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( gender.ToString() );
+                //var id       = list[ manipIdx ].EqdpIdentifier;
+                //var val      = list[ manipIdx ].EqdpValue;
+                //
+                //if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
+                //{
+                //    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+                //    var (bit1, bit2)       = GetEqdpBits( id.Slot, val );
+                //    var (defBit1, defBit2) = GetEqdpBits( id.Slot, defaults );
+                //
+                //    ret |= PrintCheckBox( "Bit 1##manip", ref bit1, defBit1 );
+                //    ret |= PrintCheckBox( "Bit 2##manip", ref bit2, defBit2 );
+                //
+                //    if( ret && _editMode )
+                //    {
+                //        list[ manipIdx ] = MetaManipulation.Eqdp( id.Slot, id.GenderRace, id.SetId, SetEqdpBits( id.Slot, val, bit1, bit2 ) );
+                //    }
+                //}
+                //
+                //ImGui.Text( id.Slot.IsAccessory()
+                //    ? ObjectType.Accessory.ToString()
+                //    : ObjectType.Equipment.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.SetId.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.Slot.ToString() );
+                //ImGui.TableNextColumn();
+                //var (gender, race) = id.GenderRace.Split();
+                //ImGui.Text( race.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( gender.ToString() );
                 return ret;
             }
 
@@ -403,30 +404,30 @@ namespace Penumbra.UI
             {
                 var defaults = ( ushort )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
-                var id       = list[ manipIdx ].EstIdentifier;
-                var val      = list[ manipIdx ].EstValue;
-                if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
-                {
-                    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
-                    if( DrawInputWithDefault( "No Idea what this does!##manip", ref val, defaults, ushort.MaxValue ) && _editMode )
-                    {
-                        list[ manipIdx ] = new MetaManipulation( id.Value, val );
-                        ret              = true;
-                    }
-                }
-
-                ImGui.Text( id.ObjectType.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.PrimaryId.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.ObjectType == ObjectType.Equipment
-                    ? id.EquipSlot.ToString()
-                    : id.BodySlot.ToString() );
-                ImGui.TableNextColumn();
-                var (gender, race) = id.GenderRace.Split();
-                ImGui.Text( race.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( gender.ToString() );
+                //var id       = list[ manipIdx ].EstIdentifier;
+                //var val      = list[ manipIdx ].EstValue;
+                //if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
+                //{
+                //    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+                //    if( DrawInputWithDefault( "No Idea what this does!##manip", ref val, defaults, ushort.MaxValue ) && _editMode )
+                //    {
+                //        list[ manipIdx ] = new MetaManipulation( id.Value, val );
+                //        ret              = true;
+                //    }
+                //}
+                //
+                //ImGui.Text( id.ObjectType.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.PrimaryId.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.ObjectType == ObjectType.Equipment
+                //    ? id.EquipSlot.ToString()
+                //    : id.BodySlot.ToString() );
+                //ImGui.TableNextColumn();
+                //var (gender, race) = id.GenderRace.Split();
+                //ImGui.Text( race.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( gender.ToString() );
 
                 return ret;
             }
@@ -435,58 +436,58 @@ namespace Penumbra.UI
             {
                 var defaults = ( ImcFile.ImageChangeData )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
-                var id       = list[ manipIdx ].ImcIdentifier;
-                var val      = list[ manipIdx ].ImcValue;
-
-                if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
-                {
-                    using var raii                = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
-                    ushort    materialId          = val.MaterialId;
-                    ushort    vfxId               = val.VfxId;
-                    ushort    decalId             = val.DecalId;
-                    var       soundId             = ( ushort )( val.SoundId >> 10 );
-                    var       attributeMask       = val.AttributeMask;
-                    var       materialAnimationId = ( ushort )( val.MaterialAnimationId >> 12 );
-                    ret |= DrawInputWithDefault( "Material Id", ref materialId, defaults.MaterialId, byte.MaxValue );
-                    ret |= DrawInputWithDefault( "Vfx Id", ref vfxId, defaults.VfxId, byte.MaxValue );
-                    ret |= DrawInputWithDefault( "Decal Id", ref decalId, defaults.DecalId, byte.MaxValue );
-                    ret |= DrawInputWithDefault( "Sound Id", ref soundId, defaults.SoundId, 0x3F );
-                    ret |= DrawInputWithDefault( "Attribute Mask", ref attributeMask, defaults.AttributeMask, 0x3FF );
-                    ret |= DrawInputWithDefault( "Material Animation Id", ref materialAnimationId, defaults.MaterialAnimationId,
-                        byte.MaxValue );
-
-                    if( ret && _editMode )
-                    {
-                        var value = ImcExtensions.FromValues( ( byte )materialId, ( byte )decalId, attributeMask, ( byte )soundId,
-                            ( byte )vfxId, ( byte )materialAnimationId );
-                        list[ manipIdx ] = new MetaManipulation( id.Value, value.ToInteger() );
-                    }
-                }
-
-                ImGui.Text( id.ObjectType.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.PrimaryId.ToString() );
-                ImGui.TableNextColumn();
-                if( id.ObjectType == ObjectType.Accessory
-                 || id.ObjectType == ObjectType.Equipment )
-                {
-                    ImGui.Text( id.ObjectType == ObjectType.Equipment
-                     || id.ObjectType         == ObjectType.Accessory
-                            ? id.EquipSlot.ToString()
-                            : id.BodySlot.ToString() );
-                }
-
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                if( id.ObjectType != ObjectType.Equipment
-                 && id.ObjectType != ObjectType.Accessory )
-                {
-                    ImGui.Text( id.SecondaryId.ToString() );
-                }
-
-                ImGui.TableNextColumn();
-                ImGui.Text( id.Variant.ToString() );
+                //var id       = list[ manipIdx ].ImcIdentifier;
+                //var val      = list[ manipIdx ].ImcValue;
+                //
+                //if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
+                //{
+                //    using var raii                = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+                //    ushort    materialId          = val.MaterialId;
+                //    ushort    vfxId               = val.VfxId;
+                //    ushort    decalId             = val.DecalId;
+                //    var       soundId             = ( ushort )( val.SoundId >> 10 );
+                //    var       attributeMask       = val.AttributeMask;
+                //    var       materialAnimationId = ( ushort )( val.MaterialAnimationId >> 12 );
+                //    ret |= DrawInputWithDefault( "Material Id", ref materialId, defaults.MaterialId, byte.MaxValue );
+                //    ret |= DrawInputWithDefault( "Vfx Id", ref vfxId, defaults.VfxId, byte.MaxValue );
+                //    ret |= DrawInputWithDefault( "Decal Id", ref decalId, defaults.DecalId, byte.MaxValue );
+                //    ret |= DrawInputWithDefault( "Sound Id", ref soundId, defaults.SoundId, 0x3F );
+                //    ret |= DrawInputWithDefault( "Attribute Mask", ref attributeMask, defaults.AttributeMask, 0x3FF );
+                //    ret |= DrawInputWithDefault( "Material Animation Id", ref materialAnimationId, defaults.MaterialAnimationId,
+                //        byte.MaxValue );
+                //
+                //    if( ret && _editMode )
+                //    {
+                //        var value = ImcExtensions.FromValues( ( byte )materialId, ( byte )decalId, attributeMask, ( byte )soundId,
+                //            ( byte )vfxId, ( byte )materialAnimationId );
+                //        list[ manipIdx ] = new MetaManipulation( id.Value, value.ToInteger() );
+                //    }
+                //}
+                //
+                //ImGui.Text( id.ObjectType.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.PrimaryId.ToString() );
+                //ImGui.TableNextColumn();
+                //if( id.ObjectType == ObjectType.Accessory
+                // || id.ObjectType == ObjectType.Equipment )
+                //{
+                //    ImGui.Text( id.ObjectType == ObjectType.Equipment
+                //     || id.ObjectType         == ObjectType.Accessory
+                //            ? id.EquipSlot.ToString()
+                //            : id.BodySlot.ToString() );
+                //}
+                //
+                //ImGui.TableNextColumn();
+                //ImGui.TableNextColumn();
+                //ImGui.TableNextColumn();
+                //if( id.ObjectType != ObjectType.Equipment
+                // && id.ObjectType != ObjectType.Accessory )
+                //{
+                //    ImGui.Text( id.SecondaryId.ToString() );
+                //}
+                //
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.Variant.ToString() );
                 return ret;
             }
 
@@ -494,45 +495,45 @@ namespace Penumbra.UI
             {
                 var defaults = ( float )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
-                var id       = list[ manipIdx ].RspIdentifier;
-                var val      = list[ manipIdx ].RspValue;
-
-                if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
-                {
-                    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
-                    if( DefaultButton(
-                            $"{( _editMode ? "Set to " : "" )}Default: {defaults:F3}##scaleManip", ref val, defaults )
-                     && _editMode )
-                    {
-                        list[ manipIdx ] = MetaManipulation.Rsp( id.SubRace, id.Attribute, defaults );
-                        ret              = true;
-                    }
-
-                    ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
-                    if( ImGui.InputFloat( "Scale###manip", ref val, 0, 0, "%.3f",
-                            _editMode ? ImGuiInputTextFlags.EnterReturnsTrue : ImGuiInputTextFlags.ReadOnly )
-                     && val >= 0
-                     && val <= 5
-                     && _editMode )
-                    {
-                        list[ manipIdx ] = MetaManipulation.Rsp( id.SubRace, id.Attribute, val );
-                        ret              = true;
-                    }
-                }
-
-                ImGui.Text( id.Attribute.ToUngenderedString() );
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.Text( id.SubRace.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.Text( id.Attribute.ToGender().ToString() );
+                //var id       = list[ manipIdx ].RspIdentifier;
+                //var val      = list[ manipIdx ].RspValue;
+                //
+                //if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
+                //{
+                //    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+                //    if( DefaultButton(
+                //            $"{( _editMode ? "Set to " : "" )}Default: {defaults:F3}##scaleManip", ref val, defaults )
+                //     && _editMode )
+                //    {
+                //        list[ manipIdx ] = MetaManipulation.Rsp( id.SubRace, id.Attribute, defaults );
+                //        ret              = true;
+                //    }
+                //
+                //    ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
+                //    if( ImGui.InputFloat( "Scale###manip", ref val, 0, 0, "%.3f",
+                //            _editMode ? ImGuiInputTextFlags.EnterReturnsTrue : ImGuiInputTextFlags.ReadOnly )
+                //     && val >= 0
+                //     && val <= 5
+                //     && _editMode )
+                //    {
+                //        list[ manipIdx ] = MetaManipulation.Rsp( id.SubRace, id.Attribute, val );
+                //        ret              = true;
+                //    }
+                //}
+                //
+                //ImGui.Text( id.Attribute.ToUngenderedString() );
+                //ImGui.TableNextColumn();
+                //ImGui.TableNextColumn();
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.SubRace.ToString() );
+                //ImGui.TableNextColumn();
+                //ImGui.Text( id.Attribute.ToGender().ToString() );
                 return ret;
             }
 
             private bool DrawManipulationRow( ref int manipIdx, IList< MetaManipulation > list, ref int count )
             {
-                var type = list[ manipIdx ].Type;
+                var type = list[ manipIdx ].ManipulationType;
 
                 if( _editMode )
                 {
@@ -553,40 +554,40 @@ namespace Penumbra.UI
                 ImGui.TableNextColumn();
 
                 var changes = false;
-                switch( type )
-                {
-                    case MetaType.Eqp:
-                        changes = DrawEqpRow( manipIdx, list );
-                        break;
-                    case MetaType.Gmp:
-                        changes = DrawGmpRow( manipIdx, list );
-                        break;
-                    case MetaType.Eqdp:
-                        changes = DrawEqdpRow( manipIdx, list );
-                        break;
-                    case MetaType.Est:
-                        changes = DrawEstRow( manipIdx, list );
-                        break;
-                    case MetaType.Imc:
-                        changes = DrawImcRow( manipIdx, list );
-                        break;
-                    case MetaType.Rsp:
-                        changes = DrawRspRow( manipIdx, list );
-                        break;
-                }
-
-                ImGui.TableSetColumnIndex( 9 );
-                if( ImGui.Selectable( $"{list[ manipIdx ].Value:X}##{manipIdx}" ) )
-                {
-                    ImGui.OpenPopup( $"##MetaPopup{manipIdx}" );
-                }
-
-                ImGui.TableNextRow();
+                //switch( type )
+                //{
+                //    case MetaType.Eqp:
+                //        changes = DrawEqpRow( manipIdx, list );
+                //        break;
+                //    case MetaType.Gmp:
+                //        changes = DrawGmpRow( manipIdx, list );
+                //        break;
+                //    case MetaType.Eqdp:
+                //        changes = DrawEqdpRow( manipIdx, list );
+                //        break;
+                //    case MetaType.Est:
+                //        changes = DrawEstRow( manipIdx, list );
+                //        break;
+                //    case MetaType.Imc:
+                //        changes = DrawImcRow( manipIdx, list );
+                //        break;
+                //    case MetaType.Rsp:
+                //        changes = DrawRspRow( manipIdx, list );
+                //        break;
+                //}
+                //
+                //ImGui.TableSetColumnIndex( 9 );
+                //if( ImGui.Selectable( $"{list[ manipIdx ].Value:X}##{manipIdx}" ) )
+                //{
+                //    ImGui.OpenPopup( $"##MetaPopup{manipIdx}" );
+                //}
+                //
+                //ImGui.TableNextRow();
                 return changes;
             }
 
 
-            private MetaType DrawNewTypeSelection()
+            private MetaManipulation.Type DrawNewTypeSelection()
             {
                 ImGui.RadioButton( "IMC##newManipType", ref _newManipTypeIdx, 1 );
                 ImGui.SameLine();
@@ -599,7 +600,7 @@ namespace Penumbra.UI
                 ImGui.RadioButton( "GMP##newManipType", ref _newManipTypeIdx, 5 );
                 ImGui.SameLine();
                 ImGui.RadioButton( "RSP##newManipType", ref _newManipTypeIdx, 6 );
-                return ( MetaType )_newManipTypeIdx;
+                return ( MetaManipulation.Type )_newManipTypeIdx;
             }
 
             private bool DrawNewManipulationPopup( string popupName, IList< MetaManipulation > list, ref int count )
@@ -615,7 +616,7 @@ namespace Penumbra.UI
                 MetaManipulation? newManip  = null;
                 switch( manipType )
                 {
-                    case MetaType.Imc:
+                    case MetaManipulation.Type.Imc:
                     {
                         RestrictedInputInt( "Set Id##newManipImc", ref _newManipSetId, 0, ushort.MaxValue );
                         RestrictedInputInt( "Variant##newManipImc", ref _newManipVariant, 0, byte.MaxValue );
@@ -625,39 +626,39 @@ namespace Penumbra.UI
                         {
                             case ObjectType.Equipment:
                                 CustomCombo( "Equipment Slot", EqdpEquipSlots, out equipSlot, ref _newManipEquipSlot );
-                                newManip = MetaManipulation.Imc( equipSlot, _newManipSetId, _newManipVariant,
-                                    new ImcFile.ImageChangeData() );
+                                //newManip = MetaManipulation.Imc( equipSlot, _newManipSetId, _newManipVariant,
+                                //    new ImcFile.ImageChangeData() );
                                 break;
                             case ObjectType.DemiHuman:
                             case ObjectType.Weapon:
                             case ObjectType.Monster:
                                 RestrictedInputInt( "Secondary Id##newManipImc", ref _newManipSecondaryId, 0, ushort.MaxValue );
                                 CustomCombo( "Body Slot", ImcBodySlots, out var bodySlot, ref _newManipBodySlot );
-                                newManip = MetaManipulation.Imc( objectType, bodySlot, _newManipSetId, _newManipSecondaryId,
-                                    _newManipVariant, new ImcFile.ImageChangeData() );
+                                //newManip = MetaManipulation.Imc( objectType, bodySlot, _newManipSetId, _newManipSecondaryId,
+                                //    _newManipVariant, new ImcFile.ImageChangeData() );
                                 break;
                         }
 
                         break;
                     }
-                    case MetaType.Eqdp:
+                    case MetaManipulation.Type.Eqdp:
                     {
                         RestrictedInputInt( "Set Id##newManipEqdp", ref _newManipSetId, 0, ushort.MaxValue );
                         CustomCombo( "Equipment Slot", EqdpEquipSlots, out var equipSlot, ref _newManipEquipSlot );
                         CustomCombo( "Race", Races, out var race, ref _newManipRace );
                         CustomCombo( "Gender", Genders, out var gender, ref _newManipGender );
-                        newManip = MetaManipulation.Eqdp( equipSlot, Names.CombinedRace( gender, race ), ( ushort )_newManipSetId,
-                            new EqdpEntry() );
+                        //newManip = MetaManipulation.Eqdp( equipSlot, Names.CombinedRace( gender, race ), ( ushort )_newManipSetId,
+                        //    new EqdpEntry() );
                         break;
                     }
-                    case MetaType.Eqp:
+                    case MetaManipulation.Type.Eqp:
                     {
                         RestrictedInputInt( "Set Id##newManipEqp", ref _newManipSetId, 0, ushort.MaxValue );
                         CustomCombo( "Equipment Slot", EqpEquipSlots, out var equipSlot, ref _newManipEquipSlot );
-                        newManip = MetaManipulation.Eqp( equipSlot, ( ushort )_newManipSetId, 0 );
+                        //newManip = MetaManipulation.Eqp( equipSlot, ( ushort )_newManipSetId, 0 );
                         break;
                     }
-                    case MetaType.Est:
+                    case MetaManipulation.Type.Est:
                     {
                         RestrictedInputInt( "Set Id##newManipEst", ref _newManipSetId, 0, ushort.MaxValue );
                         CustomCombo( "Object Type", ObjectTypes, out var objectType, ref _newManipObjectType );
@@ -675,47 +676,47 @@ namespace Penumbra.UI
 
                         CustomCombo( "Race", Races, out var race, ref _newManipRace );
                         CustomCombo( "Gender", Genders, out var gender, ref _newManipGender );
-                        newManip = MetaManipulation.Est( objectType, equipSlot, Names.CombinedRace( gender, race ), bodySlot,
-                            ( ushort )_newManipSetId, 0 );
+                        //newManip = MetaManipulation.Est( objectType, equipSlot, Names.CombinedRace( gender, race ), bodySlot,
+                        //    ( ushort )_newManipSetId, 0 );
                         break;
                     }
-                    case MetaType.Gmp:
+                    case MetaManipulation.Type.Gmp:
                         RestrictedInputInt( "Set Id##newManipGmp", ref _newManipSetId, 0, ushort.MaxValue );
-                        newManip = MetaManipulation.Gmp( ( ushort )_newManipSetId, new GmpEntry() );
+                        //newManip = MetaManipulation.Gmp( ( ushort )_newManipSetId, new GmpEntry() );
                         break;
-                    case MetaType.Rsp:
+                    case MetaManipulation.Type.Rsp:
                         CustomCombo( "Subrace", Subraces, out var subRace, ref _newManipSubrace );
                         CustomCombo( "Attribute", RspAttributes, out var rspAttribute, ref _newManipAttribute );
-                        newManip = MetaManipulation.Rsp( subRace, rspAttribute, 1f );
+                        //newManip = MetaManipulation.Rsp( subRace, rspAttribute, 1f );
                         break;
                 }
 
-                if( ImGui.Button( "Create Manipulation##newManip", Vector2.UnitX * -1 )
-                 && newManip != null
-                 && list.All( m => m.Identifier != newManip.Value.Identifier ) )
-                {
-                    var def = Penumbra.MetaDefaults.GetDefaultValue( newManip.Value );
-                    if( def != null )
-                    {
-                        var manip = newManip.Value.Type switch
-                        {
-                            MetaType.Est  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
-                            MetaType.Eqp  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
-                            MetaType.Eqdp => new MetaManipulation( newManip.Value.Identifier, (ushort) def ),
-                            MetaType.Gmp  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
-                            MetaType.Imc => new MetaManipulation( newManip.Value.Identifier,
-                                ( ( ImcFile.ImageChangeData )def ).ToInteger() ),
-                            MetaType.Rsp => MetaManipulation.Rsp( newManip.Value.RspIdentifier.SubRace,
-                                newManip.Value.RspIdentifier.Attribute, ( float )def ),
-                            _ => throw new InvalidEnumArgumentException(),
-                        };
-                        list.Add( manip );
-                        change = true;
-                        ++count;
-                    }
-
-                    ImGui.CloseCurrentPopup();
-                }
+                //if( ImGui.Button( "Create Manipulation##newManip", Vector2.UnitX * -1 )
+                // && newManip != null
+                // && list.All( m => m.Identifier != newManip.Value.Identifier ) )
+                //{
+                //    var def = Penumbra.MetaDefaults.GetDefaultValue( newManip.Value );
+                //    if( def != null )
+                //    {
+                //        var manip = newManip.Value.Type switch
+                //        {
+                //            MetaType.Est  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
+                //            MetaType.Eqp  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
+                //            MetaType.Eqdp => new MetaManipulation( newManip.Value.Identifier, (ushort) def ),
+                //            MetaType.Gmp  => new MetaManipulation( newManip.Value.Identifier, ( ulong )def ),
+                //            MetaType.Imc => new MetaManipulation( newManip.Value.Identifier,
+                //                ( ( ImcFile.ImageChangeData )def ).ToInteger() ),
+                //            MetaType.Rsp => MetaManipulation.Rsp( newManip.Value.RspIdentifier.SubRace,
+                //                newManip.Value.RspIdentifier.Attribute, ( float )def ),
+                //            _ => throw new InvalidEnumArgumentException(),
+                //        };
+                //        list.Add( manip );
+                //        change = true;
+                //        ++count;
+                //    }
+                //
+                //    ImGui.CloseCurrentPopup();
+                //}
 
                 return change;
             }

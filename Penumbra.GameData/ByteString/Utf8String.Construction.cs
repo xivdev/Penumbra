@@ -136,6 +136,7 @@ public sealed unsafe partial class Utf8String : IDisposable
 
         if( isOwned )
         {
+            GC.AddMemoryPressure( length + 1 );
             _length |= OwnedFlag;
         }
 

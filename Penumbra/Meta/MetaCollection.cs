@@ -6,9 +6,8 @@ using Dalamud.Logging;
 using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
 using Penumbra.Importer;
-using Penumbra.Meta.Files;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Mod;
-using Penumbra.Util;
 
 namespace Penumbra.Meta;
 

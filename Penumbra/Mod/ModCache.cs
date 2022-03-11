@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Mod;
 

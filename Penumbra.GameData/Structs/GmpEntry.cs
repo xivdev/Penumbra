@@ -4,6 +4,8 @@ namespace Penumbra.GameData.Structs
 {
     public struct GmpEntry
     {
+        public static readonly GmpEntry Default = new ();
+
         public bool Enabled
         {
             get => ( Value & 1 ) == 1;
