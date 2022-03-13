@@ -35,7 +35,6 @@ public class Configuration : IPluginConfiguration
     public int WaitFrames { get; set; } = 30;
 
     public string ModDirectory { get; set; } = string.Empty;
-    public string TempDirectory { get; set; } = string.Empty;
 
     public string CurrentCollection { get; set; } = "Default";
     public string DefaultCollection { get; set; } = "Default";

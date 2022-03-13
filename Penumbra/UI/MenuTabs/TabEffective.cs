@@ -192,8 +192,9 @@ public partial class SettingsInterface
                         }
                         else if( ( row -= activeResolved ) < activeMeta )
                         {
-                            var (manip, mod) = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                            DrawLine( manip.ToString(), mod.Data.Meta.Name );
+                            // TODO
+                            //var (manip, mod) = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
+                            DrawLine( 0.ToString(), 0.ToString() );
                         }
                         else if( ( row -= activeMeta ) < forcedResolved )
                         {
@@ -202,9 +203,10 @@ public partial class SettingsInterface
                         }
                         else
                         {
+                            // TODO
                             row              -= forcedResolved;
-                            var (manip, mod) =  forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                            DrawLine( manip.ToString(), mod.Data.Meta.Name );
+                            //var (manip, mod) =  forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
+                            DrawLine( 0.ToString(), 0.ToString() );
                         }
                     }
                 }

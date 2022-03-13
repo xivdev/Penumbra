@@ -24,8 +24,6 @@ public partial class SettingsInterface
         private readonly Configuration     _config;
         private          bool              _configChanged;
         private          string            _newModDirectory;
-        private          string            _newTempDirectory;
-
 
         public TabSettings( SettingsInterface ui )
         {
@@ -33,7 +31,6 @@ public partial class SettingsInterface
             _config           = Penumbra.Config;
             _configChanged    = false;
             _newModDirectory  = _config.ModDirectory;
-            _newTempDirectory = _config.TempDirectory;
         }
 
         private static bool DrawPressEnterWarning( string old )
@@ -88,33 +85,6 @@ public partial class SettingsInterface
                 modManager.DiscoverMods( _newModDirectory );
                 _base._menu.InstalledTab.Selector.Cache.TriggerListReset();
                 _newModDirectory = _config.ModDirectory;
-            }
-        }
-
-        private void DrawTempFolder()
-        {
-            ImGui.BeginGroup();
-            ImGui.SetNextItemWidth( SettingsMenu.InputTextWidth );
-            var save = ImGui.InputText( "Temp Directory", ref _newTempDirectory, 255, ImGuiInputTextFlags.EnterReturnsTrue );
-            ImGui.SameLine();
-            ImGuiComponents.HelpMarker( "This is where Penumbra will store temporary meta manipulation files.\n"
-              + "Leave this blank if you have no reason not to.\n"
-              + "A directory 'penumbrametatmp' will be created as a sub-directory to the specified directory.\n"
-              + "If none is specified (i.e. this is blank) this directory will be created in the root directory instead.\n" );
-            ImGui.SameLine();
-            var modManager = Penumbra.ModManager;
-            DrawOpenDirectoryButton( 1, modManager.TempPath, modManager.TempWritable );
-            ImGui.EndGroup();
-
-            if( _newTempDirectory == _config.TempDirectory )
-            {
-                return;
-            }
-
-            if( save || DrawPressEnterWarning( _config.TempDirectory ) )
-            {
-                modManager.SetTempDirectory( _newTempDirectory );
-                _newTempDirectory = _config.TempDirectory;
             }
         }
 
@@ -326,11 +296,11 @@ public partial class SettingsInterface
             {
                 if( tmp )
                 {
-                    _base._penumbra.ResourceLoader.EnableFullLogging();
+                    Penumbra.ResourceLoader.EnableFullLogging();
                 }
                 else
                 {
-                    _base._penumbra.ResourceLoader.DisableFullLogging();
+                    Penumbra.ResourceLoader.DisableFullLogging();
                 }
 
                 _config.EnableFullResourceLogging = tmp;
@@ -348,11 +318,11 @@ public partial class SettingsInterface
             {
                 if( tmp )
                 {
-                    _base._penumbra.ResourceLoader.EnableDebug();
+                    Penumbra.ResourceLoader.EnableDebug();
                 }
                 else
                 {
-                    _base._penumbra.ResourceLoader.DisableDebug();
+                    Penumbra.ResourceLoader.DisableDebug();
                 }
 
                 _config.DebugMode = tmp;
@@ -388,7 +358,6 @@ public partial class SettingsInterface
 
         private void DrawAdvancedSettings()
         {
-            DrawTempFolder();
             DrawRequestedResourceLogging();
             DrawDisableSoundStreamingBox();
             DrawLogLoadedFilesBox();

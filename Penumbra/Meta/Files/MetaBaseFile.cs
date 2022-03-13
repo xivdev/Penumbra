@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using Dalamud.Memory;
 
 namespace Penumbra.Meta.Files;
 
@@ -23,14 +24,15 @@ public unsafe class MetaBaseFile : IDisposable
     protected void AllocateData( int length )
     {
         Length = length;
-        Data   = ( byte* )Marshal.AllocHGlobal( length );
+        Data   = ( byte* )MemoryHelper.GameAllocateDefault( ( ulong )length ); ;
         GC.AddMemoryPressure( length );
     }
 
     // Free memory.
     protected void ReleaseUnmanagedResources()
     {
-        Marshal.FreeHGlobal( ( IntPtr )Data );
+        var ptr = ( IntPtr )Data;
+        MemoryHelper.GameFree( ref ptr, (ulong) Length );
         GC.RemoveMemoryPressure( Length );
         Length = 0;
         Data   = null;

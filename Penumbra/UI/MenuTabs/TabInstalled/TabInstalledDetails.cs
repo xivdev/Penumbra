@@ -426,8 +426,7 @@ public partial class SettingsInterface
                 foreach( var collection in modManager.Collections.Collections.Values
                            .Where( c => c.Cache != null && c.Settings[ Mod!.Data.BasePath.Name ].Enabled ) )
                 {
-                    collection.CalculateEffectiveFileList( modManager.TempPath, false,
-                        collection == modManager.Collections.ActiveCollection );
+                    collection.CalculateEffectiveFileList( false, collection == modManager.Collections.ActiveCollection );
                 }
 
                 // If the mod is enabled in the current collection, its conflicts may have changed.

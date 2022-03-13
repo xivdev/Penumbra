@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Files;
-using ImcFile = Lumina.Data.Files.ImcFile;
 
 namespace Penumbra.Meta.Manipulations;
 
@@ -58,4 +58,33 @@ public readonly struct ImcManipulation : IEquatable< ImcManipulation >
 
     public override int GetHashCode()
         => HashCode.Combine( PrimaryId, Variant, SecondaryId, ( int )ObjectType, ( int )EquipSlot, ( int )BodySlot );
+
+    public Utf8GamePath GamePath()
+    {
+        return ObjectType switch
+        {
+            ObjectType.Accessory => Utf8GamePath.FromString( $"chara/accessory/a{PrimaryId:D4}/a{PrimaryId:D4}.imc", out var p )
+                ? p
+                : Utf8GamePath.Empty,
+            ObjectType.Equipment => Utf8GamePath.FromString( $"chara/equipment/e{PrimaryId:D4}/e{PrimaryId:D4}.imc", out var p )
+                ? p
+                : Utf8GamePath.Empty,
+            ObjectType.DemiHuman => Utf8GamePath.FromString(
+                $"chara/demihuman/d{PrimaryId:D4}/obj/equipment/e{SecondaryId:D4}/e{SecondaryId:D4}.imc", out var p )
+                ? p
+                : Utf8GamePath.Empty,
+            ObjectType.Monster => Utf8GamePath.FromString( $"chara/monster/m{PrimaryId:D4}/obj/body/b{SecondaryId:D4}/b{SecondaryId:D4}.imc",
+                out var p )
+                ? p
+                : Utf8GamePath.Empty,
+            ObjectType.Weapon => Utf8GamePath.FromString( $"chara/weapon/w{PrimaryId:D4}/obj/body/b{SecondaryId:D4}/b{SecondaryId:D4}.imc",
+                out var p )
+                ? p
+                : Utf8GamePath.Empty,
+            _ => throw new NotImplementedException(),
+        };
+    }
+
+    public bool Apply( ImcFile file )
+        => file.SetEntry( ImcFile.PartIndex( EquipSlot ), Variant, Entry );
 }

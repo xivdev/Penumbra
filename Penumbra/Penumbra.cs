@@ -18,10 +18,10 @@ using System.Linq;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra;
-public class MetaDefaults
-{
 
-}
+public class MetaDefaults
+{ }
+
 public class Penumbra : IDalamudPlugin
 {
     public string Name
@@ -41,8 +41,7 @@ public class Penumbra : IDalamudPlugin
     public static MetaDefaults MetaDefaults { get; private set; } = null!;
     public static ModManager ModManager { get; private set; } = null!;
 
-
-    public ResourceLoader ResourceLoader { get; }
+    public static ResourceLoader ResourceLoader { get; set; } = null!;
     public ResourceLogger ResourceLogger { get; }
 
     //public PathResolver PathResolver { get; }
@@ -113,12 +112,20 @@ public class Penumbra : IDalamudPlugin
         };
 
         ResourceLoader.EnableHooks();
-        if (Config.EnableMods)
+        if( Config.EnableMods )
+        {
             ResourceLoader.EnableReplacements();
-        if (Config.DebugMode)
+        }
+
+        if( Config.DebugMode )
+        {
             ResourceLoader.EnableDebug();
-        if (Config.EnableFullResourceLogging)
+        }
+
+        if( Config.EnableFullResourceLogging )
+        {
             ResourceLoader.EnableFullLogging();
+        }
 
         unsafe
         {
@@ -231,7 +238,7 @@ public class Penumbra : IDalamudPlugin
         //PathResolver.Dispose();
         ResourceLogger.Dispose();
         ResourceLoader.Dispose();
-        
+
 
         ShutdownWebServer();
     }

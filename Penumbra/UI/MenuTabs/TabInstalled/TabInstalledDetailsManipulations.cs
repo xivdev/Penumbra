@@ -1,18 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
-using Lumina.Data.Files;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.Meta;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.UI.Custom;
-using Penumbra.Util;
 using ObjectType = Penumbra.GameData.Enums.ObjectType;
 
 namespace Penumbra.UI
@@ -255,7 +249,6 @@ namespace Penumbra.UI
 
             private bool DrawGmpRow( int manipIdx, IList< MetaManipulation > list )
             {
-                var defaults = ( GmpEntry )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
                 //var id       = list[ manipIdx ].GmpIdentifier;
                 //var val      = list[ manipIdx ].GmpValue;
@@ -365,7 +358,6 @@ namespace Penumbra.UI
 
             private bool DrawEqdpRow( int manipIdx, IList< MetaManipulation > list )
             {
-                var defaults = ( EqdpEntry )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
                 //var id       = list[ manipIdx ].EqdpIdentifier;
                 //var val      = list[ manipIdx ].EqdpValue;
@@ -402,7 +394,6 @@ namespace Penumbra.UI
 
             private bool DrawEstRow( int manipIdx, IList< MetaManipulation > list )
             {
-                var defaults = ( ushort )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
                 //var id       = list[ manipIdx ].EstIdentifier;
                 //var val      = list[ manipIdx ].EstValue;
@@ -434,7 +425,6 @@ namespace Penumbra.UI
 
             private bool DrawImcRow( int manipIdx, IList< MetaManipulation > list )
             {
-                var defaults = ( ImcFile.ImageChangeData )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
                 //var id       = list[ manipIdx ].ImcIdentifier;
                 //var val      = list[ manipIdx ].ImcValue;
@@ -493,7 +483,6 @@ namespace Penumbra.UI
 
             private bool DrawRspRow( int manipIdx, IList< MetaManipulation > list )
             {
-                var defaults = ( float )Penumbra.MetaDefaults.GetDefaultValue( list[ manipIdx ] )!;
                 var ret      = false;
                 //var id       = list[ manipIdx ].RspIdentifier;
                 //var val      = list[ manipIdx ].RspValue;

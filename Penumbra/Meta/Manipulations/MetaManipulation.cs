@@ -1,10 +1,11 @@
 using System;
 using System.Runtime.InteropServices;
+using Penumbra.GameData.Util;
 
 namespace Penumbra.Meta.Manipulations;
 
 [StructLayout( LayoutKind.Explicit, Pack = 1, Size = 16 )]
-public readonly struct MetaManipulation : IEquatable< MetaManipulation >
+public readonly struct MetaManipulation : IEquatable< MetaManipulation >, IComparable<MetaManipulation>
 {
     public enum Type : byte
     {
@@ -106,4 +107,10 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >
             Type.Imc  => Imc.GetHashCode(),
             _         => throw new ArgumentOutOfRangeException(),
         };
+
+    public unsafe int CompareTo( MetaManipulation other )
+    {
+        fixed(MetaManipulation* lhs = &this)
+            return Functions.MemCmpUnchecked(lhs, &other, sizeof(MetaManipulation));
+    }
 }

@@ -27,8 +27,7 @@ public class ModCollectionCache
     private readonly SortedList< string, object? >        _changedItems = new();
     public readonly  Dictionary< Utf8GamePath, FullPath > ResolvedFiles = new();
     public readonly  HashSet< FullPath >                  MissingFiles  = new();
-    public readonly  HashSet< ulong >                     Checksums     = new();
-    public readonly  MetaManager                          MetaManipulations;
+    public readonly  MetaManager2                         MetaManipulations;
 
     public IReadOnlyDictionary< string, object? > ChangedItems
     {
@@ -39,8 +38,8 @@ public class ModCollectionCache
         }
     }
 
-    public ModCollectionCache( string collectionName, DirectoryInfo tempDir )
-        => MetaManipulations = new MetaManager( collectionName, ResolvedFiles, tempDir );
+    public ModCollectionCache( ModCollection collection )
+        => MetaManipulations = new MetaManager2( collection );
 
     private static void ResetFileSeen( int size )
     {
@@ -73,11 +72,6 @@ public class ModCollectionCache
         }
 
         AddMetaFiles();
-        Checksums.Clear();
-        foreach( var file in ResolvedFiles )
-        {
-            Checksums.Add( file.Value.Crc64 );
-        }
     }
 
     private void SetChangedItems()
@@ -89,11 +83,10 @@ public class ModCollectionCache
 
         try
         {
-            // Skip meta files because IMCs would result in far too many false-positive items,
+            // Skip IMCs because they would result in far too many false-positive items,
             // since they are per set instead of per item-slot/item/variant.
-            var metaFiles  = MetaManipulations.Files.Select( p => p.Item1 ).ToHashSet();
             var identifier = GameData.GameData.GetIdentifier();
-            foreach( var resolved in ResolvedFiles.Keys.Where( file => !metaFiles.Contains( file ) ) )
+            foreach( var resolved in ResolvedFiles.Keys.Where( file => !file.Path.EndsWith( 'i', 'm', 'c' ) ) )
             {
                 identifier.Identify( _changedItems, resolved.ToGamePath() );
             }
@@ -265,18 +258,7 @@ public class ModCollectionCache
     }
 
     private void AddMetaFiles()
-    {
-        foreach( var (gamePath, file) in MetaManipulations.Files )
-        {
-            if( RegisteredFiles.TryGetValue( gamePath, out var mod ) )
-            {
-                PluginLog.Warning(
-                    $"The meta manipulation file {gamePath} was already completely replaced by {mod.Data.Meta.Name}. This is probably a mistake. Using the custom file {file.FullName}." );
-            }
-
-            ResolvedFiles[ gamePath ] = file;
-        }
-    }
+        => MetaManipulations.ApplyImcFiles( ResolvedFiles );
 
     private void AddSwaps( Mod.Mod mod )
     {
@@ -304,12 +286,12 @@ public class ModCollectionCache
         {
             if( !MetaManipulations.TryGetValue( manip, out var oldMod ) )
             {
-                //MetaManipulations.ApplyMod( manip, mod );
+                MetaManipulations.ApplyMod( manip, mod );
             }
             else
             {
-                mod.Cache.AddConflict( oldMod, manip );
-                if( !ReferenceEquals( mod, oldMod ) && mod.Settings.Priority == oldMod.Settings.Priority )
+                mod.Cache.AddConflict( oldMod!, manip );
+                if( !ReferenceEquals( mod, oldMod ) && mod.Settings.Priority == oldMod!.Settings.Priority )
                 {
                     oldMod.Cache.AddConflict( mod, manip );
                 }
@@ -319,15 +301,13 @@ public class ModCollectionCache
 
     public void UpdateMetaManipulations()
     {
-        MetaManipulations.Reset( false );
+        MetaManipulations.Reset();
 
         foreach( var mod in AvailableMods.Values.Where( m => m.Settings.Enabled && m.Data.Resources.MetaManipulations.Count > 0 ) )
         {
             mod.Cache.ClearMetaConflicts();
             AddManipulations( mod );
         }
-
-        MetaManipulations.WriteNewFiles();
     }
 
     public void RemoveMod( DirectoryInfo basePath )

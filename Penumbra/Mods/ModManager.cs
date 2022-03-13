@@ -4,401 +4,297 @@ using System.IO;
 using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Mod;
 
-namespace Penumbra.Mods
+namespace Penumbra.Mods;
+
+// The ModManager handles the basic mods installed to the mod directory.
+// It also contains the CollectionManager that handles all collections.
+public class ModManager
 {
-    // The ModManager handles the basic mods installed to the mod directory.
-    // It also contains the CollectionManager that handles all collections.
-    public class ModManager
+    public DirectoryInfo BasePath { get; private set; } = null!;
+
+    public Dictionary< string, ModData > Mods { get; } = new();
+    public ModFolder StructuredMods { get; } = ModFileSystem.Root;
+
+    public CollectionManager Collections { get; }
+
+    public bool Valid { get; private set; }
+
+    public Configuration Config
+        => Penumbra.Config;
+
+    public void DiscoverMods( string newDir )
     {
-        public DirectoryInfo BasePath { get; private set; } = null!;
-        public DirectoryInfo TempPath { get; private set; } = null!;
+        SetBaseDirectory( newDir, false );
+        DiscoverMods();
+    }
 
-        public Dictionary< string, ModData > Mods { get; } = new();
-        public ModFolder StructuredMods { get; } = ModFileSystem.Root;
-
-        public CollectionManager Collections { get; }
-
-        public bool Valid { get; private set; }
-        public bool TempWritable { get; private set; }
-
-        public Configuration Config
-            => Penumbra.Config;
-
-        public void DiscoverMods( string newDir )
+    private void SetBaseDirectory( string newPath, bool firstTime )
+    {
+        if( !firstTime && string.Equals( newPath, Config.ModDirectory, StringComparison.InvariantCultureIgnoreCase ) )
         {
-            SetBaseDirectory( newDir, false );
-            DiscoverMods();
+            return;
         }
 
-        private void ClearOldTmpDir()
+        if( !newPath.Any() )
         {
-            if( !TempWritable )
-            {
-                return;
-            }
-
-            TempPath.Refresh();
-            if( TempPath.Exists )
+            Valid    = false;
+            BasePath = new DirectoryInfo( "." );
+        }
+        else
+        {
+            var newDir = new DirectoryInfo( newPath );
+            if( !newDir.Exists )
             {
                 try
                 {
-                    TempPath.Delete( true );
+                    Directory.CreateDirectory( newDir.FullName );
+                    newDir.Refresh();
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Could not delete temporary directory {TempPath.FullName}:\n{e}" );
+                    PluginLog.Error( $"Could not create specified mod directory {newDir.FullName}:\n{e}" );
                 }
+            }
+
+            BasePath = newDir;
+            Valid    = true;
+            if( Config.ModDirectory != BasePath.FullName )
+            {
+                Config.ModDirectory = BasePath.FullName;
+                Config.Save();
+            }
+
+            if( !firstTime )
+            {
+                Collections.RecreateCaches();
+            }
+        }
+    }
+
+    public ModManager()
+    {
+        SetBaseDirectory( Config.ModDirectory, true );
+        Collections = new CollectionManager( this );
+    }
+
+    private bool SetSortOrderPath( ModData mod, string path )
+    {
+        mod.Move( path );
+        var fixedPath = mod.SortOrder.FullPath;
+        if( !fixedPath.Any() || string.Equals( fixedPath, mod.Meta.Name, StringComparison.InvariantCultureIgnoreCase ) )
+        {
+            Config.ModSortOrder.Remove( mod.BasePath.Name );
+            return true;
+        }
+
+        if( path != fixedPath )
+        {
+            Config.ModSortOrder[ mod.BasePath.Name ] = fixedPath;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void SetModStructure( bool removeOldPaths = false )
+    {
+        var changes = false;
+
+        foreach( var kvp in Config.ModSortOrder.ToArray() )
+        {
+            if( kvp.Value.Any() && Mods.TryGetValue( kvp.Key, out var mod ) )
+            {
+                changes |= SetSortOrderPath( mod, kvp.Value );
+            }
+            else if( removeOldPaths )
+            {
+                changes = true;
+                Config.ModSortOrder.Remove( kvp.Key );
             }
         }
 
-        private static bool CheckTmpDir( string newPath, out DirectoryInfo tmpDir )
+        if( changes )
         {
-            tmpDir = new DirectoryInfo( Path.Combine( newPath, MetaManager.TmpDirectory ) );
-            try
+            Config.Save();
+        }
+    }
+
+    public void DiscoverMods()
+    {
+        Mods.Clear();
+        BasePath.Refresh();
+
+        StructuredMods.SubFolders.Clear();
+        StructuredMods.Mods.Clear();
+        if( Valid && BasePath.Exists )
+        {
+            foreach( var modFolder in BasePath.EnumerateDirectories() )
             {
-                if( tmpDir.Exists )
+                var mod = ModData.LoadMod( StructuredMods, modFolder );
+                if( mod == null )
                 {
-                    tmpDir.Delete( true );
-                    tmpDir.Refresh();
+                    continue;
                 }
 
-                Directory.CreateDirectory( tmpDir.FullName );
-                tmpDir.Refresh();
-                return true;
+                Mods.Add( modFolder.Name, mod );
+            }
+
+            SetModStructure();
+        }
+
+        Collections.RecreateCaches();
+    }
+
+    public void DeleteMod( DirectoryInfo modFolder )
+    {
+        modFolder.Refresh();
+        if( modFolder.Exists )
+        {
+            try
+            {
+                Directory.Delete( modFolder.FullName, true );
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not create temporary directory {tmpDir.FullName}:\n{e}" );
-                return false;
+                PluginLog.Error( $"Could not delete the mod {modFolder.Name}:\n{e}" );
+            }
+
+            if( Mods.TryGetValue( modFolder.Name, out var mod ) )
+            {
+                mod.SortOrder.ParentFolder.RemoveMod( mod );
+                Mods.Remove( modFolder.Name );
+                Collections.RemoveModFromCaches( modFolder );
             }
         }
+    }
 
-        private void SetBaseDirectory( string newPath, bool firstTime )
+    public bool AddMod( DirectoryInfo modFolder )
+    {
+        var mod = ModData.LoadMod( StructuredMods, modFolder );
+        if( mod == null )
         {
-            if( !firstTime && string.Equals( newPath, Config.ModDirectory, StringComparison.InvariantCultureIgnoreCase ) )
-            {
-                return;
-            }
-
-            if( !newPath.Any() )
-            {
-                Valid    = false;
-                BasePath = new DirectoryInfo( "." );
-            }
-            else
-            {
-                var newDir = new DirectoryInfo( newPath );
-                if( !newDir.Exists )
-                {
-                    try
-                    {
-                        Directory.CreateDirectory( newDir.FullName );
-                        newDir.Refresh();
-                    }
-                    catch( Exception e )
-                    {
-                        PluginLog.Error( $"Could not create specified mod directory {newDir.FullName}:\n{e}" );
-                    }
-                }
-
-                BasePath = newDir;
-                Valid    = true;
-                if( Config.ModDirectory != BasePath.FullName )
-                {
-                    Config.ModDirectory = BasePath.FullName;
-                    Config.Save();
-                }
-
-                if( !Config.TempDirectory.Any() )
-                {
-                    if( CheckTmpDir( BasePath.FullName, out var newTmpDir ) )
-                    {
-                        if( !firstTime )
-                        {
-                            ClearOldTmpDir();
-                        }
-
-                        TempPath     = newTmpDir;
-                        TempWritable = true;
-                    }
-                    else
-                    {
-                        TempWritable = false;
-                    }
-                }
-
-                if( !firstTime )
-                {
-                    Collections.RecreateCaches();
-                }
-            }
-        }
-
-        private void SetTempDirectory( string newPath, bool firstTime )
-        {
-            if( !Valid || !firstTime && string.Equals( newPath, Config.TempDirectory, StringComparison.InvariantCultureIgnoreCase ) )
-            {
-                return;
-            }
-
-            if( !newPath.Any() && CheckTmpDir( BasePath.FullName, out var newTmpDir )
-             || newPath.Any()  && CheckTmpDir( newPath, out newTmpDir ) )
-            {
-                if( !firstTime )
-                {
-                    ClearOldTmpDir();
-                }
-
-                TempPath     = newTmpDir;
-                TempWritable = true;
-                var newName = newPath.Any() ? TempPath.Parent!.FullName : string.Empty;
-                if( Config.TempDirectory != newName )
-                {
-                    Config.TempDirectory = newName;
-                    Config.Save();
-                }
-
-                if( !firstTime )
-                {
-                    Collections.RecreateCaches();
-                }
-            }
-            else
-            {
-                TempWritable = false;
-            }
-        }
-
-        public void SetTempDirectory( string newPath )
-            => SetTempDirectory( newPath, false );
-
-        public ModManager()
-        {
-            SetBaseDirectory( Config.ModDirectory, true );
-            SetTempDirectory( Config.TempDirectory, true );
-            Collections = new CollectionManager( this );
-        }
-
-        private bool SetSortOrderPath( ModData mod, string path )
-        {
-            mod.Move( path );
-            var fixedPath = mod.SortOrder.FullPath;
-            if( !fixedPath.Any() || string.Equals( fixedPath, mod.Meta.Name, StringComparison.InvariantCultureIgnoreCase ) )
-            {
-                Config.ModSortOrder.Remove( mod.BasePath.Name );
-                return true;
-            }
-
-            if( path != fixedPath )
-            {
-                Config.ModSortOrder[ mod.BasePath.Name ] = fixedPath;
-                return true;
-            }
-
             return false;
         }
 
-        private void SetModStructure( bool removeOldPaths = false )
+        if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
         {
-            var changes = false;
-
-            foreach( var kvp in Config.ModSortOrder.ToArray() )
-            {
-                if( kvp.Value.Any() && Mods.TryGetValue( kvp.Key, out var mod ) )
-                {
-                    changes |= SetSortOrderPath( mod, kvp.Value );
-                }
-                else if( removeOldPaths )
-                {
-                    changes = true;
-                    Config.ModSortOrder.Remove( kvp.Key );
-                }
-            }
-
-            if( changes )
+            if( SetSortOrderPath( mod, sortOrder ) )
             {
                 Config.Save();
             }
         }
 
-        public void DiscoverMods()
+        if( Mods.ContainsKey( modFolder.Name ) )
         {
-            Mods.Clear();
-            BasePath.Refresh();
-
-            StructuredMods.SubFolders.Clear();
-            StructuredMods.Mods.Clear();
-            if( Valid && BasePath.Exists )
-            {
-                foreach( var modFolder in BasePath.EnumerateDirectories() )
-                {
-                    var mod = ModData.LoadMod( StructuredMods, modFolder );
-                    if( mod == null )
-                    {
-                        continue;
-                    }
-
-                    Mods.Add( modFolder.Name, mod );
-                }
-
-                SetModStructure();
-            }
-
-            Collections.RecreateCaches();
+            return false;
         }
 
-        public void DeleteMod( DirectoryInfo modFolder )
+        Mods.Add( modFolder.Name, mod );
+        foreach( var collection in Collections.Collections.Values )
         {
-            modFolder.Refresh();
-            if( modFolder.Exists )
-            {
-                try
-                {
-                    Directory.Delete( modFolder.FullName, true );
-                }
-                catch( Exception e )
-                {
-                    PluginLog.Error( $"Could not delete the mod {modFolder.Name}:\n{e}" );
-                }
-
-                if( Mods.TryGetValue( modFolder.Name, out var mod ) )
-                {
-                    mod.SortOrder.ParentFolder.RemoveMod( mod );
-                    Mods.Remove( modFolder.Name );
-                    Collections.RemoveModFromCaches( modFolder );
-                }
-            }
+            collection.AddMod( mod );
         }
 
-        public bool AddMod( DirectoryInfo modFolder )
-        {
-            var mod = ModData.LoadMod( StructuredMods, modFolder );
-            if( mod == null )
-            {
-                return false;
-            }
+        return true;
+    }
 
+    public bool UpdateMod( ModData mod, bool reloadMeta = false, bool recomputeMeta = false, bool force = false )
+    {
+        var oldName     = mod.Meta.Name;
+        var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile ) || force;
+        var fileChanges = mod.Resources.RefreshModFiles( mod.BasePath );
+
+        if( !recomputeMeta && !reloadMeta && !metaChanges && fileChanges == 0 )
+        {
+            return false;
+        }
+
+        if( metaChanges || fileChanges.HasFlag( ResourceChange.Files ) )
+        {
+            mod.ComputeChangedItems();
             if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
             {
-                if( SetSortOrderPath( mod, sortOrder ) )
+                mod.Move( sortOrder );
+                var path = mod.SortOrder.FullPath;
+                if( path != sortOrder )
                 {
+                    Config.ModSortOrder[ mod.BasePath.Name ] = path;
                     Config.Save();
                 }
             }
-
-            if( Mods.ContainsKey( modFolder.Name ) )
+            else
             {
-                return false;
+                mod.SortOrder = new SortOrder( StructuredMods, mod.Meta.Name );
             }
-
-            Mods.Add( modFolder.Name, mod );
-            foreach( var collection in Collections.Collections.Values )
-            {
-                collection.AddMod( mod );
-            }
-
-            return true;
         }
 
-        public bool UpdateMod( ModData mod, bool reloadMeta = false, bool recomputeMeta = false, bool force = false )
+        var nameChange = !string.Equals( oldName, mod.Meta.Name, StringComparison.InvariantCulture );
+
+        recomputeMeta |= fileChanges.HasFlag( ResourceChange.Meta );
+        if( recomputeMeta )
         {
-            var oldName     = mod.Meta.Name;
-            var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile ) || force;
-            var fileChanges = mod.Resources.RefreshModFiles( mod.BasePath );
-
-            if( !recomputeMeta && !reloadMeta && !metaChanges && fileChanges == 0 )
-            {
-                return false;
-            }
-
-            if( metaChanges || fileChanges.HasFlag( ResourceChange.Files ) )
-            {
-                mod.ComputeChangedItems();
-                if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
-                {
-                    mod.Move( sortOrder );
-                    var path = mod.SortOrder.FullPath;
-                    if( path != sortOrder )
-                    {
-                        Config.ModSortOrder[ mod.BasePath.Name ] = path;
-                        Config.Save();
-                    }
-                }
-                else
-                {
-                    mod.SortOrder = new SortOrder( StructuredMods, mod.Meta.Name );
-                }
-            }
-
-            var nameChange = !string.Equals( oldName, mod.Meta.Name, StringComparison.InvariantCulture );
-
-            recomputeMeta |= fileChanges.HasFlag( ResourceChange.Meta );
-            if( recomputeMeta )
-            {
-                mod.Resources.MetaManipulations.Update( mod.Resources.MetaFiles, mod.BasePath, mod.Meta );
-                mod.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( mod.BasePath ) );
-            }
-
-            Collections.UpdateCollections( mod, metaChanges, fileChanges, nameChange, reloadMeta );
-
-            return true;
+            mod.Resources.MetaManipulations.Update( mod.Resources.MetaFiles, mod.BasePath, mod.Meta );
+            mod.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( mod.BasePath ) );
         }
 
-        public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
-        {
-            var ret = Collections.ActiveCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
-            ret ??= Collections.ForcedCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
-            return ret;
-        }
+        Collections.UpdateCollections( mod, metaChanges, fileChanges, nameChange, reloadMeta );
 
-        //         private void FileSystemWatcherOnChanged( object sender, FileSystemEventArgs e )
-        //         {
-        // #if DEBUG
-        //             PluginLog.Verbose( "file changed: {FullPath}", e.FullPath );
-        // #endif
-        //
-        //             if( _plugin.ImportInProgress )
-        //             {
-        //                 return;
-        //             }
-        //
-        //             if( _plugin.Configuration.DisableFileSystemNotifications )
-        //             {
-        //                 return;
-        //             }
-        //
-        //             var file = e.FullPath;
-        //
-        //             if( !ResolvedFiles.Any( x => x.Value.FullName == file ) )
-        //             {
-        //                 return;
-        //             }
-        //
-        //             PluginLog.Log( "a loaded file has been modified - file: {FullPath}", file );
-        //             _plugin.GameUtils.ReloadPlayerResources();
-        //         }
-        // 
-        //         private void FileSystemPasta()
-        //         {
-        //              haha spaghet
-        //              _fileSystemWatcher?.Dispose();
-        //              _fileSystemWatcher = new FileSystemWatcher( _basePath.FullName )
-        //              {
-        //                  NotifyFilter = NotifyFilters.LastWrite |
-        //                                 NotifyFilters.FileName |
-        //                                 NotifyFilters.DirectoryName,
-        //                  IncludeSubdirectories = true,
-        //                  EnableRaisingEvents = true
-        //              };
-        //             
-        //              _fileSystemWatcher.Changed += FileSystemWatcherOnChanged;
-        //              _fileSystemWatcher.Created += FileSystemWatcherOnChanged;
-        //              _fileSystemWatcher.Deleted += FileSystemWatcherOnChanged;
-        //              _fileSystemWatcher.Renamed += FileSystemWatcherOnChanged;
-        //         }
+        return true;
     }
+
+    public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
+    {
+        var ret = Collections.ActiveCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
+        ret ??= Collections.ForcedCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
+        return ret;
+    }
+
+    //         private void FileSystemWatcherOnChanged( object sender, FileSystemEventArgs e )
+    //         {
+    // #if DEBUG
+    //             PluginLog.Verbose( "file changed: {FullPath}", e.FullPath );
+    // #endif
+    //
+    //             if( _plugin.ImportInProgress )
+    //             {
+    //                 return;
+    //             }
+    //
+    //             if( _plugin.Configuration.DisableFileSystemNotifications )
+    //             {
+    //                 return;
+    //             }
+    //
+    //             var file = e.FullPath;
+    //
+    //             if( !ResolvedFiles.Any( x => x.Value.FullName == file ) )
+    //             {
+    //                 return;
+    //             }
+    //
+    //             PluginLog.Log( "a loaded file has been modified - file: {FullPath}", file );
+    //             _plugin.GameUtils.ReloadPlayerResources();
+    //         }
+    // 
+    //         private void FileSystemPasta()
+    //         {
+    //              haha spaghet
+    //              _fileSystemWatcher?.Dispose();
+    //              _fileSystemWatcher = new FileSystemWatcher( _basePath.FullName )
+    //              {
+    //                  NotifyFilter = NotifyFilters.LastWrite |
+    //                                 NotifyFilters.FileName |
+    //                                 NotifyFilters.DirectoryName,
+    //                  IncludeSubdirectories = true,
+    //                  EnableRaisingEvents = true
+    //              };
+    //             
+    //              _fileSystemWatcher.Changed += FileSystemWatcherOnChanged;
+    //              _fileSystemWatcher.Created += FileSystemWatcherOnChanged;
+    //              _fileSystemWatcher.Deleted += FileSystemWatcherOnChanged;
+    //              _fileSystemWatcher.Renamed += FileSystemWatcherOnChanged;
+    //         }
 }

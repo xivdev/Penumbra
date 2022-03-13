@@ -5,10 +5,7 @@ using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
-using Penumbra.Mods;
-using Penumbra.Util;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
@@ -123,6 +120,10 @@ public unsafe partial class ResourceLoader
             ret = ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
             FileLoaded?.Invoke( gamePath.Path, ret != 0, false );
         }
+        else if( ResourceLoadCustomization != null && gamePath.Path[0] == (byte) '|' )
+        {
+            ret = ResourceLoadCustomization.Invoke( gamePath, resourceManager, fileDescriptor, priority, isSync );
+        }
         else
         {
             // Specify that we are loading unpacked files from the drive.
@@ -150,11 +151,18 @@ public unsafe partial class ResourceLoader
         return ret;
     }
 
+    // Customize file loading for any GamePaths that start with "|".
+    public delegate byte ResourceLoadCustomizationDelegate( Utf8GamePath gamePath, ResourceManager* resourceManager,
+        SeFileDescriptor* fileDescriptor, int priority, bool isSync );
+
+    public ResourceLoadCustomizationDelegate? ResourceLoadCustomization;
+
+
     // Use the default method of path replacement.
     public static (FullPath?, object?) DefaultReplacer( Utf8GamePath path )
     {
         var resolved = Penumbra.ModManager.ResolveSwappedOrReplacementPath( path );
-        return( resolved, null );
+        return ( resolved, null );
     }
 
     private void DisposeHooks()

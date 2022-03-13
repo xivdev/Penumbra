@@ -256,11 +256,10 @@ public class TexToolsMeta
         ushort    i      = 0;
         if( info.PrimaryType is ObjectType.Equipment or ObjectType.Accessory )
         {
+            // TODO check against default.
             foreach( var value in values )
             {
-                ImcEntry def;
-                if( !value.Equals( def ) )
-                    ImcManipulations.Add(new ImcManipulation(info.EquipSlot, i, info.PrimaryId, value)  );
+                ImcManipulations.Add(new ImcManipulation(info.EquipSlot, i, info.PrimaryId, value)  );
                 ++i;
             }
         }
@@ -268,55 +267,64 @@ public class TexToolsMeta
         {
             foreach( var value in values )
             {
-                ImcEntry def;
-                if( !value.Equals( def ) )
-                    ImcManipulations.Add( new ImcManipulation( info.PrimaryType, info.SecondaryType, info.PrimaryId, info.SecondaryId, i, value ) );
+                ImcManipulations.Add( new ImcManipulation( info.PrimaryType, info.SecondaryType, info.PrimaryId, info.SecondaryId, i, value ) );
                 ++i;
             }
         }
+    }
+
+    private static string ReadNullTerminated( BinaryReader reader )
+    {
+        var builder = new System.Text.StringBuilder();
+        for( var c = reader.ReadChar(); c != 0; c = reader.ReadChar() )
+        {
+            builder.Append( c );
+        }
+
+        return builder.ToString();
     }
 
     public TexToolsMeta( byte[] data )
     {
         try
         {
-            //using var reader = new BinaryReader( new MemoryStream( data ) );
-            //Version  = reader.ReadUInt32();
-            //FilePath = ReadNullTerminated( reader );
-            //var metaInfo    = new Info( FilePath );
-            //var numHeaders  = reader.ReadUInt32();
-            //var headerSize  = reader.ReadUInt32();
-            //var headerStart = reader.ReadUInt32();
-            //reader.BaseStream.Seek( headerStart, SeekOrigin.Begin );
-            //
-            //List< (MetaType type, uint offset, int size) > entries = new();
-            //for( var i = 0; i < numHeaders; ++i )
-            //{
-            //    var currentOffset = reader.BaseStream.Position;
-            //    var type          = ( MetaType )reader.ReadUInt32();
-            //    var offset        = reader.ReadUInt32();
-            //    var size          = reader.ReadInt32();
-            //    entries.Add( ( type, offset, size ) );
-            //    reader.BaseStream.Seek( currentOffset + headerSize, SeekOrigin.Begin );
-            //}
-            //
-            //byte[]? ReadEntry( MetaType type )
-            //{
-            //    var idx = entries.FindIndex( t => t.type == type );
-            //    if( idx < 0 )
-            //    {
-            //        return null;
-            //    }
-            //
-            //    reader.BaseStream.Seek( entries[ idx ].offset, SeekOrigin.Begin );
-            //    return reader.ReadBytes( entries[ idx ].size );
-            //}
-            //
-            //DeserializeEqpEntry( metaInfo, ReadEntry( MetaManipulation.Type.Eqp ) );
-            //DeserializeGmpEntry( metaInfo, ReadEntry( MetaManipulation.Type.Gmp ) );
-            //DeserializeEqdpEntries( metaInfo, ReadEntry( MetaManipulation.Type.Eqdp ) );
-            //DeserializeEstEntries( metaInfo, ReadEntry( MetaManipulation.Type.Est ) );
-            //DeserializeImcEntries( metaInfo, ReadEntry( MetaManipulation.Type.Imc ) );
+            using var reader = new BinaryReader( new MemoryStream( data ) );
+            Version  = reader.ReadUInt32();
+            FilePath = ReadNullTerminated( reader );
+            var metaInfo    = new Info( FilePath );
+            var numHeaders  = reader.ReadUInt32();
+            var headerSize  = reader.ReadUInt32();
+            var headerStart = reader.ReadUInt32();
+            reader.BaseStream.Seek( headerStart, SeekOrigin.Begin );
+            
+            List< (MetaManipulation.Type type, uint offset, int size) > entries = new();
+            for( var i = 0; i < numHeaders; ++i )
+            {
+                var currentOffset = reader.BaseStream.Position;
+                var type          = ( MetaManipulation.Type )reader.ReadUInt32();
+                var offset        = reader.ReadUInt32();
+                var size          = reader.ReadInt32();
+                entries.Add( ( type, offset, size ) );
+                reader.BaseStream.Seek( currentOffset + headerSize, SeekOrigin.Begin );
+            }
+            
+            byte[]? ReadEntry( MetaManipulation.Type type )
+            {
+                var idx = entries.FindIndex( t => t.type == type );
+                if( idx < 0 )
+                {
+                    return null;
+                }
+            
+                reader.BaseStream.Seek( entries[ idx ].offset, SeekOrigin.Begin );
+                return reader.ReadBytes( entries[ idx ].size );
+            }
+            
+            DeserializeEqpEntry( metaInfo, ReadEntry( MetaManipulation.Type.Eqp ) );
+            DeserializeGmpEntry( metaInfo, ReadEntry( MetaManipulation.Type.Gmp ) );
+            DeserializeEqdpEntries( metaInfo, ReadEntry( MetaManipulation.Type.Eqdp ) );
+            DeserializeEstEntries( metaInfo, ReadEntry( MetaManipulation.Type.Est ) );
+            DeserializeImcEntries( metaInfo, ReadEntry( MetaManipulation.Type.Imc ) );
         }
         catch( Exception e )
         {
@@ -362,28 +370,35 @@ public class TexToolsMeta
             return Invalid;
         }
 
-        //if( gender == 1 )
-        //{
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMinSize, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMaxSize, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMinTail, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.FemaleMaxTail, br.ReadSingle() ) );
-        //
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinX, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinY, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMinZ, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxX, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxY, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.BustMaxZ, br.ReadSingle() ) );
-        //}
-        //else
-        //{
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMinSize, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMaxSize, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMinTail, br.ReadSingle() ) );
-        //    ret.AddIfNotDefault( MetaManipulation.Rsp( subRace, RspAttribute.MaleMaxTail, br.ReadSingle() ) );
-        //}
-        //
+        void Add( RspAttribute attribute, float value )
+        {
+            var def = CmpFile.GetDefault( subRace, attribute );
+            if (value != def)
+                ret!.RspManipulations.Add(new RspManipulation(subRace, attribute, value));
+        }
+
+        if( gender == 1 )
+        {
+            Add(RspAttribute.FemaleMinSize, br.ReadSingle() );
+            Add(RspAttribute.FemaleMaxSize, br.ReadSingle() );
+            Add(RspAttribute.FemaleMinTail, br.ReadSingle() );
+            Add(RspAttribute.FemaleMaxTail, br.ReadSingle() );
+        
+            Add(RspAttribute.BustMinX, br.ReadSingle() );
+            Add(RspAttribute.BustMinY, br.ReadSingle() );
+            Add(RspAttribute.BustMinZ, br.ReadSingle() );
+            Add(RspAttribute.BustMaxX, br.ReadSingle() );
+            Add(RspAttribute.BustMaxY, br.ReadSingle() );
+            Add(RspAttribute.BustMaxZ, br.ReadSingle() );
+        }
+        else
+        {
+            Add(RspAttribute.MaleMinSize, br.ReadSingle() );
+            Add(RspAttribute.MaleMaxSize, br.ReadSingle() );
+            Add(RspAttribute.MaleMinTail, br.ReadSingle() );
+            Add(RspAttribute.MaleMaxTail, br.ReadSingle() );
+        }
+        
         return ret;
     }
 }

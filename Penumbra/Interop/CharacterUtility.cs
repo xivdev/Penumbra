@@ -20,12 +20,20 @@ public unsafe class CharacterUtility : IDisposable
     public Structs.CharacterUtility* Address
         => *_characterUtilityAddress;
 
-    public (IntPtr Address, int Size)[] DefaultResources = new (IntPtr, int)[Structs.CharacterUtility.NumResources];
+    public (IntPtr Address, int Size)[] DefaultResources = new (IntPtr, int)[Structs.CharacterUtility.NumRelevantResources];
 
     public CharacterUtility()
     {
         SignatureHelper.Initialise( this );
-        LoadDataFilesHook.Enable();
+
+        if( Address->EqpResource != null )
+        {
+            LoadDefaultResources();
+        }
+        else
+        {
+            LoadDataFilesHook.Enable();
+        }
     }
 
     // Self-disabling hook to set default resources after loading them.
@@ -40,7 +48,7 @@ public unsafe class CharacterUtility : IDisposable
     // We store the default data of the resources so we can always restore them.
     private void LoadDefaultResources()
     {
-        for( var i = 0; i < Structs.CharacterUtility.NumResources; ++i )
+        for( var i = 0; i < Structs.CharacterUtility.NumRelevantResources; ++i )
         {
             var resource = ( Structs.ResourceHandle* )Address->Resources[ i ];
             DefaultResources[ i ] = resource->GetData();
@@ -65,7 +73,7 @@ public unsafe class CharacterUtility : IDisposable
 
     public void Dispose()
     {
-        for( var i = 0; i < Structs.CharacterUtility.NumResources; ++i )
+        for( var i = 0; i < Structs.CharacterUtility.NumRelevantResources; ++i )
         {
             ResetResource( i );
         }

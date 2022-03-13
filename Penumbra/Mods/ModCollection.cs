@@ -65,9 +65,9 @@ public class ModCollection
         return removeList.Length > 0;
     }
 
-    public void CreateCache( DirectoryInfo modDirectory, IEnumerable< ModData > data )
+    public void CreateCache( IEnumerable< ModData > data )
     {
-        Cache = new ModCollectionCache( Name, modDirectory );
+        Cache = new ModCollectionCache( this );
         var changedSettings = false;
         foreach( var mod in data )
         {
@@ -89,7 +89,7 @@ public class ModCollection
             Save();
         }
 
-        CalculateEffectiveFileList( modDirectory, true, false );
+        CalculateEffectiveFileList( true, false );
     }
 
     public void ClearCache()
@@ -135,11 +135,11 @@ public class ModCollection
         }
     }
 
-    public void CalculateEffectiveFileList( DirectoryInfo modDir, bool withMetaManipulations, bool activeCollection )
+    public void CalculateEffectiveFileList( bool withMetaManipulations, bool activeCollection )
     {
         PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{IsActiveCollection}]", Name,
             withMetaManipulations, activeCollection );
-        Cache ??= new ModCollectionCache( Name, modDir );
+        Cache ??= new ModCollectionCache( this );
         UpdateSettings( false );
         Cache.CalculateEffectiveFileList();
         if( withMetaManipulations )

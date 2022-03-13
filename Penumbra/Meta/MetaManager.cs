@@ -2,25 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
-using Lumina.Data.Files;
+using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Util;
+using Penumbra.Mods;
+using CharacterUtility = Penumbra.Interop.Structs.CharacterUtility;
+using ImcFile = Penumbra.Meta.Files.ImcFile;
 
 namespace Penumbra.Meta;
-
-public struct TemporaryImcFile : IDisposable
-{
-
-    public void Dispose()
-    {
-
-    }
-}
 
 public class MetaManager2 : IDisposable
 {
@@ -42,7 +35,51 @@ public class MetaManager2 : IDisposable
     public readonly Dictionary< EqdpManipulation, Mod.Mod > EqdpManipulations = new();
 
     public readonly Dictionary< ImcManipulation, Mod.Mod > ImcManipulations = new();
-    public readonly List< TemporaryImcFile >               ImcFiles         = new();
+    public readonly Dictionary< Utf8GamePath, ImcFile >    ImcFiles         = new();
+
+    private readonly ModCollection _collection;
+
+    public unsafe void SetFiles()
+    {
+        foreach( var file in ChangedData )
+        {
+            Penumbra.CharacterUtility.SetResource( file.Index, ( IntPtr )file.Data, file.Length );
+        }
+    }
+
+    public bool TryGetValue( MetaManipulation manip, out Mod.Mod? mod )
+    {
+        mod = manip.ManipulationType switch
+        {
+            MetaManipulation.Type.Eqp  => EqpManipulations.TryGetValue( manip.Eqp, out var m ) ? m : null,
+            MetaManipulation.Type.Gmp  => GmpManipulations.TryGetValue( manip.Gmp, out var m ) ? m : null,
+            MetaManipulation.Type.Eqdp => EqdpManipulations.TryGetValue( manip.Eqdp, out var m ) ? m : null,
+            MetaManipulation.Type.Est  => EstManipulations.TryGetValue( manip.Est, out var m ) ? m : null,
+            MetaManipulation.Type.Rsp  => RspManipulations.TryGetValue( manip.Rsp, out var m ) ? m : null,
+            MetaManipulation.Type.Imc  => ImcManipulations.TryGetValue( manip.Imc, out var m ) ? m : null,
+            _                          => throw new ArgumentOutOfRangeException(),
+        };
+        return mod != null;
+    }
+
+    public int Count
+        => ImcManipulations.Count
+          + EqdpManipulations.Count
+          + RspManipulations.Count
+          + GmpManipulations.Count
+          + EstManipulations.Count
+          + EqpManipulations.Count;
+
+    public MetaManager2( ModCollection collection )
+        => _collection = collection;
+
+    public void ApplyImcFiles( Dictionary< Utf8GamePath, FullPath > resolvedFiles )
+    {
+        foreach( var path in ImcFiles.Keys )
+        {
+            resolvedFiles[ path ] = CreateImcPath( path );
+        }
+    }
 
     public void ResetEqp()
     {
@@ -95,10 +132,21 @@ public class MetaManager2 : IDisposable
         EqdpManipulations.Clear();
     }
 
+    private FullPath CreateImcPath( Utf8GamePath path )
+    {
+        var d = new DirectoryInfo( $":{_collection.Name}/" );
+        return new FullPath( d, new Utf8RelPath( path ) );
+    }
+
     public void ResetImc()
     {
-        foreach( var file in ImcFiles )
+        foreach( var (path, file) in ImcFiles )
+        {
+            _collection.Cache?.ResolvedFiles.Remove( path );
+            path.Dispose();
             file.Dispose();
+        }
+
         ImcFiles.Clear();
         ImcManipulations.Clear();
     }
@@ -153,7 +201,6 @@ public class MetaManager2 : IDisposable
             ChangedData.Add( file );
         }
     }
-
 
     public bool ApplyMod( EqpManipulation m, Mod.Mod mod )
     {
@@ -247,14 +294,61 @@ public class MetaManager2 : IDisposable
         return true;
     }
 
-    public bool ApplyMod( ImcManipulation m, Mod.Mod mod )
+    public unsafe bool ApplyMod( ImcManipulation m, Mod.Mod mod )
     {
+        const uint imcExt = 0x00696D63;
+
         if( !ImcManipulations.TryAdd( m, mod ) )
         {
             return false;
         }
 
+        var path = m.GamePath();
+        if( !ImcFiles.TryGetValue( path, out var file ) )
+        {
+            file = new ImcFile( path );
+        }
+
+        if( !m.Apply( file ) )
+        {
+            return false;
+        }
+
+        ImcFiles[ path ] = file;
+        var fullPath = CreateImcPath( path );
+        if( _collection.Cache != null )
+        {
+            _collection.Cache.ResolvedFiles[ path ] = fullPath;
+        }
+
+        var resource = ResourceLoader.FindResource( ResourceCategory.Chara, imcExt, ( uint )path.Path.Crc32 );
+        if( resource != null )
+        {
+            file.Replace( ( ResourceHandle* )resource );
+        }
+
         return true;
+    }
+
+    public static unsafe byte ImcHandler( Utf8GamePath gamePath, ResourceManager* resourceManager,
+        SeFileDescriptor* fileDescriptor, int priority, bool isSync )
+    {
+        var split = gamePath.Path.Split( ( byte )'|', 2, true );
+        fileDescriptor->ResourceHandle->FileNameData   = split[ 1 ].Path;
+        fileDescriptor->ResourceHandle->FileNameLength = split[ 1 ].Length;
+
+        var ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+        if( Penumbra.ModManager.Collections.Collections.TryGetValue( split[ 0 ].ToString(), out var collection )
+        && collection.Cache != null
+        && collection.Cache.MetaManipulations.ImcFiles.TryGetValue(
+               Utf8GamePath.FromSpan( split[ 1 ].Span, out var p, false ) ? p : Utf8GamePath.Empty, out var file ) )
+        {
+            file.Replace( fileDescriptor->ResourceHandle );
+        }
+
+        fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
+        fileDescriptor->ResourceHandle->FileNameLength = gamePath.Path.Length;
+        return ret;
     }
 
     public bool ApplyMod( MetaManipulation m, Mod.Mod mod )
@@ -267,133 +361,7 @@ public class MetaManager2 : IDisposable
             MetaManipulation.Type.Est  => ApplyMod( m.Est, mod ),
             MetaManipulation.Type.Rsp  => ApplyMod( m.Rsp, mod ),
             MetaManipulation.Type.Imc  => ApplyMod( m.Imc, mod ),
-            _                          => throw new ArgumentOutOfRangeException()
+            _                          => throw new ArgumentOutOfRangeException(),
         };
-    }
-}
-
-public class MetaManager : IDisposable
-{
-    internal class FileInformation
-    {
-        public readonly object    Data;
-        public          bool      Changed;
-        public          FullPath? CurrentFile;
-        public          byte[]    ByteData = Array.Empty< byte >();
-
-        public FileInformation( object data )
-            => Data = data;
-
-        public void Write( DirectoryInfo dir, Utf8GamePath originalPath )
-        {
-            ByteData = Data switch
-            {
-                ImcFile imc   => imc.WriteBytes(),
-                _             => throw new NotImplementedException(),
-            };
-            DisposeFile( CurrentFile );
-            CurrentFile = new FullPath( TempFile.WriteNew( dir, ByteData, $"_{originalPath.Filename()}" ) );
-            Changed     = false;
-        }
-    }
-
-    public const string TmpDirectory = "penumbrametatmp";
-
-    private readonly DirectoryInfo                        _dir;
-    private readonly Dictionary< Utf8GamePath, FullPath > _resolvedFiles;
-
-    private readonly Dictionary< MetaManipulation, Mod.Mod >     _currentManipulations = new();
-    private readonly Dictionary< Utf8GamePath, FileInformation > _currentFiles         = new();
-
-    public IEnumerable< (MetaManipulation, Mod.Mod) > Manipulations
-        => _currentManipulations.Select( kvp => ( kvp.Key, kvp.Value ) );
-
-    public IEnumerable< (Utf8GamePath, FullPath) > Files
-        => _currentFiles.Where( kvp => kvp.Value.CurrentFile != null )
-           .Select( kvp => ( kvp.Key, kvp.Value.CurrentFile!.Value ) );
-
-    public int Count
-        => _currentManipulations.Count;
-
-    public bool TryGetValue( MetaManipulation manip, out Mod.Mod mod )
-        => _currentManipulations.TryGetValue( manip, out mod! );
-
-    public byte[] EqpData = Array.Empty< byte >();
-
-    private static void DisposeFile( FullPath? file )
-    {
-        if( !( file?.Exists ?? false ) )
-        {
-            return;
-        }
-
-        try
-        {
-            File.Delete( file.Value.FullName );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not delete temporary file \"{file.Value.FullName}\":\n{e}" );
-        }
-    }
-
-    public void Reset( bool reload = true )
-    {
-        foreach( var file in _currentFiles )
-        {
-            _resolvedFiles.Remove( file.Key );
-            DisposeFile( file.Value.CurrentFile );
-        }
-
-        _currentManipulations.Clear();
-        _currentFiles.Clear();
-        ClearDirectory();
-        if( reload )
-        {
-            Penumbra.ResidentResources.Reload();
-        }
-    }
-
-    public void Dispose()
-        => Reset();
-
-    private static void ClearDirectory( DirectoryInfo modDir )
-    {
-        modDir.Refresh();
-        if( modDir.Exists )
-        {
-            try
-            {
-                Directory.Delete( modDir.FullName, true );
-            }
-            catch( Exception e )
-            {
-                PluginLog.Error( $"Could not clear temporary metafile directory \"{modDir.FullName}\":\n{e}" );
-            }
-        }
-    }
-
-    private void ClearDirectory()
-        => ClearDirectory( _dir );
-
-    public MetaManager( string name, Dictionary< Utf8GamePath, FullPath > resolvedFiles, DirectoryInfo tempDir )
-    {
-        _resolvedFiles = resolvedFiles;
-        _dir           = new DirectoryInfo( Path.Combine( tempDir.FullName, name.ReplaceBadXivSymbols() ) );
-        ClearDirectory();
-    }
-
-    public void WriteNewFiles()
-    {
-        if( _currentFiles.Any() )
-        {
-            Directory.CreateDirectory( _dir.FullName );
-        }
-
-        foreach( var (key, value) in _currentFiles.Where( kvp => kvp.Value.Changed ) )
-        {
-            value.Write( _dir, key );
-            _resolvedFiles[ key ] = value.CurrentFile!.Value;
-        }
     }
 }

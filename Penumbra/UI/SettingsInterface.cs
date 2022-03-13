@@ -68,7 +68,7 @@ public partial class SettingsInterface : IDisposable
         var current    = modManager.Collections.CurrentCollection;
         if( current.Cache != null )
         {
-            current.CalculateEffectiveFileList( modManager.TempPath, recalculateMeta,
+            current.CalculateEffectiveFileList( recalculateMeta,
                 current == modManager.Collections.ActiveCollection );
             _menu.InstalledTab.Selector.Cache.TriggerFilterReset();
         }

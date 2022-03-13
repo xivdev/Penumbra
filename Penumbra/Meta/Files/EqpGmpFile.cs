@@ -55,7 +55,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     {
         var ptr          = ( byte* )DefaultData.Data;
         var controlBlock = *( ulong* )ptr;
-        *( ulong* )ptr = ulong.MaxValue;
+        *( ulong* )Data = ulong.MaxValue;
         for( var i = 0; i < 64; ++i )
         {
             var collapsed = ( ( controlBlock >> i ) & 1 ) == 0;

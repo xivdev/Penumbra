@@ -20,6 +20,7 @@ using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
+using CharacterUtility = Penumbra.Interop.Structs.CharacterUtility;
 using ResourceHandle = Penumbra.Interop.Structs.ResourceHandle;
 using Utf8String = Penumbra.GameData.ByteString.Utf8String;
 
@@ -164,12 +165,6 @@ public partial class SettingsInterface
         PrintValue( "Mod Manager BasePath Exists",
             manager.BasePath != null ? Directory.Exists( manager.BasePath.FullName ).ToString() : false.ToString() );
         PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
-        PrintValue( "Mod Manager Temp Path", manager.TempPath?.FullName ?? "NULL" );
-        PrintValue( "Mod Manager Temp Path IsRooted",
-            ( !Penumbra.Config.TempDirectory.Any() || Path.IsPathRooted( Penumbra.Config.TempDirectory ) ).ToString() );
-        PrintValue( "Mod Manager Temp Path Exists",
-            manager.TempPath != null ? Directory.Exists( manager.TempPath.FullName ).ToString() : false.ToString() );
-        PrintValue( "Mod Manager Temp Path IsWritable", manager.TempWritable.ToString() );
         //PrintValue( "Resource Loader Enabled", _penumbra.ResourceLoader.IsEnabled.ToString() );
     }
 
@@ -273,43 +268,6 @@ public partial class SettingsInterface
         }
     }
 
-    private static void DrawDebugTabTempFiles()
-    {
-        if( !ImGui.CollapsingHeader( "Temporary Files##Debug" ) )
-        {
-            return;
-        }
-
-        if( !ImGui.BeginTable( "##tempFileTable", 4, ImGuiTableFlags.SizingFixedFit ) )
-        {
-            return;
-        }
-
-        using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
-
-        foreach( var collection in Penumbra.ModManager.Collections.Collections.Values.Where( c => c.Cache != null ) )
-        {
-            var manip = collection.Cache!.MetaManipulations;
-            var files = ( Dictionary< GamePath, MetaManager.FileInformation >? )manip.GetType()
-                   .GetField( "_currentFiles", BindingFlags.NonPublic | BindingFlags.Instance )?.GetValue( manip )
-             ?? new Dictionary< GamePath, MetaManager.FileInformation >();
-
-
-            foreach( var (file, info) in files )
-            {
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( info.CurrentFile?.FullName ?? "None" );
-                ImGui.TableNextColumn();
-                ImGui.Text( file );
-                ImGui.TableNextColumn();
-                ImGui.Text( info.CurrentFile?.Exists ?? false ? "Exists" : "Missing" );
-                ImGui.TableNextColumn();
-                ImGui.Text( info.Changed ? "Data Changed" : "Unchanged" );
-            }
-        }
-    }
-
     private void DrawDebugTabIpc()
     {
         if( !ImGui.CollapsingHeader( "IPC##Debug" ) )
@@ -369,7 +327,7 @@ public partial class SettingsInterface
             return;
         }
 
-        var cache   = Penumbra.ModManager.Collections.CurrentCollection.Cache;
+        var cache = Penumbra.ModManager.Collections.CurrentCollection.Cache;
         if( cache == null || !ImGui.BeginTable( "##MissingFilesDebugList", 1, ImGuiTableFlags.RowBg, -Vector2.UnitX ) )
         {
             return;
@@ -397,9 +355,9 @@ public partial class SettingsInterface
             return;
         }
 
-        _penumbra.ResourceLoader.UpdateDebugInfo();
+        Penumbra.ResourceLoader.UpdateDebugInfo();
 
-        if( _penumbra.ResourceLoader.DebugList.Count == 0
+        if( Penumbra.ResourceLoader.DebugList.Count == 0
         || !ImGui.BeginTable( "##ReplacedResourcesDebugList", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.UnitX ) )
         {
             return;
@@ -407,7 +365,7 @@ public partial class SettingsInterface
 
         using var end = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
-        foreach( var data in _penumbra.ResourceLoader.DebugList.Values.ToArray() )
+        foreach( var data in Penumbra.ResourceLoader.DebugList.Values.ToArray() )
         {
             var refCountManip = data.ManipulatedResource == null ? 0 : data.ManipulatedResource->RefCount;
             var refCountOrig  = data.OriginalResource    == null ? 0 : data.OriginalResource->RefCount;
@@ -423,6 +381,52 @@ public partial class SettingsInterface
             ImGui.Text( ( ( ulong )data.OriginalResource ).ToString( "X" ) );
             ImGui.TableNextColumn();
             ImGui.Text( refCountOrig.ToString() );
+        }
+    }
+
+    public unsafe void DrawDebugCharacterUtility()
+    {
+        if( !ImGui.CollapsingHeader( "Character Utility##Debug" ) )
+        {
+            return;
+        }
+
+        if( !ImGui.BeginTable( "##CharacterUtilityDebugList", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.UnitX ) )
+        {
+            return;
+        }
+
+        using var end = ImGuiRaii.DeferredEnd( ImGui.EndTable );
+
+        for( var i = 0; i < CharacterUtility.NumRelevantResources; ++i )
+        {
+            var resource = ( ResourceHandle* )Penumbra.CharacterUtility.Address->Resources[ i ];
+            ImGui.TableNextColumn();
+            ImGui.Text( $"0x{( ulong )resource:X}" );
+            ImGui.TableNextColumn();
+            ImGuiNative.igTextUnformatted( resource->FileName(), resource->FileName() + resource->FileNameLength );
+            ImGui.TableNextColumn();
+            ImGui.Text( $"0x{resource->GetData().Data:X}" );
+            if( ImGui.IsItemClicked() )
+            {
+                var (data, length) = resource->GetData();
+                ImGui.SetClipboardText( string.Join( " ",
+                    new ReadOnlySpan< byte >( ( byte* )data, length ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
+            }
+
+            ImGui.TableNextColumn();
+            ImGui.Text( $"{resource->GetData().Length}" );
+            ImGui.TableNextColumn();
+            ImGui.Text( $"0x{Penumbra.CharacterUtility.DefaultResources[ i ].Address:X}" );
+            if( ImGui.IsItemClicked() )
+            {
+                ImGui.SetClipboardText( string.Join( " ",
+                    new ReadOnlySpan< byte >( ( byte* )Penumbra.CharacterUtility.DefaultResources[ i ].Address,
+                        Penumbra.CharacterUtility.DefaultResources[ i ].Size ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
+            }
+
+            ImGui.TableNextColumn();
+            ImGui.Text( $"{Penumbra.CharacterUtility.DefaultResources[ i ].Size}" );
         }
     }
 
@@ -479,6 +483,14 @@ public partial class SettingsInterface
 
         using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
+        if( !ImGui.BeginChild( "##DebugChild", -Vector2.One ) )
+        {
+            ImGui.EndChild();
+            return;
+        }
+
+        raii.Push( ImGui.EndChild );
+
         DrawDebugTabGeneral();
         ImGui.NewLine();
         DrawDebugTabReplacedResources();
@@ -491,11 +503,11 @@ public partial class SettingsInterface
         ImGui.NewLine();
         DrawPathResolverDebug();
         ImGui.NewLine();
+        DrawDebugCharacterUtility();
+        ImGui.NewLine();
         DrawDebugTabRedraw();
         ImGui.NewLine();
         DrawDebugTabPlayers();
-        ImGui.NewLine();
-        DrawDebugTabTempFiles();
         ImGui.NewLine();
         DrawDebugTabIpc();
         ImGui.NewLine();

@@ -1,19 +1,21 @@
 using System;
 using System.Numerics;
 using Dalamud.Logging;
+using Dalamud.Memory;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
+using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Files;
 
-public struct ImcEntry : IEquatable< ImcEntry >
+public readonly struct ImcEntry : IEquatable< ImcEntry >
 {
-    public  byte   MaterialId;
-    public  byte   DecalId;
-    private ushort _attributeAndSound;
-    public  byte   VfxId;
-    public  byte   MaterialAnimationId;
+    public readonly  byte   MaterialId;
+    public readonly  byte   DecalId;
+    private readonly ushort _attributeAndSound;
+    public readonly  byte   VfxId;
+    public readonly  byte   MaterialAnimationId;
 
     public ushort AttributeMask
         => ( ushort )( _attributeAndSound & 0x3FF );
@@ -162,5 +164,27 @@ public unsafe class ImcFile : MetaBaseFile
             AllocateData( file.Data.Length + sizeof( ImcEntry ) * 100 * NumParts );
             Functions.MemCpyUnchecked( Data, ptr, file.Data.Length );
         }
+    }
+
+    public void Replace( ResourceHandle* resource )
+    {
+        var (data, length) = resource->GetData();
+        if( data == IntPtr.Zero )
+        {
+            return;
+        }
+
+        var requiredLength = ActualLength;
+        if( length >= requiredLength )
+        {
+            Functions.MemCpyUnchecked( ( void* )data, Data, requiredLength );
+            Functions.MemSet( ( byte* )data + requiredLength, 0, length - requiredLength );
+            return;
+        }
+
+        MemoryHelper.GameFree( ref data, ( ulong )length );
+        var file = ( byte* )MemoryHelper.GameAllocateDefault( ( ulong )requiredLength );
+        Functions.MemCpyUnchecked( file, Data, requiredLength );
+        resource->SetData( ( IntPtr )file, requiredLength );
     }
 }

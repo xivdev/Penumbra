@@ -7,15 +7,16 @@ namespace Penumbra.Interop.Structs;
 [StructLayout( LayoutKind.Explicit )]
 public unsafe struct CharacterUtility
 {
-    public const int NumResources = 85;
-    public const int EqpIdx       = 0;
-    public const int GmpIdx       = 1;
-    public const int HumanCmpIdx  = 63;
-    public const int FaceEstIdx   = 64;
-    public const int HairEstIdx   = 65;
-    public const int BodyEstIdx   = 66;
-    public const int HeadEstIdx   = 67;
-    public const int NumEqdpFiles = 2 * 28;
+    public const int NumResources         = 85;
+    public const int NumRelevantResources = 68;
+    public const int EqpIdx               = 0;
+    public const int GmpIdx               = 1;
+    public const int HumanCmpIdx          = 63;
+    public const int FaceEstIdx           = 64;
+    public const int HairEstIdx           = 65;
+    public const int BodyEstIdx           = 66;
+    public const int HeadEstIdx           = 67;
+    public const int NumEqdpFiles         = 2 * 28;
 
     public static int EqdpIdx( GenderRace raceCode, bool accessory )
         => ( accessory ? 28 : 0 )

@@ -93,14 +93,14 @@ public class MetaCollection
                     return false;
                 }
 
-                if( option.Value.Any( manip => defaultFiles.CheckAgainstDefault( manip ) ) )
-                {
-                    return false;
-                }
+                //if( option.Value.Any( manip => defaultFiles.CheckAgainstDefault( manip ) ) )
+                //{
+                //    return false;
+                //}
             }
-        }
+        } // TODO
 
-        return DefaultData.All( manip => !defaultFiles.CheckAgainstDefault( manip ) );
+        return true; //DefaultData.All( manip => !defaultFiles.CheckAgainstDefault( manip ) );
     }
 
     // Re-sort all manipulations.
@@ -117,31 +117,33 @@ public class MetaCollection
     // Creates the option group and the option if necessary.
     private void AddMeta( string group, string option, TexToolsMeta meta )
     {
-        if( meta.Manipulations.Count == 0 )
-        {
-            return;
-        }
+        var manipulations = meta.EqpManipulations.Select( m => new MetaManipulation( m ) )
+           .Concat( meta.EqdpManipulations.Select( m => new MetaManipulation( m ) ) )
+           .Concat( meta.EstManipulations.Select( m => new MetaManipulation( m ) ) )
+           .Concat( meta.GmpManipulations.Select( m => new MetaManipulation( m ) ) )
+           .Concat( meta.RspManipulations.Select( m => new MetaManipulation( m ) ) )
+           .Concat( meta.ImcManipulations.Select( m => new MetaManipulation( m ) ) ).ToList();
 
         if( group.Length == 0 )
         {
-            DefaultData.AddRange( meta.Manipulations );
+            DefaultData.AddRange( manipulations );
         }
         else if( option.Length == 0 )
         { }
         else if( !GroupData.TryGetValue( group, out var options ) )
         {
-            GroupData.Add( group, new Dictionary< string, List< MetaManipulation > >() { { option, meta.Manipulations.ToList() } } );
+            GroupData.Add( group, new Dictionary< string, List< MetaManipulation > >() { { option, manipulations } } );
         }
         else if( !options.TryGetValue( option, out var list ) )
         {
-            options.Add( option, meta.Manipulations.ToList() );
+            options.Add( option, manipulations );
         }
         else
         {
-            list.AddRange( meta.Manipulations );
+            list.AddRange( manipulations );
         }
 
-        Count += meta.Manipulations.Count;
+        Count += manipulations.Count;
     }
 
     // Update the whole meta collection by reading all TexTools .meta files in a mod directory anew,
@@ -160,7 +162,7 @@ public class MetaCollection
                 _       => TexToolsMeta.Invalid,
             };
 
-            if( metaData.FilePath == string.Empty || metaData.Manipulations.Count == 0 )
+            if( metaData.FilePath == string.Empty )
             {
                 continue;
             }

@@ -529,8 +529,7 @@ public partial class SettingsInterface
             var collection = Penumbra.ModManager.Collections.CurrentCollection;
             if( collection.Cache != null )
             {
-                collection.CalculateEffectiveFileList( Penumbra.ModManager.TempPath, metaManips,
-                    collection == Penumbra.ModManager.Collections.ActiveCollection );
+                collection.CalculateEffectiveFileList( metaManips, collection == Penumbra.ModManager.Collections.ActiveCollection );
             }
 
             collection.Save();
