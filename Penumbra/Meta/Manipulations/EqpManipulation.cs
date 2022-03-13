@@ -1,4 +1,7 @@
 using System;
+using System.Runtime.InteropServices;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
@@ -6,10 +9,12 @@ using Penumbra.Meta.Files;
 
 namespace Penumbra.Meta.Manipulations;
 
-public readonly struct EqpManipulation : IEquatable< EqpManipulation >
+[StructLayout( LayoutKind.Sequential, Pack = 1 )]
+public readonly struct EqpManipulation : IMetaManipulation< EqpManipulation >
 {
     public readonly EqpEntry  Entry;
     public readonly ushort    SetId;
+    [JsonConverter( typeof( StringEnumConverter ) )]
     public readonly EquipSlot Slot;
 
     public EqpManipulation( EqpEntry entry, EquipSlot slot, ushort setId )
@@ -31,6 +36,12 @@ public readonly struct EqpManipulation : IEquatable< EqpManipulation >
 
     public override int GetHashCode()
         => HashCode.Combine( ( int )Slot, SetId );
+
+    public int CompareTo( EqpManipulation other )
+    {
+        var set = SetId.CompareTo( other.SetId );
+        return set != 0 ? set : Slot.CompareTo( other.Slot );
+    }
 
     public int FileIndex()
         => CharacterUtility.EqpIdx;

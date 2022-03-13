@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing.Text;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
@@ -484,39 +486,39 @@ namespace Penumbra.UI
             private bool DrawRspRow( int manipIdx, IList< MetaManipulation > list )
             {
                 var ret      = false;
-                //var id       = list[ manipIdx ].RspIdentifier;
-                //var val      = list[ manipIdx ].RspValue;
-                //
-                //if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
-                //{
-                //    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
-                //    if( DefaultButton(
-                //            $"{( _editMode ? "Set to " : "" )}Default: {defaults:F3}##scaleManip", ref val, defaults )
-                //     && _editMode )
-                //    {
-                //        list[ manipIdx ] = MetaManipulation.Rsp( id.SubRace, id.Attribute, defaults );
-                //        ret              = true;
-                //    }
-                //
-                //    ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
-                //    if( ImGui.InputFloat( "Scale###manip", ref val, 0, 0, "%.3f",
-                //            _editMode ? ImGuiInputTextFlags.EnterReturnsTrue : ImGuiInputTextFlags.ReadOnly )
-                //     && val >= 0
-                //     && val <= 5
-                //     && _editMode )
-                //    {
-                //        list[ manipIdx ] = MetaManipulation.Rsp( id.SubRace, id.Attribute, val );
-                //        ret              = true;
-                //    }
-                //}
-                //
-                //ImGui.Text( id.Attribute.ToUngenderedString() );
-                //ImGui.TableNextColumn();
-                //ImGui.TableNextColumn();
-                //ImGui.TableNextColumn();
-                //ImGui.Text( id.SubRace.ToString() );
-                //ImGui.TableNextColumn();
-                //ImGui.Text( id.Attribute.ToGender().ToString() );
+                var id       = list[ manipIdx ].RspIdentifier;
+                var val      = list[ manipIdx ].RspValue;
+                
+                if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
+                {
+                    using var raii = ImGuiRaii.DeferredEnd( ImGui.EndPopup );
+                    if( DefaultButton(
+                            $"{( _editMode ? "Set to " : "" )}Default: {defaults:F3}##scaleManip", ref val, defaults )
+                     && _editMode )
+                    {
+                        list[ manipIdx ] = MetaManipulation.Rsp( id.SubRace, id.Attribute, defaults );
+                        ret              = true;
+                    }
+                
+                    ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
+                    if( ImGui.InputFloat( "Scale###manip", ref val, 0, 0, "%.3f",
+                            _editMode ? ImGuiInputTextFlags.EnterReturnsTrue : ImGuiInputTextFlags.ReadOnly )
+                     && val >= 0
+                     && val <= 5
+                     && _editMode )
+                    {
+                        list[ manipIdx ] = MetaManipulation.Rsp( id.SubRace, id.Attribute, val );
+                        ret              = true;
+                    }
+                }
+                
+                ImGui.Text( id.Attribute.ToUngenderedString() );
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.Text( id.SubRace.ToString() );
+                ImGui.TableNextColumn();
+                ImGui.Text( id.Attribute.ToGender().ToString() );
                 return ret;
             }
 
@@ -543,35 +545,35 @@ namespace Penumbra.UI
                 ImGui.TableNextColumn();
 
                 var changes = false;
-                //switch( type )
-                //{
-                //    case MetaType.Eqp:
-                //        changes = DrawEqpRow( manipIdx, list );
-                //        break;
-                //    case MetaType.Gmp:
-                //        changes = DrawGmpRow( manipIdx, list );
-                //        break;
-                //    case MetaType.Eqdp:
-                //        changes = DrawEqdpRow( manipIdx, list );
-                //        break;
-                //    case MetaType.Est:
-                //        changes = DrawEstRow( manipIdx, list );
-                //        break;
-                //    case MetaType.Imc:
-                //        changes = DrawImcRow( manipIdx, list );
-                //        break;
-                //    case MetaType.Rsp:
-                //        changes = DrawRspRow( manipIdx, list );
-                //        break;
-                //}
-                //
-                //ImGui.TableSetColumnIndex( 9 );
-                //if( ImGui.Selectable( $"{list[ manipIdx ].Value:X}##{manipIdx}" ) )
-                //{
-                //    ImGui.OpenPopup( $"##MetaPopup{manipIdx}" );
-                //}
-                //
-                //ImGui.TableNextRow();
+                switch( type )
+                {
+                    case MetaManipulation.Type.Eqp:
+                        changes = DrawEqpRow( manipIdx, list );
+                        break;
+                    case MetaManipulation.Type.Gmp:
+                        changes = DrawGmpRow( manipIdx, list );
+                        break;
+                    case MetaManipulation.Type.Eqdp:
+                        changes = DrawEqdpRow( manipIdx, list );
+                        break;
+                    case MetaManipulation.Type.Est:
+                        changes = DrawEstRow( manipIdx, list );
+                        break;
+                    case MetaManipulation.Type.Imc:
+                        changes = DrawImcRow( manipIdx, list );
+                        break;
+                    case MetaManipulation.Type.Rsp:
+                        changes = DrawRspRow( manipIdx, list );
+                        break;
+                }
+                
+                ImGui.TableSetColumnIndex( 9 );
+                if( ImGui.Selectable( $"{manipIdx}##{manipIdx}" ) )
+                {
+                    ImGui.OpenPopup( $"##MetaPopup{manipIdx}" );
+                }
+                
+                ImGui.TableNextRow();
                 return changes;
             }
 
@@ -714,6 +716,8 @@ namespace Penumbra.UI
             {
                 var numRows = _editMode ? 11 : 10;
                 var changes = false;
+
+
                 if( list.Count > 0
                  && ImGui.BeginTable( label, numRows,
                         ImGuiTableFlags.BordersInner | ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit ) )

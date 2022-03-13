@@ -1,11 +1,15 @@
 using System;
+using System.Runtime.InteropServices;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 
 namespace Penumbra.Meta.Manipulations;
 
-public readonly struct EstManipulation : IEquatable< EstManipulation >
+[StructLayout( LayoutKind.Sequential, Pack = 1 )]
+public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
 {
     public enum EstType : byte
     {
@@ -16,10 +20,13 @@ public readonly struct EstManipulation : IEquatable< EstManipulation >
     }
 
     public readonly ushort    SkeletonIdx;
+    [JsonConverter( typeof( StringEnumConverter ) )]
     public readonly Gender    Gender;
+    [JsonConverter( typeof( StringEnumConverter ) )]
     public readonly ModelRace Race;
     public readonly ushort    SetId;
-    public readonly EstType   Type;
+    [JsonConverter( typeof( StringEnumConverter ) )]
+    public readonly EstType   Slot;
 
     public EstManipulation( Gender gender, ModelRace race, EstType estType, ushort setId, ushort skeletonIdx )
     {
@@ -27,27 +34,45 @@ public readonly struct EstManipulation : IEquatable< EstManipulation >
         Gender      = gender;
         Race        = race;
         SetId       = setId;
-        Type        = estType;
+        Slot        = estType;
     }
 
 
     public override string ToString()
-        => $"Est - {SetId} - {Type} - {Race.ToName()} {Gender.ToName()}";
+        => $"Est - {SetId} - {Slot} - {Race.ToName()} {Gender.ToName()}";
 
     public bool Equals( EstManipulation other )
         => Gender == other.Gender
          && Race  == other.Race
          && SetId == other.SetId
-         && Type  == other.Type;
+         && Slot  == other.Slot;
 
     public override bool Equals( object? obj )
         => obj is EstManipulation other && Equals( other );
 
     public override int GetHashCode()
-        => HashCode.Combine( ( int )Gender, ( int )Race, SetId, ( int )Type );
+        => HashCode.Combine( ( int )Gender, ( int )Race, SetId, ( int )Slot );
+
+    public int CompareTo( EstManipulation other )
+    {
+        var r = Race.CompareTo( other.Race );
+        if( r != 0 )
+        {
+            return r;
+        }
+
+        var g = Gender.CompareTo( other.Gender );
+        if( g != 0 )
+        {
+            return g;
+        }
+
+        var s = Slot.CompareTo( other.Slot );
+        return s != 0 ? s : SetId.CompareTo( other.SetId );
+    }
 
     public int FileIndex()
-        => ( int )Type;
+        => ( int )Slot;
 
     public bool Apply( EstFile file )
     {

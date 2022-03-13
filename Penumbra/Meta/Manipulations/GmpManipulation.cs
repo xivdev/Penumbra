@@ -1,11 +1,13 @@
 using System;
+using System.Runtime.InteropServices;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 
 namespace Penumbra.Meta.Manipulations;
 
-public readonly struct GmpManipulation : IEquatable< GmpManipulation >
+[StructLayout( LayoutKind.Sequential, Pack = 1 )]
+public readonly struct GmpManipulation : IMetaManipulation< GmpManipulation >
 {
     public readonly GmpEntry Entry;
     public readonly ushort   SetId;
@@ -27,6 +29,9 @@ public readonly struct GmpManipulation : IEquatable< GmpManipulation >
 
     public override int GetHashCode()
         => SetId.GetHashCode();
+
+    public int CompareTo( GmpManipulation other )
+        => SetId.CompareTo( other.SetId );
 
     public int FileIndex()
         => CharacterUtility.GmpIdx;

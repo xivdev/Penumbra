@@ -1,21 +1,29 @@
 using System;
 using System.Runtime.InteropServices;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Files;
 
 namespace Penumbra.Meta.Manipulations;
 
-[StructLayout( LayoutKind.Sequential )]
-public readonly struct ImcManipulation : IEquatable< ImcManipulation >
+[StructLayout( LayoutKind.Sequential, Pack = 1 )]
+public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
 {
-    public readonly ImcEntry   Entry;
-    public readonly ushort     PrimaryId;
-    public readonly ushort     Variant;
-    public readonly ushort     SecondaryId;
+    public readonly ImcEntry Entry;
+    public readonly ushort   PrimaryId;
+    public readonly ushort   Variant;
+    public readonly ushort   SecondaryId;
+
+    [JsonConverter( typeof( StringEnumConverter ) )]
     public readonly ObjectType ObjectType;
-    public readonly EquipSlot  EquipSlot;
-    public readonly BodySlot   BodySlot;
+
+    [JsonConverter( typeof( StringEnumConverter ) )]
+    public readonly EquipSlot EquipSlot;
+
+    [JsonConverter( typeof( StringEnumConverter ) )]
+    public readonly BodySlot BodySlot;
 
     public ImcManipulation( EquipSlot equipSlot, ushort variant, ushort primaryId, ImcEntry entry )
     {
@@ -40,6 +48,19 @@ public readonly struct ImcManipulation : IEquatable< ImcManipulation >
         EquipSlot   = EquipSlot.Unknown;
     }
 
+    [JsonConstructor]
+    internal ImcManipulation( ObjectType objectType, BodySlot bodySlot, ushort primaryId, ushort secondaryId, ushort variant,
+        EquipSlot equipSlot, ImcEntry entry )
+    {
+        Entry       = entry;
+        ObjectType  = objectType;
+        BodySlot    = bodySlot;
+        PrimaryId   = primaryId;
+        SecondaryId = secondaryId;
+        Variant     = variant;
+        EquipSlot   = equipSlot;
+    }
+
     public override string ToString()
         => ObjectType is ObjectType.Equipment or ObjectType.Accessory
             ? $"Imc - {PrimaryId} - {EquipSlot} - {Variant}"
@@ -58,6 +79,39 @@ public readonly struct ImcManipulation : IEquatable< ImcManipulation >
 
     public override int GetHashCode()
         => HashCode.Combine( PrimaryId, Variant, SecondaryId, ( int )ObjectType, ( int )EquipSlot, ( int )BodySlot );
+
+    public int CompareTo( ImcManipulation other )
+    {
+        var o = ObjectType.CompareTo( other.ObjectType );
+        if( o != 0 )
+        {
+            return o;
+        }
+
+        var i = PrimaryId.CompareTo( other.PrimaryId );
+        if( i != 0 )
+        {
+            return i;
+        }
+
+        if( ObjectType is ObjectType.Equipment or ObjectType.Accessory )
+        {
+            var e = EquipSlot.CompareTo( other.EquipSlot );
+            return e != 0 ? e : Variant.CompareTo( other.Variant );
+        }
+
+        var s = SecondaryId.CompareTo( other.SecondaryId );
+        if( s != 0 )
+        {
+            return s;
+        }
+
+        var b = BodySlot.CompareTo( other.BodySlot );
+        return b != 0 ? b : Variant.CompareTo( other.Variant );
+    }
+
+    public int FileIndex()
+        => -1;
 
     public Utf8GamePath GamePath()
     {

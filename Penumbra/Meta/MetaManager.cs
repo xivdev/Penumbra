@@ -243,7 +243,7 @@ public class MetaManager2 : IDisposable
             return false;
         }
 
-        var file = m.Type switch
+        var file = m.Slot switch
         {
             EstManipulation.EstType.Hair => HairEstFile ??= new EstFile( EstManipulation.EstType.Hair ),
             EstManipulation.EstType.Face => FaceEstFile ??= new EstFile( EstManipulation.EstType.Face ),

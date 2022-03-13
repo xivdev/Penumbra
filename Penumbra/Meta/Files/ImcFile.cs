@@ -2,6 +2,7 @@ using System;
 using System.Numerics;
 using Dalamud.Logging;
 using Dalamud.Memory;
+using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
@@ -18,10 +19,16 @@ public readonly struct ImcEntry : IEquatable< ImcEntry >
     public readonly  byte   MaterialAnimationId;
 
     public ushort AttributeMask
-        => ( ushort )( _attributeAndSound & 0x3FF );
+    {
+        get => ( ushort )( _attributeAndSound & 0x3FF );
+        init => _attributeAndSound = ( ushort )( ( _attributeAndSound & ~0x3FF ) | ( value & 0x3FF ) );
+    }
 
     public byte SoundId
-        => ( byte )( _attributeAndSound >> 10 );
+    {
+        get => ( byte )( _attributeAndSound >> 10 );
+        init => _attributeAndSound = ( ushort )( AttributeMask | ( value << 10 ) );
+    }
 
     public bool Equals( ImcEntry other )
         => MaterialId           == other.MaterialId
@@ -35,6 +42,18 @@ public readonly struct ImcEntry : IEquatable< ImcEntry >
 
     public override int GetHashCode()
         => HashCode.Combine( MaterialId, DecalId, _attributeAndSound, VfxId, MaterialAnimationId );
+
+    [JsonConstructor]
+    public ImcEntry( byte materialId, byte decalId, ushort attributeMask, byte soundId, byte vfxId, byte materialAnimationId )
+    {
+        MaterialId          = materialId;
+        DecalId             = decalId;
+        _attributeAndSound  = 0;
+        VfxId               = vfxId;
+        MaterialAnimationId = materialAnimationId;
+        AttributeMask       = attributeMask;
+        SoundId             = soundId;
+    }
 }
 
 public unsafe class ImcFile : MetaBaseFile
@@ -118,7 +137,7 @@ public unsafe class ImcFile : MetaBaseFile
         }
 
         PluginLog.Verbose( "Expanded imc from {Count} to {NewCount} variants.", Count, numVariants );
-        *( ushort* )Count = ( ushort )numVariants;
+        *( ushort* )Data = ( ushort )numVariants;
         return true;
     }
 
