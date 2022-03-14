@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
@@ -20,7 +21,33 @@ public unsafe class CharacterUtility : IDisposable
     public Structs.CharacterUtility* Address
         => *_characterUtilityAddress;
 
-    public (IntPtr Address, int Size)[] DefaultResources = new (IntPtr, int)[Structs.CharacterUtility.NumRelevantResources];
+    // The relevant indices depend on which meta manipulations we allow for.
+    // The defines are set in the project configuration.
+    public static readonly int[] RelevantIndices
+        = Array.Empty< int >()
+#if USE_EQP
+           .Append( Structs.CharacterUtility.EqpIdx )
+#endif
+#if USE_GMP
+           .Append( Structs.CharacterUtility.GmpIdx )
+#endif
+#if USE_EQDP
+           .Concat( Enumerable.Range( Structs.CharacterUtility.EqdpStartIdx, Structs.CharacterUtility.NumEqdpFiles ) )
+#endif
+#if USE_CMP
+           .Append( Structs.CharacterUtility.HumanCmpIdx )
+#endif
+#if USE_EST
+           .Concat( Enumerable.Range( Structs.CharacterUtility.FaceEstIdx, 4 ) )
+#endif
+           .ToArray();
+
+    private static readonly int[] ReverseIndices
+        = Enumerable.Range( 0, Structs.CharacterUtility.NumResources )
+           .Select( i => Array.IndexOf( RelevantIndices, i ) ).ToArray();
+
+
+    public (IntPtr Address, int Size)[] DefaultResources = new (IntPtr, int)[RelevantIndices.Length];
 
     public CharacterUtility()
     {
@@ -48,9 +75,9 @@ public unsafe class CharacterUtility : IDisposable
     // We store the default data of the resources so we can always restore them.
     private void LoadDefaultResources()
     {
-        for( var i = 0; i < Structs.CharacterUtility.NumRelevantResources; ++i )
+        for( var i = 0; i < RelevantIndices.Length; ++i )
         {
-            var resource = ( Structs.ResourceHandle* )Address->Resources[ i ];
+            var resource = ( Structs.ResourceHandle* )Address->Resources[ RelevantIndices[ i ] ];
             DefaultResources[ i ] = resource->GetData();
         }
     }
@@ -65,19 +92,25 @@ public unsafe class CharacterUtility : IDisposable
     }
 
     // Reset the data of one of the stored resources to its default values.
-    public void ResetResource( int idx )
+    public void ResetResource( int fileIdx )
     {
-        var resource = ( Structs.ResourceHandle* )Address->Resources[ idx ];
-        resource->SetData( DefaultResources[ idx ].Address, DefaultResources[ idx ].Size );
+        var (data, size) = DefaultResources[ ReverseIndices[ fileIdx ] ];
+        var resource = ( Structs.ResourceHandle* )Address->Resources[ fileIdx ];
+        resource->SetData( data, size );
+    }
+
+    // Return all relevant resources to the default resource.
+    public void ResetAll()
+    {
+        foreach( var idx in RelevantIndices )
+        {
+            ResetResource( idx );
+        }
     }
 
     public void Dispose()
     {
-        for( var i = 0; i < Structs.CharacterUtility.NumRelevantResources; ++i )
-        {
-            ResetResource( i );
-        }
-
+        ResetAll();
         LoadDataFilesHook.Dispose();
     }
 }

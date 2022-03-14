@@ -2,14 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Dalamud.Logging;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Mod;
 
 namespace Penumbra.Mods;
 
 public partial class ModManagerNew
 {
-    private readonly List<ModData> _mods = new();
-    public IReadOnlyList<ModData> Mods
+    private readonly List< ModData > _mods = new();
+
+    public IReadOnlyList< ModData > Mods
         => _mods;
 
     public void DiscoverMods()
@@ -35,7 +37,6 @@ public partial class ModManagerNew
         //Collections.RecreateCaches();
     }
 }
-
 public partial class ModManagerNew
 {
     public DirectoryInfo BasePath { get; private set; } = null!;
@@ -52,7 +53,7 @@ public partial class ModManagerNew
     {
         if( Valid )
         {
-            Valid = Directory.Exists(BasePath.FullName);
+            Valid = Directory.Exists( BasePath.FullName );
         }
 
         return Valid;
@@ -87,7 +88,6 @@ public partial class ModManagerNew
             return;
         }
 
-
         ( BasePath, Valid ) = CreateDirectory( path );
 
         if( Penumbra.Config.ModDirectory != BasePath.FullName )
@@ -105,6 +105,6 @@ public partial class ModManagerNew
         }
 
         InitBaseDirectory( path );
-        BasePathChanged?.Invoke( BasePath  );
+        BasePathChanged?.Invoke( BasePath );
     }
 }

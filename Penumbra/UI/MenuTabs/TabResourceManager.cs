@@ -1,11 +1,13 @@
 using System;
 using System.Linq;
 using System.Numerics;
+using System.Reflection.Metadata.Ecma335;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using ImGuiNET;
+using Penumbra.GameData.ByteString;
 using Penumbra.Interop;
 using Penumbra.UI.Custom;
 
@@ -55,6 +57,11 @@ public partial class SettingsInterface
 
         ResourceLoader.IterateResourceMap( map, ( hash, r ) =>
         {
+            if( _filter.Length != 0 && !r->FileName.ToString().Contains( _filter, StringComparison.InvariantCultureIgnoreCase ) )
+            {
+                return;
+            }
+
             ImGui.TableNextColumn();
             ImGui.Text( $"0x{hash:X8}" );
             ImGui.TableNextColumn();
@@ -148,6 +155,8 @@ public partial class SettingsInterface
         } );
     }
 
+    private string _filter = string.Empty;
+
     private unsafe void DrawResourceManagerTab()
     {
         if( !ImGui.BeginTabItem( "Resource Manager Tab" ) )
@@ -163,6 +172,8 @@ public partial class SettingsInterface
         {
             return;
         }
+
+        ImGui.InputTextWithHint( "##resourceFilter", "Filter...", ref _filter, Utf8GamePath.MaxGamePathLength );
 
         raii.Push( ImGui.EndChild );
         if( !ImGui.BeginChild( "##ResourceManagerChild", -Vector2.One, true ) )

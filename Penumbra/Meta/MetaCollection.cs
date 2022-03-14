@@ -219,6 +219,12 @@ public class MetaCollection
 
             if( collection != null )
             {
+                if( collection.DefaultData.Concat( collection.GroupData.Values.SelectMany( kvp => kvp.Values.SelectMany( l => l ) ) )
+                  .Any( m => m.ManipulationType == MetaManipulation.Type.Unknown || !Enum.IsDefined( m.ManipulationType ) ) )
+                {
+                    throw new Exception( "Invalid collection" );
+                }
+
                 collection.Count = collection.DefaultData.Count
                   + collection.GroupData.Values.SelectMany( kvp => kvp.Values ).Sum( l => l.Count );
             }

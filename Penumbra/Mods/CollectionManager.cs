@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using Penumbra.Interop.Structs;
 using Penumbra.Mod;
 using Penumbra.Util;
 
@@ -43,6 +44,14 @@ public class CollectionManager
         {
             ActiveCollection = newActive;
             Penumbra.ResidentResources.Reload();
+            if( ActiveCollection.Cache == null )
+            {
+                Penumbra.CharacterUtility.ResetAll();
+            }
+            else
+            {
+                ActiveCollection.Cache.MetaManipulations.SetFiles();
+            }
         }
         else
         {
@@ -206,10 +215,9 @@ public class CollectionManager
     public void SetDefaultCollection( ModCollection newCollection )
         => SetCollection( newCollection, DefaultCollection, c =>
         {
-            if( !CollectionChangedTo.Any() )
+            if( CollectionChangedTo.Length == 0 )
             {
-                ActiveCollection = c;
-                Penumbra.ResidentResources.Reload();
+                SetActiveCollection( c, string.Empty );
             }
 
             DefaultCollection = c;
@@ -228,8 +236,7 @@ public class CollectionManager
             {
                 if( CollectionChangedTo == characterName && CharacterCollection.TryGetValue( characterName, out var collection ) )
                 {
-                    ActiveCollection = c;
-                    Penumbra.ResidentResources.Reload();
+                    SetActiveCollection( c, CollectionChangedTo );
                 }
 
                 CharacterCollection[ characterName ] = c;

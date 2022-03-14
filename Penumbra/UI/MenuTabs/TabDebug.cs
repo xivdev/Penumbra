@@ -1,28 +1,19 @@
 using System;
 using System.Collections.Generic;
-using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Types;
-using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
-using FFXIVClientStructs.FFXIV.Client.System.String;
 using ImGuiNET;
 using Penumbra.Api;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.GameData.Util;
 using Penumbra.Interop;
-using Penumbra.Meta;
-using Penumbra.Mods;
+using Penumbra.Meta.Files;
 using Penumbra.UI.Custom;
-using Penumbra.Util;
-using CharacterUtility = Penumbra.Interop.Structs.CharacterUtility;
 using ResourceHandle = Penumbra.Interop.Structs.ResourceHandle;
-using Utf8String = Penumbra.GameData.ByteString.Utf8String;
 
 namespace Penumbra.UI;
 
@@ -391,6 +382,31 @@ public partial class SettingsInterface
             return;
         }
 
+        var eqp = 0;
+        ImGui.InputInt( "##EqpInput", ref eqp );
+        try
+        {
+            var def = ExpandedEqpFile.GetDefault( eqp );
+            var val = Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Eqp.File?[ eqp ] ?? def;
+            ImGui.Text( Convert.ToString( ( long )def, 2 ).PadLeft( 64, '0' ) );
+            ImGui.Text( Convert.ToString( ( long )val, 2 ).PadLeft( 64, '0' ) );
+        }
+        catch
+        { }
+
+        var eqdp = 0;
+        ImGui.InputInt( "##EqdpInput", ref eqdp );
+        try
+        {
+            var def = ExpandedEqdpFile.GetDefault(GenderRace.MidlanderMale, false, eqdp );
+            var val = Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Eqdp.File(GenderRace.MidlanderMale, false)?[eqdp] ?? def;
+            ImGui.Text( Convert.ToString( ( ushort )def, 2 ).PadLeft( 16, '0' ) );
+            ImGui.Text( Convert.ToString( ( ushort )val, 2 ).PadLeft( 16, '0' ) );
+        }
+        catch
+        { }
+
+
         if( !ImGui.BeginTable( "##CharacterUtilityDebugList", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.UnitX ) )
         {
             return;
@@ -398,9 +414,10 @@ public partial class SettingsInterface
 
         using var end = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
-        for( var i = 0; i < CharacterUtility.NumRelevantResources; ++i )
+        for( var i = 0; i < CharacterUtility.RelevantIndices.Length; ++i )
         {
-            var resource = ( ResourceHandle* )Penumbra.CharacterUtility.Address->Resources[ i ];
+            var idx      = CharacterUtility.RelevantIndices[ i ];
+            var resource = ( ResourceHandle* )Penumbra.CharacterUtility.Address->Resources[ idx ];
             ImGui.TableNextColumn();
             ImGui.Text( $"0x{( ulong )resource:X}" );
             ImGui.TableNextColumn();

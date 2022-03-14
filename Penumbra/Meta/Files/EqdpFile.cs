@@ -47,7 +47,8 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
                 throw new IndexOutOfRangeException();
             }
 
-            return *( EqdpEntry* )( Data + DataOffset + EqdpEntrySize * idx );
+            var x = new ReadOnlySpan< ushort >( ( ushort* )Data, Length           / 2 );
+            return ( EqdpEntry )( *( ushort* )( Data + DataOffset + EqdpEntrySize * idx ) );
         }
         set
         {
@@ -56,7 +57,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
                 throw new IndexOutOfRangeException();
             }
 
-            *( EqdpEntry* )( Data + DataOffset + EqdpEntrySize * idx ) = value;
+            *( ushort* )( Data + DataOffset + EqdpEntrySize * idx ) = ( ushort )value;
         }
     }
 
@@ -65,9 +66,12 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
         var def = ( byte* )DefaultData.Data;
         Functions.MemCpyUnchecked( Data, def, IdentifierSize + PreambleSize );
 
-        var controlPtr  = ( ushort* )( def      + IdentifierSize + PreambleSize );
-        var dataBasePtr = ( byte* )( controlPtr + BlockCount );
-        var myDataPtr   = ( ushort* )( Data     + IdentifierSize + PreambleSize + 2 * BlockCount );
+        var controlPtr     = ( ushort* )( def + IdentifierSize + PreambleSize );
+        var dataBasePtr    = controlPtr + BlockCount;
+        var myDataPtrStart = ( ushort* )( Data + IdentifierSize + PreambleSize + 2 * BlockCount );
+        var myDataPtr      = myDataPtrStart;
+        var myControlPtr   = ( ushort* )( Data + IdentifierSize + PreambleSize );
+        var x              = new ReadOnlySpan< ushort >( ( ushort* )Data, Length / 2 );
         for( var i = 0; i < BlockCount; ++i )
         {
             if( controlPtr[ i ] == CollapsedBlock )
@@ -76,11 +80,16 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
             }
             else
             {
+                var y = new ReadOnlySpan< ushort >( dataBasePtr + controlPtr[ i ], BlockSize );
+                var z = new ReadOnlySpan< ushort >( myDataPtr, BlockSize );
                 Functions.MemCpyUnchecked( myDataPtr, dataBasePtr + controlPtr[ i ], BlockSize * EqdpEntrySize );
             }
 
-            myDataPtr += BlockSize;
+            myControlPtr[ i ] =  ( ushort )( i * BlockSize );
+            myDataPtr         += BlockSize;
         }
+
+        Functions.MemSet( myDataPtr, 0, Length - ( int )( ( byte* )myDataPtr - Data ) );
     }
 
     public void Reset( IEnumerable< int > entries )
@@ -102,7 +111,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
         DataOffset = IdentifierSize + PreambleSize + totalBlockCount * BlockHeaderSize;
 
         var fullLength = DataOffset   + totalBlockCount * totalBlockSize;
-        fullLength += ( FileAlignment - ( Length & ( FileAlignment - 1 ) ) ) & ( FileAlignment - 1 );
+        fullLength += ( FileAlignment - ( fullLength & ( FileAlignment - 1 ) ) ) & ( FileAlignment - 1 );
         AllocateData( fullLength );
         Reset();
     }
@@ -128,8 +137,9 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
             return 0;
         }
 
-        var blockData = ( EqdpEntry* )( data + IdentifierSize + PreambleSize + totalBlockCount * 2 + block );
-        return *( blockData + blockIdx % blockSize );
+        var blockData = ( ushort* )( data + IdentifierSize + PreambleSize + totalBlockCount * 2 + block * 2 );
+        var x         = new ReadOnlySpan< ushort >( blockData, blockSize );
+        return (EqdpEntry) (*( blockData + setIdx % blockSize ));
     }
 
     public static EqdpEntry GetDefault( GenderRace raceCode, bool accessory, int setIdx )

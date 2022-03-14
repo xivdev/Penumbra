@@ -18,11 +18,12 @@
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>full</DebugType>
-        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <DefineConstants>DEBUG;TRACE;USE_EQP;USE_EQDP;USE_GMP;USE_EST;USE_CMP;USE_IMC</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
         <DebugType>pdbonly</DebugType>
+        <DefineConstants>$(DefineConstants)TRACE;USE_EQP;USE_EQDP;USE_GMP;USE_EST;USE_CMP;USE_IMC</DefineConstants>
     </PropertyGroup>
 
 	<PropertyGroup>

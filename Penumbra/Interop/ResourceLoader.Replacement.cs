@@ -117,12 +117,15 @@ public unsafe partial class ResourceLoader
         // We use the IsRooted check to signify paths replaced by us pointing to the local filesystem instead of an SqPack.
         if( !valid || !gamePath.IsRooted() )
         {
-            ret = ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-            FileLoaded?.Invoke( gamePath.Path, ret != 0, false );
-        }
-        else if( ResourceLoadCustomization != null && gamePath.Path[0] == (byte) '|' )
-        {
-            ret = ResourceLoadCustomization.Invoke( gamePath, resourceManager, fileDescriptor, priority, isSync );
+            if( valid && ResourceLoadCustomization != null && gamePath.Path[ 0 ] == ( byte )'|' )
+            {
+                ret = ResourceLoadCustomization.Invoke( gamePath, resourceManager, fileDescriptor, priority, isSync );
+            }
+            else
+            {
+                ret = ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+                FileLoaded?.Invoke( gamePath.Path, ret != 0, false );
+            }
         }
         else
         {

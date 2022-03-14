@@ -108,7 +108,7 @@ public sealed unsafe partial class Utf8String
         var start = 0;
         for( var idx = IndexOf( b, start ); idx >= 0; idx = IndexOf( b, start ) )
         {
-            if( start + 1 != idx || !removeEmpty )
+            if( start != idx || !removeEmpty )
             {
                 ret.Add( Substring( start, idx - start ) );
             }

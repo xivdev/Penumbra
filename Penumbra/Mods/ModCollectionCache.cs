@@ -7,8 +7,7 @@ using System.IO;
 using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
-using Penumbra.Meta;
+using Penumbra.Meta.Manager;
 using Penumbra.Mod;
 using Penumbra.Util;
 
@@ -27,7 +26,7 @@ public class ModCollectionCache
     private readonly SortedList< string, object? >        _changedItems = new();
     public readonly  Dictionary< Utf8GamePath, FullPath > ResolvedFiles = new();
     public readonly  HashSet< FullPath >                  MissingFiles  = new();
-    public readonly  MetaManager2                         MetaManipulations;
+    public readonly  MetaManager                          MetaManipulations;
 
     public IReadOnlyDictionary< string, object? > ChangedItems
     {
@@ -39,7 +38,7 @@ public class ModCollectionCache
     }
 
     public ModCollectionCache( ModCollection collection )
-        => MetaManipulations = new MetaManager2( collection );
+        => MetaManipulations = new MetaManager( collection );
 
     private static void ResetFileSeen( int size )
     {
@@ -258,7 +257,7 @@ public class ModCollectionCache
     }
 
     private void AddMetaFiles()
-        => MetaManipulations.ApplyImcFiles( ResolvedFiles );
+        => MetaManipulations.Imc.SetFiles();
 
     private void AddSwaps( Mod.Mod mod )
     {

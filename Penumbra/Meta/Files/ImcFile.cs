@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Numerics;
 using Dalamud.Logging;
 using Dalamud.Memory;
@@ -7,6 +8,7 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Meta.Files;
 
@@ -64,39 +66,55 @@ public unsafe class ImcFile : MetaBaseFile
         => NumParts * sizeof( ImcEntry ) * ( Count + 1 ) + PreambleSize;
 
     public int Count
-        => *( ushort* )Data;
-
-    public ushort PartMask
-        => *( ushort* )( Data + 2 );
+        => CountInternal( Data );
 
     public readonly int          NumParts;
     public readonly Utf8GamePath Path;
 
-    public ImcEntry* DefaultPartPtr( int partIdx )
+    private static int CountInternal( byte* data )
+        => *( ushort* )data;
+
+    private static ushort PartMask( byte* data )
+        => *( ushort* )( data + 2 );
+
+    private static ImcEntry* DefaultPartPtr( byte* data, int partIdx )
     {
         var flag = 1 << partIdx;
-        if( ( PartMask & flag ) == 0 )
+        if( ( PartMask( data ) & flag ) == 0 )
         {
             return null;
         }
 
-        return ( ImcEntry* )( Data + PreambleSize ) + partIdx;
+        return ( ImcEntry* )( data + PreambleSize ) + partIdx;
     }
 
-    public ImcEntry* VariantPtr( int partIdx, int variantIdx )
+    private static ImcEntry* VariantPtr( byte* data, int partIdx, int variantIdx )
     {
+        if( variantIdx == 0 )
+        {
+            return DefaultPartPtr( data, partIdx );
+        }
+
+        --variantIdx;
         var flag = 1 << partIdx;
-        if( ( PartMask & flag ) == 0 || variantIdx >= Count )
+
+        if( ( PartMask( data ) & flag ) == 0 || variantIdx >= CountInternal( data ) )
         {
             return null;
         }
 
-        var numParts = NumParts;
-        var ptr      = ( ImcEntry* )( Data + PreambleSize );
+        var numParts = BitOperations.PopCount( PartMask( data ) );
+        var ptr      = ( ImcEntry* )( data + PreambleSize );
         ptr += numParts;
         ptr += variantIdx * numParts;
         ptr += partIdx;
         return ptr;
+    }
+
+    public ImcEntry GetEntry( int partIdx, int variantIdx )
+    {
+        var ptr = VariantPtr( Data, partIdx, variantIdx );
+        return ptr == null ? new ImcEntry() : *ptr;
     }
 
     public static int PartIndex( EquipSlot slot )
@@ -122,7 +140,6 @@ public unsafe class ImcFile : MetaBaseFile
             return true;
         }
 
-        var numParts = NumParts;
         if( ActualLength > Length )
         {
             PluginLog.Warning( "Adding too many variants to IMC, size exceeded." );
@@ -130,10 +147,10 @@ public unsafe class ImcFile : MetaBaseFile
         }
 
         var defaultPtr = ( ImcEntry* )( Data + PreambleSize );
-        var endPtr     = defaultPtr + ( numVariants + 1 ) * numParts;
-        for( var ptr = defaultPtr + numParts; ptr < endPtr; ptr += numParts )
+        var endPtr     = defaultPtr + ( numVariants + 1 ) * NumParts;
+        for( var ptr = defaultPtr + NumParts; ptr < endPtr; ptr += NumParts )
         {
-            Functions.MemCpyUnchecked( ptr, defaultPtr, numParts * sizeof( ImcEntry ) );
+            Functions.MemCpyUnchecked( ptr, defaultPtr, NumParts * sizeof( ImcEntry ) );
         }
 
         PluginLog.Verbose( "Expanded imc from {Count} to {NewCount} variants.", Count, numVariants );
@@ -143,15 +160,14 @@ public unsafe class ImcFile : MetaBaseFile
 
     public bool SetEntry( int partIdx, int variantIdx, ImcEntry entry )
     {
-        var numParts = NumParts;
-        if( partIdx >= numParts )
+        if( partIdx >= NumParts )
         {
             return false;
         }
 
-        EnsureVariantCount( variantIdx + 1 );
+        EnsureVariantCount( variantIdx );
 
-        var variantPtr = VariantPtr( partIdx, variantIdx );
+        var variantPtr = VariantPtr( Data, partIdx, variantIdx );
         if( variantPtr == null )
         {
             PluginLog.Error( "Error during expansion of imc file." );
@@ -168,9 +184,20 @@ public unsafe class ImcFile : MetaBaseFile
     }
 
 
+    public override void Reset()
+    {
+        var file = Dalamud.GameData.GetFile( Path.ToString() );
+        fixed( byte* ptr = file!.Data )
+        {
+            Functions.MemCpyUnchecked( Data, ptr, file.Data.Length );
+            Functions.MemSet( Data + file.Data.Length, 0, Length - file.Data.Length );
+        }
+    }
+
     public ImcFile( Utf8GamePath path )
         : base( 0 )
     {
+        Path = path;
         var file = Dalamud.GameData.GetFile( path.ToString() );
         if( file == null )
         {
@@ -182,6 +209,22 @@ public unsafe class ImcFile : MetaBaseFile
             NumParts = BitOperations.PopCount( *( ushort* )( ptr + 2 ) );
             AllocateData( file.Data.Length + sizeof( ImcEntry ) * 100 * NumParts );
             Functions.MemCpyUnchecked( Data, ptr, file.Data.Length );
+            Functions.MemSet( Data + file.Data.Length, 0, sizeof( ImcEntry ) * 100 * NumParts );
+        }
+    }
+
+    public static ImcEntry GetDefault( Utf8GamePath path, EquipSlot slot, int variantIdx )
+    {
+        var file = Dalamud.GameData.GetFile( path.ToString() );
+        if( file == null )
+        {
+            throw new Exception();
+        }
+
+        fixed( byte* ptr = file.Data )
+        {
+            var entry = VariantPtr( ptr, PartIndex( slot ), variantIdx );
+            return entry == null ? new ImcEntry() : *entry;
         }
     }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Lumina.Data.Files;
@@ -10,6 +11,7 @@ using Penumbra.GameData.Util;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Util;
+using ImcFile = Penumbra.Meta.Files.ImcFile;
 
 namespace Penumbra.Importer;
 
@@ -254,22 +256,38 @@ public class TexToolsMeta
         using var reader = new BinaryReader( new MemoryStream( data ) );
         var       values = reader.ReadStructures< ImcEntry >( num );
         ushort    i      = 0;
-        if( info.PrimaryType is ObjectType.Equipment or ObjectType.Accessory )
+        try
         {
-            // TODO check against default.
-            foreach( var value in values )
+            if( info.PrimaryType is ObjectType.Equipment or ObjectType.Accessory )
             {
-                ImcManipulations.Add(new ImcManipulation(info.EquipSlot, i, info.PrimaryId, value)  );
-                ++i;
+                var def     = new ImcFile( new ImcManipulation( info.EquipSlot, i, info.PrimaryId, new ImcEntry() ).GamePath() );
+                var partIdx = ImcFile.PartIndex( info.EquipSlot );
+                foreach( var value in values )
+                {
+                    if( !value.Equals( def.GetEntry( partIdx, i ) ) )
+                    {
+                        ImcManipulations.Add( new ImcManipulation( info.EquipSlot, i, info.PrimaryId, value ) );
+                    }
+
+                    ++i;
+                }
+            }
+            else
+            {
+                var def = new ImcFile( new ImcManipulation( info.PrimaryType, info.SecondaryType, info.PrimaryId, info.SecondaryId, i,
+                    new ImcEntry() ).GamePath() );
+                foreach( var value in values.Where( v => true || !v.Equals( def.GetEntry( 0, i ) ) ) )
+                {
+                    ImcManipulations.Add( new ImcManipulation( info.PrimaryType, info.SecondaryType, info.PrimaryId, info.SecondaryId, i,
+                        value ) );
+                    ++i;
+                }
             }
         }
-        else
+        catch( Exception e )
         {
-            foreach( var value in values )
-            {
-                ImcManipulations.Add( new ImcManipulation( info.PrimaryType, info.SecondaryType, info.PrimaryId, info.SecondaryId, i, value ) );
-                ++i;
-            }
+            PluginLog.Error( "Could not compute IMC manipulation. This is in all likelihood due to TexTools corrupting your index files.\n"
+              + $"If the following error looks like Lumina is having trouble to read an IMC file, please do a do-over in TexTools:\n{e}" );
         }
     }
 
@@ -296,7 +314,7 @@ public class TexToolsMeta
             var headerSize  = reader.ReadUInt32();
             var headerStart = reader.ReadUInt32();
             reader.BaseStream.Seek( headerStart, SeekOrigin.Begin );
-            
+
             List< (MetaManipulation.Type type, uint offset, int size) > entries = new();
             for( var i = 0; i < numHeaders; ++i )
             {
@@ -307,7 +325,7 @@ public class TexToolsMeta
                 entries.Add( ( type, offset, size ) );
                 reader.BaseStream.Seek( currentOffset + headerSize, SeekOrigin.Begin );
             }
-            
+
             byte[]? ReadEntry( MetaManipulation.Type type )
             {
                 var idx = entries.FindIndex( t => t.type == type );
@@ -315,11 +333,11 @@ public class TexToolsMeta
                 {
                     return null;
                 }
-            
+
                 reader.BaseStream.Seek( entries[ idx ].offset, SeekOrigin.Begin );
                 return reader.ReadBytes( entries[ idx ].size );
             }
-            
+
             DeserializeEqpEntry( metaInfo, ReadEntry( MetaManipulation.Type.Eqp ) );
             DeserializeGmpEntry( metaInfo, ReadEntry( MetaManipulation.Type.Gmp ) );
             DeserializeEqdpEntries( metaInfo, ReadEntry( MetaManipulation.Type.Eqdp ) );
@@ -373,32 +391,34 @@ public class TexToolsMeta
         void Add( RspAttribute attribute, float value )
         {
             var def = CmpFile.GetDefault( subRace, attribute );
-            if (value != def)
-                ret!.RspManipulations.Add(new RspManipulation(subRace, attribute, value));
+            if( value != def )
+            {
+                ret!.RspManipulations.Add( new RspManipulation( subRace, attribute, value ) );
+            }
         }
 
         if( gender == 1 )
         {
-            Add(RspAttribute.FemaleMinSize, br.ReadSingle() );
-            Add(RspAttribute.FemaleMaxSize, br.ReadSingle() );
-            Add(RspAttribute.FemaleMinTail, br.ReadSingle() );
-            Add(RspAttribute.FemaleMaxTail, br.ReadSingle() );
-        
-            Add(RspAttribute.BustMinX, br.ReadSingle() );
-            Add(RspAttribute.BustMinY, br.ReadSingle() );
-            Add(RspAttribute.BustMinZ, br.ReadSingle() );
-            Add(RspAttribute.BustMaxX, br.ReadSingle() );
-            Add(RspAttribute.BustMaxY, br.ReadSingle() );
-            Add(RspAttribute.BustMaxZ, br.ReadSingle() );
+            Add( RspAttribute.FemaleMinSize, br.ReadSingle() );
+            Add( RspAttribute.FemaleMaxSize, br.ReadSingle() );
+            Add( RspAttribute.FemaleMinTail, br.ReadSingle() );
+            Add( RspAttribute.FemaleMaxTail, br.ReadSingle() );
+
+            Add( RspAttribute.BustMinX, br.ReadSingle() );
+            Add( RspAttribute.BustMinY, br.ReadSingle() );
+            Add( RspAttribute.BustMinZ, br.ReadSingle() );
+            Add( RspAttribute.BustMaxX, br.ReadSingle() );
+            Add( RspAttribute.BustMaxY, br.ReadSingle() );
+            Add( RspAttribute.BustMaxZ, br.ReadSingle() );
         }
         else
         {
-            Add(RspAttribute.MaleMinSize, br.ReadSingle() );
-            Add(RspAttribute.MaleMaxSize, br.ReadSingle() );
-            Add(RspAttribute.MaleMinTail, br.ReadSingle() );
-            Add(RspAttribute.MaleMaxTail, br.ReadSingle() );
+            Add( RspAttribute.MaleMinSize, br.ReadSingle() );
+            Add( RspAttribute.MaleMaxSize, br.ReadSingle() );
+            Add( RspAttribute.MaleMinTail, br.ReadSingle() );
+            Add( RspAttribute.MaleMaxTail, br.ReadSingle() );
         }
-        
+
         return ret;
     }
 }

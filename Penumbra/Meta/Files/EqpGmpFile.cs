@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
@@ -24,17 +25,17 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     public ulong ControlBlock
         => *( ulong* )Data;
 
-    protected T Get< T >( int idx ) where T : unmanaged
+    protected ulong GetInternal( int idx )
     {
         return idx switch
         {
             >= Count => throw new IndexOutOfRangeException(),
-            <= 1     => *( ( T* )Data + 1 ),
-            _        => *( ( T* )Data + idx ),
+            <= 1     => *( ( ulong* )Data + 1 ),
+            _        => *( ( ulong* )Data + idx ),
         };
     }
 
-    protected void Set< T >( int idx, T value ) where T : unmanaged
+    protected void SetInternal( int idx, ulong value )
     {
         idx = idx switch
         {
@@ -43,7 +44,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
             _        => idx,
         };
 
-        *( ( T* )Data + idx ) = value;
+        *( ( ulong* )Data + idx ) = value;
     }
 
     protected virtual void SetEmptyBlock( int idx )
@@ -53,21 +54,24 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
 
     public sealed override void Reset()
     {
-        var ptr          = ( byte* )DefaultData.Data;
-        var controlBlock = *( ulong* )ptr;
-        *( ulong* )Data = ulong.MaxValue;
-        for( var i = 0; i < 64; ++i )
+        var ptr            = ( byte* )DefaultData.Data;
+        var controlBlock   = *( ulong* )ptr;
+        var expandedBlocks = 0;
+        for( var i = 0; i < NumBlocks; ++i )
         {
             var collapsed = ( ( controlBlock >> i ) & 1 ) == 0;
             if( !collapsed )
             {
-                Functions.MemCpyUnchecked( Data + i * BlockSize * EntrySize, ptr + i * BlockSize * EntrySize, BlockSize * EntrySize );
+                Functions.MemCpyUnchecked( Data + i * BlockSize * EntrySize, ptr + expandedBlocks * BlockSize * EntrySize, BlockSize * EntrySize );
+                expandedBlocks++;
             }
             else
             {
                 SetEmptyBlock( i );
             }
         }
+
+        *( ulong* )Data = ulong.MaxValue;
     }
 
     public ExpandedEqpGmpBase( bool gmp )
@@ -77,7 +81,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
         Reset();
     }
 
-    protected static T GetDefault< T >( int fileIdx, int setIdx, T def ) where T : unmanaged
+    protected static ulong GetDefaultInternal( int fileIdx, int setIdx, ulong def )
     {
         var data = ( byte* )Penumbra.CharacterUtility.DefaultResources[ fileIdx ].Address;
         if( setIdx == 0 )
@@ -100,7 +104,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
 
         var count = BitOperations.PopCount( control & ( blockBit - 1 ) );
         var idx   = setIdx % BlockSize;
-        var ptr   = ( T* )data + BlockSize * count + idx;
+        var ptr   = ( ulong* )data + BlockSize * count + idx;
         return *ptr;
     }
 }
@@ -113,12 +117,12 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase
 
     public EqpEntry this[ int idx ]
     {
-        get => Get< EqpEntry >( idx );
-        set => Set( idx, value );
+        get => ( EqpEntry )GetInternal( idx );
+        set => SetInternal( idx, ( ulong )value );
     }
 
     public static EqpEntry GetDefault( int setIdx )
-        => GetDefault( CharacterUtility.EqpIdx, setIdx, Eqp.DefaultEntry );
+        => ( EqpEntry )GetDefaultInternal( CharacterUtility.EqpIdx, setIdx, ( ulong )Eqp.DefaultEntry );
 
     protected override unsafe void SetEmptyBlock( int idx )
     {
@@ -147,12 +151,12 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase
 
     public GmpEntry this[ int idx ]
     {
-        get => Get< GmpEntry >( idx );
-        set => Set( idx, value );
+        get => ( GmpEntry )GetInternal( idx );
+        set => SetInternal( idx, ( ulong )value );
     }
 
     public static GmpEntry GetDefault( int setIdx )
-        => GetDefault( CharacterUtility.GmpIdx, setIdx, GmpEntry.Default );
+        => ( GmpEntry )GetDefaultInternal( CharacterUtility.GmpIdx, setIdx, ( ulong )GmpEntry.Default );
 
     public void Reset( IEnumerable< int > entries )
     {

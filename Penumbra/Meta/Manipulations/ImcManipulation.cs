@@ -61,6 +61,10 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
         EquipSlot   = equipSlot;
     }
 
+    public ImcManipulation( ImcManipulation copy, ImcEntry entry )
+        : this( copy.ObjectType, copy.BodySlot, copy.PrimaryId, copy.SecondaryId, copy.Variant, copy.EquipSlot, entry )
+    {}
+
     public override string ToString()
         => ObjectType is ObjectType.Equipment or ObjectType.Accessory
             ? $"Imc - {PrimaryId} - {EquipSlot} - {Variant}"

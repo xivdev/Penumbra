@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Penumbra.GameData.Enums;
 
@@ -7,49 +8,52 @@ namespace Penumbra.Interop.Structs;
 [StructLayout( LayoutKind.Explicit )]
 public unsafe struct CharacterUtility
 {
-    public const int NumResources         = 85;
-    public const int NumRelevantResources = 68;
-    public const int EqpIdx               = 0;
-    public const int GmpIdx               = 1;
-    public const int HumanCmpIdx          = 63;
-    public const int FaceEstIdx           = 64;
-    public const int HairEstIdx           = 65;
-    public const int BodyEstIdx           = 66;
-    public const int HeadEstIdx           = 67;
-    public const int NumEqdpFiles         = 2 * 28;
+    public static readonly int[] EqdpIndices
+        = Enumerable.Range( EqdpStartIdx, NumEqdpFiles ).ToArray();
+
+    public const int NumResources = 85;
+    public const int EqpIdx       = 0;
+    public const int GmpIdx       = 1;
+    public const int HumanCmpIdx  = 63;
+    public const int FaceEstIdx   = 64;
+    public const int HairEstIdx   = 65;
+    public const int BodyEstIdx   = 66;
+    public const int HeadEstIdx   = 67;
+    public const int EqdpStartIdx = 2;
+    public const int NumEqdpFiles = 2 * 28;
 
     public static int EqdpIdx( GenderRace raceCode, bool accessory )
-        => ( accessory ? 28 : 0 )
+        => ( accessory ? NumEqdpFiles / 2 : 0 )
           + ( int )raceCode switch
             {
-                0101 => 2,
-                0201 => 3,
-                0301 => 4,
-                0401 => 5,
-                0501 => 6,
-                0601 => 7,
-                0701 => 8,
-                0801 => 9,
-                0901 => 10,
-                1001 => 11,
-                1101 => 12,
-                1201 => 13,
-                1301 => 14,
-                1401 => 15,
-                1501 => 16,
-                1601 => 17, // Does not exist yet
-                1701 => 18,
-                1801 => 19,
-                0104 => 20,
-                0204 => 21,
-                0504 => 22,
-                0604 => 23,
-                0704 => 24,
-                0804 => 25,
-                1304 => 26,
-                1404 => 27,
-                9104 => 28,
-                9204 => 29,
+                0101 => EqdpStartIdx,
+                0201 => EqdpStartIdx + 1,
+                0301 => EqdpStartIdx + 2,
+                0401 => EqdpStartIdx + 3,
+                0501 => EqdpStartIdx + 4,
+                0601 => EqdpStartIdx + 5,
+                0701 => EqdpStartIdx + 6,
+                0801 => EqdpStartIdx + 7,
+                0901 => EqdpStartIdx + 8,
+                1001 => EqdpStartIdx + 9,
+                1101 => EqdpStartIdx + 10,
+                1201 => EqdpStartIdx + 11,
+                1301 => EqdpStartIdx + 12,
+                1401 => EqdpStartIdx + 13,
+                1501 => EqdpStartIdx + 14,
+                1601 => EqdpStartIdx + 15, // Does not exist yet
+                1701 => EqdpStartIdx + 16,
+                1801 => EqdpStartIdx + 17,
+                0104 => EqdpStartIdx + 18,
+                0204 => EqdpStartIdx + 19,
+                0504 => EqdpStartIdx + 20,
+                0604 => EqdpStartIdx + 21,
+                0704 => EqdpStartIdx + 22,
+                0804 => EqdpStartIdx + 23,
+                1304 => EqdpStartIdx + 24,
+                1404 => EqdpStartIdx + 25,
+                9104 => EqdpStartIdx + 26,
+                9204 => EqdpStartIdx + 27,
                 _    => throw new ArgumentException(),
             };
 
