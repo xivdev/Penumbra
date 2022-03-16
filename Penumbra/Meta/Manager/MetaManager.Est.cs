@@ -31,6 +31,15 @@ public partial class MetaManager
         }
 
         [Conditional( "USE_EST" )]
+        public static void ResetFiles()
+        {
+            SetFile( null, CharacterUtility.FaceEstIdx );
+            SetFile( null, CharacterUtility.HairEstIdx );
+            SetFile( null, CharacterUtility.BodyEstIdx );
+            SetFile( null, CharacterUtility.HeadEstIdx );
+        }
+
+        [Conditional( "USE_EST" )]
         public void Reset()
         {
             FaceFile?.Reset();

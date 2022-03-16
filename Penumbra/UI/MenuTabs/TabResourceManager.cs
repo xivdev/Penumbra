@@ -1,14 +1,13 @@
 using System;
 using System.Linq;
 using System.Numerics;
-using System.Reflection.Metadata.Ecma335;
 using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using ImGuiNET;
 using Penumbra.GameData.ByteString;
-using Penumbra.Interop;
+using Penumbra.Interop.Loader;
 using Penumbra.UI.Custom;
 
 namespace Penumbra.UI;

@@ -23,6 +23,10 @@ public partial class MetaManager
             => SetFile( File, CharacterUtility.EqpIdx );
 
         [Conditional( "USE_EQP" )]
+        public static void ResetFiles()
+            => SetFile( null, CharacterUtility.EqpIdx );
+
+        [Conditional( "USE_EQP" )]
         public void Reset()
         {
             if( File == null )

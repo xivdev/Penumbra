@@ -1,11 +1,14 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
+using Penumbra.Interop.Structs;
+using Penumbra.Meta.Manager;
 using Penumbra.Mod;
 using Penumbra.Util;
 
@@ -251,6 +254,84 @@ public class ModCollection
 
     public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
         => Cache?.ResolveSwappedOrReplacementPath( gameResourcePath );
+
+
+    [Conditional( "USE_EQP" )]
+    public void SetEqpFiles()
+    {
+        if( Cache == null )
+        {
+            MetaManager.MetaManagerEqp.ResetFiles();
+        }
+        else
+        {
+            Cache.MetaManipulations.Eqp.SetFiles();
+        }
+    }
+
+    [Conditional( "USE_EQDP" )]
+    public void SetEqdpFiles()
+    {
+        if( Cache == null )
+        {
+            MetaManager.MetaManagerEqdp.ResetFiles();
+        }
+        else
+        {
+            Cache.MetaManipulations.Eqdp.SetFiles();
+        }
+    }
+
+    [Conditional( "USE_GMP" )]
+    public void SetGmpFiles()
+    {
+        if( Cache == null )
+        {
+            MetaManager.MetaManagerGmp.ResetFiles();
+        }
+        else
+        {
+            Cache.MetaManipulations.Gmp.SetFiles();
+        }
+    }
+
+    [Conditional( "USE_EST" )]
+    public void SetEstFiles()
+    {
+        if( Cache == null )
+        {
+            MetaManager.MetaManagerEst.ResetFiles();
+        }
+        else
+        {
+            Cache.MetaManipulations.Est.SetFiles();
+        }
+    }
+
+    [Conditional( "USE_CMP" )]
+    public void SetCmpFiles()
+    {
+        if( Cache == null )
+        {
+            MetaManager.MetaManagerCmp.ResetFiles();
+        }
+        else
+        {
+            Cache.MetaManipulations.Cmp.SetFiles();
+        }
+    }
+
+    public void SetFiles()
+    {
+        if( Cache == null )
+        {
+            Penumbra.CharacterUtility.ResetAll();
+        }
+        else
+        {
+            Cache.MetaManipulations.SetFiles();
+        }
+    }
 
     public static readonly ModCollection Empty = new() { Name = "" };
 }

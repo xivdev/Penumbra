@@ -30,5 +30,6 @@ public class Dalamud
         [PluginService][RequiredVersion("1.0")] public static TargetManager          Targets         { get; private set; } = null!;
         [PluginService][RequiredVersion("1.0")] public static ObjectTable            Objects         { get; private set; } = null!;
         [PluginService][RequiredVersion("1.0")] public static TitleScreenMenu        TitleScreenMenu { get; private set; } = null!;
+        [PluginService][RequiredVersion("1.0")] public static GameGui                GameGui { get; private set; } = null!;
     // @formatter:on
 }

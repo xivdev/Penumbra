@@ -9,12 +9,13 @@ using Lumina.Excel.GeneratedSheets;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
-using Penumbra.Meta.Files;
 using Penumbra.Mods;
 using Penumbra.PlayerWatch;
 using Penumbra.UI;
 using Penumbra.Util;
 using System.Linq;
+using Penumbra.Interop.Loader;
+using Penumbra.Interop.Resolver;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra;
@@ -44,7 +45,7 @@ public class Penumbra : IDalamudPlugin
     public static ResourceLoader ResourceLoader { get; set; } = null!;
     public ResourceLogger ResourceLogger { get; }
 
-    //public PathResolver PathResolver { get; }
+    public PathResolver PathResolver { get; }
     public SettingsInterface SettingsInterface { get; }
     public MusicManager MusicManager { get; }
     public ObjectReloader ObjectReloader { get; }
@@ -75,7 +76,7 @@ public class Penumbra : IDalamudPlugin
         ModManager        = new ModManager();
         ModManager.DiscoverMods();
         ObjectReloader = new ObjectReloader( ModManager, Config.WaitFrames );
-        //PathResolver   = new PathResolver( ResourceLoader, gameUtils );
+        PathResolver   = new PathResolver( ResourceLoader );
 
         Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
         {
@@ -235,7 +236,7 @@ public class Penumbra : IDalamudPlugin
 
         Dalamud.Commands.RemoveHandler( CommandName );
 
-        //PathResolver.Dispose();
+        PathResolver.Dispose();
         ResourceLogger.Dispose();
         ResourceLoader.Dispose();
         CharacterUtility.Dispose();

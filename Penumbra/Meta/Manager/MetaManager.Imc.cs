@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
-using Penumbra.Interop;
+using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -26,6 +26,7 @@ public partial class MetaManager
         {
             _collection       = collection;
             _previousDelegate = Penumbra.ResourceLoader.ResourceLoadCustomization;
+            SetupDelegate();
         }
 
         [Conditional( "USE_IMC" )]
@@ -92,7 +93,6 @@ public partial class MetaManager
             return false;
 #endif
         }
-
 
         public void Dispose()
         {

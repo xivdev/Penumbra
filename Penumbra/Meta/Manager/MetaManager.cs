@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -14,7 +15,8 @@ public partial class MetaManager : IDisposable
     public MetaManagerCmp  Cmp  = new();
     public MetaManagerImc  Imc;
 
-    private static unsafe void SetFile( MetaBaseFile? file, int index )
+    [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
+    public static unsafe void SetFile( MetaBaseFile? file, int index )
     {
         if( file == null )
         {

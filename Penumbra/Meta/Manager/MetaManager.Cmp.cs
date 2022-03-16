@@ -19,6 +19,14 @@ public partial class MetaManager
         { }
 
         [Conditional( "USE_CMP" )]
+        public void SetFiles()
+            => SetFile( File, CharacterUtility.HumanCmpIdx );
+
+        [Conditional( "USE_CMP" )]
+        public static void ResetFiles()
+            => SetFile( null, CharacterUtility.HumanCmpIdx );
+
+        [Conditional( "USE_CMP" )]
         public void Reset()
         {
             if( File == null )
@@ -29,10 +37,6 @@ public partial class MetaManager
             File.Reset( Manipulations.Keys.Select( m => ( m.SubRace, m.Attribute ) ) );
             Manipulations.Clear();
         }
-
-        [Conditional( "USE_CMP" )]
-        public void SetFiles()
-            => SetFile( File, CharacterUtility.HumanCmpIdx );
 
         public bool ApplyMod( RspManipulation m, Mod.Mod mod )
         {

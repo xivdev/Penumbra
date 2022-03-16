@@ -27,7 +27,7 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
     public FullPath( string s )
     {
         FullName     = s;
-        InternalName = Utf8String.FromString( FullName, out var name, true ) ? name.Replace( ( byte )'\\', ( byte )'/' ) : Utf8String.Empty;
+        InternalName = Utf8String.FromString( FullName.Replace( '\\', '/' ), out var name, true ) ? name : Utf8String.Empty;
         Crc64        = Functions.ComputeCrc64( InternalName.Span );
     }
 

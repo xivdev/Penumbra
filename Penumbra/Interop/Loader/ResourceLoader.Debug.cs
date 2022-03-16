@@ -8,7 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using Penumbra.GameData.ByteString;
 
-namespace Penumbra.Interop;
+namespace Penumbra.Interop.Loader;
 
 public unsafe partial class ResourceLoader
 {

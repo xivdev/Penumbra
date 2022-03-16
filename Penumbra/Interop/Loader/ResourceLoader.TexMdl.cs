@@ -5,7 +5,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Penumbra.GameData.ByteString;
 
-namespace Penumbra.Interop;
+namespace Penumbra.Interop.Loader;
 
 // Since 6.0, Mdl and Tex Files require special treatment, probably due to datamining protection.
 public unsafe partial class ResourceLoader

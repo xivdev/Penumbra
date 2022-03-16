@@ -18,6 +18,15 @@ public partial class MetaManager
         public MetaManagerGmp()
         { }
 
+
+        [Conditional( "USE_GMP" )]
+        public void SetFiles()
+            => SetFile( File, CharacterUtility.GmpIdx );
+
+        [Conditional( "USE_GMP" )]
+        public static void ResetFiles()
+            => SetFile( null, CharacterUtility.GmpIdx );
+
         [Conditional( "USE_GMP" )]
         public void Reset()
         {
@@ -27,10 +36,6 @@ public partial class MetaManager
                 Manipulations.Clear();
             }
         }
-
-        [Conditional( "USE_GMP" )]
-        public void SetFiles()
-            => SetFile( File, CharacterUtility.GmpIdx );
 
         public bool ApplyMod( GmpManipulation m, Mod.Mod mod )
         {

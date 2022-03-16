@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 
-namespace Penumbra.Interop;
+namespace Penumbra.Interop.Loader;
 
 // A logger class that contains the relevant data to log requested files via regex.
 // Filters are case-insensitive.

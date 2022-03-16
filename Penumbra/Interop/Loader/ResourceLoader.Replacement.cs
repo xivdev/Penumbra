@@ -9,7 +9,7 @@ using Penumbra.Interop.Structs;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
-namespace Penumbra.Interop;
+namespace Penumbra.Interop.Loader;
 
 public unsafe partial class ResourceLoader
 {

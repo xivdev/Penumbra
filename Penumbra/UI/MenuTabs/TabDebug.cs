@@ -398,8 +398,10 @@ public partial class SettingsInterface
         ImGui.InputInt( "##EqdpInput", ref eqdp );
         try
         {
-            var def = ExpandedEqdpFile.GetDefault(GenderRace.MidlanderMale, false, eqdp );
-            var val = Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Eqdp.File(GenderRace.MidlanderMale, false)?[eqdp] ?? def;
+            var def = ExpandedEqdpFile.GetDefault( GenderRace.MidlanderMale, false, eqdp );
+            var val =
+                Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Eqdp.File( GenderRace.MidlanderMale, false )?[ eqdp ]
+             ?? def;
             ImGui.Text( Convert.ToString( ( ushort )def, 2 ).PadLeft( 16, '0' ) );
             ImGui.Text( Convert.ToString( ( ushort )val, 2 ).PadLeft( 16, '0' ) );
         }
@@ -454,41 +456,43 @@ public partial class SettingsInterface
             return;
         }
 
-        //if( ImGui.TreeNodeEx( "Draw Object to Object" ) )
-        //{
-        //    using var end = ImGuiRaii.DeferredEnd( ImGui.TreePop );
-        //    if( ImGui.BeginTable( "###DrawObjectResolverTable", 4, ImGuiTableFlags.SizingFixedFit ) )
-        //    {
-        //        end.Push( ImGui.EndTable );
-        //        foreach( var (ptr, idx) in _penumbra.PathResolver._drawObjectToObject )
-        //        {
-        //            ImGui.TableNextColumn();
-        //            ImGui.Text( ptr.ToString( "X" ) );
-        //            ImGui.TableNextColumn();
-        //            ImGui.Text( idx.ToString() );
-        //            ImGui.TableNextColumn();
-        //            ImGui.Text( Dalamud.Objects[ idx ]?.Address.ToString() ?? "NULL" );
-        //            ImGui.TableNextColumn();
-        //            ImGui.Text( Dalamud.Objects[ idx ]?.Name.ToString() ?? "NULL" );
-        //        }
-        //    }
-        //}
-        //
-        //if( ImGui.TreeNodeEx( "Path Collections" ) )
-        //{
-        //    using var end = ImGuiRaii.DeferredEnd( ImGui.TreePop );
-        //    if( ImGui.BeginTable( "###PathCollectionResolverTable", 2, ImGuiTableFlags.SizingFixedFit ) )
-        //    {
-        //        end.Push( ImGui.EndTable );
-        //        foreach( var (path, collection) in _penumbra.PathResolver._pathCollections )
-        //        {
-        //            ImGui.TableNextColumn();
-        //            ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
-        //            ImGui.TableNextColumn();
-        //            ImGui.Text( collection.Name );
-        //        }
-        //    }
-        //}
+        if( ImGui.TreeNodeEx( "Draw Object to Object" ) )
+        {
+            using var end = ImGuiRaii.DeferredEnd( ImGui.TreePop );
+            if( ImGui.BeginTable( "###DrawObjectResolverTable", 5, ImGuiTableFlags.SizingFixedFit ) )
+            {
+                end.Push( ImGui.EndTable );
+                foreach( var (ptr, (c, idx)) in _penumbra.PathResolver.DrawObjectToObject )
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.Text( ptr.ToString( "X" ) );
+                    ImGui.TableNextColumn();
+                    ImGui.Text( idx.ToString() );
+                    ImGui.TableNextColumn();
+                    ImGui.Text( Dalamud.Objects[ idx ]?.Address.ToString() ?? "NULL" );
+                    ImGui.TableNextColumn();
+                    ImGui.Text( Dalamud.Objects[ idx ]?.Name.ToString() ?? "NULL" );
+                    ImGui.TableNextColumn();
+                    ImGui.Text( c.Name );
+                }
+            }
+        }
+
+        if( ImGui.TreeNodeEx( "Path Collections" ) )
+        {
+            using var end = ImGuiRaii.DeferredEnd( ImGui.TreePop );
+            if( ImGui.BeginTable( "###PathCollectionResolverTable", 2, ImGuiTableFlags.SizingFixedFit ) )
+            {
+                end.Push( ImGui.EndTable );
+                foreach( var (path, collection) in _penumbra.PathResolver.PathCollections )
+                {
+                    ImGui.TableNextColumn();
+                    ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
+                    ImGui.TableNextColumn();
+                    ImGui.Text( collection.Name );
+                }
+            }
+        }
     }
 
     private void DrawDebugTab()

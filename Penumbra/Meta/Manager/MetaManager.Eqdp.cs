@@ -30,6 +30,15 @@ public partial class MetaManager
         }
 
         [Conditional( "USE_EQDP" )]
+        public static void ResetFiles()
+        {
+            foreach( var idx in CharacterUtility.EqdpIndices )
+            {
+                SetFile( null, idx );
+            }
+        }
+
+        [Conditional( "USE_EQDP" )]
         public void Reset()
         {
             foreach( var file in Files )
