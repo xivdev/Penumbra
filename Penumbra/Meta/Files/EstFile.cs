@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Meta.Manipulations;
@@ -15,7 +16,7 @@ public sealed unsafe class EstFile : MetaBaseFile
 {
     private const ushort EntryDescSize = 4;
     private const ushort EntrySize     = 2;
-    private const int    IncreaseSize  = 100;
+    private const int    IncreaseSize  = 512;
 
     public int Count
         => *( int* )Data;
@@ -52,58 +53,57 @@ public sealed unsafe class EstFile : MetaBaseFile
         {
             var data   = Data;
             var length = Length;
-            AllocateData( length + IncreaseSize * ( EntryDescSize + EntrySize ) );
+            AllocateData( length + IncreaseSize );
             Functions.MemCpyUnchecked( Data, data, length );
-            Functions.MemSet( Data + length, 0, IncreaseSize * ( EntryDescSize + EntrySize ) );
+            Functions.MemSet( Data + length, 0, IncreaseSize );
             GC.RemoveMemoryPressure( length );
             Marshal.FreeHGlobal( ( IntPtr )data );
         }
 
-        var control = ( uint* )( Data   + 4 );
-        var entries = ( ushort* )( Data + 4 * ( Count + 1 ) );
+        var control = ( Info* )( Data + 4 );
+        var entries = ( ushort* )( control + Count );
 
-        for( var i = Count; i > idx; --i )
+        for( var i = Count - 1; i >= idx; --i )
         {
-            *( entries + i + 2 ) = entries[ i - 1 ];
+            entries[ i + 3 ] = entries[ i ];
         }
+
+        entries[ idx + 2 ] = skeletonId;
 
         for( var i = idx - 1; i >= 0; --i )
         {
-            *( entries + i + 2 ) = entries[ i ];
+            entries[ i + 2 ] = entries[ i ];
         }
 
-        for( var i = Count; i > idx; --i )
+        for( var i = Count - 1; i >= idx; --i )
         {
-            *( control + i ) = control[ i - 1 ];
+            control[ i + 1 ] = control[ i ];
         }
+
+        control[ idx ] = new Info( genderRace, setId );
 
         *( int* )Data = Count + 1;
-
-        *( ushort* )control         = setId;
-        *( ( ushort* )control + 1 ) = ( ushort )genderRace;
-        control[ idx ]              = skeletonId;
     }
 
     private void RemoveEntry( int idx )
     {
-        var entries = ( ushort* )( Data + 4 * Count );
-        var control = ( uint* )( Data   + 4 );
-        *( int* )Data = Count - 1;
-        var count = Count;
+        var control = ( Info* )( Data      + 4 );
+        var entries = ( ushort* )( control + Count );
 
-        for( var i = idx; i < count; ++i )
+        for( var i = idx; i < Count; ++i )
         {
             control[ i ] = control[ i + 1 ];
         }
 
-        for( var i = 0; i < count; ++i )
+        for( var i = 0; i < Count; ++i )
         {
-            entries[ i ] = entries[ i + 1 ];
+            entries[ i - 2 ] = entries[ i + 1 ];
         }
 
-        entries[ count ]     = 0;
-        entries[ count + 1 ] = 0;
-        entries[ count + 2 ] = 0;
+        entries[ Count - 3 ] = 0;
+        entries[ Count - 2 ] = 0;
+        entries[ Count - 1 ] = 0;
+        *( int* )Data        = Count - 1;
     }
 
     [StructLayout( LayoutKind.Sequential, Size = 4 )]
@@ -179,7 +179,7 @@ public sealed unsafe class EstFile : MetaBaseFile
         : base( ( int )estType )
     {
         var length = DefaultData.Length;
-        AllocateData( length + IncreaseSize * ( EntryDescSize + EntrySize ) );
+        AllocateData( length + IncreaseSize );
         Reset();
     }
 
@@ -188,7 +188,7 @@ public sealed unsafe class EstFile : MetaBaseFile
 
     public static ushort GetDefault( EstManipulation.EstType estType, GenderRace genderRace, ushort setId )
     {
-        var data  = ( byte* )Penumbra.CharacterUtility.DefaultResources[ ( int )estType ].Address;
+        var data  = ( byte* )Penumbra.CharacterUtility.DefaultResource( ( int )estType ).Address;
         var count = *( int* )data;
         var span  = new ReadOnlySpan< Info >( data + 4, count );
         var (idx, found) = FindEntry( span, genderRace, setId );

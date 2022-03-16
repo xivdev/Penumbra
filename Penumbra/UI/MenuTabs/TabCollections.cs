@@ -360,17 +360,15 @@ public partial class SettingsInterface
 
                 using var font = ImGuiRaii.PushFont( UiBuilder.IconFont );
 
-                using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.FramePadding, Vector2.One * ImGuiHelpers.GlobalScale * 1.5f );
-                if( ImGui.Button( $"{FontAwesomeIcon.Trash.ToIconString()}##{name}" ) )
+                if( ImGui.Button( $"{FontAwesomeIcon.Trash.ToIconString()}##{name}", Vector2.One * ImGui.GetFrameHeight() ) )
                 {
                     manager.Collections.RemoveCharacterCollection( name );
                 }
 
-                style.Pop();
-
                 font.Pop();
 
                 ImGui.SameLine();
+                ImGui.AlignTextToFramePadding();
                 ImGui.Text( name );
             }
 

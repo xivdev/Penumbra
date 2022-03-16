@@ -21,9 +21,11 @@ namespace Penumbra.Interop.Resolver;
 // EST entries seem to be obtained by "44 8B C9 83 EA ?? 74", which is only called by
 // ResolveSKLBPath, ResolveSKPPath, ResolvePHYBPath and indirectly by ResolvePAPPath.
 
-// RSP entries seem to be obtained by "E8 ?? ?? ?? ?? 48 8B 8E ?? ?? ?? ?? 44 8B CF", or maybe "E8 ?? ?? ?? ?? 0F 28 F0 48 8B 05",
-// possibly also "E8 ?? ?? ?? ?? F2 0F 10 44 24 ?? 8B 44 24 ?? F2 0F 11 45 ?? 89 45 ?? 83 FF"
-// which is called by a lot of functions, but the mostly relevant is probably Human.SetupFromCharacterData, which is only called by CharacterBase.Create.
+// RSP height entries seem to be obtained by "E8 ?? ?? ?? ?? 48 8B 8E ?? ?? ?? ?? 44 8B CF"
+// RSP tail entries seem to be obtained by "E8 ?? ?? ?? ?? 0F 28 F0 48 8B 05"
+// RSP bust size entries seem to be obtained by  "E8 ?? ?? ?? ?? F2 0F 10 44 24 ?? 8B 44 24 ?? F2 0F 11 45 ?? 89 45 ?? 83 FF"
+// they all are called by many functions, but the most relevant seem to be Human.SetupFromCharacterData, which is only called by CharacterBase.Create,
+// and RspSetupCharacter, which is hooked here.
 
 // GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which has a DrawObject as its first parameter.
 
@@ -102,6 +104,18 @@ public unsafe partial class PathResolver
         ApplyVisorHook!.Original( drawObject, unk1, unk2, unk3, unk4, unk5 );
     }
 
+    // RSP
+    public delegate void RspSetupCharacterDelegate( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 );
+
+    [Signature( "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 88 54 24 ?? 57 41 56 ", DetourName = "RspSetupCharacterDetour" )]
+    public Hook< RspSetupCharacterDelegate >? RspSetupCharacterHook;
+
+    private void RspSetupCharacterDetour( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 )
+    {
+        using var rsp = MetaChanger.ChangeCmp( this, drawObject );
+        RspSetupCharacterHook!.Original( drawObject, unk2, unk3, unk4, unk5 );
+    }
+
     private void SetupMetaHooks()
     {
         OnModelLoadCompleteHook =
@@ -120,6 +134,9 @@ public unsafe partial class PathResolver
 #if USE_GMP
         ApplyVisorHook?.Enable();
 #endif
+#if USE_CMP
+        RspSetupCharacterHook?.Enable();
+#endif
     }
 
     private void DisableMetaHooks()
@@ -128,6 +145,7 @@ public unsafe partial class PathResolver
         UpdateModelsHook?.Disable();
         OnModelLoadCompleteHook?.Disable();
         ApplyVisorHook?.Disable();
+        RspSetupCharacterHook?.Disable();
     }
 
     private void DisposeMetaHooks()
@@ -136,6 +154,7 @@ public unsafe partial class PathResolver
         UpdateModelsHook?.Dispose();
         OnModelLoadCompleteHook?.Dispose();
         ApplyVisorHook?.Dispose();
+        RspSetupCharacterHook?.Dispose();
     }
 
     private ModCollection? GetCollection( IntPtr drawObject )
@@ -246,6 +265,19 @@ public unsafe partial class PathResolver
                 collection = null;
             }
 
+            return new MetaChanger( MetaManipulation.Type.Unknown );
+        }
+
+        public static MetaChanger ChangeCmp( PathResolver resolver, IntPtr drawObject )
+        {
+#if USE_CMP
+            var collection = resolver.GetCollection( drawObject );
+            if( collection != null )
+            {
+                collection.SetCmpFiles();
+                return new MetaChanger( MetaManipulation.Type.Rsp );
+            }
+#endif
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 

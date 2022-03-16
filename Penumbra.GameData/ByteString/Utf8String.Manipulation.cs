@@ -71,7 +71,7 @@ public sealed unsafe partial class Utf8String
         var length      = Length;
         var newPtr      = ByteStringFunctions.CopyString( _path, length );
         var numReplaced = ByteStringFunctions.Replace( newPtr, length, from, to );
-        return new Utf8String().Setup( newPtr, length, numReplaced > 0 ? _crc32 : null, true, true, IsAsciiLowerInternal, IsAsciiInternal );
+        return new Utf8String().Setup( newPtr, length, numReplaced == 0 ? _crc32 : null, true, true, IsAsciiLowerInternal, IsAsciiInternal );
     }
 
     // Join a number of strings with a given byte between them.

@@ -49,6 +49,9 @@ public unsafe class CharacterUtility : IDisposable
 
     public (IntPtr Address, int Size)[] DefaultResources = new (IntPtr, int)[RelevantIndices.Length];
 
+    public (IntPtr Address, int Size) DefaultResource( int fullIdx )
+        => DefaultResources[ ReverseIndices[ fullIdx ] ];
+
     public CharacterUtility()
     {
         SignatureHelper.Initialise( this );

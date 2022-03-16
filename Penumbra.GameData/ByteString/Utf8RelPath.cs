@@ -20,7 +20,14 @@ public readonly struct Utf8RelPath : IEquatable< Utf8RelPath >, IComparable< Utf
 
 
     public static explicit operator Utf8RelPath( string s )
-        => FromString( s, out var p ) ? p : Empty;
+    {
+        if( !FromString( s, out var p ) )
+        {
+            return Empty;
+        }
+
+        return new Utf8RelPath( p.Path.AsciiToLower() );
+    }
 
     public static bool FromString( string? s, out Utf8RelPath path )
     {

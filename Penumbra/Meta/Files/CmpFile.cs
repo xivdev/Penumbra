@@ -39,7 +39,7 @@ public sealed unsafe class CmpFile : MetaBaseFile
 
     public static float GetDefault( SubRace subRace, RspAttribute attribute )
     {
-        var data = ( byte* )Penumbra.CharacterUtility.DefaultResources[ CharacterUtility.HumanCmpIdx ].Address;
+        var data = ( byte* )Penumbra.CharacterUtility.DefaultResource( CharacterUtility.HumanCmpIdx ).Address;
         return *( float* )( data + RacialScalingStart + ToRspIndex( subRace ) * RspEntry.ByteSize + ( int )attribute * 4 );
     }
 

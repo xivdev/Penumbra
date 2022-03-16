@@ -40,7 +40,7 @@ public partial class MetaManager
         public bool ApplyMod( GmpManipulation m, Mod.Mod mod )
         {
 #if USE_GMP
-            if( Manipulations.TryAdd( m, mod ) )
+            if( !Manipulations.TryAdd( m, mod ) )
             {
                 return false;
             }
