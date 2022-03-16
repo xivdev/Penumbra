@@ -11,8 +11,10 @@ using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.UI.Custom;
+using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ResourceHandle = Penumbra.Interop.Structs.ResourceHandle;
 
 namespace Penumbra.UI;
@@ -159,7 +161,7 @@ public partial class SettingsInterface
         //PrintValue( "Resource Loader Enabled", _penumbra.ResourceLoader.IsEnabled.ToString() );
     }
 
-    private void DrawDebugTabRedraw()
+    private unsafe void DrawDebugTabRedraw()
     {
         if( !ImGui.CollapsingHeader( "Redrawing##Debug" ) )
         {
@@ -187,7 +189,7 @@ public partial class SettingsInterface
            .GetField( "_currentObjectName", BindingFlags.Instance | BindingFlags.NonPublic )
           ?.GetValue( _penumbra.ObjectReloader );
 
-        var currentObjectStartState = ( ObjectReloader.LoadingFlags? )_penumbra.ObjectReloader.GetType()
+        var currentObjectStartState = ( DrawState? )_penumbra.ObjectReloader.GetType()
            .GetField( "_currentObjectStartState", BindingFlags.Instance | BindingFlags.NonPublic )
           ?.GetValue( _penumbra.ObjectReloader );
 
@@ -200,7 +202,7 @@ public partial class SettingsInterface
            .Invoke( _penumbra.ObjectReloader, Array.Empty< object >() )!;
 
         var currentRender = currentObject != null
-            ? ( ObjectReloader.LoadingFlags? )Marshal.ReadInt32( ObjectReloader.RenderPtr( currentObject ) )
+            ? ObjectReloader.ActorDrawState( currentObject )
             : null;
 
         var waitFrames = ( int? )_penumbra.ObjectReloader.GetType()
