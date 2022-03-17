@@ -22,104 +22,6 @@ namespace Penumbra.UI;
 
 public partial class SettingsInterface
 {
-    private static void DrawDebugTabPlayers()
-    {
-        if( !ImGui.CollapsingHeader( "Players##Debug" ) )
-        {
-            return;
-        }
-
-        var players = Penumbra.PlayerWatcher.WatchedPlayers().ToArray();
-        var count   = players.Sum( s => Math.Max( 1, s.Item2.Length ) );
-        if( count == 0 )
-        {
-            return;
-        }
-
-        if( !ImGui.BeginTable( "##ObjectTable", 13, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.ScrollX,
-               new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 4 * count ) ) )
-        {
-            return;
-        }
-
-        using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
-
-        var identifier = GameData.GameData.GetIdentifier();
-
-        foreach( var (actor, equip) in players.SelectMany( kvp => kvp.Item2.Any()
-                    ? kvp.Item2
-                       .Select( x => ( $"{kvp.Item1} ({x.Item1})", x.Item2 ) )
-                    : new[] { ( kvp.Item1, new CharacterEquipment() ) } ) )
-        {
-                // @formatter:off
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text( actor );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.MainHand}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.Head}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.Body}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.Hands}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.Legs}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.Feet}" );
-                    
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                if (equip.IsSet == 0)
-                {
-                    ImGui.Text( "(not set)" );
-                }
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.MainHand.Set, equip.MainHand.Type, equip.MainHand.Variant, EquipSlot.MainHand )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.Head.Set, 0, equip.Head.Variant, EquipSlot.Head )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.Body.Set, 0, equip.Body.Variant, EquipSlot.Body )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.Hands.Set, 0, equip.Hands.Variant, EquipSlot.Hands )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.Legs.Set, 0, equip.Legs.Variant, EquipSlot.Legs )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.Feet.Set, 0, equip.Feet.Variant, EquipSlot.Feet )?.Name.ToString() ?? "Unknown" );
-
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.OffHand}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.Ears}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.Neck}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.Wrists}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.LFinger}" );
-                ImGui.TableNextColumn();
-                ImGui.Text( $"{equip.RFinger}" );
-
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.OffHand.Set, equip.OffHand.Type, equip.OffHand.Variant, EquipSlot.OffHand )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.Ears.Set, 0, equip.Ears.Variant, EquipSlot.Ears )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.Neck.Set, 0, equip.Neck.Variant, EquipSlot.Neck )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.Wrists.Set, 0, equip.Wrists.Variant, EquipSlot.Wrists )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.LFinger.Set, 0, equip.LFinger.Variant, EquipSlot.LFinger )?.Name.ToString() ?? "Unknown" );
-                ImGui.TableNextColumn();
-                ImGui.Text( identifier.Identify( equip.RFinger.Set, 0, equip.RFinger.Variant, EquipSlot.LFinger )?.Name.ToString() ?? "Unknown" );
-            // @formatter:on
-        }
-    }
-
     private static void PrintValue( string name, string value )
     {
         ImGui.TableNextRow();
@@ -431,8 +333,8 @@ public partial class SettingsInterface
         {
             var def = ExpandedGmpFile.GetDefault( gmp );
             var val = Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Gmp.File?[ gmp ] ?? def;
-            ImGui.Text( def.Value.ToString("X") );
-            ImGui.Text( val.Value.ToString("X") );
+            ImGui.Text( def.Value.ToString( "X" ) );
+            ImGui.Text( val.Value.ToString( "X" ) );
         }
         catch
         { }
@@ -556,8 +458,6 @@ public partial class SettingsInterface
         DrawDebugCharacterUtility();
         ImGui.NewLine();
         DrawDebugTabRedraw();
-        ImGui.NewLine();
-        DrawDebugTabPlayers();
         ImGui.NewLine();
         DrawDebugTabIpc();
         ImGui.NewLine();

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData.ByteString;
@@ -64,6 +65,7 @@ public unsafe partial class PathResolver
 
         var mtrlPath   = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
         var collection = PathCollections.TryGetValue( mtrlPath, out var c ) ? c : null;
+        var x          = PathCollections.ToList();
         for( var i = 0; i < mtrl->NumTex; ++i )
         {
             var texString = new Utf8String( mtrl->TexString( i ) );

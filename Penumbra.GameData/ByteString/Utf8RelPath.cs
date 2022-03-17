@@ -49,7 +49,7 @@ public readonly struct Utf8RelPath : IEquatable< Utf8RelPath >, IComparable< Utf
             return true;
         }
 
-        if( !Utf8String.FromString( substring, out var ascii ) || !ascii.IsAscii )
+        if( !Utf8String.FromString( substring, out var ascii, true ) || !ascii.IsAscii )
         {
             return false;
         }
@@ -66,7 +66,7 @@ public readonly struct Utf8RelPath : IEquatable< Utf8RelPath >, IComparable< Utf
             return false;
         }
 
-        var substring = file.FullName[ baseDir.FullName.Length.. ];
+        var substring = file.FullName[ (baseDir.FullName.Length + 1).. ];
         return FromString( substring, out path );
     }
 
@@ -78,7 +78,7 @@ public readonly struct Utf8RelPath : IEquatable< Utf8RelPath >, IComparable< Utf
             return false;
         }
 
-        var substring = file.FullName[ baseDir.FullName.Length.. ];
+        var substring = file.FullName[ (baseDir.FullName.Length + 1).. ];
         return FromString( substring, out path );
     }
 

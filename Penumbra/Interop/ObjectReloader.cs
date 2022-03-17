@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Enums;
@@ -16,18 +14,13 @@ public unsafe class ObjectReloader : IDisposable
 {
     private delegate void ManipulateDraw( IntPtr actor );
 
-    private const int  RenderModeOffset     = 0x0104;
-    private const int  UnloadAllRedrawDelay = 250;
-    private const uint NpcObjectId          = unchecked( ( uint )-536870912 );
-    public const  int  GPosePlayerIdx       = 201;
-    public const  int  GPoseEndIdx          = GPosePlayerIdx + 48;
+    private const uint NpcObjectId    = unchecked( ( uint )-536870912 );
+    public const  int  GPosePlayerIdx = 201;
+    public const  int  GPoseEndIdx    = GPosePlayerIdx + 48;
 
     private readonly ModManager                                         _mods;
     private readonly Queue< (uint actorId, string name, RedrawType s) > _actorIds = new();
 
-    internal int DefaultWaitFrames;
-
-    private int        _waitFrames;
     private int        _currentFrame;
     private bool       _changedSettings;
     private uint       _currentObjectId         = uint.MaxValue;
@@ -46,11 +39,8 @@ public unsafe class ObjectReloader : IDisposable
     private static delegate*< IntPtr, void > GetEnableDraw( GameObject actor )
         => ( ( delegate*< IntPtr, void >** )actor.Address )[ 0 ][ 16 ];
 
-    public ObjectReloader( ModManager mods, int defaultWaitFrames )
-    {
-        _mods             = mods;
-        DefaultWaitFrames = defaultWaitFrames;
-    }
+    public ObjectReloader( ModManager mods )
+        => _mods = mods;
 
     private void ChangeSettings()
     {
@@ -289,13 +279,6 @@ public unsafe class ObjectReloader : IDisposable
         || Dalamud.Conditions[ ConditionFlag.BetweenAreas ]
         || Dalamud.Conditions[ ConditionFlag.OccupiedInCutSceneEvent ] )
         {
-            _waitFrames = DefaultWaitFrames;
-            return;
-        }
-
-        if( _waitFrames > 0 )
-        {
-            --_waitFrames;
             return;
         }
 

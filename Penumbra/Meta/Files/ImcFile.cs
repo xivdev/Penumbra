@@ -201,7 +201,9 @@ public unsafe class ImcFile : MetaBaseFile
         var file = Dalamud.GameData.GetFile( path.ToString() );
         if( file == null )
         {
-            throw new Exception();
+            throw new Exception(
+                "Could not obtain default Imc File.\n"
+              + "Either the default file does not exist (possibly for offhand files from TexTools) or the installation is corrupted." );
         }
 
         fixed( byte* ptr = file.Data )

@@ -97,7 +97,7 @@ public sealed unsafe partial class Utf8String : IDisposable
         }
 
         Marshal.FreeHGlobal( ( IntPtr )_path );
-        GC.RemoveMemoryPressure( Length );
+        GC.RemoveMemoryPressure( Length + 1 );
         _length = AsciiCheckedFlag | AsciiFlag | AsciiLowerCheckedFlag | AsciiLowerFlag | NullTerminatedFlag;
         _path   = Null.NullBytePtr;
         _crc32  = 0;

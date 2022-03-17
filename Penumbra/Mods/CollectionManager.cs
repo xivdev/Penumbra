@@ -1,13 +1,23 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
-using Penumbra.Interop.Structs;
 using Penumbra.Mod;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
+
+public enum CollectionType : byte
+{
+    Inactive,
+    Default,
+    Forced,
+    Character,
+    Current,
+}
+
+public delegate void CollectionChangeDelegate( ModCollection? oldCollection, ModCollection? newCollection, CollectionType type,
+    string? characterName = null );
 
 // Contains all collections and respective functions, as well as the collection settings.
 public class CollectionManager
@@ -21,7 +31,10 @@ public class CollectionManager
     public ModCollection CurrentCollection { get; private set; } = ModCollection.Empty;
     public ModCollection DefaultCollection { get; private set; } = ModCollection.Empty;
     public ModCollection ForcedCollection { get; private set; } = ModCollection.Empty;
-    public ModCollection ActiveCollection { get; private set; }
+    public ModCollection ActiveCollection { get; private set; } = ModCollection.Empty;
+
+    // Is invoked after the collections actually changed.
+    public event CollectionChangeDelegate? CollectionChanged;
 
     public CollectionManager( ModManager manager )
     {
@@ -29,7 +42,7 @@ public class CollectionManager
 
         ReadCollections();
         LoadConfigCollections( Penumbra.Config );
-        ActiveCollection = DefaultCollection;
+        SetActiveCollection( DefaultCollection, string.Empty );
     }
 
     public bool SetActiveCollection( ModCollection newActive, string name )
@@ -44,14 +57,7 @@ public class CollectionManager
         {
             ActiveCollection = newActive;
             Penumbra.ResidentResources.Reload();
-            if( ActiveCollection.Cache == null )
-            {
-                Penumbra.CharacterUtility.ResetAll();
-            }
-            else
-            {
-                ActiveCollection.Cache.MetaManipulations.SetFiles();
-            }
+            ActiveCollection.SetFiles();
         }
         else
         {
@@ -131,8 +137,9 @@ public class CollectionManager
 
         var newCollection = new ModCollection( name, settings );
         Collections.Add( name, newCollection );
+        CollectionChanged?.Invoke( null, newCollection, CollectionType.Inactive );
         newCollection.Save();
-        SetCurrentCollection( newCollection );
+        SetCollection( newCollection, CollectionType.Current );
         return true;
     }
 
@@ -149,26 +156,27 @@ public class CollectionManager
             return false;
         }
 
+        CollectionChanged?.Invoke( collection, null, CollectionType.Inactive );
         if( CurrentCollection == collection )
         {
-            SetCurrentCollection( Collections[ ModCollection.DefaultCollection ] );
+            SetCollection( Collections[ ModCollection.DefaultCollection ], CollectionType.Current );
         }
 
         if( ForcedCollection == collection )
         {
-            SetForcedCollection( ModCollection.Empty );
+            SetCollection( ModCollection.Empty, CollectionType.Forced );
         }
 
         if( DefaultCollection == collection )
         {
-            SetDefaultCollection( ModCollection.Empty );
+            SetCollection( ModCollection.Empty, CollectionType.Default );
         }
 
         foreach( var (characterName, characterCollection) in CharacterCollection.ToArray() )
         {
             if( characterCollection == collection )
             {
-                SetCharacterCollection( characterName, ModCollection.Empty );
+                SetCollection( ModCollection.Empty, CollectionType.Character, characterName );
             }
         }
 
@@ -196,51 +204,63 @@ public class CollectionManager
         }
     }
 
-    private void SetCollection( ModCollection newCollection, ModCollection oldCollection, Action< ModCollection > setter,
-        Action< string > configSetter )
+    public void SetCollection( ModCollection newCollection, CollectionType type, string? characterName = null )
     {
-        if( newCollection.Name == oldCollection.Name )
+        var oldCollection = type switch
+        {
+            CollectionType.Default => DefaultCollection,
+            CollectionType.Forced  => ForcedCollection,
+            CollectionType.Current => CurrentCollection,
+            CollectionType.Character => characterName?.Length > 0
+                ? CharacterCollection.TryGetValue( characterName, out var c )
+                    ? c
+                    : ModCollection.Empty
+                : null,
+            _ => null,
+        };
+
+        if( oldCollection == null || newCollection.Name == oldCollection.Name )
         {
             return;
         }
 
         AddCache( newCollection );
-
-        setter( newCollection );
         RemoveCache( oldCollection );
-        configSetter( newCollection.Name );
-        Penumbra.Config.Save();
-    }
-
-    public void SetDefaultCollection( ModCollection newCollection )
-        => SetCollection( newCollection, DefaultCollection, c =>
+        switch( type )
         {
-            if( CollectionChangedTo.Length == 0 )
-            {
-                SetActiveCollection( c, string.Empty );
-            }
-
-            DefaultCollection = c;
-        }, s => Penumbra.Config.DefaultCollection = s );
-
-    public void SetForcedCollection( ModCollection newCollection )
-        => SetCollection( newCollection, ForcedCollection, c => ForcedCollection = c, s => Penumbra.Config.ForcedCollection = s );
-
-    public void SetCurrentCollection( ModCollection newCollection )
-        => SetCollection( newCollection, CurrentCollection, c => CurrentCollection = c, s => Penumbra.Config.CurrentCollection = s );
-
-    public void SetCharacterCollection( string characterName, ModCollection newCollection )
-        => SetCollection( newCollection,
-            CharacterCollection.TryGetValue( characterName, out var oldCollection ) ? oldCollection : ModCollection.Empty,
-            c =>
-            {
-                if( CollectionChangedTo == characterName && CharacterCollection.TryGetValue( characterName, out var collection ) )
+            case CollectionType.Default:
+                DefaultCollection                 = newCollection;
+                Penumbra.Config.DefaultCollection = newCollection.Name;
+                if( CollectionChangedTo.Length == 0 )
                 {
-                    SetActiveCollection( c, CollectionChangedTo );
+                    SetActiveCollection( newCollection, string.Empty );
                 }
 
-                CharacterCollection[ characterName ] = c;
-            }, s => Penumbra.Config.CharacterCollections[ characterName ] = s );
+                break;
+            case CollectionType.Forced:
+                ForcedCollection                 = newCollection;
+                Penumbra.Config.ForcedCollection = newCollection.Name;
+                break;
+            case CollectionType.Current:
+                CurrentCollection                 = newCollection;
+                Penumbra.Config.CurrentCollection = newCollection.Name;
+                break;
+            case CollectionType.Character:
+                if( CollectionChangedTo == characterName && CharacterCollection.ContainsKey( characterName ) )
+                {
+                    SetActiveCollection( newCollection, CollectionChangedTo );
+                }
+
+                CharacterCollection[ characterName! ]                  = newCollection;
+                Penumbra.Config.CharacterCollections[ characterName! ] = newCollection.Name;
+
+                break;
+        }
+
+        CollectionChanged?.Invoke( oldCollection, newCollection, type, characterName );
+
+        Penumbra.Config.Save();
+    }
 
     public bool CreateCharacterCollection( string characterName )
     {
@@ -252,7 +272,7 @@ public class CollectionManager
         CharacterCollection[ characterName ]                  = ModCollection.Empty;
         Penumbra.Config.CharacterCollections[ characterName ] = string.Empty;
         Penumbra.Config.Save();
-        Penumbra.PlayerWatcher.AddPlayerToWatch( characterName );
+        CollectionChanged?.Invoke( null, ModCollection.Empty, CollectionType.Character, characterName );
         return true;
     }
 
@@ -262,7 +282,7 @@ public class CollectionManager
         {
             RemoveCache( collection );
             CharacterCollection.Remove( characterName );
-            Penumbra.PlayerWatcher.RemovePlayerFromWatch( characterName );
+            CollectionChanged?.Invoke( collection, null, CollectionType.Character, characterName );
         }
 
         if( Penumbra.Config.CharacterCollections.Remove( characterName ) )
@@ -338,7 +358,6 @@ public class CollectionManager
         var configChanged = false;
         foreach( var (player, collectionName) in config.CharacterCollections.ToArray() )
         {
-            Penumbra.PlayerWatcher.AddPlayerToWatch( player );
             if( collectionName.Length == 0 )
             {
                 CharacterCollection.Add( player, ModCollection.Empty );

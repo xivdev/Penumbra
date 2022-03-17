@@ -34,7 +34,6 @@ public class Penumbra : IDalamudPlugin
     private const string CommandName = "/penumbra";
 
     public static Configuration Config { get; private set; } = null!;
-    public static IPlayerWatcher PlayerWatcher { get; private set; } = null!;
 
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
@@ -72,10 +71,9 @@ public class Penumbra : IDalamudPlugin
         MetaDefaults      = new MetaDefaults();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLogger    = new ResourceLogger( ResourceLoader );
-        PlayerWatcher     = PlayerWatchFactory.Create( Dalamud.Framework, Dalamud.ClientState, Dalamud.Objects );
         ModManager        = new ModManager();
         ModManager.DiscoverMods();
-        ObjectReloader = new ObjectReloader( ModManager, Config.WaitFrames );
+        ObjectReloader = new ObjectReloader( ModManager );
         PathResolver   = new PathResolver( ResourceLoader );
 
         Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
@@ -101,17 +99,6 @@ public class Penumbra : IDalamudPlugin
             CreateWebServer();
         }
 
-        if( !Config.EnablePlayerWatch || !Config.EnableMods )
-        {
-            PlayerWatcher.Disable();
-        }
-
-        PlayerWatcher.PlayerChanged += p =>
-        {
-            PluginLog.Debug( "Triggered Redraw of {Player}.", p.Name );
-            ObjectReloader.RedrawObject( p, RedrawType.OnlyWithSettings );
-        };
-
         ResourceLoader.EnableHooks();
         if( Config.EnableMods )
         {
@@ -127,17 +114,6 @@ public class Penumbra : IDalamudPlugin
         {
             ResourceLoader.EnableFullLogging();
         }
-
-        unsafe
-        {
-            PluginLog.Information( $"MetaManipulation: {sizeof( MetaManipulation )}" );
-            PluginLog.Information( $"EqpManipulation: {sizeof( EqpManipulation )}" );
-            PluginLog.Information( $"GmpManipulation: {sizeof( GmpManipulation )}" );
-            PluginLog.Information( $"EqdpManipulation: {sizeof( EqdpManipulation )}" );
-            PluginLog.Information( $"EstManipulation: {sizeof( EstManipulation )}" );
-            PluginLog.Information( $"RspManipulation: {sizeof( RspManipulation )}" );
-            PluginLog.Information( $"ImcManipulation: {sizeof( ImcManipulation )}" );
-        }
     }
 
     public bool Enable()
@@ -150,10 +126,6 @@ public class Penumbra : IDalamudPlugin
         Config.EnableMods = true;
         ResourceLoader.EnableReplacements();
         ResidentResources.Reload();
-        if( Config.EnablePlayerWatch )
-        {
-            PlayerWatcher.SetStatus( true );
-        }
 
         Config.Save();
         ObjectReloader.RedrawAll( RedrawType.WithSettings );
@@ -170,10 +142,6 @@ public class Penumbra : IDalamudPlugin
         Config.EnableMods = false;
         ResourceLoader.DisableReplacements();
         ResidentResources.Reload();
-        if( Config.EnablePlayerWatch )
-        {
-            PlayerWatcher.SetStatus( false );
-        }
 
         Config.Save();
         ObjectReloader.RedrawAll( RedrawType.WithoutSettings );
@@ -232,7 +200,6 @@ public class Penumbra : IDalamudPlugin
         Api.Dispose();
         SettingsInterface.Dispose();
         ObjectReloader.Dispose();
-        PlayerWatcher.Dispose();
 
         Dalamud.Commands.RemoveHandler( CommandName );
 
@@ -268,7 +235,7 @@ public class Penumbra : IDalamudPlugin
                     return false;
                 }
 
-                ModManager.Collections.SetDefaultCollection( collection );
+                ModManager.Collections.SetCollection( collection, CollectionType.Default );
                 Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
                 SettingsInterface.ResetDefaultCollection();
                 return true;
@@ -279,7 +246,7 @@ public class Penumbra : IDalamudPlugin
                     return false;
                 }
 
-                ModManager.Collections.SetForcedCollection( collection );
+                ModManager.Collections.SetCollection( collection, CollectionType.Forced );
                 Dalamud.Chat.Print( $"Set {collection.Name} as forced collection." );
                 SettingsInterface.ResetForcedCollection();
                 return true;

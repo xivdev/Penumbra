@@ -49,6 +49,12 @@ public partial class PathResolver : IDisposable
             resolved = Penumbra.ModManager.Collections.ForcedCollection.ResolveSwappedOrReplacementPath( gamePath );
             if( resolved == null )
             {
+                // We also need to handle defaulted materials against a non-default collection.
+                if( nonDefault && gamePath.Path.EndsWith( 'm', 't', 'r', 'l' ) )
+                {
+                    SetCollection( gamePath.Path, collection );
+                }
+
                 return ( null, collection );
             }
 

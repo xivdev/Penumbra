@@ -92,16 +92,17 @@ public unsafe partial class PathResolver
         }
     }
 
-    // GMP
-    public delegate void ApplyVisorDelegate( IntPtr drawObject, IntPtr unk1, float unk2, IntPtr unk3, ushort unk4, char unk5 );
+    // GMP. This gets called every time when changing visor state, and it accesses the gmp file itself,
+    // but it only applies a changed gmp file after a redraw for some reason.
+    public delegate byte SetupVisorDelegate( IntPtr drawObject, ushort modelId, byte visorState );
 
-    [Signature( "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", DetourName = "ApplyVisorDetour" )]
-    public Hook< ApplyVisorDelegate >? ApplyVisorHook;
+    [Signature( "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", DetourName = "SetupVisorDetour" )]
+    public Hook< SetupVisorDelegate >? SetupVisorHook;
 
-    private void ApplyVisorDetour( IntPtr drawObject, IntPtr unk1, float unk2, IntPtr unk3, ushort unk4, char unk5 )
+    private byte SetupVisorDetour( IntPtr drawObject, ushort modelId, byte visorState )
     {
         using var gmp = MetaChanger.ChangeGmp( this, drawObject );
-        ApplyVisorHook!.Original( drawObject, unk1, unk2, unk3, unk4, unk5 );
+        return SetupVisorHook!.Original( drawObject, modelId, visorState );
     }
 
     // RSP
@@ -132,7 +133,7 @@ public unsafe partial class PathResolver
         OnModelLoadCompleteHook?.Enable();
 #endif
 #if USE_GMP
-        ApplyVisorHook?.Enable();
+        SetupVisorHook?.Enable();
 #endif
 #if USE_CMP
         RspSetupCharacterHook?.Enable();
@@ -144,7 +145,7 @@ public unsafe partial class PathResolver
         GetEqpIndirectHook?.Disable();
         UpdateModelsHook?.Disable();
         OnModelLoadCompleteHook?.Disable();
-        ApplyVisorHook?.Disable();
+        SetupVisorHook?.Disable();
         RspSetupCharacterHook?.Disable();
     }
 
@@ -153,7 +154,7 @@ public unsafe partial class PathResolver
         GetEqpIndirectHook?.Dispose();
         UpdateModelsHook?.Dispose();
         OnModelLoadCompleteHook?.Dispose();
-        ApplyVisorHook?.Dispose();
+        SetupVisorHook?.Dispose();
         RspSetupCharacterHook?.Dispose();
     }
 

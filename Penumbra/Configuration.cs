@@ -31,8 +31,6 @@ public class Configuration : IPluginConfiguration
 
     public bool DisableSoundStreaming { get; set; } = true;
     public bool EnableHttpApi { get; set; }
-    public bool EnablePlayerWatch { get; set; } = false;
-    public int WaitFrames { get; set; } = 30;
 
     public string ModDirectory { get; set; } = string.Empty;
 

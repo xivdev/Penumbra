@@ -146,6 +146,7 @@ public class ModManager
         }
 
         Collections.RecreateCaches();
+        Collections.DefaultCollection.SetFiles();
     }
 
     public void DeleteMod( DirectoryInfo modFolder )

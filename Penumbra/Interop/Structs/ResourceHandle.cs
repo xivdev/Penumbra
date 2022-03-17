@@ -37,18 +37,30 @@ public unsafe struct ResourceHandle
     public ReadOnlySpan< byte > FileNameSpan()
         => new(FileName(), FileNameLength);
 
+    [FieldOffset( 0x00 )]
+    public void** VTable;
+
     [FieldOffset( 0x48 )]
     public byte* FileNameData;
 
     [FieldOffset( 0x58 )]
     public int FileNameLength;
 
+    // May return null.
+    public static byte* GetData( ResourceHandle* handle )
+        => ( ( delegate*< ResourceHandle*, byte* > )handle->VTable[ 23 ] )( handle );
+
+    public static ulong GetLength( ResourceHandle* handle )
+        => ( ( delegate*< ResourceHandle*, ulong > )handle->VTable[ 17 ] )( handle );
+
+
+    // Only use these if you know what you are doing.
+    // Those are actually only sure to be accessible for DefaultResourceHandles.
     [FieldOffset( 0xB0 )]
     public DataIndirection* Data;
 
     [FieldOffset( 0xB8 )]
     public uint DataLength;
-
 
     public (IntPtr Data, int Length) GetData()
         => Data != null

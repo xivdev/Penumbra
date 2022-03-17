@@ -24,8 +24,10 @@ public unsafe class MetaBaseFile : IDisposable
     {
         Length = length;
         Data   = ( byte* )MemoryHelper.GameAllocateDefault( ( ulong )length );
-        ;
-        GC.AddMemoryPressure( length );
+        if( length > 0 )
+        {
+            GC.AddMemoryPressure( length );
+        }
     }
 
     // Free memory.
@@ -33,7 +35,11 @@ public unsafe class MetaBaseFile : IDisposable
     {
         var ptr = ( IntPtr )Data;
         MemoryHelper.GameFree( ref ptr, ( ulong )Length );
-        GC.RemoveMemoryPressure( Length );
+        if( Length > 0 )
+        {
+            GC.RemoveMemoryPressure( Length );
+        }
+
         Length = 0;
         Data   = null;
     }

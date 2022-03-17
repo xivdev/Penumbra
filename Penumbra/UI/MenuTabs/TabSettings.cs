@@ -27,10 +27,10 @@ public partial class SettingsInterface
 
         public TabSettings( SettingsInterface ui )
         {
-            _base             = ui;
-            _config           = Penumbra.Config;
-            _configChanged    = false;
-            _newModDirectory  = _config.ModDirectory;
+            _base            = ui;
+            _config          = Penumbra.Config;
+            _configChanged   = false;
+            _newModDirectory = _config.ModDirectory;
         }
 
         private static bool DrawPressEnterWarning( string old )
@@ -239,44 +239,6 @@ public partial class SettingsInterface
             ImGuiComponents.HelpMarker( "Enables other applications, e.g. Anamnesis, to use some Penumbra functions, like requesting redraws." );
         }
 
-        private void DrawEnabledPlayerWatcher()
-        {
-            var enabled = _config.EnablePlayerWatch;
-            if( ImGui.Checkbox( "Enable Automatic Character Redraws", ref enabled ) )
-            {
-                _config.EnablePlayerWatch = enabled;
-                _configChanged            = true;
-                Penumbra.PlayerWatcher.SetStatus( enabled );
-            }
-
-            ImGui.SameLine();
-            ImGuiComponents.HelpMarker(
-                "If this setting is enabled, Penumbra will keep tabs on characters that have a corresponding character collection setup in the Collections tab.\n"
-              + "Penumbra will try to automatically redraw those characters using their collection when they first appear in an instance, or when they change their current equip.\n" );
-
-            if( !_config.EnablePlayerWatch || !_config.ShowAdvanced )
-            {
-                return;
-            }
-
-            var waitFrames = _config.WaitFrames;
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
-            if( ImGui.InputInt( "Wait Frames", ref waitFrames, 0, 0 )
-            && waitFrames != _config.WaitFrames
-            && waitFrames is > 0 and < 3000 )
-            {
-                _base._penumbra.ObjectReloader.DefaultWaitFrames = waitFrames;
-                _config.WaitFrames                               = waitFrames;
-                _configChanged                                   = true;
-            }
-
-            ImGui.SameLine();
-            ImGuiComponents.HelpMarker(
-                "The number of frames penumbra waits after some events (like zone changes) until it starts trying to redraw actors again, in a range of [1, 3001].\n"
-              + "Keep this as low as possible while producing stable results." );
-        }
-
         private static void DrawReloadResourceButton()
         {
             if( ImGui.Button( "Reload Resident Resources" ) )
@@ -388,7 +350,6 @@ public partial class SettingsInterface
 
             ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
             DrawEnabledBox();
-            DrawEnabledPlayerWatcher();
 
             ImGuiCustom.VerticalDistance( DefaultVerticalSpace );
             DrawScaleModSelectorBox();
