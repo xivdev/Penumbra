@@ -29,8 +29,10 @@ public partial class PathResolver : IDisposable
     // The modified resolver that handles game path resolving.
     private (FullPath?, object?) CharacterResolver( Utf8GamePath gamePath )
     {
-        // Check if the path was marked for a specific collection, if not use the default collection.
-        var nonDefault = PathCollections.TryGetValue( gamePath.Path, out var collection );
+        // Check if the path was marked for a specific collection,
+        // or if it is a file loaded by a material, and if we are currently in a material load.
+        // If not use the default collection.
+        var nonDefault = HandleMaterialSubFiles( gamePath, out var collection ) || PathCollections.TryGetValue( gamePath.Path, out collection );
         if( !nonDefault )
         {
             collection = Penumbra.ModManager.Collections.DefaultCollection;

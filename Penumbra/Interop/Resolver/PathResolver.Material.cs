@@ -4,6 +4,7 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData.ByteString;
 using Penumbra.Interop.Structs;
+using Penumbra.Mods;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -20,7 +21,9 @@ public unsafe partial class PathResolver
     private byte LoadMtrlTexDetour( IntPtr mtrlResourceHandle )
     {
         LoadMtrlTexHelper( mtrlResourceHandle );
-        return LoadMtrlTexHook!.Original( mtrlResourceHandle );
+        var ret = LoadMtrlTexHook!.Original( mtrlResourceHandle );
+        _mtrlCollection = null;
+        return ret;
     }
 
     [Signature( "48 89 5C 24 ?? 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 44 0F B7 89",
@@ -30,11 +33,12 @@ public unsafe partial class PathResolver
     private byte LoadMtrlShpkDetour( IntPtr mtrlResourceHandle )
     {
         LoadMtrlShpkHelper( mtrlResourceHandle );
-        return LoadMtrlShpkHook!.Original( mtrlResourceHandle );
+        var ret = LoadMtrlShpkHook!.Original( mtrlResourceHandle );
+        _mtrlCollection = null;
+        return ret;
     }
 
-    // Taken from the actual hooked function. The Shader string is just concatenated to this base directory.
-    private static readonly Utf8String ShaderBase = Utf8String.FromStringUnsafe( "shader/sm5/shpk", true );
+    private ModCollection? _mtrlCollection;
 
     private void LoadMtrlShpkHelper( IntPtr mtrlResourceHandle )
     {
@@ -43,11 +47,9 @@ public unsafe partial class PathResolver
             return;
         }
 
-        var mtrl       = ( MtrlResource* )mtrlResourceHandle;
-        var shpkPath   = Utf8String.Join( ( byte )'/', ShaderBase, new Utf8String( mtrl->ShpkString ).AsciiToLower() );
-        var mtrlPath   = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
-        var collection = PathCollections.TryGetValue( mtrlPath, out var c ) ? c : null;
-        SetCollection( shpkPath, collection );
+        var mtrl     = ( MtrlResource* )mtrlResourceHandle;
+        var mtrlPath = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
+        _mtrlCollection = PathCollections.TryGetValue( mtrlPath, out var c ) ? c : null;
     }
 
     private void LoadMtrlTexHelper( IntPtr mtrlResourceHandle )
@@ -63,14 +65,21 @@ public unsafe partial class PathResolver
             return;
         }
 
-        var mtrlPath   = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
-        var collection = PathCollections.TryGetValue( mtrlPath, out var c ) ? c : null;
-        var x          = PathCollections.ToList();
-        for( var i = 0; i < mtrl->NumTex; ++i )
+        var mtrlPath = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
+        _mtrlCollection = PathCollections.TryGetValue( mtrlPath, out var c ) ? c : null;
+    }
+
+    // Check specifically for shpk and tex files whether we are currently in a material load.
+    private bool HandleMaterialSubFiles( Utf8GamePath gamePath, out ModCollection? collection )
+    {
+        if( _mtrlCollection != null && ( gamePath.Path.EndsWith( 't', 'e', 'x' ) || gamePath.Path.EndsWith( 's', 'h', 'p', 'k' ) ) )
         {
-            var texString = new Utf8String( mtrl->TexString( i ) );
-            SetCollection( texString, collection );
+            collection = _mtrlCollection;
+            return true;
         }
+
+        collection = null;
+        return false;
     }
 
     private void EnableMtrlHooks()
