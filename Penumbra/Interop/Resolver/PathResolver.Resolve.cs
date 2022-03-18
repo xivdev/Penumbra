@@ -20,10 +20,10 @@ public unsafe partial class PathResolver
     private IntPtr ResolveMPapDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, uint unk5 )
         => ResolvePathDetour( drawObject, ResolveMPapPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
 
-    private IntPtr ResolveMdlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+    private IntPtr ResolveMdlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint modelType )
     {
-        using var eqdp = MetaChanger.ChangeEqdp( this, drawObject );
-        return ResolvePathDetour( drawObject, ResolveMdlPathHook!.Original( drawObject, path, unk3, unk4 ) );
+        using var eqdp = MetaChanger.ChangeEqdp( this, drawObject, modelType );
+        return ResolvePathDetour( drawObject, ResolveMdlPathHook!.Original( drawObject, path, unk3, modelType ) );
     }
 
     private IntPtr ResolveMtrlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )

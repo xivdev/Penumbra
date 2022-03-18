@@ -1,6 +1,8 @@
 using System;
 using Dalamud.Hooking;
+using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
+using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 
@@ -171,12 +173,26 @@ public unsafe partial class PathResolver
 
 
     // Small helper to handle setting metadata and reverting it at the end of the function.
+    // Since eqp and eqdp may be called multiple times in a row, we need to count them,
+    // so that we do not reset the files too early.
     private readonly struct MetaChanger : IDisposable
     {
+        private static   int                   _eqpCounter;
+        private static   int                   _eqdpCounter;
         private readonly MetaManipulation.Type _type;
 
         private MetaChanger( MetaManipulation.Type type )
-            => _type = type;
+        {
+            _type = type;
+            if( type == MetaManipulation.Type.Eqp )
+            {
+                ++_eqpCounter;
+            }
+            else if( type == MetaManipulation.Type.Eqdp )
+            {
+                ++_eqdpCounter;
+            }
+        }
 
         public static MetaChanger ChangeEqp( ModCollection collection )
         {
@@ -200,13 +216,17 @@ public unsafe partial class PathResolver
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
-        public static MetaChanger ChangeEqdp( PathResolver resolver, IntPtr drawObject )
+        // We only need to change anything if it is actually equipment here.
+        public static MetaChanger ChangeEqdp( PathResolver resolver, IntPtr drawObject, uint modelType )
         {
 #if USE_EQDP
-            var collection = resolver.GetCollection( drawObject );
-            if( collection != null )
+            if( modelType < 10 )
             {
-                return ChangeEqdp( collection );
+                var collection = resolver.GetCollection( drawObject );
+                if( collection != null )
+                {
+                    return ChangeEqdp( collection );
+                }
             }
 #endif
             return new MetaChanger( MetaManipulation.Type.Unknown );
@@ -287,10 +307,18 @@ public unsafe partial class PathResolver
             switch( _type )
             {
                 case MetaManipulation.Type.Eqdp:
-                    Penumbra.ModManager.Collections.DefaultCollection.SetEqdpFiles();
+                    if( --_eqdpCounter == 0 )
+                    {
+                        Penumbra.ModManager.Collections.DefaultCollection.SetEqdpFiles();
+                    }
+
                     break;
                 case MetaManipulation.Type.Eqp:
-                    Penumbra.ModManager.Collections.DefaultCollection.SetEqpFiles();
+                    if( --_eqpCounter == 0 )
+                    {
+                        Penumbra.ModManager.Collections.DefaultCollection.SetEqpFiles();
+                    }
+
                     break;
                 case MetaManipulation.Type.Est:
                     Penumbra.ModManager.Collections.DefaultCollection.SetEstFiles();
