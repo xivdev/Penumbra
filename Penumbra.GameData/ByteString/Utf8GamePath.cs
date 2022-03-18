@@ -70,8 +70,7 @@ public readonly struct Utf8GamePath : IEquatable< Utf8GamePath >, IComparable< U
             return true;
         }
 
-        var substring = s!.Replace( '\\', '/' );
-        substring.TrimStart( '/' );
+        var substring = s!.Replace( '\\', '/' ).TrimStart( '/' );
         if( substring.Length > MaxGamePathLength )
         {
             return false;
@@ -99,7 +98,7 @@ public readonly struct Utf8GamePath : IEquatable< Utf8GamePath >, IComparable< U
             return false;
         }
 
-        var substring = file.FullName[ baseDir.FullName.Length.. ];
+        var substring = file.FullName[ ( baseDir.FullName.Length + 1 ).. ];
         return FromString( substring, out path, toLower );
     }
 
