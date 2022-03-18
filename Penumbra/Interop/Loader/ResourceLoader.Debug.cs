@@ -21,7 +21,7 @@ public unsafe partial class ResourceLoader
     {
         public ResourceHandle*  OriginalResource;
         public ResourceHandle*  ManipulatedResource;
-        public Utf8GamePath      OriginalPath;
+        public Utf8GamePath     OriginalPath;
         public FullPath         ManipulatedPath;
         public ResourceCategory Category;
         public object?          ResolverInfo;
@@ -52,7 +52,7 @@ public unsafe partial class ResourceLoader
         }
 
         var crc              = ( uint )originalPath.Path.Crc32;
-        var originalResource = ( *ResourceManager )->FindResourceHandle( &handle->Category, &handle->FileType, &crc );
+        var originalResource = FindResource( handle->Category, handle->FileType, crc );
         _debugList[ manipulatedPath.Value ] = new DebugData()
         {
             OriginalResource    = originalResource,
@@ -113,9 +113,12 @@ public unsafe partial class ResourceLoader
     // Find a resource in the resource manager by its category, extension and crc-hash
     public static ResourceHandle* FindResource( ResourceCategory cat, uint ext, uint crc32 )
     {
-        var manager  = *ResourceManager;
+        var manager = *ResourceManager;
+        var catIdx  = ( uint )cat >> 0x18;
+        cat = ( ResourceCategory )( ushort )cat;
         var category = ( ResourceGraph.CategoryContainer* )manager->ResourceGraph->ContainerArray + ( int )cat;
-        var extMap   = FindInMap( category->MainMap, ext );
+        var extMap = FindInMap( ( StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* )category->CategoryMaps[ catIdx ],
+            ext );
         if( extMap == null )
         {
             return null;

@@ -10,18 +10,13 @@ using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
 using Penumbra.Mods;
-using Penumbra.PlayerWatch;
 using Penumbra.UI;
 using Penumbra.Util;
 using System.Linq;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
-using Penumbra.Meta.Manipulations;
 
 namespace Penumbra;
-
-public class MetaDefaults
-{ }
 
 public class Penumbra : IDalamudPlugin
 {
@@ -38,7 +33,6 @@ public class Penumbra : IDalamudPlugin
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
 
-    public static MetaDefaults MetaDefaults { get; private set; } = null!;
     public static ModManager ModManager { get; private set; } = null!;
 
     public static ResourceLoader ResourceLoader { get; set; } = null!;
@@ -68,7 +62,6 @@ public class Penumbra : IDalamudPlugin
 
         ResidentResources = new ResidentResourceManager();
         CharacterUtility  = new CharacterUtility();
-        MetaDefaults      = new MetaDefaults();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLogger    = new ResourceLogger( ResourceLoader );
         ModManager        = new ModManager();

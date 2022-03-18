@@ -77,7 +77,6 @@ public class MetaCollection
     // and that the contained manipulations are still valid and non-default manipulations.
     public bool Validate( ModMeta modMeta )
     {
-        var defaultFiles = Penumbra.MetaDefaults;
         SortLists();
         foreach( var group in GroupData )
         {
