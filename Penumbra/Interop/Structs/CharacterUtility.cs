@@ -8,8 +8,9 @@ namespace Penumbra.Interop.Structs;
 [StructLayout( LayoutKind.Explicit )]
 public unsafe struct CharacterUtility
 {
+    // TODO: female Hrothgar
     public static readonly int[] EqdpIndices
-        = Enumerable.Range( EqdpStartIdx, NumEqdpFiles ).ToArray();
+        = Enumerable.Range( EqdpStartIdx, NumEqdpFiles ).Where( i => i != EqdpStartIdx + 15 ).ToArray();
 
     public const int NumResources = 85;
     public const int EqpIdx       = 0;
@@ -41,7 +42,7 @@ public unsafe struct CharacterUtility
                 1301 => EqdpStartIdx + 12,
                 1401 => EqdpStartIdx + 13,
                 1501 => EqdpStartIdx + 14,
-                1601 => EqdpStartIdx + 15, // Does not exist yet
+                1601 => EqdpStartIdx + 15, // TODO: female Hrothgar
                 1701 => EqdpStartIdx + 16,
                 1801 => EqdpStartIdx + 17,
                 0104 => EqdpStartIdx + 18,

@@ -120,8 +120,10 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
         => GetDefault( Index, setIdx );
 
     public static EqdpEntry GetDefault( int fileIdx, int setIdx )
+        => GetDefault( ( byte* )Penumbra.CharacterUtility.DefaultResource( fileIdx ).Address, setIdx );
+
+    public static EqdpEntry GetDefault( byte* data, int setIdx )
     {
-        var data            = ( byte* )Penumbra.CharacterUtility.DefaultResource( fileIdx ).Address;
         var blockSize       = *( ushort* )( data + IdentifierSize );
         var totalBlockCount = *( ushort* )( data + IdentifierSize + 2 );
 
@@ -138,7 +140,6 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
         }
 
         var blockData = ( ushort* )( data + IdentifierSize + PreambleSize + totalBlockCount * 2 + block * 2 );
-        var x         = new ReadOnlySpan< ushort >( blockData, blockSize );
         return ( EqdpEntry )( *( blockData + setIdx % blockSize ) );
     }
 

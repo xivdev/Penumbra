@@ -6,6 +6,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Util;
 
 namespace Penumbra.Meta.Manager;
 
@@ -13,7 +14,7 @@ public partial class MetaManager
 {
     public struct MetaManagerEqdp : IDisposable
     {
-        public ExpandedEqdpFile?[] Files = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles];
+        public ExpandedEqdpFile?[] Files = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles - 1]; // TODO: female Hrothgar
 
         public readonly Dictionary< EqdpManipulation, Mod.Mod > Manipulations = new();
 
@@ -23,9 +24,9 @@ public partial class MetaManager
         [Conditional( "USE_EQDP" )]
         public void SetFiles()
         {
-            foreach( var idx in CharacterUtility.EqdpIndices )
+            for( var i = 0; i < CharacterUtility.EqdpIndices.Length; ++i )
             {
-                SetFile( Files[ idx - CharacterUtility.EqdpStartIdx ], idx );
+                SetFile( Files[ i ], CharacterUtility.EqdpIndices[ i ] );
             }
         }
 
@@ -57,7 +58,8 @@ public partial class MetaManager
                 return false;
             }
 
-            var file = Files[ m.FileIndex() - 2 ] ??= new ExpandedEqdpFile( Names.CombinedRace( m.Gender, m.Race ), m.Slot.IsAccessory() );
+            var file = Files[ Array.IndexOf( CharacterUtility.EqdpIndices, m.FileIndex() ) ] ??=
+                new ExpandedEqdpFile( Names.CombinedRace( m.Gender, m.Race ), m.Slot.IsAccessory() ); // TODO: female Hrothgar
             return m.Apply( file );
 #else
             return false;
@@ -65,7 +67,7 @@ public partial class MetaManager
         }
 
         public ExpandedEqdpFile? File( GenderRace race, bool accessory )
-            => Files[ CharacterUtility.EqdpIdx( race, accessory ) - CharacterUtility.EqdpStartIdx ];
+            => Files[ Array.IndexOf( CharacterUtility.EqdpIndices, CharacterUtility.EqdpIdx( race, accessory ) ) ]; // TODO: female Hrothgar
 
         public void Dispose()
         {

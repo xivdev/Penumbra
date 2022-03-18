@@ -3,6 +3,7 @@ using System.Linq;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
+using ImGuiScene;
 
 namespace Penumbra.Interop;
 
@@ -32,7 +33,7 @@ public unsafe class CharacterUtility : IDisposable
            .Append( Structs.CharacterUtility.GmpIdx )
 #endif
 #if USE_EQDP
-           .Concat( Enumerable.Range( Structs.CharacterUtility.EqdpStartIdx, Structs.CharacterUtility.NumEqdpFiles ) )
+           .Concat( Enumerable.Range( Structs.CharacterUtility.EqdpStartIdx, Structs.CharacterUtility.NumEqdpFiles ).Where( i => i != 17 ) ) // TODO: Female Hrothgar
 #endif
 #if USE_CMP
            .Append( Structs.CharacterUtility.HumanCmpIdx )
@@ -42,7 +43,7 @@ public unsafe class CharacterUtility : IDisposable
 #endif
            .ToArray();
 
-    private static readonly int[] ReverseIndices
+    public static readonly int[] ReverseIndices
         = Enumerable.Range( 0, Structs.CharacterUtility.NumResources )
            .Select( i => Array.IndexOf( RelevantIndices, i ) ).ToArray();
 
@@ -86,20 +87,22 @@ public unsafe class CharacterUtility : IDisposable
     }
 
     // Set the data of one of the stored resources to a given pointer and length.
-    public bool SetResource( int idx, IntPtr data, int length )
+    public bool SetResource( int resourceIdx, IntPtr data, int length )
     {
-        var resource = ( Structs.ResourceHandle* )Address->Resources[ idx ];
+        var resource = Address->Resource( resourceIdx );
         var ret      = resource->SetData( data, length );
-        PluginLog.Verbose( "Set resource {Idx} to 0x{NewData:X} ({NewLength} bytes).", idx, ( ulong )data, length );
+        PluginLog.Verbose( "Set resource {Idx} to 0x{NewData:X} ({NewLength} bytes).", resourceIdx, ( ulong )data, length );
         return ret;
     }
 
     // Reset the data of one of the stored resources to its default values.
-    public void ResetResource( int fileIdx )
+    public void ResetResource( int resourceIdx )
     {
-        var (data, size) = DefaultResources[ ReverseIndices[ fileIdx ] ];
-        var resource = ( Structs.ResourceHandle* )Address->Resources[ fileIdx ];
-        resource->SetData( data, size );
+        var relevantIdx = ReverseIndices[ resourceIdx ];
+        var (data, length) = DefaultResources[ relevantIdx ];
+        var resource = Address->Resource( resourceIdx );
+        PluginLog.Verbose( "Reset resource {Idx} to default at 0x{DefaultData:X} ({NewLength} bytes).", resourceIdx, ( ulong )data, length );
+        resource->SetData( data, length );
     }
 
     // Return all relevant resources to the default resource.
