@@ -105,7 +105,7 @@ public unsafe partial class ResourceLoader : IDisposable
     // Event fired whenever a resource is returned.
     // If the path was manipulated by penumbra, manipulatedPath will be the file path of the loaded resource.
     // resolveData is additional data returned by the current ResolvePath function and is user-defined.
-    public delegate void ResourceLoadedDelegate( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
+    public delegate void ResourceLoadedDelegate( Structs.ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
         object? resolveData );
 
     public event ResourceLoadedDelegate? ResourceLoaded;

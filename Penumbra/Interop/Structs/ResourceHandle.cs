@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using FFXIVClientStructs.FFXIV.Client.System.Resource;
 
 namespace Penumbra.Interop.Structs;
 
@@ -40,18 +41,30 @@ public unsafe struct ResourceHandle
     [FieldOffset( 0x00 )]
     public void** VTable;
 
+    [FieldOffset( 0x08 )]
+    public ResourceCategory Category;
+
+    [FieldOffset( 0x0C )]
+    public uint FileType;
+
+    [FieldOffset( 0x10 )]
+    public uint Id;
+
     [FieldOffset( 0x48 )]
     public byte* FileNameData;
 
     [FieldOffset( 0x58 )]
     public int FileNameLength;
 
+    [FieldOffset( 0xAC )]
+    public uint RefCount;
+
     // May return null.
     public static byte* GetData( ResourceHandle* handle )
-        => ( ( delegate*< ResourceHandle*, byte* > )handle->VTable[ 23 ] )( handle );
+        => ( ( delegate* unmanaged< ResourceHandle*, byte* > )handle->VTable[ 23 ] )( handle );
 
     public static ulong GetLength( ResourceHandle* handle )
-        => ( ( delegate*< ResourceHandle*, ulong > )handle->VTable[ 17 ] )( handle );
+        => ( ( delegate* unmanaged< ResourceHandle*, ulong > )handle->VTable[ 17 ] )( handle );
 
 
     // Only use these if you know what you are doing.

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,7 +26,7 @@ public class CollectionManager
     private readonly ModManager _manager;
 
     public string CollectionChangedTo { get; private set; } = string.Empty;
-    public Dictionary< string, ModCollection > Collections { get; } = new();
+    public Dictionary< string, ModCollection > Collections { get; } = new(StringComparer.InvariantCultureIgnoreCase);
     public Dictionary< string, ModCollection > CharacterCollection { get; } = new();
 
     public ModCollection CurrentCollection { get; private set; } = ModCollection.Empty;

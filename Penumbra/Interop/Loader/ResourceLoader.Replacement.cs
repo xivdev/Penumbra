@@ -72,7 +72,7 @@ public unsafe partial class ResourceLoader
         if( resolvedPath == null )
         {
             var retUnmodified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, unk, isUnk );
-            ResourceLoaded?.Invoke( retUnmodified, gamePath, null, data );
+            ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
             return retUnmodified;
         }
 
@@ -80,7 +80,7 @@ public unsafe partial class ResourceLoader
         *resourceHash = resolvedPath.Value.InternalName.Crc32;
         path          = resolvedPath.Value.InternalName.Path;
         var retModified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, unk, isUnk );
-        ResourceLoaded?.Invoke( retModified, gamePath, resolvedPath.Value, data );
+        ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retModified, gamePath, resolvedPath.Value, data );
         return retModified;
     }
 

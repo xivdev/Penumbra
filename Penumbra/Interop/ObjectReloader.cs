@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Enums;
@@ -33,11 +34,11 @@ public unsafe class ObjectReloader : IDisposable
     public static DrawState* ActorDrawState( GameObject actor )
         => ( DrawState* )( actor.Address + 0x0104 );
 
-    private static delegate*< IntPtr, void > GetDisableDraw( GameObject actor )
-        => ( ( delegate*< IntPtr, void >** )actor.Address )[ 0 ][ 17 ];
+    private static void DisableDraw( GameObject actor )
+        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 17 ]( actor.Address );
 
-    private static delegate*< IntPtr, void > GetEnableDraw( GameObject actor )
-        => ( ( delegate*< IntPtr, void >** )actor.Address )[ 0 ][ 16 ];
+    private static void EnableDraw( GameObject actor )
+        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 16 ]( actor.Address );
 
     public ObjectReloader( ModManager mods )
         => _mods = mods;
@@ -57,14 +58,14 @@ public unsafe class ObjectReloader : IDisposable
         _changedSettings = false;
     }
 
-    private unsafe void WriteInvisible( GameObject actor, int actorIdx )
+    private void WriteInvisible( GameObject actor, int actorIdx )
     {
         _currentObjectStartState =  *ActorDrawState( actor );
         *ActorDrawState( actor ) |= DrawState.Invisibility;
 
         if( _inGPose )
         {
-            GetDisableDraw( actor )( actor.Address );
+            DisableDraw( actor );
         }
     }
 
@@ -95,7 +96,7 @@ public unsafe class ObjectReloader : IDisposable
 
         if( _inGPose )
         {
-            GetEnableDraw( actor )( actor.Address );
+            EnableDraw( actor );
         }
     }
 

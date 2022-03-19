@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Numerics;
 using Dalamud.Logging;
 using Dalamud.Memory;
@@ -8,7 +7,6 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
-using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Meta.Files;
 
@@ -68,8 +66,9 @@ public unsafe class ImcFile : MetaBaseFile
     public int Count
         => CountInternal( Data );
 
-    public readonly int          NumParts;
     public readonly Utf8GamePath Path;
+    public readonly int          NumParts;
+    public          bool         ChangesSinceLoad = true;
 
     private static int CountInternal( byte* data )
         => *( ushort* )data;
@@ -179,7 +178,8 @@ public unsafe class ImcFile : MetaBaseFile
             return false;
         }
 
-        *variantPtr = entry;
+        *variantPtr      = entry;
+        ChangesSinceLoad = true;
         return true;
     }
 
@@ -192,6 +192,8 @@ public unsafe class ImcFile : MetaBaseFile
             Functions.MemCpyUnchecked( Data, ptr, file.Data.Length );
             Functions.MemSet( Data + file.Data.Length, 0, Length - file.Data.Length );
         }
+
+        ChangesSinceLoad = true;
     }
 
     public ImcFile( Utf8GamePath path )
@@ -209,9 +211,8 @@ public unsafe class ImcFile : MetaBaseFile
         fixed( byte* ptr = file.Data )
         {
             NumParts = BitOperations.PopCount( *( ushort* )( ptr + 2 ) );
-            AllocateData( file.Data.Length + sizeof( ImcEntry ) * 100 * NumParts );
+            AllocateData( file.Data.Length );
             Functions.MemCpyUnchecked( Data, ptr, file.Data.Length );
-            Functions.MemSet( Data + file.Data.Length, 0, sizeof( ImcEntry ) * 100 * NumParts );
         }
     }
 
@@ -239,6 +240,7 @@ public unsafe class ImcFile : MetaBaseFile
         }
 
         var requiredLength = ActualLength;
+        resource->SetData( (IntPtr) Data, Length );
         if( length >= requiredLength )
         {
             Functions.MemCpyUnchecked( ( void* )data, Data, requiredLength );
