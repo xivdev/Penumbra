@@ -327,6 +327,36 @@ public partial class SettingsInterface
         }
     }
 
+
+    public unsafe void DrawDebugResidentResources()
+    {
+        if( !ImGui.CollapsingHeader( "Resident Resources##Debug" ) )
+        {
+            return;
+        }
+
+        if( Penumbra.ResidentResources.Address == null || Penumbra.ResidentResources.Address->NumResources == 0 )
+        {
+            return;
+        }
+
+        if( !ImGui.BeginTable( "##Resident ResourcesDebugList", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.UnitX ) )
+        {
+            return;
+        }
+
+        using var end = ImGuiRaii.DeferredEnd( ImGui.EndTable );
+
+        for( var i = 0; i < Penumbra.ResidentResources.Address->NumResources; ++i )
+        {
+            var resource = Penumbra.ResidentResources.Address->ResourceList[ i ];
+            ImGui.TableNextColumn();
+            ImGui.Text( $"0x{( ulong )resource:X}" );
+            ImGui.TableNextColumn();
+            ImGuiNative.igTextUnformatted( resource->FileName(), resource->FileName() + resource->FileNameLength );
+        }
+    }
+
     private unsafe void DrawPathResolverDebug()
     {
         if( !ImGui.CollapsingHeader( "Path Resolver##Debug" ) )
@@ -403,6 +433,8 @@ public partial class SettingsInterface
         DrawPathResolverDebug();
         ImGui.NewLine();
         DrawDebugCharacterUtility();
+        ImGui.NewLine();
+        DrawDebugResidentResources();
         ImGui.NewLine();
         DrawDebugTabRedraw();
         ImGui.NewLine();

@@ -16,9 +16,9 @@ public unsafe class ResidentResourceManager
 
     // A static pointer to the resident resource manager address.
     [Signature( "0F 44 FE 48 8B 0D ?? ?? ?? ?? 48 85 C9 74 05", ScanType = ScanType.StaticAddress )]
-    private readonly void** _residentResourceManagerAddress = null;
+    private readonly Structs.ResidentResourceManager** _residentResourceManagerAddress = null;
 
-    public void* Address
+    public Structs.ResidentResourceManager* Address
         => *_residentResourceManagerAddress;
 
     public ResidentResourceManager()

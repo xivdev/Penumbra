@@ -107,6 +107,9 @@ public unsafe partial class PathResolver
             ? Penumbra.ModManager.Collections.DefaultCollection
             : collection, path );
 
+    // Weapons have the characters DrawObject as a parent,
+    // but that may not be set yet when creating a new object, so we have to do the same detour
+    // as for Human DrawObjects that are just being created.
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
     private IntPtr ResolveWeaponPathDetour( IntPtr drawObject, IntPtr path )
     {

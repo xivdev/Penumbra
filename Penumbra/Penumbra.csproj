@@ -79,8 +79,4 @@
         <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Collection\" />
-    </ItemGroup>
 </Project>
