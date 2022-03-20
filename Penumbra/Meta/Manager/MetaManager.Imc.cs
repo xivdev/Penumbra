@@ -56,7 +56,7 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public unsafe bool ApplyMod( ImcManipulation m, Mod.Mod mod )
+        public bool ApplyMod( ImcManipulation m, Mod.Mod mod )
         {
 #if USE_IMC
             if( !Manipulations.TryAdd( m, mod ) )

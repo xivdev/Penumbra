@@ -66,12 +66,10 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
         var def = ( byte* )DefaultData.Data;
         Functions.MemCpyUnchecked( Data, def, IdentifierSize + PreambleSize );
 
-        var controlPtr     = ( ushort* )( def + IdentifierSize + PreambleSize );
-        var dataBasePtr    = controlPtr + BlockCount;
-        var myDataPtrStart = ( ushort* )( Data + IdentifierSize + PreambleSize + 2 * BlockCount );
-        var myDataPtr      = myDataPtrStart;
-        var myControlPtr   = ( ushort* )( Data + IdentifierSize + PreambleSize );
-        var x              = new ReadOnlySpan< ushort >( ( ushort* )Data, Length / 2 );
+        var controlPtr   = ( ushort* )( def + IdentifierSize + PreambleSize );
+        var dataBasePtr  = controlPtr + BlockCount;
+        var myDataPtr    = ( ushort* )( Data + IdentifierSize + PreambleSize + 2 * BlockCount );
+        var myControlPtr = ( ushort* )( Data + IdentifierSize + PreambleSize );
         for( var i = 0; i < BlockCount; ++i )
         {
             if( controlPtr[ i ] == CollapsedBlock )
@@ -80,8 +78,6 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
             }
             else
             {
-                var y = new ReadOnlySpan< ushort >( dataBasePtr + controlPtr[ i ], BlockSize );
-                var z = new ReadOnlySpan< ushort >( myDataPtr, BlockSize );
                 Functions.MemCpyUnchecked( myDataPtr, dataBasePtr + controlPtr[ i ], BlockSize * EqdpEntrySize );
             }
 
