@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData.ByteString;

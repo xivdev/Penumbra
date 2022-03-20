@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.ByteString;
 using Penumbra.Mods;
 
@@ -8,6 +9,7 @@ namespace Penumbra.Interop.Resolver;
 // The actual resolve detours are basically all the same.
 public unsafe partial class PathResolver
 {
+    // Humans
     private IntPtr ResolveDecalDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
         => ResolvePathDetour( drawObject, ResolveDecalPathHook!.Original( drawObject, path, unk3, unk4 ) );
 
@@ -60,12 +62,68 @@ public unsafe partial class PathResolver
         => ResolvePathDetour( drawObject, ResolveVfxPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
 
 
+    // Weapons
+    private IntPtr ResolveWeaponDecalDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponDecalPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveWeaponEidDetour( IntPtr drawObject, IntPtr path, IntPtr unk3 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponEidPathHook!.Original( drawObject, path, unk3 ) );
+
+    private IntPtr ResolveWeaponImcDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponImcPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveWeaponMPapDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, uint unk5 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponMPapPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveWeaponMdlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint modelType )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponMdlPathHook!.Original( drawObject, path, unk3, modelType ) );
+
+    private IntPtr ResolveWeaponMtrlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponMtrlPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveWeaponPapDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponPapPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveWeaponPhybDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponPhybPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveWeaponSklbDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponSklbPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveWeaponSkpDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponSkpPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveWeaponTmbDetour( IntPtr drawObject, IntPtr path, IntPtr unk3 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponTmbPathHook!.Original( drawObject, path, unk3 ) );
+
+    private IntPtr ResolveWeaponVfxDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolveWeaponPathDetour( drawObject, ResolveWeaponVfxPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+
+    // Implementation
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
     private IntPtr ResolvePathDetour( IntPtr drawObject, IntPtr path )
         => ResolvePathDetour( FindParent( drawObject, out var collection ) == null
             ? Penumbra.ModManager.Collections.DefaultCollection
             : collection, path );
 
+    [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
+    private IntPtr ResolveWeaponPathDetour( IntPtr drawObject, IntPtr path )
+    {
+        var parentObject = ( ( DrawObject* )drawObject )->Object.ParentObject;
+        if( parentObject == null && LastGameObject != null )
+        {
+            var collection = IdentifyCollection( LastGameObject );
+            return ResolvePathDetour( collection, path );
+        }
+        else
+        {
+            var parent = FindParent( ( IntPtr )parentObject, out var collection );
+            return ResolvePathDetour( parent == null
+                ? Penumbra.ModManager.Collections.DefaultCollection
+                : collection, path );
+        }
+    }
 
     // Just add or remove the resolved path.
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]

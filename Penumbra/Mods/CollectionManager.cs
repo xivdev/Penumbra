@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.Mod;
 using Penumbra.Util;
 

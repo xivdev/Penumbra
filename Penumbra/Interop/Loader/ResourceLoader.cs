@@ -1,7 +1,6 @@
 using System;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData.ByteString;
-using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
 namespace Penumbra.Interop.Loader;
 
