@@ -20,7 +20,8 @@ public partial class MetaManager
         public readonly Dictionary< ImcManipulation, Mod.Mod > Manipulations = new();
 
         private readonly ModCollection                                     _collection;
-        private readonly ResourceLoader.ResourceLoadCustomizationDelegate? _previousDelegate;
+        private static   int                                               _imcManagerCount;
+        private static   ResourceLoader.ResourceLoadCustomizationDelegate? _previousDelegate;
 
 
         public MetaManagerImc( ModCollection collection )
@@ -97,25 +98,30 @@ public partial class MetaManager
 
             Files.Clear();
             Manipulations.Clear();
-            RestoreDelegate();
         }
 
         [Conditional( "USE_IMC" )]
-        private unsafe void SetupDelegate()
+        private static unsafe void SetupDelegate()
         {
-            Penumbra.ResourceLoader.ResourceLoadCustomization =  ImcLoadHandler;
-            Penumbra.ResourceLoader.ResourceLoaded            += ImcResourceHandler;
-        }
-
-        [Conditional( "USE_IMC" )]
-        private unsafe void RestoreDelegate()
-        {
-            if( Penumbra.ResourceLoader.ResourceLoadCustomization == ImcLoadHandler )
+            if( _imcManagerCount++ == 0 )
             {
-                Penumbra.ResourceLoader.ResourceLoadCustomization = _previousDelegate;
+                Penumbra.ResourceLoader.ResourceLoadCustomization =  ImcLoadHandler;
+                Penumbra.ResourceLoader.ResourceLoaded            += ImcResourceHandler;
             }
+        }
 
-            Penumbra.ResourceLoader.ResourceLoaded -= ImcResourceHandler;
+        [Conditional( "USE_IMC" )]
+        private static unsafe void RestoreDelegate()
+        {
+            if( --_imcManagerCount == 0 )
+            {
+                if( Penumbra.ResourceLoader.ResourceLoadCustomization == ImcLoadHandler )
+                {
+                    Penumbra.ResourceLoader.ResourceLoadCustomization = _previousDelegate;
+                }
+
+                Penumbra.ResourceLoader.ResourceLoaded -= ImcResourceHandler;
+            }
         }
 
         private FullPath CreateImcPath( Utf8GamePath path )

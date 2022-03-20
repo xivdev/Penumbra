@@ -1,5 +1,6 @@
 using System;
 using Dalamud.Memory;
+using Penumbra.GameData.Util;
 
 namespace Penumbra.Meta.Files;
 
@@ -42,6 +43,31 @@ public unsafe class MetaBaseFile : IDisposable
 
         Length = 0;
         Data   = null;
+    }
+
+    // Resize memory while retaining data.
+    protected void ResizeResources( int newLength )
+    {
+        if( newLength == Length )
+        {
+            return;
+        }
+
+        var data = ( byte* )MemoryHelper.GameAllocateDefault( ( ulong )newLength );
+        if( newLength > Length )
+        {
+            Functions.MemCpyUnchecked( data, Data, Length );
+            Functions.MemSet( data + Length, 0, newLength - Length );
+        }
+        else
+        {
+            Functions.MemCpyUnchecked( data, Data, newLength );
+        }
+
+        ReleaseUnmanagedResources();
+        GC.AddMemoryPressure( newLength );
+        Data   = data;
+        Length = newLength;
     }
 
     // Manually free memory. 

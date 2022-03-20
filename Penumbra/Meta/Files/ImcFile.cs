@@ -70,6 +70,9 @@ public unsafe class ImcFile : MetaBaseFile
     public readonly int          NumParts;
     public          bool         ChangesSinceLoad = true;
 
+    public ReadOnlySpan< ImcEntry > Span
+        => new(( ImcEntry* )( Data + PreambleSize ), ( Length - PreambleSize ) / sizeof( ImcEntry ));
+
     private static int CountInternal( byte* data )
         => *( ushort* )data;
 
@@ -89,24 +92,15 @@ public unsafe class ImcFile : MetaBaseFile
 
     private static ImcEntry* VariantPtr( byte* data, int partIdx, int variantIdx )
     {
-        if( variantIdx == 0 )
-        {
-            return DefaultPartPtr( data, partIdx );
-        }
-
-        --variantIdx;
         var flag = 1 << partIdx;
-
-        if( ( PartMask( data ) & flag ) == 0 || variantIdx >= CountInternal( data ) )
+        if( ( PartMask( data ) & flag ) == 0 || variantIdx > CountInternal( data ) )
         {
             return null;
         }
 
         var numParts = BitOperations.PopCount( PartMask( data ) );
         var ptr      = ( ImcEntry* )( data + PreambleSize );
-        ptr += numParts;
-        ptr += variantIdx * numParts;
-        ptr += partIdx;
+        ptr += variantIdx * numParts + partIdx;
         return ptr;
     }
 
@@ -139,21 +133,22 @@ public unsafe class ImcFile : MetaBaseFile
             return true;
         }
 
+        var oldCount = Count;
+        *( ushort* )Data = ( ushort )numVariants;
         if( ActualLength > Length )
         {
-            PluginLog.Warning( "Adding too many variants to IMC, size exceeded." );
-            return false;
+            var newLength = ( ( ( ActualLength - 1 ) >> 7 ) + 1 ) << 7;
+            PluginLog.Verbose( "Resized IMC {Path} from {Length} to {NewLength}.", Path, Length, newLength );
+            ResizeResources( newLength );
         }
 
         var defaultPtr = ( ImcEntry* )( Data + PreambleSize );
-        var endPtr     = defaultPtr + ( numVariants + 1 ) * NumParts;
-        for( var ptr = defaultPtr + NumParts; ptr < endPtr; ptr += NumParts )
+        for( var i = oldCount + 1; i < numVariants + 1; ++i )
         {
-            Functions.MemCpyUnchecked( ptr, defaultPtr, NumParts * sizeof( ImcEntry ) );
+            Functions.MemCpyUnchecked( defaultPtr + i, defaultPtr, NumParts * sizeof( ImcEntry ) );
         }
 
-        PluginLog.Verbose( "Expanded imc from {Count} to {NewCount} variants.", Count, numVariants );
-        *( ushort* )Data = ( ushort )numVariants;
+        PluginLog.Verbose( "Expanded IMC {Path} from {Count} to {NewCount} variants.", Path, oldCount, numVariants );
         return true;
     }
 
@@ -240,7 +235,7 @@ public unsafe class ImcFile : MetaBaseFile
         }
 
         var requiredLength = ActualLength;
-        resource->SetData( (IntPtr) Data, Length );
+        resource->SetData( ( IntPtr )Data, Length );
         if( length >= requiredLength )
         {
             Functions.MemCpyUnchecked( ( void* )data, Data, requiredLength );
