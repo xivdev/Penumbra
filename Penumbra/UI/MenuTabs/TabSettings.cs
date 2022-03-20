@@ -262,7 +262,7 @@ public partial class SettingsInterface
             }
 
             ImGui.SameLine();
-            ImGuiComponents.HelpMarker( "Currently does nothing." );
+            ImGuiComponents.HelpMarker( "Enables other applications, e.g. Anamnesis, to use some Penumbra functions, like requesting redraws." );
         }
 
         private void DrawEnabledPlayerWatcher()
