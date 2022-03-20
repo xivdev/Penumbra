@@ -248,7 +248,7 @@ public class ModManager
 
     public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
     {
-        var ret = Collections.ActiveCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
+        var ret = Collections.DefaultCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
         ret ??= Collections.ForcedCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
         return ret;
     }

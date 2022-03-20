@@ -6,8 +6,6 @@ using System.IO;
 using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
-using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manager;
 using Penumbra.Mod;
 using Penumbra.Util;
@@ -138,20 +136,20 @@ public class ModCollection
         }
     }
 
-    public void CalculateEffectiveFileList( bool withMetaManipulations, bool activeCollection )
+    public void CalculateEffectiveFileList( bool withMetaManipulations, bool reloadResident )
     {
-        PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{IsActiveCollection}]", Name,
-            withMetaManipulations, activeCollection );
+        PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}]", Name, withMetaManipulations );
         Cache ??= new ModCollectionCache( this );
         UpdateSettings( false );
         Cache.CalculateEffectiveFileList();
         if( withMetaManipulations )
         {
             Cache.UpdateMetaManipulations();
-            if( activeCollection )
-            {
-                Penumbra.ResidentResources.Reload();
-            }
+        }
+
+        if( reloadResident )
+        {
+            Penumbra.ResidentResources.Reload();
         }
     }
 

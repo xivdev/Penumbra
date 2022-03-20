@@ -529,7 +529,7 @@ public partial class SettingsInterface
             var collection = Penumbra.ModManager.Collections.CurrentCollection;
             if( collection.Cache != null )
             {
-                collection.CalculateEffectiveFileList( metaManips, collection == Penumbra.ModManager.Collections.ActiveCollection );
+                collection.CalculateEffectiveFileList( metaManips, Penumbra.ModManager.Collections.IsActive( collection ) );
             }
 
             collection.Save();
@@ -602,8 +602,8 @@ public partial class SettingsInterface
 
         public Selector( SettingsInterface ui, IReadOnlySet< string > newMods )
         {
-            _base       = ui;
-            Cache       = new ModListCache( Penumbra.ModManager, newMods );
+            _base = ui;
+            Cache = new ModListCache( Penumbra.ModManager, newMods );
         }
 
         private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection collection )

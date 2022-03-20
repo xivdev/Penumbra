@@ -48,13 +48,11 @@ public unsafe class ObjectReloader : IDisposable
         if( _currentObjectName != null && _mods.Collections.CharacterCollection.TryGetValue( _currentObjectName, out var collection ) )
         {
             _changedSettings = true;
-            _mods.Collections.SetActiveCollection( collection, _currentObjectName );
         }
     }
 
     private void RestoreSettings()
     {
-        _mods.Collections.ResetActiveCollection();
         _changedSettings = false;
     }
 

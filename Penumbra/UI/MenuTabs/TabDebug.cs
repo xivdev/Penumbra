@@ -6,7 +6,9 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Interface;
 using ImGuiNET;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -47,8 +49,6 @@ public partial class SettingsInterface
         using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
         var manager = Penumbra.ModManager;
-        PrintValue( "Active Collection", manager.Collections.ActiveCollection.Name );
-        PrintValue( "    has Cache", ( manager.Collections.ActiveCollection.Cache != null ).ToString() );
         PrintValue( "Current Collection", manager.Collections.CurrentCollection.Name );
         PrintValue( "    has Cache", ( manager.Collections.CurrentCollection.Cache != null ).ToString() );
         PrintValue( "Default Collection", manager.Collections.DefaultCollection.Name );
@@ -286,59 +286,6 @@ public partial class SettingsInterface
         {
             return;
         }
-
-        var eqp = 0;
-        ImGui.InputInt( "##EqpInput", ref eqp );
-        try
-        {
-            var def = ExpandedEqpFile.GetDefault( eqp );
-            var val = Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Eqp.File?[ eqp ] ?? def;
-            ImGui.Text( Convert.ToString( ( long )def, 2 ).PadLeft( 64, '0' ) );
-            ImGui.Text( Convert.ToString( ( long )val, 2 ).PadLeft( 64, '0' ) );
-        }
-        catch
-        { }
-
-        var eqdp = 0;
-        ImGui.InputInt( "##EqdpInput", ref eqdp );
-        try
-        {
-            var def = ExpandedEqdpFile.GetDefault( GenderRace.MidlanderMale, false, eqdp );
-            var val =
-                Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Eqdp.File( GenderRace.MidlanderMale, false )?[ eqdp ]
-             ?? def;
-            ImGui.Text( Convert.ToString( ( ushort )def, 2 ).PadLeft( 16, '0' ) );
-            ImGui.Text( Convert.ToString( ( ushort )val, 2 ).PadLeft( 16, '0' ) );
-        }
-        catch
-        { }
-
-        var est = 0;
-        ImGui.InputInt( "##EstInput", ref est );
-        try
-        {
-            var def = EstFile.GetDefault( EstManipulation.EstType.Body, GenderRace.MidlanderFemale, ( ushort )est );
-            var val = Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Est.BodyFile?[ GenderRace.MidlanderFemale,
-                    ( ushort )est ]
-             ?? def;
-            ImGui.Text( def.ToString() );
-            ImGui.Text( val.ToString() );
-        }
-        catch
-        { }
-
-        var gmp = 0;
-        ImGui.InputInt( "##GmpInput", ref gmp );
-        try
-        {
-            var def = ExpandedGmpFile.GetDefault( gmp );
-            var val = Penumbra.ModManager.Collections.ActiveCollection.Cache?.MetaManipulations.Gmp.File?[ gmp ] ?? def;
-            ImGui.Text( def.Value.ToString( "X" ) );
-            ImGui.Text( val.Value.ToString( "X" ) );
-        }
-        catch
-        { }
-
 
         if( !ImGui.BeginTable( "##CharacterUtilityDebugList", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.UnitX ) )
         {

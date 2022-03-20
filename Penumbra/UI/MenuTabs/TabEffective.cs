@@ -14,7 +14,7 @@ public partial class SettingsInterface
 {
     private class TabEffective
     {
-        private const    string     LabelTab = "Effective Changes";
+        private const string LabelTab = "Effective Changes";
 
         private string _gamePathFilter      = string.Empty;
         private string _gamePathFilterLower = string.Empty;
@@ -140,17 +140,17 @@ public partial class SettingsInterface
 
             const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
 
-            var modManager       = Penumbra.ModManager;
-            var activeCollection = modManager.Collections.ActiveCollection.Cache;
-            var forcedCollection = modManager.Collections.ForcedCollection.Cache;
+            var modManager        = Penumbra.ModManager;
+            var defaultCollection = modManager.Collections.DefaultCollection.Cache;
+            var forcedCollection  = modManager.Collections.ForcedCollection.Cache;
 
-            var (activeResolved, activeMeta) = activeCollection != null
-                ? ( activeCollection.ResolvedFiles.Count, activeCollection.MetaManipulations.Count )
+            var (defaultResolved, defaultMeta) = defaultCollection != null
+                ? ( defaultCollection.ResolvedFiles.Count, defaultCollection.MetaManipulations.Count )
                 : ( 0, 0 );
             var (forcedResolved, forcedMeta) = forcedCollection != null
                 ? ( forcedCollection.ResolvedFiles.Count, forcedCollection.MetaManipulations.Count )
                 : ( 0, 0 );
-            var totalLines = activeResolved + forcedResolved + activeMeta + forcedMeta;
+            var totalLines = defaultResolved + forcedResolved + defaultMeta + forcedMeta;
             if( totalLines == 0 )
             {
                 return;
@@ -166,7 +166,7 @@ public partial class SettingsInterface
 
             if( _filePathFilter.Length > 0 || _gamePathFilter.Length > 0 )
             {
-                DrawFilteredRows( activeCollection, forcedCollection );
+                DrawFilteredRows( defaultCollection, forcedCollection );
             }
             else
             {
@@ -185,18 +185,18 @@ public partial class SettingsInterface
                     {
                         var row = actualRow;
                         ImGui.TableNextRow();
-                        if( row < activeResolved )
+                        if( row < defaultResolved )
                         {
-                            var (gamePath, file) = activeCollection!.ResolvedFiles.ElementAt( row );
+                            var (gamePath, file) = defaultCollection!.ResolvedFiles.ElementAt( row );
                             DrawLine( gamePath, file );
                         }
-                        else if( ( row -= activeResolved ) < activeMeta )
+                        else if( ( row -= defaultResolved ) < defaultMeta )
                         {
                             // TODO
                             //var (manip, mod) = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
                             DrawLine( 0.ToString(), 0.ToString() );
                         }
-                        else if( ( row -= activeMeta ) < forcedResolved )
+                        else if( ( row -= defaultMeta ) < forcedResolved )
                         {
                             var (gamePath, file) = forcedCollection!.ResolvedFiles.ElementAt( row );
                             DrawLine( gamePath, file );
@@ -204,7 +204,7 @@ public partial class SettingsInterface
                         else
                         {
                             // TODO
-                            row              -= forcedResolved;
+                            row -= forcedResolved;
                             //var (manip, mod) =  forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
                             DrawLine( 0.ToString(), 0.ToString() );
                         }

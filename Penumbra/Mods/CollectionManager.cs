@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.Mod;
 using Penumbra.Util;
 
@@ -25,14 +26,15 @@ public class CollectionManager
 {
     private readonly ModManager _manager;
 
-    public string CollectionChangedTo { get; private set; } = string.Empty;
     public Dictionary< string, ModCollection > Collections { get; } = new(StringComparer.InvariantCultureIgnoreCase);
     public Dictionary< string, ModCollection > CharacterCollection { get; } = new();
 
     public ModCollection CurrentCollection { get; private set; } = ModCollection.Empty;
     public ModCollection DefaultCollection { get; private set; } = ModCollection.Empty;
     public ModCollection ForcedCollection { get; private set; } = ModCollection.Empty;
-    public ModCollection ActiveCollection { get; private set; } = ModCollection.Empty;
+
+    public bool IsActive( ModCollection collection )
+        => ReferenceEquals( collection, DefaultCollection ) || ReferenceEquals( collection, ForcedCollection );
 
     // Is invoked after the collections actually changed.
     public event CollectionChangeDelegate? CollectionChanged;
@@ -43,33 +45,7 @@ public class CollectionManager
 
         ReadCollections();
         LoadConfigCollections( Penumbra.Config );
-        SetActiveCollection( DefaultCollection, string.Empty );
     }
-
-    public bool SetActiveCollection( ModCollection newActive, string name )
-    {
-        CollectionChangedTo = name;
-        if( newActive == ActiveCollection )
-        {
-            return false;
-        }
-
-        if( ActiveCollection.Cache?.MetaManipulations.Count > 0 || newActive.Cache?.MetaManipulations.Count > 0 )
-        {
-            ActiveCollection = newActive;
-            Penumbra.ResidentResources.Reload();
-            ActiveCollection.SetFiles();
-        }
-        else
-        {
-            ActiveCollection = newActive;
-        }
-
-        return true;
-    }
-
-    public bool ResetActiveCollection()
-        => SetActiveCollection( DefaultCollection, string.Empty );
 
     public void CreateNecessaryCaches()
     {
@@ -121,7 +97,7 @@ public class CollectionManager
             }
         }
 
-        if( reloadMeta && ActiveCollection.Settings.TryGetValue( mod.BasePath.Name, out var config ) && config.Enabled )
+        if( reloadMeta && DefaultCollection.Settings.TryGetValue( mod.BasePath.Name, out var config ) && config.Enabled )
         {
             Penumbra.ResidentResources.Reload();
         }
@@ -130,7 +106,7 @@ public class CollectionManager
     public bool AddCollection( string name, Dictionary< string, ModSettings > settings )
     {
         var nameFixed = name.RemoveInvalidPathSymbols().ToLowerInvariant();
-        if( nameFixed == string.Empty || Collections.Values.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
+        if( nameFixed.Length == 0 || Collections.Values.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
         {
             PluginLog.Warning( $"The new collection {name} would lead to the same path as one that already exists." );
             return false;
@@ -232,29 +208,21 @@ public class CollectionManager
             case CollectionType.Default:
                 DefaultCollection                 = newCollection;
                 Penumbra.Config.DefaultCollection = newCollection.Name;
-                if( CollectionChangedTo.Length == 0 )
-                {
-                    SetActiveCollection( newCollection, string.Empty );
-                }
-
+                Penumbra.ResidentResources.Reload();
+                DefaultCollection.SetFiles();
                 break;
             case CollectionType.Forced:
                 ForcedCollection                 = newCollection;
                 Penumbra.Config.ForcedCollection = newCollection.Name;
+                Penumbra.ResidentResources.Reload();
                 break;
             case CollectionType.Current:
                 CurrentCollection                 = newCollection;
                 Penumbra.Config.CurrentCollection = newCollection.Name;
                 break;
             case CollectionType.Character:
-                if( CollectionChangedTo == characterName && CharacterCollection.ContainsKey( characterName ) )
-                {
-                    SetActiveCollection( newCollection, CollectionChangedTo );
-                }
-
                 CharacterCollection[ characterName! ]                  = newCollection;
                 Penumbra.Config.CharacterCollections[ characterName! ] = newCollection.Name;
-
                 break;
         }
 

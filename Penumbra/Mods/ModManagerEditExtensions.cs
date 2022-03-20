@@ -205,7 +205,7 @@ public static class ModManagerEditExtensions
                 if( collection.Cache != null && settings.Enabled )
                 {
                     collection.CalculateEffectiveFileList( mod.Resources.MetaManipulations.Count > 0,
-                        collection == manager.Collections.ActiveCollection );
+                        manager.Collections.IsActive( collection ) );
                 }
             }
         }
