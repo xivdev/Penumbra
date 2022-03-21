@@ -24,8 +24,7 @@ public class ModsController : WebApiController
                 x.Data.Meta,
                 BasePath = x.Data.BasePath.FullName,
                 Files    = x.Data.Resources.ModFiles.Select( fi => fi.FullName ),
-            } )
-         ?? null;
+            } );
     }
 
     [Route( HttpVerbs.Post, "/mods" )]

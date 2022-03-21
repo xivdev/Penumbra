@@ -7,14 +7,13 @@ using Dalamud.Logging;
 using Lumina.Data;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Util;
 using Penumbra.Mods;
 
 namespace Penumbra.Api;
 
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
-    public int ApiVersion { get; } = 3;
+    public int ApiVersion { get; } = 4;
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
 

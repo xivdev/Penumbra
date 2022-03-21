@@ -66,7 +66,7 @@ public class Penumbra : IDalamudPlugin
         ResourceLogger    = new ResourceLogger( ResourceLoader );
         ModManager        = new ModManager();
         ModManager.DiscoverMods();
-        ObjectReloader = new ObjectReloader( ModManager );
+        ObjectReloader = new ObjectReloader();
         PathResolver   = new PathResolver( ResourceLoader );
 
         Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
@@ -121,7 +121,7 @@ public class Penumbra : IDalamudPlugin
         ResidentResources.Reload();
 
         Config.Save();
-        ObjectReloader.RedrawAll( RedrawType.WithSettings );
+        ObjectReloader.RedrawAll( RedrawType.Redraw );
         return true;
     }
 
@@ -137,7 +137,7 @@ public class Penumbra : IDalamudPlugin
         ResidentResources.Reload();
 
         Config.Save();
-        ObjectReloader.RedrawAll( RedrawType.WithoutSettings );
+        ObjectReloader.RedrawAll( RedrawType.Redraw );
         return true;
     }
 
@@ -272,11 +272,11 @@ public class Penumbra : IDalamudPlugin
                 {
                     if( args.Length > 1 )
                     {
-                        ObjectReloader.RedrawObject( args[ 1 ] );
+                        ObjectReloader.RedrawObject( args[ 1 ], RedrawType.Redraw );
                     }
                     else
                     {
-                        ObjectReloader.RedrawAll();
+                        ObjectReloader.RedrawAll( RedrawType.Redraw );
                     }
 
                     break;
