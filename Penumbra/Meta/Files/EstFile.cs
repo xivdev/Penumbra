@@ -51,13 +51,7 @@ public sealed unsafe class EstFile : MetaBaseFile
     {
         if( Length < Size + EntryDescSize + EntrySize )
         {
-            var data   = Data;
-            var length = Length;
-            AllocateData( length + IncreaseSize );
-            Functions.MemCpyUnchecked( Data, data, length );
-            Functions.MemSet( Data + length, 0, IncreaseSize );
-            GC.RemoveMemoryPressure( length );
-            Marshal.FreeHGlobal( ( IntPtr )data );
+            ResizeResources( Length + IncreaseSize );
         }
 
         var control = ( Info* )( Data + 4 );
