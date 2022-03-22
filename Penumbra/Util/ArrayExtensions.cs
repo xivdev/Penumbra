@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Penumbra.Util;
 
 public static class ArrayExtensions
 {
-    public static int IndexOf< T >( this T[] array, Predicate< T > match )
+    public static int IndexOf< T >( this IReadOnlyList< T > array, Predicate< T > predicate )
     {
-        for( var i = 0; i < array.Length; ++i )
+        for( var i = 0; i < array.Count; ++i )
         {
-            if( match( array[ i ] ) )
+            if( predicate( array[ i ] ) )
             {
                 return i;
             }
@@ -18,16 +19,46 @@ public static class ArrayExtensions
         return -1;
     }
 
-    public static int IndexOf< T >( this IList< T > array, Func< T, bool > predicate )
+    public static int IndexOf< T >( this IReadOnlyList< T > array, T needle )
     {
         for( var i = 0; i < array.Count; ++i )
         {
-            if( predicate.Invoke( array[ i ] ) )
+            if( needle!.Equals( array[i] ) )
             {
                 return i;
             }
         }
 
         return -1;
+    }
+
+    public static bool FindFirst< T >( this IReadOnlyList< T > array, Predicate< T > predicate, [NotNullWhen( true )] out T? result )
+    {
+        foreach( var obj in array )
+        {
+            if( predicate( obj ) )
+            {
+                result = obj!;
+                return true;
+            }
+        }
+
+        result = default;
+        return false;
+    }
+
+    public static bool FindFirst< T >( this IReadOnlyList< T > array, T needle, [NotNullWhen( true )] out T? result ) where T : IEquatable< T >
+    {
+        foreach( var obj in array )
+        {
+            if( obj.Equals( needle ) )
+            {
+                result = obj!;
+                return true;
+            }
+        }
+
+        result = default;
+        return false;
     }
 }

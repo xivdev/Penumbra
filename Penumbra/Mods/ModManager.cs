@@ -6,8 +6,18 @@ using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta;
 using Penumbra.Mod;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
+
+public enum ModChangeType
+{
+    Added,
+    Removed,
+    Changed,
+}
+
+public delegate void ModChangeDelegate( ModChangeType type, int modIndex, ModData modData );
 
 // The ModManager handles the basic mods installed to the mod directory.
 // It also contains the CollectionManager that handles all collections.
@@ -15,10 +25,16 @@ public class ModManager
 {
     public DirectoryInfo BasePath { get; private set; } = null!;
 
-    public Dictionary< string, ModData > Mods { get; } = new();
+    private List< ModData > ModsInternal { get; init; } = new();
+
+    public IReadOnlyList< ModData > Mods
+        => ModsInternal;
+
     public ModFolder StructuredMods { get; } = ModFileSystem.Root;
 
     public CollectionManager Collections { get; }
+
+    public event ModChangeDelegate? ModChange;
 
     public bool Valid { get; private set; }
 
@@ -38,7 +54,7 @@ public class ModManager
             return;
         }
 
-        if( !newPath.Any() )
+        if( newPath.Length == 0 )
         {
             Valid    = false;
             BasePath = new DirectoryInfo( "." );
@@ -84,7 +100,7 @@ public class ModManager
     {
         mod.Move( path );
         var fixedPath = mod.SortOrder.FullPath;
-        if( !fixedPath.Any() || string.Equals( fixedPath, mod.Meta.Name, StringComparison.InvariantCultureIgnoreCase ) )
+        if( fixedPath.Length == 0 || string.Equals( fixedPath, mod.Meta.Name, StringComparison.InvariantCultureIgnoreCase ) )
         {
             Config.ModSortOrder.Remove( mod.BasePath.Name );
             return true;
@@ -103,16 +119,16 @@ public class ModManager
     {
         var changes = false;
 
-        foreach( var kvp in Config.ModSortOrder.ToArray() )
+        foreach( var (folder, path) in Config.ModSortOrder.ToArray() )
         {
-            if( kvp.Value.Any() && Mods.TryGetValue( kvp.Key, out var mod ) )
+            if( path.Length > 0 && ModsInternal.FindFirst( m => m.BasePath.Name == folder, out var mod ) )
             {
-                changes |= SetSortOrderPath( mod, kvp.Value );
+                changes |= SetSortOrderPath( mod, path );
             }
             else if( removeOldPaths )
             {
                 changes = true;
-                Config.ModSortOrder.Remove( kvp.Key );
+                Config.ModSortOrder.Remove( folder );
             }
         }
 
@@ -124,7 +140,7 @@ public class ModManager
 
     public void DiscoverMods()
     {
-        Mods.Clear();
+        ModsInternal.Clear();
         BasePath.Refresh();
 
         StructuredMods.SubFolders.Clear();
@@ -139,7 +155,7 @@ public class ModManager
                     continue;
                 }
 
-                Mods.Add( modFolder.Name, mod );
+                ModsInternal.Add( mod );
             }
 
             SetModStructure();
@@ -151,8 +167,7 @@ public class ModManager
 
     public void DeleteMod( DirectoryInfo modFolder )
     {
-        modFolder.Refresh();
-        if( modFolder.Exists )
+        if( Directory.Exists( modFolder.FullName ) )
         {
             try
             {
@@ -162,22 +177,25 @@ public class ModManager
             {
                 PluginLog.Error( $"Could not delete the mod {modFolder.Name}:\n{e}" );
             }
+        }
 
-            if( Mods.TryGetValue( modFolder.Name, out var mod ) )
-            {
-                mod.SortOrder.ParentFolder.RemoveMod( mod );
-                Mods.Remove( modFolder.Name );
-                Collections.RemoveModFromCaches( modFolder );
-            }
+        var idx = ModsInternal.FindIndex( m => m.BasePath.Name == modFolder.Name );
+        if( idx >= 0 )
+        {
+            var mod = ModsInternal[ idx ];
+            mod.SortOrder.ParentFolder.RemoveMod( mod );
+            ModsInternal.RemoveAt( idx );
+            Collections.RemoveModFromCaches( modFolder );
+            ModChange?.Invoke( ModChangeType.Removed, idx, mod );
         }
     }
 
-    public bool AddMod( DirectoryInfo modFolder )
+    public int AddMod( DirectoryInfo modFolder )
     {
         var mod = ModData.LoadMod( StructuredMods, modFolder );
         if( mod == null )
         {
-            return false;
+            return -1;
         }
 
         if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
@@ -188,22 +206,24 @@ public class ModManager
             }
         }
 
-        if( Mods.ContainsKey( modFolder.Name ) )
+        if( ModsInternal.Any( m => m.BasePath.Name == modFolder.Name ) )
         {
-            return false;
+            return -1;
         }
 
-        Mods.Add( modFolder.Name, mod );
+        ModsInternal.Add( mod );
+        ModChange?.Invoke( ModChangeType.Added, ModsInternal.Count - 1, mod );
         foreach( var collection in Collections.Collections.Values )
         {
             collection.AddMod( mod );
         }
 
-        return true;
+        return ModsInternal.Count - 1;
     }
 
-    public bool UpdateMod( ModData mod, bool reloadMeta = false, bool recomputeMeta = false, bool force = false )
+    public bool UpdateMod( int idx, bool reloadMeta = false, bool recomputeMeta = false, bool force = false )
     {
+        var mod         = Mods[ idx ];
         var oldName     = mod.Meta.Name;
         var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile ) || force;
         var fileChanges = mod.Resources.RefreshModFiles( mod.BasePath );
@@ -242,9 +262,12 @@ public class ModManager
         }
 
         Collections.UpdateCollections( mod, metaChanges, fileChanges, nameChange, reloadMeta );
-
+        ModChange?.Invoke( ModChangeType.Changed, idx, mod );
         return true;
     }
+
+    public bool UpdateMod( ModData mod, bool reloadMeta = false, bool recomputeMeta = false, bool force = false )
+        => UpdateMod( Mods.IndexOf( mod ), reloadMeta, recomputeMeta, force );
 
     public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
     {
@@ -252,50 +275,4 @@ public class ModManager
         ret ??= Collections.ForcedCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
         return ret;
     }
-
-    //         private void FileSystemWatcherOnChanged( object sender, FileSystemEventArgs e )
-    //         {
-    // #if DEBUG
-    //             PluginLog.Verbose( "file changed: {FullPath}", e.FullPath );
-    // #endif
-    //
-    //             if( _plugin.ImportInProgress )
-    //             {
-    //                 return;
-    //             }
-    //
-    //             if( _plugin.Configuration.DisableFileSystemNotifications )
-    //             {
-    //                 return;
-    //             }
-    //
-    //             var file = e.FullPath;
-    //
-    //             if( !ResolvedFiles.Any( x => x.Value.FullName == file ) )
-    //             {
-    //                 return;
-    //             }
-    //
-    //             PluginLog.Log( "a loaded file has been modified - file: {FullPath}", file );
-    //             _plugin.GameUtils.ReloadPlayerResources();
-    //         }
-    // 
-    //         private void FileSystemPasta()
-    //         {
-    //              haha spaghet
-    //              _fileSystemWatcher?.Dispose();
-    //              _fileSystemWatcher = new FileSystemWatcher( _basePath.FullName )
-    //              {
-    //                  NotifyFilter = NotifyFilters.LastWrite |
-    //                                 NotifyFilters.FileName |
-    //                                 NotifyFilters.DirectoryName,
-    //                  IncludeSubdirectories = true,
-    //                  EnableRaisingEvents = true
-    //              };
-    //             
-    //              _fileSystemWatcher.Changed += FileSystemWatcherOnChanged;
-    //              _fileSystemWatcher.Created += FileSystemWatcherOnChanged;
-    //              _fileSystemWatcher.Deleted += FileSystemWatcherOnChanged;
-    //              _fileSystemWatcher.Renamed += FileSystemWatcherOnChanged;
-    //         }
 }

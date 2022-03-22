@@ -70,9 +70,6 @@ public static class ModManagerEditExtensions
             }
         }
 
-        manager.Mods.Remove( mod.BasePath.Name );
-        manager.Mods[ newDir.Name ] = mod;
-
         var oldBasePath = mod.BasePath;
         mod.BasePath = newDir;
         mod.MetaFile = ModData.MetaFileInfo( newDir );

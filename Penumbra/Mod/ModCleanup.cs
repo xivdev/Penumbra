@@ -7,10 +7,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
 using Penumbra.Importer;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Mod;
 
@@ -62,8 +60,8 @@ public class ModCleanup
 
     private static ModData CreateNewMod( DirectoryInfo newDir, string newSortOrder )
     {
-        Penumbra.ModManager.AddMod( newDir );
-        var newMod = Penumbra.ModManager.Mods[ newDir.Name ];
+        var idx = Penumbra.ModManager.AddMod( newDir );
+        var newMod = Penumbra.ModManager.Mods[idx];
         newMod.Move( newSortOrder );
         newMod.ComputeChangedItems();
         ModFileSystem.InvokeChange();
