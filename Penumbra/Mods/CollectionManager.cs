@@ -21,7 +21,7 @@ public delegate void CollectionChangeDelegate( ModCollection? oldCollection, Mod
     string? characterName = null );
 
 // Contains all collections and respective functions, as well as the collection settings.
-public class CollectionManager
+public class CollectionManager : IDisposable
 {
     private readonly ModManager _manager;
 
@@ -42,8 +42,41 @@ public class CollectionManager
     {
         _manager = manager;
 
+        _manager.ModsRediscovered += OnModsRediscovered;
         ReadCollections();
         LoadConfigCollections( Penumbra.Config );
+    }
+
+    public void Dispose()
+    {
+        _manager.ModsRediscovered -= OnModsRediscovered;
+    }
+
+    private void OnModsRediscovered()
+    {
+        RecreateCaches();
+        DefaultCollection.SetFiles();
+    }
+
+    private void OnModChanged( ModChangeType type, int idx, ModData mod )
+    {
+        switch( type )
+        {
+            case ModChangeType.Added:
+                foreach( var collection in Collections.Values )
+                {
+                    collection.AddMod( mod );
+                }
+
+                break;
+            case ModChangeType.Removed:
+                RemoveModFromCaches( mod.BasePath );
+                break;
+            case ModChangeType.Changed:
+                // TODO
+                break;
+            default:                    throw new ArgumentOutOfRangeException( nameof( type ), type, null );
+        }
     }
 
     public void CreateNecessaryCaches()

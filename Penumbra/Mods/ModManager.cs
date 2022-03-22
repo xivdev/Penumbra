@@ -32,9 +32,8 @@ public class ModManager
 
     public ModFolder StructuredMods { get; } = ModFileSystem.Root;
 
-    public CollectionManager Collections { get; }
-
     public event ModChangeDelegate? ModChange;
+    public event Action? ModsRediscovered;
 
     public bool Valid { get; private set; }
 
@@ -82,18 +81,14 @@ public class ModManager
                 Config.ModDirectory = BasePath.FullName;
                 Config.Save();
             }
-
-            if( !firstTime )
-            {
-                Collections.RecreateCaches();
-            }
         }
+
+        ModsRediscovered?.Invoke();
     }
 
     public ModManager()
     {
         SetBaseDirectory( Config.ModDirectory, true );
-        Collections = new CollectionManager( this );
     }
 
     private bool SetSortOrderPath( ModData mod, string path )
@@ -161,8 +156,7 @@ public class ModManager
             SetModStructure();
         }
 
-        Collections.RecreateCaches();
-        Collections.DefaultCollection.SetFiles();
+        ModsRediscovered?.Invoke();
     }
 
     public void DeleteMod( DirectoryInfo modFolder )
@@ -185,7 +179,6 @@ public class ModManager
             var mod = ModsInternal[ idx ];
             mod.SortOrder.ParentFolder.RemoveMod( mod );
             ModsInternal.RemoveAt( idx );
-            Collections.RemoveModFromCaches( modFolder );
             ModChange?.Invoke( ModChangeType.Removed, idx, mod );
         }
     }
@@ -213,10 +206,6 @@ public class ModManager
 
         ModsInternal.Add( mod );
         ModChange?.Invoke( ModChangeType.Added, ModsInternal.Count - 1, mod );
-        foreach( var collection in Collections.Collections.Values )
-        {
-            collection.AddMod( mod );
-        }
 
         return ModsInternal.Count - 1;
     }
@@ -261,7 +250,7 @@ public class ModManager
             mod.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( mod.BasePath ) );
         }
 
-        Collections.UpdateCollections( mod, metaChanges, fileChanges, nameChange, reloadMeta );
+        Penumbra.CollectionManager.UpdateCollections( mod, metaChanges, fileChanges, nameChange, reloadMeta ); // TODO
         ModChange?.Invoke( ModChangeType.Changed, idx, mod );
         return true;
     }

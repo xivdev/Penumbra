@@ -34,6 +34,7 @@ public class Penumbra : IDalamudPlugin
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
 
     public static ModManager ModManager { get; private set; } = null!;
+    public static CollectionManager CollectionManager { get; private set; } = null!;
 
     public static ResourceLoader ResourceLoader { get; set; } = null!;
     public ResourceLogger ResourceLogger { get; }
@@ -66,8 +67,9 @@ public class Penumbra : IDalamudPlugin
         ResourceLogger    = new ResourceLogger( ResourceLoader );
         ModManager        = new ModManager();
         ModManager.DiscoverMods();
-        ObjectReloader = new ObjectReloader();
-        PathResolver   = new PathResolver( ResourceLoader );
+        CollectionManager = new CollectionManager( ModManager );
+        ObjectReloader    = new ObjectReloader();
+        PathResolver      = new PathResolver( ResourceLoader );
 
         Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
         {
@@ -193,6 +195,7 @@ public class Penumbra : IDalamudPlugin
         Api.Dispose();
         SettingsInterface.Dispose();
         ObjectReloader.Dispose();
+        CollectionManager.Dispose();
 
         Dalamud.Commands.RemoveHandler( CommandName );
 
