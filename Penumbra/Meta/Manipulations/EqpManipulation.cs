@@ -6,14 +6,18 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
+using Penumbra.Util;
 
 namespace Penumbra.Meta.Manipulations;
 
 [StructLayout( LayoutKind.Sequential, Pack = 1 )]
 public readonly struct EqpManipulation : IMetaManipulation< EqpManipulation >
 {
-    public readonly EqpEntry  Entry;
-    public readonly ushort    SetId;
+    [JsonConverter( typeof( ForceNumericFlagEnumConverter ) )]
+    public readonly EqpEntry Entry;
+
+    public readonly ushort SetId;
+
     [JsonConverter( typeof( StringEnumConverter ) )]
     public readonly EquipSlot Slot;
 
