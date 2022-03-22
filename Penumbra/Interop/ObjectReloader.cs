@@ -8,16 +8,15 @@ using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop;
 
-public unsafe class ObjectReloader : IDisposable
+public sealed unsafe class ObjectReloader : IDisposable
 {
-    public const  int  GPosePlayerIdx = 201;
-    public const  int  GPoseSlots     = 42;
-    public const  int  GPoseEndIdx    = GPosePlayerIdx + GPoseSlots;
+    public const int GPosePlayerIdx = 201;
+    public const int GPoseSlots     = 42;
+    public const int GPoseEndIdx    = GPosePlayerIdx + GPoseSlots;
 
-    private readonly List< int > _unloadedObjects   = new(Dalamud.Objects.Length);
-    private readonly List< int > _afterGPoseObjects = new(GPoseSlots);
-    private          int         _target            = -1;
-    private          int         _waitFrame         = 0;
+    private readonly List< int > _queue           = new(100);
+    private readonly List< int > _afterGPoseQueue = new(GPoseSlots);
+    private          int         _target          = -1;
 
     public ObjectReloader()
         => Dalamud.Framework.Update += OnUpdateEvent;
@@ -71,15 +70,13 @@ public unsafe class ObjectReloader : IDisposable
     {
         if( actor != null )
         {
-            WriteInvisible( actor );
             var idx = ObjectTableIndex( actor );
             if( actor.Address == Dalamud.Targets.Target?.Address )
             {
                 _target = idx;
             }
 
-            _unloadedObjects.Add( idx );
-            _waitFrame = 1;
+            _queue.Add( ~idx );
         }
     }
 
@@ -94,8 +91,7 @@ public unsafe class ObjectReloader : IDisposable
         if( actor != null )
         {
             WriteInvisible( actor );
-            _afterGPoseObjects.Add( ObjectTableIndex( actor ) );
-            _waitFrame = 1;
+            _afterGPoseQueue.Add( ~ObjectTableIndex( actor ) );
         }
     }
 
@@ -124,32 +120,52 @@ public unsafe class ObjectReloader : IDisposable
 
     private void HandleRedraw()
     {
-        if( _unloadedObjects.Count == 0 )
+        if( _queue.Count == 0 )
         {
             return;
         }
 
-        foreach( var idx in _unloadedObjects )
+        var numKept = 0;
+        foreach( var idx in _queue )
         {
-            WriteVisible( Dalamud.Objects[ idx ] );
+            if( idx < 0 )
+            {
+                var newIdx = ~idx;
+                WriteInvisible( Dalamud.Objects[ newIdx ] );
+                _queue[ numKept++ ] = newIdx;
+            }
+            else
+            {
+                WriteVisible( Dalamud.Objects[ idx ] );
+            }
         }
 
-        _unloadedObjects.Clear();
+        _queue.RemoveRange( numKept, _queue.Count - numKept );
     }
 
     private void HandleAfterGPose()
     {
-        if( _afterGPoseObjects.Count == 0 || Dalamud.Objects[ GPosePlayerIdx ] != null )
+        if( _afterGPoseQueue.Count == 0 || Dalamud.Objects[ GPosePlayerIdx ] != null )
         {
             return;
         }
 
-        foreach( var idx in _afterGPoseObjects )
+        var numKept = 0;
+        foreach( var idx in _afterGPoseQueue )
         {
-            WriteVisible( Dalamud.Objects[ idx ] );
+            if( idx < 0 )
+            {
+                var newIdx = ~idx;
+                WriteInvisible( Dalamud.Objects[ newIdx ] );
+                _afterGPoseQueue[ numKept++ ] = newIdx;
+            }
+            else
+            {
+                WriteVisible( Dalamud.Objects[ idx ] );
+            }
         }
 
-        _afterGPoseObjects.Clear();
+        _afterGPoseQueue.RemoveRange( numKept, _queue.Count - numKept );
     }
 
     private void OnUpdateEvent( object framework )
@@ -158,12 +174,6 @@ public unsafe class ObjectReloader : IDisposable
         || Dalamud.Conditions[ ConditionFlag.BetweenAreas ]
         || Dalamud.Conditions[ ConditionFlag.OccupiedInCutSceneEvent ] )
         {
-            return;
-        }
-
-        if( _waitFrame > 0 )
-        {
-            --_waitFrame;
             return;
         }
 
@@ -179,12 +189,6 @@ public unsafe class ObjectReloader : IDisposable
             case RedrawType.Redraw:
                 ReloadActor( actor );
                 break;
-            case RedrawType.Unload:
-                WriteInvisible( actor );
-                break;
-            case RedrawType.Load:
-                WriteVisible( actor );
-                break;
             case RedrawType.AfterGPose:
                 ReloadActorAfterGPose( actor );
                 break;
@@ -192,13 +196,13 @@ public unsafe class ObjectReloader : IDisposable
         }
     }
 
-    private GameObject? GetLocalPlayer()
+    private static GameObject? GetLocalPlayer()
     {
         var gPosePlayer = Dalamud.Objects[ GPosePlayerIdx ];
         return gPosePlayer ?? Dalamud.Objects[ 0 ];
     }
 
-    private bool GetName( string lowerName, out GameObject? actor )
+    private static bool GetName( string lowerName, out GameObject? actor )
     {
         ( actor, var ret ) = lowerName switch
         {
