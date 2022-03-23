@@ -68,12 +68,12 @@ public unsafe partial class PathResolver
         CharacterBaseCreateHook?.Enable();
         EnableDrawHook?.Enable();
         CharacterBaseDestructorHook?.Enable();
-        Penumbra.ModManager.Collections.CollectionChanged += CheckCollections;
+        Penumbra.CollectionManager.CollectionChanged += CheckCollections;
     }
 
     private void DisableDataHooks()
     {
-        Penumbra.ModManager.Collections.CollectionChanged -= CheckCollections;
+        Penumbra.CollectionManager.CollectionChanged -= CheckCollections;
         CharacterBaseCreateHook?.Disable();
         EnableDrawHook?.Disable();
         CharacterBaseDestructorHook?.Disable();
@@ -161,7 +161,7 @@ public unsafe partial class PathResolver
     {
         if( gameObject == null )
         {
-            return Penumbra.ModManager.Collections.DefaultCollection;
+            return Penumbra.CollectionManager.DefaultCollection;
         }
 
         var name = gameObject->ObjectIndex switch
@@ -174,9 +174,9 @@ public unsafe partial class PathResolver
             }
          ?? new Utf8String( gameObject->Name ).ToString();
 
-        return Penumbra.ModManager.Collections.CharacterCollection.TryGetValue( name, out var col )
+        return Penumbra.CollectionManager.CharacterCollection.TryGetValue( name, out var col )
             ? col
-            : Penumbra.ModManager.Collections.DefaultCollection;
+            : Penumbra.CollectionManager.DefaultCollection;
     }
 
     // Update collections linked to Game/DrawObjects due to a change in collection configuration.

@@ -26,8 +26,8 @@ public partial class SettingsInterface
             }
 
             var modManager = Penumbra.ModManager;
-            var items      = modManager.Collections.DefaultCollection.Cache?.ChangedItems ?? new Dictionary< string, object? >();
-            var forced     = modManager.Collections.ForcedCollection.Cache?.ChangedItems  ?? new Dictionary< string, object? >();
+            var items      = Penumbra.CollectionManager.DefaultCollection.Cache?.ChangedItems ?? new Dictionary< string, object? >();
+            var forced     = Penumbra.CollectionManager.ForcedCollection.Cache?.ChangedItems  ?? new Dictionary< string, object? >();
 
             using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 

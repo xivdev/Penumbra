@@ -104,7 +104,7 @@ public unsafe partial class PathResolver
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
     private IntPtr ResolvePathDetour( IntPtr drawObject, IntPtr path )
         => ResolvePathDetour( FindParent( drawObject, out var collection ) == null
-            ? Penumbra.ModManager.Collections.DefaultCollection
+            ? Penumbra.CollectionManager.DefaultCollection
             : collection, path );
 
     // Weapons have the characters DrawObject as a parent,
@@ -123,7 +123,7 @@ public unsafe partial class PathResolver
         {
             var parent = FindParent( ( IntPtr )parentObject, out var collection );
             return ResolvePathDetour( parent == null
-                ? Penumbra.ModManager.Collections.DefaultCollection
+                ? Penumbra.CollectionManager.DefaultCollection
                 : collection, path );
         }
     }
@@ -138,7 +138,7 @@ public unsafe partial class PathResolver
         }
 
         var gamePath = new Utf8String( ( byte* )path );
-        if( collection == Penumbra.ModManager.Collections.DefaultCollection )
+        if( collection == Penumbra.CollectionManager.DefaultCollection )
         {
             SetCollection( gamePath, null );
             return path;

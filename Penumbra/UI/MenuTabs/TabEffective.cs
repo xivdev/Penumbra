@@ -141,8 +141,8 @@ public partial class SettingsInterface
             const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
 
             var modManager        = Penumbra.ModManager;
-            var defaultCollection = modManager.Collections.DefaultCollection.Cache;
-            var forcedCollection  = modManager.Collections.ForcedCollection.Cache;
+            var defaultCollection = Penumbra.CollectionManager.DefaultCollection.Cache;
+            var forcedCollection  = Penumbra.CollectionManager.ForcedCollection.Cache;
 
             var (defaultResolved, defaultMeta) = defaultCollection != null
                 ? ( defaultCollection.ResolvedFiles.Count, defaultCollection.MetaManipulations.Count )

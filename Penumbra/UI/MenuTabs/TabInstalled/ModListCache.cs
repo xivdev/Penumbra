@@ -120,13 +120,13 @@ namespace Penumbra.UI
             var lower = filter.ToLowerInvariant();
             if( lower.StartsWith( "c:" ) )
             {
-                _modFilterChanges = lower.Substring( 2 );
+                _modFilterChanges = lower[ 2.. ];
                 _modFilter        = string.Empty;
                 _modFilterAuthor  = string.Empty;
             }
             else if( lower.StartsWith( "a:" ) )
             {
-                _modFilterAuthor  = lower.Substring( 2 );
+                _modFilterAuthor  = lower[ 2.. ];
                 _modFilter        = string.Empty;
                 _modFilterChanges = string.Empty;
             }
@@ -147,11 +147,11 @@ namespace Penumbra.UI
             _visibleFolders.Clear();
 
             PluginLog.Debug( "Resetting mod selector list..." );
-            if( !_modsInOrder.Any() )
+            if( _modsInOrder.Count == 0 )
             {
                 foreach( var modData in _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) )
                 {
-                    var mod = _manager.Collections.CurrentCollection.GetMod( modData );
+                    var mod = Penumbra.CollectionManager.CurrentCollection.GetMod( modData );
                     _modsInOrder.Add( mod );
                     _visibleMods.Add( CheckFilters( mod ) );
                 }

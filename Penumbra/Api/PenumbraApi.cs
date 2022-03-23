@@ -76,7 +76,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _penumbra!.ObjectReloader.RedrawAll( setting );
     }
 
-    private static string ResolvePath( string path, ModManager manager, ModCollection collection )
+    private static string ResolvePath( string path, ModManager _, ModCollection collection )
     {
         if( !Penumbra.Config.EnableMods )
         {
@@ -85,21 +85,21 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         var gamePath = Utf8GamePath.FromString( path, out var p, true ) ? p : Utf8GamePath.Empty;
         var ret      = collection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
-        ret ??= manager.Collections.ForcedCollection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
+        ret ??= Penumbra.CollectionManager.ForcedCollection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
         return ret?.ToString() ?? path;
     }
 
     public string ResolvePath( string path )
     {
         CheckInitialized();
-        return ResolvePath( path, Penumbra.ModManager, Penumbra.ModManager.Collections.DefaultCollection );
+        return ResolvePath( path, Penumbra.ModManager, Penumbra.CollectionManager.DefaultCollection );
     }
 
     public string ResolvePath( string path, string characterName )
     {
         CheckInitialized();
         return ResolvePath( path, Penumbra.ModManager,
-            Penumbra.ModManager.Collections.CharacterCollection.TryGetValue( characterName, out var collection )
+            Penumbra.CollectionManager.CharacterCollection.TryGetValue( characterName, out var collection )
                 ? collection
                 : ModCollection.Empty );
     }
@@ -134,7 +134,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         CheckInitialized();
         try
         {
-            if( !Penumbra.ModManager.Collections.Collections.TryGetValue( collectionName, out var collection ) )
+            if( !Penumbra.CollectionManager.Collections.TryGetValue( collectionName, out var collection ) )
             {
                 collection = ModCollection.Empty;
             }

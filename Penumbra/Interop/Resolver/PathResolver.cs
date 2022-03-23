@@ -36,7 +36,7 @@ public partial class PathResolver : IDisposable
         var nonDefault = HandleMaterialSubFiles( gamePath, out var collection ) || PathCollections.TryGetValue( gamePath.Path, out collection );
         if( !nonDefault )
         {
-            collection = Penumbra.ModManager.Collections.DefaultCollection;
+            collection = Penumbra.CollectionManager.DefaultCollection;
         }
         else
         {
@@ -49,7 +49,7 @@ public partial class PathResolver : IDisposable
         var resolved = collection!.ResolveSwappedOrReplacementPath( gamePath );
         if( resolved == null )
         {
-            resolved = Penumbra.ModManager.Collections.ForcedCollection.ResolveSwappedOrReplacementPath( gamePath );
+            resolved = Penumbra.CollectionManager.ForcedCollection.ResolveSwappedOrReplacementPath( gamePath );
             if( resolved == null )
             {
                 // We also need to handle defaulted materials against a non-default collection.
@@ -61,7 +61,7 @@ public partial class PathResolver : IDisposable
                 return ( null, collection );
             }
 
-            collection = Penumbra.ModManager.Collections.ForcedCollection;
+            collection = Penumbra.CollectionManager.ForcedCollection;
         }
 
         // Since mtrl files load their files separately, we need to add the new, resolved path

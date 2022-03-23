@@ -526,10 +526,10 @@ public partial class SettingsInterface
             }
 
             Cache.TriggerFilterReset();
-            var collection = Penumbra.ModManager.Collections.CurrentCollection;
+            var collection = Penumbra.CollectionManager.CurrentCollection;
             if( collection.Cache != null )
             {
-                collection.CalculateEffectiveFileList( metaManips, Penumbra.ModManager.Collections.IsActive( collection ) );
+                collection.CalculateEffectiveFileList( metaManips, Penumbra.CollectionManager.IsActive( collection ) );
             }
 
             collection.Save();
@@ -609,7 +609,7 @@ public partial class SettingsInterface
         private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection collection )
         {
             if( collection == ModCollection.Empty
-            || collection  == Penumbra.ModManager.Collections.CurrentCollection )
+            || collection  == Penumbra.CollectionManager.CurrentCollection )
             {
                 using var _ = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f );
                 ImGui.Button( label, Vector2.UnitX * size );
@@ -638,10 +638,10 @@ public partial class SettingsInterface
                   - 4                  * ImGui.GetStyle().ItemSpacing.X )
               / 2, 5f );
             ImGui.SameLine();
-            DrawCollectionButton( "Default", "default", buttonSize, Penumbra.ModManager.Collections.DefaultCollection );
+            DrawCollectionButton( "Default", "default", buttonSize, Penumbra.CollectionManager.DefaultCollection );
 
             ImGui.SameLine();
-            DrawCollectionButton( "Forced", "forced", buttonSize, Penumbra.ModManager.Collections.ForcedCollection );
+            DrawCollectionButton( "Forced", "forced", buttonSize, Penumbra.CollectionManager.ForcedCollection );
 
             ImGui.SameLine();
             ImGui.SetNextItemWidth( comboSize );

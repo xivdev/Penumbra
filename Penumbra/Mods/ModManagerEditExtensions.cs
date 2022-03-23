@@ -82,7 +82,7 @@ public static class ModManagerEditExtensions
             manager.Config.Save();
         }
 
-        foreach( var collection in manager.Collections.Collections.Values )
+        foreach( var collection in Penumbra.CollectionManager.Collections.Values )
         {
             if( collection.Settings.TryGetValue( oldBasePath.Name, out var settings ) )
             {
@@ -140,7 +140,7 @@ public static class ModManagerEditExtensions
 
         mod.SaveMeta();
 
-        foreach( var collection in manager.Collections.Collections.Values )
+        foreach( var collection in Penumbra.CollectionManager.Collections.Values )
         {
             if( !collection.Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
             {
@@ -176,7 +176,7 @@ public static class ModManagerEditExtensions
             return ( oldSetting & bitmaskFront ) | ( ( oldSetting & bitmaskBack ) >> 1 );
         }
 
-        foreach( var collection in manager.Collections.Collections.Values )
+        foreach( var collection in Penumbra.CollectionManager.Collections.Values )
         {
             if( !collection.Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
             {
@@ -202,7 +202,7 @@ public static class ModManagerEditExtensions
                 if( collection.Cache != null && settings.Enabled )
                 {
                     collection.CalculateEffectiveFileList( mod.Resources.MetaManipulations.Count > 0,
-                        manager.Collections.IsActive( collection ) );
+                        Penumbra.CollectionManager.IsActive( collection ) );
                 }
             }
         }

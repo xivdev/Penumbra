@@ -214,7 +214,7 @@ public class Penumbra : IDalamudPlugin
 
         var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
             ? ModCollection.Empty
-            : ModManager.Collections.Collections.Values.FirstOrDefault( c
+            : CollectionManager.Collections.Values.FirstOrDefault( c
                 => string.Equals( c.Name, collectionName, StringComparison.InvariantCultureIgnoreCase ) );
         if( collection == null )
         {
@@ -225,24 +225,24 @@ public class Penumbra : IDalamudPlugin
         switch( type )
         {
             case "default":
-                if( collection == ModManager.Collections.DefaultCollection )
+                if( collection == CollectionManager.DefaultCollection )
                 {
                     Dalamud.Chat.Print( $"{collection.Name} already is the default collection." );
                     return false;
                 }
 
-                ModManager.Collections.SetCollection( collection, CollectionType.Default );
+                CollectionManager.SetCollection( collection, CollectionType.Default );
                 Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
                 SettingsInterface.ResetDefaultCollection();
                 return true;
             case "forced":
-                if( collection == ModManager.Collections.ForcedCollection )
+                if( collection == CollectionManager.ForcedCollection )
                 {
                     Dalamud.Chat.Print( $"{collection.Name} already is the forced collection." );
                     return false;
                 }
 
-                ModManager.Collections.SetCollection( collection, CollectionType.Forced );
+                CollectionManager.SetCollection( collection, CollectionType.Forced );
                 Dalamud.Chat.Print( $"Set {collection.Name} as forced collection." );
                 SettingsInterface.ResetForcedCollection();
                 return true;

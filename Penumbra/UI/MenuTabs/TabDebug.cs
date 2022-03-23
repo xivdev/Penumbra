@@ -49,17 +49,16 @@ public partial class SettingsInterface
         using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
         var manager = Penumbra.ModManager;
-        PrintValue( "Current Collection", manager.Collections.CurrentCollection.Name );
-        PrintValue( "    has Cache", ( manager.Collections.CurrentCollection.Cache != null ).ToString() );
-        PrintValue( "Default Collection", manager.Collections.DefaultCollection.Name );
-        PrintValue( "    has Cache", ( manager.Collections.DefaultCollection.Cache != null ).ToString() );
-        PrintValue( "Forced Collection", manager.Collections.ForcedCollection.Name );
-        PrintValue( "    has Cache", ( manager.Collections.ForcedCollection.Cache != null ).ToString() );
-        PrintValue( "Mod Manager BasePath", manager.BasePath?.Name          ?? "NULL" );
-        PrintValue( "Mod Manager BasePath-Full", manager.BasePath?.FullName ?? "NULL" );
+        PrintValue( "Current Collection", Penumbra.CollectionManager.CurrentCollection.Name );
+        PrintValue( "    has Cache", ( Penumbra.CollectionManager.CurrentCollection.Cache != null ).ToString() );
+        PrintValue( "Default Collection", Penumbra.CollectionManager.DefaultCollection.Name );
+        PrintValue( "    has Cache", ( Penumbra.CollectionManager.DefaultCollection.Cache != null ).ToString() );
+        PrintValue( "Forced Collection", Penumbra.CollectionManager.ForcedCollection.Name );
+        PrintValue( "    has Cache", ( Penumbra.CollectionManager.ForcedCollection.Cache != null ).ToString() );
+        PrintValue( "Mod Manager BasePath", manager.BasePath.Name );
+        PrintValue( "Mod Manager BasePath-Full", manager.BasePath.FullName );
         PrintValue( "Mod Manager BasePath IsRooted", Path.IsPathRooted( Penumbra.Config.ModDirectory ).ToString() );
-        PrintValue( "Mod Manager BasePath Exists",
-            manager.BasePath != null ? Directory.Exists( manager.BasePath.FullName ).ToString() : false.ToString() );
+        PrintValue( "Mod Manager BasePath Exists", Directory.Exists( manager.BasePath.FullName ).ToString() );
         PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
         //PrintValue( "Resource Loader Enabled", _penumbra.ResourceLoader.IsEnabled.ToString() );
     }
@@ -122,7 +121,7 @@ public partial class SettingsInterface
             return;
         }
 
-        var cache = Penumbra.ModManager.Collections.CurrentCollection.Cache;
+        var cache = Penumbra.CollectionManager.CurrentCollection.Cache;
         if( cache == null || !ImGui.BeginTable( "##MissingFilesDebugList", 1, ImGuiTableFlags.RowBg, -Vector2.UnitX ) )
         {
             return;

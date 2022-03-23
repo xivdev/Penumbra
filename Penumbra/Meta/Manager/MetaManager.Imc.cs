@@ -135,7 +135,7 @@ public partial class MetaManager
             fileDescriptor->ResourceHandle->FileNameLength = split[ 1 ].Length;
 
             var ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-            if( Penumbra.ModManager.Collections.Collections.TryGetValue( split[ 0 ].ToString(), out var collection )
+            if( Penumbra.CollectionManager.Collections.TryGetValue( split[ 0 ].ToString(), out var collection )
             && collection.Cache != null
             && collection.Cache.MetaManipulations.Imc.Files.TryGetValue(
                    Utf8GamePath.FromSpan( split[ 1 ].Span, out var p, false ) ? p : Utf8GamePath.Empty, out var file ) )

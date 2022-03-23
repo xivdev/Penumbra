@@ -163,12 +163,12 @@ public unsafe partial class PathResolver
     private ModCollection? GetCollection( IntPtr drawObject )
     {
         var parent = FindParent( drawObject, out var collection );
-        if( parent == null || collection == Penumbra.ModManager.Collections.DefaultCollection )
+        if( parent == null || collection == Penumbra.CollectionManager.DefaultCollection )
         {
             return null;
         }
 
-        return collection.Cache == null ? Penumbra.ModManager.Collections.ForcedCollection : collection;
+        return collection.Cache == null ? Penumbra.CollectionManager.ForcedCollection : collection;
     }
 
 
@@ -274,7 +274,7 @@ public unsafe partial class PathResolver
             {
                 collection = IdentifyCollection( resolver.LastGameObject );
 #if USE_CMP
-                if( collection != Penumbra.ModManager.Collections.DefaultCollection && collection.Cache != null )
+                if( collection != Penumbra.CollectionManager.DefaultCollection && collection.Cache != null )
                 {
                     collection.SetCmpFiles();
                     return new MetaChanger( MetaManipulation.Type.Rsp );
@@ -309,25 +309,25 @@ public unsafe partial class PathResolver
                 case MetaManipulation.Type.Eqdp:
                     if( --_eqdpCounter == 0 )
                     {
-                        Penumbra.ModManager.Collections.DefaultCollection.SetEqdpFiles();
+                        Penumbra.CollectionManager.DefaultCollection.SetEqdpFiles();
                     }
 
                     break;
                 case MetaManipulation.Type.Eqp:
                     if( --_eqpCounter == 0 )
                     {
-                        Penumbra.ModManager.Collections.DefaultCollection.SetEqpFiles();
+                        Penumbra.CollectionManager.DefaultCollection.SetEqpFiles();
                     }
 
                     break;
                 case MetaManipulation.Type.Est:
-                    Penumbra.ModManager.Collections.DefaultCollection.SetEstFiles();
+                    Penumbra.CollectionManager.DefaultCollection.SetEstFiles();
                     break;
                 case MetaManipulation.Type.Gmp:
-                    Penumbra.ModManager.Collections.DefaultCollection.SetGmpFiles();
+                    Penumbra.CollectionManager.DefaultCollection.SetGmpFiles();
                     break;
                 case MetaManipulation.Type.Rsp:
-                    Penumbra.ModManager.Collections.DefaultCollection.SetCmpFiles();
+                    Penumbra.CollectionManager.DefaultCollection.SetCmpFiles();
                     break;
             }
         }

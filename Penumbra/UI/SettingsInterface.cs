@@ -57,18 +57,17 @@ public partial class SettingsInterface : IDisposable
 
     private void SaveCurrentCollection( bool recalculateMeta )
     {
-        var current = Penumbra.ModManager.Collections.CurrentCollection;
+        var current = Penumbra.CollectionManager.CurrentCollection;
         current.Save();
         RecalculateCurrent( recalculateMeta );
     }
 
     private void RecalculateCurrent( bool recalculateMeta )
     {
-        var modManager = Penumbra.ModManager;
-        var current    = modManager.Collections.CurrentCollection;
+        var current    = Penumbra.CollectionManager.CurrentCollection;
         if( current.Cache != null )
         {
-            current.CalculateEffectiveFileList( recalculateMeta, modManager.Collections.IsActive( current ) );
+            current.CalculateEffectiveFileList( recalculateMeta, Penumbra.CollectionManager.IsActive( current ) );
             _menu.InstalledTab.Selector.Cache.TriggerFilterReset();
         }
     }

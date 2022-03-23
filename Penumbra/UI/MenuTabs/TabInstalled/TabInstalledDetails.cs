@@ -127,7 +127,7 @@ public partial class SettingsInterface
 
         private void Save()
         {
-            Penumbra.ModManager.Collections.CurrentCollection.Save();
+            Penumbra.CollectionManager.CurrentCollection.Save();
         }
 
         private void DrawAboutTab()
@@ -422,11 +422,10 @@ public partial class SettingsInterface
                 _fullFilenameList = null;
                 _selector.SaveCurrentMod();
                 // Since files may have changed, we need to recompute effective files.
-                var modManager = Penumbra.ModManager;
-                foreach( var collection in modManager.Collections.Collections.Values
+                foreach( var collection in Penumbra.CollectionManager.Collections.Values
                            .Where( c => c.Cache != null && c.Settings[ Mod!.Data.BasePath.Name ].Enabled ) )
                 {
-                    collection.CalculateEffectiveFileList( false, modManager.Collections.IsActive( collection ) );
+                    collection.CalculateEffectiveFileList( false, Penumbra.CollectionManager.IsActive( collection ) );
                 }
 
                 // If the mod is enabled in the current collection, its conflicts may have changed.

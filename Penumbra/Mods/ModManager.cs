@@ -260,8 +260,8 @@ public class ModManager
 
     public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
     {
-        var ret = Collections.DefaultCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
-        ret ??= Collections.ForcedCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
+        var ret = Penumbra.CollectionManager.DefaultCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
+        ret ??= Penumbra.CollectionManager.ForcedCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
         return ret;
     }
 }
