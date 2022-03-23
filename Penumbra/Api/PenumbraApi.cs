@@ -134,7 +134,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         CheckInitialized();
         try
         {
-            if( !Penumbra.CollectionManager.Collections.TryGetValue( collectionName, out var collection ) )
+            if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
             {
                 collection = ModCollection.Empty;
             }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
@@ -25,7 +26,7 @@ public class CollectionManager : IDisposable
 {
     private readonly ModManager _manager;
 
-    public Dictionary< string, ModCollection > Collections { get; } = new(StringComparer.InvariantCultureIgnoreCase);
+    public List< ModCollection > Collections { get; } = new();
     public Dictionary< string, ModCollection > CharacterCollection { get; } = new();
 
     public ModCollection CurrentCollection { get; private set; } = ModCollection.Empty;
@@ -35,6 +36,15 @@ public class CollectionManager : IDisposable
     public bool IsActive( ModCollection collection )
         => ReferenceEquals( collection, DefaultCollection ) || ReferenceEquals( collection, ForcedCollection );
 
+    public ModCollection Default
+        => ByName( ModCollection.DefaultCollection )!;
+
+    public ModCollection? ByName( string name )
+        => Collections.Find( c => c.Name == name );
+
+    public bool ByName( string name, [NotNullWhen( true )] out ModCollection? collection )
+        => Collections.FindFirst( c => c.Name == name, out collection );
+
     // Is invoked after the collections actually changed.
     public event CollectionChangeDelegate? CollectionChanged;
 
@@ -43,6 +53,7 @@ public class CollectionManager : IDisposable
         _manager = manager;
 
         _manager.ModsRediscovered += OnModsRediscovered;
+        _manager.ModChange        += OnModChanged;
         ReadCollections();
         LoadConfigCollections( Penumbra.Config );
     }
@@ -50,6 +61,7 @@ public class CollectionManager : IDisposable
     public void Dispose()
     {
         _manager.ModsRediscovered -= OnModsRediscovered;
+        _manager.ModChange        -= OnModChanged;
     }
 
     private void OnModsRediscovered()
@@ -63,7 +75,7 @@ public class CollectionManager : IDisposable
         switch( type )
         {
             case ModChangeType.Added:
-                foreach( var collection in Collections.Values )
+                foreach( var collection in Collections )
                 {
                     collection.AddMod( mod );
                 }
@@ -75,7 +87,7 @@ public class CollectionManager : IDisposable
             case ModChangeType.Changed:
                 // TODO
                 break;
-            default:                    throw new ArgumentOutOfRangeException( nameof( type ), type, null );
+            default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
         }
     }
 
@@ -91,7 +103,7 @@ public class CollectionManager : IDisposable
 
     public void RecreateCaches()
     {
-        foreach( var collection in Collections.Values.Where( c => c.Cache != null ) )
+        foreach( var collection in Collections.Where( c => c.Cache != null ) )
         {
             collection.CreateCache( _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) );
         }
@@ -101,7 +113,7 @@ public class CollectionManager : IDisposable
 
     public void RemoveModFromCaches( DirectoryInfo modDir )
     {
-        foreach( var collection in Collections.Values )
+        foreach( var collection in Collections )
         {
             collection.Cache?.RemoveMod( modDir );
         }
@@ -109,7 +121,7 @@ public class CollectionManager : IDisposable
 
     internal void UpdateCollections( ModData mod, bool metaChanges, ResourceChange fileChanges, bool nameChange, bool reloadMeta )
     {
-        foreach( var collection in Collections.Values )
+        foreach( var collection in Collections )
         {
             if( metaChanges )
             {
@@ -138,16 +150,16 @@ public class CollectionManager : IDisposable
     public bool AddCollection( string name, Dictionary< string, ModSettings > settings )
     {
         var nameFixed = name.RemoveInvalidPathSymbols().ToLowerInvariant();
-        if( nameFixed.Length == 0 || Collections.Values.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
+        if( nameFixed.Length == 0 || Collections.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
         {
             PluginLog.Warning( $"The new collection {name} would lead to the same path as one that already exists." );
             return false;
         }
 
         var newCollection = new ModCollection( name, settings );
-        Collections.Add( name, newCollection );
-        CollectionChanged?.Invoke( null, newCollection, CollectionType.Inactive );
+        Collections.Add( newCollection );
         newCollection.Save();
+        CollectionChanged?.Invoke( null, newCollection, CollectionType.Inactive );
         SetCollection( newCollection, CollectionType.Current );
         return true;
     }
@@ -160,15 +172,17 @@ public class CollectionManager : IDisposable
             return false;
         }
 
-        if( !Collections.TryGetValue( name, out var collection ) )
+        var idx = Collections.IndexOf( c => c.Name == name );
+        if( idx < 0 )
         {
             return false;
         }
 
-        CollectionChanged?.Invoke( collection, null, CollectionType.Inactive );
+        var collection = Collections[ idx ];
+
         if( CurrentCollection == collection )
         {
-            SetCollection( Collections[ ModCollection.DefaultCollection ], CollectionType.Current );
+            SetCollection( Default, CollectionType.Current );
         }
 
         if( ForcedCollection == collection )
@@ -190,7 +204,8 @@ public class CollectionManager : IDisposable
         }
 
         collection.Delete();
-        Collections.Remove( name );
+        Collections.RemoveAt( idx );
+        CollectionChanged?.Invoke( collection, null, CollectionType.Inactive );
         return true;
     }
 
@@ -294,7 +309,7 @@ public class CollectionManager : IDisposable
 
     private bool LoadCurrentCollection( Configuration config )
     {
-        if( Collections.TryGetValue( config.CurrentCollection, out var currentCollection ) )
+        if( ByName( config.CurrentCollection, out var currentCollection ) )
         {
             CurrentCollection = currentCollection;
             AddCache( CurrentCollection );
@@ -302,7 +317,7 @@ public class CollectionManager : IDisposable
         }
 
         PluginLog.Error( $"Last choice of CurrentCollection {config.CurrentCollection} is not available, reset to Default." );
-        CurrentCollection = Collections[ ModCollection.DefaultCollection ];
+        CurrentCollection = Default;
         if( CurrentCollection.Cache == null )
         {
             CurrentCollection.CreateCache( _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) );
@@ -320,7 +335,7 @@ public class CollectionManager : IDisposable
             return false;
         }
 
-        if( Collections.TryGetValue( config.ForcedCollection, out var forcedCollection ) )
+        if( ByName( config.ForcedCollection, out var forcedCollection ) )
         {
             ForcedCollection = forcedCollection;
             AddCache( ForcedCollection );
@@ -341,7 +356,7 @@ public class CollectionManager : IDisposable
             return false;
         }
 
-        if( Collections.TryGetValue( config.DefaultCollection, out var defaultCollection ) )
+        if( ByName( config.DefaultCollection, out var defaultCollection ) )
         {
             DefaultCollection = defaultCollection;
             AddCache( DefaultCollection );
@@ -363,7 +378,7 @@ public class CollectionManager : IDisposable
             {
                 CharacterCollection.Add( player, ModCollection.Empty );
             }
-            else if( Collections.TryGetValue( collectionName, out var charCollection ) )
+            else if( ByName( collectionName, out var charCollection ) )
             {
                 AddCache( charCollection );
                 CharacterCollection.Add( player, charCollection );
@@ -411,22 +426,22 @@ public class CollectionManager : IDisposable
                     PluginLog.Warning( $"Collection {file.Name} does not correspond to {collection.Name}." );
                 }
 
-                if( Collections.ContainsKey( collection.Name ) )
+                if( ByName( collection.Name ) != null )
                 {
                     PluginLog.Warning( $"Duplicate collection found: {collection.Name} already exists." );
                 }
                 else
                 {
-                    Collections.Add( collection.Name, collection );
+                    Collections.Add( collection );
                 }
             }
         }
 
-        if( !Collections.ContainsKey( ModCollection.DefaultCollection ) )
+        if( ByName( ModCollection.DefaultCollection ) == null )
         {
             var defaultCollection = new ModCollection();
             defaultCollection.Save();
-            Collections.Add( defaultCollection.Name, defaultCollection );
+            Collections.Add( defaultCollection );
         }
     }
 }

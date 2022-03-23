@@ -214,7 +214,7 @@ public class Penumbra : IDalamudPlugin
 
         var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
             ? ModCollection.Empty
-            : CollectionManager.Collections.Values.FirstOrDefault( c
+            : CollectionManager.Collections.FirstOrDefault( c
                 => string.Equals( c.Name, collectionName, StringComparison.InvariantCultureIgnoreCase ) );
         if( collection == null )
         {

@@ -31,7 +31,7 @@ public partial class SettingsInterface
 
         private void UpdateNames()
         {
-            _collections             = Penumbra.CollectionManager.Collections.Values.Prepend( ModCollection.Empty ).ToArray();
+            _collections             = Penumbra.CollectionManager.Collections.Prepend( ModCollection.Empty ).ToArray();
             _collectionNames         = string.Join( "\0", _collections.Skip( 1 ).Select( c => c.Name ) ) + '\0';
             _collectionNamesWithNone = "None\0"                                                          + _collectionNames;
             UpdateIndices();
@@ -87,7 +87,7 @@ public partial class SettingsInterface
             if( Penumbra.CollectionManager.AddCollection( _newCollectionName, settings ) )
             {
                 UpdateNames();
-                SetCurrentCollection( Penumbra.CollectionManager.Collections[ _newCollectionName ], true );
+                SetCurrentCollection( Penumbra.CollectionManager.ByName( _newCollectionName )!, true );
             }
 
             _newCollectionName = string.Empty;
@@ -222,7 +222,7 @@ public partial class SettingsInterface
         {
             var index = _currentForcedIndex;
             ImGui.SetNextItemWidth( SettingsMenu.InputTextWidth );
-            using var style   = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, Penumbra.CollectionManager.CharacterCollection.Count == 0 );
+            using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, Penumbra.CollectionManager.CharacterCollection.Count == 0 );
             if( ImGui.Combo( "##Forced Collection", ref index, _collectionNamesWithNone )
             && index                                                != _currentForcedIndex
             && Penumbra.CollectionManager.CharacterCollection.Count > 0 )

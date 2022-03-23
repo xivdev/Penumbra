@@ -422,14 +422,14 @@ public partial class SettingsInterface
                 _fullFilenameList = null;
                 _selector.SaveCurrentMod();
                 // Since files may have changed, we need to recompute effective files.
-                foreach( var collection in Penumbra.CollectionManager.Collections.Values
-                           .Where( c => c.Cache != null && c.Settings[ Mod!.Data.BasePath.Name ].Enabled ) )
+                foreach( var collection in Penumbra.CollectionManager.Collections
+                           .Where( c => c.Cache != null && c.Settings[ Mod.Data.BasePath.Name ].Enabled ) )
                 {
                     collection.CalculateEffectiveFileList( false, Penumbra.CollectionManager.IsActive( collection ) );
                 }
 
                 // If the mod is enabled in the current collection, its conflicts may have changed.
-                if( Mod!.Settings.Enabled )
+                if( Mod.Settings.Enabled )
                 {
                     _selector.Cache.TriggerFilterReset();
                 }

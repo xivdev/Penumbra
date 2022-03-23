@@ -521,7 +521,7 @@ public class ModCleanup
             }
         }
 
-        foreach( var collection in Penumbra.CollectionManager.Collections.Values )
+        foreach( var collection in Penumbra.CollectionManager.Collections )
         {
             collection.UpdateSetting( baseDir, meta, true );
         }

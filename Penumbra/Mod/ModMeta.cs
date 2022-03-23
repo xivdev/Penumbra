@@ -5,7 +5,6 @@ using System.Linq;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
 
 namespace Penumbra.Mod;
 
