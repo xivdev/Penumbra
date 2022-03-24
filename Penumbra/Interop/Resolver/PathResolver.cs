@@ -4,6 +4,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
+using Penumbra.Mods;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -15,6 +16,7 @@ namespace Penumbra.Interop.Resolver;
 public partial class PathResolver : IDisposable
 {
     private readonly ResourceLoader _loader;
+    public bool Enabled { get; private set; }
 
     public PathResolver( ResourceLoader loader )
     {
@@ -23,7 +25,7 @@ public partial class PathResolver : IDisposable
         SetupHumanHooks();
         SetupWeaponHooks();
         SetupMetaHooks();
-        Enable();
+        Penumbra.CollectionManager.CollectionChanged += OnCollectionChange;
     }
 
     // The modified resolver that handles game path resolving.
@@ -63,6 +65,12 @@ public partial class PathResolver : IDisposable
 
     public void Enable()
     {
+        if( Enabled )
+        {
+            return;
+        }
+
+        Enabled = true;
         InitializeDrawObjects();
 
         EnableHumanHooks();
@@ -76,11 +84,20 @@ public partial class PathResolver : IDisposable
 
     public void Disable()
     {
+        if( !Enabled )
+        {
+            return;
+        }
+
+        Enabled = false;
         DisableHumanHooks();
         DisableWeaponHooks();
         DisableMtrlHooks();
         DisableDataHooks();
         DisableMetaHooks();
+
+        DrawObjectToObject.Clear();
+        PathCollections.Clear();
 
         _loader.ResolvePathCustomization -= CharacterResolver;
     }
@@ -93,5 +110,23 @@ public partial class PathResolver : IDisposable
         DisposeMtrlHooks();
         DisposeDataHooks();
         DisposeMetaHooks();
+        Penumbra.CollectionManager.CollectionChanged -= OnCollectionChange;
+    }
+
+    private void OnCollectionChange( ModCollection? _1, ModCollection? _2, CollectionType type, string? characterName )
+    {
+        if( type != CollectionType.Character )
+        {
+            return;
+        }
+
+        if( Penumbra.CollectionManager.CharacterCollection.Count > 0 )
+        {
+            Enable();
+        }
+        else
+        {
+            Disable();
+        }
     }
 }

@@ -109,6 +109,10 @@ public class Penumbra : IDalamudPlugin
         {
             ResourceLoader.EnableFullLogging();
         }
+
+        if (CollectionManager.CharacterCollection.Count > 0)
+            PathResolver.Enable();
+
         ResidentResources.Reload();
     }
 

@@ -72,8 +72,12 @@ public unsafe partial class PathResolver
         SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
     {
         ret = 0;
-        if( fileDescriptor->ResourceHandle->FileType == ResourceType.Mtrl
-        && Penumbra.CollectionManager.ByName( split.ToString(), out var collection ) )
+        if( fileDescriptor->ResourceHandle->FileType != ResourceType.Mtrl )
+        {
+            return false;
+        }
+
+        if( Penumbra.CollectionManager.ByName( split.ToString(), out var collection ) )
         {
             SetCollection( path, collection );
         }
@@ -90,7 +94,6 @@ public unsafe partial class PathResolver
         if( nonDefault && type == ResourceType.Mtrl )
         {
             var fullPath = new FullPath( $"|{collection.Name}|{path}" );
-            SetCollection( fullPath.InternalName, collection );
             data = ( fullPath, collection );
         }
         else
