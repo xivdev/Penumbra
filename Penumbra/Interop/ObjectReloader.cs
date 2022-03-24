@@ -126,8 +126,9 @@ public sealed unsafe class ObjectReloader : IDisposable
         }
 
         var numKept = 0;
-        foreach( var idx in _queue )
+        for( var i = 0; i < _queue.Count; ++i )
         {
+            var idx = _queue[ i ];
             if( idx < 0 )
             {
                 var newIdx = ~idx;
@@ -151,8 +152,9 @@ public sealed unsafe class ObjectReloader : IDisposable
         }
 
         var numKept = 0;
-        foreach( var idx in _afterGPoseQueue )
+        for( var i = 0; i < _afterGPoseQueue.Count; ++i )
         {
+            var idx = _afterGPoseQueue[ i ];
             if( idx < 0 )
             {
                 var newIdx = ~idx;
