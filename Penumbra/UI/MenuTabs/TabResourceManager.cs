@@ -87,10 +87,13 @@ public partial class SettingsInterface
 
             if( ImGui.IsItemClicked() )
             {
-                var data   = Interop.Structs.ResourceHandle.GetData( ( Interop.Structs.ResourceHandle* )r );
-                var length = ( int )Interop.Structs.ResourceHandle.GetLength( ( Interop.Structs.ResourceHandle* )r );
-                ImGui.SetClipboardText( string.Join( " ",
-                    new ReadOnlySpan< byte >( data, length ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
+                var data = Interop.Structs.ResourceHandle.GetData( ( Interop.Structs.ResourceHandle* )r );
+                if( data != null )
+                {
+                    var length = ( int )Interop.Structs.ResourceHandle.GetLength( ( Interop.Structs.ResourceHandle* )r );
+                    ImGui.SetClipboardText( string.Join( " ",
+                        new ReadOnlySpan< byte >( data, length ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
+                }
                 //ImGuiNative.igSetClipboardText( ( byte* )Structs.ResourceHandle.GetData( ( IntPtr )r ) );
             }
 

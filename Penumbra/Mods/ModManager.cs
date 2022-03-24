@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,14 +22,23 @@ public delegate void ModChangeDelegate( ModChangeType type, int modIndex, ModDat
 
 // The ModManager handles the basic mods installed to the mod directory.
 // It also contains the CollectionManager that handles all collections.
-public class ModManager
+public class ModManager : IEnumerable< ModData >
 {
     public DirectoryInfo BasePath { get; private set; } = null!;
 
-    private List< ModData > ModsInternal { get; init; } = new();
+    private readonly List< ModData > _mods = new();
+
+    public ModData this[ int idx ]
+        => _mods[ idx ];
 
     public IReadOnlyList< ModData > Mods
-        => ModsInternal;
+        => _mods;
+
+    public IEnumerator< ModData > GetEnumerator()
+        => _mods.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
 
     public ModFolder StructuredMods { get; } = ModFileSystem.Root;
 
@@ -36,6 +46,9 @@ public class ModManager
     public event Action? ModsRediscovered;
 
     public bool Valid { get; private set; }
+
+    public int Count
+        => _mods.Count;
 
     public Configuration Config
         => Penumbra.Config;
@@ -116,7 +129,7 @@ public class ModManager
 
         foreach( var (folder, path) in Config.ModSortOrder.ToArray() )
         {
-            if( path.Length > 0 && ModsInternal.FindFirst( m => m.BasePath.Name == folder, out var mod ) )
+            if( path.Length > 0 && _mods.FindFirst( m => m.BasePath.Name == folder, out var mod ) )
             {
                 changes |= SetSortOrderPath( mod, path );
             }
@@ -135,7 +148,7 @@ public class ModManager
 
     public void DiscoverMods()
     {
-        ModsInternal.Clear();
+        _mods.Clear();
         BasePath.Refresh();
 
         StructuredMods.SubFolders.Clear();
@@ -150,7 +163,7 @@ public class ModManager
                     continue;
                 }
 
-                ModsInternal.Add( mod );
+                _mods.Add( mod );
             }
 
             SetModStructure();
@@ -173,12 +186,12 @@ public class ModManager
             }
         }
 
-        var idx = ModsInternal.FindIndex( m => m.BasePath.Name == modFolder.Name );
+        var idx = _mods.FindIndex( m => m.BasePath.Name == modFolder.Name );
         if( idx >= 0 )
         {
-            var mod = ModsInternal[ idx ];
+            var mod = _mods[ idx ];
             mod.SortOrder.ParentFolder.RemoveMod( mod );
-            ModsInternal.RemoveAt( idx );
+            _mods.RemoveAt( idx );
             ModChange?.Invoke( ModChangeType.Removed, idx, mod );
         }
     }
@@ -199,15 +212,15 @@ public class ModManager
             }
         }
 
-        if( ModsInternal.Any( m => m.BasePath.Name == modFolder.Name ) )
+        if( _mods.Any( m => m.BasePath.Name == modFolder.Name ) )
         {
             return -1;
         }
 
-        ModsInternal.Add( mod );
-        ModChange?.Invoke( ModChangeType.Added, ModsInternal.Count - 1, mod );
+        _mods.Add( mod );
+        ModChange?.Invoke( ModChangeType.Added, _mods.Count - 1, mod );
 
-        return ModsInternal.Count - 1;
+        return _mods.Count - 1;
     }
 
     public bool UpdateMod( int idx, bool reloadMeta = false, bool recomputeMeta = false, bool force = false )

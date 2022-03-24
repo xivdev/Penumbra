@@ -130,10 +130,13 @@ public readonly struct Utf8GamePath : IEquatable< Utf8GamePath >, IComparable< U
         => Path.Dispose();
 
     public bool IsRooted()
-        => Path.Length >= 1 && ( Path[ 0 ] == '/' || Path[ 0 ] == '\\' )
-         || Path.Length >= 2
-         && ( Path[ 0 ] >= 'A' && Path[ 0 ] <= 'Z' || Path[ 0 ] >= 'a' && Path[ 0 ] <= 'z' )
-         && Path[ 1 ] == ':';
+        => IsRooted( Path );
+
+    public static bool IsRooted( Utf8String path )
+        => path.Length >= 1 && ( path[ 0 ] == '/' || path[ 0 ] == '\\' )
+         || path.Length >= 2
+         && ( path[ 0 ] >= 'A' && path[ 0 ] <= 'Z' || path[ 0 ] >= 'a' && path[ 0 ] <= 'z' )
+         && path[ 1 ] == ':';
 
     public class Utf8GamePathConverter : JsonConverter
     {

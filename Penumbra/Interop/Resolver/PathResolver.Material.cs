@@ -1,7 +1,9 @@
 using System;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Mods;
 
@@ -19,7 +21,7 @@ public unsafe partial class PathResolver
 
     private byte LoadMtrlTexDetour( IntPtr mtrlResourceHandle )
     {
-        LoadMtrlTexHelper( mtrlResourceHandle );
+        LoadMtrlHelper( mtrlResourceHandle );
         var ret = LoadMtrlTexHook!.Original( mtrlResourceHandle );
         _mtrlCollection = null;
         return ret;
@@ -31,7 +33,7 @@ public unsafe partial class PathResolver
 
     private byte LoadMtrlShpkDetour( IntPtr mtrlResourceHandle )
     {
-        LoadMtrlShpkHelper( mtrlResourceHandle );
+        LoadMtrlHelper( mtrlResourceHandle );
         var ret = LoadMtrlShpkHook!.Original( mtrlResourceHandle );
         _mtrlCollection = null;
         return ret;
@@ -39,7 +41,7 @@ public unsafe partial class PathResolver
 
     private ModCollection? _mtrlCollection;
 
-    private void LoadMtrlShpkHelper( IntPtr mtrlResourceHandle )
+    private void LoadMtrlHelper( IntPtr mtrlResourceHandle )
     {
         if( mtrlResourceHandle == IntPtr.Zero )
         {
@@ -51,27 +53,10 @@ public unsafe partial class PathResolver
         _mtrlCollection = PathCollections.TryGetValue( mtrlPath, out var c ) ? c : null;
     }
 
-    private void LoadMtrlTexHelper( IntPtr mtrlResourceHandle )
-    {
-        if( mtrlResourceHandle == IntPtr.Zero )
-        {
-            return;
-        }
-
-        var mtrl = ( MtrlResource* )mtrlResourceHandle;
-        if( mtrl->NumTex == 0 )
-        {
-            return;
-        }
-
-        var mtrlPath = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
-        _mtrlCollection = PathCollections.TryGetValue( mtrlPath, out var c ) ? c : null;
-    }
-
     // Check specifically for shpk and tex files whether we are currently in a material load.
-    private bool HandleMaterialSubFiles( Utf8GamePath gamePath, out ModCollection? collection )
+    private bool HandleMaterialSubFiles( ResourceType type, out ModCollection? collection )
     {
-        if( _mtrlCollection != null && ( gamePath.Path.EndsWith( 't', 'e', 'x' ) || gamePath.Path.EndsWith( 's', 'h', 'p', 'k' ) ) )
+        if( _mtrlCollection != null && type is ResourceType.Tex or ResourceType.Shpk )
         {
             collection = _mtrlCollection;
             return true;
@@ -81,16 +66,51 @@ public unsafe partial class PathResolver
         return false;
     }
 
+    // We need to set the correct collection for the actual material path that is loaded
+    // before actually loading the file.
+    private bool MtrlLoadHandler( Utf8String split, Utf8String path, ResourceManager* resourceManager,
+        SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
+    {
+        ret = 0;
+        if( fileDescriptor->ResourceHandle->FileType == ResourceType.Mtrl
+        && Penumbra.CollectionManager.ByName( split.ToString(), out var collection ) )
+        {
+            SetCollection( path, collection );
+        }
+
+        ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, isSync );
+        PathCollections.TryRemove( path, out _ );
+        return true;
+    }
+
+    // Materials need to be set per collection so they can load their textures independently from each other.
+    private void HandleMtrlCollection( ModCollection collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
+        out (FullPath?, object?) data )
+    {
+        if( nonDefault && type == ResourceType.Mtrl )
+        {
+            var fullPath = new FullPath( $"|{collection.Name}|{path}" );
+            SetCollection( fullPath.InternalName, collection );
+            data = ( fullPath, collection );
+        }
+        else
+        {
+            data = ( resolved, collection );
+        }
+    }
+
     private void EnableMtrlHooks()
     {
         LoadMtrlShpkHook?.Enable();
         LoadMtrlTexHook?.Enable();
+        Penumbra.ResourceLoader.ResourceLoadCustomization += MtrlLoadHandler;
     }
 
     private void DisableMtrlHooks()
     {
         LoadMtrlShpkHook?.Disable();
         LoadMtrlTexHook?.Disable();
+        Penumbra.ResourceLoader.ResourceLoadCustomization -= MtrlLoadHandler;
     }
 
     private void DisposeMtrlHooks()

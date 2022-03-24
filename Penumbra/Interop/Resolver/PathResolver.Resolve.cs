@@ -138,12 +138,6 @@ public unsafe partial class PathResolver
         }
 
         var gamePath = new Utf8String( ( byte* )path );
-        if( collection == Penumbra.CollectionManager.DefaultCollection )
-        {
-            SetCollection( gamePath, null );
-            return path;
-        }
-
         SetCollection( gamePath, collection );
         return path;
     }

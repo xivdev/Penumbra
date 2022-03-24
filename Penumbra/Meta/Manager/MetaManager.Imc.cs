@@ -4,7 +4,9 @@ using System.Diagnostics;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
+using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -19,15 +21,13 @@ public partial class MetaManager
         public readonly Dictionary< Utf8GamePath, ImcFile >    Files         = new();
         public readonly Dictionary< ImcManipulation, Mod.Mod > Manipulations = new();
 
-        private readonly ModCollection                                     _collection;
-        private static   int                                               _imcManagerCount;
-        private static   ResourceLoader.ResourceLoadCustomizationDelegate? _previousDelegate;
+        private readonly ModCollection _collection;
+        private static   int           _imcManagerCount;
 
 
         public MetaManagerImc( ModCollection collection )
         {
-            _collection       = collection;
-            _previousDelegate = Penumbra.ResourceLoader.ResourceLoadCustomization;
+            _collection = collection;
             SetupDelegate();
         }
 
@@ -105,7 +105,7 @@ public partial class MetaManager
         {
             if( _imcManagerCount++ == 0 )
             {
-                Penumbra.ResourceLoader.ResourceLoadCustomization =  ImcLoadHandler;
+                Penumbra.ResourceLoader.ResourceLoadCustomization += ImcLoadHandler;
                 Penumbra.ResourceLoader.ResourceLoaded            += ImcResourceHandler;
             }
         }
@@ -115,46 +115,42 @@ public partial class MetaManager
         {
             if( --_imcManagerCount == 0 )
             {
-                if( Penumbra.ResourceLoader.ResourceLoadCustomization == ImcLoadHandler )
-                {
-                    Penumbra.ResourceLoader.ResourceLoadCustomization = _previousDelegate;
-                }
-
-                Penumbra.ResourceLoader.ResourceLoaded -= ImcResourceHandler;
+                Penumbra.ResourceLoader.ResourceLoadCustomization -= ImcLoadHandler;
+                Penumbra.ResourceLoader.ResourceLoaded            -= ImcResourceHandler;
             }
         }
 
         private FullPath CreateImcPath( Utf8GamePath path )
             => new($"|{_collection.Name}|{path}");
 
-        private static unsafe byte ImcLoadHandler( Utf8GamePath gamePath, ResourceManager* resourceManager,
-            SeFileDescriptor* fileDescriptor, int priority, bool isSync )
+        private static unsafe bool ImcLoadHandler( Utf8String split, Utf8String path, ResourceManager* resourceManager,
+            SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
         {
-            var split = gamePath.Path.Split( ( byte )'|', 2, true );
-            fileDescriptor->ResourceHandle->FileNameData   = split[ 1 ].Path;
-            fileDescriptor->ResourceHandle->FileNameLength = split[ 1 ].Length;
+            ret = 0;
+            if( fileDescriptor->ResourceHandle->FileType != ResourceType.Imc )
+            {
+                return false;
+            }
 
-            var ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-            if( Penumbra.CollectionManager.ByName( split[ 0 ].ToString(), out var collection )
+            ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+            if( Penumbra.CollectionManager.ByName( split.ToString(), out var collection )
             && collection.Cache != null
             && collection.Cache.MetaManipulations.Imc.Files.TryGetValue(
-                   Utf8GamePath.FromSpan( split[ 1 ].Span, out var p, false ) ? p : Utf8GamePath.Empty, out var file ) )
+                   Utf8GamePath.FromSpan( path.Span, out var p, false ) ? p : Utf8GamePath.Empty, out var file ) )
             {
-                PluginLog.Debug( "Loaded {GamePath:l} from file and replaced with IMC from collection {Collection:l}.", gamePath,
+                PluginLog.Debug( "Loaded {GamePath:l} from file and replaced with IMC from collection {Collection:l}.", path,
                     collection.Name );
                 file.Replace( fileDescriptor->ResourceHandle );
                 file.ChangesSinceLoad = false;
             }
 
-            fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
-            fileDescriptor->ResourceHandle->FileNameLength = gamePath.Path.Length;
-            return ret;
+            return true;
         }
 
         private static unsafe void ImcResourceHandler( ResourceHandle* resource, Utf8GamePath gamePath, FullPath? _2, object? resolveData )
         {
             // Only check imcs.
-            if( resource->FileType != 0x00696D63
+            if( resource->FileType != ResourceType.Imc
             || resolveData is not ModCollection collection
             || collection.Cache == null
             || !collection.Cache.MetaManipulations.Imc.Files.TryGetValue( gamePath, out var file )

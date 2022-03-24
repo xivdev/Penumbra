@@ -7,6 +7,8 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using Penumbra.GameData.ByteString;
+using Penumbra.GameData.Enums;
+using Penumbra.Interop.Resolver;
 
 namespace Penumbra.Interop.Loader;
 
@@ -25,7 +27,7 @@ public unsafe partial class ResourceLoader
         public FullPath                ManipulatedPath;
         public ResourceCategory        Category;
         public object?                 ResolverInfo;
-        public uint                    Extension;
+        public ResourceType            Extension;
     }
 
     private readonly SortedDictionary< FullPath, DebugData > _debugList  = new();
@@ -112,14 +114,14 @@ public unsafe partial class ResourceLoader
 
 
     // Find a resource in the resource manager by its category, extension and crc-hash
-    public static ResourceHandle* FindResource( ResourceCategory cat, uint ext, uint crc32 )
+    public static ResourceHandle* FindResource( ResourceCategory cat, ResourceType ext, uint crc32 )
     {
         var manager = *ResourceManager;
         var catIdx  = ( uint )cat >> 0x18;
         cat = ( ResourceCategory )( ushort )cat;
         var category = ( ResourceGraph.CategoryContainer* )manager->ResourceGraph->ContainerArray + ( int )cat;
         var extMap = FindInMap( ( StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* )category->CategoryMaps[ catIdx ],
-            ext );
+            ( uint )ext );
         if( extMap == null )
         {
             return null;

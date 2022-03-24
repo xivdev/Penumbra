@@ -22,7 +22,7 @@ public delegate void CollectionChangeDelegate( ModCollection? oldCollection, Mod
     string? characterName = null );
 
 // Contains all collections and respective functions, as well as the collection settings.
-public class CollectionManager : IDisposable
+public sealed class CollectionManager : IDisposable
 {
     private readonly ModManager _manager;
 
@@ -40,10 +40,20 @@ public class CollectionManager : IDisposable
         => ByName( ModCollection.DefaultCollection )!;
 
     public ModCollection? ByName( string name )
-        => Collections.Find( c => c.Name == name );
+        => name.Length > 0
+            ? Collections.Find( c => string.Equals( c.Name, name, StringComparison.InvariantCultureIgnoreCase ) )
+            : ModCollection.Empty;
 
     public bool ByName( string name, [NotNullWhen( true )] out ModCollection? collection )
-        => Collections.FindFirst( c => c.Name == name, out collection );
+    {
+        if( name.Length > 0 )
+        {
+            return Collections.FindFirst( c => string.Equals( c.Name, name, StringComparison.InvariantCultureIgnoreCase ), out collection );
+        }
+
+        collection = ModCollection.Empty;
+        return true;
+    }
 
     // Is invoked after the collections actually changed.
     public event CollectionChangeDelegate? CollectionChanged;

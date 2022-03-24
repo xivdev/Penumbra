@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Hooking;
@@ -92,7 +93,7 @@ public unsafe partial class PathResolver
     internal readonly Dictionary< IntPtr, (ModCollection, int) > DrawObjectToObject = new();
 
     // This map links files to their corresponding collection, if it is non-default.
-    internal readonly Dictionary< Utf8String, ModCollection > PathCollections = new();
+    internal readonly ConcurrentDictionary< Utf8String, ModCollection > PathCollections = new();
 
     internal GameObject* LastGameObject = null;
 
@@ -225,13 +226,9 @@ public unsafe partial class PathResolver
 
 
     // Special handling for paths so that we do not store non-owned temporary strings in the dictionary.
-    private void SetCollection( Utf8String path, ModCollection? collection )
+    private void SetCollection( Utf8String path, ModCollection collection )
     {
-        if( collection == null )
-        {
-            PathCollections.Remove( path );
-        }
-        else if( PathCollections.ContainsKey( path ) || path.IsOwned )
+        if( PathCollections.ContainsKey( path ) || path.IsOwned )
         {
             PathCollections[ path ] = collection;
         }

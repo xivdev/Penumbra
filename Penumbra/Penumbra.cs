@@ -109,6 +109,7 @@ public class Penumbra : IDalamudPlugin
         {
             ResourceLoader.EnableFullLogging();
         }
+        ResidentResources.Reload();
     }
 
     public bool Enable()

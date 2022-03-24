@@ -1,6 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.GameData.Enums;
+using Penumbra.Interop.Resolver;
 
 namespace Penumbra.Interop.Structs;
 
@@ -45,7 +47,7 @@ public unsafe struct ResourceHandle
     public ResourceCategory Category;
 
     [FieldOffset( 0x0C )]
-    public uint FileType;
+    public ResourceType FileType;
 
     [FieldOffset( 0x10 )]
     public uint Id;
