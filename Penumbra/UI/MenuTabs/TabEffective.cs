@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using Dalamud.Interface;
 using ImGuiNET;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
 using Penumbra.Mods;
@@ -99,9 +100,9 @@ public partial class SettingsInterface
             return !_filePathFilter.Any() || kvp.Item3.Contains( _filePathFilterLower );
         }
 
-        private void DrawFilteredRows( ModCollectionCache? active, ModCollectionCache? forced )
+        private void DrawFilteredRows( ModCollection2 active )
         {
-            void DrawFileLines( ModCollectionCache cache )
+            void DrawFileLines( ModCollection2.Cache cache )
             {
                 foreach( var (gp, fp) in cache.ResolvedFiles.Where( CheckFilters ) )
                 {
@@ -116,15 +117,7 @@ public partial class SettingsInterface
                 //}
             }
 
-            if( active != null )
-            {
-                DrawFileLines( active );
-            }
-
-            if( forced != null )
-            {
-                DrawFileLines( forced );
-            }
+            DrawFileLines( active );
         }
 
         public void Draw()

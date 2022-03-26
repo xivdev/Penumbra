@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Loader;
-using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
@@ -18,14 +16,14 @@ public partial class MetaManager
 {
     public readonly struct MetaManagerImc : IDisposable
     {
-        public readonly Dictionary< Utf8GamePath, ImcFile >    Files         = new();
-        public readonly Dictionary< ImcManipulation, Mod.Mod > Manipulations = new();
+        public readonly Dictionary< Utf8GamePath, ImcFile > Files         = new();
+        public readonly Dictionary< ImcManipulation, int >  Manipulations = new();
 
-        private readonly ModCollection _collection;
-        private static   int           _imcManagerCount;
+        private readonly ModCollection2 _collection;
+        private static   int            _imcManagerCount;
 
 
-        public MetaManagerImc( ModCollection collection )
+        public MetaManagerImc( ModCollection2 collection )
         {
             _collection = collection;
             SetupDelegate();
@@ -34,37 +32,43 @@ public partial class MetaManager
         [Conditional( "USE_IMC" )]
         public void SetFiles()
         {
-            if( _collection.Cache == null )
+            if( !_collection.HasCache )
             {
                 return;
             }
 
             foreach( var path in Files.Keys )
             {
-                _collection.Cache.ResolvedFiles[ path ] = CreateImcPath( path );
+                _collection.ForceFile( path, CreateImcPath( path ) );
             }
         }
 
         [Conditional( "USE_IMC" )]
         public void Reset()
         {
-            foreach( var (path, file) in Files )
+            if( _collection.HasCache )
             {
-                _collection.Cache?.ResolvedFiles.Remove( path );
-                file.Reset();
+                foreach( var (path, file) in Files )
+                {
+                    _collection.RemoveFile( path );
+                    file.Reset();
+                }
+            }
+            else
+            {
+                foreach( var (_, file) in Files )
+                {
+                    file.Reset();
+                }
             }
 
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( ImcManipulation m, Mod.Mod mod )
+        public bool ApplyMod( ImcManipulation m, int modIdx )
         {
 #if USE_IMC
-            if( !Manipulations.TryAdd( m, mod ) )
-            {
-                return false;
-            }
-
+            Manipulations[ m ] = modIdx;
             var path = m.GamePath();
             if( !Files.TryGetValue( path, out var file ) )
             {
@@ -78,9 +82,9 @@ public partial class MetaManager
 
             Files[ path ] = file;
             var fullPath = CreateImcPath( path );
-            if( _collection.Cache != null )
+            if( _collection.HasCache )
             {
-                _collection.Cache.ResolvedFiles[ path ] = fullPath;
+                _collection.ForceFile( path, fullPath );
             }
 
             return true;
@@ -135,8 +139,8 @@ public partial class MetaManager
             PluginLog.Verbose( "Using ImcLoadHandler for path {$Path:l}.", path );
             ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
             if( Penumbra.CollectionManager.ByName( split.ToString(), out var collection )
-            && collection.Cache != null
-            && collection.Cache.MetaManipulations.Imc.Files.TryGetValue(
+            && collection.HasCache
+            && collection.MetaCache!.Imc.Files.TryGetValue(
                    Utf8GamePath.FromSpan( path.Span, out var p, false ) ? p : Utf8GamePath.Empty, out var file ) )
             {
                 PluginLog.Debug( "Loaded {GamePath:l} from file and replaced with IMC from collection {Collection:l}.", path,
@@ -152,9 +156,8 @@ public partial class MetaManager
         {
             // Only check imcs.
             if( resource->FileType != ResourceType.Imc
-            || resolveData is not ModCollection collection
-            || collection.Cache == null
-            || !collection.Cache.MetaManipulations.Imc.Files.TryGetValue( gamePath, out var file )
+            || resolveData is not ModCollection2 { HasCache: true } collection
+            || !collection.MetaCache!.Imc.Files.TryGetValue( gamePath, out var file )
             || !file.ChangesSinceLoad )
             {
                 return;

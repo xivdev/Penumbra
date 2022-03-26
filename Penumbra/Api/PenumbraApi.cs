@@ -5,6 +5,7 @@ using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Lumina.Data;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
@@ -76,7 +77,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _penumbra!.ObjectReloader.RedrawAll( setting );
     }
 
-    private static string ResolvePath( string path, ModManager _, ModCollection collection )
+    private static string ResolvePath( string path, ModManager _, ModCollection2 collection )
     {
         if( !Penumbra.Config.EnableMods )
         {
@@ -84,24 +85,21 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         var gamePath = Utf8GamePath.FromString( path, out var p, true ) ? p : Utf8GamePath.Empty;
-        var ret      = collection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
-        ret ??= Penumbra.CollectionManager.ForcedCollection.Cache?.ResolveSwappedOrReplacementPath( gamePath );
+        var ret      = collection.ResolvePath( gamePath );
         return ret?.ToString() ?? path;
     }
 
     public string ResolvePath( string path )
     {
         CheckInitialized();
-        return ResolvePath( path, Penumbra.ModManager, Penumbra.CollectionManager.DefaultCollection );
+        return ResolvePath( path, Penumbra.ModManager, Penumbra.CollectionManager.Default );
     }
 
     public string ResolvePath( string path, string characterName )
     {
         CheckInitialized();
         return ResolvePath( path, Penumbra.ModManager,
-            Penumbra.CollectionManager.CharacterCollection.TryGetValue( characterName, out var collection )
-                ? collection
-                : ModCollection.Empty );
+            Penumbra.CollectionManager.Character( characterName ) );
     }
 
     private T? GetFileIntern< T >( string resolvedPath ) where T : FileResource
@@ -136,12 +134,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         {
             if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
             {
-                collection = ModCollection.Empty;
+                collection = ModCollection2.Empty;
             }
 
-            if( collection.Cache != null )
+            if( collection.HasCache )
             {
-                return collection.Cache.ChangedItems;
+                return collection.ChangedItems;
             }
 
             PluginLog.Warning( $"Collection {collectionName} does not exist or is not loaded." );

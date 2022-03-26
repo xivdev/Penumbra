@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using Dalamud.Game.Command;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -12,7 +13,7 @@ using Penumbra.Interop;
 using Penumbra.Mods;
 using Penumbra.UI;
 using Penumbra.Util;
-using System.Linq;
+using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 
@@ -34,7 +35,7 @@ public class Penumbra : IDalamudPlugin
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
 
     public static ModManager ModManager { get; private set; } = null!;
-    public static CollectionManager CollectionManager { get; private set; } = null!;
+    public static CollectionManager2 CollectionManager { get; private set; } = null!;
 
     public static ResourceLoader ResourceLoader { get; set; } = null!;
     public ResourceLogger ResourceLogger { get; }
@@ -67,7 +68,7 @@ public class Penumbra : IDalamudPlugin
         ResourceLogger    = new ResourceLogger( ResourceLoader );
         ModManager        = new ModManager();
         ModManager.DiscoverMods();
-        CollectionManager = new CollectionManager( ModManager );
+        CollectionManager = new CollectionManager2( ModManager );
         ObjectReloader    = new ObjectReloader();
         PathResolver      = new PathResolver( ResourceLoader );
 
@@ -110,10 +111,15 @@ public class Penumbra : IDalamudPlugin
             ResourceLoader.EnableFullLogging();
         }
 
-        if (CollectionManager.CharacterCollection.Count > 0)
+        if( CollectionManager.HasCharacterCollections )
+        {
             PathResolver.Enable();
+        }
 
         ResidentResources.Reload();
+        //var c = ModCollection2.LoadFromFile( new FileInfo(@"C:\Users\Ozy\AppData\Roaming\XIVLauncher\pluginConfigs\Penumbra\collections\Rayla.json"),
+        //    out var inheritance );
+        //c?.Save();
     }
 
     public bool Enable()
@@ -217,10 +223,9 @@ public class Penumbra : IDalamudPlugin
         type           = type.ToLowerInvariant();
         collectionName = collectionName.ToLowerInvariant();
 
-        var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
-            ? ModCollection.Empty
-            : CollectionManager.Collections.FirstOrDefault( c
-                => string.Equals( c.Name, collectionName, StringComparison.InvariantCultureIgnoreCase ) );
+        var collection = string.Equals( collectionName, ModCollection2.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
+            ? ModCollection2.Empty
+            : CollectionManager[collectionName];
         if( collection == null )
         {
             Dalamud.Chat.Print( $"The collection {collection} does not exist." );
@@ -230,7 +235,7 @@ public class Penumbra : IDalamudPlugin
         switch( type )
         {
             case "default":
-                if( collection == CollectionManager.DefaultCollection )
+                if( collection == CollectionManager.Default )
                 {
                     Dalamud.Chat.Print( $"{collection.Name} already is the default collection." );
                     return false;
@@ -240,20 +245,9 @@ public class Penumbra : IDalamudPlugin
                 Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
                 SettingsInterface.ResetDefaultCollection();
                 return true;
-            case "forced":
-                if( collection == CollectionManager.ForcedCollection )
-                {
-                    Dalamud.Chat.Print( $"{collection.Name} already is the forced collection." );
-                    return false;
-                }
-
-                CollectionManager.SetCollection( collection, CollectionType.Forced );
-                Dalamud.Chat.Print( $"Set {collection.Name} as forced collection." );
-                SettingsInterface.ResetForcedCollection();
-                return true;
             default:
                 Dalamud.Chat.Print(
-                    "Second command argument is not default or forced, the correct command format is: /penumbra collection {default|forced} <collectionName>" );
+                    "Second command argument is not default, the correct command format is: /penumbra collection default <collectionName>" );
                 return false;
         }
     }

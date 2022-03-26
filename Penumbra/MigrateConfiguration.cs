@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Dalamud.Logging;
 using Newtonsoft.Json.Linq;
+using Penumbra.Collections;
 using Penumbra.Mod;
 using Penumbra.Mods;
 
@@ -33,8 +34,8 @@ public static class MigrateConfiguration
             return;
         }
 
-        var defaultCollection     = new ModCollection();
-        var defaultCollectionFile = defaultCollection.FileName();
+        var defaultCollection     = ModCollection2.CreateNewEmpty( ModCollection2.DefaultCollection );
+        var defaultCollectionFile = defaultCollection.FileName;
         if( defaultCollectionFile.Exists )
         {
             return;
@@ -46,6 +47,7 @@ public static class MigrateConfiguration
             var data = JArray.Parse( text );
 
             var maxPriority = 0;
+            var dict        = new Dictionary< string, ModSettings >();
             foreach( var setting in data.Cast< JObject >() )
             {
                 var modName  = ( string )setting[ "FolderName" ]!;
@@ -54,24 +56,25 @@ public static class MigrateConfiguration
                 var settings = setting[ "Settings" ]!.ToObject< Dictionary< string, int > >()
                  ?? setting[ "Conf" ]!.ToObject< Dictionary< string, int > >();
 
-                var save = new ModSettings()
+                dict[ modName ] = new ModSettings()
                 {
                     Enabled  = enabled,
                     Priority = priority,
                     Settings = settings!,
                 };
-                defaultCollection.Settings.Add( modName, save );
+                ;
                 maxPriority = Math.Max( maxPriority, priority );
             }
 
             if( !config.InvertModListOrder )
             {
-                foreach( var setting in defaultCollection.Settings.Values )
+                foreach( var setting in dict.Values )
                 {
                     setting.Priority = maxPriority - setting.Priority;
                 }
             }
 
+            defaultCollection = ModCollection2.MigrateFromV0( ModCollection2.DefaultCollection, dict );
             defaultCollection.Save();
         }
         catch( Exception e )

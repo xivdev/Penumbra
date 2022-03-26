@@ -16,7 +16,7 @@ public partial class MetaManager
     {
         public ExpandedEqdpFile?[] Files = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles - 1]; // TODO: female Hrothgar
 
-        public readonly Dictionary< EqdpManipulation, Mod.Mod > Manipulations = new();
+        public readonly Dictionary< EqdpManipulation, int > Manipulations = new();
 
         public MetaManagerEqdp()
         { }
@@ -50,14 +50,10 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( EqdpManipulation m, Mod.Mod mod )
+        public bool ApplyMod( EqdpManipulation m, int modIdx )
         {
 #if USE_EQDP
-            if( !Manipulations.TryAdd( m, mod ) )
-            {
-                return false;
-            }
-
+            Manipulations[ m ] = modIdx;
             var file = Files[ Array.IndexOf( CharacterUtility.EqdpIndices, m.FileIndex() ) ] ??=
                 new ExpandedEqdpFile( Names.CombinedRace( m.Gender, m.Race ), m.Slot.IsAccessory() ); // TODO: female Hrothgar
             return m.Apply( file );

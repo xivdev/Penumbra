@@ -12,8 +12,8 @@ public partial class MetaManager
 {
     public struct MetaManagerCmp : IDisposable
     {
-        public          CmpFile?                               File          = null;
-        public readonly Dictionary< RspManipulation, Mod.Mod > Manipulations = new();
+        public          CmpFile?                           File          = null;
+        public readonly Dictionary< RspManipulation, int > Manipulations = new();
 
         public MetaManagerCmp()
         { }
@@ -38,14 +38,10 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( RspManipulation m, Mod.Mod mod )
+        public bool ApplyMod( RspManipulation m, int modIdx )
         {
 #if USE_CMP
-            if( !Manipulations.TryAdd( m, mod ) )
-            {
-                return false;
-            }
-
+            Manipulations[ m ] = modIdx;
             File ??= new CmpFile();
             return m.Apply( File );
 #else

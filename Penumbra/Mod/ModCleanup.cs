@@ -9,6 +9,7 @@ using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.Importer;
 using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.Mod;
 
@@ -60,8 +61,8 @@ public class ModCleanup
 
     private static ModData CreateNewMod( DirectoryInfo newDir, string newSortOrder )
     {
-        var idx = Penumbra.ModManager.AddMod( newDir );
-        var newMod = Penumbra.ModManager.Mods[idx];
+        var idx    = Penumbra.ModManager.AddMod( newDir );
+        var newMod = Penumbra.ModManager.Mods[ idx ];
         newMod.Move( newSortOrder );
         newMod.ComputeChangedItems();
         ModFileSystem.InvokeChange();
@@ -509,21 +510,23 @@ public class ModCleanup
                     }
                 }
 
-                if( option.OptionFiles.Any() )
+                if( option.OptionFiles.Count > 0 )
                 {
                     group.Options.Add( option );
                 }
             }
 
-            if( group.Options.Any() )
+            if( group.Options.Count > 0 )
             {
                 meta.Groups.Add( groupDir.Name, group );
             }
         }
 
-        foreach( var collection in Penumbra.CollectionManager.Collections )
+        // TODO
+        var idx = Penumbra.ModManager.Mods.IndexOf( m => m.Meta == meta );
+        foreach( var collection in Penumbra.CollectionManager )
         {
-            collection.UpdateSetting( baseDir, meta, true );
+            collection.Settings[ idx ]?.FixInvalidSettings( meta );
         }
     }
 }

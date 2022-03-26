@@ -1,7 +1,7 @@
 using System;
 using Penumbra.Mod;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Collections;
 
 public enum ModSettingChange
 {

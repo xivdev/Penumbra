@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.CompilerServices;
+using Penumbra.Collections;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
@@ -28,19 +28,19 @@ public partial class MetaManager : IDisposable
         }
     }
 
-    public bool TryGetValue( MetaManipulation manip, out Mod.Mod? mod )
+    public bool TryGetValue( MetaManipulation manip, out int modIdx )
     {
-        mod = manip.ManipulationType switch
+        modIdx = manip.ManipulationType switch
         {
-            MetaManipulation.Type.Eqp  => Eqp.Manipulations.TryGetValue( manip.Eqp, out var m ) ? m : null,
-            MetaManipulation.Type.Gmp  => Gmp.Manipulations.TryGetValue( manip.Gmp, out var m ) ? m : null,
-            MetaManipulation.Type.Eqdp => Eqdp.Manipulations.TryGetValue( manip.Eqdp, out var m ) ? m : null,
-            MetaManipulation.Type.Est  => Est.Manipulations.TryGetValue( manip.Est, out var m ) ? m : null,
-            MetaManipulation.Type.Rsp  => Cmp.Manipulations.TryGetValue( manip.Rsp, out var m ) ? m : null,
-            MetaManipulation.Type.Imc  => Imc.Manipulations.TryGetValue( manip.Imc, out var m ) ? m : null,
+            MetaManipulation.Type.Eqp  => Eqp.Manipulations.TryGetValue( manip.Eqp, out var m ) ? m : -1,
+            MetaManipulation.Type.Gmp  => Gmp.Manipulations.TryGetValue( manip.Gmp, out var m ) ? m : -1,
+            MetaManipulation.Type.Eqdp => Eqdp.Manipulations.TryGetValue( manip.Eqdp, out var m ) ? m : -1,
+            MetaManipulation.Type.Est  => Est.Manipulations.TryGetValue( manip.Est, out var m ) ? m : -1,
+            MetaManipulation.Type.Rsp  => Cmp.Manipulations.TryGetValue( manip.Rsp, out var m ) ? m : -1,
+            MetaManipulation.Type.Imc  => Imc.Manipulations.TryGetValue( manip.Imc, out var m ) ? m : -1,
             _                          => throw new ArgumentOutOfRangeException(),
         };
-        return mod != null;
+        return modIdx != -1;
     }
 
     public int Count
@@ -51,7 +51,7 @@ public partial class MetaManager : IDisposable
           + Est.Manipulations.Count
           + Eqp.Manipulations.Count;
 
-    public MetaManager( ModCollection collection )
+    public MetaManager( ModCollection2 collection )
         => Imc = new MetaManagerImc( collection );
 
     public void SetFiles()
@@ -84,16 +84,16 @@ public partial class MetaManager : IDisposable
         Imc.Dispose();
     }
 
-    public bool ApplyMod( MetaManipulation m, Mod.Mod mod )
+    public bool ApplyMod( MetaManipulation m, int modIdx )
     {
         return m.ManipulationType switch
         {
-            MetaManipulation.Type.Eqp     => Eqp.ApplyMod( m.Eqp, mod ),
-            MetaManipulation.Type.Gmp     => Gmp.ApplyMod( m.Gmp, mod ),
-            MetaManipulation.Type.Eqdp    => Eqdp.ApplyMod( m.Eqdp, mod ),
-            MetaManipulation.Type.Est     => Est.ApplyMod( m.Est, mod ),
-            MetaManipulation.Type.Rsp     => Cmp.ApplyMod( m.Rsp, mod ),
-            MetaManipulation.Type.Imc     => Imc.ApplyMod( m.Imc, mod ),
+            MetaManipulation.Type.Eqp     => Eqp.ApplyMod( m.Eqp, modIdx ),
+            MetaManipulation.Type.Gmp     => Gmp.ApplyMod( m.Gmp, modIdx ),
+            MetaManipulation.Type.Eqdp    => Eqdp.ApplyMod( m.Eqdp, modIdx ),
+            MetaManipulation.Type.Est     => Est.ApplyMod( m.Est, modIdx ),
+            MetaManipulation.Type.Rsp     => Cmp.ApplyMod( m.Rsp, modIdx ),
+            MetaManipulation.Type.Imc     => Imc.ApplyMod( m.Imc, modIdx ),
             MetaManipulation.Type.Unknown => false,
             _                             => false,
         };

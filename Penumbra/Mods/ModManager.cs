@@ -263,7 +263,7 @@ public class ModManager : IEnumerable< ModData >
             mod.Resources.MetaManipulations.SaveToFile( MetaCollection.FileName( mod.BasePath ) );
         }
 
-        Penumbra.CollectionManager.UpdateCollections( mod, metaChanges, fileChanges, nameChange, reloadMeta ); // TODO
+        // TODO: more specific mod changes?
         ModChange?.Invoke( ModChangeType.Changed, idx, mod );
         return true;
     }
@@ -271,10 +271,6 @@ public class ModManager : IEnumerable< ModData >
     public bool UpdateMod( ModData mod, bool reloadMeta = false, bool recomputeMeta = false, bool force = false )
         => UpdateMod( Mods.IndexOf( mod ), reloadMeta, recomputeMeta, force );
 
-    public FullPath? ResolveSwappedOrReplacementPath( Utf8GamePath gameResourcePath )
-    {
-        var ret = Penumbra.CollectionManager.DefaultCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
-        ret ??= Penumbra.CollectionManager.ForcedCollection.ResolveSwappedOrReplacementPath( gameResourcePath );
-        return ret;
-    }
+    public static FullPath? ResolvePath( Utf8GamePath gameResourcePath )
+        => Penumbra.CollectionManager.Default.ResolvePath( gameResourcePath );
 }

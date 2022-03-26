@@ -6,6 +6,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Logging;
 using ImGuiNET;
+using Penumbra.Collections;
 using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
@@ -21,7 +22,7 @@ public partial class SettingsInterface
         private readonly Selector                  _selector;
         private          string                    _collectionNames         = null!;
         private          string                    _collectionNamesWithNone = null!;
-        private          ModCollection[]           _collections             = null!;
+        private          ModCollection2[]          _collections             = null!;
         private          int                       _currentCollectionIndex;
         private          int                       _currentForcedIndex;
         private          int                       _currentDefaultIndex;
@@ -31,14 +32,14 @@ public partial class SettingsInterface
 
         private void UpdateNames()
         {
-            _collections             = Penumbra.CollectionManager.Collections.Prepend( ModCollection.Empty ).ToArray();
+            _collections             = Penumbra.CollectionManager.Prepend( ModCollection2.Empty ).ToArray();
             _collectionNames         = string.Join( "\0", _collections.Skip( 1 ).Select( c => c.Name ) ) + '\0';
             _collectionNamesWithNone = "None\0"                                                          + _collectionNames;
             UpdateIndices();
         }
 
 
-        private int GetIndex( ModCollection collection )
+        private int GetIndex( ModCollection2 collection )
         {
             var ret = _collections.IndexOf( c => c.Name == collection.Name );
             if( ret < 0 )
@@ -175,7 +176,7 @@ public partial class SettingsInterface
             }
         }
 
-        public void SetCurrentCollection( ModCollection collection, bool force = false )
+        public void SetCurrentCollection( ModCollection2 collection, bool force = false )
         {
             var idx = Array.IndexOf( _collections, collection ) - 1;
             if( idx >= 0 )

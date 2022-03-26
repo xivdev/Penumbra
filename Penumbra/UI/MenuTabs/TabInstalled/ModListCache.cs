@@ -151,7 +151,7 @@ namespace Penumbra.UI
             {
                 foreach( var modData in _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) )
                 {
-                    var mod = Penumbra.CollectionManager.CurrentCollection.GetMod( modData );
+                    var mod = Penumbra.CollectionManager.Current.GetMod( modData );
                     _modsInOrder.Add( mod );
                     _visibleMods.Add( CheckFilters( mod ) );
                 }

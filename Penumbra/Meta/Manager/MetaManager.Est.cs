@@ -16,7 +16,7 @@ public partial class MetaManager
         public EstFile? BodyFile = null;
         public EstFile? HeadFile = null;
 
-        public readonly Dictionary< EstManipulation, Mod.Mod > Manipulations = new();
+        public readonly Dictionary< EstManipulation, int > Manipulations = new();
 
         public MetaManagerEst()
         { }
@@ -49,14 +49,10 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( EstManipulation m, Mod.Mod mod )
+        public bool ApplyMod( EstManipulation m, int modIdx )
         {
 #if USE_EST
-            if( !Manipulations.TryAdd( m, mod ) )
-            {
-                return false;
-            }
-
+            Manipulations[ m ] = modIdx;
             var file = m.Slot switch
             {
                 EstManipulation.EstType.Hair => HairFile ??= new EstFile( EstManipulation.EstType.Hair ),

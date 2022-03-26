@@ -4,7 +4,7 @@ using System.Linq;
 using Penumbra.Mod;
 using Penumbra.Util;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Collections;
 
 public partial class ModCollection2
 {
@@ -53,7 +53,7 @@ public partial class ModCollection2
         }
     }
 
-    public (ModSettings? Settings, ModCollection2 Collection) this[ int idx ]
+    public (ModSettings? Settings, ModCollection2 Collection) this[ Index idx ]
     {
         get
         {

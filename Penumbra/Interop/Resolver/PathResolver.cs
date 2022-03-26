@@ -1,6 +1,7 @@
 using System;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
@@ -39,27 +40,17 @@ public partial class PathResolver : IDisposable
         var nonDefault = HandleMaterialSubFiles( type, out var collection ) || PathCollections.TryRemove( gamePath.Path, out collection );
         if( !nonDefault )
         {
-            collection = Penumbra.CollectionManager.DefaultCollection;
+            collection = Penumbra.CollectionManager.Default;
         }
 
         // Resolve using character/default collection first, otherwise forced, as usual.
-        var resolved = collection!.ResolveSwappedOrReplacementPath( gamePath );
-        if( resolved == null )
-        {
-            resolved = Penumbra.CollectionManager.ForcedCollection.ResolveSwappedOrReplacementPath( gamePath );
-            if( resolved == null )
-            {
-                // We also need to handle defaulted materials against a non-default collection.
-                HandleMtrlCollection( collection, gamePath.Path.ToString(), nonDefault, type, resolved, out data );
-                return true;
-            }
-
-            collection = Penumbra.CollectionManager.ForcedCollection;
-        }
+        var resolved = collection!.ResolvePath( gamePath );
 
         // Since mtrl files load their files separately, we need to add the new, resolved path
         // so that the functions loading tex and shpk can find that path and use its collection.
-        HandleMtrlCollection( collection, resolved.Value.FullName, nonDefault, type, resolved, out data );
+        // We also need to handle defaulted materials against a non-default collection.
+        var path = resolved == null ? gamePath.Path.ToString() : resolved.Value.FullName;
+        HandleMtrlCollection( collection, path, nonDefault, type, resolved, out data );
         return true;
     }
 
@@ -113,14 +104,14 @@ public partial class PathResolver : IDisposable
         Penumbra.CollectionManager.CollectionChanged -= OnCollectionChange;
     }
 
-    private void OnCollectionChange( ModCollection? _1, ModCollection? _2, CollectionType type, string? characterName )
+    private void OnCollectionChange( ModCollection2? _1, ModCollection2? _2, CollectionType type, string? characterName )
     {
         if( type != CollectionType.Character )
         {
             return;
         }
 
-        if( Penumbra.CollectionManager.CharacterCollection.Count > 0 )
+        if( Penumbra.CollectionManager.HasCharacterCollections )
         {
             Enable();
         }

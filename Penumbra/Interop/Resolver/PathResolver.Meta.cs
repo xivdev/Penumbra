@@ -2,6 +2,7 @@ using System;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
+using Penumbra.Collections;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -160,15 +161,15 @@ public unsafe partial class PathResolver
         RspSetupCharacterHook?.Dispose();
     }
 
-    private ModCollection? GetCollection( IntPtr drawObject )
+    private ModCollection2? GetCollection( IntPtr drawObject )
     {
         var parent = FindParent( drawObject, out var collection );
-        if( parent == null || collection == Penumbra.CollectionManager.DefaultCollection )
+        if( parent == null || collection == Penumbra.CollectionManager.Default )
         {
             return null;
         }
 
-        return collection.Cache == null ? Penumbra.CollectionManager.ForcedCollection : collection;
+        return collection.HasCache ? collection : null;
     }
 
 
@@ -194,7 +195,7 @@ public unsafe partial class PathResolver
             }
         }
 
-        public static MetaChanger ChangeEqp( ModCollection collection )
+        public static MetaChanger ChangeEqp( ModCollection2 collection )
         {
 #if USE_EQP
             collection.SetEqpFiles();
@@ -232,7 +233,7 @@ public unsafe partial class PathResolver
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
-        public static MetaChanger ChangeEqdp( ModCollection collection )
+        public static MetaChanger ChangeEqdp( ModCollection2 collection )
         {
 #if USE_EQDP
             collection.SetEqdpFiles();
@@ -268,13 +269,13 @@ public unsafe partial class PathResolver
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
-        public static MetaChanger ChangeCmp( PathResolver resolver, out ModCollection? collection )
+        public static MetaChanger ChangeCmp( PathResolver resolver, out ModCollection2? collection )
         {
             if( resolver.LastGameObject != null )
             {
                 collection = IdentifyCollection( resolver.LastGameObject );
 #if USE_CMP
-                if( collection != Penumbra.CollectionManager.DefaultCollection && collection.Cache != null )
+                if( collection != Penumbra.CollectionManager.Default && collection.HasCache )
                 {
                     collection.SetCmpFiles();
                     return new MetaChanger( MetaManipulation.Type.Rsp );
@@ -309,25 +310,25 @@ public unsafe partial class PathResolver
                 case MetaManipulation.Type.Eqdp:
                     if( --_eqdpCounter == 0 )
                     {
-                        Penumbra.CollectionManager.DefaultCollection.SetEqdpFiles();
+                        Penumbra.CollectionManager.Default.SetEqdpFiles();
                     }
 
                     break;
                 case MetaManipulation.Type.Eqp:
                     if( --_eqpCounter == 0 )
                     {
-                        Penumbra.CollectionManager.DefaultCollection.SetEqpFiles();
+                        Penumbra.CollectionManager.Default.SetEqpFiles();
                     }
 
                     break;
                 case MetaManipulation.Type.Est:
-                    Penumbra.CollectionManager.DefaultCollection.SetEstFiles();
+                    Penumbra.CollectionManager.Default.SetEstFiles();
                     break;
                 case MetaManipulation.Type.Gmp:
-                    Penumbra.CollectionManager.DefaultCollection.SetGmpFiles();
+                    Penumbra.CollectionManager.Default.SetGmpFiles();
                     break;
                 case MetaManipulation.Type.Rsp:
-                    Penumbra.CollectionManager.DefaultCollection.SetCmpFiles();
+                    Penumbra.CollectionManager.Default.SetCmpFiles();
                     break;
             }
         }

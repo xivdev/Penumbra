@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using Dalamud.Logging;
 using Penumbra.Mod;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -82,19 +83,12 @@ public static class ModManagerEditExtensions
             manager.Config.Save();
         }
 
-        foreach( var collection in Penumbra.CollectionManager.Collections )
+        var idx = manager.Mods.IndexOf( mod );
+        foreach( var collection in Penumbra.CollectionManager )
         {
-            if( collection.Settings.TryGetValue( oldBasePath.Name, out var settings ) )
+            if( collection.Settings[ idx ] != null )
             {
-                collection.Settings[ newDir.Name ] = settings;
-                collection.Settings.Remove( oldBasePath.Name );
                 collection.Save();
-            }
-
-            if( collection.Cache != null )
-            {
-                collection.Cache.RemoveMod( newDir );
-                collection.AddMod( mod );
             }
         }
 
@@ -140,9 +134,13 @@ public static class ModManagerEditExtensions
 
         mod.SaveMeta();
 
-        foreach( var collection in Penumbra.CollectionManager.Collections )
+        // TODO to indices
+        var idx = Penumbra.ModManager.Mods.IndexOf( mod );
+
+        foreach( var collection in Penumbra.CollectionManager )
         {
-            if( !collection.Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
+            var settings = collection.Settings[ idx ];
+            if( settings == null )
             {
                 continue;
             }
@@ -176,9 +174,11 @@ public static class ModManagerEditExtensions
             return ( oldSetting & bitmaskFront ) | ( ( oldSetting & bitmaskBack ) >> 1 );
         }
 
-        foreach( var collection in Penumbra.CollectionManager.Collections )
+        var idx = Penumbra.ModManager.Mods.IndexOf( mod ); // TODO
+        foreach( var collection in Penumbra.CollectionManager )
         {
-            if( !collection.Settings.TryGetValue( mod.BasePath.Name, out var settings ) )
+            var settings = collection.Settings[ idx ];
+            if( settings == null )
             {
                 continue;
             }
@@ -199,10 +199,10 @@ public static class ModManagerEditExtensions
             {
                 settings.Settings[ group.GroupName ] = newSetting;
                 collection.Save();
-                if( collection.Cache != null && settings.Enabled )
+                if( collection.HasCache && settings.Enabled )
                 {
                     collection.CalculateEffectiveFileList( mod.Resources.MetaManipulations.Count > 0,
-                        Penumbra.CollectionManager.IsActive( collection ) );
+                        Penumbra.CollectionManager.Default == collection );
                 }
             }
         }

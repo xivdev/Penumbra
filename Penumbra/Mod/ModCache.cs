@@ -6,7 +6,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Mod;
 
-public struct ModCache2
+public struct ConflictCache
 {
     public readonly struct ModCacheStruct : IComparable< ModCacheStruct >
     {

@@ -16,15 +16,15 @@ public class ModsController : WebApiController
     [Route( HttpVerbs.Get, "/mods" )]
     public object? GetMods()
     {
-        return Penumbra.CollectionManager.CurrentCollection.Cache?.AvailableMods.Values.Select( x => new
-            {
-                x.Settings.Enabled,
-                x.Settings.Priority,
-                x.Data.BasePath.Name,
-                x.Data.Meta,
-                BasePath = x.Data.BasePath.FullName,
-                Files    = x.Data.Resources.ModFiles.Select( fi => fi.FullName ),
-            } );
+        return Penumbra.ModManager.Mods.Zip( Penumbra.CollectionManager.Current.ActualSettings ).Select( x => new
+        {
+            x.Second?.Enabled,
+            x.Second?.Priority,
+            x.First.BasePath.Name,
+            x.First.Meta,
+            BasePath = x.First.BasePath.FullName,
+            Files    = x.First.Resources.ModFiles.Select( fi => fi.FullName ),
+        } );
     }
 
     [Route( HttpVerbs.Post, "/mods" )]
@@ -34,7 +34,7 @@ public class ModsController : WebApiController
     [Route( HttpVerbs.Get, "/files" )]
     public object GetFiles()
     {
-        return Penumbra.CollectionManager.CurrentCollection.Cache?.ResolvedFiles.ToDictionary(
+        return Penumbra.CollectionManager.Current.ResolvedFiles.ToDictionary(
                 o => o.Key.ToString(),
                 o => o.Value.FullName
             )

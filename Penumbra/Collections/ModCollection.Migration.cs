@@ -1,9 +1,9 @@
 using System.Linq;
 using Penumbra.Mod;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Collections;
 
-public partial class ModCollection2
+public sealed partial class ModCollection2
 {
     private static class Migration
     {

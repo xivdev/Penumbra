@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.CompilerServices;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
-using Penumbra.Mods;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -104,7 +104,7 @@ public unsafe partial class PathResolver
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
     private IntPtr ResolvePathDetour( IntPtr drawObject, IntPtr path )
         => ResolvePathDetour( FindParent( drawObject, out var collection ) == null
-            ? Penumbra.CollectionManager.DefaultCollection
+            ? Penumbra.CollectionManager.Default
             : collection, path );
 
     // Weapons have the characters DrawObject as a parent,
@@ -123,14 +123,14 @@ public unsafe partial class PathResolver
         {
             var parent = FindParent( ( IntPtr )parentObject, out var collection );
             return ResolvePathDetour( parent == null
-                ? Penumbra.CollectionManager.DefaultCollection
+                ? Penumbra.CollectionManager.Default
                 : collection, path );
         }
     }
 
     // Just add or remove the resolved path.
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
-    private IntPtr ResolvePathDetour( ModCollection collection, IntPtr path )
+    private IntPtr ResolvePathDetour( ModCollection2 collection, IntPtr path )
     {
         if( path == IntPtr.Zero )
         {

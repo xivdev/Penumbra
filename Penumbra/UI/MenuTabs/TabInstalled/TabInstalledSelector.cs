@@ -8,6 +8,7 @@ using System.Windows.Forms.VisualStyles;
 using Dalamud.Interface;
 using Dalamud.Logging;
 using ImGuiNET;
+using Penumbra.Collections;
 using Penumbra.Importer;
 using Penumbra.Mod;
 using Penumbra.Mods;
@@ -606,10 +607,10 @@ public partial class SettingsInterface
             Cache = new ModListCache( Penumbra.ModManager, newMods );
         }
 
-        private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection collection )
+        private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection2 collection )
         {
-            if( collection == ModCollection.Empty
-            || collection  == Penumbra.CollectionManager.CurrentCollection )
+            if( collection == ModCollection2.Empty
+            || collection  == Penumbra.CollectionManager.Current )
             {
                 using var _ = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f );
                 ImGui.Button( label, Vector2.UnitX * size );
@@ -632,16 +633,13 @@ public partial class SettingsInterface
             var comboSize = size * ImGui.GetIO().FontGlobalScale;
             var offset    = comboSize + textSize;
 
-            var buttonSize = Math.Max( ( ImGui.GetWindowContentRegionWidth()
-                  - offset
-                  - SelectorPanelWidth * _selectorScalingFactor
-                  - 4                  * ImGui.GetStyle().ItemSpacing.X )
-              / 2, 5f );
+            var buttonSize = Math.Max( ImGui.GetWindowContentRegionWidth()
+              - offset
+              - SelectorPanelWidth * _selectorScalingFactor
+              - 3                  * ImGui.GetStyle().ItemSpacing.X, 5f );
             ImGui.SameLine();
-            DrawCollectionButton( "Default", "default", buttonSize, Penumbra.CollectionManager.DefaultCollection );
+            DrawCollectionButton( "Default", "default", buttonSize, Penumbra.CollectionManager.Default );
 
-            ImGui.SameLine();
-            DrawCollectionButton( "Forced", "forced", buttonSize, Penumbra.CollectionManager.ForcedCollection );
 
             ImGui.SameLine();
             ImGui.SetNextItemWidth( comboSize );
