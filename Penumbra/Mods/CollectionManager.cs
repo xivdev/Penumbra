@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -8,6 +9,122 @@ using Penumbra.Mod;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
+
+public sealed class CollectionManager2 : IDisposable, IEnumerable< ModCollection2 >
+{
+    private readonly ModManager _modManager;
+
+    private readonly List< ModCollection2 > _collections = new();
+
+    public ModCollection2 this[ int idx ]
+        => _collections[ idx ];
+
+    public ModCollection2? this[ string name ]
+        => ByName( name, out var c ) ? c : null;
+
+    public ModCollection2 Default
+        => this[ ModCollection2.DefaultCollection ]!;
+
+    public bool ByName( string name, [NotNullWhen( true )] out ModCollection2? collection )
+        => _collections.FindFirst( c => c.Name == name, out collection );
+
+    public IEnumerator< ModCollection2 > GetEnumerator()
+        => _collections.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
+
+    public CollectionManager2( ModManager manager )
+    {
+        _modManager = manager;
+
+        //_modManager.ModsRediscovered += OnModsRediscovered;
+        //_modManager.ModChange        += OnModChanged;
+        ReadCollections();
+        //LoadConfigCollections( Penumbra.Config );
+    }
+
+    public void Dispose()
+    { }
+
+    private void AddDefaultCollection()
+    {
+        if( this[ ModCollection.DefaultCollection ] != null )
+        {
+            return;
+        }
+
+        var defaultCollection = ModCollection2.CreateNewEmpty( ModCollection2.DefaultCollection );
+        defaultCollection.Save();
+        _collections.Add( defaultCollection );
+    }
+
+    private void ApplyInheritancesAndFixSettings( IEnumerable< IReadOnlyList< string > > inheritances )
+    {
+        foreach( var (collection, inheritance) in this.Zip( inheritances ) )
+        {
+            var changes = false;
+            foreach( var subCollectionName in inheritance )
+            {
+                if( !ByName( subCollectionName, out var subCollection ) )
+                {
+                    changes = true;
+                    PluginLog.Warning( $"Inherited collection {subCollectionName} for {collection.Name} does not exist, removed." );
+                }
+                else if( !collection.AddInheritance( subCollection ) )
+                {
+                    changes = true;
+                    PluginLog.Warning( $"{collection.Name} can not inherit from {subCollectionName}, removed." );
+                }
+            }
+
+            foreach( var (setting, mod) in collection.Settings.Zip( Penumbra.ModManager.Mods ).Where( s => s.First != null ) )
+            {
+                changes |= setting!.FixInvalidSettings( mod.Meta );
+            }
+
+            if( changes )
+            {
+                collection.Save();
+            }
+        }
+    }
+
+    private void ReadCollections()
+    {
+        var collectionDir = new DirectoryInfo( ModCollection2.CollectionDirectory );
+        var inheritances  = new List< IReadOnlyList< string > >();
+        if( collectionDir.Exists )
+        {
+            foreach( var file in collectionDir.EnumerateFiles( "*.json" ) )
+            {
+                var collection = ModCollection2.LoadFromFile( file, out var inheritance );
+                if( collection == null || collection.Name.Length == 0 )
+                {
+                    continue;
+                }
+
+                if( file.Name != $"{collection.Name.RemoveInvalidPathSymbols()}.json" )
+                {
+                    PluginLog.Warning( $"Collection {file.Name} does not correspond to {collection.Name}." );
+                }
+
+                if( this[ collection.Name ] != null )
+                {
+                    PluginLog.Warning( $"Duplicate collection found: {collection.Name} already exists." );
+                }
+                else
+                {
+                    inheritances.Add( inheritance );
+                    _collections.Add( collection );
+                }
+            }
+        }
+
+        AddDefaultCollection();
+        ApplyInheritancesAndFixSettings( inheritances );
+    }
+}
 
 public enum CollectionType : byte
 {
