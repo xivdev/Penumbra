@@ -8,6 +8,7 @@ using Lumina.Data;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.Mod;
 using Penumbra.Mods;
 
 namespace Penumbra.Api;
@@ -77,7 +78,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _penumbra!.ObjectReloader.RedrawAll( setting );
     }
 
-    private static string ResolvePath( string path, ModManager _, ModCollection2 collection )
+    private static string ResolvePath( string path, Mod.Mod.Manager _, ModCollection collection )
     {
         if( !Penumbra.Config.EnableMods )
         {
@@ -134,7 +135,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         {
             if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
             {
-                collection = ModCollection2.Empty;
+                collection = ModCollection.Empty;
             }
 
             if( collection.HasCache )

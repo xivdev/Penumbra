@@ -104,9 +104,9 @@ public partial class PathResolver : IDisposable
         Penumbra.CollectionManager.CollectionChanged -= OnCollectionChange;
     }
 
-    private void OnCollectionChange( ModCollection2? _1, ModCollection2? _2, CollectionType type, string? characterName )
+    private void OnCollectionChange( ModCollection? _1, ModCollection? _2, ModCollection.Type type, string? characterName )
     {
-        if( type != CollectionType.Character )
+        if( type != ModCollection.Type.Character )
         {
             return;
         }

@@ -51,7 +51,7 @@ public partial class MetaManager : IDisposable
           + Est.Manipulations.Count
           + Eqp.Manipulations.Count;
 
-    public MetaManager( ModCollection2 collection )
+    public MetaManager( ModCollection collection )
         => Imc = new MetaManagerImc( collection );
 
     public void SetFiles()

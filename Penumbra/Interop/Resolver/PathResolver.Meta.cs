@@ -161,7 +161,7 @@ public unsafe partial class PathResolver
         RspSetupCharacterHook?.Dispose();
     }
 
-    private ModCollection2? GetCollection( IntPtr drawObject )
+    private ModCollection? GetCollection( IntPtr drawObject )
     {
         var parent = FindParent( drawObject, out var collection );
         if( parent == null || collection == Penumbra.CollectionManager.Default )
@@ -195,7 +195,7 @@ public unsafe partial class PathResolver
             }
         }
 
-        public static MetaChanger ChangeEqp( ModCollection2 collection )
+        public static MetaChanger ChangeEqp( ModCollection collection )
         {
 #if USE_EQP
             collection.SetEqpFiles();
@@ -233,7 +233,7 @@ public unsafe partial class PathResolver
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
-        public static MetaChanger ChangeEqdp( ModCollection2 collection )
+        public static MetaChanger ChangeEqdp( ModCollection collection )
         {
 #if USE_EQDP
             collection.SetEqdpFiles();
@@ -269,7 +269,7 @@ public unsafe partial class PathResolver
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
-        public static MetaChanger ChangeCmp( PathResolver resolver, out ModCollection2? collection )
+        public static MetaChanger ChangeCmp( PathResolver resolver, out ModCollection? collection )
         {
             if( resolver.LastGameObject != null )
             {

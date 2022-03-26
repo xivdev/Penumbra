@@ -27,7 +27,7 @@ namespace Penumbra.Mods
         }
 
         public List< ModFolder > SubFolders { get; } = new();
-        public List< ModData > Mods { get; } = new();
+        public List< Mod.Mod > Mods { get; } = new();
 
         public ModFolder( ModFolder parent, string name )
         {
@@ -45,7 +45,7 @@ namespace Penumbra.Mods
             => SubFolders.Sum( f => f.TotalDescendantFolders() );
 
         // Return all descendant mods in the specified order.
-        public IEnumerable< ModData > AllMods( bool foldersFirst )
+        public IEnumerable< Mod.Mod > AllMods( bool foldersFirst )
         {
             if( foldersFirst )
             {
@@ -59,7 +59,7 @@ namespace Penumbra.Mods
                     return folder.AllMods( false );
                 }
 
-                return new[] { ( ModData )f };
+                return new[] { ( Mod.Mod )f };
             } );
         }
 
@@ -116,7 +116,7 @@ namespace Penumbra.Mods
 
         // Add the given mod as a child, if it is not already a child.
         // Returns the index of the found or inserted mod.
-        public int AddMod( ModData mod )
+        public int AddMod( Mod.Mod mod )
         {
             var idx = Mods.BinarySearch( mod, ModComparer );
             if( idx >= 0 )
@@ -132,7 +132,7 @@ namespace Penumbra.Mods
 
         // Remove mod as a child if it exists.
         // If this folder is empty afterwards, remove it from its parent.
-        public void RemoveMod( ModData mod )
+        public void RemoveMod( Mod.Mod mod )
         {
             RemoveModIgnoreEmpty( mod );
             CheckEmpty();
@@ -157,20 +157,20 @@ namespace Penumbra.Mods
                     : string.Compare( x?.Name ?? string.Empty, y?.Name ?? string.Empty, CompareType );
         }
 
-        internal class ModDataComparer : IComparer< ModData >
+        internal class ModDataComparer : IComparer< Mod.Mod >
         {
             public StringComparison CompareType = StringComparison.InvariantCultureIgnoreCase;
 
             // Compare only the direct SortOrderNames since this is only used inside an enumeration of direct mod children of one folder.
             // Since mod SortOrderNames do not have to be unique inside a folder, also compare their BasePaths (and thus their identity) if necessary.
-            public int Compare( ModData? x, ModData? y )
+            public int Compare( Mod.Mod? x, Mod.Mod? y )
             {
                 if( ReferenceEquals( x, y ) )
                 {
                     return 0;
                 }
 
-                var cmp = string.Compare( x?.SortOrder.SortOrderName, y?.SortOrder.SortOrderName, CompareType );
+                var cmp = string.Compare( x?.Order.SortOrderName, y?.Order.SortOrderName, CompareType );
                 if( cmp != 0 )
                 {
                     return cmp;
@@ -193,7 +193,7 @@ namespace Penumbra.Mods
                 for( ; modIdx < Mods.Count; ++modIdx )
                 {
                     var mod       = Mods[ modIdx ];
-                    var modString = mod.SortOrder.SortOrderName;
+                    var modString = mod.Order.SortOrderName;
                     if( string.Compare( folderString, modString, StringComparison.InvariantCultureIgnoreCase ) > 0 )
                     {
                         yield return mod;
@@ -235,7 +235,7 @@ namespace Penumbra.Mods
         }
 
         // Remove a mod, but do not remove this folder from its parent if it is empty afterwards.
-        internal void RemoveModIgnoreEmpty( ModData mod )
+        internal void RemoveModIgnoreEmpty( Mod.Mod mod )
         {
             var idx = Mods.BinarySearch( mod, ModComparer );
             if( idx >= 0 )

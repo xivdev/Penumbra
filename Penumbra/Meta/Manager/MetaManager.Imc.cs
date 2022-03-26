@@ -19,11 +19,11 @@ public partial class MetaManager
         public readonly Dictionary< Utf8GamePath, ImcFile > Files         = new();
         public readonly Dictionary< ImcManipulation, int >  Manipulations = new();
 
-        private readonly ModCollection2 _collection;
+        private readonly ModCollection _collection;
         private static   int            _imcManagerCount;
 
 
-        public MetaManagerImc( ModCollection2 collection )
+        public MetaManagerImc( ModCollection collection )
         {
             _collection = collection;
             SetupDelegate();
@@ -156,7 +156,7 @@ public partial class MetaManager
         {
             // Only check imcs.
             if( resource->FileType != ResourceType.Imc
-            || resolveData is not ModCollection2 { HasCache: true } collection
+            || resolveData is not ModCollection { HasCache: true } collection
             || !collection.MetaCache!.Imc.Files.TryGetValue( gamePath, out var file )
             || !file.ChangesSinceLoad )
             {

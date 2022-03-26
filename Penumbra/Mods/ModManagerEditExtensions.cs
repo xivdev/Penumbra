@@ -12,7 +12,7 @@ namespace Penumbra.Mods;
 // Contains all change functions on a specific mod that also require corresponding changes to collections.
 public static class ModManagerEditExtensions
 {
-    public static bool RenameMod( this ModManager manager, string newName, ModData mod )
+    public static bool RenameMod( this Mod.Mod.Manager manager, string newName, Mod.Mod mod )
     {
         if( newName.Length == 0 || string.Equals( newName, mod.Meta.Name, StringComparison.InvariantCulture ) )
         {
@@ -25,23 +25,23 @@ public static class ModManagerEditExtensions
         return true;
     }
 
-    public static bool ChangeSortOrder( this ModManager manager, ModData mod, string newSortOrder )
+    public static bool ChangeSortOrder( this Mod.Mod.Manager manager, Mod.Mod mod, string newSortOrder )
     {
-        if( string.Equals( mod.SortOrder.FullPath, newSortOrder, StringComparison.InvariantCultureIgnoreCase ) )
+        if( string.Equals( mod.Order.FullPath, newSortOrder, StringComparison.InvariantCultureIgnoreCase ) )
         {
             return false;
         }
 
-        var inRoot = new SortOrder( manager.StructuredMods, mod.Meta.Name );
+        var inRoot = new Mod.Mod.SortOrder( manager.StructuredMods, mod.Meta.Name );
         if( newSortOrder == string.Empty || newSortOrder == inRoot.SortOrderName )
         {
-            mod.SortOrder = inRoot;
+            mod.Order = inRoot;
             manager.Config.ModSortOrder.Remove( mod.BasePath.Name );
         }
         else
         {
             mod.Move( newSortOrder );
-            manager.Config.ModSortOrder[ mod.BasePath.Name ] = mod.SortOrder.FullPath;
+            manager.Config.ModSortOrder[ mod.BasePath.Name ] = mod.Order.FullPath;
         }
 
         manager.Config.Save();
@@ -49,7 +49,7 @@ public static class ModManagerEditExtensions
         return true;
     }
 
-    public static bool RenameModFolder( this ModManager manager, ModData mod, DirectoryInfo newDir, bool move = true )
+    public static bool RenameModFolder( this Mod.Mod.Manager manager, Mod.Mod mod, DirectoryInfo newDir, bool move = true )
     {
         if( move )
         {
@@ -73,7 +73,7 @@ public static class ModManagerEditExtensions
 
         var oldBasePath = mod.BasePath;
         mod.BasePath = newDir;
-        mod.MetaFile = ModData.MetaFileInfo( newDir );
+        mod.MetaFile = Mod.Mod.MetaFileInfo( newDir );
         manager.UpdateMod( mod );
 
         if( manager.Config.ModSortOrder.ContainsKey( oldBasePath.Name ) )
@@ -95,7 +95,7 @@ public static class ModManagerEditExtensions
         return true;
     }
 
-    public static bool ChangeModGroup( this ModManager manager, string oldGroupName, string newGroupName, ModData mod,
+    public static bool ChangeModGroup( this Mod.Mod.Manager manager, string oldGroupName, string newGroupName, Mod.Mod mod,
         SelectType type = SelectType.Single )
     {
         if( newGroupName == oldGroupName || mod.Meta.Groups.ContainsKey( newGroupName ) )
@@ -157,7 +157,7 @@ public static class ModManagerEditExtensions
         return true;
     }
 
-    public static bool RemoveModOption( this ModManager manager, int optionIdx, OptionGroup group, ModData mod )
+    public static bool RemoveModOption( this Mod.Mod.Manager manager, int optionIdx, OptionGroup group, Mod.Mod mod )
     {
         if( optionIdx < 0 || optionIdx >= group.Options.Count )
         {
@@ -202,7 +202,7 @@ public static class ModManagerEditExtensions
                 if( collection.HasCache && settings.Enabled )
                 {
                     collection.CalculateEffectiveFileList( mod.Resources.MetaManipulations.Count > 0,
-                        Penumbra.CollectionManager.Default == collection );
+                        Penumbra.CollectionManager.Default                                       == collection );
                 }
             }
         }

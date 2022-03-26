@@ -1,10 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
@@ -14,27 +12,34 @@ using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
-public partial class ModCollection2
+public partial class ModCollection
 {
     private Cache? _cache;
 
     public bool HasCache
         => _cache != null;
 
-    public void CreateCache()
+    public void CreateCache( bool isDefault )
     {
+        if( Index == 0 )
+        {
+            return;
+        }
+
         if( _cache == null )
         {
-            _cache = new Cache( this );
-            _cache.CalculateEffectiveFileList();
+            CalculateEffectiveFileList( true, isDefault );
         }
     }
 
-    public void UpdateCache()
-        => _cache?.CalculateEffectiveFileList();
+    public void ForceCacheUpdate( bool isDefault )
+        => CalculateEffectiveFileList( true, isDefault );
 
     public void ClearCache()
-        => _cache = null;
+    {
+        _cache?.Dispose();
+        _cache = null;
+    }
 
     public FullPath? ResolvePath( Utf8GamePath path )
         => _cache?.ResolvePath( path );
@@ -60,8 +65,16 @@ public partial class ModCollection2
     internal IReadOnlyList< ConflictCache.ModCacheStruct > Conflicts
         => _cache?.Conflicts.Conflicts ?? Array.Empty< ConflictCache.ModCacheStruct >();
 
+    internal IEnumerable< ConflictCache.ModCacheStruct > ModConflicts( int modIdx )
+        => _cache?.Conflicts.ModConflicts( modIdx ) ?? Array.Empty< ConflictCache.ModCacheStruct >();
+
     public void CalculateEffectiveFileList( bool withMetaManipulations, bool reloadResident )
     {
+        if( Index == 0 )
+        {
+            return;
+        }
+
         PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}]", Name, withMetaManipulations );
         _cache ??= new Cache( this );
         _cache.CalculateEffectiveFileList();
@@ -74,19 +87,21 @@ public partial class ModCollection2
         {
             Penumbra.ResidentResources.Reload();
         }
+
+        _cache.Conflicts.Sort();
     }
 
 
     // The ModCollectionCache contains all required temporary data to use a collection.
     // It will only be setup if a collection gets activated in any way.
-    private class Cache
+    private class Cache : IDisposable
     {
         // Shared caches to avoid allocations.
         private static readonly BitArray                        FileSeen         = new(256);
         private static readonly Dictionary< Utf8GamePath, int > RegisteredFiles  = new(256);
         private static readonly List< ModSettings? >            ResolvedSettings = new(128);
 
-        private readonly ModCollection2                       _collection;
+        private readonly ModCollection                        _collection;
         private readonly SortedList< string, object? >        _changedItems = new();
         public readonly  Dictionary< Utf8GamePath, FullPath > ResolvedFiles = new();
         public readonly  HashSet< FullPath >                  MissingFiles  = new();
@@ -102,11 +117,34 @@ public partial class ModCollection2
             }
         }
 
-        public Cache( ModCollection2 collection )
+        public Cache( ModCollection collection )
         {
-            _collection       = collection;
-            MetaManipulations = new MetaManager( collection );
+            _collection                    =  collection;
+            MetaManipulations              =  new MetaManager( collection );
+            _collection.ModSettingChanged  += OnModSettingChange;
+            _collection.InheritanceChanged += OnInheritanceChange;
         }
+
+        public void Dispose()
+        {
+            _collection.ModSettingChanged  -= OnModSettingChange;
+            _collection.InheritanceChanged -= OnInheritanceChange;
+        }
+
+        private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, string? optionName, bool _ )
+        {
+            if( type == ModSettingChange.Priority && !Conflicts.ModConflicts( modIdx ).Any()
+            || type  == ModSettingChange.Setting  && !_collection[ modIdx ].Settings!.Enabled )
+            {
+                return;
+            }
+
+            var hasMeta = Penumbra.ModManager[ modIdx ].Resources.MetaManipulations.Count       > 0;
+            _collection.CalculateEffectiveFileList( hasMeta, Penumbra.CollectionManager.Default == _collection );
+        }
+
+        private void OnInheritanceChange( bool _ )
+            => _collection.CalculateEffectiveFileList( true, true );
 
         private static void ResetFileSeen( int size )
         {
@@ -136,6 +174,7 @@ public partial class ModCollection2
         {
             ClearStorageAndPrepare();
 
+            Conflicts.ClearFileConflicts();
             for( var i = 0; i < Penumbra.ModManager.Mods.Count; ++i )
             {
                 if( ResolvedSettings[ i ]?.Enabled == true )
@@ -240,7 +279,7 @@ public partial class ModCollection2
             }
         }
 
-        private void AddPathsForOption( Option option, ModData mod, int modIdx, bool enabled )
+        private void AddPathsForOption( Option option, Mod.Mod mod, int modIdx, bool enabled )
         {
             foreach( var (file, paths) in option.OptionFiles )
             {
@@ -270,7 +309,7 @@ public partial class ModCollection2
             }
         }
 
-        private void AddFilesForSingle( OptionGroup singleGroup, ModData mod, int modIdx )
+        private void AddFilesForSingle( OptionGroup singleGroup, Mod.Mod mod, int modIdx )
         {
             Debug.Assert( singleGroup.SelectionType == SelectType.Single );
             var settings = ResolvedSettings[ modIdx ]!;
@@ -285,7 +324,7 @@ public partial class ModCollection2
             }
         }
 
-        private void AddFilesForMulti( OptionGroup multiGroup, ModData mod, int modIdx )
+        private void AddFilesForMulti( OptionGroup multiGroup, Mod.Mod mod, int modIdx )
         {
             Debug.Assert( multiGroup.SelectionType == SelectType.Multi );
             var settings = ResolvedSettings[ modIdx ]!;
@@ -301,7 +340,7 @@ public partial class ModCollection2
             }
         }
 
-        private void AddRemainingFiles( ModData mod, int modIdx )
+        private void AddRemainingFiles( Mod.Mod mod, int modIdx )
         {
             for( var i = 0; i < mod.Resources.ModFiles.Count; ++i )
             {

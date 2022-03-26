@@ -9,6 +9,7 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
@@ -119,16 +120,11 @@ public partial class SettingsInterface
         }
 
         // This is only drawn when we have a mod selected, so we can forgive nulls.
-        private Mod.Mod Mod
+        private FullMod Mod
             => _selector.Mod!;
 
         private ModMeta Meta
             => Mod.Data.Meta;
-
-        private void Save()
-        {
-            Penumbra.CollectionManager.CurrentCollection.Save();
-        }
 
         private void DrawAboutTab()
         {
@@ -189,7 +185,8 @@ public partial class SettingsInterface
 
         private void DrawConflictTab()
         {
-            if( !Mod.Cache.Conflicts.Any() || !ImGui.BeginTabItem( LabelConflictsTab ) )
+            var conflicts = Penumbra.CollectionManager.Current.ModConflicts( Mod.Data.Index ).ToList();
+            if( conflicts.Count == 0 || !ImGui.BeginTabItem( LabelConflictsTab ) )
             {
                 return;
             }
@@ -203,32 +200,43 @@ public partial class SettingsInterface
             }
 
             raii.Push( ImGui.EndListBox );
-            using var indent = ImGuiRaii.PushIndent( 0 );
-            foreach( var (mod, (files, manipulations)) in Mod.Cache.Conflicts )
+            using var indent    = ImGuiRaii.PushIndent( 0 );
+            Mod.Mod?  oldBadMod = null;
+            foreach( var conflict in conflicts )
             {
-                if( ImGui.Selectable( mod.Data.Meta.Name ) )
+                var badMod = Penumbra.ModManager[ conflict.Mod2 ];
+                if( badMod != oldBadMod )
                 {
-                    _selector.SelectModByDir( mod.Data.BasePath.Name );
+                    if( oldBadMod != null )
+                    {
+                        indent.Pop( 30f );
+                    }
+
+                    if( ImGui.Selectable( badMod.Meta.Name ) )
+                    {
+                        _selector.SelectModByDir( badMod.BasePath.Name );
+                    }
+
+                    ImGui.SameLine();
+                    using var color = ImGuiRaii.PushColor( ImGuiCol.Text, conflict.Mod1Priority ? ColorGreen : ColorRed );
+                    ImGui.Text( $"(Priority {Penumbra.CollectionManager.Current[ conflict.Mod2 ].Settings!.Priority})" );
+
+                    indent.Push( 30f );
                 }
 
-                ImGui.SameLine();
-                ImGui.Text( $"(Priority {mod.Settings.Priority})" );
-
-                indent.Push( 15f );
-                foreach( var file in files )
+                if( conflict.Conflict is Utf8GamePath p )
                 {
                     unsafe
                     {
-                        ImGuiNative.igSelectable_Bool( file.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero );
+                        ImGuiNative.igSelectable_Bool( p.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero );
                     }
                 }
-
-                foreach( var manip in manipulations )
+                else if( conflict.Conflict is MetaManipulation m )
                 {
-                    //ImGui.Text( manip.IdentifierString() );
+                    ImGui.Selectable( m.Manipulation?.ToString() ?? string.Empty );
                 }
 
-                indent.Pop( 15f );
+                oldBadMod = badMod;
             }
         }
 
@@ -421,11 +429,12 @@ public partial class SettingsInterface
             {
                 _fullFilenameList = null;
                 _selector.SaveCurrentMod();
+                var idx = Penumbra.ModManager.Mods.IndexOf( Mod.Data );
                 // Since files may have changed, we need to recompute effective files.
-                foreach( var collection in Penumbra.CollectionManager.Collections
-                           .Where( c => c.Cache != null && c.Settings[ Mod.Data.BasePath.Name ].Enabled ) )
+                foreach( var collection in Penumbra.CollectionManager
+                           .Where( c => c.HasCache && c[ idx ].Settings?.Enabled == true ) )
                 {
-                    collection.CalculateEffectiveFileList( false, Penumbra.CollectionManager.IsActive( collection ) );
+                    collection.CalculateEffectiveFileList( false, collection == Penumbra.CollectionManager.Default );
                 }
 
                 // If the mod is enabled in the current collection, its conflicts may have changed.
@@ -553,12 +562,12 @@ public partial class SettingsInterface
             var oldEnabled = enabled;
             if( ImGui.Checkbox( label, ref enabled ) && oldEnabled != enabled )
             {
-                Mod.Settings.Settings[ group.GroupName ] ^= 1 << idx;
-                Save();
+                Penumbra.CollectionManager.Current.SetModSetting( Mod.Data.Index, group.GroupName,
+                    Mod.Settings.Settings[ group.GroupName ] ^ ( 1 << idx ) );
                 // If the mod is enabled, recalculate files and filters.
                 if( Mod.Settings.Enabled )
                 {
-                    _base.RecalculateCurrent( Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    _selector.Cache.TriggerFilterReset();
                 }
             }
         }
@@ -591,12 +600,10 @@ public partial class SettingsInterface
                    , group.Options.Select( x => x.OptionName ).ToArray(), group.Options.Count )
             && code != Mod.Settings.Settings[ group.GroupName ] )
             {
-                Mod.Settings.Settings[ group.GroupName ] = code;
-                Save();
-                // If the mod is enabled, recalculate files and filters.
+                Penumbra.CollectionManager.Current.SetModSetting( Mod.Data.Index, group.GroupName, code );
                 if( Mod.Settings.Enabled )
                 {
-                    _base.RecalculateCurrent( Mod.Data.Resources.MetaManipulations.Count > 0 );
+                    _selector.Cache.TriggerFilterReset();
                 }
             }
         }

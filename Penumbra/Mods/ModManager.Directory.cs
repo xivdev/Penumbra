@@ -9,9 +9,9 @@ namespace Penumbra.Mods;
 
 public partial class ModManagerNew
 {
-    private readonly List< ModData > _mods = new();
+    private readonly List< Mod.Mod > _mods = new();
 
-    public IReadOnlyList< ModData > Mods
+    public IReadOnlyList< Mod.Mod > Mods
         => _mods;
 
     public void DiscoverMods()

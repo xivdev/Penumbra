@@ -22,9 +22,8 @@ public partial class SettingsInterface
         private readonly Selector                  _selector;
         private          string                    _collectionNames         = null!;
         private          string                    _collectionNamesWithNone = null!;
-        private          ModCollection2[]          _collections             = null!;
+        private          ModCollection[]          _collections             = null!;
         private          int                       _currentCollectionIndex;
-        private          int                       _currentForcedIndex;
         private          int                       _currentDefaultIndex;
         private readonly Dictionary< string, int > _currentCharacterIndices = new();
         private          string                    _newCollectionName       = string.Empty;
@@ -32,14 +31,14 @@ public partial class SettingsInterface
 
         private void UpdateNames()
         {
-            _collections             = Penumbra.CollectionManager.Prepend( ModCollection2.Empty ).ToArray();
+            _collections             = Penumbra.CollectionManager.Prepend( ModCollection.Empty ).ToArray();
             _collectionNames         = string.Join( "\0", _collections.Skip( 1 ).Select( c => c.Name ) ) + '\0';
             _collectionNamesWithNone = "None\0"                                                          + _collectionNames;
             UpdateIndices();
         }
 
 
-        private int GetIndex( ModCollection2 collection )
+        private int GetIndex( ModCollection collection )
         {
             var ret = _collections.IndexOf( c => c.Name == collection.Name );
             if( ret < 0 )
@@ -52,20 +51,17 @@ public partial class SettingsInterface
         }
 
         private void UpdateIndex()
-            => _currentCollectionIndex = GetIndex( Penumbra.CollectionManager.CurrentCollection ) - 1;
-
-        public void UpdateForcedIndex()
-            => _currentForcedIndex = GetIndex( Penumbra.CollectionManager.ForcedCollection );
+            => _currentCollectionIndex = GetIndex( Penumbra.CollectionManager.Current ) - 1;
 
         public void UpdateDefaultIndex()
-            => _currentDefaultIndex = GetIndex( Penumbra.CollectionManager.DefaultCollection );
+            => _currentDefaultIndex = GetIndex( Penumbra.CollectionManager.Default );
 
         private void UpdateCharacterIndices()
         {
             _currentCharacterIndices.Clear();
-            foreach( var kvp in Penumbra.CollectionManager.CharacterCollection )
+            foreach( var (character, collection) in Penumbra.CollectionManager.Characters )
             {
-                _currentCharacterIndices[ kvp.Key ] = GetIndex( kvp.Value );
+                _currentCharacterIndices[ character ] = GetIndex( collection );
             }
         }
 
@@ -73,7 +69,6 @@ public partial class SettingsInterface
         {
             UpdateIndex();
             UpdateDefaultIndex();
-            UpdateForcedIndex();
             UpdateCharacterIndices();
         }
 
@@ -83,24 +78,22 @@ public partial class SettingsInterface
             UpdateNames();
         }
 
-        private void CreateNewCollection( Dictionary< string, ModSettings > settings )
+        private void CreateNewCollection( bool duplicate )
         {
-            if( Penumbra.CollectionManager.AddCollection( _newCollectionName, settings ) )
+            if( Penumbra.CollectionManager.AddCollection( _newCollectionName, duplicate ? Penumbra.CollectionManager.Current : null ) )
             {
                 UpdateNames();
-                SetCurrentCollection( Penumbra.CollectionManager.ByName( _newCollectionName )!, true );
+                SetCurrentCollection( Penumbra.CollectionManager[ _newCollectionName ]!, true );
             }
 
             _newCollectionName = string.Empty;
         }
 
-        private void DrawCleanCollectionButton()
+        private static void DrawCleanCollectionButton()
         {
             if( ImGui.Button( "Clean Settings" ) )
             {
-                var changes = ModFunctions.CleanUpCollection( Penumbra.CollectionManager.CurrentCollection.Settings,
-                    Penumbra.ModManager.BasePath.EnumerateDirectories() );
-                Penumbra.CollectionManager.CurrentCollection.UpdateSettings( changes );
+                Penumbra.CollectionManager.Current.CleanUnavailableSettings();
             }
 
             ImGuiCustom.HoverTooltip(
@@ -120,14 +113,14 @@ public partial class SettingsInterface
 
             if( ImGui.Button( "Create New Empty Collection" ) && _newCollectionName.Length > 0 )
             {
-                CreateNewCollection( new Dictionary< string, ModSettings >() );
+                CreateNewCollection( false );
             }
 
             var hover = ImGui.IsItemHovered();
             ImGui.SameLine();
             if( ImGui.Button( "Duplicate Current Collection" ) && _newCollectionName.Length > 0 )
             {
-                CreateNewCollection( Penumbra.CollectionManager.CurrentCollection.Settings );
+                CreateNewCollection( true );
             }
 
             hover |= ImGui.IsItemHovered();
@@ -138,13 +131,12 @@ public partial class SettingsInterface
                 ImGui.SetTooltip( "Please enter a name before creating a collection." );
             }
 
-            var deleteCondition = Penumbra.CollectionManager.Collections.Count > 1
-             && Penumbra.CollectionManager.CurrentCollection.Name              != ModCollection.DefaultCollection;
+            var deleteCondition = Penumbra.CollectionManager.Current.Name != ModCollection.DefaultCollection;
             ImGui.SameLine();
             if( ImGuiCustom.DisableButton( "Delete Current Collection", deleteCondition ) )
             {
-                Penumbra.CollectionManager.RemoveCollection( Penumbra.CollectionManager.CurrentCollection.Name );
-                SetCurrentCollection( Penumbra.CollectionManager.CurrentCollection, true );
+                Penumbra.CollectionManager.RemoveCollection( Penumbra.CollectionManager.Current );
+                SetCurrentCollection( Penumbra.CollectionManager.Current, true );
                 UpdateNames();
             }
 
@@ -167,7 +159,7 @@ public partial class SettingsInterface
                 return;
             }
 
-            Penumbra.CollectionManager.SetCollection( _collections[ idx + 1 ], CollectionType.Current );
+            Penumbra.CollectionManager.SetCollection( _collections[ idx + 1 ], ModCollection.Type.Current );
             _currentCollectionIndex = idx;
             _selector.Cache.TriggerListReset();
             if( _selector.Mod != null )
@@ -176,7 +168,7 @@ public partial class SettingsInterface
             }
         }
 
-        public void SetCurrentCollection( ModCollection2 collection, bool force = false )
+        public void SetCurrentCollection( ModCollection collection, bool force = false )
         {
             var idx = Array.IndexOf( _collections, collection ) - 1;
             if( idx >= 0 )
@@ -206,7 +198,7 @@ public partial class SettingsInterface
             ImGui.SetNextItemWidth( SettingsMenu.InputTextWidth );
             if( ImGui.Combo( "##Default Collection", ref index, _collectionNamesWithNone ) && index != _currentDefaultIndex )
             {
-                Penumbra.CollectionManager.SetCollection( _collections[ index ], CollectionType.Default );
+                Penumbra.CollectionManager.SetCollection( _collections[ index ], ModCollection.Type.Default );
                 _currentDefaultIndex = index;
             }
 
@@ -217,34 +209,6 @@ public partial class SettingsInterface
 
             ImGui.SameLine();
             ImGui.Text( "Default Collection" );
-        }
-
-        private void DrawForcedCollectionSelector()
-        {
-            var index = _currentForcedIndex;
-            ImGui.SetNextItemWidth( SettingsMenu.InputTextWidth );
-            using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, Penumbra.CollectionManager.CharacterCollection.Count == 0 );
-            if( ImGui.Combo( "##Forced Collection", ref index, _collectionNamesWithNone )
-            && index                                                != _currentForcedIndex
-            && Penumbra.CollectionManager.CharacterCollection.Count > 0 )
-            {
-                Penumbra.CollectionManager.SetCollection( _collections[ index ], CollectionType.Forced );
-                _currentForcedIndex = index;
-            }
-
-            style.Pop();
-            if( Penumbra.CollectionManager.CharacterCollection.Count == 0 && ImGui.IsItemHovered() )
-            {
-                ImGui.SetTooltip(
-                    "Forced Collections only provide value if you have at least one Character Collection. There is no need to set one until then." );
-            }
-
-            ImGui.SameLine();
-            ImGuiComponents.HelpMarker(
-                "Mods in the forced collection are always loaded if not overwritten by anything in the current or character-based collection.\n"
-              + "Please avoid mixing meta-manipulating mods in Forced and other collections, as this will probably not work correctly." );
-            ImGui.SameLine();
-            ImGui.Text( "Forced Collection" );
         }
 
         private void DrawNewCharacterCollection()
@@ -339,16 +303,15 @@ public partial class SettingsInterface
             }
 
             DrawDefaultCollectionSelector();
-            DrawForcedCollectionSelector();
 
-            foreach( var name in Penumbra.CollectionManager.CharacterCollection.Keys.ToArray() )
+            foreach( var (name, collection) in Penumbra.CollectionManager.Characters.ToArray() )
             {
                 var idx = _currentCharacterIndices[ name ];
                 var tmp = idx;
                 ImGui.SetNextItemWidth( SettingsMenu.InputTextWidth );
                 if( ImGui.Combo( $"##{name}collection", ref tmp, _collectionNamesWithNone ) && idx != tmp )
                 {
-                    Penumbra.CollectionManager.SetCollection( _collections[ tmp ], CollectionType.Character, name );
+                    Penumbra.CollectionManager.SetCollection( _collections[ tmp ], ModCollection.Type.Character, name );
                     _currentCharacterIndices[ name ] = tmp;
                 }
 

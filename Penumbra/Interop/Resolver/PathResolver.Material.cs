@@ -41,7 +41,7 @@ public unsafe partial class PathResolver
         return ret;
     }
 
-    private ModCollection2? _mtrlCollection;
+    private ModCollection? _mtrlCollection;
 
     private void LoadMtrlHelper( IntPtr mtrlResourceHandle )
     {
@@ -56,7 +56,7 @@ public unsafe partial class PathResolver
     }
 
     // Check specifically for shpk and tex files whether we are currently in a material load.
-    private bool HandleMaterialSubFiles( ResourceType type, out ModCollection2? collection )
+    private bool HandleMaterialSubFiles( ResourceType type, out ModCollection? collection )
     {
         if( _mtrlCollection != null && type is ResourceType.Tex or ResourceType.Shpk )
         {
@@ -96,7 +96,7 @@ public unsafe partial class PathResolver
     }
 
     // Materials need to be set per collection so they can load their textures independently from each other.
-    private static void HandleMtrlCollection( ModCollection2 collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
+    private static void HandleMtrlCollection( ModCollection collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
         out (FullPath?, object?) data )
     {
         if( nonDefault && type == ResourceType.Mtrl )

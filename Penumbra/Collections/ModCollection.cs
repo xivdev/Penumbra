@@ -16,15 +16,25 @@ namespace Penumbra.Collections;
 // It is meant to be local only, and thus should always contain settings for every mod, not just the enabled ones.
 // Settings to mods that are not installed anymore are kept as long as no call to CleanUnavailableSettings is made.
 // Active ModCollections build a cache of currently relevant data.
-public partial class ModCollection2
+public partial class ModCollection
 {
     public const int    CurrentVersion    = 1;
     public const string DefaultCollection = "Default";
+    public const string EmptyCollection   = "None";
 
-    public static readonly ModCollection2 Empty = CreateNewEmpty( "None" );
+    public static readonly ModCollection Empty = CreateEmpty();
+
+    private static ModCollection CreateEmpty()
+    {
+        var collection = CreateNewEmpty( EmptyCollection );
+        collection.Index = 0;
+        collection._settings.Clear();
+        return collection;
+    }
 
     public string Name { get; private init; }
     public int Version { get; private set; }
+    public int Index { get; private set; } = -1;
 
     private readonly List< ModSettings? > _settings;
 
@@ -37,7 +47,7 @@ public partial class ModCollection2
     private readonly Dictionary< string, ModSettings > _unusedSettings;
 
 
-    private ModCollection2( string name, ModCollection2 duplicate )
+    private ModCollection( string name, ModCollection duplicate )
     {
         Name               =  name;
         Version            =  duplicate.Version;
@@ -45,10 +55,10 @@ public partial class ModCollection2
         _unusedSettings    =  duplicate._unusedSettings.ToDictionary( kvp => kvp.Key, kvp => kvp.Value.DeepCopy() );
         _inheritance       =  duplicate._inheritance.ToList();
         ModSettingChanged  += SaveOnChange;
-        InheritanceChanged += Save;
+        InheritanceChanged += SaveOnChange;
     }
 
-    private ModCollection2( string name, int version, Dictionary< string, ModSettings > allSettings )
+    private ModCollection( string name, int version, Dictionary< string, ModSettings > allSettings )
     {
         Name            = name;
         Version         = version;
@@ -66,19 +76,19 @@ public partial class ModCollection2
 
         Migration.Migrate( this );
         ModSettingChanged  += SaveOnChange;
-        InheritanceChanged += Save;
+        InheritanceChanged += SaveOnChange;
     }
 
-    public static ModCollection2 CreateNewEmpty( string name )
+    public static ModCollection CreateNewEmpty( string name )
         => new(name, CurrentVersion, new Dictionary< string, ModSettings >());
 
-    public ModCollection2 Duplicate( string name )
+    public ModCollection Duplicate( string name )
         => new(name, this);
 
-    internal static ModCollection2 MigrateFromV0( string name, Dictionary< string, ModSettings > allSettings )
+    internal static ModCollection MigrateFromV0( string name, Dictionary< string, ModSettings > allSettings )
         => new(name, 0, allSettings);
 
-    private void CleanUnavailableSettings()
+    public void CleanUnavailableSettings()
     {
         var any = _unusedSettings.Count > 0;
         _unusedSettings.Clear();
@@ -88,7 +98,7 @@ public partial class ModCollection2
         }
     }
 
-    public void AddMod( ModData mod )
+    public void AddMod( Mod.Mod mod )
     {
         if( _unusedSettings.TryGetValue( mod.BasePath.Name, out var settings ) )
         {
@@ -101,7 +111,7 @@ public partial class ModCollection2
         }
     }
 
-    public void RemoveMod( ModData mod, int idx )
+    public void RemoveMod( Mod.Mod mod, int idx )
     {
         var settings = _settings[ idx ];
         if( settings != null )
@@ -165,6 +175,11 @@ public partial class ModCollection2
 
     public void Delete()
     {
+        if( Index == 0 )
+        {
+            return;
+        }
+
         var file = FileName;
         if( file.Exists )
         {
@@ -179,7 +194,7 @@ public partial class ModCollection2
         }
     }
 
-    public static ModCollection2? LoadFromFile( FileInfo file, out IReadOnlyList< string > inheritance )
+    public static ModCollection? LoadFromFile( FileInfo file, out IReadOnlyList< string > inheritance )
     {
         inheritance = Array.Empty< string >();
         if( !file.Exists )
@@ -197,7 +212,7 @@ public partial class ModCollection2
              ?? new Dictionary< string, ModSettings >();
             inheritance = obj[ nameof( Inheritance ) ]?.ToObject< List< string > >() ?? ( IReadOnlyList< string > )Array.Empty< string >();
 
-            return new ModCollection2( name, version, settings );
+            return new ModCollection( name, version, settings );
         }
         catch( Exception e )
         {

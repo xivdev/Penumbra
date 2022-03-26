@@ -37,12 +37,10 @@ public partial class SettingsInterface
         using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
         var manager = Penumbra.ModManager;
-        PrintValue( "Current Collection", Penumbra.CollectionManager.CurrentCollection.Name );
-        PrintValue( "    has Cache", ( Penumbra.CollectionManager.CurrentCollection.Cache != null ).ToString() );
-        PrintValue( "Default Collection", Penumbra.CollectionManager.DefaultCollection.Name );
-        PrintValue( "    has Cache", ( Penumbra.CollectionManager.DefaultCollection.Cache != null ).ToString() );
-        PrintValue( "Forced Collection", Penumbra.CollectionManager.ForcedCollection.Name );
-        PrintValue( "    has Cache", ( Penumbra.CollectionManager.ForcedCollection.Cache != null ).ToString() );
+        PrintValue( "Current Collection", Penumbra.CollectionManager.Current.Name );
+        PrintValue( "    has Cache", Penumbra.CollectionManager.Current.HasCache.ToString() );
+        PrintValue( "Default Collection", Penumbra.CollectionManager.Default.Name );
+        PrintValue( "    has Cache", Penumbra.CollectionManager.Default.HasCache.ToString() );
         PrintValue( "Mod Manager BasePath", manager.BasePath.Name );
         PrintValue( "Mod Manager BasePath-Full", manager.BasePath.FullName );
         PrintValue( "Mod Manager BasePath IsRooted", Path.IsPathRooted( Penumbra.Config.ModDirectory ).ToString() );
@@ -111,15 +109,15 @@ public partial class SettingsInterface
             return;
         }
 
-        var cache = Penumbra.CollectionManager.CurrentCollection.Cache;
-        if( cache == null || !ImGui.BeginTable( "##MissingFilesDebugList", 1, ImGuiTableFlags.RowBg, -Vector2.UnitX ) )
+        if( !Penumbra.CollectionManager.Current.HasCache
+        || !ImGui.BeginTable( "##MissingFilesDebugList", 1, ImGuiTableFlags.RowBg, -Vector2.UnitX ) )
         {
             return;
         }
 
         using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTable );
 
-        foreach( var file in cache.MissingFiles )
+        foreach( var file in Penumbra.CollectionManager.Current.MissingFiles )
         {
             ImGui.TableNextRow();
             ImGui.TableNextColumn();

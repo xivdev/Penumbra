@@ -74,7 +74,7 @@ public static class ModelChanger
         }
     }
 
-    public static bool ChangeModMaterials( ModData mod, string from, string to )
+    public static bool ChangeModMaterials( Mod.Mod mod, string from, string to )
     {
         if( ValidStrings( from, to ) )
         {

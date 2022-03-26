@@ -53,13 +53,13 @@ public class ModCleanup
         }
     }
 
-    private static DirectoryInfo CreateNewModDir( ModData mod, string optionGroup, string option )
+    private static DirectoryInfo CreateNewModDir( Mod mod, string optionGroup, string option )
     {
         var newName = $"{mod.BasePath.Name}_{optionGroup}_{option}";
         return TexToolsImport.CreateModFolder( new DirectoryInfo( Penumbra.Config.ModDirectory ), newName );
     }
 
-    private static ModData CreateNewMod( DirectoryInfo newDir, string newSortOrder )
+    private static Mod CreateNewMod( DirectoryInfo newDir, string newSortOrder )
     {
         var idx    = Penumbra.ModManager.AddMod( newDir );
         var newMod = Penumbra.ModManager.Mods[ idx ];
@@ -69,7 +69,7 @@ public class ModCleanup
         return newMod;
     }
 
-    private static ModMeta CreateNewMeta( DirectoryInfo newDir, ModData mod, string name, string optionGroup, string option )
+    private static ModMeta CreateNewMeta( DirectoryInfo newDir, Mod mod, string name, string optionGroup, string option )
     {
         var newMeta = new ModMeta
         {
@@ -82,7 +82,7 @@ public class ModCleanup
         return newMeta;
     }
 
-    private static void CreateModSplit( HashSet< string > unseenPaths, ModData mod, OptionGroup group, Option option )
+    private static void CreateModSplit( HashSet< string > unseenPaths, Mod mod, OptionGroup group, Option option )
     {
         try
         {
@@ -105,8 +105,8 @@ public class ModCleanup
             }
 
             var newSortOrder = group.SelectionType == SelectType.Single
-                ? $"{mod.SortOrder.ParentFolder.FullName}/{mod.Meta.Name}/{group.GroupName}/{option.OptionName}"
-                : $"{mod.SortOrder.ParentFolder.FullName}/{mod.Meta.Name}/{group.GroupName} - {option.OptionName}";
+                ? $"{mod.Order.ParentFolder.FullName}/{mod.Meta.Name}/{group.GroupName}/{option.OptionName}"
+                : $"{mod.Order.ParentFolder.FullName}/{mod.Meta.Name}/{group.GroupName} - {option.OptionName}";
             CreateNewMod( newDir, newSortOrder );
         }
         catch( Exception e )
@@ -115,7 +115,7 @@ public class ModCleanup
         }
     }
 
-    public static void SplitMod( ModData mod )
+    public static void SplitMod( Mod mod )
     {
         if( mod.Meta.Groups.Count == 0 )
         {

@@ -55,26 +55,6 @@ public partial class SettingsInterface : IDisposable
         _menu.InstalledTab.Selector.Cache.TriggerListReset();
     }
 
-    private void SaveCurrentCollection( bool recalculateMeta )
-    {
-        var current = Penumbra.CollectionManager.CurrentCollection;
-        current.Save();
-        RecalculateCurrent( recalculateMeta );
-    }
-
-    private void RecalculateCurrent( bool recalculateMeta )
-    {
-        var current    = Penumbra.CollectionManager.CurrentCollection;
-        if( current.Cache != null )
-        {
-            current.CalculateEffectiveFileList( recalculateMeta, Penumbra.CollectionManager.IsActive( current ) );
-            _menu.InstalledTab.Selector.Cache.TriggerFilterReset();
-        }
-    }
-
     public void ResetDefaultCollection()
         => _menu.CollectionsTab.UpdateDefaultIndex();
-
-    public void ResetForcedCollection()
-        => _menu.CollectionsTab.UpdateForcedIndex();
 }

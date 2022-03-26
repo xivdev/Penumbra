@@ -16,6 +16,7 @@ using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
+using Penumbra.Mod;
 
 namespace Penumbra;
 
@@ -34,8 +35,8 @@ public class Penumbra : IDalamudPlugin
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
 
-    public static ModManager ModManager { get; private set; } = null!;
-    public static CollectionManager2 CollectionManager { get; private set; } = null!;
+    public static Mod.Mod.Manager ModManager { get; private set; } = null!;
+    public static ModCollection.Manager CollectionManager { get; private set; } = null!;
 
     public static ResourceLoader ResourceLoader { get; set; } = null!;
     public ResourceLogger ResourceLogger { get; }
@@ -66,9 +67,9 @@ public class Penumbra : IDalamudPlugin
         CharacterUtility  = new CharacterUtility();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLogger    = new ResourceLogger( ResourceLoader );
-        ModManager        = new ModManager();
+        ModManager        = new Mod.Mod.Manager();
         ModManager.DiscoverMods();
-        CollectionManager = new CollectionManager2( ModManager );
+        CollectionManager = new ModCollection.Manager( ModManager );
         ObjectReloader    = new ObjectReloader();
         PathResolver      = new PathResolver( ResourceLoader );
 
@@ -223,9 +224,9 @@ public class Penumbra : IDalamudPlugin
         type           = type.ToLowerInvariant();
         collectionName = collectionName.ToLowerInvariant();
 
-        var collection = string.Equals( collectionName, ModCollection2.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
-            ? ModCollection2.Empty
-            : CollectionManager[collectionName];
+        var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
+            ? ModCollection.Empty
+            : CollectionManager[ collectionName ];
         if( collection == null )
         {
             Dalamud.Chat.Print( $"The collection {collection} does not exist." );
@@ -241,7 +242,7 @@ public class Penumbra : IDalamudPlugin
                     return false;
                 }
 
-                CollectionManager.SetCollection( collection, CollectionType.Default );
+                CollectionManager.SetCollection( collection, ModCollection.Type.Default );
                 Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
                 SettingsInterface.ResetDefaultCollection();
                 return true;

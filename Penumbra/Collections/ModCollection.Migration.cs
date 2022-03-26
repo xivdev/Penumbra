@@ -3,11 +3,11 @@ using Penumbra.Mod;
 
 namespace Penumbra.Collections;
 
-public sealed partial class ModCollection2
+public sealed partial class ModCollection
 {
     private static class Migration
     {
-        public static void Migrate( ModCollection2 collection )
+        public static void Migrate( ModCollection collection )
         {
             var changes = MigrateV0ToV1( collection );
             if( changes )
@@ -16,7 +16,7 @@ public sealed partial class ModCollection2
             }
         }
 
-        private static bool MigrateV0ToV1( ModCollection2 collection )
+        private static bool MigrateV0ToV1( ModCollection collection )
         {
             if( collection.Version > 0 )
             {

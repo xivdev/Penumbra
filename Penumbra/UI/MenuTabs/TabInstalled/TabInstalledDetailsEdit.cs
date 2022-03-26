@@ -209,7 +209,7 @@ public partial class SettingsInterface
                 {
                     if( newName.Length > 0 )
                     {
-                        Mod.Settings.Settings[ group.GroupName ] = code;
+                        Penumbra.CollectionManager.Current.SetModSetting(Mod.Data.Index, group.GroupName, code);
                         group.Options.Add( new Option()
                         {
                             OptionName  = newName,
@@ -243,11 +243,6 @@ public partial class SettingsInterface
                 {
                     _selector.Cache.TriggerFilterReset();
                 }
-            }
-
-            if( code != oldSetting )
-            {
-                Save();
             }
 
             ImGui.SameLine();

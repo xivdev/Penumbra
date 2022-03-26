@@ -25,9 +25,7 @@ public partial class SettingsInterface
                 return;
             }
 
-            var modManager = Penumbra.ModManager;
-            var items      = Penumbra.CollectionManager.DefaultCollection.Cache?.ChangedItems ?? new Dictionary< string, object? >();
-            var forced     = Penumbra.CollectionManager.ForcedCollection.Cache?.ChangedItems  ?? new Dictionary< string, object? >();
+            var items = Penumbra.CollectionManager.Default.ChangedItems;
 
             using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
 
@@ -45,12 +43,8 @@ public partial class SettingsInterface
             raii.Push( ImGui.EndTable );
 
             var list = items.AsEnumerable();
-            if( forced.Count > 0 )
-            {
-                list = list.Concat( forced ).OrderBy( kvp => kvp.Key );
-            }
 
-            if( _filter.Any() )
+            if( _filter.Length > 0 )
             {
                 list = list.Where( kvp => kvp.Key.ToLowerInvariant().Contains( _filterLower ) );
             }

@@ -130,7 +130,7 @@ public unsafe partial class PathResolver
 
     // Just add or remove the resolved path.
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
-    private IntPtr ResolvePathDetour( ModCollection2 collection, IntPtr path )
+    private IntPtr ResolvePathDetour( ModCollection collection, IntPtr path )
     {
         if( path == IntPtr.Zero )
         {

@@ -6,16 +6,16 @@ using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
-public partial class ModCollection2
+public partial class ModCollection
 {
-    private readonly List< ModCollection2 > _inheritance = new();
+    private readonly List< ModCollection > _inheritance = new();
 
-    public event Action InheritanceChanged;
+    public event Action< bool > InheritanceChanged;
 
-    public IReadOnlyList< ModCollection2 > Inheritance
+    public IReadOnlyList< ModCollection > Inheritance
         => _inheritance;
 
-    public IEnumerable< ModCollection2 > GetFlattenedInheritance()
+    public IEnumerable< ModCollection > GetFlattenedInheritance()
     {
         yield return this;
 
@@ -27,7 +27,7 @@ public partial class ModCollection2
         }
     }
 
-    public bool AddInheritance( ModCollection2 collection )
+    public bool AddInheritance( ModCollection collection )
     {
         if( ReferenceEquals( collection, this ) || _inheritance.Contains( collection ) )
         {
@@ -35,25 +35,41 @@ public partial class ModCollection2
         }
 
         _inheritance.Add( collection );
-        InheritanceChanged.Invoke();
+        collection.ModSettingChanged  += OnInheritedModSettingChange;
+        collection.InheritanceChanged += OnInheritedInheritanceChange;
+        InheritanceChanged.Invoke( false );
         return true;
     }
 
     public void RemoveInheritance( int idx )
     {
+        var inheritance = _inheritance[ idx ];
+        inheritance.ModSettingChanged  -= OnInheritedModSettingChange;
+        inheritance.InheritanceChanged -= OnInheritedInheritanceChange;
         _inheritance.RemoveAt( idx );
-        InheritanceChanged.Invoke();
+        InheritanceChanged.Invoke( false );
     }
 
     public void MoveInheritance( int from, int to )
     {
         if( _inheritance.Move( from, to ) )
         {
-            InheritanceChanged.Invoke();
+            InheritanceChanged.Invoke( false );
         }
     }
 
-    public (ModSettings? Settings, ModCollection2 Collection) this[ Index idx ]
+    private void OnInheritedModSettingChange( ModSettingChange type, int modIdx, int oldValue, string? optionName, bool _ )
+    {
+        if( _settings[ modIdx ] == null )
+        {
+            ModSettingChanged.Invoke( type, modIdx, oldValue, optionName, true );
+        }
+    }
+
+    private void OnInheritedInheritanceChange( bool _ )
+        => InheritanceChanged.Invoke( true );
+
+    public (ModSettings? Settings, ModCollection Collection) this[ Index idx ]
     {
         get
         {

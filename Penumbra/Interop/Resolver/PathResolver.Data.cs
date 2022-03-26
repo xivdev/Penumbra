@@ -91,10 +91,10 @@ public unsafe partial class PathResolver
 
     // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
     // It contains any DrawObjects that correspond to a human actor, even those without specific collections.
-    internal readonly Dictionary< IntPtr, (ModCollection2, int) > DrawObjectToObject = new();
+    internal readonly Dictionary< IntPtr, (ModCollection, int) > DrawObjectToObject = new();
 
     // This map links files to their corresponding collection, if it is non-default.
-    internal readonly ConcurrentDictionary< Utf8String, ModCollection2 > PathCollections = new();
+    internal readonly ConcurrentDictionary< Utf8String, ModCollection > PathCollections = new();
 
     internal GameObject* LastGameObject = null;
 
@@ -159,7 +159,7 @@ public unsafe partial class PathResolver
     }
 
     // Identify the correct collection for a GameObject by index and name.
-    private static ModCollection2 IdentifyCollection( GameObject* gameObject )
+    private static ModCollection IdentifyCollection( GameObject* gameObject )
     {
         if( gameObject == null )
         {
@@ -180,9 +180,9 @@ public unsafe partial class PathResolver
     }
 
     // Update collections linked to Game/DrawObjects due to a change in collection configuration.
-    private void CheckCollections( ModCollection2? _1, ModCollection2? _2, CollectionType type, string? name )
+    private void CheckCollections( ModCollection? _1, ModCollection? _2, ModCollection.Type type, string? name )
     {
-        if( type is not (CollectionType.Character or CollectionType.Default) )
+        if( type is not (ModCollection.Type.Character or ModCollection.Type.Default) )
         {
             return;
         }
@@ -200,7 +200,7 @@ public unsafe partial class PathResolver
     }
 
     // Use the stored information to find the GameObject and Collection linked to a DrawObject.
-    private GameObject* FindParent( IntPtr drawObject, out ModCollection2 collection )
+    private GameObject* FindParent( IntPtr drawObject, out ModCollection collection )
     {
         if( DrawObjectToObject.TryGetValue( drawObject, out var data ) )
         {
@@ -225,7 +225,7 @@ public unsafe partial class PathResolver
 
 
     // Special handling for paths so that we do not store non-owned temporary strings in the dictionary.
-    private void SetCollection( Utf8String path, ModCollection2 collection )
+    private void SetCollection( Utf8String path, ModCollection collection )
     {
         if( PathCollections.ContainsKey( path ) || path.IsOwned )
         {

@@ -11,9 +11,9 @@ public enum ModSettingChange
     Setting,
 }
 
-public partial class ModCollection2
+public partial class ModCollection
 {
-    public delegate void ModSettingChangeDelegate( ModSettingChange type, int modIdx, int oldValue, string? optionName );
+    public delegate void ModSettingChangeDelegate( ModSettingChange type, int modIdx, int oldValue, string? optionName, bool inherited );
     public event ModSettingChangeDelegate ModSettingChanged;
 
     // Enable or disable the mod inheritance of mod idx.
@@ -21,7 +21,7 @@ public partial class ModCollection2
     {
         if( FixInheritance( idx, inherit ) )
         {
-            ModSettingChanged.Invoke( ModSettingChange.Inheritance, idx, inherit ? 0 : 1, null );
+            ModSettingChanged.Invoke( ModSettingChange.Inheritance, idx, inherit ? 0 : 1, null, false );
         }
     }
 
@@ -32,9 +32,9 @@ public partial class ModCollection2
         var oldValue = _settings[ idx ]?.Enabled ?? this[ idx ].Settings?.Enabled ?? false;
         if( newValue != oldValue )
         {
-            var inheritance = FixInheritance( idx, true );
+            var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.Enabled = newValue;
-            ModSettingChanged.Invoke( ModSettingChange.EnableState, idx, inheritance ? -1 : newValue ? 0 : 1, null );
+            ModSettingChanged.Invoke( ModSettingChange.EnableState, idx, inheritance ? -1 : newValue ? 0 : 1, null, false );
         }
     }
 
@@ -45,9 +45,9 @@ public partial class ModCollection2
         var oldValue = _settings[ idx ]?.Priority ?? this[ idx ].Settings?.Priority ?? 0;
         if( newValue != oldValue )
         {
-            var inheritance = FixInheritance( idx, true );
+            var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.Priority = newValue;
-            ModSettingChanged.Invoke( ModSettingChange.Priority, idx, inheritance ? -1 : oldValue, null );
+            ModSettingChanged.Invoke( ModSettingChange.Priority, idx, inheritance ? -1 : oldValue, null, false );
         }
     }
 
@@ -63,10 +63,10 @@ public partial class ModCollection2
                 : newValue;
         if( oldValue != newValue )
         {
-            var inheritance = FixInheritance( idx, true );
+            var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.Settings[ settingName ] = newValue;
             _settings[ idx ]!.FixSpecificSetting( settingName, Penumbra.ModManager.Mods[ idx ].Meta );
-            ModSettingChanged.Invoke( ModSettingChange.Setting, idx, inheritance ? -1 : oldValue, settingName );
+            ModSettingChanged.Invoke( ModSettingChange.Setting, idx, inheritance ? -1 : oldValue, settingName, false );
         }
     }
 
@@ -108,6 +108,14 @@ public partial class ModCollection2
         return false;
     }
 
-    private void SaveOnChange( ModSettingChange _1, int _2, int _3, string? _4 )
-        => Save();
+    private void SaveOnChange( ModSettingChange _1, int _2, int _3, string? _4, bool inherited )
+        => SaveOnChange( inherited );
+
+    private void SaveOnChange( bool inherited )
+    {
+        if( !inherited )
+        {
+            Save();
+        }
+    }
 }

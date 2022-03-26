@@ -100,24 +100,66 @@ public partial class SettingsInterface
             return !_filePathFilter.Any() || kvp.Item3.Contains( _filePathFilterLower );
         }
 
-        private void DrawFilteredRows( ModCollection2 active )
+        private void DrawFilteredRows( ModCollection active )
         {
-            void DrawFileLines( ModCollection2.Cache cache )
+            foreach( var (gp, fp) in active.ResolvedFiles.Where( CheckFilters ) )
             {
-                foreach( var (gp, fp) in cache.ResolvedFiles.Where( CheckFilters ) )
-                {
-                    DrawLine( gp, fp );
-                }
-
-                //foreach( var (mp, mod, _) in cache.MetaManipulations.Manipulations
-                //           .Select( p => ( p.Item1.IdentifierString(), p.Item2.Data.Meta.Name, p.Item2.Data.Meta.LowerName ) )
-                //           .Where( CheckFilters ) )
-                //{
-                //    DrawLine( mp, mod );
-                //}
+                DrawLine( gp, fp );
             }
 
-            DrawFileLines( active );
+            var cache = active.MetaCache;
+            if( cache == null )
+            {
+                return;
+            }
+
+            foreach( var (mp, mod, _) in cache.Cmp.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
+                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+                       .Where( CheckFilters ) )
+            {
+                DrawLine( mp, mod );
+            }
+
+            foreach( var (mp, mod, _) in cache.Eqp.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
+                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+                       .Where( CheckFilters ) )
+            {
+                DrawLine( mp, mod );
+            }
+
+            foreach( var (mp, mod, _) in cache.Eqdp.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
+                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+                       .Where( CheckFilters ) )
+            {
+                DrawLine( mp, mod );
+            }
+
+            foreach( var (mp, mod, _) in cache.Gmp.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
+                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+                       .Where( CheckFilters ) )
+            {
+                DrawLine( mp, mod );
+            }
+
+            foreach( var (mp, mod, _) in cache.Est.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
+                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+                       .Where( CheckFilters ) )
+            {
+                DrawLine( mp, mod );
+            }
+
+            foreach( var (mp, mod, _) in cache.Imc.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
+                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+                       .Where( CheckFilters ) )
+            {
+                DrawLine( mp, mod );
+            }
         }
 
         public void Draw()
@@ -133,17 +175,12 @@ public partial class SettingsInterface
 
             const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.ScrollX;
 
-            var modManager        = Penumbra.ModManager;
-            var defaultCollection = Penumbra.CollectionManager.DefaultCollection.Cache;
-            var forcedCollection  = Penumbra.CollectionManager.ForcedCollection.Cache;
+            var resolved      = Penumbra.CollectionManager.Default.ResolvedFiles;
+            var meta          = Penumbra.CollectionManager.Default.MetaCache;
+            var metaCount     = meta?.Count ?? 0;
+            var resolvedCount = resolved.Count;
 
-            var (defaultResolved, defaultMeta) = defaultCollection != null
-                ? ( defaultCollection.ResolvedFiles.Count, defaultCollection.MetaManipulations.Count )
-                : ( 0, 0 );
-            var (forcedResolved, forcedMeta) = forcedCollection != null
-                ? ( forcedCollection.ResolvedFiles.Count, forcedCollection.MetaManipulations.Count )
-                : ( 0, 0 );
-            var totalLines = defaultResolved + forcedResolved + defaultMeta + forcedMeta;
+            var totalLines = resolvedCount + metaCount;
             if( totalLines == 0 )
             {
                 return;
@@ -159,7 +196,7 @@ public partial class SettingsInterface
 
             if( _filePathFilter.Length > 0 || _gamePathFilter.Length > 0 )
             {
-                DrawFilteredRows( defaultCollection, forcedCollection );
+                DrawFilteredRows( Penumbra.CollectionManager.Default );
             }
             else
             {
@@ -178,27 +215,15 @@ public partial class SettingsInterface
                     {
                         var row = actualRow;
                         ImGui.TableNextRow();
-                        if( row < defaultResolved )
+                        if( row < resolvedCount )
                         {
-                            var (gamePath, file) = defaultCollection!.ResolvedFiles.ElementAt( row );
+                            var (gamePath, file) = resolved.ElementAt( row );
                             DrawLine( gamePath, file );
                         }
-                        else if( ( row -= defaultResolved ) < defaultMeta )
+                        else if( ( row -= resolved.Count ) < metaCount )
                         {
                             // TODO
                             //var (manip, mod) = activeCollection!.MetaManipulations.Manipulations.ElementAt( row );
-                            DrawLine( 0.ToString(), 0.ToString() );
-                        }
-                        else if( ( row -= defaultMeta ) < forcedResolved )
-                        {
-                            var (gamePath, file) = forcedCollection!.ResolvedFiles.ElementAt( row );
-                            DrawLine( gamePath, file );
-                        }
-                        else
-                        {
-                            // TODO
-                            row -= forcedResolved;
-                            //var (manip, mod) =  forcedCollection!.MetaManipulations.Manipulations.ElementAt( row );
                             DrawLine( 0.ToString(), 0.ToString() );
                         }
                     }

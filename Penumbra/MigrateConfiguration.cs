@@ -34,7 +34,7 @@ public static class MigrateConfiguration
             return;
         }
 
-        var defaultCollection     = ModCollection2.CreateNewEmpty( ModCollection2.DefaultCollection );
+        var defaultCollection     = ModCollection.CreateNewEmpty( ModCollection.DefaultCollection );
         var defaultCollectionFile = defaultCollection.FileName;
         if( defaultCollectionFile.Exists )
         {
@@ -74,7 +74,7 @@ public static class MigrateConfiguration
                 }
             }
 
-            defaultCollection = ModCollection2.MigrateFromV0( ModCollection2.DefaultCollection, dict );
+            defaultCollection = ModCollection.MigrateFromV0( ModCollection.DefaultCollection, dict );
             defaultCollection.Save();
         }
         catch( Exception e )

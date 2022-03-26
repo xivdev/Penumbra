@@ -4,7 +4,7 @@ using System.Linq;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Collections;
 
 public struct ConflictCache
 {
@@ -60,6 +60,12 @@ public struct ConflictCache
     public IReadOnlyList< ModCacheStruct > Conflicts
         => _conflicts ?? ( IReadOnlyList< ModCacheStruct > )Array.Empty< ModCacheStruct >();
 
+    public IEnumerable< ModCacheStruct > ModConflicts( int modIdx )
+    {
+        return _conflicts?.SkipWhile( c => c.Mod1 < modIdx ).TakeWhile( c => c.Mod1 == modIdx )
+         ?? Array.Empty< ModCacheStruct >();
+    }
+
     public void Sort()
         => _conflicts?.Sort();
 
@@ -89,55 +95,4 @@ public struct ConflictCache
 
     public void ClearConflictsWithMod( int modIdx )
         => _conflicts?.RemoveAll( m => m.Mod1 == modIdx || m.Mod2 == ~modIdx );
-}
-
-// The ModCache contains volatile information dependent on all current settings in a collection.
-public class ModCache
-{
-    public Dictionary< Mod, (List< Utf8GamePath > Files, List< MetaManipulation > Manipulations) > Conflicts { get; private set; } = new();
-
-    public void AddConflict( Mod precedingMod, Utf8GamePath gamePath )
-    {
-        if( Conflicts.TryGetValue( precedingMod, out var conflicts ) && !conflicts.Files.Contains( gamePath ) )
-        {
-            conflicts.Files.Add( gamePath );
-        }
-        else
-        {
-            Conflicts[ precedingMod ] = ( new List< Utf8GamePath > { gamePath }, new List< MetaManipulation >() );
-        }
-    }
-
-    public void AddConflict( Mod precedingMod, MetaManipulation manipulation )
-    {
-        if( Conflicts.TryGetValue( precedingMod, out var conflicts ) && !conflicts.Manipulations.Contains( manipulation ) )
-        {
-            conflicts.Manipulations.Add( manipulation );
-        }
-        else
-        {
-            Conflicts[ precedingMod ] = ( new List< Utf8GamePath >(), new List< MetaManipulation > { manipulation } );
-        }
-    }
-
-    public void ClearConflicts()
-        => Conflicts.Clear();
-
-    public void ClearFileConflicts()
-    {
-        Conflicts = Conflicts.Where( kvp => kvp.Value.Manipulations.Count > 0 ).ToDictionary( kvp => kvp.Key, kvp =>
-        {
-            kvp.Value.Files.Clear();
-            return kvp.Value;
-        } );
-    }
-
-    public void ClearMetaConflicts()
-    {
-        Conflicts = Conflicts.Where( kvp => kvp.Value.Files.Count > 0 ).ToDictionary( kvp => kvp.Key, kvp =>
-        {
-            kvp.Value.Manipulations.Clear();
-            return kvp.Value;
-        } );
-    }
 }

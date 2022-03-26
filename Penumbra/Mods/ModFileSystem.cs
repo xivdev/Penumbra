@@ -37,7 +37,7 @@ public static partial class ModFileSystem
 
     // Rename the SortOrderName of a single mod. Slashes are replaced by Backslashes.
     // Saves and returns true if anything changed.
-    public static bool Rename( this ModData mod, string newName )
+    public static bool Rename( this Mod.Mod mod, string newName )
     {
         if( RenameNoSave( mod, newName ) )
         {
@@ -63,7 +63,7 @@ public static partial class ModFileSystem
 
     // Move a single mod to the target folder.
     // Returns true and saves if anything changed.
-    public static bool Move( this ModData mod, ModFolder target )
+    public static bool Move( this Mod.Mod mod, ModFolder target )
     {
         if( MoveNoSave( mod, target ) )
         {
@@ -76,7 +76,7 @@ public static partial class ModFileSystem
 
     // Move a mod to the filesystem location specified by sortOrder and rename its SortOrderName.
     // Creates all necessary Subfolders.
-    public static void Move( this ModData mod, string sortOrder )
+    public static void Move( this Mod.Mod mod, string sortOrder )
     {
         var split  = sortOrder.Split( new[] { '/' }, StringSplitOptions.RemoveEmptyEntries );
         var folder = Root;
@@ -129,7 +129,7 @@ public static partial class ModFileSystem
     {
         foreach( var mod in target.AllMods( true ) )
         {
-            Penumbra.Config.ModSortOrder[ mod.BasePath.Name ] = mod.SortOrder.FullName;
+            Penumbra.Config.ModSortOrder[ mod.BasePath.Name ] = mod.Order.FullName;
         }
 
         Penumbra.Config.Save();
@@ -137,16 +137,16 @@ public static partial class ModFileSystem
     }
 
     // Sets and saves the sort order of a single mod, removing the entry if it is unnecessary.
-    private static void SaveMod( ModData mod )
+    private static void SaveMod( Mod.Mod mod )
     {
-        if( ReferenceEquals( mod.SortOrder.ParentFolder, Root )
-        && string.Equals( mod.SortOrder.SortOrderName, mod.Meta.Name.Replace( '/', '\\' ), StringComparison.InvariantCultureIgnoreCase ) )
+        if( ReferenceEquals( mod.Order.ParentFolder, Root )
+        && string.Equals( mod.Order.SortOrderName, mod.Meta.Name.Replace( '/', '\\' ), StringComparison.InvariantCultureIgnoreCase ) )
         {
             Penumbra.Config.ModSortOrder.Remove( mod.BasePath.Name );
         }
         else
         {
-            Penumbra.Config.ModSortOrder[ mod.BasePath.Name ] = mod.SortOrder.FullName;
+            Penumbra.Config.ModSortOrder[ mod.BasePath.Name ] = mod.Order.FullName;
         }
 
         Penumbra.Config.Save();
@@ -184,30 +184,30 @@ public static partial class ModFileSystem
         return true;
     }
 
-    private static bool RenameNoSave( ModData mod, string newName )
+    private static bool RenameNoSave( Mod.Mod mod, string newName )
     {
         newName = newName.Replace( '/', '\\' );
-        if( mod.SortOrder.SortOrderName == newName )
+        if( mod.Order.SortOrderName == newName )
         {
             return false;
         }
 
-        mod.SortOrder.ParentFolder.RemoveModIgnoreEmpty( mod );
-        mod.SortOrder = new SortOrder( mod.SortOrder.ParentFolder, newName );
-        mod.SortOrder.ParentFolder.AddMod( mod );
+        mod.Order.ParentFolder.RemoveModIgnoreEmpty( mod );
+        mod.Order = new Mod.Mod.SortOrder( mod.Order.ParentFolder, newName );
+        mod.Order.ParentFolder.AddMod( mod );
         return true;
     }
 
-    private static bool MoveNoSave( ModData mod, ModFolder target )
+    private static bool MoveNoSave( Mod.Mod mod, ModFolder target )
     {
-        var oldParent = mod.SortOrder.ParentFolder;
+        var oldParent = mod.Order.ParentFolder;
         if( ReferenceEquals( target, oldParent ) )
         {
             return false;
         }
 
         oldParent.RemoveMod( mod );
-        mod.SortOrder = new SortOrder( target, mod.SortOrder.SortOrderName );
+        mod.Order = new Mod.Mod.SortOrder( target, mod.Order.SortOrderName );
         target.AddMod( mod );
         return true;
     }

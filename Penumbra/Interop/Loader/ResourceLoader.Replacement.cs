@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.Mod;
 using Penumbra.Mods;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
@@ -92,7 +93,7 @@ public unsafe partial class ResourceLoader
     // Use the default method of path replacement.
     public static (FullPath?, object?) DefaultResolver( Utf8GamePath path )
     {
-        var resolved = ModManager.ResolvePath( path );
+        var resolved = Mod.Mod.Manager.ResolvePath( path );
         return ( resolved, null );
     }
 

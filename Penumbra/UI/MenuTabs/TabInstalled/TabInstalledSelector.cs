@@ -410,11 +410,11 @@ public partial class SettingsInterface
     // Selection
     private partial class Selector
     {
-        public Mod.Mod? Mod { get; private set; }
+        public Mod.FullMod? Mod { get; private set; }
         private int    _index;
         private string _nextDir = string.Empty;
 
-        private void SetSelection( int idx, Mod.Mod? info )
+        private void SetSelection( int idx, Mod.FullMod? info )
         {
             Mod = info;
             if( idx != _index )
@@ -480,7 +480,7 @@ public partial class SettingsInterface
     private partial class Selector
     {
         // === Mod ===
-        private void DrawModOrderPopup( string popupName, Mod.Mod mod, bool firstOpen )
+        private void DrawModOrderPopup( string popupName, Mod.FullMod mod, bool firstOpen )
         {
             if( !ImGui.BeginPopup( popupName ) )
             {
@@ -496,7 +496,7 @@ public partial class SettingsInterface
 
             if( firstOpen )
             {
-                ImGui.SetKeyboardFocusHere( mod.Data.SortOrder.FullPath.Length - 1 );
+                ImGui.SetKeyboardFocusHere( mod.Data.Order.FullPath.Length - 1 );
             }
         }
 
@@ -527,10 +527,10 @@ public partial class SettingsInterface
             }
 
             Cache.TriggerFilterReset();
-            var collection = Penumbra.CollectionManager.CurrentCollection;
-            if( collection.Cache != null )
+            var collection = Penumbra.CollectionManager.Current;
+            if( collection.HasCache )
             {
-                collection.CalculateEffectiveFileList( metaManips, Penumbra.CollectionManager.IsActive( collection ) );
+                collection.CalculateEffectiveFileList( metaManips, collection == Penumbra.CollectionManager.Default );
             }
 
             collection.Save();
@@ -607,9 +607,9 @@ public partial class SettingsInterface
             Cache = new ModListCache( Penumbra.ModManager, newMods );
         }
 
-        private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection2 collection )
+        private void DrawCollectionButton( string label, string tooltipLabel, float size, ModCollection collection )
         {
-            if( collection == ModCollection2.Empty
+            if( collection == ModCollection.Empty
             || collection  == Penumbra.CollectionManager.Current )
             {
                 using var _ = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f );
@@ -664,7 +664,7 @@ public partial class SettingsInterface
                         idx += sub.TotalDescendantMods();
                     }
                 }
-                else if( item is ModData _ )
+                else if( item is Mod.Mod _ )
                 {
                     var (mod, visible, color) = Cache.GetMod( idx );
                     if( mod != null && visible )
@@ -721,7 +721,7 @@ public partial class SettingsInterface
             }
         }
 
-        private void DrawMod( Mod.Mod mod, int modIndex, uint color )
+        private void DrawMod( Mod.FullMod mod, int modIndex, uint color )
         {
             using var colorRaii = ImGuiRaii.PushColor( ImGuiCol.Text, color, color != 0 );
 
@@ -736,7 +736,7 @@ public partial class SettingsInterface
                 firstOpen = true;
             }
 
-            DragDropTarget( mod.Data.SortOrder.ParentFolder );
+            DragDropTarget( mod.Data.Order.ParentFolder );
             DragDropSourceMod( modIndex, mod.Data.Meta.Name );
 
             DrawModOrderPopup( popupName, mod, firstOpen );

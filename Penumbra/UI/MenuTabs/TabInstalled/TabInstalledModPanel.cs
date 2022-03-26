@@ -69,7 +69,7 @@ public partial class SettingsInterface
             _currentWebsite = Meta?.Website ?? "";
         }
 
-        private Mod.Mod? Mod
+        private Mod.FullMod? Mod
             => _selector.Mod;
 
         private ModMeta? Meta
@@ -205,8 +205,7 @@ public partial class SettingsInterface
             ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
             if( ImGui.InputInt( "Priority", ref priority, 0 ) && priority != Mod!.Settings.Priority )
             {
-                Mod.Settings.Priority = priority;
-                _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
+                Penumbra.CollectionManager.Current.SetModPriority( Mod.Data.Index, priority );
                 _selector.Cache.TriggerFilterReset();
             }
 
@@ -220,24 +219,18 @@ public partial class SettingsInterface
             var enabled = Mod!.Settings.Enabled;
             if( ImGui.Checkbox( LabelModEnabled, ref enabled ) )
             {
-                Mod.Settings.Enabled = enabled;
+                Penumbra.CollectionManager.Current.SetModState( Mod.Data.Index, enabled );
                 if( enabled )
                 {
                     _newMods.Remove( Mod.Data.BasePath.Name );
                 }
-                else
-                {
-                    Mod.Cache.ClearConflicts();
-                }
-
-                _base.SaveCurrentCollection( Mod.Data.Resources.MetaManipulations.Count > 0 );
                 _selector.Cache.TriggerFilterReset();
             }
         }
 
-        public static bool DrawSortOrder( ModData mod, ModManager manager, Selector selector )
+        public static bool DrawSortOrder( Mod.Mod mod, Mod.Mod.Manager manager, Selector selector )
         {
-            var currentSortOrder = mod.SortOrder.FullPath;
+            var currentSortOrder = mod.Order.FullPath;
             ImGui.SetNextItemWidth( 300 * ImGuiHelpers.GlobalScale );
             if( ImGui.InputText( "Sort Order", ref currentSortOrder, 256, ImGuiInputTextFlags.EnterReturnsTrue ) )
             {
