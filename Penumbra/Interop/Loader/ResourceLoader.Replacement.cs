@@ -150,7 +150,6 @@ public unsafe partial class ResourceLoader
             return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
 
-        byte ret = 0;
         // Paths starting with a '|' are handled separately to allow for special treatment.
         // They are expected to also have a closing '|'.
         if( ResourceLoadCustomization == null || gamePath.Path[ 0 ] != ( byte )'|' )
@@ -160,7 +159,8 @@ public unsafe partial class ResourceLoader
 
         // Split the path into the special-treatment part (between the first and second '|')
         // and the actual path.
-        var split = gamePath.Path.Split( ( byte )'|', 3, false );
+        byte ret   = 0;
+        var  split = gamePath.Path.Split( ( byte )'|', 3, false );
         fileDescriptor->ResourceHandle->FileNameData   = split[ 2 ].Path;
         fileDescriptor->ResourceHandle->FileNameLength = split[ 2 ].Length;
         var funcFound = ResourceLoadCustomization.GetInvocationList()

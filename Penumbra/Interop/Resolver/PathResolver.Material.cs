@@ -1,5 +1,6 @@
 using System;
 using Dalamud.Hooking;
+using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
@@ -79,8 +80,14 @@ public unsafe partial class PathResolver
 
         if( Penumbra.CollectionManager.ByName( split.ToString(), out var collection ) )
         {
+            PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", split, path );
             SetCollection( path, collection );
         }
+        else
+        {
+            PluginLog.Verbose( "Using MtrlLoadHandler with no collection for path {$Path:l}.", path );
+        }
+
 
         ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, isSync );
         PathCollections.TryRemove( path, out _ );

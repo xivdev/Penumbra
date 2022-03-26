@@ -1,21 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reflection;
-using System.Runtime.InteropServices;
-using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Interface;
 using ImGuiNET;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.Api;
-using Penumbra.GameData.Enums;
-using Penumbra.GameData.Structs;
-using Penumbra.Interop;
-using Penumbra.Interop.Structs;
-using Penumbra.Meta.Files;
-using Penumbra.Meta.Manipulations;
 using Penumbra.UI.Custom;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ResourceHandle = Penumbra.Interop.Structs.ResourceHandle;
@@ -60,8 +48,10 @@ public partial class SettingsInterface
         PrintValue( "Mod Manager BasePath IsRooted", Path.IsPathRooted( Penumbra.Config.ModDirectory ).ToString() );
         PrintValue( "Mod Manager BasePath Exists", Directory.Exists( manager.BasePath.FullName ).ToString() );
         PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
+        PrintValue( "Path Resolver Enabled", _penumbra.PathResolver.Enabled.ToString() );
         //PrintValue( "Resource Loader Enabled", _penumbra.ResourceLoader.IsEnabled.ToString() );
     }
+
     private void DrawDebugTabIpc()
     {
         if( !ImGui.CollapsingHeader( "IPC##Debug" ) )

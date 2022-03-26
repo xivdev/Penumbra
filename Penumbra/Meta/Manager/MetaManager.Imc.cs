@@ -132,6 +132,7 @@ public partial class MetaManager
                 return false;
             }
 
+            PluginLog.Verbose( "Using ImcLoadHandler for path {$Path:l}.", path );
             ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
             if( Penumbra.CollectionManager.ByName( split.ToString(), out var collection )
             && collection.Cache != null
