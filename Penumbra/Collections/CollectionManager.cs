@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.Collections;
@@ -13,19 +14,23 @@ public partial class ModCollection
 {
     public enum Type : byte
     {
-        Inactive,
-        Default,
-        Character,
-        Current,
+        Inactive,  // A collection was added or removed
+        Default,   // The default collection was changed
+        Character, // A character collection was changed
+        Current,   // The current collection was changed.
     }
 
     public sealed partial class Manager : IDisposable, IEnumerable< ModCollection >
     {
+        // On addition, oldCollection is null. On deletion, newCollection is null.
+        // CharacterName is onls set for type == Character.
         public delegate void CollectionChangeDelegate( ModCollection? oldCollection, ModCollection? newCollection, Type type,
             string? characterName = null );
 
-        private readonly Mod.Mod.Manager _modManager;
+        private readonly Mods.Mod.Manager _modManager;
 
+        // The empty collection is always available and always has index 0.
+        // It can not be deleted or moved.
         private readonly List< ModCollection > _collections = new()
         {
             Empty,
@@ -34,25 +39,28 @@ public partial class ModCollection
         public ModCollection this[ Index idx ]
             => _collections[ idx ];
 
-        public ModCollection this[ int idx ]
-            => _collections[ idx ];
-
         public ModCollection? this[ string name ]
             => ByName( name, out var c ) ? c : null;
 
+        public int Count
+            => _collections.Count;
+
+        // Obtain a collection case-independently by name. 
         public bool ByName( string name, [NotNullWhen( true )] out ModCollection? collection )
             => _collections.FindFirst( c => string.Equals( c.Name, name, StringComparison.InvariantCultureIgnoreCase ), out collection );
 
+        // Default enumeration skips the empty collection.
         public IEnumerator< ModCollection > GetEnumerator()
             => _collections.Skip( 1 ).GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-        public Manager( Mod.Mod.Manager manager )
+        public Manager( Mods.Mod.Manager manager )
         {
             _modManager = manager;
 
+            // The collection manager reacts to changes in mods by itself.
             _modManager.ModsRediscovered += OnModsRediscovered;
             _modManager.ModChange        += OnModChanged;
             ReadCollections();
@@ -65,27 +73,143 @@ public partial class ModCollection
             _modManager.ModChange        -= OnModChanged;
         }
 
+        // Add a new collection of the given name.
+        // If duplicate is not-null, the new collection will be a duplicate of it.
+        // If the name of the collection would result in an already existing filename, skip it.
+        // Returns true if the collection was successfully created and fires a Inactive event.
+        // Also sets the current collection to the new collection afterwards.
+        public bool AddCollection( string name, ModCollection? duplicate )
+        {
+            var nameFixed = name.RemoveInvalidPathSymbols().ToLowerInvariant();
+            if( nameFixed.Length == 0
+            || nameFixed         == Empty.Name.ToLowerInvariant()
+            || _collections.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
+            {
+                PluginLog.Warning( $"The new collection {name} would lead to the same path as one that already exists." );
+                return false;
+            }
+
+            var newCollection = duplicate?.Duplicate( name ) ?? CreateNewEmpty( name );
+            newCollection.Index = _collections.Count;
+            _collections.Add( newCollection );
+            newCollection.Save();
+            CollectionChanged?.Invoke( null, newCollection, Type.Inactive );
+            SetCollection( newCollection.Index, Type.Current );
+            return true;
+        }
+
+        // Remove the given collection if it exists and is neither the empty nor the default-named collection.
+        // If the removed collection was active, it also sets the corresponding collection to the appropriate default.
+        public bool RemoveCollection( int idx )
+        {
+            if( idx <= Empty.Index || idx >= _collections.Count )
+            {
+                PluginLog.Error( "Can not remove the empty collection." );
+                return false;
+            }
+
+            if( idx == DefaultName.Index )
+            {
+                PluginLog.Error( "Can not remove the default collection." );
+                return false;
+            }
+
+            if( idx == Current.Index )
+            {
+                SetCollection( DefaultName, Type.Current );
+            }
+
+            if( idx == Default.Index )
+            {
+                SetCollection( Empty, Type.Default );
+            }
+
+            foreach( var (characterName, _) in _characters.Where( c => c.Value.Index == idx ).ToList() )
+            {
+                SetCollection( Empty, Type.Character, characterName );
+            }
+
+            var collection = _collections[ idx ];
+            collection.Delete();
+            _collections.RemoveAt( idx );
+            for( var i = idx; i < _collections.Count; ++i )
+            {
+                --_collections[ i ].Index;
+            }
+
+            CollectionChanged?.Invoke( collection, null, Type.Inactive );
+            return true;
+        }
+
+        public bool RemoveCollection( ModCollection collection )
+            => RemoveCollection( collection.Index );
+
+
         private void OnModsRediscovered()
         {
+            // When mods are rediscovered, force all cache updates and set the files of the default collection.
             ForceCacheUpdates();
             Default.SetFiles();
         }
 
+
+        // A changed mod forces changes for all collections, active and inactive.
+        private void OnModChanged( Mod.ChangeType type, int idx, Mod mod )
+        {
+            switch( type )
+            {
+                case Mod.ChangeType.Added:
+                    foreach( var collection in this )
+                    {
+                        collection.AddMod( mod );
+                    }
+
+                    OnModAddedActive( mod.Resources.MetaManipulations.Count > 0 );
+                    break;
+                case Mod.ChangeType.Removed:
+                    var settings = new List< ModSettings? >( _collections.Count );
+                    foreach( var collection in this )
+                    {
+                        settings.Add( collection[ idx ].Settings );
+                        collection.RemoveMod( mod, idx );
+                    }
+
+                    OnModRemovedActive( mod.Resources.MetaManipulations.Count > 0, settings );
+                    break;
+                case Mod.ChangeType.Changed:
+                    foreach( var collection in this.Where(
+                                collection => collection.Settings[ idx ]?.FixInvalidSettings( mod.Meta ) ?? false ) )
+                    {
+                        collection.Save();
+                    }
+
+                    OnModChangedActive( mod.Resources.MetaManipulations.Count > 0, mod.Index );
+                    break;
+                default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
+            }
+        }
+
+        // Add the collection with the default name if it does not exist.
+        // It should always be ensured that it exists, otherwise it will be created.
+        // This can also not be deleted, so there are always at least the empty and a collection with default name.
         private void AddDefaultCollection()
         {
-            var idx = _collections.IndexOf( c => c.Name == DefaultCollection );
+            var idx = GetIndexForCollectionName( DefaultCollection );
             if( idx >= 0 )
             {
-                _defaultNameIdx = idx;
+                DefaultName = this[ idx ];
                 return;
             }
 
             var defaultCollection = CreateNewEmpty( DefaultCollection );
             defaultCollection.Save();
-            _defaultNameIdx = _collections.Count;
+            defaultCollection.Index = _collections.Count;
             _collections.Add( defaultCollection );
         }
 
+        // Inheritances can not be setup before all collections are read,
+        // so this happens after reading the collections.
+        // During this iteration, we can also fix all settings that are not valid for the given mod anymore.
         private void ApplyInheritancesAndFixSettings( IEnumerable< IReadOnlyList< string > > inheritances )
         {
             foreach( var (collection, inheritance) in this.Zip( inheritances ) )
@@ -117,6 +241,9 @@ public partial class ModCollection
             }
         }
 
+        // Read all collection files in the Collection Directory.
+        // Ensure that the default named collection exists, and apply inheritances afterwards.
+        // Duplicate collection files are not deleted, just not added here.
         private void ReadCollections()
         {
             var collectionDir = new DirectoryInfo( CollectionDirectory );
@@ -151,90 +278,6 @@ public partial class ModCollection
 
             AddDefaultCollection();
             ApplyInheritancesAndFixSettings( inheritances );
-        }
-
-        public bool AddCollection( string name, ModCollection? duplicate )
-        {
-            var nameFixed = name.RemoveInvalidPathSymbols().ToLowerInvariant();
-            if( nameFixed.Length == 0
-            || nameFixed         == Empty.Name.ToLowerInvariant()
-            || _collections.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
-            {
-                PluginLog.Warning( $"The new collection {name} would lead to the same path as one that already exists." );
-                return false;
-            }
-
-            var newCollection = duplicate?.Duplicate( name ) ?? CreateNewEmpty( name );
-            newCollection.Index = _collections.Count;
-            _collections.Add( newCollection );
-            newCollection.Save();
-            CollectionChanged?.Invoke( null, newCollection, Type.Inactive );
-            SetCollection( newCollection.Index, Type.Current );
-            return true;
-        }
-
-        public bool RemoveCollection( ModCollection collection )
-            => RemoveCollection( collection.Index );
-
-        public bool RemoveCollection( int idx )
-        {
-            if( idx <= Empty.Index || idx >= _collections.Count )
-            {
-                PluginLog.Error( "Can not remove the empty collection." );
-                return false;
-            }
-
-            if( idx == _defaultNameIdx )
-            {
-                PluginLog.Error( "Can not remove the default collection." );
-                return false;
-            }
-
-            if( idx == _currentIdx )
-            {
-                SetCollection( _defaultNameIdx, Type.Current );
-            }
-            else if( _currentIdx > idx )
-            {
-                --_currentIdx;
-            }
-
-            if( idx == _defaultIdx )
-            {
-                SetCollection( -1, Type.Default );
-            }
-            else if( _defaultIdx > idx )
-            {
-                --_defaultIdx;
-            }
-
-            if( _defaultNameIdx > idx )
-            {
-                --_defaultNameIdx;
-            }
-
-            foreach( var (characterName, characterIdx) in _character.ToList() )
-            {
-                if( idx == characterIdx )
-                {
-                    SetCollection( -1, Type.Character, characterName );
-                }
-                else if( characterIdx > idx )
-                {
-                    _character[ characterName ] = characterIdx - 1;
-                }
-            }
-
-            var collection = _collections[ idx ];
-            collection.Delete();
-            _collections.RemoveAt( idx );
-            for( var i = idx; i < _collections.Count; ++i )
-            {
-                --_collections[ i ].Index;
-            }
-
-            CollectionChanged?.Invoke( collection, null, Type.Inactive );
-            return true;
         }
     }
 }

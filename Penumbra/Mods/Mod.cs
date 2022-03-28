@@ -3,9 +3,8 @@ using System.IO;
 using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
-using Penumbra.Mods;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 // Mod contains all permanent information about a mod,
 // and is independent of collections or settings.
@@ -23,7 +22,7 @@ public partial class Mod
     public FileInfo MetaFile { get; set; }
     public int Index { get; private set; } = -1;
 
-    private Mod( ModFolder parentFolder, DirectoryInfo basePath, ModMeta meta, ModResources resources )
+    private Mod( ModFolder parentFolder, DirectoryInfo basePath, ModMeta meta, ModResources resources)
     {
         BasePath  = basePath;
         Meta      = meta;

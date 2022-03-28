@@ -6,7 +6,6 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Logging;
 using ImGuiNET;
-using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
@@ -69,7 +68,7 @@ public partial class SettingsInterface
             _currentWebsite = Meta?.Website ?? "";
         }
 
-        private Mod.FullMod? Mod
+        private Mods.FullMod? Mod
             => _selector.Mod;
 
         private ModMeta? Meta
@@ -77,7 +76,7 @@ public partial class SettingsInterface
 
         private void DrawName()
         {
-            var name       = Meta!.Name;
+            var name       = Meta!.Name.Text;
             var modManager = Penumbra.ModManager;
             if( ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && modManager.RenameMod( name, Mod!.Data ) )
             {
@@ -122,7 +121,7 @@ public partial class SettingsInterface
             ImGui.TextColored( GreyColor, "by" );
 
             ImGui.SameLine();
-            var author = Meta!.Author;
+            var author = Meta!.Author.Text;
             if( ImGuiCustom.InputOrText( _editMode, LabelEditAuthor, ref author, 64 )
             && author != Meta.Author )
             {
@@ -228,7 +227,7 @@ public partial class SettingsInterface
             }
         }
 
-        public static bool DrawSortOrder( Mod.Mod mod, Mod.Mod.Manager manager, Selector selector )
+        public static bool DrawSortOrder( Mods.Mod mod, Mods.Mod.Manager manager, Selector selector )
         {
             var currentSortOrder = mod.Order.FullPath;
             ImGui.SetNextItemWidth( 300 * ImGuiHelpers.GlobalScale );

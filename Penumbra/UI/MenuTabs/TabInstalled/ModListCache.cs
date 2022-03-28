@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Logging;
-using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.Util;
 
@@ -15,19 +14,19 @@ public class ModListCache : IDisposable
     public const uint ConflictingModColor     = 0xFFAAAAFFu;
     public const uint HandledConflictModColor = 0xFF88DDDDu;
 
-    private readonly Mod.Mod.Manager _manager;
+    private readonly Mods.Mod.Manager _manager;
 
     private readonly List< FullMod >                                       _modsInOrder    = new();
     private readonly List< (bool visible, uint color) >                    _visibleMods    = new();
     private readonly Dictionary< ModFolder, (bool visible, bool enabled) > _visibleFolders = new();
     private readonly IReadOnlySet< string >                                _newMods;
 
-    private string    _modFilter        = string.Empty;
-    private string    _modFilterChanges = string.Empty;
-    private string    _modFilterAuthor  = string.Empty;
-    private ModFilter _stateFilter      = ModFilterExtensions.UnfilteredStateMods;
-    private bool      _listResetNecessary;
-    private bool      _filterResetNecessary;
+    private LowerString _modFilter        = LowerString.Empty;
+    private LowerString _modFilterAuthor  = LowerString.Empty;
+    private LowerString _modFilterChanges = LowerString.Empty;
+    private ModFilter   _stateFilter      = ModFilterExtensions.UnfilteredStateMods;
+    private bool        _listResetNecessary;
+    private bool        _filterResetNecessary;
 
 
     public ModFilter StateFilter
@@ -44,7 +43,7 @@ public class ModListCache : IDisposable
         }
     }
 
-    public ModListCache( Mod.Mod.Manager manager, IReadOnlySet< string > newMods )
+    public ModListCache( Mods.Mod.Manager manager, IReadOnlySet< string > newMods )
     {
         _manager = manager;
         _newMods = newMods;
@@ -123,20 +122,20 @@ public class ModListCache : IDisposable
         if( lower.StartsWith( "c:" ) )
         {
             _modFilterChanges = lower[ 2.. ];
-            _modFilter        = string.Empty;
-            _modFilterAuthor  = string.Empty;
+            _modFilter        = LowerString.Empty;
+            _modFilterAuthor  = LowerString.Empty;
         }
         else if( lower.StartsWith( "a:" ) )
         {
             _modFilterAuthor  = lower[ 2.. ];
-            _modFilter        = string.Empty;
-            _modFilterChanges = string.Empty;
+            _modFilter        = LowerString.Empty;
+            _modFilterChanges = LowerString.Empty;
         }
         else
         {
             _modFilter        = lower;
-            _modFilterAuthor  = string.Empty;
-            _modFilterChanges = string.Empty;
+            _modFilterAuthor  = LowerString.Empty;
+            _modFilterChanges = LowerString.Empty;
         }
 
         ResetFilters();
@@ -233,12 +232,12 @@ public class ModListCache : IDisposable
     {
         var ret = ( false, 0u );
 
-        if( _modFilter.Length > 0 && !mod.Data.Meta.LowerName.Contains( _modFilter ) )
+        if( _modFilter.Length > 0 && !mod.Data.Meta.Name.Contains( _modFilter ) )
         {
             return ret;
         }
 
-        if( _modFilterAuthor.Length > 0 && !mod.Data.Meta.LowerAuthor.Contains( _modFilterAuthor ) )
+        if( _modFilterAuthor.Length > 0 && !mod.Data.Meta.Author.Contains( _modFilterAuthor ) )
         {
             return ret;
         }

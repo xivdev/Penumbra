@@ -10,7 +10,6 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
@@ -201,7 +200,7 @@ public partial class SettingsInterface
 
             raii.Push( ImGui.EndListBox );
             using var indent    = ImGuiRaii.PushIndent( 0 );
-            Mod.Mod?  oldBadMod = null;
+            Mods.Mod?  oldBadMod = null;
             foreach( var conflict in conflicts )
             {
                 var badMod = Penumbra.ModManager[ conflict.Mod2 ];
@@ -224,14 +223,14 @@ public partial class SettingsInterface
                     indent.Push( 30f );
                 }
 
-                if( conflict.Conflict is Utf8GamePath p )
+                if( conflict.Data is Utf8GamePath p )
                 {
                     unsafe
                     {
                         ImGuiNative.igSelectable_Bool( p.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero );
                     }
                 }
-                else if( conflict.Conflict is MetaManipulation m )
+                else if( conflict.Data is MetaManipulation m )
                 {
                     ImGui.Selectable( m.Manipulation?.ToString() ?? string.Empty );
                 }

@@ -8,7 +8,6 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Resolver;
 
 namespace Penumbra.Interop.Loader;
 
@@ -30,8 +29,7 @@ public unsafe partial class ResourceLoader
         public ResourceType            Extension;
     }
 
-    private readonly SortedDictionary< FullPath, DebugData > _debugList  = new();
-    private readonly List< (FullPath, DebugData?) >          _deleteList = new();
+    private readonly SortedList< FullPath, DebugData > _debugList = new();
 
     public IReadOnlyDictionary< FullPath, DebugData > DebugList
         => _debugList;
@@ -161,35 +159,22 @@ public unsafe partial class ResourceLoader
 
     public void UpdateDebugInfo()
     {
-        var manager = *ResourceManager;
-        _deleteList.Clear();
-        foreach( var data in _debugList.Values )
+        for( var i = 0; i < _debugList.Count; ++i )
         {
+            var data             = _debugList.Values[ i ];
             var regularResource  = FindResource( data.Category, data.Extension, ( uint )data.OriginalPath.Path.Crc32 );
             var modifiedResource = FindResource( data.Category, data.Extension, ( uint )data.ManipulatedPath.InternalName.Crc32 );
             if( modifiedResource == null )
             {
-                _deleteList.Add( ( data.ManipulatedPath, null ) );
+                _debugList.RemoveAt( i-- );
             }
             else if( regularResource != data.OriginalResource || modifiedResource != data.ManipulatedResource )
             {
-                _deleteList.Add( ( data.ManipulatedPath, data with
+                _debugList[ _debugList.Keys[ i ] ] = data with
                 {
                     OriginalResource = ( Structs.ResourceHandle* )regularResource,
                     ManipulatedResource = ( Structs.ResourceHandle* )modifiedResource,
-                } ) );
-            }
-        }
-
-        foreach( var (path, data) in _deleteList )
-        {
-            if( data == null )
-            {
-                _debugList.Remove( path );
-            }
-            else
-            {
-                _debugList[ path ] = data.Value;
+                };
             }
         }
     }

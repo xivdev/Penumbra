@@ -5,7 +5,6 @@ using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 
 namespace Penumbra.Interop.Resolver;
 

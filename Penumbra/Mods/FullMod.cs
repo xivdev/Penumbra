@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using Penumbra.GameData.ByteString;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 // A complete Mod containing settings (i.e. dependent on a collection)
 // and the resulting cache.

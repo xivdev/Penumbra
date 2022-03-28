@@ -6,8 +6,8 @@ using ImGuiNET;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
-using Penumbra.Mods;
 using Penumbra.UI.Custom;
+using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -17,10 +17,8 @@ public partial class SettingsInterface
     {
         private const string LabelTab = "Effective Changes";
 
-        private string _gamePathFilter      = string.Empty;
-        private string _gamePathFilterLower = string.Empty;
-        private string _filePathFilter      = string.Empty;
-        private string _filePathFilterLower = string.Empty;
+        private LowerString _gamePathFilter = LowerString.Empty;
+        private LowerString _filePathFilter = LowerString.Empty;
 
         private const float LeftTextLength = 600;
 
@@ -57,47 +55,49 @@ public partial class SettingsInterface
             }
 
             ImGui.SetNextItemWidth( LeftTextLength * ImGuiHelpers.GlobalScale );
-            if( ImGui.InputTextWithHint( "##effective_changes_gfilter", "Filter game path...", ref _gamePathFilter, 256 ) )
+            var tmp = _gamePathFilter.Text;
+            if( ImGui.InputTextWithHint( "##effective_changes_gfilter", "Filter game path...", ref tmp, 256 ) )
             {
-                _gamePathFilterLower = _gamePathFilter.ToLowerInvariant();
+                _gamePathFilter = tmp;
             }
 
             ImGui.SameLine( ( LeftTextLength + _arrowLength ) * ImGuiHelpers.GlobalScale + 3 * ImGui.GetStyle().ItemSpacing.X );
             ImGui.SetNextItemWidth( -1 );
-            if( ImGui.InputTextWithHint( "##effective_changes_ffilter", "Filter file path...", ref _filePathFilter, 256 ) )
+            tmp = _filePathFilter.Text;
+            if( ImGui.InputTextWithHint( "##effective_changes_ffilter", "Filter file path...", ref tmp, 256 ) )
             {
-                _filePathFilterLower = _filePathFilter.ToLowerInvariant();
+                _filePathFilter = tmp;
             }
         }
 
         private bool CheckFilters( KeyValuePair< Utf8GamePath, FullPath > kvp )
         {
-            if( _gamePathFilter.Any() && !kvp.Key.ToString().Contains( _gamePathFilterLower ) )
+            if( _gamePathFilter.Length > 0 && !kvp.Key.ToString().Contains( _gamePathFilter.Lower ) )
             {
                 return false;
             }
 
-            return !_filePathFilter.Any() || kvp.Value.FullName.ToLowerInvariant().Contains( _filePathFilterLower );
+            return _filePathFilter.Length == 0 || kvp.Value.FullName.ToLowerInvariant().Contains( _filePathFilter.Lower );
         }
 
         private bool CheckFilters( KeyValuePair< Utf8GamePath, Utf8GamePath > kvp )
         {
-            if( _gamePathFilter.Any() && !kvp.Key.ToString().Contains( _gamePathFilterLower ) )
+            if( _gamePathFilter.Length > 0 && !kvp.Key.ToString().Contains( _gamePathFilter.Lower ) )
             {
                 return false;
             }
 
-            return !_filePathFilter.Any() || kvp.Value.ToString().Contains( _filePathFilterLower );
+            return _filePathFilter.Length == 0 || kvp.Value.ToString().Contains( _filePathFilter.Lower );
         }
 
-        private bool CheckFilters( (string, string, string) kvp )
+        private bool CheckFilters( (string, LowerString) kvp )
         {
-            if( _gamePathFilter.Any() && !kvp.Item1.ToLowerInvariant().Contains( _gamePathFilterLower ) )
+            if( _gamePathFilter.Length > 0 && !kvp.Item1.ToLowerInvariant().Contains( _gamePathFilter.Lower ) )
             {
                 return false;
             }
 
-            return !_filePathFilter.Any() || kvp.Item3.Contains( _filePathFilterLower );
+            return _filePathFilter.Length == 0 || kvp.Item2.Contains( _filePathFilter.Lower );
         }
 
         private void DrawFilteredRows( ModCollection active )
@@ -113,49 +113,43 @@ public partial class SettingsInterface
                 return;
             }
 
-            foreach( var (mp, mod, _) in cache.Cmp.Manipulations
-                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
-                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+            foreach( var (mp, mod) in cache.Cmp.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name ) )
                        .Where( CheckFilters ) )
             {
                 DrawLine( mp, mod );
             }
 
-            foreach( var (mp, mod, _) in cache.Eqp.Manipulations
-                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
-                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+            foreach( var (mp, mod) in cache.Eqp.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name ) )
                        .Where( CheckFilters ) )
             {
                 DrawLine( mp, mod );
             }
 
-            foreach( var (mp, mod, _) in cache.Eqdp.Manipulations
-                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
-                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+            foreach( var (mp, mod) in cache.Eqdp.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name ) )
                        .Where( CheckFilters ) )
             {
                 DrawLine( mp, mod );
             }
 
-            foreach( var (mp, mod, _) in cache.Gmp.Manipulations
-                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
-                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+            foreach( var (mp, mod) in cache.Gmp.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name ) )
                        .Where( CheckFilters ) )
             {
                 DrawLine( mp, mod );
             }
 
-            foreach( var (mp, mod, _) in cache.Est.Manipulations
-                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
-                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+            foreach( var (mp, mod) in cache.Est.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name ) )
                        .Where( CheckFilters ) )
             {
                 DrawLine( mp, mod );
             }
 
-            foreach( var (mp, mod, _) in cache.Imc.Manipulations
-                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name,
-                            Penumbra.ModManager.Mods[ p.Value ].Meta.LowerName ) )
+            foreach( var (mp, mod) in cache.Imc.Manipulations
+                       .Select( p => ( p.Key.ToString(), Penumbra.ModManager.Mods[ p.Value ].Meta.Name ) )
                        .Where( CheckFilters ) )
             {
                 DrawLine( mp, mod );

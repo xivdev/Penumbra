@@ -10,7 +10,6 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
-using Penumbra.Mods;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
 namespace Penumbra.Interop.Resolver;

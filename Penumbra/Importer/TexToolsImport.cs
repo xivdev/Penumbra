@@ -8,7 +8,7 @@ using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
 using Penumbra.Importer.Models;
-using Penumbra.Mod;
+using Penumbra.Mods;
 using Penumbra.Util;
 using FileMode = System.IO.FileMode;
 

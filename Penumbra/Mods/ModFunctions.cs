@@ -3,7 +3,7 @@ using System.IO;
 using System.Linq;
 using Penumbra.GameData.ByteString;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 // Functions that do not really depend on only one component of a mod.
 public static class ModFunctions

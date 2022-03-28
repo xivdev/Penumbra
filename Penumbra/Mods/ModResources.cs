@@ -5,7 +5,7 @@ using System.Linq;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 [Flags]
 public enum ResourceChange

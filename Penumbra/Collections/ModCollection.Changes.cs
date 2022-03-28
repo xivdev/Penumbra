@@ -1,18 +1,21 @@
 using System;
-using Penumbra.Mod;
+using Penumbra.Mods;
 
 namespace Penumbra.Collections;
 
+// Different types a mod setting can change:
 public enum ModSettingChange
 {
-    Inheritance,
-    EnableState,
-    Priority,
-    Setting,
+    Inheritance, // it was set to inherit from other collections or not inherit anymore
+    EnableState, // it was enabled or disabled
+    Priority,    // its priority was changed
+    Setting,     // a specific setting was changed
 }
 
 public partial class ModCollection
 {
+    // If the change type is a bool, oldValue will be 1 for true and 0 for false.
+    // optionName will only be set for type == Setting.
     public delegate void ModSettingChangeDelegate( ModSettingChange type, int modIdx, int oldValue, string? optionName, bool inherited );
     public event ModSettingChangeDelegate ModSettingChanged;
 
@@ -99,13 +102,13 @@ public partial class ModCollection
     private bool FixInheritance( int idx, bool inherit )
     {
         var settings = _settings[ idx ];
-        if( inherit != ( settings == null ) )
+        if( inherit == ( settings == null ) )
         {
-            _settings[ idx ] = inherit ? null : this[ idx ].Settings ?? ModSettings.DefaultSettings( Penumbra.ModManager.Mods[ idx ].Meta );
-            return true;
+            return false;
         }
 
-        return false;
+        _settings[ idx ] = inherit ? null : this[ idx ].Settings ?? ModSettings.DefaultSettings( Penumbra.ModManager.Mods[ idx ].Meta );
+        return true;
     }
 
     private void SaveOnChange( ModSettingChange _1, int _2, int _3, string? _4, bool inherited )

@@ -6,11 +6,10 @@ using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta;
-using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.Util;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 public partial class Mod
 {

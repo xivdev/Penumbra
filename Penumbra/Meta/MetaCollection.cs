@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
 using Penumbra.Importer;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mod;
+using Penumbra.Mods;
 
 namespace Penumbra.Meta;
 

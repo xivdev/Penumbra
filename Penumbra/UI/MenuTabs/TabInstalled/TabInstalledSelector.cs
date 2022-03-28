@@ -10,7 +10,6 @@ using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Collections;
 using Penumbra.Importer;
-using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
@@ -410,11 +409,11 @@ public partial class SettingsInterface
     // Selection
     private partial class Selector
     {
-        public Mod.FullMod? Mod { get; private set; }
+        public Mods.FullMod? Mod { get; private set; }
         private int    _index;
         private string _nextDir = string.Empty;
 
-        private void SetSelection( int idx, Mod.FullMod? info )
+        private void SetSelection( int idx, Mods.FullMod? info )
         {
             Mod = info;
             if( idx != _index )
@@ -480,7 +479,7 @@ public partial class SettingsInterface
     private partial class Selector
     {
         // === Mod ===
-        private void DrawModOrderPopup( string popupName, Mod.FullMod mod, bool firstOpen )
+        private void DrawModOrderPopup( string popupName, Mods.FullMod mod, bool firstOpen )
         {
             if( !ImGui.BeginPopup( popupName ) )
             {
@@ -664,7 +663,7 @@ public partial class SettingsInterface
                         idx += sub.TotalDescendantMods();
                     }
                 }
-                else if( item is Mod.Mod _ )
+                else if( item is Mods.Mod _ )
                 {
                     var (mod, visible, color) = Cache.GetMod( idx );
                     if( mod != null && visible )
@@ -721,7 +720,7 @@ public partial class SettingsInterface
             }
         }
 
-        private void DrawMod( Mod.FullMod mod, int modIndex, uint color )
+        private void DrawMod( Mods.FullMod mod, int modIndex, uint color )
         {
             using var colorRaii = ImGuiRaii.PushColor( ImGuiCol.Text, color, color != 0 );
 

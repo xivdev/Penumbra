@@ -5,10 +5,15 @@ using System.Linq;
 using Dalamud.Logging;
 using Newtonsoft.Json.Linq;
 using Penumbra.Collections;
-using Penumbra.Mod;
 using Penumbra.Mods;
 
 namespace Penumbra;
+
+public partial class Configuration
+{
+    public string ForcedCollection { internal get; set; } = "";
+    public bool InvertModListOrder { internal get; set; }
+}
 
 public static class MigrateConfiguration
 {

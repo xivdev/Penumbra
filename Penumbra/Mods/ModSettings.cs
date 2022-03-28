@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 // Contains the settings for a given mod.
 public class ModSettings

@@ -7,7 +7,6 @@ using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
-using Penumbra.Mods;
 
 namespace Penumbra.Interop.Resolver;
 

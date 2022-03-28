@@ -8,24 +8,26 @@ namespace Penumbra.Collections;
 
 public struct ConflictCache
 {
-    public readonly struct ModCacheStruct : IComparable< ModCacheStruct >
+    // A conflict stores all data about a mod conflict.
+    public readonly struct Conflict : IComparable< Conflict >
     {
-        public readonly object Conflict;
+        public readonly object Data;
         public readonly int    Mod1;
         public readonly int    Mod2;
         public readonly bool   Mod1Priority;
         public readonly bool   Solved;
 
-        public ModCacheStruct( int modIdx1, int modIdx2, int priority1, int priority2, object conflict )
+        public Conflict( int modIdx1, int modIdx2, bool priority, bool solved, object data )
         {
             Mod1         = modIdx1;
             Mod2         = modIdx2;
-            Conflict     = conflict;
-            Mod1Priority = priority1 >= priority2;
-            Solved       = priority1 != priority2;
+            Data         = data;
+            Mod1Priority = priority;
+            Solved       = solved;
         }
 
-        public int CompareTo( ModCacheStruct other )
+        // Order: Mod1 -> Mod1 overwritten -> Mod2 -> File > MetaManipulation
+        public int CompareTo( Conflict other )
         {
             var idxComp = Mod1.CompareTo( other.Mod1 );
             if( idxComp != 0 )
@@ -44,55 +46,85 @@ public struct ConflictCache
                 return idxComp;
             }
 
-            return Conflict switch
+            return Data switch
             {
-                Utf8GamePath p when other.Conflict is Utf8GamePath q         => p.CompareTo( q ),
-                Utf8GamePath                                                 => -1,
-                MetaManipulation m when other.Conflict is MetaManipulation n => m.CompareTo( n ),
-                MetaManipulation                                             => 1,
-                _                                                            => 0,
+                Utf8GamePath p when other.Data is Utf8GamePath q         => p.CompareTo( q ),
+                Utf8GamePath                                             => -1,
+                MetaManipulation m when other.Data is MetaManipulation n => m.CompareTo( n ),
+                MetaManipulation                                         => 1,
+                _                                                        => 0,
             };
         }
     }
 
-    private List< ModCacheStruct >? _conflicts;
+    private readonly List< Conflict > _conflicts = new();
+    private          bool             _isSorted  = true;
 
-    public IReadOnlyList< ModCacheStruct > Conflicts
-        => _conflicts ?? ( IReadOnlyList< ModCacheStruct > )Array.Empty< ModCacheStruct >();
+    public ConflictCache()
+    { }
 
-    public IEnumerable< ModCacheStruct > ModConflicts( int modIdx )
+    public IReadOnlyList< Conflict > Conflicts
     {
-        return _conflicts?.SkipWhile( c => c.Mod1 < modIdx ).TakeWhile( c => c.Mod1 == modIdx )
-         ?? Array.Empty< ModCacheStruct >();
+        get
+        {
+            Sort();
+            return _conflicts;
+        }
     }
 
-    public void Sort()
-        => _conflicts?.Sort();
+    // Find all mod conflicts concerning the specified mod (in both directions).
+    public IEnumerable< Conflict > ModConflicts( int modIdx )
+    {
+        return _conflicts.SkipWhile( c => c.Mod1 < modIdx ).TakeWhile( c => c.Mod1 == modIdx );
+    }
+
+    private void Sort()
+    {
+        if( !_isSorted )
+        {
+            _conflicts?.Sort();
+        }
+    }
+
+    // Add both directions for the mod.
+    // On same priority, it is assumed that mod1 is the earlier one.
+    // Also update older conflicts to refer to the highest-prioritized conflict.
+    private void AddConflict( int modIdx1, int modIdx2, int priority1, int priority2, object data )
+    {
+        var solved         = priority1 != priority2;
+        var priority       = priority1 >= priority2;
+        var prioritizedMod = priority ? modIdx1 : modIdx2;
+        _conflicts.Add( new Conflict( modIdx1, modIdx2, priority, solved, data ) );
+        _conflicts.Add( new Conflict( modIdx2, modIdx1, !priority, solved, data ) );
+        for( var i = 0; i < _conflicts.Count; ++i )
+        {
+            var c = _conflicts[ i ];
+            if( data.Equals( c.Data ) )
+            {
+                _conflicts[ i ] = c.Mod1Priority
+                    ? new Conflict( prioritizedMod, c.Mod2, true, c.Solved  || solved, data )
+                    : new Conflict( c.Mod1, prioritizedMod, false, c.Solved || solved, data );
+            }
+        }
+
+        _isSorted = false;
+    }
 
     public void AddConflict( int modIdx1, int modIdx2, int priority1, int priority2, Utf8GamePath gamePath )
-    {
-        _conflicts ??= new List< ModCacheStruct >( 2 );
-
-        _conflicts.Add( new ModCacheStruct( modIdx1, modIdx2, priority1, priority2, gamePath ) );
-        _conflicts.Add( new ModCacheStruct( modIdx2, modIdx1, priority2, priority1, gamePath ) );
-    }
+        => AddConflict( modIdx1, modIdx2, priority1, priority2, ( object )gamePath );
 
     public void AddConflict( int modIdx1, int modIdx2, int priority1, int priority2, MetaManipulation manipulation )
-    {
-        _conflicts ??= new List< ModCacheStruct >( 2 );
-        _conflicts.Add( new ModCacheStruct( modIdx1, modIdx2, priority1, priority2, manipulation ) );
-        _conflicts.Add( new ModCacheStruct( modIdx2, modIdx1, priority2, priority1, manipulation ) );
-    }
+        => AddConflict( modIdx1, modIdx2, priority1, priority2, ( object )manipulation );
 
     public void ClearConflicts()
         => _conflicts?.Clear();
 
     public void ClearFileConflicts()
-        => _conflicts?.RemoveAll( m => m.Conflict is Utf8GamePath );
+        => _conflicts?.RemoveAll( m => m.Data is Utf8GamePath );
 
     public void ClearMetaConflicts()
-        => _conflicts?.RemoveAll( m => m.Conflict is MetaManipulation );
+        => _conflicts?.RemoveAll( m => m.Data is MetaManipulation );
 
     public void ClearConflictsWithMod( int modIdx )
-        => _conflicts?.RemoveAll( m => m.Mod1 == modIdx || m.Mod2 == ~modIdx );
+        => _conflicts?.RemoveAll( m => m.Mod1 == modIdx || m.Mod2 == modIdx );
 }

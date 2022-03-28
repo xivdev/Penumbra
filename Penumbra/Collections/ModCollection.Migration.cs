@@ -1,10 +1,12 @@
+using System.Collections.Generic;
 using System.Linq;
-using Penumbra.Mod;
+using Penumbra.Mods;
 
 namespace Penumbra.Collections;
 
 public sealed partial class ModCollection
 {
+    // Migration to convert ModCollections from older versions to newer.
     private static class Migration
     {
         public static void Migrate( ModCollection collection )
@@ -24,9 +26,10 @@ public sealed partial class ModCollection
             }
 
             collection.Version = 1;
+
+            // Remove all completely defaulted settings from active and inactive mods.
             for( var i = 0; i < collection._settings.Count; ++i )
             {
-                var setting = collection._settings[ i ];
                 if( SettingIsDefaultV0( collection._settings[ i ] ) )
                 {
                     collection._settings[ i ] = null;
@@ -41,7 +44,11 @@ public sealed partial class ModCollection
             return true;
         }
 
+        // We treat every completely defaulted setting as inheritance-ready.
         private static bool SettingIsDefaultV0( ModSettings? setting )
             => setting is { Enabled: false, Priority: 0 } && setting.Settings.Values.All( s => s == 0 );
     }
+
+    internal static ModCollection MigrateFromV0( string name, Dictionary< string, ModSettings > allSettings )
+        => new(name, 0, allSettings);
 }

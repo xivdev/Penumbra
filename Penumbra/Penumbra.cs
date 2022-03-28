@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using Dalamud.Game.Command;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -10,13 +9,12 @@ using Lumina.Excel.GeneratedSheets;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
-using Penumbra.Mods;
 using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
-using Penumbra.Mod;
+using Penumbra.Mods;
 
 namespace Penumbra;
 
@@ -34,8 +32,9 @@ public class Penumbra : IDalamudPlugin
 
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
+    public static MetaFileManager MetaFileManager { get; private set; } = null!;
 
-    public static Mod.Mod.Manager ModManager { get; private set; } = null!;
+    public static Mod.Manager ModManager { get; private set; } = null!;
     public static ModCollection.Manager CollectionManager { get; private set; } = null!;
 
     public static ResourceLoader ResourceLoader { get; set; } = null!;
@@ -65,9 +64,10 @@ public class Penumbra : IDalamudPlugin
 
         ResidentResources = new ResidentResourceManager();
         CharacterUtility  = new CharacterUtility();
+        MetaFileManager    = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLogger    = new ResourceLogger( ResourceLoader );
-        ModManager        = new Mod.Mod.Manager();
+        ModManager        = new Mod.Manager();
         ModManager.DiscoverMods();
         CollectionManager = new ModCollection.Manager( ModManager );
         ObjectReloader    = new ObjectReloader();
@@ -213,6 +213,7 @@ public class Penumbra : IDalamudPlugin
 
         PathResolver.Dispose();
         ResourceLogger.Dispose();
+        MetaFileManager.Dispose();
         ResourceLoader.Dispose();
         CharacterUtility.Dispose();
 

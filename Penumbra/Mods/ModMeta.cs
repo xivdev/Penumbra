@@ -5,47 +5,20 @@ using System.Linq;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
+using Penumbra.Util;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 // Contains descriptive data about the mod as well as possible settings and fileswaps.
 public class ModMeta
 {
     public uint FileVersion { get; set; }
 
-    public string Name
-    {
-        get => _name;
-        set
-        {
-            _name     = value;
-            LowerName = value.ToLowerInvariant();
-        }
-    }
-
-    private string _name = "Mod";
-
-    [JsonIgnore]
-    public string LowerName { get; private set; } = "mod";
-
-    private string _author = "";
-
-    public string Author
-    {
-        get => _author;
-        set
-        {
-            _author     = value;
-            LowerAuthor = value.ToLowerInvariant();
-        }
-    }
-
-    [JsonIgnore]
-    public string LowerAuthor { get; private set; } = "";
-
-    public string Description { get; set; } = "";
-    public string Version { get; set; } = "";
-    public string Website { get; set; } = "";
+    public LowerString Name { get; set; } = "Mod";
+    public LowerString Author { get; set; } = LowerString.Empty;
+    public string Description { get; set; } = string.Empty;
+    public string Version { get; set; } = string.Empty;
+    public string Website { get; set; } = string.Empty;
 
     [JsonProperty( ItemConverterType = typeof( FullPath.FullPathConverter ) )]
     public Dictionary< Utf8GamePath, FullPath > FileSwaps { get; set; } = new();

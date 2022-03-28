@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 // Contains settings with the option selections stored by names instead of index.
 // This is meant to make them possibly more portable when we support importing collections from other users.

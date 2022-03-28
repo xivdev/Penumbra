@@ -8,10 +8,9 @@ using System.Security.Cryptography;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.Importer;
-using Penumbra.Mods;
 using Penumbra.Util;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 public class ModCleanup
 {

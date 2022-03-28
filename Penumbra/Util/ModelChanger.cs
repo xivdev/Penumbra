@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Files;
-using Penumbra.Mod;
+using Penumbra.Mods;
 
 namespace Penumbra.Util;
 
@@ -74,7 +74,7 @@ public static class ModelChanger
         }
     }
 
-    public static bool ChangeModMaterials( Mod.Mod mod, string from, string to )
+    public static bool ChangeModMaterials( Mods.Mod mod, string from, string to )
     {
         if( ValidStrings( from, to ) )
         {

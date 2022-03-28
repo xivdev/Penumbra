@@ -1,8 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Logging;
-using Penumbra.Mod;
+using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.Collections;
@@ -14,122 +13,39 @@ public partial class ModCollection
         // Is invoked after the collections actually changed.
         public event CollectionChangeDelegate? CollectionChanged;
 
-        private int _currentIdx     = 1;
-        private int _defaultIdx     = 0;
-        private int _defaultNameIdx = 0;
+        // The collection currently selected for changing settings.
+        public ModCollection Current { get; private set; } = Empty;
 
-        public ModCollection Current
-            => this[ _currentIdx ];
+        // The collection used for general file redirections and all characters not specifically named.
+        public ModCollection Default { get; private set; } = Empty;
 
-        public ModCollection Default
-            => this[ _defaultIdx ];
+        // A single collection that can not be deleted as a fallback for the current collection.
+        public ModCollection DefaultName { get; private set; } = Empty;
 
-        private readonly Dictionary< string, int > _character = new();
+        // The list of character collections.
+        private readonly Dictionary< string, ModCollection > _characters = new();
 
+        public IReadOnlyDictionary< string, ModCollection > Characters
+            => _characters;
+
+        // If a name does not correspond to a character, return the default collection instead.
         public ModCollection Character( string name )
-            => _character.TryGetValue( name, out var idx ) ? this[ idx ] : Default;
-
-        public IEnumerable< (string, ModCollection) > Characters
-            => _character.Select( kvp => ( kvp.Key, this[ kvp.Value ] ) );
+            => _characters.TryGetValue( name, out var c ) ? c : Default;
 
         public bool HasCharacterCollections
-            => _character.Count > 0;
+            => _characters.Count > 0;
 
-        private void OnModChanged( Mod.Mod.ChangeType type, int idx, Mod.Mod mod )
-        {
-            var meta = mod.Resources.MetaManipulations.Count > 0;
-            switch( type )
-            {
-                case Mod.Mod.ChangeType.Added:
-                    foreach( var collection in this )
-                    {
-                        collection.AddMod( mod );
-                    }
-
-                    foreach( var collection in this.Where( c => c.HasCache && c[ ^1 ].Settings?.Enabled == true ) )
-                    {
-                        collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
-                    }
-
-                    break;
-                case Mod.Mod.ChangeType.Removed:
-                    var list = new List< ModSettings? >( _collections.Count );
-                    foreach( var collection in this )
-                    {
-                        list.Add( collection[ idx ].Settings );
-                        collection.RemoveMod( mod, idx );
-                    }
-
-                    foreach( var (collection, _) in this.Zip( list ).Where( c => c.First.HasCache && c.Second?.Enabled == true ) )
-                    {
-                        collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
-                    }
-
-                    break;
-                case Mod.Mod.ChangeType.Changed:
-                    foreach( var collection in this.Where(
-                                collection => collection.Settings[ idx ]?.FixInvalidSettings( mod.Meta ) ?? false ) )
-                    {
-                        collection.Save();
-                    }
-
-                    foreach( var collection in this.Where( c => c.HasCache && c[ idx ].Settings?.Enabled == true ) )
-                    {
-                        collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
-                    }
-
-                    break;
-                default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
-            }
-        }
-
-        private void CreateNecessaryCaches()
-        {
-            if( _defaultIdx > Empty.Index )
-            {
-                Default.CreateCache(true);
-            }
-
-            if( _currentIdx > Empty.Index )
-            {
-                Current.CreateCache(false);
-            }
-
-            foreach( var idx in _character.Values.Where( i => i > Empty.Index ) )
-            {
-                _collections[ idx ].CreateCache(false);
-            }
-        }
-
-        public void ForceCacheUpdates()
-        {
-            foreach( var collection in this )
-            {
-                collection.ForceCacheUpdate(collection == Default);
-            }
-        }
-
-        private void RemoveCache( int idx )
-        {
-            if( idx != _defaultIdx && idx != _currentIdx && _character.All( kvp => kvp.Value != idx ) )
-            {
-                _collections[ idx ].ClearCache();
-            }
-        }
-
-        public void SetCollection( ModCollection collection, Type type, string? characterName = null )
-            => SetCollection( collection.Index, type, characterName );
-
+        // Set a active collection, can be used to set Default, Current or Character collections.
         public void SetCollection( int newIdx, Type type, string? characterName = null )
         {
             var oldCollectionIdx = type switch
             {
-                Type.Default => _defaultIdx,
-                Type.Current => _currentIdx,
+                Type.Default => Default.Index,
+                Type.Current => Current.Index,
                 Type.Character => characterName?.Length > 0
-                    ? _character.TryGetValue( characterName, out var c )
-                        ? c
-                        : _defaultIdx
+                    ? _characters.TryGetValue( characterName, out var c )
+                        ? c.Index
+                        : Default.Index
                     : -1,
                 _ => -1,
             };
@@ -142,24 +58,24 @@ public partial class ModCollection
             var newCollection = this[ newIdx ];
             if( newIdx > Empty.Index )
             {
-                newCollection.CreateCache(false);
+                newCollection.CreateCache( false );
             }
 
             RemoveCache( oldCollectionIdx );
             switch( type )
             {
                 case Type.Default:
-                    _defaultIdx                       = newIdx;
+                    Default                           = newCollection;
                     Penumbra.Config.DefaultCollection = newCollection.Name;
                     Penumbra.ResidentResources.Reload();
                     Default.SetFiles();
                     break;
                 case Type.Current:
-                    _currentIdx                       = newIdx;
+                    Current                           = newCollection;
                     Penumbra.Config.CurrentCollection = newCollection.Name;
                     break;
                 case Type.Character:
-                    _character[ characterName! ]                           = newIdx;
+                    _characters[ characterName! ]                          = newCollection;
                     Penumbra.Config.CharacterCollections[ characterName! ] = newCollection.Name;
                     break;
             }
@@ -168,27 +84,32 @@ public partial class ModCollection
             Penumbra.Config.Save();
         }
 
+        public void SetCollection( ModCollection collection, Type type, string? characterName = null )
+            => SetCollection( collection.Index, type, characterName );
+
+        // Create a new character collection. Returns false if the character name already has a collection.
         public bool CreateCharacterCollection( string characterName )
         {
-            if( _character.ContainsKey( characterName ) )
+            if( _characters.ContainsKey( characterName ) )
             {
                 return false;
             }
 
-            _character[ characterName ]                           = Empty.Index;
+            _characters[ characterName ]                          = Empty;
             Penumbra.Config.CharacterCollections[ characterName ] = Empty.Name;
             Penumbra.Config.Save();
             CollectionChanged?.Invoke( null, Empty, Type.Character, characterName );
             return true;
         }
 
+        // Remove a character collection if it exists.
         public void RemoveCharacterCollection( string characterName )
         {
-            if( _character.TryGetValue( characterName, out var collection ) )
+            if( _characters.TryGetValue( characterName, out var collection ) )
             {
-                RemoveCache( collection );
-                _character.Remove( characterName );
-                CollectionChanged?.Invoke( this[ collection ], null, Type.Character, characterName );
+                RemoveCache( collection.Index );
+                _characters.Remove( characterName );
+                CollectionChanged?.Invoke( collection, null, Type.Character, characterName );
             }
 
             if( Penumbra.Config.CharacterCollections.Remove( characterName ) )
@@ -197,35 +118,40 @@ public partial class ModCollection
             }
         }
 
+        // Obtain the index of a collection by name.
         private int GetIndexForCollectionName( string name )
-        {
-            if( name.Length == 0 )
-            {
-                return Empty.Index;
-            }
+            => name.Length == 0 ? Empty.Index : _collections.IndexOf( c => c.Name == name );
 
-            return _collections.IndexOf( c => c.Name == name );
-        }
 
+        // Load default, current and character collections from config.
+        // Then create caches. If a collection does not exist anymore, reset it to an appropriate default.
         public void LoadCollections()
         {
             var configChanged = false;
-            _defaultIdx = GetIndexForCollectionName( Penumbra.Config.DefaultCollection );
-            if( _defaultIdx < 0 )
+            var defaultIdx    = GetIndexForCollectionName( Penumbra.Config.DefaultCollection );
+            if( defaultIdx < 0 )
             {
                 PluginLog.Error( $"Last choice of Default Collection {Penumbra.Config.DefaultCollection} is not available, reset to None." );
-                _defaultIdx                       = Empty.Index;
-                Penumbra.Config.DefaultCollection = this[ _defaultIdx ].Name;
+                Default                           = Empty;
+                Penumbra.Config.DefaultCollection = Default.Name;
                 configChanged                     = true;
             }
+            else
+            {
+                Default = this[ defaultIdx ];
+            }
 
-            _currentIdx = GetIndexForCollectionName( Penumbra.Config.CurrentCollection );
-            if( _currentIdx < 0 )
+            var currentIdx = GetIndexForCollectionName( Penumbra.Config.CurrentCollection );
+            if( currentIdx < 0 )
             {
                 PluginLog.Error( $"Last choice of Current Collection {Penumbra.Config.CurrentCollection} is not available, reset to Default." );
-                _currentIdx                       = _defaultNameIdx;
-                Penumbra.Config.DefaultCollection = this[ _currentIdx ].Name;
+                Current                           = DefaultName;
+                Penumbra.Config.DefaultCollection = Current.Name;
                 configChanged                     = true;
+            }
+            else
+            {
+                Current = this[ currentIdx ];
             }
 
             if( LoadCharacterCollections() || configChanged )
@@ -236,6 +162,7 @@ public partial class ModCollection
             CreateNecessaryCaches();
         }
 
+        // Load character collections. If a player name comes up multiple times, the last one is applied.
         private bool LoadCharacterCollections()
         {
             var configChanged = false;
@@ -245,17 +172,71 @@ public partial class ModCollection
                 if( idx < 0 )
                 {
                     PluginLog.Error( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to None." );
-                    _character.Add( player, Empty.Index );
+                    _characters.Add( player, Empty );
                     Penumbra.Config.CharacterCollections[ player ] = Empty.Name;
                     configChanged                                  = true;
                 }
                 else
                 {
-                    _character.Add( player, idx );
+                    _characters.Add( player, this[ idx ] );
                 }
             }
 
             return configChanged;
+        }
+
+
+        // Cache handling.
+        private void CreateNecessaryCaches()
+        {
+            Default.CreateCache( true );
+            Current.CreateCache( false );
+
+            foreach( var collection in _characters.Values )
+            {
+                collection.CreateCache( false );
+            }
+        }
+
+        private void RemoveCache( int idx )
+        {
+            if( idx != Default.Index && idx != Current.Index && _characters.Values.All( c => c.Index != idx ) )
+            {
+                _collections[ idx ].ClearCache();
+            }
+        }
+
+        private void ForceCacheUpdates()
+        {
+            foreach( var collection in this )
+            {
+                collection.ForceCacheUpdate( collection == Default );
+            }
+        }
+
+        // Recalculate effective files for active collections on events.
+        private void OnModAddedActive( bool meta )
+        {
+            foreach( var collection in this.Where( c => c.HasCache && c[ ^1 ].Settings?.Enabled == true ) )
+            {
+                collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
+            }
+        }
+
+        private void OnModRemovedActive( bool meta, IEnumerable< ModSettings? > settings )
+        {
+            foreach( var (collection, _) in this.Zip( settings ).Where( c => c.First.HasCache && c.Second?.Enabled == true ) )
+            {
+                collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
+            }
+        }
+
+        private void OnModChangedActive( bool meta, int modIdx )
+        {
+            foreach( var collection in this.Where( c => c.HasCache && c[ modIdx ].Settings?.Enabled == true ) )
+            {
+                collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
+            }
         }
     }
 }

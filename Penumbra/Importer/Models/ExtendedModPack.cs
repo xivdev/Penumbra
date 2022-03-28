@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Penumbra.Mod;
+using Penumbra.Mods;
 
 namespace Penumbra.Importer.Models
 {

@@ -5,8 +5,9 @@ using Dalamud.Logging;
 
 namespace Penumbra;
 
+
 [Serializable]
-public class Configuration : IPluginConfiguration
+public partial class Configuration : IPluginConfiguration
 {
     private const int CurrentVersion = 1;
 
@@ -36,7 +37,7 @@ public class Configuration : IPluginConfiguration
 
     public string CurrentCollection { get; set; } = "Default";
     public string DefaultCollection { get; set; } = "Default";
-    public string ForcedCollection { get; set; } = "";
+
 
     public bool SortFoldersFirst { get; set; } = false;
     public bool HasReadCharacterCollectionDesc { get; set; } = false;
@@ -44,7 +45,6 @@ public class Configuration : IPluginConfiguration
     public Dictionary< string, string > CharacterCollections { get; set; } = new();
     public Dictionary< string, string > ModSortOrder { get; set; } = new();
 
-    public bool InvertModListOrder { internal get; set; }
 
     public static Configuration Load()
     {

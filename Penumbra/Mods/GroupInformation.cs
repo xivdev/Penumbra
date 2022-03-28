@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
 using Penumbra.Util;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 public enum SelectType
 {

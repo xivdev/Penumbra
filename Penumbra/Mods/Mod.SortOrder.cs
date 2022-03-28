@@ -1,7 +1,6 @@
 using System;
-using Penumbra.Mods;
 
-namespace Penumbra.Mod;
+namespace Penumbra.Mods;
 
 public partial class Mod
 {

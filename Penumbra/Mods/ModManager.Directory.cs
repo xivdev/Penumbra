@@ -2,16 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Dalamud.Logging;
-using Penumbra.Meta.Manipulations;
-using Penumbra.Mod;
 
 namespace Penumbra.Mods;
 
 public partial class ModManagerNew
 {
-    private readonly List< Mod.Mod > _mods = new();
+    private readonly List< Mod > _mods = new();
 
-    public IReadOnlyList< Mod.Mod > Mods
+    public IReadOnlyList< Mod > Mods
         => _mods;
 
     public void DiscoverMods()
@@ -37,6 +35,7 @@ public partial class ModManagerNew
         //Collections.RecreateCaches();
     }
 }
+
 public partial class ModManagerNew
 {
     public DirectoryInfo BasePath { get; private set; } = null!;

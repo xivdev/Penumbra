@@ -1,21 +1,28 @@
-using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Text;
-using Dalamud.Logging;
-using Newtonsoft.Json.Linq;
-using Penumbra.Mod;
-using Penumbra.Util;
+using Penumbra.Mods;
 
 namespace Penumbra.Collections;
 
+public partial class ModCollection
+{
+    // Create the always available Empty Collection that will always sit at index 0,
+    // can not be deleted and does never create a cache.
+    private static ModCollection CreateEmpty()
+    {
+        var collection = CreateNewEmpty( EmptyCollection );
+        collection.Index = 0;
+        collection._settings.Clear();
+        return collection;
+    }
+}
+
 // A ModCollection is a named set of ModSettings to all of the users' installed mods.
-// It is meant to be local only, and thus should always contain settings for every mod, not just the enabled ones.
 // Settings to mods that are not installed anymore are kept as long as no call to CleanUnavailableSettings is made.
-// Active ModCollections build a cache of currently relevant data.
+// Invariants:
+//    - Index is the collections index in the ModCollection.Manager
+//    - Settings has the same size as ModManager.Mods.
+//    - any change in settings or inheritance of the collection causes a Save.
 public partial class ModCollection
 {
     public const int    CurrentVersion    = 1;
@@ -24,29 +31,28 @@ public partial class ModCollection
 
     public static readonly ModCollection Empty = CreateEmpty();
 
-    private static ModCollection CreateEmpty()
-    {
-        var collection = CreateNewEmpty( EmptyCollection );
-        collection.Index = 0;
-        collection._settings.Clear();
-        return collection;
-    }
-
+    // The collection name can contain invalid path characters,
+    // but after removing those and going to lower case it has to be unique.
     public string Name { get; private init; }
     public int Version { get; private set; }
     public int Index { get; private set; } = -1;
 
+    // If a ModSetting is null, it can be inherited from other collections.
+    // If no collection provides a setting for the mod, it is just disabled.
     private readonly List< ModSettings? > _settings;
 
     public IReadOnlyList< ModSettings? > Settings
         => _settings;
 
+    // Evaluates the settings along the whole inheritance tree.
     public IEnumerable< ModSettings? > ActualSettings
         => Enumerable.Range( 0, _settings.Count ).Select( i => this[ i ].Settings );
 
+    // Settings for deleted mods will be kept via directory name.
     private readonly Dictionary< string, ModSettings > _unusedSettings;
 
 
+    // Constructor for duplication.
     private ModCollection( string name, ModCollection duplicate )
     {
         Name               =  name;
@@ -58,6 +64,7 @@ public partial class ModCollection
         InheritanceChanged += SaveOnChange;
     }
 
+    // Constructor for reading from files.
     private ModCollection( string name, int version, Dictionary< string, ModSettings > allSettings )
     {
         Name            = name;
@@ -79,15 +86,15 @@ public partial class ModCollection
         InheritanceChanged += SaveOnChange;
     }
 
+    // Create a new, unique empty collection of a given name.
     public static ModCollection CreateNewEmpty( string name )
         => new(name, CurrentVersion, new Dictionary< string, ModSettings >());
 
+    // Duplicate the calling collection to a new, unique collection of a given name.
     public ModCollection Duplicate( string name )
         => new(name, this);
 
-    internal static ModCollection MigrateFromV0( string name, Dictionary< string, ModSettings > allSettings )
-        => new(name, 0, allSettings);
-
+    // Remove all settings for not currently-installed mods.
     public void CleanUnavailableSettings()
     {
         var any = _unusedSettings.Count > 0;
@@ -98,7 +105,8 @@ public partial class ModCollection
         }
     }
 
-    public void AddMod( Mod.Mod mod )
+    // Add settings for a new appended mod, by checking if the mod had settings from a previous deletion.
+    private void AddMod( Mods.Mod mod )
     {
         if( _unusedSettings.TryGetValue( mod.BasePath.Name, out var settings ) )
         {
@@ -111,7 +119,8 @@ public partial class ModCollection
         }
     }
 
-    public void RemoveMod( Mod.Mod mod, int idx )
+    // Move settings from the current mod list to the unused mod settings.
+    private void RemoveMod( Mods.Mod mod, int idx )
     {
         var settings = _settings[ idx ];
         if( settings != null )
@@ -120,105 +129,5 @@ public partial class ModCollection
         }
 
         _settings.RemoveAt( idx );
-    }
-
-    public static string CollectionDirectory
-        => Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(), "collections" );
-
-    public FileInfo FileName
-        => new(Path.Combine( CollectionDirectory, $"{Name.RemoveInvalidPathSymbols()}.json" ));
-
-    public void Save()
-    {
-        try
-        {
-            var file = FileName;
-            file.Directory?.Create();
-            using var s = file.Open( FileMode.Truncate );
-            using var w = new StreamWriter( s, Encoding.UTF8 );
-            using var j = new JsonTextWriter( w );
-            j.Formatting = Formatting.Indented;
-            var x = JsonSerializer.Create( new JsonSerializerSettings { Formatting = Formatting.Indented } );
-            j.WriteStartObject();
-            j.WritePropertyName( nameof( Version ) );
-            j.WriteValue( Version );
-            j.WritePropertyName( nameof( Name ) );
-            j.WriteValue( Name );
-            j.WritePropertyName( nameof( Settings ) );
-            j.WriteStartObject();
-            for( var i = 0; i < _settings.Count; ++i )
-            {
-                var settings = _settings[ i ];
-                if( settings != null )
-                {
-                    j.WritePropertyName( Penumbra.ModManager[ i ].BasePath.Name );
-                    x.Serialize( j, settings );
-                }
-            }
-
-            foreach( var settings in _unusedSettings )
-            {
-                j.WritePropertyName( settings.Key );
-                x.Serialize( j, settings.Value );
-            }
-
-            j.WriteEndObject();
-            j.WritePropertyName( nameof( Inheritance ) );
-            x.Serialize( j, Inheritance );
-            j.WriteEndObject();
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not save collection {Name}:\n{e}" );
-        }
-    }
-
-    public void Delete()
-    {
-        if( Index == 0 )
-        {
-            return;
-        }
-
-        var file = FileName;
-        if( file.Exists )
-        {
-            try
-            {
-                file.Delete();
-            }
-            catch( Exception e )
-            {
-                PluginLog.Error( $"Could not delete collection file {file.FullName} for {Name}:\n{e}" );
-            }
-        }
-    }
-
-    public static ModCollection? LoadFromFile( FileInfo file, out IReadOnlyList< string > inheritance )
-    {
-        inheritance = Array.Empty< string >();
-        if( !file.Exists )
-        {
-            PluginLog.Error( $"Could not read collection because {file.FullName} does not exist." );
-            return null;
-        }
-
-        try
-        {
-            var obj     = JObject.Parse( File.ReadAllText( file.FullName ) );
-            var name    = obj[ nameof( Name ) ]?.ToObject< string >() ?? string.Empty;
-            var version = obj[ nameof( Version ) ]?.ToObject< int >() ?? 0;
-            var settings = obj[ nameof( Settings ) ]?.ToObject< Dictionary< string, ModSettings > >()
-             ?? new Dictionary< string, ModSettings >();
-            inheritance = obj[ nameof( Inheritance ) ]?.ToObject< List< string > >() ?? ( IReadOnlyList< string > )Array.Empty< string >();
-
-            return new ModCollection( name, version, settings );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not read collection information from {file.FullName}:\n{e}" );
-        }
-
-        return null;
     }
 }

@@ -10,7 +10,6 @@ using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.GameData.ByteString;
 using Penumbra.Interop;
-using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
 

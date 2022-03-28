@@ -7,7 +7,6 @@ using Dalamud.Interface.Components;
 using Dalamud.Logging;
 using ImGuiNET;
 using Penumbra.Collections;
-using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
@@ -22,7 +21,7 @@ public partial class SettingsInterface
         private readonly Selector                  _selector;
         private          string                    _collectionNames         = null!;
         private          string                    _collectionNamesWithNone = null!;
-        private          ModCollection[]          _collections             = null!;
+        private          ModCollection[]           _collections             = null!;
         private          int                       _currentCollectionIndex;
         private          int                       _currentDefaultIndex;
         private readonly Dictionary< string, int > _currentCharacterIndices = new();
@@ -192,6 +191,65 @@ public partial class SettingsInterface
             }
         }
 
+        private static void DrawInheritance( ModCollection collection )
+        {
+            ImGui.PushID( collection.Index );
+            if( ImGui.TreeNodeEx( collection.Name, ImGuiTreeNodeFlags.DefaultOpen ) )
+            {
+                foreach( var inheritance in collection.Inheritance )
+                {
+                    DrawInheritance( inheritance );
+                }
+            }
+
+            ImGui.PopID();
+        }
+
+        private void DrawCurrentCollectionInheritance()
+        {
+            if( !ImGui.BeginListBox( "##inheritanceList",
+                   new Vector2( SettingsMenu.InputTextWidth, ImGui.GetTextLineHeightWithSpacing() * 10 ) ) )
+            {
+                return;
+            }
+
+            using var end = ImGuiRaii.DeferredEnd( ImGui.EndListBox );
+            DrawInheritance( _collections[ _currentCollectionIndex + 1 ] );
+        }
+
+        private static int _newInheritanceIdx = 0;
+
+        private void DrawNewInheritanceSelection()
+        {
+            ImGui.SetNextItemWidth( SettingsMenu.InputTextWidth - ImGui.GetFrameHeight() - ImGui.GetStyle().ItemSpacing.X );
+            if( ImGui.BeginCombo( "##newInheritance", Penumbra.CollectionManager[ _newInheritanceIdx ].Name ) )
+            {
+                using var end = ImGuiRaii.DeferredEnd( ImGui.EndCombo );
+                foreach( var collection in Penumbra.CollectionManager )
+                {
+                    if( ImGui.Selectable( collection.Name, _newInheritanceIdx == collection.Index ) )
+                    {
+                        _newInheritanceIdx = collection.Index;
+                    }
+                }
+            }
+
+            ImGui.SameLine();
+            var valid = _newInheritanceIdx                        > ModCollection.Empty.Index
+             && _collections[ _currentCollectionIndex + 1 ].Index != _newInheritanceIdx
+             && _collections[ _currentCollectionIndex + 1 ].Inheritance.All( c => c.Index != _newInheritanceIdx );
+            using var style = ImGuiRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, !valid );
+            using var font  = ImGuiRaii.PushFont( UiBuilder.IconFont );
+            if( ImGui.Button( $"{FontAwesomeIcon.Plus.ToIconString()}##newInheritanceAdd", ImGui.GetFrameHeight() * Vector2.One ) && valid )
+            {
+                _collections[ _currentCollectionIndex + 1 ].AddInheritance( Penumbra.CollectionManager[ _newInheritanceIdx ] );
+            }
+
+            style.Pop();
+            font.Pop();
+            ImGuiComponents.HelpMarker( "Add a new inheritance to the collection." );
+        }
+
         private void DrawDefaultCollectionSelector()
         {
             var index = _currentDefaultIndex;
@@ -344,12 +402,14 @@ public partial class SettingsInterface
             using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem )
                .Push( ImGui.EndChild );
 
-            if( ImGui.BeginChild( "##CollectionHandling", new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 6 ), true ) )
+            if( ImGui.BeginChild( "##CollectionHandling", new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 17 ), true ) )
             {
                 DrawCurrentCollectionSelector( true );
-
                 ImGuiHelpers.ScaledDummy( 0, 10 );
                 DrawNewCollectionInput();
+                ImGuiHelpers.ScaledDummy( 0, 10 );
+                DrawCurrentCollectionInheritance();
+                DrawNewInheritanceSelection();
             }
 
             raii.Pop();

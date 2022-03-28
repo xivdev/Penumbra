@@ -5,7 +5,6 @@ using Dalamud.Interface;
 using ImGuiNET;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Util;
-using Penumbra.Mod;
 using Penumbra.Mods;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
