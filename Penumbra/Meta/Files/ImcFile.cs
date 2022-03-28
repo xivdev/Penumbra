@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
+using Penumbra.Interop;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Files;
@@ -68,7 +69,7 @@ public unsafe class ImcFile : MetaBaseFile
 
     public readonly Utf8GamePath Path;
     public readonly int          NumParts;
-    public          bool         ChangesSinceLoad = true;
+    public          bool         ChangesSinceLoad = false;
 
     public ReadOnlySpan< ImcEntry > Span
         => new(( ImcEntry* )( Data + PreambleSize ), ( Length - PreambleSize ) / sizeof( ImcEntry ));
@@ -78,17 +79,6 @@ public unsafe class ImcFile : MetaBaseFile
 
     private static ushort PartMask( byte* data )
         => *( ushort* )( data + 2 );
-
-    private static ImcEntry* DefaultPartPtr( byte* data, int partIdx )
-    {
-        var flag = 1 << partIdx;
-        if( ( PartMask( data ) & flag ) == 0 )
-        {
-            return null;
-        }
-
-        return ( ImcEntry* )( data + PreambleSize ) + partIdx;
-    }
 
     private static ImcEntry* VariantPtr( byte* data, int partIdx, int variantIdx )
     {
@@ -140,6 +130,7 @@ public unsafe class ImcFile : MetaBaseFile
             var newLength = ( ( ( ActualLength - 1 ) >> 7 ) + 1 ) << 7;
             PluginLog.Verbose( "Resized IMC {Path} from {Length} to {NewLength}.", Path, Length, newLength );
             ResizeResources( newLength );
+            ChangesSinceLoad = true;
         }
 
         var defaultPtr = ( ImcEntry* )( Data + PreambleSize );
@@ -173,8 +164,7 @@ public unsafe class ImcFile : MetaBaseFile
             return false;
         }
 
-        *variantPtr      = entry;
-        ChangesSinceLoad = true;
+        *variantPtr = entry;
         return true;
     }
 
@@ -187,8 +177,6 @@ public unsafe class ImcFile : MetaBaseFile
             Functions.MemCpyUnchecked( Data, ptr, file.Data.Length );
             Functions.MemSet( Data + file.Data.Length, 0, Length - file.Data.Length );
         }
-
-        ChangesSinceLoad = true;
     }
 
     public ImcFile( Utf8GamePath path )
@@ -226,7 +214,7 @@ public unsafe class ImcFile : MetaBaseFile
         }
     }
 
-    public void Replace( ResourceHandle* resource )
+    public void Replace( ResourceHandle* resource, bool firstTime )
     {
         var (data, length) = resource->GetData();
         if( data == IntPtr.Zero )
@@ -234,18 +222,10 @@ public unsafe class ImcFile : MetaBaseFile
             return;
         }
 
-        var requiredLength = ActualLength;
         resource->SetData( ( IntPtr )Data, Length );
-        if( length >= requiredLength )
+        if( firstTime )
         {
-            Functions.MemCpyUnchecked( ( void* )data, Data, requiredLength );
-            Functions.MemSet( ( byte* )data + requiredLength, 0, length - requiredLength );
-            return;
+            Penumbra.MetaFileManager.AddImcFile( resource, data, length );
         }
-
-        MemoryHelper.GameFree( ref data, ( ulong )length );
-        var file = ( byte* )MemoryHelper.GameAllocateDefault( ( ulong )requiredLength );
-        Functions.MemCpyUnchecked( file, Data, requiredLength );
-        resource->SetData( ( IntPtr )file, requiredLength );
     }
 }

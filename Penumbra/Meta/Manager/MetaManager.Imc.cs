@@ -145,7 +145,7 @@ public partial class MetaManager
             {
                 PluginLog.Debug( "Loaded {GamePath:l} from file and replaced with IMC from collection {Collection:l}.", path,
                     collection.Name );
-                file.Replace( fileDescriptor->ResourceHandle );
+                file.Replace( fileDescriptor->ResourceHandle, true);
                 file.ChangesSinceLoad = false;
             }
 
@@ -165,7 +165,7 @@ public partial class MetaManager
 
             PluginLog.Debug( "File {GamePath:l} was already loaded but IMC in collection {Collection:l} was changed, so reloaded.", gamePath,
                 collection.Name );
-            file.Replace( resource );
+            file.Replace( resource, false );
             file.ChangesSinceLoad = false;
         }
     }

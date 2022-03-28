@@ -24,7 +24,7 @@ public unsafe class MetaBaseFile : IDisposable
     protected void AllocateData( int length )
     {
         Length = length;
-        Data   = ( byte* )MemoryHelper.GameAllocateDefault( ( ulong )length );
+        Data   = ( byte* )Penumbra.MetaFileManager.AllocateFileMemory( length );
         if( length > 0 )
         {
             GC.AddMemoryPressure( length );
@@ -53,7 +53,7 @@ public unsafe class MetaBaseFile : IDisposable
             return;
         }
 
-        var data = ( byte* )MemoryHelper.GameAllocateDefault( ( ulong )newLength );
+        var data = ( byte* )Penumbra.MetaFileManager.AllocateFileMemory( ( ulong )newLength );
         if( newLength > Length )
         {
             Functions.MemCpyUnchecked( data, Data, Length );
