@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Dalamud.Game.Command;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -54,6 +57,7 @@ public class Penumbra : IDalamudPlugin
     {
         Dalamud.Initialize( pluginInterface );
         GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
+        Backup.CreateBackup( PenumbraBackupFiles() );
         Config = Configuration.Load();
 
         MusicManager = new MusicManager();
@@ -64,7 +68,7 @@ public class Penumbra : IDalamudPlugin
 
         ResidentResources = new ResidentResourceManager();
         CharacterUtility  = new CharacterUtility();
-        MetaFileManager    = new MetaFileManager();
+        MetaFileManager   = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLogger    = new ResourceLogger( ResourceLoader );
         ModManager        = new Mod.Manager();
@@ -336,5 +340,15 @@ public class Penumbra : IDalamudPlugin
         }
 
         SettingsInterface.FlipVisibility();
+    }
+
+    // Collect all relevant files for penumbra configuration.
+    private static IReadOnlyList< FileInfo > PenumbraBackupFiles()
+    {
+        var list = new DirectoryInfo( ModCollection.CollectionDirectory ).EnumerateFiles( "*.json" ).ToList();
+        list.Add( Dalamud.PluginInterface.ConfigFile );
+        list.Add( new FileInfo( Mod.Manager.SortOrderFile ) );
+        list.Add( new FileInfo( ModCollection.Manager.ActiveCollectionFile ) );
+        return list;
     }
 }

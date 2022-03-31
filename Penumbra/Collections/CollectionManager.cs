@@ -96,7 +96,7 @@ public partial class ModCollection
             newCollection.Index = _collections.Count;
             _collections.Add( newCollection );
             newCollection.Save();
-            CollectionChanged?.Invoke( Type.Inactive, null, newCollection );
+            CollectionChanged.Invoke( Type.Inactive, null, newCollection );
             SetCollection( newCollection.Index, Type.Current );
             return true;
         }
@@ -140,7 +140,7 @@ public partial class ModCollection
                 --_collections[ i ].Index;
             }
 
-            CollectionChanged?.Invoke( Type.Inactive, collection, null );
+            CollectionChanged.Invoke( Type.Inactive, collection, null );
             return true;
         }
 

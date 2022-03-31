@@ -15,7 +15,7 @@ public partial class ModCollection
     public sealed partial class Manager
     {
         // Is invoked after the collections actually changed.
-        public event CollectionChangeDelegate? CollectionChanged;
+        public event CollectionChangeDelegate CollectionChanged;
 
         // The collection currently selected for changing settings.
         public ModCollection Current { get; private set; } = Empty;
@@ -81,7 +81,7 @@ public partial class ModCollection
                     break;
             }
 
-            CollectionChanged?.Invoke( type, this[ oldCollectionIdx ], newCollection, characterName );
+            CollectionChanged.Invoke( type, this[ oldCollectionIdx ], newCollection, characterName );
         }
 
         public void SetCollection( ModCollection collection, Type type, string? characterName = null )
@@ -96,7 +96,7 @@ public partial class ModCollection
             }
 
             _characters[ characterName ] = Empty;
-            CollectionChanged?.Invoke( Type.Character, null, Empty, characterName );
+            CollectionChanged.Invoke( Type.Character, null, Empty, characterName );
             return true;
         }
 
@@ -107,7 +107,7 @@ public partial class ModCollection
             {
                 RemoveCache( collection.Index );
                 _characters.Remove( characterName );
-                CollectionChanged?.Invoke( Type.Character, collection, null, characterName );
+                CollectionChanged.Invoke( Type.Character, collection, null, characterName );
             }
         }
 
@@ -118,27 +118,13 @@ public partial class ModCollection
         public static string ActiveCollectionFile
             => Path.Combine( Dalamud.PluginInterface.ConfigDirectory.FullName, "active_collections.json" );
 
-
         // Load default, current and character collections from config.
         // Then create caches. If a collection does not exist anymore, reset it to an appropriate default.
         public void LoadCollections()
         {
-            var file          = ActiveCollectionFile;
-            var configChanged = true;
-            var jObject       = new JObject();
-            if( File.Exists( file ) )
-            {
-                try
-                {
-                    jObject       = JObject.Parse( File.ReadAllText( file ) );
-                    configChanged = false;
-                }
-                catch( Exception e )
-                {
-                    PluginLog.Error( $"Could not read active collections from file {file}:\n{e}" );
-                }
-            }
+            var configChanged = !ReadActiveCollections( out var jObject );
 
+            // Load the default collection.
             var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? Empty.Name;
             var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
@@ -152,6 +138,7 @@ public partial class ModCollection
                 Default = this[ defaultIdx ];
             }
 
+            // Load the current collection.
             var currentName = jObject[ nameof( Current ) ]?.ToObject< string >() ?? DefaultCollection;
             var currentIdx  = GetIndexForCollectionName( currentName );
             if( currentIdx < 0 )
@@ -182,6 +169,7 @@ public partial class ModCollection
                 }
             }
 
+            // Save any changes and create all required caches.
             if( configChanged )
             {
                 SaveActiveCollections();
@@ -225,6 +213,30 @@ public partial class ModCollection
             }
         }
 
+        // Read the active collection file into a jObject.
+        // Returns true if this is successful, false if the file does not exist or it is unsuccessful.
+        private static bool ReadActiveCollections( out JObject ret )
+        {
+            var file = ActiveCollectionFile;
+            if( File.Exists( file ) )
+            {
+                try
+                {
+                    ret = JObject.Parse( File.ReadAllText( file ) );
+                    return true;
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not read active collections from file {file}:\n{e}" );
+                }
+            }
+
+            ret = new JObject();
+            return false;
+        }
+
+
+        // Save if any of the active collections is changed.
         private void SaveOnChange( Type type, ModCollection? _1, ModCollection? _2, string? _3 )
         {
             if( type != Type.Inactive )

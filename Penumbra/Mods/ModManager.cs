@@ -101,24 +101,25 @@ public partial class Mod
             }
         }
 
+        public static string SortOrderFile = Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(),
+            "sort_order.json" );
+
         public Manager()
         {
             SetBaseDirectory( Config.ModDirectory, true );
             // TODO
             try
             {
-                var data = JObject.Parse( File.ReadAllText( Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(),
-                    "sort_order.json" ) ) );
-                TemporaryModSortOrder = data["Data"]?.ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
-
+                var data = JObject.Parse( File.ReadAllText( SortOrderFile ) );
+                TemporaryModSortOrder = data[ "Data" ]?.ToObject< Dictionary< string, string > >() ?? new Dictionary< string, string >();
             }
             catch
             {
-                TemporaryModSortOrder = new Dictionary<string, string>();
+                TemporaryModSortOrder = new Dictionary< string, string >();
             }
         }
 
-        public Dictionary<string, string> TemporaryModSortOrder;
+        public Dictionary< string, string > TemporaryModSortOrder;
 
         private bool SetSortOrderPath( Mod mod, string path )
         {
