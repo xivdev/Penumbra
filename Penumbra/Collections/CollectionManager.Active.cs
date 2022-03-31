@@ -1,6 +1,10 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using Penumbra.Mods;
 using Penumbra.Util;
 
@@ -65,23 +69,19 @@ public partial class ModCollection
             switch( type )
             {
                 case Type.Default:
-                    Default                           = newCollection;
-                    Penumbra.Config.DefaultCollection = newCollection.Name;
+                    Default = newCollection;
                     Penumbra.ResidentResources.Reload();
                     Default.SetFiles();
                     break;
                 case Type.Current:
-                    Current                           = newCollection;
-                    Penumbra.Config.CurrentCollection = newCollection.Name;
+                    Current = newCollection;
                     break;
                 case Type.Character:
-                    _characters[ characterName! ]                          = newCollection;
-                    Penumbra.Config.CharacterCollections[ characterName! ] = newCollection.Name;
+                    _characters[ characterName! ] = newCollection;
                     break;
             }
 
-            CollectionChanged?.Invoke( this[ oldCollectionIdx ], newCollection, type, characterName );
-            Penumbra.Config.Save();
+            CollectionChanged?.Invoke( type, this[ oldCollectionIdx ], newCollection, characterName );
         }
 
         public void SetCollection( ModCollection collection, Type type, string? characterName = null )
@@ -95,10 +95,8 @@ public partial class ModCollection
                 return false;
             }
 
-            _characters[ characterName ]                          = Empty;
-            Penumbra.Config.CharacterCollections[ characterName ] = Empty.Name;
-            Penumbra.Config.Save();
-            CollectionChanged?.Invoke( null, Empty, Type.Character, characterName );
+            _characters[ characterName ] = Empty;
+            CollectionChanged?.Invoke( Type.Character, null, Empty, characterName );
             return true;
         }
 
@@ -109,12 +107,7 @@ public partial class ModCollection
             {
                 RemoveCache( collection.Index );
                 _characters.Remove( characterName );
-                CollectionChanged?.Invoke( collection, null, Type.Character, characterName );
-            }
-
-            if( Penumbra.Config.CharacterCollections.Remove( characterName ) )
-            {
-                Penumbra.Config.Save();
+                CollectionChanged?.Invoke( Type.Character, collection, null, characterName );
             }
         }
 
@@ -122,59 +115,66 @@ public partial class ModCollection
         private int GetIndexForCollectionName( string name )
             => name.Length == 0 ? Empty.Index : _collections.IndexOf( c => c.Name == name );
 
+        public static string ActiveCollectionFile
+            => Path.Combine( Dalamud.PluginInterface.ConfigDirectory.FullName, "active_collections.json" );
+
 
         // Load default, current and character collections from config.
         // Then create caches. If a collection does not exist anymore, reset it to an appropriate default.
         public void LoadCollections()
         {
-            var configChanged = false;
-            var defaultIdx    = GetIndexForCollectionName( Penumbra.Config.DefaultCollection );
+            var file          = ActiveCollectionFile;
+            var configChanged = true;
+            var jObject       = new JObject();
+            if( File.Exists( file ) )
+            {
+                try
+                {
+                    jObject       = JObject.Parse( File.ReadAllText( file ) );
+                    configChanged = false;
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not read active collections from file {file}:\n{e}" );
+                }
+            }
+
+            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? Empty.Name;
+            var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
             {
-                PluginLog.Error( $"Last choice of Default Collection {Penumbra.Config.DefaultCollection} is not available, reset to None." );
-                Default                           = Empty;
-                Penumbra.Config.DefaultCollection = Default.Name;
-                configChanged                     = true;
+                PluginLog.Error( $"Last choice of Default Collection {defaultName} is not available, reset to {Empty.Name}." );
+                Default       = Empty;
+                configChanged = true;
             }
             else
             {
                 Default = this[ defaultIdx ];
             }
 
-            var currentIdx = GetIndexForCollectionName( Penumbra.Config.CurrentCollection );
+            var currentName = jObject[ nameof( Current ) ]?.ToObject< string >() ?? DefaultCollection;
+            var currentIdx  = GetIndexForCollectionName( currentName );
             if( currentIdx < 0 )
             {
-                PluginLog.Error( $"Last choice of Current Collection {Penumbra.Config.CurrentCollection} is not available, reset to Default." );
-                Current                           = DefaultName;
-                Penumbra.Config.DefaultCollection = Current.Name;
-                configChanged                     = true;
+                PluginLog.Error( $"Last choice of Current Collection {currentName} is not available, reset to {DefaultCollection}." );
+                Current       = DefaultName;
+                configChanged = true;
             }
             else
             {
                 Current = this[ currentIdx ];
             }
 
-            if( LoadCharacterCollections() || configChanged )
-            {
-                Penumbra.Config.Save();
-            }
-
-            CreateNecessaryCaches();
-        }
-
-        // Load character collections. If a player name comes up multiple times, the last one is applied.
-        private bool LoadCharacterCollections()
-        {
-            var configChanged = false;
-            foreach( var (player, collectionName) in Penumbra.Config.CharacterCollections.ToArray() )
+            // Load character collections. If a player name comes up multiple times, the last one is applied.
+            var characters = jObject[ nameof( Characters ) ]?.ToObject< Dictionary< string, string > >() ?? new Dictionary< string, string >();
+            foreach( var (player, collectionName) in characters )
             {
                 var idx = GetIndexForCollectionName( collectionName );
                 if( idx < 0 )
                 {
-                    PluginLog.Error( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to None." );
+                    PluginLog.Error( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {Empty.Name}." );
                     _characters.Add( player, Empty );
-                    Penumbra.Config.CharacterCollections[ player ] = Empty.Name;
-                    configChanged                                  = true;
+                    configChanged = true;
                 }
                 else
                 {
@@ -182,7 +182,55 @@ public partial class ModCollection
                 }
             }
 
-            return configChanged;
+            if( configChanged )
+            {
+                SaveActiveCollections();
+            }
+
+            CreateNecessaryCaches();
+        }
+
+
+        public void SaveActiveCollections()
+            => SaveActiveCollections( Default.Name, Current.Name, Characters.Select( kvp => ( kvp.Key, kvp.Value.Name ) ) );
+
+        internal static void SaveActiveCollections( string def, string current, IEnumerable< (string, string) > characters )
+        {
+            var file = ActiveCollectionFile;
+            try
+            {
+                using var stream = File.Open( file, File.Exists( file ) ? FileMode.Truncate : FileMode.CreateNew );
+                using var writer = new StreamWriter( stream );
+                using var j      = new JsonTextWriter( writer );
+                j.Formatting = Formatting.Indented;
+                j.WriteStartObject();
+                j.WritePropertyName( nameof( Default ) );
+                j.WriteValue( def );
+                j.WritePropertyName( nameof( Current ) );
+                j.WriteValue( current );
+                j.WritePropertyName( nameof( Characters ) );
+                j.WriteStartObject();
+                foreach( var (character, collection) in characters )
+                {
+                    j.WritePropertyName( character, true );
+                    j.WriteValue( collection );
+                }
+
+                j.WriteEndObject();
+                j.WriteEndObject();
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not save active collections to file {file}:\n{e}" );
+            }
+        }
+
+        private void SaveOnChange( Type type, ModCollection? _1, ModCollection? _2, string? _3 )
+        {
+            if( type != Type.Inactive )
+            {
+                SaveActiveCollections();
+            }
         }
 
 

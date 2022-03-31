@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta;
 using Penumbra.Mods;
@@ -103,7 +104,21 @@ public partial class Mod
         public Manager()
         {
             SetBaseDirectory( Config.ModDirectory, true );
+            // TODO
+            try
+            {
+                var data = JObject.Parse( File.ReadAllText( Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(),
+                    "sort_order.json" ) ) );
+                TemporaryModSortOrder = data["Data"]?.ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
+
+            }
+            catch
+            {
+                TemporaryModSortOrder = new Dictionary<string, string>();
+            }
         }
+
+        public Dictionary<string, string> TemporaryModSortOrder;
 
         private bool SetSortOrderPath( Mod mod, string path )
         {
@@ -111,13 +126,13 @@ public partial class Mod
             var fixedPath = mod.Order.FullPath;
             if( fixedPath.Length == 0 || string.Equals( fixedPath, mod.Meta.Name, StringComparison.InvariantCultureIgnoreCase ) )
             {
-                Config.ModSortOrder.Remove( mod.BasePath.Name );
+                Penumbra.ModManager.TemporaryModSortOrder.Remove( mod.BasePath.Name );
                 return true;
             }
 
             if( path != fixedPath )
             {
-                Config.ModSortOrder[ mod.BasePath.Name ] = fixedPath;
+                TemporaryModSortOrder[ mod.BasePath.Name ] = fixedPath;
                 return true;
             }
 
@@ -128,7 +143,7 @@ public partial class Mod
         {
             var changes = false;
 
-            foreach( var (folder, path) in Config.ModSortOrder.ToArray() )
+            foreach( var (folder, path) in TemporaryModSortOrder.ToArray() )
             {
                 if( path.Length > 0 && _mods.FindFirst( m => m.BasePath.Name == folder, out var mod ) )
                 {
@@ -137,7 +152,7 @@ public partial class Mod
                 else if( removeOldPaths )
                 {
                     changes = true;
-                    Config.ModSortOrder.Remove( folder );
+                    TemporaryModSortOrder.Remove( folder );
                 }
             }
 
@@ -212,7 +227,7 @@ public partial class Mod
                 return -1;
             }
 
-            if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
+            if( TemporaryModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
             {
                 if( SetSortOrderPath( mod, sortOrder ) )
                 {
@@ -246,13 +261,13 @@ public partial class Mod
             if( metaChanges || fileChanges.HasFlag( ResourceChange.Files ) )
             {
                 mod.ComputeChangedItems();
-                if( Config.ModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
+                if( TemporaryModSortOrder.TryGetValue( mod.BasePath.Name, out var sortOrder ) )
                 {
                     mod.Move( sortOrder );
                     var path = mod.Order.FullPath;
                     if( path != sortOrder )
                     {
-                        Config.ModSortOrder[ mod.BasePath.Name ] = path;
+                        TemporaryModSortOrder[ mod.BasePath.Name ] = path;
                         Config.Save();
                     }
                 }

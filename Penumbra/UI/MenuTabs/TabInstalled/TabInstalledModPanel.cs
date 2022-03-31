@@ -81,7 +81,7 @@ public partial class SettingsInterface
             if( ImGuiCustom.InputOrText( _editMode, LabelEditName, ref name, 64 ) && modManager.RenameMod( name, Mod!.Data ) )
             {
                 _selector.SelectModOnUpdate( Mod.Data.BasePath.Name );
-                if( !modManager.Config.ModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) )
+                if( !modManager.TemporaryModSortOrder.ContainsKey( Mod!.Data.BasePath.Name ) )
                 {
                     Mod.Data.Rename( name );
                 }

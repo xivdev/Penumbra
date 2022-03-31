@@ -24,10 +24,10 @@ public partial class ModCollection
     {
         // On addition, oldCollection is null. On deletion, newCollection is null.
         // CharacterName is onls set for type == Character.
-        public delegate void CollectionChangeDelegate( ModCollection? oldCollection, ModCollection? newCollection, Type type,
+        public delegate void CollectionChangeDelegate( Type type, ModCollection? oldCollection, ModCollection? newCollection,
             string? characterName = null );
 
-        private readonly Mods.Mod.Manager _modManager;
+        private readonly Mod.Manager _modManager;
 
         // The empty collection is always available and always has index 0.
         // It can not be deleted or moved.
@@ -64,6 +64,7 @@ public partial class ModCollection
             _modManager.ModDiscoveryStarted  += OnModDiscoveryStarted;
             _modManager.ModDiscoveryFinished += OnModDiscoveryFinished;
             _modManager.ModChange            += OnModChanged;
+            CollectionChanged                += SaveOnChange;
             ReadCollections();
             LoadCollections();
         }
@@ -95,7 +96,7 @@ public partial class ModCollection
             newCollection.Index = _collections.Count;
             _collections.Add( newCollection );
             newCollection.Save();
-            CollectionChanged?.Invoke( null, newCollection, Type.Inactive );
+            CollectionChanged?.Invoke( Type.Inactive, null, newCollection );
             SetCollection( newCollection.Index, Type.Current );
             return true;
         }
@@ -139,7 +140,7 @@ public partial class ModCollection
                 --_collections[ i ].Index;
             }
 
-            CollectionChanged?.Invoke( collection, null, Type.Inactive );
+            CollectionChanged?.Invoke( Type.Inactive, collection, null );
             return true;
         }
 

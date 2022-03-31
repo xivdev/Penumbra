@@ -35,12 +35,12 @@ public static class ModManagerEditExtensions
         if( newSortOrder == string.Empty || newSortOrder == inRoot.SortOrderName )
         {
             mod.Order = inRoot;
-            manager.Config.ModSortOrder.Remove( mod.BasePath.Name );
+            manager.TemporaryModSortOrder.Remove( mod.BasePath.Name );
         }
         else
         {
             mod.Move( newSortOrder );
-            manager.Config.ModSortOrder[ mod.BasePath.Name ] = mod.Order.FullPath;
+            manager.TemporaryModSortOrder[ mod.BasePath.Name ] = mod.Order.FullPath;
         }
 
         manager.Config.Save();
@@ -75,10 +75,10 @@ public static class ModManagerEditExtensions
         mod.MetaFile = Mod.MetaFileInfo( newDir );
         manager.UpdateMod( mod );
 
-        if( manager.Config.ModSortOrder.ContainsKey( oldBasePath.Name ) )
+        if( manager.TemporaryModSortOrder.ContainsKey( oldBasePath.Name ) )
         {
-            manager.Config.ModSortOrder[ newDir.Name ] = manager.Config.ModSortOrder[ oldBasePath.Name ];
-            manager.Config.ModSortOrder.Remove( oldBasePath.Name );
+            manager.TemporaryModSortOrder[ newDir.Name ] = manager.TemporaryModSortOrder[ oldBasePath.Name ];
+            manager.TemporaryModSortOrder.Remove( oldBasePath.Name );
             manager.Config.Save();
         }
 

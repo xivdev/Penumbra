@@ -128,7 +128,7 @@ public static partial class ModFileSystem
     {
         foreach( var mod in target.AllMods( true ) )
         {
-            Penumbra.Config.ModSortOrder[ mod.BasePath.Name ] = mod.Order.FullName;
+            Penumbra.ModManager.TemporaryModSortOrder[ mod.BasePath.Name ] = mod.Order.FullName;
         }
 
         Penumbra.Config.Save();
@@ -136,16 +136,16 @@ public static partial class ModFileSystem
     }
 
     // Sets and saves the sort order of a single mod, removing the entry if it is unnecessary.
-    private static void SaveMod( global::Penumbra.Mods.Mod mod )
+    private static void SaveMod( Mod mod )
     {
         if( ReferenceEquals( mod.Order.ParentFolder, Root )
         && string.Equals( mod.Order.SortOrderName, mod.Meta.Name.Text.Replace( '/', '\\' ), StringComparison.InvariantCultureIgnoreCase ) )
         {
-            Penumbra.Config.ModSortOrder.Remove( mod.BasePath.Name );
+            Penumbra.ModManager.TemporaryModSortOrder.Remove( mod.BasePath.Name );
         }
         else
         {
-            Penumbra.Config.ModSortOrder[ mod.BasePath.Name ] = mod.Order.FullName;
+            Penumbra.ModManager.TemporaryModSortOrder[ mod.BasePath.Name ] = mod.Order.FullName;
         }
 
         Penumbra.Config.Save();
@@ -183,7 +183,7 @@ public static partial class ModFileSystem
         return true;
     }
 
-    private static bool RenameNoSave( global::Penumbra.Mods.Mod mod, string newName )
+    private static bool RenameNoSave( Mod mod, string newName )
     {
         newName = newName.Replace( '/', '\\' );
         if( mod.Order.SortOrderName == newName )
@@ -192,12 +192,12 @@ public static partial class ModFileSystem
         }
 
         mod.Order.ParentFolder.RemoveModIgnoreEmpty( mod );
-        mod.Order = new global::Penumbra.Mods.Mod.SortOrder( mod.Order.ParentFolder, newName );
+        mod.Order = new Mod.SortOrder( mod.Order.ParentFolder, newName );
         mod.Order.ParentFolder.AddMod( mod );
         return true;
     }
 
-    private static bool MoveNoSave( global::Penumbra.Mods.Mod mod, ModFolder target )
+    private static bool MoveNoSave( Mod mod, ModFolder target )
     {
         var oldParent = mod.Order.ParentFolder;
         if( ReferenceEquals( target, oldParent ) )
@@ -206,7 +206,7 @@ public static partial class ModFileSystem
         }
 
         oldParent.RemoveMod( mod );
-        mod.Order = new global::Penumbra.Mods.Mod.SortOrder( target, mod.Order.SortOrderName );
+        mod.Order = new Mod.SortOrder( target, mod.Order.SortOrderName );
         target.AddMod( mod );
         return true;
     }

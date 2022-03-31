@@ -5,11 +5,10 @@ using Dalamud.Logging;
 
 namespace Penumbra;
 
-
 [Serializable]
 public partial class Configuration : IPluginConfiguration
 {
-    private const int CurrentVersion = 1;
+    private const int CurrentVersion = 2;
 
     public int Version { get; set; } = CurrentVersion;
 
@@ -35,26 +34,19 @@ public partial class Configuration : IPluginConfiguration
 
     public string ModDirectory { get; set; } = string.Empty;
 
-    public string CurrentCollection { get; set; } = "Default";
-    public string DefaultCollection { get; set; } = "Default";
-
-
     public bool SortFoldersFirst { get; set; } = false;
     public bool HasReadCharacterCollectionDesc { get; set; } = false;
 
-    public Dictionary< string, string > CharacterCollections { get; set; } = new();
-    public Dictionary< string, string > ModSortOrder { get; set; } = new();
-
-
     public static Configuration Load()
     {
-        var configuration = Dalamud.PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
-        if( configuration.Version == CurrentVersion )
+        var iConfiguration = Dalamud.PluginInterface.GetPluginConfig();
+        var configuration  = iConfiguration as Configuration ?? new Configuration();
+        if( iConfiguration is { Version: CurrentVersion } )
         {
             return configuration;
         }
 
-        MigrateConfiguration.Version0To1( configuration );
+        MigrateConfiguration.Migrate( configuration );
         configuration.Save();
 
         return configuration;

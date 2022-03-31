@@ -179,7 +179,7 @@ public unsafe partial class PathResolver
     }
 
     // Update collections linked to Game/DrawObjects due to a change in collection configuration.
-    private void CheckCollections( ModCollection? _1, ModCollection? _2, ModCollection.Type type, string? name )
+    private void CheckCollections( ModCollection.Type type, ModCollection? _1, ModCollection? _2, string? name )
     {
         if( type is not (ModCollection.Type.Character or ModCollection.Type.Default) )
         {
