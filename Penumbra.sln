@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.29709.97
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32210.308
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra", "Penumbra\Penumbra.csproj", "{13C812E9-0D42-4B95-8646-40EEBF30636F}"
 EndProject
@@ -13,6 +13,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.GameData", "Penumbra.GameData\Penumbra.GameData.csproj", "{EE551E87-FDB3-4612-B500-DC870C07C605}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.PlayerWatch", "Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj", "{01685BD8-8847-4B49-BF90-1683B4C76B0E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OtterGui", "OtterGui\OtterGui.csproj", "{87750518-1A20-40B4-9FC1-22F906EFB290}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,6 +34,10 @@ Global
 		{01685BD8-8847-4B49-BF90-1683B4C76B0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01685BD8-8847-4B49-BF90-1683B4C76B0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{01685BD8-8847-4B49-BF90-1683B4C76B0E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87750518-1A20-40B4-9FC1-22F906EFB290}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87750518-1A20-40B4-9FC1-22F906EFB290}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87750518-1A20-40B4-9FC1-22F906EFB290}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87750518-1A20-40B4-9FC1-22F906EFB290}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
