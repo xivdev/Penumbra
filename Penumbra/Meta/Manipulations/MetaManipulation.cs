@@ -137,7 +137,7 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
 
     [FieldOffset( 15 )]
     [JsonConverter( typeof( StringEnumConverter ) )]
-    [JsonProperty("Type")]
+    [JsonProperty( "Type" )]
     public readonly Type ManipulationType;
 
     public object? Manipulation
@@ -238,6 +238,25 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
 
     public static implicit operator MetaManipulation( ImcManipulation imc )
         => new(imc);
+
+    public bool EntryEquals( MetaManipulation other )
+    {
+        if( ManipulationType != other.ManipulationType )
+        {
+            return false;
+        }
+
+        return ManipulationType switch
+        {
+            Type.Eqp  => Eqp.Entry.Equals( other.Eqp.Entry ),
+            Type.Gmp  => Gmp.Entry.Equals( other.Gmp.Entry ),
+            Type.Eqdp => Eqdp.Entry.Equals( other.Eqdp.Entry ),
+            Type.Est  => Est.Entry.Equals( other.Est.Entry ),
+            Type.Rsp  => Rsp.Entry.Equals( other.Rsp.Entry ),
+            Type.Imc  => Imc.Entry.Equals( other.Imc.Entry ),
+            _         => throw new ArgumentOutOfRangeException(),
+        };
+    }
 
     public bool Equals( MetaManipulation other )
     {

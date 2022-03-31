@@ -28,7 +28,6 @@ public partial class Mod
             }
         }
 
-
         public SortOrder( ModFolder parentFolder, string name )
         {
             ParentFolder   = parentFolder;

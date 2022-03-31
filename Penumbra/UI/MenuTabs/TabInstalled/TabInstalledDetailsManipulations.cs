@@ -393,7 +393,7 @@ public partial class SettingsInterface
         {
             var ret = false;
             var id  = list[ manipIdx ].Est;
-            var val = id.SkeletonIdx;
+            var val = id.Entry;
 
             if( ImGui.BeginPopup( $"##MetaPopup{manipIdx}" ) )
             {
@@ -570,7 +570,7 @@ public partial class SettingsInterface
                 case MetaManipulation.Type.Est:
                     changes = DrawEstRow( manipIdx, list );
                     ImGui.TableSetColumnIndex( 9 );
-                    if( ImGui.Selectable( $"{list[ manipIdx ].Est.SkeletonIdx}##{manipIdx}" ) )
+                    if( ImGui.Selectable( $"{list[ manipIdx ].Est.Entry}##{manipIdx}" ) )
                     {
                         ImGui.OpenPopup( $"##MetaPopup{manipIdx}" );
                     }

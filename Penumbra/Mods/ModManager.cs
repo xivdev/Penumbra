@@ -45,7 +45,8 @@ public partial class Mod
         public delegate void ModChangeDelegate( ChangeType type, int modIndex, Mod mod );
 
         public event ModChangeDelegate? ModChange;
-        public event Action? ModsRediscovered;
+        public event Action? ModDiscoveryStarted;
+        public event Action? ModDiscoveryFinished;
 
         public bool Valid { get; private set; }
 
@@ -97,8 +98,6 @@ public partial class Mod
                     Config.Save();
                 }
             }
-
-            ModsRediscovered?.Invoke();
         }
 
         public Manager()
@@ -150,6 +149,7 @@ public partial class Mod
 
         public void DiscoverMods()
         {
+            ModDiscoveryStarted?.Invoke();
             _mods.Clear();
             BasePath.Refresh();
 
@@ -172,7 +172,7 @@ public partial class Mod
                 SetModStructure();
             }
 
-            ModsRediscovered?.Invoke();
+            ModDiscoveryFinished?.Invoke();
         }
 
         public void DeleteMod( DirectoryInfo modFolder )
@@ -235,7 +235,7 @@ public partial class Mod
         {
             var mod         = Mods[ idx ];
             var oldName     = mod.Meta.Name;
-            var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile ) || force;
+            var metaChanges = mod.Meta.RefreshFromFile( mod.MetaFile ) != 0 || force;
             var fileChanges = mod.Resources.RefreshModFiles( mod.BasePath );
 
             if( !recomputeMeta && !reloadMeta && !metaChanges && fileChanges == 0 )

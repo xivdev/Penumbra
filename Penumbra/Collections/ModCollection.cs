@@ -1,21 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Penumbra.Mods;
 
 namespace Penumbra.Collections;
-
-public partial class ModCollection
-{
-    // Create the always available Empty Collection that will always sit at index 0,
-    // can not be deleted and does never create a cache.
-    private static ModCollection CreateEmpty()
-    {
-        var collection = CreateNewEmpty( EmptyCollection );
-        collection.Index = 0;
-        collection._settings.Clear();
-        return collection;
-    }
-}
 
 // A ModCollection is a named set of ModSettings to all of the users' installed mods.
 // Settings to mods that are not installed anymore are kept as long as no call to CleanUnavailableSettings is made.
@@ -51,7 +39,6 @@ public partial class ModCollection
     // Settings for deleted mods will be kept via directory name.
     private readonly Dictionary< string, ModSettings > _unusedSettings;
 
-
     // Constructor for duplication.
     private ModCollection( string name, ModCollection duplicate )
     {
@@ -70,16 +57,9 @@ public partial class ModCollection
         Name            = name;
         Version         = version;
         _unusedSettings = allSettings;
-        _settings       = Enumerable.Repeat( ( ModSettings? )null, Penumbra.ModManager.Count ).ToList();
-        for( var i = 0; i < Penumbra.ModManager.Count; ++i )
-        {
-            var modName = Penumbra.ModManager[ i ].BasePath.Name;
-            if( _unusedSettings.TryGetValue( Penumbra.ModManager[ i ].BasePath.Name, out var settings ) )
-            {
-                _unusedSettings.Remove( modName );
-                _settings[ i ] = settings;
-            }
-        }
+
+        _settings = new List< ModSettings? >();
+        ApplyModSettings();
 
         Migration.Migrate( this );
         ModSettingChanged  += SaveOnChange;
@@ -106,7 +86,7 @@ public partial class ModCollection
     }
 
     // Add settings for a new appended mod, by checking if the mod had settings from a previous deletion.
-    private void AddMod( Mods.Mod mod )
+    private void AddMod( Mod mod )
     {
         if( _unusedSettings.TryGetValue( mod.BasePath.Name, out var settings ) )
         {
@@ -120,7 +100,7 @@ public partial class ModCollection
     }
 
     // Move settings from the current mod list to the unused mod settings.
-    private void RemoveMod( Mods.Mod mod, int idx )
+    private void RemoveMod( Mod mod, int idx )
     {
         var settings = _settings[ idx ];
         if( settings != null )
@@ -129,5 +109,52 @@ public partial class ModCollection
         }
 
         _settings.RemoveAt( idx );
+    }
+
+    // Create the always available Empty Collection that will always sit at index 0,
+    // can not be deleted and does never create a cache.
+    private static ModCollection CreateEmpty()
+    {
+        var collection = CreateNewEmpty( EmptyCollection );
+        collection.Index = 0;
+        collection._settings.Clear();
+        return collection;
+    }
+
+    // Move all settings to unused settings for rediscovery.
+    private void PrepareModDiscovery()
+    {
+        foreach( var (mod, setting) in Penumbra.ModManager.Zip( _settings ).Where( s => s.Second != null ) )
+        {
+            _unusedSettings[ mod.BasePath.Name ] = setting!;
+        }
+
+        _settings.Clear();
+    }
+
+    // Apply all mod settings from unused settings to the current set of mods.
+    // Also fixes invalid settings.
+    private void ApplyModSettings()
+    {
+        _settings.Capacity = Math.Max( _settings.Capacity, Penumbra.ModManager.Count );
+        var changes = false;
+        foreach( var mod in Penumbra.ModManager )
+        {
+            if( _unusedSettings.TryGetValue( mod.BasePath.Name, out var s ) )
+            {
+                changes |= s.FixInvalidSettings( mod.Meta );
+                _settings.Add( s );
+                _unusedSettings.Remove( mod.BasePath.Name );
+            }
+            else
+            {
+                _settings.Add( null );
+            }
+        }
+
+        if( changes )
+        {
+            Save();
+        }
     }
 }

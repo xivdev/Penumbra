@@ -206,14 +206,6 @@ public partial class ModCollection
             }
         }
 
-        private void ForceCacheUpdates()
-        {
-            foreach( var collection in this )
-            {
-                collection.ForceCacheUpdate( collection == Default );
-            }
-        }
-
         // Recalculate effective files for active collections on events.
         private void OnModAddedActive( bool meta )
         {

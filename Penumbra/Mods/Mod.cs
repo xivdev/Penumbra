@@ -9,7 +9,7 @@ namespace Penumbra.Mods;
 // Mod contains all permanent information about a mod,
 // and is independent of collections or settings.
 // It only changes when the user actively changes the mod or their filesystem.
-public partial class Mod
+public sealed partial class Mod
 {
     public DirectoryInfo BasePath;
     public ModMeta       Meta;

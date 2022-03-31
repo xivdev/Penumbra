@@ -19,7 +19,7 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
         Head = CharacterUtility.HeadEstIdx,
     }
 
-    public readonly ushort SkeletonIdx;
+    public readonly ushort Entry; // SkeletonIdx.
 
     [JsonConverter( typeof( StringEnumConverter ) )]
     public readonly Gender Gender;
@@ -33,13 +33,13 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
     public readonly EstType Slot;
 
     [JsonConstructor]
-    public EstManipulation( Gender gender, ModelRace race, EstType slot, ushort setId, ushort skeletonIdx )
+    public EstManipulation( Gender gender, ModelRace race, EstType slot, ushort setId, ushort entry )
     {
-        SkeletonIdx = skeletonIdx;
-        Gender      = gender;
-        Race        = race;
-        SetId       = setId;
-        Slot        = slot;
+        Entry  = entry;
+        Gender = gender;
+        Race   = race;
+        SetId  = setId;
+        Slot   = slot;
     }
 
 
@@ -81,7 +81,7 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
 
     public bool Apply( EstFile file )
     {
-        return file.SetEntry( Names.CombinedRace( Gender, Race ), SetId, SkeletonIdx ) switch
+        return file.SetEntry( Names.CombinedRace( Gender, Race ), SetId, Entry ) switch
         {
             EstFile.EstEntryChange.Unchanged => false,
             EstFile.EstEntryChange.Changed   => true,

@@ -56,21 +56,23 @@ public partial class ModCollection
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-        public Manager( Mods.Mod.Manager manager )
+        public Manager( Mod.Manager manager )
         {
             _modManager = manager;
 
             // The collection manager reacts to changes in mods by itself.
-            _modManager.ModsRediscovered += OnModsRediscovered;
-            _modManager.ModChange        += OnModChanged;
+            _modManager.ModDiscoveryStarted  += OnModDiscoveryStarted;
+            _modManager.ModDiscoveryFinished += OnModDiscoveryFinished;
+            _modManager.ModChange            += OnModChanged;
             ReadCollections();
             LoadCollections();
         }
 
         public void Dispose()
         {
-            _modManager.ModsRediscovered -= OnModsRediscovered;
-            _modManager.ModChange        -= OnModChanged;
+            _modManager.ModDiscoveryStarted  -= OnModDiscoveryStarted;
+            _modManager.ModDiscoveryFinished -= OnModDiscoveryFinished;
+            _modManager.ModChange            -= OnModChanged;
         }
 
         // Add a new collection of the given name.
@@ -144,12 +146,27 @@ public partial class ModCollection
         public bool RemoveCollection( ModCollection collection )
             => RemoveCollection( collection.Index );
 
-
-        private void OnModsRediscovered()
+        private void OnModDiscoveryStarted()
         {
-            // When mods are rediscovered, force all cache updates and set the files of the default collection.
-            ForceCacheUpdates();
-            Default.SetFiles();
+            foreach( var collection in this )
+            {
+                collection.PrepareModDiscovery();
+            }
+        }
+
+        private void OnModDiscoveryFinished()
+        {
+            // First, re-apply all mod settings.
+            foreach( var collection in this )
+            {
+                collection.ApplyModSettings();
+            }
+
+            // Afterwards, we update the caches. This can not happen in the same loop due to inheritance.
+            foreach( var collection in this )
+            {
+                collection.ForceCacheUpdate( collection == Default );
+            }
         }
 
 
@@ -209,8 +226,7 @@ public partial class ModCollection
 
         // Inheritances can not be setup before all collections are read,
         // so this happens after reading the collections.
-        // During this iteration, we can also fix all settings that are not valid for the given mod anymore.
-        private void ApplyInheritancesAndFixSettings( IEnumerable< IReadOnlyList< string > > inheritances )
+        private void ApplyInheritances( IEnumerable< IReadOnlyList< string > > inheritances )
         {
             foreach( var (collection, inheritance) in this.Zip( inheritances ) )
             {
@@ -227,11 +243,6 @@ public partial class ModCollection
                         changes = true;
                         PluginLog.Warning( $"{collection.Name} can not inherit from {subCollectionName}, removed." );
                     }
-                }
-
-                foreach( var (setting, mod) in collection.Settings.Zip( _modManager.Mods ).Where( s => s.First != null ) )
-                {
-                    changes |= setting!.FixInvalidSettings( mod.Meta );
                 }
 
                 if( changes )
@@ -277,7 +288,7 @@ public partial class ModCollection
             }
 
             AddDefaultCollection();
-            ApplyInheritancesAndFixSettings( inheritances );
+            ApplyInheritances( inheritances );
         }
     }
 }

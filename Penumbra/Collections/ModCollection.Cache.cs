@@ -74,7 +74,7 @@ public partial class ModCollection
 
     // Update the effective file list for the given cache.
     // Creates a cache if necessary.
-    public void CalculateEffectiveFileList( bool withMetaManipulations, bool reloadResident )
+    public void CalculateEffectiveFileList( bool withMetaManipulations, bool reloadDefault )
     {
         // Skip the empty collection.
         if( Index == 0 )
@@ -82,15 +82,20 @@ public partial class ModCollection
             return;
         }
 
-        PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}]", Name, withMetaManipulations );
+        PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{ReloadDefault}]", Name,
+            withMetaManipulations, reloadDefault );
         _cache ??= new Cache( this );
         _cache.CalculateEffectiveFileList();
         if( withMetaManipulations )
         {
             _cache.UpdateMetaManipulations();
+            if( reloadDefault )
+            {
+                SetFiles();
+            }
         }
 
-        if( reloadResident )
+        if( reloadDefault )
         {
             Penumbra.ResidentResources.Reload();
         }
