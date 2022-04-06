@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Logging;
+using OtterGui;
 using Penumbra.Mods;
 using Penumbra.Util;
 
@@ -9,12 +10,7 @@ namespace Penumbra.UI;
 
 public class ModListCache : IDisposable
 {
-    public const uint NewModColor             = 0xFF66DD66u;
-    public const uint DisabledModColor        = 0xFF666666u;
-    public const uint ConflictingModColor     = 0xFFAAAAFFu;
-    public const uint HandledConflictModColor = 0xFF88DDDDu;
-
-    private readonly Mods.Mod.Manager _manager;
+    private readonly Mod.Manager _manager;
 
     private readonly List< FullMod >                                       _modsInOrder    = new();
     private readonly List< (bool visible, uint color) >                    _visibleMods    = new();
@@ -24,10 +20,11 @@ public class ModListCache : IDisposable
     private LowerString _modFilter        = LowerString.Empty;
     private LowerString _modFilterAuthor  = LowerString.Empty;
     private LowerString _modFilterChanges = LowerString.Empty;
-    private ModFilter   _stateFilter      = ModFilterExtensions.UnfilteredStateMods;
-    private bool        _listResetNecessary;
-    private bool        _filterResetNecessary;
 
+    private bool _listResetNecessary;
+    private bool _filterResetNecessary;
+
+    private ModFilter _stateFilter = ModFilterExtensions.UnfilteredStateMods;
 
     public ModFilter StateFilter
     {
@@ -43,7 +40,7 @@ public class ModListCache : IDisposable
         }
     }
 
-    public ModListCache( Mods.Mod.Manager manager, IReadOnlySet< string > newMods )
+    public ModListCache( Mod.Manager manager, IReadOnlySet< string > newMods )
     {
         _manager = manager;
         _newMods = newMods;
@@ -281,7 +278,7 @@ public class ModListCache : IDisposable
                 return ret;
             }
 
-            ret.Item2 = ret.Item2 == 0 ? DisabledModColor : ret.Item2;
+            ret.Item2 = ret.Item2 == 0 ? Colors.DisabledModColor : ret.Item2;
         }
 
         if( mod.Settings.Enabled && !StateFilter.HasFlag( ModFilter.Enabled ) )
@@ -299,7 +296,7 @@ public class ModListCache : IDisposable
                     return ret;
                 }
 
-                ret.Item2 = ret.Item2 == 0 ? ConflictingModColor : ret.Item2;
+                ret.Item2 = ret.Item2 == 0 ? Colors.ConflictingModColor : ret.Item2;
             }
             else
             {
@@ -308,7 +305,7 @@ public class ModListCache : IDisposable
                     return ret;
                 }
 
-                ret.Item2 = ret.Item2 == 0 ? HandledConflictModColor : ret.Item2;
+                ret.Item2 = ret.Item2 == 0 ? Colors.HandledConflictModColor : ret.Item2;
             }
         }
         else if( !StateFilter.HasFlag( ModFilter.NoConflict ) )
@@ -319,7 +316,7 @@ public class ModListCache : IDisposable
         ret.Item1 = true;
         if( isNew )
         {
-            ret.Item2 = NewModColor;
+            ret.Item2 = Colors.NewModColor;
         }
 
         SetFolderAndParentsVisible( mod.Data.Order.ParentFolder );

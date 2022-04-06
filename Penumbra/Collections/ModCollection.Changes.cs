@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Penumbra.Mods;
 
 namespace Penumbra.Collections;
@@ -6,10 +8,12 @@ namespace Penumbra.Collections;
 // Different types a mod setting can change:
 public enum ModSettingChange
 {
-    Inheritance, // it was set to inherit from other collections or not inherit anymore
-    EnableState, // it was enabled or disabled
-    Priority,    // its priority was changed
-    Setting,     // a specific setting was changed
+    Inheritance,      // it was set to inherit from other collections or not inherit anymore
+    EnableState,      // it was enabled or disabled
+    Priority,         // its priority was changed
+    Setting,          // a specific setting was changed
+    MultiInheritance, // multiple mods were set to inherit from other collections or not inherit anymore.
+    MultiEnableState, // multiple mods were enabled or disabled at once.
 }
 
 public partial class ModCollection
@@ -28,7 +32,7 @@ public partial class ModCollection
         }
     }
 
-    // Set the enabled state mod idx to newValue if it differs from the current priority.
+    // Set the enabled state mod idx to newValue if it differs from the current enabled state.
     // If mod idx is currently inherited, stop the inheritance.
     public void SetModState( int idx, bool newValue )
     {
@@ -38,6 +42,37 @@ public partial class ModCollection
             var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.Enabled = newValue;
             ModSettingChanged.Invoke( ModSettingChange.EnableState, idx, inheritance ? -1 : newValue ? 0 : 1, null, false );
+        }
+    }
+
+    // Enable or disable the mod inheritance of every mod in mods.
+    public void SetMultipleModInheritances( IEnumerable< Mod > mods, bool inherit )
+    {
+        if( mods.Aggregate( false, ( current, mod ) => current | FixInheritance( mod.Index, inherit ) ) )
+        {
+            ModSettingChanged.Invoke( ModSettingChange.MultiInheritance, -1, -1, null, false );
+        }
+    }
+
+    // Set the enabled state of every mod in mods to the new value.
+    // If the mod is currently inherited, stop the inheritance.
+    public void SetMultipleModStates( IEnumerable< Mod > mods, bool newValue )
+    {
+        var changes = false;
+        foreach( var mod in mods )
+        {
+            var oldValue = _settings[ mod.Index ]?.Enabled ?? this[ mod.Index ].Settings?.Enabled ?? false;
+            if( newValue != oldValue )
+            {
+                FixInheritance( mod.Index, false );
+                _settings[ mod.Index ]!.Enabled = newValue;
+                changes                         = true;
+            }
+        }
+
+        if( changes )
+        {
+            ModSettingChanged.Invoke( ModSettingChange.MultiEnableState, -1, -1, null, false );
         }
     }
 

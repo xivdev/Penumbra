@@ -3,7 +3,7 @@ using System.IO;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Penumbra.Util;
+using OtterGui;
 
 namespace Penumbra.Mods;
 

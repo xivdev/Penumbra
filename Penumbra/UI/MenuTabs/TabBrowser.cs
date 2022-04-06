@@ -1,24 +1,37 @@
-using System.Diagnostics;
-using ImGuiNET;
+using System.Runtime.InteropServices;
+using OtterGui.Raii;
+using Penumbra.Mods;
 
-namespace Penumbra.UI
+namespace Penumbra.UI;
+
+[StructLayout( LayoutKind.Sequential, Pack = 1 )]
+public struct ModState
 {
-    public partial class SettingsInterface
-    {
-        private class TabBrowser
-        {
-            [Conditional( "LEAVEMEALONE" )]
-            public void Draw()
-            {
-                var ret = ImGui.BeginTabItem( "Available Mods" );
-                if( !ret )
-                {
-                    return;
-                }
+    public uint Color;
+}
 
-                ImGui.Text( "woah" );
-                ImGui.EndTabItem();
+public partial class SettingsInterface
+{
+    private class TabBrowser
+    {
+        private readonly ModFileSystemA        _fileSystem;
+        private readonly ModFileSystemSelector _selector;
+
+        public TabBrowser()
+        {
+            _fileSystem = ModFileSystemA.Load();
+            _selector   = new ModFileSystemSelector( _fileSystem );
+        }
+
+        public void Draw()
+        {
+            using var ret = ImRaii.TabItem( "Available Mods" );
+            if( !ret )
+            {
+                return;
             }
+
+            _selector.Draw( 400 );
         }
     }
 }

@@ -235,7 +235,8 @@ public partial class SettingsInterface
             }
 
             ImGui.SameLine();
-            ImGuiComponents.HelpMarker( "Enables other applications, e.g. Anamnesis, to use some Penumbra functions, like requesting redraws." );
+            ImGuiComponents.HelpMarker(
+                "Enables other applications, e.g. Anamnesis, to use some Penumbra functions, like requesting redraws." );
         }
 
         private static void DrawReloadResourceButton()
@@ -342,7 +343,6 @@ public partial class SettingsInterface
             }
 
             using var raii = ImGuiRaii.DeferredEnd( ImGui.EndTabItem );
-
             DrawRootFolder();
 
             DrawRediscoverButton();

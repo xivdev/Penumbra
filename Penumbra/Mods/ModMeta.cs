@@ -5,6 +5,7 @@ using System.Linq;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using Penumbra.GameData.ByteString;
 using Penumbra.Util;
 

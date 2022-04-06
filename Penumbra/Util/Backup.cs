@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using Dalamud.Logging;
 
 namespace Penumbra.Util;
@@ -119,7 +120,7 @@ public static class Backup
     {
         using var fileStream = File.Open( fileName, FileMode.Create );
         using var zip        = new ZipArchive( fileStream, ZipArchiveMode.Create );
-        foreach( var file in files )
+        foreach( var file in files.Where( f => File.Exists( f.FullName ) ) )
         {
             zip.CreateEntryFromFile( file.FullName, Path.GetRelativePath( configDirectory, file.FullName ), CompressionLevel.Optimal );
         }

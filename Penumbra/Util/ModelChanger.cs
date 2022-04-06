@@ -26,7 +26,7 @@ public static class ModelChanger
          && Encoding.UTF8.GetByteCount( to )   == to.Length;
 
 
-    [Conditional( "Debug" )]
+    [Conditional( "DEBUG" )]
     private static void WriteBackup( string name, byte[] text )
         => File.WriteAllBytes( name + ".bak", text );
 

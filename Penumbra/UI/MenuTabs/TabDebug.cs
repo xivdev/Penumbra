@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using ImGuiNET;
+using OtterGui.Raii;
 using Penumbra.Api;
 using Penumbra.UI.Custom;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
@@ -12,6 +13,17 @@ namespace Penumbra.UI;
 
 public partial class SettingsInterface
 {
+    private string ImGuiIdTester = string.Empty;
+
+    private void DrawImGuiIdTester()
+    {
+        ImGui.SetNextItemWidth( 200 );
+        ImGui.InputText( "##abc1", ref ImGuiIdTester, 32 );
+        ImGui.SameLine();
+        ImGui.Text( ImGui.GetID( ImGuiIdTester ).ToString( "X" ) );
+    }
+
+
     private static void PrintValue( string name, string value )
     {
         ImGui.TableNextRow();
@@ -289,6 +301,16 @@ public partial class SettingsInterface
         }
     }
 
+    private void DrawDebugTabUtility()
+    {
+        if( !ImGui.CollapsingHeader( "Utilities##Debug" ) )
+        {
+            return;
+        }
+
+        DrawImGuiIdTester();
+    }
+
     private void DrawDebugTab()
     {
         if( !ImGui.BeginTabItem( "Debug Tab" ) )
@@ -323,6 +345,8 @@ public partial class SettingsInterface
         DrawDebugResidentResources();
         ImGui.NewLine();
         DrawDebugTabIpc();
+        ImGui.NewLine();
+        DrawDebugTabUtility();
         ImGui.NewLine();
     }
 }
