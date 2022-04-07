@@ -3,15 +3,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Text.RegularExpressions;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using Dalamud.Logging;
 using ImGuiNET;
+using OtterGui;
 using Penumbra.GameData.ByteString;
-using Penumbra.Interop;
+using Penumbra.UI.Classes;
 using Penumbra.UI.Custom;
-using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -358,6 +356,19 @@ public partial class SettingsInterface
             if( _config.ShowAdvanced )
             {
                 DrawAdvancedSettings();
+            }
+
+            if( ImGui.CollapsingHeader( "Colors" ) )
+            {
+                foreach( var color in Enum.GetValues< ColorId >() )
+                {
+                    var (defaultColor, name, description) = color.Data();
+                    var currentColor = Penumbra.Config.Colors.TryGetValue( color, out var current ) ? current : defaultColor;
+                    if( ImGuiUtil.ColorPicker( name, description, currentColor, c => Penumbra.Config.Colors[ color ] = c, defaultColor ) )
+                    {
+                        _configChanged = true;
+                    }
+                }
             }
 
             if( _configChanged )

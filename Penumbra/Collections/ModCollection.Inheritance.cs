@@ -12,6 +12,7 @@ namespace Penumbra.Collections;
 public partial class ModCollection
 {
     // A change in inheritance usually requires complete recomputation.
+    // The bool signifies whether the change was in an already inherited collection.
     public event Action< bool > InheritanceChanged;
 
     private readonly List< ModCollection > _inheritance = new();
@@ -25,7 +26,7 @@ public partial class ModCollection
     {
         yield return this;
 
-        foreach( var collection in _inheritance.SelectMany( c => c._inheritance )
+        foreach( var collection in _inheritance.SelectMany( c => c.GetFlattenedInheritance() )
                    .Where( c => !ReferenceEquals( this, c ) )
                    .Distinct() )
         {

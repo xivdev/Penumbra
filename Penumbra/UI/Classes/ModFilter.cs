@@ -1,6 +1,6 @@
 using System;
 
-namespace Penumbra.UI;
+namespace Penumbra.UI.Classes;
 
 [Flags]
 public enum ModFilter

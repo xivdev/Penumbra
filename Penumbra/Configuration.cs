@@ -1,7 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
 using Dalamud.Configuration;
 using Dalamud.Logging;
+using Penumbra.UI;
+using Penumbra.UI.Classes;
 
 namespace Penumbra;
 
@@ -37,17 +41,21 @@ public partial class Configuration : IPluginConfiguration
     public bool SortFoldersFirst { get; set; } = false;
     public bool HasReadCharacterCollectionDesc { get; set; } = false;
 
+    public Dictionary< ColorId, uint > Colors { get; set; }
+        = Enum.GetValues< ColorId >().ToDictionary( c => c, c => c.Data().DefaultColor );
+
     public static Configuration Load()
     {
         var iConfiguration = Dalamud.PluginInterface.GetPluginConfig();
         var configuration  = iConfiguration as Configuration ?? new Configuration();
         if( iConfiguration is { Version: CurrentVersion } )
         {
+            configuration.AddColors( false );
             return configuration;
         }
 
         MigrateConfiguration.Migrate( configuration );
-        configuration.Save();
+        configuration.AddColors( true );
 
         return configuration;
     }
@@ -61,6 +69,21 @@ public partial class Configuration : IPluginConfiguration
         catch( Exception e )
         {
             PluginLog.Error( $"Could not save plugin configuration:\n{e}" );
+        }
+    }
+
+    // Add missing colors to the dictionary if necessary.
+    private void AddColors( bool forceSave )
+    {
+        var save = false;
+        foreach( var color in Enum.GetValues< ColorId >() )
+        {
+            save |= Colors.TryAdd( color, color.Data().DefaultColor );
+        }
+
+        if( save || forceSave )
+        {
+            Save();
         }
     }
 }

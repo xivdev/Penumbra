@@ -7,6 +7,8 @@ namespace Penumbra.Mods;
 // Contains the settings for a given mod.
 public class ModSettings
 {
+    public static readonly ModSettings Empty = new();
+
     public bool Enabled { get; set; }
     public int Priority { get; set; }
     public Dictionary< string, int > Settings { get; set; } = new();

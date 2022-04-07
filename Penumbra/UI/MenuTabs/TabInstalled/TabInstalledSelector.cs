@@ -11,6 +11,7 @@ using ImGuiNET;
 using Penumbra.Collections;
 using Penumbra.Importer;
 using Penumbra.Mods;
+using Penumbra.UI.Classes;
 using Penumbra.UI.Custom;
 using Penumbra.Util;
 
@@ -217,18 +218,18 @@ public partial class SettingsInterface
             ImGui.Text( "Enabled in the current collection." );
             ImGui.Bullet();
             ImGui.SameLine();
-            ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( Colors.DisabledModColor ), "Disabled in the current collection." );
+            ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( ColorId.DisabledMod.Value() ), "Disabled in the current collection." );
             ImGui.Bullet();
             ImGui.SameLine();
-            ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( Colors.NewModColor ),
+            ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( ColorId.NewMod.Value() ),
                 "Newly imported during this session. Will go away when first enabling a mod or when Penumbra is reloaded." );
             ImGui.Bullet();
             ImGui.SameLine();
-            ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( Colors.HandledConflictModColor ),
+            ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( ColorId.HandledConflictMod.Value() ),
                 "Enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved)." );
             ImGui.Bullet();
             ImGui.SameLine();
-            ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( Colors.ConflictingModColor ),
+            ImGui.TextColored( ImGui.ColorConvertU32ToFloat4( ColorId.DisabledMod.Value() ),
                 "Enabled and conflicting with another enabled Mod on the same priority." );
             ImGui.Unindent();
             ImGui.BulletText( "Right-click a mod to enter its sort order, which is its name by default." );

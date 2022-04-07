@@ -231,7 +231,8 @@ public partial class ModCollection
                 return;
             }
 
-            var hasMeta = Penumbra.ModManager[ modIdx ].Resources.MetaManipulations.Count       > 0;
+            var hasMeta = type is ModSettingChange.MultiEnableState or ModSettingChange.MultiInheritance
+             || Penumbra.ModManager[ modIdx ].Resources.MetaManipulations.Count > 0;
             _collection.CalculateEffectiveFileList( hasMeta, Penumbra.CollectionManager.Default == _collection );
         }
 

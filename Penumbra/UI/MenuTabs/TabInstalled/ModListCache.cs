@@ -4,6 +4,7 @@ using System.Linq;
 using Dalamud.Logging;
 using OtterGui;
 using Penumbra.Mods;
+using Penumbra.UI.Classes;
 using Penumbra.Util;
 
 namespace Penumbra.UI;
@@ -278,7 +279,7 @@ public class ModListCache : IDisposable
                 return ret;
             }
 
-            ret.Item2 = ret.Item2 == 0 ? Colors.DisabledModColor : ret.Item2;
+            ret.Item2 = ret.Item2 == 0 ? ColorId.DisabledMod.Value() : ret.Item2;
         }
 
         if( mod.Settings.Enabled && !StateFilter.HasFlag( ModFilter.Enabled ) )
@@ -296,7 +297,7 @@ public class ModListCache : IDisposable
                     return ret;
                 }
 
-                ret.Item2 = ret.Item2 == 0 ? Colors.ConflictingModColor : ret.Item2;
+                ret.Item2 = ret.Item2 == 0 ? ColorId.ConflictingMod.Value() : ret.Item2;
             }
             else
             {
@@ -305,7 +306,7 @@ public class ModListCache : IDisposable
                     return ret;
                 }
 
-                ret.Item2 = ret.Item2 == 0 ? Colors.HandledConflictModColor : ret.Item2;
+                ret.Item2 = ret.Item2 == 0 ? ColorId.HandledConflictMod.Value() : ret.Item2;
             }
         }
         else if( !StateFilter.HasFlag( ModFilter.NoConflict ) )
@@ -316,7 +317,7 @@ public class ModListCache : IDisposable
         ret.Item1 = true;
         if( isNew )
         {
-            ret.Item2 = Colors.NewModColor;
+            ret.Item2 = ColorId.NewMod.Value();
         }
 
         SetFolderAndParentsVisible( mod.Data.Order.ParentFolder );
