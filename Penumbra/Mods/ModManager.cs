@@ -42,7 +42,7 @@ public partial class Mod
 
         public ModFolder StructuredMods { get; } = ModFileSystem.Root;
 
-        public delegate void ModChangeDelegate( ChangeType type, int modIndex, Mod mod );
+        public delegate void ModChangeDelegate( ChangeType type, Mod mod );
 
         public event ModChangeDelegate? ModChange;
         public event Action? ModDiscoveryStarted;
@@ -90,8 +90,14 @@ public partial class Mod
                     }
                 }
 
+                if( !firstTime )
+                {
+                    HandleSortOrderFiles( newDir );
+                }
+
                 BasePath = newDir;
-                Valid    = true;
+
+                Valid = true;
                 if( Config.ModDirectory != BasePath.FullName )
                 {
                     Config.ModDirectory = BasePath.FullName;
@@ -100,8 +106,37 @@ public partial class Mod
             }
         }
 
-        public static string SortOrderFile = Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(),
-            "sort_order.json" );
+        private const string SortOrderFileName = "sort_order.json";
+        public static string SortOrderFile     = Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(), SortOrderFileName );
+
+        private void HandleSortOrderFiles( DirectoryInfo newDir )
+        {
+            try
+            {
+                var mainFile = SortOrderFile;
+                // Copy old sort order to backup.
+                var oldSortOrderFile = Path.Combine( BasePath.FullName, SortOrderFileName );
+                PluginLog.Debug( "Copying current sort older file to {BackupFile}...", oldSortOrderFile );
+                File.Copy( mainFile, oldSortOrderFile, true );
+                BasePath = newDir;
+                var newSortOrderFile = Path.Combine( newDir.FullName, SortOrderFileName );
+                // Copy new sort order to main, if it exists.
+                if( File.Exists( newSortOrderFile ) )
+                {
+                    File.Copy( newSortOrderFile, mainFile, true );
+                    PluginLog.Debug( "Copying stored sort order file from {BackupFile}...", newSortOrderFile );
+                }
+                else
+                {
+                    File.Delete( mainFile );
+                    PluginLog.Debug( "Deleting current sort order file...", newSortOrderFile );
+                }
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not swap Sort Order files:\n{e}" );
+            }
+        }
 
         public Manager()
         {
@@ -215,7 +250,7 @@ public partial class Mod
                     --_mods[ i ].Index;
                 }
 
-                ModChange?.Invoke( ChangeType.Removed, idx, mod );
+                ModChange?.Invoke( ChangeType.Removed, mod );
             }
         }
 
@@ -241,7 +276,7 @@ public partial class Mod
             }
 
             _mods.Add( mod );
-            ModChange?.Invoke( ChangeType.Added, _mods.Count - 1, mod );
+            ModChange?.Invoke( ChangeType.Added, mod );
 
             return _mods.Count - 1;
         }
@@ -287,7 +322,7 @@ public partial class Mod
             }
 
             // TODO: more specific mod changes?
-            ModChange?.Invoke( ChangeType.Changed, idx, mod );
+            ModChange?.Invoke( ChangeType.Changed, mod );
             return true;
         }
 

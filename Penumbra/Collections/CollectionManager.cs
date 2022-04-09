@@ -172,7 +172,7 @@ public partial class ModCollection
 
 
         // A changed mod forces changes for all collections, active and inactive.
-        private void OnModChanged( Mod.ChangeType type, int idx, Mod mod )
+        private void OnModChanged( Mod.ChangeType type, Mod mod )
         {
             switch( type )
             {
@@ -188,15 +188,15 @@ public partial class ModCollection
                     var settings = new List< ModSettings? >( _collections.Count );
                     foreach( var collection in this )
                     {
-                        settings.Add( collection[ idx ].Settings );
-                        collection.RemoveMod( mod, idx );
+                        settings.Add( collection[ mod.Index ].Settings );
+                        collection.RemoveMod( mod, mod.Index );
                     }
 
                     OnModRemovedActive( mod.Resources.MetaManipulations.Count > 0, settings );
                     break;
                 case Mod.ChangeType.Changed:
                     foreach( var collection in this.Where(
-                                collection => collection.Settings[ idx ]?.FixInvalidSettings( mod.Meta ) ?? false ) )
+                                collection => collection.Settings[ mod.Index ]?.FixInvalidSettings( mod.Meta ) ?? false ) )
                     {
                         collection.Save();
                     }

@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using OtterGui.Raii;
 using Penumbra.Mods;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
@@ -20,7 +22,7 @@ public partial class SettingsInterface
         public TabBrowser()
         {
             _fileSystem = ModFileSystemA.Load();
-            _selector   = new ModFileSystemSelector( _fileSystem );
+            _selector   = new ModFileSystemSelector( _fileSystem, new HashSet<Mod>() );
         }
 
         public void Draw()

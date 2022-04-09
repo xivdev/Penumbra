@@ -29,7 +29,7 @@ public sealed partial class Mod2
 
         public void RenameModGroup( Mod2 mod, int groupIdx, string newName )
         {
-            var group   = mod._options[ groupIdx ];
+            var group   = mod._groups[ groupIdx ];
             var oldName = group.Name;
             if( oldName == newName || !VerifyFileName( mod, group, newName ) )
             {
@@ -53,25 +53,25 @@ public sealed partial class Mod2
                 return;
             }
 
-            var maxPriority = mod._options.Max( o => o.Priority ) + 1;
+            var maxPriority = mod._groups.Max( o => o.Priority ) + 1;
 
-            mod._options.Add( type == SelectType.Multi
+            mod._groups.Add( type == SelectType.Multi
                 ? new MultiModGroup { Name  = newName, Priority = maxPriority }
                 : new SingleModGroup { Name = newName, Priority = maxPriority } );
-            ModOptionChanged.Invoke( ModOptionChangeType.GroupAdded, mod, mod._options.Count - 1, 0 );
+            ModOptionChanged.Invoke( ModOptionChangeType.GroupAdded, mod, mod._groups.Count - 1, 0 );
         }
 
         public void DeleteModGroup( Mod2 mod, int groupIdx )
         {
-            var group = mod._options[ groupIdx ];
-            mod._options.RemoveAt( groupIdx );
+            var group = mod._groups[ groupIdx ];
+            mod._groups.RemoveAt( groupIdx );
             group.DeleteFile( BasePath );
             ModOptionChanged.Invoke( ModOptionChangeType.GroupDeleted, mod, groupIdx, 0 );
         }
 
         public void ChangeGroupDescription( Mod2 mod, int groupIdx, string newDescription )
         {
-            var group = mod._options[ groupIdx ];
+            var group = mod._groups[ groupIdx ];
             if( group.Description == newDescription )
             {
                 return;
@@ -88,7 +88,7 @@ public sealed partial class Mod2
 
         public void ChangeGroupPriority( Mod2 mod, int groupIdx, int newPriority )
         {
-            var group = mod._options[ groupIdx ];
+            var group = mod._groups[ groupIdx ];
             if( group.Priority == newPriority )
             {
                 return;
@@ -105,7 +105,7 @@ public sealed partial class Mod2
 
         public void ChangeOptionPriority( Mod2 mod, int groupIdx, int optionIdx, int newPriority )
         {
-            switch( mod._options[ groupIdx ] )
+            switch( mod._groups[ groupIdx ] )
             {
                 case SingleModGroup s:
                     ChangeGroupPriority( mod, groupIdx, newPriority );
@@ -124,7 +124,7 @@ public sealed partial class Mod2
 
         public void RenameOption( Mod2 mod, int groupIdx, int optionIdx, string newName )
         {
-            switch( mod._options[ groupIdx ] )
+            switch( mod._groups[ groupIdx ] )
             {
                 case SingleModGroup s:
                     if( s.OptionData[ optionIdx ].Name == newName )
@@ -150,7 +150,7 @@ public sealed partial class Mod2
 
         public void AddOption( Mod2 mod, int groupIdx, string newName )
         {
-            switch( mod._options[ groupIdx ] )
+            switch( mod._groups[ groupIdx ] )
             {
                 case SingleModGroup s:
                     s.OptionData.Add( new SubMod { Name = newName } );
@@ -160,12 +160,12 @@ public sealed partial class Mod2
                     break;
             }
 
-            ModOptionChanged.Invoke( ModOptionChangeType.OptionAdded, mod, groupIdx, mod._options[ groupIdx ].Count - 1 );
+            ModOptionChanged.Invoke( ModOptionChangeType.OptionAdded, mod, groupIdx, mod._groups[ groupIdx ].Count - 1 );
         }
 
         public void DeleteOption( Mod2 mod, int groupIdx, int optionIdx )
         {
-            switch( mod._options[ groupIdx ] )
+            switch( mod._groups[ groupIdx ] )
             {
                 case SingleModGroup s:
                     s.OptionData.RemoveAt( optionIdx );
@@ -181,26 +181,24 @@ public sealed partial class Mod2
         public void OptionSetManipulation( Mod2 mod, int groupIdx, int optionIdx, MetaManipulation manip, bool delete = false )
         {
             var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            var idx    = subMod.ManipulationData.FindIndex( m => m.Equals( manip ) );
             if( delete )
             {
-                if( idx < 0 )
+                if( !subMod.ManipulationData.Remove( manip ) )
                 {
                     return;
                 }
-
-                subMod.ManipulationData.RemoveAt( idx );
             }
             else
             {
-                if( idx >= 0 )
+                if( subMod.ManipulationData.TryGetValue( manip, out var oldManip ) )
                 {
-                    if( manip.EntryEquals( subMod.ManipulationData[ idx ] ) )
+                    if( manip.EntryEquals( oldManip ) )
                     {
                         return;
                     }
 
-                    subMod.ManipulationData[ idx ] = manip;
+                    subMod.ManipulationData.Remove( oldManip );
+                    subMod.ManipulationData.Add( manip );
                 }
                 else
                 {
@@ -232,7 +230,7 @@ public sealed partial class Mod2
         private bool VerifyFileName( Mod2 mod, IModGroup? group, string newName )
         {
             var path = newName.RemoveInvalidPathSymbols();
-            if( mod.Options.Any( o => !ReferenceEquals( o, group )
+            if( mod.Groups.Any( o => !ReferenceEquals( o, group )
                 && string.Equals( o.Name.RemoveInvalidPathSymbols(), path, StringComparison.InvariantCultureIgnoreCase ) ) )
             {
                 PluginLog.Warning( $"Could not name option {newName} because option with same filename {path} already exists." );
@@ -244,7 +242,7 @@ public sealed partial class Mod2
 
         private static SubMod GetSubMod( Mod2 mod, int groupIdx, int optionIdx )
         {
-            return mod._options[ groupIdx ] switch
+            return mod._groups[ groupIdx ] switch
             {
                 SingleModGroup s => s.OptionData[ optionIdx ],
                 MultiModGroup m  => m.PrioritizedOptions[ optionIdx ].Mod,
@@ -285,15 +283,15 @@ public sealed partial class Mod2
             // File deletion is handled in the actual function.
             if( type != ModOptionChangeType.GroupDeleted )
             {
-                mod._options[groupIdx].Save( mod.BasePath );
+                IModGroup.SaveModGroup( mod._groups[ groupIdx ], mod.BasePath );
             }
 
             // State can not change on adding groups, as they have no immediate options.
             mod.HasOptions = type switch
             {
-                ModOptionChangeType.GroupDeleted  => mod.HasOptions =  mod.Options.Any( o => o.IsOption ),
-                ModOptionChangeType.OptionAdded   => mod.HasOptions |= mod._options[groupIdx].IsOption,
-                ModOptionChangeType.OptionDeleted => mod.HasOptions =  mod.Options.Any( o => o.IsOption ),
+                ModOptionChangeType.GroupDeleted  => mod.HasOptions =  mod.Groups.Any( o => o.IsOption ),
+                ModOptionChangeType.OptionAdded   => mod.HasOptions |= mod._groups[ groupIdx ].IsOption,
+                ModOptionChangeType.OptionDeleted => mod.HasOptions =  mod.Groups.Any( o => o.IsOption ),
                 _                                 => mod.HasOptions,
             };
         }

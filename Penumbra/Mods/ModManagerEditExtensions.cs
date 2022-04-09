@@ -43,7 +43,7 @@ public static class ModManagerEditExtensions
             manager.TemporaryModSortOrder[ mod.BasePath.Name ] = mod.Order.FullPath;
         }
 
-        manager.Config.Save();
+        Penumbra.Config.Save();
 
         return true;
     }
@@ -79,7 +79,7 @@ public static class ModManagerEditExtensions
         {
             manager.TemporaryModSortOrder[ newDir.Name ] = manager.TemporaryModSortOrder[ oldBasePath.Name ];
             manager.TemporaryModSortOrder.Remove( oldBasePath.Name );
-            manager.Config.Save();
+            Penumbra.Config.Save();
         }
 
         var idx = manager.Mods.IndexOf( mod );

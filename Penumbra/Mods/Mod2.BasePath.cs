@@ -15,18 +15,10 @@ public partial class Mod2
     public DirectoryInfo BasePath { get; private set; }
     public int Index { get; private set; } = -1;
 
-    private FileInfo MetaFile
-        => new(Path.Combine( BasePath.FullName, "meta.json" ));
+    private Mod2( DirectoryInfo basePath )
+        => BasePath = basePath;
 
-    private Mod2( ModFolder parentFolder, DirectoryInfo basePath )
-    {
-        BasePath = basePath;
-        Order    = new Mod.SortOrder( parentFolder, Name );
-        //Order.ParentFolder.AddMod( this ); // TODO
-        ComputeChangedItems();
-    }
-
-    public static Mod2? LoadMod( ModFolder parentFolder, DirectoryInfo basePath )
+    public static Mod2? LoadMod( DirectoryInfo basePath )
     {
         basePath.Refresh();
         if( !basePath.Exists )
@@ -35,22 +27,18 @@ public partial class Mod2
             return null;
         }
 
-        var mod = new Mod2( parentFolder, basePath );
-
-        var metaFile = mod.MetaFile;
-        if( !metaFile.Exists )
-        {
-            PluginLog.Debug( "No mod meta found for {ModLocation}.", basePath.Name );
-            return null;
-        }
-
-        mod.LoadMetaFromFile( metaFile );
+        var mod = new Mod2( basePath );
+        mod.LoadMeta();
         if( mod.Name.Length == 0 )
         {
             PluginLog.Error( $"Mod at {basePath} without name is not supported." );
         }
 
-        mod.ReloadFiles();
+        mod.LoadDefaultOption();
+        mod.LoadAllGroups();
+        mod.ComputeChangedItems();
+        mod.SetHasOptions();
+
         return mod;
     }
 }

@@ -5,16 +5,16 @@ namespace Penumbra.Mods;
 
 public sealed partial class Mod2
 {
-    public SortedList<string, object?> ChangedItems { get; } = new();
+    public SortedList< string, object? > ChangedItems { get; } = new();
     public string LowerChangedItemsString { get; private set; } = string.Empty;
 
     public void ComputeChangedItems()
     {
         var identifier = GameData.GameData.GetIdentifier();
         ChangedItems.Clear();
-        foreach( var (file, _) in AllFiles )
+        foreach( var gamePath in AllRedirects )
         {
-            identifier.Identify( ChangedItems, file.ToGamePath() );
+            identifier.Identify( ChangedItems, gamePath.ToGamePath() );
         }
 
         // TODO: manipulations

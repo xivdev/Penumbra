@@ -1,7 +1,12 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
+using Penumbra.Importer;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
@@ -10,29 +15,184 @@ public sealed partial class Mod2
 {
     private static class Migration
     {
-        public static void Migrate( Mod2 mod, string text )
-        {
-            MigrateV0ToV1( mod, text );
-        }
+        public static bool Migrate( Mod2 mod, JObject json )
+            => MigrateV0ToV1( mod, json );
 
-        private static void MigrateV0ToV1( Mod2 mod, string text )
+        private static bool MigrateV0ToV1( Mod2 mod, JObject json )
         {
             if( mod.FileVersion > 0 )
+            {
+                return false;
+            }
+
+            var swaps = json[ "FileSwaps" ]?.ToObject< Dictionary< Utf8GamePath, FullPath > >()
+             ?? new Dictionary< Utf8GamePath, FullPath >();
+            var groups   = json[ "Groups" ]?.ToObject< Dictionary< string, OptionGroupV0 > >() ?? new Dictionary< string, OptionGroupV0 >();
+            var priority = 1;
+            foreach( var group in groups.Values )
+            {
+                ConvertGroup( mod, group, ref priority );
+            }
+
+            foreach( var unusedFile in mod.FindUnusedFiles() )
+            {
+                if( unusedFile.ToGamePath( mod.BasePath, out var gamePath ) )
+                {
+                    mod._default.FileData.Add( gamePath, unusedFile );
+                }
+            }
+
+            mod._default.FileSwapData.Clear();
+            mod._default.FileSwapData.EnsureCapacity( swaps.Count );
+            foreach( var (gamePath, swapPath) in swaps )
+            {
+                mod._default.FileSwapData.Add( gamePath, swapPath );
+            }
+
+            HandleMetaChanges( mod._default, mod.BasePath );
+            foreach( var group in mod.Groups )
+            {
+                IModGroup.SaveModGroup( group, mod.BasePath );
+            }
+
+            mod.SaveDefaultMod();
+
+            return true;
+        }
+
+        private static void ConvertGroup( Mod2 mod, OptionGroupV0 group, ref int priority )
+        {
+            if( group.Options.Count == 0 )
             {
                 return;
             }
 
-            var data = JObject.Parse( text );
-            var swaps = data[ "FileSwaps" ]?.ToObject< Dictionary< Utf8GamePath, FullPath > >()
-             ?? new Dictionary< Utf8GamePath, FullPath >();
-            var groups = data[ "Groups" ]?.ToObject< Dictionary< string, OptionGroupV0 > >() ?? new Dictionary< string, OptionGroupV0 >();
-            foreach( var group in groups.Values )
-            { }
+            switch( group.SelectionType )
+            {
+                case SelectType.Multi:
 
-            foreach( var swap in swaps )
-            { }
+                    var optionPriority = 0;
+                    var newMultiGroup = new MultiModGroup()
+                    {
+                        Name        = group.GroupName,
+                        Priority    = priority++,
+                        Description = string.Empty,
+                    };
+                    mod._groups.Add( newMultiGroup );
+                    foreach( var option in group.Options )
+                    {
+                        newMultiGroup.PrioritizedOptions.Add( ( SubModFromOption( mod.BasePath, option ), optionPriority++ ) );
+                    }
+
+                    break;
+                case SelectType.Single:
+                    if( group.Options.Count == 1 )
+                    {
+                        AddFilesToSubMod( mod._default, mod.BasePath, group.Options[ 0 ] );
+                        return;
+                    }
+
+                    var newSingleGroup = new SingleModGroup()
+                    {
+                        Name        = group.GroupName,
+                        Priority    = priority++,
+                        Description = string.Empty,
+                    };
+                    mod._groups.Add( newSingleGroup );
+                    foreach( var option in group.Options )
+                    {
+                        newSingleGroup.OptionData.Add( SubModFromOption( mod.BasePath, option ) );
+                    }
+
+                    break;
+            }
         }
 
+        private static void AddFilesToSubMod( SubMod mod, DirectoryInfo basePath, OptionV0 option )
+        {
+            foreach( var (relPath, gamePaths) in option.OptionFiles )
+            {
+                foreach( var gamePath in gamePaths )
+                {
+                    mod.FileData.TryAdd( gamePath, new FullPath( basePath, relPath ) );
+                }
+            }
+        }
+
+        private static void HandleMetaChanges( SubMod subMod, DirectoryInfo basePath )
+        {
+            foreach( var (key, file) in subMod.Files.ToList() )
+            {
+                try
+                {
+                    switch( file.Extension )
+                    {
+                        case ".meta":
+                            subMod.FileData.Remove( key );
+                            if( !file.Exists )
+                            {
+                                continue;
+                            }
+
+                            var meta = new TexToolsMeta( File.ReadAllBytes( file.FullName ) );
+                            foreach( var manip in meta.EqpManipulations )
+                            {
+                                subMod.ManipulationData.Add( manip );
+                            }
+
+                            foreach( var manip in meta.EqdpManipulations )
+                            {
+                                subMod.ManipulationData.Add( manip );
+                            }
+
+                            foreach( var manip in meta.EstManipulations )
+                            {
+                                subMod.ManipulationData.Add( manip );
+                            }
+
+                            foreach( var manip in meta.GmpManipulations )
+                            {
+                                subMod.ManipulationData.Add( manip );
+                            }
+
+                            foreach( var manip in meta.ImcManipulations )
+                            {
+                                subMod.ManipulationData.Add( manip );
+                            }
+
+                            break;
+                        case ".rgsp":
+                            subMod.FileData.Remove( key );
+                            if( !file.Exists )
+                            {
+                                continue;
+                            }
+
+                            var rgsp = TexToolsMeta.FromRgspFile( file.FullName, File.ReadAllBytes( file.FullName ) );
+                            foreach( var manip in rgsp.RspManipulations )
+                            {
+                                subMod.ManipulationData.Add( manip );
+                            }
+
+                            break;
+                        default: continue;
+                    }
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not migrate meta changes in mod {basePath} from file {file.FullName}:\n{e}" );
+                    continue;
+                }
+            }
+        }
+
+        private static SubMod SubModFromOption( DirectoryInfo basePath, OptionV0 option )
+        {
+            var subMod = new SubMod() { Name = option.OptionName };
+            AddFilesToSubMod( subMod, basePath, option );
+            HandleMetaChanges( subMod, basePath );
+            return subMod;
+        }
 
         private struct OptionV0
         {

@@ -122,9 +122,11 @@ public class Penumbra : IDalamudPlugin
         }
 
         ResidentResources.Reload();
-        //var c = ModCollection2.LoadFromFile( new FileInfo(@"C:\Users\Ozy\AppData\Roaming\XIVLauncher\pluginConfigs\Penumbra\collections\Rayla.json"),
-        //    out var inheritance );
-        //c?.Save();
+
+        foreach( var folder in ModManager.BasePath.EnumerateDirectories() )
+        {
+            var m = Mod2.LoadMod( folder );
+        }
     }
 
     public bool Enable()

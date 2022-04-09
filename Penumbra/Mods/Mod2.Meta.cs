@@ -17,6 +17,7 @@ public enum MetaChangeType : byte
     Version     = 0x08,
     Website     = 0x10,
     Deletion    = 0x20,
+    Migration   = 0x40,
 }
 
 public sealed partial class Mod2
@@ -29,19 +30,21 @@ public sealed partial class Mod2
     public string Version { get; private set; } = string.Empty;
     public string Website { get; private set; } = string.Empty;
 
-    private void SaveMeta()
-        => SaveToFile( MetaFile );
+    private FileInfo MetaFile
+        => new(Path.Combine( BasePath.FullName, "meta.json" ));
 
-    private MetaChangeType LoadMetaFromFile( FileInfo filePath )
+    private MetaChangeType LoadMeta()
     {
-        if( !File.Exists( filePath.FullName ) )
+        var metaFile = MetaFile;
+        if( !File.Exists( metaFile.FullName ) )
         {
+            PluginLog.Debug( "No mod meta found for {ModLocation}.", BasePath.Name );
             return MetaChangeType.Deletion;
         }
 
         try
         {
-            var text = File.ReadAllText( filePath.FullName );
+            var text = File.ReadAllText( metaFile.FullName );
             var json = JObject.Parse( text );
 
             var newName        = json[ nameof( Name ) ]?.Value< string >()        ?? string.Empty;
@@ -52,12 +55,6 @@ public sealed partial class Mod2
             var newFileVersion = json[ nameof( FileVersion ) ]?.Value< uint >()   ?? 0;
 
             MetaChangeType changes = 0;
-            if( newFileVersion < CurrentFileVersion )
-            {
-                Migration.Migrate( this, text );
-                FileVersion = newFileVersion;
-            }
-
             if( Name != newName )
             {
                 changes |= MetaChangeType.Name;
@@ -88,6 +85,14 @@ public sealed partial class Mod2
                 Website =  newWebsite;
             }
 
+            if( FileVersion != newFileVersion )
+            {
+                FileVersion = newFileVersion;
+                if( Migration.Migrate( this, json ) )
+                {
+                    changes |= MetaChangeType.Migration;
+                }
+            }
 
             return changes;
         }
@@ -98,8 +103,9 @@ public sealed partial class Mod2
         }
     }
 
-    private void SaveToFile( FileInfo filePath )
+    private void SaveMeta()
     {
+        var metaFile = MetaFile;
         try
         {
             var jObject = new JObject
@@ -111,11 +117,11 @@ public sealed partial class Mod2
                 { nameof( Version ), JToken.FromObject( Version ) },
                 { nameof( Website ), JToken.FromObject( Website ) },
             };
-            File.WriteAllText( filePath.FullName, jObject.ToString( Formatting.Indented ) );
+            File.WriteAllText( metaFile.FullName, jObject.ToString( Formatting.Indented ) );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not write meta file for mod {Name} to {filePath.FullName}:\n{e}" );
+            PluginLog.Error( $"Could not write meta file for mod {Name} to {metaFile.FullName}:\n{e}" );
         }
     }
 }

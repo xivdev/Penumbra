@@ -148,7 +148,7 @@ public class ModListCache : IDisposable
         PluginLog.Debug( "Resetting mod selector list..." );
         if( _modsInOrder.Count == 0 )
         {
-            foreach( var modData in _manager.StructuredMods.AllMods( _manager.Config.SortFoldersFirst ) )
+            foreach( var modData in _manager.StructuredMods.AllMods( Penumbra.Config.SortFoldersFirst ) )
             {
                 var idx = Penumbra.ModManager.Mods.IndexOf( modData );
                 var mod = new FullMod( Penumbra.CollectionManager.Current[ idx ].Settings ?? ModSettings.DefaultSettings( modData.Meta ),

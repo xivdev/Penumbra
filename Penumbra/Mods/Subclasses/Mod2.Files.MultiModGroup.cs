@@ -3,8 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Penumbra.Mods;
 
@@ -17,7 +17,7 @@ public partial class Mod2
 
         public string Name { get; set; } = "Group";
         public string Description { get; set; } = "A non-exclusive group of settings.";
-        public int Priority { get; set; } = 0;
+        public int Priority { get; set; }
 
         public int OptionPriority( Index idx )
             => PrioritizedOptions[ idx ].Priority;
@@ -25,6 +25,7 @@ public partial class Mod2
         public ISubMod this[ Index idx ]
             => PrioritizedOptions[ idx ].Mod;
 
+        [JsonIgnore]
         public int Count
             => PrioritizedOptions.Count;
 
@@ -36,18 +37,31 @@ public partial class Mod2
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-        public void Save( DirectoryInfo basePath )
+        public static MultiModGroup? Load( JObject json, DirectoryInfo basePath )
         {
-            var path = ( ( IModGroup )this ).FileName( basePath );
-            try
+            var options = json[ "Options" ];
+            var ret = new MultiModGroup()
             {
-                var text = JsonConvert.SerializeObject( this, Formatting.Indented );
-                File.WriteAllText( path, text );
-            }
-            catch( Exception e )
+                Name        = json[ nameof( Name ) ]?.ToObject< string >()        ?? string.Empty,
+                Description = json[ nameof( Description ) ]?.ToObject< string >() ?? string.Empty,
+                Priority    = json[ nameof( Priority ) ]?.ToObject< int >()       ?? 0,
+            };
+            if( ret.Name.Length == 0 )
             {
-                PluginLog.Error( $"Could not save option group {Name} to {path}:\n{e}" );
+                return null;
             }
+
+            if( options != null )
+            {
+                foreach( var child in options.Children() )
+                {
+                    var subMod = new SubMod();
+                    subMod.Load( basePath, child, out var priority );
+                    ret.PrioritizedOptions.Add( ( subMod, priority ) );
+                }
+            }
+
+            return ret;
         }
     }
 }
