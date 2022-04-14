@@ -38,7 +38,10 @@ public sealed partial class Mod2
             {
                 if( unusedFile.ToGamePath( mod.BasePath, out var gamePath ) )
                 {
-                    mod._default.FileData.Add( gamePath, unusedFile );
+                    if( !mod._default.FileData.TryAdd( gamePath, unusedFile ) )
+                    {
+                        PluginLog.Error( $"Could not add {gamePath} because it already points to {mod._default.FileData[ gamePath ]}." );
+                    }
                 }
             }
 

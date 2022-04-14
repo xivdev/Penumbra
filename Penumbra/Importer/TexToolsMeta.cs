@@ -275,17 +275,21 @@ public class TexToolsMeta
             {
                 var def = new ImcFile( new ImcManipulation( info.PrimaryType, info.SecondaryType, info.PrimaryId, info.SecondaryId, i,
                     new ImcEntry() ).GamePath() );
-                foreach( var value in values.Where( v => true || !v.Equals( def.GetEntry( 0, i ) ) ) )
+                foreach( var value in values )
                 {
-                    ImcManipulations.Add( new ImcManipulation( info.PrimaryType, info.SecondaryType, info.PrimaryId, info.SecondaryId, i,
-                        value ) );
+                    if( !value.Equals( def.GetEntry( 0, i ) ) )
+                    {
+                        ImcManipulations.Add( new ImcManipulation( info.PrimaryType, info.SecondaryType, info.PrimaryId, info.SecondaryId, i,
+                            value ) );
+                    }
+
                     ++i;
                 }
             }
         }
         catch( Exception e )
         {
-            PluginLog.Error( "Could not compute IMC manipulation. This is in all likelihood due to TexTools corrupting your index files.\n"
+            PluginLog.Warning( $"Could not compute IMC manipulation for {info.PrimaryType} {info.PrimaryId}. This is in all likelihood due to TexTools corrupting your index files.\n"
               + $"If the following error looks like Lumina is having trouble to read an IMC file, please do a do-over in TexTools:\n{e}" );
         }
     }
