@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Game.Command;
+using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 using Dalamud.Plugin;
 using EmbedIO;
@@ -36,20 +37,22 @@ public class Penumbra : IDalamudPlugin
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
     public static MetaFileManager MetaFileManager { get; private set; } = null!;
-
-    public static Mod.Manager ModManager { get; private set; } = null!;
+    public static Mod2.Manager ModManager { get; private set; } = null!;
     public static ModCollection.Manager CollectionManager { get; private set; } = null!;
+    public static SimpleRedirectManager Redirects { get; private set; } = null!;
+    public static ResourceLoader ResourceLoader { get; private set; } = null!;
 
-    public static ResourceLoader ResourceLoader { get; set; } = null!;
-    public ResourceLogger ResourceLogger { get; }
 
-    public PathResolver PathResolver { get; }
-    public SettingsInterface SettingsInterface { get; }
-    public MusicManager MusicManager { get; }
-    public ObjectReloader ObjectReloader { get; }
-
-    public PenumbraApi Api { get; }
-    public PenumbraIpc Ipc { get; }
+    public readonly  ResourceLogger ResourceLogger;
+    public readonly  PathResolver   PathResolver;
+    public readonly  MusicManager   MusicManager;
+    public readonly  ObjectReloader ObjectReloader;
+    public readonly  ModFileSystemA ModFileSystem;
+    public readonly  PenumbraApi    Api;
+    public readonly  PenumbraIpc    Ipc;
+    private readonly ConfigWindow   _configWindow;
+    private readonly LaunchButton   _launchButton;
+    private readonly WindowSystem   _windowSystem;
 
     private WebServer? _webServer;
 
@@ -68,12 +71,14 @@ public class Penumbra : IDalamudPlugin
 
         ResidentResources = new ResidentResourceManager();
         CharacterUtility  = new CharacterUtility();
+        Redirects         = new SimpleRedirectManager();
         MetaFileManager   = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLogger    = new ResourceLogger( ResourceLoader );
-        ModManager        = new Mod.Manager();
+        ModManager        = new Mod2.Manager( Config.ModDirectory );
         ModManager.DiscoverMods();
         CollectionManager = new ModCollection.Manager( ModManager );
+        ModFileSystem     = ModFileSystemA.Load();
         ObjectReloader    = new ObjectReloader();
         PathResolver      = new PathResolver( ResourceLoader );
 
@@ -92,8 +97,7 @@ public class Penumbra : IDalamudPlugin
         Api = new PenumbraApi( this );
         Ipc = new PenumbraIpc( pluginInterface, Api );
         SubscribeItemLinks();
-
-        SettingsInterface = new SettingsInterface( this );
+        SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
 
         if( Config.EnableHttpApi )
         {
@@ -127,6 +131,24 @@ public class Penumbra : IDalamudPlugin
         {
             var m = Mod2.LoadMod( folder );
         }
+    }
+
+    private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
+    {
+        cfg    = new ConfigWindow( this );
+        btn    = new LaunchButton( _configWindow );
+        system = new WindowSystem( Name );
+        system.AddWindow( _configWindow );
+        Dalamud.PluginInterface.UiBuilder.Draw         += system.Draw;
+        Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
+    }
+
+    private void DisposeInterface()
+    {
+        Dalamud.PluginInterface.UiBuilder.Draw         -= _windowSystem.Draw;
+        Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= _configWindow.Toggle;
+        _launchButton.Dispose();
+        _configWindow.Dispose();
     }
 
     public bool Enable()
@@ -209,10 +231,11 @@ public class Penumbra : IDalamudPlugin
 
     public void Dispose()
     {
+        DisposeInterface();
         Ipc.Dispose();
         Api.Dispose();
-        SettingsInterface.Dispose();
         ObjectReloader.Dispose();
+        ModFileSystem.Dispose();
         CollectionManager.Dispose();
 
         Dalamud.Commands.RemoveHandler( CommandName );
@@ -251,7 +274,6 @@ public class Penumbra : IDalamudPlugin
 
                 CollectionManager.SetCollection( collection, ModCollection.Type.Default );
                 Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
-                SettingsInterface.ResetDefaultCollection();
                 return true;
             default:
                 Dalamud.Chat.Print(
@@ -293,7 +315,7 @@ public class Penumbra : IDalamudPlugin
                 }
                 case "debug":
                 {
-                    SettingsInterface.MakeDebugTabVisible();
+                    // TODO
                     break;
                 }
                 case "enable":
@@ -341,7 +363,7 @@ public class Penumbra : IDalamudPlugin
             return;
         }
 
-        SettingsInterface.FlipVisibility();
+        _configWindow.Toggle();
     }
 
     // Collect all relevant files for penumbra configuration.
@@ -349,7 +371,7 @@ public class Penumbra : IDalamudPlugin
     {
         var list = new DirectoryInfo( ModCollection.CollectionDirectory ).EnumerateFiles( "*.json" ).ToList();
         list.Add( Dalamud.PluginInterface.ConfigFile );
-        list.Add( new FileInfo( Mod.Manager.SortOrderFile ) );
+        list.Add( new FileInfo( Mod2.Manager.ModFileSystemFile ) );
         list.Add( new FileInfo( ModCollection.Manager.ActiveCollectionFile ) );
         return list;
     }

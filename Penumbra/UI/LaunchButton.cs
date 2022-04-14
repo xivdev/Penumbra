@@ -5,38 +5,33 @@ using ImGuiScene;
 
 namespace Penumbra.UI;
 
-public partial class SettingsInterface
+public class LaunchButton : IDisposable
 {
-    private class ManageModsButton : IDisposable
+    private readonly ConfigWindow                          _configWindow;
+    private readonly TextureWrap?                          _icon;
+    private readonly TitleScreenMenu.TitleScreenMenuEntry? _entry;
+
+    public LaunchButton( ConfigWindow ui )
     {
-        private readonly SettingsInterface                     _base;
-        private readonly TextureWrap?                          _icon;
-        private readonly TitleScreenMenu.TitleScreenMenuEntry? _entry;
+        _configWindow = ui;
 
-        public ManageModsButton( SettingsInterface ui )
+        _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
+            "tsmLogo.png" ) );
+        if( _icon != null )
         {
-            _base  = ui;
-
-            _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
-                "tsmLogo.png" ) );
-            if( _icon != null )
-            {
-                _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
-            }
+            _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
         }
+    }
 
-        private void OnTriggered()
-        {
-            _base.FlipVisibility();
-        }
+    private void OnTriggered()
+        => _configWindow.Toggle();
 
-        public void Dispose()
+    public void Dispose()
+    {
+        _icon?.Dispose();
+        if( _entry != null )
         {
-            _icon?.Dispose();
-            if( _entry != null )
-            {
-                Dalamud.TitleScreenMenu.RemoveEntry( _entry );
-            }
+            Dalamud.TitleScreenMenu.RemoveEntry( _entry );
         }
     }
 }

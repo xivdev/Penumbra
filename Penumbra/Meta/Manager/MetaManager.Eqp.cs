@@ -41,8 +41,8 @@ public partial class MetaManager
         public bool ApplyMod( EqpManipulation m, int modIdx )
         {
 #if USE_EQP
-            Manipulations[ m ] = modIdx;
-            File ??= new ExpandedEqpFile();
+            Manipulations[ m ] =   modIdx;
+            File               ??= new ExpandedEqpFile();
             return m.Apply( File );
 #else
             return false;

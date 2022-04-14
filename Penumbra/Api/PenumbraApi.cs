@@ -76,7 +76,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _penumbra!.ObjectReloader.RedrawAll( setting );
     }
 
-    private static string ResolvePath( string path, Mods.Mod.Manager _, ModCollection collection )
+    private static string ResolvePath( string path, Mods.Mod2.Manager _, ModCollection collection )
     {
         if( !Penumbra.Config.EnableMods )
         {

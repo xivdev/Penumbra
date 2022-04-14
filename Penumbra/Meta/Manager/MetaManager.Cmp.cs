@@ -41,8 +41,8 @@ public partial class MetaManager
         public bool ApplyMod( RspManipulation m, int modIdx )
         {
 #if USE_CMP
-            Manipulations[ m ] = modIdx;
-            File ??= new CmpFile();
+            Manipulations[ m ] =   modIdx;
+            File               ??= new CmpFile();
             return m.Apply( File );
 #else
             return false;

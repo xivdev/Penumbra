@@ -6,7 +6,6 @@ using System.Text;
 using Dalamud.Logging;
 using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
-using Penumbra.GameData.ByteString;
 using Penumbra.Importer.Models;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -148,23 +147,13 @@ internal class TexToolsImport
 
         var modList = modListRaw.Select( JsonConvert.DeserializeObject< SimpleMod > );
 
-        // Create a new ModMeta from the TTMP modlist info
-        var modMeta = new ModMeta
-        {
-            Author      = "Unknown",
-            Name        = modPackFile.Name,
-            Description = "Mod imported from TexTools mod pack",
-        };
-
         // Open the mod data file from the modpack as a SqPackStream
         using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
         ExtractedDirectory = CreateModFolder( _outDirectory, Path.GetFileNameWithoutExtension( modPackFile.Name ) );
-
-        File.WriteAllText(
-            Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
-            JsonConvert.SerializeObject( modMeta )
-        );
+        // Create a new ModMeta from the TTMP modlist info
+        Mod2.CreateMeta( ExtractedDirectory, string.IsNullOrEmpty( modPackFile.Name ) ? "New Mod" : modPackFile.Name, "Unknown",
+            "Mod imported from TexTools mod pack.", null, null );
 
         ExtractSimpleModList( ExtractedDirectory, modList, modData );
 
@@ -173,7 +162,7 @@ internal class TexToolsImport
 
     private DirectoryInfo ImportV2ModPack( FileInfo _, ZipFile extractedModPack, string modRaw )
     {
-        var modList = JsonConvert.DeserializeObject<SimpleModPack>( modRaw );
+        var modList = JsonConvert.DeserializeObject< SimpleModPack >( modRaw );
 
         if( modList.TTMPVersion?.EndsWith( "s" ) ?? false )
         {
@@ -233,23 +222,13 @@ internal class TexToolsImport
     {
         PluginLog.Log( "    -> Importing Simple V2 ModPack" );
 
-        // Create a new ModMeta from the TTMP modlist info
-        var modMeta = new ModMeta
-        {
-            Author = modList.Author ?? "Unknown",
-            Name   = modList.Name   ?? "New Mod",
-            Description = string.IsNullOrEmpty( modList.Description )
-                ? "Mod imported from TexTools mod pack"
-                : modList.Description!,
-        };
-
         // Open the mod data file from the modpack as a SqPackStream
         using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
         ExtractedDirectory = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
-
-        File.WriteAllText( Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
-            JsonConvert.SerializeObject( modMeta ) );
+        Mod2.CreateMeta( ExtractedDirectory, modList.Name ?? "New Mod", modList.Author ?? "Unknown", string.IsNullOrEmpty( modList.Description )
+            ? "Mod imported from TexTools mod pack"
+            : modList.Description, null, null );
 
         ExtractSimpleModList( ExtractedDirectory, modList.SimpleModsList ?? Enumerable.Empty< SimpleMod >(), modData );
         return ExtractedDirectory;
@@ -261,21 +240,12 @@ internal class TexToolsImport
 
         var modList = JsonConvert.DeserializeObject< ExtendedModPack >( modRaw );
 
-        // Create a new ModMeta from the TTMP modlist info
-        var modMeta = new ModMeta
-        {
-            Author = modList.Author ?? "Unknown",
-            Name   = modList.Name   ?? "New Mod",
-            Description = string.IsNullOrEmpty( modList.Description )
-                ? "Mod imported from TexTools mod pack"
-                : modList.Description ?? "",
-            Version = modList.Version ?? "",
-        };
-
         // Open the mod data file from the modpack as a SqPackStream
         using var modData = GetMagicSqPackDeleterStream( extractedModPack, "TTMPD.mpd" );
 
         ExtractedDirectory = CreateModFolder( _outDirectory, modList.Name ?? "New Mod" );
+        Mod2.CreateMeta( ExtractedDirectory, modList.Name ?? "New Mod", modList.Author ?? "Unknown",
+            string.IsNullOrEmpty( modList.Description ) ? "Mod imported from TexTools mod pack" : modList.Description, modList.Version, null );
 
         if( modList.SimpleModsList != null )
         {
@@ -288,6 +258,8 @@ internal class TexToolsImport
         }
 
         // Iterate through all pages
+        var options       = new List< ISubMod >();
+        var groupPriority = 0;
         foreach( var page in modList.ModPackPages )
         {
             if( page.ModGroups == null )
@@ -297,6 +269,8 @@ internal class TexToolsImport
 
             foreach( var group in page.ModGroups.Where( group => group.GroupName != null && group.OptionList != null ) )
             {
+                options.Clear();
+                var description = new StringBuilder();
                 var groupFolder = NewOptionDirectory( ExtractedDirectory, group.GroupName! );
                 if( groupFolder.Exists )
                 {
@@ -308,52 +282,19 @@ internal class TexToolsImport
                 {
                     var optionFolder = NewOptionDirectory( groupFolder, option.Name! );
                     ExtractSimpleModList( optionFolder, option.ModsJsons!, modData );
-                }
-
-                AddMeta( ExtractedDirectory, groupFolder, group, modMeta );
-            }
-        }
-
-        File.WriteAllText(
-            Path.Combine( ExtractedDirectory.FullName, "meta.json" ),
-            JsonConvert.SerializeObject( modMeta, Formatting.Indented )
-        );
-        return ExtractedDirectory;
-    }
-
-    private static void AddMeta( DirectoryInfo baseFolder, DirectoryInfo groupFolder, ModGroup group, ModMeta meta )
-    {
-        var inf = new OptionGroup
-        {
-            SelectionType = group.SelectionType,
-            GroupName     = group.GroupName!,
-            Options       = new List< Option >(),
-        };
-        foreach( var opt in group.OptionList! )
-        {
-            var option = new Option
-            {
-                OptionName  = opt.Name!,
-                OptionDesc  = string.IsNullOrEmpty( opt.Description ) ? "" : opt.Description!,
-                OptionFiles = new Dictionary< Utf8RelPath, HashSet< Utf8GamePath > >(),
-            };
-            var optDir = NewOptionDirectory( groupFolder, opt.Name! );
-            if( optDir.Exists )
-            {
-                foreach( var file in optDir.EnumerateFiles( "*.*", SearchOption.AllDirectories ) )
-                {
-                    if( Utf8RelPath.FromFile( file, baseFolder, out var rel )
-                    && Utf8GamePath.FromFile( file, optDir, out var game, true ) )
+                    options.Add( Mod2.CreateSubMod( ExtractedDirectory, optionFolder, option ) );
+                    description.Append( option.Description );
+                    if( !string.IsNullOrEmpty( option.Description ) )
                     {
-                        option.AddFile( rel, game );
+                        description.Append( '\n' );
                     }
                 }
+
+                Mod2.CreateOptionGroup( ExtractedDirectory, group, groupPriority++, description.ToString(), options );
             }
-
-            inf.Options.Add( option );
         }
-
-        meta.Groups.Add( inf.GroupName, inf );
+        Mod2.CreateDefaultFiles( ExtractedDirectory );
+        return ExtractedDirectory;
     }
 
     private void ImportMetaModPack( FileInfo file )

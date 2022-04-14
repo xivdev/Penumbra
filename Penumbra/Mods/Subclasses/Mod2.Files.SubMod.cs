@@ -6,6 +6,7 @@ using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
+using Penumbra.Importer;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Mods;
@@ -110,6 +111,83 @@ public partial class Mod2
                 foreach( var s in manips.Children().Select( c => c.ToObject< MetaManipulation >() ) )
                 {
                     ManipulationData.Add( s );
+                }
+            }
+        }
+
+        public void IncorporateMetaChanges( DirectoryInfo basePath, bool delete )
+        {
+            foreach( var (key, file) in Files.ToList() )
+            {
+                try
+                {
+                    switch( file.Extension )
+                    {
+                        case ".meta":
+                            FileData.Remove( key );
+                            if( !file.Exists )
+                            {
+                                continue;
+                            }
+
+                            var meta = new TexToolsMeta( File.ReadAllBytes( file.FullName ) );
+                            if( delete )
+                            {
+                                File.Delete( file.FullName );
+                            }
+
+                            foreach( var manip in meta.EqpManipulations )
+                            {
+                                ManipulationData.Add( manip );
+                            }
+
+                            foreach( var manip in meta.EqdpManipulations )
+                            {
+                                ManipulationData.Add( manip );
+                            }
+
+                            foreach( var manip in meta.EstManipulations )
+                            {
+                                ManipulationData.Add( manip );
+                            }
+
+                            foreach( var manip in meta.GmpManipulations )
+                            {
+                                ManipulationData.Add( manip );
+                            }
+
+                            foreach( var manip in meta.ImcManipulations )
+                            {
+                                ManipulationData.Add( manip );
+                            }
+
+                            break;
+                        case ".rgsp":
+                            FileData.Remove( key );
+                            if( !file.Exists )
+                            {
+                                continue;
+                            }
+
+                            var rgsp = TexToolsMeta.FromRgspFile( file.FullName, File.ReadAllBytes( file.FullName ) );
+                            if( delete )
+                            {
+                                File.Delete( file.FullName );
+                            }
+
+                            foreach( var manip in rgsp.RspManipulations )
+                            {
+                                ManipulationData.Add( manip );
+                            }
+
+                            break;
+                        default: continue;
+                    }
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not incorporate meta changes in mod {basePath} from file {file.FullName}:\n{e}" );
+                    continue;
                 }
             }
         }

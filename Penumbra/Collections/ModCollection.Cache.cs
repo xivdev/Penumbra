@@ -1,193 +1,24 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
 using System.Linq;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manager;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
 public partial class ModCollection
 {
-    // Only active collections need to have a cache.
-    private Cache? _cache;
-
-    public bool HasCache
-        => _cache != null;
-
-    // Only create, do not update. 
-    public void CreateCache( bool isDefault )
-    {
-        if( _cache == null )
-        {
-            CalculateEffectiveFileList( true, isDefault );
-        }
-    }
-
-    // Force an update with metadata for this cache.
-    public void ForceCacheUpdate( bool isDefault )
-        => CalculateEffectiveFileList( true, isDefault );
-
-
-    // Clear the current cache.
-    public void ClearCache()
-    {
-        _cache?.Dispose();
-        _cache = null;
-    }
-
-
-    public FullPath? ResolvePath( Utf8GamePath path )
-        => _cache?.ResolvePath( path );
-
-    // Force a file to be resolved to a specific path regardless of conflicts.
-    internal void ForceFile( Utf8GamePath path, FullPath fullPath )
-        => _cache!.ResolvedFiles[ path ] = fullPath;
-
-    // Force a file resolve to be removed.
-    internal void RemoveFile( Utf8GamePath path )
-        => _cache!.ResolvedFiles.Remove( path );
-
-    // Obtain data from the cache.
-    internal MetaManager? MetaCache
-        => _cache?.MetaManipulations;
-
-    internal IReadOnlyDictionary< Utf8GamePath, FullPath > ResolvedFiles
-        => _cache?.ResolvedFiles ?? new Dictionary< Utf8GamePath, FullPath >();
-
-    internal IReadOnlySet< FullPath > MissingFiles
-        => _cache?.MissingFiles ?? new HashSet< FullPath >();
-
-    internal IReadOnlyDictionary< string, object? > ChangedItems
-        => _cache?.ChangedItems ?? new Dictionary< string, object? >();
-
-    internal IReadOnlyList< ConflictCache.Conflict > Conflicts
-        => _cache?.Conflicts.Conflicts ?? Array.Empty< ConflictCache.Conflict >();
-
-    internal IEnumerable< ConflictCache.Conflict > ModConflicts( int modIdx )
-        => _cache?.Conflicts.ModConflicts( modIdx ) ?? Array.Empty< ConflictCache.Conflict >();
-
-    // Update the effective file list for the given cache.
-    // Creates a cache if necessary.
-    public void CalculateEffectiveFileList( bool withMetaManipulations, bool reloadDefault )
-    {
-        // Skip the empty collection.
-        if( Index == 0 )
-        {
-            return;
-        }
-
-        PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{ReloadDefault}]", Name,
-            withMetaManipulations, reloadDefault );
-        _cache ??= new Cache( this );
-        _cache.CalculateEffectiveFileList();
-        if( withMetaManipulations )
-        {
-            _cache.UpdateMetaManipulations();
-            if( reloadDefault )
-            {
-                SetFiles();
-            }
-        }
-
-        if( reloadDefault )
-        {
-            Penumbra.ResidentResources.Reload();
-        }
-    }
-
-    // Set Metadata files.
-    [Conditional( "USE_EQP" )]
-    public void SetEqpFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.MetaManagerEqp.ResetFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.Eqp.SetFiles();
-        }
-    }
-
-    [Conditional( "USE_EQDP" )]
-    public void SetEqdpFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.MetaManagerEqdp.ResetFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.Eqdp.SetFiles();
-        }
-    }
-
-    [Conditional( "USE_GMP" )]
-    public void SetGmpFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.MetaManagerGmp.ResetFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.Gmp.SetFiles();
-        }
-    }
-
-    [Conditional( "USE_EST" )]
-    public void SetEstFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.MetaManagerEst.ResetFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.Est.SetFiles();
-        }
-    }
-
-    [Conditional( "USE_CMP" )]
-    public void SetCmpFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.MetaManagerCmp.ResetFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.Cmp.SetFiles();
-        }
-    }
-
-    public void SetFiles()
-    {
-        if( _cache == null )
-        {
-            Penumbra.CharacterUtility.ResetAll();
-        }
-        else
-        {
-            _cache.MetaManipulations.SetFiles();
-        }
-    }
-
-
-    // The ModCollectionCache contains all required temporary data to use a collection.
+    // The Cache contains all required temporary data to use a collection.
     // It will only be setup if a collection gets activated in any way.
     private class Cache : IDisposable
     {
         // Shared caches to avoid allocations.
-        private static readonly BitArray                        FileSeen         = new(256);
-        private static readonly Dictionary< Utf8GamePath, int > RegisteredFiles  = new(256);
-        private static readonly List< ModSettings? >            ResolvedSettings = new(128);
+        private static readonly Dictionary< Utf8GamePath, FileRegister >     RegisteredFiles         = new(1024);
+        private static readonly Dictionary< MetaManipulation, FileRegister > RegisteredManipulations = new(1024);
+        private static readonly List< ModSettings2? >                        ResolvedSettings        = new(128);
 
         private readonly ModCollection                        _collection;
         private readonly SortedList< string, object? >        _changedItems = new();
@@ -221,7 +52,24 @@ public partial class ModCollection
             _collection.InheritanceChanged -= OnInheritanceChange;
         }
 
-        private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, string? optionName, bool _ )
+        // Resolve a given game path according to this collection.
+        public FullPath? ResolvePath( Utf8GamePath gameResourcePath )
+        {
+            if( !ResolvedFiles.TryGetValue( gameResourcePath, out var candidate ) )
+            {
+                return null;
+            }
+
+            if( candidate.InternalName.Length > Utf8GamePath.MaxGamePathLength
+            || candidate.IsRooted && !candidate.Exists )
+            {
+                return null;
+            }
+
+            return candidate;
+        }
+
+        private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
         {
             // Recompute the file list if it was not just a non-conflicting priority change
             // or a setting change for a disabled mod.
@@ -232,7 +80,7 @@ public partial class ModCollection
             }
 
             var hasMeta = type is ModSettingChange.MultiEnableState or ModSettingChange.MultiInheritance
-             || Penumbra.ModManager[ modIdx ].Resources.MetaManipulations.Count > 0;
+             || Penumbra.ModManager[ modIdx ].AllManipulations.Any();
             _collection.CalculateEffectiveFileList( hasMeta, Penumbra.CollectionManager.Default == _collection );
         }
 
@@ -240,22 +88,6 @@ public partial class ModCollection
         // just recompute everything.
         private void OnInheritanceChange( bool _ )
             => _collection.CalculateEffectiveFileList( true, true );
-
-        // Reset the shared file-seen cache.
-        private static void ResetFileSeen( int size )
-        {
-            if( size < FileSeen.Length )
-            {
-                FileSeen.Length = size;
-                FileSeen.SetAll( false );
-            }
-            else
-            {
-                FileSeen.SetAll( false );
-                FileSeen.Length = size;
-            }
-        }
-
 
         // Clear all local and global caches to prepare for recomputation.
         private void ClearStorageAndPrepare()
@@ -270,21 +102,27 @@ public partial class ModCollection
             ResolvedSettings.AddRange( _collection.ActualSettings );
         }
 
-        public void CalculateEffectiveFileList()
+        // Recalculate all file changes from current settings. Include all fixed custom redirects.
+        // Recalculate meta manipulations only if withManipulations is true.
+        public void CalculateEffectiveFileList( bool withManipulations )
         {
             ClearStorageAndPrepare();
+            if( withManipulations )
+            {
+                RegisteredManipulations.Clear();
+                MetaManipulations.Reset();
+            }
+
+            AddCustomRedirects();
             for( var i = 0; i < Penumbra.ModManager.Count; ++i )
             {
-                if( ResolvedSettings[ i ]?.Enabled == true )
-                {
-                    AddFiles( i );
-                    AddSwaps( i );
-                }
+                AddMod( i, withManipulations );
             }
 
             AddMetaFiles();
         }
 
+        // Identify and record all manipulated objects for this entire collection.
         private void SetChangedItems()
         {
             if( _changedItems.Count > 0 || ResolvedFiles.Count + MetaManipulations.Count == 0 )
@@ -309,228 +147,185 @@ public partial class ModCollection
             }
         }
 
-        private void AddFiles( int idx )
+        // Add a specific file redirection, handling potential conflicts.
+        // For different mods, higher mod priority takes precedence before option group priority,
+        // which takes precedence before option priority, which takes precedence before ordering.
+        // Inside the same mod, conflicts are not recorded.
+        private void AddFile( Utf8GamePath path, FullPath file, FileRegister priority )
         {
-            var mod = Penumbra.ModManager.Mods[ idx ];
-            ResetFileSeen( mod.Resources.ModFiles.Count );
-            // Iterate in reverse so that later groups take precedence before earlier ones.
-            // TODO: add group priorities.
-            foreach( var group in mod.Meta.Groups.Values.Reverse() )
+            if( RegisteredFiles.TryGetValue( path, out var register ) )
             {
-                switch( group.SelectionType )
+                if( register.SameMod( priority, out var less ) )
                 {
-                    case SelectType.Single:
-                        AddFilesForSingle( group, mod, idx );
-                        break;
-                    case SelectType.Multi:
-                        AddFilesForMulti( group, mod, idx );
-                        break;
-                    default: throw new InvalidEnumArgumentException();
-                }
-            }
-
-            AddRemainingFiles( mod, idx );
-        }
-
-        // If audio streaming is not disabled, replacing .scd files crashes the game,
-        // so only add those files if it is disabled.
-        private static bool FilterFile( Utf8GamePath gamePath )
-            => !Penumbra.Config.DisableSoundStreaming
-             && gamePath.Path.EndsWith( '.', 's', 'c', 'd' );
-
-        private void AddFile( int modIdx, Utf8GamePath gamePath, FullPath file )
-        {
-            if( FilterFile( gamePath ) )
-            {
-                return;
-            }
-
-            if( !RegisteredFiles.TryGetValue( gamePath, out var oldModIdx ) )
-            {
-                // No current conflict, just add.
-                RegisteredFiles.Add( gamePath, modIdx );
-                ResolvedFiles[ gamePath ] = file;
-            }
-            else
-            {
-                // Conflict, check which mod has higher priority, replace if necessary, add conflict.
-                var priority    = ResolvedSettings[ modIdx ]!.Priority;
-                var oldPriority = ResolvedSettings[ oldModIdx ]!.Priority;
-                Conflicts.AddConflict( oldModIdx, modIdx, oldPriority, priority, gamePath );
-                if( priority > oldPriority )
-                {
-                    ResolvedFiles[ gamePath ]   = file;
-                    RegisteredFiles[ gamePath ] = modIdx;
-                }
-            }
-        }
-
-        private void AddMissingFile( FullPath file )
-        {
-            switch( file.Extension.ToLowerInvariant() )
-            {
-                // We do not care for those file types
-                case ".scp" when !Penumbra.Config.DisableSoundStreaming:
-                case ".meta":
-                case ".rgsp":
-                    return;
-                default:
-                    MissingFiles.Add( file );
-                    return;
-            }
-        }
-
-        private void AddPathsForOption( Option option, Mod mod, int modIdx, bool enabled )
-        {
-            foreach( var (file, paths) in option.OptionFiles )
-            {
-                // TODO: complete rework of options.
-                var fullPath = new FullPath( mod.BasePath, file );
-                var idx      = mod.Resources.ModFiles.IndexOf( f => f.Equals( fullPath ) );
-                if( idx < 0 )
-                {
-                    AddMissingFile( fullPath );
-                    continue;
-                }
-
-                var registeredFile = mod.Resources.ModFiles[ idx ];
-                if( !registeredFile.Exists )
-                {
-                    AddMissingFile( registeredFile );
-                    continue;
-                }
-
-                FileSeen.Set( idx, true );
-                if( enabled )
-                {
-                    foreach( var path in paths )
+                    Conflicts.AddConflict( register.ModIdx, priority.ModIdx, register.ModPriority, priority.ModPriority, path );
+                    if( less )
                     {
-                        AddFile( modIdx, path, registeredFile );
-                    }
-                }
-            }
-        }
-
-        private void AddFilesForSingle( OptionGroup singleGroup, Mod mod, int modIdx )
-        {
-            Debug.Assert( singleGroup.SelectionType == SelectType.Single );
-            var settings = ResolvedSettings[ modIdx ]!;
-            if( !settings.Settings.TryGetValue( singleGroup.GroupName, out var setting ) )
-            {
-                setting = 0;
-            }
-
-            for( var i = 0; i < singleGroup.Options.Count; ++i )
-            {
-                AddPathsForOption( singleGroup.Options[ i ], mod, modIdx, setting == i );
-            }
-        }
-
-        private void AddFilesForMulti( OptionGroup multiGroup, Mod mod, int modIdx )
-        {
-            Debug.Assert( multiGroup.SelectionType == SelectType.Multi );
-            var settings = ResolvedSettings[ modIdx ]!;
-            if( !settings.Settings.TryGetValue( multiGroup.GroupName, out var setting ) )
-            {
-                return;
-            }
-
-            // Also iterate options in reverse so that later options take precedence before earlier ones.
-            for( var i = multiGroup.Options.Count - 1; i >= 0; --i )
-            {
-                AddPathsForOption( multiGroup.Options[ i ], mod, modIdx, ( setting & ( 1 << i ) ) != 0 );
-            }
-        }
-
-        private void AddRemainingFiles( Mod mod, int modIdx )
-        {
-            for( var i = 0; i < mod.Resources.ModFiles.Count; ++i )
-            {
-                if( FileSeen.Get( i ) )
-                {
-                    continue;
-                }
-
-                var file = mod.Resources.ModFiles[ i ];
-                if( file.Exists )
-                {
-                    if( file.ToGamePath( mod.BasePath, out var gamePath ) )
-                    {
-                        AddFile( modIdx, gamePath, file );
-                    }
-                    else
-                    {
-                        PluginLog.Warning( $"Could not convert {file} in {mod.BasePath.FullName} to GamePath." );
+                        RegisteredFiles[ path ] = priority;
+                        ResolvedFiles[ path ]   = file;
                     }
                 }
                 else
                 {
-                    MissingFiles.Add( file );
+                    // File seen before in the same mod:
+                    // use higher priority or earlier recurrences in case of same priority.
+                    // Do not add conflicts.
+                    if( less )
+                    {
+                        RegisteredFiles[ path ] = priority;
+                        ResolvedFiles[ path ]   = file;
+                    }
+                }
+            }
+            else // File not seen before, just add it.
+            {
+                RegisteredFiles.Add( path, priority );
+                ResolvedFiles.Add( path, file );
+            }
+        }
+
+        // Add a specific manipulation, handling potential conflicts.
+        // For different mods, higher mod priority takes precedence before option group priority,
+        // which takes precedence before option priority, which takes precedence before ordering.
+        // Inside the same mod, conflicts are not recorded.
+        private void AddManipulation( MetaManipulation manip, FileRegister priority )
+        {
+            if( RegisteredManipulations.TryGetValue( manip, out var register ) )
+            {
+                if( register.SameMod( priority, out var less ) )
+                {
+                    Conflicts.AddConflict( register.ModIdx, priority.ModIdx, register.ModPriority, priority.ModPriority, manip );
+                    if( less )
+                    {
+                        RegisteredManipulations[ manip ] = priority;
+                        MetaManipulations.ApplyMod( manip, priority.ModIdx );
+                    }
+                }
+                else
+                {
+                    // Manipulation seen before in the same mod:
+                    // use higher priority or earlier occurrences in case of same priority.
+                    // Do not add conflicts.
+                    if( less )
+                    {
+                        RegisteredManipulations[ manip ] = priority;
+                        MetaManipulations.ApplyMod( manip, priority.ModIdx );
+                    }
+                }
+            }
+            else // Manipulation not seen before, just add it.
+            {
+                RegisteredManipulations[ manip ] = priority;
+                MetaManipulations.ApplyMod( manip, priority.ModIdx );
+            }
+        }
+
+        // Add all files and possibly manipulations of a specific submod with the given priorities.
+        private void AddSubMod( ISubMod mod, FileRegister priority, bool withManipulations )
+        {
+            foreach( var (path, file) in mod.Files.Concat( mod.FileSwaps ) )
+            {
+                // Skip all filtered files
+                if( Mod2.FilterFile( path ) )
+                {
+                    continue;
+                }
+
+                AddFile( path, file, priority );
+            }
+
+            if( withManipulations )
+            {
+                foreach( var manip in mod.Manipulations )
+                {
+                    AddManipulation( manip, priority );
                 }
             }
         }
 
+        // Add all files and possibly manipulations of a given mod according to its settings in this collection.
+        private void AddMod( int modIdx, bool withManipulations )
+        {
+            var settings = ResolvedSettings[ modIdx ];
+            if( settings is not { Enabled: true } )
+            {
+                return;
+            }
+
+            var mod = Penumbra.ModManager.Mods[ modIdx ];
+            AddSubMod( mod.Default, new FileRegister( modIdx, settings.Priority, 0, 0 ), withManipulations );
+            for( var idx = 0; idx < mod.Groups.Count; ++idx )
+            {
+                var config = settings.Settings[ idx ];
+                var group  = mod.Groups[ idx ];
+                switch( group.Type )
+                {
+                    case SelectType.Single:
+                        var singlePriority = new FileRegister( modIdx, settings.Priority, group.Priority, group.Priority );
+                        AddSubMod( group[ ( int )config ], singlePriority, withManipulations );
+                        break;
+                    case SelectType.Multi:
+                    {
+                        for( var optionIdx = 0; optionIdx < group.Count; ++optionIdx )
+                        {
+                            if( ( ( 1 << optionIdx ) & config ) != 0 )
+                            {
+                                var priority = new FileRegister( modIdx, settings.Priority, group.Priority, group.OptionPriority( optionIdx ) );
+                                AddSubMod( group[ optionIdx ], priority, withManipulations );
+                            }
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Add all necessary meta file redirects.
         private void AddMetaFiles()
             => MetaManipulations.Imc.SetFiles();
 
-        private void AddSwaps( int modIdx )
+        // Add all API redirects.
+        private void AddCustomRedirects()
         {
-            var mod = Penumbra.ModManager.Mods[ modIdx ];
-            foreach( var (gamePath, swapPath) in mod.Meta.FileSwaps.Where( kvp => !FilterFile( kvp.Key ) ) )
+            Penumbra.Redirects.Apply( ResolvedFiles );
+            foreach( var gamePath in ResolvedFiles.Keys )
             {
-                AddFile( modIdx, gamePath, swapPath );
+                RegisteredFiles.Add( gamePath, new FileRegister( -1, int.MaxValue, 0, 0 ) );
             }
         }
 
-        private void AddManipulations( int modIdx )
+
+        // Struct to keep track of all priorities involved in a mod and register and compare accordingly.
+        private readonly record struct FileRegister( int ModIdx, int ModPriority, int GroupPriority, int OptionPriority )
         {
-            var mod = Penumbra.ModManager.Mods[ modIdx ];
-            foreach( var manip in mod.Resources.MetaManipulations.GetManipulationsForConfig( ResolvedSettings[ modIdx ]!, mod.Meta ) )
+            public readonly int ModIdx         = ModIdx;
+            public readonly int ModPriority    = ModPriority;
+            public readonly int GroupPriority  = GroupPriority;
+            public readonly int OptionPriority = OptionPriority;
+
+            public bool SameMod( FileRegister other, out bool less )
             {
-                if( !MetaManipulations.TryGetValue( manip, out var oldModIdx ) )
+                if( ModIdx != other.ModIdx )
                 {
-                    MetaManipulations.ApplyMod( manip, modIdx );
+                    less = ModPriority < other.ModPriority;
+                    return true;
+                }
+
+                if( GroupPriority < other.GroupPriority )
+                {
+                    less = true;
+                }
+                else if( GroupPriority == other.GroupPriority )
+                {
+                    less = OptionPriority < other.OptionPriority;
                 }
                 else
                 {
-                    var priority    = ResolvedSettings[ modIdx ]!.Priority;
-                    var oldPriority = ResolvedSettings[ oldModIdx ]!.Priority;
-                    Conflicts.AddConflict( oldModIdx, modIdx, oldPriority, priority, manip );
-                    if( priority > oldPriority )
-                    {
-                        MetaManipulations.ApplyMod( manip, modIdx );
-                    }
+                    less = false;
                 }
+
+                return false;
             }
-        }
-
-        public void UpdateMetaManipulations()
-        {
-            MetaManipulations.Reset();
-            Conflicts.ClearMetaConflicts();
-
-            foreach( var mod in Penumbra.ModManager.Mods.Zip( ResolvedSettings )
-                       .Select( ( m, i ) => ( m.First, m.Second, i ) )
-                       .Where( m => m.Second?.Enabled == true && m.First.Resources.MetaManipulations.Count > 0 ) )
-            {
-                AddManipulations( mod.i );
-            }
-        }
-
-        public FullPath? ResolvePath( Utf8GamePath gameResourcePath )
-        {
-            if( !ResolvedFiles.TryGetValue( gameResourcePath, out var candidate ) )
-            {
-                return null;
-            }
-
-            if( candidate.InternalName.Length > Utf8GamePath.MaxGamePathLength
-            || candidate.IsRooted && !candidate.Exists )
-            {
-                return null;
-            }
-
-            return candidate;
-        }
+        };
     }
 }

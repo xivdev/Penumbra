@@ -27,7 +27,7 @@ public partial class ModCollection
         public delegate void CollectionChangeDelegate( Type type, ModCollection? oldCollection, ModCollection? newCollection,
             string? characterName = null );
 
-        private readonly Mod.Manager _modManager;
+        private readonly Mod2.Manager _modManager;
 
         // The empty collection is always available and always has index 0.
         // It can not be deleted or moved.
@@ -56,14 +56,15 @@ public partial class ModCollection
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-        public Manager( Mod.Manager manager )
+        public Manager( Mod2.Manager manager )
         {
             _modManager = manager;
 
             // The collection manager reacts to changes in mods by itself.
             _modManager.ModDiscoveryStarted  += OnModDiscoveryStarted;
             _modManager.ModDiscoveryFinished += OnModDiscoveryFinished;
-            _modManager.ModChange            += OnModChanged;
+            _modManager.ModOptionChanged     += OnModOptionsChanged;
+            _modManager.ModPathChanged       += OnModPathChanged;
             CollectionChanged                += SaveOnChange;
             ReadCollections();
             LoadCollections();
@@ -73,7 +74,8 @@ public partial class ModCollection
         {
             _modManager.ModDiscoveryStarted  -= OnModDiscoveryStarted;
             _modManager.ModDiscoveryFinished -= OnModDiscoveryFinished;
-            _modManager.ModChange            -= OnModChanged;
+            _modManager.ModOptionChanged     -= OnModOptionsChanged;
+            _modManager.ModPathChanged       -= OnModPathChanged;
         }
 
         // Add a new collection of the given name.
@@ -171,38 +173,60 @@ public partial class ModCollection
         }
 
 
-        // A changed mod forces changes for all collections, active and inactive.
-        private void OnModChanged( Mod.ChangeType type, Mod mod )
+        // A changed mod path forces changes for all collections, active and inactive.
+        private void OnModPathChanged( ModPathChangeType type, Mod2 mod, DirectoryInfo? oldDirectory,
+            DirectoryInfo? newDirectory )
         {
             switch( type )
             {
-                case Mod.ChangeType.Added:
+                case ModPathChangeType.Added:
                     foreach( var collection in this )
                     {
                         collection.AddMod( mod );
                     }
 
-                    OnModAddedActive( mod.Resources.MetaManipulations.Count > 0 );
+                    OnModAddedActive( mod.TotalManipulations > 0 );
                     break;
-                case Mod.ChangeType.Removed:
-                    var settings = new List< ModSettings? >( _collections.Count );
+                case ModPathChangeType.Deleted:
+                    var settings = new List< ModSettings2? >( _collections.Count );
                     foreach( var collection in this )
                     {
                         settings.Add( collection[ mod.Index ].Settings );
                         collection.RemoveMod( mod, mod.Index );
                     }
 
-                    OnModRemovedActive( mod.Resources.MetaManipulations.Count > 0, settings );
+                    OnModRemovedActive( mod.TotalManipulations > 0, settings );
                     break;
-                case Mod.ChangeType.Changed:
-                    foreach( var collection in this.Where(
-                                collection => collection.Settings[ mod.Index ]?.FixInvalidSettings( mod.Meta ) ?? false ) )
+                case ModPathChangeType.Moved:
+                    foreach( var collection in this.Where( collection => collection.Settings[ mod.Index ] != null ) )
                     {
                         collection.Save();
                     }
 
-                    OnModChangedActive( mod.Resources.MetaManipulations.Count > 0, mod.Index );
+                    OnModChangedActive( mod.TotalManipulations > 0, mod.Index );
                     break;
+                default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
+            }
+        }
+
+
+        private void OnModOptionsChanged( ModOptionChangeType type, Mod2 mod, int groupIdx, int optionIdx )
+        {
+            if( type == ModOptionChangeType.DisplayChange )
+            {
+                return;
+            }
+
+            // TODO
+            switch( type )
+            {
+                case ModOptionChangeType.GroupRenamed:
+                case ModOptionChangeType.GroupAdded:
+                case ModOptionChangeType.GroupDeleted:
+                case ModOptionChangeType.PriorityChanged:
+                case ModOptionChangeType.OptionAdded:
+                case ModOptionChangeType.OptionDeleted:
+                case ModOptionChangeType.OptionChanged:
                 default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
             }
         }

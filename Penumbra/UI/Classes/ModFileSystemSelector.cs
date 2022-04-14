@@ -12,12 +12,12 @@ using Penumbra.Mods;
 
 namespace Penumbra.UI.Classes;
 
-public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, ModFileSystemSelector.ModState >
+public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, ModFileSystemSelector.ModState >
 {
-    public ModSettings SelectedSettings { get; private set; } = ModSettings.Empty;
+    public ModSettings2 SelectedSettings { get; private set; } = ModSettings2.Empty;
     public ModCollection SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
-    public ModFileSystemSelector( ModFileSystemA fileSystem, IReadOnlySet<Mod> newMods )
+    public ModFileSystemSelector( ModFileSystemA fileSystem, IReadOnlySet< Mod2 > newMods )
         : base( fileSystem )
     {
         _newMods = newMods;
@@ -29,13 +29,19 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         AddButton( DeleteModButton, 1000 );
         SetFilterTooltip();
 
-        Penumbra.CollectionManager.CollectionChanged += OnCollectionChange;
+        Penumbra.CollectionManager.CollectionChanged          += OnCollectionChange;
+        Penumbra.CollectionManager.Current.ModSettingChanged  += OnSettingChange;
+        Penumbra.CollectionManager.Current.InheritanceChanged += OnInheritanceChange;
+        Penumbra.ModManager.ModDiscoveryStarted               += StoreCurrentSelection;
+        Penumbra.ModManager.ModDiscoveryFinished              += RestoreLastSelection;
         OnCollectionChange( ModCollection.Type.Current, null, Penumbra.CollectionManager.Current, null );
     }
 
     public override void Dispose()
     {
         base.Dispose();
+        Penumbra.ModManager.ModDiscoveryStarted               -= StoreCurrentSelection;
+        Penumbra.ModManager.ModDiscoveryFinished              -= RestoreLastSelection;
         Penumbra.CollectionManager.Current.ModSettingChanged  -= OnSettingChange;
         Penumbra.CollectionManager.Current.InheritanceChanged -= OnInheritanceChange;
         Penumbra.CollectionManager.CollectionChanged          -= OnCollectionChange;
@@ -54,11 +60,11 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     protected override uint FolderLineColor
         => ColorId.FolderLine.Value();
 
-    protected override void DrawLeafName( FileSystem< Mod >.Leaf leaf, in ModState state, bool selected )
+    protected override void DrawLeafName( FileSystem< Mod2 >.Leaf leaf, in ModState state, bool selected )
     {
         var       flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
         using var c     = ImRaii.PushColor( ImGuiCol.Text, state.Color );
-        using var _     = ImRaii.TreeNode( leaf.Value.Meta.Name, flags );
+        using var _     = ImRaii.TreeNode( leaf.Value.Name, flags );
     }
 
 
@@ -126,7 +132,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     }
 
     // Automatic cache update functions.
-    private void OnSettingChange( ModSettingChange type, int modIdx, int oldValue, string? optionName, bool inherited )
+    private void OnSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool inherited )
     {
         // TODO: maybe make more efficient
         SetFilterDirty();
@@ -169,13 +175,32 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     {
         if( newSelection == null )
         {
-            SelectedSettings          = ModSettings.Empty;
+            SelectedSettings          = ModSettings2.Empty;
             SelectedSettingCollection = ModCollection.Empty;
         }
         else
         {
             ( var settings, SelectedSettingCollection ) = Penumbra.CollectionManager.Current[ newSelection.Value.Index ];
-            SelectedSettings                            = settings ?? ModSettings.Empty;
+            SelectedSettings                            = settings ?? ModSettings2.Empty;
+        }
+    }
+
+    // Keep selections across rediscoveries if possible.
+    private string _lastSelectedDirectory = string.Empty;
+
+    private void StoreCurrentSelection()
+    {
+        _lastSelectedDirectory = Selected?.BasePath.FullName ?? string.Empty;
+        ClearSelection();
+    }
+
+    private void RestoreLastSelection()
+    {
+        if( _lastSelectedDirectory.Length > 0 )
+        {
+            SelectedLeaf = ( ModFileSystemA.Leaf? )FileSystem.Root.GetAllDescendants( SortMode.Lexicographical )
+               .FirstOrDefault( l => l is ModFileSystemA.Leaf m && m.Value.BasePath.FullName == _lastSelectedDirectory );
+            _lastSelectedDirectory = string.Empty;
         }
     }
 }

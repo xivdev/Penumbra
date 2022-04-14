@@ -49,7 +49,7 @@ public sealed partial class Mod2
                 mod._default.FileSwapData.Add( gamePath, swapPath );
             }
 
-            HandleMetaChanges( mod._default, mod.BasePath );
+            mod._default.IncorporateMetaChanges( mod.BasePath, false );
             foreach( var group in mod.Groups )
             {
                 IModGroup.SaveModGroup( group, mod.BasePath );
@@ -119,78 +119,11 @@ public sealed partial class Mod2
             }
         }
 
-        private static void HandleMetaChanges( SubMod subMod, DirectoryInfo basePath )
-        {
-            foreach( var (key, file) in subMod.Files.ToList() )
-            {
-                try
-                {
-                    switch( file.Extension )
-                    {
-                        case ".meta":
-                            subMod.FileData.Remove( key );
-                            if( !file.Exists )
-                            {
-                                continue;
-                            }
-
-                            var meta = new TexToolsMeta( File.ReadAllBytes( file.FullName ) );
-                            foreach( var manip in meta.EqpManipulations )
-                            {
-                                subMod.ManipulationData.Add( manip );
-                            }
-
-                            foreach( var manip in meta.EqdpManipulations )
-                            {
-                                subMod.ManipulationData.Add( manip );
-                            }
-
-                            foreach( var manip in meta.EstManipulations )
-                            {
-                                subMod.ManipulationData.Add( manip );
-                            }
-
-                            foreach( var manip in meta.GmpManipulations )
-                            {
-                                subMod.ManipulationData.Add( manip );
-                            }
-
-                            foreach( var manip in meta.ImcManipulations )
-                            {
-                                subMod.ManipulationData.Add( manip );
-                            }
-
-                            break;
-                        case ".rgsp":
-                            subMod.FileData.Remove( key );
-                            if( !file.Exists )
-                            {
-                                continue;
-                            }
-
-                            var rgsp = TexToolsMeta.FromRgspFile( file.FullName, File.ReadAllBytes( file.FullName ) );
-                            foreach( var manip in rgsp.RspManipulations )
-                            {
-                                subMod.ManipulationData.Add( manip );
-                            }
-
-                            break;
-                        default: continue;
-                    }
-                }
-                catch( Exception e )
-                {
-                    PluginLog.Error( $"Could not migrate meta changes in mod {basePath} from file {file.FullName}:\n{e}" );
-                    continue;
-                }
-            }
-        }
-
         private static SubMod SubModFromOption( DirectoryInfo basePath, OptionV0 option )
         {
             var subMod = new SubMod() { Name = option.OptionName };
             AddFilesToSubMod( subMod, basePath, option );
-            HandleMetaChanges( subMod, basePath );
+            subMod.IncorporateMetaChanges( basePath, false );
             return subMod;
         }
 

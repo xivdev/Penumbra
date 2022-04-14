@@ -5,7 +5,6 @@ using System.Linq;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Filesystem;
 using Penumbra.Collections;
 using Penumbra.Mods;
 
@@ -21,7 +20,7 @@ public class MigrateConfiguration
     public string                       ForcedCollection     = string.Empty;
     public Dictionary< string, string > CharacterCollections = new();
     public Dictionary< string, string > ModSortOrder         = new();
-    public bool                         InvertModListOrder   = false;
+    public bool                         InvertModListOrder;
 
 
     public static void Migrate( Configuration config )
@@ -143,32 +142,28 @@ public class MigrateConfiguration
             var data = JArray.Parse( text );
 
             var maxPriority = 0;
-            var dict        = new Dictionary< string, ModSettings >();
+            var dict        = new Dictionary< string, ModSettings2.SavedSettings >();
             foreach( var setting in data.Cast< JObject >() )
             {
                 var modName  = ( string )setting[ "FolderName" ]!;
                 var enabled  = ( bool )setting[ "Enabled" ]!;
                 var priority = ( int )setting[ "Priority" ]!;
-                var settings = setting[ "Settings" ]!.ToObject< Dictionary< string, int > >()
-                 ?? setting[ "Conf" ]!.ToObject< Dictionary< string, int > >();
+                var settings = setting[ "Settings" ]!.ToObject< Dictionary< string, uint > >()
+                 ?? setting[ "Conf" ]!.ToObject< Dictionary< string, uint > >();
 
-                dict[ modName ] = new ModSettings()
+                dict[ modName ] = new ModSettings2.SavedSettings()
                 {
                     Enabled  = enabled,
                     Priority = priority,
                     Settings = settings!,
                 };
-                ;
                 maxPriority = Math.Max( maxPriority, priority );
             }
 
             InvertModListOrder = _data[ nameof( InvertModListOrder ) ]?.ToObject< bool >() ?? InvertModListOrder;
             if( !InvertModListOrder )
             {
-                foreach( var setting in dict.Values )
-                {
-                    setting.Priority = maxPriority - setting.Priority;
-                }
+                dict = dict.ToDictionary( kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority } );
             }
 
             defaultCollection = ModCollection.MigrateFromV0( ModCollection.DefaultCollection, dict );

@@ -30,6 +30,12 @@
 		<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
 	</PropertyGroup>
 
+	<ItemGroup>
+	  <Compile Remove="UI\MenuTabs\**" />
+	  <EmbeddedResource Remove="UI\MenuTabs\**" />
+	  <None Remove="UI\MenuTabs\**" />
+	</ItemGroup>
+
     <ItemGroup>
         <Content Include="tsmLogo.png">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

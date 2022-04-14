@@ -92,7 +92,7 @@ public unsafe partial class ResourceLoader
     // Use the default method of path replacement.
     public static (FullPath?, object?) DefaultResolver( Utf8GamePath path )
     {
-        var resolved = Mods.Mod.Manager.ResolvePath( path );
+        var resolved = Penumbra.CollectionManager.Default.ResolvePath( path );
         return ( resolved, null );
     }
 

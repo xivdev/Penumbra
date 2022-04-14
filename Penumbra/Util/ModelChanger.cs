@@ -74,11 +74,11 @@ public static class ModelChanger
         }
     }
 
-    public static bool ChangeModMaterials( Mods.Mod mod, string from, string to )
+    public static bool ChangeModMaterials( Mod2 mod, string from, string to )
     {
         if( ValidStrings( from, to ) )
         {
-            return mod.Resources.ModFiles
+            return mod.AllFiles
                .Where( f => f.Extension.Equals( ".mdl", StringComparison.InvariantCultureIgnoreCase ) )
                .All( file => ChangeMtrl( file, from, to ) >= 0 );
         }

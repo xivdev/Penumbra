@@ -20,7 +20,7 @@ public partial class MetaManager
         public readonly Dictionary< ImcManipulation, int >  Manipulations = new();
 
         private readonly ModCollection _collection;
-        private static   int            _imcManagerCount;
+        private static   int           _imcManagerCount;
 
 
         public MetaManagerImc( ModCollection collection )
@@ -102,6 +102,7 @@ public partial class MetaManager
 
             Files.Clear();
             Manipulations.Clear();
+            RestoreDelegate();
         }
 
         [Conditional( "USE_IMC" )]
@@ -141,11 +142,11 @@ public partial class MetaManager
             if( Penumbra.CollectionManager.ByName( split.ToString(), out var collection )
             && collection.HasCache
             && collection.MetaCache!.Imc.Files.TryGetValue(
-                   Utf8GamePath.FromSpan( path.Span, out var p, false ) ? p : Utf8GamePath.Empty, out var file ) )
+                   Utf8GamePath.FromSpan( path.Span, out var p ) ? p : Utf8GamePath.Empty, out var file ) )
             {
                 PluginLog.Debug( "Loaded {GamePath:l} from file and replaced with IMC from collection {Collection:l}.", path,
                     collection.Name );
-                file.Replace( fileDescriptor->ResourceHandle, true);
+                file.Replace( fileDescriptor->ResourceHandle, true );
                 file.ChangesSinceLoad = false;
             }
 

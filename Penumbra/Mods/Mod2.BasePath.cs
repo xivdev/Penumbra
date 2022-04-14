@@ -37,7 +37,7 @@ public partial class Mod2
         mod.LoadDefaultOption();
         mod.LoadAllGroups();
         mod.ComputeChangedItems();
-        mod.SetHasOptions();
+        mod.SetCounts();
 
         return mod;
     }

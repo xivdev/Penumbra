@@ -27,17 +27,17 @@ public partial class ModCollection
 
     // If a ModSetting is null, it can be inherited from other collections.
     // If no collection provides a setting for the mod, it is just disabled.
-    private readonly List< ModSettings? > _settings;
+    private readonly List< ModSettings2? > _settings;
 
-    public IReadOnlyList< ModSettings? > Settings
+    public IReadOnlyList< ModSettings2? > Settings
         => _settings;
 
     // Evaluates the settings along the whole inheritance tree.
-    public IEnumerable< ModSettings? > ActualSettings
+    public IEnumerable< ModSettings2? > ActualSettings
         => Enumerable.Range( 0, _settings.Count ).Select( i => this[ i ].Settings );
 
     // Settings for deleted mods will be kept via directory name.
-    private readonly Dictionary< string, ModSettings > _unusedSettings;
+    private readonly Dictionary< string, ModSettings2.SavedSettings > _unusedSettings;
 
     // Constructor for duplication.
     private ModCollection( string name, ModCollection duplicate )
@@ -52,13 +52,13 @@ public partial class ModCollection
     }
 
     // Constructor for reading from files.
-    private ModCollection( string name, int version, Dictionary< string, ModSettings > allSettings )
+    private ModCollection( string name, int version, Dictionary< string, ModSettings2.SavedSettings > allSettings )
     {
         Name            = name;
         Version         = version;
         _unusedSettings = allSettings;
 
-        _settings = new List< ModSettings? >();
+        _settings = new List< ModSettings2? >();
         ApplyModSettings();
 
         Migration.Migrate( this );
@@ -68,7 +68,7 @@ public partial class ModCollection
 
     // Create a new, unique empty collection of a given name.
     public static ModCollection CreateNewEmpty( string name )
-        => new(name, CurrentVersion, new Dictionary< string, ModSettings >());
+        => new(name, CurrentVersion, new Dictionary< string, ModSettings2.SavedSettings >());
 
     // Duplicate the calling collection to a new, unique collection of a given name.
     public ModCollection Duplicate( string name )
@@ -86,26 +86,27 @@ public partial class ModCollection
     }
 
     // Add settings for a new appended mod, by checking if the mod had settings from a previous deletion.
-    private void AddMod( Mod mod )
+    private bool AddMod( Mod2 mod )
     {
-        if( _unusedSettings.TryGetValue( mod.BasePath.Name, out var settings ) )
+        if( _unusedSettings.TryGetValue( mod.BasePath.Name, out var save ) )
         {
+            var ret = save.ToSettings( mod, out var settings );
             _settings.Add( settings );
             _unusedSettings.Remove( mod.BasePath.Name );
+            return ret;
         }
-        else
-        {
-            _settings.Add( null );
-        }
+
+        _settings.Add( null );
+        return false;
     }
 
     // Move settings from the current mod list to the unused mod settings.
-    private void RemoveMod( Mod mod, int idx )
+    private void RemoveMod( Mod2 mod, int idx )
     {
         var settings = _settings[ idx ];
         if( settings != null )
         {
-            _unusedSettings.Add( mod.BasePath.Name, settings );
+            _unusedSettings.Add( mod.BasePath.Name, new ModSettings2.SavedSettings( settings, mod ) );
         }
 
         _settings.RemoveAt( idx );
@@ -126,7 +127,7 @@ public partial class ModCollection
     {
         foreach( var (mod, setting) in Penumbra.ModManager.Zip( _settings ).Where( s => s.Second != null ) )
         {
-            _unusedSettings[ mod.BasePath.Name ] = setting!;
+            _unusedSettings[ mod.BasePath.Name ] = new ModSettings2.SavedSettings( setting!, mod );
         }
 
         _settings.Clear();
@@ -137,22 +138,7 @@ public partial class ModCollection
     private void ApplyModSettings()
     {
         _settings.Capacity = Math.Max( _settings.Capacity, Penumbra.ModManager.Count );
-        var changes = false;
-        foreach( var mod in Penumbra.ModManager )
-        {
-            if( _unusedSettings.TryGetValue( mod.BasePath.Name, out var s ) )
-            {
-                changes |= s.FixInvalidSettings( mod.Meta );
-                _settings.Add( s );
-                _unusedSettings.Remove( mod.BasePath.Name );
-            }
-            else
-            {
-                _settings.Add( null );
-            }
-        }
-
-        if( changes )
+        if( Penumbra.ModManager.Aggregate( false, ( current, mod ) => current | AddMod( mod ) ) )
         {
             Save();
         }

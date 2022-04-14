@@ -71,11 +71,11 @@ public partial class ModCollection
     }
 
     // Carry changes in collections inherited from forward if they are relevant for this collection.
-    private void OnInheritedModSettingChange( ModSettingChange type, int modIdx, int oldValue, string? optionName, bool _ )
+    private void OnInheritedModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
     {
         if( _settings[ modIdx ] == null )
         {
-            ModSettingChanged.Invoke( type, modIdx, oldValue, optionName, true );
+            ModSettingChanged.Invoke( type, modIdx, oldValue, groupIdx, true );
         }
     }
 
@@ -85,7 +85,7 @@ public partial class ModCollection
     // Obtain the actual settings for a given mod via index.
     // Also returns the collection the settings are taken from.
     // If no collection provides settings for this mod, this collection is returned together with null.
-    public (ModSettings? Settings, ModCollection Collection) this[ Index idx ]
+    public (ModSettings2? Settings, ModCollection Collection) this[ Index idx ]
     {
         get
         {

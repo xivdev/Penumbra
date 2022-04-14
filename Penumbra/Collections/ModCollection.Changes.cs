@@ -20,7 +20,7 @@ public partial class ModCollection
 {
     // If the change type is a bool, oldValue will be 1 for true and 0 for false.
     // optionName will only be set for type == Setting.
-    public delegate void ModSettingChangeDelegate( ModSettingChange type, int modIdx, int oldValue, string? optionName, bool inherited );
+    public delegate void ModSettingChangeDelegate( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool inherited );
     public event ModSettingChangeDelegate ModSettingChanged;
 
     // Enable or disable the mod inheritance of mod idx.
@@ -28,7 +28,7 @@ public partial class ModCollection
     {
         if( FixInheritance( idx, inherit ) )
         {
-            ModSettingChanged.Invoke( ModSettingChange.Inheritance, idx, inherit ? 0 : 1, null, false );
+            ModSettingChanged.Invoke( ModSettingChange.Inheritance, idx, inherit ? 0 : 1, 0, false );
         }
     }
 
@@ -41,22 +41,22 @@ public partial class ModCollection
         {
             var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.Enabled = newValue;
-            ModSettingChanged.Invoke( ModSettingChange.EnableState, idx, inheritance ? -1 : newValue ? 0 : 1, null, false );
+            ModSettingChanged.Invoke( ModSettingChange.EnableState, idx, inheritance ? -1 : newValue ? 0 : 1, 0, false );
         }
     }
 
     // Enable or disable the mod inheritance of every mod in mods.
-    public void SetMultipleModInheritances( IEnumerable< Mod > mods, bool inherit )
+    public void SetMultipleModInheritances( IEnumerable< Mod2 > mods, bool inherit )
     {
         if( mods.Aggregate( false, ( current, mod ) => current | FixInheritance( mod.Index, inherit ) ) )
         {
-            ModSettingChanged.Invoke( ModSettingChange.MultiInheritance, -1, -1, null, false );
+            ModSettingChanged.Invoke( ModSettingChange.MultiInheritance, -1, -1, 0, false );
         }
     }
 
     // Set the enabled state of every mod in mods to the new value.
     // If the mod is currently inherited, stop the inheritance.
-    public void SetMultipleModStates( IEnumerable< Mod > mods, bool newValue )
+    public void SetMultipleModStates( IEnumerable< Mod2 > mods, bool newValue )
     {
         var changes = false;
         foreach( var mod in mods )
@@ -72,7 +72,7 @@ public partial class ModCollection
 
         if( changes )
         {
-            ModSettingChanged.Invoke( ModSettingChange.MultiEnableState, -1, -1, null, false );
+            ModSettingChanged.Invoke( ModSettingChange.MultiEnableState, -1, -1, 0, false );
         }
     }
 
@@ -85,26 +85,21 @@ public partial class ModCollection
         {
             var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.Priority = newValue;
-            ModSettingChanged.Invoke( ModSettingChange.Priority, idx, inheritance ? -1 : oldValue, null, false );
+            ModSettingChanged.Invoke( ModSettingChange.Priority, idx, inheritance ? -1 : oldValue, 0, false );
         }
     }
 
     // Set a given setting group settingName of mod idx to newValue if it differs from the current value and fix it if necessary.
     // If mod idx is currently inherited, stop the inheritance.
-    public void SetModSetting( int idx, string settingName, int newValue )
+    public void SetModSetting( int idx, int groupIdx, uint newValue )
     {
         var settings = _settings[ idx ] != null ? _settings[ idx ]!.Settings : this[ idx ].Settings?.Settings;
-        var oldValue = settings != null
-            ? settings.TryGetValue( settingName, out var v ) ? v : newValue
-            : Penumbra.ModManager.Mods[ idx ].Meta.Groups.ContainsKey( settingName )
-                ? 0
-                : newValue;
+        var oldValue = settings?[ groupIdx ] ?? 0;
         if( oldValue != newValue )
         {
             var inheritance = FixInheritance( idx, false );
-            _settings[ idx ]!.Settings[ settingName ] = newValue;
-            _settings[ idx ]!.FixSpecificSetting( settingName, Penumbra.ModManager.Mods[ idx ].Meta );
-            ModSettingChanged.Invoke( ModSettingChange.Setting, idx, inheritance ? -1 : oldValue, settingName, false );
+            _settings[ idx ]!.SetValue( Penumbra.ModManager.Mods[ idx ], groupIdx, newValue );
+            ModSettingChanged.Invoke( ModSettingChange.Setting, idx, inheritance ? -1 : ( int )oldValue, groupIdx, false );
         }
     }
 
@@ -112,7 +107,7 @@ public partial class ModCollection
     // If type == Setting, settingName should be a valid setting for that mod, otherwise it will be ignored.
     // The setting will also be automatically fixed if it is invalid for that setting group.
     // For boolean parameters, newValue == 0 will be treated as false and != 0 as true.
-    public void ChangeModSetting( ModSettingChange type, int idx, int newValue, string? settingName = null )
+    public void ChangeModSetting( ModSettingChange type, int idx, int newValue, int groupIdx )
     {
         switch( type )
         {
@@ -126,7 +121,7 @@ public partial class ModCollection
                 SetModPriority( idx, newValue );
                 break;
             case ModSettingChange.Setting:
-                SetModSetting( idx, settingName ?? string.Empty, newValue );
+                SetModSetting( idx, groupIdx, ( uint )newValue );
                 break;
             default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
         }
@@ -142,11 +137,11 @@ public partial class ModCollection
             return false;
         }
 
-        _settings[ idx ] = inherit ? null : this[ idx ].Settings ?? ModSettings.DefaultSettings( Penumbra.ModManager.Mods[ idx ].Meta );
+        _settings[ idx ] = inherit ? null : this[ idx ].Settings ?? ModSettings2.DefaultSettings( Penumbra.ModManager.Mods[ idx ] );
         return true;
     }
 
-    private void SaveOnChange( ModSettingChange _1, int _2, int _3, string? _4, bool inherited )
+    private void SaveOnChange( ModSettingChange _1, int _2, int _3, int _4, bool inherited )
         => SaveOnChange( inherited );
 
     private void SaveOnChange( bool inherited )

@@ -25,7 +25,6 @@ public sealed partial class Mod2
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-
         public Manager( string modDirectory )
         {
             SetBaseDirectory( modDirectory, true );

@@ -4,13 +4,13 @@ using OtterGui.Filesystem;
 
 namespace Penumbra.Mods;
 
-public sealed class ModFileSystemA : FileSystem< Mod >, IDisposable
+public sealed class ModFileSystemA : FileSystem< Mod2 >, IDisposable
 {
     // Save the current sort order.
     // Does not save or copy the backup in the current mod directory,
     // as this is done on mod directory changes only.
     public void Save()
-        => SaveToFile( new FileInfo( Mod.Manager.SortOrderFile ), SaveMod, true );
+        => SaveToFile( new FileInfo( Mod2.Manager.ModFileSystemFile ), SaveMod, true );
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
     public static ModFileSystemA Load()
@@ -31,7 +31,7 @@ public sealed class ModFileSystemA : FileSystem< Mod >, IDisposable
     // Used on construction and on mod rediscoveries.
     private void Reload()
     {
-        if( Load( new FileInfo( Mod.Manager.SortOrderFile ), Penumbra.ModManager.Mods, ModToIdentifier, ModToName ) )
+        if( Load( new FileInfo( Mod2.Manager.ModFileSystemFile ), Penumbra.ModManager.Mods, ModToIdentifier, ModToName ) )
         {
             Save();
         }
@@ -47,13 +47,13 @@ public sealed class ModFileSystemA : FileSystem< Mod >, IDisposable
     }
 
     // Used for saving and loading.
-    private static string ModToIdentifier( Mod mod )
+    private static string ModToIdentifier( Mod2 mod )
         => mod.BasePath.Name;
 
-    private static string ModToName( Mod mod )
-        => mod.Meta.Name.Text;
+    private static string ModToName( Mod2 mod )
+        => mod.Name.Text;
 
-    private static (string, bool) SaveMod( Mod mod, string fullPath )
+    private static (string, bool) SaveMod( Mod2 mod, string fullPath )
     {
         // Only save pairs with non-default paths.
         if( fullPath == ModToName( mod ) )

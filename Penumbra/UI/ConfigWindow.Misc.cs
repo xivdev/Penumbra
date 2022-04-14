@@ -2,13 +2,19 @@ using System.Numerics;
 using ImGuiNET;
 using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
+using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.UI.Custom;
 
 namespace Penumbra.UI;
 
-public partial class SettingsInterface
+public partial class ConfigWindow
 {
+    internal static unsafe void Text( Utf8String s )
+    {
+        ImGuiNative.igTextUnformatted( s.Path, s.Path + s.Length );
+    }
+
     internal void DrawChangedItem( string name, object? data, float itemIdOffset = 0 )
     {
         var ret = ImGui.Selectable( name ) ? MouseButton.Left : MouseButton.None;

@@ -17,18 +17,30 @@ public partial class Mod2
     public IReadOnlyList< IModGroup > Groups
         => _groups;
 
+    private readonly SubMod            _default = new();
+    private readonly List< IModGroup > _groups  = new();
+
+    public int TotalFileCount { get; private set; }
+    public int TotalSwapCount { get; private set; }
+    public int TotalManipulations { get; private set; }
     public bool HasOptions { get; private set; }
 
-    private void SetHasOptions()
+    private void SetCounts()
     {
+        TotalFileCount     = 0;
+        TotalSwapCount     = 0;
+        TotalManipulations = 0;
+        foreach( var s in AllSubMods )
+        {
+            TotalFileCount     += s.Files.Count;
+            TotalSwapCount     += s.FileSwaps.Count;
+            TotalManipulations += s.Manipulations.Count;
+        }
+
         HasOptions = _groups.Any( o
             => o is MultiModGroup m && m.PrioritizedOptions.Count > 0
          || o is SingleModGroup s   && s.OptionData.Count         > 1 );
     }
-
-
-    private readonly SubMod            _default = new();
-    private readonly List< IModGroup > _groups  = new();
 
     public IEnumerable< ISubMod > AllSubMods
         => _groups.SelectMany( o => o ).Prepend( _default );
@@ -55,6 +67,13 @@ public partial class Mod2
            .Where( f => !modFiles.Contains( f ) )
            .ToList();
     }
+
+    // Filter invalid files.
+    // If audio streaming is not disabled, replacing .scd files crashes the game,
+    // so only add those files if it is disabled.
+    public static bool FilterFile( Utf8GamePath gamePath )
+        => !Penumbra.Config.DisableSoundStreaming
+         && gamePath.Path.EndsWith( '.', 's', 'c', 'd' );
 
     public List< FullPath > FindMissingFiles()
         => AllFiles.Where( f => !f.Exists ).ToList();
