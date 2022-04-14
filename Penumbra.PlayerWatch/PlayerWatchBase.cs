@@ -26,7 +26,7 @@ internal readonly struct WatchedPlayer
 internal class PlayerWatchBase : IDisposable
 {
     public const  int GPosePlayerIdx  = 201;
-    public const  int GPoseTableEnd   = GPosePlayerIdx + 48;
+    public const  int GPoseTableEnd   = GPosePlayerIdx + 40;
     private const int ObjectsPerFrame = 32;
 
     private readonly  Framework                           _framework;
@@ -301,7 +301,7 @@ internal class PlayerWatchBase : IDisposable
 
             var id = GetId( character );
             SeenActors.Add( id );
-            PluginLog.Verbose( "Comparing Gear for {PlayerName} ({Id}) at {Address}...", character.Name, id, character.Address );
+            PluginLog.Verbose( "Comparing Gear for {PlayerName:l} ({Id}) at 0x{Address:X}...", character.Name, id, character.Address.ToInt64() );
             if( !watch.FoundActors.TryGetValue( id, out var equip ) )
             {
                 equip                   = new CharacterEquipment( character );
