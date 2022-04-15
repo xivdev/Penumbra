@@ -85,7 +85,7 @@ namespace Penumbra.Interop
             if( _inGPose )
             {
                 var ptr         = ( void*** )actor.Address;
-                var disableDraw = Marshal.GetDelegateForFunctionPointer< ManipulateDraw >( new IntPtr( ptr[ 0 ][ 18 ] ) );
+                var disableDraw = Marshal.GetDelegateForFunctionPointer< ManipulateDraw >( new IntPtr( ptr[ 0 ][ 17 ] ) );
                 disableDraw( actor.Address );
             }
         }
@@ -119,7 +119,7 @@ namespace Penumbra.Interop
             if( _inGPose )
             {
                 var ptr        = ( void*** )actor.Address;
-                var enableDraw = Marshal.GetDelegateForFunctionPointer< ManipulateDraw >( new IntPtr( ptr[ 0 ][ 17 ] ) );
+                var enableDraw = Marshal.GetDelegateForFunctionPointer< ManipulateDraw >( new IntPtr( ptr[ 0 ][ 16 ] ) );
                 enableDraw( actor.Address );
             }
         }
