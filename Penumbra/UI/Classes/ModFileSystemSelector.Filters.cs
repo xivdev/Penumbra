@@ -77,18 +77,18 @@ public partial class ModFileSystemSelector
     // or they contain the path search string.
     protected override bool ApplyFiltersAndState( FileSystem< Mod2 >.IPath path, out ModState state )
     {
-        if( path is ModFileSystemA.Folder f )
+        if( path is ModFileSystem.Folder f )
         {
             state = default;
             return ModFilterExtensions.UnfilteredStateMods != _stateFilter
              || FilterValue.Length > 0 && !f.FullName().Contains( FilterValue, IgnoreCase );
         }
 
-        return ApplyFiltersAndState( ( ModFileSystemA.Leaf )path, out state );
+        return ApplyFiltersAndState( ( ModFileSystem.Leaf )path, out state );
     }
 
     // Apply the string filters.
-    private bool ApplyStringFilters( ModFileSystemA.Leaf leaf, Mod2 mod )
+    private bool ApplyStringFilters( ModFileSystem.Leaf leaf, Mod2 mod )
     {
         return _filterType switch
         {
@@ -226,7 +226,7 @@ public partial class ModFileSystemSelector
     }
 
     // Combined wrapper for handling all filters and setting state.
-    private bool ApplyFiltersAndState( ModFileSystemA.Leaf leaf, out ModState state )
+    private bool ApplyFiltersAndState( ModFileSystem.Leaf leaf, out ModState state )
     {
         state = new ModState { Color = ColorId.EnabledMod.Value() };
         var mod = leaf.Value;

@@ -36,12 +36,10 @@ public sealed partial class Mod2
 
             foreach( var unusedFile in mod.FindUnusedFiles() )
             {
-                if( unusedFile.ToGamePath( mod.BasePath, out var gamePath ) )
+                if( unusedFile.ToGamePath( mod.BasePath, out var gamePath )
+                && !mod._default.FileData.TryAdd( gamePath, unusedFile ) )
                 {
-                    if( !mod._default.FileData.TryAdd( gamePath, unusedFile ) )
-                    {
-                        PluginLog.Error( $"Could not add {gamePath} because it already points to {mod._default.FileData[ gamePath ]}." );
-                    }
+                    PluginLog.Error( $"Could not add {gamePath} because it already points to {mod._default.FileData[ gamePath ]}." );
                 }
             }
 

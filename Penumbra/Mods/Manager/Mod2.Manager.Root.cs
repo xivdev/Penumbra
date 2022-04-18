@@ -65,24 +65,19 @@ public sealed partial class Mod2
             _mods.Clear();
             BasePath.Refresh();
 
-            // TODO
-            //StructuredMods.SubFolders.Clear();
-            //StructuredMods.Mods.Clear();
             if( Valid && BasePath.Exists )
             {
                 foreach( var modFolder in BasePath.EnumerateDirectories() )
                 {
-                    //var mod = LoadMod( StructuredMods, modFolder );
-                    //if( mod == null )
-                    //{
-                    //    continue;
-                    //}
-                    //
-                    //mod.Index = _mods.Count;
-                    //_mods.Add( mod );
+                    var mod = LoadMod( modFolder );
+                    if( mod == null )
+                    {
+                        continue;
+                    }
+                    
+                    mod.Index = _mods.Count;
+                    _mods.Add( mod );
                 }
-
-                //SetModStructure();
             }
 
             ModDiscoveryFinished?.Invoke();

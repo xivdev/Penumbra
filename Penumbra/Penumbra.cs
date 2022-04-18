@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
@@ -27,10 +28,12 @@ public class Penumbra : IDalamudPlugin
     public string Name
         => "Penumbra";
 
-    public string PluginDebugTitleStr
-        => "Penumbra - Debug Build";
-
     private const string CommandName = "/penumbra";
+
+    public static string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
+
+    public static string CommitHash =
+        Assembly.GetExecutingAssembly().GetCustomAttribute< AssemblyInformationalVersionAttribute >()?.InformationalVersion ?? "Unknown";
 
     public static Configuration Config { get; private set; } = null!;
 
@@ -47,14 +50,14 @@ public class Penumbra : IDalamudPlugin
     public readonly  PathResolver   PathResolver;
     public readonly  MusicManager   MusicManager;
     public readonly  ObjectReloader ObjectReloader;
-    public readonly  ModFileSystemA ModFileSystem;
+    public readonly  ModFileSystem  ModFileSystem;
     public readonly  PenumbraApi    Api;
     public readonly  PenumbraIpc    Ipc;
     private readonly ConfigWindow   _configWindow;
     private readonly LaunchButton   _launchButton;
     private readonly WindowSystem   _windowSystem;
 
-    private WebServer? _webServer;
+    internal WebServer? WebServer;
 
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
@@ -78,7 +81,7 @@ public class Penumbra : IDalamudPlugin
         ModManager        = new Mod2.Manager( Config.ModDirectory );
         ModManager.DiscoverMods();
         CollectionManager = new ModCollection.Manager( ModManager );
-        ModFileSystem     = ModFileSystemA.Load();
+        ModFileSystem     = ModFileSystem.Load();
         ObjectReloader    = new ObjectReloader();
         PathResolver      = new PathResolver( ResourceLoader );
 
@@ -113,6 +116,7 @@ public class Penumbra : IDalamudPlugin
         if( Config.DebugMode )
         {
             ResourceLoader.EnableDebug();
+            _configWindow.IsOpen = true;
         }
 
         if( Config.EnableFullResourceLogging )
@@ -126,11 +130,6 @@ public class Penumbra : IDalamudPlugin
         }
 
         ResidentResources.Reload();
-
-        foreach( var folder in ModManager.BasePath.EnumerateDirectories() )
-        {
-            var m = Mod2.LoadMod( folder );
-        }
     }
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
@@ -210,7 +209,7 @@ public class Penumbra : IDalamudPlugin
 
         ShutdownWebServer();
 
-        _webServer = new WebServer( o => o
+        WebServer = new WebServer( o => o
                .WithUrlPrefix( prefix )
                .WithMode( HttpListenerMode.EmbedIO ) )
            .WithCors( prefix )
@@ -218,15 +217,15 @@ public class Penumbra : IDalamudPlugin
                .WithController( () => new ModsController( this ) )
                .WithController( () => new RedrawController( this ) ) );
 
-        _webServer.StateChanged += ( _, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
+        WebServer.StateChanged += ( _, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
 
-        _webServer.RunAsync();
+        WebServer.RunAsync();
     }
 
     public void ShutdownWebServer()
     {
-        _webServer?.Dispose();
-        _webServer = null;
+        WebServer?.Dispose();
+        WebServer = null;
     }
 
     public void Dispose()

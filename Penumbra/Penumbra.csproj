@@ -26,15 +26,9 @@
         <DefineConstants>$(DefineConstants)TRACE;USE_EQP;USE_EQDP;USE_GMP;USE_EST;USE_CMP;USE_IMC</DefineConstants>
     </PropertyGroup>
 
-	<PropertyGroup>
-		<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
-	</PropertyGroup>
-
-	<ItemGroup>
-	  <Compile Remove="UI\MenuTabs\**" />
-	  <EmbeddedResource Remove="UI\MenuTabs\**" />
-	  <None Remove="UI\MenuTabs\**" />
-	</ItemGroup>
+    <PropertyGroup>
+        <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+    </PropertyGroup>
 
     <ItemGroup>
         <Content Include="tsmLogo.png">
@@ -76,14 +70,24 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
-      <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
-      <ProjectReference Include="..\Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj" />
+        <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
+        <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
+        <ProjectReference Include="..\Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Penumbra.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
+        <None Update="Penumbra.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
+
+    <Target Name="GetGitHash" BeforeTargets="GetAssemblyVersion" Returns="InformationalVersion">
+        <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
+            <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" />
+        </Exec>
+
+        <PropertyGroup>
+            <InformationalVersion>$(GitCommitHash)</InformationalVersion>
+        </PropertyGroup>
+    </Target>
 </Project>

@@ -157,6 +157,8 @@ public unsafe partial class ResourceLoader
                 => IterateResourceMap( resourceMap, action ) ) );
     }
 
+    // Update the list of currently replaced resources.
+    // Only used when the Replaced Resources Tab in the Debug tab is open.
     public void UpdateDebugInfo()
     {
         for( var i = 0; i < _debugList.Count; ++i )

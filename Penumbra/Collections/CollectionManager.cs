@@ -56,6 +56,9 @@ public partial class ModCollection
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
+        public IEnumerable< ModCollection > GetEnumeratorWithEmpty()
+            => _collections;
+
         public Manager( Mod2.Manager manager )
         {
             _modManager = manager;
@@ -227,7 +230,8 @@ public partial class ModCollection
                 case ModOptionChangeType.OptionAdded:
                 case ModOptionChangeType.OptionDeleted:
                 case ModOptionChangeType.OptionChanged:
-                default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
+                default:
+                    throw new ArgumentOutOfRangeException( nameof( type ), type, null );
             }
         }
 

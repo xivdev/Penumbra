@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Windows.Forms;
 using Dalamud.Configuration;
 using Dalamud.Logging;
-using Penumbra.UI;
+using OtterGui.Filesystem;
 using Penumbra.UI.Classes;
 
 namespace Penumbra;
@@ -12,11 +11,12 @@ namespace Penumbra;
 [Serializable]
 public partial class Configuration : IPluginConfiguration
 {
-    private const int CurrentVersion = 2;
-
-    public int Version { get; set; } = CurrentVersion;
+    public int Version { get; set; } = Constants.CurrentVersion;
 
     public bool EnableMods { get; set; } = true;
+    public string ModDirectory { get; set; } = string.Empty;
+
+
 #if DEBUG
     public bool DebugMode { get; set; } = true;
 #else
@@ -27,39 +27,39 @@ public partial class Configuration : IPluginConfiguration
     public bool EnableResourceLogging { get; set; } = false;
     public string ResourceLoggingFilter { get; set; } = string.Empty;
 
+
+    public SortMode SortMode { get; set; } = SortMode.FoldersFirst;
     public bool ScaleModSelector { get; set; } = false;
+    public float ModSelectorAbsoluteSize { get; set; } = Constants.DefaultAbsoluteSize;
+    public int ModSelectorScaledSize { get; set; } = Constants.DefaultScaledSize;
+
 
     public bool ShowAdvanced { get; set; }
-
-    public bool DisableFileSystemNotifications { get; set; }
-
     public bool DisableSoundStreaming { get; set; } = true;
     public bool EnableHttpApi { get; set; }
-
-    public string ModDirectory { get; set; } = string.Empty;
-
-    public bool SortFoldersFirst { get; set; } = false;
-    public bool HasReadCharacterCollectionDesc { get; set; } = false;
 
     public Dictionary< ColorId, uint > Colors { get; set; }
         = Enum.GetValues< ColorId >().ToDictionary( c => c, c => c.Data().DefaultColor );
 
+    // Load the current configuration.
+    // Includes adding new colors and migrating from old versions.
     public static Configuration Load()
     {
         var iConfiguration = Dalamud.PluginInterface.GetPluginConfig();
         var configuration  = iConfiguration as Configuration ?? new Configuration();
-        if( iConfiguration is { Version: CurrentVersion } )
+        if( iConfiguration is { Version: Constants.CurrentVersion } )
         {
             configuration.AddColors( false );
             return configuration;
         }
 
-        MigrateConfiguration.Migrate( configuration );
+        Migration.Migrate( configuration );
         configuration.AddColors( true );
 
         return configuration;
     }
 
+    // Save the current configuration.
     public void Save()
     {
         try

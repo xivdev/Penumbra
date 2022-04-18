@@ -17,7 +17,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
     public ModSettings2 SelectedSettings { get; private set; } = ModSettings2.Empty;
     public ModCollection SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
-    public ModFileSystemSelector( ModFileSystemA fileSystem, IReadOnlySet< Mod2 > newMods )
+    public ModFileSystemSelector( ModFileSystem fileSystem, IReadOnlySet< Mod2 > newMods )
         : base( fileSystem )
     {
         _newMods = newMods;
@@ -29,6 +29,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         AddButton( DeleteModButton, 1000 );
         SetFilterTooltip();
 
+        SelectionChanged                                      += OnSelectionChange;
         Penumbra.CollectionManager.CollectionChanged          += OnCollectionChange;
         Penumbra.CollectionManager.Current.ModSettingChanged  += OnSettingChange;
         Penumbra.CollectionManager.Current.InheritanceChanged += OnInheritanceChange;
@@ -49,7 +50,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
 
     // Customization points.
     public override SortMode SortMode
-        => Penumbra.Config.SortFoldersFirst ? SortMode.FoldersFirst : SortMode.Lexicographical;
+        => Penumbra.Config.SortMode;
 
     protected override uint ExpandedFolderColor
         => ColorId.FolderExpanded.Value();
@@ -69,7 +70,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
 
 
     // Add custom context menu items.
-    private static void EnableDescendants( ModFileSystemA.Folder folder )
+    private static void EnableDescendants( ModFileSystem.Folder folder )
     {
         if( ImGui.MenuItem( "Enable Descendants" ) )
         {
@@ -77,7 +78,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         }
     }
 
-    private static void DisableDescendants( ModFileSystemA.Folder folder )
+    private static void DisableDescendants( ModFileSystem.Folder folder )
     {
         if( ImGui.MenuItem( "Disable Descendants" ) )
         {
@@ -85,7 +86,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         }
     }
 
-    private static void InheritDescendants( ModFileSystemA.Folder folder )
+    private static void InheritDescendants( ModFileSystem.Folder folder )
     {
         if( ImGui.MenuItem( "Inherit Descendants" ) )
         {
@@ -93,7 +94,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         }
     }
 
-    private static void OwnDescendants( ModFileSystemA.Folder folder )
+    private static void OwnDescendants( ModFileSystem.Folder folder )
     {
         if( ImGui.MenuItem( "Stop Inheriting Descendants" ) )
         {
@@ -118,9 +119,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
 
 
     // Helpers.
-    private static void SetDescendants( ModFileSystemA.Folder folder, bool enabled, bool inherit = false )
+    private static void SetDescendants( ModFileSystem.Folder folder, bool enabled, bool inherit = false )
     {
-        var mods = folder.GetAllDescendants( SortMode.Lexicographical ).OfType< ModFileSystemA.Leaf >().Select( l => l.Value );
+        var mods = folder.GetAllDescendants( SortMode.Lexicographical ).OfType< ModFileSystem.Leaf >().Select( l => l.Value );
         if( inherit )
         {
             Penumbra.CollectionManager.Current.SetMultipleModInheritances( mods, enabled );
@@ -138,14 +139,14 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         SetFilterDirty();
         if( modIdx == Selected?.Index )
         {
-            OnSelectionChange( SelectedLeaf, SelectedLeaf, default );
+            OnSelectionChange( Selected, Selected, default );
         }
     }
 
     private void OnInheritanceChange( bool _ )
     {
         SetFilterDirty();
-        OnSelectionChange( SelectedLeaf, SelectedLeaf, default );
+        OnSelectionChange( Selected, Selected, default );
     }
 
     private void OnCollectionChange( ModCollection.Type type, ModCollection? oldCollection, ModCollection? newCollection, string? _ )
@@ -168,10 +169,10 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         }
 
         SetFilterDirty();
-        OnSelectionChange( SelectedLeaf, SelectedLeaf, default );
+        OnSelectionChange( Selected, Selected, default );
     }
 
-    private void OnSelectionChange( ModFileSystemA.Leaf? _1, ModFileSystemA.Leaf? newSelection, in ModState _2 )
+    private void OnSelectionChange( Mod2? _1, Mod2? newSelection, in ModState _2 )
     {
         if( newSelection == null )
         {
@@ -180,7 +181,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         }
         else
         {
-            ( var settings, SelectedSettingCollection ) = Penumbra.CollectionManager.Current[ newSelection.Value.Index ];
+            ( var settings, SelectedSettingCollection ) = Penumbra.CollectionManager.Current[ newSelection.Index ];
             SelectedSettings                            = settings ?? ModSettings2.Empty;
         }
     }
@@ -198,8 +199,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
     {
         if( _lastSelectedDirectory.Length > 0 )
         {
-            SelectedLeaf = ( ModFileSystemA.Leaf? )FileSystem.Root.GetAllDescendants( SortMode.Lexicographical )
-               .FirstOrDefault( l => l is ModFileSystemA.Leaf m && m.Value.BasePath.FullName == _lastSelectedDirectory );
+            SelectedLeaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( SortMode.Lexicographical )
+               .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.BasePath.FullName == _lastSelectedDirectory );
             _lastSelectedDirectory = string.Empty;
         }
     }

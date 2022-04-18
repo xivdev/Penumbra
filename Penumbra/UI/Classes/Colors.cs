@@ -15,11 +15,13 @@ public enum ColorId
     FolderExpanded,
     FolderCollapsed,
     FolderLine,
+    ItemId,
 }
 
 public static class Colors
 {
     public const uint PressEnterWarningBg = 0xFF202080;
+    public const uint RegexWarningBorder  = 0xFF0000B0;
 
     public static (uint DefaultColor, string Name, string Description) Data( this ColorId color )
         => color switch
@@ -36,6 +38,7 @@ public static class Colors
             ColorId.FolderExpanded       => ( 0xFFFFF0C0, "Expanded Mod Folder",            "A mod folder that is currently expanded." ),
             ColorId.FolderCollapsed      => ( 0xFFFFF0C0, "Collapsed Mod Folder",           "A mod folder that is currently collapsed." ),
             ColorId.FolderLine           => ( 0xFFFFF0C0, "Expanded Mod Folder Line",       "The line signifying which descendants belong to an expanded mod folder." ),
+            ColorId.ItemId               => ( 0xFF808080, "Item Id",                        "The numeric model id of the given item to the right of changed items." ),
             _                            => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
             // @formatter:on
         };

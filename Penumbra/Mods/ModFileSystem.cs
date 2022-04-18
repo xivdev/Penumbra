@@ -4,7 +4,7 @@ using OtterGui.Filesystem;
 
 namespace Penumbra.Mods;
 
-public sealed class ModFileSystemA : FileSystem< Mod2 >, IDisposable
+public sealed class ModFileSystem : FileSystem< Mod2 >, IDisposable
 {
     // Save the current sort order.
     // Does not save or copy the backup in the current mod directory,
@@ -13,9 +13,9 @@ public sealed class ModFileSystemA : FileSystem< Mod2 >, IDisposable
         => SaveToFile( new FileInfo( Mod2.Manager.ModFileSystemFile ), SaveMod, true );
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
-    public static ModFileSystemA Load()
+    public static ModFileSystem Load()
     {
-        var ret = new ModFileSystemA();
+        var ret = new ModFileSystem();
         ret.Reload();
 
         ret.Changed                              += ret.OnChange;

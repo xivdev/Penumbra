@@ -5,6 +5,8 @@ using ImGuiScene;
 
 namespace Penumbra.UI;
 
+// A Launch Button used in the title screen of the game,
+// using the Dalamud-provided collapsible submenu.
 public class LaunchButton : IDisposable
 {
     private readonly ConfigWindow                          _configWindow;

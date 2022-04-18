@@ -27,7 +27,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
         RespectCloseHotkey = true;
         SizeConstraints = new WindowSizeConstraints()
         {
-            MinimumSize = new Vector2( 1024, 768 ),
+            MinimumSize = new Vector2( 800, 600 ),
             MaximumSize = new Vector2( 4096, 2160 ),
         };
     }
@@ -39,6 +39,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
         DrawSettingsTab();
         DrawModsTab();
         DrawCollectionsTab();
+        DrawChangedItemTab();
         DrawEffectiveChangesTab();
         DrawDebugTab();
         DrawResourceManagerTab();
@@ -50,19 +51,14 @@ public sealed partial class ConfigWindow : Window, IDisposable
     }
 
     private static string GetLabel()
-    {
-        var version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "";
-        return version.Length == 0
+        => Penumbra.Version.Length == 0
             ? "Penumbra###PenumbraConfigWindow"
-            : $"Penumbra v{version}###PenumbraConfigWindow";
-    }
+            : $"Penumbra v{Penumbra.Version}###PenumbraConfigWindow";
 
-    private Vector2 _verticalSpace;
     private Vector2 _inputTextWidth;
 
     private void SetupSizes()
     {
-        _verticalSpace  = new Vector2( 0, 20f * ImGuiHelpers.GlobalScale );
-        _inputTextWidth = new Vector2( 450f   * ImGuiHelpers.GlobalScale, 0 );
+        _inputTextWidth = new Vector2( 350f   * ImGuiHelpers.GlobalScale, 0 );
     }
 }
