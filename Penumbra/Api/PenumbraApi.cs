@@ -66,6 +66,21 @@ namespace Penumbra.Api
             _penumbra!.ObjectReloader.RedrawObject( name, setting );
         }
 
+        public void RedrawObject( string name, string collection )
+        {
+            CheckInitialized();
+
+            var modManager = Service<ModManager>.Get();
+
+            if( modManager.Collections.Collections.TryGetValue( collection, out var characterCollection ) )
+            {
+                modManager.Collections.SetActiveCollection( characterCollection, name );
+
+                RedrawType setting = RedrawType.WithoutSettings;
+                _penumbra!.ObjectReloader.RedrawObject( name, setting );
+            }
+        }
+
         public void RedrawObject( GameObject? gameObject, RedrawType setting )
         {
             CheckInitialized();

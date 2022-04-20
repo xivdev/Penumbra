@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Dalamud.Logging;
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
@@ -17,7 +18,15 @@ namespace Penumbra.Api
         public async Task Redraw()
         {
             RedrawData data = await HttpContext.GetRequestDataAsync<RedrawData>();
-            _penumbra.Api.RedrawObject( data.Name, data.Type );
+
+            if( data.CharacterCollection == null )
+            {
+                _penumbra.Api.RedrawObject( data.Name, data.Type );
+            }
+            else
+            {
+                _penumbra.Api.RedrawObject( data.Name, data.CharacterCollection );
+            }
         }
 
         [Route( HttpVerbs.Post, "/redrawAll" )]
@@ -30,6 +39,7 @@ namespace Penumbra.Api
         {
             public string Name { get; set; } = string.Empty;
             public RedrawType Type { get; set; } = RedrawType.WithSettings;
+            public string? CharacterCollection { get; set; } = string.Empty;
         }
     }
 }

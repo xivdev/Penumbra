@@ -167,7 +167,8 @@ public class Penumbra : IDalamudPlugin
            .WithCors( prefix )
            .WithWebApi( "/api", m => m
                .WithController( () => new ModsController( this ) )
-               .WithController( () => new RedrawController( this ) ) );
+               .WithController( () => new RedrawController( this ) )
+               .WithController( () => new CollectionsController() ) );
 
         _webServer.StateChanged += ( _, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
 
