@@ -22,6 +22,7 @@ public static class Colors
 {
     public const uint PressEnterWarningBg = 0xFF202080;
     public const uint RegexWarningBorder  = 0xFF0000B0;
+    public const uint MetaInfoText        = 0xAAFFFFFF;
 
     public static (uint DefaultColor, string Name, string Description) Data( this ColorId color )
         => color switch

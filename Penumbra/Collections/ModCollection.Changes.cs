@@ -137,7 +137,7 @@ public partial class ModCollection
             return false;
         }
 
-        _settings[ idx ] = inherit ? null : this[ idx ].Settings ?? ModSettings2.DefaultSettings( Penumbra.ModManager.Mods[ idx ] );
+        _settings[ idx ] = inherit ? null : this[ idx ].Settings?.DeepCopy() ?? ModSettings2.DefaultSettings( Penumbra.ModManager.Mods[ idx ] );
         return true;
     }
 

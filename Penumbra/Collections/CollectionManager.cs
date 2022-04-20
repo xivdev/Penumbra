@@ -81,6 +81,29 @@ public partial class ModCollection
             _modManager.ModPathChanged       -= OnModPathChanged;
         }
 
+        // Returns true if the name is not empty, it is not the name of the empty collection
+        // and no existing collection results in the same filename as name.
+        public bool CanAddCollection( string name, out string fixedName )
+        {
+            if( name.Length == 0 )
+            {
+                fixedName = string.Empty;
+                return false;
+            }
+
+            name = name.RemoveInvalidPathSymbols().ToLowerInvariant();
+            if( name.Length == 0
+            || name         == Empty.Name.ToLowerInvariant()
+            || _collections.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == name ) )
+            {
+                fixedName = string.Empty;
+                return false;
+            }
+
+            fixedName = name;
+            return true;
+        }
+
         // Add a new collection of the given name.
         // If duplicate is not-null, the new collection will be a duplicate of it.
         // If the name of the collection would result in an already existing filename, skip it.
@@ -88,12 +111,9 @@ public partial class ModCollection
         // Also sets the current collection to the new collection afterwards.
         public bool AddCollection( string name, ModCollection? duplicate )
         {
-            var nameFixed = name.RemoveInvalidPathSymbols().ToLowerInvariant();
-            if( nameFixed.Length == 0
-            || nameFixed         == Empty.Name.ToLowerInvariant()
-            || _collections.Any( c => c.Name.RemoveInvalidPathSymbols().ToLowerInvariant() == nameFixed ) )
+            if( !CanAddCollection( name, out var fixedName ) )
             {
-                PluginLog.Warning( $"The new collection {name} would lead to the same path as one that already exists." );
+                PluginLog.Warning( $"The new collection {name} would lead to the same path {fixedName} as one that already exists." );
                 return false;
             }
 
@@ -108,6 +128,7 @@ public partial class ModCollection
 
         // Remove the given collection if it exists and is neither the empty nor the default-named collection.
         // If the removed collection was active, it also sets the corresponding collection to the appropriate default.
+        // Also removes the collection from inheritances of all other collections.
         public bool RemoveCollection( int idx )
         {
             if( idx <= Empty.Index || idx >= _collections.Count )
@@ -140,9 +161,18 @@ public partial class ModCollection
             var collection = _collections[ idx ];
             collection.Delete();
             _collections.RemoveAt( idx );
-            for( var i = idx; i < _collections.Count; ++i )
+            foreach( var c in _collections )
             {
-                --_collections[ i ].Index;
+                var inheritedIdx = c._inheritance.IndexOf( collection );
+                if( inheritedIdx >= 0 )
+                {
+                    c.RemoveInheritance( inheritedIdx );
+                }
+
+                if( c.Index > idx )
+                {
+                    --c.Index;
+                }
             }
 
             CollectionChanged.Invoke( Type.Inactive, collection, null );

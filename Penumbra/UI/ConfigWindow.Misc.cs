@@ -43,8 +43,16 @@ public partial class ConfigWindow
 
         if( _penumbra.Api.HasTooltip && ImGui.IsItemHovered() )
         {
-            using var tt = ImRaii.Tooltip();
+            // We can not be sure that any subscriber actually prints something in any case.
+            // Circumvent ugly blank tooltip with less-ugly useless tooltip.
+            using var tt    = ImRaii.Tooltip();
+            using var group = ImRaii.Group();
             _penumbra.Api.InvokeTooltip( data );
+            group.Dispose();
+            if( ImGui.GetItemRectSize() == Vector2.Zero )
+            {
+                ImGui.Text( "No actions available." );
+            }
         }
 
         if( data is Item it )

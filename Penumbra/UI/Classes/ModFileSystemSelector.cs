@@ -48,6 +48,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         Penumbra.CollectionManager.CollectionChanged          -= OnCollectionChange;
     }
 
+    public new ModFileSystem.Leaf? SelectedLeaf
+        => base.SelectedLeaf;
+
     // Customization points.
     public override SortMode SortMode
         => Penumbra.Config.SortMode;
@@ -199,7 +202,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
     {
         if( _lastSelectedDirectory.Length > 0 )
         {
-            SelectedLeaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( SortMode.Lexicographical )
+            base.SelectedLeaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( SortMode.Lexicographical )
                .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.BasePath.FullName == _lastSelectedDirectory );
             _lastSelectedDirectory = string.Empty;
         }

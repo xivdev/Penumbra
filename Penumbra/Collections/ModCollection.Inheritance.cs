@@ -23,23 +23,57 @@ public partial class ModCollection
     // Iterate over all collections inherited from in depth-first order.
     // Skip already visited collections to avoid circular dependencies.
     public IEnumerable< ModCollection > GetFlattenedInheritance()
-    {
-        yield return this;
+        => InheritedCollections( this ).Distinct();
 
-        foreach( var collection in _inheritance.SelectMany( c => c.GetFlattenedInheritance() )
-                   .Where( c => !ReferenceEquals( this, c ) )
-                   .Distinct() )
-        {
-            yield return collection;
-        }
+    // All inherited collections in application order without filtering for duplicates.
+    private static IEnumerable< ModCollection > InheritedCollections( ModCollection collection )
+        => collection.Inheritance.SelectMany( InheritedCollections ).Prepend( collection );
+
+    // Reasons why a collection can not be inherited from.
+    public enum ValidInheritance
+    {
+        Valid,
+        Self,      // Can not inherit from self
+        Empty,     // Can not inherit from the empty collection
+        Contained, // Already inherited from
+        Circle,    // Inheritance would lead to a circle.
     }
+
+    // Check whether a collection can be inherited from.
+    public ValidInheritance CheckValidInheritance( ModCollection? collection )
+    {
+        if( collection == null || ReferenceEquals( collection, Empty ) )
+        {
+            return ValidInheritance.Empty;
+        }
+
+        if( ReferenceEquals( collection, this ) )
+        {
+            return ValidInheritance.Self;
+        }
+
+        if( _inheritance.Contains( collection ) )
+        {
+            return ValidInheritance.Contained;
+        }
+
+        if( InheritedCollections( collection ).Any( c => c == this ) )
+        {
+            return ValidInheritance.Circle;
+        }
+
+        return ValidInheritance.Valid;
+    }
+
+    private bool CheckForCircle( ModCollection collection )
+        => ReferenceEquals( collection, this ) || _inheritance.Any( c => c.CheckForCircle( collection ) );
 
     // Add a new collection to the inheritance list.
     // We do not check if this collection would be visited before,
     // only that it is unique in the list itself.
     public bool AddInheritance( ModCollection collection )
     {
-        if( ReferenceEquals( collection, this ) || _inheritance.Contains( collection ) )
+        if( CheckValidInheritance( collection ) != ValidInheritance.Valid )
         {
             return false;
         }

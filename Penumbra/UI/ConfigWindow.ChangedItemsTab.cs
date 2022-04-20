@@ -11,8 +11,19 @@ public partial class ConfigWindow
 {
     private LowerString _changedItemFilter = LowerString.Empty;
 
-    public void DrawChangedItemTab()
+    // Draw a simple clipped table containing all changed items.
+    private void DrawChangedItemTab()
     {
+        // Functions in here for less pollution.
+        bool FilterChangedItem( KeyValuePair< string, object? > item )
+            => item.Key.Contains( _changedItemFilter.Lower, StringComparison.InvariantCultureIgnoreCase );
+
+        void DrawChangedItemColumn( KeyValuePair< string, object? > item )
+        {
+            ImGui.TableNextColumn();
+            DrawChangedItem( item.Key, item.Value, ImGui.GetStyle().ScrollbarSize );
+        }
+
         using var tab = ImRaii.TabItem( "Changed Items" );
         if( !tab )
         {
@@ -36,19 +47,10 @@ public partial class ConfigWindow
             return;
         }
 
-        var items  = Penumbra.CollectionManager.Default.ChangedItems;
+        var items = Penumbra.CollectionManager.Default.ChangedItems;
         var rest = _changedItemFilter.IsEmpty
-            ? ImGuiClip.ClippedDraw( items, skips, DrawChangedItem, items.Count )
-            : ImGuiClip.FilteredClippedDraw( items, skips, FilterChangedItem, DrawChangedItem );
+            ? ImGuiClip.ClippedDraw( items, skips, DrawChangedItemColumn, items.Count )
+            : ImGuiClip.FilteredClippedDraw( items, skips, FilterChangedItem, DrawChangedItemColumn );
         ImGuiClip.DrawEndDummy( rest, height );
-    }
-
-    private bool FilterChangedItem( KeyValuePair< string, object? > item )
-        => item.Key.Contains( _changedItemFilter.Lower, StringComparison.InvariantCultureIgnoreCase );
-
-    private void DrawChangedItem( KeyValuePair< string, object? > item )
-    {
-        ImGui.TableNextColumn();
-        DrawChangedItem( item.Key, item.Value, ImGui.GetStyle().ScrollbarSize );
     }
 }
