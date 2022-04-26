@@ -45,13 +45,13 @@ public sealed partial class ModCollection
         }
 
         // We treat every completely defaulted setting as inheritance-ready.
-        private static bool SettingIsDefaultV0( ModSettings2.SavedSettings setting )
+        private static bool SettingIsDefaultV0( ModSettings.SavedSettings setting )
             => setting is { Enabled: false, Priority: 0 } && setting.Settings.Values.All( s => s == 0 );
 
-        private static bool SettingIsDefaultV0( ModSettings2? setting )
+        private static bool SettingIsDefaultV0( ModSettings? setting )
             => setting is { Enabled: false, Priority: 0 } && setting.Settings.All( s => s == 0 );
     }
 
-    internal static ModCollection MigrateFromV0( string name, Dictionary< string, ModSettings2.SavedSettings > allSettings )
+    internal static ModCollection MigrateFromV0( string name, Dictionary< string, ModSettings.SavedSettings > allSettings )
         => new(name, 0, allSettings);
 }

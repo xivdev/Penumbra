@@ -1,19 +1,20 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using OtterGui.Filesystem;
 
 namespace Penumbra.Mods;
 
-
 // Contains the settings for a given mod.
-public class ModSettings2
+public class ModSettings
 {
-    public static readonly ModSettings2 Empty = new();
+    public static readonly ModSettings Empty = new();
     public List< uint > Settings { get; init; } = new();
     public int Priority { get; set; }
     public bool Enabled { get; set; }
 
-    public ModSettings2 DeepCopy()
+    public ModSettings DeepCopy()
         => new()
         {
             Enabled  = Enabled,
@@ -21,7 +22,7 @@ public class ModSettings2
             Settings = Settings.ToList(),
         };
 
-    public static ModSettings2 DefaultSettings( Mod2 mod )
+    public static ModSettings DefaultSettings( Mod mod )
         => new()
         {
             Enabled  = false,
@@ -29,19 +30,31 @@ public class ModSettings2
             Settings = Enumerable.Repeat( 0u, mod.Groups.Count ).ToList(),
         };
 
-
-
-    public void HandleChanges( ModOptionChangeType type, Mod2 mod, int groupIdx, int optionIdx )
+    public bool HandleChanges( ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx )
     {
         switch( type )
         {
+            case ModOptionChangeType.GroupRenamed: return true;
             case ModOptionChangeType.GroupAdded:
                 Settings.Insert( groupIdx, 0 );
-                break;
+                return true;
             case ModOptionChangeType.GroupDeleted:
                 Settings.RemoveAt( groupIdx );
-                break;
+                return true;
+            case ModOptionChangeType.GroupTypeChanged:
+            {
+                var group  = mod.Groups[ groupIdx ];
+                var config = Settings[ groupIdx ];
+                Settings[ groupIdx ] = group.Type switch
+                {
+                    SelectType.Single => ( uint )Math.Min( group.Count - 1, BitOperations.TrailingZeroCount( config ) ),
+                    SelectType.Multi  => 1u << ( int )config,
+                    _                 => config,
+                };
+                return config != Settings[ groupIdx ];
+            }
             case ModOptionChangeType.OptionDeleted:
+            {
                 var group  = mod.Groups[ groupIdx ];
                 var config = Settings[ groupIdx ];
                 Settings[ groupIdx ] = group.Type switch
@@ -50,20 +63,38 @@ public class ModSettings2
                     SelectType.Multi  => RemoveBit( config, optionIdx ),
                     _                 => config,
                 };
-                break;
+                return config != Settings[ groupIdx ];
+            }
+            case ModOptionChangeType.GroupMoved: return Settings.Move( groupIdx, movedToIdx );
+            case ModOptionChangeType.OptionMoved:
+            {
+                var group  = mod.Groups[ groupIdx ];
+                var config = Settings[ groupIdx ];
+                Settings[ groupIdx ] = group.Type switch
+                {
+                    SelectType.Single => config == optionIdx ? ( uint )movedToIdx : config,
+                    SelectType.Multi  => MoveBit( config, optionIdx, movedToIdx ),
+                    _                 => config,
+                };
+                return config != Settings[ groupIdx ];
+            }
+            default: return false;
         }
     }
 
-    public void SetValue( Mod2 mod, int groupIdx, uint newValue )
+    private static uint FixSetting( IModGroup group, uint value )
+        => group.Type switch
+        {
+            SelectType.Single => ( uint )Math.Min( value, group.Count     - 1 ),
+            SelectType.Multi  => ( uint )( value & ( ( 1 << group.Count ) - 1 ) ),
+            _                 => value,
+        };
+
+    public void SetValue( Mod mod, int groupIdx, uint newValue )
     {
         AddMissingSettings( groupIdx + 1 );
         var group = mod.Groups[ groupIdx ];
-        Settings[ groupIdx ] = group.Type switch
-        {
-            SelectType.Single => ( uint )Math.Max( newValue, group.Count ),
-            SelectType.Multi  => ( ( 1u << group.Count ) - 1 ) & newValue,
-            _                 => newValue,
-        };
+        Settings[ groupIdx ] = FixSetting( group, newValue );
     }
 
     private static uint RemoveBit( uint config, int bit )
@@ -73,6 +104,16 @@ public class ModSettings2
         var low      = config & lowMask;
         var high     = ( config & highMask ) >> 1;
         return low | high;
+    }
+
+    private static uint MoveBit( uint config, int bit1, int bit2 )
+    {
+        var enabled = ( config & ( 1 << bit1 ) ) != 0 ? 1u << bit2 : 0u;
+        config = RemoveBit( config, bit1 );
+        var lowMask = ( 1u << bit2 ) - 1u;
+        var low     = config & lowMask;
+        var high    = ( config & ~lowMask ) << 1;
+        return low | enabled | high;
     }
 
     internal bool AddMissingSettings( int totalCount )
@@ -100,7 +141,7 @@ public class ModSettings2
                 Settings = Settings.ToDictionary( kvp => kvp.Key, kvp => kvp.Value ),
             };
 
-        public SavedSettings( ModSettings2 settings, Mod2 mod )
+        public SavedSettings( ModSettings settings, Mod mod )
         {
             Priority = settings.Priority;
             Enabled  = settings.Enabled;
@@ -113,7 +154,7 @@ public class ModSettings2
             }
         }
 
-        public bool ToSettings( Mod2 mod, out ModSettings2 settings )
+        public bool ToSettings( Mod mod, out ModSettings settings )
         {
             var list    = new List< uint >( mod.Groups.Count );
             var changes = Settings.Count != mod.Groups.Count;
@@ -121,7 +162,12 @@ public class ModSettings2
             {
                 if( Settings.TryGetValue( group.Name, out var config ) )
                 {
-                    list.Add( config );
+                    var actualConfig = FixSetting( group, config );
+                    list.Add( actualConfig );
+                    if( actualConfig != config )
+                    {
+                        changes = true;
+                    }
                 }
                 else
                 {
@@ -130,7 +176,7 @@ public class ModSettings2
                 }
             }
 
-            settings = new ModSettings2
+            settings = new ModSettings
             {
                 Enabled  = Enabled,
                 Priority = Priority,

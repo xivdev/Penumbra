@@ -47,7 +47,7 @@ public partial class ConfigWindow
             DrawAdvancedSettings();
         }
 
-        private          string?           _settingsNewModDirectory;
+        private          string?           _newModDirectory;
         private readonly FileDialogManager _dialogManager = new();
         private          bool              _dialogOpen;
 
@@ -70,12 +70,18 @@ public partial class ConfigWindow
                 }
                 else
                 {
-                    // TODO
-                    //_dialogManager.OpenFolderDialog( "Choose Mod Directory", ( b, s ) =>
-                    //{
-                    //    _newModDirectory = b ? s : _newModDirectory;
-                    //    _dialogOpen      = false;
-                    //}, _newModDirectory, false);
+                    _newModDirectory ??= Penumbra.Config.ModDirectory;
+                    var startDir = Directory.Exists( _newModDirectory )
+                        ? _newModDirectory
+                        : Directory.Exists( Penumbra.Config.ModDirectory )
+                            ? Penumbra.Config.ModDirectory
+                            : ".";
+
+                    _dialogManager.OpenFolderDialog( "Choose Mod Directory", ( b, s ) =>
+                    {
+                        _newModDirectory = b ? s : _newModDirectory;
+                        _dialogOpen      = false;
+                    }, startDir );
                     _dialogOpen = true;
                 }
             }
@@ -99,12 +105,12 @@ public partial class ConfigWindow
 
         private void DrawRootFolder()
         {
-            _settingsNewModDirectory ??= Penumbra.Config.ModDirectory;
+            _newModDirectory ??= Penumbra.Config.ModDirectory;
 
             var       spacing = 3 * ImGuiHelpers.GlobalScale;
             using var group   = ImRaii.Group();
             ImGui.SetNextItemWidth( _window._inputTextWidth.X - spacing - ImGui.GetFrameHeight() );
-            var       save  = ImGui.InputText( "##rootDirectory", ref _settingsNewModDirectory, 255, ImGuiInputTextFlags.EnterReturnsTrue );
+            var       save  = ImGui.InputText( "##rootDirectory", ref _newModDirectory, 255, ImGuiInputTextFlags.EnterReturnsTrue );
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( spacing, 0 ) );
             ImGui.SameLine();
             DrawDirectoryPickerButton();
@@ -121,14 +127,14 @@ public partial class ConfigWindow
             var pos = ImGui.GetCursorPosX();
             ImGui.NewLine();
 
-            if( Penumbra.Config.ModDirectory == _settingsNewModDirectory || _settingsNewModDirectory.Length == 0 )
+            if( Penumbra.Config.ModDirectory == _newModDirectory || _newModDirectory.Length == 0 )
             {
                 return;
             }
 
             if( save || DrawPressEnterWarning( Penumbra.Config.ModDirectory, pos ) )
             {
-                Penumbra.ModManager.DiscoverMods( _settingsNewModDirectory );
+                Penumbra.ModManager.DiscoverMods( _newModDirectory );
             }
         }
 
@@ -137,12 +143,13 @@ public partial class ConfigWindow
         {
             DrawOpenDirectoryButton( 0, Penumbra.ModManager.BasePath, Penumbra.ModManager.Valid );
             ImGui.SameLine();
-            if( ImGui.Button( "Rediscover Mods" ) )
+            var tt = Penumbra.ModManager.Valid
+                ? "Force Penumbra to completely re-scan your root directory as if it was restarted."
+                : "The currently selected folder is not valid. Please select a different folder.";
+            if( ImGuiUtil.DrawDisabledButton( "Rediscover Mods", Vector2.Zero, tt, !Penumbra.ModManager.Valid ) )
             {
                 Penumbra.ModManager.DiscoverMods();
             }
-
-            ImGuiUtil.HoverTooltip( "Force Penumbra to completely re-scan your root directory as if it was restarted." );
         }
 
         private void DrawEnabledBox()

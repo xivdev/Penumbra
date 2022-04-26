@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using OtterGui.Filesystem;
 using Penumbra.Mods;
 using Penumbra.Util;
 
@@ -27,7 +28,7 @@ public partial class ModCollection
         public delegate void CollectionChangeDelegate( Type type, ModCollection? oldCollection, ModCollection? newCollection,
             string? characterName = null );
 
-        private readonly Mod2.Manager _modManager;
+        private readonly Mod.Manager _modManager;
 
         // The empty collection is always available and always has index 0.
         // It can not be deleted or moved.
@@ -59,7 +60,7 @@ public partial class ModCollection
         public IEnumerable< ModCollection > GetEnumeratorWithEmpty()
             => _collections;
 
-        public Manager( Mod2.Manager manager )
+        public Manager( Mod.Manager manager )
         {
             _modManager = manager;
 
@@ -207,7 +208,7 @@ public partial class ModCollection
 
 
         // A changed mod path forces changes for all collections, active and inactive.
-        private void OnModPathChanged( ModPathChangeType type, Mod2 mod, DirectoryInfo? oldDirectory,
+        private void OnModPathChanged( ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
             DirectoryInfo? newDirectory )
         {
             switch( type )
@@ -221,10 +222,10 @@ public partial class ModCollection
                     OnModAddedActive( mod.TotalManipulations > 0 );
                     break;
                 case ModPathChangeType.Deleted:
-                    var settings = new List< ModSettings2? >( _collections.Count );
+                    var settings = new List< ModSettings? >( _collections.Count );
                     foreach( var collection in this )
                     {
-                        settings.Add( collection[ mod.Index ].Settings );
+                        settings.Add( collection._settings[ mod.Index ] );
                         collection.RemoveMod( mod, mod.Index );
                     }
 
@@ -242,26 +243,50 @@ public partial class ModCollection
             }
         }
 
-
-        private void OnModOptionsChanged( ModOptionChangeType type, Mod2 mod, int groupIdx, int optionIdx )
+        // Automatically update all relevant collections when a mod is changed.
+        // This means saving if options change in a way where the settings may change and the collection has settings for this mod.
+        // And also updating effective file and meta manipulation lists if necessary.
+        private void OnModOptionsChanged( ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx )
         {
-            if( type == ModOptionChangeType.DisplayChange )
+            var (handleChanges, recomputeList, withMeta) = type switch
             {
-                return;
+                ModOptionChangeType.GroupRenamed       => ( true, false, false ),
+                ModOptionChangeType.GroupAdded         => ( true, false, false ),
+                ModOptionChangeType.GroupDeleted       => ( true, true, true ),
+                ModOptionChangeType.GroupMoved         => ( true, false, false ),
+                ModOptionChangeType.GroupTypeChanged   => ( true, true, true ),
+                ModOptionChangeType.PriorityChanged    => ( true, true, true ),
+                ModOptionChangeType.OptionAdded        => ( true, true, true ),
+                ModOptionChangeType.OptionDeleted      => ( true, true, true ),
+                ModOptionChangeType.OptionMoved        => ( true, false, false ),
+                ModOptionChangeType.OptionFilesChanged => ( false, true, false ),
+                ModOptionChangeType.OptionSwapsChanged => ( false, true, false ),
+                ModOptionChangeType.OptionMetaChanged  => ( false, true, true ),
+                ModOptionChangeType.OptionUpdated      => ( false, true, true ),
+                ModOptionChangeType.DisplayChange      => ( false, false, false ),
+                _                                      => ( false, false, false ),
+            };
+
+            if( handleChanges )
+            {
+                foreach( var collection in this )
+                {
+                    if( collection._settings[ mod.Index ]?.HandleChanges( type, mod, groupIdx, optionIdx, movedToIdx ) ?? false )
+                    {
+                        collection.Save();
+                    }
+                }
             }
 
-            // TODO
-            switch( type )
+            if( recomputeList )
             {
-                case ModOptionChangeType.GroupRenamed:
-                case ModOptionChangeType.GroupAdded:
-                case ModOptionChangeType.GroupDeleted:
-                case ModOptionChangeType.PriorityChanged:
-                case ModOptionChangeType.OptionAdded:
-                case ModOptionChangeType.OptionDeleted:
-                case ModOptionChangeType.OptionChanged:
-                default:
-                    throw new ArgumentOutOfRangeException( nameof( type ), type, null );
+                foreach( var collection in this.Where( c => c.HasCache ) )
+                {
+                    if( collection[ mod.Index ].Settings is { Enabled: true } )
+                    {
+                        collection.CalculateEffectiveFileList( withMeta, collection == Penumbra.CollectionManager.Default );
+                    }
+                }
             }
         }
 

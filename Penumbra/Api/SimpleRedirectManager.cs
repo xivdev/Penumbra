@@ -48,7 +48,7 @@ public class SimpleRedirectManager
             return RedirectResult.NoPermission;
         }
 
-        if( Mod2.FilterFile( path ) )
+        if( Mod.FilterFile( path ) )
         {
             return RedirectResult.FilteredGamePath;
         }

@@ -4,6 +4,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;

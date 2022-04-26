@@ -6,19 +6,18 @@ using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
-using Penumbra.Importer;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
-public sealed partial class Mod2
+public sealed partial class Mod
 {
     private static class Migration
     {
-        public static bool Migrate( Mod2 mod, JObject json )
+        public static bool Migrate( Mod mod, JObject json )
             => MigrateV0ToV1( mod, json );
 
-        private static bool MigrateV0ToV1( Mod2 mod, JObject json )
+        private static bool MigrateV0ToV1( Mod mod, JObject json )
         {
             if( mod.FileVersion > 0 )
             {
@@ -27,14 +26,15 @@ public sealed partial class Mod2
 
             var swaps = json[ "FileSwaps" ]?.ToObject< Dictionary< Utf8GamePath, FullPath > >()
              ?? new Dictionary< Utf8GamePath, FullPath >();
-            var groups   = json[ "Groups" ]?.ToObject< Dictionary< string, OptionGroupV0 > >() ?? new Dictionary< string, OptionGroupV0 >();
+            var groups = json[ "Groups" ]?.ToObject< Dictionary< string, OptionGroupV0 > >() ?? new Dictionary< string, OptionGroupV0 >();
             var priority = 1;
+            var seenMetaFiles = new HashSet< FullPath >();
             foreach( var group in groups.Values )
             {
-                ConvertGroup( mod, group, ref priority );
+                ConvertGroup( mod, group, ref priority, seenMetaFiles );
             }
 
-            foreach( var unusedFile in mod.FindUnusedFiles() )
+            foreach( var unusedFile in mod.FindUnusedFiles().Where( f => !seenMetaFiles.Contains( f ) ) )
             {
                 if( unusedFile.ToGamePath( mod.BasePath, out var gamePath )
                 && !mod._default.FileData.TryAdd( gamePath, unusedFile ) )
@@ -61,7 +61,7 @@ public sealed partial class Mod2
             return true;
         }
 
-        private static void ConvertGroup( Mod2 mod, OptionGroupV0 group, ref int priority )
+        private static void ConvertGroup( Mod mod, OptionGroupV0 group, ref int priority, HashSet< FullPath > seenMetaFiles )
         {
             if( group.Options.Count == 0 )
             {
@@ -82,14 +82,14 @@ public sealed partial class Mod2
                     mod._groups.Add( newMultiGroup );
                     foreach( var option in group.Options )
                     {
-                        newMultiGroup.PrioritizedOptions.Add( ( SubModFromOption( mod.BasePath, option ), optionPriority++ ) );
+                        newMultiGroup.PrioritizedOptions.Add( ( SubModFromOption( mod.BasePath, option, seenMetaFiles ), optionPriority++ ) );
                     }
 
                     break;
                 case SelectType.Single:
                     if( group.Options.Count == 1 )
                     {
-                        AddFilesToSubMod( mod._default, mod.BasePath, group.Options[ 0 ] );
+                        AddFilesToSubMod( mod._default, mod.BasePath, group.Options[ 0 ], seenMetaFiles );
                         return;
                     }
 
@@ -102,28 +102,34 @@ public sealed partial class Mod2
                     mod._groups.Add( newSingleGroup );
                     foreach( var option in group.Options )
                     {
-                        newSingleGroup.OptionData.Add( SubModFromOption( mod.BasePath, option ) );
+                        newSingleGroup.OptionData.Add( SubModFromOption( mod.BasePath, option, seenMetaFiles ) );
                     }
 
                     break;
             }
         }
 
-        private static void AddFilesToSubMod( SubMod mod, DirectoryInfo basePath, OptionV0 option )
+        private static void AddFilesToSubMod( SubMod mod, DirectoryInfo basePath, OptionV0 option, HashSet< FullPath > seenMetaFiles )
         {
             foreach( var (relPath, gamePaths) in option.OptionFiles )
             {
+                var fullPath = new FullPath( basePath, relPath );
                 foreach( var gamePath in gamePaths )
                 {
-                    mod.FileData.TryAdd( gamePath, new FullPath( basePath, relPath ) );
+                    mod.FileData.TryAdd( gamePath, fullPath );
+                }
+
+                if( fullPath.Extension is ".meta" or ".rgsp" )
+                {
+                    seenMetaFiles.Add( fullPath );
                 }
             }
         }
 
-        private static SubMod SubModFromOption( DirectoryInfo basePath, OptionV0 option )
+        private static SubMod SubModFromOption( DirectoryInfo basePath, OptionV0 option, HashSet< FullPath > seenMetaFiles )
         {
-            var subMod = new SubMod() { Name = option.OptionName };
-            AddFilesToSubMod( subMod, basePath, option );
+            var subMod = new SubMod { Name = option.OptionName };
+            AddFilesToSubMod( subMod, basePath, option, seenMetaFiles );
             subMod.IncorporateMetaChanges( basePath, false );
             return subMod;
         }
@@ -151,6 +157,46 @@ public sealed partial class Mod2
 
             public OptionGroupV0()
             { }
+        }
+
+        // Not used anymore, but required for migration.
+        private class SingleOrArrayConverter< T > : JsonConverter
+        {
+            public override bool CanConvert( Type objectType )
+                => objectType == typeof( HashSet< T > );
+
+            public override object ReadJson( JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer )
+            {
+                var token = JToken.Load( reader );
+
+                if( token.Type == JTokenType.Array )
+                {
+                    return token.ToObject< HashSet< T > >() ?? new HashSet< T >();
+                }
+
+                var tmp = token.ToObject< T >();
+                return tmp != null
+                    ? new HashSet< T > { tmp }
+                    : new HashSet< T >();
+            }
+
+            public override bool CanWrite
+                => true;
+
+            public override void WriteJson( JsonWriter writer, object? value, JsonSerializer serializer )
+            {
+                writer.WriteStartArray();
+                if( value != null )
+                {
+                    var v = ( HashSet< T > )value;
+                    foreach( var val in v )
+                    {
+                        serializer.Serialize( writer, val?.ToString() );
+                    }
+                }
+
+                writer.WriteEndArray();
+            }
         }
     }
 }

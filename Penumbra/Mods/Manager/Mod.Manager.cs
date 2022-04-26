@@ -4,22 +4,22 @@ using System.Collections.Generic;
 
 namespace Penumbra.Mods;
 
-public sealed partial class Mod2
+public sealed partial class Mod
 {
-    public sealed partial class Manager : IEnumerable< Mod2 >
+    public sealed partial class Manager : IEnumerable< Mod >
     {
-        private readonly List< Mod2 > _mods = new();
+        private readonly List< Mod > _mods = new();
 
-        public Mod2 this[ Index idx ]
+        public Mod this[ Index idx ]
             => _mods[ idx ];
 
-        public IReadOnlyList< Mod2 > Mods
+        public IReadOnlyList< Mod > Mods
             => _mods;
 
         public int Count
             => _mods.Count;
 
-        public IEnumerator< Mod2 > GetEnumerator()
+        public IEnumerator< Mod > GetEnumerator()
             => _mods.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator()

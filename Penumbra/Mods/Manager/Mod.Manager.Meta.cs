@@ -2,11 +2,11 @@ using System;
 
 namespace Penumbra.Mods;
 
-public sealed partial class Mod2
+public sealed partial class Mod
 {
     public partial class Manager
     {
-        public delegate void ModMetaChangeDelegate( MetaChangeType type, Mod2 mod );
+        public delegate void ModMetaChangeDelegate( MetaChangeType type, Mod mod, string? oldName );
         public event ModMetaChangeDelegate? ModMetaChanged;
 
         public void ChangeModName( Index idx, string newName )
@@ -14,9 +14,10 @@ public sealed partial class Mod2
             var mod = this[ idx ];
             if( mod.Name != newName )
             {
+                var oldName = mod.Name;
                 mod.Name = newName;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Name, mod );
+                ModMetaChanged?.Invoke( MetaChangeType.Name, mod, oldName.Text );
             }
         }
 
@@ -27,7 +28,7 @@ public sealed partial class Mod2
             {
                 mod.Author = newAuthor;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Author, mod );
+                ModMetaChanged?.Invoke( MetaChangeType.Author, mod, null );
             }
         }
 
@@ -38,7 +39,7 @@ public sealed partial class Mod2
             {
                 mod.Description = newDescription;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Description, mod );
+                ModMetaChanged?.Invoke( MetaChangeType.Description, mod, null );
             }
         }
 
@@ -49,7 +50,7 @@ public sealed partial class Mod2
             {
                 mod.Version = newVersion;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Version, mod );
+                ModMetaChanged?.Invoke( MetaChangeType.Version, mod, null );
             }
         }
 
@@ -60,7 +61,7 @@ public sealed partial class Mod2
             {
                 mod.Website = newWebsite;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Website, mod );
+                ModMetaChanged?.Invoke( MetaChangeType.Website, mod, null );
             }
         }
     }

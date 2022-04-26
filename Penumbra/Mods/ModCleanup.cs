@@ -7,7 +7,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
-using Penumbra.Importer;
+using Penumbra.Import;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;

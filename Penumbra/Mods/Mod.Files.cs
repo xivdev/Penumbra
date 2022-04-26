@@ -9,7 +9,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Mods;
 
-public partial class Mod2
+public partial class Mod
 {
     public ISubMod Default
         => _default;

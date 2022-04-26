@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Dalamud.Logging;
+using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manager;
 
@@ -64,8 +65,8 @@ public partial class ModCollection
     internal IReadOnlyList< ConflictCache.Conflict > Conflicts
         => _cache?.Conflicts.Conflicts ?? Array.Empty< ConflictCache.Conflict >();
 
-    internal IEnumerable< ConflictCache.Conflict > ModConflicts( int modIdx )
-        => _cache?.Conflicts.ModConflicts( modIdx ) ?? Array.Empty< ConflictCache.Conflict >();
+    internal SubList< ConflictCache.Conflict > ModConflicts( int modIdx )
+        => _cache?.Conflicts.ModConflicts( modIdx ) ?? SubList< ConflictCache.Conflict >.Empty;
 
     // Update the effective file list for the given cache.
     // Creates a cache if necessary.

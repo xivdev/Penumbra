@@ -1,11 +1,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 
 namespace Penumbra.Util;
 
 public static class ArrayExtensions
 {
+    public static IEnumerable< (T, int) > WithIndex< T >( this IEnumerable< T > list )
+        => list.Select( ( x, i ) => ( x, i ) );
+
     public static int IndexOf< T >( this IReadOnlyList< T > array, Predicate< T > predicate )
     {
         for( var i = 0; i < array.Count; ++i )
@@ -60,36 +64,5 @@ public static class ArrayExtensions
 
         result = default;
         return false;
-    }
-
-    public static bool Move< T >( this IList< T > list, int idx1, int idx2 )
-    {
-        idx1 = Math.Clamp( idx1, 0, list.Count - 1 );
-        idx2 = Math.Clamp( idx2, 0, list.Count - 1 );
-        if( idx1 == idx2 )
-        {
-            return false;
-        }
-
-        var tmp = list[ idx1 ];
-        // move element down and shift other elements up
-        if( idx1 < idx2 )
-        {
-            for( var i = idx1; i < idx2; i++ )
-            {
-                list[ i ] = list[ i + 1 ];
-            }
-        }
-        // move element up and shift other elements down
-        else
-        {
-            for( var i = idx1; i > idx2; i-- )
-            {
-                list[ i ] = list[ i - 1 ];
-            }
-        }
-
-        list[ idx2 ] = tmp;
-        return true;
     }
 }

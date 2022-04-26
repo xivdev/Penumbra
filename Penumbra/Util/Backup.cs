@@ -66,12 +66,12 @@ public static class Backup
         {
             ++count;
             var time = file.CreationTimeUtc;
-            if( ( oldest?.CreationTimeUtc ?? DateTime.MinValue ) < time )
+            if( ( oldest?.CreationTimeUtc ?? DateTime.MaxValue ) > time )
             {
                 oldest = file;
             }
 
-            if( ( newest?.CreationTimeUtc ?? DateTime.MaxValue ) > time )
+            if( ( newest?.CreationTimeUtc ?? DateTime.MinValue ) < time )
             {
                 newest = file;
             }

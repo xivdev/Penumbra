@@ -103,7 +103,7 @@ public partial class Configuration
         private void ResettleSortOrder()
         {
             ModSortOrder = _data[ nameof( ModSortOrder ) ]?.ToObject< Dictionary< string, string > >() ?? ModSortOrder;
-            var       file   = Mod2.Manager.ModFileSystemFile;
+            var       file   = ModFileSystem.ModFileSystemFile;
             using var stream = File.Open( file, File.Exists( file ) ? FileMode.Truncate : FileMode.CreateNew );
             using var writer = new StreamWriter( stream );
             using var j      = new JsonTextWriter( writer );
@@ -169,7 +169,7 @@ public partial class Configuration
                 var data = JArray.Parse( text );
 
                 var maxPriority = 0;
-                var dict        = new Dictionary< string, ModSettings2.SavedSettings >();
+                var dict        = new Dictionary< string, ModSettings.SavedSettings >();
                 foreach( var setting in data.Cast< JObject >() )
                 {
                     var modName  = ( string )setting[ "FolderName" ]!;
@@ -178,7 +178,7 @@ public partial class Configuration
                     var settings = setting[ "Settings" ]!.ToObject< Dictionary< string, uint > >()
                      ?? setting[ "Conf" ]!.ToObject< Dictionary< string, uint > >();
 
-                    dict[ modName ] = new ModSettings2.SavedSettings()
+                    dict[ modName ] = new ModSettings.SavedSettings()
                     {
                         Enabled  = enabled,
                         Priority = priority,

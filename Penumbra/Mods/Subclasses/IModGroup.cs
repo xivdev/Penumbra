@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using Dalamud.Logging;
 using Newtonsoft.Json;
+using OtterGui.Filesystem;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
@@ -76,4 +77,7 @@ public interface IModGroup : IEnumerable< ISubMod >
         j.WriteEndArray();
         j.WriteEndObject();
     }
+
+    public IModGroup Convert( SelectType type );
+    public bool      MoveOption( int optionIdxFrom, int optionIdxTo );
 }

@@ -5,10 +5,11 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui.Filesystem;
 
 namespace Penumbra.Mods;
 
-public partial class Mod2
+public partial class Mod
 {
     private sealed class MultiModGroup : IModGroup
     {
@@ -63,5 +64,26 @@ public partial class Mod2
 
             return ret;
         }
+
+        public IModGroup Convert( SelectType type )
+        {
+            switch( type )
+            {
+                case SelectType.Multi: return this;
+                case SelectType.Single:
+                    var multi = new SingleModGroup()
+                    {
+                        Name        = Name,
+                        Description = Description,
+                        Priority    = Priority,
+                    };
+                    multi.OptionData.AddRange( PrioritizedOptions.Select( p => p.Mod ) );
+                    return multi;
+                default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
+            }
+        }
+
+        public bool MoveOption( int optionIdxFrom, int optionIdxTo )
+            => PrioritizedOptions.Move( optionIdxFrom, optionIdxTo );
     }
 }

@@ -46,7 +46,7 @@ public partial class ModCollection
     }
 
     // Enable or disable the mod inheritance of every mod in mods.
-    public void SetMultipleModInheritances( IEnumerable< Mod2 > mods, bool inherit )
+    public void SetMultipleModInheritances( IEnumerable< Mod > mods, bool inherit )
     {
         if( mods.Aggregate( false, ( current, mod ) => current | FixInheritance( mod.Index, inherit ) ) )
         {
@@ -56,7 +56,7 @@ public partial class ModCollection
 
     // Set the enabled state of every mod in mods to the new value.
     // If the mod is currently inherited, stop the inheritance.
-    public void SetMultipleModStates( IEnumerable< Mod2 > mods, bool newValue )
+    public void SetMultipleModStates( IEnumerable< Mod > mods, bool newValue )
     {
         var changes = false;
         foreach( var mod in mods )
@@ -137,7 +137,7 @@ public partial class ModCollection
             return false;
         }
 
-        _settings[ idx ] = inherit ? null : this[ idx ].Settings?.DeepCopy() ?? ModSettings2.DefaultSettings( Penumbra.ModManager.Mods[ idx ] );
+        _settings[ idx ] = inherit ? null : this[ idx ].Settings?.DeepCopy() ?? ModSettings.DefaultSettings( Penumbra.ModManager.Mods[ idx ] );
         return true;
     }
 

@@ -40,7 +40,7 @@ public class Penumbra : IDalamudPlugin
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
     public static MetaFileManager MetaFileManager { get; private set; } = null!;
-    public static Mod2.Manager ModManager { get; private set; } = null!;
+    public static Mod.Manager ModManager { get; private set; } = null!;
     public static ModCollection.Manager CollectionManager { get; private set; } = null!;
     public static SimpleRedirectManager Redirects { get; private set; } = null!;
     public static ResourceLoader ResourceLoader { get; private set; } = null!;
@@ -78,7 +78,7 @@ public class Penumbra : IDalamudPlugin
         MetaFileManager   = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLogger    = new ResourceLogger( ResourceLoader );
-        ModManager        = new Mod2.Manager( Config.ModDirectory );
+        ModManager        = new Mod.Manager( Config.ModDirectory );
         ModManager.DiscoverMods();
         CollectionManager = new ModCollection.Manager( ModManager );
         ModFileSystem     = ModFileSystem.Load();
@@ -138,6 +138,7 @@ public class Penumbra : IDalamudPlugin
         btn    = new LaunchButton( _configWindow );
         system = new WindowSystem( Name );
         system.AddWindow( _configWindow );
+        system.AddWindow( cfg.SubModPopup );
         Dalamud.PluginInterface.UiBuilder.Draw         += system.Draw;
         Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
     }
@@ -294,8 +295,7 @@ public class Penumbra : IDalamudPlugin
                 case "reload":
                 {
                     ModManager.DiscoverMods();
-                    Dalamud.Chat.Print(
-                        $"Reloaded Penumbra mods. You have {ModManager.Mods.Count} mods."
+                    Dalamud.Chat.Print( $"Reloaded Penumbra mods. You have {ModManager.Mods.Count} mods."
                     );
                     break;
                 }
@@ -314,7 +314,8 @@ public class Penumbra : IDalamudPlugin
                 }
                 case "debug":
                 {
-                    // TODO
+                    Config.DebugMode = true;
+                    Config.Save();
                     break;
                 }
                 case "enable":
@@ -370,7 +371,7 @@ public class Penumbra : IDalamudPlugin
     {
         var list = new DirectoryInfo( ModCollection.CollectionDirectory ).EnumerateFiles( "*.json" ).ToList();
         list.Add( Dalamud.PluginInterface.ConfigFile );
-        list.Add( new FileInfo( Mod2.Manager.ModFileSystemFile ) );
+        list.Add( new FileInfo( ModFileSystem.ModFileSystemFile ) );
         list.Add( new FileInfo( ModCollection.Manager.ActiveCollectionFile ) );
         return list;
     }

@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Raii;
 using Penumbra.Collections;
@@ -21,7 +22,7 @@ public partial class ModFileSystemSelector
     }
 
     private const    StringComparison     IgnoreCase   = StringComparison.InvariantCultureIgnoreCase;
-    private readonly IReadOnlySet< Mod2 > _newMods     = new HashSet< Mod2 >();
+    private readonly IReadOnlySet< Mod > _newMods     = new HashSet< Mod >();
     private          LowerString          _modFilter   = LowerString.Empty;
     private          int                  _filterType  = -1;
     private          ModFilter            _stateFilter = ModFilterExtensions.UnfilteredStateMods;
@@ -75,7 +76,7 @@ public partial class ModFileSystemSelector
     // Folders have default state and are filtered out on the direct string instead of the other options.
     // If any filter is set, they should be hidden by default unless their children are visible,
     // or they contain the path search string.
-    protected override bool ApplyFiltersAndState( FileSystem< Mod2 >.IPath path, out ModState state )
+    protected override bool ApplyFiltersAndState( FileSystem< Mod >.IPath path, out ModState state )
     {
         if( path is ModFileSystem.Folder f )
         {
@@ -88,7 +89,7 @@ public partial class ModFileSystemSelector
     }
 
     // Apply the string filters.
-    private bool ApplyStringFilters( ModFileSystem.Leaf leaf, Mod2 mod )
+    private bool ApplyStringFilters( ModFileSystem.Leaf leaf, Mod mod )
     {
         return _filterType switch
         {
@@ -102,7 +103,7 @@ public partial class ModFileSystemSelector
     }
 
     // Only get the text color for a mod if no filters are set.
-    private uint GetTextColor( Mod2 mod, ModSettings2? settings, ModCollection collection )
+    private uint GetTextColor( Mod mod, ModSettings? settings, ModCollection collection )
     {
         if( _newMods.Contains( mod ) )
         {
@@ -119,7 +120,7 @@ public partial class ModFileSystemSelector
             return collection != Penumbra.CollectionManager.Current ? ColorId.InheritedDisabledMod.Value() : ColorId.DisabledMod.Value();
         }
 
-        var conflicts = Penumbra.CollectionManager.Current.ModConflicts( mod.Index ).ToList();
+        var conflicts = Penumbra.CollectionManager.Current.ModConflicts( mod.Index );
         if( conflicts.Count == 0 )
         {
             return collection != Penumbra.CollectionManager.Current ? ColorId.InheritedMod.Value() : ColorId.EnabledMod.Value();
@@ -130,7 +131,7 @@ public partial class ModFileSystemSelector
             : ColorId.HandledConflictMod.Value();
     }
 
-    private bool CheckStateFilters( Mod2 mod, ModSettings2? settings, ModCollection collection, ref ModState state )
+    private bool CheckStateFilters( Mod mod, ModSettings? settings, ModCollection collection, ref ModState state )
     {
         var isNew = _newMods.Contains( mod );
         // Handle mod details.
@@ -188,7 +189,7 @@ public partial class ModFileSystemSelector
             }
 
             // Conflicts can only be relevant if the mod is enabled.
-            var conflicts = Penumbra.CollectionManager.Current.ModConflicts( mod.Index ).ToList();
+            var conflicts = Penumbra.CollectionManager.Current.ModConflicts( mod.Index );
             if( conflicts.Count > 0 )
             {
                 if( conflicts.Any( c => !c.Solved ) )

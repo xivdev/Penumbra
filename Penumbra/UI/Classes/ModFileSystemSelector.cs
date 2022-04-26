@@ -1,23 +1,30 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Interface.ImGuiFileDialog;
+using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Filesystem;
 using OtterGui.FileSystem.Selector;
 using OtterGui.Raii;
 using Penumbra.Collections;
+using Penumbra.Import;
 using Penumbra.Mods;
 
 namespace Penumbra.UI.Classes;
 
-public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, ModFileSystemSelector.ModState >
+public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, ModFileSystemSelector.ModState >
 {
-    public ModSettings2 SelectedSettings { get; private set; } = ModSettings2.Empty;
+    private readonly FileDialogManager _fileManager = new();
+    private          TexToolsImporter? _import;
+    public ModSettings SelectedSettings { get; private set; } = ModSettings.Empty;
     public ModCollection SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
-    public ModFileSystemSelector( ModFileSystem fileSystem, IReadOnlySet< Mod2 > newMods )
+    public ModFileSystemSelector( ModFileSystem fileSystem, IReadOnlySet< Mod > newMods )
         : base( fileSystem )
     {
         _newMods = newMods;
@@ -26,6 +33,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         SubscribeRightClickFolder( InheritDescendants, 15 );
         SubscribeRightClickFolder( OwnDescendants, 15 );
         AddButton( AddNewModButton, 0 );
+        AddButton( AddImportModButton, 1 );
         AddButton( DeleteModButton, 1000 );
         SetFilterTooltip();
 
@@ -33,6 +41,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         Penumbra.CollectionManager.CollectionChanged          += OnCollectionChange;
         Penumbra.CollectionManager.Current.ModSettingChanged  += OnSettingChange;
         Penumbra.CollectionManager.Current.InheritanceChanged += OnInheritanceChange;
+        Penumbra.ModManager.ModMetaChanged                    += OnModMetaChange;
         Penumbra.ModManager.ModDiscoveryStarted               += StoreCurrentSelection;
         Penumbra.ModManager.ModDiscoveryFinished              += RestoreLastSelection;
         OnCollectionChange( ModCollection.Type.Current, null, Penumbra.CollectionManager.Current, null );
@@ -43,6 +52,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         base.Dispose();
         Penumbra.ModManager.ModDiscoveryStarted               -= StoreCurrentSelection;
         Penumbra.ModManager.ModDiscoveryFinished              -= RestoreLastSelection;
+        Penumbra.ModManager.ModMetaChanged                    -= OnModMetaChange;
         Penumbra.CollectionManager.Current.ModSettingChanged  -= OnSettingChange;
         Penumbra.CollectionManager.Current.InheritanceChanged -= OnInheritanceChange;
         Penumbra.CollectionManager.CollectionChanged          -= OnCollectionChange;
@@ -64,10 +74,11 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
     protected override uint FolderLineColor
         => ColorId.FolderLine.Value();
 
-    protected override void DrawLeafName( FileSystem< Mod2 >.Leaf leaf, in ModState state, bool selected )
+    protected override void DrawLeafName( FileSystem< Mod >.Leaf leaf, in ModState state, bool selected )
     {
         var       flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
         using var c     = ImRaii.PushColor( ImGuiCol.Text, state.Color );
+        using var id    = ImRaii.PushId( leaf.Value.Index );
         using var _     = ImRaii.TreeNode( leaf.Value.Name, flags );
     }
 
@@ -107,17 +118,90 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
 
 
     // Add custom buttons.
-    private static void AddNewModButton( Vector2 size )
+    private string _newModName = string.Empty;
+
+    private void AddNewModButton( Vector2 size )
     {
-        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), size, "Create a new, empty mod of a given name.", false, true ) )
-        { }
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), size, "Create a new, empty mod of a given name.", !Penumbra.ModManager.Valid, true ) )
+        {
+            ImGui.OpenPopup( "Create New Mod" );
+        }
+
+        if( ImGuiUtil.OpenNameField( "Create New Mod", ref _newModName ) )
+        {
+            try
+            {
+                var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
+                Mod.CreateMeta( newDir, _newModName, string.Empty, string.Empty, "1.0", string.Empty );
+                Penumbra.ModManager.AddMod( newDir );
+                _newModName = string.Empty;
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not create directory for new Mod {_newModName}:\n{e}" );
+            }
+        }
+    }
+
+    // Add an import mods button that opens a file selector.
+    private void AddImportModButton( Vector2 size )
+    {
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
+               "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true ) )
+        {
+            _fileManager.OpenFileDialog( "Import Mod Pack", "TexTools Mod Packs{.ttmp,.ttmp2}", ( s, f ) =>
+            {
+                if( s )
+                {
+                    _import = new TexToolsImporter( Penumbra.ModManager.BasePath, f.Count, f.Select( file => new FileInfo( file ) ) );
+                    ImGui.OpenPopup( "Import Status" );
+                }
+            }, 0, Penumbra.Config.ModDirectory );
+        }
+
+        _fileManager.Draw();
+        DrawInfoPopup();
+    }
+
+    // Draw the progress information for import.
+    private void DrawInfoPopup()
+    {
+        var display = ImGui.GetIO().DisplaySize;
+        ImGui.SetNextWindowSize( display / 4 );
+        ImGui.SetNextWindowPos( 3 * display / 8 );
+        using var popup = ImRaii.Popup( "Import Status", ImGuiWindowFlags.Modal );
+        if( _import != null && popup.Success )
+        {
+            _import.DrawProgressInfo( ImGuiHelpers.ScaledVector2( -1, ImGui.GetFrameHeight() ) );
+            if( _import.State == ImporterState.Done )
+            {
+                ImGui.SetCursorPosY( ImGui.GetWindowHeight() - ImGui.GetFrameHeight() * 2 );
+                if( ImGui.Button( "Close", -Vector2.UnitX ) )
+                {
+                    _import = null;
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+        }
     }
 
     private void DeleteModButton( Vector2 size )
     {
-        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), size,
-               "Delete the currently selected mod entirely from your drive.", SelectedLeaf == null, true ) )
-        { }
+        var keys = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
+        var tt = SelectedLeaf == null
+            ? "No mod selected."
+            : "Delete the currently selected mod entirely from your drive.\n"
+          + "This can not be undone.";
+        if( !keys )
+        {
+            tt += "\nHold Control and Shift while clicking to delete the mod.";
+        }
+
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), size, tt, SelectedLeaf == null || !keys, true )
+        && Selected != null )
+        {
+            Penumbra.ModManager.DeleteMod( Selected.Index );
+        }
     }
 
 
@@ -143,6 +227,17 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         if( modIdx == Selected?.Index )
         {
             OnSelectionChange( Selected, Selected, default );
+        }
+    }
+
+    private void OnModMetaChange( MetaChangeType type, Mod mod, string? oldName )
+    {
+        switch( type )
+        {
+            case MetaChangeType.Name:
+            case MetaChangeType.Author:
+                SetFilterDirty();
+                break;
         }
     }
 
@@ -175,17 +270,17 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod2, Mo
         OnSelectionChange( Selected, Selected, default );
     }
 
-    private void OnSelectionChange( Mod2? _1, Mod2? newSelection, in ModState _2 )
+    private void OnSelectionChange( Mod? _1, Mod? newSelection, in ModState _2 )
     {
         if( newSelection == null )
         {
-            SelectedSettings          = ModSettings2.Empty;
+            SelectedSettings          = ModSettings.Empty;
             SelectedSettingCollection = ModCollection.Empty;
         }
         else
         {
             ( var settings, SelectedSettingCollection ) = Penumbra.CollectionManager.Current[ newSelection.Index ];
-            SelectedSettings                            = settings ?? ModSettings2.Empty;
+            SelectedSettings                            = settings ?? ModSettings.Empty;
         }
     }
 

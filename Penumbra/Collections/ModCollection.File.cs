@@ -6,8 +6,8 @@ using System.Text;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui.Filesystem;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
@@ -48,7 +48,7 @@ public partial class ModCollection
                 if( settings != null )
                 {
                     j.WritePropertyName( Penumbra.ModManager[ i ].BasePath.Name );
-                    x.Serialize( j, new ModSettings2.SavedSettings( settings, Penumbra.ModManager[ i ] ) );
+                    x.Serialize( j, new ModSettings.SavedSettings( settings, Penumbra.ModManager[ i ] ) );
                 }
             }
 
@@ -111,8 +111,8 @@ public partial class ModCollection
             var name    = obj[ nameof( Name ) ]?.ToObject< string >() ?? string.Empty;
             var version = obj[ nameof( Version ) ]?.ToObject< int >() ?? 0;
             // Custom deserialization that is converted with the constructor. 
-            var settings = obj[ nameof( Settings ) ]?.ToObject< Dictionary< string, ModSettings2.SavedSettings > >()
-             ?? new Dictionary< string, ModSettings2.SavedSettings >();
+            var settings = obj[ nameof( Settings ) ]?.ToObject< Dictionary< string, ModSettings.SavedSettings > >()
+             ?? new Dictionary< string, ModSettings.SavedSettings >();
             inheritance = obj[ nameof( Inheritance ) ]?.ToObject< List< string > >() ?? ( IReadOnlyList< string > )Array.Empty< string >();
 
             return new ModCollection( name, version, settings );

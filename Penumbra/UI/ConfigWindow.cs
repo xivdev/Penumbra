@@ -21,13 +21,14 @@ public sealed partial class ConfigWindow : Window, IDisposable
     private readonly EffectiveTab          _effectiveTab;
     private readonly DebugTab              _debugTab;
     private readonly ResourceTab           _resourceTab;
+    public readonly  SubModEditWindow      SubModPopup = new();
 
     public ConfigWindow( Penumbra penumbra )
         : base( GetLabel() )
     {
         _penumbra       = penumbra;
         _settingsTab    = new SettingsTab( this );
-        _selector       = new ModFileSystemSelector( _penumbra.ModFileSystem, new HashSet< Mod2 >() ); // TODO
+        _selector       = new ModFileSystemSelector( _penumbra.ModFileSystem, new HashSet< Mod >() ); // TODO
         _modPanel       = new ModPanel( this );
         _collectionsTab = new CollectionsTab( this );
         _effectiveTab   = new EffectiveTab();
@@ -61,6 +62,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     public void Dispose()
     {
         _selector.Dispose();
+        _modPanel.Dispose();
     }
 
     private static string GetLabel()
@@ -70,10 +72,12 @@ public sealed partial class ConfigWindow : Window, IDisposable
 
     private Vector2 _defaultSpace;
     private Vector2 _inputTextWidth;
+    private Vector2 _iconButtonSize;
 
     private void SetupSizes()
     {
         _defaultSpace   = new Vector2( 0, 10 * ImGuiHelpers.GlobalScale );
         _inputTextWidth = new Vector2( 350f  * ImGuiHelpers.GlobalScale, 0 );
+        _iconButtonSize = new Vector2( ImGui.GetFrameHeight() );
     }
 }

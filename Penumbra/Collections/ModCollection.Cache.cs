@@ -18,7 +18,7 @@ public partial class ModCollection
         // Shared caches to avoid allocations.
         private static readonly Dictionary< Utf8GamePath, FileRegister >     RegisteredFiles         = new(1024);
         private static readonly Dictionary< MetaManipulation, FileRegister > RegisteredManipulations = new(1024);
-        private static readonly List< ModSettings2? >                        ResolvedSettings        = new(128);
+        private static readonly List< ModSettings? >                        ResolvedSettings        = new(128);
 
         private readonly ModCollection                        _collection;
         private readonly SortedList< string, object? >        _changedItems = new();
@@ -225,7 +225,7 @@ public partial class ModCollection
             foreach( var (path, file) in mod.Files.Concat( mod.FileSwaps ) )
             {
                 // Skip all filtered files
-                if( Mod2.FilterFile( path ) )
+                if( Mod.FilterFile( path ) )
                 {
                     continue;
                 }
@@ -257,6 +257,11 @@ public partial class ModCollection
             {
                 var config = settings.Settings[ idx ];
                 var group  = mod.Groups[ idx ];
+                if( group.Count == 0 )
+                {
+                    continue;
+                }
+
                 switch( group.Type )
                 {
                     case SelectType.Single:

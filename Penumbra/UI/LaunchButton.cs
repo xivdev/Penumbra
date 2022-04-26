@@ -9,7 +9,7 @@ namespace Penumbra.UI;
 // using the Dalamud-provided collapsible submenu.
 public class LaunchButton : IDisposable
 {
-    private readonly ConfigWindow                          _configWindow;
+    private readonly ConfigWindow                  _configWindow;
     private readonly TextureWrap?                          _icon;
     private readonly TitleScreenMenu.TitleScreenMenuEntry? _entry;
 

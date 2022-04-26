@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OtterGui.Filesystem;
 using Penumbra.Mods;
 using Penumbra.Util;
 
@@ -119,7 +120,7 @@ public partial class ModCollection
     // Obtain the actual settings for a given mod via index.
     // Also returns the collection the settings are taken from.
     // If no collection provides settings for this mod, this collection is returned together with null.
-    public (ModSettings2? Settings, ModCollection Collection) this[ Index idx ]
+    public (ModSettings? Settings, ModCollection Collection) this[ Index idx ]
     {
         get
         {

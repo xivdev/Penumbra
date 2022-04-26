@@ -4,6 +4,7 @@ using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
+using OtterGui.Classes;
 
 namespace Penumbra.Mods;
 
@@ -20,7 +21,7 @@ public enum MetaChangeType : byte
     Migration   = 0x40,
 }
 
-public sealed partial class Mod2
+public sealed partial class Mod
 {
     public const uint CurrentFileVersion = 1;
     public uint FileVersion { get; private set; } = CurrentFileVersion;

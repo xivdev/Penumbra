@@ -22,7 +22,6 @@ public partial class MetaManager
         private readonly ModCollection _collection;
         private static   int           _imcManagerCount;
 
-
         public MetaManagerImc( ModCollection collection )
         {
             _collection = collection;

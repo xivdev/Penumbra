@@ -12,90 +12,9 @@ public interface IMetaManipulation
     public int FileIndex();
 }
 
-public interface IMetaManipulation< T > : IMetaManipulation, IComparable< T >, IEquatable< T > where T : struct
+public interface IMetaManipulation< T >
+    : IMetaManipulation, IComparable< T >, IEquatable< T > where T : struct
 { }
-
-public struct ManipulationSet< T > where T : struct, IMetaManipulation< T >
-{
-    private List< T >? _data = null;
-
-    public IReadOnlyList< T > Data
-        => ( IReadOnlyList< T >? )_data ?? Array.Empty< T >();
-
-    public int Count
-        => _data?.Count ?? 0;
-
-    public ManipulationSet( int count = 0 )
-    {
-        if( count > 0 )
-        {
-            _data = new List< T >( count );
-        }
-    }
-
-    public bool TryAdd( T manip )
-    {
-        if( _data == null )
-        {
-            _data = new List< T > { manip };
-            return true;
-        }
-
-        var idx = _data.BinarySearch( manip );
-        if( idx >= 0 )
-        {
-            return false;
-        }
-
-        _data.Insert( ~idx, manip );
-        return true;
-    }
-
-    public int Set( T manip )
-    {
-        if( _data == null )
-        {
-            _data = new List< T > { manip };
-            return 0;
-        }
-
-        var idx = _data.BinarySearch( manip );
-        if( idx >= 0 )
-        {
-            _data[ idx ] = manip;
-            return idx;
-        }
-
-        idx = ~idx;
-        _data.Insert( idx, manip );
-        return idx;
-    }
-
-    public bool TryGet( T manip, out T value )
-    {
-        var idx = _data?.BinarySearch( manip ) ?? -1;
-        if( idx < 0 )
-        {
-            value = default;
-            return false;
-        }
-
-        value = _data![ idx ];
-        return true;
-    }
-
-    public bool Remove( T manip )
-    {
-        var idx = _data?.BinarySearch( manip ) ?? -1;
-        if( idx < 0 )
-        {
-            return false;
-        }
-
-        _data!.RemoveAt( idx );
-        return true;
-    }
-}
 
 [StructLayout( LayoutKind.Explicit, Pack = 1, Size = 16 )]
 public readonly struct MetaManipulation : IEquatable< MetaManipulation >, IComparable< MetaManipulation >

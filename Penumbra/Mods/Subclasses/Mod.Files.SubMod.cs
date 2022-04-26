@@ -6,12 +6,12 @@ using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
-using Penumbra.Importer;
+using Penumbra.Import;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Mods;
 
-public partial class Mod2
+public partial class Mod
 {
     private string DefaultFile
         => Path.Combine( BasePath.FullName, "default_mod.json" );
@@ -135,31 +135,7 @@ public partial class Mod2
                             {
                                 File.Delete( file.FullName );
                             }
-
-                            foreach( var manip in meta.EqpManipulations )
-                            {
-                                ManipulationData.Add( manip );
-                            }
-
-                            foreach( var manip in meta.EqdpManipulations )
-                            {
-                                ManipulationData.Add( manip );
-                            }
-
-                            foreach( var manip in meta.EstManipulations )
-                            {
-                                ManipulationData.Add( manip );
-                            }
-
-                            foreach( var manip in meta.GmpManipulations )
-                            {
-                                ManipulationData.Add( manip );
-                            }
-
-                            foreach( var manip in meta.ImcManipulations )
-                            {
-                                ManipulationData.Add( manip );
-                            }
+                            ManipulationData.UnionWith( meta.MetaManipulations );
 
                             break;
                         case ".rgsp":
@@ -174,11 +150,7 @@ public partial class Mod2
                             {
                                 File.Delete( file.FullName );
                             }
-
-                            foreach( var manip in rgsp.RspManipulations )
-                            {
-                                ManipulationData.Add( manip );
-                            }
+                            ManipulationData.UnionWith( rgsp.MetaManipulations );
 
                             break;
                         default: continue;

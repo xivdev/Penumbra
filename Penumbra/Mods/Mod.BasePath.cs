@@ -10,15 +10,15 @@ public enum ModPathChangeType
     Moved,
 }
 
-public partial class Mod2
+public partial class Mod
 {
     public DirectoryInfo BasePath { get; private set; }
     public int Index { get; private set; } = -1;
 
-    private Mod2( DirectoryInfo basePath )
+    private Mod( DirectoryInfo basePath )
         => BasePath = basePath;
 
-    public static Mod2? LoadMod( DirectoryInfo basePath )
+    public static Mod? LoadMod( DirectoryInfo basePath )
     {
         basePath.Refresh();
         if( !basePath.Exists )
@@ -27,7 +27,7 @@ public partial class Mod2
             return null;
         }
 
-        var mod = new Mod2( basePath );
+        var mod = new Mod( basePath );
         mod.LoadMeta();
         if( mod.Name.Length == 0 )
         {

@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 
@@ -73,9 +73,16 @@ public struct ConflictCache
     }
 
     // Find all mod conflicts concerning the specified mod (in both directions).
-    public IEnumerable< Conflict > ModConflicts( int modIdx )
+    public SubList< Conflict > ModConflicts( int modIdx )
     {
-        return _conflicts.SkipWhile( c => c.Mod1 < modIdx ).TakeWhile( c => c.Mod1 == modIdx );
+        var start = _conflicts.FindIndex( c => c.Mod1 == modIdx );
+        if( start < 0 )
+        {
+            return SubList< Conflict >.Empty;
+        }
+
+        var end = _conflicts.FindIndex( start, c => c.Mod1 != modIdx );
+        return new SubList< Conflict >( _conflicts, start, end - start );
     }
 
     private void Sort()

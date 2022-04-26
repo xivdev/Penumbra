@@ -275,7 +275,7 @@ public partial class ModCollection
             }
         }
 
-        private void OnModRemovedActive( bool meta, IEnumerable< ModSettings2? > settings )
+        private void OnModRemovedActive( bool meta, IEnumerable< ModSettings? > settings )
         {
             foreach( var (collection, _) in this.Zip( settings ).Where( c => c.First.HasCache && c.Second?.Enabled == true ) )
             {

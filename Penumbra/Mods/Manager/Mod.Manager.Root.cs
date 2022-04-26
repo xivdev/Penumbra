@@ -4,7 +4,7 @@ using Dalamud.Logging;
 
 namespace Penumbra.Mods;
 
-public sealed partial class Mod2
+public sealed partial class Mod
 {
     public sealed partial class Manager
     {
@@ -50,7 +50,7 @@ public sealed partial class Mod2
                 }
 
                 BasePath = newDir;
-                Valid    = true;
+                Valid    = Directory.Exists( newDir.FullName );
                 if( Penumbra.Config.ModDirectory != BasePath.FullName )
                 {
                     Penumbra.Config.ModDirectory = BasePath.FullName;
@@ -74,7 +74,7 @@ public sealed partial class Mod2
                     {
                         continue;
                     }
-                    
+
                     mod.Index = _mods.Count;
                     _mods.Add( mod );
                 }
