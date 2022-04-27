@@ -47,14 +47,19 @@ public partial class ConfigWindow
             }
         }
 
+        // Only gets drawn when actually relevant.
         private static void DrawCleanCollectionButton()
         {
-            if( ImGui.Button( "Clean Settings" ) )
+            if( Penumbra.Config.ShowAdvanced && Penumbra.CollectionManager.Current.HasUnusedSettings )
             {
-                Penumbra.CollectionManager.Current.CleanUnavailableSettings();
+                ImGui.SameLine();
+                if( ImGuiUtil.DrawDisabledButton( "Clean Settings", Vector2.Zero
+                       , "Remove all stored settings for mods not currently available and fix invalid settings.\nUse at own risk."
+                       , false ) )
+                {
+                    Penumbra.CollectionManager.Current.CleanUnavailableSettings();
+                }
             }
-
-            ImGuiUtil.HoverTooltip( "Remove all stored settings for mods not currently available and fix invalid settings.\nUse at own risk." );
         }
 
         // Draw the new collection input as well as its buttons.
@@ -94,11 +99,7 @@ public partial class ConfigWindow
                 Penumbra.CollectionManager.RemoveCollection( Penumbra.CollectionManager.Current );
             }
 
-            if( Penumbra.Config.ShowAdvanced )
-            {
-                ImGui.SameLine();
-                DrawCleanCollectionButton();
-            }
+            DrawCleanCollectionButton();
         }
 
         private void DrawCurrentCollectionSelector()
@@ -152,7 +153,7 @@ public partial class ConfigWindow
                 using var id = ImRaii.PushId( name );
                 DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, ModCollection.Type.Character, true, name );
                 ImGui.SameLine();
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), Vector2.One * ImGui.GetFrameHeight(), string.Empty,
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
                        false,
                        true ) )
                 {

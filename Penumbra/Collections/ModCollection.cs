@@ -32,6 +32,10 @@ public partial class ModCollection
     public IReadOnlyList< ModSettings? > Settings
         => _settings;
 
+    // Returns whether there are settings not in use by any current mod.
+    public bool HasUnusedSettings
+        => _unusedSettings.Count > 0;
+
     // Evaluates the settings along the whole inheritance tree.
     public IEnumerable< ModSettings? > ActualSettings
         => Enumerable.Range( 0, _settings.Count ).Select( i => this[ i ].Settings );

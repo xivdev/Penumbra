@@ -47,10 +47,13 @@ public partial class ConfigWindow
             DrawAdvancedSettings();
         }
 
+        // Changing the base mod directory.
         private          string?           _newModDirectory;
         private readonly FileDialogManager _dialogManager = new();
-        private          bool              _dialogOpen;
+        private          bool              _dialogOpen; // For toggling on/off.
 
+        // Do not change the directory without explicitly pressing enter or this button.
+        // Shows up only if the current input does not correspond to the current directory.
         private static bool DrawPressEnterWarning( string old, float width )
         {
             using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.PressEnterWarningBg );
@@ -58,9 +61,11 @@ public partial class ConfigWindow
             return ImGui.Button( $"Press Enter or Click Here to Save (Current Directory: {old})", w );
         }
 
+        // Draw a directory picker button that toggles the directory picker.
+        // Selecting a directory does behave the same as writing in the text input, i.e. needs to be saved.
         private void DrawDirectoryPickerButton()
         {
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Folder.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Folder.ToIconString(), _window._iconButtonSize,
                    "Select a directory via dialog.", false, true ) )
             {
                 if( _dialogOpen )
@@ -71,6 +76,8 @@ public partial class ConfigWindow
                 else
                 {
                     _newModDirectory ??= Penumbra.Config.ModDirectory;
+                    // Use the current input as start directory if it exists,
+                    // otherwise the current mod directory, otherwise the current application directory.
                     var startDir = Directory.Exists( _newModDirectory )
                         ? _newModDirectory
                         : Directory.Exists( Penumbra.Config.ModDirectory )
@@ -103,13 +110,15 @@ public partial class ConfigWindow
             }
         }
 
+        // Draw the text input for the mod directory,
+        // as well as the directory picker button and the enter warning.
         private void DrawRootFolder()
         {
             _newModDirectory ??= Penumbra.Config.ModDirectory;
 
             var       spacing = 3 * ImGuiHelpers.GlobalScale;
             using var group   = ImRaii.Group();
-            ImGui.SetNextItemWidth( _window._inputTextWidth.X - spacing - ImGui.GetFrameHeight() );
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X - spacing - _window._iconButtonSize.X );
             var       save  = ImGui.InputText( "##rootDirectory", ref _newModDirectory, 255, ImGuiInputTextFlags.EnterReturnsTrue );
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( spacing, 0 ) );
             ImGui.SameLine();
@@ -127,17 +136,13 @@ public partial class ConfigWindow
             var pos = ImGui.GetCursorPosX();
             ImGui.NewLine();
 
-            if( Penumbra.Config.ModDirectory == _newModDirectory || _newModDirectory.Length == 0 )
-            {
-                return;
-            }
-
-            if( save || DrawPressEnterWarning( Penumbra.Config.ModDirectory, pos ) )
+            if( Penumbra.Config.ModDirectory != _newModDirectory
+            && _newModDirectory.Length       == 0
+            && ( save || DrawPressEnterWarning( Penumbra.Config.ModDirectory, pos ) ) )
             {
                 Penumbra.ModManager.DiscoverMods( _newModDirectory );
             }
         }
-
 
         private static void DrawRediscoverButton()
         {

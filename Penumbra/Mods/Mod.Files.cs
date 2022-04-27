@@ -78,7 +78,7 @@ public partial class Mod
     public List< FullPath > FindMissingFiles()
         => AllFiles.Where( f => !f.Exists ).ToList();
 
-    public static IModGroup? LoadModGroup( FileInfo file, DirectoryInfo basePath )
+    private static IModGroup? LoadModGroup( FileInfo file, DirectoryInfo basePath )
     {
         if( !File.Exists( file.FullName ) )
         {

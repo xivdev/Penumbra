@@ -42,7 +42,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     // Used on construction and on mod rediscoveries.
     private void Reload()
     {
-        if( Load( new FileInfo( ModFileSystemFile ), Penumbra.ModManager.Mods, ModToIdentifier, ModToName ) )
+        if( Load( new FileInfo( ModFileSystemFile ), Penumbra.ModManager, ModToIdentifier, ModToName ) )
         {
             Save();
         }

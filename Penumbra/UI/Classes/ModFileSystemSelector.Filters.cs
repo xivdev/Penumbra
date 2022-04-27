@@ -21,11 +21,10 @@ public partial class ModFileSystemSelector
         public uint Color;
     }
 
-    private const    StringComparison     IgnoreCase   = StringComparison.InvariantCultureIgnoreCase;
-    private readonly IReadOnlySet< Mod > _newMods     = new HashSet< Mod >();
-    private          LowerString          _modFilter   = LowerString.Empty;
-    private          int                  _filterType  = -1;
-    private          ModFilter            _stateFilter = ModFilterExtensions.UnfilteredStateMods;
+    private const    StringComparison IgnoreCase = StringComparison.InvariantCultureIgnoreCase;
+    private          LowerString      _modFilter   = LowerString.Empty;
+    private          int              _filterType  = -1;
+    private          ModFilter        _stateFilter = ModFilterExtensions.UnfilteredStateMods;
 
     private void SetFilterTooltip()
     {
@@ -105,7 +104,7 @@ public partial class ModFileSystemSelector
     // Only get the text color for a mod if no filters are set.
     private uint GetTextColor( Mod mod, ModSettings? settings, ModCollection collection )
     {
-        if( _newMods.Contains( mod ) )
+        if( Penumbra.ModManager.NewMods.Contains( mod ) )
         {
             return ColorId.NewMod.Value();
         }
@@ -133,7 +132,7 @@ public partial class ModFileSystemSelector
 
     private bool CheckStateFilters( Mod mod, ModSettings? settings, ModCollection collection, ref ModState state )
     {
-        var isNew = _newMods.Contains( mod );
+        var isNew = Penumbra.ModManager.NewMods.Contains( mod );
         // Handle mod details.
         if( CheckFlags( mod.TotalFileCount, ModFilter.HasNoFiles, ModFilter.HasFiles )
         || CheckFlags( mod.TotalSwapCount, ModFilter.HasNoFileSwaps, ModFilter.HasFileSwaps )

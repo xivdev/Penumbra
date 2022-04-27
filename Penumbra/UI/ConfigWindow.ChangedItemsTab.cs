@@ -31,6 +31,7 @@ public partial class ConfigWindow
             return;
         }
 
+        // Draw filters.
         ImGui.SetNextItemWidth( -1 );
         LowerString.InputWithHint( "##changedItemsFilter", "Filter...", ref _changedItemFilter, 64 );
 
@@ -40,6 +41,7 @@ public partial class ConfigWindow
             return;
         }
 
+        // Draw table of changed items.
         var       height = ImGui.GetTextLineHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
         var       skips  = ImGuiClip.GetNecessarySkips( height );
         using var list   = ImRaii.Table( "##changedItems", 1, ImGuiTableFlags.RowBg, -Vector2.One );

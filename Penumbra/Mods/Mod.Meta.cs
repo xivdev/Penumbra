@@ -25,13 +25,13 @@ public sealed partial class Mod
 {
     public const uint CurrentFileVersion = 1;
     public uint FileVersion { get; private set; } = CurrentFileVersion;
-    public LowerString Name { get; private set; } = "Mod";
+    public LowerString Name { get; private set; } = "New Mod";
     public LowerString Author { get; private set; } = LowerString.Empty;
     public string Description { get; private set; } = string.Empty;
     public string Version { get; private set; } = string.Empty;
     public string Website { get; private set; } = string.Empty;
 
-    private FileInfo MetaFile
+    internal FileInfo MetaFile
         => new(Path.Combine( BasePath.FullName, "meta.json" ));
 
     private MetaChangeType LoadMeta()

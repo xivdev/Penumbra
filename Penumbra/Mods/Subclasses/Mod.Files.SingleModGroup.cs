@@ -11,6 +11,7 @@ namespace Penumbra.Mods;
 
 public partial class Mod
 {
+    // Groups that allow only one of their available options to be selected.
     private sealed class SingleModGroup : IModGroup
     {
         public SelectType Type

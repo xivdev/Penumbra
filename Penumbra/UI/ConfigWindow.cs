@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using System.Reflection;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
@@ -28,7 +27,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     {
         _penumbra       = penumbra;
         _settingsTab    = new SettingsTab( this );
-        _selector       = new ModFileSystemSelector( _penumbra.ModFileSystem, new HashSet< Mod >() ); // TODO
+        _selector       = new ModFileSystemSelector( _penumbra.ModFileSystem ); 
         _modPanel       = new ModPanel( this );
         _collectionsTab = new CollectionsTab( this );
         _effectiveTab   = new EffectiveTab();

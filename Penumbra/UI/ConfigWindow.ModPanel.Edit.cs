@@ -1,6 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
@@ -14,7 +15,7 @@ public partial class ConfigWindow
 {
     private partial class ModPanel
     {
-        public readonly Queue< Action > _delayedActions = new();
+        private readonly Queue< Action > _delayedActions = new();
 
         private void DrawAddOptionGroupInput()
         {
@@ -24,7 +25,7 @@ public partial class ConfigWindow
 
             var nameValid = Mod.Manager.VerifyFileName( _mod, null, _newGroupName, false );
             var tt        = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize,
                    tt, !nameValid, true ) )
             {
                 Penumbra.ModManager.AddModGroup( _mod, SelectType.Single, _newGroupName );
@@ -73,6 +74,33 @@ public partial class ConfigWindow
             EditDescriptionPopup();
         }
 
+        private void EditButtons()
+        {
+            var folderExists = Directory.Exists( _mod.BasePath.FullName );
+            var tt = folderExists
+                ? $"Open {_mod.BasePath.FullName} in the file explorer of your choice."
+                : $"Mod directory {_mod.BasePath.FullName} does not exist.";
+            if( ImGuiUtil.DrawDisabledButton( "Open Mod Directory", Vector2.Zero, tt, !folderExists ) )
+            {
+                Process.Start( new ProcessStartInfo( _mod.BasePath.FullName ) { UseShellExecute = true } );
+            }
+
+            ImGui.SameLine();
+            ImGuiUtil.DrawDisabledButton( "Rename Mod Directory", Vector2.Zero, "Not implemented yet", true );
+            ImGui.SameLine();
+            ImGuiUtil.DrawDisabledButton( "Reload Mod", Vector2.Zero, "Not implemented yet", true );
+
+            ImGuiUtil.DrawDisabledButton( "Deduplicate", Vector2.Zero, "Not implemented yet", true );
+            ImGui.SameLine();
+            ImGuiUtil.DrawDisabledButton( "Normalize", Vector2.Zero, "Not implemented yet", true );
+            ImGui.SameLine();
+            ImGuiUtil.DrawDisabledButton( "Auto-Create Groups", Vector2.Zero, "Not implemented yet", true );
+
+            ImGuiUtil.DrawDisabledButton( "Change Material Suffix", Vector2.Zero, "Not implemented yet", true );
+
+            ImGui.Dummy( _window._defaultSpace );
+        }
+
 
         // Special field indices to reuse the same string buffer.
         private const int NoFieldIdx          = -1;
@@ -105,14 +133,36 @@ public partial class ConfigWindow
                 Penumbra.ModManager.ChangeModWebsite( _mod.Index, newWebsite );
             }
 
-            if( ImGui.Button( "Edit Description", _window._inputTextWidth ) )
+            var reducedSize = new Vector2( _window._inputTextWidth.X - _window._iconButtonSize.X - ImGui.GetStyle().ItemSpacing.X, 0 );
+
+            if( ImGui.Button( "Edit Description", reducedSize ) )
             {
                 _delayedActions.Enqueue( () => OpenEditDescriptionPopup( DescriptionFieldIdx ) );
             }
 
-            if( ImGui.Button( "Edit Default Mod", _window._inputTextWidth ) )
+            ImGui.SameLine();
+            var fileExists = File.Exists( _mod.MetaFile.FullName );
+            var tt = fileExists
+                ? "Open the metadata json file in the text editor of your choice."
+                : "The metadata json file does not exist.";
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileExport.ToIconString(), _window._iconButtonSize, tt, !fileExists, true ) )
+            {
+                Process.Start( new ProcessStartInfo( _mod.MetaFile.FullName ) { UseShellExecute = true } );
+            }
+
+            if( ImGui.Button( "Edit Default Mod", reducedSize ) )
             {
                 _window.SubModPopup.Activate( _mod, -1, 0 );
+            }
+
+            ImGui.SameLine();
+            fileExists = File.Exists( _mod.DefaultFile );
+            tt = fileExists
+                ? "Open the default option json file in the text editor of your choice."
+                : "The default option json file does not exist.";
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileExport.ToIconString(), _window._iconButtonSize, tt, !fileExists, true ) )
+            {
+                Process.Start( new ProcessStartInfo( _mod.DefaultFile ) { UseShellExecute = true } );
             }
         }
 
@@ -144,7 +194,7 @@ public partial class ConfigWindow
 
             ImGuiUtil.HoverTooltip( "Group Name" );
             ImGui.SameLine();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize,
                    "Delete this option group.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true ) )
             {
                 _delayedActions.Enqueue( () => Penumbra.ModManager.DeleteModGroup( _mod, groupIdx ) );
@@ -152,7 +202,7 @@ public partial class ConfigWindow
 
             ImGui.SameLine();
 
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), _window._iconButtonSize,
                    "Edit group description.", false, true ) )
             {
                 _delayedActions.Enqueue( () => OpenEditDescriptionPopup( groupIdx ) );
@@ -167,7 +217,7 @@ public partial class ConfigWindow
 
             ImGuiUtil.HoverTooltip( "Group Priority" );
 
-            ImGui.SetNextItemWidth( _window._inputTextWidth.X - 2 * ImGui.GetFrameHeight() - 8 * ImGuiHelpers.GlobalScale );
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X - 3 * _window._iconButtonSize.X - 12 * ImGuiHelpers.GlobalScale );
             using( var combo = ImRaii.Combo( "##GroupType", GroupTypeName( group.Type ) ) )
             {
                 if( combo )
@@ -185,7 +235,7 @@ public partial class ConfigWindow
             ImGui.SameLine();
 
             var tt = groupIdx == 0 ? "Can not move this group further upwards." : $"Move this group up to group {groupIdx}.";
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.ArrowUp.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.ArrowUp.ToIconString(), _window._iconButtonSize,
                    tt, groupIdx == 0, true ) )
             {
                 _delayedActions.Enqueue( () => Penumbra.ModManager.MoveModGroup( _mod, groupIdx, groupIdx - 1 ) );
@@ -195,10 +245,21 @@ public partial class ConfigWindow
             tt = groupIdx == _mod.Groups.Count - 1
                 ? "Can not move this group further downwards."
                 : $"Move this group down to group {groupIdx + 2}.";
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.ArrowDown.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.ArrowDown.ToIconString(), _window._iconButtonSize,
                    tt, groupIdx == _mod.Groups.Count - 1, true ) )
             {
                 _delayedActions.Enqueue( () => Penumbra.ModManager.MoveModGroup( _mod, groupIdx, groupIdx + 1 ) );
+            }
+
+            ImGui.SameLine();
+            var fileName   = group.FileName( _mod.BasePath );
+            var fileExists = File.Exists( fileName );
+            tt = fileExists
+                ? $"Open the {group.Name} json file in the text editor of your choice."
+                : $"The {group.Name} json file does not exist.";
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileExport.ToIconString(), _window._iconButtonSize, tt, !fileExists, true ) )
+            {
+                Process.Start( new ProcessStartInfo( fileName ) { UseShellExecute = true } );
             }
 
             ImGui.Dummy( _window._defaultSpace );
@@ -206,8 +267,8 @@ public partial class ConfigWindow
             using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.SizingFixedFit );
             ImGui.TableSetupColumn( "idx", ImGuiTableColumnFlags.WidthFixed, 60 * ImGuiHelpers.GlobalScale );
             ImGui.TableSetupColumn( "name", ImGuiTableColumnFlags.WidthFixed, _window._inputTextWidth.X - 62 * ImGuiHelpers.GlobalScale );
-            ImGui.TableSetupColumn( "delete", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight() );
-            ImGui.TableSetupColumn( "edit", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight() );
+            ImGui.TableSetupColumn( "delete", ImGuiTableColumnFlags.WidthFixed, _window._iconButtonSize.X );
+            ImGui.TableSetupColumn( "edit", ImGuiTableColumnFlags.WidthFixed, _window._iconButtonSize.X );
             ImGui.TableSetupColumn( "priority", ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale );
             if( table )
             {
@@ -221,7 +282,7 @@ public partial class ConfigWindow
                 ImGui.SetNextItemWidth( -1 );
                 ImGui.InputTextWithHint( "##newOption", "Add new option...", ref _newOptionName, 256 );
                 ImGui.TableNextColumn();
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize,
                        "Add a new option to this group.", _newOptionName.Length == 0, true ) )
                 {
                     Penumbra.ModManager.AddOption( _mod, groupIdx, _newOptionName );
@@ -258,6 +319,7 @@ public partial class ConfigWindow
                 }
             }
 
+            // TODO drag options to other groups without options.
             using( var target = ImRaii.DragDropTarget() )
             {
                 if( target.Success && ImGuiUtil.IsDropping( label ) )
@@ -266,14 +328,21 @@ public partial class ConfigWindow
                     {
                         if( _dragDropGroupIdx == groupIdx )
                         {
-                            // TODO
-                            Dalamud.Chat.Print(
-                                $"Dropped {_mod.Groups[ _dragDropGroupIdx ][ _dragDropOptionIdx ].Name} onto {_mod.Groups[ groupIdx ][ optionIdx ].Name}" );
+                            var sourceOption = _dragDropOptionIdx;
+                            _delayedActions.Enqueue( () => Penumbra.ModManager.MoveOption( _mod, groupIdx, sourceOption, optionIdx ) );
                         }
                         else
                         {
-                            Dalamud.Chat.Print(
-                                $"Dropped {_mod.Groups[ _dragDropGroupIdx ][ _dragDropOptionIdx ].Name} onto {_mod.Groups[ groupIdx ][ optionIdx ].Name}" );
+                            // Move from one group to another by deleting, then adding the option.
+                            var sourceGroup  = _dragDropGroupIdx;
+                            var sourceOption = _dragDropOptionIdx;
+                            var option       = group[ _dragDropOptionIdx ];
+                            var priority     = group.OptionPriority( _dragDropGroupIdx );
+                            _delayedActions.Enqueue( () =>
+                            {
+                                Penumbra.ModManager.DeleteOption( _mod, sourceGroup, sourceOption );
+                                Penumbra.ModManager.AddOption( _mod, groupIdx, option, priority );
+                            } );
                         }
                     }
 
@@ -299,14 +368,14 @@ public partial class ConfigWindow
             }
 
             ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize,
                    "Delete this option.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true ) )
             {
                 _delayedActions.Enqueue( () => Penumbra.ModManager.DeleteOption( _mod, groupIdx, optionIdx ) );
             }
 
             ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), _window._iconButtonSize,
                    "Edit this option.", false, true ) )
             {
                 _window.SubModPopup.Activate( _mod, groupIdx, optionIdx );

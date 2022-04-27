@@ -98,7 +98,7 @@ public partial class ModCollection
         if( oldValue != newValue )
         {
             var inheritance = FixInheritance( idx, false );
-            _settings[ idx ]!.SetValue( Penumbra.ModManager.Mods[ idx ], groupIdx, newValue );
+            _settings[ idx ]!.SetValue( Penumbra.ModManager[ idx ], groupIdx, newValue );
             ModSettingChanged.Invoke( ModSettingChange.Setting, idx, inheritance ? -1 : ( int )oldValue, groupIdx, false );
         }
     }
@@ -137,7 +137,7 @@ public partial class ModCollection
             return false;
         }
 
-        _settings[ idx ] = inherit ? null : this[ idx ].Settings?.DeepCopy() ?? ModSettings.DefaultSettings( Penumbra.ModManager.Mods[ idx ] );
+        _settings[ idx ] = inherit ? null : this[ idx ].Settings?.DeepCopy() ?? ModSettings.DefaultSettings( Penumbra.ModManager[ idx ] );
         return true;
     }
 

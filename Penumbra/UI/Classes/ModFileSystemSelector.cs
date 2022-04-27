@@ -24,10 +24,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     public ModSettings SelectedSettings { get; private set; } = ModSettings.Empty;
     public ModCollection SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
-    public ModFileSystemSelector( ModFileSystem fileSystem, IReadOnlySet< Mod > newMods )
+    public ModFileSystemSelector( ModFileSystem fileSystem )
         : base( fileSystem )
     {
-        _newMods = newMods;
         SubscribeRightClickFolder( EnableDescendants, 10 );
         SubscribeRightClickFolder( DisableDescendants, 10 );
         SubscribeRightClickFolder( InheritDescendants, 15 );
@@ -122,7 +121,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     private void AddNewModButton( Vector2 size )
     {
-        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), size, "Create a new, empty mod of a given name.", !Penumbra.ModManager.Valid, true ) )
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), size, "Create a new, empty mod of a given name.",
+               !Penumbra.ModManager.Valid, true ) )
         {
             ImGui.OpenPopup( "Create New Mod" );
         }
@@ -167,20 +167,52 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     private void DrawInfoPopup()
     {
         var display = ImGui.GetIO().DisplaySize;
-        ImGui.SetNextWindowSize( display / 4 );
+        ImGui.SetNextWindowSize( display    / 4 );
         ImGui.SetNextWindowPos( 3 * display / 8 );
         using var popup = ImRaii.Popup( "Import Status", ImGuiWindowFlags.Modal );
         if( _import != null && popup.Success )
         {
-            _import.DrawProgressInfo( ImGuiHelpers.ScaledVector2( -1, ImGui.GetFrameHeight() ) );
+            _import.DrawProgressInfo( new Vector2( -1, ImGui.GetFrameHeight() ) );
             if( _import.State == ImporterState.Done )
             {
                 ImGui.SetCursorPosY( ImGui.GetWindowHeight() - ImGui.GetFrameHeight() * 2 );
                 if( ImGui.Button( "Close", -Vector2.UnitX ) )
                 {
+                    AddNewMods( _import.ExtractedMods );
                     _import = null;
                     ImGui.CloseCurrentPopup();
                 }
+            }
+        }
+    }
+
+    // Clean up invalid directories if necessary.
+    // Add all successfully extracted mods.
+    private static void AddNewMods( IEnumerable< (FileInfo File, DirectoryInfo? Mod, Exception? Error) > list )
+    {
+        foreach( var (file, dir, error) in list )
+        {
+            if( error != null )
+            {
+                if( dir != null && Directory.Exists( dir.FullName ) )
+                {
+                    try
+                    {
+                        Directory.Delete( dir.FullName );
+                    }
+                    catch( Exception e )
+                    {
+                        PluginLog.Error($"Error cleaning up failed mod extraction of {file.FullName} to {dir.FullName}:\n{e}"  );
+                    }
+                }
+
+                PluginLog.Error( $"Error extracting {file.FullName}, mod skipped:\n{error}" );
+                continue;
+            }
+
+            if( dir != null )
+            {
+                Penumbra.ModManager.AddMod( dir );
             }
         }
     }

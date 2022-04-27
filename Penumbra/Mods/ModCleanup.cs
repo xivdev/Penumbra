@@ -12,6 +12,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
+// TODO Everything
 //ublic class ModCleanup
 //
 //   private const string Duplicates = "Duplicates";
@@ -521,7 +522,6 @@ namespace Penumbra.Mods;
 //           }
 //       }
 //
-//       // TODO
 //       var idx = Penumbra.ModManager.Mods.IndexOf( m => m.Meta == meta );
 //       foreach( var collection in Penumbra.CollectionManager )
 //       {

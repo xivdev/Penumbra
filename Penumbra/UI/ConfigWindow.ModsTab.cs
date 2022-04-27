@@ -1,18 +1,17 @@
-using System;
-using System.Numerics;
-using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
+using System;
+using System.Numerics;
 
 namespace Penumbra.UI;
 
 public partial class ConfigWindow
 {
-    public void DrawModsTab()
+    private void DrawModsTab()
     {
         if( !Penumbra.ModManager.Valid )
         {
@@ -103,12 +102,10 @@ public partial class ConfigWindow
 
         private bool               _valid;
         private ModFileSystem.Leaf _leaf = null!;
-        private Mod               _mod  = null!;
+        private Mod                _mod  = null!;
 
         public ModPanel( ConfigWindow window )
-        {
-            _window = window;
-        }
+            => _window = window;
 
         public void Draw( ModFileSystemSelector selector )
         {

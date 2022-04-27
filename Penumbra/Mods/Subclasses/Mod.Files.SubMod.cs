@@ -13,9 +13,11 @@ namespace Penumbra.Mods;
 
 public partial class Mod
 {
-    private string DefaultFile
+    internal string DefaultFile
         => Path.Combine( BasePath.FullName, "default_mod.json" );
 
+    // The default mod contains setting-independent sets of file replacements, file swaps and meta changes.
+    // Every mod has an default mod, though it may be empty.
     private void SaveDefaultMod()
     {
         var defaultFile = DefaultFile;
@@ -55,6 +57,14 @@ public partial class Mod
     }
 
 
+    // A sub mod is a collection of
+    //   - file replacements
+    //   - file swaps
+    //   - meta manipulations
+    // that can be used either as an option or as the default data for a mod.
+    // It can be loaded and reloaded from Json.
+    // Nothing is checked for existence or validity when loading.
+    // Objects are also not checked for uniqueness, the first appearance of a game path or meta path decides.
     private sealed class SubMod : ISubMod
     {
         public string Name { get; set; } = "Default";
@@ -78,6 +88,7 @@ public partial class Mod
             FileSwapData.Clear();
             ManipulationData.Clear();
 
+            // Every option has a name, but priorities are only relevant for multi group options.
             Name     = json[ nameof( ISubMod.Name ) ]?.ToObject< string >()    ?? string.Empty;
             priority = json[ nameof( IModGroup.Priority ) ]?.ToObject< int >() ?? 0;
 
@@ -115,6 +126,8 @@ public partial class Mod
             }
         }
 
+        // If .meta or .rgsp files are encountered, parse them and incorporate their meta changes into the mod.
+        // If delete is true, the files are deleted afterwards.
         public void IncorporateMetaChanges( DirectoryInfo basePath, bool delete )
         {
             foreach( var (key, file) in Files.ToList() )

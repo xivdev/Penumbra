@@ -124,7 +124,7 @@ public partial class ConfigWindow
                 // Filters mean we can not use the known counts.
                 if( hasFilters )
                 {
-                    var it2 = it.Select( p => ( p.Item1.ToString() ?? string.Empty, Penumbra.ModManager.Mods[ p.Item2 ].Name ) );
+                    var it2 = it.Select( p => ( p.Item1.ToString() ?? string.Empty, Penumbra.ModManager[ p.Item2 ].Name ) );
                     if( stop >= 0 )
                     {
                         ImGuiClip.DrawEndDummy( stop + it2.Count( CheckFilters ), height );
@@ -190,7 +190,7 @@ public partial class ConfigWindow
             ImGui.TableNextColumn();
             ImGuiUtil.PrintIcon( FontAwesomeIcon.LongArrowAltLeft );
             ImGui.TableNextColumn();
-            ImGuiUtil.CopyOnClickSelectable( Penumbra.ModManager.Mods[ modIdx ].Name );
+            ImGuiUtil.CopyOnClickSelectable( Penumbra.ModManager[ modIdx ].Name );
         }
 
         // Check filters for file replacements.

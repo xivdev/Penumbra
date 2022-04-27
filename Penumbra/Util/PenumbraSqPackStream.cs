@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Runtime.InteropServices;
 using Lumina.Data.Structs;
+using Lumina.Extensions;
 
 namespace Penumbra.Util;
 

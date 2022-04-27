@@ -112,7 +112,7 @@ public partial class ConfigWindow
         private void DrawCurrentCollectionInheritance()
         {
             using var list = ImRaii.ListBox( "##inheritanceList",
-                new Vector2( _window._inputTextWidth.X - ImGui.GetFrameHeight() - ImGui.GetStyle().ItemSpacing.X,
+                new Vector2( _window._inputTextWidth.X - _window._iconButtonSize.X - ImGui.GetStyle().ItemSpacing.X,
                     ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight ) );
             if( !list )
             {
@@ -131,7 +131,7 @@ public partial class ConfigWindow
         private void DrawInheritanceTrashButton()
         {
             ImGui.SameLine();
-            var size        = new Vector2( ImGui.GetFrameHeight(), ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight );
+            var size        = new Vector2( _window._iconButtonSize.X, ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight );
             var buttonColor = ImGui.GetColorU32( ImGuiCol.Button );
             // Prevent hovering from highlighting the button.
             using var color = ImRaii.PushColor( ImGuiCol.ButtonActive, buttonColor )
@@ -142,7 +142,7 @@ public partial class ConfigWindow
             using var target = ImRaii.DragDropTarget();
             if( target.Success && ImGuiUtil.IsDropping( InheritanceDragDropLabel ) )
             {
-                _inheritanceAction = ( Penumbra.CollectionManager.Current.Inheritance.IndexOf( _movedInheritance ), -1 );
+                _inheritanceAction = ( Penumbra.CollectionManager.Current.Inheritance.IndexOf( _movedInheritance! ), -1 );
             }
         }
 
@@ -192,7 +192,7 @@ public partial class ConfigWindow
                 ModCollection.ValidInheritance.Circle    => "Inheriting from selected collection would lead to cyclic inheritance.",
                 _                                        => string.Empty,
             };
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), ImGui.GetFrameHeight() * Vector2.One, tt,
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize, tt,
                    inheritance != ModCollection.ValidInheritance.Valid, true )
             && Penumbra.CollectionManager.Current.AddInheritance( _newInheritance! ) )
             {
@@ -211,7 +211,7 @@ public partial class ConfigWindow
         // Only valid inheritances are drawn in the preview, or nothing if no inheritance is available.
         private void DrawNewInheritanceCombo()
         {
-            ImGui.SetNextItemWidth( _window._inputTextWidth.X - ImGui.GetFrameHeight() - ImGui.GetStyle().ItemSpacing.X );
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X - _window._iconButtonSize.X - ImGui.GetStyle().ItemSpacing.X );
             _newInheritance ??= Penumbra.CollectionManager.FirstOrDefault( c
                     => c != Penumbra.CollectionManager.Current && !Penumbra.CollectionManager.Current.Inheritance.Contains( c ) )
              ?? ModCollection.Empty;

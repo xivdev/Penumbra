@@ -18,7 +18,7 @@ public partial class Mod
     private Mod( DirectoryInfo basePath )
         => BasePath = basePath;
 
-    public static Mod? LoadMod( DirectoryInfo basePath )
+    private static Mod? LoadMod( DirectoryInfo basePath )
     {
         basePath.Refresh();
         if( !basePath.Exists )

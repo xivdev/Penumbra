@@ -1,6 +1,4 @@
 using System;
-using System.ComponentModel.Design;
-using System.Linq;
 using System.Numerics;
 using ImGuiNET;
 using OtterGui;
@@ -112,6 +110,7 @@ public partial class ConfigWindow
             {
                 return;
             }
+
             var       conflicts = Penumbra.CollectionManager.Current.ModConflicts( _mod.Index );
             Mod?      oldBadMod = null;
             using var indent    = ImRaii.PushIndent( 0f );
@@ -124,19 +123,20 @@ public partial class ConfigWindow
                     {
                         indent.Pop( 30f );
                     }
-            
+
                     if( ImGui.Selectable( badMod.Name ) )
                     {
                         _window._selector.SelectByValue( badMod );
                     }
-            
+
                     ImGui.SameLine();
-                    using var color = ImRaii.PushColor( ImGuiCol.Text, conflict.Mod1Priority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value() );
+                    using var color = ImRaii.PushColor( ImGuiCol.Text,
+                        conflict.Mod1Priority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value() );
                     ImGui.Text( $"(Priority {Penumbra.CollectionManager.Current[ conflict.Mod2 ].Settings!.Priority})" );
-            
+
                     indent.Push( 30f );
                 }
-            
+
                 if( conflict.Data is Utf8GamePath p )
                 {
                     unsafe
@@ -148,7 +148,7 @@ public partial class ConfigWindow
                 {
                     ImGui.Selectable( m.Manipulation?.ToString() ?? string.Empty );
                 }
-            
+
                 oldBadMod = badMod;
             }
         }

@@ -30,9 +30,9 @@ public class Penumbra : IDalamudPlugin
 
     private const string CommandName = "/penumbra";
 
-    public static string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
+    public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
 
-    public static string CommitHash =
+    public static readonly string CommitHash =
         Assembly.GetExecutingAssembly().GetCustomAttribute< AssemblyInformationalVersionAttribute >()?.InformationalVersion ?? "Unknown";
 
     public static Configuration Config { get; private set; } = null!;
@@ -295,7 +295,7 @@ public class Penumbra : IDalamudPlugin
                 case "reload":
                 {
                     ModManager.DiscoverMods();
-                    Dalamud.Chat.Print( $"Reloaded Penumbra mods. You have {ModManager.Mods.Count} mods."
+                    Dalamud.Chat.Print( $"Reloaded Penumbra mods. You have {ModManager.Count} mods."
                     );
                     break;
                 }

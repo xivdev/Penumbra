@@ -197,6 +197,14 @@ public sealed partial class Mod
                 return;
             }
 
+            if( mod._groups[ groupIdx ].Count > 63 )
+            {
+                PluginLog.Error(
+                    $"Could not add option {option.Name} to {mod._groups[ groupIdx ].Name} for mod {mod.Name}, "
+                  + "since only up to 64 options are supported in one group." );
+                return;
+            }
+
             switch( mod._groups[ groupIdx ] )
             {
                 case SingleModGroup s:

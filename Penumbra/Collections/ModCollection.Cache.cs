@@ -251,7 +251,7 @@ public partial class ModCollection
                 return;
             }
 
-            var mod = Penumbra.ModManager.Mods[ modIdx ];
+            var mod = Penumbra.ModManager[ modIdx ];
             AddSubMod( mod.Default, new FileRegister( modIdx, settings.Priority, 0, 0 ), withManipulations );
             for( var idx = 0; idx < mod.Groups.Count; ++idx )
             {

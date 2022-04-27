@@ -4,9 +4,14 @@ using System.IO;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using OtterGui.Filesystem;
-using Penumbra.Util;
 
 namespace Penumbra.Mods;
+
+public enum SelectType
+{
+    Single,
+    Multi,
+}
 
 public interface IModGroup : IEnumerable< ISubMod >
 {

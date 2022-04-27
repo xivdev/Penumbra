@@ -11,16 +11,19 @@ public sealed partial class Mod
         public DirectoryInfo BasePath { get; private set; } = null!;
         public bool Valid { get; private set; }
 
-
         public event Action? ModDiscoveryStarted;
         public event Action? ModDiscoveryFinished;
 
+        // Change the mod base directory and discover available mods.
         public void DiscoverMods( string newDir )
         {
             SetBaseDirectory( newDir, false );
             DiscoverMods();
         }
 
+        // Set the mod base directory.
+        // If its not the first time, check if it is the same directory as before.
+        // Also checks if the directory is available and tries to create it if it is not.
         private void SetBaseDirectory( string newPath, bool firstTime )
         {
             if( !firstTime && string.Equals( newPath, Penumbra.Config.ModDirectory, StringComparison.InvariantCultureIgnoreCase ) )
@@ -59,8 +62,10 @@ public sealed partial class Mod
             }
         }
 
+        // Discover new mods.
         public void DiscoverMods()
         {
+            NewMods.Clear();
             ModDiscoveryStarted?.Invoke();
             _mods.Clear();
             BasePath.Refresh();

@@ -16,17 +16,15 @@ public class ModsController : WebApiController
     [Route( HttpVerbs.Get, "/mods" )]
     public object? GetMods()
     {
-        // TODO
-        return null;
-        //return Penumbra.ModManager.Mods.Zip( Penumbra.CollectionManager.Current.ActualSettings ).Select( x => new
-        //{
-        //    x.Second?.Enabled,
-        //    x.Second?.Priority,
-        //    x.First.BasePath.Name,
-        //    x.First.Name,
-        //    BasePath = x.First.BasePath.FullName,
-        //    Files    = x.First.Resources.ModFiles.Select( fi => fi.FullName ),
-        //} );
+        return Penumbra.ModManager.Zip( Penumbra.CollectionManager.Current.ActualSettings ).Select( x => new
+        {
+            x.Second?.Enabled,
+            x.Second?.Priority,
+            FolderName = x.First.BasePath.Name,
+            x.First.Name,
+            BasePath = x.First.BasePath.FullName,
+            Files    = x.First.AllFiles,
+        } );
     }
 
     [Route( HttpVerbs.Post, "/mods" )]

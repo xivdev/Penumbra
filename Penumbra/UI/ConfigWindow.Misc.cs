@@ -21,16 +21,16 @@ public partial class ConfigWindow
         => ImGuiNative.igTextUnformatted( s.Path, s.Path + s.Length );
 
     // Draw text given by a byte pointer.
-    internal static unsafe void Text( byte* s, int length )
+    private static unsafe void Text( byte* s, int length )
         => ImGuiNative.igTextUnformatted( s, s + length );
 
     // Draw the name of a resource file.
-    internal static unsafe void Text( ResourceHandle* resource )
+    private static unsafe void Text( ResourceHandle* resource )
         => Text( resource->FileName(), resource->FileNameLength );
 
     // Draw a changed item, invoking the Api-Events for clicks and tooltips.
     // Also draw the item Id in grey
-    internal void DrawChangedItem( string name, object? data, float itemIdOffset = 0 )
+    private void DrawChangedItem( string name, object? data, float itemIdOffset = 0 )
     {
         var ret = ImGui.Selectable( name ) ? MouseButton.Left : MouseButton.None;
         ret = ImGui.IsItemClicked( ImGuiMouseButton.Right ) ? MouseButton.Right : ret;
@@ -64,7 +64,7 @@ public partial class ConfigWindow
 
     // A selectable that copies its text to clipboard on selection and provides a on-hover tooltip about that,
     // using an Utf8String.
-    internal static unsafe void CopyOnClickSelectable( Utf8String text )
+    private static unsafe void CopyOnClickSelectable( Utf8String text )
     {
         if( ImGuiNative.igSelectable_Bool( text.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero ) != 0 )
         {

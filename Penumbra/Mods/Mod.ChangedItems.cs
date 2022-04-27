@@ -8,7 +8,7 @@ public sealed partial class Mod
     public SortedList< string, object? > ChangedItems { get; } = new();
     public string LowerChangedItemsString { get; private set; } = string.Empty;
 
-    public void ComputeChangedItems()
+    private void ComputeChangedItems()
     {
         var identifier = GameData.GameData.GetIdentifier();
         ChangedItems.Clear();

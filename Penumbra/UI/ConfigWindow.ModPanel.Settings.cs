@@ -1,4 +1,3 @@
-using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
@@ -16,7 +15,7 @@ public partial class ConfigWindow
 {
     private partial class ModPanel
     {
-        private ModSettings                      _settings   = null!;
+        private ModSettings                       _settings   = null!;
         private ModCollection                     _collection = null!;
         private bool                              _emptySetting;
         private bool                              _inherited;
@@ -92,6 +91,7 @@ public partial class ConfigWindow
             var enabled = _settings.Enabled;
             if( ImGui.Checkbox( "Enabled", ref enabled ) )
             {
+                Penumbra.ModManager.NewMods.Remove( _mod );
                 Penumbra.CollectionManager.Current.SetModState( _mod.Index, enabled );
             }
         }
@@ -132,7 +132,7 @@ public partial class ConfigWindow
             }
 
             var scroll = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0;
-            ImGui.SameLine( ImGui.GetWindowWidth() - ImGui.CalcTextSize( text ).X - ImGui.GetStyle().FramePadding.X * 2 - scroll);
+            ImGui.SameLine( ImGui.GetWindowWidth() - ImGui.CalcTextSize( text ).X - ImGui.GetStyle().FramePadding.X * 2 - scroll );
             if( ImGui.Button( text ) )
             {
                 Penumbra.CollectionManager.Current.SetModInheritance( _mod.Index, true );

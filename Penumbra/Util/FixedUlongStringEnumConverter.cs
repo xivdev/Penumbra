@@ -75,7 +75,7 @@ public static partial class JsonExtensions
         return reader;
     }
 
-    public static JsonReader ReadAndAssert( this JsonReader reader )
+    private static JsonReader ReadAndAssert( this JsonReader reader )
     {
         if( reader == null )
         {
