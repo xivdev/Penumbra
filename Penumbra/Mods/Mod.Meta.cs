@@ -9,7 +9,7 @@ using OtterGui.Classes;
 namespace Penumbra.Mods;
 
 [Flags]
-public enum MetaChangeType : byte
+public enum MetaChangeType : ushort
 {
     None        = 0x00,
     Name        = 0x01,
@@ -19,6 +19,7 @@ public enum MetaChangeType : byte
     Website     = 0x10,
     Deletion    = 0x20,
     Migration   = 0x40,
+    ImportDate  = 0x80,
 }
 
 public sealed partial class Mod
@@ -30,6 +31,7 @@ public sealed partial class Mod
     public string Description { get; private set; } = string.Empty;
     public string Version { get; private set; } = string.Empty;
     public string Website { get; private set; } = string.Empty;
+    public long ImportDate { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     internal FileInfo MetaFile
         => new(Path.Combine( BasePath.FullName, "meta.json" ));
@@ -54,6 +56,7 @@ public sealed partial class Mod
             var newVersion     = json[ nameof( Version ) ]?.Value< string >()     ?? string.Empty;
             var newWebsite     = json[ nameof( Website ) ]?.Value< string >()     ?? string.Empty;
             var newFileVersion = json[ nameof( FileVersion ) ]?.Value< uint >()   ?? 0;
+            var importDate     = json[ nameof( ImportDate ) ]?.Value< long >()    ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
             MetaChangeType changes = 0;
             if( Name != newName )
@@ -95,6 +98,12 @@ public sealed partial class Mod
                 }
             }
 
+            if( ImportDate != importDate )
+            {
+                ImportDate =  importDate;
+                changes    |= MetaChangeType.ImportDate;
+            }
+
             return changes;
         }
         catch( Exception e )
@@ -117,6 +126,7 @@ public sealed partial class Mod
                 { nameof( Description ), JToken.FromObject( Description ) },
                 { nameof( Version ), JToken.FromObject( Version ) },
                 { nameof( Website ), JToken.FromObject( Website ) },
+                { nameof( ImportDate ), JToken.FromObject( ImportDate ) },
             };
             File.WriteAllText( metaFile.FullName, jObject.ToString( Formatting.Indented ) );
         }
