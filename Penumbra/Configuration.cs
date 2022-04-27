@@ -4,6 +4,7 @@ using System.Linq;
 using Dalamud.Configuration;
 using Dalamud.Logging;
 using OtterGui.Filesystem;
+using Penumbra.Import;
 using Penumbra.UI.Classes;
 
 namespace Penumbra;
@@ -37,6 +38,9 @@ public partial class Configuration : IPluginConfiguration
     public bool ShowAdvanced { get; set; }
     public bool DisableSoundStreaming { get; set; } = true;
     public bool EnableHttpApi { get; set; }
+
+    public string DefaultModImportPath { get; set; } = string.Empty;
+    public string DefaultModAuthor { get; set; } = DefaultTexToolsData.Author;
 
     public Dictionary< ColorId, uint > Colors { get; set; }
         = Enum.GetValues< ColorId >().ToDictionary( c => c, c => c.Data().DefaultColor );

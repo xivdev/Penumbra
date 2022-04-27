@@ -45,6 +45,8 @@ public partial class ConfigWindow
             DrawModSelectorSettings();
             DrawColorSettings();
             DrawAdvancedSettings();
+
+            _dialogManager.Draw();
         }
 
         // Changing the base mod directory.
@@ -92,8 +94,6 @@ public partial class ConfigWindow
                     _dialogOpen = true;
                 }
             }
-
-            _dialogManager.Draw();
         }
 
         private static void DrawOpenDirectoryButton( int id, DirectoryInfo directory, bool condition )
@@ -137,7 +137,7 @@ public partial class ConfigWindow
             ImGui.NewLine();
 
             if( Penumbra.Config.ModDirectory != _newModDirectory
-            && _newModDirectory.Length       == 0
+            && _newModDirectory.Length       != 0
             && ( save || DrawPressEnterWarning( Penumbra.Config.ModDirectory, pos ) ) )
             {
                 Penumbra.ModManager.DiscoverMods( _newModDirectory );

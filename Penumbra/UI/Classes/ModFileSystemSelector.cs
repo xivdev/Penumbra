@@ -132,7 +132,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             try
             {
                 var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
-                Mod.CreateMeta( newDir, _newModName, string.Empty, string.Empty, "1.0", string.Empty );
+                Mod.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty );
                 Penumbra.ModManager.AddMod( newDir );
                 _newModName = string.Empty;
             }
@@ -144,11 +144,18 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     }
 
     // Add an import mods button that opens a file selector.
+    // Only set the initial directory once.
+    private bool _hasSetFolder;
+
     private void AddImportModButton( Vector2 size )
     {
         if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
                "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true ) )
         {
+            var modPath = _hasSetFolder                           ? null
+                : Penumbra.Config.DefaultModImportPath.Length > 0 ? Penumbra.Config.DefaultModImportPath
+                : Penumbra.Config.ModDirectory.Length         > 0 ? Penumbra.Config.ModDirectory : null;
+            _hasSetFolder = true;
             _fileManager.OpenFileDialog( "Import Mod Pack", "TexTools Mod Packs{.ttmp,.ttmp2}", ( s, f ) =>
             {
                 if( s )
@@ -156,7 +163,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
                     _import = new TexToolsImporter( Penumbra.ModManager.BasePath, f.Count, f.Select( file => new FileInfo( file ) ) );
                     ImGui.OpenPopup( "Import Status" );
                 }
-            }, 0, Penumbra.Config.ModDirectory );
+            }, 0, modPath );
         }
 
         _fileManager.Draw();
@@ -202,7 +209,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
                     }
                     catch( Exception e )
                     {
-                        PluginLog.Error($"Error cleaning up failed mod extraction of {file.FullName} to {dir.FullName}:\n{e}"  );
+                        PluginLog.Error( $"Error cleaning up failed mod extraction of {file.FullName} to {dir.FullName}:\n{e}" );
                     }
                 }
 

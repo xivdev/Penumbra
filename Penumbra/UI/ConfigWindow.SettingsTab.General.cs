@@ -1,4 +1,7 @@
 using System;
+using System.IO;
+using System.Numerics;
+using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Filesystem;
@@ -12,7 +15,7 @@ public partial class ConfigWindow
     {
         private void DrawModSelectorSettings()
         {
-            if( !ImGui.CollapsingHeader( "Mod Selector" ) )
+            if( !ImGui.CollapsingHeader( "General" ) )
             {
                 return;
             }
@@ -20,6 +23,9 @@ public partial class ConfigWindow
             DrawFolderSortType();
             DrawAbsoluteSizeSelector();
             DrawRelativeSizeSelector();
+            ImGui.Dummy( _window._defaultSpace );
+            DrawDefaultModImportPath();
+            DrawDefaultModAuthor();
 
             ImGui.NewLine();
         }
@@ -92,6 +98,67 @@ public partial class ConfigWindow
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( "Mod Selector Relative Size",
                 "Instead of keeping the mod-selector in the Installed Mods tab a fixed width, this will let it scale with the total size of the Penumbra window." );
+        }
+
+        private void DrawDefaultModImportPath()
+        {
+            var       tmp     = Penumbra.Config.DefaultModImportPath;
+            var       spacing = new Vector2( 3 * ImGuiHelpers.GlobalScale );
+            using var style   = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, spacing );
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X - _window._iconButtonSize.X - spacing.X );
+            if( ImGui.InputText( "##defaultModImport", ref tmp, 256 ) )
+            {
+                Penumbra.Config.DefaultModImportPath = tmp;
+            }
+
+            if( ImGui.IsItemDeactivatedAfterEdit() )
+            {
+                Penumbra.Config.Save();
+            }
+
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( $"{FontAwesomeIcon.Folder.ToIconString()}##import", _window._iconButtonSize,
+                   "Select a directory via dialog.", false, true ) )
+            {
+                if( _dialogOpen )
+                {
+                    _dialogManager.Reset();
+                    _dialogOpen = false;
+                }
+                else
+                {
+                    var startDir = Directory.Exists( Penumbra.Config.ModDirectory ) ? Penumbra.Config.ModDirectory : ".";
+
+                    _dialogManager.OpenFolderDialog( "Choose Default Import Directory", ( b, s ) =>
+                    {
+                        Penumbra.Config.DefaultModImportPath = b ? s : Penumbra.Config.DefaultModImportPath;
+                        Penumbra.Config.Save();
+                        _dialogOpen = false;
+                    }, startDir );
+                    _dialogOpen = true;
+                }
+            }
+
+            style.Pop();
+            ImGuiUtil.LabeledHelpMarker( "Default Mod Import Directory",
+                "Set the directory that gets opened when using the file picker to import mods for the first time." );
+        }
+
+        private void DrawDefaultModAuthor()
+        {
+            var tmp = Penumbra.Config.DefaultModAuthor;
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X );
+            if( ImGui.InputText( "##defaultAuthor", ref tmp, 64 ) )
+            {
+                Penumbra.Config.DefaultModAuthor = tmp;
+            }
+
+            if( ImGui.IsItemDeactivatedAfterEdit() )
+            {
+                Penumbra.Config.Save();
+            }
+
+            ImGuiUtil.LabeledHelpMarker( "Default Mod Author", "Set the default author stored for newly created mods." );
         }
     }
 }
