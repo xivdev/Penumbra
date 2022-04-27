@@ -53,6 +53,7 @@ public partial class ConfigWindow
             _cellPadding = ImGui.GetStyle().CellPadding with { X = 2 * ImGuiHelpers.GlobalScale };
             _itemSpacing = ImGui.GetStyle().CellPadding with { X = 4 * ImGuiHelpers.GlobalScale };
 
+            EditButtons();
             EditRegularMeta();
             ImGui.Dummy( _window._defaultSpace );
 
@@ -76,27 +77,29 @@ public partial class ConfigWindow
 
         private void EditButtons()
         {
+            var buttonSize   = new Vector2( 150 * ImGuiHelpers.GlobalScale, 0 );
             var folderExists = Directory.Exists( _mod.BasePath.FullName );
             var tt = folderExists
-                ? $"Open {_mod.BasePath.FullName} in the file explorer of your choice."
-                : $"Mod directory {_mod.BasePath.FullName} does not exist.";
-            if( ImGuiUtil.DrawDisabledButton( "Open Mod Directory", Vector2.Zero, tt, !folderExists ) )
+                ? $"Open \"{_mod.BasePath.FullName}\" in the file explorer of your choice."
+                : $"Mod directory \"{_mod.BasePath.FullName}\" does not exist.";
+            if( ImGuiUtil.DrawDisabledButton( "Open Mod Directory", buttonSize, tt, !folderExists ) )
             {
                 Process.Start( new ProcessStartInfo( _mod.BasePath.FullName ) { UseShellExecute = true } );
             }
 
+            
             ImGui.SameLine();
-            ImGuiUtil.DrawDisabledButton( "Rename Mod Directory", Vector2.Zero, "Not implemented yet", true );
+            ImGuiUtil.DrawDisabledButton( "Rename Mod Directory", buttonSize, "Not implemented yet", true );
             ImGui.SameLine();
-            ImGuiUtil.DrawDisabledButton( "Reload Mod", Vector2.Zero, "Not implemented yet", true );
+            ImGuiUtil.DrawDisabledButton( "Reload Mod", buttonSize, "Not implemented yet", true );
 
-            ImGuiUtil.DrawDisabledButton( "Deduplicate", Vector2.Zero, "Not implemented yet", true );
+            ImGuiUtil.DrawDisabledButton( "Deduplicate", buttonSize, "Not implemented yet", true );
             ImGui.SameLine();
-            ImGuiUtil.DrawDisabledButton( "Normalize", Vector2.Zero, "Not implemented yet", true );
+            ImGuiUtil.DrawDisabledButton( "Normalize", buttonSize, "Not implemented yet", true );
             ImGui.SameLine();
-            ImGuiUtil.DrawDisabledButton( "Auto-Create Groups", Vector2.Zero, "Not implemented yet", true );
+            ImGuiUtil.DrawDisabledButton( "Auto-Create Groups", buttonSize, "Not implemented yet", true );
 
-            ImGuiUtil.DrawDisabledButton( "Change Material Suffix", Vector2.Zero, "Not implemented yet", true );
+            ImGuiUtil.DrawDisabledButton( "Change Material Suffix", buttonSize, "Not implemented yet", true );
 
             ImGui.Dummy( _window._defaultSpace );
         }
