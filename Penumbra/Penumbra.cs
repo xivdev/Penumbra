@@ -160,6 +160,7 @@ public class Penumbra : IDalamudPlugin
 
         Config.EnableMods = true;
         ResourceLoader.EnableReplacements();
+        CollectionManager.Default.SetFiles();
         ResidentResources.Reload();
 
         Config.Save();
@@ -176,6 +177,7 @@ public class Penumbra : IDalamudPlugin
 
         Config.EnableMods = false;
         ResourceLoader.DisableReplacements();
+        CharacterUtility.ResetAll();
         ResidentResources.Reload();
 
         Config.Save();
