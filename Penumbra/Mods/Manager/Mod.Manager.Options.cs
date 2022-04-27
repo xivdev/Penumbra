@@ -55,6 +55,8 @@ public sealed partial class Mod
                 return;
             }
 
+            group.DeleteFile( mod.BasePath );
+
             var _ = group switch
             {
                 SingleModGroup s => s.Name = newName,

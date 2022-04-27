@@ -6,7 +6,6 @@ using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
-using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -50,13 +49,42 @@ public sealed partial class Mod
                 mod._default.FileSwapData.Add( gamePath, swapPath );
             }
 
-            mod._default.IncorporateMetaChanges( mod.BasePath, false );
+            mod._default.IncorporateMetaChanges( mod.BasePath, true );
             foreach( var group in mod.Groups )
             {
                 IModGroup.SaveModGroup( group, mod.BasePath );
             }
 
+            // Delete meta files.
+            foreach( var file in seenMetaFiles.Where( f => f.Exists ) )
+            {
+                try
+                {
+                    File.Delete( file.FullName );
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Warning( $"Could not delete meta file {file.FullName} during migration:\n{e}" );
+                }
+            }
+
+            // Delete old meta files.
+            var oldMetaFile = Path.Combine( mod.BasePath.FullName, "metadata_manipulations.json" );
+            if( File.Exists( oldMetaFile ) )
+            {
+                try
+                {
+                    File.Delete( oldMetaFile );
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Warning( $"Could not delete old meta file {oldMetaFile} during migration:\n{e}" );
+                }
+            }
+
+            mod.FileVersion = 1;
             mod.SaveDefaultMod();
+            mod.SaveMeta();
 
             return true;
         }
