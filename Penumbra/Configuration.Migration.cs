@@ -111,7 +111,7 @@ public partial class Configuration
             j.WriteStartObject();
             j.WritePropertyName( "Data" );
             j.WriteStartObject();
-            foreach( var (mod, path) in ModSortOrder )
+            foreach( var (mod, path) in ModSortOrder.Where( kvp => Directory.Exists( Path.Combine( _config.ModDirectory, kvp.Key ) ) ) )
             {
                 j.WritePropertyName( mod, true );
                 j.WriteValue( path );
