@@ -22,7 +22,7 @@ public static class Backup
             var configDirectory = Dalamud.PluginInterface.ConfigDirectory.Parent!.FullName;
             var directory       = CreateBackupDirectory();
             var (newestFile, oldestFile, numFiles) = CheckExistingBackups( directory );
-            var newBackupName = Path.Combine( directory.FullName, $"{DateTime.Now:yyyyMMddHHmss}.zip" );
+            var newBackupName = Path.Combine( directory.FullName, $"{DateTime.Now:yyyyMMddHHmmss}.zip" );
             if( newestFile == null || CheckNewestBackup( newestFile, configDirectory, files.Count ) )
             {
                 CreateBackup( files, newBackupName, configDirectory );
