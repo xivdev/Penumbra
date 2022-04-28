@@ -39,7 +39,7 @@ public partial class TexToolsImporter
         Mod.CreateMeta( ret, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description, null, null );
 
         ExtractSimpleModList( ret, modList, modData );
-
+        Mod.CreateDefaultFiles( ret );
         return ret;
     }
 
@@ -96,6 +96,7 @@ public partial class TexToolsImporter
             : modList.Description, null, null );
 
         ExtractSimpleModList( ret, modList.SimpleModsList, modData );
+        Mod.CreateDefaultFiles( ret );
         return ret;
     }
 

@@ -87,7 +87,7 @@ public partial class ConfigWindow
                 Process.Start( new ProcessStartInfo( _mod.BasePath.FullName ) { UseShellExecute = true } );
             }
 
-            
+
             ImGui.SameLine();
             ImGuiUtil.DrawDisabledButton( "Rename Mod Directory", buttonSize, "Not implemented yet", true );
             ImGui.SameLine();
@@ -136,8 +136,10 @@ public partial class ConfigWindow
                 Penumbra.ModManager.ChangeModWebsite( _mod.Index, newWebsite );
             }
 
-            var reducedSize = new Vector2( _window._inputTextWidth.X - _window._iconButtonSize.X - ImGui.GetStyle().ItemSpacing.X, 0 );
+            var       spacing = new Vector2( 3 * ImGuiHelpers.GlobalScale );
+            using var style   = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, spacing );
 
+            var reducedSize = new Vector2( _window._inputTextWidth.X - _window._iconButtonSize.X - spacing.X, 0 );
             if( ImGui.Button( "Edit Description", reducedSize ) )
             {
                 _delayedActions.Enqueue( () => OpenEditDescriptionPopup( DescriptionFieldIdx ) );
@@ -148,7 +150,8 @@ public partial class ConfigWindow
             var tt = fileExists
                 ? "Open the metadata json file in the text editor of your choice."
                 : "The metadata json file does not exist.";
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileExport.ToIconString(), _window._iconButtonSize, tt, !fileExists, true ) )
+            if( ImGuiUtil.DrawDisabledButton( $"{FontAwesomeIcon.FileExport.ToIconString()}##metaFile", _window._iconButtonSize, tt,
+                   !fileExists, true ) )
             {
                 Process.Start( new ProcessStartInfo( _mod.MetaFile.FullName ) { UseShellExecute = true } );
             }
@@ -163,7 +166,8 @@ public partial class ConfigWindow
             tt = fileExists
                 ? "Open the default option json file in the text editor of your choice."
                 : "The default option json file does not exist.";
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileExport.ToIconString(), _window._iconButtonSize, tt, !fileExists, true ) )
+            if( ImGuiUtil.DrawDisabledButton( $"{FontAwesomeIcon.FileExport.ToIconString()}##defaultFile", _window._iconButtonSize, tt,
+                   !fileExists, true ) )
             {
                 Process.Start( new ProcessStartInfo( _mod.DefaultFile ) { UseShellExecute = true } );
             }

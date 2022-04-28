@@ -5,12 +5,194 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 using Penumbra.Import;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
+
+public partial class Mod
+{
+    //public partial class Manager
+    //{
+    //    public class Normalizer
+    //    {
+    //        private Dictionary< Utf8GamePath, List< (FullPath Path, IModGroup Group, ISubMod Option) > >              Files  = new();
+    //        private Dictionary< Utf8GamePath, List< (FullPath Path, IModGroup Group, ISubMod Option) > >              Swaps  = new();
+    //        private Dictionary< MetaManipulation, List< (MetaManipulation Value, IModGroup Group, ISubMod Option) > > Manips = new();
+    //
+    //        public Normalizer( Mod mod )
+    //        {
+    //            // Default changes are irrelevant since they can only be overwritten.
+    //            foreach( var group in mod.Groups )
+    //            {
+    //                foreach( var option in group )
+    //                {
+    //                    foreach( var (key, value) in option.Files )
+    //                    {
+    //                        if( !Files.TryGetValue( key, out var list ) )
+    //                        {
+    //                            list         = new List< (FullPath Path, IModGroup Group, ISubMod Option) > { ( value, @group, option ) };
+    //                            Files[ key ] = list;
+    //                        }
+    //                        else
+    //                        {
+    //                            list.Add( ( value, @group, option ) );
+    //                        }
+    //                    }
+    //                }
+    //            }
+    //        }
+    //
+    //        // Normalize a mod, this entails:
+    //        //   - If 
+    //        public static void Normalize( Mod mod )
+    //        {
+    //            NormalizeOptions( mod );
+    //            MergeSingleGroups( mod );
+    //            DeleteEmptyGroups( mod );
+    //        }
+    //
+    //
+    //        // Delete every option group that has either no options,
+    //        // or exclusively empty options.
+    //        // Triggers changes through calling ModManager.
+    //        private static void DeleteEmptyGroups( Mod mod )
+    //        {
+    //            for( var i = 0; i < mod.Groups.Count; ++i )
+    //            {
+    //                DeleteIdenticalOptions( mod, i );
+    //                var group = mod.Groups[ i ];
+    //                if( group.Count == 0 || group.All( o => o.FileSwaps.Count == 0 && o.Files.Count == 0 && o.Manipulations.Count == 0 ) )
+    //                {
+    //                    Penumbra.ModManager.DeleteModGroup( mod, i-- );
+    //                }
+    //            }
+    //        }
+    //
+    //        // Merge every non-optional group into the default mod.
+    //        // Overwrites default mod entries if necessary.
+    //        // Deletes the non-optional group afterwards.
+    //        // Triggers changes through calling ModManager.
+    //        private static void MergeSingleGroup( Mod mod )
+    //        {
+    //            var defaultMod = ( SubMod )mod.Default;
+    //            for( var i = 0; i < mod.Groups.Count; ++i )
+    //            {
+    //                var group = mod.Groups[ i ];
+    //                if( group.Type == SelectType.Single && group.Count == 1 )
+    //                {
+    //                    defaultMod.MergeIn( group[ 0 ] );
+    //
+    //                    Penumbra.ModManager.DeleteModGroup( mod, i-- );
+    //                }
+    //            }
+    //        }
+    //
+    //        private static void NotifyChanges( Mod mod, int groupIdx, ModOptionChangeType type, ref bool anyChanges )
+    //        {
+    //            if( anyChanges )
+    //            {
+    //                for( var i = 0; i < mod.Groups[ groupIdx ].Count; ++i )
+    //                {
+    //                    Penumbra.ModManager.ModOptionChanged.Invoke( type, mod, groupIdx, i, -1 );
+    //                }
+    //
+    //                anyChanges = false;
+    //            }
+    //        }
+    //
+    //        private static void NormalizeOptions( Mod mod )
+    //        {
+    //            var defaultMod = ( SubMod )mod.Default;
+    //
+    //            for( var i = 0; i < mod.Groups.Count; ++i )
+    //            {
+    //                var group = mod.Groups[ i ];
+    //                if( group.Type == SelectType.Multi || group.Count < 2 )
+    //                {
+    //                    continue;
+    //                }
+    //
+    //                var firstOption = mod.Groups[ i ][ 0 ];
+    //                var anyChanges  = false;
+    //                foreach( var (key, value) in firstOption.Files.ToList() )
+    //                {
+    //                    if( group.Skip( 1 ).All( o => o.Files.TryGetValue( key, out var v ) && v.Equals( value ) ) )
+    //                    {
+    //                        anyChanges                 = true;
+    //                        defaultMod.FileData[ key ] = value;
+    //                        foreach( var option in group.Cast< SubMod >() )
+    //                        {
+    //                            option.FileData.Remove( key );
+    //                        }
+    //                    }
+    //                }
+    //
+    //                NotifyChanges( mod, i, ModOptionChangeType.OptionFilesChanged, ref anyChanges );
+    //
+    //                foreach( var (key, value) in firstOption.FileSwaps.ToList() )
+    //                {
+    //                    if( group.Skip( 1 ).All( o => o.FileSwaps.TryGetValue( key, out var v ) && v.Equals( value ) ) )
+    //                    {
+    //                        anyChanges                 = true;
+    //                        defaultMod.FileData[ key ] = value;
+    //                        foreach( var option in group.Cast< SubMod >() )
+    //                        {
+    //                            option.FileSwapData.Remove( key );
+    //                        }
+    //                    }
+    //                }
+    //
+    //                NotifyChanges( mod, i, ModOptionChangeType.OptionSwapsChanged, ref anyChanges );
+    //
+    //                anyChanges = false;
+    //                foreach( var manip in firstOption.Manipulations.ToList() )
+    //                {
+    //                    if( group.Skip( 1 ).All( o => ( ( HashSet< MetaManipulation > )o.Manipulations ).TryGetValue( manip, out var m )
+    //                        && manip.EntryEquals( m ) ) )
+    //                    {
+    //                        anyChanges = true;
+    //                        defaultMod.ManipulationData.Remove( manip );
+    //                        defaultMod.ManipulationData.Add( manip );
+    //                        foreach( var option in group.Cast< SubMod >() )
+    //                        {
+    //                            option.ManipulationData.Remove( manip );
+    //                        }
+    //                    }
+    //                }
+    //
+    //                NotifyChanges( mod, i, ModOptionChangeType.OptionMetaChanged, ref anyChanges );
+    //            }
+    //        }
+    //
+    //
+    //        // Delete all options that are entirely identical.
+    //        // Deletes the later occurring option.
+    //        private static void DeleteIdenticalOptions( Mod mod, int groupIdx )
+    //        {
+    //            var group = mod.Groups[ groupIdx ];
+    //            for( var i = 0; i < group.Count; ++i )
+    //            {
+    //                var option = group[ i ];
+    //                for( var j = i + 1; j < group.Count; ++j )
+    //                {
+    //                    var option2 = group[ j ];
+    //                    if( option.Files.SetEquals( option2.Files )
+    //                    && option.FileSwaps.SetEquals( option2.FileSwaps )
+    //                    && option.Manipulations.SetEquals( option2.Manipulations ) )
+    //                    {
+    //                        Penumbra.ModManager.DeleteOption( mod, groupIdx, j-- );
+    //                    }
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
+}
 
 // TODO Everything
 //ublic class ModCleanup

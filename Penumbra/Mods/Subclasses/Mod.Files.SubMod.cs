@@ -82,6 +82,27 @@ public partial class Mod
         public IReadOnlySet< MetaManipulation > Manipulations
             => ManipulationData;
 
+        // Insert all changes from the other submod.
+        // Overwrites already existing changes in this mod.
+        public void MergeIn( ISubMod other )
+        {
+            foreach( var (key, value) in other.Files )
+            {
+                FileData[ key ] = value;
+            }
+
+            foreach( var (key, value) in other.FileSwaps )
+            {
+                FileSwapData[ key ] = value;
+            }
+
+            foreach( var manip in other.Manipulations )
+            {
+                ManipulationData.Remove( manip );
+                ManipulationData.Add( manip );
+            }
+        }
+
         public void Load( DirectoryInfo basePath, JToken json, out int priority )
         {
             FileData.Clear();
@@ -148,6 +169,7 @@ public partial class Mod
                             {
                                 File.Delete( file.FullName );
                             }
+
                             ManipulationData.UnionWith( meta.MetaManipulations );
 
                             break;
@@ -163,6 +185,7 @@ public partial class Mod
                             {
                                 File.Delete( file.FullName );
                             }
+
                             ManipulationData.UnionWith( rgsp.MetaManipulations );
 
                             break;
