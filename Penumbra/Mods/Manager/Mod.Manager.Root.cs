@@ -56,6 +56,7 @@ public sealed partial class Mod
                 Valid    = Directory.Exists( newDir.FullName );
                 if( Penumbra.Config.ModDirectory != BasePath.FullName )
                 {
+                    PluginLog.Information( "Set new mod base directory from {OldDirectory:l} to {NewDirectory:l}.", Penumbra.Config.ModDirectory, BasePath.FullName );
                     Penumbra.Config.ModDirectory = BasePath.FullName;
                     Penumbra.Config.Save();
                 }
@@ -86,6 +87,7 @@ public sealed partial class Mod
             }
 
             ModDiscoveryFinished?.Invoke();
+            PluginLog.Information( "Rediscovered mods." );
         }
     }
 }

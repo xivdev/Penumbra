@@ -87,6 +87,7 @@ public partial class ModCollection
         try
         {
             file.Delete();
+            PluginLog.Information( "Deleted collection file {File:l} for {Name:l}.", file.FullName, Name );
         }
         catch( Exception e )
         {

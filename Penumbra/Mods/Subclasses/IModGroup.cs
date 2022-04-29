@@ -48,6 +48,7 @@ public interface IModGroup : IEnumerable< ISubMod >
         try
         {
             File.Delete( file );
+            PluginLog.Debug( "Deleted group file {File:l} for {GroupName:l}.", file, Name );
         }
         catch( Exception e )
         {
@@ -81,6 +82,7 @@ public interface IModGroup : IEnumerable< ISubMod >
 
         j.WriteEndArray();
         j.WriteEndObject();
+        PluginLog.Debug( "Saved group file {File:l} for {GroupName:l}.", file, group.Name );
     }
 
     public IModGroup Convert( SelectType type );

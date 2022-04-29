@@ -112,6 +112,7 @@ public unsafe class CharacterUtility : IDisposable
         {
             ResetResource( idx );
         }
+        PluginLog.Debug( "Reset all CharacterUtility resources to default."  );
     }
 
     public void Dispose()

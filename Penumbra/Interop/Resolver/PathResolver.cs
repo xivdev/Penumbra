@@ -1,4 +1,5 @@
 using System;
+using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
@@ -70,9 +71,10 @@ public partial class PathResolver : IDisposable
         EnableMetaHooks();
 
         _loader.ResolvePathCustomization += CharacterResolver;
+        PluginLog.Debug( "Character Path Resolver enabled." );
     }
 
-    public void Disable()
+    private void Disable()
     {
         if( !Enabled )
         {
@@ -90,6 +92,7 @@ public partial class PathResolver : IDisposable
         PathCollections.Clear();
 
         _loader.ResolvePathCustomization -= CharacterResolver;
+        PluginLog.Debug( "Character Path Resolver disabled." );
     }
 
     public void Dispose()

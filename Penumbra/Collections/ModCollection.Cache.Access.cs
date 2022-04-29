@@ -17,24 +17,26 @@ public partial class ModCollection
         => _cache != null;
 
     // Only create, do not update. 
-    public void CreateCache( bool isDefault )
+    private void CreateCache( bool isDefault )
     {
         if( _cache == null )
         {
             CalculateEffectiveFileList( true, isDefault );
+            PluginLog.Verbose( "Created new cache for collection {Name:l}.", Name );
         }
     }
 
     // Force an update with metadata for this cache.
-    public void ForceCacheUpdate( bool isDefault )
+    private void ForceCacheUpdate( bool isDefault )
         => CalculateEffectiveFileList( true, isDefault );
 
 
     // Clear the current cache.
-    public void ClearCache()
+    private void ClearCache()
     {
         _cache?.Dispose();
         _cache = null;
+        PluginLog.Verbose( "Cleared cache of collection {Name:l}.", Name );
     }
 
 
@@ -78,7 +80,7 @@ public partial class ModCollection
             return;
         }
 
-        PluginLog.Debug( "Recalculating effective file list for {CollectionName} [{WithMetaManipulations}] [{ReloadDefault}]", Name,
+        PluginLog.Debug( "Recalculating effective file list for {CollectionName:l} [{WithMetaManipulations}] [{ReloadDefault}]", Name,
             withMetaManipulations, reloadDefault );
         _cache ??= new Cache( this );
         _cache.CalculateEffectiveFileList( withMetaManipulations );
@@ -164,6 +166,7 @@ public partial class ModCollection
         else
         {
             _cache.MetaManipulations.SetFiles();
+            PluginLog.Debug( "Set CharacterUtility resources for collection {Name:l}.", Name );
         }
     }
 }

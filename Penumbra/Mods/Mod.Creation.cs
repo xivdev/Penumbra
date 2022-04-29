@@ -67,7 +67,7 @@ public partial class Mod
             {
                 var group = new MultiModGroup()
                 {
-                    Name        = groupData.GroupName!,
+                    Name        = groupData.GroupName,
                     Description = desc,
                     Priority    = priority,
                 };
@@ -79,7 +79,7 @@ public partial class Mod
             {
                 var group = new SingleModGroup()
                 {
-                    Name        = groupData.GroupName!,
+                    Name        = groupData.GroupName,
                     Description = desc,
                     Priority    = priority,
                 };
@@ -97,9 +97,9 @@ public partial class Mod
            .Select( f => ( Utf8GamePath.FromFile( f, optionFolder, out var gamePath, true ), gamePath, new FullPath( f ) ) )
            .Where( t => t.Item1 );
 
-        var mod = new SubMod()
+        var mod = new SubMod
         {
-            Name = option.Name!,
+            Name = option.Name,
         };
         foreach( var (_, gamePath, file) in list )
         {

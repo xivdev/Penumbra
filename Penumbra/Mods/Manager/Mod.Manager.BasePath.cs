@@ -33,6 +33,7 @@ public partial class Mod
                 try
                 {
                     Directory.Delete( mod.BasePath.FullName, true );
+                    PluginLog.Debug( "Deleted directory {Directory:l} for {Name:l}.", mod.BasePath.FullName, mod.Name );
                 }
                 catch( Exception e )
                 {
@@ -47,6 +48,7 @@ public partial class Mod
             }
 
             ModPathChanged.Invoke( ModPathChangeType.Deleted, mod, mod.BasePath, null );
+            PluginLog.Debug( "Deleted mod {Name:l}.", mod.Name );
         }
 
         // Load a new mod and add it to the manager if successful.
@@ -66,6 +68,7 @@ public partial class Mod
             mod.Index = _mods.Count;
             _mods.Add( mod );
             ModPathChanged.Invoke( ModPathChangeType.Added, mod, null, mod.BasePath );
+            PluginLog.Debug( "Added new mod {Name:l} from {Directory:l}.", mod.Name, modFolder.FullName  );
         }
 
         // Add new mods to NewMods and remove deleted mods from NewMods.

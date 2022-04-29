@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Logging;
 using OtterGui.Filesystem;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
@@ -66,9 +66,6 @@ public partial class ModCollection
         return ValidInheritance.Valid;
     }
 
-    private bool CheckForCircle( ModCollection collection )
-        => ReferenceEquals( collection, this ) || _inheritance.Any( c => c.CheckForCircle( collection ) );
-
     // Add a new collection to the inheritance list.
     // We do not check if this collection would be visited before,
     // only that it is unique in the list itself.
@@ -84,6 +81,7 @@ public partial class ModCollection
         collection.ModSettingChanged  += OnInheritedModSettingChange;
         collection.InheritanceChanged += OnInheritedInheritanceChange;
         InheritanceChanged.Invoke( false );
+        PluginLog.Debug( "Added {InheritedName:l} to {Name:l} inheritances.", collection.Name, Name );
         return true;
     }
 
@@ -94,6 +92,7 @@ public partial class ModCollection
         inheritance.InheritanceChanged -= OnInheritedInheritanceChange;
         _inheritance.RemoveAt( idx );
         InheritanceChanged.Invoke( false );
+        PluginLog.Debug( "Removed {InheritedName:l} from {Name:l} inheritances.", inheritance.Name, Name );
     }
 
     // Order in the inheritance list is relevant.
@@ -102,6 +101,7 @@ public partial class ModCollection
         if( _inheritance.Move( from, to ) )
         {
             InheritanceChanged.Invoke( false );
+            PluginLog.Debug( "Moved {Name:l}s inheritance {From} to {To}.", Name, from, to );
         }
     }
 

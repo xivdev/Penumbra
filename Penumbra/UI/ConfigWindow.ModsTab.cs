@@ -6,6 +6,7 @@ using Penumbra.Mods;
 using Penumbra.UI.Classes;
 using System;
 using System.Numerics;
+using Dalamud.Logging;
 
 namespace Penumbra.UI;
 
@@ -18,21 +19,36 @@ public partial class ConfigWindow
             return;
         }
 
-        using var tab = ImRaii.TabItem( "Mods" );
-        if( !tab )
+        try
         {
-            return;
+            using var tab = ImRaii.TabItem( "Mods" );
+            if( !tab )
+            {
+                return;
+            }
+
+            _selector.Draw( GetModSelectorSize() );
+            ImGui.SameLine();
+            using var group = ImRaii.Group();
+            DrawHeaderLine();
+
+            using var child = ImRaii.Child( "##ModsTabMod", -Vector2.One, true, ImGuiWindowFlags.HorizontalScrollbar );
+            if( child )
+            {
+                _modPanel.Draw( _selector );
+            }
         }
-
-        _selector.Draw( GetModSelectorSize() );
-        ImGui.SameLine();
-        using var group = ImRaii.Group();
-        DrawHeaderLine();
-
-        using var child = ImRaii.Child( "##ModsTabMod", -Vector2.One, true, ImGuiWindowFlags.HorizontalScrollbar );
-        if( child )
+        catch( Exception e )
         {
-            _modPanel.Draw( _selector );
+            PluginLog.Error($"Exception thrown during ModPanel Render:\n{e}"  );
+            PluginLog.Error($"{Penumbra.ModManager.Count} Mods\n"
+              + $"{Penumbra.CollectionManager.Current.Name} Current Collection\n"
+              + $"{Penumbra.CollectionManager.Current.Settings.Count} Settings\n"
+              + $"{_selector.SortMode} Sort Mode\n"
+              + $"{_selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
+              + $"{_selector.Selected?.Name ?? "NULL"} Selected Mod\n"
+              + $"{string.Join(", ", Penumbra.CollectionManager.Current.Inheritance)} Inheritances\n"
+              + $"{_selector.SelectedSettingCollection.Name} Collection\n");
         }
     }
 

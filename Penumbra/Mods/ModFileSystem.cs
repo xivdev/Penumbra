@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Dalamud.Logging;
 using OtterGui.Filesystem;
 
 namespace Penumbra.Mods;
@@ -14,8 +15,11 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     // Save the current sort order.
     // Does not save or copy the backup in the current mod directory,
     // as this is done on mod directory changes only.
-    public void Save()
-        => SaveToFile( new FileInfo( ModFileSystemFile ), SaveMod, true );
+    private void Save()
+    {
+        SaveToFile( new FileInfo( ModFileSystemFile ), SaveMod, true );
+        PluginLog.Verbose( "Saved mod filesystem." );
+    }
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
     public static ModFileSystem Load()
@@ -46,6 +50,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
         {
             Save();
         }
+        PluginLog.Debug( "Reloaded mod filesystem." );
     }
 
     // Save the filesystem on every filesystem change except full reloading.

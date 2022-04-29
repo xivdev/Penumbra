@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
+using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui.Raii;
 using Penumbra.Mods;
@@ -27,7 +28,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     {
         _penumbra       = penumbra;
         _settingsTab    = new SettingsTab( this );
-        _selector       = new ModFileSystemSelector( _penumbra.ModFileSystem ); 
+        _selector       = new ModFileSystemSelector( _penumbra.ModFileSystem );
         _modPanel       = new ModPanel( this );
         _collectionsTab = new CollectionsTab( this );
         _effectiveTab   = new EffectiveTab();
@@ -47,15 +48,22 @@ public sealed partial class ConfigWindow : Window, IDisposable
 
     public override void Draw()
     {
-        using var bar = ImRaii.TabBar( string.Empty, ImGuiTabBarFlags.NoTooltip );
-        SetupSizes();
-        _settingsTab.Draw();
-        DrawModsTab();
-        _collectionsTab.Draw();
-        DrawChangedItemTab();
-        _effectiveTab.Draw();
-        _debugTab.Draw();
-        _resourceTab.Draw();
+        try
+        {
+            using var bar = ImRaii.TabBar( string.Empty, ImGuiTabBarFlags.NoTooltip );
+            SetupSizes();
+            _settingsTab.Draw();
+            DrawModsTab();
+            _collectionsTab.Draw();
+            DrawChangedItemTab();
+            _effectiveTab.Draw();
+            _debugTab.Draw();
+            _resourceTab.Draw();
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Exception thrown during UI Render:\n{e}" );
+        }
     }
 
     public void Dispose()

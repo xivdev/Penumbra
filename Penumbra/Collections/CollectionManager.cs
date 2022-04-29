@@ -122,6 +122,7 @@ public partial class ModCollection
             newCollection.Index = _collections.Count;
             _collections.Add( newCollection );
             newCollection.Save();
+            PluginLog.Debug( "Added collection {Name:l}.", newCollection.Name );
             CollectionChanged.Invoke( Type.Inactive, null, newCollection );
             SetCollection( newCollection.Index, Type.Current );
             return true;
@@ -176,6 +177,7 @@ public partial class ModCollection
                 }
             }
 
+            PluginLog.Debug( "Removed collection {Name:l}.", collection.Name );
             CollectionChanged.Invoke( Type.Inactive, collection, null );
             return true;
         }

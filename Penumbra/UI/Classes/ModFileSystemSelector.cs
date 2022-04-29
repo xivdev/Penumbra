@@ -338,6 +338,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         {
             base.SelectedLeaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( SortMode.Lexicographical )
                .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.BasePath.FullName == _lastSelectedDirectory );
+            OnSelectionChange( null, base.SelectedLeaf?.Value, default );
             _lastSelectedDirectory = string.Empty;
         }
     }

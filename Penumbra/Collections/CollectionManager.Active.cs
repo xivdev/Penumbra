@@ -206,6 +206,7 @@ public partial class ModCollection
 
                 j.WriteEndObject();
                 j.WriteEndObject();
+                PluginLog.Verbose( "Active Collections saved."  );
             }
             catch( Exception e )
             {
