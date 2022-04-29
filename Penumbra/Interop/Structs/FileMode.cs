@@ -1,6 +1,6 @@
 namespace Penumbra.Interop.Structs;
 
-public enum FileMode : uint
+public enum FileMode : byte
 {
     LoadUnpackedResource = 0,
     LoadFileResource     = 1, // The config files in MyGames use this.

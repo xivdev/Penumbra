@@ -163,13 +163,18 @@ public unsafe partial class ResourceLoader
         var  split = gamePath.Path.Split( ( byte )'|', 3, false );
         fileDescriptor->ResourceHandle->FileNameData   = split[ 2 ].Path;
         fileDescriptor->ResourceHandle->FileNameLength = split[ 2 ].Length;
+
+        // Force isSync = true for these calls. I don't really understand why,
+        // or where the difference even comes from.
+        // Was called with True on my client and with false on other peoples clients,
+        // which caused problems.
         var funcFound = ResourceLoadCustomization.GetInvocationList()
            .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
-               .Invoke( split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, isSync, out ret ) );
+               .Invoke( split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, true, out ret ) );
 
         if( !funcFound )
         {
-            ret = DefaultLoadResource( split[ 2 ], resourceManager, fileDescriptor, priority, isSync );
+            ret = DefaultLoadResource( split[ 2 ], resourceManager, fileDescriptor, priority, true );
         }
 
         // Return original resource handle path so that they can be loaded separately.
