@@ -7,6 +7,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
@@ -138,6 +139,25 @@ public unsafe partial class PathResolver
         return text != null ? text->NodeText.ToString() : null;
     }
 
+    // Obtain the name displayed in the Character Card from the agent.
+    private static string? GetCardName()
+    {
+        var uiModule    = ( UIModule* )Dalamud.GameGui.GetUIModule();
+        var agentModule = uiModule->GetAgentModule();
+        var agent       = (byte*) agentModule->GetAgentByInternalID( 393 );
+        if( agent == null )
+        {
+            return null;
+        }
+
+        var data = *(byte**) (agent + 0x28);
+        if( data == null )
+            return null;
+
+        var block = data + 0x7A;
+        return new Utf8String( block ).ToString();
+    }
+
     // Guesstimate whether an unnamed cutscene actor corresponds to the player or not,
     // and if so, return the player name.
     private static string? GetCutsceneName( GameObject* gameObject )
@@ -167,9 +187,9 @@ public unsafe partial class PathResolver
 
         var name = gameObject->ObjectIndex switch
             {
-                240    => GetPlayerName(),  // character window
-                241    => GetInspectName(), // inspect
-                242    => GetPlayerName(),  // try-on
+                240    => GetPlayerName(),                   // character window
+                241    => GetInspectName() ?? GetCardName(), // inspect, character card
+                242    => GetPlayerName(),                   // try-on
                 >= 200 => GetCutsceneName( gameObject ),
                 _      => null,
             }
