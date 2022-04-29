@@ -125,7 +125,7 @@ public partial class MetaManager
         }
 
         private FullPath CreateImcPath( Utf8GamePath path )
-            => new($"|{_collection.RecomputeCounter}_{_collection.Name}|{path}");
+            => new($"|{_collection.Name}_{_collection.RecomputeCounter}|{path}");
 
         private static unsafe bool ImcLoadHandler( Utf8String split, Utf8String path, ResourceManager* resourceManager,
             SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
