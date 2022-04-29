@@ -16,6 +16,9 @@ public partial class ModCollection
     public bool HasCache
         => _cache != null;
 
+    public int RecomputeCounter
+        => _cache?.RecomputeCounter ?? 0;
+
     // Only create, do not update. 
     private void CreateCache( bool isDefault )
     {

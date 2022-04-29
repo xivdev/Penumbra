@@ -90,11 +90,6 @@ public class Penumbra : IDalamudPlugin
             HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
         } );
 
-        if( Config.DebugMode )
-        {
-            ResourceLoader.EnableDebug();
-        }
-
         ResidentResources.Reload();
 
         Api = new PenumbraApi( this );
@@ -111,6 +106,7 @@ public class Penumbra : IDalamudPlugin
         if( Config.EnableMods )
         {
             ResourceLoader.EnableReplacements();
+            PathResolver.Enable();
         }
 
         if( Config.DebugMode )
@@ -122,11 +118,6 @@ public class Penumbra : IDalamudPlugin
         if( Config.EnableFullResourceLogging )
         {
             ResourceLoader.EnableFullLogging();
-        }
-
-        if( CollectionManager.HasCharacterCollections )
-        {
-            PathResolver.Enable();
         }
 
         ResidentResources.Reload();
@@ -162,6 +153,7 @@ public class Penumbra : IDalamudPlugin
         ResourceLoader.EnableReplacements();
         CollectionManager.Default.SetFiles();
         ResidentResources.Reload();
+        PathResolver.Enable();
 
         Config.Save();
         ObjectReloader.RedrawAll( RedrawType.Redraw );
@@ -179,6 +171,7 @@ public class Penumbra : IDalamudPlugin
         ResourceLoader.DisableReplacements();
         CharacterUtility.ResetAll();
         ResidentResources.Reload();
+        PathResolver.Disable();
 
         Config.Save();
         ObjectReloader.RedrawAll( RedrawType.Redraw );

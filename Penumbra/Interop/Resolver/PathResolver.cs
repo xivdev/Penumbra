@@ -26,7 +26,6 @@ public partial class PathResolver : IDisposable
         SetupHumanHooks();
         SetupWeaponHooks();
         SetupMetaHooks();
-        Penumbra.CollectionManager.CollectionChanged += OnCollectionChange;
     }
 
     // The modified resolver that handles game path resolving.
@@ -74,7 +73,7 @@ public partial class PathResolver : IDisposable
         PluginLog.Debug( "Character Path Resolver enabled." );
     }
 
-    private void Disable()
+    public void Disable()
     {
         if( !Enabled )
         {
@@ -103,23 +102,5 @@ public partial class PathResolver : IDisposable
         DisposeMtrlHooks();
         DisposeDataHooks();
         DisposeMetaHooks();
-        Penumbra.CollectionManager.CollectionChanged -= OnCollectionChange;
-    }
-
-    private void OnCollectionChange( ModCollection.Type type, ModCollection? _1, ModCollection? _2, string? characterName )
-    {
-        if( type != ModCollection.Type.Character )
-        {
-            return;
-        }
-
-        if( Penumbra.CollectionManager.HasCharacterCollections )
-        {
-            Enable();
-        }
-        else
-        {
-            Disable();
-        }
     }
 }

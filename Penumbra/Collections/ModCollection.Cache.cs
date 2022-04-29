@@ -18,7 +18,7 @@ public partial class ModCollection
         // Shared caches to avoid allocations.
         private static readonly Dictionary< Utf8GamePath, FileRegister >     RegisteredFiles         = new(1024);
         private static readonly Dictionary< MetaManipulation, FileRegister > RegisteredManipulations = new(1024);
-        private static readonly List< ModSettings? >                        ResolvedSettings        = new(128);
+        private static readonly List< ModSettings? >                         ResolvedSettings        = new(128);
 
         private readonly ModCollection                        _collection;
         private readonly SortedList< string, object? >        _changedItems = new();
@@ -26,6 +26,10 @@ public partial class ModCollection
         public readonly  HashSet< FullPath >                  MissingFiles  = new();
         public readonly  MetaManager                          MetaManipulations;
         public           ConflictCache                        Conflicts = new();
+
+        // Count the number of recalculations of the effective file list.
+        // This is used for material and imc changes.
+        public int RecomputeCounter { get; private set; } = 0;
 
         // Obtain currently changed items. Computes them if they haven't been computed before.
         public IReadOnlyDictionary< string, object? > ChangedItems
@@ -120,6 +124,7 @@ public partial class ModCollection
             }
 
             AddMetaFiles();
+            ++RecomputeCounter;
         }
 
         // Identify and record all manipulated objects for this entire collection.

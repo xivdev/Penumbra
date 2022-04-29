@@ -125,7 +125,7 @@ public partial class MetaManager
         }
 
         private FullPath CreateImcPath( Utf8GamePath path )
-            => new($"|{_collection.Name}|{path}");
+            => new($"|{_collection.RecomputeCounter}_{_collection.Name}|{path}");
 
         private static unsafe bool ImcLoadHandler( Utf8String split, Utf8String path, ResourceManager* resourceManager,
             SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
@@ -138,7 +138,10 @@ public partial class MetaManager
 
             PluginLog.Verbose( "Using ImcLoadHandler for path {$Path:l}.", path );
             ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-            if( Penumbra.CollectionManager.ByName( split.ToString(), out var collection )
+
+            var lastUnderscore = split.LastIndexOf( ( byte )'_' );
+            var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
+            if( Penumbra.CollectionManager.ByName( name, out var collection )
             && collection.HasCache
             && collection.MetaCache!.Imc.Files.TryGetValue(
                    Utf8GamePath.FromSpan( path.Span, out var p ) ? p : Utf8GamePath.Empty, out var file ) )

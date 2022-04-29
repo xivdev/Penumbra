@@ -78,7 +78,9 @@ public unsafe partial class PathResolver
             return false;
         }
 
-        if( Penumbra.CollectionManager.ByName( split.ToString(), out var collection ) )
+        var lastUnderscore = split.LastIndexOf( ( byte )'_' );
+        var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
+        if( Penumbra.CollectionManager.ByName( name, out var collection ) )
         {
             PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", split, path );
             SetCollection( path, collection );
@@ -100,7 +102,7 @@ public unsafe partial class PathResolver
     {
         if( nonDefault && type == ResourceType.Mtrl )
         {
-            var fullPath = new FullPath( $"|{collection.Name}|{path}" );
+            var fullPath = new FullPath( $"|{collection.RecomputeCounter}_{collection.Name}|{path}" );
             data = ( fullPath, collection );
         }
         else
