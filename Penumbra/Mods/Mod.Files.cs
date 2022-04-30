@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -25,7 +27,7 @@ public partial class Mod
     public int TotalManipulations { get; private set; }
     public bool HasOptions { get; private set; }
 
-    private void SetCounts()
+    private bool SetCounts()
     {
         TotalFileCount     = 0;
         TotalSwapCount     = 0;
@@ -40,6 +42,7 @@ public partial class Mod
         HasOptions = _groups.Any( o
             => o is MultiModGroup m && m.PrioritizedOptions.Count > 0
          || o is SingleModGroup s   && s.OptionData.Count         > 1 );
+        return true;
     }
 
     public IEnumerable< ISubMod > AllSubMods
@@ -112,6 +115,31 @@ public partial class Mod
             {
                 _groups.Add( group );
             }
+        }
+    }
+
+    // Delete all existing group files and save them anew.
+    // Used when indices change in complex ways.
+    private void SaveAllGroups()
+    {
+        foreach( var file in GroupFiles )
+        {
+            try
+            {
+                if( file.Exists )
+                {
+                    file.Delete();
+                }
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not delete outdated group file {file}:\n{e}" );
+            }
+        }
+
+        foreach( var (group, index) in _groups.WithIndex() )
+        {
+            IModGroup.SaveModGroup( group, BasePath, index );
         }
     }
 }

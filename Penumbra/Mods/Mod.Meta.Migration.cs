@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -14,7 +16,36 @@ public sealed partial class Mod
     private static class Migration
     {
         public static bool Migrate( Mod mod, JObject json )
-            => MigrateV0ToV1( mod, json );
+            => MigrateV0ToV1( mod, json ) || MigrateV1ToV2( mod );
+
+        private static bool MigrateV1ToV2( Mod mod )
+        {
+            if( mod.FileVersion > 1 )
+            {
+                return false;
+            }
+
+            foreach( var (group, index) in mod.GroupFiles.WithIndex().ToArray() )
+            {
+                var newName = Regex.Replace( group.Name, "^group_", $"group_{index + 1:D3}_", RegexOptions.Compiled );
+                try
+                {
+                    if( newName != group.Name )
+                    {
+                        group.MoveTo( Path.Combine( group.DirectoryName ?? string.Empty, newName ), false );
+                    }
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not rename group file {group.Name} to {newName} during migration:\n{e}" );
+                }
+            }
+
+            mod.FileVersion = 2;
+            mod.SaveMeta();
+
+            return true;
+        }
 
         private static bool MigrateV0ToV1( Mod mod, JObject json )
         {
@@ -50,9 +81,9 @@ public sealed partial class Mod
             }
 
             mod._default.IncorporateMetaChanges( mod.BasePath, true );
-            foreach( var group in mod.Groups )
+            foreach( var (group, index) in mod.Groups.WithIndex() )
             {
-                IModGroup.SaveModGroup( group, mod.BasePath );
+                IModGroup.SaveModGroup( group, mod.BasePath, index );
             }
 
             // Delete meta files.

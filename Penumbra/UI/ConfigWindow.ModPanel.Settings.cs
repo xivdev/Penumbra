@@ -59,6 +59,7 @@ public partial class ConfigWindow
                 DrawSingleGroup( _mod.Groups[ idx ], idx );
             }
 
+            ImGui.Dummy( _window._defaultSpace );
             for( var idx = 0; idx < _mod.Groups.Count; ++idx )
             {
                 DrawMultiGroup( _mod.Groups[ idx ], idx );

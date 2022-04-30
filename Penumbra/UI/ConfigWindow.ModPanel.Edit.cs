@@ -259,7 +259,7 @@ public partial class ConfigWindow
             }
 
             ImGui.SameLine();
-            var fileName   = group.FileName( _mod.BasePath );
+            var fileName   = group.FileName( _mod.BasePath, groupIdx );
             var fileExists = File.Exists( fileName );
             tt = fileExists
                 ? $"Open the {group.Name} json file in the text editor of your choice."

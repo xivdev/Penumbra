@@ -55,7 +55,7 @@ public sealed partial class Mod
                 return;
             }
 
-            group.DeleteFile( mod.BasePath );
+            group.DeleteFile( mod.BasePath, groupIdx );
 
             var _ = group switch
             {
@@ -86,7 +86,7 @@ public sealed partial class Mod
         {
             var group = mod._groups[ groupIdx ];
             mod._groups.RemoveAt( groupIdx );
-            group.DeleteFile( mod.BasePath );
+            group.DeleteFile( mod.BasePath, groupIdx );
             ModOptionChanged.Invoke( ModOptionChangeType.GroupDeleted, mod, groupIdx, -1, -1 );
         }
 
@@ -400,19 +400,32 @@ public sealed partial class Mod
         private static void OnModOptionChange( ModOptionChangeType type, Mod mod, int groupIdx, int _, int _2 )
         {
             // File deletion is handled in the actual function.
-            if( type != ModOptionChangeType.GroupDeleted )
+            if( type is ModOptionChangeType.GroupDeleted or ModOptionChangeType.GroupMoved )
             {
-                IModGroup.SaveModGroup( mod._groups[ groupIdx ], mod.BasePath );
+                mod.SaveAllGroups();
+            }
+            else
+            {
+                IModGroup.SaveModGroup( mod._groups[ groupIdx ], mod.BasePath, groupIdx );
             }
 
             // State can not change on adding groups, as they have no immediate options.
-            mod.HasOptions = type switch
+            var unused = type switch
             {
-                ModOptionChangeType.GroupDeleted     => mod.HasOptions =  mod.Groups.Any( o => o.IsOption ),
-                ModOptionChangeType.GroupTypeChanged => mod.HasOptions =  mod.Groups.Any( o => o.IsOption ),
-                ModOptionChangeType.OptionAdded      => mod.HasOptions |= mod._groups[ groupIdx ].IsOption,
-                ModOptionChangeType.OptionDeleted    => mod.HasOptions =  mod.Groups.Any( o => o.IsOption ),
-                _                                    => mod.HasOptions,
+                ModOptionChangeType.GroupAdded         => mod.SetCounts(),
+                ModOptionChangeType.GroupDeleted       => mod.SetCounts(),
+                ModOptionChangeType.GroupMoved         => false,
+                ModOptionChangeType.GroupTypeChanged   => mod.HasOptions = mod.Groups.Any( o => o.IsOption ),
+                ModOptionChangeType.PriorityChanged    => false,
+                ModOptionChangeType.OptionAdded        => mod.SetCounts(),
+                ModOptionChangeType.OptionDeleted      => mod.SetCounts(),
+                ModOptionChangeType.OptionMoved        => false,
+                ModOptionChangeType.OptionFilesChanged => 0 < ( mod.TotalFileCount = mod.AllSubMods.Sum( s => s.Files.Count ) ),
+                ModOptionChangeType.OptionSwapsChanged => 0 < ( mod.TotalSwapCount = mod.AllSubMods.Sum( s => s.FileSwaps.Count ) ),
+                ModOptionChangeType.OptionMetaChanged  => 0 < ( mod.TotalManipulations = mod.AllSubMods.Sum( s => s.Manipulations.Count ) ),
+                ModOptionChangeType.OptionUpdated      => mod.SetCounts(),
+                ModOptionChangeType.DisplayChange      => false,
+                _                                      => false,
             };
         }
     }

@@ -34,12 +34,12 @@ public interface IModGroup : IEnumerable< ISubMod >
             _                 => false,
         };
 
-    public string FileName( DirectoryInfo basePath )
-        => Path.Combine( basePath.FullName, $"group_{Name.RemoveInvalidPathSymbols().ToLowerInvariant()}.json" );
+    public string FileName( DirectoryInfo basePath, int groupIdx )
+        => Path.Combine( basePath.FullName, $"group_{groupIdx + 1:D3}_{Name.RemoveInvalidPathSymbols().ToLowerInvariant()}.json" );
 
-    public void DeleteFile( DirectoryInfo basePath )
+    public void DeleteFile( DirectoryInfo basePath, int groupIdx )
     {
-        var file = FileName( basePath );
+        var file = FileName( basePath, groupIdx );
         if( !File.Exists( file ) )
         {
             return;
@@ -48,7 +48,7 @@ public interface IModGroup : IEnumerable< ISubMod >
         try
         {
             File.Delete( file );
-            PluginLog.Debug( "Deleted group file {File:l} for {GroupName:l}.", file, Name );
+            PluginLog.Debug( "Deleted group file {File:l} for group {GroupIdx}: {GroupName:l}.", file, groupIdx + 1, Name );
         }
         catch( Exception e )
         {
@@ -57,9 +57,9 @@ public interface IModGroup : IEnumerable< ISubMod >
         }
     }
 
-    public static void SaveModGroup( IModGroup group, DirectoryInfo basePath )
+    public static void SaveModGroup( IModGroup group, DirectoryInfo basePath, int groupIdx )
     {
-        var       file       = group.FileName( basePath );
+        var       file       = group.FileName( basePath, groupIdx );
         using var s          = File.Exists( file ) ? File.Open( file, FileMode.Truncate ) : File.Open( file, FileMode.CreateNew );
         using var writer     = new StreamWriter( s );
         using var j          = new JsonTextWriter( writer ) { Formatting = Formatting.Indented };
@@ -82,7 +82,7 @@ public interface IModGroup : IEnumerable< ISubMod >
 
         j.WriteEndArray();
         j.WriteEndObject();
-        PluginLog.Debug( "Saved group file {File:l} for {GroupName:l}.", file, group.Name );
+        PluginLog.Debug( "Saved group file {File:l} for group {GroupIdx}: {GroupName:l}.", file, groupIdx + 1, group.Name );
     }
 
     public IModGroup Convert( SelectType type );
