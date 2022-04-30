@@ -131,17 +131,17 @@ public partial class ConfigWindow
                 var refCountManip = data.ManipulatedResource == null ? 0 : data.ManipulatedResource->RefCount;
                 var refCountOrig  = data.OriginalResource    == null ? 0 : data.OriginalResource->RefCount;
                 ImGui.TableNextColumn();
-                ImGui.Text( data.ManipulatedPath.ToString() );
+                ImGui.TextUnformatted( data.ManipulatedPath.ToString() );
                 ImGui.TableNextColumn();
-                ImGui.Text( ( ( ulong )data.ManipulatedResource ).ToString( "X" ) );
+                ImGui.TextUnformatted( ( ( ulong )data.ManipulatedResource ).ToString( "X" ) );
                 ImGui.TableNextColumn();
-                ImGui.Text( refCountManip.ToString() );
+                ImGui.TextUnformatted( refCountManip.ToString() );
                 ImGui.TableNextColumn();
-                ImGui.Text( data.OriginalPath.ToString() );
+                ImGui.TextUnformatted( data.OriginalPath.ToString() );
                 ImGui.TableNextColumn();
-                ImGui.Text( ( ( ulong )data.OriginalResource ).ToString( "X" ) );
+                ImGui.TextUnformatted( ( ( ulong )data.OriginalResource ).ToString( "X" ) );
                 ImGui.TableNextColumn();
-                ImGui.Text( refCountOrig.ToString() );
+                ImGui.TextUnformatted( refCountOrig.ToString() );
             }
         }
 
@@ -163,15 +163,15 @@ public partial class ConfigWindow
                     foreach( var (ptr, (c, idx)) in _window._penumbra.PathResolver.DrawObjectToObject )
                     {
                         ImGui.TableNextColumn();
-                        ImGui.Text( ptr.ToString( "X" ) );
+                        ImGui.TextUnformatted( ptr.ToString( "X" ) );
                         ImGui.TableNextColumn();
-                        ImGui.Text( idx.ToString() );
+                        ImGui.TextUnformatted( idx.ToString() );
                         ImGui.TableNextColumn();
-                        ImGui.Text( Dalamud.Objects[ idx ]?.Address.ToString() ?? "NULL" );
+                        ImGui.TextUnformatted( Dalamud.Objects[ idx ]?.Address.ToString() ?? "NULL" );
                         ImGui.TableNextColumn();
-                        ImGui.Text( Dalamud.Objects[ idx ]?.Name.ToString() ?? "NULL" );
+                        ImGui.TextUnformatted( Dalamud.Objects[ idx ]?.Name.ToString() ?? "NULL" );
                         ImGui.TableNextColumn();
-                        ImGui.Text( c.Name );
+                        ImGui.TextUnformatted( c.Name );
                     }
                 }
             }
@@ -189,7 +189,7 @@ public partial class ConfigWindow
                         ImGui.TableNextColumn();
                         ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
                         ImGui.TableNextColumn();
-                        ImGui.Text( collection.Name );
+                        ImGui.TextUnformatted( collection.Name );
                     }
                 }
             }
@@ -216,7 +216,7 @@ public partial class ConfigWindow
                 var idx      = CharacterUtility.RelevantIndices[ i ];
                 var resource = ( ResourceHandle* )Penumbra.CharacterUtility.Address->Resources[ idx ];
                 ImGui.TableNextColumn();
-                ImGui.Text( $"0x{( ulong )resource:X}" );
+                ImGui.TextUnformatted( $"0x{( ulong )resource:X}" );
                 ImGui.TableNextColumn();
                 Text( resource );
                 ImGui.TableNextColumn();
@@ -234,7 +234,7 @@ public partial class ConfigWindow
                 ImGuiUtil.HoverTooltip( "Click to copy bytes to clipboard." );
 
                 ImGui.TableNextColumn();
-                ImGui.Text( $"{resource->GetData().Length}" );
+                ImGui.TextUnformatted( $"{resource->GetData().Length}" );
                 ImGui.TableNextColumn();
                 ImGui.Selectable( $"0x{Penumbra.CharacterUtility.DefaultResources[ i ].Address:X}" );
                 if( ImGui.IsItemClicked() )
@@ -247,7 +247,7 @@ public partial class ConfigWindow
                 ImGuiUtil.HoverTooltip( "Click to copy bytes to clipboard." );
 
                 ImGui.TableNextColumn();
-                ImGui.Text( $"{Penumbra.CharacterUtility.DefaultResources[ i ].Size}" );
+                ImGui.TextUnformatted( $"{Penumbra.CharacterUtility.DefaultResources[ i ].Size}" );
             }
         }
 
@@ -275,7 +275,7 @@ public partial class ConfigWindow
             {
                 var resource = Penumbra.ResidentResources.Address->ResourceList[ i ];
                 ImGui.TableNextColumn();
-                ImGui.Text( $"0x{( ulong )resource:X}" );
+                ImGui.TextUnformatted( $"0x{( ulong )resource:X}" );
                 ImGui.TableNextColumn();
                 Text( resource );
             }
@@ -319,9 +319,9 @@ public partial class ConfigWindow
                 var imc = ( ResourceHandle* )model->IMCArray[ i ];
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.Text( $"Slot {i}" );
+                ImGui.TextUnformatted( $"Slot {i}" );
                 ImGui.TableNextColumn();
-                ImGui.Text( imc == null ? "NULL" : $"0x{( ulong )imc:X}" );
+                ImGui.TextUnformatted( imc == null ? "NULL" : $"0x{( ulong )imc:X}" );
                 ImGui.TableNextColumn();
                 if( imc != null )
                 {
@@ -330,7 +330,7 @@ public partial class ConfigWindow
 
                 var mdl = ( RenderModel* )model->ModelArray[ i ];
                 ImGui.TableNextColumn();
-                ImGui.Text( mdl == null ? "NULL" : $"0x{( ulong )mdl:X}" );
+                ImGui.TextUnformatted( mdl == null ? "NULL" : $"0x{( ulong )mdl:X}" );
                 if( mdl == null || mdl->ResourceHandle == null || mdl->ResourceHandle->Category != ResourceCategory.Chara )
                 {
                     continue;
@@ -367,15 +367,15 @@ public partial class ConfigWindow
                 }
 
                 ImGui.TableNextColumn();
-                ImGui.Text( r->Category.ToString() );
+                ImGui.TextUnformatted( r->Category.ToString() );
                 ImGui.TableNextColumn();
-                ImGui.Text( r->FileType.ToString( "X" ) );
+                ImGui.TextUnformatted( r->FileType.ToString( "X" ) );
                 ImGui.TableNextColumn();
-                ImGui.Text( r->Id.ToString( "X" ) );
+                ImGui.TextUnformatted( r->Id.ToString( "X" ) );
                 ImGui.TableNextColumn();
-                ImGui.Text( ( ( ulong )r ).ToString( "X" ) );
+                ImGui.TextUnformatted( ( ( ulong )r ).ToString( "X" ) );
                 ImGui.TableNextColumn();
-                ImGui.Text( r->RefCount.ToString() );
+                ImGui.TextUnformatted( r->RefCount.ToString() );
                 ImGui.TableNextColumn();
                 ref var name = ref r->FileName;
                 if( name.Capacity > 15 )
@@ -402,52 +402,52 @@ public partial class ConfigWindow
             }
 
             var ipc = _window._penumbra.Ipc;
-            ImGui.Text( $"API Version: {ipc.Api.ApiVersion}" );
-            ImGui.Text( "Available subscriptions:" );
+            ImGui.TextUnformatted( $"API Version: {ipc.Api.ApiVersion}" );
+            ImGui.TextUnformatted( "Available subscriptions:" );
             using var indent = ImRaii.PushIndent();
             if( ipc.ProviderApiVersion != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderApiVersion );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderApiVersion );
             }
 
             if( ipc.ProviderRedrawName != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderRedrawName );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderRedrawName );
             }
 
             if( ipc.ProviderRedrawObject != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderRedrawObject );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderRedrawObject );
             }
 
             if( ipc.ProviderRedrawAll != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderRedrawAll );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderRedrawAll );
             }
 
             if( ipc.ProviderResolveDefault != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderResolveDefault );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderResolveDefault );
             }
 
             if( ipc.ProviderResolveCharacter != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderResolveCharacter );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderResolveCharacter );
             }
 
             if( ipc.ProviderChangedItemTooltip != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderChangedItemTooltip );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderChangedItemTooltip );
             }
 
             if( ipc.ProviderChangedItemClick != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderChangedItemClick );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderChangedItemClick );
             }
 
             if( ipc.ProviderGetChangedItems != null )
             {
-                ImGui.Text( PenumbraIpc.LabelProviderGetChangedItems );
+                ImGui.TextUnformatted( PenumbraIpc.LabelProviderGetChangedItems );
             }
         }
 
@@ -455,9 +455,9 @@ public partial class ConfigWindow
         private static void PrintValue( string name, string value )
         {
             ImGui.TableNextColumn();
-            ImGui.Text( name );
+            ImGui.TextUnformatted( name );
             ImGui.TableNextColumn();
-            ImGui.Text( value );
+            ImGui.TextUnformatted( value );
         }
     }
 }

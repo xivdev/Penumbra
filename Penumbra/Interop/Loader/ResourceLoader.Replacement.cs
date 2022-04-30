@@ -49,15 +49,14 @@ public unsafe partial class ResourceLoader
     {
         if( local != game )
         {
-            PluginLog.Warning( "Hash function appears to have changed. {Hash1:X8} vs {Hash2:X8} for {Path}.", game, local, path );
+            PluginLog.Warning( "Hash function appears to have changed. Computed {Hash1:X8} vs Game {Hash2:X8} for {Path}.", local, game, path );
         }
     }
 
     private event Action< Utf8GamePath, FullPath?, object? >? PathResolved;
 
     private ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
-        ResourceType* resourceType,
-        int* resourceHash, byte* path, void* unk, bool isUnk )
+        ResourceType* resourceType, int* resourceHash, byte* path, void* unk, bool isUnk )
     {
         if( !Utf8GamePath.FromPointer( path, out var gamePath ) )
         {

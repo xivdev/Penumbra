@@ -162,7 +162,7 @@ public partial class ConfigWindow
 
                 ImGui.SameLine();
                 ImGui.AlignTextToFramePadding();
-                ImGui.Text( name );
+                ImGui.TextUnformatted( name );
             }
 
             DrawNewCharacterCollection();

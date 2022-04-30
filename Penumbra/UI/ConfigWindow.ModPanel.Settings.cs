@@ -174,7 +174,7 @@ public partial class ConfigWindow
             }
             else
             {
-                ImGui.Text( group.Name );
+                ImGui.TextUnformatted( group.Name );
             }
         }
 

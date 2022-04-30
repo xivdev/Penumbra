@@ -322,7 +322,7 @@ public partial class ConfigWindow
                         _dragDropOptionIdx = optionIdx;
                     }
 
-                    ImGui.Text( $"Dragging option {group[ optionIdx ].Name} from group {group.Name}..." );
+                    ImGui.TextUnformatted( $"Dragging option {group[ optionIdx ].Name} from group {group.Name}..." );
                 }
             }
 

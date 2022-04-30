@@ -38,7 +38,7 @@ public partial class TexToolsImporter
             var percentage = _modPackCount / ( float )_currentModPackIdx;
             ImGui.ProgressBar( percentage, size, $"Mod {_currentModPackIdx + 1} / {_modPackCount}" );
             ImGui.NewLine();
-            ImGui.Text( $"Extracting {_currentModName}..." );
+            ImGui.TextUnformatted( $"Extracting {_currentModName}..." );
 
             if( _currentNumOptions > 1 )
             {
@@ -47,7 +47,7 @@ public partial class TexToolsImporter
                 percentage = _currentNumOptions == 0 ? 1f : _currentOptionIdx / ( float )_currentNumOptions;
                 ImGui.ProgressBar( percentage, size, $"Option {_currentOptionIdx + 1} / {_currentNumOptions}" );
                 ImGui.NewLine();
-                ImGui.Text(
+                ImGui.TextUnformatted(
                     $"Extracting option {( _currentGroupName.Length == 0 ? string.Empty : $"{_currentGroupName} - " )}{_currentOptionName}..." );
             }
 
@@ -56,7 +56,7 @@ public partial class TexToolsImporter
             percentage = _currentNumFiles == 0 ? 1f : _currentFileIdx / ( float )_currentNumFiles;
             ImGui.ProgressBar( percentage, size, $"File {_currentFileIdx + 1} / {_currentNumFiles}" );
             ImGui.NewLine();
-            ImGui.Text( $"Extracting file {_currentFileName}..." );
+            ImGui.TextUnformatted( $"Extracting file {_currentFileName}..." );
         }
     }
 
@@ -65,7 +65,7 @@ public partial class TexToolsImporter
     {
         var success = ExtractedMods.Count( t => t.Mod != null );
 
-        ImGui.Text( $"Successfully extracted {success} / {ExtractedMods.Count} files." );
+        ImGui.TextUnformatted( $"Successfully extracted {success} / {ExtractedMods.Count} files." );
         ImGui.NewLine();
         using var table = ImRaii.Table( "##files", 2 );
         if( !table )
@@ -76,17 +76,17 @@ public partial class TexToolsImporter
         foreach( var (file, dir, ex) in ExtractedMods )
         {
             ImGui.TableNextColumn();
-            ImGui.Text( file.Name );
+            ImGui.TextUnformatted( file.Name );
             ImGui.TableNextColumn();
             if( dir != null )
             {
                 using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.FolderExpanded.Value() );
-                ImGui.Text( dir.FullName[ ( _baseDirectory.FullName.Length + 1 ).. ] );
+                ImGui.TextUnformatted( dir.FullName[ ( _baseDirectory.FullName.Length + 1 ).. ] );
             }
             else
             {
                 using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.ConflictingMod.Value() );
-                ImGui.Text( ex!.Message );
+                ImGui.TextUnformatted( ex!.Message );
                 ImGuiUtil.HoverTooltip( ex.ToString() );
             }
         }

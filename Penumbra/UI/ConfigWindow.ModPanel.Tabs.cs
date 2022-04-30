@@ -132,7 +132,7 @@ public partial class ConfigWindow
                     ImGui.SameLine();
                     using var color = ImRaii.PushColor( ImGuiCol.Text,
                         conflict.Mod1Priority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value() );
-                    ImGui.Text( $"(Priority {Penumbra.CollectionManager.Current[ conflict.Mod2 ].Settings!.Priority})" );
+                    ImGui.TextUnformatted( $"(Priority {Penumbra.CollectionManager.Current[ conflict.Mod2 ].Settings!.Priority})" );
 
                     indent.Push( 30f );
                 }

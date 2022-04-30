@@ -51,7 +51,7 @@ public partial class ConfigWindow
             group.Dispose();
             if( ImGui.GetItemRectSize() == Vector2.Zero )
             {
-                ImGui.Text( "No actions available." );
+                ImGui.TextUnformatted( "No actions available." );
             }
         }
 

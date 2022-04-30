@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -178,16 +179,26 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     private void DrawInfoPopup()
     {
         var display = ImGui.GetIO().DisplaySize;
-        ImGui.SetNextWindowSize( display    / 4 );
-        ImGui.SetNextWindowPos( 3 * display / 8 );
+        var height  = Math.Max( display.Y / 4, 15 * ImGui.GetFrameHeightWithSpacing() );
+        var width   = display.X / 8;
+        var size    = new Vector2( width * 2, height );
+        var pos     = ( display - size ) / 2;
+        ImGui.SetNextWindowSize( size );
+        ImGui.SetNextWindowPos( pos );
         using var popup = ImRaii.Popup( "Import Status", ImGuiWindowFlags.Modal );
         if( _import == null || !popup.Success )
         {
             return;
         }
 
-        _import.DrawProgressInfo( new Vector2( -1, ImGui.GetFrameHeight() ) );
-        ImGui.SetCursorPosY( ImGui.GetWindowHeight() - ImGui.GetFrameHeight() * 2 );
+        using( var child = ImRaii.Child( "##import", new Vector2( -1, size.Y - ImGui.GetFrameHeight() * 2 ) ) )
+        {
+            if( child )
+            {
+                _import.DrawProgressInfo( new Vector2( -1, ImGui.GetFrameHeight() ) );
+            }
+        }
+
         if( _import.State == ImporterState.Done && ImGui.Button( "Close", -Vector2.UnitX )
         || _import.State  != ImporterState.Done && _import.DrawCancelButton( -Vector2.UnitX ) )
         {

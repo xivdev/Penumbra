@@ -119,11 +119,11 @@ public class SubModEditWindow : Window
             ImGui.TableNextColumn();
             ConfigWindow.Text( file.RelFile.Path );
             ImGui.TableNextColumn();
-            ImGui.Text( file.Size.ToString() );
+            ImGui.TextUnformatted( file.Size.ToString() );
             ImGui.TableNextColumn();
             if( file.SubMods.Count == 0 )
             {
-                ImGui.Text( "Unused" );
+                ImGui.TextUnformatted( "Unused" );
             }
 
             foreach( var (groupIdx, optionIdx, gamePath) in file.SubMods )
@@ -135,7 +135,7 @@ public class SubModEditWindow : Window
                 var text = groupIdx >= 0
                     ? $"{group!.Name} - {option.Name}"
                     : option.Name;
-                ImGui.Text( text );
+                ImGui.TextUnformatted( text );
                 ImGui.TableNextColumn();
                 ConfigWindow.Text( gamePath.Path );
             }
@@ -147,7 +147,7 @@ public class SubModEditWindow : Window
             ImGui.TableNextColumn();
             ConfigWindow.Text( gamePath.Path );
             ImGui.TableNextColumn();
-            ImGui.Text( fullPath.FullName );
+            ImGui.TextUnformatted( fullPath.FullName );
             ImGui.TableNextColumn();
         }
     }
@@ -169,9 +169,9 @@ public class SubModEditWindow : Window
         foreach( var manip in _manipulations )
         {
             ImGui.TableNextColumn();
-            ImGui.Text( manip.ManipulationType.ToString() );
+            ImGui.TextUnformatted( manip.ManipulationType.ToString() );
             ImGui.TableNextColumn();
-            ImGui.Text( manip.ManipulationType switch
+            ImGui.TextUnformatted( manip.ManipulationType switch
             {
                 MetaManipulation.Type.Imc  => manip.Imc.ToString(),
                 MetaManipulation.Type.Eqdp => manip.Eqdp.ToString(),
@@ -182,7 +182,7 @@ public class SubModEditWindow : Window
                 _                          => string.Empty,
             } );
             ImGui.TableNextColumn();
-            ImGui.Text( manip.ManipulationType switch
+            ImGui.TextUnformatted( manip.ManipulationType switch
             {
                 MetaManipulation.Type.Imc  => manip.Imc.Entry.ToString(),
                 MetaManipulation.Type.Eqdp => manip.Eqdp.Entry.ToString(),
@@ -214,7 +214,7 @@ public class SubModEditWindow : Window
             ImGui.TableNextColumn();
             ConfigWindow.Text( from.Path );
             ImGui.TableNextColumn();
-            ImGui.Text( to.FullName );
+            ImGui.TextUnformatted( to.FullName );
             ImGui.TableNextColumn();
         }
     }

@@ -130,7 +130,7 @@ public partial class ConfigWindow
             ImGuiUtil.TextColored( Colors.MetaInfoText, "by " );
             ImGui.SameLine();
             style.Pop();
-            ImGui.Text( _mod.Author );
+            ImGui.TextUnformatted( _mod.Author );
         }
 
         // Draw either a website button if the source is a valid website address,
@@ -163,7 +163,7 @@ public partial class ConfigWindow
                 ImGuiUtil.TextColored( Colors.MetaInfoText, "from " );
                 ImGui.SameLine();
                 style.Pop();
-                ImGui.Text( _mod.Website );
+                ImGui.TextUnformatted( _mod.Website );
             }
         }
 

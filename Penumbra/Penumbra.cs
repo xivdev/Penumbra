@@ -187,7 +187,7 @@ public class Penumbra : IDalamudPlugin
         {
             if( it is Item )
             {
-                ImGui.Text( "Left Click to create an item link in chat." );
+                ImGui.TextUnformatted( "Left Click to create an item link in chat." );
             }
         };
         Api.ChangedItemClicked += ( button, it ) =>

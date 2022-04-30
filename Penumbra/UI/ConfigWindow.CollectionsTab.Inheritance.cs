@@ -260,7 +260,7 @@ public partial class ConfigWindow
             {
                 ImGui.SetDragDropPayload( InheritanceDragDropLabel, IntPtr.Zero, 0 );
                 _movedInheritance = collection;
-                ImGui.Text( $"Moving {_movedInheritance?.Name ?? "Unknown"}..." );
+                ImGui.TextUnformatted( $"Moving {_movedInheritance?.Name ?? "Unknown"}..." );
             }
         }
 
