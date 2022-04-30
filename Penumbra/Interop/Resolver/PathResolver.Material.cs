@@ -90,8 +90,11 @@ public unsafe partial class PathResolver
             PluginLog.Verbose( "Using MtrlLoadHandler with no collection for path {$Path:l}.", path );
         }
 
-
-        ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, isSync );
+        // Force isSync = true for this call. I don't really understand why,
+        // or where the difference even comes from.
+        // Was called with True on my client and with false on other peoples clients,
+        // which caused problems.
+        ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, true );
         PathCollections.TryRemove( path, out _ );
         return true;
     }

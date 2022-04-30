@@ -365,7 +365,7 @@ public class Penumbra : IDalamudPlugin
     private static IReadOnlyList< FileInfo > PenumbraBackupFiles()
     {
         var collectionDir = ModCollection.CollectionDirectory;
-        var list          = Directory.Exists(collectionDir)
+        var list = Directory.Exists( collectionDir )
             ? new DirectoryInfo( collectionDir ).EnumerateFiles( "*.json" ).ToList()
             : new List< FileInfo >();
         list.Add( Dalamud.PluginInterface.ConfigFile );

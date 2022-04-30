@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Logging;
 using ICSharpCode.SharpZipLib.Zip;
@@ -11,7 +13,7 @@ using FileMode = System.IO.FileMode;
 
 namespace Penumbra.Import;
 
-public partial class TexToolsImporter
+public partial class TexToolsImporter : IDisposable
 {
     private const           string                 TempFileName = "textools-import";
     private static readonly JsonSerializerSettings JsonSettings = new() { NullValueHandling = NullValueHandling.Ignore };
@@ -21,22 +23,59 @@ public partial class TexToolsImporter
 
     private readonly IEnumerable< FileInfo > _modPackFiles;
     private readonly int                     _modPackCount;
+    private          FileStream?             _tmpFileStream;
+    private          StreamDisposer?         _streamDisposer;
+    private readonly CancellationTokenSource _cancellation = new();
+    private readonly CancellationToken       _token;
 
     public ImporterState State { get; private set; }
     public readonly List< (FileInfo File, DirectoryInfo? Mod, Exception? Error) > ExtractedMods;
 
-    public TexToolsImporter( DirectoryInfo baseDirectory, ICollection< FileInfo > files )
-        : this( baseDirectory, files.Count, files )
+    public TexToolsImporter( DirectoryInfo baseDirectory, ICollection< FileInfo > files,
+        Action< FileInfo, DirectoryInfo?, Exception? > handler )
+        : this( baseDirectory, files.Count, files, handler )
     { }
 
-    public TexToolsImporter( DirectoryInfo baseDirectory, int count, IEnumerable< FileInfo > modPackFiles )
+    public TexToolsImporter( DirectoryInfo baseDirectory, int count, IEnumerable< FileInfo > modPackFiles,
+        Action< FileInfo, DirectoryInfo?, Exception? > handler )
     {
         _baseDirectory = baseDirectory;
         _tmpFile       = Path.Combine( _baseDirectory.FullName, TempFileName );
         _modPackFiles  = modPackFiles;
         _modPackCount  = count;
         ExtractedMods  = new List< (FileInfo, DirectoryInfo?, Exception?) >( count );
-        Task.Run( ImportFiles );
+        _token         = _cancellation.Token;
+        Task.Run( ImportFiles, _token )
+           .ContinueWith( _ => CloseStreams() )
+           .ContinueWith( _ =>
+            {
+                foreach( var (file, dir, error) in ExtractedMods )
+                {
+                    handler( file, dir, error );
+                }
+            } );
+    }
+
+    private void CloseStreams()
+    {
+        _tmpFileStream?.Dispose();
+        _tmpFileStream = null;
+        ResetStreamDisposer();
+    }
+
+    public void Dispose()
+    {
+        _cancellation.Cancel( true );
+        if( State != ImporterState.WritingPackToDisk )
+        {
+            _tmpFileStream?.Dispose();
+            _tmpFileStream = null;
+        }
+
+        if( State != ImporterState.ExtractingModFiles )
+        {
+            ResetStreamDisposer();
+        }
     }
 
     private void ImportFiles()
@@ -45,6 +84,13 @@ public partial class TexToolsImporter
         _currentModPackIdx = 0;
         foreach( var file in _modPackFiles )
         {
+            _currentModDirectory = null;
+            if( _token.IsCancellationRequested )
+            {
+                ExtractedMods.Add( ( file, null, new TaskCanceledException( "Task canceled by user." ) ) );
+                continue;
+            }
+
             try
             {
                 var directory = VerifyVersionAndImport( file );
@@ -52,7 +98,7 @@ public partial class TexToolsImporter
             }
             catch( Exception e )
             {
-                ExtractedMods.Add( ( file, null, e ) );
+                ExtractedMods.Add( ( file, _currentModDirectory, e ) );
                 _currentNumOptions = 0;
                 _currentOptionIdx  = 0;
                 _currentFileIdx    = 0;
@@ -88,7 +134,7 @@ public partial class TexToolsImporter
                 PluginLog.Warning( $"File {modPackFile.FullName} seems to be a V2 TTMP, but has the wrong extension." );
             }
 
-            return ImportV2ModPack( _: modPackFile, extractedModPack, modRaw );
+            return ImportV2ModPack( modPackFile, extractedModPack, modRaw );
         }
 
         if( modPackFile.Extension != ".ttmp" )
@@ -129,11 +175,19 @@ public partial class TexToolsImporter
 
     private void WriteZipEntryToTempFile( Stream s )
     {
-        using var fs = new FileStream( _tmpFile, FileMode.Create );
-        s.CopyTo( fs );
+        _tmpFileStream?.Dispose(); // should not happen
+        _tmpFileStream = new FileStream( _tmpFile, FileMode.Create );
+        if( _token.IsCancellationRequested )
+        {
+            return;
+        }
+
+        s.CopyTo( _tmpFileStream );
+        _tmpFileStream.Dispose();
+        _tmpFileStream = null;
     }
 
-    private PenumbraSqPackStream GetSqPackStreamStream( ZipFile file, string entryName )
+    private StreamDisposer GetSqPackStreamStream( ZipFile file, string entryName )
     {
         State = ImporterState.WritingPackToDisk;
 
@@ -148,7 +202,14 @@ public partial class TexToolsImporter
 
         WriteZipEntryToTempFile( s );
 
+        _streamDisposer?.Dispose(); // Should not happen.
         var fs = new FileStream( _tmpFile, FileMode.Open );
         return new StreamDisposer( fs );
+    }
+
+    private void ResetStreamDisposer()
+    {
+        _streamDisposer?.Dispose();
+        _streamDisposer = null;
     }
 }

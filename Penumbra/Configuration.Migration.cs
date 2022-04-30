@@ -30,6 +30,11 @@ public partial class Configuration
 
         public static void Migrate( Configuration config )
         {
+            if( !File.Exists( Dalamud.PluginInterface.ConfigFile.FullName ) )
+            {
+                return;
+            }
+
             var m = new Migration
             {
                 _config = config,

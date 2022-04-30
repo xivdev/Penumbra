@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Logging;
@@ -55,6 +56,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         Penumbra.CollectionManager.Current.ModSettingChanged  -= OnSettingChange;
         Penumbra.CollectionManager.Current.InheritanceChanged -= OnInheritanceChange;
         Penumbra.CollectionManager.CollectionChanged          -= OnCollectionChange;
+        _import?.Dispose();
+        _import = null;
     }
 
     public new ModFileSystem.Leaf? SelectedLeaf
@@ -160,7 +163,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             {
                 if( s )
                 {
-                    _import = new TexToolsImporter( Penumbra.ModManager.BasePath, f.Count, f.Select( file => new FileInfo( file ) ) );
+                    _import = new TexToolsImporter( Penumbra.ModManager.BasePath, f.Count, f.Select( file => new FileInfo( file ) ),
+                        AddNewMod );
                     ImGui.OpenPopup( "Import Status" );
                 }
             }, 0, modPath );
@@ -177,50 +181,48 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         ImGui.SetNextWindowSize( display    / 4 );
         ImGui.SetNextWindowPos( 3 * display / 8 );
         using var popup = ImRaii.Popup( "Import Status", ImGuiWindowFlags.Modal );
-        if( _import != null && popup.Success )
+        if( _import == null || !popup.Success )
         {
-            _import.DrawProgressInfo( new Vector2( -1, ImGui.GetFrameHeight() ) );
-            if( _import.State == ImporterState.Done )
-            {
-                ImGui.SetCursorPosY( ImGui.GetWindowHeight() - ImGui.GetFrameHeight() * 2 );
-                if( ImGui.Button( "Close", -Vector2.UnitX ) )
-                {
-                    AddNewMods( _import.ExtractedMods );
-                    _import = null;
-                    ImGui.CloseCurrentPopup();
-                }
-            }
+            return;
+        }
+
+        _import.DrawProgressInfo( new Vector2( -1, ImGui.GetFrameHeight() ) );
+        ImGui.SetCursorPosY( ImGui.GetWindowHeight() - ImGui.GetFrameHeight() * 2 );
+        if( _import.State == ImporterState.Done && ImGui.Button( "Close", -Vector2.UnitX )
+        || _import.State  != ImporterState.Done && _import.DrawCancelButton( -Vector2.UnitX ) )
+        {
+            _import?.Dispose();
+            _import = null;
+            ImGui.CloseCurrentPopup();
         }
     }
 
-    // Clean up invalid directories if necessary.
-    // Add all successfully extracted mods.
-    private static void AddNewMods( IEnumerable< (FileInfo File, DirectoryInfo? Mod, Exception? Error) > list )
+    // Clean up invalid directory if necessary.
+    // Add successfully extracted mods.
+    private static void AddNewMod( FileInfo file, DirectoryInfo? dir, Exception? error )
     {
-        foreach( var (file, dir, error) in list )
+        if( error != null )
         {
-            if( error != null )
+            if( dir != null && Directory.Exists( dir.FullName ) )
             {
-                if( dir != null && Directory.Exists( dir.FullName ) )
+                try
                 {
-                    try
-                    {
-                        Directory.Delete( dir.FullName );
-                    }
-                    catch( Exception e )
-                    {
-                        PluginLog.Error( $"Error cleaning up failed mod extraction of {file.FullName} to {dir.FullName}:\n{e}" );
-                    }
+                    Directory.Delete( dir.FullName, true );
                 }
-
-                PluginLog.Error( $"Error extracting {file.FullName}, mod skipped:\n{error}" );
-                continue;
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Error cleaning up failed mod extraction of {file.FullName} to {dir.FullName}:\n{e}" );
+                }
             }
 
-            if( dir != null )
+            if( error is not OperationCanceledException )
             {
-                Penumbra.ModManager.AddMod( dir );
+                PluginLog.Error( $"Error extracting {file.FullName}, mod skipped:\n{error}" );
             }
+        }
+        else if( dir != null )
+        {
+            Penumbra.ModManager.AddMod( dir );
         }
     }
 

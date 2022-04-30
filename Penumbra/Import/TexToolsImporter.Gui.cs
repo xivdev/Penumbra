@@ -91,4 +91,7 @@ public partial class TexToolsImporter
             }
         }
     }
+
+    public bool DrawCancelButton( Vector2 size )
+        => ImGuiUtil.DrawDisabledButton( "Cancel", size, string.Empty, _token.IsCancellationRequested );
 }
