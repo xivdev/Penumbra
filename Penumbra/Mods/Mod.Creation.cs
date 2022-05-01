@@ -110,6 +110,13 @@ public partial class Mod
         return mod;
     }
 
+    // Create an empty sub mod for single groups with None options.
+    internal static ISubMod CreateEmptySubMod( string name )
+        => new SubMod()
+        {
+            Name = name,
+        };
+
     // Create the default data file from all unused files that were not handled before
     // and are used in sub mods.
     internal static void CreateDefaultFiles( DirectoryInfo directory )

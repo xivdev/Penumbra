@@ -158,7 +158,9 @@ public partial class ConfigWindow
 
             if( ImGui.Button( "Edit Default Mod", reducedSize ) )
             {
-                _window.SubModPopup.Activate( _mod, -1, 0 );
+                _window.ModEditPopup.ChangeMod( _mod );
+                _window.ModEditPopup.ChangeOption( -1, 0 );
+                _window.ModEditPopup.IsOpen = true;
             }
 
             ImGui.SameLine();
@@ -180,6 +182,7 @@ public partial class ConfigWindow
         private int     _currentField = -1;
         private int     _optionIndex  = -1;
 
+        private int    _newOptionNameIdx  = -1;
         private string _newGroupName      = string.Empty;
         private string _newOptionName     = string.Empty;
         private string _newDescription    = string.Empty;
@@ -287,10 +290,15 @@ public partial class ConfigWindow
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
                 ImGui.SetNextItemWidth( -1 );
-                ImGui.InputTextWithHint( "##newOption", "Add new option...", ref _newOptionName, 256 );
+                var tmp = _newOptionNameIdx == groupIdx ? _newOptionName : string.Empty;
+                if( ImGui.InputTextWithHint( "##newOption", "Add new option...", ref tmp, 256 ) )
+                {
+                    _newOptionName    = tmp;
+                    _newOptionNameIdx = groupIdx;
+                }
                 ImGui.TableNextColumn();
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize,
-                       "Add a new option to this group.", _newOptionName.Length == 0, true ) )
+                       "Add a new option to this group.", _newOptionName.Length == 0 || _newOptionNameIdx != groupIdx, true ) )
                 {
                     Penumbra.ModManager.AddOption( _mod, groupIdx, _newOptionName );
                     _newOptionName = string.Empty;
@@ -385,7 +393,9 @@ public partial class ConfigWindow
             if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), _window._iconButtonSize,
                    "Edit this option.", false, true ) )
             {
-                _window.SubModPopup.Activate( _mod, groupIdx, optionIdx );
+                _window.ModEditPopup.ChangeMod( _mod );
+                _window.ModEditPopup.ChangeOption( groupIdx, optionIdx );
+                _window.ModEditPopup.IsOpen = true;
             }
 
             ImGui.TableNextColumn();

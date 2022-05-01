@@ -109,7 +109,8 @@ public partial class TexToolsImporter
                .Sum( page => page.ModGroups
                    .Where( g => g.GroupName.Length > 0 && g.OptionList.Length > 0 )
                    .Sum( group => group.OptionList
-                       .Count( o => o.Name.Length > 0 && o.ModsJsons.Length > 0 ) ) );
+                           .Count( o => o.Name.Length > 0 && o.ModsJsons.Length > 0 )
+                      + ( group.OptionList.Any( o => o.Name.Length > 0 && o.ModsJsons.Length == 0 ) ? 1 : 0 ) ) );
 
     // Extended V2 mod packs contain multiple options that need to be handled separately.
     private DirectoryInfo ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
@@ -171,6 +172,18 @@ public partial class TexToolsImporter
 
                     ++optionIdx;
                     ++_currentOptionIdx;
+                }
+
+                // Handle empty options for single select groups without creating a folder for them.
+                // We only want one of those at most, and it should usually be the first option.
+                if( group.SelectionType == SelectType.Single )
+                {
+                    var empty = group.OptionList.FirstOrDefault( o => o.Name.Length > 0 && o.ModsJsons.Length == 0 );
+                    if( empty != null )
+                    {
+                        _currentOptionName = empty.Name;
+                        options.Insert( 0, Mod.CreateEmptySubMod( empty.Name ) );
+                    }
                 }
 
                 Mod.CreateOptionGroup( _currentModDirectory, group, groupPriority, groupPriority, description.ToString(), options );

@@ -21,7 +21,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     private readonly EffectiveTab          _effectiveTab;
     private readonly DebugTab              _debugTab;
     private readonly ResourceTab           _resourceTab;
-    public readonly  SubModEditWindow      SubModPopup = new();
+    public readonly  ModEditWindow         ModEditPopup = new();
 
     public ConfigWindow( Penumbra penumbra )
         : base( GetLabel() )
@@ -70,6 +70,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     {
         _selector.Dispose();
         _modPanel.Dispose();
+        ModEditPopup.Dispose();
     }
 
     private static string GetLabel()

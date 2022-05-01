@@ -282,6 +282,7 @@ public partial class ModCollection
 
             if( recomputeList )
             {
+                // TODO: Does not check if the option that was changed is actually enabled.
                 foreach( var collection in this.Where( c => c.HasCache ) )
                 {
                     if( collection[ mod.Index ].Settings is { Enabled: true } )

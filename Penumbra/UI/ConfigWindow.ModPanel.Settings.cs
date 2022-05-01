@@ -105,6 +105,7 @@ public partial class ConfigWindow
             ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
             if( ImGui.InputInt( "##Priority", ref priority, 0, 0 ) )
             {
+
                 _currentPriority = priority;
             }
 

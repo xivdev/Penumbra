@@ -283,8 +283,7 @@ public sealed partial class Mod
                 return;
             }
 
-            subMod.ManipulationData.Clear();
-            subMod.ManipulationData.UnionWith( manipulations );
+            subMod.ManipulationData = manipulations;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionMetaChanged, mod, groupIdx, optionIdx, -1 );
         }
 
@@ -300,13 +299,24 @@ public sealed partial class Mod
         public void OptionSetFiles( Mod mod, int groupIdx, int optionIdx, Dictionary< Utf8GamePath, FullPath > replacements )
         {
             var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            if( subMod.FileData.Equals( replacements ) )
+            if( subMod.FileData.SetEquals( replacements ) )
             {
                 return;
             }
 
-            subMod.FileData.SetTo( replacements );
+            subMod.FileData = replacements;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionFilesChanged, mod, groupIdx, optionIdx, -1 );
+        }
+
+        public void OptionAddFiles( Mod mod, int groupIdx, int optionIdx, Dictionary< Utf8GamePath, FullPath > additions )
+        {
+            var subMod   = GetSubMod( mod, groupIdx, optionIdx );
+            var oldCount = subMod.FileData.Count;
+            subMod.FileData.AddFrom( additions );
+            if( oldCount != subMod.FileData.Count )
+            {
+                ModOptionChanged.Invoke( ModOptionChangeType.OptionFilesChanged, mod, groupIdx, optionIdx, -1 );
+            }
         }
 
         public void OptionSetFileSwap( Mod mod, int groupIdx, int optionIdx, Utf8GamePath gamePath, FullPath? newPath )
@@ -321,12 +331,12 @@ public sealed partial class Mod
         public void OptionSetFileSwaps( Mod mod, int groupIdx, int optionIdx, Dictionary< Utf8GamePath, FullPath > swaps )
         {
             var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            if( subMod.FileSwapData.Equals( swaps ) )
+            if( subMod.FileSwapData.SetEquals( swaps ) )
             {
                 return;
             }
 
-            subMod.FileSwapData.SetTo( swaps );
+            subMod.FileSwapData = swaps;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionSwapsChanged, mod, groupIdx, optionIdx, -1 );
         }
 
@@ -334,10 +344,9 @@ public sealed partial class Mod
             HashSet< MetaManipulation > manipulations, Dictionary< Utf8GamePath, FullPath > swaps )
         {
             var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            subMod.FileData.SetTo( replacements );
-            subMod.ManipulationData.Clear();
-            subMod.ManipulationData.UnionWith( manipulations );
-            subMod.FileSwapData.SetTo( swaps );
+            subMod.FileData         = replacements;
+            subMod.ManipulationData = manipulations;
+            subMod.FileSwapData     = swaps;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionUpdated, mod, groupIdx, optionIdx, -1 );
         }
 
@@ -361,6 +370,11 @@ public sealed partial class Mod
 
         private static SubMod GetSubMod( Mod mod, int groupIdx, int optionIdx )
         {
+            if( groupIdx == -1 && optionIdx == 0 )
+            {
+                return mod._default;
+            }
+
             return mod._groups[ groupIdx ] switch
             {
                 SingleModGroup s => s.OptionData[ optionIdx ],
@@ -406,7 +420,14 @@ public sealed partial class Mod
             }
             else
             {
-                IModGroup.SaveModGroup( mod._groups[ groupIdx ], mod.BasePath, groupIdx );
+                if( groupIdx == -1 )
+                {
+                    mod.SaveDefaultMod();
+                }
+                else
+                {
+                    IModGroup.SaveModGroup( mod._groups[ groupIdx ], mod.BasePath, groupIdx );
+                }
             }
 
             // State can not change on adding groups, as they have no immediate options.

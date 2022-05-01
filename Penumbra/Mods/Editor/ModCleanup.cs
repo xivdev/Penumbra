@@ -1,17 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text.RegularExpressions;
-using Dalamud.Logging;
-using Penumbra.GameData.ByteString;
-using Penumbra.Import;
-using Penumbra.Meta.Manipulations;
-using Penumbra.Util;
-
 namespace Penumbra.Mods;
 
 public partial class Mod
@@ -202,15 +188,10 @@ public partial class Mod
 //
 //   private readonly DirectoryInfo _baseDir;
 //   private readonly ModMeta       _mod;
-//   private          SHA256?       _hasher;
+
 //
 //   private readonly Dictionary< long, List< FileInfo > > _filesBySize = new();
 //
-//   private SHA256 Sha()
-//   {
-//       _hasher ??= SHA256.Create();
-//       return _hasher;
-//   }
 //
 //   private ModCleanup( DirectoryInfo baseDir, ModMeta mod )
 //   {
@@ -366,47 +347,6 @@ public partial class Mod
 //       return meta.Groups[ Duplicates ].Options.First();
 //   }
 //
-//   public static void Deduplicate( DirectoryInfo baseDir, ModMeta mod )
-//   {
-//       var dedup = new ModCleanup( baseDir, mod );
-//       foreach( var (key, value) in dedup._filesBySize.Where( pair => pair.Value.Count >= 2 ) )
-//       {
-//           if( value.Count == 2 )
-//           {
-//               if( CompareFilesDirectly( value[ 0 ], value[ 1 ] ) )
-//               {
-//                   dedup.ReplaceFile( value[ 0 ], value[ 1 ] );
-//               }
-//           }
-//           else
-//           {
-//               var deleted = Enumerable.Repeat( false, value.Count ).ToArray();
-//               var hashes  = value.Select( dedup.ComputeHash ).ToArray();
-//
-//               for( var i = 0; i < value.Count; ++i )
-//               {
-//                   if( deleted[ i ] )
-//                   {
-//                       continue;
-//                   }
-//
-//                   for( var j = i + 1; j < value.Count; ++j )
-//                   {
-//                       if( deleted[ j ] || !CompareHashes( hashes[ i ], hashes[ j ] ) )
-//                       {
-//                           continue;
-//                       }
-//
-//                       dedup.ReplaceFile( value[ i ], value[ j ] );
-//                       deleted[ j ] = true;
-//                   }
-//               }
-//           }
-//       }
-//
-//       CleanUpDuplicates( mod );
-//       ClearEmptySubDirectories( dedup._baseDir );
-//   }
 //
 //   private void ReplaceFile( FileInfo f1, FileInfo f2 )
 //   {
@@ -458,32 +398,8 @@ public partial class Mod
 //       f2.Delete();
 //   }
 //
-//   public static bool CompareFilesDirectly( FileInfo f1, FileInfo f2 )
-//       => File.ReadAllBytes( f1.FullName ).SequenceEqual( File.ReadAllBytes( f2.FullName ) );
 //
-//   public static bool CompareHashes( byte[] f1, byte[] f2 )
-//       => StructuralComparisons.StructuralEqualityComparer.Equals( f1, f2 );
-//
-//   public byte[] ComputeHash( FileInfo f )
-//   {
-//       var stream = File.OpenRead( f.FullName );
-//       var ret    = Sha().ComputeHash( stream );
-//       stream.Dispose();
-//       return ret;
-//   }
-//
-//   // Does not delete the base directory itself even if it is completely empty at the end.
-//   public static void ClearEmptySubDirectories( DirectoryInfo baseDir )
-//   {
-//       foreach( var subDir in baseDir.GetDirectories() )
-//       {
-//           ClearEmptySubDirectories( subDir );
-//           if( subDir.GetFiles().Length == 0 && subDir.GetDirectories().Length == 0 )
-//           {
-//               subDir.Delete();
-//           }
-//       }
-//   }
+
 //
 //   private static bool FileIsInAnyGroup( ModMeta meta, Utf8RelPath relPath, bool exceptDuplicates = false )
 //   {

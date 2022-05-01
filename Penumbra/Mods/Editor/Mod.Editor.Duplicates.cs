@@ -1,0 +1,207 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using Dalamud.Logging;
+using Penumbra.GameData.ByteString;
+
+namespace Penumbra.Mods;
+
+public partial class Mod
+{
+    public partial class Editor
+    {
+        private readonly SHA256                                           _hasher     = SHA256.Create();
+        private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = new();
+
+        public IReadOnlyList< (FullPath[] Paths, long Size, byte[] Hash) > Duplicates
+            => _duplicates;
+
+        public long SavedSpace { get; private set; } = 0;
+
+        public bool DuplicatesFinished { get; private set; } = true;
+
+        public void DeleteDuplicates()
+        {
+            if( !DuplicatesFinished || _duplicates.Count == 0 )
+            {
+                return;
+            }
+
+            foreach( var (set, _, _) in _duplicates )
+            {
+                if( set.Length < 2 )
+                {
+                    continue;
+                }
+
+                var remaining = set[ 0 ];
+                foreach( var duplicate in set.Skip( 1 ) )
+                {
+                    HandleDuplicate( duplicate, remaining );
+                }
+            }
+            _availableFiles.RemoveAll( p => !p.Item1.Exists );
+            _duplicates.Clear();
+        }
+
+        public void Cancel()
+        {
+            DuplicatesFinished = true;
+        }
+
+        private void HandleDuplicate( FullPath duplicate, FullPath remaining )
+        {
+            void HandleSubMod( ISubMod subMod, int groupIdx, int optionIdx )
+            {
+                var changes = false;
+                var dict = subMod.Files.ToDictionary( kvp => kvp.Key,
+                    kvp => ChangeDuplicatePath( kvp.Value, duplicate, remaining, kvp.Key, ref changes ) );
+                if( changes )
+                {
+                    Penumbra.ModManager.OptionSetFiles( _mod, groupIdx, optionIdx, dict );
+                }
+            }
+
+            ApplyToAllOptions( _mod, HandleSubMod );
+
+            try
+            {
+                File.Delete( duplicate.FullName );
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"[DeleteDuplicates] Could not delete duplicate {duplicate.FullName} of {remaining.FullName}:\n{e}" );
+            }
+        }
+
+
+        private FullPath ChangeDuplicatePath( FullPath value, FullPath from, FullPath to, Utf8GamePath key, ref bool changes )
+        {
+            if( !value.Equals( from ) )
+            {
+                return value;
+            }
+
+            changes = true;
+            PluginLog.Debug( "[DeleteDuplicates] Changing {GamePath:l} for {Mod:d}\n     : {Old:l}\n    -> {New:l}", key, _mod.Name, from, to);
+            return to;
+        }
+
+
+        public void StartDuplicateCheck()
+        {
+            DuplicatesFinished = false;
+            Task.Run( CheckDuplicates );
+        }
+
+        private void CheckDuplicates()
+        {
+            _duplicates.Clear();
+            SavedSpace = 0;
+            var list     = new List< FullPath >();
+            var lastSize = -1L;
+            foreach( var (p, size) in AvailableFiles )
+            {
+                if( DuplicatesFinished )
+                {
+                    return;
+                }
+
+                if( size == lastSize )
+                {
+                    list.Add( p );
+                    continue;
+                }
+
+                if( list.Count >= 2 )
+                {
+                    CheckMultiDuplicates( list, lastSize );
+                }
+                lastSize = size;
+
+                list.Clear();
+                list.Add( p );
+            }
+            if( list.Count >= 2 )
+            {
+                CheckMultiDuplicates( list, lastSize );
+            }
+
+            DuplicatesFinished = true;
+        }
+
+        private void CheckMultiDuplicates( IReadOnlyList< FullPath > list, long size )
+        {
+            var hashes = list.Select( f => (f, ComputeHash(f)) ).ToList();
+            while( hashes.Count > 0 )
+            {
+                if( DuplicatesFinished )
+                {
+                    return;
+                }
+
+                var set  = new HashSet< FullPath > { hashes[ 0 ].Item1 };
+                var hash = hashes[ 0 ];
+                for( var j = 1; j < hashes.Count; ++j )
+                {
+                    if( DuplicatesFinished )
+                    {
+                        return;
+                    }
+
+                    if( CompareHashes( hash.Item2, hashes[ j ].Item2 ) && CompareFilesDirectly( hashes[ 0 ].Item1, hashes[ j ].Item1 ) )
+                    {
+                        set.Add( hashes[ j ].Item1 );
+                    }
+                }
+
+                hashes.RemoveAll( p => set.Contains(p.Item1) );
+                if( set.Count > 1 )
+                {
+                    _duplicates.Add( (set.OrderBy( f => f.FullName.Length ).ToArray(), size, hash.Item2) );
+                    SavedSpace += ( set.Count - 1 ) * size;
+                }
+            }
+        }
+
+        private static unsafe bool CompareFilesDirectly( FullPath f1, FullPath f2 )
+        {
+            if( !f1.Exists || !f2.Exists )
+                return false;
+
+            using var s1      = File.OpenRead( f1.FullName );
+            using var s2      = File.OpenRead( f2.FullName );
+            var       buffer1 = stackalloc byte[256];
+            var       buffer2 = stackalloc byte[256];
+            var       span1    = new Span< byte >( buffer1, 256 );
+            var       span2    = new Span< byte >( buffer2, 256 );
+
+            while( true )
+            {
+                var bytes1   = s1.Read( span1 );
+                var bytes2   = s2.Read( span2 );
+                if( bytes1 != bytes2 )
+                    return false;
+
+                if( !span1[ ..bytes1 ].SequenceEqual( span2[ ..bytes2 ] ) )
+                    return false;
+
+                if( bytes1 < 256 )
+                    return true;
+            }
+        }
+
+        public static bool CompareHashes( byte[] f1, byte[] f2 )
+            => StructuralComparisons.StructuralEqualityComparer.Equals( f1, f2 );
+
+        public byte[] ComputeHash( FullPath f )
+        {
+            using var stream = File.OpenRead( f.FullName );
+            return _hasher.ComputeHash( stream );
+        }
+    }
+}

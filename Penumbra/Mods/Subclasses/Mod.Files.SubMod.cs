@@ -69,9 +69,9 @@ public partial class Mod
     {
         public string Name { get; set; } = "Default";
 
-        public readonly Dictionary< Utf8GamePath, FullPath > FileData         = new();
-        public readonly Dictionary< Utf8GamePath, FullPath > FileSwapData     = new();
-        public readonly HashSet< MetaManipulation >          ManipulationData = new();
+        public Dictionary< Utf8GamePath, FullPath > FileData         = new();
+        public Dictionary< Utf8GamePath, FullPath > FileSwapData     = new();
+        public HashSet< MetaManipulation >          ManipulationData = new();
 
         public IReadOnlyDictionary< Utf8GamePath, FullPath > Files
             => FileData;

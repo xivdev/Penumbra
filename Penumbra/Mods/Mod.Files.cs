@@ -78,9 +78,6 @@ public partial class Mod
         => !Penumbra.Config.DisableSoundStreaming
          && gamePath.Path.EndsWith( '.', 's', 'c', 'd' );
 
-    public List< FullPath > FindMissingFiles()
-        => AllFiles.Where( f => !f.Exists ).ToList();
-
     private static IModGroup? LoadModGroup( FileInfo file, DirectoryInfo basePath )
     {
         if( !File.Exists( file.FullName ) )
