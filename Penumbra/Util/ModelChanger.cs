@@ -16,9 +16,9 @@ public static class ModelChanger
     public const           string MaterialFormat = "/mt_c0201b0001_{0}.mtrl";
     public static readonly Regex  MaterialRegex  = new(@"/mt_c0201b0001_.*?\.mtrl", RegexOptions.Compiled);
 
+    // Non-ASCII encoding can not be used.
     public static bool ValidStrings( string from, string to )
-        => from.Length                         != 0
-         && to.Length                          != 0
+        =>  to.Length                          != 0
          && from.Length                        < 16
          && to.Length                          < 16
          && from                               != to
@@ -26,10 +26,11 @@ public static class ModelChanger
          && Encoding.UTF8.GetByteCount( to )   == to.Length;
 
 
-    [Conditional( "DEBUG" )]
+    [Conditional( "FALSE" )]
     private static void WriteBackup( string name, byte[] text )
         => File.WriteAllBytes( name + ".bak", text );
 
+    // Change material suffices for a single mdl file.
     public static int ChangeMtrl( FullPath file, string from, string to )
     {
         if( !file.Exists )
@@ -41,6 +42,9 @@ public static class ModelChanger
         {
             var                  data    = File.ReadAllBytes( file.FullName );
             var                  mdlFile = new MdlFile( data );
+
+            // If from is empty, match with any current material suffix,
+            // otherwise check for exact matches with from.
             Func< string, bool > compare = MaterialRegex.IsMatch;
             if( from.Length > 0 )
             {
@@ -59,6 +63,7 @@ public static class ModelChanger
                 }
             }
 
+            // Only rewrite the file if anything was changed.
             if( replaced > 0 )
             {
                 WriteBackup( file.FullName, data );

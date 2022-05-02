@@ -4,10 +4,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -15,27 +17,10 @@ public partial class ConfigWindow
 {
     private partial class ModPanel
     {
-        private readonly Queue< Action > _delayedActions = new();
-
-        private void DrawAddOptionGroupInput()
-        {
-            ImGui.SetNextItemWidth( _window._inputTextWidth.X );
-            ImGui.InputTextWithHint( "##newGroup", "Add new option group...", ref _newGroupName, 256 );
-            ImGui.SameLine();
-
-            var nameValid = Mod.Manager.VerifyFileName( _mod, null, _newGroupName, false );
-            var tt        = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize,
-                   tt, !nameValid, true ) )
-            {
-                Penumbra.ModManager.AddModGroup( _mod, SelectType.Single, _newGroupName );
-                _newGroupName = string.Empty;
-            }
-        }
-
         private Vector2 _cellPadding = Vector2.Zero;
         private Vector2 _itemSpacing = Vector2.Zero;
 
+        // Draw the edit tab that contains all things concerning editing the mod.
         private void DrawEditModTab()
         {
             using var tab = DrawTab( EditModTabHeader, Tabs.Edit );
@@ -75,6 +60,57 @@ public partial class ConfigWindow
             EditDescriptionPopup();
         }
 
+        // Do some edits outside of iterations.
+        private readonly Queue< Action > _delayedActions = new();
+
+        // Text input to add a new option group at the end of the current groups.
+        private void DrawAddOptionGroupInput()
+        {
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X );
+            ImGui.InputTextWithHint( "##newGroup", "Add new option group...", ref _newGroupName, 256 );
+            ImGui.SameLine();
+
+            var nameValid = Mod.Manager.VerifyFileName( _mod, null, _newGroupName, false );
+            var tt        = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize,
+                   tt, !nameValid, true ) )
+            {
+                Penumbra.ModManager.AddModGroup( _mod, SelectType.Single, _newGroupName );
+                _newGroupName = string.Empty;
+            }
+        }
+
+        
+        private string _materialSuffixFrom = string.Empty;
+        private string _materialSuffixTo   = string.Empty;
+
+        // A row of three buttonSizes and a help marker that can be used for material suffix changing.
+        private void DrawChangeMaterialSuffix( Vector2 buttonSize )
+        {
+            ImGui.SetNextItemWidth( buttonSize.X );
+            ImGui.InputTextWithHint( "##suffixFrom", "From...", ref _materialSuffixFrom, 32 );
+            ImGui.SameLine();
+            var disabled = !ModelChanger.ValidStrings( _materialSuffixFrom, _materialSuffixTo );
+            var tt = _materialSuffixTo.Length == 0                 ? "Please enter a target suffix."
+                : _materialSuffixFrom         == _materialSuffixTo ? "The source and target are identical."
+                : disabled                                         ? "The suffices are not valid suffices."
+                : _materialSuffixFrom.Length == 0                  ? "Convert all skin material suffices to the target."
+                                                                     : $"Convert all skin material suffices that are currently {_materialSuffixFrom} to {_materialSuffixTo}.";
+            if( ImGuiUtil.DrawDisabledButton( "Change Material Suffix", buttonSize, tt, disabled ) )
+            {
+                ModelChanger.ChangeModMaterials( _mod, _materialSuffixFrom, _materialSuffixTo );
+            }
+
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth( buttonSize.X );
+            ImGui.InputTextWithHint( "##suffixTo", "To...", ref _materialSuffixTo, 32 );
+            ImGui.SameLine();
+            ImGuiComponents.HelpMarker(
+                "Model files refer to the skin material they should use. This skin material is always the same, but modders have started using different suffices to differentiate between body types.\n"
+              + "This option allows you to switch the suffix of all model files to another. This changes the files, so you do this on your own risk.\n"
+              + "If you do not know what the currently used suffix of this mod is, you can leave 'From' blank and it will replace all suffices with 'To', instead of only the matching ones." );
+        }
+
         private void EditButtons()
         {
             var buttonSize   = new Vector2( 150 * ImGuiHelpers.GlobalScale, 0 );
@@ -93,14 +129,7 @@ public partial class ConfigWindow
             ImGui.SameLine();
             ImGuiUtil.DrawDisabledButton( "Reload Mod", buttonSize, "Not implemented yet", true );
 
-            ImGuiUtil.DrawDisabledButton( "Deduplicate", buttonSize, "Not implemented yet", true );
-            ImGui.SameLine();
-            ImGuiUtil.DrawDisabledButton( "Normalize", buttonSize, "Not implemented yet", true );
-            ImGui.SameLine();
-            ImGuiUtil.DrawDisabledButton( "Auto-Create Groups", buttonSize, "Not implemented yet", true );
-
-            ImGuiUtil.DrawDisabledButton( "Change Material Suffix", buttonSize, "Not implemented yet", true );
-
+            DrawChangeMaterialSuffix( buttonSize );
             ImGui.Dummy( _window._defaultSpace );
         }
 
@@ -296,6 +325,7 @@ public partial class ConfigWindow
                     _newOptionName    = tmp;
                     _newOptionNameIdx = groupIdx;
                 }
+
                 ImGui.TableNextColumn();
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize,
                        "Add a new option to this group.", _newOptionName.Length == 0 || _newOptionNameIdx != groupIdx, true ) )
