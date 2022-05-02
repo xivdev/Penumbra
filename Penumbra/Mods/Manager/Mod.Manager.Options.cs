@@ -55,7 +55,7 @@ public sealed partial class Mod
                 return;
             }
 
-            group.DeleteFile( mod.BasePath, groupIdx );
+            group.DeleteFile( mod.ModPath, groupIdx );
 
             var _ = group switch
             {
@@ -86,7 +86,7 @@ public sealed partial class Mod
         {
             var group = mod._groups[ groupIdx ];
             mod._groups.RemoveAt( groupIdx );
-            group.DeleteFile( mod.BasePath, groupIdx );
+            group.DeleteFile( mod.ModPath, groupIdx );
             ModOptionChanged.Invoke( ModOptionChangeType.GroupDeleted, mod, groupIdx, -1, -1 );
         }
 
@@ -426,7 +426,7 @@ public sealed partial class Mod
                 }
                 else
                 {
-                    IModGroup.SaveModGroup( mod._groups[ groupIdx ], mod.BasePath, groupIdx );
+                    IModGroup.SaveModGroup( mod._groups[ groupIdx ], mod.ModPath, groupIdx );
                 }
             }
 

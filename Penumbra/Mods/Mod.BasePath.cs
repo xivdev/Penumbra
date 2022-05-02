@@ -8,37 +8,53 @@ public enum ModPathChangeType
     Added,
     Deleted,
     Moved,
+    Reloaded,
 }
 
 public partial class Mod
 {
-    public DirectoryInfo BasePath { get; private set; }
+    public DirectoryInfo ModPath { get; private set; }
     public int Index { get; private set; } = -1;
 
-    private Mod( DirectoryInfo basePath )
-        => BasePath = basePath;
+    private Mod( DirectoryInfo modPath )
+        => ModPath = modPath;
 
-    private static Mod? LoadMod( DirectoryInfo basePath )
+    private static Mod? LoadMod( DirectoryInfo modPath )
     {
-        basePath.Refresh();
-        if( !basePath.Exists )
+        modPath.Refresh();
+        if( !modPath.Exists )
         {
-            PluginLog.Error( $"Supplied mod directory {basePath} does not exist." );
+            PluginLog.Error( $"Supplied mod directory {modPath} does not exist." );
             return null;
         }
 
-        var mod = new Mod( basePath );
-        mod.LoadMeta();
-        if( mod.Name.Length == 0 )
+        var mod = new Mod( modPath );
+        if( !mod.Reload(out _) )
         {
-            PluginLog.Error( $"Mod at {basePath} without name is not supported." );
+            // Can not be base path not existing because that is checked before.
+            PluginLog.Error( $"Mod at {modPath} without name is not supported." );
         }
 
-        mod.LoadDefaultOption();
-        mod.LoadAllGroups();
-        mod.ComputeChangedItems();
-        mod.SetCounts();
-
         return mod;
+    }
+
+    private bool Reload(out MetaChangeType metaChange)
+    {
+        metaChange = MetaChangeType.Deletion;
+        ModPath.Refresh();
+        if( !ModPath.Exists )
+            return false;
+
+        metaChange = LoadMeta();
+        if( metaChange.HasFlag(MetaChangeType.Deletion) || Name.Length == 0 )
+        {
+            return false;
+        }
+
+        LoadDefaultOption();
+        LoadAllGroups();
+        ComputeChangedItems();
+        SetCounts();
+        return true;
     }
 }

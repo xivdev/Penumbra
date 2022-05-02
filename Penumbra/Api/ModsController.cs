@@ -20,9 +20,9 @@ public class ModsController : WebApiController
         {
             x.Second?.Enabled,
             x.Second?.Priority,
-            FolderName = x.First.BasePath.Name,
+            FolderName = x.First.ModPath.Name,
             x.First.Name,
-            BasePath = x.First.BasePath.FullName,
+            BasePath = x.First.ModPath.FullName,
             Files    = x.First.AllFiles,
         } );
     }

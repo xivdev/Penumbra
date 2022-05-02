@@ -34,14 +34,14 @@ public sealed partial class Mod
     public long ImportDate { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
     internal FileInfo MetaFile
-        => new(Path.Combine( BasePath.FullName, "meta.json" ));
+        => new(Path.Combine( ModPath.FullName, "meta.json" ));
 
     private MetaChangeType LoadMeta()
     {
         var metaFile = MetaFile;
         if( !File.Exists( metaFile.FullName ) )
         {
-            PluginLog.Debug( "No mod meta found for {ModLocation}.", BasePath.Name );
+            PluginLog.Debug( "No mod meta found for {ModLocation}.", ModPath.Name );
             return MetaChangeType.Deletion;
         }
 

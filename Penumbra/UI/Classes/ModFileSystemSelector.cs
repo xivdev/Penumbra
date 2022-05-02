@@ -137,6 +137,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             {
                 var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
                 Mod.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty );
+                Mod.CreateDefaultFiles( newDir );
                 Penumbra.ModManager.AddMod( newDir );
                 _newModName = string.Empty;
             }
@@ -341,7 +342,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     private void StoreCurrentSelection()
     {
-        _lastSelectedDirectory = Selected?.BasePath.FullName ?? string.Empty;
+        _lastSelectedDirectory = Selected?.ModPath.FullName ?? string.Empty;
         ClearSelection();
     }
 
@@ -350,7 +351,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         if( _lastSelectedDirectory.Length > 0 )
         {
             base.SelectedLeaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( SortMode.Lexicographical )
-               .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.BasePath.FullName == _lastSelectedDirectory );
+               .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.ModPath.FullName == _lastSelectedDirectory );
             OnSelectionChange( null, base.SelectedLeaf?.Value, default );
             _lastSelectedDirectory = string.Empty;
         }

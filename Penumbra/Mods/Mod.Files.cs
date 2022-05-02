@@ -59,12 +59,12 @@ public partial class Mod
            .Select( p => p.Value );
 
     public IEnumerable< FileInfo > GroupFiles
-        => BasePath.EnumerateFiles( "group_*.json" );
+        => ModPath.EnumerateFiles( "group_*.json" );
 
     public List< FullPath > FindUnusedFiles()
     {
         var modFiles = AllFiles.ToHashSet();
-        return BasePath.EnumerateDirectories()
+        return ModPath.EnumerateDirectories()
            .SelectMany( f => f.EnumerateFiles( "*", SearchOption.AllDirectories ) )
            .Select( f => new FullPath( f ) )
            .Where( f => !modFiles.Contains( f ) )
@@ -107,7 +107,7 @@ public partial class Mod
         _groups.Clear();
         foreach( var file in GroupFiles )
         {
-            var group = LoadModGroup( file, BasePath );
+            var group = LoadModGroup( file, ModPath );
             if( group != null )
             {
                 _groups.Add( group );
@@ -136,7 +136,7 @@ public partial class Mod
 
         foreach( var (group, index) in _groups.WithIndex() )
         {
-            IModGroup.SaveModGroup( group, BasePath, index );
+            IModGroup.SaveModGroup( group, ModPath, index );
         }
     }
 }

@@ -41,7 +41,7 @@ public partial class Mod
             var dict = new Dictionary< Utf8GamePath, FullPath >( UnusedFiles.Count );
             foreach( var file in UnusedFiles )
             {
-                var gamePath = file.ToGamePath( _mod.BasePath, out var g ) ? g : Utf8GamePath.Empty;
+                var gamePath = file.ToGamePath( _mod.ModPath, out var g ) ? g : Utf8GamePath.Empty;
                 if( !gamePath.IsEmpty && !dict.ContainsKey( gamePath ) )
                 {
                     dict.Add( gamePath, file );
@@ -105,7 +105,7 @@ public partial class Mod
 
 
         private static List<(FullPath, long)> GetAvailablePaths( Mod mod )
-            => mod.BasePath.EnumerateDirectories()
+            => mod.ModPath.EnumerateDirectories()
                .SelectMany( d => d.EnumerateFiles( "*.*", SearchOption.AllDirectories ).Select( f => (new FullPath( f ), f.Length) ) )
                .OrderBy( p => -p.Length ).ToList();
     }

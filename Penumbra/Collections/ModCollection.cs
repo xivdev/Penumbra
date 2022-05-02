@@ -92,11 +92,11 @@ public partial class ModCollection
     // Add settings for a new appended mod, by checking if the mod had settings from a previous deletion.
     private bool AddMod( Mod mod )
     {
-        if( _unusedSettings.TryGetValue( mod.BasePath.Name, out var save ) )
+        if( _unusedSettings.TryGetValue( mod.ModPath.Name, out var save ) )
         {
             var ret = save.ToSettings( mod, out var settings );
             _settings.Add( settings );
-            _unusedSettings.Remove( mod.BasePath.Name );
+            _unusedSettings.Remove( mod.ModPath.Name );
             return ret;
         }
 
@@ -110,7 +110,7 @@ public partial class ModCollection
         var settings = _settings[ idx ];
         if( settings != null )
         {
-            _unusedSettings.Add( mod.BasePath.Name, new ModSettings.SavedSettings( settings, mod ) );
+            _unusedSettings.Add( mod.ModPath.Name, new ModSettings.SavedSettings( settings, mod ) );
         }
 
         _settings.RemoveAt( idx );
@@ -131,7 +131,7 @@ public partial class ModCollection
     {
         foreach( var (mod, setting) in Penumbra.ModManager.Zip( _settings ).Where( s => s.Second != null ) )
         {
-            _unusedSettings[ mod.BasePath.Name ] = new ModSettings.SavedSettings( setting!, mod );
+            _unusedSettings[ mod.ModPath.Name ] = new ModSettings.SavedSettings( setting!, mod );
         }
 
         _settings.Clear();

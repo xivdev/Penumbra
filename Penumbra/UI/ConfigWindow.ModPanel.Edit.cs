@@ -42,13 +42,14 @@ public partial class ConfigWindow
             EditRegularMeta();
             ImGui.Dummy( _window._defaultSpace );
 
-            if( TextInput( "Mod Path", PathFieldIdx, NoFieldIdx, _leaf.FullName(), out var newPath, 256, _window._inputTextWidth.X ) )
+            if( Input.Text( "Mod Path", Input.Path, Input.None, _leaf.FullName(), out var newPath, 256,
+                   _window._inputTextWidth.X ) )
             {
                 _window._penumbra.ModFileSystem.RenameAndMove( _leaf, newPath );
             }
 
             ImGui.Dummy( _window._defaultSpace );
-            DrawAddOptionGroupInput();
+            AddOptionGroup.Draw( _window, _mod );
             ImGui.Dummy( _window._defaultSpace );
 
             for( var groupIdx = 0; groupIdx < _mod.Groups.Count; ++groupIdx )
@@ -57,110 +58,59 @@ public partial class ConfigWindow
             }
 
             EndActions();
-            EditDescriptionPopup();
+            DescriptionEdit.DrawPopup( _window );
         }
 
-        // Do some edits outside of iterations.
-        private readonly Queue< Action > _delayedActions = new();
-
-        // Text input to add a new option group at the end of the current groups.
-        private void DrawAddOptionGroupInput()
-        {
-            ImGui.SetNextItemWidth( _window._inputTextWidth.X );
-            ImGui.InputTextWithHint( "##newGroup", "Add new option group...", ref _newGroupName, 256 );
-            ImGui.SameLine();
-
-            var nameValid = Mod.Manager.VerifyFileName( _mod, null, _newGroupName, false );
-            var tt        = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize,
-                   tt, !nameValid, true ) )
-            {
-                Penumbra.ModManager.AddModGroup( _mod, SelectType.Single, _newGroupName );
-                _newGroupName = string.Empty;
-            }
-        }
-
-        
-        private string _materialSuffixFrom = string.Empty;
-        private string _materialSuffixTo   = string.Empty;
-
-        // A row of three buttonSizes and a help marker that can be used for material suffix changing.
-        private void DrawChangeMaterialSuffix( Vector2 buttonSize )
-        {
-            ImGui.SetNextItemWidth( buttonSize.X );
-            ImGui.InputTextWithHint( "##suffixFrom", "From...", ref _materialSuffixFrom, 32 );
-            ImGui.SameLine();
-            var disabled = !ModelChanger.ValidStrings( _materialSuffixFrom, _materialSuffixTo );
-            var tt = _materialSuffixTo.Length == 0                 ? "Please enter a target suffix."
-                : _materialSuffixFrom         == _materialSuffixTo ? "The source and target are identical."
-                : disabled                                         ? "The suffices are not valid suffices."
-                : _materialSuffixFrom.Length == 0                  ? "Convert all skin material suffices to the target."
-                                                                     : $"Convert all skin material suffices that are currently {_materialSuffixFrom} to {_materialSuffixTo}.";
-            if( ImGuiUtil.DrawDisabledButton( "Change Material Suffix", buttonSize, tt, disabled ) )
-            {
-                ModelChanger.ChangeModMaterials( _mod, _materialSuffixFrom, _materialSuffixTo );
-            }
-
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth( buttonSize.X );
-            ImGui.InputTextWithHint( "##suffixTo", "To...", ref _materialSuffixTo, 32 );
-            ImGui.SameLine();
-            ImGuiComponents.HelpMarker(
-                "Model files refer to the skin material they should use. This skin material is always the same, but modders have started using different suffices to differentiate between body types.\n"
-              + "This option allows you to switch the suffix of all model files to another. This changes the files, so you do this on your own risk.\n"
-              + "If you do not know what the currently used suffix of this mod is, you can leave 'From' blank and it will replace all suffices with 'To', instead of only the matching ones." );
-        }
-
+        // The general edit row for non-detailed mod edits.
         private void EditButtons()
         {
             var buttonSize   = new Vector2( 150 * ImGuiHelpers.GlobalScale, 0 );
-            var folderExists = Directory.Exists( _mod.BasePath.FullName );
+            var folderExists = Directory.Exists( _mod.ModPath.FullName );
             var tt = folderExists
-                ? $"Open \"{_mod.BasePath.FullName}\" in the file explorer of your choice."
-                : $"Mod directory \"{_mod.BasePath.FullName}\" does not exist.";
+                ? $"Open \"{_mod.ModPath.FullName}\" in the file explorer of your choice."
+                : $"Mod directory \"{_mod.ModPath.FullName}\" does not exist.";
             if( ImGuiUtil.DrawDisabledButton( "Open Mod Directory", buttonSize, tt, !folderExists ) )
             {
-                Process.Start( new ProcessStartInfo( _mod.BasePath.FullName ) { UseShellExecute = true } );
+                Process.Start( new ProcessStartInfo( _mod.ModPath.FullName ) { UseShellExecute = true } );
+            }
+
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( "Reload Mod", buttonSize, "Reload the current mod from its files.\n"
+                 + "If the mod directory or meta file do not exist anymore or if the new mod name is empty, the mod is deleted instead.",
+                   false ) )
+            {
+                Penumbra.ModManager.ReloadMod( _mod.Index );
             }
 
 
-            ImGui.SameLine();
-            ImGuiUtil.DrawDisabledButton( "Rename Mod Directory", buttonSize, "Not implemented yet", true );
-            ImGui.SameLine();
-            ImGuiUtil.DrawDisabledButton( "Reload Mod", buttonSize, "Not implemented yet", true );
+            MoveDirectory.Draw( _mod, buttonSize );
 
-            DrawChangeMaterialSuffix( buttonSize );
+
+            MaterialSuffix.Draw( _mod, buttonSize );
             ImGui.Dummy( _window._defaultSpace );
         }
 
-
-        // Special field indices to reuse the same string buffer.
-        private const int NoFieldIdx          = -1;
-        private const int NameFieldIdx        = -2;
-        private const int AuthorFieldIdx      = -3;
-        private const int VersionFieldIdx     = -4;
-        private const int WebsiteFieldIdx     = -5;
-        private const int PathFieldIdx        = -6;
-        private const int DescriptionFieldIdx = -7;
-
+        // Anything about editing the regular meta information about the mod.
         private void EditRegularMeta()
         {
-            if( TextInput( "Name", NameFieldIdx, NoFieldIdx, _mod.Name, out var newName, 256, _window._inputTextWidth.X ) )
+            if( Input.Text( "Name", Input.Name, Input.None, _mod.Name, out var newName, 256, _window._inputTextWidth.X ) )
             {
                 Penumbra.ModManager.ChangeModName( _mod.Index, newName );
             }
 
-            if( TextInput( "Author", AuthorFieldIdx, NoFieldIdx, _mod.Author, out var newAuthor, 256, _window._inputTextWidth.X ) )
+            if( Input.Text( "Author", Input.Author, Input.None, _mod.Author, out var newAuthor, 256, _window._inputTextWidth.X ) )
             {
                 Penumbra.ModManager.ChangeModAuthor( _mod.Index, newAuthor );
             }
 
-            if( TextInput( "Version", VersionFieldIdx, NoFieldIdx, _mod.Version, out var newVersion, 32, _window._inputTextWidth.X ) )
+            if( Input.Text( "Version", Input.Version, Input.None, _mod.Version, out var newVersion, 32,
+                   _window._inputTextWidth.X ) )
             {
                 Penumbra.ModManager.ChangeModVersion( _mod.Index, newVersion );
             }
 
-            if( TextInput( "Website", WebsiteFieldIdx, NoFieldIdx, _mod.Website, out var newWebsite, 256, _window._inputTextWidth.X ) )
+            if( Input.Text( "Website", Input.Website, Input.None, _mod.Website, out var newWebsite, 256,
+                   _window._inputTextWidth.X ) )
             {
                 Penumbra.ModManager.ChangeModWebsite( _mod.Index, newWebsite );
             }
@@ -171,7 +121,7 @@ public partial class ConfigWindow
             var reducedSize = new Vector2( _window._inputTextWidth.X - _window._iconButtonSize.X - spacing.X, 0 );
             if( ImGui.Button( "Edit Description", reducedSize ) )
             {
-                _delayedActions.Enqueue( () => OpenEditDescriptionPopup( DescriptionFieldIdx ) );
+                _delayedActions.Enqueue( () => DescriptionEdit.OpenPopup( _mod, Input.Description ) );
             }
 
             ImGui.SameLine();
@@ -204,18 +154,199 @@ public partial class ConfigWindow
             }
         }
 
+        // Do some edits outside of iterations.
+        private readonly Queue< Action > _delayedActions = new();
 
-        // Temporary strings
-        private string? _currentEdit;
-        private int?    _currentGroupPriority;
-        private int     _currentField = -1;
-        private int     _optionIndex  = -1;
+        // Delete a marked group or option outside of iteration.
+        private void EndActions()
+        {
+            while( _delayedActions.TryDequeue( out var action ) )
+            {
+                action.Invoke();
+            }
+        }
 
-        private int    _newOptionNameIdx  = -1;
-        private string _newGroupName      = string.Empty;
-        private string _newOptionName     = string.Empty;
-        private string _newDescription    = string.Empty;
-        private int    _newDescriptionIdx = -1;
+        // Text input to add a new option group at the end of the current groups.
+        private static class AddOptionGroup
+        {
+            private static string _newGroupName = string.Empty;
+
+            public static void Draw( ConfigWindow window, Mod mod )
+            {
+                ImGui.SetNextItemWidth( window._inputTextWidth.X );
+                ImGui.InputTextWithHint( "##newGroup", "Add new option group...", ref _newGroupName, 256 );
+                ImGui.SameLine();
+
+                var nameValid = Mod.Manager.VerifyFileName( mod, null, _newGroupName, false );
+                var tt        = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), window._iconButtonSize,
+                       tt, !nameValid, true ) )
+                {
+                    Penumbra.ModManager.AddModGroup( mod, SelectType.Single, _newGroupName );
+                    _newGroupName = string.Empty;
+                }
+            }
+        }
+
+        // A row of three buttonSizes and a help marker that can be used for material suffix changing.
+        private static class MaterialSuffix
+        {
+            private static string _materialSuffixFrom = string.Empty;
+            private static string _materialSuffixTo   = string.Empty;
+
+            public static void Draw( Mod mod, Vector2 buttonSize )
+            {
+                ImGui.SetNextItemWidth( buttonSize.X );
+                ImGui.InputTextWithHint( "##suffixFrom", "From...", ref _materialSuffixFrom, 32 );
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth( buttonSize.X );
+                ImGui.InputTextWithHint( "##suffixTo", "To...", ref _materialSuffixTo, 32 );
+                ImGui.SameLine();
+                var disabled = !ModelChanger.ValidStrings( _materialSuffixFrom, _materialSuffixTo );
+                var tt = _materialSuffixTo.Length == 0                 ? "Please enter a target suffix."
+                    : _materialSuffixFrom         == _materialSuffixTo ? "The source and target are identical."
+                    : disabled                                         ? "The suffices are not valid suffices."
+                    : _materialSuffixFrom.Length == 0                  ? "Convert all skin material suffices to the target."
+                                                                         : $"Convert all skin material suffices that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'.";
+                if( ImGuiUtil.DrawDisabledButton( "Change Material Suffix", buttonSize, tt, disabled ) )
+                {
+                    ModelChanger.ChangeModMaterials( mod, _materialSuffixFrom, _materialSuffixTo );
+                }
+
+                ImGui.SameLine();
+                ImGuiComponents.HelpMarker(
+                    "Model files refer to the skin material they should use. This skin material is always the same, but modders have started using different suffices to differentiate between body types.\n"
+                  + "This option allows you to switch the suffix of all model files to another. This changes the files, so you do this on your own risk.\n"
+                  + "If you do not know what the currently used suffix of this mod is, you can leave 'From' blank and it will replace all suffices with 'To', instead of only the matching ones." );
+            }
+        }
+
+        // A text input for the new directory name and a button to apply the move.
+        private static class MoveDirectory
+        {
+            private static string?                       _currentModDirectory;
+            private static Mod?                          _modForDirectory;
+            private static Mod.Manager.NewDirectoryState _state = Mod.Manager.NewDirectoryState.Identical;
+
+            public static void Draw( Mod mod, Vector2 buttonSize )
+            {
+                ImGui.SetNextItemWidth( buttonSize.X * 2 + ImGui.GetStyle().ItemSpacing.X );
+                var tmp = _currentModDirectory ?? mod.ModPath.Name;
+                if( mod != _modForDirectory )
+                {
+                    tmp                  = mod.ModPath.Name;
+                    _currentModDirectory = null;
+                    _state               = Mod.Manager.NewDirectoryState.Identical;
+                }
+
+                if( ImGui.InputText( "##newModMove", ref tmp, 64 ) )
+                {
+                    _currentModDirectory = tmp;
+                    _modForDirectory     = mod;
+                    _state               = Mod.Manager.NewDirectoryValid( mod.ModPath.Name, _currentModDirectory, out _ );
+                }
+
+                var (disabled, tt) = _state switch
+                {
+                    Mod.Manager.NewDirectoryState.Identical      => ( true, "Current directory name is identical to new one." ),
+                    Mod.Manager.NewDirectoryState.Empty          => ( true, "Please enter a new directory name first." ),
+                    Mod.Manager.NewDirectoryState.NonExisting    => ( false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}." ),
+                    Mod.Manager.NewDirectoryState.ExistsEmpty    => ( false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}." ),
+                    Mod.Manager.NewDirectoryState.ExistsNonEmpty => ( true, $"{_currentModDirectory} already exists and is not empty." ),
+                    Mod.Manager.NewDirectoryState.ExistsAsFile   => ( true, $"{_currentModDirectory} exists as a file." ),
+                    Mod.Manager.NewDirectoryState.ContainsInvalidSymbols => ( true,
+                        $"{_currentModDirectory} contains invalid symbols for FFXIV." ),
+                    _ => ( true, "Unknown error." ),
+                };
+                ImGui.SameLine();
+                if( ImGuiUtil.DrawDisabledButton( "Rename Mod Directory", buttonSize, tt, disabled ) && _currentModDirectory != null )
+                {
+                    Penumbra.ModManager.MoveModDirectory( mod.Index, _currentModDirectory );
+                    _currentModDirectory = null;
+                    _state               = Mod.Manager.NewDirectoryState.Identical;
+                }
+
+                ImGui.SameLine();
+                ImGuiComponents.HelpMarker(
+                    "The mod directory name is used to correspond stored settings and sort orders, otherwise it has no influence on anything that is displayed.\n"
+                  + "This can currently not be used on pre-existing folders and does not support merges or overwriting." );
+            }
+        }
+
+        // Open a popup to edit a multi-line mod or option description.
+        private static class DescriptionEdit
+        {
+            private const  string PopupName          = "Edit Description";
+            private static string _newDescription    = string.Empty;
+            private static int    _newDescriptionIdx = -1;
+            private static Mod?   _mod;
+
+            public static void OpenPopup( Mod mod, int groupIdx )
+            {
+                _newDescriptionIdx = groupIdx;
+                _newDescription    = groupIdx < 0 ? mod.Description : mod.Groups[ groupIdx ].Description;
+                _mod               = mod;
+                ImGui.OpenPopup( PopupName );
+            }
+
+            public static void DrawPopup( ConfigWindow window )
+            {
+                if( _mod == null )
+                {
+                    return;
+                }
+
+                using var popup = ImRaii.Popup( PopupName );
+                if( !popup )
+                {
+                    return;
+                }
+
+                if( ImGui.IsWindowAppearing() )
+                {
+                    ImGui.SetKeyboardFocusHere();
+                }
+
+                ImGui.InputTextMultiline( "##editDescription", ref _newDescription, 4096, ImGuiHelpers.ScaledVector2( 800, 800 ) );
+                ImGui.Dummy( window._defaultSpace );
+
+                var buttonSize = ImGuiHelpers.ScaledVector2( 100, 0 );
+                var width = 2 * buttonSize.X
+                  + 4         * ImGui.GetStyle().FramePadding.X
+                  + ImGui.GetStyle().ItemSpacing.X;
+                ImGui.SetCursorPosX( ( 800 * ImGuiHelpers.GlobalScale - width ) / 2 );
+
+                var oldDescription = _newDescriptionIdx == Input.Description
+                    ? _mod.Description
+                    : _mod.Groups[ _newDescriptionIdx ].Description;
+
+                var tooltip = _newDescription != oldDescription ? string.Empty : "No changes made yet.";
+
+                if( ImGuiUtil.DrawDisabledButton( "Save", buttonSize, tooltip, tooltip.Length > 0 ) )
+                {
+                    switch( _newDescriptionIdx )
+                    {
+                        case Input.Description:
+                            Penumbra.ModManager.ChangeModDescription( _mod.Index, _newDescription );
+                            break;
+                        case >= 0:
+                            Penumbra.ModManager.ChangeGroupDescription( _mod, _newDescriptionIdx, _newDescription );
+                            break;
+                    }
+
+                    ImGui.CloseCurrentPopup();
+                }
+
+                ImGui.SameLine();
+                if( ImGui.Button( "Cancel", buttonSize )
+                || ImGui.IsKeyPressed( ImGui.GetKeyIndex( ImGuiKey.Escape ) ) )
+                {
+                    _newDescriptionIdx = Input.None;
+                    _newDescription    = string.Empty;
+                    ImGui.CloseCurrentPopup();
+                }
+            }
+        }
 
         private void EditGroup( int groupIdx )
         {
@@ -226,7 +357,7 @@ public partial class ConfigWindow
             using var style = ImRaii.PushStyle( ImGuiStyleVar.CellPadding, _cellPadding )
                .Push( ImGuiStyleVar.ItemSpacing, _itemSpacing );
 
-            if( TextInput( "##Name", groupIdx, NoFieldIdx, group.Name, out var newGroupName, 256, _window._inputTextWidth.X ) )
+            if( Input.Text( "##Name", groupIdx, Input.None, group.Name, out var newGroupName, 256, _window._inputTextWidth.X ) )
             {
                 Penumbra.ModManager.RenameModGroup( _mod, groupIdx, newGroupName );
             }
@@ -244,33 +375,19 @@ public partial class ConfigWindow
             if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), _window._iconButtonSize,
                    "Edit group description.", false, true ) )
             {
-                _delayedActions.Enqueue( () => OpenEditDescriptionPopup( groupIdx ) );
+                _delayedActions.Enqueue( () => DescriptionEdit.OpenPopup( _mod, groupIdx ) );
             }
 
             ImGui.SameLine();
 
-            if( PriorityInput( "##Priority", groupIdx, NoFieldIdx, group.Priority, out var priority, 50 * ImGuiHelpers.GlobalScale ) )
+            if( Input.Priority( "##Priority", groupIdx, Input.None, group.Priority, out var priority, 50 * ImGuiHelpers.GlobalScale ) )
             {
                 Penumbra.ModManager.ChangeGroupPriority( _mod, groupIdx, priority );
             }
 
             ImGuiUtil.HoverTooltip( "Group Priority" );
 
-            ImGui.SetNextItemWidth( _window._inputTextWidth.X - 3 * _window._iconButtonSize.X - 12 * ImGuiHelpers.GlobalScale );
-            using( var combo = ImRaii.Combo( "##GroupType", GroupTypeName( group.Type ) ) )
-            {
-                if( combo )
-                {
-                    foreach( var type in new[] { SelectType.Single, SelectType.Multi } )
-                    {
-                        if( ImGui.Selectable( GroupTypeName( type ), group.Type == type ) )
-                        {
-                            Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, type );
-                        }
-                    }
-                }
-            }
-
+            DrawGroupCombo( group, groupIdx );
             ImGui.SameLine();
 
             var tt = groupIdx == 0 ? "Can not move this group further upwards." : $"Move this group up to group {groupIdx}.";
@@ -291,7 +408,7 @@ public partial class ConfigWindow
             }
 
             ImGui.SameLine();
-            var fileName   = group.FileName( _mod.BasePath, groupIdx );
+            var fileName   = group.FileName( _mod.ModPath, groupIdx );
             var fileExists = File.Exists( fileName );
             tt = fileExists
                 ? $"Open the {group.Name} json file in the text editor of your choice."
@@ -303,19 +420,92 @@ public partial class ConfigWindow
 
             ImGui.Dummy( _window._defaultSpace );
 
-            using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.SizingFixedFit );
-            ImGui.TableSetupColumn( "idx", ImGuiTableColumnFlags.WidthFixed, 60 * ImGuiHelpers.GlobalScale );
-            ImGui.TableSetupColumn( "name", ImGuiTableColumnFlags.WidthFixed, _window._inputTextWidth.X - 62 * ImGuiHelpers.GlobalScale );
-            ImGui.TableSetupColumn( "delete", ImGuiTableColumnFlags.WidthFixed, _window._iconButtonSize.X );
-            ImGui.TableSetupColumn( "edit", ImGuiTableColumnFlags.WidthFixed, _window._iconButtonSize.X );
-            ImGui.TableSetupColumn( "priority", ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale );
-            if( table )
+            OptionTable.Draw( this, groupIdx );
+        }
+
+        // Draw the table displaying all options and the add new option line.
+        private static class OptionTable
+        {
+            private const string DragDropLabel = "##DragOption";
+
+            private static int    _newOptionNameIdx  = -1;
+            private static string _newOptionName     = string.Empty;
+            private static int    _dragDropGroupIdx  = -1;
+            private static int    _dragDropOptionIdx = -1;
+
+            public static void Draw( ModPanel panel, int groupIdx )
             {
-                for( var optionIdx = 0; optionIdx < group.Count; ++optionIdx )
+                using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.SizingFixedFit );
+                if( !table )
                 {
-                    EditOption( group, groupIdx, optionIdx );
+                    return;
                 }
 
+                ImGui.TableSetupColumn( "idx", ImGuiTableColumnFlags.WidthFixed, 60 * ImGuiHelpers.GlobalScale );
+                ImGui.TableSetupColumn( "name", ImGuiTableColumnFlags.WidthFixed,
+                    panel._window._inputTextWidth.X - 62 * ImGuiHelpers.GlobalScale );
+                ImGui.TableSetupColumn( "delete", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
+                ImGui.TableSetupColumn( "edit", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
+                ImGui.TableSetupColumn( "priority", ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale );
+
+                var group = panel._mod.Groups[ groupIdx ];
+                for( var optionIdx = 0; optionIdx < group.Count; ++optionIdx )
+                {
+                    EditOption( panel, group, groupIdx, optionIdx );
+                }
+
+                DrawNewOption( panel._mod, groupIdx, panel._window._iconButtonSize );
+            }
+
+            // Draw a line for a single option.
+            private static void EditOption( ModPanel panel, IModGroup group, int groupIdx, int optionIdx )
+            {
+                var       option = group[ optionIdx ];
+                using var id     = ImRaii.PushId( optionIdx );
+                ImGui.TableNextColumn();
+                ImGui.AlignTextToFramePadding();
+                ImGui.Selectable( $"Option #{optionIdx + 1}" );
+                Source( group, groupIdx, optionIdx );
+                Target( panel, group, groupIdx, optionIdx );
+
+                ImGui.TableNextColumn();
+                if( Input.Text( "##Name", groupIdx, optionIdx, option.Name, out var newOptionName, 256, -1 ) )
+                {
+                    Penumbra.ModManager.RenameOption( panel._mod, groupIdx, optionIdx, newOptionName );
+                }
+
+                ImGui.TableNextColumn();
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), panel._window._iconButtonSize,
+                       "Delete this option.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true ) )
+                {
+                    panel._delayedActions.Enqueue( () => Penumbra.ModManager.DeleteOption( panel._mod, groupIdx, optionIdx ) );
+                }
+
+                ImGui.TableNextColumn();
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), panel._window._iconButtonSize,
+                       "Edit this option.", false, true ) )
+                {
+                    panel._window.ModEditPopup.ChangeMod( panel._mod );
+                    panel._window.ModEditPopup.ChangeOption( groupIdx, optionIdx );
+                    panel._window.ModEditPopup.IsOpen = true;
+                }
+
+                ImGui.TableNextColumn();
+                if( group.Type == SelectType.Multi )
+                {
+                    if( Input.Priority( "##Priority", groupIdx, optionIdx, group.OptionPriority( optionIdx ), out var priority,
+                           50 * ImGuiHelpers.GlobalScale ) )
+                    {
+                        Penumbra.ModManager.ChangeOptionPriority( panel._mod, groupIdx, optionIdx, priority );
+                    }
+
+                    ImGuiUtil.HoverTooltip( "Option priority." );
+                }
+            }
+
+            // Draw the line to add a new option.
+            private static void DrawNewOption( Mod mod, int groupIdx, Vector2 iconButtonSize )
+            {
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
                 ImGui.SetNextItemWidth( -1 );
@@ -327,233 +517,161 @@ public partial class ConfigWindow
                 }
 
                 ImGui.TableNextColumn();
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize,
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), iconButtonSize,
                        "Add a new option to this group.", _newOptionName.Length == 0 || _newOptionNameIdx != groupIdx, true ) )
                 {
-                    Penumbra.ModManager.AddOption( _mod, groupIdx, _newOptionName );
+                    Penumbra.ModManager.AddOption( mod, groupIdx, _newOptionName );
                     _newOptionName = string.Empty;
                 }
             }
-        }
 
-        private static string GroupTypeName( SelectType type )
-            => type switch
+            // Handle drag and drop to move options inside a group or into another group.
+            private static void Source( IModGroup group, int groupIdx, int optionIdx )
             {
-                SelectType.Single => "Single Group",
-                SelectType.Multi  => "Multi Group",
-                _                 => "Unknown",
-            };
-
-        private int _dragDropGroupIdx  = -1;
-        private int _dragDropOptionIdx = -1;
-
-        private void OptionDragDrop( IModGroup group, int groupIdx, int optionIdx )
-        {
-            const string label = "##DragOption";
-            using( var source = ImRaii.DragDropSource() )
-            {
-                if( source )
+                using var source = ImRaii.DragDropSource();
+                if( !source )
                 {
-                    if( ImGui.SetDragDropPayload( label, IntPtr.Zero, 0 ) )
-                    {
-                        _dragDropGroupIdx  = groupIdx;
-                        _dragDropOptionIdx = optionIdx;
-                    }
-
-                    ImGui.TextUnformatted( $"Dragging option {group[ optionIdx ].Name} from group {group.Name}..." );
+                    return;
                 }
+
+                if( ImGui.SetDragDropPayload( DragDropLabel, IntPtr.Zero, 0 ) )
+                {
+                    _dragDropGroupIdx  = groupIdx;
+                    _dragDropOptionIdx = optionIdx;
+                }
+
+                ImGui.TextUnformatted( $"Dragging option {group[ optionIdx ].Name} from group {group.Name}..." );
             }
 
-            // TODO drag options to other groups without options.
-            using( var target = ImRaii.DragDropTarget() )
+            private static void Target( ModPanel panel, IModGroup group, int groupIdx, int optionIdx )
             {
-                if( target.Success && ImGuiUtil.IsDropping( label ) )
+                // TODO drag options to other groups without options.
+                using var target = ImRaii.DragDropTarget();
+                if( !target.Success || !ImGuiUtil.IsDropping( DragDropLabel ) )
                 {
-                    if( _dragDropGroupIdx >= 0 && _dragDropOptionIdx >= 0 )
+                    return;
+                }
+
+                if( _dragDropGroupIdx >= 0 && _dragDropOptionIdx >= 0 )
+                {
+                    if( _dragDropGroupIdx == groupIdx )
                     {
-                        if( _dragDropGroupIdx == groupIdx )
+                        var sourceOption = _dragDropOptionIdx;
+                        panel._delayedActions.Enqueue( () => Penumbra.ModManager.MoveOption( panel._mod, groupIdx, sourceOption, optionIdx ) );
+                    }
+                    else
+                    {
+                        // Move from one group to another by deleting, then adding the option.
+                        var sourceGroup  = _dragDropGroupIdx;
+                        var sourceOption = _dragDropOptionIdx;
+                        var option       = @group[ _dragDropOptionIdx ];
+                        var priority     = @group.OptionPriority( _dragDropGroupIdx );
+                        panel._delayedActions.Enqueue( () =>
                         {
-                            var sourceOption = _dragDropOptionIdx;
-                            _delayedActions.Enqueue( () => Penumbra.ModManager.MoveOption( _mod, groupIdx, sourceOption, optionIdx ) );
-                        }
-                        else
-                        {
-                            // Move from one group to another by deleting, then adding the option.
-                            var sourceGroup  = _dragDropGroupIdx;
-                            var sourceOption = _dragDropOptionIdx;
-                            var option       = group[ _dragDropOptionIdx ];
-                            var priority     = group.OptionPriority( _dragDropGroupIdx );
-                            _delayedActions.Enqueue( () =>
-                            {
-                                Penumbra.ModManager.DeleteOption( _mod, sourceGroup, sourceOption );
-                                Penumbra.ModManager.AddOption( _mod, groupIdx, option, priority );
-                            } );
-                        }
+                            Penumbra.ModManager.DeleteOption( panel._mod, sourceGroup, sourceOption );
+                            Penumbra.ModManager.AddOption( panel._mod, groupIdx, option, priority );
+                        } );
                     }
-
-                    _dragDropGroupIdx  = -1;
-                    _dragDropOptionIdx = -1;
                 }
+
+                _dragDropGroupIdx  = -1;
+                _dragDropOptionIdx = -1;
             }
         }
 
-        private void EditOption( IModGroup group, int groupIdx, int optionIdx )
+        // Draw a combo to select single or multi group and switch between them.
+        private void DrawGroupCombo( IModGroup group, int groupIdx )
         {
-            var       option = group[ optionIdx ];
-            using var id     = ImRaii.PushId( optionIdx );
-            ImGui.TableNextColumn();
-            ImGui.AlignTextToFramePadding();
-            ImGui.Selectable( $"Option #{optionIdx + 1}" );
-            OptionDragDrop( group, groupIdx, optionIdx );
-
-            ImGui.TableNextColumn();
-            if( TextInput( "##Name", groupIdx, optionIdx, option.Name, out var newOptionName, 256, -1 ) )
-            {
-                Penumbra.ModManager.RenameOption( _mod, groupIdx, optionIdx, newOptionName );
-            }
-
-            ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize,
-                   "Delete this option.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true ) )
-            {
-                _delayedActions.Enqueue( () => Penumbra.ModManager.DeleteOption( _mod, groupIdx, optionIdx ) );
-            }
-
-            ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), _window._iconButtonSize,
-                   "Edit this option.", false, true ) )
-            {
-                _window.ModEditPopup.ChangeMod( _mod );
-                _window.ModEditPopup.ChangeOption( groupIdx, optionIdx );
-                _window.ModEditPopup.IsOpen = true;
-            }
-
-            ImGui.TableNextColumn();
-            if( group.Type == SelectType.Multi )
-            {
-                if( PriorityInput( "##Priority", groupIdx, optionIdx, group.OptionPriority( optionIdx ), out var priority,
-                       50 * ImGuiHelpers.GlobalScale ) )
+            static string GroupTypeName( SelectType type )
+                => type switch
                 {
-                    Penumbra.ModManager.ChangeOptionPriority( _mod, groupIdx, optionIdx, priority );
-                }
+                    SelectType.Single => "Single Group",
+                    SelectType.Multi  => "Multi Group",
+                    _                 => "Unknown",
+                };
 
-                ImGuiUtil.HoverTooltip( "Option priority." );
-            }
-        }
-
-        private bool TextInput( string label, int field, int option, string oldValue, out string value, uint maxLength, float width )
-        {
-            var tmp = field == _currentField && option == _optionIndex ? _currentEdit ?? oldValue : oldValue;
-            ImGui.SetNextItemWidth( width );
-            if( ImGui.InputText( label, ref tmp, maxLength ) )
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X - 3 * _window._iconButtonSize.X - 12 * ImGuiHelpers.GlobalScale );
+            using var combo = ImRaii.Combo( "##GroupType", GroupTypeName( group.Type ) );
+            if( !combo )
             {
-                _currentEdit  = tmp;
-                _optionIndex  = option;
-                _currentField = field;
+                return;
             }
 
-            if( ImGui.IsItemDeactivatedAfterEdit() && _currentEdit != null )
+            foreach( var type in new[] { SelectType.Single, SelectType.Multi } )
             {
-                var ret = _currentEdit != oldValue;
-                value         = _currentEdit;
-                _currentEdit  = null;
-                _currentField = NoFieldIdx;
-                _optionIndex  = NoFieldIdx;
-                return ret;
-            }
-
-            value = string.Empty;
-            return false;
-        }
-
-        private bool PriorityInput( string label, int field, int option, int oldValue, out int value, float width )
-        {
-            var tmp = field == _currentField && option == _optionIndex ? _currentGroupPriority ?? oldValue : oldValue;
-            ImGui.SetNextItemWidth( width );
-            if( ImGui.InputInt( label, ref tmp, 0, 0 ) )
-            {
-                _currentGroupPriority = tmp;
-                _optionIndex          = option;
-                _currentField         = field;
-            }
-
-            if( ImGui.IsItemDeactivatedAfterEdit() && _currentGroupPriority != null )
-            {
-                var ret = _currentGroupPriority != oldValue;
-                value                 = _currentGroupPriority.Value;
-                _currentGroupPriority = null;
-                _currentField         = NoFieldIdx;
-                _optionIndex          = NoFieldIdx;
-                return ret;
-            }
-
-            value = 0;
-            return false;
-        }
-
-        // Delete a marked group or option outside of iteration.
-        private void EndActions()
-        {
-            while( _delayedActions.TryDequeue( out var action ) )
-            {
-                action.Invoke();
-            }
-        }
-
-        private void OpenEditDescriptionPopup( int groupIdx )
-        {
-            _newDescriptionIdx = groupIdx;
-            _newDescription    = groupIdx < 0 ? _mod.Description : _mod.Groups[ groupIdx ].Description;
-            ImGui.OpenPopup( "Edit Description" );
-        }
-
-        private void EditDescriptionPopup()
-        {
-            using var popup = ImRaii.Popup( "Edit Description" );
-            if( popup )
-            {
-                if( ImGui.IsWindowAppearing() )
+                if( ImGui.Selectable( GroupTypeName( type ), @group.Type == type ) )
                 {
-                    ImGui.SetKeyboardFocusHere();
+                    Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, type );
                 }
+            }
+        }
 
-                ImGui.InputTextMultiline( "##editDescription", ref _newDescription, 4096, ImGuiHelpers.ScaledVector2( 800, 800 ) );
-                ImGui.Dummy( _window._defaultSpace );
+        // Handles input text and integers in separate fields without buffers for every single one.
+        private static class Input
+        {
+            // Special field indices to reuse the same string buffer.
+            public const int None        = -1;
+            public const int Name        = -2;
+            public const int Author      = -3;
+            public const int Version     = -4;
+            public const int Website     = -5;
+            public const int Path        = -6;
+            public const int Description = -7;
 
-                var buttonSize = ImGuiHelpers.ScaledVector2( 100, 0 );
-                var width = 2 * buttonSize.X
-                  + 4         * ImGui.GetStyle().FramePadding.X
-                  + ImGui.GetStyle().ItemSpacing.X;
-                ImGui.SetCursorPosX( ( 800 * ImGuiHelpers.GlobalScale - width ) / 2 );
+            // Temporary strings
+            private static string? _currentEdit;
+            private static int?    _currentGroupPriority;
+            private static int     _currentField = -1;
+            private static int     _optionIndex  = -1;
 
-                var oldDescription = _newDescriptionIdx == DescriptionFieldIdx
-                    ? _mod.Description
-                    : _mod.Groups[ _newDescriptionIdx ].Description;
-
-                var tooltip = _newDescription != oldDescription ? string.Empty : "No changes made yet.";
-
-                if( ImGuiUtil.DrawDisabledButton( "Save", buttonSize, tooltip, tooltip.Length > 0 ) )
+            public static bool Text( string label, int field, int option, string oldValue, out string value, uint maxLength, float width )
+            {
+                var tmp = field == _currentField && option == _optionIndex ? _currentEdit ?? oldValue : oldValue;
+                ImGui.SetNextItemWidth( width );
+                if( ImGui.InputText( label, ref tmp, maxLength ) )
                 {
-                    if( _newDescriptionIdx == DescriptionFieldIdx )
-                    {
-                        Penumbra.ModManager.ChangeModDescription( _mod.Index, _newDescription );
-                    }
-                    else if( _newDescriptionIdx >= 0 )
-                    {
-                        Penumbra.ModManager.ChangeGroupDescription( _mod, _newDescriptionIdx, _newDescription );
-                    }
-
-                    ImGui.CloseCurrentPopup();
+                    _currentEdit  = tmp;
+                    _optionIndex  = option;
+                    _currentField = field;
                 }
 
-                ImGui.SameLine();
-                if( ImGui.Button( "Cancel", buttonSize )
-                || ImGui.IsKeyPressed( ImGui.GetKeyIndex( ImGuiKey.Escape ) ) )
+                if( ImGui.IsItemDeactivatedAfterEdit() && _currentEdit != null )
                 {
-                    _newDescriptionIdx = NoFieldIdx;
-                    _newDescription    = string.Empty;
-                    ImGui.CloseCurrentPopup();
+                    var ret = _currentEdit != oldValue;
+                    value         = _currentEdit;
+                    _currentEdit  = null;
+                    _currentField = None;
+                    _optionIndex  = None;
+                    return ret;
                 }
+
+                value = string.Empty;
+                return false;
+            }
+
+            public static bool Priority( string label, int field, int option, int oldValue, out int value, float width )
+            {
+                var tmp = field == _currentField && option == _optionIndex ? _currentGroupPriority ?? oldValue : oldValue;
+                ImGui.SetNextItemWidth( width );
+                if( ImGui.InputInt( label, ref tmp, 0, 0 ) )
+                {
+                    _currentGroupPriority = tmp;
+                    _optionIndex          = option;
+                    _currentField         = field;
+                }
+
+                if( ImGui.IsItemDeactivatedAfterEdit() && _currentGroupPriority != null )
+                {
+                    var ret = _currentGroupPriority != oldValue;
+                    value                 = _currentGroupPriority.Value;
+                    _currentGroupPriority = null;
+                    _currentField         = None;
+                    _optionIndex          = None;
+                    return ret;
+                }
+
+                value = 0;
+                return false;
             }
         }
     }

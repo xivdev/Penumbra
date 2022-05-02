@@ -241,6 +241,9 @@ public partial class ModCollection
 
                     OnModChangedActive( mod.TotalManipulations > 0, mod.Index );
                     break;
+                case ModPathChangeType.Reloaded:
+                    OnModChangedActive( mod.TotalManipulations > 0, mod.Index );
+                    break;
                 default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
             }
         }

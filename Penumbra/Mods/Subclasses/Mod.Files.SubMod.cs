@@ -14,7 +14,7 @@ namespace Penumbra.Mods;
 public partial class Mod
 {
     internal string DefaultFile
-        => Path.Combine( BasePath.FullName, "default_mod.json" );
+        => Path.Combine( ModPath.FullName, "default_mod.json" );
 
     // The default mod contains setting-independent sets of file replacements, file swaps and meta changes.
     // Every mod has an default mod, though it may be empty.
@@ -33,7 +33,7 @@ public partial class Mod
         {
             Formatting = Formatting.Indented,
         };
-        ISubMod.WriteSubMod( j, serializer, _default, BasePath, 0 );
+        ISubMod.WriteSubMod( j, serializer, _default, ModPath, 0 );
     }
 
     private void LoadDefaultOption()
@@ -43,11 +43,11 @@ public partial class Mod
         {
             if( !File.Exists( defaultFile ) )
             {
-                _default.Load( BasePath, new JObject(), out _ );
+                _default.Load( ModPath, new JObject(), out _ );
             }
             else
             {
-                _default.Load( BasePath, JObject.Parse( File.ReadAllText( defaultFile ) ), out _ );
+                _default.Load( ModPath, JObject.Parse( File.ReadAllText( defaultFile ) ), out _ );
             }
         }
         catch( Exception e )

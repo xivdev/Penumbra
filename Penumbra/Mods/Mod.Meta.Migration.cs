@@ -66,7 +66,7 @@ public sealed partial class Mod
 
             foreach( var unusedFile in mod.FindUnusedFiles().Where( f => !seenMetaFiles.Contains( f ) ) )
             {
-                if( unusedFile.ToGamePath( mod.BasePath, out var gamePath )
+                if( unusedFile.ToGamePath( mod.ModPath, out var gamePath )
                 && !mod._default.FileData.TryAdd( gamePath, unusedFile ) )
                 {
                     PluginLog.Error( $"Could not add {gamePath} because it already points to {mod._default.FileData[ gamePath ]}." );
@@ -80,10 +80,10 @@ public sealed partial class Mod
                 mod._default.FileSwapData.Add( gamePath, swapPath );
             }
 
-            mod._default.IncorporateMetaChanges( mod.BasePath, true );
+            mod._default.IncorporateMetaChanges( mod.ModPath, true );
             foreach( var (group, index) in mod.Groups.WithIndex() )
             {
-                IModGroup.SaveModGroup( group, mod.BasePath, index );
+                IModGroup.SaveModGroup( group, mod.ModPath, index );
             }
 
             // Delete meta files.
@@ -100,7 +100,7 @@ public sealed partial class Mod
             }
 
             // Delete old meta files.
-            var oldMetaFile = Path.Combine( mod.BasePath.FullName, "metadata_manipulations.json" );
+            var oldMetaFile = Path.Combine( mod.ModPath.FullName, "metadata_manipulations.json" );
             if( File.Exists( oldMetaFile ) )
             {
                 try
@@ -141,14 +141,14 @@ public sealed partial class Mod
                     mod._groups.Add( newMultiGroup );
                     foreach( var option in group.Options )
                     {
-                        newMultiGroup.PrioritizedOptions.Add( ( SubModFromOption( mod.BasePath, option, seenMetaFiles ), optionPriority++ ) );
+                        newMultiGroup.PrioritizedOptions.Add( ( SubModFromOption( mod.ModPath, option, seenMetaFiles ), optionPriority++ ) );
                     }
 
                     break;
                 case SelectType.Single:
                     if( group.Options.Count == 1 )
                     {
-                        AddFilesToSubMod( mod._default, mod.BasePath, group.Options[ 0 ], seenMetaFiles );
+                        AddFilesToSubMod( mod._default, mod.ModPath, group.Options[ 0 ], seenMetaFiles );
                         return;
                     }
 
@@ -161,7 +161,7 @@ public sealed partial class Mod
                     mod._groups.Add( newSingleGroup );
                     foreach( var option in group.Options )
                     {
-                        newSingleGroup.OptionData.Add( SubModFromOption( mod.BasePath, option, seenMetaFiles ) );
+                        newSingleGroup.OptionData.Add( SubModFromOption( mod.ModPath, option, seenMetaFiles ) );
                     }
 
                     break;

@@ -141,7 +141,7 @@ public partial class Mod
 
     // XIV can not deal with non-ascii symbols in a path,
     // and the path must obviously be valid itself.
-    private static string ReplaceBadXivSymbols( string s, string replacement = "_" )
+    public static string ReplaceBadXivSymbols( string s, string replacement = "_" )
     {
         StringBuilder sb = new(s.Length);
         foreach( var c in s )

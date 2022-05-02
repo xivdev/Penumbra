@@ -47,7 +47,7 @@ public partial class ModCollection
                 var settings = _settings[ i ];
                 if( settings != null )
                 {
-                    j.WritePropertyName( Penumbra.ModManager[ i ].BasePath.Name );
+                    j.WritePropertyName( Penumbra.ModManager[ i ].ModPath.Name );
                     x.Serialize( j, new ModSettings.SavedSettings( settings, Penumbra.ModManager[ i ] ) );
                 }
             }

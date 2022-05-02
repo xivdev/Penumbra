@@ -102,12 +102,15 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
             case ModPathChangeType.Moved:
                 Save();
                 break;
+            case ModPathChangeType.Reloaded:
+                // Nothing
+                break;
         }
     }
 
     // Used for saving and loading.
     private static string ModToIdentifier( Mod mod )
-        => mod.BasePath.Name;
+        => mod.ModPath.Name;
 
     private static string ModToName( Mod mod )
         => mod.Name.Text.FixName();

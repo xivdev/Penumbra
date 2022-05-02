@@ -147,7 +147,7 @@ public class ModEditWindow : Window, IDisposable
         foreach( var (set, size, hash) in _editor.Duplicates.Where( s => s.Paths.Length > 1 ) )
         {
             ImGui.TableNextColumn();
-            using var tree = ImRaii.TreeNode( set[ 0 ].FullName[ ( _mod!.BasePath.FullName.Length + 1 ).. ],
+            using var tree = ImRaii.TreeNode( set[ 0 ].FullName[ ( _mod!.ModPath.FullName.Length + 1 ).. ],
                 ImGuiTreeNodeFlags.NoTreePushOnOpen );
             ImGui.TableNextColumn();
             ImGuiUtil.RightAlign( Functions.HumanReadableSize( size ) );
@@ -174,7 +174,7 @@ public class ModEditWindow : Window, IDisposable
             {
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40000080 );
-                using var node = ImRaii.TreeNode( duplicate.FullName[ ( _mod!.BasePath.FullName.Length + 1 ).. ], ImGuiTreeNodeFlags.Leaf );
+                using var node = ImRaii.TreeNode( duplicate.FullName[ ( _mod!.ModPath.FullName.Length + 1 ).. ], ImGuiTreeNodeFlags.Leaf );
                 ImGui.TableNextColumn();
                 ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40000080 );
                 ImGui.TableNextColumn();
