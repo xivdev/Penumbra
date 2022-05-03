@@ -5,11 +5,11 @@ using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using Dalamud.Memory;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -84,9 +84,6 @@ public partial class ConfigWindow
 
 
             MoveDirectory.Draw( _mod, buttonSize );
-
-
-            MaterialSuffix.Draw( _mod, buttonSize );
             ImGui.Dummy( _window._defaultSpace );
         }
 
@@ -135,13 +132,12 @@ public partial class ConfigWindow
                 Process.Start( new ProcessStartInfo( _mod.MetaFile.FullName ) { UseShellExecute = true } );
             }
 
-            if( ImGui.Button( "Edit Default Mod", reducedSize ) )
+            if( ImGui.Button( "Edit Mod Details", reducedSize ) )
             {
                 _window.ModEditPopup.ChangeMod( _mod );
                 _window.ModEditPopup.ChangeOption( -1, 0 );
                 _window.ModEditPopup.IsOpen = true;
             }
-
             ImGui.SameLine();
             fileExists = File.Exists( _mod.DefaultFile );
             tt = fileExists
@@ -171,6 +167,9 @@ public partial class ConfigWindow
         {
             private static string _newGroupName = string.Empty;
 
+            public static void Reset()
+                => _newGroupName = string.Empty;
+
             public static void Draw( ConfigWindow window, Mod mod )
             {
                 ImGui.SetNextItemWidth( window._inputTextWidth.X );
@@ -183,41 +182,8 @@ public partial class ConfigWindow
                        tt, !nameValid, true ) )
                 {
                     Penumbra.ModManager.AddModGroup( mod, SelectType.Single, _newGroupName );
-                    _newGroupName = string.Empty;
+                    Reset();
                 }
-            }
-        }
-
-        // A row of three buttonSizes and a help marker that can be used for material suffix changing.
-        private static class MaterialSuffix
-        {
-            private static string _materialSuffixFrom = string.Empty;
-            private static string _materialSuffixTo   = string.Empty;
-
-            public static void Draw( Mod mod, Vector2 buttonSize )
-            {
-                ImGui.SetNextItemWidth( buttonSize.X );
-                ImGui.InputTextWithHint( "##suffixFrom", "From...", ref _materialSuffixFrom, 32 );
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth( buttonSize.X );
-                ImGui.InputTextWithHint( "##suffixTo", "To...", ref _materialSuffixTo, 32 );
-                ImGui.SameLine();
-                var disabled = !ModelChanger.ValidStrings( _materialSuffixFrom, _materialSuffixTo );
-                var tt = _materialSuffixTo.Length == 0                 ? "Please enter a target suffix."
-                    : _materialSuffixFrom         == _materialSuffixTo ? "The source and target are identical."
-                    : disabled                                         ? "The suffices are not valid suffices."
-                    : _materialSuffixFrom.Length == 0                  ? "Convert all skin material suffices to the target."
-                                                                         : $"Convert all skin material suffices that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'.";
-                if( ImGuiUtil.DrawDisabledButton( "Change Material Suffix", buttonSize, tt, disabled ) )
-                {
-                    ModelChanger.ChangeModMaterials( mod, _materialSuffixFrom, _materialSuffixTo );
-                }
-
-                ImGui.SameLine();
-                ImGuiComponents.HelpMarker(
-                    "Model files refer to the skin material they should use. This skin material is always the same, but modders have started using different suffices to differentiate between body types.\n"
-                  + "This option allows you to switch the suffix of all model files to another. This changes the files, so you do this on your own risk.\n"
-                  + "If you do not know what the currently used suffix of this mod is, you can leave 'From' blank and it will replace all suffices with 'To', instead of only the matching ones." );
             }
         }
 
@@ -225,24 +191,21 @@ public partial class ConfigWindow
         private static class MoveDirectory
         {
             private static string?                       _currentModDirectory;
-            private static Mod?                          _modForDirectory;
             private static Mod.Manager.NewDirectoryState _state = Mod.Manager.NewDirectoryState.Identical;
+
+            public static void Reset()
+            {
+                _currentModDirectory = null;
+                _state               = Mod.Manager.NewDirectoryState.Identical;
+            }
 
             public static void Draw( Mod mod, Vector2 buttonSize )
             {
                 ImGui.SetNextItemWidth( buttonSize.X * 2 + ImGui.GetStyle().ItemSpacing.X );
                 var tmp = _currentModDirectory ?? mod.ModPath.Name;
-                if( mod != _modForDirectory )
-                {
-                    tmp                  = mod.ModPath.Name;
-                    _currentModDirectory = null;
-                    _state               = Mod.Manager.NewDirectoryState.Identical;
-                }
-
                 if( ImGui.InputText( "##newModMove", ref tmp, 64 ) )
                 {
                     _currentModDirectory = tmp;
-                    _modForDirectory     = mod;
                     _state               = Mod.Manager.NewDirectoryValid( mod.ModPath.Name, _currentModDirectory, out _ );
                 }
 
@@ -262,8 +225,7 @@ public partial class ConfigWindow
                 if( ImGuiUtil.DrawDisabledButton( "Rename Mod Directory", buttonSize, tt, disabled ) && _currentModDirectory != null )
                 {
                     Penumbra.ModManager.MoveModDirectory( mod.Index, _currentModDirectory );
-                    _currentModDirectory = null;
-                    _state               = Mod.Manager.NewDirectoryState.Identical;
+                    Reset();
                 }
 
                 ImGui.SameLine();
@@ -372,14 +334,6 @@ public partial class ConfigWindow
 
             ImGui.SameLine();
 
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), _window._iconButtonSize,
-                   "Edit group description.", false, true ) )
-            {
-                _delayedActions.Enqueue( () => DescriptionEdit.OpenPopup( _mod, groupIdx ) );
-            }
-
-            ImGui.SameLine();
-
             if( Input.Priority( "##Priority", groupIdx, Input.None, group.Priority, out var priority, 50 * ImGuiHelpers.GlobalScale ) )
             {
                 Penumbra.ModManager.ChangeGroupPriority( _mod, groupIdx, priority );
@@ -408,6 +362,14 @@ public partial class ConfigWindow
             }
 
             ImGui.SameLine();
+
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), _window._iconButtonSize,
+                   "Edit group description.", false, true ) )
+            {
+                _delayedActions.Enqueue( () => DescriptionEdit.OpenPopup( _mod, groupIdx ) );
+            }
+
+            ImGui.SameLine();
             var fileName   = group.FileName( _mod.ModPath, groupIdx );
             var fileExists = File.Exists( fileName );
             tt = fileExists
@@ -433,9 +395,17 @@ public partial class ConfigWindow
             private static int    _dragDropGroupIdx  = -1;
             private static int    _dragDropOptionIdx = -1;
 
+            public static void Reset()
+            {
+                _newOptionNameIdx  = -1;
+                _newOptionName     = string.Empty;
+                _dragDropGroupIdx  = -1;
+                _dragDropOptionIdx = -1;
+            }
+
             public static void Draw( ModPanel panel, int groupIdx )
             {
-                using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.SizingFixedFit );
+                using var table = ImRaii.Table( string.Empty, 4, ImGuiTableFlags.SizingFixedFit );
                 if( !table )
                 {
                     return;
@@ -445,7 +415,6 @@ public partial class ConfigWindow
                 ImGui.TableSetupColumn( "name", ImGuiTableColumnFlags.WidthFixed,
                     panel._window._inputTextWidth.X - 62 * ImGuiHelpers.GlobalScale );
                 ImGui.TableSetupColumn( "delete", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
-                ImGui.TableSetupColumn( "edit", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
                 ImGui.TableSetupColumn( "priority", ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale );
 
                 var group = panel._mod.Groups[ groupIdx ];
@@ -479,15 +448,6 @@ public partial class ConfigWindow
                        "Delete this option.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true ) )
                 {
                     panel._delayedActions.Enqueue( () => Penumbra.ModManager.DeleteOption( panel._mod, groupIdx, optionIdx ) );
-                }
-
-                ImGui.TableNextColumn();
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), panel._window._iconButtonSize,
-                       "Edit this option.", false, true ) )
-                {
-                    panel._window.ModEditPopup.ChangeMod( panel._mod );
-                    panel._window.ModEditPopup.ChangeOption( groupIdx, optionIdx );
-                    panel._window.ModEditPopup.IsOpen = true;
                 }
 
                 ImGui.TableNextColumn();
@@ -621,8 +581,16 @@ public partial class ConfigWindow
             // Temporary strings
             private static string? _currentEdit;
             private static int?    _currentGroupPriority;
-            private static int     _currentField = -1;
-            private static int     _optionIndex  = -1;
+            private static int     _currentField = None;
+            private static int     _optionIndex  = None;
+
+            public static void Reset()
+            {
+                _currentEdit          = null;
+                _currentGroupPriority = null;
+                _currentField         = None;
+                _optionIndex          = None;
+            }
 
             public static bool Text( string label, int field, int option, string oldValue, out string value, uint maxLength, float width )
             {
@@ -638,10 +606,8 @@ public partial class ConfigWindow
                 if( ImGui.IsItemDeactivatedAfterEdit() && _currentEdit != null )
                 {
                     var ret = _currentEdit != oldValue;
-                    value         = _currentEdit;
-                    _currentEdit  = null;
-                    _currentField = None;
-                    _optionIndex  = None;
+                    value = _currentEdit;
+                    Reset();
                     return ret;
                 }
 
@@ -663,10 +629,8 @@ public partial class ConfigWindow
                 if( ImGui.IsItemDeactivatedAfterEdit() && _currentGroupPriority != null )
                 {
                     var ret = _currentGroupPriority != oldValue;
-                    value                 = _currentGroupPriority.Value;
-                    _currentGroupPriority = null;
-                    _currentField         = None;
-                    _optionIndex          = None;
+                    value = _currentGroupPriority.Value;
+                    Reset();
                     return ret;
                 }
 

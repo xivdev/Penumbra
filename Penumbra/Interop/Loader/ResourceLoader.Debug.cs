@@ -52,18 +52,26 @@ public unsafe partial class ResourceLoader
             return;
         }
 
-        var crc              = ( uint )originalPath.Path.Crc32;
-        var originalResource = FindResource( handle->Category, handle->FileType, crc );
-        _debugList[ manipulatedPath.Value ] = new DebugData()
+        // Got some incomprehensible null-dereference exceptions here when hot-reloading penumbra.
+        try
         {
-            OriginalResource    = ( Structs.ResourceHandle* )originalResource,
-            ManipulatedResource = handle,
-            Category            = handle->Category,
-            Extension           = handle->FileType,
-            OriginalPath        = originalPath.Clone(),
-            ManipulatedPath     = manipulatedPath.Value,
-            ResolverInfo        = resolverInfo,
-        };
+            var crc              = ( uint )originalPath.Path.Crc32;
+            var originalResource = FindResource( handle->Category, handle->FileType, crc );
+            _debugList[ manipulatedPath.Value ] = new DebugData()
+            {
+                OriginalResource    = ( Structs.ResourceHandle* )originalResource,
+                ManipulatedResource = handle,
+                Category            = handle->Category,
+                Extension           = handle->FileType,
+                OriginalPath        = originalPath.Clone(),
+                ManipulatedPath     = manipulatedPath.Value,
+                ResolverInfo        = resolverInfo,
+            };
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( e.ToString() );
+        }
     }
 
     // Find a key in a StdMap.

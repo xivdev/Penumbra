@@ -18,7 +18,7 @@ public partial class Mod
     //     - Containing no symbols invalid for FFXIV or windows paths.
     internal static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName )
     {
-        var name = Path.GetFileNameWithoutExtension( modListName );
+        var name = modListName;
         if( name.Length == 0 )
         {
             name = "_";

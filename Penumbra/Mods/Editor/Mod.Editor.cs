@@ -21,12 +21,16 @@ public partial class Mod
             _missingPaths   = new SortedSet< FullPath >( UsedPaths.Where( f => !f.Exists ) );
             _unusedFiles    = new SortedSet< FullPath >( AvailableFiles.Where( p => !UsedPaths.Contains( p.Item1 ) ).Select( p => p.Item1 ) );
             _subMod         = _mod._default;
+            ScanModels();
         }
 
-        public void Dispose()
+        public void Cancel()
         {
             DuplicatesFinished = true;
         }
+
+        public void Dispose()
+            => Cancel();
 
         // Does not delete the base directory itself even if it is completely empty at the end.
         private static void ClearEmptySubDirectories( DirectoryInfo baseDir )
@@ -49,7 +53,7 @@ public partial class Mod
             {
                 for( var optionIdx = 0; optionIdx < group.Count; ++optionIdx )
                 {
-                    action( @group[ optionIdx ], groupIdx, optionIdx );
+                    action( group[ optionIdx ], groupIdx, optionIdx );
                 }
             }
         }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Util;
@@ -9,11 +10,14 @@ public partial class Mod
 {
     public partial class Editor
     {
-        private int _groupIdx  = -1;
-        private int _optionIdx = 0;
+        public int GroupIdx { get; private set; } = -1;
+        public int OptionIdx { get; private set; } = 0;
 
         private IModGroup? _modGroup;
         private SubMod     _subMod;
+
+        public ISubMod CurrentOption
+            => _subMod;
 
         public readonly Dictionary< Utf8GamePath, FullPath > CurrentFiles         = new();
         public readonly Dictionary< Utf8GamePath, FullPath > CurrentSwaps         = new();
@@ -21,8 +25,8 @@ public partial class Mod
 
         public void SetSubMod( int groupIdx, int optionIdx )
         {
-            _groupIdx  = groupIdx;
-            _optionIdx = optionIdx;
+            GroupIdx  = groupIdx;
+            OptionIdx = optionIdx;
             if( groupIdx >= 0 )
             {
                 _modGroup = _mod.Groups[ groupIdx ];
@@ -34,8 +38,38 @@ public partial class Mod
                 _subMod   = _mod._default;
             }
 
+            RevertFiles();
+            RevertSwaps();
+            RevertManipulations();
+        }
+
+        public void ApplyFiles()
+        {
+            Penumbra.ModManager.OptionSetFiles( _mod, GroupIdx, OptionIdx, CurrentFiles.ToDictionary( kvp => kvp.Key, kvp => kvp.Value ) );
+        }
+
+        public void RevertFiles()
+        {
             CurrentFiles.SetTo( _subMod.Files );
+        }
+
+        public void ApplySwaps()
+        {
+            Penumbra.ModManager.OptionSetFileSwaps( _mod, GroupIdx, OptionIdx, CurrentSwaps.ToDictionary( kvp => kvp.Key, kvp => kvp.Value ) );
+        }
+
+        public void RevertSwaps()
+        {
             CurrentSwaps.SetTo( _subMod.FileSwaps );
+        }
+
+        public void ApplyManipulations()
+        {
+            Penumbra.ModManager.OptionSetManipulations( _mod, GroupIdx, OptionIdx, CurrentManipulations.ToHashSet() );
+        }
+
+        public void RevertManipulations()
+        {
             CurrentManipulations.Clear();
             CurrentManipulations.UnionWith( _subMod.Manipulations );
         }

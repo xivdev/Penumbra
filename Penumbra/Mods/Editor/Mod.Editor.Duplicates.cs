@@ -48,11 +48,6 @@ public partial class Mod
             _duplicates.Clear();
         }
 
-        public void Cancel()
-        {
-            DuplicatesFinished = true;
-        }
-
         private void HandleDuplicate( FullPath duplicate, FullPath remaining )
         {
             void HandleSubMod( ISubMod subMod, int groupIdx, int optionIdx )
@@ -94,8 +89,11 @@ public partial class Mod
 
         public void StartDuplicateCheck()
         {
-            DuplicatesFinished = false;
-            Task.Run( CheckDuplicates );
+            if( DuplicatesFinished )
+            {
+                DuplicatesFinished = false;
+                Task.Run( CheckDuplicates );
+            }
         }
 
         private void CheckDuplicates()

@@ -163,7 +163,7 @@ public static class RaceEnumExtensions
             ModelRace.AuRa       => Race.AuRa.ToName(),
             ModelRace.Hrothgar   => Race.Hrothgar.ToName(),
             ModelRace.Viera      => Race.Viera.ToName(),
-            _                    => throw new ArgumentOutOfRangeException( nameof( modelRace ), modelRace, null ),
+            _                    => Race.Unknown.ToName(),
         };
     }
 
@@ -179,7 +179,7 @@ public static class RaceEnumExtensions
             Race.AuRa     => "Au Ra",
             Race.Hrothgar => "Hrothgar",
             Race.Viera    => "Viera",
-            _             => throw new ArgumentOutOfRangeException( nameof( race ), race, null ),
+            _             => "Unknown",
         };
     }
 
@@ -191,7 +191,7 @@ public static class RaceEnumExtensions
             Gender.Female    => "Female",
             Gender.MaleNpc   => "Male (NPC)",
             Gender.FemaleNpc => "Female (NPC)",
-            _                => throw new InvalidEnumArgumentException(),
+            _                => "Unknown",
         };
     }
 
@@ -215,7 +215,7 @@ public static class RaceEnumExtensions
             SubRace.Lost            => "Lost",
             SubRace.Rava            => "Rava",
             SubRace.Veena           => "Veena",
-            _                       => throw new InvalidEnumArgumentException(),
+            _                       => "Unknown",
         };
     }
 

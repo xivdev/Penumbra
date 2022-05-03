@@ -26,14 +26,15 @@ public sealed partial class ConfigWindow : Window, IDisposable
     public ConfigWindow( Penumbra penumbra )
         : base( GetLabel() )
     {
-        _penumbra       = penumbra;
-        _settingsTab    = new SettingsTab( this );
-        _selector       = new ModFileSystemSelector( _penumbra.ModFileSystem );
-        _modPanel       = new ModPanel( this );
-        _collectionsTab = new CollectionsTab( this );
-        _effectiveTab   = new EffectiveTab();
-        _debugTab       = new DebugTab( this );
-        _resourceTab    = new ResourceTab( this );
+        _penumbra                  =  penumbra;
+        _settingsTab               =  new SettingsTab( this );
+        _selector                  =  new ModFileSystemSelector( _penumbra.ModFileSystem );
+        _modPanel                  =  new ModPanel( this );
+        _selector.SelectionChanged += _modPanel.OnSelectionChange;
+        _collectionsTab            =  new CollectionsTab( this );
+        _effectiveTab              =  new EffectiveTab();
+        _debugTab                  =  new DebugTab( this );
+        _resourceTab               =  new ResourceTab( this );
 
         Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide    = true;
         Dalamud.PluginInterface.UiBuilder.DisableCutsceneUiHide = true;

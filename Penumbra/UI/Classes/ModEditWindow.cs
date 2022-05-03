@@ -1,13 +1,18 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.GameData.ByteString;
+using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.UI.Classes;
 
@@ -28,6 +33,11 @@ public class ModEditWindow : Window, IDisposable
         _editor    = new Mod.Editor( mod );
         _mod       = mod;
         WindowName = $"{mod.Name}{WindowBaseLabel}";
+        SizeConstraints = new WindowSizeConstraints
+        {
+            MinimumSize = ImGuiHelpers.ScaledVector2( 800, 600 ),
+            MaximumSize = 4000 * Vector2.One,
+        };
     }
 
     public void ChangeOption( int groupIdx, int optionIdx )
@@ -50,6 +60,168 @@ public class ModEditWindow : Window, IDisposable
         DrawMissingFilesTab();
         DrawUnusedFilesTab();
         DrawDuplicatesTab();
+        DrawMaterialChangeTab();
+    }
+
+    // A row of three buttonSizes and a help marker that can be used for material suffix changing.
+    private static class MaterialSuffix
+    {
+        private static string     _materialSuffixFrom = string.Empty;
+        private static string     _materialSuffixTo   = string.Empty;
+        private static GenderRace _raceCode           = GenderRace.Unknown;
+
+        private static string RaceCodeName( GenderRace raceCode )
+        {
+            if( raceCode == GenderRace.Unknown )
+            {
+                return "All Races and Genders";
+            }
+
+            var (gender, race) = raceCode.Split();
+            return $"({raceCode.ToRaceCode()}) {race.ToName()} {gender.ToName()} ";
+        }
+
+        private static void DrawRaceCodeCombo( Vector2 buttonSize )
+        {
+            ImGui.SetNextItemWidth( buttonSize.X );
+            using var combo = ImRaii.Combo( "##RaceCode", RaceCodeName( _raceCode ) );
+            if( !combo )
+            {
+                return;
+            }
+
+            foreach( var raceCode in Enum.GetValues< GenderRace >() )
+            {
+                if( ImGui.Selectable( RaceCodeName( raceCode ), _raceCode == raceCode ) )
+                {
+                    _raceCode = raceCode;
+                }
+            }
+        }
+
+        public static void Draw( Mod.Editor editor, Vector2 buttonSize )
+        {
+            DrawRaceCodeCombo( buttonSize );
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth( buttonSize.X );
+            ImGui.InputTextWithHint( "##suffixFrom", "From...", ref _materialSuffixFrom, 32 );
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth( buttonSize.X );
+            ImGui.InputTextWithHint( "##suffixTo", "To...", ref _materialSuffixTo, 32 );
+            ImGui.SameLine();
+            var disabled = !Mod.Editor.ValidString( _materialSuffixTo );
+            var tt = _materialSuffixTo.Length == 0
+                ? "Please enter a target suffix."
+                : _materialSuffixFrom == _materialSuffixTo
+                    ? "The source and target are identical."
+                    : disabled
+                        ? "The suffix is invalid."
+                        : _materialSuffixFrom.Length == 0
+                            ? _raceCode == GenderRace.Unknown ? "Convert all skin material suffices to the target."
+                                                                : "Convert all skin material suffices for the given race code to the target."
+                            : _raceCode == GenderRace.Unknown
+                                ? $"Convert all skin material suffices that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'."
+                                : $"Convert all skin material suffices for the given race code that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'.";
+            if( ImGuiUtil.DrawDisabledButton( "Change Material Suffix", buttonSize, tt, disabled ) )
+            {
+                editor.ReplaceAllMaterials( _materialSuffixTo, _materialSuffixFrom, _raceCode );
+            }
+
+            var anyChanges = editor.ModelFiles.Any( m => m.Changed );
+            if( ImGuiUtil.DrawDisabledButton( "Save All Changes", buttonSize,
+                   anyChanges ? "Irreversibly rewrites all currently applied changes to model files." : "No changes made yet.", !anyChanges ) )
+            {
+                editor.SaveAllModels();
+            }
+
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( "Revert All Changes", buttonSize,
+                   anyChanges ? "Revert all currently made and unsaved changes." : "No changes made yet.", !anyChanges ) )
+            {
+                editor.RestoreAllModels();
+            }
+
+            ImGui.SameLine();
+            ImGuiComponents.HelpMarker(
+                "Model files refer to the skin material they should use. This skin material is always the same, but modders have started using different suffices to differentiate between body types.\n"
+              + "This option allows you to switch the suffix of all model files to another. This changes the files, so you do this on your own risk.\n"
+              + "If you do not know what the currently used suffix of this mod is, you can leave 'From' blank and it will replace all suffices with 'To', instead of only the matching ones." );
+        }
+    }
+
+    private void DrawMaterialChangeTab()
+    {
+        using var tab = ImRaii.TabItem( "Model Materials" );
+        if( !tab )
+        {
+            return;
+        }
+
+        if( _editor!.ModelFiles.Count == 0 )
+        {
+            ImGui.NewLine();
+            ImGui.TextUnformatted( "No .mdl files detected." );
+        }
+        else
+        {
+            ImGui.NewLine();
+            MaterialSuffix.Draw( _editor, ImGuiHelpers.ScaledVector2( 175, 0 ) );
+            ImGui.NewLine();
+            using var child = ImRaii.Child( "##mdlFiles", -Vector2.One, true );
+            if( !child )
+            {
+                return;
+            }
+
+            using var table = ImRaii.Table( "##files", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.One );
+            if( !table )
+            {
+                return;
+            }
+
+            var iconSize = ImGui.GetFrameHeight() * Vector2.One;
+            foreach( var (info, idx) in _editor.ModelFiles.WithIndex() )
+            {
+                using var id = ImRaii.PushId( idx );
+                ImGui.TableNextColumn();
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Save.ToIconString(), iconSize,
+                       "Save the changed mdl file.\nUse at own risk!", !info.Changed, true ) )
+                {
+                    info.Save();
+                }
+
+                ImGui.TableNextColumn();
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Recycle.ToIconString(), iconSize,
+                       "Restore current changes to default.", !info.Changed, true ) )
+                {
+                    info.Restore();
+                }
+
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted( info.Path.FullName[ ( _mod!.ModPath.FullName.Length + 1 ).. ] );
+                ImGui.TableNextColumn();
+                ImGui.SetNextItemWidth( 400 * ImGuiHelpers.GlobalScale );
+                var tmp = info.CurrentMaterials[ 0 ];
+                if( ImGui.InputText( "##0", ref tmp, 64 ) )
+                {
+                    info.SetMaterial( tmp, 0 );
+                }
+
+                for( var i = 1; i < info.Count; ++i )
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.TableNextColumn();
+                    ImGui.TableNextColumn();
+                    ImGui.TableNextColumn();
+                    ImGui.SetNextItemWidth( 400 * ImGuiHelpers.GlobalScale );
+                    tmp = info.CurrentMaterials[ i ];
+                    if( ImGui.InputText( $"##{i}", ref tmp, 64 ) )
+                    {
+                        info.SetMaterial( tmp, i );
+                    }
+                }
+            }
+        }
     }
 
     private void DrawMissingFilesTab()
@@ -62,6 +234,7 @@ public class ModEditWindow : Window, IDisposable
 
         if( _editor!.MissingPaths.Count == 0 )
         {
+            ImGui.NewLine();
             ImGui.TextUnformatted( "No missing files detected." );
         }
         else
@@ -69,6 +242,12 @@ public class ModEditWindow : Window, IDisposable
             if( ImGui.Button( "Remove Missing Files from Mod" ) )
             {
                 _editor.RemoveMissingPaths();
+            }
+
+            using var child = ImRaii.Child( "##unusedFiles", -Vector2.One, true );
+            if( !child )
+            {
+                return;
             }
 
             using var table = ImRaii.Table( "##missingFiles", 1, ImGuiTableFlags.RowBg, -Vector2.One );
@@ -113,7 +292,9 @@ public class ModEditWindow : Window, IDisposable
 
         if( _editor.Duplicates.Count == 0 )
         {
+            ImGui.NewLine();
             ImGui.TextUnformatted( "No duplicates found." );
+            return;
         }
 
         if( ImGui.Button( "Delete and Redirect Duplicates" ) )
@@ -173,12 +354,68 @@ public class ModEditWindow : Window, IDisposable
             foreach( var duplicate in set.Skip( 1 ) )
             {
                 ImGui.TableNextColumn();
-                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40000080 );
+                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint );
                 using var node = ImRaii.TreeNode( duplicate.FullName[ ( _mod!.ModPath.FullName.Length + 1 ).. ], ImGuiTreeNodeFlags.Leaf );
                 ImGui.TableNextColumn();
-                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40000080 );
+                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint );
                 ImGui.TableNextColumn();
-                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40000080 );
+                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, Colors.RedTableBgTint );
+            }
+        }
+    }
+
+    private void DrawOptionSelectHeader()
+    {
+        const string defaultOption   = "Default Option";
+        using var    style           = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, Vector2.Zero ).Push( ImGuiStyleVar.FrameRounding, 0 );
+        var          width           = new Vector2( ImGui.GetWindowWidth() / 3, 0 );
+        var          isDefaultOption = _editor!.GroupIdx == -1 && _editor!.OptionIdx == 0;
+        if( ImGuiUtil.DrawDisabledButton( defaultOption, width, "Switch to the default option for the mod.\nThis resets unsaved changes.",
+               isDefaultOption ) )
+        {
+            _editor.SetSubMod( -1, 0 );
+        }
+
+        ImGui.SameLine();
+        if( ImGuiUtil.DrawDisabledButton( "Refresh Data", width, "Refresh data for the current option.\nThis resets unsaved changes.", false ) )
+        {
+            _editor.SetSubMod( _editor.GroupIdx, _editor.OptionIdx );
+        }
+
+        ImGui.SameLine();
+
+        string GetLabel()
+        {
+            if( isDefaultOption )
+            {
+                return defaultOption;
+            }
+
+            var group = _mod!.Groups[ _editor!.GroupIdx ];
+            return $"{group.Name}: {group[ _editor.OptionIdx ].Name}";
+        }
+
+        var       groupLabel = GetLabel();
+        using var combo      = ImRaii.Combo( "##optionSelector", groupLabel, ImGuiComboFlags.NoArrowButton );
+        if( !combo )
+        {
+            return;
+        }
+
+        if( ImGui.Selectable( $"{defaultOption}###-1_0", isDefaultOption ) )
+        {
+            _editor.SetSubMod( -1, 0 );
+        }
+
+        foreach( var (group, groupIdx) in _mod!.Groups.WithIndex() )
+        {
+            foreach( var (option, optionIdx) in group.WithIndex() )
+            {
+                var name = $"{group.Name}: {option.Name}###{groupIdx}_{optionIdx}";
+                if( ImGui.Selectable( name, groupIdx == _editor.GroupIdx && optionIdx == _editor.OptionIdx ) )
+                {
+                    _editor.SetSubMod( groupIdx, optionIdx );
+                }
             }
         }
     }
@@ -193,6 +430,7 @@ public class ModEditWindow : Window, IDisposable
 
         if( _editor!.UnusedFiles.Count == 0 )
         {
+            ImGui.NewLine();
             ImGui.TextUnformatted( "No unused files detected." );
         }
         else
@@ -202,12 +440,19 @@ public class ModEditWindow : Window, IDisposable
                 _editor.AddUnusedPathsToDefault();
             }
 
+            ImGui.SameLine();
             if( ImGui.Button( "Delete Unused Files from Filesystem" ) )
             {
                 _editor.DeleteUnusedPaths();
             }
 
-            using var table = ImRaii.Table( "##unusedFiles", 1, ImGuiTableFlags.RowBg, -Vector2.One );
+            using var child = ImRaii.Child( "##unusedFiles", -Vector2.One, true );
+            if( !child )
+            {
+                return;
+            }
+
+            using var table = ImRaii.Table( "##table", 1, ImGuiTableFlags.RowBg );
             if( !table )
             {
                 return;
@@ -230,7 +475,14 @@ public class ModEditWindow : Window, IDisposable
             return;
         }
 
-        using var list = ImRaii.Table( "##files", 2 );
+        DrawOptionSelectHeader();
+        using var child = ImRaii.Child( "##files", -Vector2.One, true );
+        if( !child )
+        {
+            return;
+        }
+
+        using var list = ImRaii.Table( "##table", 2 );
         if( !list )
         {
             return;
@@ -253,7 +505,30 @@ public class ModEditWindow : Window, IDisposable
             return;
         }
 
-        using var list = ImRaii.Table( "##meta", 3 );
+        DrawOptionSelectHeader();
+
+        var setsEqual = _editor!.CurrentManipulations.SetEquals( _editor.CurrentOption.Manipulations );
+        var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
+        ImGui.NewLine();
+        if( ImGuiUtil.DrawDisabledButton( "Apply Changes", Vector2.Zero, tt, setsEqual ) )
+        {
+            _editor.ApplyManipulations();
+        }
+
+        ImGui.SameLine();
+        tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
+        if( ImGuiUtil.DrawDisabledButton( "Revert Changes", Vector2.Zero, tt, setsEqual ) )
+        {
+            _editor.RevertManipulations();
+        }
+
+        using var child = ImRaii.Child( "##meta", -Vector2.One, true );
+        if( !child )
+        {
+            return;
+        }
+
+        using var list = ImRaii.Table( "##table", 3 );
         if( !list )
         {
             return;
@@ -288,6 +563,8 @@ public class ModEditWindow : Window, IDisposable
         }
     }
 
+    private string _newSwapKey   = string.Empty;
+    private string _newSwapValue = string.Empty;
     private void DrawSwapTab()
     {
         using var tab = ImRaii.TabItem( "File Swaps" );
@@ -296,19 +573,94 @@ public class ModEditWindow : Window, IDisposable
             return;
         }
 
-        using var list = ImRaii.Table( "##swaps", 3 );
+        DrawOptionSelectHeader();
+
+        var setsEqual = _editor!.CurrentSwaps.SetEquals( _editor.CurrentOption.FileSwaps );
+        var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
+        ImGui.NewLine();
+        if( ImGuiUtil.DrawDisabledButton( "Apply Changes", Vector2.Zero, tt, setsEqual ) )
+        {
+            _editor.ApplySwaps();
+        }
+
+        ImGui.SameLine();
+        tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
+        if( ImGuiUtil.DrawDisabledButton( "Revert Changes", Vector2.Zero, tt, setsEqual ) )
+        {
+            _editor.RevertSwaps();
+        }
+
+        using var child = ImRaii.Child( "##swaps", -Vector2.One, true );
+        if( !child )
+        {
+            return;
+        }
+
+        using var list = ImRaii.Table( "##table", 3, ImGuiTableFlags.RowBg, -Vector2.One );
         if( !list )
         {
             return;
         }
 
-        foreach( var (gamePath, file) in _editor!.CurrentSwaps )
+        var idx      = 0;
+        var iconSize = ImGui.GetFrameHeight() * Vector2.One;
+        var pathSize = ImGui.GetContentRegionAvail().X / 2 - iconSize.X;
+        ImGui.TableSetupColumn( "button", ImGuiTableColumnFlags.WidthFixed, iconSize.X );
+        ImGui.TableSetupColumn( "source", ImGuiTableColumnFlags.WidthFixed, pathSize );
+        ImGui.TableSetupColumn( "value", ImGuiTableColumnFlags.WidthFixed, pathSize );
+
+        foreach( var (gamePath, file) in _editor!.CurrentSwaps.ToList() )
         {
+            using var id = ImRaii.PushId( idx++ );
             ImGui.TableNextColumn();
-            ConfigWindow.Text( gamePath.Path );
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this swap.", false, true ) )
+            {
+                _editor.CurrentSwaps.Remove( gamePath );
+            }
+
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted( file.FullName );
+            var tmp = gamePath.Path.ToString();
+            ImGui.SetNextItemWidth( -1 );
+            if( ImGui.InputText( "##key", ref tmp, Utf8GamePath.MaxGamePathLength )
+            && Utf8GamePath.FromString( tmp, out var path )
+            && !_editor.CurrentSwaps.ContainsKey( path ) )
+            {
+                _editor.CurrentSwaps.Remove( gamePath );
+                if( path.Length > 0 )
+                {
+                    _editor.CurrentSwaps[ path ] = file;
+                }
+            }
+
+            ImGui.TableNextColumn();
+            tmp = file.FullName;
+            ImGui.SetNextItemWidth( -1 );
+            if( ImGui.InputText( "##value", ref tmp, Utf8GamePath.MaxGamePathLength ) && tmp.Length > 0 )
+            {
+                _editor.CurrentSwaps[ gamePath ] = new FullPath( tmp );
+            }
         }
+
+        ImGui.TableNextColumn();
+        var addable = Utf8GamePath.FromString( _newSwapKey, out var newPath )
+         && newPath.Length       > 0
+         && _newSwapValue.Length > 0
+         && _newSwapValue        != _newSwapKey
+         && !_editor.CurrentSwaps.ContainsKey( newPath );
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), iconSize, "Add a new file swap to this option.", !addable,
+               true ) )
+        {
+            _editor.CurrentSwaps[ newPath ] = new FullPath( _newSwapValue );
+            _newSwapKey                     = string.Empty;
+            _newSwapValue                   = string.Empty;
+        }
+
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth( -1 );
+        ImGui.InputTextWithHint( "##swapKey", "New Swap Source...", ref _newSwapKey, Utf8GamePath.MaxGamePathLength );
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth( -1 );
+        ImGui.InputTextWithHint( "##swapValue", "New Swap Target...", ref _newSwapValue, Utf8GamePath.MaxGamePathLength );
     }
 
     public ModEditWindow()

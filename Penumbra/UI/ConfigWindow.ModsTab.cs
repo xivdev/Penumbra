@@ -40,15 +40,15 @@ public partial class ConfigWindow
         }
         catch( Exception e )
         {
-            PluginLog.Error($"Exception thrown during ModPanel Render:\n{e}"  );
-            PluginLog.Error($"{Penumbra.ModManager.Count} Mods\n"
+            PluginLog.Error( $"Exception thrown during ModPanel Render:\n{e}" );
+            PluginLog.Error( $"{Penumbra.ModManager.Count} Mods\n"
               + $"{Penumbra.CollectionManager.Current.Name} Current Collection\n"
               + $"{Penumbra.CollectionManager.Current.Settings.Count} Settings\n"
               + $"{_selector.SortMode} Sort Mode\n"
               + $"{_selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
-              + $"{_selector.Selected?.Name ?? "NULL"} Selected Mod\n"
-              + $"{string.Join(", ", Penumbra.CollectionManager.Current.Inheritance)} Inheritances\n"
-              + $"{_selector.SelectedSettingCollection.Name} Collection\n");
+              + $"{_selector.Selected?.Name     ?? "NULL"} Selected Mod\n"
+              + $"{string.Join( ", ", Penumbra.CollectionManager.Current.Inheritance )} Inheritances\n"
+              + $"{_selector.SelectedSettingCollection.Name} Collection\n" );
         }
     }
 
@@ -62,7 +62,7 @@ public partial class ConfigWindow
         ImGui.SameLine();
         DrawInheritedCollectionButton( 3 * buttonSize );
         ImGui.SameLine();
-        DrawCollectionSelector( "##collection", 2 * buttonSize.X, ModCollection.Type.Current, false, null );
+        DrawCollectionSelector( "##collectionSelector", 2 * buttonSize.X, ModCollection.Type.Current, false, null );
     }
 
     private static void DrawDefaultCollectionButton( Vector2 width )
@@ -147,6 +147,29 @@ public partial class ConfigWindow
             _mod  = selector.Selected!;
             UpdateSettingsData( selector );
             UpdateModData();
+        }
+
+        public void OnSelectionChange( Mod? old, Mod? mod, in ModFileSystemSelector.ModState _ )
+        {
+            if( old == mod )
+            {
+                return;
+            }
+
+            if( mod == null )
+            {
+                _window.ModEditPopup.IsOpen = false;
+            }
+            else if( _window.ModEditPopup.IsOpen )
+            {
+                _window.ModEditPopup.ChangeMod( mod );
+            }
+
+            _currentPriority = null;
+            MoveDirectory.Reset();
+            OptionTable.Reset();
+            Input.Reset();
+            AddOptionGroup.Reset();
         }
     }
 }
