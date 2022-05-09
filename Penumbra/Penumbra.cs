@@ -348,7 +348,7 @@ public class Penumbra : IDalamudPlugin
                     else
                     {
                         Dalamud.Chat.Print( "Missing arguments, the correct command format is:"
-                          + " /penumbra collection {default|forced} <collectionName>" );
+                          + " /penumbra collection {default} <collectionName>" );
                     }
 
                     break;

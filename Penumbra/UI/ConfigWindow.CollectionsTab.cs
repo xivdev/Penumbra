@@ -115,8 +115,7 @@ public partial class ConfigWindow
             DrawCollectionSelector( "##default", _window._inputTextWidth.X, ModCollection.Type.Default, true, null );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( "Default Collection",
-                "Mods in the default collection are loaded for any character that is not explicitly named in the character collections below.\n"
-              + "They also take precedence before the forced collection." );
+                "Mods in the default collection are loaded for any character that is not explicitly named in the character collections below.\n" );
         }
 
         // We do not check for valid character names.
