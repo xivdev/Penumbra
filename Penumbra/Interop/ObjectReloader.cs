@@ -105,12 +105,6 @@ public sealed unsafe class ObjectReloader : IDisposable
         var actor = Dalamud.Objects[ _target ];
         if( actor == null || Dalamud.Targets.Target != null )
         {
-            _target = -1;
-            return;
-        }
-
-        if( ( ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )actor.Address )->DrawObject == null )
-        {
             return;
         }
 
