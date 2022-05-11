@@ -10,7 +10,7 @@ public unsafe struct CharacterUtility
 {
     // TODO: female Hrothgar
     public static readonly int[] EqdpIndices
-        = Enumerable.Range( EqdpStartIdx, NumEqdpFiles ).Where( i => i != EqdpStartIdx + 15 ).ToArray();
+        = Enumerable.Range( EqdpStartIdx, NumEqdpFiles ).Where( i => i != EqdpStartIdx + 15 && i != EqdpStartIdx + 15 + NumEqdpFiles / 2 ).ToArray();
 
     public const int NumResources = 85;
     public const int EqpIdx       = 0;

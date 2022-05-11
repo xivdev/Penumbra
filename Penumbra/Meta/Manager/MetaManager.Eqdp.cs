@@ -14,7 +14,7 @@ public partial class MetaManager
 {
     public struct MetaManagerEqdp : IDisposable
     {
-        public ExpandedEqdpFile?[] Files = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles - 1]; // TODO: female Hrothgar
+        public ExpandedEqdpFile?[] Files = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles - 2]; // TODO: female Hrothgar
 
         public readonly Dictionary< EqdpManipulation, int > Manipulations = new();
 
