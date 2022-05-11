@@ -110,7 +110,7 @@ public unsafe partial class PathResolver
     // RSP
     public delegate void RspSetupCharacterDelegate( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 );
 
-    [Signature( "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 88 54 24 ?? 57 41 56 ", DetourName = "RspSetupCharacterDetour" )]
+    [Signature( "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 88 54 24 ?? 57 41 56", DetourName = "RspSetupCharacterDetour" )]
     public Hook< RspSetupCharacterDelegate >? RspSetupCharacterHook;
 
     private void RspSetupCharacterDetour( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 )

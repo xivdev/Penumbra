@@ -24,15 +24,16 @@ public unsafe partial class PathResolver
     [Signature( "E8 ?? ?? ?? ?? 48 85 C0 74 21 C7 40" )]
     public Hook< CharacterBaseCreateDelegate >? CharacterBaseCreateHook;
 
+    private ModCollection? _lastCreatedCollection;
+
     private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
     {
-        using var cmp = MetaChanger.ChangeCmp( this, out var collection );
+        using var cmp = MetaChanger.ChangeCmp( this, out _lastCreatedCollection );
         var       ret = CharacterBaseCreateHook!.Original( a, b, c, d );
         if( LastGameObject != null )
         {
-            DrawObjectToObject[ ret ] = ( collection!, LastGameObject->ObjectIndex );
+            DrawObjectToObject[ ret ] = (_lastCreatedCollection!, LastGameObject->ObjectIndex );
         }
-
         return ret;
     }
 

@@ -32,11 +32,14 @@ public partial class PathResolver : IDisposable
     private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, object?) data )
     {
         // Check if the path was marked for a specific collection,
-        // or if it is a file loaded by a material, and if we are currently in a material load.
+        // or if it is a file loaded by a material, and if we are currently in a material load,
+        // or if it is a face decal path and the current mod collection is set.
         // If not use the default collection.
         // We can remove paths after they have actually been loaded.
         // A potential next request will add the path anew.
-        var nonDefault = HandleMaterialSubFiles( type, out var collection ) || PathCollections.TryRemove( gamePath.Path, out collection );
+        var nonDefault = HandleMaterialSubFiles( type, out var collection )
+         || PathCollections.TryRemove( gamePath.Path, out collection )
+         || HandleDecalFile( type, gamePath, out collection );
         if( !nonDefault )
         {
             collection = Penumbra.CollectionManager.Default;
@@ -51,6 +54,20 @@ public partial class PathResolver : IDisposable
         var path = resolved == null ? gamePath.Path.ToString() : resolved.Value.FullName;
         HandleMtrlCollection( collection, path, nonDefault, type, resolved, out data );
         return true;
+    }
+
+    private bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, out ModCollection? collection )
+    {
+        if( type                 == ResourceType.Tex
+        && _lastCreatedCollection != null
+        && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l', '_', 'f', 'a', 'c', 'e' ) )
+        {
+            collection = _lastCreatedCollection;
+            return true;
+        }
+
+        collection = null;
+        return false;
     }
 
     public void Enable()

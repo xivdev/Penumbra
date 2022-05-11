@@ -12,7 +12,6 @@ public unsafe partial class PathResolver
     // Humans
     private IntPtr ResolveDecalDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
         => ResolvePathDetour( drawObject, ResolveDecalPathHook!.Original( drawObject, path, unk3, unk4 ) );
-
     private IntPtr ResolveEidDetour( IntPtr drawObject, IntPtr path, IntPtr unk3 )
         => ResolvePathDetour( drawObject, ResolveEidPathHook!.Original( drawObject, path, unk3 ) );
 
