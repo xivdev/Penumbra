@@ -97,7 +97,7 @@ public partial class ModCollection
 
     // Since inheritances depend on other collections existing,
     // we return them as a list to be applied after reading all collections.
-    public static ModCollection? LoadFromFile( FileInfo file, out IReadOnlyList< string > inheritance )
+    private static ModCollection? LoadFromFile( FileInfo file, out IReadOnlyList< string > inheritance )
     {
         inheritance = Array.Empty< string >();
         if( !file.Exists )

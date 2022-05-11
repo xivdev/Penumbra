@@ -24,7 +24,7 @@ public partial class ModCollection
         public ModCollection Default { get; private set; } = Empty;
 
         // A single collection that can not be deleted as a fallback for the current collection.
-        public ModCollection DefaultName { get; private set; } = Empty;
+        private ModCollection DefaultName { get; set; } = Empty;
 
         // The list of character collections.
         private readonly Dictionary< string, ModCollection > _characters = new();
@@ -36,11 +36,8 @@ public partial class ModCollection
         public ModCollection Character( string name )
             => _characters.TryGetValue( name, out var c ) ? c : Default;
 
-        public bool HasCharacterCollections
-            => _characters.Count > 0;
-
         // Set a active collection, can be used to set Default, Current or Character collections.
-        public void SetCollection( int newIdx, Type type, string? characterName = null )
+        private void SetCollection( int newIdx, Type type, string? characterName = null )
         {
             var oldCollectionIdx = type switch
             {
@@ -120,7 +117,7 @@ public partial class ModCollection
 
         // Load default, current and character collections from config.
         // Then create caches. If a collection does not exist anymore, reset it to an appropriate default.
-        public void LoadCollections()
+        private void LoadCollections()
         {
             var configChanged = !ReadActiveCollections( out var jObject );
 

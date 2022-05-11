@@ -16,9 +16,9 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     // Does not save or copy the backup in the current mod directory,
     // as this is done on mod directory changes only.
     private void Save()
-    {
-        SaveToFile( new FileInfo( ModFileSystemFile ), SaveMod, true );
-        PluginLog.Verbose( "Saved mod filesystem." );
+        {
+            SaveToFile( new FileInfo( ModFileSystemFile ), SaveMod, true );
+            PluginLog.Verbose( "Saved mod filesystem." );
     }
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
