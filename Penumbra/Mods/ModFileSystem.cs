@@ -68,7 +68,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
         if( type.HasFlag( MetaChangeType.Name ) && oldName != null )
         {
             var old = oldName.FixName();
-            if( Find( old, out var child ) )
+            if( Find( old, out var child ) && child is not Folder)
             {
                 Rename( child, mod.Name.Text );
             }
@@ -117,7 +117,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
 
     private static (string, bool) SaveMod( Mod mod, string fullPath )
     {
-        var regex = new Regex( $@"^{Regex.Escape( ModToName( mod ) )}( \(\d+\))?" );
+        var regex = new Regex( $@"^{Regex.Escape( ModToName( mod ) )}( \(\d+\))?$" );
         // Only save pairs with non-default paths.
         if( regex.IsMatch( fullPath ) )
         {

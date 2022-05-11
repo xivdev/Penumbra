@@ -13,7 +13,7 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
     public readonly Utf8String InternalName;
     public readonly ulong      Crc64;
 
-    public static readonly FullPath Empty = new(string.Empty);
+    public static readonly FullPath Empty   = new(string.Empty);
 
     public FullPath( DirectoryInfo baseDir, Utf8RelPath relPath )
         : this( Path.Combine( baseDir.FullName, relPath.ToString() ) )
@@ -71,9 +71,9 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
     public int CompareTo( object? obj )
         => obj switch
         {
-            FullPath p   => InternalName.CompareTo( p.InternalName ),
+            FullPath p   => InternalName?.CompareTo( p.InternalName ) ?? -1,
             FileInfo f   => string.Compare( FullName, f.FullName, StringComparison.InvariantCultureIgnoreCase ),
-            Utf8String u => InternalName.CompareTo( u ),
+            Utf8String u => InternalName?.CompareTo( u ) ?? -1,
             string s     => string.Compare( FullName, s, StringComparison.InvariantCultureIgnoreCase ),
             _            => -1,
         };

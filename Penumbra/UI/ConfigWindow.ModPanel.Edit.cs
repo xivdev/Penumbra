@@ -5,6 +5,7 @@ using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using Dalamud.Logging;
 using Dalamud.Memory;
 using ImGuiNET;
 using OtterGui;
@@ -45,7 +46,14 @@ public partial class ConfigWindow
             if( Input.Text( "Mod Path", Input.Path, Input.None, _leaf.FullName(), out var newPath, 256,
                    _window._inputTextWidth.X ) )
             {
-                _window._penumbra.ModFileSystem.RenameAndMove( _leaf, newPath );
+                try
+                {
+                    _window._penumbra.ModFileSystem.RenameAndMove( _leaf, newPath );
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Warning( e.Message );
+                }
             }
 
             ImGui.Dummy( _window._defaultSpace );
@@ -138,6 +146,7 @@ public partial class ConfigWindow
                 _window.ModEditPopup.ChangeOption( -1, 0 );
                 _window.ModEditPopup.IsOpen = true;
             }
+
             ImGui.SameLine();
             fileExists = File.Exists( _mod.DefaultFile );
             tt = fileExists
