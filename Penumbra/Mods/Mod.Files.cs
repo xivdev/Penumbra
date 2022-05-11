@@ -105,13 +105,24 @@ public partial class Mod
     private void LoadAllGroups()
     {
         _groups.Clear();
+        var changes = false;
         foreach( var file in GroupFiles )
         {
             var group = LoadModGroup( file, ModPath );
-            if( group != null )
+            if( group != null && _groups.All( g => g.Name != group.Name ) )
             {
+                changes = changes || group.FileName( ModPath, _groups.Count ) != file.FullName;
                 _groups.Add( group );
             }
+            else
+            {
+                changes = true;
+            }
+        }
+
+        if( changes )
+        {
+            SaveAllGroups();
         }
     }
 

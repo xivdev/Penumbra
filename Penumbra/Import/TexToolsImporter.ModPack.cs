@@ -112,6 +112,17 @@ public partial class TexToolsImporter
                            .Count( o => o.Name.Length > 0 && o.ModsJsons.Length > 0 )
                       + ( group.OptionList.Any( o => o.Name.Length > 0 && o.ModsJsons.Length == 0 ) ? 1 : 0 ) ) );
 
+    private static string GetGroupName( string groupName, ISet< string > names )
+    {
+        var baseName = groupName;
+        var i        = 2;
+        while( !names.Add( groupName ) )
+        {
+            groupName = $"{baseName} ({i++})";
+        }
+        return groupName;
+    }
+
     // Extended V2 mod packs contain multiple options that need to be handled separately.
     private DirectoryInfo ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
     {
@@ -144,14 +155,15 @@ public partial class TexToolsImporter
         // Iterate through all pages
         var options       = new List< ISubMod >();
         var groupPriority = 0;
+        var groupNames    = new HashSet< string >();
         foreach( var page in modList.ModPackPages )
         {
             foreach( var group in page.ModGroups.Where( group => group.GroupName.Length > 0 && group.OptionList.Length > 0 ) )
             {
-                _currentGroupName = group.GroupName;
+                _currentGroupName = GetGroupName( group.GroupName, groupNames );
                 options.Clear();
                 var description = new StringBuilder();
-                var groupFolder = Mod.NewSubFolderName( _currentModDirectory, group.GroupName )
+                var groupFolder = Mod.NewSubFolderName( _currentModDirectory, _currentGroupName )
                  ?? new DirectoryInfo( Path.Combine( _currentModDirectory.FullName, $"Group {groupPriority + 1}" ) );
 
                 var optionIdx = 1;
@@ -186,7 +198,7 @@ public partial class TexToolsImporter
                     }
                 }
 
-                Mod.CreateOptionGroup( _currentModDirectory, group, groupPriority, groupPriority, description.ToString(), options );
+                Mod.CreateOptionGroup( _currentModDirectory, group.SelectionType, _currentGroupName, groupPriority, groupPriority, description.ToString(), options );
                 ++groupPriority;
             }
         }

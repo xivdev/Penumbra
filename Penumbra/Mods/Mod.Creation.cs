@@ -58,16 +58,16 @@ public partial class Mod
     }
 
     // Create a file for an option group from given data.
-    internal static void CreateOptionGroup( DirectoryInfo baseFolder, ModGroup groupData,
+    internal static void CreateOptionGroup( DirectoryInfo baseFolder, SelectType type, string name,
         int priority, int index, string desc, IEnumerable< ISubMod > subMods )
     {
-        switch( groupData.SelectionType )
+        switch( type )
         {
             case SelectType.Multi:
             {
                 var group = new MultiModGroup()
                 {
-                    Name        = groupData.GroupName,
+                    Name        = name,
                     Description = desc,
                     Priority    = priority,
                 };
@@ -79,7 +79,7 @@ public partial class Mod
             {
                 var group = new SingleModGroup()
                 {
-                    Name        = groupData.GroupName,
+                    Name        = name,
                     Description = desc,
                     Priority    = priority,
                 };
