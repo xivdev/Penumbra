@@ -47,7 +47,7 @@ public unsafe partial class ResourceLoader
     private void AddModifiedDebugInfo( Structs.ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
         object? resolverInfo )
     {
-        if( manipulatedPath == null )
+        if( manipulatedPath == null || manipulatedPath.Value.Crc64 == 0 )
         {
             return;
         }
