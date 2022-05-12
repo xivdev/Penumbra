@@ -105,7 +105,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var box = ImRaii.ListBox( "##conflicts" );
+            using var box = ImRaii.ListBox( "##conflicts", -Vector2.One );
             if( !box )
             {
                 return;

@@ -55,6 +55,15 @@ public struct ConflictCache
                 _                                                        => 0,
             };
         }
+
+        public override string ToString()
+            => ( Mod1Priority, Solved ) switch
+            {
+                (true, true)   => $"{Penumbra.ModManager[ Mod1 ].Name} >  {Penumbra.ModManager[ Mod2 ].Name} ({Data})",
+                (true, false)  => $"{Penumbra.ModManager[ Mod1 ].Name} >= {Penumbra.ModManager[ Mod2 ].Name} ({Data})",
+                (false, true)  => $"{Penumbra.ModManager[ Mod1 ].Name} <  {Penumbra.ModManager[ Mod2 ].Name} ({Data})",
+                (false, false) => $"{Penumbra.ModManager[ Mod1 ].Name} <= {Penumbra.ModManager[ Mod2 ].Name} ({Data})",
+            };
     }
 
     private readonly List< Conflict > _conflicts = new();
@@ -75,6 +84,7 @@ public struct ConflictCache
     // Find all mod conflicts concerning the specified mod (in both directions).
     public SubList< Conflict > ModConflicts( int modIdx )
     {
+        Sort();
         var start = _conflicts.FindIndex( c => c.Mod1 == modIdx );
         if( start < 0 )
         {
@@ -90,6 +100,7 @@ public struct ConflictCache
         if( !_isSorted )
         {
             _conflicts?.Sort();
+            _isSorted = true;
         }
     }
 
