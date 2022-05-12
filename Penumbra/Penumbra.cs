@@ -44,6 +44,7 @@ public class Penumbra : IDalamudPlugin
     public static ModCollection.Manager CollectionManager { get; private set; } = null!;
     public static SimpleRedirectManager Redirects { get; private set; } = null!;
     public static ResourceLoader ResourceLoader { get; private set; } = null!;
+    public static FrameworkManager Framework { get; private set; } = null!;
 
 
     public readonly  ResourceLogger ResourceLogger;
@@ -62,6 +63,7 @@ public class Penumbra : IDalamudPlugin
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
         Dalamud.Initialize( pluginInterface );
+        Framework = new FrameworkManager();
         GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
         Backup.CreateBackup( PenumbraBackupFiles() );
         Config = Configuration.Load();

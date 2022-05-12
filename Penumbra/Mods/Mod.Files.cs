@@ -147,7 +147,7 @@ public partial class Mod
 
         foreach( var (group, index) in _groups.WithIndex() )
         {
-            IModGroup.SaveModGroup( group, ModPath, index );
+            IModGroup.SaveDelayed( group, ModPath, index );
         }
     }
 }

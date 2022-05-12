@@ -64,7 +64,7 @@ public partial class Configuration : IPluginConfiguration
     }
 
     // Save the current configuration.
-    public void Save()
+    private void SaveConfiguration()
     {
         try
         {
@@ -75,6 +75,9 @@ public partial class Configuration : IPluginConfiguration
             PluginLog.Error( $"Could not save plugin configuration:\n{e}" );
         }
     }
+
+    public void Save()
+        => Penumbra.Framework.RegisterDelayed( nameof( SaveConfiguration ), SaveConfiguration );
 
     // Add missing colors to the dictionary if necessary.
     private void AddColors( bool forceSave )

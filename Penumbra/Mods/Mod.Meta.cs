@@ -114,6 +114,9 @@ public sealed partial class Mod
     }
 
     private void SaveMeta()
+        => Penumbra.Framework.RegisterDelayed( nameof( SaveMetaFile ) + ModPath.Name, SaveMetaFile );
+
+    private void SaveMetaFile()
     {
         var metaFile = MetaFile;
         try

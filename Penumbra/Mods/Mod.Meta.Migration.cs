@@ -83,7 +83,7 @@ public sealed partial class Mod
             mod._default.IncorporateMetaChanges( mod.ModPath, true );
             foreach( var (group, index) in mod.Groups.WithIndex() )
             {
-                IModGroup.SaveModGroup( group, mod.ModPath, index );
+                IModGroup.Save( group, mod.ModPath, index );
             }
 
             // Delete meta files.

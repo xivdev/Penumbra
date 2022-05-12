@@ -22,7 +22,7 @@ public partial class ModCollection
         => new(Path.Combine( CollectionDirectory, $"{Name.RemoveInvalidPathSymbols()}.json" ));
 
     // Custom serialization due to shared mod information across managers.
-    public void Save()
+    private void SaveCollection()
     {
         try
         {
@@ -70,6 +70,9 @@ public partial class ModCollection
             PluginLog.Error( $"Could not save collection {Name}:\n{e}" );
         }
     }
+
+    public void Save()
+        => Penumbra.Framework.RegisterDelayed( nameof( SaveCollection ) + Name, SaveCollection );
 
     public void Delete()
     {

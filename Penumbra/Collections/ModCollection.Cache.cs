@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Dalamud.Logging;
+using Dalamud.Utility;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manager;
 using Penumbra.Meta.Manipulations;
@@ -15,15 +18,12 @@ public partial class ModCollection
     // It will only be setup if a collection gets activated in any way.
     private class Cache : IDisposable
     {
-        // Shared caches to avoid allocations.
-        private static readonly Dictionary< Utf8GamePath, FileRegister >     RegisteredFiles         = new(1024);
-        private static readonly Dictionary< MetaManipulation, FileRegister > RegisteredManipulations = new(1024);
-        private static readonly List< ModSettings? >                         ResolvedSettings        = new(128);
+        private readonly Dictionary< Utf8GamePath, FileRegister >     _registeredFiles         = new();
+        private readonly Dictionary< MetaManipulation, FileRegister > _registeredManipulations = new();
 
         private readonly ModCollection                        _collection;
         private readonly SortedList< string, object? >        _changedItems = new();
         public readonly  Dictionary< Utf8GamePath, FullPath > ResolvedFiles = new();
-        public readonly  HashSet< FullPath >                  MissingFiles  = new();
         public readonly  MetaManager                          MetaManipulations;
         public           ConflictCache                        Conflicts = new();
 
@@ -96,14 +96,10 @@ public partial class ModCollection
         // Clear all local and global caches to prepare for recomputation.
         private void ClearStorageAndPrepare()
         {
-            ResolvedFiles.Clear();
-            MissingFiles.Clear();
-            RegisteredFiles.Clear();
             _changedItems.Clear();
-            ResolvedSettings.Clear();
+            _registeredFiles.EnsureCapacity( 2 * ResolvedFiles.Count );
+            ResolvedFiles.Clear();
             Conflicts.ClearFileConflicts();
-            // Obtains actual settings for this collection with all inheritances.
-            ResolvedSettings.AddRange( _collection.ActualSettings );
         }
 
         // Recalculate all file changes from current settings. Include all fixed custom redirects.
@@ -113,7 +109,7 @@ public partial class ModCollection
             ClearStorageAndPrepare();
             if( withManipulations )
             {
-                RegisteredManipulations.Clear();
+                _registeredManipulations.EnsureCapacity( 2 * MetaManipulations.Count );
                 MetaManipulations.Reset();
             }
 
@@ -125,6 +121,10 @@ public partial class ModCollection
 
             AddMetaFiles();
             ++RecomputeCounter;
+            _registeredFiles.Clear();
+            _registeredFiles.TrimExcess();
+            _registeredManipulations.Clear();
+            _registeredManipulations.TrimExcess();
         }
 
         // Identify and record all manipulated objects for this entire collection.
@@ -158,15 +158,15 @@ public partial class ModCollection
         // Inside the same mod, conflicts are not recorded.
         private void AddFile( Utf8GamePath path, FullPath file, FileRegister priority )
         {
-            if( RegisteredFiles.TryGetValue( path, out var register ) )
+            if( _registeredFiles.TryGetValue( path, out var register ) )
             {
                 if( register.SameMod( priority, out var less ) )
                 {
                     Conflicts.AddConflict( register.ModIdx, priority.ModIdx, register.ModPriority, priority.ModPriority, path );
                     if( less )
                     {
-                        RegisteredFiles[ path ] = priority;
-                        ResolvedFiles[ path ]   = file;
+                        _registeredFiles[ path ] = priority;
+                        ResolvedFiles[ path ]    = file;
                     }
                 }
                 else
@@ -176,14 +176,14 @@ public partial class ModCollection
                     // Do not add conflicts.
                     if( less )
                     {
-                        RegisteredFiles[ path ] = priority;
-                        ResolvedFiles[ path ]   = file;
+                        _registeredFiles[ path ] = priority;
+                        ResolvedFiles[ path ]    = file;
                     }
                 }
             }
             else // File not seen before, just add it.
             {
-                RegisteredFiles.Add( path, priority );
+                _registeredFiles.Add( path, priority );
                 ResolvedFiles.Add( path, file );
             }
         }
@@ -194,14 +194,14 @@ public partial class ModCollection
         // Inside the same mod, conflicts are not recorded.
         private void AddManipulation( MetaManipulation manip, FileRegister priority )
         {
-            if( RegisteredManipulations.TryGetValue( manip, out var register ) )
+            if( _registeredManipulations.TryGetValue( manip, out var register ) )
             {
                 if( register.SameMod( priority, out var less ) )
                 {
                     Conflicts.AddConflict( register.ModIdx, priority.ModIdx, register.ModPriority, priority.ModPriority, manip );
                     if( less )
                     {
-                        RegisteredManipulations[ manip ] = priority;
+                        _registeredManipulations[ manip ] = priority;
                         MetaManipulations.ApplyMod( manip, priority.ModIdx );
                     }
                 }
@@ -212,14 +212,14 @@ public partial class ModCollection
                     // Do not add conflicts.
                     if( less )
                     {
-                        RegisteredManipulations[ manip ] = priority;
+                        _registeredManipulations[ manip ] = priority;
                         MetaManipulations.ApplyMod( manip, priority.ModIdx );
                     }
                 }
             }
             else // Manipulation not seen before, just add it.
             {
-                RegisteredManipulations[ manip ] = priority;
+                _registeredManipulations[ manip ] = priority;
                 MetaManipulations.ApplyMod( manip, priority.ModIdx );
             }
         }
@@ -250,7 +250,7 @@ public partial class ModCollection
         // Add all files and possibly manipulations of a given mod according to its settings in this collection.
         private void AddMod( int modIdx, bool withManipulations )
         {
-            var settings = ResolvedSettings[ modIdx ];
+            var settings = _collection[ modIdx ].Settings;
             if( settings is not { Enabled: true } )
             {
                 return;
@@ -300,7 +300,7 @@ public partial class ModCollection
             Penumbra.Redirects.Apply( ResolvedFiles );
             foreach( var gamePath in ResolvedFiles.Keys )
             {
-                RegisteredFiles.Add( gamePath, new FileRegister( -1, int.MaxValue, 0, 0 ) );
+                _registeredFiles.Add( gamePath, new FileRegister( -1, int.MaxValue, 0, 0 ) );
             }
         }
 

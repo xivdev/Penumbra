@@ -57,7 +57,15 @@ public interface IModGroup : IEnumerable< ISubMod >
         }
     }
 
-    public static void SaveModGroup( IModGroup group, DirectoryInfo basePath, int groupIdx )
+    public static void SaveDelayed( IModGroup group, DirectoryInfo basePath, int groupIdx )
+    {
+        Penumbra.Framework.RegisterDelayed( $"{nameof( SaveModGroup )}_{basePath.Name}_{group.Name}", () => SaveModGroup( group, basePath, groupIdx ) );
+    }
+
+    public static void Save( IModGroup group, DirectoryInfo basePath, int groupIdx )
+        => SaveModGroup( group, basePath, groupIdx );
+
+    private static void SaveModGroup( IModGroup group, DirectoryInfo basePath, int groupIdx )
     {
         var       file       = group.FileName( basePath, groupIdx );
         using var s          = File.Exists( file ) ? File.Open( file, FileMode.Truncate ) : File.Open( file, FileMode.CreateNew );

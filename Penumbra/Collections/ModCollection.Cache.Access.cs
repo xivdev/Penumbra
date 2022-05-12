@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using Dalamud.Logging;
 using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
@@ -61,9 +62,6 @@ public partial class ModCollection
     internal IReadOnlyDictionary< Utf8GamePath, FullPath > ResolvedFiles
         => _cache?.ResolvedFiles ?? new Dictionary< Utf8GamePath, FullPath >();
 
-    internal IReadOnlySet< FullPath > MissingFiles
-        => _cache?.MissingFiles ?? new HashSet< FullPath >();
-
     internal IReadOnlyDictionary< string, object? > ChangedItems
         => _cache?.ChangedItems ?? new Dictionary< string, object? >();
 
@@ -76,6 +74,10 @@ public partial class ModCollection
     // Update the effective file list for the given cache.
     // Creates a cache if necessary.
     public void CalculateEffectiveFileList( bool withMetaManipulations, bool reloadDefault )
+        => Penumbra.Framework.RegisterImportant( nameof( CalculateEffectiveFileList ) + Name,
+            () => CalculateEffectiveFileListInternal( withMetaManipulations, reloadDefault ) );
+
+    private void CalculateEffectiveFileListInternal( bool withMetaManipulations, bool reloadDefault )
     {
         // Skip the empty collection.
         if( Index == 0 )
@@ -83,7 +85,7 @@ public partial class ModCollection
             return;
         }
 
-        PluginLog.Debug( "Recalculating effective file list for {CollectionName:l} [{WithMetaManipulations}] [{ReloadDefault}]", Name,
+        PluginLog.Debug( "[{Thread}] Recalculating effective file list for {CollectionName:l} [{WithMetaManipulations}] [{ReloadDefault}]", Thread.CurrentThread.ManagedThreadId, Name,
             withMetaManipulations, reloadDefault );
         _cache ??= new Cache( this );
         _cache.CalculateEffectiveFileList( withMetaManipulations );
@@ -92,6 +94,7 @@ public partial class ModCollection
             SetFiles();
             Penumbra.ResidentResources.Reload();
         }
+        PluginLog.Debug( "[{Thread}] Recalculation of effective file list for {CollectionName:l} finished.", Thread.CurrentThread.ManagedThreadId, Name);
     }
 
     // Set Metadata files.

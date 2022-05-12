@@ -72,7 +72,7 @@ public partial class Mod
                     Priority    = priority,
                 };
                 group.PrioritizedOptions.AddRange( subMods.OfType< SubMod >().Select( ( s, idx ) => ( s, idx ) ) );
-                IModGroup.SaveModGroup( group, baseFolder, index );
+                IModGroup.Save( group, baseFolder, index );
                 break;
             }
             case SelectType.Single:
@@ -84,7 +84,7 @@ public partial class Mod
                     Priority    = priority,
                 };
                 group.OptionData.AddRange( subMods.OfType< SubMod >() );
-                IModGroup.SaveModGroup( group, baseFolder, index );
+                IModGroup.Save( group, baseFolder, index );
                 break;
             }
         }

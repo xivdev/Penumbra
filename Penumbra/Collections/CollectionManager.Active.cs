@@ -177,7 +177,10 @@ public partial class ModCollection
 
 
         public void SaveActiveCollections()
-            => SaveActiveCollections( Default.Name, Current.Name, Characters.Select( kvp => ( kvp.Key, kvp.Value.Name ) ) );
+        {
+            Penumbra.Framework.RegisterDelayed( nameof( SaveActiveCollections ),
+                () => SaveActiveCollections( Default.Name, Current.Name, Characters.Select( kvp => ( kvp.Key, kvp.Value.Name ) ) ) );
+        }
 
         internal static void SaveActiveCollections( string def, string current, IEnumerable< (string, string) > characters )
         {
@@ -203,7 +206,7 @@ public partial class ModCollection
 
                 j.WriteEndObject();
                 j.WriteEndObject();
-                PluginLog.Verbose( "Active Collections saved."  );
+                PluginLog.Verbose( "Active Collections saved." );
             }
             catch( Exception e )
             {

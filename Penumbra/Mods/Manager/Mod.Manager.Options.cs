@@ -426,7 +426,7 @@ public sealed partial class Mod
                 }
                 else
                 {
-                    IModGroup.SaveModGroup( mod._groups[ groupIdx ], mod.ModPath, groupIdx );
+                    IModGroup.SaveDelayed( mod._groups[ groupIdx ], mod.ModPath, groupIdx );
                 }
             }
 

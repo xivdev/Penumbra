@@ -15,11 +15,14 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     // Save the current sort order.
     // Does not save or copy the backup in the current mod directory,
     // as this is done on mod directory changes only.
-    private void Save()
-        {
-            SaveToFile( new FileInfo( ModFileSystemFile ), SaveMod, true );
-            PluginLog.Verbose( "Saved mod filesystem." );
+    private void SaveFilesystem()
+    {
+        SaveToFile( new FileInfo( ModFileSystemFile ), SaveMod, true );
+        PluginLog.Verbose( "Saved mod filesystem." );
     }
+
+    private void Save()
+        => Penumbra.Framework.RegisterDelayed( nameof( SaveFilesystem ), SaveFilesystem );
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
     public static ModFileSystem Load()
@@ -50,6 +53,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
         {
             Save();
         }
+
         PluginLog.Debug( "Reloaded mod filesystem." );
     }
 
@@ -98,6 +102,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
                 {
                     Delete( leaf );
                 }
+
                 break;
             case ModPathChangeType.Moved:
                 Save();
