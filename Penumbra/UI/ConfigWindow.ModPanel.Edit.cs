@@ -6,7 +6,6 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Logging;
-using Dalamud.Memory;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -90,9 +89,42 @@ public partial class ConfigWindow
                 Penumbra.ModManager.ReloadMod( _mod.Index );
             }
 
-
+            BackupButtons( buttonSize );
             MoveDirectory.Draw( _mod, buttonSize );
+
             ImGui.Dummy( _window._defaultSpace );
+        }
+
+        private void BackupButtons( Vector2 buttonSize )
+        {
+            var backup = new ModBackup( _mod );
+            var tt = ModBackup.CreatingBackup
+                ? "Already creating a backup."
+                : backup.Exists
+                    ? $"Overwrite current backup \"{backup.Name}\" with current mod."
+                    : $"Create backup archive of current mod at \"{backup.Name}\".";
+            if( ImGuiUtil.DrawDisabledButton( "Create Backup", buttonSize, tt, ModBackup.CreatingBackup ) )
+            {
+                backup.CreateAsync();
+            }
+
+            ImGui.SameLine();
+            tt = backup.Exists
+                ? $"Delete existing backup file \"{backup.Name}\"."
+                : $"Backup file \"{backup.Name}\" does not exist.";
+            if( ImGuiUtil.DrawDisabledButton( "Delete Backup", buttonSize, tt, !backup.Exists ) )
+            {
+                backup.Delete();
+            }
+
+            tt = backup.Exists
+                ? $"Restore mod from backup file \"{backup.Name}\"."
+                : $"Backup file \"{backup.Name}\" does not exist.";
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( "Restore From Backup", buttonSize, tt, !backup.Exists ) )
+            {
+                backup.Restore();
+            }
         }
 
         // Anything about editing the regular meta information about the mod.
