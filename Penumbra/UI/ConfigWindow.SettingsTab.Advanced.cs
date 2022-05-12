@@ -78,10 +78,10 @@ public partial class ConfigWindow
             }
 
             ImGui.SameLine();
-            ImGuiUtil.LabeledHelpMarker( "Disable Audio Streaming",
-                "Disable streaming in the games audio engine.\n"
-              + "If you do not disable streaming, you can not replace sound files in the game (*.scd files), they will be ignored by Penumbra.\n\n"
-              + "Only touch this if you experience sound problems.\n"
+            ImGuiUtil.LabeledHelpMarker( "Enable Sound Modification",
+                "Disable streaming in the games audio engine. The game enables this by default, and Penumbra should disable it.\n"
+              + "If this is unchecked, you can not replace sound files in the game (*.scd files), they will be ignored by Penumbra.\n\n"
+              + "Only touch this if you experience sound problems like audio stuttering.\n"
               + "If you toggle this, make sure no modified or to-be-modified sound file is currently playing or was recently playing, else you might crash.\n"
               + "You might need to restart your game for this to fully take effect." );
         }
