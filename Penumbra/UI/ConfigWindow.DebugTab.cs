@@ -128,6 +128,11 @@ public partial class ConfigWindow
 
             foreach( var data in Penumbra.ResourceLoader.DebugList.Values.ToArray() )
             {
+                if( data.ManipulatedPath.Crc64 == 0 )
+                {
+                    continue;
+                }
+
                 var refCountManip = data.ManipulatedResource == null ? 0 : data.ManipulatedResource->RefCount;
                 var refCountOrig  = data.OriginalResource    == null ? 0 : data.OriginalResource->RefCount;
                 ImGui.TableNextColumn();
