@@ -422,7 +422,7 @@ public sealed partial class Mod
             {
                 if( groupIdx == -1 )
                 {
-                    mod.SaveDefaultMod();
+                    mod.SaveDefaultModDelayed();
                 }
                 else
                 {

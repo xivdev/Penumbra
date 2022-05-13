@@ -36,6 +36,9 @@ public partial class Mod
         ISubMod.WriteSubMod( j, serializer, _default, ModPath, 0 );
     }
 
+    private void SaveDefaultModDelayed()
+        => Penumbra.Framework.RegisterDelayed( nameof( SaveDefaultMod ) + ModPath.Name, SaveDefaultMod );
+
     private void LoadDefaultOption()
     {
         var defaultFile = DefaultFile;
