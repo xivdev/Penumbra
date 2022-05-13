@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Dalamud.Logging;
 using OtterGui.Filesystem;
@@ -108,9 +109,19 @@ public partial class ModCollection
     // Carry changes in collections inherited from forward if they are relevant for this collection.
     private void OnInheritedModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
     {
-        if( _settings[ modIdx ] == null )
+        switch( type )
         {
-            ModSettingChanged.Invoke( type, modIdx, oldValue, groupIdx, true );
+            case ModSettingChange.MultiInheritance:
+            case ModSettingChange.MultiEnableState:
+                ModSettingChanged.Invoke( type, modIdx, oldValue, groupIdx, true );
+                return;
+            default:
+                if( _settings[ modIdx ] == null )
+                {
+                    ModSettingChanged.Invoke( type, modIdx, oldValue, groupIdx, true );
+                }
+
+                return;
         }
     }
 
