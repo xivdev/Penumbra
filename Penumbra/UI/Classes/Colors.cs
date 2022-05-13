@@ -24,6 +24,7 @@ public static class Colors
     public const uint RegexWarningBorder  = 0xFF0000B0;
     public const uint MetaInfoText        = 0xAAFFFFFF;
     public const uint RedTableBgTint      = 0x40000080;
+    public const uint DiscordColor        = 0xFFDA8972;
 
     public static (uint DefaultColor, string Name, string Description) Data( this ColorId color )
         => color switch

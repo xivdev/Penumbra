@@ -47,6 +47,7 @@ public partial class ConfigWindow
             DrawAdvancedSettings();
 
             _dialogManager.Draw();
+            DrawDiscordButton();
         }
 
         // Changing the base mod directory.
@@ -198,6 +199,34 @@ public partial class ConfigWindow
             }
 
             ImGui.NewLine();
+        }
+
+        private static void DrawDiscordButton()
+        {
+            const string discord = "Join Discord for Support";
+            const string address = @"https://discord.gg/kVva7DHV4r";
+            var          width   = ImGui.CalcTextSize( discord ).X + ImGui.GetStyle().FramePadding.X * 2;
+            if( ImGui.GetScrollMaxY() > 0 )
+                width += ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemSpacing.X;
+            ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, 0 ) );
+            using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.DiscordColor );
+            if( ImGui.Button( discord ) )
+            {
+                try
+                {
+                    var process = new ProcessStartInfo( address )
+                    {
+                        UseShellExecute = true,
+                    };
+                    Process.Start( process );
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+
+            ImGuiUtil.HoverTooltip( $"Open {address}" );
         }
     }
 }
