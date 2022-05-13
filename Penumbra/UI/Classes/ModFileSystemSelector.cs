@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Logging;
@@ -35,6 +32,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         SubscribeRightClickFolder( OwnDescendants, 15 );
         AddButton( AddNewModButton, 0 );
         AddButton( AddImportModButton, 1 );
+        AddButton( AddHelpButton, 800 );
         AddButton( DeleteModButton, 1000 );
         SetFilterTooltip();
 
@@ -76,6 +74,29 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     protected override uint FolderLineColor
         => ColorId.FolderLine.Value();
+
+    protected override void DrawPopups()
+    {
+        _fileManager.Draw();
+        DrawHelpPopup();
+        DrawInfoPopup();
+
+        if( ImGuiUtil.OpenNameField( "Create New Mod", ref _newModName ) )
+        {
+            try
+            {
+                var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
+                Mod.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty );
+                Mod.CreateDefaultFiles( newDir );
+                Penumbra.ModManager.AddMod( newDir );
+                _newModName = string.Empty;
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not create directory for new Mod {_newModName}:\n{e}" );
+            }
+        }
+    }
 
     protected override void DrawLeafName( FileSystem< Mod >.Leaf leaf, in ModState state, bool selected )
     {
@@ -123,28 +144,12 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     // Add custom buttons.
     private string _newModName = string.Empty;
 
-    private void AddNewModButton( Vector2 size )
+    private static void AddNewModButton( Vector2 size )
     {
         if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), size, "Create a new, empty mod of a given name.",
                !Penumbra.ModManager.Valid, true ) )
         {
             ImGui.OpenPopup( "Create New Mod" );
-        }
-
-        if( ImGuiUtil.OpenNameField( "Create New Mod", ref _newModName ) )
-        {
-            try
-            {
-                var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
-                Mod.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty );
-                Mod.CreateDefaultFiles( newDir );
-                Penumbra.ModManager.AddMod( newDir );
-                _newModName = string.Empty;
-            }
-            catch( Exception e )
-            {
-                PluginLog.Error( $"Could not create directory for new Mod {_newModName}:\n{e}" );
-            }
         }
     }
 
@@ -154,26 +159,25 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     private void AddImportModButton( Vector2 size )
     {
-        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
+        if( !ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
                "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true ) )
         {
-            var modPath = _hasSetFolder                           ? null
-                : Penumbra.Config.DefaultModImportPath.Length > 0 ? Penumbra.Config.DefaultModImportPath
-                : Penumbra.Config.ModDirectory.Length         > 0 ? Penumbra.Config.ModDirectory : null;
-            _hasSetFolder = true;
-            _fileManager.OpenFileDialog( "Import Mod Pack", "TexTools Mod Packs{.ttmp,.ttmp2}", ( s, f ) =>
-            {
-                if( s )
-                {
-                    _import = new TexToolsImporter( Penumbra.ModManager.BasePath, f.Count, f.Select( file => new FileInfo( file ) ),
-                        AddNewMod );
-                    ImGui.OpenPopup( "Import Status" );
-                }
-            }, 0, modPath );
+            return;
         }
 
-        _fileManager.Draw();
-        DrawInfoPopup();
+        var modPath = _hasSetFolder                           ? null
+            : Penumbra.Config.DefaultModImportPath.Length > 0 ? Penumbra.Config.DefaultModImportPath
+            : Penumbra.Config.ModDirectory.Length         > 0 ? Penumbra.Config.ModDirectory : null;
+        _hasSetFolder = true;
+        _fileManager.OpenFileDialog( "Import Mod Pack", "TexTools Mod Packs{.ttmp,.ttmp2}", ( s, f ) =>
+        {
+            if( s )
+            {
+                _import = new TexToolsImporter( Penumbra.ModManager.BasePath, f.Count, f.Select( file => new FileInfo( file ) ),
+                    AddNewMod );
+                ImGui.OpenPopup( "Import Status" );
+            }
+        }, 0, modPath );
     }
 
     // Draw the progress information for import.
@@ -183,9 +187,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         var height  = Math.Max( display.Y / 4, 15 * ImGui.GetFrameHeightWithSpacing() );
         var width   = display.X / 8;
         var size    = new Vector2( width * 2, height );
-        var pos     = ( display - size ) / 2;
+        ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Always, Vector2.One / 2 );
         ImGui.SetNextWindowSize( size );
-        ImGui.SetNextWindowPos( pos );
         using var popup = ImRaii.Popup( "Import Status", ImGuiWindowFlags.Modal );
         if( _import == null || !popup.Success )
         {
@@ -257,6 +260,13 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         }
     }
 
+    private static void AddHelpButton( Vector2 size )
+    {
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.QuestionCircle.ToIconString(), size, "Open extended help.", false, true ) )
+        {
+            ImGui.OpenPopup( "ExtendedHelp" );
+        }
+    }
 
     // Helpers.
     private static void SetDescendants( ModFileSystem.Folder folder, bool enabled, bool inherit = false )
@@ -354,6 +364,66 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
                .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.ModPath.FullName == _lastSelectedDirectory );
             OnSelectionChange( null, base.SelectedLeaf?.Value, default );
             _lastSelectedDirectory = string.Empty;
+        }
+    }
+
+    private static void DrawHelpPopup()
+    {
+        ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Always, Vector2.One / 2 );
+        ImGui.SetNextWindowSize( new Vector2( 1000 * ImGuiHelpers.GlobalScale, 34 * ImGui.GetTextLineHeightWithSpacing() ) );
+        using var popup = ImRaii.Popup( "ExtendedHelp", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.Modal );
+        if( !popup )
+        {
+            return;
+        }
+
+        ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
+        ImGui.Text( "Mod Selector" );
+        ImGui.BulletText( "Select a mod to obtain more information or change settings." );
+        ImGui.BulletText( "Names are colored according to your config and their current state in the collection:" );
+        using var indent = ImRaii.PushIndent();
+        ImGuiUtil.BulletTextColored( ColorId.EnabledMod.Value(), "enabled in the current collection." );
+        ImGuiUtil.BulletTextColored( ColorId.DisabledMod.Value(), "disabled in the current collection." );
+        ImGuiUtil.BulletTextColored( ColorId.InheritedMod.Value(), "enabled due to inheritance from another collection." );
+        ImGuiUtil.BulletTextColored( ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection." );
+        ImGuiUtil.BulletTextColored( ColorId.UndefinedMod.Value(), "disabled in all inherited collections." );
+        ImGuiUtil.BulletTextColored( ColorId.NewMod.Value(),
+            "newly imported during this session. Will go away when first enabling a mod or when Penumbra is reloaded." );
+        ImGuiUtil.BulletTextColored( ColorId.HandledConflictMod.Value(),
+            "enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved)." );
+        ImGuiUtil.BulletTextColored( ColorId.ConflictingMod.Value(), "enabled and conflicting with another enabled Mod on the same priority." );
+        ImGuiUtil.BulletTextColored( ColorId.FolderExpanded.Value(), "expanded mod folder." );
+        ImGuiUtil.BulletTextColored( ColorId.FolderCollapsed.Value(), "collapsed mod folder" );
+        indent.Pop( 1 );
+        ImGui.BulletText( "Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number." );
+        indent.Push();
+        ImGui.BulletText( "A sort order differing from the mods name will not be displayed, it will just be used for ordering." );
+        ImGui.BulletText(
+            "If the sort order string contains Forward-Slashes ('/'), the preceding substring will be turned into folders automatically." );
+        indent.Pop( 1 );
+        ImGui.BulletText(
+            "You can drag and drop mods and subfolders into existing folders. Dropping them onto mods is the same as dropping them onto the parent of the mod." );
+        ImGui.BulletText( "Right-clicking a folder opens a context menu." );
+        ImGui.BulletText( "Right-clicking empty space allows you to expand or collapse all folders at once." );
+        ImGui.BulletText( "Use the Filter Mods... input at the top to filter the list for mods whose name or path contain the text." );
+        indent.Push();
+        ImGui.BulletText( "You can enter n:[string] to filter only for names, without path." );
+        ImGui.BulletText( "You can enter c:[string] to filter for Changed Items instead." );
+        ImGui.BulletText( "You can enter a:[string] to filter for Mod Authors instead." );
+        indent.Pop( 1 );
+        ImGui.BulletText( "Use the expandable menu beside the input to filter for mods fulfilling specific criteria." );
+        ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
+        ImGui.Text( "Mod Management" );
+        ImGui.BulletText( "You can create empty mods or import TTMP-based mods with the buttons in this row." );
+        ImGui.BulletText(
+            "You can import penumbra-based mods by moving the corresponding folder into your mod directory in a file explorer, then rediscovering mods." );
+        ImGui.BulletText(
+            "If you enable Advanced Options in the Settings tab, you can toggle Edit Mode to manipulate your selected mod even further." );
+        ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
+        ImGui.SetCursorPosX( 400   * ImGuiHelpers.GlobalScale );
+        if( ImGui.Button( "Understood", ImGuiHelpers.ScaledVector2( 200, 0 ) ) )
+        {
+            ImGui.CloseCurrentPopup();
         }
     }
 }
