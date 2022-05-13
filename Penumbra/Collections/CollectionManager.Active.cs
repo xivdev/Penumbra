@@ -122,7 +122,7 @@ public partial class ModCollection
             var configChanged = !ReadActiveCollections( out var jObject );
 
             // Load the default collection.
-            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? Empty.Name;
+            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? (configChanged ? DefaultCollection : Empty.Name);
             var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
             {
