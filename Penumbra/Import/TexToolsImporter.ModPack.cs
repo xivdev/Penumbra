@@ -120,6 +120,7 @@ public partial class TexToolsImporter
         {
             groupName = $"{baseName} ({i++})";
         }
+
         return groupName;
     }
 
@@ -160,46 +161,58 @@ public partial class TexToolsImporter
         {
             foreach( var group in page.ModGroups.Where( group => group.GroupName.Length > 0 && group.OptionList.Length > 0 ) )
             {
+                var allOptions = group.OptionList.Where( option => option.Name.Length > 0 && option.ModsJsons.Length > 0 ).ToList();
+                var (numGroups, maxOptions) = group.SelectionType == SelectType.Single
+                    ? ( 1, allOptions.Count )
+                    : ( 1 + allOptions.Count / IModGroup.MaxMultiOptions, IModGroup.MaxMultiOptions );
                 _currentGroupName = GetGroupName( group.GroupName, groupNames );
-                options.Clear();
-                var description = new StringBuilder();
-                var groupFolder = Mod.NewSubFolderName( _currentModDirectory, _currentGroupName )
-                 ?? new DirectoryInfo( Path.Combine( _currentModDirectory.FullName, $"Group {groupPriority + 1}" ) );
 
-                var optionIdx = 1;
-
-                foreach( var option in group.OptionList.Where( option => option.Name.Length > 0 && option.ModsJsons.Length > 0 ) )
+                var optionIdx = 0;
+                for( var groupId = 0; groupId < numGroups; ++groupId )
                 {
-                    _token.ThrowIfCancellationRequested();
-                    _currentOptionName = option.Name;
-                    var optionFolder = Mod.NewSubFolderName( groupFolder, option.Name )
-                     ?? new DirectoryInfo( Path.Combine( groupFolder.FullName, $"Option {optionIdx}" ) );
-                    ExtractSimpleModList( optionFolder, option.ModsJsons );
-                    options.Add( Mod.CreateSubMod( _currentModDirectory, optionFolder, option ) );
-                    description.Append( option.Description );
-                    if( !string.IsNullOrEmpty( option.Description ) )
+                    var name = numGroups == 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
+                    options.Clear();
+                    var description = new StringBuilder();
+                    var groupFolder = Mod.NewSubFolderName( _currentModDirectory, name )
+                     ?? new DirectoryInfo( Path.Combine( _currentModDirectory.FullName,
+                            numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}" ) );
+
+                    for( var i = 0; i + optionIdx < allOptions.Count && i < maxOptions; ++i )
                     {
-                        description.Append( '\n' );
+                        var option = allOptions[ i + optionIdx ];
+                        _token.ThrowIfCancellationRequested();
+                        _currentOptionName = option.Name;
+                        var optionFolder = Mod.NewSubFolderName( groupFolder, option.Name )
+                         ?? new DirectoryInfo( Path.Combine( groupFolder.FullName, $"Option {i + optionIdx + 1}" ) );
+                        ExtractSimpleModList( optionFolder, option.ModsJsons );
+                        options.Add( Mod.CreateSubMod( _currentModDirectory, optionFolder, option ) );
+                        description.Append( option.Description );
+                        if( !string.IsNullOrEmpty( option.Description ) )
+                        {
+                            description.Append( '\n' );
+                        }
+
+                        ++_currentOptionIdx;
                     }
 
-                    ++optionIdx;
-                    ++_currentOptionIdx;
-                }
+                    optionIdx += maxOptions;
 
-                // Handle empty options for single select groups without creating a folder for them.
-                // We only want one of those at most, and it should usually be the first option.
-                if( group.SelectionType == SelectType.Single )
-                {
-                    var empty = group.OptionList.FirstOrDefault( o => o.Name.Length > 0 && o.ModsJsons.Length == 0 );
-                    if( empty != null )
+                    // Handle empty options for single select groups without creating a folder for them.
+                    // We only want one of those at most, and it should usually be the first option.
+                    if( group.SelectionType == SelectType.Single )
                     {
-                        _currentOptionName = empty.Name;
-                        options.Insert( 0, Mod.CreateEmptySubMod( empty.Name ) );
+                        var empty = group.OptionList.FirstOrDefault( o => o.Name.Length > 0 && o.ModsJsons.Length == 0 );
+                        if( empty != null )
+                        {
+                            _currentOptionName = empty.Name;
+                            options.Insert( 0, Mod.CreateEmptySubMod( empty.Name ) );
+                        }
                     }
-                }
 
-                Mod.CreateOptionGroup( _currentModDirectory, group.SelectionType, _currentGroupName, groupPriority, groupPriority, description.ToString(), options );
-                ++groupPriority;
+                    Mod.CreateOptionGroup( _currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
+                        description.ToString(), options );
+                    ++groupPriority;
+                }
             }
         }
 

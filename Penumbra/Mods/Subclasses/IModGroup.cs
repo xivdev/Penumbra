@@ -15,6 +15,8 @@ public enum SelectType
 
 public interface IModGroup : IEnumerable< ISubMod >
 {
+    public const int MaxMultiOptions = 32;
+
     public string Name { get; }
     public string Description { get; }
     public SelectType Type { get; }

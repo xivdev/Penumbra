@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
@@ -57,6 +58,11 @@ public partial class Mod
             {
                 foreach( var child in options.Children() )
                 {
+                    if( ret.PrioritizedOptions.Count == IModGroup.MaxMultiOptions )
+                    {
+                        PluginLog.Warning($"Multi Group {ret.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options."  );
+                        break;
+                    }
                     var subMod = new SubMod();
                     subMod.Load( basePath, child, out var priority );
                     ret.PrioritizedOptions.Add( ( subMod, priority ) );

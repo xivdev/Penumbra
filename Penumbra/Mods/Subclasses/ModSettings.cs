@@ -101,7 +101,7 @@ public class ModSettings
         => group.Type switch
         {
             SelectType.Single => ( uint )Math.Min( value, group.Count     - 1 ),
-            SelectType.Multi  => ( uint )( value & ( ( 1 << group.Count ) - 1 ) ),
+            SelectType.Multi  => ( uint )( value & ( ( 1ul << group.Count ) - 1 ) ),
             _                 => value,
         };
 

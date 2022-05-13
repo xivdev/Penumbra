@@ -518,8 +518,13 @@ public partial class ConfigWindow
                 }
 
                 ImGui.TableNextColumn();
+                var canAddGroup = mod.Groups[ groupIdx ].Type != SelectType.Multi || mod.Groups[ groupIdx ].Count < IModGroup.MaxMultiOptions;
+                var validName   = _newOptionName.Length       > 0 && _newOptionNameIdx                            == groupIdx;
+                var tt = canAddGroup
+                    ? validName ? "Add a new option to this group." : "Please enter a name for the new option."
+                    : $"Can not add more than {IModGroup.MaxMultiOptions} options to a multi group.";
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), iconButtonSize,
-                       "Add a new option to this group.", _newOptionName.Length == 0 || _newOptionNameIdx != groupIdx, true ) )
+                       tt, !( canAddGroup && validName ), true ) )
                 {
                     Penumbra.ModManager.AddOption( mod, groupIdx, _newOptionName );
                     _newOptionName = string.Empty;
@@ -598,12 +603,22 @@ public partial class ConfigWindow
                 return;
             }
 
-            foreach( var type in new[] { SelectType.Single, SelectType.Multi } )
+            if( ImGui.Selectable( GroupTypeName( SelectType.Single ), group.Type == SelectType.Single ) )
             {
-                if( ImGui.Selectable( GroupTypeName( type ), @group.Type == type ) )
-                {
-                    Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, type );
-                }
+                Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, SelectType.Single );
+            }
+
+            var       canSwitchToMulti = group.Count <= IModGroup.MaxMultiOptions;
+            using var style            = ImRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, !canSwitchToMulti );
+            if( ImGui.Selectable( GroupTypeName( SelectType.Multi ), group.Type == SelectType.Multi ) && canSwitchToMulti )
+            {
+                Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, SelectType.Multi );
+            }
+
+            style.Pop();
+            if( !canSwitchToMulti )
+            {
+                ImGuiUtil.HoverTooltip( $"Can not convert group to multi group since it has more than {IModGroup.MaxMultiOptions} options." );
             }
         }
 
