@@ -369,61 +369,51 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     private static void DrawHelpPopup()
     {
-        ImGui.SetNextWindowPos( ImGui.GetMainViewport().GetCenter(), ImGuiCond.Always, Vector2.One / 2 );
-        ImGui.SetNextWindowSize( new Vector2( 1000 * ImGuiHelpers.GlobalScale, 34 * ImGui.GetTextLineHeightWithSpacing() ) );
-        using var popup = ImRaii.Popup( "ExtendedHelp", ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.Modal );
-        if( !popup )
+        ImGuiUtil.HelpPopup( "ExtendedHelp", new Vector2( 1000 * ImGuiHelpers.GlobalScale, 33.5f * ImGui.GetTextLineHeightWithSpacing() ), () =>
         {
-            return;
-        }
-
-        ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
-        ImGui.Text( "Mod Selector" );
-        ImGui.BulletText( "Select a mod to obtain more information or change settings." );
-        ImGui.BulletText( "Names are colored according to your config and their current state in the collection:" );
-        using var indent = ImRaii.PushIndent();
-        ImGuiUtil.BulletTextColored( ColorId.EnabledMod.Value(), "enabled in the current collection." );
-        ImGuiUtil.BulletTextColored( ColorId.DisabledMod.Value(), "disabled in the current collection." );
-        ImGuiUtil.BulletTextColored( ColorId.InheritedMod.Value(), "enabled due to inheritance from another collection." );
-        ImGuiUtil.BulletTextColored( ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection." );
-        ImGuiUtil.BulletTextColored( ColorId.UndefinedMod.Value(), "disabled in all inherited collections." );
-        ImGuiUtil.BulletTextColored( ColorId.NewMod.Value(),
-            "newly imported during this session. Will go away when first enabling a mod or when Penumbra is reloaded." );
-        ImGuiUtil.BulletTextColored( ColorId.HandledConflictMod.Value(),
-            "enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved)." );
-        ImGuiUtil.BulletTextColored( ColorId.ConflictingMod.Value(), "enabled and conflicting with another enabled Mod on the same priority." );
-        ImGuiUtil.BulletTextColored( ColorId.FolderExpanded.Value(), "expanded mod folder." );
-        ImGuiUtil.BulletTextColored( ColorId.FolderCollapsed.Value(), "collapsed mod folder" );
-        indent.Pop( 1 );
-        ImGui.BulletText( "Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number." );
-        indent.Push();
-        ImGui.BulletText( "A sort order differing from the mods name will not be displayed, it will just be used for ordering." );
-        ImGui.BulletText(
-            "If the sort order string contains Forward-Slashes ('/'), the preceding substring will be turned into folders automatically." );
-        indent.Pop( 1 );
-        ImGui.BulletText(
-            "You can drag and drop mods and subfolders into existing folders. Dropping them onto mods is the same as dropping them onto the parent of the mod." );
-        ImGui.BulletText( "Right-clicking a folder opens a context menu." );
-        ImGui.BulletText( "Right-clicking empty space allows you to expand or collapse all folders at once." );
-        ImGui.BulletText( "Use the Filter Mods... input at the top to filter the list for mods whose name or path contain the text." );
-        indent.Push();
-        ImGui.BulletText( "You can enter n:[string] to filter only for names, without path." );
-        ImGui.BulletText( "You can enter c:[string] to filter for Changed Items instead." );
-        ImGui.BulletText( "You can enter a:[string] to filter for Mod Authors instead." );
-        indent.Pop( 1 );
-        ImGui.BulletText( "Use the expandable menu beside the input to filter for mods fulfilling specific criteria." );
-        ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
-        ImGui.Text( "Mod Management" );
-        ImGui.BulletText( "You can create empty mods or import TTMP-based mods with the buttons in this row." );
-        ImGui.BulletText(
-            "You can import penumbra-based mods by moving the corresponding folder into your mod directory in a file explorer, then rediscovering mods." );
-        ImGui.BulletText(
-            "If you enable Advanced Options in the Settings tab, you can toggle Edit Mode to manipulate your selected mod even further." );
-        ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
-        ImGui.SetCursorPosX( 400   * ImGuiHelpers.GlobalScale );
-        if( ImGui.Button( "Understood", ImGuiHelpers.ScaledVector2( 200, 0 ) ) )
-        {
-            ImGui.CloseCurrentPopup();
-        }
+            ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
+            ImGui.TextUnformatted( "Mod Selector" );
+            ImGui.BulletText( "Select a mod to obtain more information or change settings." );
+            ImGui.BulletText( "Names are colored according to your config and their current state in the collection:" );
+            using var indent = ImRaii.PushIndent();
+            ImGuiUtil.BulletTextColored( ColorId.EnabledMod.Value(), "enabled in the current collection." );
+            ImGuiUtil.BulletTextColored( ColorId.DisabledMod.Value(), "disabled in the current collection." );
+            ImGuiUtil.BulletTextColored( ColorId.InheritedMod.Value(), "enabled due to inheritance from another collection." );
+            ImGuiUtil.BulletTextColored( ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection." );
+            ImGuiUtil.BulletTextColored( ColorId.UndefinedMod.Value(), "disabled in all inherited collections." );
+            ImGuiUtil.BulletTextColored( ColorId.NewMod.Value(),
+                "newly imported during this session. Will go away when first enabling a mod or when Penumbra is reloaded." );
+            ImGuiUtil.BulletTextColored( ColorId.HandledConflictMod.Value(),
+                "enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved)." );
+            ImGuiUtil.BulletTextColored( ColorId.ConflictingMod.Value(),
+                "enabled and conflicting with another enabled Mod on the same priority." );
+            ImGuiUtil.BulletTextColored( ColorId.FolderExpanded.Value(), "expanded mod folder." );
+            ImGuiUtil.BulletTextColored( ColorId.FolderCollapsed.Value(), "collapsed mod folder" );
+            indent.Pop( 1 );
+            ImGui.BulletText( "Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number." );
+            indent.Push();
+            ImGui.BulletText( "A sort order differing from the mods name will not be displayed, it will just be used for ordering." );
+            ImGui.BulletText(
+                "If the sort order string contains Forward-Slashes ('/'), the preceding substring will be turned into folders automatically." );
+            indent.Pop( 1 );
+            ImGui.BulletText(
+                "You can drag and drop mods and subfolders into existing folders. Dropping them onto mods is the same as dropping them onto the parent of the mod." );
+            ImGui.BulletText( "Right-clicking a folder opens a context menu." );
+            ImGui.BulletText( "Right-clicking empty space allows you to expand or collapse all folders at once." );
+            ImGui.BulletText( "Use the Filter Mods... input at the top to filter the list for mods whose name or path contain the text." );
+            indent.Push();
+            ImGui.BulletText( "You can enter n:[string] to filter only for names, without path." );
+            ImGui.BulletText( "You can enter c:[string] to filter for Changed Items instead." );
+            ImGui.BulletText( "You can enter a:[string] to filter for Mod Authors instead." );
+            indent.Pop( 1 );
+            ImGui.BulletText( "Use the expandable menu beside the input to filter for mods fulfilling specific criteria." );
+            ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
+            ImGui.TextUnformatted( "Mod Management" );
+            ImGui.BulletText( "You can create empty mods or import TTMP-based mods with the buttons in this row." );
+            ImGui.BulletText(
+                "You can import penumbra-based mods by moving the corresponding folder into your mod directory in a file explorer, then rediscovering mods." );
+            ImGui.BulletText(
+                "If you enable Advanced Options in the Settings tab, you can toggle Edit Mode to manipulate your selected mod even further." );
+        } );
     }
 }

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
-using Dalamud.Interface.Components;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -204,7 +203,35 @@ public partial class ConfigWindow
                 _newInheritance = null;
             }
 
-            ImGuiComponents.HelpMarker( tt );
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.QuestionCircle.ToIconString(), _window._iconButtonSize, "What is Inheritance?",
+                   false, true ) )
+            {
+                ImGui.OpenPopup( "InheritanceHelp" );
+            }
+
+            ImGuiUtil.HelpPopup( "InheritanceHelp", new Vector2( 1000 * ImGuiHelpers.GlobalScale, 21 * ImGui.GetTextLineHeightWithSpacing() ), () =>
+            {
+                ImGui.NewLine();
+                ImGui.TextWrapped( "Inheritance is a way to use a baseline of mods across multiple collections, without needing to change all those collections if you want to add a single mod." );
+                ImGui.NewLine();
+                ImGui.TextUnformatted( "Every mod in a collection can have three basic states: 'Enabled', 'Disabled' and 'Unconfigured'." );
+                ImGui.BulletText( "If the mod is 'Enabled' or 'Disabled', it does not matter if the collection inherits from other collections." );
+                ImGui.BulletText( "If the mod is unconfigured, those inherited-from collections are checked in the order displayed here, including sub-inheritances." );
+                ImGui.BulletText( "If a collection is found in which the mod is either 'Enabled' or 'Disabled', the settings from this collection will be used." );
+                ImGui.BulletText( "If no such collection is found, the mod will be treated as disabled." );
+                ImGui.BulletText( "Highlighted collections in the left box are never reached because they are already checked in a sub-inheritance before." );
+                ImGui.NewLine();
+                ImGui.TextUnformatted( "Example"  );
+                ImGui.BulletText( "Collection A has the Bibo+ body and a Hempen Camise mod enabled." );
+                ImGui.BulletText( "Collection B inherits from A, leaves Bibo+ unconfigured, but has the Hempen Camise enabled with different settings than A." );
+                ImGui.BulletText( "Collection C also inherits from A, has Bibo+ explicitly disabled and the Hempen Camise unconfigured." );
+                ImGui.BulletText( "Collection D inherits from C and then B and leaves everything unconfigured." );
+                using var indent = ImRaii.PushIndent();
+                ImGui.BulletText( "B uses Bibo+ settings from A and its own Hempen Camise settings." );
+                ImGui.BulletText( "C has Bibo+ disabled and uses A's Hempen Camise settings." );
+                ImGui.BulletText( "D has Bibo+ disabled and uses A's Hempen Camise settings, not B's. It traversed the collections in Order D -> (C -> A) -> (B -> A)." );
+            } );
         }
 
         // Draw the combo to select new potential inheritances.
