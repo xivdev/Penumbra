@@ -1,23 +1,21 @@
 using System;
 using System.Numerics;
 using Dalamud.Logging;
-using Dalamud.Memory;
 using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
-using Penumbra.Interop;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Files;
 
 public readonly struct ImcEntry : IEquatable< ImcEntry >
 {
-    public readonly  byte   MaterialId;
-    public readonly  byte   DecalId;
+    public byte MaterialId { get; init; }
+    public byte DecalId { get; init; }
     private readonly ushort _attributeAndSound;
-    public readonly  byte   VfxId;
-    public readonly  byte   MaterialAnimationId;
+    public byte VfxId { get; init; }
+    public byte MaterialAnimationId { get; init; }
 
     public ushort AttributeMask
     {

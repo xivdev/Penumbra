@@ -12,14 +12,18 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout( LayoutKind.Sequential, Pack = 1 )]
 public readonly struct EqdpManipulation : IMetaManipulation< EqdpManipulation >
 {
-    public readonly EqdpEntry Entry;
+    public EqdpEntry Entry { get; init; }
+
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly Gender    Gender;
+    public Gender Gender { get; init; }
+
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly ModelRace Race;
-    public readonly ushort    SetId;
+    public ModelRace Race { get; init; }
+
+    public ushort SetId { get; init; }
+
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly EquipSlot Slot;
+    public EquipSlot Slot { get; init; }
 
     public EqdpManipulation( EqdpEntry entry, EquipSlot slot, Gender gender, ModelRace race, ushort setId )
     {

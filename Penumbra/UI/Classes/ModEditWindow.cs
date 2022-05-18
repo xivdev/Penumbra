@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
@@ -10,17 +9,18 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.Meta.Manipulations;
+using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.Util;
 
 namespace Penumbra.UI.Classes;
 
-public class ModEditWindow : Window, IDisposable
+public partial class ModEditWindow : Window, IDisposable
 {
     private const string      WindowBaseLabel = "###SubModEdit";
     private       Mod.Editor? _editor;
     private       Mod?        _mod;
+    private       Vector2     _iconSize = Vector2.Zero;
 
     public void ChangeMod( Mod mod )
     {
@@ -54,6 +54,7 @@ public class ModEditWindow : Window, IDisposable
             return;
         }
 
+        _iconSize = new Vector2( ImGui.GetFrameHeight() );
         DrawFileTab();
         DrawMetaTab();
         DrawSwapTab();
@@ -117,8 +118,9 @@ public class ModEditWindow : Window, IDisposable
                     : disabled
                         ? "The suffix is invalid."
                         : _materialSuffixFrom.Length == 0
-                            ? _raceCode == GenderRace.Unknown ? "Convert all skin material suffices to the target."
-                                                                : "Convert all skin material suffices for the given race code to the target."
+                            ? _raceCode == GenderRace.Unknown
+                                ? "Convert all skin material suffices to the target."
+                                : "Convert all skin material suffices for the given race code to the target."
                             : _raceCode == GenderRace.Unknown
                                 ? $"Convert all skin material suffices that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'."
                                 : $"Convert all skin material suffices for the given race code that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'.";
@@ -374,6 +376,7 @@ public class ModEditWindow : Window, IDisposable
                isDefaultOption ) )
         {
             _editor.SetSubMod( -1, 0 );
+            isDefaultOption = true;
         }
 
         ImGui.SameLine();
@@ -395,8 +398,7 @@ public class ModEditWindow : Window, IDisposable
             return $"{group.Name}: {group[ _editor.OptionIdx ].Name}";
         }
 
-        var       groupLabel = GetLabel();
-        using var combo      = ImRaii.Combo( "##optionSelector", groupLabel, ImGuiComboFlags.NoArrowButton );
+        using var combo      = ImRaii.Combo( "##optionSelector", GetLabel(), ImGuiComboFlags.NoArrowButton );
         if( !combo )
         {
             return;
@@ -497,74 +499,9 @@ public class ModEditWindow : Window, IDisposable
         }
     }
 
-    private void DrawMetaTab()
-    {
-        using var tab = ImRaii.TabItem( "Meta Manipulations" );
-        if( !tab )
-        {
-            return;
-        }
-
-        DrawOptionSelectHeader();
-
-        var setsEqual = _editor!.CurrentManipulations.SetEquals( _editor.CurrentOption.Manipulations );
-        var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
-        ImGui.NewLine();
-        if( ImGuiUtil.DrawDisabledButton( "Apply Changes", Vector2.Zero, tt, setsEqual ) )
-        {
-            _editor.ApplyManipulations();
-        }
-
-        ImGui.SameLine();
-        tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
-        if( ImGuiUtil.DrawDisabledButton( "Revert Changes", Vector2.Zero, tt, setsEqual ) )
-        {
-            _editor.RevertManipulations();
-        }
-
-        using var child = ImRaii.Child( "##meta", -Vector2.One, true );
-        if( !child )
-        {
-            return;
-        }
-
-        using var list = ImRaii.Table( "##table", 3 );
-        if( !list )
-        {
-            return;
-        }
-
-        foreach( var manip in _editor!.CurrentManipulations )
-        {
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted( manip.ManipulationType.ToString() );
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted( manip.ManipulationType switch
-            {
-                MetaManipulation.Type.Imc  => manip.Imc.ToString(),
-                MetaManipulation.Type.Eqdp => manip.Eqdp.ToString(),
-                MetaManipulation.Type.Eqp  => manip.Eqp.ToString(),
-                MetaManipulation.Type.Est  => manip.Est.ToString(),
-                MetaManipulation.Type.Gmp  => manip.Gmp.ToString(),
-                MetaManipulation.Type.Rsp  => manip.Rsp.ToString(),
-                _                          => string.Empty,
-            } );
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted( manip.ManipulationType switch
-            {
-                MetaManipulation.Type.Imc  => manip.Imc.Entry.ToString(),
-                MetaManipulation.Type.Eqdp => manip.Eqdp.Entry.ToString(),
-                MetaManipulation.Type.Eqp  => manip.Eqp.Entry.ToString(),
-                MetaManipulation.Type.Est  => manip.Est.Entry.ToString(),
-                MetaManipulation.Type.Gmp  => manip.Gmp.Entry.ToString(),
-                MetaManipulation.Type.Rsp  => manip.Rsp.Entry.ToString(),
-                _                          => string.Empty,
-            } );
-        }
-    }
-
     private string _newSwapKey   = string.Empty;
     private string _newSwapValue = string.Empty;
+
     private void DrawSwapTab()
     {
         using var tab = ImRaii.TabItem( "File Swaps" );

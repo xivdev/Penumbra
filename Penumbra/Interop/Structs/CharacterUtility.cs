@@ -55,7 +55,7 @@ public unsafe struct CharacterUtility
                 1404 => EqdpStartIdx + 25,
                 9104 => EqdpStartIdx + 26,
                 9204 => EqdpStartIdx + 27,
-                _    => throw new ArgumentException(),
+                _    => -1,
             };
 
     [FieldOffset( 0 )]

@@ -19,18 +19,18 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
         Head = CharacterUtility.HeadEstIdx,
     }
 
-    public readonly ushort Entry; // SkeletonIdx.
+    public ushort Entry { get; init; } // SkeletonIdx.
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly Gender Gender;
+    public Gender Gender { get; init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly ModelRace Race;
+    public ModelRace Race { get; init; }
 
-    public readonly ushort SetId;
+    public ushort SetId { get; init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly EstType Slot;
+    public EstType Slot { get; init; }
 
     [JsonConstructor]
     public EstManipulation( Gender gender, ModelRace race, EstType slot, ushort setId, ushort entry )

@@ -21,7 +21,7 @@ public unsafe partial class PathResolver
     // and use the last game object that called EnableDraw to link them.
     public delegate IntPtr CharacterBaseCreateDelegate( uint a, IntPtr b, IntPtr c, byte d );
 
-    [Signature( "E8 ?? ?? ?? ?? 48 85 C0 74 21 C7 40" )]
+    [Signature( "E8 ?? ?? ?? ?? 48 85 C0 74 21 C7 40", DetourName = "CharacterBaseCreateDetour" )]
     public Hook< CharacterBaseCreateDelegate >? CharacterBaseCreateHook;
 
     private ModCollection? _lastCreatedCollection;

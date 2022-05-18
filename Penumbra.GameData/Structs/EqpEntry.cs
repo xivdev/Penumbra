@@ -198,12 +198,14 @@ public static class Eqp
             EqpEntry._55                   => EquipSlot.Head,
             EqpEntry.HeadShowHrothgarHat   => EquipSlot.Head,
             EqpEntry.HeadShowVieraHat      => EquipSlot.Head,
-            EqpEntry._58                   => EquipSlot.Head,
-            EqpEntry._59                   => EquipSlot.Head,
-            EqpEntry._60                   => EquipSlot.Head,
-            EqpEntry._61                   => EquipSlot.Head,
-            EqpEntry._62                   => EquipSlot.Head,
-            EqpEntry._63                   => EquipSlot.Head,
+
+            // Currently unused.
+            EqpEntry._58                   => EquipSlot.Unknown,
+            EqpEntry._59                   => EquipSlot.Unknown,
+            EqpEntry._60                   => EquipSlot.Unknown,
+            EqpEntry._61                   => EquipSlot.Unknown,
+            EqpEntry._62                   => EquipSlot.Unknown,
+            EqpEntry._63                   => EquipSlot.Unknown,
 
             _ => EquipSlot.Unknown,
         };
@@ -299,7 +301,7 @@ public static class Eqp
     public static readonly EqpEntry[] EqpAttributesFeet  = GetEntriesForSlot( EquipSlot.Feet );
     public static readonly EqpEntry[] EqpAttributesHead  = GetEntriesForSlot( EquipSlot.Head );
 
-    public static IReadOnlyDictionary< EquipSlot, EqpEntry[] > EqpAttributes = new Dictionary< EquipSlot, EqpEntry[] >()
+    public static readonly IReadOnlyDictionary< EquipSlot, EqpEntry[] > EqpAttributes = new Dictionary< EquipSlot, EqpEntry[] >()
     {
         [ EquipSlot.Body ]  = EqpAttributesBody,
         [ EquipSlot.Legs ]  = EqpAttributesLegs,

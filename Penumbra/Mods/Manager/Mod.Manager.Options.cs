@@ -278,7 +278,7 @@ public sealed partial class Mod
         public void OptionSetManipulations( Mod mod, int groupIdx, int optionIdx, HashSet< MetaManipulation > manipulations )
         {
             var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            if( subMod.Manipulations.SetEquals( manipulations ) )
+            if( subMod.Manipulations.All( m => manipulations.TryGetValue( m, out var old ) && old.EntryEquals( m ) ) )
             {
                 return;
             }

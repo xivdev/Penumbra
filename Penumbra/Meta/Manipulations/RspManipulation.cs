@@ -11,13 +11,13 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout( LayoutKind.Sequential, Pack = 1 )]
 public readonly struct RspManipulation : IMetaManipulation< RspManipulation >
 {
-    public readonly float Entry;
+    public float Entry { get; init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly SubRace SubRace;
+    public SubRace SubRace { get; init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly RspAttribute Attribute;
+    public RspAttribute Attribute { get; init; }
 
     public RspManipulation( SubRace subRace, RspAttribute attribute, float entry )
     {

@@ -9,8 +9,8 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout( LayoutKind.Sequential, Pack = 1 )]
 public readonly struct GmpManipulation : IMetaManipulation< GmpManipulation >
 {
-    public readonly GmpEntry Entry;
-    public readonly ushort   SetId;
+    public GmpEntry Entry { get; init; }
+    public ushort SetId { get; init; }
 
     public GmpManipulation( GmpEntry entry, ushort setId )
     {

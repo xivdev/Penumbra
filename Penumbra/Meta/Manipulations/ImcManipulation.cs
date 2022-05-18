@@ -11,19 +11,19 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout( LayoutKind.Sequential, Pack = 1 )]
 public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
 {
-    public readonly ImcEntry Entry;
-    public readonly ushort   PrimaryId;
-    public readonly ushort   Variant;
-    public readonly ushort   SecondaryId;
+    public ImcEntry Entry { get; init; }
+    public ushort PrimaryId { get; init; }
+    public ushort Variant { get; init; }
+    public ushort SecondaryId { get; init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly ObjectType ObjectType;
+    public ObjectType ObjectType { get; init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly EquipSlot EquipSlot;
+    public EquipSlot EquipSlot { get; init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly BodySlot BodySlot;
+    public BodySlot BodySlot { get; init; }
 
     public ImcManipulation( EquipSlot equipSlot, ushort variant, ushort primaryId, ImcEntry entry )
     {
@@ -52,18 +52,23 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
     internal ImcManipulation( ObjectType objectType, BodySlot bodySlot, ushort primaryId, ushort secondaryId, ushort variant,
         EquipSlot equipSlot, ImcEntry entry )
     {
-        Entry       = entry;
-        ObjectType  = objectType;
-        BodySlot    = bodySlot;
-        PrimaryId   = primaryId;
-        SecondaryId = secondaryId;
-        Variant     = variant;
-        EquipSlot   = equipSlot;
+        Entry      = entry;
+        ObjectType = objectType;
+        PrimaryId  = primaryId;
+        Variant    = variant;
+        if( objectType is ObjectType.Accessory or ObjectType.Equipment )
+        {
+            BodySlot    = BodySlot.Unknown;
+            SecondaryId = 0;
+            EquipSlot   = equipSlot;
+        }
+        else
+        {
+            BodySlot    = bodySlot;
+            SecondaryId = secondaryId;
+            EquipSlot   = EquipSlot.Unknown;
+        }
     }
-
-    public ImcManipulation( ImcManipulation copy, ImcEntry entry )
-        : this( copy.ObjectType, copy.BodySlot, copy.PrimaryId, copy.SecondaryId, copy.Variant, copy.EquipSlot, entry )
-    {}
 
     public override string ToString()
         => ObjectType is ObjectType.Equipment or ObjectType.Accessory

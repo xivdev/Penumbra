@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -95,6 +96,11 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             {
                 PluginLog.Error( $"Could not create directory for new Mod {_newModName}:\n{e}" );
             }
+        }
+
+        while( _modsToAdd.TryDequeue( out var dir ) )
+        {
+            Penumbra.ModManager.AddMod( dir );
         }
     }
 
@@ -212,9 +218,12 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         }
     }
 
+    // Mods need to be added thread-safely outside of iteration.
+    private readonly ConcurrentQueue< DirectoryInfo > _modsToAdd = new();
+
     // Clean up invalid directory if necessary.
     // Add successfully extracted mods.
-    private static void AddNewMod( FileInfo file, DirectoryInfo? dir, Exception? error )
+    private void AddNewMod( FileInfo file, DirectoryInfo? dir, Exception? error )
     {
         if( error != null )
         {
@@ -237,7 +246,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         }
         else if( dir != null )
         {
-            Penumbra.ModManager.AddMod( dir );
+            _modsToAdd.Enqueue( dir );
         }
     }
 

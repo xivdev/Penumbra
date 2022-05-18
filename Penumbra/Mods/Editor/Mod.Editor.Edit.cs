@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using Penumbra.GameData.ByteString;
-using Penumbra.Meta.Manipulations;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
@@ -11,7 +10,7 @@ public partial class Mod
     public partial class Editor
     {
         public int GroupIdx { get; private set; } = -1;
-        public int OptionIdx { get; private set; } = 0;
+        public int OptionIdx { get; private set; }
 
         private IModGroup? _modGroup;
         private SubMod     _subMod;
@@ -21,7 +20,6 @@ public partial class Mod
 
         public readonly Dictionary< Utf8GamePath, FullPath > CurrentFiles         = new();
         public readonly Dictionary< Utf8GamePath, FullPath > CurrentSwaps         = new();
-        public readonly HashSet< MetaManipulation >          CurrentManipulations = new();
 
         public void SetSubMod( int groupIdx, int optionIdx )
         {
@@ -61,17 +59,6 @@ public partial class Mod
         public void RevertSwaps()
         {
             CurrentSwaps.SetTo( _subMod.FileSwaps );
-        }
-
-        public void ApplyManipulations()
-        {
-            Penumbra.ModManager.OptionSetManipulations( _mod, GroupIdx, OptionIdx, CurrentManipulations.ToHashSet() );
-        }
-
-        public void RevertManipulations()
-        {
-            CurrentManipulations.Clear();
-            CurrentManipulations.UnionWith( _subMod.Manipulations );
         }
     }
 }

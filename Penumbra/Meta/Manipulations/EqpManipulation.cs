@@ -14,12 +14,12 @@ namespace Penumbra.Meta.Manipulations;
 public readonly struct EqpManipulation : IMetaManipulation< EqpManipulation >
 {
     [JsonConverter( typeof( ForceNumericFlagEnumConverter ) )]
-    public readonly EqpEntry Entry;
+    public EqpEntry Entry { get; init; }
 
-    public readonly ushort SetId;
+    public ushort SetId { get; init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public readonly EquipSlot Slot;
+    public EquipSlot Slot { get; init; }
 
     public EqpManipulation( EqpEntry entry, EquipSlot slot, ushort setId )
     {
