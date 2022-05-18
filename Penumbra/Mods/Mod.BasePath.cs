@@ -33,6 +33,7 @@ public partial class Mod
         {
             // Can not be base path not existing because that is checked before.
             PluginLog.Error( $"Mod at {modPath} without name is not supported." );
+            return null;
         }
 
         return mod;

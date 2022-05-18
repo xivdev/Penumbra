@@ -430,6 +430,12 @@ public partial class ModEditWindow : Window, IDisposable
             return;
         }
 
+        if( ImGui.Button( "Refresh" ) )
+        {
+            _editor!.Dispose();
+            _editor = new Mod.Editor( _mod! );
+        }
+
         if( _editor!.UnusedFiles.Count == 0 )
         {
             ImGui.NewLine();
@@ -437,6 +443,7 @@ public partial class ModEditWindow : Window, IDisposable
         }
         else
         {
+            ImGui.SameLine();
             if( ImGui.Button( "Add Unused Files to Default" ) )
             {
                 _editor.AddUnusedPathsToDefault();

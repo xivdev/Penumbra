@@ -54,7 +54,7 @@ public partial class Mod
         mod.Description = description ?? mod.Description;
         mod.Version     = version     ?? mod.Version;
         mod.Website     = website     ?? mod.Website;
-        mod.SaveMeta();
+        mod.SaveMetaFile(); // Not delayed.
     }
 
     // Create a file for an option group from given data.

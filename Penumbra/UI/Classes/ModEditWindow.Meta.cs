@@ -43,18 +43,25 @@ public partial class ModEditWindow
             _editor.RevertManipulations();
         }
 
+        ImGui.SameLine();
+        AddFromClipboardButton();
+        ImGui.SameLine();
+        SetFromClipboardButton();
+        ImGui.SameLine();
+        CopyToClipboardButton( "Copy all current manipulations to clipboard.", _iconSize, _editor.Meta.Recombine() );
+
         using var child = ImRaii.Child( "##meta", -Vector2.One, true );
         if( !child )
         {
             return;
         }
 
-        DrawEditHeader( _editor.Meta.Eqp, "Equipment Parameter Edits (EQP)###EQP", 4, EqpRow.Draw, EqpRow.DrawNew );
-        DrawEditHeader( _editor.Meta.Eqdp, "Racial Model Edits (EQDP)###EQDP", 6, EqdpRow.Draw, EqdpRow.DrawNew );
-        DrawEditHeader( _editor.Meta.Imc, "Variant Edits (IMC)###IMC", 8, ImcRow.Draw, ImcRow.DrawNew );
-        DrawEditHeader( _editor.Meta.Est, "Extra Skeleton Parameters (EST)###EST", 6, EstRow.Draw, EstRow.DrawNew );
-        DrawEditHeader( _editor.Meta.Gmp, "Visor/Gimmick Edits (GMP)###GMP", 6, GmpRow.Draw, GmpRow.DrawNew );
-        DrawEditHeader( _editor.Meta.Rsp, "Racial Scaling Edits (RSP)###RSP", 4, RspRow.Draw, RspRow.DrawNew );
+        DrawEditHeader( _editor.Meta.Eqp, "Equipment Parameter Edits (EQP)###EQP", 5, EqpRow.Draw, EqpRow.DrawNew );
+        DrawEditHeader( _editor.Meta.Eqdp, "Racial Model Edits (EQDP)###EQDP", 7, EqdpRow.Draw, EqdpRow.DrawNew );
+        DrawEditHeader( _editor.Meta.Imc, "Variant Edits (IMC)###IMC", 9, ImcRow.Draw, ImcRow.DrawNew );
+        DrawEditHeader( _editor.Meta.Est, "Extra Skeleton Parameters (EST)###EST", 7, EstRow.Draw, EstRow.DrawNew );
+        DrawEditHeader( _editor.Meta.Gmp, "Visor/Gimmick Edits (GMP)###GMP", 7, GmpRow.Draw, GmpRow.DrawNew );
+        DrawEditHeader( _editor.Meta.Rsp, "Racial Scaling Edits (RSP)###RSP", 5, RspRow.Draw, RspRow.DrawNew );
     }
 
 
@@ -67,12 +74,12 @@ public partial class ModEditWindow
         {
             return;
         }
-
         using( var table = ImRaii.Table( label, numColumns, flags ) )
         {
             if( table )
             {
                 drawNew( _editor!, _iconSize );
+                ImGui.Separator();
                 foreach( var (item, index) in items.ToArray().WithIndex() )
                 {
                     using var id = ImRaii.PushId( index );
@@ -93,6 +100,8 @@ public partial class ModEditWindow
 
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
+            ImGui.TableNextColumn();
+            CopyToClipboardButton( "Copy all current EQP manipulations to clipboard.", iconSize, editor.Meta.Eqp.Select( m => (MetaManipulation) m  ) );
             ImGui.TableNextColumn();
             var canAdd       = editor.Meta.CanAdd( _new );
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
@@ -125,15 +134,12 @@ public partial class ModEditWindow
                 Checkmark( string.Empty, flag.ToLocalName(), value, value, out _ );
                 ImGui.SameLine();
             }
+            ImGui.NewLine();
         }
 
         public static void Draw( EqpManipulation meta, Mod.Editor editor, Vector2 iconSize )
         {
-            ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this meta edit.", false, true ) )
-            {
-                editor.Meta.Delete( meta );
-            }
+            DrawMetaButtons( meta, editor, iconSize );
 
             // Identifier
             ImGui.TableNextColumn();
@@ -172,6 +178,8 @@ public partial class ModEditWindow
 
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
+            ImGui.TableNextColumn();
+            CopyToClipboardButton( "Copy all current EQDP manipulations to clipboard.", iconSize, editor.Meta.Eqdp.Select( m => ( MetaManipulation )m ) );
             ImGui.TableNextColumn();
             var raceCode      = Names.CombinedRace( _new.Gender, _new.Race );
             var validRaceCode = CharacterUtility.EqdpIdx( raceCode, false ) >= 0;
@@ -221,11 +229,7 @@ public partial class ModEditWindow
 
         public static void Draw( EqdpManipulation meta, Mod.Editor editor, Vector2 iconSize )
         {
-            ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this meta edit.", false, true ) )
-            {
-                editor.Meta.Delete( meta );
-            }
+            DrawMetaButtons( meta, editor, iconSize );
 
             // Identifier
             ImGui.TableNextColumn();
@@ -284,6 +288,8 @@ public partial class ModEditWindow
 
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
+            ImGui.TableNextColumn();
+            CopyToClipboardButton( "Copy all current IMC manipulations to clipboard.", iconSize, editor.Meta.Imc.Select( m => ( MetaManipulation )m ) );
             ImGui.TableNextColumn();
             var defaultEntry = GetDefault( _new );
             var canAdd = defaultEntry != null && editor.Meta.CanAdd( _new );
@@ -354,11 +360,7 @@ public partial class ModEditWindow
 
         public static void Draw( ImcManipulation meta, Mod.Editor editor, Vector2 iconSize )
         {
-            ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this meta edit.", false, true ) )
-            {
-                editor.Meta.Delete( meta );
-            }
+            DrawMetaButtons( meta, editor, iconSize );
 
             // Identifier
             ImGui.TableNextColumn();
@@ -439,6 +441,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
+            CopyToClipboardButton( "Copy all current EST manipulations to clipboard.", iconSize, editor.Meta.Est.Select( m => ( MetaManipulation )m ) );
+            ImGui.TableNextColumn();
             var canAdd       = editor.Meta.CanAdd( _new );
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
             var defaultEntry = EstFile.GetDefault( _new.Slot, Names.CombinedRace( _new.Gender, _new.Race ), _new.SetId );
@@ -479,11 +483,7 @@ public partial class ModEditWindow
 
         public static void Draw( EstManipulation meta, Mod.Editor editor, Vector2 iconSize )
         {
-            ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this meta edit.", false, true ) )
-            {
-                editor.Meta.Delete( meta );
-            }
+            DrawMetaButtons( meta, editor, iconSize );
 
             // Identifier
             ImGui.TableNextColumn();
@@ -526,6 +526,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
+            CopyToClipboardButton( "Copy all current GMP manipulations to clipboard.", iconSize, editor.Meta.Gmp.Select( m => ( MetaManipulation )m ) );
+            ImGui.TableNextColumn();
             var canAdd       = editor.Meta.CanAdd( _new );
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
             var defaultEntry = ExpandedGmpFile.GetDefault( _new.SetId );
@@ -563,11 +565,7 @@ public partial class ModEditWindow
 
         public static void Draw( GmpManipulation meta, Mod.Editor editor, Vector2 iconSize )
         {
-            ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this meta edit.", false, true ) )
-            {
-                editor.Meta.Delete( meta );
-            }
+            DrawMetaButtons( meta, editor, iconSize );
 
             // Identifier
             ImGui.TableNextColumn();
@@ -635,6 +633,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
+            CopyToClipboardButton( "Copy all current RSP manipulations to clipboard.", iconSize, editor.Meta.Rsp.Select( m => ( MetaManipulation )m ) );
+            ImGui.TableNextColumn();
             var canAdd       = editor.Meta.CanAdd( _new );
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
             var defaultEntry = CmpFile.GetDefault( _new.SubRace, _new.Attribute );
@@ -664,11 +664,7 @@ public partial class ModEditWindow
 
         public static void Draw( RspManipulation meta, Mod.Editor editor, Vector2 iconSize )
         {
-            ImGui.TableNextColumn();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this meta edit.", false, true ) )
-            {
-                editor.Meta.Delete( meta );
-            }
+            DrawMetaButtons( meta, editor, iconSize );
 
             // Identifier
             ImGui.TableNextColumn();
@@ -769,5 +765,64 @@ public partial class ModEditWindow
         ImGuiUtil.HoverTooltip( tooltip );
 
         return newValue != currentValue;
+    }
+
+    private const byte CurrentManipulationVersion = 0;
+
+    private static void CopyToClipboardButton( string tooltip, Vector2 iconSize, IEnumerable< MetaManipulation > manipulations )
+    {
+        if( !ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Clipboard.ToIconString(), iconSize, tooltip, false, true ) )
+        {
+            return;
+        }
+
+        var text = Functions.ToCompressedBase64( manipulations, CurrentManipulationVersion );
+        if( text.Length > 0 )
+        {
+            ImGui.SetClipboardText( text );
+        }
+    }
+
+    private void AddFromClipboardButton( )
+    {
+        if( ImGui.Button( "Add from Clipboard" ) )
+        {
+            var clipboard = ImGui.GetClipboardText();
+            var version   = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
+            if( version == CurrentManipulationVersion && manips != null)
+            {
+                foreach( var manip in manips )
+                    _editor!.Meta.Set( manip );
+            }
+        }
+        ImGuiUtil.HoverTooltip( "Try to add meta manipulations currently stored in the clipboard to the current manipulations.\nOverwrites already existing manipulations." );
+    }
+
+    private void SetFromClipboardButton()
+    {
+        if( ImGui.Button( "Set from Clipboard" ) )
+        {
+            var clipboard = ImGui.GetClipboardText();
+            var version   = Functions.FromCompressedBase64<MetaManipulation[]>( clipboard, out var manips );
+            if( version == CurrentManipulationVersion && manips != null )
+            {
+                _editor!.Meta.Clear();
+                foreach( var manip in manips )
+                    _editor!.Meta.Set( manip );
+            }
+        }
+        ImGuiUtil.HoverTooltip( "Try to set the current meta manipulations to the set currently stored in the clipboard.\nRemoves all other manipulations." );
+    }
+
+    private static void DrawMetaButtons( MetaManipulation meta, Mod.Editor editor, Vector2 iconSize )
+    {
+        ImGui.TableNextColumn();
+        CopyToClipboardButton( "Copy this manipulation to clipboard.", iconSize, Array.Empty<MetaManipulation>().Append( meta ) );
+
+        ImGui.TableNextColumn();
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this meta manipulation.", false, true ) )
+        {
+            editor.Meta.Delete( meta );
+        }
     }
 }

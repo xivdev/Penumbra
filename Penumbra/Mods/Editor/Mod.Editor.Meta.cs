@@ -134,20 +134,19 @@ public partial class Mod
                 Changes = false;
             }
 
-            private HashSet< MetaManipulation > Recombine()
+            public IEnumerable< MetaManipulation > Recombine()
                 => _imc.Select( m => ( MetaManipulation )m )
                    .Concat( _eqdp.Select( m => ( MetaManipulation )m ) )
                    .Concat( _eqp.Select( m => ( MetaManipulation )m ) )
                    .Concat( _est.Select( m => ( MetaManipulation )m ) )
                    .Concat( _gmp.Select( m => ( MetaManipulation )m ) )
-                   .Concat( _rsp.Select( m => ( MetaManipulation )m ) )
-                   .ToHashSet();
+                   .Concat( _rsp.Select( m => ( MetaManipulation )m ) );
 
             public void Apply( Mod mod, int groupIdx, int optionIdx )
             {
                 if( Changes )
                 {
-                    Penumbra.ModManager.OptionSetManipulations( mod, groupIdx, optionIdx, Recombine() );
+                    Penumbra.ModManager.OptionSetManipulations( mod, groupIdx, optionIdx, Recombine().ToHashSet() );
                     Changes = false;
                 }
             }

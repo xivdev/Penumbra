@@ -224,10 +224,9 @@ public partial class ModCollection
                     OnModAddedActive( mod.TotalManipulations > 0 );
                     break;
                 case ModPathChangeType.Deleted:
-                    var settings = new List< ModSettings? >( _collections.Count );
+                    var settings = this.Select( c => c[mod.Index].Settings ).ToList();
                     foreach( var collection in this )
                     {
-                        settings.Add( collection._settings[ mod.Index ] );
                         collection.RemoveMod( mod, mod.Index );
                     }
 
