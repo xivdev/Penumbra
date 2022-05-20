@@ -95,7 +95,7 @@ public partial class ConfigWindow
             return;
         }
 
-        foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ) )
+        foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ).OrderBy( c => c.Name ) )
         {
             using var id = ImRaii.PushId( collection.Index );
             if( ImGui.Selectable( collection.Name, collection == current ) )

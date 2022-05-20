@@ -147,7 +147,7 @@ public partial class ConfigWindow
 
             DrawDefaultCollectionSelector();
 
-            foreach( var name in Penumbra.CollectionManager.Characters.Keys.ToArray() )
+            foreach( var name in Penumbra.CollectionManager.Characters.Keys.OrderBy( k => k ).ToArray() )
             {
                 using var id = ImRaii.PushId( name );
                 DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, ModCollection.Type.Character, true, name );
