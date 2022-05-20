@@ -16,7 +16,7 @@ public unsafe class CharacterUtility : IDisposable
     // The initial function in which all the character resources get loaded.
     public delegate void LoadDataFilesDelegate( Structs.CharacterUtility* characterUtility );
 
-    [Signature( "E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2" )]
+    [Signature( "E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2", DetourName = "LoadDataFilesDetour")]
     public Hook< LoadDataFilesDelegate > LoadDataFilesHook = null!;
 
     public Structs.CharacterUtility* Address
@@ -57,7 +57,7 @@ public unsafe class CharacterUtility : IDisposable
     {
         SignatureHelper.Initialise( this );
 
-        if( Address->EqpResource != null )
+        if( Address->EqpResource != null && Address->EqpResource->Data != null )
         {
             LoadDefaultResources();
         }
