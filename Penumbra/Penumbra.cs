@@ -23,11 +23,32 @@ using Penumbra.Mods;
 
 namespace Penumbra;
 
-public class Penumbra : IDalamudPlugin
+public class MainClass : IDalamudPlugin
 {
-    public string Name
-        => "Penumbra";
+    private          Penumbra?        _penumbra;
+    private readonly CharacterUtility _characterUtility;
 
+    public MainClass( DalamudPluginInterface pluginInterface )
+    {
+        Dalamud.Initialize( pluginInterface );
+        _characterUtility = new CharacterUtility();
+        _characterUtility.LoadingFinished += ()
+            => _penumbra = new Penumbra( _characterUtility );
+    }
+
+    public void Dispose()
+    {
+        _penumbra?.Dispose();
+        _characterUtility.Dispose();
+    }
+
+    public string Name
+        => Penumbra.Name;
+}
+
+public class Penumbra : IDisposable
+{
+    public const  string Name        = "Penumbra";
     private const string CommandName = "/penumbra";
 
     public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
@@ -60,9 +81,10 @@ public class Penumbra : IDalamudPlugin
 
     internal WebServer? WebServer;
 
-    public Penumbra( DalamudPluginInterface pluginInterface )
+    public Penumbra( CharacterUtility characterUtility )
     {
-        Dalamud.Initialize( pluginInterface );
+        CharacterUtility = characterUtility;
+
         Framework = new FrameworkManager();
         GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
         Backup.CreateBackup( PenumbraBackupFiles() );
@@ -75,7 +97,6 @@ public class Penumbra : IDalamudPlugin
         }
 
         ResidentResources = new ResidentResourceManager();
-        CharacterUtility  = new CharacterUtility();
         Redirects         = new SimpleRedirectManager();
         MetaFileManager   = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
@@ -94,9 +115,6 @@ public class Penumbra : IDalamudPlugin
 
         ResidentResources.Reload();
 
-        Api = new PenumbraApi( this );
-        Ipc = new PenumbraIpc( pluginInterface, Api );
-        SubscribeItemLinks();
         SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
 
         if( Config.EnableHttpApi )
@@ -123,6 +141,10 @@ public class Penumbra : IDalamudPlugin
         }
 
         ResidentResources.Reload();
+
+        Api = new PenumbraApi( this );
+        Ipc = new PenumbraIpc( Dalamud.PluginInterface, Api );
+        SubscribeItemLinks();
     }
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
