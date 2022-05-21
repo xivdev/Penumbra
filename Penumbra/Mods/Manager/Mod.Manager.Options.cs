@@ -23,7 +23,6 @@ public enum ModOptionChangeType
     OptionFilesChanged,
     OptionSwapsChanged,
     OptionMetaChanged,
-    OptionUpdated,
     DisplayChange,
 }
 
@@ -171,7 +170,7 @@ public sealed partial class Mod
                     }
 
                     option.Name = newName;
-                    return;
+                    break;
             }
 
             ModOptionChanged.Invoke( ModOptionChangeType.DisplayChange, mod, groupIdx, optionIdx, -1 );
@@ -244,56 +243,17 @@ public sealed partial class Mod
             }
         }
 
-        public void OptionSetManipulation( Mod mod, int groupIdx, int optionIdx, MetaManipulation manip, bool delete = false )
-        {
-            var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            if( delete )
-            {
-                if( !subMod.ManipulationData.Remove( manip ) )
-                {
-                    return;
-                }
-            }
-            else
-            {
-                if( subMod.ManipulationData.TryGetValue( manip, out var oldManip ) )
-                {
-                    if( manip.EntryEquals( oldManip ) )
-                    {
-                        return;
-                    }
-
-                    subMod.ManipulationData.Remove( oldManip );
-                    subMod.ManipulationData.Add( manip );
-                }
-                else
-                {
-                    subMod.ManipulationData.Add( manip );
-                }
-            }
-
-            ModOptionChanged.Invoke( ModOptionChangeType.OptionMetaChanged, mod, groupIdx, optionIdx, -1 );
-        }
-
         public void OptionSetManipulations( Mod mod, int groupIdx, int optionIdx, HashSet< MetaManipulation > manipulations )
         {
             var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            if( subMod.Manipulations.All( m => manipulations.TryGetValue( m, out var old ) && old.EntryEquals( m ) ) )
+            if( subMod.Manipulations.Count == manipulations.Count
+            && subMod.Manipulations.All( m => manipulations.TryGetValue( m, out var old ) && old.EntryEquals( m ) ) )
             {
                 return;
             }
 
             subMod.ManipulationData = manipulations;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionMetaChanged, mod, groupIdx, optionIdx, -1 );
-        }
-
-        public void OptionSetFile( Mod mod, int groupIdx, int optionIdx, Utf8GamePath gamePath, FullPath? newPath )
-        {
-            var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            if( OptionSetFile( subMod.FileData, gamePath, newPath ) )
-            {
-                ModOptionChanged.Invoke( ModOptionChangeType.OptionFilesChanged, mod, groupIdx, optionIdx, -1 );
-            }
         }
 
         public void OptionSetFiles( Mod mod, int groupIdx, int optionIdx, Dictionary< Utf8GamePath, FullPath > replacements )
@@ -319,15 +279,6 @@ public sealed partial class Mod
             }
         }
 
-        public void OptionSetFileSwap( Mod mod, int groupIdx, int optionIdx, Utf8GamePath gamePath, FullPath? newPath )
-        {
-            var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            if( OptionSetFile( subMod.FileSwapData, gamePath, newPath ) )
-            {
-                ModOptionChanged.Invoke( ModOptionChangeType.OptionSwapsChanged, mod, groupIdx, optionIdx, -1 );
-            }
-        }
-
         public void OptionSetFileSwaps( Mod mod, int groupIdx, int optionIdx, Dictionary< Utf8GamePath, FullPath > swaps )
         {
             var subMod = GetSubMod( mod, groupIdx, optionIdx );
@@ -338,16 +289,6 @@ public sealed partial class Mod
 
             subMod.FileSwapData = swaps;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionSwapsChanged, mod, groupIdx, optionIdx, -1 );
-        }
-
-        public void OptionUpdate( Mod mod, int groupIdx, int optionIdx, Dictionary< Utf8GamePath, FullPath > replacements,
-            HashSet< MetaManipulation > manipulations, Dictionary< Utf8GamePath, FullPath > swaps )
-        {
-            var subMod = GetSubMod( mod, groupIdx, optionIdx );
-            subMod.FileData         = replacements;
-            subMod.ManipulationData = manipulations;
-            subMod.FileSwapData     = swaps;
-            ModOptionChanged.Invoke( ModOptionChangeType.OptionUpdated, mod, groupIdx, optionIdx, -1 );
         }
 
         public static bool VerifyFileName( Mod mod, IModGroup? group, string newName, bool message )
@@ -383,34 +324,6 @@ public sealed partial class Mod
             };
         }
 
-        private static bool OptionSetFile( IDictionary< Utf8GamePath, FullPath > dict, Utf8GamePath gamePath, FullPath? newPath )
-        {
-            if( dict.TryGetValue( gamePath, out var oldPath ) )
-            {
-                if( newPath == null )
-                {
-                    dict.Remove( gamePath );
-                    return true;
-                }
-
-                if( newPath.Value.Equals( oldPath ) )
-                {
-                    return false;
-                }
-
-                dict[ gamePath ] = newPath.Value;
-                return true;
-            }
-
-            if( newPath == null )
-            {
-                return false;
-            }
-
-            dict.Add( gamePath, newPath.Value );
-            return true;
-        }
-
         private static void OnModOptionChange( ModOptionChangeType type, Mod mod, int groupIdx, int _, int _2 )
         {
             // File deletion is handled in the actual function.
@@ -444,7 +357,6 @@ public sealed partial class Mod
                 ModOptionChangeType.OptionFilesChanged => 0 < ( mod.TotalFileCount = mod.AllSubMods.Sum( s => s.Files.Count ) ),
                 ModOptionChangeType.OptionSwapsChanged => 0 < ( mod.TotalSwapCount = mod.AllSubMods.Sum( s => s.FileSwaps.Count ) ),
                 ModOptionChangeType.OptionMetaChanged  => 0 < ( mod.TotalManipulations = mod.AllSubMods.Sum( s => s.Manipulations.Count ) ),
-                ModOptionChangeType.OptionUpdated      => mod.SetCounts(),
                 ModOptionChangeType.DisplayChange      => false,
                 _                                      => false,
             };

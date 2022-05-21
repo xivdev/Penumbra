@@ -266,7 +266,6 @@ public partial class ModCollection
                 ModOptionChangeType.OptionFilesChanged => ( false, true, false ),
                 ModOptionChangeType.OptionSwapsChanged => ( false, true, false ),
                 ModOptionChangeType.OptionMetaChanged  => ( false, true, true ),
-                ModOptionChangeType.OptionUpdated      => ( false, true, true ),
                 ModOptionChangeType.DisplayChange      => ( false, false, false ),
                 _                                      => ( false, false, false ),
             };
