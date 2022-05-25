@@ -74,6 +74,7 @@ public partial class ModEditWindow
         {
             return;
         }
+
         using( var table = ImRaii.Table( label, numColumns, flags ) )
         {
             if( table )
@@ -101,7 +102,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
-            CopyToClipboardButton( "Copy all current EQP manipulations to clipboard.", iconSize, editor.Meta.Eqp.Select( m => (MetaManipulation) m  ) );
+            CopyToClipboardButton( "Copy all current EQP manipulations to clipboard.", iconSize,
+                editor.Meta.Eqp.Select( m => ( MetaManipulation )m ) );
             ImGui.TableNextColumn();
             var canAdd       = editor.Meta.CanAdd( _new );
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
@@ -126,14 +128,15 @@ public partial class ModEditWindow
 
             // Values
             ImGui.TableNextColumn();
-            using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing / 2 );
+            using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
+                new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
             foreach( var flag in Eqp.EqpAttributes[ _new.Slot ] )
             {
-                using var id    = ImRaii.PushId( ( int )flag );
-                var       value = defaultEntry.HasFlag( flag );
-                Checkmark( string.Empty, flag.ToLocalName(), value, value, out _ );
+                var value = defaultEntry.HasFlag( flag );
+                Checkmark( "##eqp", flag.ToLocalName(), value, value, out _ );
                 ImGui.SameLine();
             }
+
             ImGui.NewLine();
         }
 
@@ -152,19 +155,23 @@ public partial class ModEditWindow
 
             // Values
             ImGui.TableNextColumn();
-            using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing / 2 );
+            using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
+                new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
+            var idx = 0;
             foreach( var flag in Eqp.EqpAttributes[ meta.Slot ] )
             {
-                using var id           = ImRaii.PushId( ( int )flag );
+                using var id           = ImRaii.PushId( idx++ );
                 var       defaultValue = defaultEntry.HasFlag( flag );
                 var       currentValue = meta.Entry.HasFlag( flag );
-                if( Checkmark( string.Empty, flag.ToLocalName(), currentValue, defaultValue, out var value ) )
+                if( Checkmark( "##eqp", flag.ToLocalName(), currentValue, defaultValue, out var value ) )
                 {
                     editor.Meta.Change( meta with { Entry = value ? meta.Entry | flag : meta.Entry & ~flag } );
                 }
 
                 ImGui.SameLine();
             }
+
+            ImGui.NewLine();
         }
     }
 
@@ -179,7 +186,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
-            CopyToClipboardButton( "Copy all current EQDP manipulations to clipboard.", iconSize, editor.Meta.Eqdp.Select( m => ( MetaManipulation )m ) );
+            CopyToClipboardButton( "Copy all current EQDP manipulations to clipboard.", iconSize,
+                editor.Meta.Eqdp.Select( m => ( MetaManipulation )m ) );
             ImGui.TableNextColumn();
             var raceCode      = Names.CombinedRace( _new.Gender, _new.Race );
             var validRaceCode = CharacterUtility.EqdpIdx( raceCode, false ) >= 0;
@@ -289,7 +297,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
-            CopyToClipboardButton( "Copy all current IMC manipulations to clipboard.", iconSize, editor.Meta.Imc.Select( m => ( MetaManipulation )m ) );
+            CopyToClipboardButton( "Copy all current IMC manipulations to clipboard.", iconSize,
+                editor.Meta.Imc.Select( m => ( MetaManipulation )m ) );
             ImGui.TableNextColumn();
             var defaultEntry = GetDefault( _new );
             var canAdd = defaultEntry != null && editor.Meta.CanAdd( _new );
@@ -313,6 +322,9 @@ public partial class ModEditWindow
             {
                 _new = _new with { PrimaryId = setId };
             }
+
+            using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
+                new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
 
             ImGui.TableNextColumn();
             // Equipment and accessories are slightly different imcs than other types.
@@ -354,8 +366,16 @@ public partial class ModEditWindow
             IntDragInput( "##imcSoundId", "Sound ID", SmallIdWidth, defaultEntry.Value.SoundId, defaultEntry.Value.SoundId, out _, 0, 0b111111,
                 0f );
             ImGui.TableNextColumn();
-            IntDragInput( "##imcAttributes", "Attributes", IdWidth, defaultEntry.Value.AttributeMask, defaultEntry.Value.AttributeMask, out _,
-                0, 0b1111111111, 0f );
+            for( var i = 0; i < 10; ++i )
+            {
+                using var id   = ImRaii.PushId( i );
+                var       flag = 1 << i;
+                Checkmark( "##attribute", $"{( char )( 'A' + i )}", ( defaultEntry.Value.AttributeMask & flag ) != 0,
+                    ( defaultEntry.Value.AttributeMask                                                 & flag ) != 0, out _ );
+                ImGui.SameLine();
+            }
+
+            ImGui.NewLine();
         }
 
         public static void Draw( ImcManipulation meta, Mod.Editor editor, Vector2 iconSize )
@@ -386,6 +406,8 @@ public partial class ModEditWindow
             ImGui.TextUnformatted( meta.Variant.ToString() );
 
             // Values
+            using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
+                new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
             ImGui.TableNextColumn();
             var defaultEntry = GetDefault( meta ) ?? new ImcEntry();
             if( IntDragInput( "##imcMaterialId", $"Material ID\nDefault Value: {defaultEntry.MaterialId}", SmallIdWidth, meta.Entry.MaterialId,
@@ -423,11 +445,21 @@ public partial class ModEditWindow
             }
 
             ImGui.TableNextColumn();
-            if( IntDragInput( "##imcAttributes", $"Attributes\nDefault Value: {defaultEntry.AttributeMask}", IdWidth,
-                   meta.Entry.AttributeMask, defaultEntry.AttributeMask, out var attributeMask, 0, 0b1111111111, 0.1f ) )
+            for( var i = 0; i < 10; ++i )
             {
-                editor.Meta.Change( meta with { Entry = meta.Entry with { AttributeMask = ( ushort )attributeMask } } );
+                using var id   = ImRaii.PushId( i );
+                var       flag = 1 << i;
+                if( Checkmark( "##attribute", $"{( char )( 'A' + i )}\nDefault Value: ", ( meta.Entry.AttributeMask & flag ) != 0,
+                       ( defaultEntry.AttributeMask                                                & flag ) != 0, out var val ) )
+                {
+                    var attributes = val ? meta.Entry.AttributeMask | flag : meta.Entry.AttributeMask & ~flag;
+                    editor.Meta.Change( meta with { Entry = meta.Entry with { AttributeMask = ( ushort )attributes } } );
+                }
+
+                ImGui.SameLine();
             }
+
+            ImGui.NewLine();
         }
     }
 
@@ -441,7 +473,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
-            CopyToClipboardButton( "Copy all current EST manipulations to clipboard.", iconSize, editor.Meta.Est.Select( m => ( MetaManipulation )m ) );
+            CopyToClipboardButton( "Copy all current EST manipulations to clipboard.", iconSize,
+                editor.Meta.Est.Select( m => ( MetaManipulation )m ) );
             ImGui.TableNextColumn();
             var canAdd       = editor.Meta.CanAdd( _new );
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
@@ -526,7 +559,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
-            CopyToClipboardButton( "Copy all current GMP manipulations to clipboard.", iconSize, editor.Meta.Gmp.Select( m => ( MetaManipulation )m ) );
+            CopyToClipboardButton( "Copy all current GMP manipulations to clipboard.", iconSize,
+                editor.Meta.Gmp.Select( m => ( MetaManipulation )m ) );
             ImGui.TableNextColumn();
             var canAdd       = editor.Meta.CanAdd( _new );
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
@@ -633,7 +667,8 @@ public partial class ModEditWindow
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
             ImGui.TableNextColumn();
-            CopyToClipboardButton( "Copy all current RSP manipulations to clipboard.", iconSize, editor.Meta.Rsp.Select( m => ( MetaManipulation )m ) );
+            CopyToClipboardButton( "Copy all current RSP manipulations to clipboard.", iconSize,
+                editor.Meta.Rsp.Select( m => ( MetaManipulation )m ) );
             ImGui.TableNextColumn();
             var canAdd       = editor.Meta.CanAdd( _new );
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
@@ -783,19 +818,23 @@ public partial class ModEditWindow
         }
     }
 
-    private void AddFromClipboardButton( )
+    private void AddFromClipboardButton()
     {
         if( ImGui.Button( "Add from Clipboard" ) )
         {
             var clipboard = ImGui.GetClipboardText();
             var version   = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
-            if( version == CurrentManipulationVersion && manips != null)
+            if( version == CurrentManipulationVersion && manips != null )
             {
                 foreach( var manip in manips )
+                {
                     _editor!.Meta.Set( manip );
+                }
             }
         }
-        ImGuiUtil.HoverTooltip( "Try to add meta manipulations currently stored in the clipboard to the current manipulations.\nOverwrites already existing manipulations." );
+
+        ImGuiUtil.HoverTooltip(
+            "Try to add meta manipulations currently stored in the clipboard to the current manipulations.\nOverwrites already existing manipulations." );
     }
 
     private void SetFromClipboardButton()
@@ -803,21 +842,25 @@ public partial class ModEditWindow
         if( ImGui.Button( "Set from Clipboard" ) )
         {
             var clipboard = ImGui.GetClipboardText();
-            var version   = Functions.FromCompressedBase64<MetaManipulation[]>( clipboard, out var manips );
+            var version   = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
             if( version == CurrentManipulationVersion && manips != null )
             {
                 _editor!.Meta.Clear();
                 foreach( var manip in manips )
+                {
                     _editor!.Meta.Set( manip );
+                }
             }
         }
-        ImGuiUtil.HoverTooltip( "Try to set the current meta manipulations to the set currently stored in the clipboard.\nRemoves all other manipulations." );
+
+        ImGuiUtil.HoverTooltip(
+            "Try to set the current meta manipulations to the set currently stored in the clipboard.\nRemoves all other manipulations." );
     }
 
     private static void DrawMetaButtons( MetaManipulation meta, Mod.Editor editor, Vector2 iconSize )
     {
         ImGui.TableNextColumn();
-        CopyToClipboardButton( "Copy this manipulation to clipboard.", iconSize, Array.Empty<MetaManipulation>().Append( meta ) );
+        CopyToClipboardButton( "Copy this manipulation to clipboard.", iconSize, Array.Empty< MetaManipulation >().Append( meta ) );
 
         ImGui.TableNextColumn();
         if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this meta manipulation.", false, true ) )

@@ -9,7 +9,6 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.Util;
 
@@ -35,7 +34,7 @@ public partial class ModEditWindow : Window, IDisposable
         WindowName = $"{mod.Name}{WindowBaseLabel}";
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = ImGuiHelpers.ScaledVector2( 800, 600 ),
+            MinimumSize = ImGuiHelpers.ScaledVector2( 1000, 600 ),
             MaximumSize = 4000 * Vector2.One,
         };
     }
