@@ -203,14 +203,25 @@ public partial class ConfigWindow
 
         private static void DrawDiscordButton()
         {
+            const string help    = "Copy Support Info to Clipboard";
             const string discord = "Join Discord for Support";
             const string address = @"https://discord.gg/kVva7DHV4r";
-            var          width   = ImGui.CalcTextSize( discord ).X + ImGui.GetStyle().FramePadding.X * 2;
+            var          width   = ImGui.CalcTextSize( help ).X + ImGui.GetStyle().FramePadding.X * 2;
             if( ImGui.GetScrollMaxY() > 0 )
+            {
                 width += ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemSpacing.X;
+            }
+
+            ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, ImGui.GetFrameHeightWithSpacing() ) );
+            if( ImGui.Button( help ) )
+            {
+                var text = Penumbra.GatherSupportInformation();
+                ImGui.SetClipboardText( text );
+            }
+
             ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, 0 ) );
             using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.DiscordColor );
-            if( ImGui.Button( discord ) )
+            if( ImGui.Button( discord, new Vector2( width, 0 ) ) )
             {
                 try
                 {

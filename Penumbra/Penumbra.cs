@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
@@ -396,5 +397,62 @@ public class Penumbra : IDisposable
         list.Add( new FileInfo( ModFileSystem.ModFileSystemFile ) );
         list.Add( new FileInfo( ModCollection.Manager.ActiveCollectionFile ) );
         return list;
+    }
+
+    public static string GatherSupportInformation()
+    {
+        var sb = new StringBuilder( 10240 );
+        sb.AppendLine( "**Settings**" );
+        sb.AppendFormat( "> **`Plugin Version:              `** {0}\n", Version );
+        sb.AppendFormat( "> **`Commit Hash:                 `** {0}\n", CommitHash );
+        sb.AppendFormat( "> **`Enable Mods:                 `** {0}\n", Config.EnableMods );
+        sb.AppendFormat( "> **`Enable Sound Modification:   `** {0}\n", Config.DisableSoundStreaming );
+        sb.AppendFormat( "> **`Enable HTTP API:             `** {0}\n", Config.EnableHttpApi );
+        sb.AppendFormat( "> **`Root Directory:              `** {0}, {1}\n", Config.ModDirectory,
+            Config.ModDirectory.Length > 0 && Directory.Exists( Config.ModDirectory ) ? "Exists" : "Not Existing" );
+        sb.AppendLine( "**Mods**" );
+        sb.AppendFormat( "> **`Installed Mods:              `** {0}\n", ModManager.Count );
+        sb.AppendFormat( "> **`Mods with Config:            `** {0}\n", ModManager.Count( m => m.HasOptions ) );
+        sb.AppendFormat( "> **`Mods with File Redirections: `** {0}, Total: {1}\n", ModManager.Count( m => m.TotalFileCount > 0 ),
+            ModManager.Sum( m => m.TotalFileCount ) );
+        sb.AppendFormat( "> **`Mods with FileSwaps:         `** {0}, Total: {1}\n", ModManager.Count( m => m.TotalSwapCount > 0 ),
+            ModManager.Sum( m => m.TotalSwapCount ) );
+        sb.AppendFormat( "> **`Mods with Meta Manipulations:`** {0}, Total {1}\n", ModManager.Count( m => m.TotalManipulations > 0 ),
+            ModManager.Sum( m => m.TotalManipulations ) );
+
+        string CollectionName( ModCollection c )
+            => c == ModCollection.Empty ? ModCollection.Empty.Name : c.Name.Length >= 2 ? c.Name[ ..2 ] : c.Name;
+
+        string CharacterName( string name )
+            => string.Join( " ", name.Split().Select( n => $"{n[ 0 ]}." ) ) + ':';
+
+        void PrintCollection( ModCollection c )
+            => sb.AppendFormat( "**Collection {0}... ({1})**\n"
+              + "> **`Inheritances:                `** {2}\n"
+              + "> **`Enabled Mods:                `** {3}\n"
+              + "> **`Total Conflicts:             `** {4}\n"
+              + "> **`Solved Conflicts:            `** {5}\n",
+                CollectionName( c ), c.Index, c.Inheritance.Count, c.ActualSettings.Count( s => s is { Enabled: true } ), c.Conflicts.Count,
+                c.Conflicts.Count( con => con.Solved ) );
+
+        sb.AppendLine( "**Collections**" );
+        sb.AppendFormat( "> **`#Collections:                `** {0}\n", CollectionManager.Count );
+        sb.AppendFormat( "> **`Active Collections:          `** {0}\n", CollectionManager.Count( c => c.HasCache ) );
+        sb.AppendFormat( "> **`Default Collection:          `** {0}... ({1})\n", CollectionName( CollectionManager.Default ),
+            CollectionManager.Default.Index );
+        sb.AppendFormat( "> **`Current Collection:          `** {0}... ({1})\n", CollectionName( CollectionManager.Current ),
+            CollectionManager.Current.Index );
+        foreach( var (name, collection) in CollectionManager.Characters )
+        {
+            sb.AppendFormat( "> **`{2,-29}`** {0}... ({1})\n", CollectionName( collection ),
+                collection.Index, CharacterName( name ) );
+        }
+
+        foreach( var collection in CollectionManager.Where( c => c.HasCache ) )
+        {
+            PrintCollection( collection );
+        }
+
+        return sb.ToString();
     }
 }
