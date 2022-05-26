@@ -1,8 +1,10 @@
+using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
+using Penumbra.Interop;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
@@ -24,6 +26,7 @@ public partial class ConfigWindow
             DrawEnableDebugModeBox();
             DrawEnableFullResourceLoggingBox();
             DrawReloadResourceButton();
+            DrawReloadFontsButton();
             ImGui.NewLine();
         }
 
@@ -167,6 +170,14 @@ public partial class ConfigWindow
 
             ImGuiUtil.HoverTooltip( "Reload some specific files that the game keeps in memory at all times.\n"
               + "You usually should not need to do this." );
+        }
+
+        private static void DrawReloadFontsButton()
+        {
+            if( ImGuiUtil.DrawDisabledButton( "Reload Fonts", Vector2.Zero, "Force the game to reload its font files.", !FontReloader.Valid ) )
+            {
+                FontReloader.Reload();
+            }
         }
     }
 }
