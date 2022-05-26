@@ -4,7 +4,8 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 
 namespace Penumbra.Interop;
 
-// Handle font reloading via 
+// Handle font reloading via game functions.
+// May cause a interface flicker while reloading.
 public static unsafe class FontReloader
 {
     private static readonly AtkModule*                                        AtkModule       = null;
@@ -43,7 +44,7 @@ public static unsafe class FontReloader
         {
             return;
         }
-
+        
         var atkModule = uiModule->GetRaptureAtkModule();
         if( atkModule == null )
         {
