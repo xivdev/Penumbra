@@ -308,11 +308,6 @@ public partial class ModCollection
         // Struct to keep track of all priorities involved in a mod and register and compare accordingly.
         private readonly record struct FileRegister( int ModIdx, int ModPriority, int GroupPriority, int OptionPriority )
         {
-            public readonly int ModIdx         = ModIdx;
-            public readonly int ModPriority    = ModPriority;
-            public readonly int GroupPriority  = GroupPriority;
-            public readonly int OptionPriority = OptionPriority;
-
             public bool SameMod( FileRegister other, out bool less )
             {
                 if( ModIdx != other.ModIdx )
