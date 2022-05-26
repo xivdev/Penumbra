@@ -33,7 +33,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         SubscribeRightClickFolder( OwnDescendants, 15 );
         AddButton( AddNewModButton, 0 );
         AddButton( AddImportModButton, 1 );
-        AddButton( AddHelpButton, 800 );
+        AddButton( AddHelpButton, 2 );
         AddButton( DeleteModButton, 1000 );
         SetFilterTooltip();
 
