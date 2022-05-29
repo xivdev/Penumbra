@@ -5,6 +5,7 @@ using System.Linq;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
@@ -13,7 +14,7 @@ public partial class MetaManager
     public struct MetaManagerCmp : IDisposable
     {
         public          CmpFile?                           File          = null;
-        public readonly Dictionary< RspManipulation, int > Manipulations = new();
+        public readonly Dictionary< RspManipulation, Mod > Manipulations = new();
 
         public MetaManagerCmp()
         { }
@@ -38,15 +39,28 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( RspManipulation m, int modIdx )
+        public bool ApplyMod( RspManipulation m, Mod mod )
         {
 #if USE_CMP
-            Manipulations[ m ] =   modIdx;
+            Manipulations[ m ] =   mod;
             File               ??= new CmpFile();
             return m.Apply( File );
 #else
             return false;
 #endif
+        }
+
+        public bool RevertMod( RspManipulation m )
+        {
+#if USE_CMP
+            if( Manipulations.Remove( m ) )
+            {
+                var def   = CmpFile.GetDefault( m.SubRace, m.Attribute );
+                var manip = new RspManipulation( m.SubRace, m.Attribute, def );
+                return manip.Apply( File! );
+            }
+#endif
+            return false;
         }
 
         public void Dispose()

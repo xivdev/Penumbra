@@ -93,11 +93,11 @@ public partial class ConfigWindow
 
             var zipList = ZipList.FromSortedList( _mod.ChangedItems );
             var height  = ImGui.GetTextLineHeight();
-            ImGuiClip.ClippedDraw( zipList, kvp => _window.DrawChangedItem( kvp.Item1, kvp.Item2 ), height );
+            ImGuiClip.ClippedDraw( zipList, kvp => _window.DrawChangedItem( kvp.Item1, kvp.Item2, true ), height );
         }
 
         // If any conflicts exist, show them in this tab.
-        private void DrawConflictsTab()
+        private unsafe void DrawConflictsTab()
         {
             using var tab = DrawTab( ConflictTabHeader, Tabs.Conflicts );
             if( !tab )
@@ -111,45 +111,30 @@ public partial class ConfigWindow
                 return;
             }
 
-            var       conflicts = Penumbra.CollectionManager.Current.ModConflicts( _mod.Index );
-            Mod?      oldBadMod = null;
-            using var indent    = ImRaii.PushIndent( 0f );
-            foreach( var conflict in conflicts )
+            foreach( var conflict in Penumbra.CollectionManager.Current.Conflicts( _mod ) )
             {
-                var badMod = Penumbra.ModManager[ conflict.Mod2 ];
-                if( badMod != oldBadMod )
+                if( ImGui.Selectable( conflict.Mod2.Name ) )
                 {
-                    if( oldBadMod != null )
-                    {
-                        indent.Pop( 30f );
-                    }
-
-                    if( ImGui.Selectable( badMod.Name ) )
-                    {
-                        _window._selector.SelectByValue( badMod );
-                    }
-
-                    ImGui.SameLine();
-                    using var color = ImRaii.PushColor( ImGuiCol.Text,
-                        conflict.Mod1Priority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value() );
-                    ImGui.TextUnformatted( $"(Priority {Penumbra.CollectionManager.Current[ conflict.Mod2 ].Settings!.Priority})" );
-
-                    indent.Push( 30f );
+                    _window._selector.SelectByValue( conflict.Mod2 );
                 }
 
-                if( conflict.Data is Utf8GamePath p )
+                ImGui.SameLine();
+                using( var color = ImRaii.PushColor( ImGuiCol.Text,
+                          conflict.HasPriority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value() ) )
                 {
-                    unsafe
-                    {
-                        ImGuiNative.igSelectable_Bool( p.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero );
-                    }
-                }
-                else if( conflict.Data is MetaManipulation m )
-                {
-                    ImGui.Selectable( m.Manipulation?.ToString() ?? string.Empty );
+                    ImGui.TextUnformatted( $"(Priority {Penumbra.CollectionManager.Current[ conflict.Mod2.Index ].Settings!.Priority})" );
                 }
 
-                oldBadMod = badMod;
+                using var indent = ImRaii.PushIndent( 30f );
+                foreach( var data in conflict.Conflicts )
+                {
+                    var _ = data switch
+                    {
+                        Utf8GamePath p     => ImGuiNative.igSelectable_Bool( p.Path.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero ) > 0,
+                        MetaManipulation m => ImGui.Selectable( m.Manipulation?.ToString() ?? string.Empty ),
+                        _                  => false,
+                    };
+                }
             }
         }
 

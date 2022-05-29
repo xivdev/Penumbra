@@ -6,6 +6,7 @@ using Dalamud.Logging;
 using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manager;
+using Penumbra.Mods;
 
 namespace Penumbra.Collections;
 
@@ -18,21 +19,21 @@ public partial class ModCollection
         => _cache != null;
 
     public int RecomputeCounter
-        => _cache?.RecomputeCounter ?? 0;
+        => _cache?.ChangeCounter ?? 0;
 
     // Only create, do not update. 
-    private void CreateCache( bool isDefault )
+    private void CreateCache()
     {
         if( _cache == null )
         {
-            CalculateEffectiveFileList( true, isDefault );
+            CalculateEffectiveFileList();
             PluginLog.Verbose( "Created new cache for collection {Name:l}.", Name );
         }
     }
 
     // Force an update with metadata for this cache.
-    private void ForceCacheUpdate( bool isDefault )
-        => CalculateEffectiveFileList( true, isDefault );
+    private void ForceCacheUpdate()
+        => CalculateEffectiveFileList();
 
 
     // Clear the current cache.
@@ -49,7 +50,7 @@ public partial class ModCollection
 
     // Force a file to be resolved to a specific path regardless of conflicts.
     internal void ForceFile( Utf8GamePath path, FullPath fullPath )
-        => _cache!.ResolvedFiles[ path ] = fullPath;
+        => _cache!.ResolvedFiles[ path ] = new ModPath( Mod.ForcedFiles, fullPath );
 
     // Force a file resolve to be removed.
     internal void RemoveFile( Utf8GamePath path )
@@ -59,25 +60,25 @@ public partial class ModCollection
     internal MetaManager? MetaCache
         => _cache?.MetaManipulations;
 
-    internal IReadOnlyDictionary< Utf8GamePath, FullPath > ResolvedFiles
-        => _cache?.ResolvedFiles ?? new Dictionary< Utf8GamePath, FullPath >();
+    internal IReadOnlyDictionary< Utf8GamePath, ModPath > ResolvedFiles
+        => _cache?.ResolvedFiles ?? new Dictionary< Utf8GamePath, ModPath >();
 
-    internal IReadOnlyDictionary< string, object? > ChangedItems
-        => _cache?.ChangedItems ?? new Dictionary< string, object? >();
+    internal IReadOnlyDictionary< string, (SingleArray< Mod >, object?) > ChangedItems
+        => _cache?.ChangedItems ?? new Dictionary< string, (SingleArray< Mod >, object?) >();
 
-    internal IReadOnlyList< ConflictCache.Conflict > Conflicts
-        => _cache?.Conflicts.Conflicts ?? Array.Empty< ConflictCache.Conflict >();
+    internal IEnumerable< SingleArray< ModConflicts > > AllConflicts
+        => _cache?.AllConflicts ?? Array.Empty< SingleArray< ModConflicts > >();
 
-    internal SubList< ConflictCache.Conflict > ModConflicts( int modIdx )
-        => _cache?.Conflicts.ModConflicts( modIdx ) ?? SubList< ConflictCache.Conflict >.Empty;
+    internal SingleArray< ModConflicts > Conflicts( Mod mod )
+        => _cache?.Conflicts( mod ) ?? new SingleArray< ModConflicts >();
 
     // Update the effective file list for the given cache.
     // Creates a cache if necessary.
-    public void CalculateEffectiveFileList( bool withMetaManipulations, bool reloadDefault )
+    public void CalculateEffectiveFileList()
         => Penumbra.Framework.RegisterImportant( nameof( CalculateEffectiveFileList ) + Name,
-            () => CalculateEffectiveFileListInternal( withMetaManipulations, reloadDefault ) );
+            CalculateEffectiveFileListInternal );
 
-    private void CalculateEffectiveFileListInternal( bool withMetaManipulations, bool reloadDefault )
+    private void CalculateEffectiveFileListInternal()
     {
         // Skip the empty collection.
         if( Index == 0 )
@@ -85,16 +86,13 @@ public partial class ModCollection
             return;
         }
 
-        PluginLog.Debug( "[{Thread}] Recalculating effective file list for {CollectionName:l} [{WithMetaManipulations}] [{ReloadDefault}]", Thread.CurrentThread.ManagedThreadId, Name,
-            withMetaManipulations, reloadDefault );
+        PluginLog.Debug( "[{Thread}] Recalculating effective file list for {CollectionName:l}",
+            Thread.CurrentThread.ManagedThreadId, Name );
         _cache ??= new Cache( this );
-        _cache.CalculateEffectiveFileList( withMetaManipulations );
-        if( reloadDefault )
-        {
-            SetFiles();
-            Penumbra.ResidentResources.Reload();
-        }
-        PluginLog.Debug( "[{Thread}] Recalculation of effective file list for {CollectionName:l} finished.", Thread.CurrentThread.ManagedThreadId, Name);
+        _cache.FullRecalculation();
+
+        PluginLog.Debug( "[{Thread}] Recalculation of effective file list for {CollectionName:l} finished.",
+            Thread.CurrentThread.ManagedThreadId, Name );
     }
 
     // Set Metadata files.

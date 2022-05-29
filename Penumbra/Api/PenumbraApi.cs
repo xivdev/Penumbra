@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
@@ -138,7 +139,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
             if( collection.HasCache )
             {
-                return collection.ChangedItems;
+                return collection.ChangedItems.ToDictionary( kvp => kvp.Key, kvp => kvp.Value.Item2 );
             }
 
             PluginLog.Warning( $"Collection {collectionName} does not exist or is not loaded." );

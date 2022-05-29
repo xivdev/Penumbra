@@ -5,6 +5,7 @@ using System.Linq;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
@@ -13,7 +14,7 @@ public partial class MetaManager
     public struct MetaManagerEqp : IDisposable
     {
         public          ExpandedEqpFile?                   File          = null;
-        public readonly Dictionary< EqpManipulation, int > Manipulations = new();
+        public readonly Dictionary< EqpManipulation, Mod > Manipulations = new();
 
         public MetaManagerEqp()
         { }
@@ -38,15 +39,28 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( EqpManipulation m, int modIdx )
+        public bool ApplyMod( EqpManipulation m, Mod mod )
         {
 #if USE_EQP
-            Manipulations[ m ] =   modIdx;
+            Manipulations[ m ] =   mod;
             File               ??= new ExpandedEqpFile();
             return m.Apply( File );
 #else
             return false;
 #endif
+        }
+
+        public bool RevertMod( EqpManipulation m )
+        {
+#if USE_EQP
+            if( Manipulations.Remove( m ) )
+            {
+                var def   = ExpandedEqpFile.GetDefault( m.SetId );
+                var manip = new EqpManipulation( def, m.Slot, m.SetId );
+                return manip.Apply( File! );
+            }
+#endif
+            return false;
         }
 
         public void Dispose()

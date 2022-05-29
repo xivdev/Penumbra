@@ -9,6 +9,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
@@ -17,7 +18,7 @@ public partial class MetaManager
     public readonly struct MetaManagerImc : IDisposable
     {
         public readonly Dictionary< Utf8GamePath, ImcFile > Files         = new();
-        public readonly Dictionary< ImcManipulation, int >  Manipulations = new();
+        public readonly Dictionary< ImcManipulation, Mod >  Manipulations = new();
 
         private readonly ModCollection _collection;
         private static   int           _imcManagerCount;
@@ -64,10 +65,10 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( ImcManipulation m, int modIdx )
+        public bool ApplyMod( ImcManipulation m, Mod mod )
         {
 #if USE_IMC
-            Manipulations[ m ] = modIdx;
+            Manipulations[ m ] = mod;
             var path = m.GamePath();
             if( !Files.TryGetValue( path, out var file ) )
             {
@@ -90,6 +91,36 @@ public partial class MetaManager
 #else
             return false;
 #endif
+        }
+
+        public bool RevertMod( ImcManipulation m )
+        {
+#if USE_IMC
+            if( Manipulations.Remove( m ) )
+            {
+                var path = m.GamePath();
+                if( !Files.TryGetValue( path, out var file ) )
+                {
+                    return false;
+                }
+
+                var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant );
+                var manip = m with { Entry = def };
+                if( !manip.Apply( file ) )
+                {
+                    return false;
+                }
+
+                var fullPath = CreateImcPath( path );
+                if( _collection.HasCache )
+                {
+                    _collection.ForceFile( path, fullPath );
+                }
+
+                return true;
+            }
+#endif
+            return false;
         }
 
         public void Dispose()

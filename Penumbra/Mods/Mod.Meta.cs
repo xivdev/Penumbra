@@ -24,6 +24,12 @@ public enum MetaChangeType : ushort
 
 public sealed partial class Mod
 {
+    public static readonly Mod ForcedFiles = new(new DirectoryInfo( "." ))
+    {
+        Name  = "Forced Files",
+        Index = -1,
+    };
+
     public const uint CurrentFileVersion = 1;
     public uint FileVersion { get; private set; } = CurrentFileVersion;
     public LowerString Name { get; private set; } = "New Mod";
@@ -138,4 +144,7 @@ public sealed partial class Mod
             PluginLog.Error( $"Could not write meta file for mod {Name} to {metaFile.FullName}:\n{e}" );
         }
     }
+
+    public override string ToString()
+        => Name.Text;
 }

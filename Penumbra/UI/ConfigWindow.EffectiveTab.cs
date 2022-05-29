@@ -8,6 +8,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
+using Penumbra.Mods;
 
 namespace Penumbra.UI;
 
@@ -111,7 +112,7 @@ public partial class ConfigWindow
             {
                 // We can treat all meta manipulations the same,
                 // we are only really interested in their ToString function here.
-                static (object, int) Convert< T >( KeyValuePair< T, int > kvp )
+                static (object, Mod) Convert< T >( KeyValuePair< T, Mod > kvp )
                     => ( kvp.Key!, kvp.Value );
 
                 var it = m.Cmp.Manipulations.Select( Convert )
@@ -124,7 +125,7 @@ public partial class ConfigWindow
                 // Filters mean we can not use the known counts.
                 if( hasFilters )
                 {
-                    var it2 = it.Select( p => ( p.Item1.ToString() ?? string.Empty, Penumbra.ModManager[ p.Item2 ].Name ) );
+                    var it2 = it.Select( p => ( p.Item1.ToString() ?? string.Empty, p.Item2.Name ) );
                     if( stop >= 0 )
                     {
                         ImGuiClip.DrawEndDummy( stop + it2.Count( CheckFilters ), height );
@@ -155,7 +156,7 @@ public partial class ConfigWindow
         }
 
         // Draw a line for a game path and its redirected file.
-        private static void DrawLine( KeyValuePair< Utf8GamePath, FullPath > pair )
+        private static void DrawLine( KeyValuePair< Utf8GamePath, ModPath > pair )
         {
             var (path, name) = pair;
             ImGui.TableNextColumn();
@@ -164,7 +165,8 @@ public partial class ConfigWindow
             ImGui.TableNextColumn();
             ImGuiUtil.PrintIcon( FontAwesomeIcon.LongArrowAltLeft );
             ImGui.TableNextColumn();
-            CopyOnClickSelectable( name.InternalName );
+            CopyOnClickSelectable( name.Path.InternalName );
+            ImGuiUtil.HoverTooltip( $"\nChanged by {name.Mod.Name}." );
         }
 
         // Draw a line for a path and its name.
@@ -181,20 +183,20 @@ public partial class ConfigWindow
         }
 
         // Draw a line for a unfiltered/unconverted manipulation and mod-index pair.
-        private static void DrawLine( (object, int) pair )
+        private static void DrawLine( (object, Mod) pair )
         {
-            var (manipulation, modIdx) = pair;
+            var (manipulation, mod) = pair;
             ImGui.TableNextColumn();
             ImGuiUtil.CopyOnClickSelectable( manipulation.ToString() ?? string.Empty );
 
             ImGui.TableNextColumn();
             ImGuiUtil.PrintIcon( FontAwesomeIcon.LongArrowAltLeft );
             ImGui.TableNextColumn();
-            ImGuiUtil.CopyOnClickSelectable( Penumbra.ModManager[ modIdx ].Name );
+            ImGuiUtil.CopyOnClickSelectable( mod.Name );
         }
 
         // Check filters for file replacements.
-        private bool CheckFilters( KeyValuePair< Utf8GamePath, FullPath > kvp )
+        private bool CheckFilters( KeyValuePair< Utf8GamePath, ModPath > kvp )
         {
             var (gamePath, fullPath) = kvp;
             if( _effectiveGamePathFilter.Length > 0 && !gamePath.ToString().Contains( _effectiveGamePathFilter.Lower ) )
@@ -202,7 +204,7 @@ public partial class ConfigWindow
                 return false;
             }
 
-            return _effectiveFilePathFilter.Length == 0 || fullPath.FullName.ToLowerInvariant().Contains( _effectiveFilePathFilter.Lower );
+            return _effectiveFilePathFilter.Length == 0 || fullPath.Path.FullName.ToLowerInvariant().Contains( _effectiveFilePathFilter.Lower );
         }
 
         // Check filters for meta manipulations.

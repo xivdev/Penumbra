@@ -9,23 +9,6 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
-public enum ModOptionChangeType
-{
-    GroupRenamed,
-    GroupAdded,
-    GroupDeleted,
-    GroupMoved,
-    GroupTypeChanged,
-    PriorityChanged,
-    OptionAdded,
-    OptionDeleted,
-    OptionMoved,
-    OptionFilesChanged,
-    OptionSwapsChanged,
-    OptionMetaChanged,
-    DisplayChange,
-}
-
 public sealed partial class Mod
 {
     public sealed partial class Manager
@@ -84,6 +67,7 @@ public sealed partial class Mod
         public void DeleteModGroup( Mod mod, int groupIdx )
         {
             var group = mod._groups[ groupIdx ];
+            ModOptionChanged.Invoke( ModOptionChangeType.PrepareChange, mod, groupIdx, -1, -1 );
             mod._groups.RemoveAt( groupIdx );
             group.DeleteFile( mod.ModPath, groupIdx );
             ModOptionChanged.Invoke( ModOptionChangeType.GroupDeleted, mod, groupIdx, -1, -1 );
@@ -221,6 +205,7 @@ public sealed partial class Mod
 
         public void DeleteOption( Mod mod, int groupIdx, int optionIdx )
         {
+            ModOptionChanged.Invoke( ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1 );
             switch( mod._groups[ groupIdx ] )
             {
                 case SingleModGroup s:
@@ -252,6 +237,7 @@ public sealed partial class Mod
                 return;
             }
 
+            ModOptionChanged.Invoke( ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1 );
             subMod.ManipulationData = manipulations;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionMetaChanged, mod, groupIdx, optionIdx, -1 );
         }
@@ -264,6 +250,7 @@ public sealed partial class Mod
                 return;
             }
 
+            ModOptionChanged.Invoke( ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1 );
             subMod.FileData = replacements;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionFilesChanged, mod, groupIdx, optionIdx, -1 );
         }
@@ -275,7 +262,7 @@ public sealed partial class Mod
             subMod.FileData.AddFrom( additions );
             if( oldCount != subMod.FileData.Count )
             {
-                ModOptionChanged.Invoke( ModOptionChangeType.OptionFilesChanged, mod, groupIdx, optionIdx, -1 );
+                ModOptionChanged.Invoke( ModOptionChangeType.OptionFilesAdded, mod, groupIdx, optionIdx, -1 );
             }
         }
 
@@ -287,6 +274,7 @@ public sealed partial class Mod
                 return;
             }
 
+            ModOptionChanged.Invoke( ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1 );
             subMod.FileSwapData = swaps;
             ModOptionChanged.Invoke( ModOptionChangeType.OptionSwapsChanged, mod, groupIdx, optionIdx, -1 );
         }

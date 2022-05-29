@@ -119,7 +119,7 @@ public partial class ModFileSystemSelector
             return collection != Penumbra.CollectionManager.Current ? ColorId.InheritedDisabledMod.Value() : ColorId.DisabledMod.Value();
         }
 
-        var conflicts = Penumbra.CollectionManager.Current.ModConflicts( mod.Index );
+        var conflicts = Penumbra.CollectionManager.Current.Conflicts( mod );
         if( conflicts.Count == 0 )
         {
             return collection != Penumbra.CollectionManager.Current ? ColorId.InheritedMod.Value() : ColorId.EnabledMod.Value();
@@ -188,7 +188,7 @@ public partial class ModFileSystemSelector
             }
 
             // Conflicts can only be relevant if the mod is enabled.
-            var conflicts = Penumbra.CollectionManager.Current.ModConflicts( mod.Index );
+            var conflicts = Penumbra.CollectionManager.Current.Conflicts( mod );
             if( conflicts.Count > 0 )
             {
                 if( conflicts.Any( c => !c.Solved ) )

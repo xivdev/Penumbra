@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Dalamud.Logging;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.Mods;
 
@@ -22,13 +23,13 @@ public enum RedirectResult
 public class SimpleRedirectManager
 {
     internal readonly Dictionary< Utf8GamePath, (FullPath File, string Tag) > Replacements = new();
-    public readonly   HashSet< string >                                       AllowedTags   = new();
+    public readonly   HashSet< string >                                       AllowedTags  = new();
 
-    public void Apply( IDictionary< Utf8GamePath, FullPath > dict )
+    public void Apply( IDictionary< Utf8GamePath, ModPath > dict )
     {
         foreach( var (gamePath, (file, _)) in Replacements )
         {
-            dict.TryAdd( gamePath, file );
+            dict.TryAdd( gamePath, new ModPath(Mod.ForcedFiles, file) );
         }
     }
 

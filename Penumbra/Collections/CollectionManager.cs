@@ -204,7 +204,7 @@ public partial class ModCollection
             // Afterwards, we update the caches. This can not happen in the same loop due to inheritance.
             foreach( var collection in this )
             {
-                collection.ForceCacheUpdate( collection == Default );
+                collection.ForceCacheUpdate();
             }
         }
 
@@ -221,27 +221,29 @@ public partial class ModCollection
                         collection.AddMod( mod );
                     }
 
-                    OnModAddedActive( mod.TotalManipulations > 0 );
+                    OnModAddedActive( mod );
                     break;
                 case ModPathChangeType.Deleted:
-                    var settings = this.Select( c => c[mod.Index].Settings ).ToList();
+                    OnModRemovedActive( mod );
                     foreach( var collection in this )
                     {
                         collection.RemoveMod( mod, mod.Index );
                     }
 
-                    OnModRemovedActive( mod.TotalManipulations > 0, settings );
                     break;
                 case ModPathChangeType.Moved:
+                    OnModMovedActive( mod );
                     foreach( var collection in this.Where( collection => collection.Settings[ mod.Index ] != null ) )
                     {
                         collection.Save();
                     }
 
-                    OnModChangedActive( mod.TotalManipulations > 0, mod.Index );
+                    break;
+                case ModPathChangeType.StartingReload:
+                    OnModRemovedActive( mod );
                     break;
                 case ModPathChangeType.Reloaded:
-                    OnModChangedActive( mod.TotalManipulations > 0, mod.Index );
+                    OnModAddedActive( mod );
                     break;
                 default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
             }
@@ -252,25 +254,24 @@ public partial class ModCollection
         // And also updating effective file and meta manipulation lists if necessary.
         private void OnModOptionsChanged( ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx )
         {
-            var (handleChanges, recomputeList, withMeta) = type switch
+            // Handle changes that break revertability.
+            if( type == ModOptionChangeType.PrepareChange )
             {
-                ModOptionChangeType.GroupRenamed       => ( true, false, false ),
-                ModOptionChangeType.GroupAdded         => ( true, false, false ),
-                ModOptionChangeType.GroupDeleted       => ( true, true, true ),
-                ModOptionChangeType.GroupMoved         => ( true, false, false ),
-                ModOptionChangeType.GroupTypeChanged   => ( true, true, true ),
-                ModOptionChangeType.PriorityChanged    => ( true, true, true ),
-                ModOptionChangeType.OptionAdded        => ( true, true, true ),
-                ModOptionChangeType.OptionDeleted      => ( true, true, true ),
-                ModOptionChangeType.OptionMoved        => ( true, false, false ),
-                ModOptionChangeType.OptionFilesChanged => ( false, true, false ),
-                ModOptionChangeType.OptionSwapsChanged => ( false, true, false ),
-                ModOptionChangeType.OptionMetaChanged  => ( false, true, true ),
-                ModOptionChangeType.DisplayChange      => ( false, false, false ),
-                _                                      => ( false, false, false ),
-            };
+                foreach( var collection in this.Where( c => c.HasCache ) )
+                {
+                    if( collection[ mod.Index ].Settings is { Enabled: true } )
+                    {
+                        collection._cache!.RemoveMod( mod, false );
+                    }
+                }
 
-            if( handleChanges )
+                return;
+            }
+
+            type.HandlingInfo( out var requiresSaving, out var recomputeList, out var reload );
+
+            // Handle changes that require overwriting the collection.
+            if( requiresSaving )
             {
                 foreach( var collection in this )
                 {
@@ -281,14 +282,22 @@ public partial class ModCollection
                 }
             }
 
+            // Handle changes that reload the mod if the changes did not need to be prepared,
+            // or re-add the mod if they were prepared.
             if( recomputeList )
             {
-                // TODO: Does not check if the option that was changed is actually enabled.
                 foreach( var collection in this.Where( c => c.HasCache ) )
                 {
                     if( collection[ mod.Index ].Settings is { Enabled: true } )
                     {
-                        collection.CalculateEffectiveFileList( withMeta, collection == Penumbra.CollectionManager.Default );
+                        if( reload )
+                        {
+                            collection._cache!.ReloadMod( mod, true );
+                        }
+                        else
+                        {
+                            collection._cache!.AddMod( mod, true );
+                        }
                     }
                 }
             }

@@ -29,8 +29,8 @@ public partial class ConfigWindow
         => Text( resource->FileName(), resource->FileNameLength );
 
     // Draw a changed item, invoking the Api-Events for clicks and tooltips.
-    // Also draw the item Id in grey
-    private void DrawChangedItem( string name, object? data, float itemIdOffset = 0 )
+    // Also draw the item Id in grey if requested
+    private void DrawChangedItem( string name, object? data, bool drawId )
     {
         var ret = ImGui.Selectable( name ) ? MouseButton.Left : MouseButton.None;
         ret = ImGui.IsItemClicked( ImGuiMouseButton.Right ) ? MouseButton.Right : ret;
@@ -55,7 +55,7 @@ public partial class ConfigWindow
             }
         }
 
-        if( data is Item it )
+        if( data is Item it && drawId )
         {
             ImGui.SameLine( ImGui.GetContentRegionAvail().X );
             ImGuiUtil.RightJustify( $"({( ( Quad )it.ModelMain ).A})", ColorId.ItemId.Value() );

@@ -59,7 +59,7 @@ public partial class ModCollection
             var newCollection = this[ newIdx ];
             if( newIdx > Empty.Index )
             {
-                newCollection.CreateCache( false );
+                newCollection.CreateCache();
             }
 
             RemoveCache( oldCollectionIdx );
@@ -122,7 +122,7 @@ public partial class ModCollection
             var configChanged = !ReadActiveCollections( out var jObject );
 
             // Load the default collection.
-            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? (configChanged ? DefaultCollection : Empty.Name);
+            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? ( configChanged ? DefaultCollection : Empty.Name );
             var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
             {
@@ -250,12 +250,12 @@ public partial class ModCollection
         // Cache handling.
         private void CreateNecessaryCaches()
         {
-            Default.CreateCache( true );
-            Current.CreateCache( false );
+            Default.CreateCache();
+            Current.CreateCache();
 
             foreach( var collection in _characters.Values )
             {
-                collection.CreateCache( false );
+                collection.CreateCache();
             }
         }
 
@@ -268,27 +268,27 @@ public partial class ModCollection
         }
 
         // Recalculate effective files for active collections on events.
-        private void OnModAddedActive( bool meta )
+        private void OnModAddedActive( Mod mod )
         {
-            foreach( var collection in this.Where( c => c.HasCache && c[ ^1 ].Settings?.Enabled == true ) )
+            foreach( var collection in this.Where( c => c.HasCache && c[ mod.Index ].Settings?.Enabled == true ) )
             {
-                collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
+                collection._cache!.AddMod( mod, true );
             }
         }
 
-        private void OnModRemovedActive( bool meta, IEnumerable< ModSettings? > settings )
+        private void OnModRemovedActive( Mod mod )
         {
-            foreach( var (collection, _) in this.Zip( settings ).Where( c => c.First.HasCache && c.Second?.Enabled == true ) )
+            foreach( var collection in this.Where( c => c.HasCache && c[ mod.Index ].Settings?.Enabled == true ) )
             {
-                collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
+                collection._cache!.RemoveMod( mod, true );
             }
         }
 
-        private void OnModChangedActive( bool meta, int modIdx )
+        private void OnModMovedActive( Mod mod )
         {
-            foreach( var collection in this.Where( c => c.HasCache && c[ modIdx ].Settings?.Enabled == true ) )
+            foreach( var collection in this.Where( c => c.HasCache && c[ mod.Index ].Settings?.Enabled == true ) )
             {
-                collection.CalculateEffectiveFileList( meta, collection == Penumbra.CollectionManager.Default );
+                collection._cache!.ReloadMod( mod, true );
             }
         }
     }

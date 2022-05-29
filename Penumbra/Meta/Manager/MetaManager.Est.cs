@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
@@ -16,7 +18,7 @@ public partial class MetaManager
         public EstFile? BodyFile = null;
         public EstFile? HeadFile = null;
 
-        public readonly Dictionary< EstManipulation, int > Manipulations = new();
+        public readonly Dictionary< EstManipulation, Mod > Manipulations = new();
 
         public MetaManagerEst()
         { }
@@ -49,10 +51,10 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( EstManipulation m, int modIdx )
+        public bool ApplyMod( EstManipulation m, Mod mod )
         {
 #if USE_EST
-            Manipulations[ m ] = modIdx;
+            Manipulations[ m ] = mod;
             var file = m.Slot switch
             {
                 EstManipulation.EstType.Hair => HairFile ??= new EstFile( EstManipulation.EstType.Hair ),
@@ -65,6 +67,27 @@ public partial class MetaManager
 #else
             return false;
 #endif
+        }
+
+        public bool RevertMod( EstManipulation m )
+        {
+#if USE_EST
+            if( Manipulations.Remove( m ) )
+            {
+                var def   = EstFile.GetDefault( m.Slot, Names.CombinedRace( m.Gender, m.Race ), m.SetId );
+                var manip = new EstManipulation( m.Gender, m.Race, m.Slot, m.SetId, def );
+                var file = m.Slot switch
+                {
+                    EstManipulation.EstType.Hair => HairFile!,
+                    EstManipulation.EstType.Face => FaceFile!,
+                    EstManipulation.EstType.Body => BodyFile!,
+                    EstManipulation.EstType.Head => HeadFile!,
+                    _                            => throw new ArgumentOutOfRangeException(),
+                };
+                return manip.Apply( file );
+            }
+#endif
+            return false;
         }
 
         public void Dispose()

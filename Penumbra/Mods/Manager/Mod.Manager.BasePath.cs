@@ -81,6 +81,7 @@ public partial class Mod
             var mod     = this[ idx ];
             var oldName = mod.Name;
 
+            ModPathChanged.Invoke(ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath  );
             if( !mod.Reload( out var metaChange ) )
             {
                 PluginLog.Warning( mod.Name.Length == 0

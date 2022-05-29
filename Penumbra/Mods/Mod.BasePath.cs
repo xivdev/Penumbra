@@ -9,6 +9,7 @@ public enum ModPathChangeType
     Deleted,
     Moved,
     Reloaded,
+    StartingReload,
 }
 
 public partial class Mod

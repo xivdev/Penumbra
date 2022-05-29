@@ -432,8 +432,9 @@ public class Penumbra : IDisposable
               + "> **`Enabled Mods:                `** {3}\n"
               + "> **`Total Conflicts:             `** {4}\n"
               + "> **`Solved Conflicts:            `** {5}\n",
-                CollectionName( c ), c.Index, c.Inheritance.Count, c.ActualSettings.Count( s => s is { Enabled: true } ), c.Conflicts.Count,
-                c.Conflicts.Count( con => con.Solved ) );
+                CollectionName( c ), c.Index, c.Inheritance.Count, c.ActualSettings.Count( s => s is { Enabled: true } ),
+                c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority ? 0 : x.Conflicts.Count ),
+                c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority || !x.Solved ? 0 : x.Conflicts.Count ) );
 
         sb.AppendLine( "**Collections**" );
         sb.AppendFormat( "> **`#Collections:                `** {0}\n", CollectionManager.Count );

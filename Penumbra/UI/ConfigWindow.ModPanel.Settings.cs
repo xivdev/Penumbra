@@ -15,11 +15,11 @@ public partial class ConfigWindow
 {
     private partial class ModPanel
     {
-        private ModSettings                       _settings   = null!;
-        private ModCollection                     _collection = null!;
-        private bool                              _emptySetting;
-        private bool                              _inherited;
-        private SubList< ConflictCache.Conflict > _conflicts = SubList< ConflictCache.Conflict >.Empty;
+        private ModSettings                 _settings   = null!;
+        private ModCollection               _collection = null!;
+        private bool                        _emptySetting;
+        private bool                        _inherited;
+        private SingleArray< ModConflicts > _conflicts = new();
 
         private int? _currentPriority;
 
@@ -29,7 +29,7 @@ public partial class ConfigWindow
             _collection   = selector.SelectedSettingCollection;
             _emptySetting = _settings   == ModSettings.Empty;
             _inherited    = _collection != Penumbra.CollectionManager.Current;
-            _conflicts    = Penumbra.CollectionManager.Current.ModConflicts( _mod.Index );
+            _conflicts    = Penumbra.CollectionManager.Current.Conflicts( _mod );
         }
 
         // Draw the whole settings tab as well as its contents.
@@ -105,7 +105,6 @@ public partial class ConfigWindow
             ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
             if( ImGui.InputInt( "##Priority", ref priority, 0, 0 ) )
             {
-
                 _currentPriority = priority;
             }
 
