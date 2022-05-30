@@ -36,9 +36,9 @@ public sealed partial class ConfigWindow : Window, IDisposable
         _debugTab                  =  new DebugTab( this );
         _resourceTab               =  new ResourceTab( this );
 
-        Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide    = true;
-        Dalamud.PluginInterface.UiBuilder.DisableCutsceneUiHide = true;
-        Dalamud.PluginInterface.UiBuilder.DisableUserUiHide     = true;
+        Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide    = !Penumbra.Config.HideUiInGPose;
+        Dalamud.PluginInterface.UiBuilder.DisableCutsceneUiHide = !Penumbra.Config.HideUiInCutscenes;
+        Dalamud.PluginInterface.UiBuilder.DisableUserUiHide     = !Penumbra.Config.HideUiWhenUiHidden;
         RespectCloseHotkey                                      = true;
         SizeConstraints = new WindowSizeConstraints()
         {

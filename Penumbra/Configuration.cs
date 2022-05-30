@@ -17,6 +17,9 @@ public partial class Configuration : IPluginConfiguration
     public bool EnableMods { get; set; } = true;
     public string ModDirectory { get; set; } = string.Empty;
 
+    public bool HideUiInGPose { get; set; } = false;
+    public bool HideUiInCutscenes { get; set; } = true;
+    public bool HideUiWhenUiHidden { get; set; } = false;
 
 #if DEBUG
     public bool DebugMode { get; set; } = true;

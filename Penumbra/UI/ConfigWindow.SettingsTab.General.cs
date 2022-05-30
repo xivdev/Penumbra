@@ -13,6 +13,20 @@ public partial class ConfigWindow
 {
     private partial class SettingsTab
     {
+        private static void Checkbox( string label, string tooltip, bool current, Action< bool > setter )
+        {
+            using var id  = ImRaii.PushId( label );
+            var       tmp = current;
+            if( ImGui.Checkbox( string.Empty, ref tmp ) && tmp != current )
+            {
+                setter( tmp );
+                Penumbra.Config.Save();
+            }
+
+            ImGui.SameLine();
+            ImGuiUtil.LabeledHelpMarker( label, tooltip );
+        }
+
         private void DrawModSelectorSettings()
         {
             if( !ImGui.CollapsingHeader( "General" ) )
@@ -20,6 +34,28 @@ public partial class ConfigWindow
                 return;
             }
 
+            Checkbox( "Hide Config Window when UI is Hidden",
+                "Hide the penumbra main window when you manually hide the in-game user interface.", Penumbra.Config.HideUiWhenUiHidden,
+                v =>
+                {
+                    Penumbra.Config.HideUiWhenUiHidden                  = v;
+                    Dalamud.PluginInterface.UiBuilder.DisableUserUiHide = !v;
+                } );
+            Checkbox( "Hide Config Window when in Cutscenes",
+                "Hide the penumbra main window when you are currently watching a cutscene.", Penumbra.Config.HideUiInCutscenes,
+                v =>
+                {
+                    Penumbra.Config.HideUiInCutscenes                       = v;
+                    Dalamud.PluginInterface.UiBuilder.DisableCutsceneUiHide = !v;
+                } );
+            Checkbox( "Hide Config Window when in GPose",
+                "Hide the penumbra main window when you are currently in GPose mode.", Penumbra.Config.HideUiInGPose,
+                v =>
+                {
+                    Penumbra.Config.HideUiInGPose                        = v;
+                    Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide = !v;
+                } );
+            ImGui.Dummy( _window._defaultSpace );
             DrawFolderSortType();
             DrawAbsoluteSizeSelector();
             DrawRelativeSizeSelector();
