@@ -222,7 +222,6 @@ public partial class ModCollection
                 return;
             }
 
-            AddSubMod( mod.Default, mod );
             foreach( var (group, groupIndex) in mod.Groups.WithIndex().OrderByDescending( g => g.Item1.Priority ) )
             {
                 if( group.Count == 0 )
@@ -249,6 +248,7 @@ public partial class ModCollection
                     }
                 }
             }
+            AddSubMod( mod.Default, mod );
 
             if( addMetaChanges )
             {
