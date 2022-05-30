@@ -99,7 +99,7 @@ public partial class Mod
             }
         }
 
-        // Delete a mod by its index.
+        // Delete a mod by its index. The event is invoked before the mod is removed from the list.
         // Deletes from filesystem as well as from internal data.
         // Updates indices of later mods.
         public void DeleteMod( int idx )
@@ -118,13 +118,13 @@ public partial class Mod
                 }
             }
 
+            ModPathChanged.Invoke( ModPathChangeType.Deleted, mod, mod.ModPath, null );
             _mods.RemoveAt( idx );
             foreach( var remainingMod in _mods.Skip( idx ) )
             {
                 --remainingMod.Index;
             }
 
-            ModPathChanged.Invoke( ModPathChangeType.Deleted, mod, mod.ModPath, null );
             PluginLog.Debug( "Deleted mod {Name:l}.", mod.Name );
         }
 

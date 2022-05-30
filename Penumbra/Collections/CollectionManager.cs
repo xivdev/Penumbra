@@ -68,7 +68,7 @@ public partial class ModCollection
             _modManager.ModDiscoveryStarted  += OnModDiscoveryStarted;
             _modManager.ModDiscoveryFinished += OnModDiscoveryFinished;
             _modManager.ModOptionChanged     += OnModOptionsChanged;
-            _modManager.ModPathChanged       += OnModPathChanged;
+            _modManager.ModPathChanged       += OnModPathChange;
             CollectionChanged                += SaveOnChange;
             ReadCollections();
             LoadCollections();
@@ -79,7 +79,7 @@ public partial class ModCollection
             _modManager.ModDiscoveryStarted  -= OnModDiscoveryStarted;
             _modManager.ModDiscoveryFinished -= OnModDiscoveryFinished;
             _modManager.ModOptionChanged     -= OnModOptionsChanged;
-            _modManager.ModPathChanged       -= OnModPathChanged;
+            _modManager.ModPathChanged       -= OnModPathChange;
         }
 
         // Returns true if the name is not empty, it is not the name of the empty collection
@@ -210,7 +210,7 @@ public partial class ModCollection
 
 
         // A changed mod path forces changes for all collections, active and inactive.
-        private void OnModPathChanged( ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
+        private void OnModPathChange( ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
             DirectoryInfo? newDirectory )
         {
             switch( type )
