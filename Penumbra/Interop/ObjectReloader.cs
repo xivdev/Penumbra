@@ -36,48 +36,61 @@ public sealed unsafe class ObjectReloader : IDisposable
     private static int ObjectTableIndex( GameObject actor )
         => ( ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )actor.Address )->ObjectIndex;
 
-    private static void WriteInvisible( GameObject? actor )
+    private static bool BadRedrawIndices( GameObject? actor, out int tableIndex )
     {
         if( actor == null )
+        {
+            tableIndex = -1;
+            return true;
+        }
+
+        tableIndex = ObjectTableIndex( actor );
+        return tableIndex is >= 240 and < 245;
+    }
+
+    private static void WriteInvisible( GameObject? actor )
+    {
+        if( BadRedrawIndices( actor, out var tableIndex ) )
         {
             return;
         }
 
-        *ActorDrawState( actor ) |= DrawState.Invisibility;
+        *ActorDrawState( actor! ) |= DrawState.Invisibility;
 
-        if( ObjectTableIndex( actor ) is >= GPosePlayerIdx and < GPoseEndIdx )
+        if( tableIndex is >= GPosePlayerIdx and < GPoseEndIdx )
         {
-            DisableDraw( actor );
+            DisableDraw( actor! );
         }
     }
 
     private static void WriteVisible( GameObject? actor )
     {
-        if( actor == null )
+        if( BadRedrawIndices( actor, out var tableIndex ) )
         {
             return;
         }
 
-        *ActorDrawState( actor ) &= ~DrawState.Invisibility;
+        *ActorDrawState( actor! ) &= ~DrawState.Invisibility;
 
-        if( ObjectTableIndex( actor ) is >= GPosePlayerIdx and < GPoseEndIdx )
+        if( tableIndex is >= GPosePlayerIdx and < GPoseEndIdx )
         {
-            EnableDraw( actor );
+            EnableDraw( actor! );
         }
     }
 
     private void ReloadActor( GameObject? actor )
     {
-        if( actor != null )
+        if( BadRedrawIndices( actor, out var tableIndex ) )
         {
-            var idx = ObjectTableIndex( actor );
-            if( actor.Address == Dalamud.Targets.Target?.Address )
-            {
-                _target = idx;
-            }
-
-            _queue.Add( ~idx );
+            return;
         }
+
+        if( actor!.Address == Dalamud.Targets.Target?.Address )
+        {
+            _target = tableIndex;
+        }
+
+        _queue.Add( ~tableIndex );
     }
 
     private void ReloadActorAfterGPose( GameObject? actor )
