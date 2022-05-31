@@ -32,8 +32,9 @@ public unsafe partial class PathResolver
         var       ret = CharacterBaseCreateHook!.Original( a, b, c, d );
         if( LastGameObject != null )
         {
-            DrawObjectToObject[ ret ] = (_lastCreatedCollection!, LastGameObject->ObjectIndex );
+            DrawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
         }
+
         return ret;
     }
 
@@ -145,18 +146,27 @@ public unsafe partial class PathResolver
     {
         var uiModule    = ( UIModule* )Dalamud.GameGui.GetUIModule();
         var agentModule = uiModule->GetAgentModule();
-        var agent       = (byte*) agentModule->GetAgentByInternalID( 393 );
+        var agent       = ( byte* )agentModule->GetAgentByInternalID( 393 );
         if( agent == null )
         {
             return null;
         }
 
-        var data = *(byte**) (agent + 0x28);
+        var data = *( byte** )( agent + 0x28 );
         if( data == null )
+        {
             return null;
+        }
 
         var block = data + 0x7A;
         return new Utf8String( block ).ToString();
+    }
+
+    // Obtain the name of the player character if the glamour plate edit window is open.
+    private static string? GetGlamourName()
+    {
+        var addon = Dalamud.GameGui.GetAddonByName( "MiragePrismMiragePlate", 1 );
+        return addon == IntPtr.Zero ? null : GetPlayerName();
     }
 
     // Guesstimate whether an unnamed cutscene actor corresponds to the player or not,
@@ -188,9 +198,9 @@ public unsafe partial class PathResolver
 
         var name = gameObject->ObjectIndex switch
             {
-                240    => GetPlayerName(),                   // character window
-                241    => GetInspectName() ?? GetCardName(), // inspect, character card
-                242    => GetPlayerName(),                   // try-on
+                240    => GetPlayerName(),                                       // character window
+                241    => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
+                242    => GetPlayerName(),                                       // try-on
                 >= 200 => GetCutsceneName( gameObject ),
                 _      => null,
             }
