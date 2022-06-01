@@ -437,7 +437,11 @@ public partial class ModCollection
                         }
                         else if( !data.Item1.Contains( modPath.Mod ) )
                         {
-                            _changedItems[ name ] = ( data.Item1.Append( modPath.Mod ), obj );
+                            _changedItems[ name ] = ( data.Item1.Append( modPath.Mod ), obj is int x && data.Item2 is int y ? x + y : obj);
+                        }
+                        else if (obj is int x && data.Item2 is int y)
+                        {
+                            _changedItems[name] = (data.Item1, x + y);
                         }
                     }
                 }

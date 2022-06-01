@@ -28,10 +28,16 @@ public partial class ConfigWindow
     private static unsafe void Text( ResourceHandle* resource )
         => Text( resource->FileName(), resource->FileNameLength );
 
+
+    // Apply Changed Item Counters to the Name if necessary.
+    private static string ChangedItemName( string name, object? data )
+        => data is int counter ? $"{counter} Files Manipulating {name}s" : name;
+
     // Draw a changed item, invoking the Api-Events for clicks and tooltips.
     // Also draw the item Id in grey if requested
     private void DrawChangedItem( string name, object? data, bool drawId )
     {
+        name = ChangedItemName( name, data );
         var ret = ImGui.Selectable( name ) ? MouseButton.Left : MouseButton.None;
         ret = ImGui.IsItemClicked( ImGuiMouseButton.Right ) ? MouseButton.Right : ret;
         ret = ImGui.IsItemClicked( ImGuiMouseButton.Middle ) ? MouseButton.Middle : ret;

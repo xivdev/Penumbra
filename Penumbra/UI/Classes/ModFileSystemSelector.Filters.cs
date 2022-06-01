@@ -96,7 +96,7 @@ public partial class ModFileSystemSelector
             0  => !( leaf.FullName().Contains( _modFilter.Lower, IgnoreCase ) || mod.Name.Contains( _modFilter ) ),
             1  => !mod.Name.Contains( _modFilter ),
             2  => !mod.Author.Contains( _modFilter ),
-            3  => !mod.LowerChangedItemsString.Contains( _modFilter ),
+            3  => !mod.LowerChangedItemsString.Contains( _modFilter.Lower, IgnoreCase ),
             _  => false, // Should never happen
         };
     }
