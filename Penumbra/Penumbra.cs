@@ -32,6 +32,7 @@ public class MainClass : IDalamudPlugin
     public MainClass( DalamudPluginInterface pluginInterface )
     {
         Dalamud.Initialize( pluginInterface );
+        GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
         _characterUtility = new CharacterUtility();
         _characterUtility.LoadingFinished += ()
             => _penumbra = new Penumbra( _characterUtility );
@@ -87,7 +88,6 @@ public class Penumbra : IDisposable
         CharacterUtility = characterUtility;
 
         Framework = new FrameworkManager();
-        GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
         Backup.CreateBackup( PenumbraBackupFiles() );
         Config = Configuration.Load();
 
