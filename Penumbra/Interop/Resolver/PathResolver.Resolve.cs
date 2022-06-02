@@ -98,6 +98,43 @@ public unsafe partial class PathResolver
     private IntPtr ResolveWeaponVfxDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
         => ResolveWeaponPathDetour( drawObject, ResolveWeaponVfxPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
 
+    // Monsters
+    private IntPtr ResolveMonsterDecalDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveMonsterDecalPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveMonsterEidDetour( IntPtr drawObject, IntPtr path, IntPtr unk3 )
+        => ResolvePathDetour( drawObject, ResolveMonsterEidPathHook!.Original( drawObject, path, unk3 ) );
+
+    private IntPtr ResolveMonsterImcDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveMonsterImcPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveMonsterMPapDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, uint unk5 )
+        => ResolvePathDetour( drawObject, ResolveMonsterMPapPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveMonsterMdlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint modelType )
+        => ResolvePathDetour( drawObject, ResolveMonsterMdlPathHook!.Original( drawObject, path, unk3, modelType ) );
+
+    private IntPtr ResolveMonsterMtrlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolvePathDetour( drawObject, ResolveMonsterMtrlPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveMonsterPapDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolvePathDetour( drawObject, ResolveMonsterPapPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveMonsterPhybDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveMonsterPhybPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveMonsterSklbDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveMonsterSklbPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveMonsterSkpDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveMonsterSkpPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveMonsterTmbDetour( IntPtr drawObject, IntPtr path, IntPtr unk3 )
+        => ResolvePathDetour( drawObject, ResolveMonsterTmbPathHook!.Original( drawObject, path, unk3 ) );
+
+    private IntPtr ResolveMonsterVfxDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolvePathDetour( drawObject, ResolveMonsterVfxPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
 
     // Implementation
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]

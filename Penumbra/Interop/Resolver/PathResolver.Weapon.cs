@@ -23,7 +23,6 @@ public unsafe partial class PathResolver
     public Hook< EidResolveDelegate >?     ResolveWeaponTmbPathHook;
     public Hook< MaterialResolveDetour >?  ResolveWeaponVfxPathHook;
 
-
     private void SetupWeaponHooks()
     {
         ResolveWeaponDecalPathHook = new Hook< GeneralResolveDelegate >( DrawObjectWeaponVTable[ ResolveDecalIdx ], ResolveWeaponDecalDetour );

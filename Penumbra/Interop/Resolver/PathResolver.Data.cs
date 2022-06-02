@@ -188,6 +188,29 @@ public unsafe partial class PathResolver
         return pc->ClassJob == ( ( Character* )gameObject )->ClassJob ? player.Name.ToString() : null;
     }
 
+    // Identify the owner of a companion, mount or monster and apply the corresponding collection.
+    // Companions and mounts get set to the actor before them in the table if it exists.
+    // Monsters with a owner use that owner if it exists.
+    private static string? GetOwnerName( GameObject* gameObject )
+    {
+        GameObject* owner = null;
+        if( ( ObjectKind )gameObject->GetObjectKind() is ObjectKind.Companion or ObjectKind.MountType && gameObject->ObjectIndex > 0 )
+        {
+            owner = ( GameObject* )Dalamud.Objects[ gameObject->ObjectIndex - 1 ]?.Address;
+        }
+        else if( gameObject->OwnerID != 0xE0000000 )
+        {
+            owner = ( GameObject* )Dalamud.Objects.SearchById( gameObject->OwnerID )?.Address;
+        }
+
+        if( owner != null )
+        {
+            return new Utf8String( owner->Name ).ToString();
+        }
+
+        return null;
+    }
+
     // Identify the correct collection for a GameObject by index and name.
     private static ModCollection IdentifyCollection( GameObject* gameObject )
     {
@@ -204,7 +227,7 @@ public unsafe partial class PathResolver
                 >= 200 => GetCutsceneName( gameObject ),
                 _      => null,
             }
-         ?? new Utf8String( gameObject->Name ).ToString();
+         ?? GetOwnerName( gameObject ) ?? new Utf8String( gameObject->Name ).ToString();
 
         return Penumbra.CollectionManager.Character( name );
     }

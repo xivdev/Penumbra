@@ -25,6 +25,7 @@ public partial class PathResolver : IDisposable
         SignatureHelper.Initialise( this );
         SetupHumanHooks();
         SetupWeaponHooks();
+        SetupMonsterHooks();
         SetupMetaHooks();
     }
 
@@ -82,6 +83,7 @@ public partial class PathResolver : IDisposable
 
         EnableHumanHooks();
         EnableWeaponHooks();
+        EnableMonsterHooks();
         EnableMtrlHooks();
         EnableDataHooks();
         EnableMetaHooks();
@@ -100,6 +102,7 @@ public partial class PathResolver : IDisposable
         Enabled = false;
         DisableHumanHooks();
         DisableWeaponHooks();
+        DisableMonsterHooks();
         DisableMtrlHooks();
         DisableDataHooks();
         DisableMetaHooks();
@@ -116,6 +119,7 @@ public partial class PathResolver : IDisposable
         Disable();
         DisposeHumanHooks();
         DisposeWeaponHooks();
+        DisposeMonsterHooks();
         DisposeMtrlHooks();
         DisposeDataHooks();
         DisposeMetaHooks();
