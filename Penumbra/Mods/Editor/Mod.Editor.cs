@@ -13,14 +13,13 @@ public partial class Mod
     {
         private readonly Mod _mod;
 
-        public Editor( Mod mod )
+        public Editor( Mod mod, int groupIdx, int optionIdx )
         {
-            _mod            = mod;
-            _availableFiles = GetAvailablePaths( mod );
-            _usedPaths      = new SortedSet< FullPath >( mod.AllFiles );
-            _missingPaths   = new SortedSet< FullPath >( UsedPaths.Where( f => !f.Exists ) );
-            _unusedFiles    = new SortedSet< FullPath >( AvailableFiles.Where( p => !UsedPaths.Contains( p.Item1 ) ).Select( p => p.Item1 ) );
-            _subMod         = _mod._default;
+            _mod     = mod;
+            SetSubMod( groupIdx, optionIdx );
+            GroupIdx = groupIdx;
+            _subMod  = _mod._default;
+            UpdateFiles();
             ScanModels();
         }
 

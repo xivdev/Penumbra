@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
@@ -11,68 +12,75 @@ public partial class Mod
 {
     public partial class Editor
     {
+        public class FileRegistry : IEquatable< FileRegistry >
+        {
+            public readonly List< (ISubMod, Utf8GamePath) > SubModUsage = new();
+            public FullPath File { get; private init; }
+            public Utf8RelPath RelPath { get; private init; }
+            public long FileSize { get; private init; }
+            public int CurrentUsage;
+
+            public static bool FromFile( Mod mod, FileInfo file, [NotNullWhen( true )] out FileRegistry? registry )
+            {
+                var fullPath = new FullPath( file.FullName );
+                if( !fullPath.ToRelPath( mod.ModPath, out var relPath ) )
+                {
+                    registry = null;
+                    return false;
+                }
+
+                registry = new FileRegistry
+                {
+                    File         = fullPath,
+                    RelPath      = relPath,
+                    FileSize     = file.Length,
+                    CurrentUsage = 0,
+                };
+                return true;
+            }
+
+            public bool Equals( FileRegistry? other )
+            {
+                if( ReferenceEquals( null, other ) )
+                {
+                    return false;
+                }
+
+                return ReferenceEquals( this, other ) || File.Equals( other.File );
+            }
+
+            public override bool Equals( object? obj )
+            {
+                if( ReferenceEquals( null, obj ) )
+                {
+                    return false;
+                }
+
+                if( ReferenceEquals( this, obj ) )
+                {
+                    return true;
+                }
+
+                return obj.GetType() == GetType() && Equals( ( FileRegistry )obj );
+            }
+
+            public override int GetHashCode()
+                => File.GetHashCode();
+        }
+
         // All files in subdirectories of the mod directory.
-        public IReadOnlyList< (FullPath, long) > AvailableFiles
+        public IReadOnlyList< FileRegistry > AvailableFiles
             => _availableFiles;
 
-        private readonly List< (FullPath, long) > _availableFiles;
-
-        // All files that are available but not currently used in any option.
-        private readonly SortedSet< FullPath > _unusedFiles;
-
-        public IReadOnlySet< FullPath > UnusedFiles
-            => _unusedFiles;
-
-        // All paths that are used in any option in the mod.
-        private readonly SortedSet< FullPath > _usedPaths;
-
-        public IReadOnlySet< FullPath > UsedPaths
-            => _usedPaths;
+        public bool FileChanges { get; private set; }
+        private          List< FileRegistry >    _availableFiles = null!;
+        private readonly HashSet< Utf8GamePath > _usedPaths      = new();
 
         // All paths that are used in 
-        private readonly SortedSet< FullPath > _missingPaths;
+        private readonly SortedSet< FullPath > _missingFiles = new();
 
-        public IReadOnlySet< FullPath > MissingPaths
-            => _missingPaths;
-
-        // Adds all currently unused paths, relative to the mod directory, to the replacements.
-        public void AddUnusedPathsToDefault()
-        {
-            var dict = new Dictionary< Utf8GamePath, FullPath >( UnusedFiles.Count );
-            foreach( var file in UnusedFiles )
-            {
-                var gamePath = file.ToGamePath( _mod.ModPath, out var g ) ? g : Utf8GamePath.Empty;
-                if( !gamePath.IsEmpty && !dict.ContainsKey( gamePath ) )
-                {
-                    dict.Add( gamePath, file );
-                    PluginLog.Debug( "[AddUnusedPaths] Adding {GamePath} -> {File} to default option of {Mod}.", gamePath, file, _mod.Name );
-                }
-            }
-
-            Penumbra.ModManager.OptionAddFiles( _mod, -1, 0, dict );
-            _usedPaths.UnionWith( _mod.Default.Files.Values );
-            _unusedFiles.RemoveWhere( f => _mod.Default.Files.Values.Contains( f ) );
-        }
-
-        // Delete all currently unused paths from your filesystem.
-        public void DeleteUnusedPaths()
-        {
-            foreach( var file in UnusedFiles )
-            {
-                try
-                {
-                    File.Delete( file.FullName );
-                    PluginLog.Debug( "[DeleteUnusedPaths] Deleted {File} from {Mod}.", file, _mod.Name );
-                }
-                catch( Exception e )
-                {
-                    PluginLog.Error($"[DeleteUnusedPaths] Could not delete {file} from {_mod.Name}:\n{e}"  );
-                }
-            }
-
-            _unusedFiles.RemoveWhere( f => !f.Exists );
-            _availableFiles.RemoveAll( p => !p.Item1.Exists );
-        }
+        public IReadOnlySet< FullPath > MissingFiles
+            => _missingFiles;
 
         // Remove all path redirections where the pointed-to file does not exist.
         public void RemoveMissingPaths()
@@ -88,13 +96,12 @@ public partial class Mod
             }
 
             ApplyToAllOptions( _mod, HandleSubMod );
-            _usedPaths.RemoveWhere( _missingPaths.Contains );
-            _missingPaths.Clear();
+            _missingFiles.Clear();
         }
 
         private bool CheckAgainstMissing( FullPath file, Utf8GamePath key )
         {
-            if( !_missingPaths.Contains( file ) )
+            if( !_missingFiles.Contains( file ) )
             {
                 return true;
             }
@@ -104,9 +111,157 @@ public partial class Mod
         }
 
 
-        private static List<(FullPath, long)> GetAvailablePaths( Mod mod )
-            => mod.ModPath.EnumerateDirectories()
-               .SelectMany( d => d.EnumerateFiles( "*.*", SearchOption.AllDirectories ).Select( f => (new FullPath( f ), f.Length) ) )
-               .OrderBy( p => -p.Length ).ToList();
+        // Fetch all files inside subdirectories of the main mod directory.
+        // Then check which options use them and how often.
+        private void UpdateFiles()
+        {
+            _availableFiles = _mod.ModPath.EnumerateDirectories()
+               .SelectMany( d => d.EnumerateFiles( "*.*", SearchOption.AllDirectories )
+                   .Select( f => FileRegistry.FromFile( _mod, f, out var r ) ? r : null )
+                   .OfType< FileRegistry >() )
+               .ToList();
+
+            _usedPaths.Clear();
+            FileChanges = false;
+            foreach( var subMod in _mod.AllSubMods )
+            {
+                foreach( var (gamePath, file) in subMod.Files )
+                {
+                    if( !file.Exists )
+                    {
+                        _missingFiles.Add( file );
+                        if( subMod == _subMod )
+                        {
+                            _usedPaths.Add( gamePath );
+                        }
+                    }
+                    else
+                    {
+                        var registry = _availableFiles.FirstOrDefault( x => x.File.Equals( file ) );
+                        if( registry != null )
+                        {
+                            if( subMod == _subMod )
+                            {
+                                ++registry.CurrentUsage;
+                                _usedPaths.Add( gamePath );
+                            }
+
+                            registry.SubModUsage.Add( ( subMod, gamePath ) );
+                        }
+                    }
+                }
+            }
+        }
+
+        // Return whether the given path is already used in the current option.
+        public bool CanAddGamePath( Utf8GamePath path )
+            => !_usedPaths.Contains( path );
+
+        // Try to set a given path for a given file.
+        // Returns false if this is not possible.
+        // If path is empty, it will be deleted instead.
+        // If pathIdx is equal to the total number of paths, path will be added, otherwise replaced.
+        public bool SetGamePath( int fileIdx, int pathIdx, Utf8GamePath path )
+        {
+            if( _usedPaths.Contains( path ) || fileIdx < 0 || fileIdx > _availableFiles.Count || pathIdx < 0 )
+            {
+                return false;
+            }
+
+            var registry = _availableFiles[ fileIdx ];
+            if( pathIdx > registry.SubModUsage.Count )
+            {
+                return false;
+            }
+
+            if( pathIdx == registry.SubModUsage.Count )
+            {
+                registry.SubModUsage.Add( ( CurrentOption, path ) );
+                ++registry.CurrentUsage;
+                _usedPaths.Add( path );
+            }
+            else
+            {
+                _usedPaths.Remove( registry.SubModUsage[ pathIdx ].Item2 );
+                if( path.IsEmpty )
+                {
+                    registry.SubModUsage.RemoveAt( pathIdx );
+                    --registry.CurrentUsage;
+                }
+                else
+                {
+                    registry.SubModUsage[ pathIdx ] = ( registry.SubModUsage[ pathIdx ].Item1, path );
+                }
+            }
+
+            FileChanges = true;
+
+            return true;
+        }
+
+        // Transform a set of files to the appropriate game paths with the given number of folders skipped,
+        // and add them to the given option.
+        public int AddPathsToSelected( IEnumerable< FileRegistry > files, int skipFolders = 0 )
+        {
+            var failed = 0;
+            foreach( var file in files )
+            {
+                var gamePath = file.RelPath.ToGamePath( skipFolders );
+                if( gamePath.IsEmpty )
+                {
+                    ++failed;
+                    continue;
+                }
+
+                if( CanAddGamePath( gamePath ) )
+                {
+                    ++file.CurrentUsage;
+                    file.SubModUsage.Add( ( CurrentOption, gamePath ) );
+                    _usedPaths.Add( gamePath );
+                    FileChanges = true;
+                }
+                else
+                {
+                    ++failed;
+                }
+            }
+
+            return failed;
+        }
+
+        // Remove all paths in the current option from the given files.
+        public void RemovePathsFromSelected( IEnumerable< FileRegistry > files )
+        {
+            foreach( var file in files )
+            {
+                file.CurrentUsage =  0;
+                FileChanges       |= file.SubModUsage.RemoveAll( p => p.Item1 == CurrentOption && _usedPaths.Remove( p.Item2 ) ) > 0;
+            }
+        }
+
+        // Delete all given files from your filesystem
+        public void DeleteFiles( IEnumerable< FileRegistry > files )
+        {
+            var deletions = 0;
+            foreach( var file in files )
+            {
+                try
+                {
+                    File.Delete( file.File.FullName );
+                    PluginLog.Debug( "[DeleteFiles] Deleted {File} from {Mod}.", file.File.FullName, _mod.Name );
+                    ++deletions;
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"[DeleteFiles] Could not delete {file.File.FullName} from {_mod.Name}:\n{e}" );
+                }
+            }
+
+            if( deletions > 0 )
+            {
+                _mod.Reload( out _ );
+                UpdateFiles();
+            }
+        }
     }
 }

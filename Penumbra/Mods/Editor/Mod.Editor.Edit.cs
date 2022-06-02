@@ -18,38 +18,52 @@ public partial class Mod
         public ISubMod CurrentOption
             => _subMod;
 
-        public readonly Dictionary< Utf8GamePath, FullPath > CurrentFiles         = new();
-        public readonly Dictionary< Utf8GamePath, FullPath > CurrentSwaps         = new();
+        public readonly Dictionary< Utf8GamePath, FullPath > CurrentSwaps = new();
 
         public void SetSubMod( int groupIdx, int optionIdx )
         {
             GroupIdx  = groupIdx;
             OptionIdx = optionIdx;
-            if( groupIdx >= 0 )
+            if( groupIdx >= 0 && groupIdx < _mod.Groups.Count && optionIdx >= 0 && optionIdx < _mod.Groups[ groupIdx ].Count )
             {
                 _modGroup = _mod.Groups[ groupIdx ];
                 _subMod   = ( SubMod )_modGroup![ optionIdx ];
             }
             else
             {
+                GroupIdx  = -1;
+                OptionIdx = 0;
                 _modGroup = null;
                 _subMod   = _mod._default;
             }
 
-            RevertFiles();
+            UpdateFiles();
             RevertSwaps();
             RevertManipulations();
         }
 
-        public void ApplyFiles()
+        public int ApplyFiles()
         {
-            Penumbra.ModManager.OptionSetFiles( _mod, GroupIdx, OptionIdx, CurrentFiles.ToDictionary( kvp => kvp.Key, kvp => kvp.Value ) );
+            var dict = new Dictionary< Utf8GamePath, FullPath >();
+            var num  = 0;
+            foreach( var file in _availableFiles )
+            {
+                foreach( var path in file.SubModUsage.Where( p => p.Item1 == CurrentOption ) )
+                {
+                    num += dict.TryAdd( path.Item2, file.File ) ? 0 : 1;
+                }
+            }
+
+            Penumbra.ModManager.OptionSetFiles( _mod, GroupIdx, OptionIdx, dict );
+            if( num > 0 )
+                RevertFiles();
+            else
+                FileChanges = false;
+            return num;
         }
 
         public void RevertFiles()
-        {
-            CurrentFiles.SetTo( _subMod.Files );
-        }
+            => UpdateFiles();
 
         public void ApplySwaps()
         {

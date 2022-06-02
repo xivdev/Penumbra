@@ -72,22 +72,22 @@ public partial class Mod
         private void ScanModels()
         {
             _modelFiles.Clear();
-            foreach( var (file, _) in AvailableFiles.Where( f => f.Item1.Extension == ".mdl" ) )
+            foreach( var file in AvailableFiles.Where( f => f.File.Extension == ".mdl" ) )
             {
                 try
                 {
-                    var bytes   = File.ReadAllBytes( file.FullName );
+                    var bytes   = File.ReadAllBytes( file.File.FullName );
                     var mdlFile = new MdlFile( bytes );
                     var materials = mdlFile.Materials.WithIndex().Where( p => MaterialRegex.IsMatch( p.Item1 ) )
                        .Select( p => p.Item2 ).ToArray();
                     if( materials.Length > 0 )
                     {
-                        _modelFiles.Add( new MaterialInfo( file, mdlFile, materials ) );
+                        _modelFiles.Add( new MaterialInfo( file.File, mdlFile, materials ) );
                     }
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Unexpected error scanning {_mod.Name}'s {file.FullName} for materials:\n{e}" );
+                    PluginLog.Error( $"Unexpected error scanning {_mod.Name}'s {file.File.FullName} for materials:\n{e}" );
                 }
             }
         }

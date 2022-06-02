@@ -14,8 +14,8 @@ public partial class Mod
 {
     public partial class Editor
     {
-        private readonly SHA256                                           _hasher     = SHA256.Create();
-        private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = new();
+        private readonly SHA256                                             _hasher     = SHA256.Create();
+        private readonly List< (FullPath[] Paths, long Size, byte[] Hash) > _duplicates = new();
 
         public IReadOnlyList< (FullPath[] Paths, long Size, byte[] Hash) > Duplicates
             => _duplicates;
@@ -44,7 +44,8 @@ public partial class Mod
                     HandleDuplicate( duplicate, remaining );
                 }
             }
-            _availableFiles.RemoveAll( p => !p.Item1.Exists );
+
+            _availableFiles.RemoveAll( p => !p.File.Exists );
             _duplicates.Clear();
         }
 
@@ -82,7 +83,7 @@ public partial class Mod
             }
 
             changes = true;
-            PluginLog.Debug( "[DeleteDuplicates] Changing {GamePath:l} for {Mod:d}\n     : {Old:l}\n    -> {New:l}", key, _mod.Name, from, to);
+            PluginLog.Debug( "[DeleteDuplicates] Changing {GamePath:l} for {Mod:d}\n     : {Old:l}\n    -> {New:l}", key, _mod.Name, from, to );
             return to;
         }
 
@@ -92,26 +93,28 @@ public partial class Mod
             if( DuplicatesFinished )
             {
                 DuplicatesFinished = false;
-                Task.Run( CheckDuplicates );
+                UpdateFiles();
+                var files = _availableFiles.OrderByDescending(f => f.FileSize).ToArray();
+                Task.Run( () => CheckDuplicates( files ) );
             }
         }
 
-        private void CheckDuplicates()
+        private void CheckDuplicates( IReadOnlyList< FileRegistry > files )
         {
             _duplicates.Clear();
             SavedSpace = 0;
             var list     = new List< FullPath >();
             var lastSize = -1L;
-            foreach( var (p, size) in AvailableFiles )
+            foreach( var file in files )
             {
                 if( DuplicatesFinished )
                 {
                     return;
                 }
 
-                if( size == lastSize )
+                if( file.FileSize == lastSize )
                 {
-                    list.Add( p );
+                    list.Add( file.File );
                     continue;
                 }
 
@@ -119,22 +122,25 @@ public partial class Mod
                 {
                     CheckMultiDuplicates( list, lastSize );
                 }
-                lastSize = size;
+
+                lastSize = file.FileSize;
 
                 list.Clear();
-                list.Add( p );
+                list.Add( file.File );
             }
+
             if( list.Count >= 2 )
             {
                 CheckMultiDuplicates( list, lastSize );
             }
 
+            _duplicates.Sort( ( a, b ) => a.Size != b.Size ? b.Size.CompareTo( a.Size ) : a.Paths[ 0 ].CompareTo( b.Paths[ 0 ] ) );
             DuplicatesFinished = true;
         }
 
         private void CheckMultiDuplicates( IReadOnlyList< FullPath > list, long size )
         {
-            var hashes = list.Select( f => (f, ComputeHash(f)) ).ToList();
+            var hashes = list.Select( f => ( f, ComputeHash( f ) ) ).ToList();
             while( hashes.Count > 0 )
             {
                 if( DuplicatesFinished )
@@ -157,10 +163,10 @@ public partial class Mod
                     }
                 }
 
-                hashes.RemoveAll( p => set.Contains(p.Item1) );
+                hashes.RemoveAll( p => set.Contains( p.Item1 ) );
                 if( set.Count > 1 )
                 {
-                    _duplicates.Add( (set.OrderBy( f => f.FullName.Length ).ToArray(), size, hash.Item2) );
+                    _duplicates.Add( ( set.OrderBy( f => f.FullName.Length ).ToArray(), size, hash.Item2 ) );
                     SavedSpace += ( set.Count - 1 ) * size;
                 }
             }
@@ -169,27 +175,35 @@ public partial class Mod
         private static unsafe bool CompareFilesDirectly( FullPath f1, FullPath f2 )
         {
             if( !f1.Exists || !f2.Exists )
+            {
                 return false;
+            }
 
             using var s1      = File.OpenRead( f1.FullName );
             using var s2      = File.OpenRead( f2.FullName );
             var       buffer1 = stackalloc byte[256];
             var       buffer2 = stackalloc byte[256];
-            var       span1    = new Span< byte >( buffer1, 256 );
-            var       span2    = new Span< byte >( buffer2, 256 );
+            var       span1   = new Span< byte >( buffer1, 256 );
+            var       span2   = new Span< byte >( buffer2, 256 );
 
             while( true )
             {
-                var bytes1   = s1.Read( span1 );
-                var bytes2   = s2.Read( span2 );
+                var bytes1 = s1.Read( span1 );
+                var bytes2 = s2.Read( span2 );
                 if( bytes1 != bytes2 )
+                {
                     return false;
+                }
 
                 if( !span1[ ..bytes1 ].SequenceEqual( span2[ ..bytes2 ] ) )
+                {
                     return false;
+                }
 
                 if( bytes1 < 256 )
+                {
                     return true;
+                }
             }
         }
 

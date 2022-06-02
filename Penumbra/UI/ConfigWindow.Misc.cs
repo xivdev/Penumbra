@@ -28,6 +28,12 @@ public partial class ConfigWindow
     private static unsafe void Text( ResourceHandle* resource )
         => Text( resource->FileName(), resource->FileNameLength );
 
+    // Draw a Utf8String as a selectable.
+    internal static unsafe bool Selectable( Utf8String s, bool selected )
+    {
+        var tmp = ( byte )( selected ? 1 : 0 );
+        return ImGuiNative.igSelectable_Bool( s.Path, tmp, ImGuiSelectableFlags.None, Vector2.Zero ) != 0;
+    }
 
     // Apply Changed Item Counters to the Name if necessary.
     private static string ChangedItemName( string name, object? data )

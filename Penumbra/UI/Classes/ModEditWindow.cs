@@ -29,7 +29,7 @@ public partial class ModEditWindow : Window, IDisposable
         }
 
         _editor?.Dispose();
-        _editor    = new Mod.Editor( mod );
+        _editor    = new Mod.Editor( mod, -1, 0 );
         _mod       = mod;
         WindowName = $"{mod.Name}{WindowBaseLabel}";
         SizeConstraints = new WindowSizeConstraints
@@ -37,6 +37,7 @@ public partial class ModEditWindow : Window, IDisposable
             MinimumSize = ImGuiHelpers.ScaledVector2( 1000, 600 ),
             MaximumSize = 4000 * Vector2.One,
         };
+        _selectedFiles.Clear();
     }
 
     public void ChangeOption( int groupIdx, int optionIdx )
@@ -58,7 +59,6 @@ public partial class ModEditWindow : Window, IDisposable
         DrawMetaTab();
         DrawSwapTab();
         DrawMissingFilesTab();
-        DrawUnusedFilesTab();
         DrawDuplicatesTab();
         DrawMaterialChangeTab();
     }
@@ -233,7 +233,7 @@ public partial class ModEditWindow : Window, IDisposable
             return;
         }
 
-        if( _editor!.MissingPaths.Count == 0 )
+        if( _editor!.MissingFiles.Count == 0 )
         {
             ImGui.NewLine();
             ImGui.TextUnformatted( "No missing files detected." );
@@ -257,7 +257,7 @@ public partial class ModEditWindow : Window, IDisposable
                 return;
             }
 
-            foreach( var path in _editor.MissingPaths )
+            foreach( var path in _editor.MissingFiles )
             {
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted( path.FullName );
@@ -418,90 +418,6 @@ public partial class ModEditWindow : Window, IDisposable
                     _editor.SetSubMod( groupIdx, optionIdx );
                 }
             }
-        }
-    }
-
-    private void DrawUnusedFilesTab()
-    {
-        using var tab = ImRaii.TabItem( "Unused Files" );
-        if( !tab )
-        {
-            return;
-        }
-
-        if( ImGui.Button( "Refresh" ) )
-        {
-            _editor!.Dispose();
-            _editor = new Mod.Editor( _mod! );
-        }
-
-        if( _editor!.UnusedFiles.Count == 0 )
-        {
-            ImGui.NewLine();
-            ImGui.TextUnformatted( "No unused files detected." );
-        }
-        else
-        {
-            ImGui.SameLine();
-            if( ImGui.Button( "Add Unused Files to Default" ) )
-            {
-                _editor.AddUnusedPathsToDefault();
-            }
-
-            ImGui.SameLine();
-            if( ImGui.Button( "Delete Unused Files from Filesystem" ) )
-            {
-                _editor.DeleteUnusedPaths();
-            }
-
-            using var child = ImRaii.Child( "##unusedFiles", -Vector2.One, true );
-            if( !child )
-            {
-                return;
-            }
-
-            using var table = ImRaii.Table( "##table", 1, ImGuiTableFlags.RowBg );
-            if( !table )
-            {
-                return;
-            }
-
-            foreach( var path in _editor.UnusedFiles )
-            {
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( path.FullName );
-            }
-        }
-    }
-
-
-    private void DrawFileTab()
-    {
-        using var tab = ImRaii.TabItem( "File Redirections" );
-        if( !tab )
-        {
-            return;
-        }
-
-        DrawOptionSelectHeader();
-        using var child = ImRaii.Child( "##files", -Vector2.One, true );
-        if( !child )
-        {
-            return;
-        }
-
-        using var list = ImRaii.Table( "##table", 2 );
-        if( !list )
-        {
-            return;
-        }
-
-        foreach( var (gamePath, file) in _editor!.CurrentFiles )
-        {
-            ImGui.TableNextColumn();
-            ConfigWindow.Text( gamePath.Path );
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted( file.FullName );
         }
     }
 
