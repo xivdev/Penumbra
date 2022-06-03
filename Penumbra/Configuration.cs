@@ -21,6 +21,13 @@ public partial class Configuration : IPluginConfiguration
     public bool HideUiInCutscenes { get; set; } = true;
     public bool HideUiWhenUiHidden { get; set; } = false;
 
+    public bool UseCharacterCollectionInMainWindow { get; set; } = true;
+    public bool UseCharacterCollectionsInCards { get; set; } = true;
+    public bool UseCharacterCollectionInInspect { get; set; } = true;
+    public bool UseCharacterCollectionInTryOn { get; set; } = true;
+    public bool UseOwnerNameForCharacterCollection { get; set; } = true;
+    public bool PreferNamedCollectionsOverOwners { get; set; } = false;
+
 #if DEBUG
     public bool DebugMode { get; set; } = true;
 #else

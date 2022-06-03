@@ -125,6 +125,11 @@ public unsafe partial class PathResolver
     // Obtain the name of the inspect target from its window, if it exists.
     private static string? GetInspectName()
     {
+        if( !Penumbra.Config.UseCharacterCollectionInInspect )
+        {
+            return null;
+        }
+
         var addon = Dalamud.GameGui.GetAddonByName( "CharacterInspect", 1 );
         if( addon == IntPtr.Zero )
         {
@@ -137,13 +142,23 @@ public unsafe partial class PathResolver
             return null;
         }
 
-        var text = ( AtkTextNode* )ui->UldManager.NodeList[ 60 ];
+        var text = ( AtkTextNode* )ui->UldManager.NodeList[ 59 ];
+        if( text == null || !text->AtkResNode.IsVisible )
+        {
+            text = ( AtkTextNode* )ui->UldManager.NodeList[ 60 ];
+        }
+
         return text != null ? text->NodeText.ToString() : null;
     }
 
     // Obtain the name displayed in the Character Card from the agent.
     private static string? GetCardName()
     {
+        if( !Penumbra.Config.UseCharacterCollectionsInCards )
+        {
+            return null;
+        }
+
         var uiModule    = ( UIModule* )Dalamud.GameGui.GetUIModule();
         var agentModule = uiModule->GetAgentModule();
         var agent       = ( byte* )agentModule->GetAgentByInternalID( 393 );
@@ -165,6 +180,11 @@ public unsafe partial class PathResolver
     // Obtain the name of the player character if the glamour plate edit window is open.
     private static string? GetGlamourName()
     {
+        if( !Penumbra.Config.UseCharacterCollectionInTryOn )
+        {
+            return null;
+        }
+
         var addon = Dalamud.GameGui.GetAddonByName( "MiragePrismMiragePlate", 1 );
         return addon == IntPtr.Zero ? null : GetPlayerName();
     }
@@ -193,6 +213,11 @@ public unsafe partial class PathResolver
     // Monsters with a owner use that owner if it exists.
     private static string? GetOwnerName( GameObject* gameObject )
     {
+        if( !Penumbra.Config.UseOwnerNameForCharacterCollection )
+        {
+            return null;
+        }
+
         GameObject* owner = null;
         if( ( ObjectKind )gameObject->GetObjectKind() is ObjectKind.Companion or ObjectKind.MountType && gameObject->ObjectIndex > 0 )
         {
@@ -200,7 +225,7 @@ public unsafe partial class PathResolver
         }
         else if( gameObject->OwnerID != 0xE0000000 )
         {
-            owner = ( GameObject* )(Dalamud.Objects.SearchById( gameObject->OwnerID )?.Address ?? IntPtr.Zero);
+            owner = ( GameObject* )( Dalamud.Objects.SearchById( gameObject->OwnerID )?.Address ?? IntPtr.Zero );
         }
 
         if( owner != null )
@@ -219,17 +244,30 @@ public unsafe partial class PathResolver
             return Penumbra.CollectionManager.Default;
         }
 
-        var name = gameObject->ObjectIndex switch
+        string? actorName = null;
+        if( Penumbra.Config.PreferNamedCollectionsOverOwners )
+        {
+            // Early return if we prefer the actors own name over its owner.
+            actorName = new Utf8String( gameObject->Name ).ToString();
+            if( actorName.Length > 0 && Penumbra.CollectionManager.Characters.TryGetValue( actorName, out var actorCollection ) )
             {
-                240    => GetPlayerName(),                                       // character window
+                return actorCollection;
+            }
+        }
+
+        // All these special cases are relevant for an empty name, so never collide with the above setting.
+        // Only OwnerName can be applied to something with a non-empty name, and that is the specific case we want to handle.
+        var actualName = gameObject->ObjectIndex switch
+            {
+                240    => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
                 241    => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
-                242    => GetPlayerName(),                                       // try-on
+                242    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
                 >= 200 => GetCutsceneName( gameObject ),
                 _      => null,
             }
-         ?? GetOwnerName( gameObject ) ?? new Utf8String( gameObject->Name ).ToString();
+         ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
-        return Penumbra.CollectionManager.Character( name );
+        return Penumbra.CollectionManager.Character( actualName );
     }
 
     // Update collections linked to Game/DrawObjects due to a change in collection configuration.
