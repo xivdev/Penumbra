@@ -18,7 +18,7 @@ public partial class ModFileSystemSelector
     [StructLayout( LayoutKind.Sequential, Pack = 1 )]
     public struct ModState
     {
-        public uint Color;
+        public ColorId Color;
     }
 
     private const    StringComparison IgnoreCase = StringComparison.InvariantCultureIgnoreCase;
@@ -102,32 +102,32 @@ public partial class ModFileSystemSelector
     }
 
     // Only get the text color for a mod if no filters are set.
-    private uint GetTextColor( Mod mod, ModSettings? settings, ModCollection collection )
+    private static ColorId GetTextColor( Mod mod, ModSettings? settings, ModCollection collection )
     {
         if( Penumbra.ModManager.NewMods.Contains( mod ) )
         {
-            return ColorId.NewMod.Value();
+            return ColorId.NewMod;
         }
 
         if( settings == null )
         {
-            return ColorId.UndefinedMod.Value();
+            return ColorId.UndefinedMod;
         }
 
         if( !settings.Enabled )
         {
-            return collection != Penumbra.CollectionManager.Current ? ColorId.InheritedDisabledMod.Value() : ColorId.DisabledMod.Value();
+            return collection != Penumbra.CollectionManager.Current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod;
         }
 
         var conflicts = Penumbra.CollectionManager.Current.Conflicts( mod );
         if( conflicts.Count == 0 )
         {
-            return collection != Penumbra.CollectionManager.Current ? ColorId.InheritedMod.Value() : ColorId.EnabledMod.Value();
+            return collection != Penumbra.CollectionManager.Current ? ColorId.InheritedMod : ColorId.EnabledMod;
         }
 
         return conflicts.Any( c => !c.Solved )
-            ? ColorId.ConflictingMod.Value()
-            : ColorId.HandledConflictMod.Value();
+            ? ColorId.ConflictingMod
+            : ColorId.HandledConflictMod;
     }
 
     private bool CheckStateFilters( Mod mod, ModSettings? settings, ModCollection collection, ref ModState state )
@@ -153,7 +153,7 @@ public partial class ModFileSystemSelector
         }
         else
         {
-            state.Color = ColorId.InheritedMod.Value();
+            state.Color = ColorId.InheritedMod;
             if( !_stateFilter.HasFlag( ModFilter.Inherited ) )
             {
                 return true;
@@ -163,7 +163,7 @@ public partial class ModFileSystemSelector
         // Handle settings.
         if( settings == null )
         {
-            state.Color = ColorId.UndefinedMod.Value();
+            state.Color = ColorId.UndefinedMod;
             if( !_stateFilter.HasFlag( ModFilter.Undefined )
             || !_stateFilter.HasFlag( ModFilter.Disabled )
             || !_stateFilter.HasFlag( ModFilter.NoConflict ) )
@@ -173,7 +173,7 @@ public partial class ModFileSystemSelector
         }
         else if( !settings.Enabled )
         {
-            state.Color = collection == Penumbra.CollectionManager.Current ? ColorId.DisabledMod.Value() : ColorId.InheritedDisabledMod.Value();
+            state.Color = collection == Penumbra.CollectionManager.Current ? ColorId.DisabledMod : ColorId.InheritedDisabledMod;
             if( !_stateFilter.HasFlag( ModFilter.Disabled )
             || !_stateFilter.HasFlag( ModFilter.NoConflict ) )
             {
@@ -198,7 +198,7 @@ public partial class ModFileSystemSelector
                         return true;
                     }
 
-                    state.Color = ColorId.ConflictingMod.Value();
+                    state.Color = ColorId.ConflictingMod;
                 }
                 else
                 {
@@ -207,7 +207,7 @@ public partial class ModFileSystemSelector
                         return true;
                     }
 
-                    state.Color = ColorId.HandledConflictMod.Value();
+                    state.Color = ColorId.HandledConflictMod;
                 }
             }
             else if( !_stateFilter.HasFlag( ModFilter.NoConflict ) )
@@ -219,7 +219,7 @@ public partial class ModFileSystemSelector
         // isNew color takes precedence before other colors.
         if( isNew )
         {
-            state.Color = ColorId.NewMod.Value();
+            state.Color = ColorId.NewMod;
         }
 
         return false;
@@ -228,7 +228,7 @@ public partial class ModFileSystemSelector
     // Combined wrapper for handling all filters and setting state.
     private bool ApplyFiltersAndState( ModFileSystem.Leaf leaf, out ModState state )
     {
-        state = new ModState { Color = ColorId.EnabledMod.Value() };
+        state = new ModState { Color = ColorId.EnabledMod };
         var mod = leaf.Value;
         var (settings, collection) = Penumbra.CollectionManager.Current[ mod.Index ];
 

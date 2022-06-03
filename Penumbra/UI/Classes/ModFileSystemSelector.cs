@@ -107,7 +107,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     protected override void DrawLeafName( FileSystem< Mod >.Leaf leaf, in ModState state, bool selected )
     {
         var       flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
-        using var c     = ImRaii.PushColor( ImGuiCol.Text, state.Color );
+        using var c     = ImRaii.PushColor( ImGuiCol.Text, state.Color.Value() );
         using var id    = ImRaii.PushId( leaf.Value.Index );
         using var _     = ImRaii.TreeNode( leaf.Value.Name, flags );
     }
