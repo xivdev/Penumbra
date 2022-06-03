@@ -81,34 +81,33 @@ public partial class ModCollection
 
         private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
         {
-            var mod = Penumbra.ModManager[ modIdx ];
             switch( type )
             {
                 case ModSettingChange.Inheritance:
-                    ReloadMod( mod, true );
+                    ReloadMod( Penumbra.ModManager[ modIdx ], true );
                     break;
                 case ModSettingChange.EnableState:
                     if( oldValue != 1 )
                     {
-                        AddMod( mod, true );
+                        AddMod( Penumbra.ModManager[ modIdx ], true );
                     }
                     else
                     {
-                        RemoveMod( mod, true );
+                        RemoveMod( Penumbra.ModManager[ modIdx ], true );
                     }
 
                     break;
                 case ModSettingChange.Priority:
-                    if( Conflicts( mod ).Count > 0 )
+                    if( Conflicts( Penumbra.ModManager[ modIdx ] ).Count > 0 )
                     {
-                        ReloadMod( mod, true );
+                        ReloadMod( Penumbra.ModManager[ modIdx ], true );
                     }
 
                     break;
                 case ModSettingChange.Setting:
                     if( _collection[ modIdx ].Settings?.Enabled == true )
                     {
-                        ReloadMod( mod, true );
+                        ReloadMod( Penumbra.ModManager[ modIdx ], true );
                     }
 
                     break;
@@ -248,6 +247,7 @@ public partial class ModCollection
                     }
                 }
             }
+
             AddSubMod( mod.Default, mod );
 
             if( addMetaChanges )
@@ -344,16 +344,16 @@ public partial class ModCollection
         // Returns if the added mod takes priority before the existing mod.
         private bool AddConflict( object data, Mod addedMod, Mod existingMod )
         {
-            var addedPriority     = addedMod.Index    >= 0 ? _collection[ addedMod.Index ].Settings!.Priority : int.MaxValue;
-            var existingPriority  = existingMod.Index >= 0 ? _collection[ existingMod.Index ].Settings!.Priority : int.MaxValue;
+            var addedPriority    = addedMod.Index    >= 0 ? _collection[ addedMod.Index ].Settings!.Priority : int.MaxValue;
+            var existingPriority = existingMod.Index >= 0 ? _collection[ existingMod.Index ].Settings!.Priority : int.MaxValue;
 
             if( existingPriority < addedPriority )
             {
                 var tmpConflicts = Conflicts( existingMod );
                 foreach( var conflict in tmpConflicts )
                 {
-                    if( data is Utf8GamePath path    && conflict.Conflicts.RemoveAll( p => p is Utf8GamePath x && x.Equals(path) ) > 0
-                    || data is MetaManipulation meta && conflict.Conflicts.RemoveAll( m => m is MetaManipulation x && x.Equals(meta) ) > 0 )
+                    if( data is Utf8GamePath path    && conflict.Conflicts.RemoveAll( p => p is Utf8GamePath x     && x.Equals( path ) ) > 0
+                    || data is MetaManipulation meta && conflict.Conflicts.RemoveAll( m => m is MetaManipulation x && x.Equals( meta ) ) > 0 )
                     {
                         AddConflict( data, addedMod, conflict.Mod2 );
                     }
@@ -362,7 +362,7 @@ public partial class ModCollection
                 RemoveEmptyConflicts( existingMod, tmpConflicts, true );
             }
 
-            var addedConflicts = Conflicts( addedMod );
+            var addedConflicts    = Conflicts( addedMod );
             var existingConflicts = Conflicts( existingMod );
             if( addedConflicts.FindFirst( c => c.Mod2 == existingMod, out var oldConflicts ) )
             {
@@ -437,11 +437,11 @@ public partial class ModCollection
                         }
                         else if( !data.Item1.Contains( modPath.Mod ) )
                         {
-                            _changedItems[ name ] = ( data.Item1.Append( modPath.Mod ), obj is int x && data.Item2 is int y ? x + y : obj);
+                            _changedItems[ name ] = ( data.Item1.Append( modPath.Mod ), obj is int x && data.Item2 is int y ? x + y : obj );
                         }
-                        else if (obj is int x && data.Item2 is int y)
+                        else if( obj is int x && data.Item2 is int y )
                         {
-                            _changedItems[name] = (data.Item1, x + y);
+                            _changedItems[ name ] = ( data.Item1, x + y );
                         }
                     }
                 }

@@ -61,7 +61,7 @@ public partial class ModCollection
         var changes = false;
         foreach( var mod in mods )
         {
-            var oldValue = _settings[ mod.Index ]?.Enabled ?? this[ mod.Index ].Settings?.Enabled ?? false;
+            var oldValue = _settings[ mod.Index ]?.Enabled;
             if( newValue != oldValue )
             {
                 FixInheritance( mod.Index, false );
