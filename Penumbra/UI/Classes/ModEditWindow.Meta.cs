@@ -449,7 +449,7 @@ public partial class ModEditWindow
             {
                 using var id   = ImRaii.PushId( i );
                 var       flag = 1 << i;
-                if( Checkmark( "##attribute", $"{( char )( 'A' + i )}\nDefault Value: ", ( meta.Entry.AttributeMask & flag ) != 0,
+                if( Checkmark( "##attribute", $"{( char )( 'A' + i )}", ( meta.Entry.AttributeMask & flag ) != 0,
                        ( defaultEntry.AttributeMask                                                & flag ) != 0, out var val ) )
                 {
                     var attributes = val ? meta.Entry.AttributeMask | flag : meta.Entry.AttributeMask & ~flag;

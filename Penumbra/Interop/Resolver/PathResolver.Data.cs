@@ -200,7 +200,7 @@ public unsafe partial class PathResolver
         }
         else if( gameObject->OwnerID != 0xE0000000 )
         {
-            owner = ( GameObject* )Dalamud.Objects.SearchById( gameObject->OwnerID )?.Address;
+            owner = ( GameObject* )(Dalamud.Objects.SearchById( gameObject->OwnerID )?.Address ?? IntPtr.Zero);
         }
 
         if( owner != null )
