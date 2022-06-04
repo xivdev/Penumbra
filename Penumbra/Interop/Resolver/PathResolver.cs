@@ -72,10 +72,10 @@ public partial class PathResolver : IDisposable
         return false;
     }
 
-    private bool HandlePapFile( ResourceType type, Utf8GamePath gamePath, out ModCollection? collection )
+    private bool HandlePapFile( ResourceType type, Utf8GamePath _, out ModCollection? collection )
     {
         if( type is ResourceType.Pap or ResourceType.Tmb
-        && _animationLoadCollection != null)
+        && _animationLoadCollection != null )
         {
             collection = _animationLoadCollection;
             return true;

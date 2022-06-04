@@ -1,7 +1,5 @@
 using System;
-using System.Linq;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
@@ -10,7 +8,6 @@ namespace Penumbra.Interop.Resolver;
 
 public unsafe partial class PathResolver
 {
-
     // Probably used when the base idle animation gets loaded.
     // Make it aware of the correct collection to load the correct pap files.
     [Signature( "E8 ?? ?? ?? ?? BA ?? ?? ?? ?? 48 8B CF 44 8B C2 E8 ?? ?? ?? ?? 48 8B 05", DetourName = "CharacterBaseLoadAnimationDetour" )]
@@ -18,10 +15,11 @@ public unsafe partial class PathResolver
 
     private ModCollection? _animationLoadCollection;
 
-    private void CharacterBaseLoadAnimationDetour( IntPtr address )
+    private void CharacterBaseLoadAnimationDetour( IntPtr drawObject )
     {
-        _animationLoadCollection = _lastCreatedCollection ?? IdentifyCollection( ( GameObject* )address );
-        CharacterBaseLoadAnimationHook!.Original( address );
+        _animationLoadCollection = _lastCreatedCollection
+         ?? ( FindParent( drawObject, out var collection ) != null ? collection : Penumbra.CollectionManager.Default );
+        CharacterBaseLoadAnimationHook!.Original( drawObject );
         _animationLoadCollection = null;
     }
 
@@ -31,9 +29,11 @@ public unsafe partial class PathResolver
 
     [Signature( "E8 ?? ?? ?? ?? 0F 10 00 0F 11 06", DetourName = "RandomPapDetour" )]
     public Hook< PapLoadFunction >? RandomPapHook;
+
     private void RandomPapDetour( IntPtr drawObject, IntPtr a2, uint a3, IntPtr a4, uint a5, uint a6, uint a7 )
     {
-        _animationLoadCollection = _lastCreatedCollection ?? IdentifyCollection( ( GameObject* )drawObject );
+        _animationLoadCollection = _lastCreatedCollection
+         ?? ( FindParent( drawObject, out var collection ) != null ? collection : Penumbra.CollectionManager.Default );
         RandomPapHook!.Original( drawObject, a2, a3, a4, a5, a6, a7 );
         _animationLoadCollection = null;
     }
