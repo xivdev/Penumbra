@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Dalamud.Configuration;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Lumina.Data;
+using Newtonsoft.Json;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
@@ -36,6 +38,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     public event ChangedItemClick? ChangedItemClicked;
+
+    public string GetModDirectory()
+    {
+        CheckInitialized();
+        return Penumbra.Config.ModDirectory;
+    }
+
+    public IPluginConfiguration GetConfiguration()
+    {
+        CheckInitialized();
+        return JsonConvert.DeserializeObject< Configuration >( JsonConvert.SerializeObject( Penumbra.Config ) );
+    }
+
     public event ChangedItemHover? ChangedItemTooltip;
 
     internal bool HasTooltip
@@ -59,21 +74,18 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public void RedrawObject( string name, RedrawType setting )
     {
         CheckInitialized();
-
         _penumbra!.ObjectReloader.RedrawObject( name, setting );
     }
 
     public void RedrawObject( GameObject? gameObject, RedrawType setting )
     {
         CheckInitialized();
-
         _penumbra!.ObjectReloader.RedrawObject( gameObject, setting );
     }
 
     public void RedrawAll( RedrawType setting )
     {
         CheckInitialized();
-
         _penumbra!.ObjectReloader.RedrawAll( setting );
     }
 
@@ -150,5 +162,44 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             PluginLog.Error( $"Could not obtain Changed Items for {collectionName}:\n{e}" );
             throw;
         }
+    }
+
+    public IList< string > GetCollections()
+    {
+        CheckInitialized();
+        return Penumbra.CollectionManager.Skip( 1 ).Select( c => c.Name ).ToArray();
+    }
+
+    public string GetCurrentCollection()
+    {
+        CheckInitialized();
+        return Penumbra.CollectionManager.Current.Name;
+    }
+
+    public string GetDefaultCollection()
+    {
+        CheckInitialized();
+        return Penumbra.CollectionManager.Default.Name;
+    }
+
+    public (string, bool) GetCharacterCollection( string characterName )
+    {
+        CheckInitialized();
+        return Penumbra.CollectionManager.Characters.TryGetValue( characterName, out var collection )
+            ? ( collection.Name, true )
+            : ( Penumbra.CollectionManager.Default.Name, false );
+    }
+
+    public (IntPtr, string) GetDrawObjectInfo( IntPtr drawObject )
+    {
+        CheckInitialized();
+        var (obj, collection) = _penumbra!.PathResolver.IdentifyDrawObject( drawObject );
+        return ( obj, collection.Name );
+    }
+
+    public IList< (string, string) > GetModList()
+    {
+        CheckInitialized();
+        return Penumbra.ModManager.Select( m => ( m.ModPath.Name, m.Name.Text ) ).ToArray();
     }
 }

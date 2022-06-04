@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dalamud.Configuration;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -8,34 +9,115 @@ using Penumbra.GameData.Enums;
 
 namespace Penumbra.Api;
 
-public class PenumbraIpc : IDisposable
+public partial class PenumbraIpc : IDisposable
+{
+    internal readonly IPenumbraApi Api;
+
+    public PenumbraIpc( DalamudPluginInterface pi, IPenumbraApi api )
+    {
+        Api = api;
+
+        InitializeGeneralProviders( pi );
+        InitializeResolveProviders( pi );
+        InitializeRedrawProviders( pi );
+        InitializeChangedItemProviders( pi );
+        InitializeDataProviders( pi );
+        ProviderInitialized?.SendMessage();
+    }
+
+    public void Dispose()
+    {
+        DisposeDataProviders();
+        DisposeChangedItemProviders();
+        DisposeRedrawProviders();
+        DisposeResolveProviders();
+        DisposeGeneralProviders();
+        ProviderDisposed?.SendMessage();
+    }
+}
+
+public partial class PenumbraIpc
 {
     public const string LabelProviderInitialized      = "Penumbra.Initialized";
     public const string LabelProviderDisposed         = "Penumbra.Disposed";
     public const string LabelProviderApiVersion       = "Penumbra.ApiVersion";
-    public const string LabelProviderRedrawName       = "Penumbra.RedrawObjectByName";
-    public const string LabelProviderRedrawObject     = "Penumbra.RedrawObject";
-    public const string LabelProviderRedrawAll        = "Penumbra.RedrawAll";
-    public const string LabelProviderResolveDefault   = "Penumbra.ResolveDefaultPath";
-    public const string LabelProviderResolveCharacter = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderGetModDirectory  = "Penumbra.GetModDirectory";
+    public const string LabelProviderGetConfiguration = "Penumbra.GetConfiguration";
 
-    public const string LabelProviderChangedItemTooltip = "Penumbra.ChangedItemTooltip";
-    public const string LabelProviderChangedItemClick   = "Penumbra.ChangedItemClick";
-    public const string LabelProviderGetChangedItems    = "Penumbra.GetChangedItems";
+    internal ICallGateProvider< object? >?              ProviderInitialized;
+    internal ICallGateProvider< object? >?              ProviderDisposed;
+    internal ICallGateProvider< int >?                  ProviderApiVersion;
+    internal ICallGateProvider< string >?               ProviderGetModDirectory;
+    internal ICallGateProvider< IPluginConfiguration >? ProviderGetConfiguration;
 
-    internal ICallGateProvider< object? >?                                        ProviderInitialized;
-    internal ICallGateProvider< object? >?                                        ProviderDisposed;
-    internal ICallGateProvider< int >?                                            ProviderApiVersion;
-    internal ICallGateProvider< string, int, object >?                            ProviderRedrawName;
-    internal ICallGateProvider< GameObject, int, object >?                        ProviderRedrawObject;
-    internal ICallGateProvider< int, object >?                                    ProviderRedrawAll;
-    internal ICallGateProvider< string, string >?                                 ProviderResolveDefault;
-    internal ICallGateProvider< string, string, string >?                         ProviderResolveCharacter;
-    internal ICallGateProvider< ChangedItemType, uint, object >?                  ProviderChangedItemTooltip;
-    internal ICallGateProvider< MouseButton, ChangedItemType, uint, object >?     ProviderChangedItemClick;
-    internal ICallGateProvider< string, IReadOnlyDictionary< string, object? > >? ProviderGetChangedItems;
+    private void InitializeGeneralProviders( DalamudPluginInterface pi )
+    {
+        try
+        {
+            ProviderInitialized = pi.GetIpcProvider< object? >( LabelProviderInitialized );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderInitialized}:\n{e}" );
+        }
 
-    internal readonly IPenumbraApi Api;
+        try
+        {
+            ProviderDisposed = pi.GetIpcProvider< object? >( LabelProviderDisposed );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderDisposed}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderApiVersion = pi.GetIpcProvider< int >( LabelProviderApiVersion );
+            ProviderApiVersion.RegisterFunc( () => Api.ApiVersion );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderApiVersion}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderGetModDirectory = pi.GetIpcProvider< string >( LabelProviderGetModDirectory );
+            ProviderGetModDirectory.RegisterFunc( Api.GetModDirectory );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetModDirectory}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderGetConfiguration = pi.GetIpcProvider< IPluginConfiguration >( LabelProviderGetConfiguration );
+            ProviderGetConfiguration.RegisterFunc( Api.GetConfiguration );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetConfiguration}:\n{e}" );
+        }
+    }
+
+    private void DisposeGeneralProviders()
+    {
+        ProviderGetConfiguration?.UnregisterFunc();
+        ProviderGetModDirectory?.UnregisterFunc();
+        ProviderApiVersion?.UnregisterFunc();
+    }
+}
+
+public partial class PenumbraIpc
+{
+    public const string LabelProviderRedrawName   = "Penumbra.RedrawObjectByName";
+    public const string LabelProviderRedrawObject = "Penumbra.RedrawObject";
+    public const string LabelProviderRedrawAll    = "Penumbra.RedrawAll";
+
+    internal ICallGateProvider< string, int, object >?     ProviderRedrawName;
+    internal ICallGateProvider< GameObject, int, object >? ProviderRedrawObject;
+    internal ICallGateProvider< int, object >?             ProviderRedrawAll;
 
     private static RedrawType CheckRedrawType( int value )
     {
@@ -47,6 +129,108 @@ public class PenumbraIpc : IDisposable
 
         throw new Exception( "The integer provided for a Redraw Function was not a valid RedrawType." );
     }
+
+    private void InitializeRedrawProviders( DalamudPluginInterface pi )
+    {
+        try
+        {
+            ProviderRedrawName = pi.GetIpcProvider< string, int, object >( LabelProviderRedrawName );
+            ProviderRedrawName.RegisterAction( ( s, i ) => Api.RedrawObject( s, CheckRedrawType( i ) ) );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawName}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderRedrawObject = pi.GetIpcProvider< GameObject, int, object >( LabelProviderRedrawObject );
+            ProviderRedrawObject.RegisterAction( ( o, i ) => Api.RedrawObject( o, CheckRedrawType( i ) ) );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawObject}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderRedrawAll = pi.GetIpcProvider< int, object >( LabelProviderRedrawAll );
+            ProviderRedrawAll.RegisterAction( i => Api.RedrawAll( CheckRedrawType( i ) ) );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawAll}:\n{e}" );
+        }
+    }
+
+    private void DisposeRedrawProviders()
+    {
+        ProviderRedrawName?.UnregisterAction();
+        ProviderRedrawObject?.UnregisterAction();
+        ProviderRedrawAll?.UnregisterAction();
+    }
+}
+
+public partial class PenumbraIpc
+{
+    public const string LabelProviderResolveDefault    = "Penumbra.ResolveDefaultPath";
+    public const string LabelProviderResolveCharacter  = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderGetDrawObjectInfo = "Penumbra.GetDrawObjectInfo";
+
+    internal ICallGateProvider< string, string >?           ProviderResolveDefault;
+    internal ICallGateProvider< string, string, string >?   ProviderResolveCharacter;
+    internal ICallGateProvider< IntPtr, (IntPtr, string) >? ProviderGetDrawObjectInfo;
+
+    private void InitializeResolveProviders( DalamudPluginInterface pi )
+    {
+        try
+        {
+            ProviderResolveDefault = pi.GetIpcProvider< string, string >( LabelProviderResolveDefault );
+            ProviderResolveDefault.RegisterFunc( Api.ResolvePath );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderResolveDefault}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderResolveCharacter = pi.GetIpcProvider< string, string, string >( LabelProviderResolveCharacter );
+            ProviderResolveCharacter.RegisterFunc( Api.ResolvePath );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderResolveCharacter}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderGetDrawObjectInfo = pi.GetIpcProvider< IntPtr, (IntPtr, string) >( LabelProviderGetDrawObjectInfo );
+            ProviderGetDrawObjectInfo.RegisterFunc( Api.GetDrawObjectInfo );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetDrawObjectInfo}:\n{e}" );
+        }
+    }
+
+    private void DisposeResolveProviders()
+    {
+        ProviderGetDrawObjectInfo?.UnregisterFunc();
+        ProviderResolveDefault?.UnregisterFunc();
+        ProviderResolveCharacter?.UnregisterFunc();
+    }
+}
+
+public partial class PenumbraIpc
+{
+    public const string LabelProviderChangedItemTooltip = "Penumbra.ChangedItemTooltip";
+    public const string LabelProviderChangedItemClick   = "Penumbra.ChangedItemClick";
+    public const string LabelProviderGetChangedItems    = "Penumbra.GetChangedItems";
+
+    internal ICallGateProvider< ChangedItemType, uint, object >?                  ProviderChangedItemTooltip;
+    internal ICallGateProvider< MouseButton, ChangedItemType, uint, object >?     ProviderChangedItemClick;
+    internal ICallGateProvider< string, IReadOnlyDictionary< string, object? > >? ProviderGetChangedItems;
 
     private void OnClick( MouseButton click, object? item )
     {
@@ -60,93 +244,12 @@ public class PenumbraIpc : IDisposable
         ProviderChangedItemTooltip?.SendMessage( type, id );
     }
 
-
-    public PenumbraIpc( DalamudPluginInterface pi, IPenumbraApi api )
+    private void InitializeChangedItemProviders( DalamudPluginInterface pi )
     {
-        Api = api;
-
-        try
-        {
-            ProviderInitialized = pi.GetIpcProvider< object? >( LabelProviderInitialized );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderInitialized}:\n{e}" );
-        }
-
-        try
-        {
-            ProviderDisposed = pi.GetIpcProvider<object?>( LabelProviderDisposed );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderDisposed}:\n{e}" );
-        }
-
-        try
-        {
-            ProviderApiVersion = pi.GetIpcProvider< int >( LabelProviderApiVersion );
-            ProviderApiVersion.RegisterFunc( () => api.ApiVersion );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderApiVersion}:\n{e}" );
-        }
-
-        try
-        {
-            ProviderRedrawName = pi.GetIpcProvider< string, int, object >( LabelProviderRedrawName );
-            ProviderRedrawName.RegisterAction( ( s, i ) => api.RedrawObject( s, CheckRedrawType( i ) ) );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawName}:\n{e}" );
-        }
-
-        try
-        {
-            ProviderRedrawObject = pi.GetIpcProvider< GameObject, int, object >( LabelProviderRedrawObject );
-            ProviderRedrawObject.RegisterAction( ( o, i ) => api.RedrawObject( o, CheckRedrawType( i ) ) );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawObject}:\n{e}" );
-        }
-
-        try
-        {
-            ProviderRedrawAll = pi.GetIpcProvider< int, object >( LabelProviderRedrawAll );
-            ProviderRedrawAll.RegisterAction( i => api.RedrawAll( CheckRedrawType( i ) ) );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawAll}:\n{e}" );
-        }
-
-        try
-        {
-            ProviderResolveDefault = pi.GetIpcProvider< string, string >( LabelProviderResolveDefault );
-            ProviderResolveDefault.RegisterFunc( api.ResolvePath );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderResolveDefault}:\n{e}" );
-        }
-
-        try
-        {
-            ProviderResolveCharacter = pi.GetIpcProvider< string, string, string >( LabelProviderResolveCharacter );
-            ProviderResolveCharacter.RegisterFunc( api.ResolvePath );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderResolveCharacter}:\n{e}" );
-        }
-
         try
         {
             ProviderChangedItemTooltip =  pi.GetIpcProvider< ChangedItemType, uint, object >( LabelProviderChangedItemTooltip );
-            api.ChangedItemTooltip     += OnTooltip;
+            Api.ChangedItemTooltip     += OnTooltip;
         }
         catch( Exception e )
         {
@@ -156,7 +259,7 @@ public class PenumbraIpc : IDisposable
         try
         {
             ProviderChangedItemClick =  pi.GetIpcProvider< MouseButton, ChangedItemType, uint, object >( LabelProviderChangedItemClick );
-            api.ChangedItemClicked   += OnClick;
+            Api.ChangedItemClicked   += OnClick;
         }
         catch( Exception e )
         {
@@ -165,29 +268,96 @@ public class PenumbraIpc : IDisposable
 
         try
         {
-            ProviderGetChangedItems = pi.GetIpcProvider<string, IReadOnlyDictionary<string, object?>>( LabelProviderGetChangedItems );
-            ProviderGetChangedItems.RegisterFunc( api.GetChangedItemsForCollection );
+            ProviderGetChangedItems = pi.GetIpcProvider< string, IReadOnlyDictionary< string, object? > >( LabelProviderGetChangedItems );
+            ProviderGetChangedItems.RegisterFunc( Api.GetChangedItemsForCollection );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+        }
+    }
+
+    private void DisposeChangedItemProviders()
+    {
+        ProviderGetChangedItems?.UnregisterFunc();
+        Api.ChangedItemClicked -= OnClick;
+        Api.ChangedItemTooltip -= OnTooltip;
+    }
+}
+
+public partial class PenumbraIpc
+{
+    public const string LabelProviderGetMods                 = "Penumbra.GetMods";
+    public const string LabelProviderGetCollections          = "Penumbra.GetCollections";
+    public const string LabelProviderCurrentCollectionName   = "Penumbra.GetCurrentCollectionName";
+    public const string LabelProviderDefaultCollectionName   = "Penumbra.GetDefaultCollectionName";
+    public const string LabelProviderCharacterCollectionName = "Penumbra.GetCharacterCollectionName";
+
+    internal ICallGateProvider< IList< (string, string) > >? ProviderGetMods;
+    internal ICallGateProvider< IList< string > >?           ProviderGetCollections;
+    internal ICallGateProvider< string >?                    ProviderCurrentCollectionName;
+    internal ICallGateProvider< string >?                    ProviderDefaultCollectionName;
+    internal ICallGateProvider< string, (string, bool) >?    ProviderCharacterCollectionName;
+
+    private void InitializeDataProviders( DalamudPluginInterface pi )
+    {
+        try
+        {
+            ProviderGetMods = pi.GetIpcProvider< IList< (string, string) > >( LabelProviderGetMods );
+            ProviderGetMods.RegisterFunc( Api.GetModList );
         }
         catch( Exception e )
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
         }
 
-        ProviderInitialized?.SendMessage();
+        try
+        {
+            ProviderGetCollections = pi.GetIpcProvider< IList< string > >( LabelProviderGetCollections );
+            ProviderGetCollections.RegisterFunc( Api.GetCollections );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderCurrentCollectionName = pi.GetIpcProvider< string >( LabelProviderCurrentCollectionName );
+            ProviderCurrentCollectionName.RegisterFunc( Api.GetCurrentCollection );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderDefaultCollectionName = pi.GetIpcProvider< string >( LabelProviderDefaultCollectionName );
+            ProviderDefaultCollectionName.RegisterFunc( Api.GetDefaultCollection );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderCharacterCollectionName = pi.GetIpcProvider< string, ( string, bool) >( LabelProviderCharacterCollectionName );
+            ProviderCharacterCollectionName.RegisterFunc( Api.GetCharacterCollection );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+        }
     }
 
-    public void Dispose()
+    private void DisposeDataProviders()
     {
-        ProviderDisposed?.SendMessage();
-        ProviderInitialized?.UnregisterFunc();
-        ProviderApiVersion?.UnregisterFunc();
-        ProviderRedrawName?.UnregisterAction();
-        ProviderRedrawObject?.UnregisterAction();
-        ProviderRedrawAll?.UnregisterAction();
-        ProviderResolveDefault?.UnregisterFunc();
-        ProviderResolveCharacter?.UnregisterFunc();
-        ProviderGetChangedItems?.UnregisterFunc();
-        Api.ChangedItemClicked -= OnClick;
-        Api.ChangedItemTooltip -= OnTooltip;
+        ProviderGetMods?.UnregisterFunc();
+        ProviderGetCollections?.UnregisterFunc();
+        ProviderCurrentCollectionName?.UnregisterFunc();
+        ProviderDefaultCollectionName?.UnregisterFunc();
+        ProviderCharacterCollectionName?.UnregisterFunc();
     }
 }

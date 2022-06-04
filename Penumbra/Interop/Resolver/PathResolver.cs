@@ -138,4 +138,10 @@ public partial class PathResolver : IDisposable
         DisposeDataHooks();
         DisposeMetaHooks();
     }
+
+    public unsafe (IntPtr, ModCollection) IdentifyDrawObject( IntPtr drawObject )
+    {
+        var parent = FindParent( drawObject, out var collection );
+        return ( ( IntPtr )parent, collection );
+    }
 }
