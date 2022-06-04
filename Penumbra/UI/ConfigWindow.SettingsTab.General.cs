@@ -63,7 +63,7 @@ public partial class ConfigWindow
                 "Use the appropriate character collection for the adventurer card you are currently looking at, based on the adventurer's name.",
                 Penumbra.Config.UseCharacterCollectionsInCards, v => Penumbra.Config.UseCharacterCollectionsInCards = v );
             Checkbox( "Use Character Collections in Try-On Window",
-                "Use the character collection for your character's name in your try-on window, if it is set.",
+                "Use the character collection for your character's name in your try-on, dye preview or glamour plate window, if it is set.",
                 Penumbra.Config.UseCharacterCollectionInTryOn, v => Penumbra.Config.UseCharacterCollectionInTryOn = v );
             Checkbox( "Use Character Collections in Inspect Windows",
                 "Use the appropriate character collection for the character you are currently inspecting, based on their name.",

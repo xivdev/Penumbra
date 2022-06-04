@@ -267,6 +267,7 @@ public unsafe partial class PathResolver
                 240    => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
                 241    => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
                 242    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
+                243    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // dye preview
                 >= 200 => GetCutsceneName( gameObject ),
                 _      => null,
             }
