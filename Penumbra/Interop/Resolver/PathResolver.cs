@@ -40,6 +40,7 @@ public partial class PathResolver : IDisposable
         // A potential next request will add the path anew.
         var nonDefault = HandleMaterialSubFiles( type, out var collection )
          || PathCollections.TryRemove( gamePath.Path, out collection )
+         || HandlePapFile( type, gamePath, out collection )
          || HandleDecalFile( type, gamePath, out collection );
         if( !nonDefault )
         {
@@ -59,11 +60,24 @@ public partial class PathResolver : IDisposable
 
     private bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, out ModCollection? collection )
     {
-        if( type                 == ResourceType.Tex
+        if( type                  == ResourceType.Tex
         && _lastCreatedCollection != null
         && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l', '_', 'f', 'a', 'c', 'e' ) )
         {
             collection = _lastCreatedCollection;
+            return true;
+        }
+
+        collection = null;
+        return false;
+    }
+
+    private bool HandlePapFile( ResourceType type, Utf8GamePath gamePath, out ModCollection? collection )
+    {
+        if( type is ResourceType.Pap or ResourceType.Tmb
+        && _animationLoadCollection != null)
+        {
+            collection = _animationLoadCollection;
             return true;
         }
 
