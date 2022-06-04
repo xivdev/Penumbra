@@ -170,7 +170,7 @@ public partial class ConfigWindow
         private void DrawMainSelectors()
         {
             var size = new Vector2( -1,
-                ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight
+                ImGui.GetTextLineHeightWithSpacing() * (InheritedCollectionHeight + 1)
               + _window._defaultSpace.Y              * 2
               + ImGui.GetFrameHeightWithSpacing()    * 4
               + ImGui.GetStyle().ItemSpacing.Y       * 6 );

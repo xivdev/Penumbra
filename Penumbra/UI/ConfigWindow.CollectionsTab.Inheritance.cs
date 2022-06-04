@@ -16,7 +16,7 @@ public partial class ConfigWindow
 {
     private partial class CollectionsTab
     {
-        private const int    InheritedCollectionHeight = 10;
+        private const int    InheritedCollectionHeight = 9;
         private const string InheritanceDragDropLabel  = "##InheritanceMove";
 
         // Keep for reuse.
@@ -32,6 +32,7 @@ public partial class ConfigWindow
         private void DrawInheritanceBlock()
         {
             using var id = ImRaii.PushId( "##Inheritance" );
+            ImGui.TextUnformatted( "The current collection inherits from:" );
             DrawCurrentCollectionInheritance();
             DrawInheritanceTrashButton();
             DrawNewInheritanceSelection();
@@ -185,8 +186,8 @@ public partial class ConfigWindow
             var tt = inheritance switch
             {
                 ModCollection.ValidInheritance.Empty     => "No valid collection to inherit from selected.",
-                ModCollection.ValidInheritance.Valid     => "Add a new inheritance to the collection.",
-                ModCollection.ValidInheritance.Self      => "Can not inherit from itself.",
+                ModCollection.ValidInheritance.Valid     => "Let the current collection inherit from the selected collection.",
+                ModCollection.ValidInheritance.Self      => "The collection can not inherit from itself.",
                 ModCollection.ValidInheritance.Contained => "Already inheriting from the selected collection.",
                 ModCollection.ValidInheritance.Circle    => "Inheriting from selected collection would lead to cyclic inheritance.",
                 _                                        => string.Empty,
