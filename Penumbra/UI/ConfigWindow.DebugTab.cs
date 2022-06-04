@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -410,49 +411,16 @@ public partial class ConfigWindow
             ImGui.TextUnformatted( $"API Version: {ipc.Api.ApiVersion}" );
             ImGui.TextUnformatted( "Available subscriptions:" );
             using var indent = ImRaii.PushIndent();
-            if( ipc.ProviderApiVersion != null )
-            {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderApiVersion );
-            }
 
-            if( ipc.ProviderRedrawName != null )
+            var dict = ipc.GetType().GetFields( BindingFlags.Static | BindingFlags.Public ).Where( f => f.IsLiteral )
+               .ToDictionary( f => f.Name, f => f.GetValue( ipc ) as string );
+            foreach( var provider in ipc.GetType().GetFields( BindingFlags.Instance | BindingFlags.NonPublic ) )
             {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderRedrawName );
-            }
-
-            if( ipc.ProviderRedrawObject != null )
-            {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderRedrawObject );
-            }
-
-            if( ipc.ProviderRedrawAll != null )
-            {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderRedrawAll );
-            }
-
-            if( ipc.ProviderResolveDefault != null )
-            {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderResolveDefault );
-            }
-
-            if( ipc.ProviderResolveCharacter != null )
-            {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderResolveCharacter );
-            }
-
-            if( ipc.ProviderChangedItemTooltip != null )
-            {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderChangedItemTooltip );
-            }
-
-            if( ipc.ProviderChangedItemClick != null )
-            {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderChangedItemClick );
-            }
-
-            if( ipc.ProviderGetChangedItems != null )
-            {
-                ImGui.TextUnformatted( PenumbraIpc.LabelProviderGetChangedItems );
+                var value = provider.GetValue( ipc );
+                if( value != null && dict.TryGetValue( "Label" + provider.Name, out var label ))
+                {
+                    ImGui.TextUnformatted( label );
+                }
             }
         }
 
