@@ -1,0 +1,208 @@
+using System.Numerics;
+using Dalamud.Interface;
+using ImGuiNET;
+using OtterGui;
+using OtterGui.Classes;
+using OtterGui.Raii;
+using OtterGui.Widgets;
+using Penumbra.Collections;
+using Penumbra.Mods;
+using Penumbra.UI.Classes;
+
+namespace Penumbra.UI;
+
+public partial class ConfigWindow
+{
+    private partial class ModPanel
+    {
+        private ModSettings                 _settings   = null!;
+        private ModCollection               _collection = null!;
+        private bool                        _emptySetting;
+        private bool                        _inherited;
+        private SingleArray< ModConflicts > _conflicts = new();
+
+        private int? _currentPriority;
+
+        private void UpdateSettingsData( ModFileSystemSelector selector )
+        {
+            _settings     = selector.SelectedSettings;
+            _collection   = selector.SelectedSettingCollection;
+            _emptySetting = _settings   == ModSettings.Empty;
+            _inherited    = _collection != Penumbra.CollectionManager.Current;
+            _conflicts    = Penumbra.CollectionManager.Current.Conflicts( _mod );
+        }
+
+        // Draw the whole settings tab as well as its contents.
+        private void DrawSettingsTab()
+        {
+            using var tab = DrawTab( SettingsTabHeader, Tabs.Settings );
+            if( !tab )
+            {
+                return;
+            }
+
+            using var child = ImRaii.Child( "##settings" );
+            if( !child )
+            {
+                return;
+            }
+
+            DrawInheritedWarning();
+            ImGui.Dummy( _window._defaultSpace );
+            DrawEnabledInput();
+            ImGui.SameLine();
+            DrawPriorityInput();
+            DrawRemoveSettings();
+            ImGui.Dummy( _window._defaultSpace );
+            for( var idx = 0; idx < _mod.Groups.Count; ++idx )
+            {
+                DrawSingleGroup( _mod.Groups[ idx ], idx );
+            }
+
+            ImGui.Dummy( _window._defaultSpace );
+            for( var idx = 0; idx < _mod.Groups.Count; ++idx )
+            {
+                DrawMultiGroup( _mod.Groups[ idx ], idx );
+            }
+        }
+
+
+        // Draw a big red bar if the current setting is inherited.
+        private void DrawInheritedWarning()
+        {
+            if( !_inherited )
+            {
+                return;
+            }
+
+            using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.PressEnterWarningBg );
+            var       width = new Vector2( ImGui.GetContentRegionAvail().X, 0 );
+            if( ImGui.Button( $"These settings are inherited from {_collection.Name}.", width ) )
+            {
+                Penumbra.CollectionManager.Current.SetModInheritance( _mod.Index, false );
+            }
+
+            ImGuiUtil.HoverTooltip( "You can click this button to copy the current settings to the current selection.\n"
+              + "You can also just change any setting, which will copy the settings with the single setting changed to the current selection." );
+        }
+
+        // Draw a checkbox for the enabled status of the mod.
+        private void DrawEnabledInput()
+        {
+            var enabled = _settings.Enabled;
+            if( ImGui.Checkbox( "Enabled", ref enabled ) )
+            {
+                Penumbra.ModManager.NewMods.Remove( _mod );
+                Penumbra.CollectionManager.Current.SetModState( _mod.Index, enabled );
+            }
+        }
+
+        // Draw a priority input.
+        // Priority is changed on deactivation of the input box.
+        private void DrawPriorityInput()
+        {
+            var priority = _currentPriority ?? _settings.Priority;
+            ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
+            if( ImGui.InputInt( "##Priority", ref priority, 0, 0 ) )
+            {
+                _currentPriority = priority;
+            }
+
+            if( ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue )
+            {
+                if( _currentPriority != _settings.Priority )
+                {
+                    Penumbra.CollectionManager.Current.SetModPriority( _mod.Index, _currentPriority.Value );
+                }
+
+                _currentPriority = null;
+            }
+
+            ImGuiUtil.LabeledHelpMarker( "Priority", "Mods with higher priority take precedence before Mods with lower priority.\n"
+              + "That means, if Mod A should overwrite changes from Mod B, Mod A should have higher priority than Mod B." );
+        }
+
+        // Draw a button to remove the current settings and inherit them instead
+        // on the top-right corner of the window/tab.
+        private void DrawRemoveSettings()
+        {
+            const string text = "Remove Settings";
+            if( _inherited || _emptySetting )
+            {
+                return;
+            }
+
+            var scroll = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0;
+            ImGui.SameLine( ImGui.GetWindowWidth() - ImGui.CalcTextSize( text ).X - ImGui.GetStyle().FramePadding.X * 2 - scroll );
+            if( ImGui.Button( text ) )
+            {
+                Penumbra.CollectionManager.Current.SetModInheritance( _mod.Index, true );
+            }
+
+            ImGuiUtil.HoverTooltip( "Remove current settings from this collection so that it can inherit them.\n"
+              + "If no inherited collection has settings for this mod, it will be disabled." );
+        }
+
+        // Draw a single group selector as a combo box.
+        // If a description is provided, add a help marker besides it.
+        private void DrawSingleGroup( IModGroup group, int groupIdx )
+        {
+            if( group.Type != SelectType.Single || !group.IsOption )
+            {
+                return;
+            }
+
+            using var id             = ImRaii.PushId( groupIdx );
+            var       selectedOption = _emptySetting ? 0 : ( int )_settings.Settings[ groupIdx ];
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X * 3 / 4 );
+            using var combo = ImRaii.Combo( string.Empty, group[ selectedOption ].Name );
+            if( combo )
+            {
+                for( var idx2 = 0; idx2 < group.Count; ++idx2 )
+                {
+                    if( ImGui.Selectable( group[ idx2 ].Name, idx2 == selectedOption ) )
+                    {
+                        Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx2 );
+                    }
+                }
+            }
+
+            combo.Dispose();
+            ImGui.SameLine();
+            if( group.Description.Length > 0 )
+            {
+                ImGuiUtil.LabeledHelpMarker( group.Name, group.Description );
+            }
+            else
+            {
+                ImGui.TextUnformatted( group.Name );
+            }
+        }
+
+        // Draw a multi group selector as a bordered set of checkboxes.
+        // If a description is provided, add a help marker in the title.
+        private void DrawMultiGroup( IModGroup group, int groupIdx )
+        {
+            if( group.Type != SelectType.Multi || !group.IsOption )
+            {
+                return;
+            }
+
+            using var id    = ImRaii.PushId( groupIdx );
+            var       flags = _emptySetting ? 0u : _settings.Settings[ groupIdx ];
+            Widget.BeginFramedGroup( group.Name, group.Description );
+            for( var idx2 = 0; idx2 < group.Count; ++idx2 )
+            {
+                var flag    = 1u << idx2;
+                var setting = ( flags & flag ) != 0;
+                if( ImGui.Checkbox( group[ idx2 ].Name, ref setting ) )
+                {
+                    flags = setting ? flags | flag : flags & ~flag;
+                    Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, flags );
+                }
+            }
+
+            Widget.EndFramedGroup();
+        }
+    }
+}

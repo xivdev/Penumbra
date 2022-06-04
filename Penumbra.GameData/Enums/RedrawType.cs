@@ -1,14 +1,7 @@
-namespace Penumbra.GameData.Enums
+namespace Penumbra.GameData.Enums;
+
+public enum RedrawType
 {
-    public enum RedrawType
-    {
-        WithoutSettings,
-        WithSettings,
-        OnlyWithSettings,
-        Unload,
-        RedrawWithoutSettings,
-        RedrawWithSettings,
-        AfterGPoseWithSettings,
-        AfterGPoseWithoutSettings,
-    }
+    Redraw,
+    AfterGPose,
 }

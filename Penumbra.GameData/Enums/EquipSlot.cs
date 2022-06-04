@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 
 namespace Penumbra.GameData.Enums
 {
@@ -30,7 +32,7 @@ namespace Penumbra.GameData.Enums
         All               = 22, // Not officially existing
     }
 
-    public static class EquipSlotEnumExtension
+    public static class EquipSlotExtensions
     {
         public static string ToSuffix( this EquipSlot value )
         {
@@ -79,6 +81,36 @@ namespace Penumbra.GameData.Enums
             };
         }
 
+        public static string ToName( this EquipSlot value )
+        {
+            return value switch
+            {
+                EquipSlot.Head              => "Head",
+                EquipSlot.Hands             => "Hands",
+                EquipSlot.Legs              => "Legs",
+                EquipSlot.Feet              => "Feet",
+                EquipSlot.Body              => "Body",
+                EquipSlot.Ears              => "Earrings",
+                EquipSlot.Neck              => "Necklace",
+                EquipSlot.RFinger           => "Right Ring",
+                EquipSlot.LFinger           => "Left Ring",
+                EquipSlot.Wrists            => "Bracelets",
+                EquipSlot.MainHand          => "Primary Weapon",
+                EquipSlot.OffHand           => "Secondary Weapon",
+                EquipSlot.Belt              => "Belt",
+                EquipSlot.BothHand          => "Primary Weapon",
+                EquipSlot.HeadBody          => "Head and Body",
+                EquipSlot.BodyHandsLegsFeet => "Costume",
+                EquipSlot.SoulCrystal       => "Soul Crystal",
+                EquipSlot.LegsFeet          => "Bottom",
+                EquipSlot.FullBody          => "Costume",
+                EquipSlot.BodyHands         => "Top",
+                EquipSlot.BodyLegsFeet      => "Costume",
+                EquipSlot.All               => "Costume",
+                _                           => "Unknown",
+            };
+        }
+
         public static bool IsEquipment( this EquipSlot value )
         {
             return value switch
@@ -104,6 +136,10 @@ namespace Penumbra.GameData.Enums
                 _                 => false,
             };
         }
+
+        public static readonly EquipSlot[] EquipmentSlots = Enum.GetValues< EquipSlot >().Where( e => e.IsEquipment() ).ToArray();
+        public static readonly EquipSlot[] AccessorySlots = Enum.GetValues< EquipSlot >().Where( e => e.IsAccessory() ).ToArray();
+        public static readonly EquipSlot[] EqdpSlots = EquipmentSlots.Concat( AccessorySlots ).ToArray();
     }
 
     public static partial class Names

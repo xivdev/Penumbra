@@ -107,30 +107,6 @@ public enum GenderRace : ushort
 
 public static class RaceEnumExtensions
 {
-    public static int ToRspIndex( this SubRace subRace )
-    {
-        return subRace switch
-        {
-            SubRace.Midlander       => 0,
-            SubRace.Highlander      => 1,
-            SubRace.Wildwood        => 10,
-            SubRace.Duskwight       => 11,
-            SubRace.Plainsfolk      => 20,
-            SubRace.Dunesfolk       => 21,
-            SubRace.SeekerOfTheSun  => 30,
-            SubRace.KeeperOfTheMoon => 31,
-            SubRace.Seawolf         => 40,
-            SubRace.Hellsguard      => 41,
-            SubRace.Raen            => 50,
-            SubRace.Xaela           => 51,
-            SubRace.Helion          => 60,
-            SubRace.Lost            => 61,
-            SubRace.Rava            => 70,
-            SubRace.Veena           => 71,
-            _                       => throw new ArgumentOutOfRangeException( nameof( subRace ), subRace, null ),
-        };
-    }
-
     public static Race ToRace( this ModelRace race )
     {
         return race switch
@@ -187,7 +163,7 @@ public static class RaceEnumExtensions
             ModelRace.AuRa       => Race.AuRa.ToName(),
             ModelRace.Hrothgar   => Race.Hrothgar.ToName(),
             ModelRace.Viera      => Race.Viera.ToName(),
-            _                    => throw new ArgumentOutOfRangeException( nameof( modelRace ), modelRace, null ),
+            _                    => Race.Unknown.ToName(),
         };
     }
 
@@ -203,7 +179,7 @@ public static class RaceEnumExtensions
             Race.AuRa     => "Au Ra",
             Race.Hrothgar => "Hrothgar",
             Race.Viera    => "Viera",
-            _             => throw new ArgumentOutOfRangeException( nameof( race ), race, null ),
+            _             => "Unknown",
         };
     }
 
@@ -215,7 +191,7 @@ public static class RaceEnumExtensions
             Gender.Female    => "Female",
             Gender.MaleNpc   => "Male (NPC)",
             Gender.FemaleNpc => "Female (NPC)",
-            _                => throw new InvalidEnumArgumentException(),
+            _                => "Unknown",
         };
     }
 
@@ -239,7 +215,7 @@ public static class RaceEnumExtensions
             SubRace.Lost            => "Lost",
             SubRace.Rava            => "Rava",
             SubRace.Veena           => "Veena",
-            _                       => throw new InvalidEnumArgumentException(),
+            _                       => "Unknown",
         };
     }
 

@@ -1,73 +1,68 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.GameData.Util;
+using Penumbra.Interop.Structs;
+using System.Collections.Generic;
 
-namespace Penumbra.Meta.Files
+namespace Penumbra.Meta.Files;
+
+// The human.cmp file contains many character-relevant parameters like color sets.
+// We only support manipulating the racial scaling parameters at the moment.
+public sealed unsafe class CmpFile : MetaBaseFile
 {
-    public class CmpFile
+    private const int RacialScalingStart = 0x2A800;
+
+    public float this[ SubRace subRace, RspAttribute attribute ]
     {
-        private const int RacialScalingStart = 0x2A800;
-
-        private readonly byte[]     _byteData = new byte[RacialScalingStart];
-        private readonly RspEntry[] _rspEntries;
-
-        public CmpFile( byte[] bytes )
-        {
-            if( bytes.Length < RacialScalingStart )
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-
-            Array.Copy( bytes, _byteData, RacialScalingStart );
-            var rspEntryNum = ( bytes.Length - RacialScalingStart ) / RspEntry.ByteSize;
-            var tmp         = new List< RspEntry >( rspEntryNum );
-            for( var i = 0; i < rspEntryNum; ++i )
-            {
-                tmp.Add( new RspEntry( bytes, RacialScalingStart + i * RspEntry.ByteSize ) );
-            }
-
-            _rspEntries = tmp.ToArray();
-        }
-
-        public RspEntry this[ SubRace subRace ]
-            => _rspEntries[ subRace.ToRspIndex() ];
-
-        public bool Set( SubRace subRace, RspAttribute attribute, float value )
-        {
-            var entry    = _rspEntries[ subRace.ToRspIndex() ];
-            var oldValue = entry[ attribute ];
-            if( oldValue == value )
-            {
-                return false;
-            }
-
-            entry[ attribute ] = value;
-            return true;
-        }
-
-        public byte[] WriteBytes()
-        {
-            using var s = new MemoryStream( RacialScalingStart + _rspEntries.Length * RspEntry.ByteSize );
-            s.Write( _byteData, 0, _byteData.Length );
-            foreach( var entry in _rspEntries )
-            {
-                var bytes = entry.ToBytes();
-                s.Write( bytes, 0, bytes.Length );
-            }
-
-            return s.ToArray();
-        }
-
-        private CmpFile( byte[] data, RspEntry[] entries )
-        {
-            _byteData   = data.ToArray();
-            _rspEntries = entries.Select( e => new RspEntry( e ) ).ToArray();
-        }
-
-        public CmpFile Clone()
-            => new( _byteData, _rspEntries );
+        get => *( float* )( Data + RacialScalingStart + ToRspIndex( subRace ) * RspEntry.ByteSize + ( int )attribute * 4 );
+        set => *( float* )( Data + RacialScalingStart + ToRspIndex( subRace ) * RspEntry.ByteSize + ( int )attribute * 4 ) = value;
     }
+
+    public override void Reset()
+        => Functions.MemCpyUnchecked( Data, ( byte* )DefaultData.Data, DefaultData.Length );
+
+    public void Reset( IEnumerable< (SubRace, RspAttribute) > entries )
+    {
+        foreach( var (r, a) in entries )
+        {
+            this[ r, a ] = GetDefault( r, a );
+        }
+    }
+
+    public CmpFile()
+        : base( CharacterUtility.HumanCmpIdx )
+    {
+        AllocateData( DefaultData.Length );
+        Reset();
+    }
+
+    public static float GetDefault( SubRace subRace, RspAttribute attribute )
+    {
+        var data = ( byte* )Penumbra.CharacterUtility.DefaultResource( CharacterUtility.HumanCmpIdx ).Address;
+        return *( float* )( data + RacialScalingStart + ToRspIndex( subRace ) * RspEntry.ByteSize + ( int )attribute * 4 );
+    }
+
+    private static int ToRspIndex( SubRace subRace )
+        => subRace switch
+        {
+            SubRace.Midlander       => 0,
+            SubRace.Highlander      => 1,
+            SubRace.Wildwood        => 10,
+            SubRace.Duskwight       => 11,
+            SubRace.Plainsfolk      => 20,
+            SubRace.Dunesfolk       => 21,
+            SubRace.SeekerOfTheSun  => 30,
+            SubRace.KeeperOfTheMoon => 31,
+            SubRace.Seawolf         => 40,
+            SubRace.Hellsguard      => 41,
+            SubRace.Raen            => 50,
+            SubRace.Xaela           => 51,
+            SubRace.Helion          => 60,
+            SubRace.Lost            => 61,
+            SubRace.Rava            => 70,
+            SubRace.Veena           => 71,
+            SubRace.Unknown         => 0,
+            _                       => throw new ArgumentOutOfRangeException( nameof( subRace ), subRace, null ),
+        };
 }

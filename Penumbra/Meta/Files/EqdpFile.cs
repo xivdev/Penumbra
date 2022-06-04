@@ -1,214 +1,144 @@
 using System;
-using System.IO;
-using System.Linq;
-using Lumina.Data;
+using System.Collections.Generic;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.GameData.Util;
+using Penumbra.Interop.Structs;
 
-namespace Penumbra.Meta.Files
+namespace Penumbra.Meta.Files;
+
+// EQDP file structure:
+// [Identifier][BlockSize:ushort][BlockCount:ushort]
+//   BlockCount x [BlockHeader:ushort]
+//   Containing offsets for blocks, ushort.Max means collapsed.
+//   Offsets are based on the end of the header, so 0 means IdentifierSize + 4 + BlockCount x 2.
+//     ExpandedBlockCount x [Entry]
+
+// Expanded Eqdp File just expands all blocks for easy read and write access to single entries and to keep the same memory for it.
+public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
 {
-    // EQDP file structure:
-    // [Identifier][BlockSize:ushort][BlockCount:ushort]
-    //   BlockCount x [BlockHeader:ushort]
-    //   Containing offsets for blocks, ushort.Max means collapsed.
-    //   Offsets are based on the end of the header, so 0 means IdentifierSize + 4 + BlockCount x 2.
-    //     ExpandedBlockCount x [Entry]
-    public class EqdpFile
+    private const ushort BlockHeaderSize = 2;
+    private const ushort PreambleSize    = 4;
+    private const ushort CollapsedBlock  = ushort.MaxValue;
+    private const ushort IdentifierSize  = 2;
+    private const ushort EqdpEntrySize   = 2;
+    private const int    FileAlignment   = 1 << 9;
+
+    public readonly int DataOffset;
+
+    public ushort Identifier
+        => *( ushort* )Data;
+
+    public ushort BlockSize
+        => *( ushort* )( Data + 2 );
+
+    public ushort BlockCount
+        => *( ushort* )( Data + 4 );
+
+    public int Count
+        => ( Length - DataOffset ) / EqdpEntrySize;
+
+    public EqdpEntry this[ int idx ]
     {
-        private const ushort BlockHeaderSize = 2;
-        private const ushort PreambleSize    = 4;
-        private const ushort CollapsedBlock  = ushort.MaxValue;
-        private const ushort IdentifierSize  = 2;
-        private const ushort EqdpEntrySize   = 2;
-        private const int    FileAlignment   = 1 << 9;
-
-        private EqdpFile( EqdpFile clone )
+        get
         {
-            Identifier         = clone.Identifier;
-            BlockSize          = clone.BlockSize;
-            TotalBlockCount    = clone.TotalBlockCount;
-            ExpandedBlockCount = clone.ExpandedBlockCount;
-            Blocks             = new EqdpEntry[clone.TotalBlockCount][];
-            for( var i = 0; i < TotalBlockCount; ++i )
+            if( idx >= Count || idx < 0 )
             {
-                if( clone.Blocks[ i ] != null )
-                {
-                    Blocks[ i ] = ( EqdpEntry[] )clone.Blocks[ i ]!.Clone();
-                }
+                throw new IndexOutOfRangeException();
             }
+
+            var x = new ReadOnlySpan< ushort >( ( ushort* )Data, Length           / 2 );
+            return ( EqdpEntry )( *( ushort* )( Data + DataOffset + EqdpEntrySize * idx ) );
         }
-
-        public ref EqdpEntry this[ ushort setId ]
-            => ref GetTrueEntry( setId );
-
-
-        public EqdpFile Clone()
-            => new( this );
-
-        private ushort Identifier { get; }
-        private ushort BlockSize { get; }
-        private ushort TotalBlockCount { get; }
-        private ushort ExpandedBlockCount { get; set; }
-        private EqdpEntry[]?[] Blocks { get; }
-
-        private int BlockIdx( ushort id )
-            => ( ushort )( id / BlockSize );
-
-        private int SubIdx( ushort id )
-            => ( ushort )( id % BlockSize );
-
-        private bool ExpandBlock( int idx )
+        set
         {
-            if( idx < TotalBlockCount && Blocks[ idx ] == null )
+            if( idx >= Count || idx < 0 )
             {
-                Blocks[ idx ] = new EqdpEntry[BlockSize];
-                ++ExpandedBlockCount;
-                return true;
+                throw new IndexOutOfRangeException();
             }
 
-            return false;
+            *( ushort* )( Data + DataOffset + EqdpEntrySize * idx ) = ( ushort )value;
         }
+    }
 
-        private bool CollapseBlock( int idx )
+    public override void Reset()
+    {
+        var def = ( byte* )DefaultData.Data;
+        Functions.MemCpyUnchecked( Data, def, IdentifierSize + PreambleSize );
+
+        var controlPtr   = ( ushort* )( def + IdentifierSize + PreambleSize );
+        var dataBasePtr  = controlPtr + BlockCount;
+        var myDataPtr    = ( ushort* )( Data + IdentifierSize + PreambleSize + 2 * BlockCount );
+        var myControlPtr = ( ushort* )( Data + IdentifierSize + PreambleSize );
+        for( var i = 0; i < BlockCount; ++i )
         {
-            if( idx >= TotalBlockCount || Blocks[ idx ] == null )
+            if( controlPtr[ i ] == CollapsedBlock )
             {
-                return false;
-            }
-
-            Blocks[ idx ] = null;
-            --ExpandedBlockCount;
-            return true;
-        }
-
-        public bool SetEntry( ushort idx, EqdpEntry entry )
-        {
-            var block = BlockIdx( idx );
-            if( block >= TotalBlockCount )
-            {
-                return false;
-            }
-
-            if( entry != 0 )
-            {
-                ExpandBlock( block );
-                if( Blocks[ block ]![ SubIdx( idx ) ] != entry )
-                {
-                    Blocks[ block ]![ SubIdx( idx ) ] = entry;
-                    return true;
-                }
+                Functions.MemSet( myDataPtr, 0, BlockSize * EqdpEntrySize );
             }
             else
             {
-                var array = Blocks[ block ];
-                if( array != null )
-                {
-                    array[ SubIdx( idx ) ] = entry;
-                    if( array.All( e => e == 0 ) )
-                    {
-                        CollapseBlock( block );
-                    }
-
-                    return true;
-                }
+                Functions.MemCpyUnchecked( myDataPtr, dataBasePtr + controlPtr[ i ], BlockSize * EqdpEntrySize );
             }
 
-            return false;
+            myControlPtr[ i ] =  ( ushort )( i * BlockSize );
+            myDataPtr         += BlockSize;
         }
 
-        public EqdpEntry GetEntry( ushort idx )
+        Functions.MemSet( myDataPtr, 0, Length - ( int )( ( byte* )myDataPtr - Data ) );
+    }
+
+    public void Reset( IEnumerable< int > entries )
+    {
+        foreach( var entry in entries )
         {
-            var block = BlockIdx( idx );
-            var array = block < Blocks.Length ? Blocks[ block ] : null;
-            return array?[ SubIdx( idx ) ] ?? 0;
-        }
-
-        private ref EqdpEntry GetTrueEntry( ushort idx )
-        {
-            var block = BlockIdx( idx );
-            if( block >= TotalBlockCount )
-            {
-                throw new ArgumentOutOfRangeException();
-            }
-
-            ExpandBlock( block );
-            var array = Blocks[ block ]!;
-            return ref array[ SubIdx( idx ) ];
-        }
-
-        private void WriteHeaders( BinaryWriter bw )
-        {
-            ushort offset = 0;
-            foreach( var block in Blocks )
-            {
-                if( block == null )
-                {
-                    bw.Write( CollapsedBlock );
-                    continue;
-                }
-
-                bw.Write( offset );
-                offset += BlockSize;
-            }
-        }
-
-        private static void WritePadding( BinaryWriter bw, int paddingSize )
-        {
-            var buffer = new byte[paddingSize];
-            bw.Write( buffer, 0, paddingSize );
-        }
-
-        private void WriteBlocks( BinaryWriter bw )
-        {
-            foreach( var entry in Blocks.Where( block => block != null )
-               .SelectMany( block => block! ) )
-            {
-                bw.Write( ( ushort )entry );
-            }
-        }
-
-        public byte[] WriteBytes()
-        {
-            var dataSize = PreambleSize + IdentifierSize + BlockHeaderSize * TotalBlockCount + ExpandedBlockCount * BlockSize * EqdpEntrySize;
-            var paddingSize = FileAlignment - ( dataSize & ( FileAlignment - 1 ) );
-            using var mem =
-                new MemoryStream( dataSize + paddingSize );
-            using var bw = new BinaryWriter( mem );
-            bw.Write( Identifier );
-            bw.Write( BlockSize );
-            bw.Write( TotalBlockCount );
-
-            WriteHeaders( bw );
-            WriteBlocks( bw );
-            WritePadding( bw, paddingSize );
-
-            return mem.ToArray();
-        }
-
-        public EqdpFile( FileResource file )
-        {
-            file.Reader.BaseStream.Seek( 0, SeekOrigin.Begin );
-
-            Identifier         = file.Reader.ReadUInt16();
-            BlockSize          = file.Reader.ReadUInt16();
-            TotalBlockCount    = file.Reader.ReadUInt16();
-            Blocks             = new EqdpEntry[TotalBlockCount][];
-            ExpandedBlockCount = 0;
-            for( var i = 0; i < TotalBlockCount; ++i )
-            {
-                var offset = file.Reader.ReadUInt16();
-                if( offset != CollapsedBlock )
-                {
-                    ExpandBlock( ( ushort )i );
-                }
-            }
-
-            foreach( var array in Blocks.Where( array => array != null ) )
-            {
-                for( var i = 0; i < BlockSize; ++i )
-                {
-                    array![ i ] = ( EqdpEntry )file.Reader.ReadUInt16();
-                }
-            }
+            this[ entry ] = GetDefault( entry );
         }
     }
+
+    public ExpandedEqdpFile( GenderRace raceCode, bool accessory )
+        : base( CharacterUtility.EqdpIdx( raceCode, accessory ) )
+    {
+        var def             = ( byte* )DefaultData.Data;
+        var blockSize       = *( ushort* )( def + IdentifierSize );
+        var totalBlockCount = *( ushort* )( def + IdentifierSize + 2 );
+        var totalBlockSize  = blockSize * EqdpEntrySize;
+
+        DataOffset = IdentifierSize + PreambleSize + totalBlockCount * BlockHeaderSize;
+
+        var fullLength = DataOffset   + totalBlockCount * totalBlockSize;
+        fullLength += ( FileAlignment - ( fullLength & ( FileAlignment - 1 ) ) ) & ( FileAlignment - 1 );
+        AllocateData( fullLength );
+        Reset();
+    }
+
+    public EqdpEntry GetDefault( int setIdx )
+        => GetDefault( Index, setIdx );
+
+    public static EqdpEntry GetDefault( int fileIdx, int setIdx )
+        => GetDefault( ( byte* )Penumbra.CharacterUtility.DefaultResource( fileIdx ).Address, setIdx );
+
+    public static EqdpEntry GetDefault( byte* data, int setIdx )
+    {
+        var blockSize       = *( ushort* )( data + IdentifierSize );
+        var totalBlockCount = *( ushort* )( data + IdentifierSize + 2 );
+
+        var blockIdx = setIdx / blockSize;
+        if( blockIdx >= totalBlockCount )
+        {
+            return 0;
+        }
+
+        var block = ( ( ushort* )( data + IdentifierSize + PreambleSize ) )[ blockIdx ];
+        if( block == CollapsedBlock )
+        {
+            return 0;
+        }
+
+        var blockData = ( ushort* )( data + IdentifierSize + PreambleSize + totalBlockCount * 2 + block * 2 );
+        return ( EqdpEntry )( *( blockData + setIdx % blockSize ) );
+    }
+
+    public static EqdpEntry GetDefault( GenderRace raceCode, bool accessory, int setIdx )
+        => GetDefault( CharacterUtility.EqdpIdx( raceCode, accessory ), setIdx );
 }

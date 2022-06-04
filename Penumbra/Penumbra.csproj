@@ -12,22 +12,22 @@
         <OutputPath>bin\$(Configuration)\</OutputPath>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
-        <UseWindowsForms>true</UseWindowsForms>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <DebugType>full</DebugType>
-        <DefineConstants>DEBUG;TRACE</DefineConstants>
+        <DefineConstants>DEBUG;TRACE;USE_EQP;USE_EQDP;USE_GMP;USE_EST;USE_CMP;USE_IMC</DefineConstants>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
         <DebugType>pdbonly</DebugType>
+        <DefineConstants>$(DefineConstants)TRACE;USE_EQP;USE_EQDP;USE_GMP;USE_EST;USE_CMP;USE_IMC</DefineConstants>
     </PropertyGroup>
 
-	<PropertyGroup>
-		<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
-	</PropertyGroup>
+    <PropertyGroup>
+        <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+    </PropertyGroup>
 
     <ItemGroup>
         <Content Include="tsmLogo.png">
@@ -69,13 +69,24 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
-      <ProjectReference Include="..\Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj" />
+        <ProjectReference Include="..\OtterGui\OtterGui.csproj" />
+        <ProjectReference Include="..\Penumbra.GameData\Penumbra.GameData.csproj" />
+        <ProjectReference Include="..\Penumbra.PlayerWatch\Penumbra.PlayerWatch.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="Penumbra.json">
-        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      </None>
+        <None Update="Penumbra.json">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
+
+    <Target Name="GetGitHash" BeforeTargets="GetAssemblyVersion" Returns="InformationalVersion">
+        <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" StandardOutputImportance="low">
+            <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" />
+        </Exec>
+
+        <PropertyGroup>
+            <InformationalVersion>$(GitCommitHash)</InformationalVersion>
+        </PropertyGroup>
+    </Target>
 </Project>
