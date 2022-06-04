@@ -40,7 +40,7 @@ public partial class PathResolver : IDisposable
         // A potential next request will add the path anew.
         var nonDefault = HandleMaterialSubFiles( type, out var collection )
          || PathCollections.TryRemove( gamePath.Path, out collection )
-         || HandlePapFile( type, gamePath, out collection )
+         //|| HandlePapFile( type, gamePath, out collection )
          || HandleDecalFile( type, gamePath, out collection );
         if( !nonDefault )
         {
@@ -72,18 +72,18 @@ public partial class PathResolver : IDisposable
         return false;
     }
 
-    private bool HandlePapFile( ResourceType type, Utf8GamePath _, out ModCollection? collection )
-    {
-        if( type is ResourceType.Pap or ResourceType.Tmb
-        && _animationLoadCollection != null )
-        {
-            collection = _animationLoadCollection;
-            return true;
-        }
-
-        collection = null;
-        return false;
-    }
+    //private bool HandlePapFile( ResourceType type, Utf8GamePath _, out ModCollection? collection )
+    //{
+    //    if( type is ResourceType.Pap or ResourceType.Tmb
+    //    && _animationLoadCollection != null )
+    //    {
+    //        collection = _animationLoadCollection;
+    //        return true;
+    //    }
+    //
+    //    collection = null;
+    //    return false;
+    //}
 
     public void Enable()
     {

@@ -72,28 +72,29 @@ public unsafe partial class PathResolver
         CharacterBaseCreateHook?.Enable();
         EnableDrawHook?.Enable();
         CharacterBaseDestructorHook?.Enable();
-        CharacterBaseLoadAnimationHook?.Enable();
-        RandomPapHook?.Enable();
         Penumbra.CollectionManager.CollectionChanged += CheckCollections;
+        //CharacterBaseLoadAnimationHook?.Enable();
+        //RandomPapHook?.Enable();
     }
 
     private void DisableDataHooks()
     {
         Penumbra.CollectionManager.CollectionChanged -= CheckCollections;
-        RandomPapHook?.Disable();
-        CharacterBaseLoadAnimationHook?.Disable();
         CharacterBaseCreateHook?.Disable();
         EnableDrawHook?.Disable();
         CharacterBaseDestructorHook?.Disable();
+        //RandomPapHook?.Disable();
+        //CharacterBaseLoadAnimationHook?.Disable();
     }
 
     private void DisposeDataHooks()
     {
-        CharacterBaseLoadAnimationHook?.Dispose();
+        
         CharacterBaseCreateHook?.Dispose();
         EnableDrawHook?.Dispose();
         CharacterBaseDestructorHook?.Dispose();
-        RandomPapHook?.Dispose();
+        //RandomPapHook?.Dispose();
+        //CharacterBaseLoadAnimationHook?.Dispose();
     }
 
     // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
