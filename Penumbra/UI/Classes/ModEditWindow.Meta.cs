@@ -286,7 +286,7 @@ public partial class ModEditWindow
         {
             try
             {
-                return ImcFile.GetDefault( imc.GamePath(), imc.EquipSlot, imc.Variant );
+                return ImcFile.GetDefault( imc.GamePath(), imc.EquipSlot, imc.Variant, out _ );
             }
             catch
             {

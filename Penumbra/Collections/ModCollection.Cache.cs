@@ -253,15 +253,14 @@ public partial class ModCollection
             if( addMetaChanges )
             {
                 ++ChangeCounter;
+                if( mod.TotalManipulations > 0 )
+                {
+                    AddMetaFiles();
+                }
                 if( _collection == Penumbra.CollectionManager.Default )
                 {
                     Penumbra.ResidentResources.Reload();
                     MetaManipulations.SetFiles();
-                }
-
-                if( mod.TotalManipulations > 0 )
-                {
-                    AddMetaFiles();
                 }
             }
         }

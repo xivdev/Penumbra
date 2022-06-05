@@ -104,7 +104,7 @@ public partial class MetaManager
                     return false;
                 }
 
-                var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant );
+                var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant, out _ );
                 var manip = m with { Entry = def };
                 if( !manip.Apply( file ) )
                 {

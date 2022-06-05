@@ -134,7 +134,7 @@ public unsafe class ImcFile : MetaBaseFile
         var defaultPtr = ( ImcEntry* )( Data + PreambleSize );
         for( var i = oldCount + 1; i < numVariants + 1; ++i )
         {
-            Functions.MemCpyUnchecked( defaultPtr + i, defaultPtr, NumParts * sizeof( ImcEntry ) );
+            Functions.MemCpyUnchecked( defaultPtr + i * NumParts, defaultPtr, NumParts * sizeof( ImcEntry ) );
         }
 
         PluginLog.Verbose( "Expanded IMC {Path} from {Count} to {NewCount} variants.", Path, oldCount, numVariants );
@@ -197,9 +197,10 @@ public unsafe class ImcFile : MetaBaseFile
         }
     }
 
-    public static ImcEntry GetDefault( Utf8GamePath path, EquipSlot slot, int variantIdx )
+    public static ImcEntry GetDefault( Utf8GamePath path, EquipSlot slot, int variantIdx, out bool exists )
     {
         var file = Dalamud.GameData.GetFile( path.ToString() );
+        exists = false;
         if( file == null )
         {
             throw new Exception();
@@ -208,7 +209,12 @@ public unsafe class ImcFile : MetaBaseFile
         fixed( byte* ptr = file.Data )
         {
             var entry = VariantPtr( ptr, PartIndex( slot ), variantIdx );
-            return entry == null ? new ImcEntry() : *entry;
+            if( entry != null )
+            {
+                exists = true;
+                return *entry;
+            }
+            return new ImcEntry();
         }
     }
 
