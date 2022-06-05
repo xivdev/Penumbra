@@ -202,7 +202,7 @@ public partial class ModCollection
             }
 
             // Afterwards, we update the caches. This can not happen in the same loop due to inheritance.
-            foreach( var collection in this )
+            foreach( var collection in this.Where( c => c.HasCache ) )
             {
                 collection.ForceCacheUpdate();
             }
