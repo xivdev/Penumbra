@@ -25,7 +25,7 @@ jobs:
       - name: Build
         run: |
           $ver = '${{ github.ref }}' -replace 'refs/tags/',''
-          invoke-expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver -p:FileVersion=$ver'
+          invoke-expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
       - name: write version into json
         run: |
           $ver = '${{ github.ref }}' -replace 'refs/tags/',''
