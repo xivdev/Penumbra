@@ -11,12 +11,15 @@ public unsafe class CharacterUtility : IDisposable
     [Signature( "48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2", ScanType = ScanType.StaticAddress )]
     private readonly Structs.CharacterUtility** _characterUtilityAddress = null;
 
+
     // Only required for migration anymore.
+    public delegate void LoadResources( Structs.CharacterUtility* address );
+
     [Signature( "E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2" )]
-    public readonly Action< IntPtr >? LoadCharacterResourcesFunc;
+    public readonly LoadResources? LoadCharacterResourcesFunc;
 
     public void LoadCharacterResources()
-        => LoadCharacterResourcesFunc?.Invoke( ( IntPtr )_characterUtilityAddress );
+        => LoadCharacterResourcesFunc?.Invoke( Address );
 
     public Structs.CharacterUtility* Address
         => *_characterUtilityAddress;
