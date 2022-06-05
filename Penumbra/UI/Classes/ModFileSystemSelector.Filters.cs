@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
@@ -21,10 +22,10 @@ public partial class ModFileSystemSelector
         public ColorId Color;
     }
 
-    private const    StringComparison IgnoreCase = StringComparison.InvariantCultureIgnoreCase;
-    private          LowerString      _modFilter   = LowerString.Empty;
-    private          int              _filterType  = -1;
-    private          ModFilter        _stateFilter = ModFilterExtensions.UnfilteredStateMods;
+    private const StringComparison IgnoreCase   = StringComparison.InvariantCultureIgnoreCase;
+    private       LowerString      _modFilter   = LowerString.Empty;
+    private       int              _filterType  = -1;
+    private       ModFilter        _stateFilter = ModFilterExtensions.UnfilteredStateMods;
 
     private void SetFilterTooltip()
     {
@@ -252,13 +253,30 @@ public partial class ModFileSystemSelector
         var pos            = ImGui.GetCursorPos();
         var remainingWidth = width - ImGui.GetFrameHeight();
         var comboPos       = new Vector2( pos.X + remainingWidth, pos.Y );
+
+        var everything = _stateFilter == ModFilterExtensions.UnfilteredStateMods;
+
         ImGui.SetCursorPos( comboPos );
+        // Draw combo button
+        using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.FilterActive, !everything );
         using var combo = ImRaii.Combo( "##filterCombo", string.Empty,
             ImGuiComboFlags.NoPreview | ImGuiComboFlags.PopupAlignLeft | ImGuiComboFlags.HeightLargest );
+        color.Pop();
 
         if( combo )
         {
+            using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
+                ImGui.GetStyle().ItemSpacing with { Y = 3 * ImGuiHelpers.GlobalScale } );
             var flags = ( int )_stateFilter;
+
+
+            if( ImGui.Checkbox( "Everything", ref everything ) )
+            {
+                _stateFilter = everything ? ModFilterExtensions.UnfilteredStateMods : 0;
+                SetFilterDirty();
+            }
+
+            ImGui.Dummy( new Vector2( 0, 5 * ImGuiHelpers.GlobalScale ) );
             foreach( ModFilter flag in Enum.GetValues( typeof( ModFilter ) ) )
             {
                 if( ImGui.CheckboxFlags( flag.ToName(), ref flags, ( int )flag ) )
@@ -270,7 +288,13 @@ public partial class ModFileSystemSelector
         }
 
         combo.Dispose();
-        ImGuiUtil.HoverTooltip( "Filter mods for their activation status." );
+        if( ImGui.IsItemClicked( ImGuiMouseButton.Right ) )
+        {
+            _stateFilter = ModFilterExtensions.UnfilteredStateMods;
+            SetFilterDirty();
+        }
+
+        ImGuiUtil.HoverTooltip( "Filter mods for their activation status.\nRight-Click to clear all filters." );
         ImGui.SetCursorPos( pos );
         return remainingWidth;
     }
