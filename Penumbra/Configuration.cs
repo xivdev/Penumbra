@@ -43,6 +43,7 @@ public partial class Configuration : IPluginConfiguration
     public bool ScaleModSelector { get; set; } = false;
     public float ModSelectorAbsoluteSize { get; set; } = Constants.DefaultAbsoluteSize;
     public int ModSelectorScaledSize { get; set; } = Constants.DefaultScaledSize;
+    public bool OpenFoldersByDefault { get; set; } = false;
 
 
     public bool ShowAdvanced { get; set; }

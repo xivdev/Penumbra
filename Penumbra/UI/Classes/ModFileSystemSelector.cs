@@ -76,6 +76,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     protected override uint FolderLineColor
         => ColorId.FolderLine.Value();
 
+    protected override bool FoldersDefaultOpen
+        => Penumbra.Config.OpenFoldersByDefault;
+
     protected override void DrawPopups()
     {
         _fileManager.Draw();

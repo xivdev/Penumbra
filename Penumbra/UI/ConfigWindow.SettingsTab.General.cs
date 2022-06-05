@@ -79,6 +79,12 @@ public partial class ConfigWindow
             DrawFolderSortType();
             DrawAbsoluteSizeSelector();
             DrawRelativeSizeSelector();
+            Checkbox( "Open Folders by Default", "Whether to start with all folders collapsed or expanded in the mod selector.",
+                Penumbra.Config.OpenFoldersByDefault, v =>
+                {
+                    Penumbra.Config.OpenFoldersByDefault = v;
+                    _window._selector.SetFilterDirty();
+                } );
             ImGui.Dummy( _window._defaultSpace );
             DrawDefaultModImportPath();
             DrawDefaultModAuthor();
