@@ -70,6 +70,8 @@ public partial class Configuration
                 return;
             }
 
+            // Ensure the right meta files are loaded.
+            Penumbra.CharacterUtility.LoadCharacterResources();
             ResettleSortOrder();
             ResettleCollectionSettings();
             ResettleForcedCollection();
@@ -180,8 +182,8 @@ public partial class Configuration
                     var modName  = ( string )setting[ "FolderName" ]!;
                     var enabled  = ( bool )setting[ "Enabled" ]!;
                     var priority = ( int )setting[ "Priority" ]!;
-                    var settings = setting[ "Settings" ]!.ToObject< Dictionary< string, uint > >()
-                     ?? setting[ "Conf" ]!.ToObject< Dictionary< string, uint > >();
+                    var settings = setting[ "Settings" ]!.ToObject< Dictionary< string, long > >()
+                     ?? setting[ "Conf" ]!.ToObject< Dictionary< string, long > >();
 
                     dict[ modName ] = new ModSettings.SavedSettings()
                     {

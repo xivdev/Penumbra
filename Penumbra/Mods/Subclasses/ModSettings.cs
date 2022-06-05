@@ -149,7 +149,7 @@ public class ModSettings
     // A simple struct conversion to easily save settings by name instead of value.
     public struct SavedSettings
     {
-        public Dictionary< string, uint > Settings;
+        public Dictionary< string, long > Settings;
         public int                        Priority;
         public bool                       Enabled;
 
@@ -165,7 +165,7 @@ public class ModSettings
         {
             Priority = settings.Priority;
             Enabled  = settings.Enabled;
-            Settings = new Dictionary< string, uint >( mod.Groups.Count );
+            Settings = new Dictionary< string, long >( mod.Groups.Count );
             settings.AddMissingSettings( mod.Groups.Count );
 
             foreach( var (group, setting) in mod.Groups.Zip( settings.Settings ) )
@@ -183,7 +183,8 @@ public class ModSettings
             {
                 if( Settings.TryGetValue( group.Name, out var config ) )
                 {
-                    var actualConfig = FixSetting( group, config );
+                    var castConfig   = ( uint )Math.Clamp( config, 0, uint.MaxValue );
+                    var actualConfig = FixSetting( group, castConfig );
                     list.Add( actualConfig );
                     if( actualConfig != config )
                     {
