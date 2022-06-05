@@ -26,7 +26,7 @@ public partial class Configuration : IPluginConfiguration
     public bool UseCharacterCollectionInInspect { get; set; } = true;
     public bool UseCharacterCollectionInTryOn { get; set; } = true;
     public bool UseOwnerNameForCharacterCollection { get; set; } = true;
-    public bool PreferNamedCollectionsOverOwners { get; set; } = false;
+    public bool PreferNamedCollectionsOverOwners { get; set; } = true;
 
 #if DEBUG
     public bool DebugMode { get; set; } = true;
