@@ -183,6 +183,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             : Penumbra.Config.DefaultModImportPath.Length > 0                   ? Penumbra.Config.DefaultModImportPath
             : Penumbra.Config.ModDirectory.Length         > 0                   ? Penumbra.Config.ModDirectory : null;
         _hasSetFolder = true;
+
         _fileManager.OpenFileDialog( "Import Mod Pack", "TexTools Mod Packs{.ttmp,.ttmp2}", ( s, f ) =>
         {
             if( s )
