@@ -282,15 +282,21 @@ internal class ObjectIdentification : IObjectIdentifier
                 var (gender, race) = info.GenderRace.Split();
                 var raceString   = race   != ModelRace.Unknown ? race.ToName() + " " : "";
                 var genderString = gender != Gender.Unknown ? gender.ToName()  + " " : "Player ";
-                if( info.CustomizationType == CustomizationType.Skin )
+                switch( info.CustomizationType )
                 {
-                    set[ $"Customization: {raceString}{genderString}Skin Textures" ] = null;
-                }
-                else
-                {
-                    var customizationString =
-                        $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
-                    set[ customizationString ] = null;
+                    case CustomizationType.Skin:
+                        set[ $"Customization: {raceString}{genderString}Skin Textures" ] = null;
+                        break;
+                    case CustomizationType.DecalFace:
+                        set[ $"Customization: Face Decal {info.PrimaryId}" ] = null;
+                        break;
+                    default:
+                    {
+                        var customizationString =
+                            $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
+                        set[ customizationString ] = null;
+                        break;
+                    }
                 }
 
                 break;
