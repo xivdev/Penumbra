@@ -104,6 +104,11 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         while( _modsToAdd.TryDequeue( out var dir ) )
         {
             Penumbra.ModManager.AddMod( dir );
+            var mod = Penumbra.ModManager.LastOrDefault();
+            if( mod != null )
+            {
+                SelectByValue( mod );
+            }
         }
     }
 
