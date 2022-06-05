@@ -58,6 +58,7 @@ internal class ExtendedModPack
     public string        Author         = DefaultTexToolsData.Author;
     public string        Version        = string.Empty;
     public string        Description    = DefaultTexToolsData.Description;
+    public string        Url            = string.Empty;
     public ModPackPage[] ModPackPages   = Array.Empty< ModPackPage >();
     public SimpleMod[]   SimpleModsList = Array.Empty< SimpleMod >();
 }
@@ -65,10 +66,11 @@ internal class ExtendedModPack
 [Serializable]
 internal class SimpleModPack
 {
-    public string      TtmpVersion    = string.Empty;
-    public string      Name           = DefaultTexToolsData.Name;
-    public string      Author         = DefaultTexToolsData.Author;
-    public string      Version        = string.Empty;
-    public string      Description    = DefaultTexToolsData.Description;
+    public string TtmpVersion = string.Empty;
+    public string Name        = DefaultTexToolsData.Name;
+    public string Author      = DefaultTexToolsData.Author;
+    public string Version     = string.Empty;
+    public string Description = DefaultTexToolsData.Description;
+    public string Url         = string.Empty;
     public SimpleMod[] SimpleModsList = Array.Empty< SimpleMod >();
 }

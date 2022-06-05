@@ -92,7 +92,7 @@ public partial class TexToolsImporter
         _currentModDirectory = Mod.CreateModFolder( _baseDirectory, _currentModName );
         Mod.CreateMeta( _currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty( modList.Description )
             ? "Mod imported from TexTools mod pack"
-            : modList.Description, null, null );
+            : modList.Description, modList.Version, modList.Url );
 
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream( extractedModPack, "TTMPD.mpd" );
@@ -135,7 +135,7 @@ public partial class TexToolsImporter
         _currentModName    = modList.Name;
 
         _currentModDirectory = Mod.CreateModFolder( _baseDirectory, _currentModName );
-        Mod.CreateMeta( _currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version, null );
+        Mod.CreateMeta( _currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version, modList.Url );
 
         if( _currentNumOptions == 0 )
         {
@@ -226,10 +226,10 @@ public partial class TexToolsImporter
         State = ImporterState.ExtractingModFiles;
 
         _currentFileIdx  = 0;
-        _currentNumFiles = mods.Count;
+        _currentNumFiles = mods.Count(m => m.FullPath.Length > 0);
 
         // Extract each SimpleMod into the new mod folder
-        foreach( var simpleMod in mods )
+        foreach( var simpleMod in mods.Where(m => m.FullPath.Length > 0 ) )
         {
             ExtractMod( outDirectory, simpleMod );
             ++_currentFileIdx;
