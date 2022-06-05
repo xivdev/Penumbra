@@ -86,6 +86,9 @@ public partial class ConfigWindow
                     _window._selector.SetFilterDirty();
                 } );
             ImGui.Dummy( _window._defaultSpace );
+            Checkbox( "Always Open Import at Default Directory",
+                "Open the import window at the location specified here every time, forgetting your previous path.",
+                Penumbra.Config.AlwaysOpenDefaultImport, v => Penumbra.Config.AlwaysOpenDefaultImport = v );
             DrawDefaultModImportPath();
             DrawDefaultModAuthor();
 
