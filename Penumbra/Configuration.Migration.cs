@@ -63,6 +63,7 @@ public partial class Configuration
         // The forced collection was removed due to general inheritance.
         // Sort Order was moved to a separate file and may contain empty folders.
         // Active collections in general were moved to their own file.
+        // Delete the penumbrametatmp folder if it exists.
         private void Version1To2()
         {
             if( _config.Version != 1 )
@@ -71,11 +72,28 @@ public partial class Configuration
             }
 
             // Ensure the right meta files are loaded.
+            DeleteMetaTmp();
             Penumbra.CharacterUtility.LoadCharacterResources();
             ResettleSortOrder();
             ResettleCollectionSettings();
             ResettleForcedCollection();
             _config.Version = 2;
+        }
+
+        private void DeleteMetaTmp()
+        {
+            var path = Path.Combine( _config.ModDirectory, "penumbrametatmp" );
+            if( Directory.Exists( path ) )
+            {
+                try
+                {
+                    Directory.Delete( path, true );
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Error( $"Could not delete the outdated penumbrametatmp folder:\n{e}" );
+                }
+            }
         }
 
         private void ResettleForcedCollection()
