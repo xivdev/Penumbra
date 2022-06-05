@@ -331,22 +331,31 @@ public sealed partial class Mod
                 }
             }
 
+            bool ComputeChangedItems()
+            {
+                mod.ComputeChangedItems();
+                return true;
+            }
+
             // State can not change on adding groups, as they have no immediate options.
             var unused = type switch
             {
-                ModOptionChangeType.GroupAdded         => mod.SetCounts(),
-                ModOptionChangeType.GroupDeleted       => mod.SetCounts(),
-                ModOptionChangeType.GroupMoved         => false,
-                ModOptionChangeType.GroupTypeChanged   => mod.HasOptions = mod.Groups.Any( o => o.IsOption ),
-                ModOptionChangeType.PriorityChanged    => false,
-                ModOptionChangeType.OptionAdded        => mod.SetCounts(),
-                ModOptionChangeType.OptionDeleted      => mod.SetCounts(),
-                ModOptionChangeType.OptionMoved        => false,
-                ModOptionChangeType.OptionFilesChanged => 0 < ( mod.TotalFileCount = mod.AllSubMods.Sum( s => s.Files.Count ) ),
-                ModOptionChangeType.OptionSwapsChanged => 0 < ( mod.TotalSwapCount = mod.AllSubMods.Sum( s => s.FileSwaps.Count ) ),
-                ModOptionChangeType.OptionMetaChanged  => 0 < ( mod.TotalManipulations = mod.AllSubMods.Sum( s => s.Manipulations.Count ) ),
-                ModOptionChangeType.DisplayChange      => false,
-                _                                      => false,
+                ModOptionChangeType.GroupAdded       => ComputeChangedItems() & mod.SetCounts(),
+                ModOptionChangeType.GroupDeleted     => ComputeChangedItems() & mod.SetCounts(),
+                ModOptionChangeType.GroupMoved       => false,
+                ModOptionChangeType.GroupTypeChanged => mod.HasOptions = mod.Groups.Any( o => o.IsOption ),
+                ModOptionChangeType.PriorityChanged  => false,
+                ModOptionChangeType.OptionAdded      => ComputeChangedItems() & mod.SetCounts(),
+                ModOptionChangeType.OptionDeleted    => ComputeChangedItems() & mod.SetCounts(),
+                ModOptionChangeType.OptionMoved      => false,
+                ModOptionChangeType.OptionFilesChanged => ComputeChangedItems()
+                  & ( 0 < ( mod.TotalFileCount = mod.AllSubMods.Sum( s => s.Files.Count ) ) ),
+                ModOptionChangeType.OptionSwapsChanged => ComputeChangedItems()
+                  & ( 0 < ( mod.TotalSwapCount = mod.AllSubMods.Sum( s => s.FileSwaps.Count ) ) ),
+                ModOptionChangeType.OptionMetaChanged => ComputeChangedItems()
+                  & ( 0 < ( mod.TotalManipulations = mod.AllSubMods.Sum( s => s.Manipulations.Count ) ) ),
+                ModOptionChangeType.DisplayChange => false,
+                _                                 => false,
             };
         }
     }
