@@ -232,7 +232,7 @@ public partial class ConfigWindow
                     var (data, length) = resource->GetData();
                     if( data != IntPtr.Zero && length > 0 )
                     {
-                        ImGui.SetClipboardText( string.Join( " ",
+                        ImGui.SetClipboardText( string.Join( "\n",
                             new ReadOnlySpan< byte >( ( byte* )data, length ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
                     }
                 }
@@ -245,7 +245,7 @@ public partial class ConfigWindow
                 ImGui.Selectable( $"0x{Penumbra.CharacterUtility.DefaultResources[ i ].Address:X}" );
                 if( ImGui.IsItemClicked() )
                 {
-                    ImGui.SetClipboardText( string.Join( " ",
+                    ImGui.SetClipboardText( string.Join( "\n",
                         new ReadOnlySpan< byte >( ( byte* )Penumbra.CharacterUtility.DefaultResources[ i ].Address,
                             Penumbra.CharacterUtility.DefaultResources[ i ].Size ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
                 }

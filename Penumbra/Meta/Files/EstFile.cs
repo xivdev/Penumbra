@@ -88,9 +88,14 @@ public sealed unsafe class EstFile : MetaBaseFile
             control[ i ] = control[ i + 1 ];
         }
 
-        for( var i = 0; i < Count; ++i )
+        for( var i = 0; i < idx; ++i )
         {
-            entries[ i - 2 ] = entries[ i + 1 ];
+            entries[ i - 2 ] = entries[ i ];
+        }
+
+        for( var i = idx; i < Count - 1; ++i )
+        {
+            entries[i - 2] = entries[i + 1];
         }
 
         entries[ Count - 3 ] = 0;
