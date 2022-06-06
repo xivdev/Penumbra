@@ -37,6 +37,14 @@ public partial class ConfigWindow
 
             DrawEnabledBox();
             DrawShowAdvancedBox();
+            Checkbox( "Fix Main Window", "Prevent the main window from being resized or moved.", Penumbra.Config.FixMainWindow, v =>
+            {
+                Penumbra.Config.FixMainWindow = v;
+                _window.Flags = v
+                    ? _window.Flags | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize
+                    : _window.Flags & ~( ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize );
+            } );
+
             ImGui.NewLine();
             DrawRootFolder();
             DrawRediscoverButton();

@@ -360,6 +360,12 @@ public class Penumbra : IDisposable
                         : modsDisabled );
                     break;
                 }
+                case "unfix":
+                {
+                    Config.FixMainWindow =  false;
+                    _configWindow.Flags  &= ~( ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize );
+                    break;
+                }
                 case "collection":
                 {
                     if( args.Length == 2 )

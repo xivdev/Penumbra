@@ -45,7 +45,7 @@ public partial class Configuration : IPluginConfiguration
     public int ModSelectorScaledSize { get; set; } = Constants.DefaultScaledSize;
     public bool OpenFoldersByDefault { get; set; } = false;
 
-
+    public bool FixMainWindow { get; set; } = false;
     public bool ShowAdvanced { get; set; }
     public bool DisableSoundStreaming { get; set; } = true;
     public bool EnableHttpApi { get; set; }

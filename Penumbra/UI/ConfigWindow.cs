@@ -36,11 +36,15 @@ public sealed partial class ConfigWindow : Window, IDisposable
         _debugTab                  =  new DebugTab( this );
         _resourceTab               =  new ResourceTab( this );
         Flags                      |= ImGuiWindowFlags.NoDocking;
+        if( Penumbra.Config.FixMainWindow )
+        {
+            Flags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
+        }
 
-        Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide    =  !Penumbra.Config.HideUiInGPose;
-        Dalamud.PluginInterface.UiBuilder.DisableCutsceneUiHide =  !Penumbra.Config.HideUiInCutscenes;
-        Dalamud.PluginInterface.UiBuilder.DisableUserUiHide     =  !Penumbra.Config.HideUiWhenUiHidden;
-        RespectCloseHotkey                                      =  true;
+        Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide    = !Penumbra.Config.HideUiInGPose;
+        Dalamud.PluginInterface.UiBuilder.DisableCutsceneUiHide = !Penumbra.Config.HideUiInCutscenes;
+        Dalamud.PluginInterface.UiBuilder.DisableUserUiHide     = !Penumbra.Config.HideUiWhenUiHidden;
+        RespectCloseHotkey                                      = true;
         SizeConstraints = new WindowSizeConstraints()
         {
             MinimumSize = new Vector2( 800, 600 ),
