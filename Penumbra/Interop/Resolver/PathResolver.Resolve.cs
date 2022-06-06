@@ -12,6 +12,7 @@ public unsafe partial class PathResolver
     // Humans
     private IntPtr ResolveDecalDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
         => ResolvePathDetour( drawObject, ResolveDecalPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
     private IntPtr ResolveEidDetour( IntPtr drawObject, IntPtr path, IntPtr unk3 )
         => ResolvePathDetour( drawObject, ResolveEidPathHook!.Original( drawObject, path, unk3 ) );
 
@@ -149,19 +150,24 @@ public unsafe partial class PathResolver
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
     private IntPtr ResolveWeaponPathDetour( IntPtr drawObject, IntPtr path )
     {
+        var parent = FindParent( drawObject, out var collection );
+        if( parent != null )
+        {
+            return ResolvePathDetour( collection, path );
+        }
+
         var parentObject = ( ( DrawObject* )drawObject )->Object.ParentObject;
         if( parentObject == null && LastGameObject != null )
         {
-            var collection = IdentifyCollection( LastGameObject );
-            return ResolvePathDetour( collection, path );
+            var c2 = IdentifyCollection( LastGameObject );
+            DrawObjectToObject[ drawObject ] = ( c2, LastGameObject->ObjectIndex );
+            return ResolvePathDetour( c2, path );
         }
-        else
-        {
-            var parent = FindParent( ( IntPtr )parentObject, out var collection );
-            return ResolvePathDetour( parent == null
-                ? Penumbra.CollectionManager.Default
-                : collection, path );
-        }
+
+        parent = FindParent( ( IntPtr )parentObject, out collection );
+        return ResolvePathDetour( parent == null
+            ? Penumbra.CollectionManager.Default
+            : collection, path );
     }
 
     // Just add or remove the resolved path.

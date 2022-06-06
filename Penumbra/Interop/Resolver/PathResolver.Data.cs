@@ -62,16 +62,34 @@ public unsafe partial class PathResolver
 
     private void EnableDrawDetour( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d )
     {
+        var oldObject = LastGameObject;
         LastGameObject = ( GameObject* )gameObject;
         EnableDrawHook!.Original.Invoke( gameObject, b, c, d );
-        LastGameObject = null;
+        LastGameObject = oldObject;
     }
+
+    // Not fully understood. The game object the weapon is loaded for is seemingly found at a1 + 8,
+    // so we use that.
+    public delegate void WeaponReloadFunc( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 );
+
+    [Signature( "E8 ?? ?? ?? ?? 44 8B 9F" )]
+    public Hook< WeaponReloadFunc >? WeaponReloadHook;
+
+    public void WeaponReloadDetour( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 )
+    {
+        var oldGame = LastGameObject;
+        LastGameObject = *( GameObject** )( a1 + 8 );
+        WeaponReloadHook!.Original( a1, a2, a3, a4, a5, a6, a7 );
+        LastGameObject = oldGame;
+    }
+
 
     private void EnableDataHooks()
     {
         CharacterBaseCreateHook?.Enable();
         EnableDrawHook?.Enable();
         CharacterBaseDestructorHook?.Enable();
+        WeaponReloadHook?.Enable();
         Penumbra.CollectionManager.CollectionChanged += CheckCollections;
         //CharacterBaseLoadAnimationHook?.Enable();
         //RandomPapHook?.Enable();
@@ -80,6 +98,7 @@ public unsafe partial class PathResolver
     private void DisableDataHooks()
     {
         Penumbra.CollectionManager.CollectionChanged -= CheckCollections;
+        WeaponReloadHook?.Disable();
         CharacterBaseCreateHook?.Disable();
         EnableDrawHook?.Disable();
         CharacterBaseDestructorHook?.Disable();
@@ -89,7 +108,7 @@ public unsafe partial class PathResolver
 
     private void DisposeDataHooks()
     {
-        
+        WeaponReloadHook?.Dispose();
         CharacterBaseCreateHook?.Dispose();
         EnableDrawHook?.Dispose();
         CharacterBaseDestructorHook?.Dispose();
