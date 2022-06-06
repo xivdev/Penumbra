@@ -12,6 +12,7 @@ using EmbedIO;
 using EmbedIO.WebApi;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
+using OtterGui;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
@@ -407,15 +408,18 @@ public class Penumbra : IDisposable
 
     public static string GatherSupportInformation()
     {
-        var sb = new StringBuilder( 10240 );
+        var sb     = new StringBuilder( 10240 );
+        var exists = Config.ModDirectory.Length > 0 && Directory.Exists( Config.ModDirectory );
+        var drive  = exists ? new DriveInfo( new DirectoryInfo( Config.ModDirectory ).Root.FullName ) : null;
         sb.AppendLine( "**Settings**" );
         sb.AppendFormat( "> **`Plugin Version:              `** {0}\n", Version );
         sb.AppendFormat( "> **`Commit Hash:                 `** {0}\n", CommitHash );
         sb.AppendFormat( "> **`Enable Mods:                 `** {0}\n", Config.EnableMods );
         sb.AppendFormat( "> **`Enable Sound Modification:   `** {0}\n", Config.DisableSoundStreaming );
         sb.AppendFormat( "> **`Enable HTTP API:             `** {0}\n", Config.EnableHttpApi );
-        sb.AppendFormat( "> **`Root Directory:              `** {0}, {1}\n", Config.ModDirectory,
-            Config.ModDirectory.Length > 0 && Directory.Exists( Config.ModDirectory ) ? "Exists" : "Not Existing" );
+        sb.AppendFormat( "> **`Root Directory:              `** `{0}`, {1}\n", Config.ModDirectory, exists ? "Exists" : "Not Existing" );
+        sb.AppendFormat( "> **`Free Drive Space:            `** {0}\n",
+            drive != null ? Functions.HumanReadableSize( drive.AvailableFreeSpace ) : "Unknown" );
         sb.AppendLine( "**Mods**" );
         sb.AppendFormat( "> **`Installed Mods:              `** {0}\n", ModManager.Count );
         sb.AppendFormat( "> **`Mods with Config:            `** {0}\n", ModManager.Count( m => m.HasOptions ) );
@@ -443,7 +447,7 @@ public class Penumbra : IDisposable
                 c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority || !x.Solved ? 0 : x.Conflicts.Count ) );
 
         sb.AppendLine( "**Collections**" );
-        sb.AppendFormat( "> **`#Collections:                `** {0}\n", CollectionManager.Count );
+        sb.AppendFormat( "> **`#Collections:                `** {0}\n", CollectionManager.Count - 1 );
         sb.AppendFormat( "> **`Active Collections:          `** {0}\n", CollectionManager.Count( c => c.HasCache ) );
         sb.AppendFormat( "> **`Default Collection:          `** {0}... ({1})\n", CollectionName( CollectionManager.Default ),
             CollectionManager.Default.Index );
