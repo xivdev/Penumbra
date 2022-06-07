@@ -126,7 +126,7 @@ public partial class ConfigWindow
         // on the top-right corner of the window/tab.
         private void DrawRemoveSettings()
         {
-            const string text = "Remove Settings";
+            const string text = "Inherit Settings";
             if( _inherited || _emptySetting )
             {
                 return;

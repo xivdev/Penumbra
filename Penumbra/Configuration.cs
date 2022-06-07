@@ -44,6 +44,7 @@ public partial class Configuration : IPluginConfiguration
     public float ModSelectorAbsoluteSize { get; set; } = Constants.DefaultAbsoluteSize;
     public int ModSelectorScaledSize { get; set; } = Constants.DefaultScaledSize;
     public bool OpenFoldersByDefault { get; set; } = false;
+    public string DefaultImportFolder { get; set; } = string.Empty;
 
     public bool FixMainWindow { get; set; } = false;
     public bool ShowAdvanced { get; set; }

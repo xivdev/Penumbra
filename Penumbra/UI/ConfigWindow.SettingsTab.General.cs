@@ -91,6 +91,7 @@ public partial class ConfigWindow
                 Penumbra.Config.AlwaysOpenDefaultImport, v => Penumbra.Config.AlwaysOpenDefaultImport = v );
             DrawDefaultModImportPath();
             DrawDefaultModAuthor();
+            DrawDefaultModImportFolder();
 
             ImGui.NewLine();
         }
@@ -224,6 +225,24 @@ public partial class ConfigWindow
             }
 
             ImGuiUtil.LabeledHelpMarker( "Default Mod Author", "Set the default author stored for newly created mods." );
+        }
+
+        private void DrawDefaultModImportFolder()
+        {
+            var tmp = Penumbra.Config.DefaultImportFolder;
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X );
+            if( ImGui.InputText( "##defaultImportFolder", ref tmp, 64 ) )
+            {
+                Penumbra.Config.DefaultImportFolder = tmp;
+            }
+
+            if( ImGui.IsItemDeactivatedAfterEdit() )
+            {
+                Penumbra.Config.Save();
+            }
+
+            ImGuiUtil.LabeledHelpMarker( "Default Mod Import Folder",
+                "Set the default Penumbra mod folder to place newly imported mods into.\nLeave blank to import into Root." );
         }
     }
 }

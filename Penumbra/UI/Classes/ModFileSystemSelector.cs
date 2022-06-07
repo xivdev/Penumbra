@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Concurrent;
-using System.IO;
-using System.Linq;
-using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Logging;
@@ -14,6 +9,11 @@ using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.Import;
 using Penumbra.Mods;
+using System;
+using System.Collections.Concurrent;
+using System.IO;
+using System.Linq;
+using System.Numerics;
 
 namespace Penumbra.UI.Classes;
 
@@ -31,6 +31,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         SubscribeRightClickFolder( DisableDescendants, 10 );
         SubscribeRightClickFolder( InheritDescendants, 15 );
         SubscribeRightClickFolder( OwnDescendants, 15 );
+        SubscribeRightClickFolder( SetDefaultImportFolder, 100 );
+        SubscribeRightClickMain( ClearDefaultImportFolder, 100 );
         AddButton( AddNewModButton, 0 );
         AddButton( AddImportModButton, 1 );
         AddButton( AddHelpButton, 2 );
@@ -107,6 +109,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             var mod = Penumbra.ModManager.LastOrDefault();
             if( mod != null )
             {
+                MoveModToDefaultDirectory( mod );
                 SelectByValue( mod );
             }
         }
@@ -151,6 +154,28 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         if( ImGui.MenuItem( "Stop Inheriting Descendants" ) )
         {
             SetDescendants( folder, false, true );
+        }
+    }
+
+    private static void SetDefaultImportFolder( ModFileSystem.Folder folder )
+    {
+        if( ImGui.MenuItem( "Set As Default Import Folder" ) )
+        {
+            var newName = folder.FullName();
+            if( newName != Penumbra.Config.DefaultImportFolder )
+            {
+                Penumbra.Config.DefaultImportFolder = newName;
+                Penumbra.Config.Save();
+            }
+        }
+    }
+
+    private static void ClearDefaultImportFolder()
+    {
+        if( ImGui.MenuItem( "Clear Default Import Folder" ) && Penumbra.Config.DefaultImportFolder.Length > 0 )
+        {
+            Penumbra.Config.DefaultImportFolder = string.Empty;
+            Penumbra.Config.Save();
         }
     }
 
@@ -382,6 +407,34 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
                .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.ModPath.FullName == _lastSelectedDirectory );
             OnSelectionChange( null, base.SelectedLeaf?.Value, default );
             _lastSelectedDirectory = string.Empty;
+        }
+    }
+
+    // If a default import folder is setup, try to move the given mod in there.
+    // If the folder does not exist, create it if possible.
+    private void MoveModToDefaultDirectory( Mod mod )
+    {
+        if( Penumbra.Config.DefaultImportFolder.Length == 0 )
+        {
+            return;
+        }
+
+        try
+        {
+            var leaf = FileSystem.Root.GetChildren( SortMode.Lexicographical )
+               .FirstOrDefault( f => f is FileSystem< Mod >.Leaf l && l.Value == mod );
+            if( leaf == null )
+            {
+                throw new Exception( "Mod was not found at root." );
+            }
+
+            var folder = FileSystem.FindOrCreateAllFolders( Penumbra.Config.DefaultImportFolder );
+            FileSystem.Move( leaf, folder );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Warning(
+                $"Could not move newly imported mod {mod.Name} to default import folder {Penumbra.Config.DefaultImportFolder}:\n{e}" );
         }
     }
 
