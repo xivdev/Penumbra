@@ -27,17 +27,13 @@ public partial class ConfigWindow
 
 #if DEBUG
         private const string DebugVersionString = "(Debug)";
-        private const bool   DefaultVisibility  = true;
 #else
         private const string DebugVersionString = "(Release)";
-        private const bool DefaultVisibility = false;
 #endif
-
-        public bool DebugTabVisible = DefaultVisibility;
 
         public void Draw()
         {
-            if( !DebugTabVisible )
+            if( !Penumbra.Config.DebugMode )
             {
                 return;
             }

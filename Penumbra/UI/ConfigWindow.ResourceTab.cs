@@ -30,7 +30,7 @@ public partial class ConfigWindow
         // Draw a tab to iterate over the main resource maps and see what resources are currently loaded.
         public void Draw()
         {
-            if( !_window._debugTab.DebugTabVisible )
+            if( !Penumbra.Config.DebugMode )
             {
                 return;
             }
