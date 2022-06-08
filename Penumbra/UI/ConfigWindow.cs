@@ -1,12 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
 using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui.Raii;
-using Penumbra.Mods;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
@@ -56,6 +54,25 @@ public sealed partial class ConfigWindow : Window, IDisposable
     {
         try
         {
+            if( Penumbra.ImcExceptions > 0 )
+            {
+                using var color = ImRaii.PushColor( ImGuiCol.Text, Colors.RegexWarningBorder );
+                ImGui.NewLine();
+                ImGui.NewLine();
+                ImGui.TextWrapped( $"There were {Penumbra.ImcExceptions} errors while trying to load IMC files from the game data.\n"
+                  + "This usually means that your game installation was corrupted by updating the game while having TexTools mods still active.\n"
+                  + "It is recommended to not use TexTools and Penumbra (or other Lumina-based tools) at the same time.\n\n"
+                  + "Please use the Launcher's Repair Game Files function to repair your client installation." );
+                color.Pop();
+
+                ImGui.NewLine();
+                ImGui.NewLine();
+                SettingsTab.DrawDiscordButton( 0 );
+                ImGui.SameLine();
+                SettingsTab.DrawSupportButton();
+                return;
+            }
+
             using var bar = ImRaii.TabBar( string.Empty, ImGuiTabBarFlags.NoTooltip );
             SetupSizes();
             _settingsTab.Draw();

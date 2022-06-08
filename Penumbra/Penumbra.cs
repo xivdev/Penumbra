@@ -69,6 +69,7 @@ public class Penumbra : IDisposable
     public static SimpleRedirectManager Redirects { get; private set; } = null!;
     public static ResourceLoader ResourceLoader { get; private set; } = null!;
     public static FrameworkManager Framework { get; private set; } = null!;
+    public static int ImcExceptions = 0;
 
 
     public readonly  ResourceLogger ResourceLogger;
@@ -147,6 +148,10 @@ public class Penumbra : IDisposable
         Api = new PenumbraApi( this );
         Ipc = new PenumbraIpc( Dalamud.PluginInterface, Api );
         SubscribeItemLinks();
+        if( ImcExceptions > 0 )
+        {
+            PluginLog.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
+        }
     }
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
@@ -429,6 +434,7 @@ public class Penumbra : IDisposable
             ModManager.Sum( m => m.TotalSwapCount ) );
         sb.AppendFormat( "> **`Mods with Meta Manipulations:`** {0}, Total {1}\n", ModManager.Count( m => m.TotalManipulations > 0 ),
             ModManager.Sum( m => m.TotalManipulations ) );
+        sb.AppendFormat( "> **`IMC Exceptions Thrown:       `** {0}\n", ImcExceptions );
 
         string CollectionName( ModCollection c )
             => c == ModCollection.Empty ? ModCollection.Empty.Name : c.Name.Length >= 2 ? c.Name[ ..2 ] : c.Name;

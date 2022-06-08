@@ -55,7 +55,7 @@ public partial class ConfigWindow
             DrawAdvancedSettings();
 
             _dialogManager.Draw();
-            DrawDiscordButton();
+            DrawSupportButtons();
         }
 
         // Changing the base mod directory.
@@ -209,26 +209,11 @@ public partial class ConfigWindow
             ImGui.NewLine();
         }
 
-        private static void DrawDiscordButton()
+        public static void DrawDiscordButton( float width )
         {
-            const string help    = "Copy Support Info to Clipboard";
             const string discord = "Join Discord for Support";
             const string address = @"https://discord.gg/kVva7DHV4r";
-            var          width   = ImGui.CalcTextSize( help ).X + ImGui.GetStyle().FramePadding.X * 2;
-            if( ImGui.GetScrollMaxY() > 0 )
-            {
-                width += ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemSpacing.X;
-            }
-
-            ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, ImGui.GetFrameHeightWithSpacing() ) );
-            if( ImGui.Button( help ) )
-            {
-                var text = Penumbra.GatherSupportInformation();
-                ImGui.SetClipboardText( text );
-            }
-
-            ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, 0 ) );
-            using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.DiscordColor );
+            using var    color   = ImRaii.PushColor( ImGuiCol.Button, Colors.DiscordColor );
             if( ImGui.Button( discord, new Vector2( width, 0 ) ) )
             {
                 try
@@ -246,6 +231,32 @@ public partial class ConfigWindow
             }
 
             ImGuiUtil.HoverTooltip( $"Open {address}" );
+        }
+
+        private const string SupportInfoButtonText = "Copy Support Info to Clipboard";
+
+        public static void DrawSupportButton()
+        {
+            if( ImGui.Button( SupportInfoButtonText ) )
+            {
+                var text = Penumbra.GatherSupportInformation();
+                ImGui.SetClipboardText( text );
+            }
+        }
+
+        private static void DrawSupportButtons()
+        {
+            var width = ImGui.CalcTextSize( SupportInfoButtonText ).X + ImGui.GetStyle().FramePadding.X * 2;
+            if( ImGui.GetScrollMaxY() > 0 )
+            {
+                width += ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemSpacing.X;
+            }
+
+            ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, ImGui.GetFrameHeightWithSpacing() ) );
+            DrawSupportButton();
+
+            ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, 0 ) );
+            DrawDiscordButton( width );
         }
     }
 }

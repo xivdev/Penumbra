@@ -70,24 +70,33 @@ public partial class MetaManager
 #if USE_IMC
             Manipulations[ m ] = mod;
             var path = m.GamePath();
-            if( !Files.TryGetValue( path, out var file ) )
+            try
             {
-                file = new ImcFile( path );
-            }
+                if( !Files.TryGetValue( path, out var file ) )
+                {
+                    file = new ImcFile( path );
+                }
 
-            if( !m.Apply( file ) )
+                if( !m.Apply( file ) )
+                {
+                    return false;
+                }
+
+                Files[ path ] = file;
+                var fullPath = CreateImcPath( path );
+                if( _collection.HasCache )
+                {
+                    _collection.ForceFile( path, fullPath );
+                }
+
+                return true;
+            }
+            catch( Exception e )
             {
+                ++Penumbra.ImcExceptions;
+                PluginLog.Error( $"Could not apply IMC Manipulation:\n{e}" );
                 return false;
             }
-
-            Files[ path ] = file;
-            var fullPath = CreateImcPath( path );
-            if( _collection.HasCache )
-            {
-                _collection.ForceFile( path, fullPath );
-            }
-
-            return true;
 #else
             return false;
 #endif
