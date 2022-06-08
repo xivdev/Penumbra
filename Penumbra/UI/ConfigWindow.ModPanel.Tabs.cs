@@ -34,7 +34,7 @@ public partial class ConfigWindow
         private static readonly Utf8String DescriptionTabHeader  = Utf8String.FromStringUnsafe( "Description", false );
         private static readonly Utf8String SettingsTabHeader     = Utf8String.FromStringUnsafe( "Settings", false );
         private static readonly Utf8String ChangedItemsTabHeader = Utf8String.FromStringUnsafe( "Changed Items", false );
-        private static readonly Utf8String EditModTabHeader      = Utf8String.FromStringUnsafe( "Edit Mod", false );
+        private static readonly Utf8String EditModTabHeader      = Utf8String.FromStringUnsafe( "Edit Mod Meta", false );
 
         private void DrawTabBar()
         {
@@ -56,6 +56,20 @@ public partial class ConfigWindow
             DrawChangedItemsTab();
             DrawConflictsTab();
             DrawEditModTab();
+            if( ImGui.TabItemButton( "Open Advanced Edit Window", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
+            {
+                _window.ModEditPopup.ChangeMod( _mod );
+                _window.ModEditPopup.ChangeOption( -1, 0 );
+                _window.ModEditPopup.IsOpen = true;
+            }
+
+            ImGuiUtil.HoverTooltip(
+                "Clicking this will open a new window in which you can\nedit the following things per option for this mod:\n\n"
+              + "\t\t- file redirections\n"
+              + "\t\t- file swaps\n"
+              + "\t\t- metadata manipulations\n"
+              + "\t\t- model materials\n"
+              + "\t\t- duplicates" );
         }
 
         // Just a simple text box with the wrapped description, if it exists.

@@ -171,24 +171,6 @@ public partial class ConfigWindow
             {
                 Process.Start( new ProcessStartInfo( _mod.MetaFile.FullName ) { UseShellExecute = true } );
             }
-
-            if( ImGui.Button( "Edit Mod Details", reducedSize ) )
-            {
-                _window.ModEditPopup.ChangeMod( _mod );
-                _window.ModEditPopup.ChangeOption( -1, 0 );
-                _window.ModEditPopup.IsOpen = true;
-            }
-
-            ImGui.SameLine();
-            fileExists = File.Exists( _mod.DefaultFile );
-            tt = fileExists
-                ? "Open the default option json file in the text editor of your choice."
-                : "The default option json file does not exist.";
-            if( ImGuiUtil.DrawDisabledButton( $"{FontAwesomeIcon.FileExport.ToIconString()}##defaultFile", _window._iconButtonSize, tt,
-                   !fileExists, true ) )
-            {
-                Process.Start( new ProcessStartInfo( _mod.DefaultFile ) { UseShellExecute = true } );
-            }
         }
 
         // Do some edits outside of iterations.
@@ -213,12 +195,24 @@ public partial class ConfigWindow
 
             public static void Draw( ConfigWindow window, Mod mod )
             {
-                ImGui.SetNextItemWidth( window._inputTextWidth.X );
+                using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( 3 * ImGuiHelpers.GlobalScale ) );
+                ImGui.SetNextItemWidth( window._inputTextWidth.X - window._iconButtonSize.X - 3 * ImGuiHelpers.GlobalScale );
                 ImGui.InputTextWithHint( "##newGroup", "Add new option group...", ref _newGroupName, 256 );
+                ImGui.SameLine();
+                var fileExists = File.Exists( mod.DefaultFile );
+                var tt = fileExists
+                    ? "Open the default option json file in the text editor of your choice."
+                    : "The default option json file does not exist.";
+                if( ImGuiUtil.DrawDisabledButton( $"{FontAwesomeIcon.FileExport.ToIconString()}##defaultFile", window._iconButtonSize, tt,
+                       !fileExists, true ) )
+                {
+                    Process.Start( new ProcessStartInfo( mod.DefaultFile ) { UseShellExecute = true } );
+                }
+
                 ImGui.SameLine();
 
                 var nameValid = Mod.Manager.VerifyFileName( mod, null, _newGroupName, false );
-                var tt        = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
+                tt = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), window._iconButtonSize,
                        tt, !nameValid, true ) )
                 {
