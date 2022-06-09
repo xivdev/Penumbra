@@ -63,7 +63,7 @@ public partial class TexToolsImporter
 
     private void DrawEndState()
     {
-        var success = ExtractedMods.Count( t => t.Mod != null );
+        var success = ExtractedMods.Count( t => t.Error == null );
 
         ImGui.TextUnformatted( $"Successfully extracted {success} / {ExtractedMods.Count} files." );
         ImGui.NewLine();
@@ -78,15 +78,15 @@ public partial class TexToolsImporter
             ImGui.TableNextColumn();
             ImGui.TextUnformatted( file.Name );
             ImGui.TableNextColumn();
-            if( dir != null )
+            if( ex == null )
             {
                 using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.FolderExpanded.Value() );
-                ImGui.TextUnformatted( dir.FullName[ ( _baseDirectory.FullName.Length + 1 ).. ] );
+                ImGui.TextUnformatted( dir?.FullName[ ( _baseDirectory.FullName.Length + 1 ).. ] ?? "Unknown Directory" );
             }
             else
             {
                 using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.ConflictingMod.Value() );
-                ImGui.TextUnformatted( ex!.Message );
+                ImGui.TextUnformatted( ex.Message );
                 ImGuiUtil.HoverTooltip( ex.ToString() );
             }
         }
