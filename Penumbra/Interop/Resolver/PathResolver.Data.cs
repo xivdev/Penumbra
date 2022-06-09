@@ -83,7 +83,6 @@ public unsafe partial class PathResolver
         LastGameObject = oldGame;
     }
 
-
     private void EnableDataHooks()
     {
         CharacterBaseCreateHook?.Enable();
@@ -91,8 +90,8 @@ public unsafe partial class PathResolver
         CharacterBaseDestructorHook?.Enable();
         WeaponReloadHook?.Enable();
         Penumbra.CollectionManager.CollectionChanged += CheckCollections;
-        //CharacterBaseLoadAnimationHook?.Enable();
-        //RandomPapHook?.Enable();
+        LoadTimelineResourcesHook?.Enable();
+        CharacterBaseLoadAnimationHook?.Enable();
     }
 
     private void DisableDataHooks()
@@ -102,8 +101,8 @@ public unsafe partial class PathResolver
         CharacterBaseCreateHook?.Disable();
         EnableDrawHook?.Disable();
         CharacterBaseDestructorHook?.Disable();
-        //RandomPapHook?.Disable();
-        //CharacterBaseLoadAnimationHook?.Disable();
+        LoadTimelineResourcesHook?.Disable();
+        CharacterBaseLoadAnimationHook?.Disable();
     }
 
     private void DisposeDataHooks()
@@ -112,8 +111,8 @@ public unsafe partial class PathResolver
         CharacterBaseCreateHook?.Dispose();
         EnableDrawHook?.Dispose();
         CharacterBaseDestructorHook?.Dispose();
-        //RandomPapHook?.Dispose();
-        //CharacterBaseLoadAnimationHook?.Dispose();
+        LoadTimelineResourcesHook?.Dispose();
+        CharacterBaseLoadAnimationHook?.Dispose();
     }
 
     // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
