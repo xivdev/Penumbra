@@ -120,11 +120,15 @@ public partial class ModEditWindow
                 _new = _new with { SetId = setId };
             }
 
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
+
             ImGui.TableNextColumn();
             if( EqpEquipSlotCombo( "##eqpSlot", _new.Slot, out var slot ) )
             {
                 _new = _new with { Slot = slot };
             }
+
+            ImGuiUtil.HoverTooltip( "Equip Slot" );
 
             // Values
             ImGui.TableNextColumn();
@@ -148,10 +152,12 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.SetId.ToString() );
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
             var defaultEntry = ExpandedEqpFile.GetDefault( meta.SetId );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Slot.ToName() );
+            ImGuiUtil.HoverTooltip( "Equip Slot" );
 
             // Values
             ImGui.TableNextColumn();
@@ -209,11 +215,15 @@ public partial class ModEditWindow
                 _new = _new with { SetId = setId };
             }
 
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
+
             ImGui.TableNextColumn();
             if( RaceCombo( "##eqdpRace", _new.Race, out var race ) )
             {
                 _new = _new with { Race = race };
             }
+
+            ImGuiUtil.HoverTooltip( "Model Race" );
 
             ImGui.TableNextColumn();
             if( GenderCombo( "##eqdpGender", _new.Gender, out var gender ) )
@@ -221,11 +231,15 @@ public partial class ModEditWindow
                 _new = _new with { Gender = gender };
             }
 
+            ImGuiUtil.HoverTooltip( "Gender" );
+
             ImGui.TableNextColumn();
             if( EqdpEquipSlotCombo( "##eqdpSlot", _new.Slot, out var slot ) )
             {
                 _new = _new with { Slot = slot };
             }
+
+            ImGuiUtil.HoverTooltip( "Equip Slot" );
 
             // Values
             ImGui.TableNextColumn();
@@ -243,15 +257,19 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.SetId.ToString() );
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Race.ToName() );
+            ImGuiUtil.HoverTooltip( "Model Race" );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Gender.ToName() );
+            ImGuiUtil.HoverTooltip( "Gender" );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Slot.ToName() );
+            ImGuiUtil.HoverTooltip( "Equip Slot" );
 
             // Values
             var defaultEntry = ExpandedEqdpFile.GetDefault( Names.CombinedRace( meta.Gender, meta.Race ), meta.Slot.IsAccessory(), meta.SetId );
@@ -317,11 +335,15 @@ public partial class ModEditWindow
                     _new.Variant, _new.EquipSlot == EquipSlot.Unknown ? EquipSlot.Head : _new.EquipSlot, _new.Entry );
             }
 
+            ImGuiUtil.HoverTooltip( "Object Type" );
+
             ImGui.TableNextColumn();
             if( IdInput( "##imcId", IdWidth, _new.PrimaryId, out var setId, ushort.MaxValue ) )
             {
                 _new = _new with { PrimaryId = setId };
             }
+
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
 
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
                 new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
@@ -334,6 +356,8 @@ public partial class ModEditWindow
                 {
                     _new = _new with { EquipSlot = slot };
                 }
+
+                ImGuiUtil.HoverTooltip( "Equip Slot" );
             }
             else
             {
@@ -341,6 +365,8 @@ public partial class ModEditWindow
                 {
                     _new = _new with { SecondaryId = setId2 };
                 }
+
+                ImGuiUtil.HoverTooltip( "Secondary ID" );
             }
 
             ImGui.TableNextColumn();
@@ -348,6 +374,8 @@ public partial class ModEditWindow
             {
                 _new = _new with { Variant = variant };
             }
+
+            ImGuiUtil.HoverTooltip( "Variant ID" );
 
             // Values
             ImGui.TableNextColumn();
@@ -386,24 +414,29 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.ObjectType.ToName() );
+            ImGuiUtil.HoverTooltip( "Object Type" );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.PrimaryId.ToString() );
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
 
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             if( meta.ObjectType is ObjectType.Equipment or ObjectType.Accessory )
             {
                 ImGui.TextUnformatted( meta.EquipSlot.ToName() );
+                ImGuiUtil.HoverTooltip( "Equip Slot" );
             }
             else
             {
                 ImGui.TextUnformatted( meta.SecondaryId.ToString() );
+                ImGuiUtil.HoverTooltip( "Secondary ID" );
             }
 
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Variant.ToString() );
+            ImGuiUtil.HoverTooltip( "Variant ID" );
 
             // Values
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
@@ -491,11 +524,15 @@ public partial class ModEditWindow
                 _new = _new with { SetId = setId };
             }
 
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
+
             ImGui.TableNextColumn();
             if( RaceCombo( "##estRace", _new.Race, out var race ) )
             {
                 _new = _new with { Race = race };
             }
+
+            ImGuiUtil.HoverTooltip( "Model Race" );
 
             ImGui.TableNextColumn();
             if( GenderCombo( "##estGender", _new.Gender, out var gender ) )
@@ -503,11 +540,15 @@ public partial class ModEditWindow
                 _new = _new with { Gender = gender };
             }
 
+            ImGuiUtil.HoverTooltip( "Gender" );
+
             ImGui.TableNextColumn();
             if( EstSlotCombo( "##estSlot", _new.Slot, out var slot ) )
             {
                 _new = _new with { Slot = slot };
             }
+
+            ImGuiUtil.HoverTooltip( "EST Type" );
 
             // Values
             ImGui.TableNextColumn();
@@ -522,15 +563,19 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.SetId.ToString() );
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Race.ToName() );
+            ImGuiUtil.HoverTooltip( "Model Race" );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Gender.ToName() );
+            ImGuiUtil.HoverTooltip( "Gender" );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Slot.ToString() );
+            ImGuiUtil.HoverTooltip( "EST Type" );
 
             // Values
             var defaultEntry = EstFile.GetDefault( meta.Slot, Names.CombinedRace( meta.Gender, meta.Race ), meta.SetId );
@@ -577,6 +622,8 @@ public partial class ModEditWindow
                 _new = _new with { SetId = setId };
             }
 
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
+
             // Values
             ImGui.TableNextColumn();
             Checkmark( "##gmpEnabled", "Gimmick Enabled", defaultEntry.Enabled, defaultEntry.Enabled, out _ );
@@ -605,6 +652,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.SetId.ToString() );
+            ImGuiUtil.HoverTooltip( "Model Set ID" );
 
             // Values
             var defaultEntry = ExpandedGmpFile.GetDefault( meta.SetId );
@@ -685,11 +733,15 @@ public partial class ModEditWindow
                 _new = _new with { SubRace = subRace };
             }
 
+            ImGuiUtil.HoverTooltip( "Racial Tribe" );
+
             ImGui.TableNextColumn();
             if( RspAttributeCombo( "##rspAttribute", _new.Attribute, out var attribute ) )
             {
                 _new = _new with { Attribute = attribute };
             }
+
+            ImGuiUtil.HoverTooltip( "Scaling Type" );
 
             // Values
             ImGui.TableNextColumn();
@@ -705,9 +757,11 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.SubRace.ToName() );
+            ImGuiUtil.HoverTooltip( "Racial Tribe" );
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Attribute.ToFullString() );
+            ImGuiUtil.HoverTooltip( "Scaling Type" );
             ImGui.TableNextColumn();
 
             // Values
