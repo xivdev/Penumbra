@@ -308,7 +308,12 @@ public sealed unsafe partial class ObjectReloader : IDisposable
     }
 
     public void RedrawObject( int tableIndex, RedrawType settings )
-        => RedrawObject( Dalamud.Objects[tableIndex], settings  );
+    {
+        if( tableIndex >= 0 && tableIndex < Dalamud.Objects.Length )
+        {
+            RedrawObject( Dalamud.Objects[ tableIndex ], settings );
+        }
+    }
 
     public void RedrawObject( string name, RedrawType settings )
     {
