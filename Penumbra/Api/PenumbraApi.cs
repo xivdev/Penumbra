@@ -71,6 +71,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
     }
 
+    public void RedrawObject( int tableIndex, RedrawType setting )
+    {
+        CheckInitialized();
+        _penumbra!.ObjectReloader.RedrawObject( tableIndex, setting );
+    }
+
     public void RedrawObject( string name, RedrawType setting )
     {
         CheckInitialized();

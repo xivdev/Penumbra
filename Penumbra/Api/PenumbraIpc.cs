@@ -112,10 +112,12 @@ public partial class PenumbraIpc
 public partial class PenumbraIpc
 {
     public const string LabelProviderRedrawName   = "Penumbra.RedrawObjectByName";
+    public const string LabelProviderRedrawIndex  = "Penumbra.RedrawObjectByIndex";
     public const string LabelProviderRedrawObject = "Penumbra.RedrawObject";
     public const string LabelProviderRedrawAll    = "Penumbra.RedrawAll";
 
     internal ICallGateProvider< string, int, object >?     ProviderRedrawName;
+    internal ICallGateProvider< int, int, object >?        ProviderRedrawIndex;
     internal ICallGateProvider< GameObject, int, object >? ProviderRedrawObject;
     internal ICallGateProvider< int, object >?             ProviderRedrawAll;
 
@@ -136,6 +138,16 @@ public partial class PenumbraIpc
         {
             ProviderRedrawName = pi.GetIpcProvider< string, int, object >( LabelProviderRedrawName );
             ProviderRedrawName.RegisterAction( ( s, i ) => Api.RedrawObject( s, CheckRedrawType( i ) ) );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawName}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderRedrawIndex = pi.GetIpcProvider<int, int, object>( LabelProviderRedrawIndex );
+            ProviderRedrawIndex.RegisterAction( ( idx, i ) => Api.RedrawObject( idx, CheckRedrawType( i ) ) );
         }
         catch( Exception e )
         {
@@ -166,6 +178,7 @@ public partial class PenumbraIpc
     private void DisposeRedrawProviders()
     {
         ProviderRedrawName?.UnregisterAction();
+        ProviderRedrawIndex?.UnregisterAction();
         ProviderRedrawObject?.UnregisterAction();
         ProviderRedrawAll?.UnregisterAction();
     }

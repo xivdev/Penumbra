@@ -34,6 +34,9 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Queue redrawing of all actors of the given name with the given RedrawType.
     public void RedrawObject( string name, RedrawType setting );
 
+    // Queue redrawing of the actor with the given object table index, if it exists, with the given RedrawType.
+    public void RedrawObject( int tableIndex, RedrawType setting );
+
     // Queue redrawing of the specific actor with the given RedrawType. Should only be used when the actor is sure to be valid.
     public void RedrawObject( GameObject gameObject, RedrawType setting );
 
