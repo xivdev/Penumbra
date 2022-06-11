@@ -44,6 +44,7 @@ internal class GamePathParser : IGamePathParser
             , { ObjectType.Character, new Regex[]{ new(@"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/texture/(?'minus'(--)?)(v(?'variant'\d{2})_)?c\k'race'\k'typeabr'\k'id'(_(?'slot'[a-z]{3}))?(_[a-z])?_[a-z]\.tex")
                                                  , new(@"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/texture")
                                                  , new(@"chara/common/texture/skin(?'skin'.*)\.tex")
+                                                 , new(@"chara/common/texture/(?'catchlight'catchlight)(.*)\.tex")
                                                  , new(@"chara/common/texture/decal_(?'location'[a-z]+)/[-_]?decal_(?'id'\d+).tex") } } } }
         , { FileType.Model, new Dictionary< ObjectType, Regex[] >()
             { { ObjectType.Weapon,    new Regex[]{ new(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/model/w\k'id'b\k'weapon'\.mdl") } }
@@ -223,6 +224,11 @@ internal class GamePathParser : IGamePathParser
 
     private static GameObjectInfo HandleCustomization( FileType fileType, GroupCollection groups )
     {
+        if( groups[ "catchlight" ].Success )
+        {
+            return GameObjectInfo.Customization( fileType, CustomizationType.Iris );
+        }
+
         if( groups[ "skin" ].Success )
         {
             return GameObjectInfo.Customization( fileType, CustomizationType.Skin );

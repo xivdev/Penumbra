@@ -290,10 +290,16 @@ internal class ObjectIdentification : IObjectIdentifier
                     case CustomizationType.DecalFace:
                         set[ $"Customization: Face Decal {info.PrimaryId}" ] = null;
                         break;
+                    case CustomizationType.Iris when race == ModelRace.Unknown:
+                        set[ $"Customization: All Eyes (Catchlight)" ] = null;
+                        break;
                     default:
                     {
-                        var customizationString =
-                            $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
+                        var customizationString = race == ModelRace.Unknown
+                         || info.BodySlot              == BodySlot.Unknown
+                         || info.CustomizationType     == CustomizationType.Unknown
+                                ? "Customization: Unknown"
+                                : $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
                         set[ customizationString ] = null;
                         break;
                     }
