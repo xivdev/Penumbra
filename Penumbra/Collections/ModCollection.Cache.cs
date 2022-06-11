@@ -87,13 +87,13 @@ public partial class ModCollection
                     ReloadMod( Penumbra.ModManager[ modIdx ], true );
                     break;
                 case ModSettingChange.EnableState:
-                    if( oldValue != 1 )
+                    if( _collection.Settings[ modIdx ]!.Enabled )
                     {
-                        AddMod( Penumbra.ModManager[ modIdx ], true );
+                        AddMod( Penumbra.ModManager[modIdx], true ); 
                     }
                     else
                     {
-                        RemoveMod( Penumbra.ModManager[ modIdx ], true );
+                        RemoveMod( Penumbra.ModManager[modIdx], true );
                     }
 
                     break;
@@ -257,6 +257,7 @@ public partial class ModCollection
                 {
                     AddMetaFiles();
                 }
+
                 if( _collection == Penumbra.CollectionManager.Default )
                 {
                     Penumbra.ResidentResources.Reload();
