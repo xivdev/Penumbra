@@ -87,13 +87,21 @@ public partial class ModCollection
                     ReloadMod( Penumbra.ModManager[ modIdx ], true );
                     break;
                 case ModSettingChange.EnableState:
-                    if( _collection.Settings[ modIdx ]!.Enabled )
+                    if( oldValue == 0 )
                     {
-                        AddMod( Penumbra.ModManager[modIdx], true ); 
+                        AddMod( Penumbra.ModManager[ modIdx ], true );
+                    }
+                    else if( oldValue == 1 )
+                    {
+                        RemoveMod( Penumbra.ModManager[ modIdx ], true );
+                    }
+                    else if( _collection[ modIdx ].Settings?.Enabled == true )
+                    {
+                        ReloadMod( Penumbra.ModManager[ modIdx ], true );
                     }
                     else
                     {
-                        RemoveMod( Penumbra.ModManager[modIdx], true );
+                        RemoveMod( Penumbra.ModManager[ modIdx ], true );
                     }
 
                     break;
