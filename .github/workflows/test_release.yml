@@ -1,8 +1,8 @@
-name: Create Release
+name: Create Test Release
 
 on:
   push:
-    tags-ignore:
+    tags:
       - t*
 
 jobs:
@@ -24,22 +24,22 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
       - name: Build
         run: |
-          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
-          invoke-expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
+          $ver = '${{ github.ref }}' -replace 'refs/tags/t',''
+          invoke-expression 'dotnet build --no-restore --configuration Debug --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
       - name: write version into json
         run: |
-          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
-          $path = './Penumbra/bin/Release/net5.0-windows/Penumbra.json'
+          $ver = '${{ github.ref }}' -replace 'refs/tags/t',''
+          $path = './Penumbra/bin/Debug/net5.0-windows/Penumbra.json'
           $content = get-content -path $path
           $content = $content -replace '1.0.0.0',$ver
           set-content -Path $path -Value $content
       - name: Archive
-        run: Compress-Archive -Path Penumbra/bin/Release/net5.0-windows/* -DestinationPath Penumbra.zip
+        run: Compress-Archive -Path Penumbra/bin/Debug/net5.0-windows/* -DestinationPath Penumbra.zip
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.2.1
         with:
           path: |
-            ./Penumbra/bin/Release/net5.0-windows/*
+            ./Penumbra/bin/Debug/net5.0-windows/*
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -63,10 +63,12 @@ jobs:
 
       - name: Write out repo.json
         run: |
-          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
+          $ver = '${{ github.ref }}' -replace 'refs/tags/t',''
+          $ver2 = '${{ github.ref }}' -replace 'refs/tags/',''
           $path = './base_repo.json'
           $new_path = './repo.json'
           $content = get-content -path $path
+          $content = $content -replace '/1.0.0.0/',"/$ver2/"
           $content = $content -replace '1.0.0.0',$ver
           set-content -Path $new_path -Value $content
 
@@ -75,8 +77,8 @@ jobs:
           git config --global user.name "Actions User"
           git config --global user.email "actions@github.com"
 
-          git fetch origin master && git checkout master
+          git fetch origin master && git fetch origin test && git checkout test && git reset --hard master
           git add repo.json
           git commit -m "[CI] Updating repo.json for ${{ github.ref }}" || true
 
-          git push origin master || true
+          git push origin test || true
