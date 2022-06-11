@@ -38,7 +38,14 @@ public partial class TexToolsImporter
             var percentage = _modPackCount / ( float )_currentModPackIdx;
             ImGui.ProgressBar( percentage, size, $"Mod {_currentModPackIdx + 1} / {_modPackCount}" );
             ImGui.NewLine();
-            ImGui.TextUnformatted( $"Extracting {_currentModName}..." );
+            if( State == ImporterState.DeduplicatingFiles )
+            {
+                ImGui.TextUnformatted( $"Deduplicating {_currentModName}..." );
+            }
+            else
+            {
+                ImGui.TextUnformatted( $"Extracting {_currentModName}..." );
+            }
 
             if( _currentNumOptions > 1 )
             {
@@ -47,8 +54,11 @@ public partial class TexToolsImporter
                 percentage = _currentNumOptions == 0 ? 1f : _currentOptionIdx / ( float )_currentNumOptions;
                 ImGui.ProgressBar( percentage, size, $"Option {_currentOptionIdx + 1} / {_currentNumOptions}" );
                 ImGui.NewLine();
-                ImGui.TextUnformatted(
-                    $"Extracting option {( _currentGroupName.Length == 0 ? string.Empty : $"{_currentGroupName} - " )}{_currentOptionName}..." );
+                if( State != ImporterState.DeduplicatingFiles )
+                {
+                    ImGui.TextUnformatted(
+                        $"Extracting option {( _currentGroupName.Length == 0 ? string.Empty : $"{_currentGroupName} - " )}{_currentOptionName}..." );
+                }
             }
 
             ImGui.NewLine();
@@ -56,7 +66,10 @@ public partial class TexToolsImporter
             percentage = _currentNumFiles == 0 ? 1f : _currentFileIdx / ( float )_currentNumFiles;
             ImGui.ProgressBar( percentage, size, $"File {_currentFileIdx + 1} / {_currentNumFiles}" );
             ImGui.NewLine();
-            ImGui.TextUnformatted( $"Extracting file {_currentFileName}..." );
+            if( State != ImporterState.DeduplicatingFiles )
+            {
+                ImGui.TextUnformatted( $"Extracting file {_currentFileName}..." );
+            }
         }
     }
 
