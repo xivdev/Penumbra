@@ -27,8 +27,8 @@ public partial class ConfigWindow
                 return;
             }
 
-            DrawMainSelectors();
             DrawCharacterCollectionSelectors();
+            DrawMainSelectors();
         }
 
 
@@ -139,52 +139,46 @@ public partial class ConfigWindow
 
         private void DrawCharacterCollectionSelectors()
         {
-            using var child = ImRaii.Child( "##Collections", -Vector2.One, true );
-            if( !child )
+            ImGui.Dummy( _window._defaultSpace );
+            if( ImGui.CollapsingHeader( "Active Collections", ImGuiTreeNodeFlags.DefaultOpen ) )
             {
-                return;
-            }
-
-            DrawDefaultCollectionSelector();
-
-            foreach( var name in Penumbra.CollectionManager.Characters.Keys.OrderBy( k => k ).ToArray() )
-            {
-                using var id = ImRaii.PushId( name );
-                DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, ModCollection.Type.Character, true, name );
-                ImGui.SameLine();
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
-                       false,
-                       true ) )
+                ImGui.Dummy( _window._defaultSpace );
+                DrawDefaultCollectionSelector();
+                ImGui.Dummy( _window._defaultSpace );
+                foreach( var name in Penumbra.CollectionManager.Characters.Keys.OrderBy( k => k ).ToArray() )
                 {
-                    Penumbra.CollectionManager.RemoveCharacterCollection( name );
+                    using var id = ImRaii.PushId( name );
+                    DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, ModCollection.Type.Character, true, name );
+                    ImGui.SameLine();
+                    if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
+                           false,
+                           true ) )
+                    {
+                        Penumbra.CollectionManager.RemoveCharacterCollection( name );
+                    }
+
+                    ImGui.SameLine();
+                    ImGui.AlignTextToFramePadding();
+                    ImGui.TextUnformatted( name );
                 }
 
-                ImGui.SameLine();
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted( name );
+                DrawNewCharacterCollection();
+                ImGui.NewLine();
             }
-
-            DrawNewCharacterCollection();
         }
 
         private void DrawMainSelectors()
         {
-            var size = new Vector2( -1,
-                ImGui.GetTextLineHeightWithSpacing() * (InheritedCollectionHeight + 1)
-              + _window._defaultSpace.Y              * 2
-              + ImGui.GetFrameHeightWithSpacing()    * 4
-              + ImGui.GetStyle().ItemSpacing.Y       * 6 );
-            using var main = ImRaii.Child( "##CollectionsMain", size, true );
-            if( !main )
+            ImGui.Dummy( _window._defaultSpace );
+            if( ImGui.CollapsingHeader( "Collection Settings", ImGuiTreeNodeFlags.DefaultOpen ) )
             {
-                return;
+                ImGui.Dummy( _window._defaultSpace );
+                DrawCurrentCollectionSelector();
+                ImGui.Dummy( _window._defaultSpace );
+                DrawNewCollectionInput();
+                ImGui.Dummy( _window._defaultSpace );
+                DrawInheritanceBlock();
             }
-
-            DrawCurrentCollectionSelector();
-            ImGui.Dummy( _window._defaultSpace );
-            DrawNewCollectionInput();
-            ImGui.Dummy( _window._defaultSpace );
-            DrawInheritanceBlock();
         }
     }
 }
