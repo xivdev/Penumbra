@@ -1,20 +1,21 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Dalamud.Interface;
+using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Logging;
 using Dalamud.Utility;
 using ImGuiNET;
 using ImGuiScene;
-using Lumina.Data;
 using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
 using Penumbra.Import.Textures;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 
 namespace Penumbra.UI.Classes;
@@ -23,7 +24,6 @@ public partial class ModEditWindow
 {
     private string _pathLeft  = string.Empty;
     private string _pathRight = string.Empty;
-    private string _pathSave  = string.Empty;
 
     private byte[]? _imageLeft;
     private byte[]? _imageRight;
@@ -36,7 +36,22 @@ public partial class ModEditWindow
     private Matrix4x4 _multiplierLeft  = Matrix4x4.Identity;
     private Matrix4x4 _multiplierRight = Matrix4x4.Identity;
 
-    private bool DrawMatrixInput( float width, ref Matrix4x4 matrix )
+    private readonly FileDialogManager _dialogManager = new();
+
+    private static bool DragFloat( string label, float width, ref float value )
+    {
+        var tmp = value;
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth( width );
+        if( ImGui.DragFloat( label, ref tmp, 0.001f, -1f, 1f ) )
+        {
+            value = tmp;
+        }
+
+        return ImGui.IsItemDeactivatedAfterEdit();
+    }
+
+    private static bool DrawMatrixInput( float width, ref Matrix4x4 matrix )
     {
         using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.BordersInner | ImGuiTableFlags.SizingFixedFit );
         if( !table )
@@ -60,86 +75,66 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.Text( "R    " );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##RR", ref matrix.M11, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##RG", ref matrix.M12, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##RB", ref matrix.M13, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##RA", ref matrix.M14, 0.001f, -1f, 1f );
+        changes |= DragFloat( "##RR", inputWidth, ref matrix.M11 );
+        changes |= DragFloat( "##RG", inputWidth, ref matrix.M12 );
+        changes |= DragFloat( "##RB", inputWidth, ref matrix.M13 );
+        changes |= DragFloat( "##RA", inputWidth, ref matrix.M14 );
 
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.Text( "G    " );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##GR", ref matrix.M21, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##GG", ref matrix.M22, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##GB", ref matrix.M23, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##GA", ref matrix.M24, 0.001f, -1f, 1f );
+        changes |= DragFloat( "##GR", inputWidth, ref matrix.M21 );
+        changes |= DragFloat( "##GG", inputWidth, ref matrix.M22 );
+        changes |= DragFloat( "##GB", inputWidth, ref matrix.M23 );
+        changes |= DragFloat( "##GA", inputWidth, ref matrix.M24 );
 
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.Text( "B    " );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##BR", ref matrix.M31, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##BG", ref matrix.M32, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##BB", ref matrix.M33, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##BA", ref matrix.M34, 0.001f, -1f, 1f );
+        changes |= DragFloat( "##BR", inputWidth, ref matrix.M31 );
+        changes |= DragFloat( "##BG", inputWidth, ref matrix.M32 );
+        changes |= DragFloat( "##BB", inputWidth, ref matrix.M33 );
+        changes |= DragFloat( "##BA", inputWidth, ref matrix.M34 );
 
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.Text( "A    " );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##AR", ref matrix.M41, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##AG", ref matrix.M42, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##AB", ref matrix.M43, 0.001f, -1f, 1f );
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( inputWidth );
-        changes |= ImGui.DragFloat( "##AA", ref matrix.M44, 0.001f, -1f, 1f );
+        changes |= DragFloat( "##AR", inputWidth, ref matrix.M41 );
+        changes |= DragFloat( "##AG", inputWidth, ref matrix.M42 );
+        changes |= DragFloat( "##AB", inputWidth, ref matrix.M43 );
+        changes |= DragFloat( "##AA", inputWidth, ref matrix.M44 );
 
         return changes;
     }
 
-    private bool PathInputBox( string label, string hint, string tooltip, ref string path )
+    private void PathInputBox( string label, string hint, string tooltip, int which )
     {
-        var       tmp     = path;
+        var       tmp     = which == 0 ? _pathLeft : _pathRight;
         using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( 3 * ImGuiHelpers.GlobalScale, 0 ) );
         ImGui.SetNextItemWidth( -ImGui.GetFrameHeight() - 3 * ImGuiHelpers.GlobalScale );
         ImGui.InputTextWithHint( label, hint, ref tmp, Utf8GamePath.MaxGamePathLength );
-        var ret = ImGui.IsItemDeactivatedAfterEdit() && tmp != path;
-        ImGuiUtil.HoverTooltip( tooltip );
-        ImGui.SameLine();
-        ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Folder.ToIconString(), new Vector2( ImGui.GetFrameHeight() ), string.Empty, false, true );
-        if( ret )
+        if( ImGui.IsItemDeactivatedAfterEdit() )
         {
-            path = tmp;
+            UpdateImage( tmp, which );
         }
 
-        return ret;
+        ImGuiUtil.HoverTooltip( tooltip );
+        ImGui.SameLine();
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Folder.ToIconString(), new Vector2( ImGui.GetFrameHeight() ), string.Empty, false,
+               true ) )
+        {
+            var startPath = Penumbra.Config.DefaultModImportPath.Length > 0 ? Penumbra.Config.DefaultModImportPath : _mod?.ModPath.FullName;
+
+            void UpdatePath( bool success, List< string > paths )
+            {
+                if( success && paths.Count > 0 )
+                {
+                    UpdateImage( paths[ 0 ], which );
+                }
+            }
+
+            _dialogManager.OpenFileDialog( "Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath );
+        }
     }
 
     private static (byte[]?, int, int) GetDdsRgbaData( string path )
@@ -153,10 +148,18 @@ public partial class ModEditWindow
             }
 
             f.ConvertToTex( out var bytes );
-            using var ms = new MemoryStream( bytes );
-            using var sq = new SqPackStream( ms );
-            var       x  = sq.ReadFile< TexFile >( 0 );
-            return ( x.GetRgbaImageData(), x.Header.Width, x.Header.Height );
+            TexFile tex = new();
+            tex.GetType().GetProperty( "Data",
+                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy )
+              ?.SetValue( tex, bytes );
+            tex.GetType().GetProperty( "FileStream",
+                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy )
+              ?.SetValue( tex, new MemoryStream( tex.Data ) );
+            tex.GetType().GetProperty( "Reader",
+                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy )
+              ?.SetValue( tex, new BinaryReader( tex.FileStream ) );
+            tex.LoadFile();
+            return ( tex.GetRgbaImageData(), tex.Header.Width, tex.Header.Height );
         }
         catch( Exception e )
         {
@@ -186,7 +189,7 @@ public partial class ModEditWindow
         try
         {
             using var stream = File.OpenRead( path );
-            var       png    = Image.Load< Rgba32 >( stream );
+            using var png    = Image.Load< Rgba32 >( stream );
             var       bytes  = new byte[png.Height * png.Width * 4];
             png.CopyPixelDataTo( bytes );
             return ( bytes, png.Width, png.Height );
@@ -198,8 +201,23 @@ public partial class ModEditWindow
         }
     }
 
-    private void UpdateImage( string path, ref byte[]? data, ref TextureWrap? wrap )
+    private void UpdateImage( string newPath, int which )
     {
+        if( which is < 0 or > 1 )
+        {
+            return;
+        }
+
+        ref var path = ref which == 0 ? ref _pathLeft : ref _pathRight;
+        if( path == newPath )
+        {
+            return;
+        }
+
+        path = newPath;
+        ref var data = ref which == 0 ? ref _imageLeft : ref _imageRight;
+        ref var wrap = ref which == 0 ? ref _wrapLeft : ref _wrapRight;
+
         data = null;
         wrap?.Dispose();
         wrap = null;
@@ -232,21 +250,35 @@ public partial class ModEditWindow
         UpdateCenter();
     }
 
+    private static Vector4 CappedVector( IReadOnlyList< byte >? bytes, int offset, Matrix4x4 transform )
+    {
+        if( bytes == null )
+        {
+            return Vector4.Zero;
+        }
+
+        var rgba        = new Rgba32( bytes[ offset ], bytes[ offset + 1 ], bytes[ offset + 2 ], bytes[ offset + 3 ] );
+        var transformed = Vector4.Transform( rgba.ToVector4(), transform );
+        transformed.X = Math.Clamp( transformed.X, 0, 1 );
+        transformed.Y = Math.Clamp( transformed.Y, 0, 1 );
+        transformed.Z = Math.Clamp( transformed.Z, 0, 1 );
+        transformed.W = Math.Clamp( transformed.W, 0, 1 );
+        return transformed;
+    }
+
     private void AddPixels( int width, int x, int y )
     {
         var offset = ( y * width + x ) * 4;
-        var rgbaLeft = _imageLeft != null
-            ? new Rgba32( _imageLeft[ offset ], _imageLeft[ offset + 1 ], _imageLeft[ offset + 2 ], _imageLeft[ offset + 3 ] )
-            : new Rgba32();
-        var rgbaRight = _imageRight != null
-            ? new Rgba32( _imageRight[ offset ], _imageRight[ offset + 1 ], _imageRight[ offset + 2 ], _imageRight[ offset + 3 ] )
-            : new Rgba32();
-        var transformLeft  = Vector4.Transform( rgbaLeft.ToVector4(), _multiplierLeft );
-        var transformRight = Vector4.Transform( rgbaRight.ToVector4(), _multiplierRight );
-        var alpha          = transformLeft.Z + transformRight.Z * ( 1 - transformLeft.Z );
-        var rgba = alpha == 0
-            ? new Rgba32()
-            : new Rgba32( ( transformLeft * transformLeft.Z + transformRight * transformRight.Z * ( 1 - transformLeft.Z ) ) / alpha );
+        var left   = CappedVector( _imageLeft, offset, _multiplierLeft );
+        var right  = CappedVector( _imageRight, offset, _multiplierRight );
+        var alpha  = right.W + left.W * ( 1 - right.W );
+        if( alpha == 0 )
+        {
+            return;
+        }
+
+        var sum  = ( right * right.W + left * left.W * ( 1 - right.W ) ) / alpha;
+        var rgba = new Rgba32( sum with { W = alpha } );
         _imageCenter![ offset ]     = rgba.R;
         _imageCenter![ offset + 1 ] = rgba.G;
         _imageCenter![ offset + 2 ] = rgba.B;
@@ -255,7 +287,25 @@ public partial class ModEditWindow
 
     private void UpdateCenter()
     {
-        _wrapCenter?.Dispose();
+        if( _imageLeft != null && _imageRight == null && _multiplierLeft.IsIdentity )
+        {
+            _imageCenter = _imageLeft;
+            _wrapCenter  = _wrapLeft;
+            return;
+        }
+
+        if( _imageLeft == null && _imageRight != null && _multiplierRight.IsIdentity )
+        {
+            _imageCenter = _imageRight;
+            _wrapCenter  = _wrapRight;
+            return;
+        }
+
+        if( !ReferenceEquals( _imageCenter, _imageLeft ) && !ReferenceEquals( _imageCenter, _imageRight ) )
+        {
+            _wrapCenter?.Dispose();
+        }
+
         if( _imageLeft != null || _imageRight != null )
         {
             var (width, height) = _imageLeft != null ? ( _wrapLeft!.Width, _wrapLeft.Height ) : ( _wrapRight!.Width, _wrapRight.Height );
@@ -280,12 +330,16 @@ public partial class ModEditWindow
         _wrapCenter  = null;
     }
 
-    private static void ScaledImage( TextureWrap? wrap, Vector2 size )
+    private static void ScaledImage( string path, TextureWrap? wrap, Vector2 size )
     {
         if( wrap != null )
         {
             size = size with { Y = wrap.Height * size.X / wrap.Width };
             ImGui.Image( wrap.ImGuiHandle, size );
+        }
+        else if( path.Length > 0 )
+        {
+            ImGui.TextUnformatted( "Could not load file." );
         }
         else
         {
@@ -293,8 +347,56 @@ public partial class ModEditWindow
         }
     }
 
+    private void SaveAs( bool success, string path, int type )
+    {
+        if( !success || _imageCenter == null || _wrapCenter == null )
+        {
+            return;
+        }
+
+        try
+        {
+            switch( type )
+            {
+                case 0:
+                    var img = Image.LoadPixelData< Rgba32 >( _imageCenter, _wrapCenter.Width, _wrapCenter.Height );
+                    img.Save( path, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression } );
+                    break;
+                case 1:
+                    if( TextureImporter.RgbaBytesToTex( _imageCenter, _wrapCenter.Width, _wrapCenter.Height, out var tex ) )
+                    {
+                        File.WriteAllBytes( path, tex );
+                    }
+
+                    break;
+                case 2:
+                    if( TextureImporter.RgbaBytesToDds( _imageCenter, _wrapCenter.Width, _wrapCenter.Height, out var dds ) )
+                    {
+                        File.WriteAllBytes( path, dds );
+                    }
+
+                    break;
+            }
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Could not save image to {path}:\n{e}" );
+        }
+    }
+
+    private void SaveAsPng( bool success, string path )
+        => SaveAs( success, path, 0 );
+
+    private void SaveAsTex( bool success, string path )
+        => SaveAs( success, path, 1 );
+
+    private void SaveAsDds( bool success, string path )
+        => SaveAs( success, path, 2 );
+
     private void DrawTextureTab()
     {
+        _dialogManager.Draw();
+
         using var tab = ImRaii.TabItem( "Texture Import/Export" );
         if( !tab )
         {
@@ -305,44 +407,72 @@ public partial class ModEditWindow
         var imageSize      = new Vector2( leftRightWidth.X - ImGui.GetStyle().FramePadding.X * 2 );
         using( var child = ImRaii.Child( "ImageLeft", leftRightWidth, true ) )
         {
-            if( PathInputBox( "##ImageLeft", "Import Image...", string.Empty, ref _pathLeft ) )
+            if( child )
             {
-                UpdateImage( _pathLeft, ref _imageLeft, ref _wrapLeft );
+                PathInputBox( "##ImageLeft", "Import Image...", string.Empty, 0 );
+
+                ImGui.NewLine();
+                if( DrawMatrixInput( leftRightWidth.X, ref _multiplierLeft ) )
+                {
+                    UpdateCenter();
+                }
+
+                ImGui.NewLine();
+                ScaledImage( _pathLeft, _wrapLeft, imageSize );
             }
-
-            ImGui.NewLine();
-            if( DrawMatrixInput( leftRightWidth.X, ref _multiplierLeft ) )
-            {
-                UpdateCenter();
-            }
-
-            ImGui.NewLine();
-            ScaledImage( _wrapLeft, imageSize );
-
         }
 
         ImGui.SameLine();
         using( var child = ImRaii.Child( "ImageMix", leftRightWidth, true ) )
         {
-            ScaledImage( _wrapCenter, imageSize );
+            if( child )
+            {
+                if( _wrapCenter == null && _wrapLeft != null && _wrapRight != null )
+                {
+                    ImGui.TextUnformatted( "Images have incompatible resolutions." );
+                }
+                else if( _wrapCenter != null )
+                {
+                    if( ImGui.Button( "Save as TEX", -Vector2.UnitX ) )
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension( _pathLeft.Length > 0 ? _pathLeft : _pathRight );
+                        _dialogManager.SaveFileDialog( "Save Texture as TEX...", ".tex", fileName, ".tex", SaveAsTex, _mod!.ModPath.FullName );
+                    }
+
+                    if( ImGui.Button( "Save as PNG", -Vector2.UnitX ) )
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension( _pathRight.Length > 0 ? _pathRight : _pathLeft );
+                        _dialogManager.SaveFileDialog( "Save Texture as PNG...", ".png", fileName, ".png", SaveAsPng, _mod!.ModPath.FullName );
+                    }
+
+                    if( ImGui.Button( "Save as DDS", -Vector2.UnitX ) )
+                    {
+                        var fileName = Path.GetFileNameWithoutExtension( _pathRight.Length > 0 ? _pathRight : _pathLeft );
+                        _dialogManager.SaveFileDialog( "Save Texture as DDS...", ".dds", fileName, ".dds", SaveAsDds, _mod!.ModPath.FullName );
+                    }
+
+                    ImGui.NewLine();
+                    ScaledImage( string.Empty, _wrapCenter, imageSize );
+                }
+            }
         }
 
         ImGui.SameLine();
         using( var child = ImRaii.Child( "ImageRight", leftRightWidth, true ) )
         {
-            if( PathInputBox( "##ImageRight", "Import Image...", string.Empty, ref _pathRight ) )
+            if( child )
             {
-                UpdateImage( _pathRight, ref _imageRight, ref _wrapRight );
-            }
+                PathInputBox( "##ImageRight", "Import Image...", string.Empty, 1 );
 
-            ImGui.NewLine();
-            if( DrawMatrixInput( leftRightWidth.X, ref _multiplierRight ) )
-            {
-                UpdateCenter();
-            }
+                ImGui.NewLine();
+                if( DrawMatrixInput( leftRightWidth.X, ref _multiplierRight ) )
+                {
+                    UpdateCenter();
+                }
 
-            ImGui.NewLine();
-            ScaledImage( _wrapRight, imageSize );
+                ImGui.NewLine();
+                ScaledImage( _pathRight, _wrapRight, imageSize );
+            }
         }
     }
 }

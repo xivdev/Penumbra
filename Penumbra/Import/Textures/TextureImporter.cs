@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using Dalamud.Logging;
 using Lumina.Data.Files;
 using Lumina.Extensions;
-using System.Drawing;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -37,10 +36,22 @@ public struct PixelFormat
     public FormatFlags Flags;
     public FourCCType  FourCC;
     public int         RgbBitCount;
-    public int         RBitMask;
-    public int         GBitMask;
-    public int         BBitMask;
-    public int         ABitMask;
+    public uint        RBitMask;
+    public uint        GBitMask;
+    public uint        BBitMask;
+    public uint        ABitMask;
+
+    public void Write( BinaryWriter bw )
+    {
+        bw.Write( Size );
+        bw.Write( ( uint )Flags );
+        bw.Write( ( uint )FourCC );
+        bw.Write( RgbBitCount );
+        bw.Write( RBitMask );
+        bw.Write( GBitMask );
+        bw.Write( BBitMask );
+        bw.Write( ABitMask );
+    }
 }
 
 [StructLayout( LayoutKind.Sequential )]
@@ -82,30 +93,70 @@ public struct DdsHeader
         Volume            = 0x200000,
     }
 
-    public int         Size;
-    public DdsFlags    Flags;
-    public int         Height;
-    public int         Width;
-    public int         PitchOrLinearSize;
-    public int         Depth;
-    public int         MipMapCount;
-    public int         Reserved1;
-    public int         Reserved2;
-    public int         Reserved3;
-    public int         Reserved4;
-    public int         Reserved5;
-    public int         Reserved6;
-    public int         Reserved7;
-    public int         Reserved8;
-    public int         Reserved9;
-    public int         ReservedA;
-    public int         ReservedB;
-    public PixelFormat PixelFormat;
-    public DdsCaps1    Caps1;
-    public DdsCaps2    Caps2;
-    public uint        Caps3;
-    public uint        Caps4;
-    public int         ReservedC;
+    public const int         Size = 124;
+    private      int         _size;
+    public       DdsFlags    Flags;
+    public       int         Height;
+    public       int         Width;
+    public       int         PitchOrLinearSize;
+    public       int         Depth;
+    public       int         MipMapCount;
+    public       int         Reserved1;
+    public       int         Reserved2;
+    public       int         Reserved3;
+    public       int         Reserved4;
+    public       int         Reserved5;
+    public       int         Reserved6;
+    public       int         Reserved7;
+    public       int         Reserved8;
+    public       int         Reserved9;
+    public       int         ReservedA;
+    public       int         ReservedB;
+    public       PixelFormat PixelFormat;
+    public       DdsCaps1    Caps1;
+    public       DdsCaps2    Caps2;
+    public       uint        Caps3;
+    public       uint        Caps4;
+    public       int         ReservedC;
+
+    public void Write( BinaryWriter bw )
+    {
+        bw.Write( ( byte )'D' );
+        bw.Write( ( byte )'D' );
+        bw.Write( ( byte )'S' );
+        bw.Write( ( byte )' ' );
+        bw.Write( Size );
+        bw.Write( ( uint )Flags );
+        bw.Write( Height );
+        bw.Write( Width );
+        bw.Write( PitchOrLinearSize );
+        bw.Write( Depth );
+        bw.Write( MipMapCount );
+        bw.Write( Reserved1 );
+        bw.Write( Reserved2 );
+        bw.Write( Reserved3 );
+        bw.Write( Reserved4 );
+        bw.Write( Reserved5 );
+        bw.Write( Reserved6 );
+        bw.Write( Reserved7 );
+        bw.Write( Reserved8 );
+        bw.Write( Reserved9 );
+        bw.Write( ReservedA );
+        bw.Write( ReservedB );
+        PixelFormat.Write( bw );
+        bw.Write( ( uint )Caps1 );
+        bw.Write( ( uint )Caps2 );
+        bw.Write( Caps3 );
+        bw.Write( Caps4 );
+        bw.Write( ReservedC );
+    }
+
+    public void Write( byte[] bytes, int offset )
+    {
+        using var m  = new MemoryStream( bytes, offset, bytes.Length - offset );
+        using var bw = new BinaryWriter( m );
+        Write( bw );
+    }
 }
 
 [StructLayout( LayoutKind.Sequential )]
@@ -407,32 +458,88 @@ public class DdsFile
 
 public class TextureImporter
 {
-    public static bool ReadPng( string inputFile, out byte[] texData )
+    private static void WriteHeader( byte[] target, int width, int height )
+    {
+        using var mem = new MemoryStream( target );
+        using var bw  = new BinaryWriter( mem );
+        bw.Write( ( uint )TexFile.Attribute.TextureType2D );
+        bw.Write( ( uint )TexFile.TextureFormat.A8R8G8B8 );
+        bw.Write( ( ushort )width );
+        bw.Write( ( ushort )height );
+        bw.Write( ( ushort )1 );
+        bw.Write( ( ushort )1 );
+        bw.Write( 0 );
+        bw.Write( 1 );
+        bw.Write( 2 );
+        bw.Write( 80 );
+        for( var i = 1; i < 13; ++i )
+        {
+            bw.Write( 0 );
+        }
+    }
+
+    public static unsafe bool RgbaBytesToDds( byte[] rgba, int width, int height, out byte[] ddsData )
+    {
+        var header = new DdsHeader()
+        {
+            Caps1  = DdsHeader.DdsCaps1.Complex | DdsHeader.DdsCaps1.Texture | DdsHeader.DdsCaps1.MipMap,
+            Depth  = 1,
+            Flags  = DdsHeader.DdsFlags.Required | DdsHeader.DdsFlags.Pitch | DdsHeader.DdsFlags.MipMapCount,
+            Height = height,
+            Width  = width,
+            PixelFormat = new PixelFormat()
+            {
+                Flags       = PixelFormat.FormatFlags.AlphaPixels | PixelFormat.FormatFlags.RGB,
+                FourCC      = 0,
+                BBitMask    = 0x000000FF,
+                GBitMask    = 0x0000FF00,
+                RBitMask    = 0x00FF0000,
+                ABitMask    = 0xFF000000,
+                Size        = 32,
+                RgbBitCount = 32,
+            },
+        };
+        ddsData = new byte[DdsHeader.Size + rgba.Length];
+        header.Write( ddsData, 0 );
+        rgba.CopyTo( ddsData, DdsHeader.Size );
+        for( var i = 0; i < rgba.Length; i += 4 )
+        {
+            ( ddsData[ DdsHeader.Size       + i ], ddsData[ DdsHeader.Size + i                            + 2 ] )
+                = ( ddsData[ DdsHeader.Size + i                            + 2 ], ddsData[ DdsHeader.Size + i ] );
+        }
+
+        return true;
+    }
+
+    public static bool RgbaBytesToTex( byte[] rgba, int width, int height, out byte[] texData )
+    {
+        texData = Array.Empty< byte >();
+        if( rgba.Length != width * height * 4 )
+        {
+            return false;
+        }
+
+        texData = new byte[80 + width * height * 4];
+        WriteHeader( texData, width, height );
+        // RGBA to BGRA.
+        for( var i = 0; i < rgba.Length; i += 4 )
+        {
+            texData[ 80 + i + 0 ] = rgba[ i + 2 ];
+            texData[ 80 + i + 1 ] = rgba[ i + 1 ];
+            texData[ 80 + i + 2 ] = rgba[ i + 0 ];
+            texData[ 80 + i + 3 ] = rgba[ i + 3 ];
+        }
+
+        return true;
+    }
+
+    public static bool PngToTex( string inputFile, out byte[] texData )
     {
         using var file  = File.OpenRead( inputFile );
         var       image = Image.Load< Bgra32 >( file );
 
         var buffer = new byte[80 + image.Height * image.Width * 4];
-        using( var mem = new MemoryStream( buffer ) )
-        {
-            using( var bw = new BinaryWriter( mem ) )
-            {
-                bw.Write( ( uint )TexFile.Attribute.TextureType2D );
-                bw.Write( ( uint )TexFile.TextureFormat.A8R8G8B8 );
-                bw.Write( ( ushort )image.Width );
-                bw.Write( ( ushort )image.Height );
-                bw.Write( ( ushort )1 );
-                bw.Write( ( ushort )1 );
-                bw.Write( 0 );
-                bw.Write( 1 );
-                bw.Write( 2 );
-                bw.Write( 80 );
-                for( var i = 1; i < 13; ++i )
-                {
-                    bw.Write( 0 );
-                }
-            }
-        }
+        WriteHeader( buffer, image.Width, image.Height );
 
         var span = new Span< byte >( buffer, 80, buffer.Length - 80 );
         image.CopyPixelDataTo( span );
