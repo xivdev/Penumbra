@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -40,16 +41,15 @@ public partial class PathResolver : IDisposable
         // A potential next request will add the path anew.
         var nonDefault = HandleMaterialSubFiles( type, out var collection )
          || PathCollections.TryRemove( gamePath.Path, out collection )
-            //|| HandlePapFile( type, gamePath, out collection )
          || HandleAnimationFile( type, gamePath, out collection )
          || HandleDecalFile( type, gamePath, out collection );
-        if( !nonDefault )
+        if( !nonDefault || collection == null)
         {
             collection = Penumbra.CollectionManager.Default;
         }
 
         // Resolve using character/default collection first, otherwise forced, as usual.
-        var resolved = collection!.ResolvePath( gamePath );
+        var resolved = collection.ResolvePath( gamePath );
 
         // Since mtrl files load their files separately, we need to add the new, resolved path
         // so that the functions loading tex and shpk can find that path and use its collection.
@@ -59,7 +59,7 @@ public partial class PathResolver : IDisposable
         return true;
     }
 
-    private bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, out ModCollection? collection )
+    private bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, [NotNullWhen(true)] out ModCollection? collection )
     {
         if( type                  == ResourceType.Tex
         && _lastCreatedCollection != null
@@ -73,7 +73,7 @@ public partial class PathResolver : IDisposable
         return false;
     }
 
-    private bool HandleAnimationFile( ResourceType type, Utf8GamePath _, out ModCollection? collection )
+    private bool HandleAnimationFile( ResourceType type, Utf8GamePath _, [NotNullWhen(true)] out ModCollection? collection )
     {
         if( _animationLoadCollection != null )
         {
