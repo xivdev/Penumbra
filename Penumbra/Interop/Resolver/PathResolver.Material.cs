@@ -83,12 +83,16 @@ public unsafe partial class PathResolver
         var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
         if( Penumbra.CollectionManager.ByName( name, out var collection ) )
         {
+#if DEBUG
             PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", name, path );
+#endif
             SetCollection( path, collection );
         }
         else
         {
+#if DEBUG
             PluginLog.Verbose( "Using MtrlLoadHandler with no collection for path {$Path:l}.", path );
+#endif
         }
 
         // Force isSync = true for this call. I don't really understand why,

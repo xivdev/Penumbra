@@ -54,7 +54,7 @@ public unsafe class CharacterUtility : IDisposable
            .Select( i => Array.IndexOf( RelevantIndices, i ) ).ToArray();
 
 
-    public (IntPtr Address, int Size)[] DefaultResources = new (IntPtr, int)[RelevantIndices.Length];
+    public readonly (IntPtr Address, int Size)[] DefaultResources = new (IntPtr, int)[RelevantIndices.Length];
 
     public (IntPtr Address, int Size) DefaultResource( int fullIdx )
         => DefaultResources[ ReverseIndices[ fullIdx ] ];
