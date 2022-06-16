@@ -12,7 +12,7 @@ using Penumbra.Util;
 namespace Penumbra.Collections;
 
 public record struct ModPath( Mod Mod, FullPath Path );
-public record ModConflicts( Mod Mod2, List< object > Conflicts, bool HasPriority, bool Solved );
+public record ModConflicts( Mod Mod2, List<object> Conflicts, bool HasPriority, bool Solved );
 
 public partial class ModCollection
 {
@@ -20,17 +20,17 @@ public partial class ModCollection
     // It will only be setup if a collection gets activated in any way.
     private class Cache : IDisposable
     {
-        private readonly ModCollection                                       _collection;
-        private readonly SortedList< string, (SingleArray< Mod >, object?) > _changedItems = new();
-        public readonly  Dictionary< Utf8GamePath, ModPath >                 ResolvedFiles = new();
-        public readonly  MetaManager                                         MetaManipulations;
-        private readonly Dictionary< Mod, SingleArray< ModConflicts > >      _conflicts = new();
+        private readonly ModCollection _collection;
+        private readonly SortedList<string, (SingleArray<Mod>, object?)> _changedItems = new();
+        public readonly Dictionary<Utf8GamePath, ModPath> ResolvedFiles = new();
+        public readonly MetaManager MetaManipulations;
+        private readonly Dictionary<Mod, SingleArray<ModConflicts>> _conflicts = new();
 
-        public IEnumerable< SingleArray< ModConflicts > > AllConflicts
+        public IEnumerable<SingleArray<ModConflicts>> AllConflicts
             => _conflicts.Values;
 
-        public SingleArray< ModConflicts > Conflicts( Mod mod )
-            => _conflicts.TryGetValue( mod, out var c ) ? c : new SingleArray< ModConflicts >();
+        public SingleArray<ModConflicts> Conflicts( Mod mod )
+            => _conflicts.TryGetValue( mod, out var c ) ? c : new SingleArray<ModConflicts>();
 
         // Count the number of changes of the effective file list.
         // This is used for material and imc changes.
@@ -38,7 +38,7 @@ public partial class ModCollection
         private int _changedItemsSaveCounter = -1;
 
         // Obtain currently changed items. Computes them if they haven't been computed before.
-        public IReadOnlyDictionary< string, (SingleArray< Mod >, object?) > ChangedItems
+        public IReadOnlyDictionary<string, (SingleArray<Mod>, object?)> ChangedItems
         {
             get
             {
@@ -50,15 +50,15 @@ public partial class ModCollection
         // The cache reacts through events on its collection changing.
         public Cache( ModCollection collection )
         {
-            _collection                    =  collection;
-            MetaManipulations              =  new MetaManager( collection );
-            _collection.ModSettingChanged  += OnModSettingChange;
+            _collection = collection;
+            MetaManipulations = new MetaManager( collection );
+            _collection.ModSettingChanged += OnModSettingChange;
             _collection.InheritanceChanged += OnInheritanceChange;
         }
 
         public void Dispose()
         {
-            _collection.ModSettingChanged  -= OnModSettingChange;
+            _collection.ModSettingChanged -= OnModSettingChange;
             _collection.InheritanceChanged -= OnInheritanceChange;
         }
 
@@ -79,43 +79,50 @@ public partial class ModCollection
             return candidate.Path;
         }
 
+        public List<Utf8GamePath> ReverseResolvePath( FullPath localFilePath )
+        {
+            string strToSearchFor = localFilePath.FullName.Replace( '/', '\\' ).ToLower();
+            return ResolvedFiles.Where( f => f.Value.Path.FullName.ToLower() ==  strToSearchFor )
+                .Select( kvp => kvp.Key ).ToList();
+        }
+
         private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
         {
             switch( type )
             {
                 case ModSettingChange.Inheritance:
-                    ReloadMod( Penumbra.ModManager[ modIdx ], true );
+                    ReloadMod( Penumbra.ModManager[modIdx], true );
                     break;
                 case ModSettingChange.EnableState:
                     if( oldValue == 0 )
                     {
-                        AddMod( Penumbra.ModManager[ modIdx ], true );
+                        AddMod( Penumbra.ModManager[modIdx], true );
                     }
                     else if( oldValue == 1 )
                     {
-                        RemoveMod( Penumbra.ModManager[ modIdx ], true );
+                        RemoveMod( Penumbra.ModManager[modIdx], true );
                     }
-                    else if( _collection[ modIdx ].Settings?.Enabled == true )
+                    else if( _collection[modIdx].Settings?.Enabled == true )
                     {
-                        ReloadMod( Penumbra.ModManager[ modIdx ], true );
+                        ReloadMod( Penumbra.ModManager[modIdx], true );
                     }
                     else
                     {
-                        RemoveMod( Penumbra.ModManager[ modIdx ], true );
+                        RemoveMod( Penumbra.ModManager[modIdx], true );
                     }
 
                     break;
                 case ModSettingChange.Priority:
-                    if( Conflicts( Penumbra.ModManager[ modIdx ] ).Count > 0 )
+                    if( Conflicts( Penumbra.ModManager[modIdx] ).Count > 0 )
                     {
-                        ReloadMod( Penumbra.ModManager[ modIdx ], true );
+                        ReloadMod( Penumbra.ModManager[modIdx], true );
                     }
 
                     break;
                 case ModSettingChange.Setting:
-                    if( _collection[ modIdx ].Settings?.Enabled == true )
+                    if( _collection[modIdx].Settings?.Enabled == true )
                     {
-                        ReloadMod( Penumbra.ModManager[ modIdx ], true );
+                        ReloadMod( Penumbra.ModManager[modIdx], true );
                     }
 
                     break;
@@ -199,7 +206,7 @@ public partial class ModCollection
                     var newConflicts = Conflicts( conflict.Mod2 ).Remove( c => c.Mod2 == mod );
                     if( newConflicts.Count > 0 )
                     {
-                        _conflicts[ conflict.Mod2 ] = newConflicts;
+                        _conflicts[conflict.Mod2] = newConflicts;
                     }
                     else
                     {
@@ -223,7 +230,7 @@ public partial class ModCollection
         // Add all files and possibly manipulations of a given mod according to its settings in this collection.
         public void AddMod( Mod mod, bool addMetaChanges )
         {
-            var settings = _collection[ mod.Index ].Settings;
+            var settings = _collection[mod.Index].Settings;
             if( settings is not { Enabled: true } )
             {
                 return;
@@ -236,23 +243,23 @@ public partial class ModCollection
                     continue;
                 }
 
-                var config = settings.Settings[ groupIndex ];
+                var config = settings.Settings[groupIndex];
                 switch( group.Type )
                 {
                     case SelectType.Single:
-                        AddSubMod( group[ ( int )config ], mod );
+                        AddSubMod( group[( int )config], mod );
                         break;
                     case SelectType.Multi:
-                    {
-                        foreach( var (option, _) in group.WithIndex()
-                                   .OrderByDescending( p => group.OptionPriority( p.Item2 ) )
-                                   .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 ) )
                         {
-                            AddSubMod( option, mod );
-                        }
+                            foreach( var (option, _) in group.WithIndex()
+                                       .OrderByDescending( p => group.OptionPriority( p.Item2 ) )
+                                       .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 ) )
+                            {
+                                AddSubMod( option, mod );
+                            }
 
-                        break;
-                    }
+                            break;
+                        }
                 }
             }
 
@@ -305,7 +312,7 @@ public partial class ModCollection
                 return;
             }
 
-            var modPath = ResolvedFiles[ path ];
+            var modPath = ResolvedFiles[path];
             // Lower prioritized option in the same mod.
             if( mod == modPath.Mod )
             {
@@ -314,14 +321,14 @@ public partial class ModCollection
 
             if( AddConflict( path, mod, modPath.Mod ) )
             {
-                ResolvedFiles[ path ] = new ModPath( mod, file );
+                ResolvedFiles[path] = new ModPath( mod, file );
             }
         }
 
 
         // Remove all empty conflict sets for a given mod with the given conflicts.
         // If transitive is true, also removes the corresponding version of the other mod.
-        private void RemoveEmptyConflicts( Mod mod, SingleArray< ModConflicts > oldConflicts, bool transitive )
+        private void RemoveEmptyConflicts( Mod mod, SingleArray<ModConflicts> oldConflicts, bool transitive )
         {
             var changedConflicts = oldConflicts.Remove( c =>
             {
@@ -343,7 +350,7 @@ public partial class ModCollection
             }
             else
             {
-                _conflicts[ mod ] = changedConflicts;
+                _conflicts[mod] = changedConflicts;
             }
         }
 
@@ -352,15 +359,15 @@ public partial class ModCollection
         // Returns if the added mod takes priority before the existing mod.
         private bool AddConflict( object data, Mod addedMod, Mod existingMod )
         {
-            var addedPriority    = addedMod.Index    >= 0 ? _collection[ addedMod.Index ].Settings!.Priority : int.MaxValue;
-            var existingPriority = existingMod.Index >= 0 ? _collection[ existingMod.Index ].Settings!.Priority : int.MaxValue;
+            var addedPriority = addedMod.Index >= 0 ? _collection[addedMod.Index].Settings!.Priority : int.MaxValue;
+            var existingPriority = existingMod.Index >= 0 ? _collection[existingMod.Index].Settings!.Priority : int.MaxValue;
 
             if( existingPriority < addedPriority )
             {
                 var tmpConflicts = Conflicts( existingMod );
                 foreach( var conflict in tmpConflicts )
                 {
-                    if( data is Utf8GamePath path    && conflict.Conflicts.RemoveAll( p => p is Utf8GamePath x     && x.Equals( path ) ) > 0
+                    if( data is Utf8GamePath path && conflict.Conflicts.RemoveAll( p => p is Utf8GamePath x && x.Equals( path ) ) > 0
                     || data is MetaManipulation meta && conflict.Conflicts.RemoveAll( m => m is MetaManipulation x && x.Equals( meta ) ) > 0 )
                     {
                         AddConflict( data, addedMod, conflict.Mod2 );
@@ -370,7 +377,7 @@ public partial class ModCollection
                 RemoveEmptyConflicts( existingMod, tmpConflicts, true );
             }
 
-            var addedConflicts    = Conflicts( addedMod );
+            var addedConflicts = Conflicts( addedMod );
             var existingConflicts = Conflicts( existingMod );
             if( addedConflicts.FindFirst( c => c.Mod2 == existingMod, out var oldConflicts ) )
             {
@@ -380,10 +387,10 @@ public partial class ModCollection
             else
             {
                 // Add the same conflict list to both conflict directions.
-                var conflictList = new List< object > { data };
-                _conflicts[ addedMod ] = addedConflicts.Append( new ModConflicts( existingMod, conflictList, existingPriority < addedPriority,
+                var conflictList = new List<object> { data };
+                _conflicts[addedMod] = addedConflicts.Append( new ModConflicts( existingMod, conflictList, existingPriority < addedPriority,
                     existingPriority != addedPriority ) );
-                _conflicts[ existingMod ] = existingConflicts.Append( new ModConflicts( addedMod, conflictList,
+                _conflicts[existingMod] = existingConflicts.Append( new ModConflicts( addedMod, conflictList,
                     existingPriority >= addedPriority,
                     existingPriority != addedPriority ) );
             }
@@ -441,15 +448,15 @@ public partial class ModCollection
                     {
                         if( !_changedItems.TryGetValue( name, out var data ) )
                         {
-                            _changedItems.Add( name, ( new SingleArray< Mod >( modPath.Mod ), obj ) );
+                            _changedItems.Add( name, (new SingleArray<Mod>( modPath.Mod ), obj) );
                         }
                         else if( !data.Item1.Contains( modPath.Mod ) )
                         {
-                            _changedItems[ name ] = ( data.Item1.Append( modPath.Mod ), obj is int x && data.Item2 is int y ? x + y : obj );
+                            _changedItems[name] = (data.Item1.Append( modPath.Mod ), obj is int x && data.Item2 is int y ? x + y : obj);
                         }
                         else if( obj is int x && data.Item2 is int y )
                         {
-                            _changedItems[ name ] = ( data.Item1, x + y );
+                            _changedItems[name] = (data.Item1, x + y);
                         }
                     }
                 }
