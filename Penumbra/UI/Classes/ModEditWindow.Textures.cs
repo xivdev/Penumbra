@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using System.Reflection;
+using System.Threading.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Logging;
@@ -13,7 +14,7 @@ using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
-using Penumbra.Import.Textures;
+using Penumbra.Import.Dds;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
@@ -35,6 +36,10 @@ public partial class ModEditWindow
 
     private Matrix4x4 _multiplierLeft  = Matrix4x4.Identity;
     private Matrix4x4 _multiplierRight = Matrix4x4.Identity;
+    private bool      _invertLeft      = false;
+    private bool      _invertRight     = false;
+    private int       _offsetX         = 0;
+    private int       _offsetY         = 0;
 
     private readonly FileDialogManager _dialogManager = new();
 
@@ -147,19 +152,7 @@ public partial class ModEditWindow
                 return ( null, 0, 0 );
             }
 
-            f.ConvertToTex( out var bytes );
-            TexFile tex = new();
-            tex.GetType().GetProperty( "Data",
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy )
-              ?.SetValue( tex, bytes );
-            tex.GetType().GetProperty( "FileStream",
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy )
-              ?.SetValue( tex, new MemoryStream( tex.Data ) );
-            tex.GetType().GetProperty( "Reader",
-                    BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.FlattenHierarchy )
-              ?.SetValue( tex, new BinaryReader( tex.FileStream ) );
-            tex.LoadFile();
-            return ( tex.GetRgbaImageData(), tex.Header.Width, tex.Header.Height );
+            return ( f.RgbaData.ToArray(), f.Header.Width, f.Header.Height );
         }
         catch( Exception e )
         {
@@ -172,10 +165,26 @@ public partial class ModEditWindow
     {
         try
         {
+            if( fromDisk )
+            {
+                var       tmp    = new TmpTexFile();
+                using var stream = File.OpenRead( path );
+                using var br     = new BinaryReader( stream );
+                tmp.Load(br);
+                return (tmp.RgbaData, tmp.Header.Width, tmp.Header.Height);
+            }
+
+
             var tex = fromDisk ? Dalamud.GameData.GameData.GetFileFromDisk< TexFile >( path ) : Dalamud.GameData.GetFile< TexFile >( path );
-            return tex == null
-                ? ( null, 0, 0 )
-                : ( tex.GetRgbaImageData(), tex.Header.Width, tex.Header.Height );
+            if( tex == null )
+            {
+                return ( null, 0, 0 );
+            }
+
+            var rgba = tex.Header.Format == TexFile.TextureFormat.A8R8G8B8
+                ? ImageParsing.DecodeUncompressedR8G8B8A8( tex.ImageData, tex.Header.Height, tex.Header.Width )
+                : tex.GetRgbaImageData();
+            return ( rgba, tex.Header.Width, tex.Header.Height );
         }
         catch( Exception e )
         {
@@ -250,7 +259,7 @@ public partial class ModEditWindow
         UpdateCenter();
     }
 
-    private static Vector4 CappedVector( IReadOnlyList< byte >? bytes, int offset, Matrix4x4 transform )
+    private static Vector4 CappedVector( IReadOnlyList< byte >? bytes, int offset, Matrix4x4 transform, bool invert )
     {
         if( bytes == null )
         {
@@ -259,6 +268,11 @@ public partial class ModEditWindow
 
         var rgba        = new Rgba32( bytes[ offset ], bytes[ offset + 1 ], bytes[ offset + 2 ], bytes[ offset + 3 ] );
         var transformed = Vector4.Transform( rgba.ToVector4(), transform );
+        if( invert )
+        {
+            transformed = new Vector4( 1 - transformed.X, 1 - transformed.Y, 1 - transformed.Z, transformed.W );
+        }
+
         transformed.X = Math.Clamp( transformed.X, 0, 1 );
         transformed.Y = Math.Clamp( transformed.Y, 0, 1 );
         transformed.Z = Math.Clamp( transformed.Z, 0, 1 );
@@ -266,11 +280,32 @@ public partial class ModEditWindow
         return transformed;
     }
 
+    private Vector4 DataLeft( int offset )
+        => CappedVector( _imageLeft, offset, _multiplierLeft, _invertLeft );
+
+    private Vector4 DataRight( int x, int y )
+    {
+        if( _imageRight == null )
+        {
+            return Vector4.Zero;
+        }
+
+        x -= _offsetX;
+        y -= _offsetY;
+        if( x < 0 || x >= _wrapRight!.Width || y < 0 || y >= _wrapRight!.Height )
+        {
+            return Vector4.Zero;
+        }
+
+        var offset = ( y * _wrapRight!.Width + x ) * 4;
+        return CappedVector( _imageRight, offset, _multiplierRight, _invertRight );
+    }
+
     private void AddPixels( int width, int x, int y )
     {
-        var offset = ( y * width + x ) * 4;
-        var left   = CappedVector( _imageLeft, offset, _multiplierLeft );
-        var right  = CappedVector( _imageRight, offset, _multiplierRight );
+        var offset = ( width * y + x ) * 4;
+        var left   = DataLeft( offset );
+        var right  = DataRight( x, y );
         var alpha  = right.W + left.W * ( 1 - right.W );
         if( alpha == 0 )
         {
@@ -287,14 +322,14 @@ public partial class ModEditWindow
 
     private void UpdateCenter()
     {
-        if( _imageLeft != null && _imageRight == null && _multiplierLeft.IsIdentity )
+        if( _imageLeft != null && _imageRight == null && _multiplierLeft.IsIdentity && !_invertLeft )
         {
             _imageCenter = _imageLeft;
             _wrapCenter  = _wrapLeft;
             return;
         }
 
-        if( _imageLeft == null && _imageRight != null && _multiplierRight.IsIdentity )
+        if( _imageLeft == null && _imageRight != null && _multiplierRight.IsIdentity && !_invertRight )
         {
             _imageCenter = _imageRight;
             _wrapCenter  = _wrapRight;
@@ -308,22 +343,19 @@ public partial class ModEditWindow
 
         if( _imageLeft != null || _imageRight != null )
         {
-            var (width, height) = _imageLeft != null ? ( _wrapLeft!.Width, _wrapLeft.Height ) : ( _wrapRight!.Width, _wrapRight.Height );
-            if( _imageRight == null || _wrapRight!.Width == width && _wrapRight!.Height == height )
+            var (totalWidth, totalHeight) =
+                _imageLeft != null ? ( _wrapLeft!.Width, _wrapLeft.Height ) : ( _wrapRight!.Width, _wrapRight.Height );
+            _imageCenter = new byte[4 * totalWidth * totalHeight];
+
+            Parallel.For( 0, totalHeight - 1, ( y, _ ) =>
             {
-                _imageCenter = new byte[4 * width * height];
-
-                for( var y = 0; y < height; ++y )
+                for( var x = 0; x < totalWidth; ++x )
                 {
-                    for( var x = 0; x < width; ++x )
-                    {
-                        AddPixels( width, x, y );
-                    }
+                    AddPixels( totalWidth, x, y );
                 }
-
-                _wrapCenter = Dalamud.PluginInterface.UiBuilder.LoadImageRaw( _imageCenter, width, height, 4 );
-                return;
-            }
+            } );
+            _wrapCenter = Dalamud.PluginInterface.UiBuilder.LoadImageRaw( _imageCenter, totalWidth, totalHeight, 4 );
+            return;
         }
 
         _imageCenter = null;
@@ -334,6 +366,7 @@ public partial class ModEditWindow
     {
         if( wrap != null )
         {
+            ImGui.TextUnformatted( $"Image Dimensions: {wrap.Width} x {wrap.Height}" );
             size = size with { Y = wrap.Height * size.X / wrap.Width };
             ImGui.Image( wrap.ImGuiHandle, size );
         }
@@ -397,7 +430,7 @@ public partial class ModEditWindow
     {
         _dialogManager.Draw();
 
-        using var tab = ImRaii.TabItem( "Texture Import/Export" );
+        using var tab = ImRaii.TabItem( "Texture Import/Export (WIP)" );
         if( !tab )
         {
             return;
@@ -412,7 +445,7 @@ public partial class ModEditWindow
                 PathInputBox( "##ImageLeft", "Import Image...", string.Empty, 0 );
 
                 ImGui.NewLine();
-                if( DrawMatrixInput( leftRightWidth.X, ref _multiplierLeft ) )
+                if( DrawMatrixInput( leftRightWidth.X, ref _multiplierLeft ) || ImGui.Checkbox( "Invert##Left", ref _invertLeft ) )
                 {
                     UpdateCenter();
                 }
@@ -465,7 +498,7 @@ public partial class ModEditWindow
                 PathInputBox( "##ImageRight", "Import Image...", string.Empty, 1 );
 
                 ImGui.NewLine();
-                if( DrawMatrixInput( leftRightWidth.X, ref _multiplierRight ) )
+                if( DrawMatrixInput( leftRightWidth.X, ref _multiplierRight ) || ImGui.Checkbox( "Invert##Right", ref _invertRight ) )
                 {
                     UpdateCenter();
                 }
