@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.Mods;
 
 namespace Penumbra.Api;
 
@@ -208,4 +209,44 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         CheckInitialized();
         return Penumbra.ModManager.Select( m => ( m.ModPath.Name, m.Name.Text ) ).ToArray();
     }
+
+    public Dictionary< string, (string[], SelectType) >? GetAvailableModSettings( string modDirectory, string modName )
+        => throw new NotImplementedException();
+
+    public (PenumbraApiEc, (bool, int, Dictionary< string, string[] >, bool)?) GetCurrentModSettings( string collectionName, string modDirectory, string modName,
+        bool allowInheritance )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc TryInheritMod( string collectionName, string modDirectory, string modName, bool inherit )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc TrySetMod( string collectionName, string modDirectory, string modName, bool enabled )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc TrySetModPriority( string collectionName, string modDirectory, string modName, int priority )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string option )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string[] options )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc CreateTemporaryCollection( string collectionName, string? character, bool forceOverwriteCharacter )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc RemoveTemporaryCollection( string collectionName )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc SetFileRedirection( string tag, string collectionName, string gamePath, string fullPath, int priority )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc SetMetaManipulation( string tag, string collectionName, string manipulationBase64, int priority )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc RemoveFileRedirection( string tag, string collectionName, string gamePath )
+        => throw new NotImplementedException();
+
+    public PenumbraApiEc RemoveMetaManipulation( string tag, string collectionName, string manipulationBase64 )
+        => throw new NotImplementedException();
 }
