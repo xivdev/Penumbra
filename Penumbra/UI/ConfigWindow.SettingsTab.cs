@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -16,6 +17,7 @@ public partial class ConfigWindow
 {
     private partial class SettingsTab
     {
+        public const     int          RootDirectoryMaxLength = 64;
         private readonly ConfigWindow _window;
 
         public SettingsTab( ConfigWindow window )
@@ -65,11 +67,18 @@ public partial class ConfigWindow
 
         // Do not change the directory without explicitly pressing enter or this button.
         // Shows up only if the current input does not correspond to the current directory.
-        private static bool DrawPressEnterWarning( string old, float width )
+        private static bool DrawPressEnterWarning( string newName, string old, float width, bool saved )
         {
-            using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.PressEnterWarningBg );
-            var       w     = new Vector2( width, 0 );
-            return ImGui.Button( $"Press Enter or Click Here to Save (Current Directory: {old})", w );
+            using var color  = ImRaii.PushColor( ImGuiCol.Button, Colors.PressEnterWarningBg );
+            var       w      = new Vector2( width, 0 );
+            var       symbol = '\0';
+            var (text, valid) = newName.Length > RootDirectoryMaxLength
+                ? ( $"Path is too long. The maximum length is {RootDirectoryMaxLength}.", false )
+                : newName.Any( c => ( symbol = c ) > ( char )0x7F )
+                    ? ( $"Path contains invalid symbol {symbol}. Only ASCII is allowed.", false )
+                    : ( $"Press Enter or Click Here to Save (Current Directory: {old})", true );
+
+            return ( ImGui.Button( text, w ) || saved ) && valid;
         }
 
         // Draw a directory picker button that toggles the directory picker.
@@ -128,7 +137,7 @@ public partial class ConfigWindow
             var       spacing = 3 * ImGuiHelpers.GlobalScale;
             using var group   = ImRaii.Group();
             ImGui.SetNextItemWidth( _window._inputTextWidth.X - spacing - _window._iconButtonSize.X );
-            var       save  = ImGui.InputText( "##rootDirectory", ref _newModDirectory, 255, ImGuiInputTextFlags.EnterReturnsTrue );
+            var       save  = ImGui.InputText( "##rootDirectory", ref _newModDirectory, 64, ImGuiInputTextFlags.EnterReturnsTrue );
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( spacing, 0 ) );
             ImGui.SameLine();
             DrawDirectoryPickerButton();
@@ -147,7 +156,7 @@ public partial class ConfigWindow
 
             if( Penumbra.Config.ModDirectory != _newModDirectory
             && _newModDirectory.Length       != 0
-            && ( save || DrawPressEnterWarning( Penumbra.Config.ModDirectory, pos ) ) )
+            && DrawPressEnterWarning( _newModDirectory, Penumbra.Config.ModDirectory, pos, save ) )
             {
                 Penumbra.ModManager.DiscoverMods( _newModDirectory );
             }
