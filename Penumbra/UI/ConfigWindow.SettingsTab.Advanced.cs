@@ -20,6 +20,9 @@ public partial class ConfigWindow
                 return;
             }
 
+            Checkbox( "Auto Deduplicate on Import",
+                "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
+                Penumbra.Config.AutoDeduplicateOnImport, v => Penumbra.Config.AutoDeduplicateOnImport = v );
             DrawRequestedResourceLogging();
             DrawDisableSoundStreamingBox();
             DrawEnableHttpApiBox();

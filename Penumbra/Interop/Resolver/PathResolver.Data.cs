@@ -92,6 +92,7 @@ public unsafe partial class PathResolver
         Penumbra.CollectionManager.CollectionChanged += CheckCollections;
         LoadTimelineResourcesHook?.Enable();
         CharacterBaseLoadAnimationHook?.Enable();
+        LoadSomeAvfxHook?.Enable();
     }
 
     private void DisableDataHooks()
@@ -103,6 +104,7 @@ public unsafe partial class PathResolver
         CharacterBaseDestructorHook?.Disable();
         LoadTimelineResourcesHook?.Disable();
         CharacterBaseLoadAnimationHook?.Disable();
+        LoadSomeAvfxHook?.Disable();
     }
 
     private void DisposeDataHooks()
@@ -113,6 +115,7 @@ public unsafe partial class PathResolver
         CharacterBaseDestructorHook?.Dispose();
         LoadTimelineResourcesHook?.Dispose();
         CharacterBaseLoadAnimationHook?.Dispose();
+        LoadSomeAvfxHook?.Dispose();
     }
 
     // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.

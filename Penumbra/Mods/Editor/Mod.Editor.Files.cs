@@ -163,7 +163,7 @@ public partial class Mod
         // If pathIdx is equal to the total number of paths, path will be added, otherwise replaced.
         public bool SetGamePath( int fileIdx, int pathIdx, Utf8GamePath path )
         {
-            if( _usedPaths.Contains( path ) || fileIdx < 0 || fileIdx > _availableFiles.Count || pathIdx < 0 )
+            if( _usedPaths.Contains( path ) || fileIdx < 0 || fileIdx > _availableFiles.Count )
             {
                 return false;
             }
@@ -174,7 +174,7 @@ public partial class Mod
                 return false;
             }
 
-            if( pathIdx == registry.SubModUsage.Count )
+            if( (pathIdx == - 1 || pathIdx == registry.SubModUsage.Count) && !path.IsEmpty )
             {
                 registry.SubModUsage.Add( ( CurrentOption, path ) );
                 ++registry.CurrentUsage;

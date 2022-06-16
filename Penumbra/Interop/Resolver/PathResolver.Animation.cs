@@ -58,4 +58,18 @@ public unsafe partial class PathResolver
         CharacterBaseLoadAnimationHook!.Original( drawObject );
         _animationLoadCollection = last;
     }
+
+    public delegate ulong LoadSomeAvfx( uint a1, IntPtr gameObject, IntPtr gameObject2 );
+
+    [Signature( "E8 ?? ?? ?? ?? 45 0F B6 F7", DetourName = nameof( LoadSomeAvfxDetour ) )]
+    public Hook< LoadSomeAvfx >? LoadSomeAvfxHook;
+
+    private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2 )
+    {
+        var last = _animationLoadCollection;
+        _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
+        var ret = LoadSomeAvfxHook!.Original( a1, gameObject, gameObject2 );
+        _animationLoadCollection = last;
+        return ret;
+    }
 }

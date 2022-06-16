@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
@@ -55,7 +56,7 @@ public unsafe partial class PathResolver
     }
 
     // Check specifically for shpk and tex files whether we are currently in a material load.
-    private bool HandleMaterialSubFiles( ResourceType type, out ModCollection? collection )
+    private bool HandleMaterialSubFiles( ResourceType type, [NotNullWhen(true)] out ModCollection? collection )
     {
         if( _mtrlCollection != null && type is ResourceType.Tex or ResourceType.Shpk )
         {
@@ -82,12 +83,16 @@ public unsafe partial class PathResolver
         var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
         if( Penumbra.CollectionManager.ByName( name, out var collection ) )
         {
+#if DEBUG
             PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", name, path );
+#endif
             SetCollection( path, collection );
         }
         else
         {
+#if DEBUG
             PluginLog.Verbose( "Using MtrlLoadHandler with no collection for path {$Path:l}.", path );
+#endif
         }
 
         // Force isSync = true for this call. I don't really understand why,

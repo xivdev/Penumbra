@@ -8,12 +8,100 @@ using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop;
 
-public sealed unsafe class ObjectReloader : IDisposable
+public unsafe partial class ObjectReloader
 {
     public const int GPosePlayerIdx = 201;
     public const int GPoseSlots     = 42;
     public const int GPoseEndIdx    = GPosePlayerIdx + GPoseSlots;
 
+    private readonly string?[] _gPoseNames       = new string?[GPoseSlots];
+    private          int       _gPoseNameCounter = 0;
+    private          bool      _inGPose          = false;
+
+    // VFuncs that disable and enable draw, used only for GPose actors.
+    private static void DisableDraw( GameObject actor )
+        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 17 ]( actor.Address );
+
+    private static void EnableDraw( GameObject actor )
+        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 16 ]( actor.Address );
+
+
+    // Check whether we currently are in GPose.
+    // Also clear the name list.
+    private void SetGPose()
+    {
+        _inGPose          = Dalamud.Objects[ GPosePlayerIdx ] != null;
+        _gPoseNameCounter = 0;
+    }
+
+    private static bool IsGPoseActor( int idx )
+        => idx is >= GPosePlayerIdx and < GPoseEndIdx;
+
+    // Return whether an object has to be replaced by a GPose object.
+    // If the object does not exist, is already a GPose actor
+    // or no actor of the same name is found in the GPose actor list,
+    // obj will be the object itself (or null) and false will be returned.
+    // If we are in GPose and a game object with the same name as the original actor is found,
+    // this will be in obj and true will be returned.
+    private bool FindCorrectActor( int idx, out GameObject? obj )
+    {
+        obj = Dalamud.Objects[ idx ];
+        if( !_inGPose || obj == null || IsGPoseActor( idx ) )
+        {
+            return false;
+        }
+
+        var name = obj.Name.ToString();
+        for( var i = 0; i < _gPoseNameCounter; ++i )
+        {
+            var gPoseName = _gPoseNames[ i ];
+            if( gPoseName == null )
+            {
+                break;
+            }
+
+            if( name == gPoseName )
+            {
+                obj = Dalamud.Objects[ GPosePlayerIdx + i ];
+                return true;
+            }
+        }
+
+        for( ; _gPoseNameCounter < GPoseSlots; ++_gPoseNameCounter )
+        {
+            var gPoseName = Dalamud.Objects[ GPosePlayerIdx + _gPoseNameCounter ]?.Name.ToString();
+            _gPoseNames[ _gPoseNameCounter ] = gPoseName;
+            if( gPoseName == null )
+            {
+                break;
+            }
+
+            if( name == gPoseName )
+            {
+                obj = Dalamud.Objects[ GPosePlayerIdx + _gPoseNameCounter ];
+                return true;
+            }
+        }
+
+        return obj;
+    }
+
+    // Do not ever redraw any of the five UI Window actors.
+    private static bool BadRedrawIndices( GameObject? actor, out int tableIndex )
+    {
+        if( actor == null )
+        {
+            tableIndex = -1;
+            return true;
+        }
+
+        tableIndex = ObjectTableIndex( actor );
+        return tableIndex is >= 240 and < 245;
+    }
+}
+
+public sealed unsafe partial class ObjectReloader : IDisposable
+{
     private readonly List< int > _queue           = new(100);
     private readonly List< int > _afterGPoseQueue = new(GPoseSlots);
     private          int         _target          = -1;
@@ -27,26 +115,8 @@ public sealed unsafe class ObjectReloader : IDisposable
     public static DrawState* ActorDrawState( GameObject actor )
         => ( DrawState* )( actor.Address + 0x0104 );
 
-    private static void DisableDraw( GameObject actor )
-        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 17 ]( actor.Address );
-
-    private static void EnableDraw( GameObject actor )
-        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 16 ]( actor.Address );
-
     private static int ObjectTableIndex( GameObject actor )
         => ( ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )actor.Address )->ObjectIndex;
-
-    private static bool BadRedrawIndices( GameObject? actor, out int tableIndex )
-    {
-        if( actor == null )
-        {
-            tableIndex = -1;
-            return true;
-        }
-
-        tableIndex = ObjectTableIndex( actor );
-        return tableIndex is >= 240 and < 245;
-    }
 
     private static void WriteInvisible( GameObject? actor )
     {
@@ -57,7 +127,7 @@ public sealed unsafe class ObjectReloader : IDisposable
 
         *ActorDrawState( actor! ) |= DrawState.Invisibility;
 
-        if( tableIndex is >= GPosePlayerIdx and < GPoseEndIdx )
+        if( IsGPoseActor( tableIndex ) )
         {
             DisableDraw( actor! );
         }
@@ -72,7 +142,7 @@ public sealed unsafe class ObjectReloader : IDisposable
 
         *ActorDrawState( actor! ) &= ~DrawState.Invisibility;
 
-        if( tableIndex is >= GPosePlayerIdx and < GPoseEndIdx )
+        if( IsGPoseActor( tableIndex ) )
         {
             EnableDraw( actor! );
         }
@@ -136,15 +206,22 @@ public sealed unsafe class ObjectReloader : IDisposable
         for( var i = 0; i < _queue.Count; ++i )
         {
             var idx = _queue[ i ];
-            if( idx < 0 )
+            if( FindCorrectActor( idx < 0 ? ~idx : idx, out var obj ) )
             {
-                var newIdx = ~idx;
-                WriteInvisible( Dalamud.Objects[ newIdx ] );
-                _queue[ numKept++ ] = newIdx;
+                _afterGPoseQueue.Add( idx < 0 ? idx : ~idx );
             }
-            else
+
+            if( obj != null )
             {
-                WriteVisible( Dalamud.Objects[ idx ] );
+                if( idx < 0 )
+                {
+                    WriteInvisible( obj );
+                    _queue[ numKept++ ] = ObjectTableIndex( obj );
+                }
+                else
+                {
+                    WriteVisible( obj );
+                }
             }
         }
 
@@ -153,7 +230,7 @@ public sealed unsafe class ObjectReloader : IDisposable
 
     private void HandleAfterGPose()
     {
-        if( _afterGPoseQueue.Count == 0 || Dalamud.Objects[ GPosePlayerIdx ] != null )
+        if( _afterGPoseQueue.Count == 0 || _inGPose )
         {
             return;
         }
@@ -174,7 +251,7 @@ public sealed unsafe class ObjectReloader : IDisposable
             }
         }
 
-        _afterGPoseQueue.RemoveRange( numKept, _queue.Count - numKept );
+        _afterGPoseQueue.RemoveRange( numKept, _afterGPoseQueue.Count - numKept );
     }
 
     private void OnUpdateEvent( object framework )
@@ -186,6 +263,7 @@ public sealed unsafe class ObjectReloader : IDisposable
             return;
         }
 
+        SetGPose();
         HandleRedraw();
         HandleAfterGPose();
         HandleTarget();
@@ -227,6 +305,14 @@ public sealed unsafe class ObjectReloader : IDisposable
             _           => ( null, false ),
         };
         return ret;
+    }
+
+    public void RedrawObject( int tableIndex, RedrawType settings )
+    {
+        if( tableIndex >= 0 && tableIndex < Dalamud.Objects.Length )
+        {
+            RedrawObject( Dalamud.Objects[ tableIndex ], settings );
+        }
     }
 
     public void RedrawObject( string name, RedrawType settings )

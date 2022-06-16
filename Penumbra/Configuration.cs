@@ -48,6 +48,7 @@ public partial class Configuration : IPluginConfiguration
 
     public bool FixMainWindow { get; set; } = false;
     public bool ShowAdvanced { get; set; }
+    public bool AutoDeduplicateOnImport { get; set; } = false;
     public bool DisableSoundStreaming { get; set; } = true;
     public bool EnableHttpApi { get; set; }
 

@@ -24,7 +24,7 @@ public partial class Mod
 
         public bool DuplicatesFinished { get; private set; } = true;
 
-        public void DeleteDuplicates()
+        public void DeleteDuplicates( bool useModManager = true )
         {
             if( !DuplicatesFinished || _duplicates.Count == 0 )
             {
@@ -41,15 +41,16 @@ public partial class Mod
                 var remaining = set[ 0 ];
                 foreach( var duplicate in set.Skip( 1 ) )
                 {
-                    HandleDuplicate( duplicate, remaining );
+                    HandleDuplicate( duplicate, remaining, useModManager );
                 }
             }
 
             _availableFiles.RemoveAll( p => !p.File.Exists );
             _duplicates.Clear();
+            DeleteEmptyDirectories( _mod.ModPath );
         }
 
-        private void HandleDuplicate( FullPath duplicate, FullPath remaining )
+        private void HandleDuplicate( FullPath duplicate, FullPath remaining, bool useModManager )
         {
             void HandleSubMod( ISubMod subMod, int groupIdx, int optionIdx )
             {
@@ -58,7 +59,23 @@ public partial class Mod
                     kvp => ChangeDuplicatePath( kvp.Value, duplicate, remaining, kvp.Key, ref changes ) );
                 if( changes )
                 {
-                    Penumbra.ModManager.OptionSetFiles( _mod, groupIdx, optionIdx, dict );
+                    if( useModManager )
+                    {
+                        Penumbra.ModManager.OptionSetFiles( _mod, groupIdx, optionIdx, dict );
+                    }
+                    else
+                    {
+                        var sub = ( SubMod )subMod;
+                        sub.FileData = dict;
+                        if( groupIdx == -1 )
+                        {
+                            _mod.SaveDefaultMod();
+                        }
+                        else
+                        {
+                            IModGroup.Save( _mod.Groups[ groupIdx ], _mod.ModPath, groupIdx );
+                        }
+                    }
                 }
             }
 
@@ -94,7 +111,7 @@ public partial class Mod
             {
                 DuplicatesFinished = false;
                 UpdateFiles();
-                var files = _availableFiles.OrderByDescending(f => f.FileSize).ToArray();
+                var files = _availableFiles.OrderByDescending( f => f.FileSize ).ToArray();
                 Task.Run( () => CheckDuplicates( files ) );
             }
         }
@@ -214,6 +231,54 @@ public partial class Mod
         {
             using var stream = File.OpenRead( f.FullName );
             return _hasher.ComputeHash( stream );
+        }
+
+        // Recursively delete all empty directories starting from the given directory.
+        // Deletes inner directories first, so that a tree of empty directories is actually deleted.
+        private void DeleteEmptyDirectories( DirectoryInfo baseDir )
+        {
+            try
+            {
+                if( !baseDir.Exists )
+                {
+                    return;
+                }
+
+                foreach( var dir in baseDir.EnumerateDirectories( "*", SearchOption.TopDirectoryOnly ) )
+                {
+                    DeleteEmptyDirectories( dir );
+                }
+
+                baseDir.Refresh();
+                if( !baseDir.EnumerateFileSystemInfos().Any() )
+                {
+                    Directory.Delete( baseDir.FullName, false );
+                }
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not delete empty directories in {baseDir.FullName}:\n{e}" );
+            }
+        }
+
+
+
+        // Deduplicate a mod simply by its directory without any confirmation or waiting time.
+        internal static void DeduplicateMod( DirectoryInfo modDirectory )
+        {
+            try
+            {
+                var mod = new Mod( modDirectory );
+                mod.Reload( out _ );
+                var editor = new Editor( mod, 0, 0 );
+                editor.DuplicatesFinished = false;
+                editor.CheckDuplicates( editor.AvailableFiles.OrderByDescending( f => f.FileSize ).ToArray() );
+                editor.DeleteDuplicates( false );
+            }
+            catch( Exception e )
+            {
+                PluginLog.Warning( $"Could not deduplicate mod {modDirectory.Name}:\n{e}" );
+            }
         }
     }
 }

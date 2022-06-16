@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Logging;
 using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
-using Penumbra.Util;
+using Penumbra.Mods;
 using FileMode = System.IO.FileMode;
 
 namespace Penumbra.Import;
@@ -95,6 +94,11 @@ public partial class TexToolsImporter : IDisposable
             {
                 var directory = VerifyVersionAndImport( file );
                 ExtractedMods.Add( ( file, directory, null ) );
+                if( Penumbra.Config.AutoDeduplicateOnImport )
+                {
+                    State = ImporterState.DeduplicatingFiles;
+                    Mod.Editor.DeduplicateMod( directory );
+                }
             }
             catch( Exception e )
             {
