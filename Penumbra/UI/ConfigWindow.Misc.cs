@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface;
+using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
 using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
@@ -11,6 +13,7 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.UI.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -113,5 +116,33 @@ public partial class ConfigWindow
                 }
             }
         }
+    }
+
+    // Set up the file selector with the right flags and custom side bar items.
+    public static FileDialogManager SetupFileManager()
+    {
+        var fileManager = new FileDialogManager
+        {
+            AddedWindowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoDocking,
+        };
+
+        if( Functions.GetDownloadsFolder( out var downloadsFolder ) )
+        {
+            fileManager.CustomSideBarItems.Add( ("Downloads", downloadsFolder, FontAwesomeIcon.Download, -1) );
+        }
+
+        if( Functions.GetQuickAccessFolders( out var folders ) )
+        {
+            foreach( var ((name, path), idx) in folders.WithIndex() )
+            {
+                fileManager.CustomSideBarItems.Add( ($"{name}##{idx}", path, FontAwesomeIcon.Folder, -1) );
+            }
+        }
+
+        // Remove Videos and Music.
+        fileManager.CustomSideBarItems.Add( ("Videos", string.Empty, 0, -1)  );
+        fileManager.CustomSideBarItems.Add( ("Music", string.Empty, 0, -1)  );
+
+        return fileManager;
     }
 }

@@ -62,7 +62,7 @@ public partial class ConfigWindow
 
         // Changing the base mod directory.
         private          string?           _newModDirectory;
-        private readonly FileDialogManager _dialogManager = new();
+        private readonly FileDialogManager _dialogManager = SetupFileManager();
         private          bool              _dialogOpen; // For toggling on/off.
 
         // Do not change the directory without explicitly pressing enter or this button.
