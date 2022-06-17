@@ -210,10 +210,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Penumbra.ModManager.Select( m => ( m.ModPath.Name, m.Name.Text ) ).ToArray();
     }
 
-    public Dictionary< string, (string[], SelectType) >? GetAvailableModSettings( string modDirectory, string modName )
+    public IDictionary< string, (IList<string>, SelectType) >? GetAvailableModSettings( string modDirectory, string modName )
         => throw new NotImplementedException();
 
-    public (PenumbraApiEc, (bool, int, Dictionary< string, string[] >, bool)?) GetCurrentModSettings( string collectionName, string modDirectory, string modName,
+    public (PenumbraApiEc, (bool, int, IDictionary< string, IList<string> >, bool)?) GetCurrentModSettings( string collectionName, string modDirectory, string modName,
         bool allowInheritance )
         => throw new NotImplementedException();
 
@@ -229,7 +229,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string option )
         => throw new NotImplementedException();
 
-    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string[] options )
+    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, IReadOnlyList<string> options )
         => throw new NotImplementedException();
 
     public PenumbraApiEc CreateTemporaryCollection( string collectionName, string? character, bool forceOverwriteCharacter )

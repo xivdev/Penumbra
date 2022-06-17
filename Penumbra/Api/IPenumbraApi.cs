@@ -104,12 +104,12 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Obtain the potential settings of a mod specified by its directory name first or mod name second.
     // Returns null if the mod could not be found.
-    public Dictionary< string, (string[], SelectType) >? GetAvailableModSettings( string modDirectory, string modName );
+    public IDictionary< string, (IList<string>, SelectType) >? GetAvailableModSettings( string modDirectory, string modName );
 
     // Obtain the enabled state, the priority, the settings of a mod specified by its directory name first or mod name second,
     // and whether these settings are inherited, or null if the collection does not set them at all.
     // If allowInheritance is false, only the collection itself will be checked.
-    public (PenumbraApiEc, (bool, int, Dictionary< string, string[] >, bool)?) GetCurrentModSettings( string collectionName,
+    public (PenumbraApiEc, (bool, int, IDictionary< string, IList<string> >, bool)?) GetCurrentModSettings( string collectionName,
         string modDirectory, string modName, bool allowInheritance );
 
     // Try to set the inheritance state in the given collection of a mod specified by its directory name first or mod name second.
@@ -131,7 +131,7 @@ public interface IPenumbraApi : IPenumbraApiBase
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string option );
 
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName,
-        string[] options );
+        IReadOnlyList<string> options );
 
 
     // Create a temporary collection without actual settings but with a cache.
