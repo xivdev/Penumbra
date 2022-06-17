@@ -12,16 +12,11 @@ namespace Penumbra.UI;
 
 public partial class ConfigWindow
 {
-    private partial class ModPanel : IDisposable
+    private partial class ModPanel
     {
         // We use a big, nice game font for the title.
         private readonly GameFontHandle _nameFont =
             Dalamud.PluginInterface.UiBuilder.GetGameFontHandle( new GameFontStyle( GameFontFamilyAndSize.Jupiter23 ) );
-
-        public void Dispose()
-        {
-            _nameFont.Dispose();
-        }
 
         // Header data.
         private string _modName          = string.Empty;

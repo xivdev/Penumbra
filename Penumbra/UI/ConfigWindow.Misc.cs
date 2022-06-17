@@ -101,18 +101,16 @@ public partial class ConfigWindow
             _                            => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
         };
 
-        using var combo = ImRaii.Combo( label, current.Name );
-        if( !combo )
+        using var combo  = ImRaii.Combo( label, current.Name );
+        if( combo )
         {
-            return;
-        }
-
-        foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ).OrderBy( c => c.Name ) )
-        {
-            using var id = ImRaii.PushId( collection.Index );
-            if( ImGui.Selectable( collection.Name, collection == current ) )
+            foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ).OrderBy( c => c.Name ) )
             {
-                Penumbra.CollectionManager.SetCollection( collection, type, characterName );
+                using var id = ImRaii.PushId( collection.Index );
+                if( ImGui.Selectable( collection.Name, collection == current ) )
+                {
+                    Penumbra.CollectionManager.SetCollection( collection, type, characterName );
+                }
             }
         }
     }
