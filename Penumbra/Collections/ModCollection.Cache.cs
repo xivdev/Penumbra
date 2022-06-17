@@ -12,7 +12,6 @@ using Penumbra.Util;
 namespace Penumbra.Collections;
 
 public record struct ModPath( Mod Mod, FullPath Path );
-
 public record ModConflicts( Mod Mod2, List< object > Conflicts, bool HasPriority, bool Solved );
 
 public partial class ModCollection
@@ -72,7 +71,7 @@ public partial class ModCollection
             }
 
             if( candidate.Path.InternalName.Length > Utf8GamePath.MaxGamePathLength
-               || candidate.Path.IsRooted && !candidate.Path.Exists )
+            || candidate.Path.IsRooted && !candidate.Path.Exists )
             {
                 return null;
             }
@@ -80,11 +79,26 @@ public partial class ModCollection
             return candidate.Path;
         }
 
-        public List< Utf8GamePath > ReverseResolvePath( FullPath localFilePath )
+        // For a given full path, find all game paths that currently use this file.
+        public IEnumerable< Utf8GamePath > ReverseResolvePath( FullPath localFilePath )
         {
-            string strToSearchFor = localFilePath.FullName.Replace( '/', '\\' ).ToLower();
-            return ResolvedFiles.Where( f => f.Value.Path.FullName.ToLower() == strToSearchFor )
-                .Select( kvp => kvp.Key ).ToList();
+            var needle = localFilePath.FullName.ToLower();
+            if( localFilePath.IsRooted )
+            {
+                needle = needle.Replace( '/', '\\' );
+            }
+
+            var iterator = ResolvedFiles
+               .Where( f => string.Equals( f.Value.Path.FullName, needle, StringComparison.InvariantCultureIgnoreCase ) )
+               .Select( kvp => kvp.Key );
+
+            // For files that are not rooted, try to add themselves.
+            if( !localFilePath.IsRooted && Utf8GamePath.FromString( localFilePath.FullName, out var utf8 ) )
+            {
+                iterator = iterator.Prepend( utf8 );
+            }
+
+            return iterator;
         }
 
         private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
@@ -253,8 +267,8 @@ public partial class ModCollection
                     case SelectType.Multi:
                     {
                         foreach( var (option, _) in group.WithIndex()
-                                    .OrderByDescending( p => group.OptionPriority( p.Item2 ) )
-                                    .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 ) )
+                                   .OrderByDescending( p => group.OptionPriority( p.Item2 ) )
+                                   .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 ) )
                         {
                             AddSubMod( option, mod );
                         }
@@ -360,7 +374,7 @@ public partial class ModCollection
         // Returns if the added mod takes priority before the existing mod.
         private bool AddConflict( object data, Mod addedMod, Mod existingMod )
         {
-            var addedPriority    = addedMod.Index >= 0 ? _collection[ addedMod.Index ].Settings!.Priority : int.MaxValue;
+            var addedPriority    = addedMod.Index    >= 0 ? _collection[ addedMod.Index ].Settings!.Priority : int.MaxValue;
             var existingPriority = existingMod.Index >= 0 ? _collection[ existingMod.Index ].Settings!.Priority : int.MaxValue;
 
             if( existingPriority < addedPriority )
@@ -368,9 +382,8 @@ public partial class ModCollection
                 var tmpConflicts = Conflicts( existingMod );
                 foreach( var conflict in tmpConflicts )
                 {
-                    if( data is Utf8GamePath path && conflict.Conflicts.RemoveAll( p => p is Utf8GamePath x && x.Equals( path ) ) > 0
-                       || data is MetaManipulation meta &&
-                       conflict.Conflicts.RemoveAll( m => m is MetaManipulation x && x.Equals( meta ) ) > 0 )
+                    if( data is Utf8GamePath path    && conflict.Conflicts.RemoveAll( p => p is Utf8GamePath x     && x.Equals( path ) ) > 0
+                    || data is MetaManipulation meta && conflict.Conflicts.RemoveAll( m => m is MetaManipulation x && x.Equals( meta ) ) > 0 )
                     {
                         AddConflict( data, addedMod, conflict.Mod2 );
                     }

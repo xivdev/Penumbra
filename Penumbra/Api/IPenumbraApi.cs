@@ -20,6 +20,7 @@ public interface IPenumbraApiBase
 
 public delegate void ChangedItemHover( object? item );
 public delegate void ChangedItemClick( MouseButton button, object? item );
+public delegate void GameObjectRedrawn( IntPtr objectPtr, int objectTableIndex );
 
 public enum PenumbraApiEc
 {
@@ -51,7 +52,7 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Triggered when the user clicks a listed changed object in a mod tab.
     public event ChangedItemClick? ChangedItemClicked;
-    event EventHandler? ObjectIsRedrawn;
+    public event GameObjectRedrawn? GameObjectRedrawn;
 
     // Queue redrawing of all actors of the given name with the given RedrawType.
     public void RedrawObject( string name, RedrawType setting );
@@ -74,7 +75,7 @@ public interface IPenumbraApi : IPenumbraApiBase
     public string ResolvePath( string gamePath, string characterName );
 
     // Reverse resolves a given modded local path into its replacement in form of all applicable game path for given character
-    public string[] ReverseResolvePath( string moddedPath, string characterName );
+    public IList<string> ReverseResolvePath( string moddedPath, string characterName );
 
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath ) where T : FileResource;

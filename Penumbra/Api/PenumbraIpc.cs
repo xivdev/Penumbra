@@ -111,17 +111,17 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderRedrawName      = "Penumbra.RedrawObjectByName";
-    public const string LabelProviderRedrawIndex     = "Penumbra.RedrawObjectByIndex";
-    public const string LabelProviderRedrawObject    = "Penumbra.RedrawObject";
-    public const string LabelProviderRedrawAll       = "Penumbra.RedrawAll";
-    public const string LabelProviderObjectIsRedrawn = "Penumbra.ObjectIsRedrawn";
+    public const string LabelProviderRedrawName        = "Penumbra.RedrawObjectByName";
+    public const string LabelProviderRedrawIndex       = "Penumbra.RedrawObjectByIndex";
+    public const string LabelProviderRedrawObject      = "Penumbra.RedrawObject";
+    public const string LabelProviderRedrawAll         = "Penumbra.RedrawAll";
+    public const string LabelProviderGameObjectRedrawn = "Penumbra.GameObjectRedrawn";
 
     internal ICallGateProvider< string, int, object >?     ProviderRedrawName;
     internal ICallGateProvider< int, int, object >?        ProviderRedrawIndex;
     internal ICallGateProvider< GameObject, int, object >? ProviderRedrawObject;
     internal ICallGateProvider< int, object >?             ProviderRedrawAll;
-    internal ICallGateProvider< string, string >?          ProviderObjectIsRedrawn;
+    internal ICallGateProvider< IntPtr, int, object? >?    ProviderGameObjectRedrawn;
 
     private static RedrawType CheckRedrawType( int value )
     {
@@ -178,19 +178,17 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderObjectIsRedrawn =  pi.GetIpcProvider< string, string >( LabelProviderObjectIsRedrawn );
-            Api.ObjectIsRedrawn     += Api_ObjectIsRedrawn;
+            ProviderGameObjectRedrawn =  pi.GetIpcProvider< IntPtr, int, object? >( LabelProviderGameObjectRedrawn );
+            Api.GameObjectRedrawn     += OnGameObjectRedrawn;
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderObjectIsRedrawn}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGameObjectRedrawn}:\n{e}" );
         }
     }
 
-    private void Api_ObjectIsRedrawn( object? sender, EventArgs e )
-    {
-        ProviderObjectIsRedrawn?.SendMessage( ( ( GameObject? )sender )?.Name.ToString() ?? "" );
-    }
+    private void OnGameObjectRedrawn( IntPtr objectAddress, int objectTableIndex )
+        => ProviderGameObjectRedrawn?.SendMessage( objectAddress, objectTableIndex );
 
     private void DisposeRedrawProviders()
     {
@@ -198,7 +196,7 @@ public partial class PenumbraIpc
         ProviderRedrawIndex?.UnregisterAction();
         ProviderRedrawObject?.UnregisterAction();
         ProviderRedrawAll?.UnregisterAction();
-        Api.ObjectIsRedrawn -= Api_ObjectIsRedrawn;
+        Api.GameObjectRedrawn -= OnGameObjectRedrawn;
     }
 }
 
@@ -209,10 +207,10 @@ public partial class PenumbraIpc
     public const string LabelProviderGetDrawObjectInfo  = "Penumbra.GetDrawObjectInfo";
     public const string LabelProviderReverseResolvePath = "Penumbra.ReverseResolvePath";
 
-    internal ICallGateProvider< string, string >?           ProviderResolveDefault;
-    internal ICallGateProvider< string, string, string >?   ProviderResolveCharacter;
-    internal ICallGateProvider< IntPtr, (IntPtr, string) >? ProviderGetDrawObjectInfo;
-    internal ICallGateProvider< string, string, string[] >? ProviderReverseResolvePath;
+    internal ICallGateProvider< string, string >?                  ProviderResolveDefault;
+    internal ICallGateProvider< string, string, string >?          ProviderResolveCharacter;
+    internal ICallGateProvider< IntPtr, (IntPtr, string) >?        ProviderGetDrawObjectInfo;
+    internal ICallGateProvider< string, string, IList< string > >? ProviderReverseResolvePath;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
@@ -248,7 +246,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderReverseResolvePath = pi.GetIpcProvider< string, string, string[] >( LabelProviderReverseResolvePath );
+            ProviderReverseResolvePath = pi.GetIpcProvider< string, string, IList< string > >( LabelProviderReverseResolvePath );
             ProviderReverseResolvePath.RegisterFunc( Api.ReverseResolvePath );
         }
         catch( Exception e )
@@ -262,6 +260,7 @@ public partial class PenumbraIpc
         ProviderGetDrawObjectInfo?.UnregisterFunc();
         ProviderResolveDefault?.UnregisterFunc();
         ProviderResolveCharacter?.UnregisterFunc();
+        ProviderReverseResolvePath?.UnregisterFunc();
     }
 }
 
