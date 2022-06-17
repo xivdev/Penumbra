@@ -75,6 +75,10 @@ public partial class ConfigWindow
                 "If you have a character collection set to a specific name for a companion or combat pet, prefer this collection over the owner's collection.\n"
               + "That is, if you have a 'Topaz Carbuncle' collection, it will use this one instead of the one for its owner.",
                 Penumbra.Config.PreferNamedCollectionsOverOwners, v => Penumbra.Config.PreferNamedCollectionsOverOwners = v );
+            Checkbox( "Use Default Collection for Housing Retainers",
+                "Housing Retainers use the name of their owner instead of their own, you can decide to let them use their owners character collection or the default collection.\n"
+              + "It is not possible to make them have their own collection, since they have no connection to their actual name.",
+                Penumbra.Config.UseDefaultCollectionForRetainers, v => Penumbra.Config.UseDefaultCollectionForRetainers = v );
             ImGui.Dummy( _window._defaultSpace );
             DrawFolderSortType();
             DrawAbsoluteSizeSelector();
