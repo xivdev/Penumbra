@@ -79,6 +79,28 @@ public partial class ModCollection
             return candidate.Path;
         }
 
+        // For a given full path, find all game paths that currently use this file.
+        public IEnumerable< Utf8GamePath > ReverseResolvePath( FullPath localFilePath )
+        {
+            var needle = localFilePath.FullName.ToLower();
+            if( localFilePath.IsRooted )
+            {
+                needle = needle.Replace( '/', '\\' );
+            }
+
+            var iterator = ResolvedFiles
+               .Where( f => string.Equals( f.Value.Path.FullName, needle, StringComparison.InvariantCultureIgnoreCase ) )
+               .Select( kvp => kvp.Key );
+
+            // For files that are not rooted, try to add themselves.
+            if( !localFilePath.IsRooted && Utf8GamePath.FromString( localFilePath.FullName, out var utf8 ) )
+            {
+                iterator = iterator.Prepend( utf8 );
+            }
+
+            return iterator;
+        }
+
         private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
         {
             switch( type )
