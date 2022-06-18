@@ -14,12 +14,6 @@ public unsafe partial class PathResolver
     // [Signature( "48 8D 1D ?? ?? ?? ?? 48 C7 41", ScanType = ScanType.StaticAddress )]
     // public IntPtr* DrawObjectVTable;
     // 
-    // [Signature( "48 8D 05 ?? ?? ?? ?? 45 33 C0 48 89 03 BA", ScanType = ScanType.StaticAddress )]
-    // public IntPtr* DrawObjectDemihumanVTable;
-    // 
-    // [Signature( "48 8D 05 ?? ?? ?? ?? 48 89 03 33 C0 48 89 83 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? C7 83", ScanType = ScanType.StaticAddress )]
-    // public IntPtr* DrawObjectMonsterVTable;
-    // 
     // public const int ResolveRootIdx  = 71;
 
     public const int ResolveSklbIdx  = 72;

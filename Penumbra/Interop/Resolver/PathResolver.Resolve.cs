@@ -136,6 +136,43 @@ public unsafe partial class PathResolver
     private IntPtr ResolveMonsterVfxDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
         => ResolvePathDetour( drawObject, ResolveMonsterVfxPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
 
+    // Demihumans
+    private IntPtr ResolveDemiDecalDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveDemiDecalPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveDemiEidDetour( IntPtr drawObject, IntPtr path, IntPtr unk3 )
+        => ResolvePathDetour( drawObject, ResolveDemiEidPathHook!.Original( drawObject, path, unk3 ) );
+
+    private IntPtr ResolveDemiImcDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveDemiImcPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveDemiMPapDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, uint unk5 )
+        => ResolvePathDetour( drawObject, ResolveDemiMPapPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveDemiMdlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint modelType )
+        => ResolvePathDetour( drawObject, ResolveDemiMdlPathHook!.Original( drawObject, path, unk3, modelType ) );
+
+    private IntPtr ResolveDemiMtrlDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolvePathDetour( drawObject, ResolveDemiMtrlPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveDemiPapDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolvePathDetour( drawObject, ResolveDemiPapPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
+    private IntPtr ResolveDemiPhybDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveDemiPhybPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveDemiSklbDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveDemiSklbPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveDemiSkpDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
+        => ResolvePathDetour( drawObject, ResolveDemiSkpPathHook!.Original( drawObject, path, unk3, unk4 ) );
+
+    private IntPtr ResolveDemiTmbDetour( IntPtr drawObject, IntPtr path, IntPtr unk3 )
+        => ResolvePathDetour( drawObject, ResolveDemiTmbPathHook!.Original( drawObject, path, unk3 ) );
+
+    private IntPtr ResolveDemiVfxDetour( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
+        => ResolvePathDetour( drawObject, ResolveDemiVfxPathHook!.Original( drawObject, path, unk3, unk4, unk5 ) );
+
 
     // Implementation
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
