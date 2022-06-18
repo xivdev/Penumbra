@@ -29,10 +29,14 @@ public class MainClass : IDalamudPlugin
 {
     private          Penumbra?        _penumbra;
     private readonly CharacterUtility _characterUtility;
+    public static    bool             DevPenumbraExists;
+    public static    bool             IsNotInstalledPenumbra;
 
     public MainClass( DalamudPluginInterface pluginInterface )
     {
         Dalamud.Initialize( pluginInterface );
+        DevPenumbraExists      = CheckDevPluginPenumbra();
+        IsNotInstalledPenumbra = CheckIsNotInstalled();
         GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
         _characterUtility = new CharacterUtility();
         _characterUtility.LoadingFinished += ()
@@ -47,6 +51,38 @@ public class MainClass : IDalamudPlugin
 
     public string Name
         => Penumbra.Name;
+
+    // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.
+    private static bool CheckDevPluginPenumbra()
+    {
+#if !DEBUG
+        var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
+        var dir  = new DirectoryInfo( path );
+
+        try
+        {
+            return dir.Exists && dir.EnumerateFiles( "*.dll", SearchOption.AllDirectories ).Any();
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
+            return true;
+        }
+#else
+        return false;
+#endif
+    }
+
+    // Check if the loaded version of penumbra itself is in devPlugins.
+    private static bool CheckIsNotInstalled()
+    {
+#if !DEBUG
+        return !Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Name.Equals( "installedPlugins",
+            StringComparison.InvariantCultureIgnoreCase ) ?? true;
+#else
+        return false;
+#endif
+    }
 }
 
 public class Penumbra : IDisposable
@@ -70,7 +106,6 @@ public class Penumbra : IDisposable
     public static ResourceLoader ResourceLoader { get; private set; } = null!;
     public static FrameworkManager Framework { get; private set; } = null!;
     public static int ImcExceptions = 0;
-
 
     public readonly  ResourceLogger ResourceLogger;
     public readonly  PathResolver   PathResolver;

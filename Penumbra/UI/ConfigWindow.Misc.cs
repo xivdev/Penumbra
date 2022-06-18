@@ -104,7 +104,7 @@ public partial class ConfigWindow
             _                            => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
         };
 
-        using var combo  = ImRaii.Combo( label, current.Name );
+        using var combo = ImRaii.Combo( label, current.Name );
         if( combo )
         {
             foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ).OrderBy( c => c.Name ) )
@@ -128,20 +128,23 @@ public partial class ConfigWindow
 
         if( Functions.GetDownloadsFolder( out var downloadsFolder ) )
         {
-            fileManager.CustomSideBarItems.Add( ("Downloads", downloadsFolder, FontAwesomeIcon.Download, -1) );
+            fileManager.CustomSideBarItems.Add( ( "Downloads", downloadsFolder, FontAwesomeIcon.Download, -1 ) );
         }
 
         if( Functions.GetQuickAccessFolders( out var folders ) )
         {
             foreach( var ((name, path), idx) in folders.WithIndex() )
             {
-                fileManager.CustomSideBarItems.Add( ($"{name}##{idx}", path, FontAwesomeIcon.Folder, -1) );
+                fileManager.CustomSideBarItems.Add( ( $"{name}##{idx}", path, FontAwesomeIcon.Folder, -1 ) );
             }
         }
 
+        // Add Penumbra Root. This is not updated if the root changes right now.
+        fileManager.CustomSideBarItems.Add( ("Root Directory", Penumbra.Config.ModDirectory, FontAwesomeIcon.Gamepad, 0) );
+
         // Remove Videos and Music.
-        fileManager.CustomSideBarItems.Add( ("Videos", string.Empty, 0, -1)  );
-        fileManager.CustomSideBarItems.Add( ("Music", string.Empty, 0, -1)  );
+        fileManager.CustomSideBarItems.Add( ( "Videos", string.Empty, 0, -1 ) );
+        fileManager.CustomSideBarItems.Add( ( "Music", string.Empty, 0, -1 ) );
 
         return fileManager;
     }
