@@ -25,7 +25,6 @@ public unsafe partial class ObjectReloader
     private static void EnableDraw( GameObject actor )
         => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 16 ]( actor.Address );
 
-    public event EventHandler? ObjectIsRedrawn;
 
     // Check whether we currently are in GPose.
     // Also clear the name list.
@@ -282,8 +281,6 @@ public sealed unsafe partial class ObjectReloader : IDisposable
                 break;
             default: throw new ArgumentOutOfRangeException( nameof( settings ), settings, null );
         }
-
-        ObjectIsRedrawn?.Invoke( actor, new EventArgs() );
     }
 
     private static GameObject? GetLocalPlayer()

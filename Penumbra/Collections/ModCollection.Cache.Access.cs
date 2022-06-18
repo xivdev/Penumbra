@@ -44,7 +44,6 @@ public partial class ModCollection
         PluginLog.Verbose( "Cleared cache of collection {Name:l}.", Name );
     }
 
-    public List<Utf8GamePath>? ResolveReversePath( FullPath path ) => _cache?.ReverseResolvePath( path );
 
     public FullPath? ResolvePath( Utf8GamePath path )
         => _cache?.ResolvePath( path );
