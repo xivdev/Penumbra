@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,12 +13,15 @@ using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
+using Penumbra.Util;
 
 namespace Penumbra.Api;
 
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
-    public int ApiVersion { get; } = 4;
+    public int ApiVersion
+        => 4;
+
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
     public event GameObjectRedrawn? GameObjectRedrawn;
@@ -231,28 +235,173 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     public IDictionary< string, (IList< string >, SelectType) >? GetAvailableModSettings( string modDirectory, string modName )
-        => throw new NotImplementedException();
+    {
+        CheckInitialized();
+        return Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod )
+            ? mod.Groups.ToDictionary( g => g.Name, g => ( ( IList< string > )g.Select( o => o.Name ).ToList(), g.Type ) )
+            : null;
+    }
 
     public (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) GetCurrentModSettings( string collectionName,
-        string modDirectory, string modName,
-        bool allowInheritance )
-        => throw new NotImplementedException();
+        string modDirectory, string modName, bool allowInheritance )
+    {
+        CheckInitialized();
+        if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            return ( PenumbraApiEc.CollectionMissing, null );
+        }
+
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
+            return ( PenumbraApiEc.ModMissing, null );
+        }
+
+        var settings = allowInheritance ? collection.Settings[ mod.Index ] : collection[ mod.Index ].Settings;
+        if( settings == null )
+        {
+            return ( PenumbraApiEc.Okay, null );
+        }
+
+        var shareSettings = settings.ConvertToShareable( mod );
+        return ( PenumbraApiEc.Okay,
+            ( shareSettings.Enabled, shareSettings.Priority, shareSettings.Settings, collection.Settings[ mod.Index ] != null ) );
+    }
 
     public PenumbraApiEc TryInheritMod( string collectionName, string modDirectory, string modName, bool inherit )
-        => throw new NotImplementedException();
+    {
+        CheckInitialized();
+        if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            return PenumbraApiEc.CollectionMissing;
+        }
+
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
+            return PenumbraApiEc.ModMissing;
+        }
+
+
+        return collection.SetModInheritance( mod.Index, inherit ) ? PenumbraApiEc.Okay : PenumbraApiEc.NothingChanged;
+    }
 
     public PenumbraApiEc TrySetMod( string collectionName, string modDirectory, string modName, bool enabled )
-        => throw new NotImplementedException();
+    {
+        CheckInitialized();
+        if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            return PenumbraApiEc.CollectionMissing;
+        }
+
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
+            return PenumbraApiEc.ModMissing;
+        }
+
+        return collection.SetModState( mod.Index, enabled ) ? PenumbraApiEc.Okay : PenumbraApiEc.NothingChanged;
+    }
 
     public PenumbraApiEc TrySetModPriority( string collectionName, string modDirectory, string modName, int priority )
-        => throw new NotImplementedException();
+    {
+        CheckInitialized();
+        if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            return PenumbraApiEc.CollectionMissing;
+        }
 
-    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string option )
-        => throw new NotImplementedException();
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
+            return PenumbraApiEc.ModMissing;
+        }
+
+        return collection.SetModPriority( mod.Index, priority ) ? PenumbraApiEc.Okay : PenumbraApiEc.NothingChanged;
+    }
 
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName,
-        IReadOnlyList< string > options )
-        => throw new NotImplementedException();
+        string optionName )
+    {
+        CheckInitialized();
+        if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            return PenumbraApiEc.CollectionMissing;
+        }
+
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
+            return PenumbraApiEc.ModMissing;
+        }
+
+        var groupIdx = mod.Groups.IndexOf( g => g.Name == optionGroupName );
+        if( groupIdx < 0 )
+        {
+            return PenumbraApiEc.OptionGroupMissing;
+        }
+
+        var optionIdx = mod.Groups[ groupIdx ].IndexOf( o => o.Name == optionName );
+        if( optionIdx < 0 )
+        {
+            return PenumbraApiEc.OptionMissing;
+        }
+
+        var setting = mod.Groups[ groupIdx ].Type == SelectType.Multi ? 1u << optionIdx : ( uint )optionIdx;
+
+        return collection.SetModSetting( mod.Index, groupIdx, setting ) ? PenumbraApiEc.Okay : PenumbraApiEc.NothingChanged;
+    }
+
+    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName,
+        IReadOnlyList< string > optionNames )
+    {
+        CheckInitialized();
+        if( optionNames.Count == 0 )
+        {
+            return PenumbraApiEc.InvalidArgument;
+        }
+
+        if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            return PenumbraApiEc.CollectionMissing;
+        }
+
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
+            return PenumbraApiEc.ModMissing;
+        }
+
+        var groupIdx = mod.Groups.IndexOf( g => g.Name == optionGroupName );
+        if( groupIdx < 0 )
+        {
+            return PenumbraApiEc.OptionGroupMissing;
+        }
+
+        var group = mod.Groups[ groupIdx ];
+
+        uint setting = 0;
+        if( group.Type == SelectType.Single )
+        {
+            var name      = optionNames[ ^1 ];
+            var optionIdx = group.IndexOf( o => o.Name == name );
+            if( optionIdx < 0 )
+            {
+                return PenumbraApiEc.OptionMissing;
+            }
+
+            setting = ( uint )optionIdx;
+        }
+        else
+        {
+            foreach( var name in optionNames )
+            {
+                var optionIdx = group.IndexOf( o => o.Name == name );
+                if( optionIdx < 0 )
+                {
+                    return PenumbraApiEc.OptionMissing;
+                }
+
+                setting |= 1u << optionIdx;
+            }
+        }
+
+        return collection.SetModSetting( mod.Index, groupIdx, setting ) ? PenumbraApiEc.Okay : PenumbraApiEc.NothingChanged;
+    }
 
     public PenumbraApiEc CreateTemporaryCollection( string collectionName, string? character, bool forceOverwriteCharacter )
         => throw new NotImplementedException();

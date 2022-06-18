@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Penumbra.Mods;
 
@@ -36,6 +37,29 @@ public sealed partial class Mod
             SetBaseDirectory( modDirectory, true );
             ModOptionChanged += OnModOptionChange;
             ModPathChanged   += OnModPathChange;
+        }
+
+
+        // Try to obtain a mod by its directory name (unique identifier, preferred),
+        // or the first mod of the given name if no directory fits.
+        public bool TryGetMod( string modDirectory, string modName, [NotNullWhen( true )] out Mod? mod )
+        {
+            mod = null;
+            foreach( var m in _mods )
+            {
+                if( m.ModPath.Name == modDirectory )
+                {
+                    mod = m;
+                    return true;
+                }
+
+                if( m.Name == modName )
+                {
+                    mod ??= m;
+                }
+            }
+
+            return mod != null;
         }
     }
 }

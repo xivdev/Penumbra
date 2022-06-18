@@ -24,17 +24,20 @@ public partial class ModCollection
     public event ModSettingChangeDelegate ModSettingChanged;
 
     // Enable or disable the mod inheritance of mod idx.
-    public void SetModInheritance( int idx, bool inherit )
+    public bool SetModInheritance( int idx, bool inherit )
     {
         if( FixInheritance( idx, inherit ) )
         {
             ModSettingChanged.Invoke( ModSettingChange.Inheritance, idx, inherit ? 0 : 1, 0, false );
+            return true;
         }
+
+        return false;
     }
 
     // Set the enabled state mod idx to newValue if it differs from the current enabled state.
     // If mod idx is currently inherited, stop the inheritance.
-    public void SetModState( int idx, bool newValue )
+    public bool SetModState( int idx, bool newValue )
     {
         var oldValue = _settings[ idx ]?.Enabled ?? this[ idx ].Settings?.Enabled ?? false;
         if( newValue != oldValue )
@@ -42,7 +45,10 @@ public partial class ModCollection
             var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.Enabled = newValue;
             ModSettingChanged.Invoke( ModSettingChange.EnableState, idx, inheritance ? -1 : newValue ? 0 : 1, 0, false );
+            return true;
         }
+
+        return false;
     }
 
     // Enable or disable the mod inheritance of every mod in mods.
@@ -78,7 +84,7 @@ public partial class ModCollection
 
     // Set the priority of mod idx to newValue if it differs from the current priority.
     // If mod idx is currently inherited, stop the inheritance.
-    public void SetModPriority( int idx, int newValue )
+    public bool SetModPriority( int idx, int newValue )
     {
         var oldValue = _settings[ idx ]?.Priority ?? this[ idx ].Settings?.Priority ?? 0;
         if( newValue != oldValue )
@@ -86,12 +92,15 @@ public partial class ModCollection
             var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.Priority = newValue;
             ModSettingChanged.Invoke( ModSettingChange.Priority, idx, inheritance ? -1 : oldValue, 0, false );
+            return true;
         }
+
+        return false;
     }
 
     // Set a given setting group settingName of mod idx to newValue if it differs from the current value and fix it if necessary.
     // If mod idx is currently inherited, stop the inheritance.
-    public void SetModSetting( int idx, int groupIdx, uint newValue )
+    public bool SetModSetting( int idx, int groupIdx, uint newValue )
     {
         var settings = _settings[ idx ] != null ? _settings[ idx ]!.Settings : this[ idx ].Settings?.Settings;
         var oldValue = settings?[ groupIdx ] ?? 0;
@@ -100,31 +109,26 @@ public partial class ModCollection
             var inheritance = FixInheritance( idx, false );
             _settings[ idx ]!.SetValue( Penumbra.ModManager[ idx ], groupIdx, newValue );
             ModSettingChanged.Invoke( ModSettingChange.Setting, idx, inheritance ? -1 : ( int )oldValue, groupIdx, false );
+            return true;
         }
+
+        return false;
     }
 
     // Change one of the available mod settings for mod idx discerned by type.
     // If type == Setting, settingName should be a valid setting for that mod, otherwise it will be ignored.
     // The setting will also be automatically fixed if it is invalid for that setting group.
     // For boolean parameters, newValue == 0 will be treated as false and != 0 as true.
-    public void ChangeModSetting( ModSettingChange type, int idx, int newValue, int groupIdx )
+    public bool ChangeModSetting( ModSettingChange type, int idx, int newValue, int groupIdx )
     {
-        switch( type )
+        return type switch
         {
-            case ModSettingChange.Inheritance:
-                SetModInheritance( idx, newValue != 0 );
-                break;
-            case ModSettingChange.EnableState:
-                SetModState( idx, newValue != 0 );
-                break;
-            case ModSettingChange.Priority:
-                SetModPriority( idx, newValue );
-                break;
-            case ModSettingChange.Setting:
-                SetModSetting( idx, groupIdx, ( uint )newValue );
-                break;
-            default: throw new ArgumentOutOfRangeException( nameof( type ), type, null );
-        }
+            ModSettingChange.Inheritance => SetModInheritance( idx, newValue != 0 ),
+            ModSettingChange.EnableState => SetModState( idx, newValue       != 0 ),
+            ModSettingChange.Priority    => SetModPriority( idx, newValue ),
+            ModSettingChange.Setting     => SetModSetting( idx, groupIdx, ( uint )newValue ),
+            _                            => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
+        };
     }
 
     // Set inheritance of a mod without saving,

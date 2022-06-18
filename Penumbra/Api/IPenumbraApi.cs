@@ -29,13 +29,14 @@ public enum PenumbraApiEc
     CollectionMissing  = 2,
     ModMissing         = 3,
     OptionGroupMissing = 4,
-    SettingMissing     = 5,
+    OptionMissing      = 5,
 
     CharacterCollectionExists = 6,
     LowerPriority             = 7,
     InvalidGamePath           = 8,
     FileMissing               = 9,
     InvalidManipulation       = 10,
+    InvalidArgument           = 11,
 }
 
 public interface IPenumbraApi : IPenumbraApiBase
@@ -75,7 +76,7 @@ public interface IPenumbraApi : IPenumbraApiBase
     public string ResolvePath( string gamePath, string characterName );
 
     // Reverse resolves a given modded local path into its replacement in form of all applicable game path for given character
-    public IList<string> ReverseResolvePath( string moddedPath, string characterName );
+    public IList< string > ReverseResolvePath( string moddedPath, string characterName );
 
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath ) where T : FileResource;
@@ -109,12 +110,12 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Obtain the potential settings of a mod specified by its directory name first or mod name second.
     // Returns null if the mod could not be found.
-    public IDictionary< string, (IList<string>, SelectType) >? GetAvailableModSettings( string modDirectory, string modName );
+    public IDictionary< string, (IList< string >, SelectType) >? GetAvailableModSettings( string modDirectory, string modName );
 
     // Obtain the enabled state, the priority, the settings of a mod specified by its directory name first or mod name second,
     // and whether these settings are inherited, or null if the collection does not set them at all.
     // If allowInheritance is false, only the collection itself will be checked.
-    public (PenumbraApiEc, (bool, int, IDictionary< string, IList<string> >, bool)?) GetCurrentModSettings( string collectionName,
+    public (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) GetCurrentModSettings( string collectionName,
         string modDirectory, string modName, bool allowInheritance );
 
     // Try to set the inheritance state in the given collection of a mod specified by its directory name first or mod name second.
@@ -136,7 +137,7 @@ public interface IPenumbraApi : IPenumbraApiBase
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string option );
 
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName,
-        IReadOnlyList<string> options );
+        IReadOnlyList< string > options );
 
 
     // Create a temporary collection without actual settings but with a cache.

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using OtterGui.Filesystem;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -10,7 +11,7 @@ namespace Penumbra.Mods;
 public class ModSettings
 {
     public static readonly ModSettings Empty = new();
-    public List< uint > Settings { get; init; } = new();
+    public List< uint > Settings { get; private init; } = new();
     public int Priority { get; set; }
     public bool Enabled { get; set; }
 
@@ -100,7 +101,7 @@ public class ModSettings
     private static uint FixSetting( IModGroup group, uint value )
         => group.Type switch
         {
-            SelectType.Single => ( uint )Math.Min( value, group.Count     - 1 ),
+            SelectType.Single => ( uint )Math.Min( value, group.Count       - 1 ),
             SelectType.Multi  => ( uint )( value & ( ( 1ul << group.Count ) - 1 ) ),
             _                 => value,
         };
@@ -207,5 +208,32 @@ public class ModSettings
 
             return changes;
         }
+    }
+
+    // Return the settings for a given mod in a shareable format, using the names of groups and options instead of indices.
+    // Does not repair settings but ignores settings not fitting to the given mod.
+    public (bool Enabled, int Priority, Dictionary< string, IList< string > > Settings) ConvertToShareable( Mod mod )
+    {
+        var dict = new Dictionary< string, IList< string > >( Settings.Count );
+        foreach( var (setting, idx) in Settings.WithIndex() )
+        {
+            if( idx >= mod.Groups.Count )
+            {
+                break;
+            }
+
+            var group = mod.Groups[ idx ];
+            if( group.Type == SelectType.Single && setting < group.Count )
+            {
+                dict.Add( group.Name, new[] { group[ ( int )setting ].Name } );
+            }
+            else
+            {
+                var list = group.Where( ( _, optionIdx ) => ( setting & ( 1 << optionIdx ) ) != 0 ).Select( o => o.Name ).ToList();
+                dict.Add( group.Name, list );
+            }
+        }
+
+        return ( Enabled, Priority, dict );
     }
 }
