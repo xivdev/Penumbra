@@ -378,7 +378,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if( group.Type == SelectType.Single )
         {
             var name      = optionNames[ ^1 ];
-            var optionIdx = group.IndexOf( o => o.Name == name );
+            var optionIdx = group.IndexOf( o => o.Name == optionNames[^1] );
             if( optionIdx < 0 )
             {
                 return PenumbraApiEc.OptionMissing;

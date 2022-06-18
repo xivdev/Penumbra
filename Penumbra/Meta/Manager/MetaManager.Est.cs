@@ -18,7 +18,7 @@ public partial class MetaManager
         public EstFile? BodyFile = null;
         public EstFile? HeadFile = null;
 
-        public readonly Dictionary< EstManipulation, Mod > Manipulations = new();
+        public readonly Dictionary< EstManipulation, IMod > Manipulations = new();
 
         public MetaManagerEst()
         { }
@@ -51,7 +51,7 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( EstManipulation m, Mod mod )
+        public bool ApplyMod( EstManipulation m, IMod mod )
         {
 #if USE_EST
             Manipulations[ m ] = mod;

@@ -128,16 +128,19 @@ public partial class ConfigWindow
 
             foreach( var conflict in Penumbra.CollectionManager.Current.Conflicts( _mod ) )
             {
-                if( ImGui.Selectable( conflict.Mod2.Name ) )
+                if( ImGui.Selectable( conflict.Mod2.Name ) && conflict.Mod2 is Mod mod )
                 {
-                    _window._selector.SelectByValue( conflict.Mod2 );
+                    _window._selector.SelectByValue( mod );
                 }
 
                 ImGui.SameLine();
                 using( var color = ImRaii.PushColor( ImGuiCol.Text,
                           conflict.HasPriority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value() ) )
                 {
-                    ImGui.TextUnformatted( $"(Priority {Penumbra.CollectionManager.Current[ conflict.Mod2.Index ].Settings!.Priority})" );
+                    var priority = conflict.Mod2.Index < 0
+                        ? conflict.Mod2.Priority
+                        : Penumbra.CollectionManager.Current[conflict.Mod2.Index].Settings!.Priority;
+                    ImGui.TextUnformatted( $"(Priority {priority})" );
                 }
 
                 using var indent = ImRaii.PushIndent( 30f );

@@ -1,13 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using Penumbra.GameData.ByteString;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
-public partial class Mod
+public partial class Mod : IMod
 {
     public partial class Editor : IDisposable
     {
@@ -15,7 +12,7 @@ public partial class Mod
 
         public Editor( Mod mod, int groupIdx, int optionIdx )
         {
-            _mod     = mod;
+            _mod = mod;
             SetSubMod( groupIdx, optionIdx );
             GroupIdx = groupIdx;
             _subMod  = _mod._default;

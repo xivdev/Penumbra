@@ -11,8 +11,8 @@ using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
-public record struct ModPath( Mod Mod, FullPath Path );
-public record ModConflicts( Mod Mod2, List< object > Conflicts, bool HasPriority, bool Solved );
+public record struct ModPath( IMod Mod, FullPath Path );
+public record ModConflicts( IMod Mod2, List< object > Conflicts, bool HasPriority, bool Solved );
 
 public partial class ModCollection
 {
@@ -21,15 +21,15 @@ public partial class ModCollection
     private class Cache : IDisposable
     {
         private readonly ModCollection                                       _collection;
-        private readonly SortedList< string, (SingleArray< Mod >, object?) > _changedItems = new();
+        private readonly SortedList< string, (SingleArray< IMod >, object?) > _changedItems = new();
         public readonly  Dictionary< Utf8GamePath, ModPath >                 ResolvedFiles = new();
         public readonly  MetaManager                                         MetaManipulations;
-        private readonly Dictionary< Mod, SingleArray< ModConflicts > >      _conflicts = new();
+        private readonly Dictionary< IMod, SingleArray< ModConflicts > >      _conflicts = new();
 
         public IEnumerable< SingleArray< ModConflicts > > AllConflicts
             => _conflicts.Values;
 
-        public SingleArray< ModConflicts > Conflicts( Mod mod )
+        public SingleArray< ModConflicts > Conflicts( IMod mod )
             => _conflicts.TryGetValue( mod, out var c ) ? c : new SingleArray< ModConflicts >();
 
         // Count the number of changes of the effective file list.
@@ -38,7 +38,7 @@ public partial class ModCollection
         private int _changedItemsSaveCounter = -1;
 
         // Obtain currently changed items. Computes them if they haven't been computed before.
-        public IReadOnlyDictionary< string, (SingleArray< Mod >, object?) > ChangedItems
+        public IReadOnlyDictionary< string, (SingleArray< IMod >, object?) > ChangedItems
         {
             get
             {
@@ -178,13 +178,13 @@ public partial class ModCollection
             }
         }
 
-        public void ReloadMod( Mod mod, bool addMetaChanges )
+        public void ReloadMod( IMod mod, bool addMetaChanges )
         {
             RemoveMod( mod, addMetaChanges );
             AddMod( mod, addMetaChanges );
         }
 
-        public void RemoveMod( Mod mod, bool addMetaChanges )
+        public void RemoveMod( IMod mod, bool addMetaChanges )
         {
             var conflicts = Conflicts( mod );
 
@@ -243,37 +243,40 @@ public partial class ModCollection
 
 
         // Add all files and possibly manipulations of a given mod according to its settings in this collection.
-        public void AddMod( Mod mod, bool addMetaChanges )
+        public void AddMod( IMod mod, bool addMetaChanges )
         {
-            var settings = _collection[ mod.Index ].Settings;
-            if( settings is not { Enabled: true } )
+            if( mod.Index >= 0 )
             {
-                return;
-            }
-
-            foreach( var (group, groupIndex) in mod.Groups.WithIndex().OrderByDescending( g => g.Item1.Priority ) )
-            {
-                if( group.Count == 0 )
+                var settings = _collection[ mod.Index ].Settings;
+                if( settings is not { Enabled: true } )
                 {
-                    continue;
+                    return;
                 }
 
-                var config = settings.Settings[ groupIndex ];
-                switch( group.Type )
+                foreach( var (group, groupIndex) in mod.Groups.WithIndex().OrderByDescending( g => g.Item1.Priority ) )
                 {
-                    case SelectType.Single:
-                        AddSubMod( group[ ( int )config ], mod );
-                        break;
-                    case SelectType.Multi:
+                    if( group.Count == 0 )
                     {
-                        foreach( var (option, _) in group.WithIndex()
-                                   .OrderByDescending( p => group.OptionPriority( p.Item2 ) )
-                                   .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 ) )
-                        {
-                            AddSubMod( option, mod );
-                        }
+                        continue;
+                    }
 
-                        break;
+                    var config = settings.Settings[ groupIndex ];
+                    switch( group.Type )
+                    {
+                        case SelectType.Single:
+                            AddSubMod( group[ ( int )config ], mod );
+                            break;
+                        case SelectType.Multi:
+                        {
+                            foreach( var (option, _) in group.WithIndex()
+                                       .OrderByDescending( p => group.OptionPriority( p.Item2 ) )
+                                       .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 ) )
+                            {
+                                AddSubMod( option, mod );
+                            }
+
+                            break;
+                        }
                     }
                 }
             }
@@ -297,7 +300,7 @@ public partial class ModCollection
         }
 
         // Add all files and possibly manipulations of a specific submod
-        private void AddSubMod( ISubMod subMod, Mod parentMod )
+        private void AddSubMod( ISubMod subMod, IMod parentMod )
         {
             foreach( var (path, file) in subMod.Files.Concat( subMod.FileSwaps ) )
             {
@@ -320,7 +323,7 @@ public partial class ModCollection
         // For different mods, higher mod priority takes precedence before option group priority,
         // which takes precedence before option priority, which takes precedence before ordering.
         // Inside the same mod, conflicts are not recorded.
-        private void AddFile( Utf8GamePath path, FullPath file, Mod mod )
+        private void AddFile( Utf8GamePath path, FullPath file, IMod mod )
         {
             if( ResolvedFiles.TryAdd( path, new ModPath( mod, file ) ) )
             {
@@ -343,7 +346,7 @@ public partial class ModCollection
 
         // Remove all empty conflict sets for a given mod with the given conflicts.
         // If transitive is true, also removes the corresponding version of the other mod.
-        private void RemoveEmptyConflicts( Mod mod, SingleArray< ModConflicts > oldConflicts, bool transitive )
+        private void RemoveEmptyConflicts( IMod mod, SingleArray< ModConflicts > oldConflicts, bool transitive )
         {
             var changedConflicts = oldConflicts.Remove( c =>
             {
@@ -372,10 +375,10 @@ public partial class ModCollection
         // Add a new conflict between the added mod and the existing mod.
         // Update all other existing conflicts between the existing mod and other mods if necessary.
         // Returns if the added mod takes priority before the existing mod.
-        private bool AddConflict( object data, Mod addedMod, Mod existingMod )
+        private bool AddConflict( object data, IMod addedMod, IMod existingMod )
         {
-            var addedPriority    = addedMod.Index    >= 0 ? _collection[ addedMod.Index ].Settings!.Priority : int.MaxValue;
-            var existingPriority = existingMod.Index >= 0 ? _collection[ existingMod.Index ].Settings!.Priority : int.MaxValue;
+            var addedPriority    = addedMod.Index    >= 0 ? _collection[ addedMod.Index ].Settings!.Priority : addedMod.Priority;
+            var existingPriority = existingMod.Index >= 0 ? _collection[ existingMod.Index ].Settings!.Priority : existingMod.Priority;
 
             if( existingPriority < addedPriority )
             {
@@ -417,7 +420,7 @@ public partial class ModCollection
         // For different mods, higher mod priority takes precedence before option group priority,
         // which takes precedence before option priority, which takes precedence before ordering.
         // Inside the same mod, conflicts are not recorded.
-        private void AddManipulation( MetaManipulation manip, Mod mod )
+        private void AddManipulation( MetaManipulation manip, IMod mod )
         {
             if( !MetaManipulations.TryGetValue( manip, out var existingMod ) )
             {
@@ -463,7 +466,7 @@ public partial class ModCollection
                     {
                         if( !_changedItems.TryGetValue( name, out var data ) )
                         {
-                            _changedItems.Add( name, ( new SingleArray< Mod >( modPath.Mod ), obj ) );
+                            _changedItems.Add( name, ( new SingleArray< IMod >( modPath.Mod ), obj ) );
                         }
                         else if( !data.Item1.Contains( modPath.Mod ) )
                         {

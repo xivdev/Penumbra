@@ -18,7 +18,7 @@ public partial class MetaManager
     public readonly struct MetaManagerImc : IDisposable
     {
         public readonly Dictionary< Utf8GamePath, ImcFile > Files         = new();
-        public readonly Dictionary< ImcManipulation, Mod >  Manipulations = new();
+        public readonly Dictionary< ImcManipulation, IMod >  Manipulations = new();
 
         private readonly ModCollection _collection;
         private static   int           _imcManagerCount;
@@ -65,7 +65,7 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( ImcManipulation m, Mod mod )
+        public bool ApplyMod( ImcManipulation m, IMod mod )
         {
 #if USE_IMC
             Manipulations[ m ] = mod;

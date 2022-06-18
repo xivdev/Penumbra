@@ -17,7 +17,7 @@ public partial class MetaManager
     {
         public readonly ExpandedEqdpFile?[] Files = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles - 2]; // TODO: female Hrothgar
 
-        public readonly Dictionary< EqdpManipulation, Mod > Manipulations = new();
+        public readonly Dictionary< EqdpManipulation, IMod > Manipulations = new();
 
         public MetaManagerEqdp()
         { }
@@ -51,7 +51,7 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( EqdpManipulation m, Mod mod )
+        public bool ApplyMod( EqdpManipulation m, IMod mod )
         {
 #if USE_EQDP
             Manipulations[ m ] = mod;
