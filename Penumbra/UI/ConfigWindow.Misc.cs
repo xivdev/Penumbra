@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface;
+using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
 using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
@@ -11,6 +13,7 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.UI.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -101,19 +104,45 @@ public partial class ConfigWindow
             _                            => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
         };
 
-        using var combo = ImRaii.Combo( label, current.Name );
-        if( !combo )
+        using var combo  = ImRaii.Combo( label, current.Name );
+        if( combo )
         {
-            return;
-        }
-
-        foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ).OrderBy( c => c.Name ) )
-        {
-            using var id = ImRaii.PushId( collection.Index );
-            if( ImGui.Selectable( collection.Name, collection == current ) )
+            foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ).OrderBy( c => c.Name ) )
             {
-                Penumbra.CollectionManager.SetCollection( collection, type, characterName );
+                using var id = ImRaii.PushId( collection.Index );
+                if( ImGui.Selectable( collection.Name, collection == current ) )
+                {
+                    Penumbra.CollectionManager.SetCollection( collection, type, characterName );
+                }
             }
         }
+    }
+
+    // Set up the file selector with the right flags and custom side bar items.
+    public static FileDialogManager SetupFileManager()
+    {
+        var fileManager = new FileDialogManager
+        {
+            AddedWindowFlags = ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoDocking,
+        };
+
+        if( Functions.GetDownloadsFolder( out var downloadsFolder ) )
+        {
+            fileManager.CustomSideBarItems.Add( ("Downloads", downloadsFolder, FontAwesomeIcon.Download, -1) );
+        }
+
+        if( Functions.GetQuickAccessFolders( out var folders ) )
+        {
+            foreach( var ((name, path), idx) in folders.WithIndex() )
+            {
+                fileManager.CustomSideBarItems.Add( ($"{name}##{idx}", path, FontAwesomeIcon.Folder, -1) );
+            }
+        }
+
+        // Remove Videos and Music.
+        fileManager.CustomSideBarItems.Add( ("Videos", string.Empty, 0, -1)  );
+        fileManager.CustomSideBarItems.Add( ("Music", string.Empty, 0, -1)  );
+
+        return fileManager;
     }
 }

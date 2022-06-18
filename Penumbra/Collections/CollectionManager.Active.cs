@@ -20,6 +20,9 @@ public partial class ModCollection
         // The collection currently selected for changing settings.
         public ModCollection Current { get; private set; } = Empty;
 
+        // The collection currently selected is in use either as an active collection or through inheritance.
+        public bool CurrentCollectionInUse { get; private set; }
+
         // The collection used for general file redirections and all characters not specifically named.
         public ModCollection Default { get; private set; } = Empty;
 
@@ -77,6 +80,8 @@ public partial class ModCollection
                     _characters[ characterName! ] = newCollection;
                     break;
             }
+
+            CurrentCollectionInUse = Characters.Values.Prepend( Default ).SelectMany( c => c.GetFlattenedInheritance() ).Contains( Current );
 
             CollectionChanged.Invoke( type, this[ oldCollectionIdx ], newCollection, characterName );
         }

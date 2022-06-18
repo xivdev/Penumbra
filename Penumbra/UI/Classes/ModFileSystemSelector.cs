@@ -19,7 +19,7 @@ namespace Penumbra.UI.Classes;
 
 public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, ModFileSystemSelector.ModState >
 {
-    private readonly FileDialogManager _fileManager = new();
+    private readonly FileDialogManager _fileManager = ConfigWindow.SetupFileManager();
     private          TexToolsImporter? _import;
     public ModSettings SelectedSettings { get; private set; } = ModSettings.Empty;
     public ModCollection SelectedSettingCollection { get; private set; } = ModCollection.Empty;

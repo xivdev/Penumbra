@@ -41,7 +41,7 @@ public partial class ModEditWindow
     private int       _offsetX         = 0;
     private int       _offsetY         = 0;
 
-    private readonly FileDialogManager _dialogManager = new();
+    private readonly FileDialogManager _dialogManager = ConfigWindow.SetupFileManager();
 
     private static bool DragFloat( string label, float width, ref float value )
     {

@@ -20,6 +20,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public int ApiVersion { get; } = 4;
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
+    public event GameObjectRedrawn? GameObjectRedrawn;
 
     public bool Valid
         => _penumbra != null;
@@ -30,12 +31,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
            .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
           ?.GetValue( Dalamud.GameData );
+        _penumbra.ObjectReloader.GameObjectRedrawn += OnGameObjectRedrawn;
     }
 
     public void Dispose()
     {
-        _penumbra = null;
-        _lumina   = null;
+        _penumbra!.ObjectReloader.GameObjectRedrawn -= OnGameObjectRedrawn;
+        _penumbra                                   =  null;
+        _lumina                                     =  null;
     }
 
     public event ChangedItemClick? ChangedItemClicked;
@@ -90,13 +93,18 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _penumbra!.ObjectReloader.RedrawObject( gameObject, setting );
     }
 
+    private void OnGameObjectRedrawn( IntPtr objectAddress, int objectTableIndex )
+    {
+        GameObjectRedrawn?.Invoke( objectAddress, objectTableIndex );
+    }
+
     public void RedrawAll( RedrawType setting )
     {
         CheckInitialized();
         _penumbra!.ObjectReloader.RedrawAll( setting );
     }
 
-    private static string ResolvePath( string path, Mods.Mod.Manager _, ModCollection collection )
+    private static string ResolvePath( string path, Mod.Manager _, ModCollection collection )
     {
         if( !Penumbra.Config.EnableMods )
         {
@@ -119,6 +127,18 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         CheckInitialized();
         return ResolvePath( path, Penumbra.ModManager,
             Penumbra.CollectionManager.Character( characterName ) );
+    }
+
+    public IList< string > ReverseResolvePath( string path, string characterName )
+    {
+        CheckInitialized();
+        if( !Penumbra.Config.EnableMods )
+        {
+            return new[] { path };
+        }
+
+        var ret = Penumbra.CollectionManager.Character( characterName ).ReverseResolvePath( new FullPath( path ) );
+        return ret.Select( r => r.ToString() ).ToList();
     }
 
     private T? GetFileIntern< T >( string resolvedPath ) where T : FileResource
@@ -210,10 +230,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Penumbra.ModManager.Select( m => ( m.ModPath.Name, m.Name.Text ) ).ToArray();
     }
 
-    public Dictionary< string, (string[], SelectType) >? GetAvailableModSettings( string modDirectory, string modName )
+    public IDictionary< string, (IList< string >, SelectType) >? GetAvailableModSettings( string modDirectory, string modName )
         => throw new NotImplementedException();
 
-    public (PenumbraApiEc, (bool, int, Dictionary< string, string[] >, bool)?) GetCurrentModSettings( string collectionName, string modDirectory, string modName,
+    public (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) GetCurrentModSettings( string collectionName,
+        string modDirectory, string modName,
         bool allowInheritance )
         => throw new NotImplementedException();
 
@@ -229,7 +250,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string option )
         => throw new NotImplementedException();
 
-    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string[] options )
+    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName,
+        IReadOnlyList< string > options )
         => throw new NotImplementedException();
 
     public PenumbraApiEc CreateTemporaryCollection( string collectionName, string? character, bool forceOverwriteCharacter )

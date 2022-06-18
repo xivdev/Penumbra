@@ -87,7 +87,7 @@ public partial class ConfigWindow
         ImGui.TableSetupColumn( "mods", flags, varWidth - 100 * ImGuiHelpers.GlobalScale );
         ImGui.TableSetupColumn( "id", flags, 100 * ImGuiHelpers.GlobalScale );
 
-        var items = Penumbra.CollectionManager.Default.ChangedItems;
+        var items = Penumbra.CollectionManager.Current.ChangedItems;
         var rest = _changedItemFilter.IsEmpty && _changedItemModFilter.IsEmpty
             ? ImGuiClip.ClippedDraw( items, skips, DrawChangedItemColumn, items.Count )
             : ImGuiClip.FilteredClippedDraw( items, skips, FilterChangedItem, DrawChangedItemColumn );

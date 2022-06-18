@@ -271,6 +271,10 @@ public unsafe partial class PathResolver
             return Penumbra.CollectionManager.Default;
         }
 
+        // Housing Retainers
+        if( Penumbra.Config.UseDefaultCollectionForRetainers && gameObject->ObjectKind == (byte) ObjectKind.EventNpc && gameObject->DataID == 1011832 )
+            return Penumbra.CollectionManager.Default;
+
         string? actorName = null;
         if( Penumbra.Config.PreferNamedCollectionsOverOwners )
         {

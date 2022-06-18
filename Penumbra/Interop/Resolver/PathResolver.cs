@@ -27,6 +27,7 @@ public partial class PathResolver : IDisposable
         SetupHumanHooks();
         SetupWeaponHooks();
         SetupMonsterHooks();
+        SetupDemiHooks();
         SetupMetaHooks();
     }
 
@@ -105,6 +106,7 @@ public partial class PathResolver : IDisposable
         EnableHumanHooks();
         EnableWeaponHooks();
         EnableMonsterHooks();
+        EnableDemiHooks();
         EnableMtrlHooks();
         EnableDataHooks();
         EnableMetaHooks();
@@ -124,6 +126,7 @@ public partial class PathResolver : IDisposable
         DisableHumanHooks();
         DisableWeaponHooks();
         DisableMonsterHooks();
+        DisableDemiHooks();
         DisableMtrlHooks();
         DisableDataHooks();
         DisableMetaHooks();
@@ -141,6 +144,7 @@ public partial class PathResolver : IDisposable
         DisposeHumanHooks();
         DisposeWeaponHooks();
         DisposeMonsterHooks();
+        DisposeDemiHooks();
         DisposeMtrlHooks();
         DisposeDataHooks();
         DisposeMetaHooks();

@@ -25,7 +25,6 @@ public unsafe partial class ObjectReloader
     private static void EnableDraw( GameObject actor )
         => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 16 ]( actor.Address );
 
-
     // Check whether we currently are in GPose.
     // Also clear the name list.
     private void SetGPose()
@@ -106,6 +105,8 @@ public sealed unsafe partial class ObjectReloader : IDisposable
     private readonly List< int > _afterGPoseQueue = new(GPoseSlots);
     private          int         _target          = -1;
 
+    public event Action< IntPtr, int >? GameObjectRedrawn;
+
     public ObjectReloader()
         => Dalamud.Framework.Update += OnUpdateEvent;
 
@@ -133,7 +134,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
         }
     }
 
-    private static void WriteVisible( GameObject? actor )
+    private void WriteVisible( GameObject? actor )
     {
         if( BadRedrawIndices( actor, out var tableIndex ) )
         {
@@ -141,11 +142,12 @@ public sealed unsafe partial class ObjectReloader : IDisposable
         }
 
         *ActorDrawState( actor! ) &= ~DrawState.Invisibility;
-
         if( IsGPoseActor( tableIndex ) )
         {
             EnableDraw( actor! );
         }
+
+        GameObjectRedrawn?.Invoke( actor!.Address, tableIndex );
     }
 
     private void ReloadActor( GameObject? actor )

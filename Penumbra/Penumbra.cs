@@ -152,6 +152,10 @@ public class Penumbra : IDisposable
         {
             PluginLog.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
         }
+        else
+        {
+            PluginLog.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
+        }
     }
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )

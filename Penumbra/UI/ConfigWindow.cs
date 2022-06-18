@@ -33,7 +33,6 @@ public sealed partial class ConfigWindow : Window, IDisposable
         _effectiveTab              =  new EffectiveTab();
         _debugTab                  =  new DebugTab( this );
         _resourceTab               =  new ResourceTab( this );
-        Flags                      |= ImGuiWindowFlags.NoDocking;
         if( Penumbra.Config.FixMainWindow )
         {
             Flags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;

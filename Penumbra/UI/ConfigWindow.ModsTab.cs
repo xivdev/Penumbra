@@ -63,6 +63,10 @@ public partial class ConfigWindow
         DrawInheritedCollectionButton( 3 * buttonSize );
         ImGui.SameLine();
         DrawCollectionSelector( "##collectionSelector", 2 * buttonSize.X, ModCollection.Type.Current, false, null );
+        if( !Penumbra.CollectionManager.CurrentCollectionInUse )
+        {
+            ImGuiUtil.DrawTextButton( "The currently selected collection is not used in any way.", -Vector2.UnitX, Colors.PressEnterWarningBg );
+        }
     }
 
     private static void DrawDefaultCollectionButton( Vector2 width )
@@ -112,7 +116,7 @@ public partial class ConfigWindow
 
     // The basic setup for the mod panel.
     // Details are in other files.
-    private partial class ModPanel
+    private partial class ModPanel : IDisposable
     {
         private readonly ConfigWindow _window;
 
@@ -122,6 +126,11 @@ public partial class ConfigWindow
 
         public ModPanel( ConfigWindow window )
             => _window = window;
+
+        public void Dispose()
+        {
+            _nameFont.Dispose();
+        }
 
         public void Draw( ModFileSystemSelector selector )
         {
