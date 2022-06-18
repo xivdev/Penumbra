@@ -56,7 +56,7 @@ public partial class ConfigWindow
             DrawChangedItemsTab();
             DrawConflictsTab();
             DrawEditModTab();
-            if( ImGui.TabItemButton( "Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
+            if( Penumbra.Config.ShowAdvanced && ImGui.TabItemButton( "Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
             {
                 _window.ModEditPopup.ChangeMod( _mod );
                 _window.ModEditPopup.ChangeOption( -1, 0 );
