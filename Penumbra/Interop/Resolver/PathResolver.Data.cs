@@ -93,6 +93,7 @@ public unsafe partial class PathResolver
         LoadTimelineResourcesHook?.Enable();
         CharacterBaseLoadAnimationHook?.Enable();
         LoadSomeAvfxHook?.Enable();
+        LoadSomePapHook?.Enable();
     }
 
     private void DisableDataHooks()
@@ -105,6 +106,7 @@ public unsafe partial class PathResolver
         LoadTimelineResourcesHook?.Disable();
         CharacterBaseLoadAnimationHook?.Disable();
         LoadSomeAvfxHook?.Disable();
+        LoadSomePapHook?.Disable();
     }
 
     private void DisposeDataHooks()
@@ -116,6 +118,7 @@ public unsafe partial class PathResolver
         LoadTimelineResourcesHook?.Dispose();
         CharacterBaseLoadAnimationHook?.Dispose();
         LoadSomeAvfxHook?.Dispose();
+        LoadSomePapHook?.Dispose();
     }
 
     // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
@@ -272,8 +275,12 @@ public unsafe partial class PathResolver
         }
 
         // Housing Retainers
-        if( Penumbra.Config.UseDefaultCollectionForRetainers && gameObject->ObjectKind == (byte) ObjectKind.EventNpc && gameObject->DataID == 1011832 )
+        if( Penumbra.Config.UseDefaultCollectionForRetainers
+        && gameObject->ObjectKind == ( byte )ObjectKind.EventNpc
+        && gameObject->DataID     == 1011832 )
+        {
             return Penumbra.CollectionManager.Default;
+        }
 
         string? actorName = null;
         if( Penumbra.Config.PreferNamedCollectionsOverOwners )

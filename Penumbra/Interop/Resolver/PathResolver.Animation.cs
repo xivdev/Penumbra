@@ -72,4 +72,25 @@ public unsafe partial class PathResolver
         _animationLoadCollection = last;
         return ret;
     }
+
+    public delegate void LoadSomePap( IntPtr a1, int a2, IntPtr a3, int a4 );
+
+    [Signature( "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 89 51" )]
+    public Hook< LoadSomePap >? LoadSomePapHook;
+
+    private void LoadSomePapDetour( IntPtr a1, int a2, IntPtr a3, int a4 )
+    {
+        var timelinePtr = a1 + 0x50;
+        var last        = _animationLoadCollection;
+        if( timelinePtr != IntPtr.Zero )
+        {
+            var actorIdx = ( int )( *( *( ulong** )timelinePtr + 1 ) >> 3 );
+            if( actorIdx >= 0 && actorIdx < Dalamud.Objects.Length )
+            {
+                _animationLoadCollection = IdentifyCollection( ( GameObject* )( Dalamud.Objects[ actorIdx ]?.Address ?? IntPtr.Zero ) );
+            }
+        }
+        LoadSomePapHook!.Original( a1, a2, a3, a4 );
+        _animationLoadCollection = last;
+    }
 }

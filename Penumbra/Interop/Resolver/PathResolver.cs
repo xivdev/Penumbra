@@ -76,6 +76,9 @@ public partial class PathResolver : IDisposable
 
     private bool HandleAnimationFile( ResourceType type, Utf8GamePath _, [NotNullWhen(true)] out ModCollection? collection )
     {
+        if( type == ResourceType.Pap && _.Path.EndsWith( '0', '1', '0', '.', 'p', 'a', 'p' ) )
+            PluginLog.Information( $"PAPPITY PAP {_}" );
+
         if( _animationLoadCollection != null )
         {
             switch( type )
@@ -84,6 +87,7 @@ public partial class PathResolver : IDisposable
                 case ResourceType.Pap:
                 case ResourceType.Avfx:
                 case ResourceType.Atex:
+                case ResourceType.Scd:
                     collection = _animationLoadCollection;
                     return true;
             }
