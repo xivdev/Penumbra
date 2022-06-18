@@ -18,7 +18,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public int ApiVersion { get; } = 4;
-    private Penumbra?        _penumbra;
+    private Penumbra? _penumbra;
     private Lumina.GameData? _lumina;
     public event EventHandler? ObjectIsRedrawn;
 
@@ -29,8 +29,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         _penumbra = penumbra;
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
-            .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
-            ?.GetValue( Dalamud.GameData );
+           .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
+          ?.GetValue( Dalamud.GameData );
         _penumbra.ObjectReloader.ObjectIsRedrawn += ObjectReloader_ObjectIsRedrawn;
     }
 
@@ -42,8 +42,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public void Dispose()
     {
         _penumbra!.ObjectReloader.ObjectIsRedrawn -= ObjectReloader_ObjectIsRedrawn;
-        _penumbra                                 =  null;
-        _lumina                                   =  null;
+        _penumbra = null;
+        _lumina = null;
     }
 
     public event ChangedItemClick? ChangedItemClicked;
@@ -57,7 +57,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public IPluginConfiguration GetConfiguration()
     {
         CheckInitialized();
-        return JsonConvert.DeserializeObject< Configuration >( JsonConvert.SerializeObject( Penumbra.Config ) );
+        return JsonConvert.DeserializeObject<Configuration>( JsonConvert.SerializeObject( Penumbra.Config ) );
     }
 
     public event ChangedItemHover? ChangedItemTooltip;
@@ -112,7 +112,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         var gamePath = Utf8GamePath.FromString( path, out var p, true ) ? p : Utf8GamePath.Empty;
-        var ret      = collection.ResolvePath( gamePath );
+        var ret = collection.ResolvePath( gamePath );
         return ret?.ToString() ?? path;
     }
 
@@ -138,23 +138,22 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         var gamePath = Utf8GamePath.FromString( path, out var p, true ) ? p : Utf8GamePath.Empty;
-        var ret = Penumbra.CollectionManager.Character( characterName ).ResolveReversePath( new FullPath( path ) ) ??
-            new List< Utf8GamePath >();
+        var ret = Penumbra.CollectionManager.Character( characterName ).ResolveReversePath( new FullPath( path ) ) ?? new List<Utf8GamePath>();
         if( ret.Count == 0 ) ret.Add( gamePath );
         return ret.Select( r => r.ToString() ).ToArray();
     }
 
-    private T? GetFileIntern< T >( string resolvedPath ) where T : FileResource
+    private T? GetFileIntern<T>( string resolvedPath ) where T : FileResource
     {
         CheckInitialized();
         try
         {
             if( Path.IsPathRooted( resolvedPath ) )
             {
-                return _lumina?.GetFileFromDisk< T >( resolvedPath );
+                return _lumina?.GetFileFromDisk<T>( resolvedPath );
             }
 
-            return Dalamud.GameData.GetFile< T >( resolvedPath );
+            return Dalamud.GameData.GetFile<T>( resolvedPath );
         }
         catch( Exception e )
         {
@@ -163,13 +162,13 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
     }
 
-    public T? GetFile< T >( string gamePath ) where T : FileResource
-        => GetFileIntern< T >( ResolvePath( gamePath ) );
+    public T? GetFile<T>( string gamePath ) where T : FileResource
+        => GetFileIntern<T>( ResolvePath( gamePath ) );
 
-    public T? GetFile< T >( string gamePath, string characterName ) where T : FileResource
-        => GetFileIntern< T >( ResolvePath( gamePath, characterName ) );
+    public T? GetFile<T>( string gamePath, string characterName ) where T : FileResource
+        => GetFileIntern<T>( ResolvePath( gamePath, characterName ) );
 
-    public IReadOnlyDictionary< string, object? > GetChangedItemsForCollection( string collectionName )
+    public IReadOnlyDictionary<string, object?> GetChangedItemsForCollection( string collectionName )
     {
         CheckInitialized();
         try
@@ -185,7 +184,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             }
 
             PluginLog.Warning( $"Collection {collectionName} does not exist or is not loaded." );
-            return new Dictionary< string, object? >();
+            return new Dictionary<string, object?>();
         }
         catch( Exception e )
         {
@@ -194,7 +193,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
     }
 
-    public IList< string > GetCollections()
+    public IList<string> GetCollections()
     {
         CheckInitialized();
         return Penumbra.CollectionManager.Skip( 1 ).Select( c => c.Name ).ToArray();
@@ -216,28 +215,27 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         return Penumbra.CollectionManager.Characters.TryGetValue( characterName, out var collection )
-            ? ( collection.Name, true )
-            : ( Penumbra.CollectionManager.Default.Name, false );
+            ? (collection.Name, true)
+            : (Penumbra.CollectionManager.Default.Name, false);
     }
 
     public (IntPtr, string) GetDrawObjectInfo( IntPtr drawObject )
     {
         CheckInitialized();
         var (obj, collection) = _penumbra!.PathResolver.IdentifyDrawObject( drawObject );
-        return ( obj, collection.Name );
+        return (obj, collection.Name);
     }
 
-    public IList< (string, string) > GetModList()
+    public IList<(string, string)> GetModList()
     {
         CheckInitialized();
-        return Penumbra.ModManager.Select( m => ( m.ModPath.Name, m.Name.Text ) ).ToArray();
+        return Penumbra.ModManager.Select( m => (m.ModPath.Name, m.Name.Text) ).ToArray();
     }
 
-    public Dictionary< string, (string[], SelectType) >? GetAvailableModSettings( string modDirectory, string modName )
+    public Dictionary<string, (string[], SelectType)>? GetAvailableModSettings( string modDirectory, string modName )
         => throw new NotImplementedException();
 
-    public (PenumbraApiEc, (bool, int, Dictionary< string, string[] >, bool)?) GetCurrentModSettings( string collectionName,
-        string modDirectory, string modName,
+    public (PenumbraApiEc, (bool, int, Dictionary<string, string[]>, bool)?) GetCurrentModSettings( string collectionName, string modDirectory, string modName,
         bool allowInheritance )
         => throw new NotImplementedException();
 
@@ -253,8 +251,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string option )
         => throw new NotImplementedException();
 
-    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName,
-        string[] options )
+    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string[] options )
         => throw new NotImplementedException();
 
     public PenumbraApiEc CreateTemporaryCollection( string collectionName, string? character, bool forceOverwriteCharacter )
