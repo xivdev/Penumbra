@@ -77,8 +77,11 @@ public class MainClass : IDalamudPlugin
     private static bool CheckIsNotInstalled()
     {
 #if !DEBUG
-        return !Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Name.Equals( "installedPlugins",
-            StringComparison.InvariantCultureIgnoreCase ) ?? true;
+        var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
+        var ret              = checkedDirectory?.Equals( "installedPlugins", StringComparison.InvariantCultureIgnoreCase ) ?? false;
+        if (!ret)
+            PluginLog.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
+        return !ret;
 #else
         return false;
 #endif
