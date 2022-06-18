@@ -50,7 +50,7 @@ public partial class ConfigWindow
             ImGui.TableSetupColumn( string.Empty, ImGuiTableColumnFlags.WidthFixed, _effectiveArrowLength );
             ImGui.TableSetupColumn( "##file", ImGuiTableColumnFlags.WidthFixed, _effectiveRightTextLength );
 
-            DrawEffectiveRows( Penumbra.CollectionManager.Default, skips, height,
+            DrawEffectiveRows( Penumbra.CollectionManager.Current, skips, height,
                 _effectiveFilePathFilter.Length > 0 || _effectiveGamePathFilter.Length > 0 );
         }
 
