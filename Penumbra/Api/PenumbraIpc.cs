@@ -22,6 +22,8 @@ public partial class PenumbraIpc : IDisposable
         InitializeRedrawProviders( pi );
         InitializeChangedItemProviders( pi );
         InitializeDataProviders( pi );
+        InitializeSettingProviders( pi );
+        InitializeTempProviders( pi );
         ProviderInitialized?.SendMessage();
     }
 
@@ -32,6 +34,8 @@ public partial class PenumbraIpc : IDisposable
         DisposeRedrawProviders();
         DisposeResolveProviders();
         DisposeGeneralProviders();
+        DisposeSettingProviders();
+        DisposeTempProviders();
         ProviderDisposed?.SendMessage();
     }
 }
@@ -401,5 +405,218 @@ public partial class PenumbraIpc
         ProviderCurrentCollectionName?.UnregisterFunc();
         ProviderDefaultCollectionName?.UnregisterFunc();
         ProviderCharacterCollectionName?.UnregisterFunc();
+    }
+}
+
+public partial class PenumbraIpc
+{
+    public const string LabelProviderGetAvailableModSettings = "Penumbra.GetAvailableModSettings";
+    public const string LabelProviderGetCurrentModSettings   = "Penumbra.GetCurrentModSettings";
+    public const string LabelProviderTryInheritMod           = "Penumbra.TryInheritMod";
+    public const string LabelProviderTrySetMod               = "Penumbra.TrySetMod";
+    public const string LabelProviderTrySetModPriority       = "Penumbra.TrySetModPriority";
+    public const string LabelProviderTrySetModSetting        = "Penumbra.TrySetModSetting";
+    public const string LabelProviderTrySetModSettings       = "Penumbra.TrySetModSettings";
+
+    internal ICallGateProvider< string, string, IDictionary< string, (IList< string >, Mods.SelectType) >? >? ProviderGetAvailableModSettings;
+
+    internal ICallGateProvider< string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) >?
+        ProviderGetCurrentModSettings;
+
+    internal ICallGateProvider< string, string, string, bool, PenumbraApiEc >?                            ProviderTryInheritMod;
+    internal ICallGateProvider< string, string, string, bool, PenumbraApiEc >?                            ProviderTrySetMod;
+    internal ICallGateProvider< string, string, string, int, PenumbraApiEc >?                             ProviderTrySetModPriority;
+    internal ICallGateProvider< string, string, string, string, string, PenumbraApiEc >?                  ProviderTrySetModSetting;
+    internal ICallGateProvider< string, string, string, string, IReadOnlyList< string >, PenumbraApiEc >? ProviderTrySetModSettings;
+
+    private void InitializeSettingProviders( DalamudPluginInterface pi )
+    {
+        try
+        {
+            ProviderGetAvailableModSettings =
+                pi.GetIpcProvider< string, string, IDictionary< string, (IList< string >, Mods.SelectType) >? >(
+                    LabelProviderGetAvailableModSettings );
+            ProviderGetAvailableModSettings.RegisterFunc( Api.GetAvailableModSettings );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetAvailableModSettings}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderGetCurrentModSettings =
+                pi.GetIpcProvider< string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) >(
+                    LabelProviderGetCurrentModSettings );
+            ProviderGetCurrentModSettings.RegisterFunc( Api.GetCurrentModSettings );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetCurrentModSettings}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderTryInheritMod = pi.GetIpcProvider< string, string, string, bool, PenumbraApiEc >( LabelProviderTryInheritMod );
+            ProviderTryInheritMod.RegisterFunc( Api.TryInheritMod );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTryInheritMod}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderTrySetMod = pi.GetIpcProvider< string, string, string, bool, PenumbraApiEc >( LabelProviderTrySetMod );
+            ProviderTrySetMod.RegisterFunc( Api.TrySetMod );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTrySetMod}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderTrySetModPriority = pi.GetIpcProvider< string, string, string, int, PenumbraApiEc >( LabelProviderTrySetModPriority );
+            ProviderTrySetModPriority.RegisterFunc( Api.TrySetModPriority );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTrySetModPriority}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderTrySetModSetting =
+                pi.GetIpcProvider< string, string, string, string, string, PenumbraApiEc >( LabelProviderTrySetModSetting );
+            ProviderTrySetModSetting.RegisterFunc( Api.TrySetModSetting );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTrySetModSetting}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderTrySetModSettings =
+                pi.GetIpcProvider< string, string, string, string, IReadOnlyList< string >, PenumbraApiEc >( LabelProviderTrySetModSettings );
+            ProviderTrySetModSettings.RegisterFunc( Api.TrySetModSettings );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTrySetModSettings}:\n{e}" );
+        }
+    }
+
+    private void DisposeSettingProviders()
+    {
+        ProviderGetAvailableModSettings?.UnregisterFunc();
+        ProviderGetCurrentModSettings?.UnregisterFunc();
+        ProviderTryInheritMod?.UnregisterFunc();
+        ProviderTrySetMod?.UnregisterFunc();
+        ProviderTrySetModPriority?.UnregisterFunc();
+        ProviderTrySetModSetting?.UnregisterFunc();
+        ProviderTrySetModSettings?.UnregisterFunc();
+    }
+}
+
+public partial class PenumbraIpc
+{
+    public const string LabelProviderCreateTemporaryCollection = "Penumbra.CreateTemporaryCollection";
+    public const string LabelProviderRemoveTemporaryCollection = "Penumbra.RemoveTemporaryCollection";
+    public const string LabelProviderAddTemporaryModAll        = "Penumbra.AddTemporaryModAll";
+    public const string LabelProviderAddTemporaryMod           = "Penumbra.AddTemporaryMod";
+    public const string LabelProviderRemoveTemporaryModAll     = "Penumbra.RemoveTemporaryModAll";
+    public const string LabelProviderRemoveTemporaryMod        = "Penumbra.RemoveTemporaryMod";
+
+    internal ICallGateProvider< string, string, bool, (PenumbraApiEc, string) >? ProviderCreateTemporaryCollection;
+    internal ICallGateProvider< string, PenumbraApiEc >?                         ProviderRemoveTemporaryCollection;
+
+    internal ICallGateProvider< string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >?
+        ProviderAddTemporaryModAll;
+
+    internal ICallGateProvider< string, string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >?
+        ProviderAddTemporaryMod;
+
+    internal ICallGateProvider< string, int, PenumbraApiEc >?         ProviderRemoveTemporaryModAll;
+    internal ICallGateProvider< string, string, int, PenumbraApiEc >? ProviderRemoveTemporaryMod;
+
+    private void InitializeTempProviders( DalamudPluginInterface pi )
+    {
+        try
+        {
+            ProviderCreateTemporaryCollection =
+                pi.GetIpcProvider< string, string, bool, (PenumbraApiEc, string) >( LabelProviderCreateTemporaryCollection );
+            ProviderCreateTemporaryCollection.RegisterFunc( Api.CreateTemporaryCollection );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreateTemporaryCollection}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderRemoveTemporaryCollection =
+                pi.GetIpcProvider< string, PenumbraApiEc >( LabelProviderRemoveTemporaryCollection );
+            ProviderRemoveTemporaryCollection.RegisterFunc( Api.RemoveTemporaryCollection );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryCollection}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderAddTemporaryModAll =
+                pi.GetIpcProvider< string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >(
+                    LabelProviderAddTemporaryModAll );
+            ProviderAddTemporaryModAll.RegisterFunc( Api.AddTemporaryModAll );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderAddTemporaryModAll}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderAddTemporaryMod =
+                pi.GetIpcProvider< string, string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >(
+                    LabelProviderAddTemporaryMod );
+            ProviderAddTemporaryMod.RegisterFunc( Api.AddTemporaryMod );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderAddTemporaryMod}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderRemoveTemporaryModAll = pi.GetIpcProvider< string, int, PenumbraApiEc >( LabelProviderRemoveTemporaryModAll );
+            ProviderRemoveTemporaryModAll.RegisterFunc( Api.RemoveTemporaryModAll );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryModAll}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderRemoveTemporaryMod = pi.GetIpcProvider< string, string, int, PenumbraApiEc >( LabelProviderRemoveTemporaryMod );
+            ProviderRemoveTemporaryMod.RegisterFunc( Api.RemoveTemporaryMod );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryMod}:\n{e}" );
+        }
+    }
+
+    private void DisposeTempProviders()
+    {
+        ProviderCreateTemporaryCollection?.UnregisterFunc();
+        ProviderRemoveTemporaryCollection?.UnregisterFunc();
+        ProviderAddTemporaryModAll?.UnregisterFunc();
+        ProviderAddTemporaryMod?.UnregisterFunc();
+        ProviderRemoveTemporaryModAll?.UnregisterFunc();
+        ProviderRemoveTemporaryMod?.UnregisterFunc();
     }
 }

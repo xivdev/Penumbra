@@ -14,7 +14,7 @@ public partial class MetaManager
     public struct MetaManagerGmp : IDisposable
     {
         public          ExpandedGmpFile?                   File          = null;
-        public readonly Dictionary< GmpManipulation, Mod > Manipulations = new();
+        public readonly Dictionary< GmpManipulation, IMod > Manipulations = new();
 
         public MetaManagerGmp()
         { }
@@ -38,7 +38,7 @@ public partial class MetaManager
             }
         }
 
-        public bool ApplyMod( GmpManipulation m, Mod mod )
+        public bool ApplyMod( GmpManipulation m, IMod mod )
         {
 #if USE_GMP
             Manipulations[ m ] =   mod;

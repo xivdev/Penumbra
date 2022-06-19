@@ -14,7 +14,7 @@ public partial class MetaManager
     public struct MetaManagerEqp : IDisposable
     {
         public          ExpandedEqpFile?                   File          = null;
-        public readonly Dictionary< EqpManipulation, Mod > Manipulations = new();
+        public readonly Dictionary< EqpManipulation, IMod > Manipulations = new();
 
         public MetaManagerEqp()
         { }
@@ -39,7 +39,7 @@ public partial class MetaManager
             Manipulations.Clear();
         }
 
-        public bool ApplyMod( EqpManipulation m, Mod mod )
+        public bool ApplyMod( EqpManipulation m, IMod mod )
         {
 #if USE_EQP
             Manipulations[ m ] =   mod;

@@ -14,6 +14,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using OtterGui.Classes;
 
 namespace Penumbra.UI.Classes;
 
@@ -286,14 +287,14 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     private void DeleteModButton( Vector2 size )
     {
-        var keys = ImGui.GetIO().KeyCtrl && ImGui.GetIO().KeyShift;
+        var keys = Penumbra.Config.DeleteModModifier.IsActive();
         var tt = SelectedLeaf == null
             ? "No mod selected."
             : "Delete the currently selected mod entirely from your drive.\n"
           + "This can not be undone.";
         if( !keys )
         {
-            tt += "\nHold Control and Shift while clicking to delete the mod.";
+            tt += $"\nHold {Penumbra.Config.DeleteModModifier} while clicking to delete the mod.";
         }
 
         if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), size, tt, SelectedLeaf == null || !keys, true )

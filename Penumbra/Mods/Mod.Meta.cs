@@ -24,10 +24,11 @@ public enum MetaChangeType : ushort
 
 public sealed partial class Mod
 {
-    public static readonly Mod ForcedFiles = new(new DirectoryInfo( "." ))
+    public static readonly TemporaryMod ForcedFiles = new()
     {
-        Name  = "Forced Files",
-        Index = -1,
+        Name     = "Forced Files",
+        Index    = -1,
+        Priority = int.MaxValue,
     };
 
     public const uint CurrentFileVersion = 1;

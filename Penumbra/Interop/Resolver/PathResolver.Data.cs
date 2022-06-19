@@ -93,6 +93,8 @@ public unsafe partial class PathResolver
         LoadTimelineResourcesHook?.Enable();
         CharacterBaseLoadAnimationHook?.Enable();
         LoadSomeAvfxHook?.Enable();
+        LoadSomePapHook?.Enable();
+        SomeActionLoadHook?.Enable();
     }
 
     private void DisableDataHooks()
@@ -105,6 +107,8 @@ public unsafe partial class PathResolver
         LoadTimelineResourcesHook?.Disable();
         CharacterBaseLoadAnimationHook?.Disable();
         LoadSomeAvfxHook?.Disable();
+        LoadSomePapHook?.Disable();
+        SomeActionLoadHook?.Disable();
     }
 
     private void DisposeDataHooks()
@@ -116,6 +120,8 @@ public unsafe partial class PathResolver
         LoadTimelineResourcesHook?.Dispose();
         CharacterBaseLoadAnimationHook?.Dispose();
         LoadSomeAvfxHook?.Dispose();
+        LoadSomePapHook?.Dispose();
+        SomeActionLoadHook?.Dispose();
     }
 
     // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
@@ -272,8 +278,12 @@ public unsafe partial class PathResolver
         }
 
         // Housing Retainers
-        if( Penumbra.Config.UseDefaultCollectionForRetainers && gameObject->ObjectKind == (byte) ObjectKind.EventNpc && gameObject->DataID == 1011832 )
+        if( Penumbra.Config.UseDefaultCollectionForRetainers
+        && gameObject->ObjectKind == ( byte )ObjectKind.EventNpc
+        && gameObject->DataID     == 1011832 )
+        {
             return Penumbra.CollectionManager.Default;
+        }
 
         string? actorName = null;
         if( Penumbra.Config.PreferNamedCollectionsOverOwners )
@@ -299,7 +309,8 @@ public unsafe partial class PathResolver
             }
          ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
-        return Penumbra.CollectionManager.Character( actualName );
+        // First check temporary character collections, then the own configuration.
+        return Penumbra.TempMods.Collections.TryGetValue(actualName, out var c) ? c : Penumbra.CollectionManager.Character( actualName );
     }
 
     // Update collections linked to Game/DrawObjects due to a change in collection configuration.

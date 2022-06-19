@@ -112,7 +112,7 @@ public partial class ConfigWindow
             {
                 // We can treat all meta manipulations the same,
                 // we are only really interested in their ToString function here.
-                static (object, Mod) Convert< T >( KeyValuePair< T, Mod > kvp )
+                static (object, IMod) Convert< T >( KeyValuePair< T, IMod > kvp )
                     => ( kvp.Key!, kvp.Value );
 
                 var it = m.Cmp.Manipulations.Select( Convert )
@@ -183,7 +183,7 @@ public partial class ConfigWindow
         }
 
         // Draw a line for a unfiltered/unconverted manipulation and mod-index pair.
-        private static void DrawLine( (object, Mod) pair )
+        private static void DrawLine( (object, IMod) pair )
         {
             var (manipulation, mod) = pair;
             ImGui.TableNextColumn();

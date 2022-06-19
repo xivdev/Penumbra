@@ -6,6 +6,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Filesystem;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 
 namespace Penumbra.UI;
 
@@ -88,6 +89,15 @@ public partial class ConfigWindow
                 {
                     Penumbra.Config.OpenFoldersByDefault = v;
                     _window._selector.SetFilterDirty();
+                } );
+
+            Widget.DoubleModifierSelector( "Mod Deletion Modifier",
+                "A modifier you need to hold while clicking the Delete Mod button for it to take effect.", _window._inputTextWidth.X,
+                Penumbra.Config.DeleteModModifier,
+                v =>
+                {
+                    Penumbra.Config.DeleteModModifier = v;
+                    Penumbra.Config.Save();
                 } );
             ImGui.Dummy( _window._defaultSpace );
             Checkbox( "Always Open Import at Default Directory",

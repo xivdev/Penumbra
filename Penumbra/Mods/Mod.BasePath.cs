@@ -17,6 +17,10 @@ public partial class Mod
     public DirectoryInfo ModPath { get; private set; }
     public int Index { get; private set; } = -1;
 
+    // Unused if Index < 0 but used for special temporary mods.
+    public int Priority
+        => 0;
+
     private Mod( DirectoryInfo modPath )
         => ModPath = modPath;
 
@@ -30,7 +34,7 @@ public partial class Mod
         }
 
         var mod = new Mod( modPath );
-        if( !mod.Reload(out _) )
+        if( !mod.Reload( out _ ) )
         {
             // Can not be base path not existing because that is checked before.
             PluginLog.Error( $"Mod at {modPath} without name is not supported." );
@@ -40,15 +44,17 @@ public partial class Mod
         return mod;
     }
 
-    private bool Reload(out MetaChangeType metaChange)
+    private bool Reload( out MetaChangeType metaChange )
     {
         metaChange = MetaChangeType.Deletion;
         ModPath.Refresh();
         if( !ModPath.Exists )
+        {
             return false;
+        }
 
         metaChange = LoadMeta();
-        if( metaChange.HasFlag(MetaChangeType.Deletion) || Name.Length == 0 )
+        if( metaChange.HasFlag( MetaChangeType.Deletion ) || Name.Length == 0 )
         {
             return false;
         }

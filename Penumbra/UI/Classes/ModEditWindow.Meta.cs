@@ -856,8 +856,6 @@ public partial class ModEditWindow
         return newValue != currentValue;
     }
 
-    private const byte CurrentManipulationVersion = 0;
-
     private static void CopyToClipboardButton( string tooltip, Vector2 iconSize, IEnumerable< MetaManipulation > manipulations )
     {
         if( !ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Clipboard.ToIconString(), iconSize, tooltip, false, true ) )
@@ -865,7 +863,7 @@ public partial class ModEditWindow
             return;
         }
 
-        var text = Functions.ToCompressedBase64( manipulations, CurrentManipulationVersion );
+        var text = Functions.ToCompressedBase64( manipulations, MetaManipulation.CurrentVersion );
         if( text.Length > 0 )
         {
             ImGui.SetClipboardText( text );
@@ -878,7 +876,7 @@ public partial class ModEditWindow
         {
             var clipboard = ImGui.GetClipboardText();
             var version   = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
-            if( version == CurrentManipulationVersion && manips != null )
+            if( version == MetaManipulation.CurrentVersion && manips != null )
             {
                 foreach( var manip in manips )
                 {
@@ -897,7 +895,7 @@ public partial class ModEditWindow
         {
             var clipboard = ImGui.GetClipboardText();
             var version   = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
-            if( version == CurrentManipulationVersion && manips != null )
+            if( version == MetaManipulation.CurrentVersion && manips != null )
             {
                 _editor!.Meta.Clear();
                 foreach( var manip in manips )

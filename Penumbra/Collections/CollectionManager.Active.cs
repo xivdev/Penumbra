@@ -81,10 +81,13 @@ public partial class ModCollection
                     break;
             }
 
-            CurrentCollectionInUse = Characters.Values.Prepend( Default ).SelectMany( c => c.GetFlattenedInheritance() ).Contains( Current );
-
+            
+            UpdateCurrentCollectionInUse();
             CollectionChanged.Invoke( type, this[ oldCollectionIdx ], newCollection, characterName );
         }
+
+        private void UpdateCurrentCollectionInUse()
+            => CurrentCollectionInUse = Characters.Values.Prepend( Default ).SelectMany( c => c.GetFlattenedInheritance() ).Contains( Current );
 
         public void SetCollection( ModCollection collection, Type type, string? characterName = null )
             => SetCollection( collection.Index, type, characterName );

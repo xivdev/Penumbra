@@ -72,6 +72,7 @@ public partial class ModCollection
             CollectionChanged                += SaveOnChange;
             ReadCollections();
             LoadCollections();
+            UpdateCurrentCollectionInUse();
         }
 
         public void Dispose()

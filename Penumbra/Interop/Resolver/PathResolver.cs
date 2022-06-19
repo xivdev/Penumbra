@@ -84,6 +84,7 @@ public partial class PathResolver : IDisposable
                 case ResourceType.Pap:
                 case ResourceType.Avfx:
                 case ResourceType.Atex:
+                case ResourceType.Scd:
                     collection = _animationLoadCollection;
                     return true;
             }

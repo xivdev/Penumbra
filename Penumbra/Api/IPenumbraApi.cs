@@ -1,13 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
 using Dalamud.Configuration;
 using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
-using OtterGui.Classes;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 
 namespace Penumbra.Api;
@@ -24,18 +20,20 @@ public delegate void GameObjectRedrawn( IntPtr objectPtr, int objectTableIndex )
 
 public enum PenumbraApiEc
 {
-    Okay               = 0,
+    Success            = 0,
     NothingChanged     = 1,
     CollectionMissing  = 2,
     ModMissing         = 3,
     OptionGroupMissing = 4,
-    SettingMissing     = 5,
+    OptionMissing      = 5,
 
     CharacterCollectionExists = 6,
     LowerPriority             = 7,
     InvalidGamePath           = 8,
     FileMissing               = 9,
     InvalidManipulation       = 10,
+    InvalidArgument           = 11,
+    UnknownError              = 255,
 }
 
 public interface IPenumbraApi : IPenumbraApiBase
@@ -75,7 +73,7 @@ public interface IPenumbraApi : IPenumbraApiBase
     public string ResolvePath( string gamePath, string characterName );
 
     // Reverse resolves a given modded local path into its replacement in form of all applicable game path for given character
-    public IList<string> ReverseResolvePath( string moddedPath, string characterName );
+    public IList< string > ReverseResolvePath( string moddedPath, string characterName );
 
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath ) where T : FileResource;
@@ -109,12 +107,12 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Obtain the potential settings of a mod specified by its directory name first or mod name second.
     // Returns null if the mod could not be found.
-    public IDictionary< string, (IList<string>, SelectType) >? GetAvailableModSettings( string modDirectory, string modName );
+    public IDictionary< string, (IList< string >, SelectType) >? GetAvailableModSettings( string modDirectory, string modName );
 
     // Obtain the enabled state, the priority, the settings of a mod specified by its directory name first or mod name second,
     // and whether these settings are inherited, or null if the collection does not set them at all.
     // If allowInheritance is false, only the collection itself will be checked.
-    public (PenumbraApiEc, (bool, int, IDictionary< string, IList<string> >, bool)?) GetCurrentModSettings( string collectionName,
+    public (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) GetCurrentModSettings( string collectionName,
         string modDirectory, string modName, bool allowInheritance );
 
     // Try to set the inheritance state in the given collection of a mod specified by its directory name first or mod name second.
@@ -135,32 +133,36 @@ public interface IPenumbraApi : IPenumbraApiBase
     // If any setting can not be found, it will not change anything.
     public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName, string option );
 
-    public PenumbraApiEc TrySetModSetting( string collectionName, string modDirectory, string modName, string optionGroupName,
-        IReadOnlyList<string> options );
+    public PenumbraApiEc TrySetModSettings( string collectionName, string modDirectory, string modName, string optionGroupName,
+        IReadOnlyList< string > options );
 
 
     // Create a temporary collection without actual settings but with a cache.
-    // If character is non-zero and either no character collection for this character exists or forceOverwriteCharacter is true,
+    // If no character collection for this character exists or forceOverwriteCharacter is true,
     // associate this collection to a specific character.
-    // Can return Okay, CharacterCollectionExists or NothingChanged.
-    public PenumbraApiEc CreateTemporaryCollection( string collectionName, string? character, bool forceOverwriteCharacter );
+    // Can return Okay, CharacterCollectionExists or NothingChanged, as well as the name of the new temporary collection on success.
+    public (PenumbraApiEc, string) CreateTemporaryCollection( string tag, string character, bool forceOverwriteCharacter );
 
-    // Remove a temporary collection if it exists.
+    // Remove the temporary collection associated with characterName if it exists.
     // Can return Okay or NothingChanged.
-    public PenumbraApiEc RemoveTemporaryCollection( string collectionName );
+    public PenumbraApiEc RemoveTemporaryCollection( string characterName );
 
+    // Set a temporary mod with the given paths, manipulations and priority and the name tag to all collections.
+    // Can return Okay, InvalidGamePath, or InvalidManipulation.
+    public PenumbraApiEc AddTemporaryModAll( string tag, IReadOnlyDictionary< string, string > paths, IReadOnlySet< string > manipCodes,
+        int priority );
 
-    // Set or remove a specific file redirection or meta manipulation under the name of Tag and with a given priority
-    // for a given collection, which may be temporary.
-    // Can return Okay, CollectionMissing, InvalidPath, FileMissing, LowerPriority, or NothingChanged.
-    public PenumbraApiEc SetFileRedirection( string tag, string collectionName, string gamePath, string fullPath, int priority );
+    // Set a temporary mod with the given paths, manipulations and priority and the name tag to the collection with the given name, which can be temporary.
+    // Can return Okay, MissingCollection InvalidGamePath, or InvalidManipulation.
+    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, IReadOnlyDictionary< string, string > paths,
+        IReadOnlySet< string > manipCodes,
+        int priority );
 
-    // Can return Okay, CollectionMissing, InvalidManipulation, LowerPriority, or NothingChanged.
-    public PenumbraApiEc SetMetaManipulation( string tag, string collectionName, string manipulationBase64, int priority );
+    // Remove the temporary mod with the given tag and priority from the temporary mods applying to all collections, if it exists.
+    // Can return Okay or NothingDone.
+    public PenumbraApiEc RemoveTemporaryModAll( string tag, int priority );
 
-    // Can return Okay, CollectionMissing, InvalidPath, or NothingChanged.
-    public PenumbraApiEc RemoveFileRedirection( string tag, string collectionName, string gamePath );
-
-    // Can return Okay, CollectionMissing, InvalidManipulation, or NothingChanged.
-    public PenumbraApiEc RemoveMetaManipulation( string tag, string collectionName, string manipulationBase64 );
+    // Remove the temporary mod with the given tag and priority from the temporary mods applying to the collection of the given name, which can be temporary.
+    // Can return Okay or NothingDone.
+    public PenumbraApiEc RemoveTemporaryMod( string tag, string collectionName, int priority );
 }

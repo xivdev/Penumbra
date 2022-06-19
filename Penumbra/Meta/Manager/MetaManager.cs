@@ -30,7 +30,7 @@ public partial class MetaManager : IDisposable
         }
     }
 
-    public bool TryGetValue( MetaManipulation manip, [NotNullWhen(true)] out Mod? mod )
+    public bool TryGetValue( MetaManipulation manip, [NotNullWhen(true)] out IMod? mod )
     {
         mod = manip.ManipulationType switch
         {
@@ -86,7 +86,7 @@ public partial class MetaManager : IDisposable
         Imc.Dispose();
     }
 
-    public bool ApplyMod( MetaManipulation m, Mod mod )
+    public bool ApplyMod( MetaManipulation m, IMod mod )
     {
         return m.ManipulationType switch
         {

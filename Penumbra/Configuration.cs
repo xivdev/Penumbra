@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Configuration;
 using Dalamud.Logging;
+using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Import;
 using Penumbra.UI.Classes;
@@ -46,6 +47,7 @@ public partial class Configuration : IPluginConfiguration
     public int ModSelectorScaledSize { get; set; } = Constants.DefaultScaledSize;
     public bool OpenFoldersByDefault { get; set; } = false;
     public string DefaultImportFolder { get; set; } = string.Empty;
+    public DoubleModifier DeleteModModifier { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
 
     public bool FixMainWindow { get; set; } = false;
     public bool ShowAdvanced { get; set; }
