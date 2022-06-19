@@ -57,7 +57,7 @@ public class MainClass : IDalamudPlugin
     {
 #if !DEBUG
         var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
-        var dir  = new DirectoryInfo( path );
+        var dir = new DirectoryInfo( path );
 
         try
         {
@@ -78,7 +78,7 @@ public class MainClass : IDalamudPlugin
     {
 #if !DEBUG
         var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret              = checkedDirectory?.Equals( "installedPlugins", StringComparison.InvariantCultureIgnoreCase ) ?? false;
+        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.InvariantCultureIgnoreCase ) ?? false;
         if (!ret)
             PluginLog.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
         return !ret;
@@ -105,7 +105,7 @@ public class Penumbra : IDisposable
     public static MetaFileManager MetaFileManager { get; private set; } = null!;
     public static Mod.Manager ModManager { get; private set; } = null!;
     public static ModCollection.Manager CollectionManager { get; private set; } = null!;
-    public static SimpleRedirectManager Redirects { get; private set; } = null!;
+    public static TempModManager TempMods { get; private set; } = null!;
     public static ResourceLoader ResourceLoader { get; private set; } = null!;
     public static FrameworkManager Framework { get; private set; } = null!;
     public static int ImcExceptions = 0;
@@ -138,7 +138,7 @@ public class Penumbra : IDisposable
         }
 
         ResidentResources = new ResidentResourceManager();
-        Redirects         = new SimpleRedirectManager();
+        TempMods          = new TempModManager();
         MetaFileManager   = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLogger    = new ResourceLogger( ResourceLoader );

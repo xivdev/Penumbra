@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -10,8 +11,10 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Api;
+using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
+using Penumbra.Mods;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 
 namespace Penumbra.UI;
@@ -413,9 +416,82 @@ public partial class ConfigWindow
             foreach( var provider in ipc.GetType().GetFields( BindingFlags.Instance | BindingFlags.NonPublic ) )
             {
                 var value = provider.GetValue( ipc );
-                if( value != null && dict.TryGetValue( "Label" + provider.Name, out var label ))
+                if( value != null && dict.TryGetValue( "Label" + provider.Name, out var label ) )
                 {
                     ImGui.TextUnformatted( label );
+                }
+            }
+
+            using( var collTree = ImRaii.TreeNode( "Collections" ) )
+            {
+                if( collTree )
+                {
+                    using var table = ImRaii.Table( "##collTree", 4 );
+                    if( table )
+                    {
+                        foreach( var (character, collection) in Penumbra.TempMods.Collections )
+                        {
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( character );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( collection.Name );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( collection.ResolvedFiles.Count.ToString() );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( collection.MetaCache?.Count.ToString() ?? "0" );
+                        }
+                    }
+                }
+            }
+
+            using( var modTree = ImRaii.TreeNode( "Mods" ) )
+            {
+                if( modTree )
+                {
+                    using var table = ImRaii.Table( "##modTree", 5 );
+
+                    void PrintList( string collectionName, IReadOnlyList< Mod.TemporaryMod > list )
+                    {
+                        foreach( var mod in list )
+                        {
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( mod.Name );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( mod.Priority.ToString() );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( collectionName );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( mod.Default.Files.Count.ToString() );
+                            if( ImGui.IsItemHovered() )
+                            {
+                                using var tt = ImRaii.Tooltip();
+                                foreach( var (path, file) in mod.Default.Files )
+                                {
+                                    ImGui.TextUnformatted( $"{path} -> {file}" );
+                                }
+                            }
+
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( mod.TotalManipulations.ToString() );
+                            if( ImGui.IsItemHovered() )
+                            {
+                                using var tt = ImRaii.Tooltip();
+                                foreach( var manip in mod.Default.Manipulations )
+                                {
+                                    ImGui.TextUnformatted( manip.ToString() );
+                                }
+                            }
+                        }
+                    }
+
+                    if( table )
+                    {
+                        PrintList( "All", Penumbra.TempMods.ModsForAllCollections );
+                        foreach( var (collection, list) in Penumbra.TempMods.Mods )
+                        {
+                            PrintList( collection.Name, list );
+                        }
+                    }
                 }
             }
         }

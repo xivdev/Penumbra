@@ -309,7 +309,8 @@ public unsafe partial class PathResolver
             }
          ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
-        return Penumbra.CollectionManager.Character( actualName );
+        // First check temporary character collections, then the own configuration.
+        return Penumbra.TempMods.Collections.TryGetValue(actualName, out var c) ? c : Penumbra.CollectionManager.Character( actualName );
     }
 
     // Update collections linked to Game/DrawObjects due to a change in collection configuration.

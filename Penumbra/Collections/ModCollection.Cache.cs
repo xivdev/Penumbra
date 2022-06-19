@@ -20,10 +20,10 @@ public partial class ModCollection
     // It will only be setup if a collection gets activated in any way.
     private class Cache : IDisposable
     {
-        private readonly ModCollection                                       _collection;
+        private readonly ModCollection                                        _collection;
         private readonly SortedList< string, (SingleArray< IMod >, object?) > _changedItems = new();
-        public readonly  Dictionary< Utf8GamePath, ModPath >                 ResolvedFiles = new();
-        public readonly  MetaManager                                         MetaManipulations;
+        public readonly  Dictionary< Utf8GamePath, ModPath >                  ResolvedFiles = new();
+        public readonly  MetaManager                                          MetaManipulations;
         private readonly Dictionary< IMod, SingleArray< ModConflicts > >      _conflicts = new();
 
         public IEnumerable< SingleArray< ModConflicts > > AllConflicts
@@ -160,7 +160,11 @@ public partial class ModCollection
             _conflicts.Clear();
 
             // Add all forced redirects.
-            Penumbra.Redirects.Apply( ResolvedFiles );
+            foreach( var tempMod in Penumbra.TempMods.ModsForAllCollections.Concat(
+                        Penumbra.TempMods.Mods.TryGetValue( _collection, out var list ) ? list : Array.Empty< Mod.TemporaryMod >() ) )
+            {
+                AddMod( tempMod, false );
+            }
 
             foreach( var mod in Penumbra.ModManager )
             {

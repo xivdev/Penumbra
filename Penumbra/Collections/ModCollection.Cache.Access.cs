@@ -35,6 +35,24 @@ public partial class ModCollection
     private void ForceCacheUpdate()
         => CalculateEffectiveFileList();
 
+    // Handle temporary mods for this collection.
+    public void Apply( Mod.TemporaryMod tempMod, bool created )
+    {
+        if( created )
+        {
+            _cache?.AddMod( tempMod, tempMod.TotalManipulations > 0 );
+        }
+        else
+        {
+            _cache?.ReloadMod( tempMod, tempMod.TotalManipulations > 0 );
+        }
+    }
+
+    public void Remove( Mod.TemporaryMod tempMod )
+    {
+        _cache?.RemoveMod( tempMod, tempMod.TotalManipulations > 0 );
+    }
+
 
     // Clear the current cache.
     private void ClearCache()

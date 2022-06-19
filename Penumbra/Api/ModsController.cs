@@ -37,7 +37,6 @@ public class ModsController : WebApiController
         return Penumbra.CollectionManager.Current.ResolvedFiles.ToDictionary(
                 o => o.Key.ToString(),
                 o => o.Value.Path.FullName
-            )
-         ?? new Dictionary< string, string >();
+            );
     }
 }

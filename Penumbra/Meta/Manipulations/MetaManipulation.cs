@@ -19,6 +19,8 @@ public interface IMetaManipulation< T >
 [StructLayout( LayoutKind.Explicit, Pack = 1, Size = 16 )]
 public readonly struct MetaManipulation : IEquatable< MetaManipulation >, IComparable< MetaManipulation >
 {
+    public const int CurrentVersion = 0;
+
     public enum Type : byte
     {
         Unknown = 0,
