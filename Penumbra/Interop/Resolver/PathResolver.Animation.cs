@@ -73,6 +73,7 @@ public unsafe partial class PathResolver
         return ret;
     }
 
+    // Unknown what exactly this is but it seems to load a bunch of paps.
     public delegate void LoadSomePap( IntPtr a1, int a2, IntPtr a3, int a4 );
 
     [Signature( "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 89 51" )]
@@ -91,6 +92,18 @@ public unsafe partial class PathResolver
             }
         }
         LoadSomePapHook!.Original( a1, a2, a3, a4 );
+        _animationLoadCollection = last;
+    }
+
+    // Seems to load character actions when zoning or changing class, maybe.
+    [Signature( "E8 ?? ?? ?? ?? C6 83 ?? ?? ?? ?? ?? 8B 8E", DetourName = nameof( SomeActionLoadDetour ) )]
+    public Hook< CharacterBaseDestructorDelegate >? SomeActionLoadHook;
+
+    private void SomeActionLoadDetour( IntPtr gameObject )
+    {
+        var last = _animationLoadCollection;
+        _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
+        SomeActionLoadHook!.Original( gameObject );
         _animationLoadCollection = last;
     }
 }
