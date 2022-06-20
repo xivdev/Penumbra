@@ -68,7 +68,7 @@ public unsafe partial class ResourceLoader
         }
     }
 
-    private event Action< Utf8GamePath, FullPath?, object? >? PathResolved;
+    private event Action< Utf8GamePath, ResourceType, FullPath?, object? >? PathResolved;
 
     private ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
@@ -85,7 +85,7 @@ public unsafe partial class ResourceLoader
 
         // If no replacements are being made, we still want to be able to trigger the event.
         var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
-        PathResolved?.Invoke( gamePath, resolvedPath, data );
+        PathResolved?.Invoke( gamePath, *resourceType, resolvedPath, data );
         if( resolvedPath == null )
         {
             var retUnmodified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
