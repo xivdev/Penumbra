@@ -88,7 +88,7 @@ public class ResourceLogger : IDisposable
     private string? Match( Utf8String data )
     {
         var s = data.ToString();
-        return Filter.Length == 0 || ( _filterRegex?.IsMatch( s ) ?? s.Contains( Filter, StringComparison.InvariantCultureIgnoreCase ) )
+        return Filter.Length == 0 || ( _filterRegex?.IsMatch( s ) ?? s.Contains( Filter, StringComparison.OrdinalIgnoreCase ) )
             ? s
             : null;
     }

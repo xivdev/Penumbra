@@ -72,9 +72,9 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
         => obj switch
         {
             FullPath p   => InternalName?.CompareTo( p.InternalName ) ?? -1,
-            FileInfo f   => string.Compare( FullName, f.FullName, StringComparison.InvariantCultureIgnoreCase ),
+            FileInfo f   => string.Compare( FullName, f.FullName, StringComparison.OrdinalIgnoreCase ),
             Utf8String u => InternalName?.CompareTo( u ) ?? -1,
-            string s     => string.Compare( FullName, s, StringComparison.InvariantCultureIgnoreCase ),
+            string s     => string.Compare( FullName, s, StringComparison.OrdinalIgnoreCase ),
             _            => -1,
         };
 

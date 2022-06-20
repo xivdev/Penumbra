@@ -38,14 +38,14 @@ public sealed unsafe partial class Utf8String : IDisposable
     // Can throw ArgumentOutOfRange if length is higher than max length.
     // The Crc32 will be computed.
     public static Utf8String FromByteStringUnsafe( byte* path, int length, bool isNullTerminated, bool? isLower = null, bool? isAscii = false )
-        => FromSpanUnsafe( new ReadOnlySpan< byte >( path, length ), isNullTerminated, isLower, isAscii );
+        => new Utf8String().Setup( path, length, null, isNullTerminated, false, isLower, isAscii );
 
     // Same as above, just with a span.
     public static Utf8String FromSpanUnsafe( ReadOnlySpan< byte > path, bool isNullTerminated, bool? isLower = null, bool? isAscii = false )
     {
         fixed( byte* ptr = path )
         {
-            return new Utf8String().Setup( ptr, path.Length, null, isNullTerminated, false, isLower, isAscii );
+            return FromByteStringUnsafe( ptr, path.Length, isNullTerminated, isLower, isAscii );
         }
     }
 

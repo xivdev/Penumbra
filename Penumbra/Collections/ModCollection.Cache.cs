@@ -89,7 +89,7 @@ public partial class ModCollection
             }
 
             var iterator = ResolvedFiles
-               .Where( f => string.Equals( f.Value.Path.FullName, needle, StringComparison.InvariantCultureIgnoreCase ) )
+               .Where( f => string.Equals( f.Value.Path.FullName, needle, StringComparison.OrdinalIgnoreCase ) )
                .Select( kvp => kvp.Key );
 
             // For files that are not rooted, try to add themselves.

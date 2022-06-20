@@ -87,7 +87,7 @@ public partial class ConfigWindow
             {
                 // Filter unwanted names.
                 if( _resourceManagerFilter.Length != 0
-                && !r->FileName.ToString().Contains( _resourceManagerFilter, StringComparison.InvariantCultureIgnoreCase ) )
+                && !r->FileName.ToString().Contains( _resourceManagerFilter, StringComparison.OrdinalIgnoreCase ) )
                 {
                     return;
                 }

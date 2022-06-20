@@ -78,7 +78,7 @@ public class MainClass : IDalamudPlugin
     {
 #if !DEBUG
         var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.InvariantCultureIgnoreCase ) ?? false;
+        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
         if (!ret)
             PluginLog.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
         return !ret;
@@ -310,12 +310,12 @@ public class Penumbra : IDisposable
         ShutdownWebServer();
     }
 
-    public bool SetCollection( string type, string collectionName )
+    public static bool SetCollection( string type, string collectionName )
     {
         type           = type.ToLowerInvariant();
         collectionName = collectionName.ToLowerInvariant();
 
-        var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.InvariantCultureIgnoreCase )
+        var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.OrdinalIgnoreCase )
             ? ModCollection.Empty
             : CollectionManager[ collectionName ];
         if( collection == null )

@@ -48,7 +48,7 @@ public partial class ModCollection
 
         // Obtain a collection case-independently by name. 
         public bool ByName( string name, [NotNullWhen( true )] out ModCollection? collection )
-            => _collections.FindFirst( c => string.Equals( c.Name, name, StringComparison.InvariantCultureIgnoreCase ), out collection );
+            => _collections.FindFirst( c => string.Equals( c.Name, name, StringComparison.OrdinalIgnoreCase ), out collection );
 
         // Default enumeration skips the empty collection.
         public IEnumerator< ModCollection > GetEnumerator()

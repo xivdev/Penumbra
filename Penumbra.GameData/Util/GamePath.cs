@@ -70,8 +70,8 @@ public readonly struct GamePath : IComparable
     {
         return rhs switch
         {
-            string path   => string.Compare( _path, path, StringComparison.InvariantCulture ),
-            GamePath path => string.Compare( _path, path._path, StringComparison.InvariantCulture ),
+            string path   => string.Compare( _path, path, StringComparison.Ordinal ),
+            GamePath path => string.Compare( _path, path._path, StringComparison.Ordinal ),
             _             => -1,
         };
     }

@@ -25,7 +25,7 @@ public partial class ModEditWindow
     private          int                                _folderSkip    = 0;
 
     private bool CheckFilter( Mod.Editor.FileRegistry registry )
-        => _fileFilter.IsEmpty || registry.File.FullName.Contains( _fileFilter.Lower, StringComparison.InvariantCultureIgnoreCase );
+        => _fileFilter.IsEmpty || registry.File.FullName.Contains( _fileFilter.Lower, StringComparison.OrdinalIgnoreCase );
 
     private bool CheckFilter( (Mod.Editor.FileRegistry, int) p )
         => CheckFilter( p.Item1 );

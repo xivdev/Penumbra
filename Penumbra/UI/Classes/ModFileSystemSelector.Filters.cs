@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -22,7 +21,7 @@ public partial class ModFileSystemSelector
         public ColorId Color;
     }
 
-    private const StringComparison IgnoreCase   = StringComparison.InvariantCultureIgnoreCase;
+    private const StringComparison IgnoreCase   = StringComparison.OrdinalIgnoreCase;
     private       LowerString      _modFilter   = LowerString.Empty;
     private       int              _filterType  = -1;
     private       ModFilter        _stateFilter = ModFilterExtensions.UnfilteredStateMods;
