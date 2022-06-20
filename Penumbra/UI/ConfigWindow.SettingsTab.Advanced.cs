@@ -24,7 +24,6 @@ public partial class ConfigWindow
                 "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
                 Penumbra.Config.AutoDeduplicateOnImport, v => Penumbra.Config.AutoDeduplicateOnImport = v );
             DrawRequestedResourceLogging();
-            DrawDisableSoundStreamingBox();
             DrawEnableHttpApiBox();
             DrawEnableDebugModeBox();
             DrawEnableFullResourceLoggingBox();
@@ -60,36 +59,6 @@ public partial class ConfigWindow
             {
                 _window._penumbra.ResourceLogger.SetFilter( tmpString );
             }
-        }
-
-        // Toggling audio streaming will need to apply to the music manager
-        // and rediscover mods due to determining whether .scds will be loaded or not.
-        private void DrawDisableSoundStreamingBox()
-        {
-            var tmp = Penumbra.Config.DisableSoundStreaming;
-            if( ImGui.Checkbox( "##streaming", ref tmp ) && tmp != Penumbra.Config.DisableSoundStreaming )
-            {
-                Penumbra.Config.DisableSoundStreaming = tmp;
-                Penumbra.Config.Save();
-                if( tmp )
-                {
-                    _window._penumbra.MusicManager.DisableStreaming();
-                }
-                else
-                {
-                    _window._penumbra.MusicManager.EnableStreaming();
-                }
-
-                Penumbra.ModManager.DiscoverMods();
-            }
-
-            ImGui.SameLine();
-            ImGuiUtil.LabeledHelpMarker( "Enable Sound Modification",
-                "Disable streaming in the games audio engine. The game enables this by default, and Penumbra should disable it.\n"
-              + "If this is unchecked, you can not replace sound files in the game (*.scd files), they will be ignored by Penumbra.\n\n"
-              + "Only touch this if you experience sound problems like audio stuttering.\n"
-              + "If you toggle this, make sure no modified or to-be-modified sound file is currently playing or was recently playing, else you might crash.\n"
-              + "You might need to restart your game for this to fully take effect." );
         }
 
         // Creates and destroys the web server when toggled.

@@ -308,12 +308,6 @@ public partial class ModCollection
         {
             foreach( var (path, file) in subMod.Files.Concat( subMod.FileSwaps ) )
             {
-                // Skip all filtered files
-                if( Mod.FilterFile( path ) )
-                {
-                    continue;
-                }
-
                 AddFile( path, file, parentMod );
             }
 

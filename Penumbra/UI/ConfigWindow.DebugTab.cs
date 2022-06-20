@@ -99,12 +99,11 @@ public partial class ConfigWindow
             PrintValue( "Mod Manager BasePath Exists", Directory.Exists( manager.BasePath.FullName ).ToString() );
             PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
             PrintValue( "Path Resolver Enabled", _window._penumbra.PathResolver.Enabled.ToString() );
-            PrintValue( "Music Manager Streaming Disabled", ( !_window._penumbra.MusicManager.StreamingEnabled ).ToString() );
             PrintValue( "Web Server Enabled", ( _window._penumbra.WebServer != null ).ToString() );
         }
 
         // Draw all resources currently replaced by Penumbra and (if existing) the resources they replace.
-        // Resources are collected by iterating through the 
+        // Resources are collected by iterating through the
         private static unsafe void DrawDebugTabReplacedResources()
         {
             if( !ImGui.CollapsingHeader( "Replaced Resources" ) )

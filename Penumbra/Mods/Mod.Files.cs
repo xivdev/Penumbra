@@ -70,13 +70,6 @@ public partial class Mod
            .ToList();
     }
 
-    // Filter invalid files.
-    // If audio streaming is not disabled, replacing .scd files crashes the game,
-    // so only add those files if it is disabled.
-    public static bool FilterFile( Utf8GamePath gamePath )
-        => !Penumbra.Config.DisableSoundStreaming
-         && gamePath.Path.EndsWith( '.', 's', 'c', 'd' );
-
     private static IModGroup? LoadModGroup( FileInfo file, DirectoryInfo basePath )
     {
         if( !File.Exists( file.FullName ) )
