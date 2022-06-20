@@ -1,12 +1,14 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
@@ -17,31 +19,44 @@ public unsafe partial class ResourceLoader
 {
     // Resources can be obtained synchronously and asynchronously. We need to change behaviour in both cases.
     // Both work basically the same, so we can reduce the main work to one function used by both hooks.
+
+    [StructLayout( LayoutKind.Explicit )]
+    public struct GetResourceParameters
+    {
+        [FieldOffset( 16 )]
+        public uint SegmentOffset;
+
+        [FieldOffset( 20 )]
+        public uint SegmentLength;
+
+        public bool IsPartialRead => SegmentLength != 0;
+    }
+
     public delegate ResourceHandle* GetResourceSyncPrototype( ResourceManager* resourceManager, ResourceCategory* pCategoryId,
-        ResourceType* pResourceType, int* pResourceHash, byte* pPath, void* pUnknown );
+        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams );
 
     [Signature( "E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00", DetourName = "GetResourceSyncDetour" )]
     public Hook< GetResourceSyncPrototype > GetResourceSyncHook = null!;
 
     public delegate ResourceHandle* GetResourceAsyncPrototype( ResourceManager* resourceManager, ResourceCategory* pCategoryId,
-        ResourceType* pResourceType, int* pResourceHash, byte* pPath, void* pUnknown, bool isUnknown );
+        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, bool isUnknown );
 
     [Signature( "E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00", DetourName = "GetResourceAsyncDetour" )]
     public Hook< GetResourceAsyncPrototype > GetResourceAsyncHook = null!;
 
     private ResourceHandle* GetResourceSyncDetour( ResourceManager* resourceManager, ResourceCategory* categoryId, ResourceType* resourceType,
-        int* resourceHash, byte* path, void* unk )
-        => GetResourceHandler( true, resourceManager, categoryId, resourceType, resourceHash, path, unk, false );
+        int* resourceHash, byte* path, GetResourceParameters* pGetResParams )
+        => GetResourceHandler( true, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, false );
 
     private ResourceHandle* GetResourceAsyncDetour( ResourceManager* resourceManager, ResourceCategory* categoryId, ResourceType* resourceType,
-        int* resourceHash, byte* path, void* unk, bool isUnk )
-        => GetResourceHandler( false, resourceManager, categoryId, resourceType, resourceHash, path, unk, isUnk );
+        int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
+        => GetResourceHandler( false, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
 
     private ResourceHandle* CallOriginalHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
-        ResourceType* resourceType, int* resourceHash, byte* path, void* unk, bool isUnk )
+        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
         => isSync
-            ? GetResourceSyncHook.Original( resourceManager, categoryId, resourceType, resourceHash, path, unk )
-            : GetResourceAsyncHook.Original( resourceManager, categoryId, resourceType, resourceHash, path, unk, isUnk );
+            ? GetResourceSyncHook.Original( resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams )
+            : GetResourceAsyncHook.Original( resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
 
 
     [Conditional( "DEBUG" )]
@@ -56,15 +71,15 @@ public unsafe partial class ResourceLoader
     private event Action< Utf8GamePath, FullPath?, object? >? PathResolved;
 
     private ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
-        ResourceType* resourceType, int* resourceHash, byte* path, void* unk, bool isUnk )
+        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
     {
         if( !Utf8GamePath.FromPointer( path, out var gamePath ) )
         {
             PluginLog.Error( "Could not create GamePath from resource path." );
-            return CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, unk, isUnk );
+            return CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
         }
 
-        CompareHash( gamePath.Path.Crc32, *resourceHash, gamePath );
+        CompareHash( ComputeHash( gamePath.Path, pGetResParams ), *resourceHash, gamePath );
 
         ResourceRequested?.Invoke( gamePath, isSync );
 
@@ -73,15 +88,15 @@ public unsafe partial class ResourceLoader
         PathResolved?.Invoke( gamePath, resolvedPath, data );
         if( resolvedPath == null )
         {
-            var retUnmodified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, unk, isUnk );
+            var retUnmodified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
             ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
             return retUnmodified;
         }
 
         // Replace the hash and path with the correct one for the replacement.
-        *resourceHash = resolvedPath.Value.InternalName.Crc32;
+        *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
         path          = resolvedPath.Value.InternalName.Path;
-        var retModified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, unk, isUnk );
+        var retModified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
         ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retModified, gamePath, resolvedPath.Value, data );
         return retModified;
     }
@@ -227,5 +242,23 @@ public unsafe partial class ResourceLoader
         ReadSqPackHook.Dispose();
         GetResourceSyncHook.Dispose();
         GetResourceAsyncHook.Dispose();
+    }
+
+    private int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )
+    {
+        if( pGetResParams == null || !pGetResParams->IsPartialRead )
+            return path.Crc32;
+
+        // When the game requests file only partially, crc32 includes that information, in format of:
+        // path/to/file.ext.hex_offset.hex_size
+        // ex) music/ex4/BGM_EX4_System_Title.scd.381adc.30000
+        var pathWithSegmentInfo = Utf8String.Join(
+            0x2e,
+            path,
+            Utf8String.FromStringUnsafe( pGetResParams->SegmentOffset.ToString( "x" ), true ),
+            Utf8String.FromStringUnsafe( pGetResParams->SegmentLength.ToString( "x" ), true )
+        );
+        Functions.ComputeCrc32AsciiLowerAndSize( pathWithSegmentInfo.Path, out var crc32, out _, out _ );
+        return crc32;
     }
 }
