@@ -252,13 +252,11 @@ public unsafe partial class ResourceLoader
         // When the game requests file only partially, crc32 includes that information, in format of:
         // path/to/file.ext.hex_offset.hex_size
         // ex) music/ex4/BGM_EX4_System_Title.scd.381adc.30000
-        var pathWithSegmentInfo = Utf8String.Join(
-            0x2e,
+        return Utf8String.Join(
+            (byte)'.',
             path,
             Utf8String.FromStringUnsafe( pGetResParams->SegmentOffset.ToString( "x" ), true ),
             Utf8String.FromStringUnsafe( pGetResParams->SegmentLength.ToString( "x" ), true )
-        );
-        Functions.ComputeCrc32AsciiLowerAndSize( pathWithSegmentInfo.Path, out var crc32, out _, out _ );
-        return crc32;
+        ).Crc32;
     }
 }
