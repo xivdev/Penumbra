@@ -284,7 +284,7 @@ public sealed partial class Mod
             var path = newName.RemoveInvalidPathSymbols();
             if( path.Length == 0
             || mod.Groups.Any( o => !ReferenceEquals( o, group )
-                && string.Equals( o.Name.RemoveInvalidPathSymbols(), path, StringComparison.InvariantCultureIgnoreCase ) ) )
+                && string.Equals( o.Name.RemoveInvalidPathSymbols(), path, StringComparison.OrdinalIgnoreCase ) ) )
             {
                 if( message )
                 {

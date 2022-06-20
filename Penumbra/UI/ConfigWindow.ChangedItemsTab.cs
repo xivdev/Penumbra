@@ -26,7 +26,7 @@ public partial class ConfigWindow
         bool FilterChangedItem( KeyValuePair< string, (SingleArray< IMod >, object?) > item )
             => ( _changedItemFilter.IsEmpty
                  || ChangedItemName( item.Key, item.Value.Item2 )
-                       .Contains( _changedItemFilter.Lower, StringComparison.InvariantCultureIgnoreCase ) )
+                       .Contains( _changedItemFilter.Lower, StringComparison.OrdinalIgnoreCase ) )
              && ( _changedItemModFilter.IsEmpty || item.Value.Item1.Any( m => m.Name.Contains( _changedItemModFilter ) ) );
 
         void DrawChangedItemColumn( KeyValuePair< string, (SingleArray< IMod >, object?) > item )

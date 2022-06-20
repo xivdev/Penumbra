@@ -26,7 +26,7 @@ public sealed partial class Mod
         // Also checks if the directory is available and tries to create it if it is not.
         private void SetBaseDirectory( string newPath, bool firstTime )
         {
-            if( !firstTime && string.Equals( newPath, Penumbra.Config.ModDirectory, StringComparison.InvariantCultureIgnoreCase ) )
+            if( !firstTime && string.Equals( newPath, Penumbra.Config.ModDirectory, StringComparison.OrdinalIgnoreCase ) )
             {
                 return;
             }

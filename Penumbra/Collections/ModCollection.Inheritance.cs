@@ -134,6 +134,11 @@ public partial class ModCollection
     {
         get
         {
+            if( Index <= 0 )
+            {
+                return ( ModSettings.Empty, this );
+            }
+
             foreach( var collection in GetFlattenedInheritance() )
             {
                 var settings = collection._settings[ idx ];
