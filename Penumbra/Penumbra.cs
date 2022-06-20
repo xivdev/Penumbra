@@ -112,7 +112,6 @@ public class Penumbra : IDisposable
 
     public readonly  ResourceLogger ResourceLogger;
     public readonly  PathResolver   PathResolver;
-    public readonly  MusicManager   MusicManager;
     public readonly  ObjectReloader ObjectReloader;
     public readonly  ModFileSystem  ModFileSystem;
     public readonly  PenumbraApi    Api;
@@ -130,12 +129,6 @@ public class Penumbra : IDisposable
         Framework = new FrameworkManager();
         Backup.CreateBackup( PenumbraBackupFiles() );
         Config = Configuration.Load();
-
-        MusicManager = new MusicManager();
-        if( Config.DisableSoundStreaming )
-        {
-            MusicManager.DisableStreaming();
-        }
 
         ResidentResources = new ResidentResourceManager();
         TempMods          = new TempModManager();
@@ -462,7 +455,6 @@ public class Penumbra : IDisposable
         sb.AppendFormat( "> **`Plugin Version:              `** {0}\n", Version );
         sb.AppendFormat( "> **`Commit Hash:                 `** {0}\n", CommitHash );
         sb.AppendFormat( "> **`Enable Mods:                 `** {0}\n", Config.EnableMods );
-        sb.AppendFormat( "> **`Enable Sound Modification:   `** {0}\n", Config.DisableSoundStreaming );
         sb.AppendFormat( "> **`Enable HTTP API:             `** {0}\n", Config.EnableHttpApi );
         sb.AppendFormat( "> **`Root Directory:              `** `{0}`, {1}\n", Config.ModDirectory, exists ? "Exists" : "Not Existing" );
         sb.AppendFormat( "> **`Free Drive Space:            `** {0}\n",
