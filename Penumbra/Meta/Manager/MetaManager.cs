@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Penumbra.Collections;
 using Penumbra.Meta.Files;
@@ -30,7 +31,7 @@ public partial class MetaManager : IDisposable
         }
     }
 
-    public bool TryGetValue( MetaManipulation manip, [NotNullWhen(true)] out IMod? mod )
+    public bool TryGetValue( MetaManipulation manip, [NotNullWhen( true )] out IMod? mod )
     {
         mod = manip.ManipulationType switch
         {
@@ -52,6 +53,15 @@ public partial class MetaManager : IDisposable
           + Gmp.Manipulations.Count
           + Est.Manipulations.Count
           + Eqp.Manipulations.Count;
+
+    public MetaManipulation[] Manipulations
+        => Imc.Manipulations.Keys.Select( m => ( MetaManipulation )m )
+           .Concat( Eqdp.Manipulations.Keys.Select( m => ( MetaManipulation )m ) )
+           .Concat( Cmp.Manipulations.Keys.Select( m => ( MetaManipulation )m ) )
+           .Concat( Gmp.Manipulations.Keys.Select( m => ( MetaManipulation )m ) )
+           .Concat( Est.Manipulations.Keys.Select( m => ( MetaManipulation )m ) )
+           .Concat( Eqp.Manipulations.Keys.Select( m => ( MetaManipulation )m ) )
+           .ToArray();
 
     public MetaManager( ModCollection collection )
         => Imc = new MetaManagerImc( collection );

@@ -14,7 +14,6 @@ using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Api;
 
@@ -447,6 +446,14 @@ public class IpcTester : IDisposable
             _collectionMode = false;
             _mods           = _pi.GetIpcSubscriber< IList< (string, string) > >( PenumbraIpc.LabelProviderGetMods ).InvokeFunc();
             ImGui.OpenPopup( "Ipc Data" );
+        }
+
+        DrawIntro(PenumbraIpc.LabelProviderGetMetaManipulations, "Meta Manipulations"  );
+        if( ImGui.Button( "Copy to Clipboard" ) )
+        {
+            var base64 = _pi.GetIpcSubscriber< string, string >( PenumbraIpc.LabelProviderGetMetaManipulations )
+               .InvokeFunc( _characterCollectionName );
+            ImGui.SetClipboardText( base64 );
         }
 
         ImGui.SetNextWindowSize( ImGuiHelpers.ScaledVector2( 500, 500 ) );
