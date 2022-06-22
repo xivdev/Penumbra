@@ -68,7 +68,7 @@ public interface IPenumbraApi : IPenumbraApiBase
     public string ResolvePath( string gamePath, string characterName );
 
     // Reverse resolves a given modded local path into its replacement in form of all applicable game path for given character
-    public IList<string> ReverseResolvePath( string moddedPath, string characterName );
+    public IList< string > ReverseResolvePath( string moddedPath, string characterName );
 
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath ) where T : FileResource;
@@ -144,13 +144,12 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Set a temporary mod with the given paths, manipulations and priority and the name tag to all collections.
     // Can return Okay, InvalidGamePath, or InvalidManipulation.
-    public PenumbraApiEc AddTemporaryModAll( string tag, IReadOnlyDictionary< string, string > paths, IReadOnlySet< string > manipCodes,
+    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, HashSet< string > manipCodes,
         int priority );
 
     // Set a temporary mod with the given paths, manipulations and priority and the name tag to the collection with the given name, which can be temporary.
     // Can return Okay, MissingCollection InvalidGamePath, or InvalidManipulation.
-    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, IReadOnlyDictionary< string, string > paths,
-        IReadOnlySet< string > manipCodes,
+    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, HashSet< string > manipCodes,
         int priority );
 
     // Remove the temporary mod with the given tag and priority from the temporary mods applying to all collections, if it exists.

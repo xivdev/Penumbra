@@ -4,8 +4,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Dalamud.Configuration;
-using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Lumina.Data;
 using Newtonsoft.Json;
@@ -22,7 +20,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public int ApiVersion
-        => 4;
+        => 5;
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -342,6 +340,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public (PenumbraApiEc, string) CreateTemporaryCollection( string tag, string character, bool forceOverwriteCharacter )
     {
         CheckInitialized();
+
+        if( character.Length is 0 or > 32 || tag.Length == 0 )
+        {
+            return ( PenumbraApiEc.InvalidArgument, string.Empty );
+        }
+
         if( !forceOverwriteCharacter && Penumbra.CollectionManager.Characters.ContainsKey( character )
         || Penumbra.TempMods.Collections.ContainsKey( character ) )
         {
@@ -364,8 +368,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return PenumbraApiEc.Success;
     }
 
-    public PenumbraApiEc AddTemporaryModAll( string tag, IReadOnlyDictionary< string, string > paths, IReadOnlySet< string > manipCodes,
-        int priority )
+    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, HashSet< string > manipCodes, int priority )
     {
         CheckInitialized();
         if( !ConvertPaths( paths, out var p ) )
@@ -385,11 +388,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         };
     }
 
-    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, IReadOnlyDictionary< string, string > paths,
-        IReadOnlySet< string > manipCodes, int priority )
+    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, HashSet< string > manipCodes,
+        int priority )
     {
         CheckInitialized();
-        if( !Penumbra.TempMods.Collections.TryGetValue( collectionName, out var collection )
+        if( !Penumbra.TempMods.Collections.Values.FindFirst( c => c.Name == collectionName, out var collection )
         && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
         {
             return PenumbraApiEc.CollectionMissing;
@@ -426,7 +429,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc RemoveTemporaryMod( string tag, string collectionName, int priority )
     {
         CheckInitialized();
-        if( !Penumbra.TempMods.Collections.TryGetValue( collectionName, out var collection )
+        if( !Penumbra.TempMods.Collections.Values.FindFirst( c => c.Name == collectionName, out var collection )
         && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
         {
             return PenumbraApiEc.CollectionMissing;
@@ -530,16 +533,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         manips = new HashSet< MetaManipulation >( manipStrings.Count );
         foreach( var m in manipStrings )
         {
-            if( Functions.FromCompressedBase64< MetaManipulation >( m, out var manip ) != MetaManipulation.CurrentVersion )
+            if( Functions.FromCompressedBase64< MetaManipulation[] >( m, out var manipArray ) != MetaManipulation.CurrentVersion )
             {
                 manips = null;
                 return false;
             }
 
-            if( !manips.Add( manip ) )
+            foreach( var manip in manipArray! )
             {
-                manips = null;
-                return false;
+                if( !manips.Add( manip ) )
+                {
+                    manips = null;
+                    return false;
+                }
             }
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Dalamud.Hooking;
 using Dalamud.Logging;
@@ -293,7 +294,8 @@ public unsafe partial class PathResolver
             {
                 // Early return if we prefer the actors own name over its owner.
                 actorName = new Utf8String( gameObject->Name ).ToString();
-                if( actorName.Length > 0 && Penumbra.CollectionManager.Characters.TryGetValue( actorName, out var actorCollection ) )
+                if( actorName.Length > 0
+                && CollectionByActorName( actorName, out var actorCollection ) )
                 {
                     return actorCollection;
                 }
@@ -313,7 +315,7 @@ public unsafe partial class PathResolver
              ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
             // First check temporary character collections, then the own configuration.
-            return Penumbra.TempMods.Collections.TryGetValue( actualName, out var c ) ? c : Penumbra.CollectionManager.Character( actualName );
+            return CollectionByActorName( actualName, out var c ) ? c : Penumbra.CollectionManager.Default;
         }
         catch( Exception e )
         {
@@ -321,6 +323,12 @@ public unsafe partial class PathResolver
             return Penumbra.CollectionManager.Default;
         }
     }
+
+    // Check both temporary and permanent character collections. Temporary first.
+    private static bool CollectionByActorName( string name, [NotNullWhen( true )] out ModCollection? collection )
+        => Penumbra.TempMods.Collections.TryGetValue( name, out collection )
+         || Penumbra.CollectionManager.Characters.TryGetValue( name, out collection );
+
 
     // Update collections linked to Game/DrawObjects due to a change in collection configuration.
     private void CheckCollections( ModCollection.Type type, ModCollection? _1, ModCollection? _2, string? name )

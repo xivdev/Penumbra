@@ -483,8 +483,8 @@ public class IpcTester : IDisposable
     private bool                                                  _settingsEnabled          = false;
     private int                                                   _settingsPriority         = 0;
     private IDictionary< string, (IList< string >, SelectType) >? _availableSettings;
-    private IDictionary< string, IList< string > >?               _currentSettings = null;
-    private PenumbraApiEc                                         _lastError       = PenumbraApiEc.Success;
+    private IDictionary< string, IList< string > >?               _currentSettings   = null;
+    private PenumbraApiEc                                         _lastSettingsError = PenumbraApiEc.Success;
 
 
     private void DrawSetting()
@@ -506,7 +506,7 @@ public class IpcTester : IDisposable
             return;
         }
 
-        DrawIntro( "Last Error", _lastError.ToString() );
+        DrawIntro( "Last Error", _lastSettingsError.ToString() );
 
         DrawIntro( PenumbraIpc.LabelProviderGetAvailableModSettings, "Get Available Settings" );
         if( ImGui.Button( "Get##Available" ) )
@@ -514,7 +514,7 @@ public class IpcTester : IDisposable
             _availableSettings = _pi
                .GetIpcSubscriber< string, string, IDictionary< string, (IList< string >, SelectType) >? >(
                     PenumbraIpc.LabelProviderGetAvailableModSettings ).InvokeFunc( _settingsModDirectory, _settingsModName );
-            _lastError = _availableSettings == null ? PenumbraApiEc.ModMissing : PenumbraApiEc.Success;
+            _lastSettingsError = _availableSettings == null ? PenumbraApiEc.ModMissing : PenumbraApiEc.Success;
         }
 
         DrawIntro( PenumbraIpc.LabelProviderGetCurrentModSettings, "Get Current Settings" );
@@ -524,7 +524,7 @@ public class IpcTester : IDisposable
                .GetIpcSubscriber< string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) >(
                     PenumbraIpc.LabelProviderGetCurrentModSettings ).InvokeFunc( _settingsCollection, _settingsModDirectory, _settingsModName,
                     _settingsAllowInheritance );
-            _lastError = ret.Item1;
+            _lastSettingsError = ret.Item1;
             if( ret.Item1 == PenumbraApiEc.Success )
             {
                 _settingsEnabled  = ret.Item2?.Item1 ?? false;
@@ -543,7 +543,7 @@ public class IpcTester : IDisposable
         ImGui.SameLine();
         if( ImGui.Button( "Set##Inherit" ) )
         {
-            _lastError = _pi.GetIpcSubscriber< string, string, string, bool, PenumbraApiEc >( PenumbraIpc.LabelProviderTryInheritMod )
+            _lastSettingsError = _pi.GetIpcSubscriber< string, string, string, bool, PenumbraApiEc >( PenumbraIpc.LabelProviderTryInheritMod )
                .InvokeFunc( _settingsCollection, _settingsModDirectory, _settingsModName, _settingsInherit );
         }
 
@@ -552,7 +552,7 @@ public class IpcTester : IDisposable
         ImGui.SameLine();
         if( ImGui.Button( "Set##Enabled" ) )
         {
-            _lastError = _pi.GetIpcSubscriber< string, string, string, bool, PenumbraApiEc >( PenumbraIpc.LabelProviderTrySetMod )
+            _lastSettingsError = _pi.GetIpcSubscriber< string, string, string, bool, PenumbraApiEc >( PenumbraIpc.LabelProviderTrySetMod )
                .InvokeFunc( _settingsCollection, _settingsModDirectory, _settingsModName, _settingsEnabled );
         }
 
@@ -562,7 +562,8 @@ public class IpcTester : IDisposable
         ImGui.SameLine();
         if( ImGui.Button( "Set##Priority" ) )
         {
-            _lastError = _pi.GetIpcSubscriber< string, string, string, int, PenumbraApiEc >( PenumbraIpc.LabelProviderTrySetModPriority )
+            _lastSettingsError = _pi
+               .GetIpcSubscriber< string, string, string, int, PenumbraApiEc >( PenumbraIpc.LabelProviderTrySetModPriority )
                .InvokeFunc( _settingsCollection, _settingsModDirectory, _settingsModName, _settingsPriority );
         }
 
@@ -615,24 +616,36 @@ public class IpcTester : IDisposable
                 {
                     if( type == SelectType.Single )
                     {
-                        _lastError = _pi
+                        _lastSettingsError = _pi
                            .GetIpcSubscriber< string, string, string, string, string,
                                 PenumbraApiEc >( PenumbraIpc.LabelProviderTrySetModSetting ).InvokeFunc( _settingsCollection,
                                 _settingsModDirectory, _settingsModName, group, current.Count > 0 ? current[ 0 ] : string.Empty );
                     }
                     else
                     {
-                        _lastError = _pi
+                        _lastSettingsError = _pi
                            .GetIpcSubscriber< string, string, string, string, IReadOnlyList< string >,
                                 PenumbraApiEc >( PenumbraIpc.LabelProviderTrySetModSettings ).InvokeFunc( _settingsCollection,
                                 _settingsModDirectory, _settingsModName, group, current.ToArray() );
                     }
                 }
+
                 ImGui.SameLine();
                 ImGui.TextUnformatted( group );
             }
         }
     }
+
+    private string        _tempCollectionName        = string.Empty;
+    private string        _tempCharacterName         = string.Empty;
+    private bool          _forceOverwrite            = true;
+    private string        _tempModName               = string.Empty;
+    private PenumbraApiEc _lastTempError             = PenumbraApiEc.Success;
+    private string        _lastCreatedCollectionName = string.Empty;
+    private string        _tempGamePath              = "test/game/path.mtrl";
+    private string        _tempFilePath              = "test/success.mtrl";
+    private string        _tempManipulation          = string.Empty;
+
 
     private void DrawTemp()
     {
@@ -640,6 +653,72 @@ public class IpcTester : IDisposable
         if( !_ )
         {
             return;
+        }
+
+        ImGui.InputTextWithHint( "##tempCollection", "Collection Name...", ref _tempCollectionName, 128 );
+        ImGui.InputTextWithHint( "##tempCollectionChar", "Collection Character...", ref _tempCharacterName, 32 );
+        ImGui.InputTextWithHint( "##tempMod", "Temporary Mod Name...", ref _tempModName, 32 );
+        ImGui.InputTextWithHint( "##tempGame", "Game Path...", ref _tempGamePath, 256 );
+        ImGui.InputTextWithHint( "##tempFile", "File Path...", ref _tempFilePath, 256 );
+        ImGui.InputTextWithHint( "##tempManip", "Manipulation Base64 String...", ref _tempManipulation, 256 );
+        ImGui.Checkbox( "Force Character Collection Overwrite", ref _forceOverwrite );
+
+        using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
+        if( !table )
+        {
+            return;
+        }
+
+        DrawIntro( "Last Error", _lastTempError.ToString() );
+        DrawIntro( "Last Created Collection", _lastCreatedCollectionName );
+        DrawIntro( PenumbraIpc.LabelProviderCreateTemporaryCollection, "Create Temporary Collection" );
+        if( ImGui.Button( "Create##Collection" ) )
+        {
+            ( _lastTempError, _lastCreatedCollectionName ) =
+                _pi.GetIpcSubscriber< string, string, bool, (PenumbraApiEc, string) >( PenumbraIpc.LabelProviderCreateTemporaryCollection )
+                   .InvokeFunc( _tempCollectionName, _tempCharacterName, _forceOverwrite );
+        }
+
+        DrawIntro( PenumbraIpc.LabelProviderRemoveTemporaryCollection, "Remove Temporary Collection from Character" );
+        if( ImGui.Button( "Delete##Collection" ) )
+        {
+            _lastTempError = _pi.GetIpcSubscriber< string, PenumbraApiEc >( PenumbraIpc.LabelProviderRemoveTemporaryCollection )
+               .InvokeFunc( _tempCharacterName );
+        }
+
+        DrawIntro( PenumbraIpc.LabelProviderAddTemporaryMod, "Add Temporary Mod to specific Collection" );
+        if( ImGui.Button( "Add##Mod" ) )
+        {
+            _lastTempError = _pi
+               .GetIpcSubscriber< string, string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >(
+                    PenumbraIpc.LabelProviderAddTemporaryMod )
+               .InvokeFunc( _tempModName, _tempCollectionName,
+                    new Dictionary< string, string > { { _tempGamePath, _tempFilePath } },
+                    _tempManipulation.Length > 0 ? new HashSet< string > { _tempManipulation } : new HashSet< string >(), int.MaxValue );
+        }
+
+        DrawIntro( PenumbraIpc.LabelProviderAddTemporaryModAll, "Add Temporary Mod to all Collections" );
+        if( ImGui.Button( "Add##All" ) )
+        {
+            _lastTempError = _pi
+               .GetIpcSubscriber< string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >(
+                    PenumbraIpc.LabelProviderAddTemporaryModAll )
+               .InvokeFunc( _tempModName, new Dictionary< string, string > { { _tempGamePath, _tempFilePath } },
+                    _tempManipulation.Length > 0 ? new HashSet< string > { _tempManipulation } : new HashSet< string >(), int.MaxValue );
+        }
+
+        DrawIntro( PenumbraIpc.LabelProviderRemoveTemporaryMod, "Remove Temporary Mod from specific Collection" );
+        if( ImGui.Button( "Remove##Mod" ) )
+        {
+            _lastTempError = _pi.GetIpcSubscriber< string, string, int, PenumbraApiEc >( PenumbraIpc.LabelProviderRemoveTemporaryMod )
+               .InvokeFunc( _tempModName, _tempCollectionName, int.MaxValue );
+        }
+
+        DrawIntro( PenumbraIpc.LabelProviderRemoveTemporaryModAll, "Remove Temporary Mod from all Collections" );
+        if( ImGui.Button( "Remove##ModAll" ) )
+        {
+            _lastTempError = _pi.GetIpcSubscriber< string, int, PenumbraApiEc >( PenumbraIpc.LabelProviderRemoveTemporaryModAll )
+               .InvokeFunc( _tempModName, int.MaxValue );
         }
     }
 

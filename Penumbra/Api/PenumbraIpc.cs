@@ -520,10 +520,10 @@ public partial class PenumbraIpc
     internal ICallGateProvider< string, string, bool, (PenumbraApiEc, string) >? ProviderCreateTemporaryCollection;
     internal ICallGateProvider< string, PenumbraApiEc >?                         ProviderRemoveTemporaryCollection;
 
-    internal ICallGateProvider< string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >?
+    internal ICallGateProvider< string, Dictionary< string, string >, HashSet< string >, int, PenumbraApiEc >?
         ProviderAddTemporaryModAll;
 
-    internal ICallGateProvider< string, string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >?
+    internal ICallGateProvider< string, string, Dictionary< string, string >, HashSet< string >, int, PenumbraApiEc >?
         ProviderAddTemporaryMod;
 
     internal ICallGateProvider< string, int, PenumbraApiEc >?         ProviderRemoveTemporaryModAll;
@@ -556,7 +556,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderAddTemporaryModAll =
-                pi.GetIpcProvider< string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >(
+                pi.GetIpcProvider< string, Dictionary< string, string >, HashSet< string >, int, PenumbraApiEc >(
                     LabelProviderAddTemporaryModAll );
             ProviderAddTemporaryModAll.RegisterFunc( Api.AddTemporaryModAll );
         }
@@ -568,7 +568,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderAddTemporaryMod =
-                pi.GetIpcProvider< string, string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >(
+                pi.GetIpcProvider< string, string, Dictionary< string, string >, HashSet< string >, int, PenumbraApiEc >(
                     LabelProviderAddTemporaryMod );
             ProviderAddTemporaryMod.RegisterFunc( Api.AddTemporaryMod );
         }
