@@ -97,6 +97,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain a list of all installed mods. The first string is their directory name, the second string is their mod name.
     public IList< (string, string) > GetModList();
 
+    // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
+    // for the given collection associated with the character name, or the default collection.
+    public string GetMetaManipulations( string characterName );
+
 
     // ############## Mod Settings #################
 

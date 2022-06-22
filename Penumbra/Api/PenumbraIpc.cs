@@ -326,12 +326,14 @@ public partial class PenumbraIpc
     public const string LabelProviderCurrentCollectionName   = "Penumbra.GetCurrentCollectionName";
     public const string LabelProviderDefaultCollectionName   = "Penumbra.GetDefaultCollectionName";
     public const string LabelProviderCharacterCollectionName = "Penumbra.GetCharacterCollectionName";
+    public const string LabelProviderGetMetaManipulations    = "Penumbra.GetMetaManipulations";
 
     internal ICallGateProvider< IList< (string, string) > >? ProviderGetMods;
     internal ICallGateProvider< IList< string > >?           ProviderGetCollections;
     internal ICallGateProvider< string >?                    ProviderCurrentCollectionName;
     internal ICallGateProvider< string >?                    ProviderDefaultCollectionName;
     internal ICallGateProvider< string, (string, bool) >?    ProviderCharacterCollectionName;
+    internal ICallGateProvider< string, string >?            ProviderGetMetaManipulations;
 
     private void InitializeDataProviders( DalamudPluginInterface pi )
     {
@@ -384,6 +386,16 @@ public partial class PenumbraIpc
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
         }
+
+        try
+        {
+            ProviderGetMetaManipulations = pi.GetIpcProvider< string, string >( LabelProviderGetMetaManipulations );
+            ProviderGetMetaManipulations.RegisterFunc( Api.GetMetaManipulations );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+        }
     }
 
     private void DisposeDataProviders()
@@ -393,6 +405,7 @@ public partial class PenumbraIpc
         ProviderCurrentCollectionName?.UnregisterFunc();
         ProviderDefaultCollectionName?.UnregisterFunc();
         ProviderCharacterCollectionName?.UnregisterFunc();
+        ProviderGetMetaManipulations?.UnregisterFunc();
     }
 }
 
