@@ -55,10 +55,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Penumbra.Config.ModDirectory;
     }
 
-    public IPluginConfiguration GetConfiguration()
+    public string GetConfiguration()
     {
         CheckInitialized();
-        return JsonConvert.DeserializeObject< Configuration >( JsonConvert.SerializeObject( Penumbra.Config ) );
+        return JsonConvert.SerializeObject( Penumbra.Config, Formatting.Indented );
     }
 
     public event ChangedItemHover? ChangedItemTooltip;
@@ -73,12 +73,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         _penumbra!.ObjectReloader.RedrawObject( name, setting );
-    }
-
-    public void RedrawObject( GameObject? gameObject, RedrawType setting )
-    {
-        CheckInitialized();
-        _penumbra!.ObjectReloader.RedrawObject( gameObject, setting );
     }
 
     public void RedrawAll( RedrawType setting )
@@ -299,11 +293,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         IReadOnlyList< string > optionNames )
     {
         CheckInitialized();
-        if( optionNames.Count == 0 )
-        {
-            return PenumbraApiEc.InvalidArgument;
-        }
-
         if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
         {
             return PenumbraApiEc.CollectionMissing;
@@ -325,8 +314,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         uint setting = 0;
         if( group.Type == SelectType.Single )
         {
-            var name      = optionNames[ ^1 ];
-            var optionIdx = group.IndexOf( o => o.Name == optionNames[ ^1 ] );
+            var optionIdx = optionNames.Count == 0 ? -1 : group.IndexOf( o => o.Name == optionNames[ ^1 ] );
             if( optionIdx < 0 )
             {
                 return PenumbraApiEc.OptionMissing;

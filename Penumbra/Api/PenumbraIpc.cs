@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Configuration;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -12,11 +11,12 @@ namespace Penumbra.Api;
 public partial class PenumbraIpc : IDisposable
 {
     internal readonly IPenumbraApi Api;
+    internal readonly IpcTester    Tester;
 
     public PenumbraIpc( DalamudPluginInterface pi, IPenumbraApi api )
     {
-        Api = api;
-
+        Api    = api;
+        Tester = new IpcTester( pi, this );
         InitializeGeneralProviders( pi );
         InitializeResolveProviders( pi );
         InitializeRedrawProviders( pi );
@@ -37,6 +37,7 @@ public partial class PenumbraIpc : IDisposable
         DisposeSettingProviders();
         DisposeTempProviders();
         ProviderDisposed?.SendMessage();
+        Tester.Dispose();
     }
 }
 
@@ -48,11 +49,11 @@ public partial class PenumbraIpc
     public const string LabelProviderGetModDirectory  = "Penumbra.GetModDirectory";
     public const string LabelProviderGetConfiguration = "Penumbra.GetConfiguration";
 
-    internal ICallGateProvider< object? >?              ProviderInitialized;
-    internal ICallGateProvider< object? >?              ProviderDisposed;
-    internal ICallGateProvider< int >?                  ProviderApiVersion;
-    internal ICallGateProvider< string >?               ProviderGetModDirectory;
-    internal ICallGateProvider< IPluginConfiguration >? ProviderGetConfiguration;
+    internal ICallGateProvider< object? >? ProviderInitialized;
+    internal ICallGateProvider< object? >? ProviderDisposed;
+    internal ICallGateProvider< int >?     ProviderApiVersion;
+    internal ICallGateProvider< string >?  ProviderGetModDirectory;
+    internal ICallGateProvider< string >?  ProviderGetConfiguration;
 
     private void InitializeGeneralProviders( DalamudPluginInterface pi )
     {
@@ -96,7 +97,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetConfiguration = pi.GetIpcProvider< IPluginConfiguration >( LabelProviderGetConfiguration );
+            ProviderGetConfiguration = pi.GetIpcProvider< string >( LabelProviderGetConfiguration );
             ProviderGetConfiguration.RegisterFunc( Api.GetConfiguration );
         }
         catch( Exception e )
@@ -117,15 +118,13 @@ public partial class PenumbraIpc
 {
     public const string LabelProviderRedrawName        = "Penumbra.RedrawObjectByName";
     public const string LabelProviderRedrawIndex       = "Penumbra.RedrawObjectByIndex";
-    public const string LabelProviderRedrawObject      = "Penumbra.RedrawObject";
     public const string LabelProviderRedrawAll         = "Penumbra.RedrawAll";
     public const string LabelProviderGameObjectRedrawn = "Penumbra.GameObjectRedrawn";
 
-    internal ICallGateProvider< string, int, object >?     ProviderRedrawName;
-    internal ICallGateProvider< int, int, object >?        ProviderRedrawIndex;
-    internal ICallGateProvider< GameObject, int, object >? ProviderRedrawObject;
-    internal ICallGateProvider< int, object >?             ProviderRedrawAll;
-    internal ICallGateProvider< IntPtr, int, object? >?    ProviderGameObjectRedrawn;
+    internal ICallGateProvider< string, int, object? >? ProviderRedrawName;
+    internal ICallGateProvider< int, int, object? >?    ProviderRedrawIndex;
+    internal ICallGateProvider< int, object? >?         ProviderRedrawAll;
+    internal ICallGateProvider< IntPtr, int, object? >? ProviderGameObjectRedrawn;
 
     private static RedrawType CheckRedrawType( int value )
     {
@@ -142,7 +141,7 @@ public partial class PenumbraIpc
     {
         try
         {
-            ProviderRedrawName = pi.GetIpcProvider< string, int, object >( LabelProviderRedrawName );
+            ProviderRedrawName = pi.GetIpcProvider< string, int, object? >( LabelProviderRedrawName );
             ProviderRedrawName.RegisterAction( ( s, i ) => Api.RedrawObject( s, CheckRedrawType( i ) ) );
         }
         catch( Exception e )
@@ -152,7 +151,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderRedrawIndex = pi.GetIpcProvider< int, int, object >( LabelProviderRedrawIndex );
+            ProviderRedrawIndex = pi.GetIpcProvider< int, int, object? >( LabelProviderRedrawIndex );
             ProviderRedrawIndex.RegisterAction( ( idx, i ) => Api.RedrawObject( idx, CheckRedrawType( i ) ) );
         }
         catch( Exception e )
@@ -162,17 +161,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderRedrawObject = pi.GetIpcProvider< GameObject, int, object >( LabelProviderRedrawObject );
-            ProviderRedrawObject.RegisterAction( ( o, i ) => Api.RedrawObject( o, CheckRedrawType( i ) ) );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawObject}:\n{e}" );
-        }
-
-        try
-        {
-            ProviderRedrawAll = pi.GetIpcProvider< int, object >( LabelProviderRedrawAll );
+            ProviderRedrawAll = pi.GetIpcProvider< int, object? >( LabelProviderRedrawAll );
             ProviderRedrawAll.RegisterAction( i => Api.RedrawAll( CheckRedrawType( i ) ) );
         }
         catch( Exception e )
@@ -198,7 +187,6 @@ public partial class PenumbraIpc
     {
         ProviderRedrawName?.UnregisterAction();
         ProviderRedrawIndex?.UnregisterAction();
-        ProviderRedrawObject?.UnregisterAction();
         ProviderRedrawAll?.UnregisterAction();
         Api.GameObjectRedrawn -= OnGameObjectRedrawn;
     }
@@ -274,8 +262,8 @@ public partial class PenumbraIpc
     public const string LabelProviderChangedItemClick   = "Penumbra.ChangedItemClick";
     public const string LabelProviderGetChangedItems    = "Penumbra.GetChangedItems";
 
-    internal ICallGateProvider< ChangedItemType, uint, object >?                  ProviderChangedItemTooltip;
-    internal ICallGateProvider< MouseButton, ChangedItemType, uint, object >?     ProviderChangedItemClick;
+    internal ICallGateProvider< ChangedItemType, uint, object? >?                 ProviderChangedItemTooltip;
+    internal ICallGateProvider< MouseButton, ChangedItemType, uint, object? >?    ProviderChangedItemClick;
     internal ICallGateProvider< string, IReadOnlyDictionary< string, object? > >? ProviderGetChangedItems;
 
     private void OnClick( MouseButton click, object? item )
@@ -294,7 +282,7 @@ public partial class PenumbraIpc
     {
         try
         {
-            ProviderChangedItemTooltip =  pi.GetIpcProvider< ChangedItemType, uint, object >( LabelProviderChangedItemTooltip );
+            ProviderChangedItemTooltip =  pi.GetIpcProvider< ChangedItemType, uint, object? >( LabelProviderChangedItemTooltip );
             Api.ChangedItemTooltip     += OnTooltip;
         }
         catch( Exception e )
@@ -304,7 +292,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderChangedItemClick =  pi.GetIpcProvider< MouseButton, ChangedItemType, uint, object >( LabelProviderChangedItemClick );
+            ProviderChangedItemClick =  pi.GetIpcProvider< MouseButton, ChangedItemType, uint, object? >( LabelProviderChangedItemClick );
             Api.ChangedItemClicked   += OnClick;
         }
         catch( Exception e )

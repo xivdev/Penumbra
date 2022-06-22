@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Configuration;
-using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
@@ -41,8 +39,8 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain the currently set mod directory from the configuration.
     public string GetModDirectory();
 
-    // Obtain the entire current penumbra configuration.
-    public IPluginConfiguration GetConfiguration();
+    // Obtain the entire current penumbra configuration as a json encoded string.
+    public string GetConfiguration();
 
     // Triggered when the user hovers over a listed changed object in a mod tab.
     // Can be used to append tooltips.
@@ -58,9 +56,6 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Queue redrawing of the actor with the given object table index, if it exists, with the given RedrawType.
     public void RedrawObject( int tableIndex, RedrawType setting );
 
-    // Queue redrawing of the specific actor with the given RedrawType. Should only be used when the actor is sure to be valid.
-    public void RedrawObject( GameObject gameObject, RedrawType setting );
-
     // Queue redrawing of all currently available actors with the given RedrawType.
     public void RedrawAll( RedrawType setting );
 
@@ -73,7 +68,7 @@ public interface IPenumbraApi : IPenumbraApiBase
     public string ResolvePath( string gamePath, string characterName );
 
     // Reverse resolves a given modded local path into its replacement in form of all applicable game path for given character
-    public IList< string > ReverseResolvePath( string moddedPath, string characterName );
+    public IList<string> ReverseResolvePath( string moddedPath, string characterName );
 
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath ) where T : FileResource;
