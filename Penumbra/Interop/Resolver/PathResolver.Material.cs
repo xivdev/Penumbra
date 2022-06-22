@@ -8,6 +8,7 @@ using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.Util;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -56,7 +57,7 @@ public unsafe partial class PathResolver
     }
 
     // Check specifically for shpk and tex files whether we are currently in a material load.
-    private bool HandleMaterialSubFiles( ResourceType type, [NotNullWhen(true)] out ModCollection? collection )
+    private bool HandleMaterialSubFiles( ResourceType type, [NotNullWhen( true )] out ModCollection? collection )
     {
         if( _mtrlCollection != null && type is ResourceType.Tex or ResourceType.Shpk )
         {
@@ -81,7 +82,9 @@ public unsafe partial class PathResolver
 
         var lastUnderscore = split.LastIndexOf( ( byte )'_' );
         var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
-        if( Penumbra.CollectionManager.ByName( name, out var collection ) )
+        if( Penumbra.TempMods.Collections.Values.FindFirst( c => string.Equals( c.Name, name, StringComparison.OrdinalIgnoreCase ),
+               out var collection )
+        || Penumbra.CollectionManager.ByName( name, out collection ) )
         {
 #if DEBUG
             PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", name, path );
