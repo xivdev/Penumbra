@@ -1,5 +1,6 @@
 using System;
 using Dalamud.Hooking;
+using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
@@ -59,16 +60,16 @@ public unsafe partial class PathResolver
         _animationLoadCollection = last;
     }
 
-    public delegate ulong LoadSomeAvfx( uint a1, IntPtr gameObject, IntPtr gameObject2 );
+    public delegate ulong LoadSomeAvfx( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 );
 
     [Signature( "E8 ?? ?? ?? ?? 45 0F B6 F7", DetourName = nameof( LoadSomeAvfxDetour ) )]
     public Hook< LoadSomeAvfx >? LoadSomeAvfxHook;
 
-    private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2 )
+    private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 )
     {
         var last = _animationLoadCollection;
         _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
-        var ret = LoadSomeAvfxHook!.Original( a1, gameObject, gameObject2 );
+        var ret = LoadSomeAvfxHook!.Original( a1, gameObject, gameObject2, unk1, unk2, unk3 );
         _animationLoadCollection = last;
         return ret;
     }
