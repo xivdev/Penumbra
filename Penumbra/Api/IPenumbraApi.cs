@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Configuration;
-using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
@@ -41,8 +39,8 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain the currently set mod directory from the configuration.
     public string GetModDirectory();
 
-    // Obtain the entire current penumbra configuration.
-    public IPluginConfiguration GetConfiguration();
+    // Obtain the entire current penumbra configuration as a json encoded string.
+    public string GetConfiguration();
 
     // Triggered when the user hovers over a listed changed object in a mod tab.
     // Can be used to append tooltips.
@@ -57,9 +55,6 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Queue redrawing of the actor with the given object table index, if it exists, with the given RedrawType.
     public void RedrawObject( int tableIndex, RedrawType setting );
-
-    // Queue redrawing of the specific actor with the given RedrawType. Should only be used when the actor is sure to be valid.
-    public void RedrawObject( GameObject gameObject, RedrawType setting );
 
     // Queue redrawing of all currently available actors with the given RedrawType.
     public void RedrawAll( RedrawType setting );
@@ -149,13 +144,12 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Set a temporary mod with the given paths, manipulations and priority and the name tag to all collections.
     // Can return Okay, InvalidGamePath, or InvalidManipulation.
-    public PenumbraApiEc AddTemporaryModAll( string tag, IReadOnlyDictionary< string, string > paths, IReadOnlySet< string > manipCodes,
+    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, HashSet< string > manipCodes,
         int priority );
 
     // Set a temporary mod with the given paths, manipulations and priority and the name tag to the collection with the given name, which can be temporary.
     // Can return Okay, MissingCollection InvalidGamePath, or InvalidManipulation.
-    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, IReadOnlyDictionary< string, string > paths,
-        IReadOnlySet< string > manipCodes,
+    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, HashSet< string > manipCodes,
         int priority );
 
     // Remove the temporary mod with the given tag and priority from the temporary mods applying to all collections, if it exists.

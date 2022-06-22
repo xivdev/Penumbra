@@ -117,7 +117,7 @@ public class TempModManager
             return RedirectResult.NotRegistered;
         }
 
-        var removed = _modsForAllCollections.RemoveAll( m =>
+        var removed = list.RemoveAll( m =>
         {
             if( m.Name != tag || priority != null && m.Priority != priority.Value )
             {

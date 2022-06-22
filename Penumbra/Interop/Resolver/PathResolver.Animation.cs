@@ -1,5 +1,6 @@
 using System;
 using Dalamud.Hooking;
+using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
@@ -10,16 +11,16 @@ public unsafe partial class PathResolver
 {
     private ModCollection? _animationLoadCollection;
 
-    public delegate byte LoadTimelineResourcesDelegate( IntPtr timeline );
+    public delegate ulong LoadTimelineResourcesDelegate( IntPtr timeline );
 
     // The timeline object loads the requested .tmb and .pap files. The .tmb files load the respective .avfx files.
     // We can obtain the associated game object from the timelines 28'th vfunc and use that to apply the correct collection.
     [Signature( "E8 ?? ?? ?? ?? 83 7F ?? ?? 75 ?? 0F B6 87", DetourName = nameof( LoadTimelineResourcesDetour ) )]
     public Hook< LoadTimelineResourcesDelegate >? LoadTimelineResourcesHook;
 
-    private byte LoadTimelineResourcesDetour( IntPtr timeline )
+    private ulong LoadTimelineResourcesDetour( IntPtr timeline )
     {
-        byte ret;
+        ulong ret;
         var  old = _animationLoadCollection;
         try
         {
@@ -59,16 +60,16 @@ public unsafe partial class PathResolver
         _animationLoadCollection = last;
     }
 
-    public delegate ulong LoadSomeAvfx( uint a1, IntPtr gameObject, IntPtr gameObject2 );
+    public delegate ulong LoadSomeAvfx( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 );
 
     [Signature( "E8 ?? ?? ?? ?? 45 0F B6 F7", DetourName = nameof( LoadSomeAvfxDetour ) )]
     public Hook< LoadSomeAvfx >? LoadSomeAvfxHook;
 
-    private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2 )
+    private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 )
     {
         var last = _animationLoadCollection;
         _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
-        var ret = LoadSomeAvfxHook!.Original( a1, gameObject, gameObject2 );
+        var ret = LoadSomeAvfxHook!.Original( a1, gameObject, gameObject2, unk1, unk2, unk3 );
         _animationLoadCollection = last;
         return ret;
     }
