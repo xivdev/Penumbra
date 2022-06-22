@@ -10,16 +10,16 @@ public unsafe partial class PathResolver
 {
     private ModCollection? _animationLoadCollection;
 
-    public delegate byte LoadTimelineResourcesDelegate( IntPtr timeline );
+    public delegate ulong LoadTimelineResourcesDelegate( IntPtr timeline );
 
     // The timeline object loads the requested .tmb and .pap files. The .tmb files load the respective .avfx files.
     // We can obtain the associated game object from the timelines 28'th vfunc and use that to apply the correct collection.
     [Signature( "E8 ?? ?? ?? ?? 83 7F ?? ?? 75 ?? 0F B6 87", DetourName = nameof( LoadTimelineResourcesDetour ) )]
     public Hook< LoadTimelineResourcesDelegate >? LoadTimelineResourcesHook;
 
-    private byte LoadTimelineResourcesDetour( IntPtr timeline )
+    private ulong LoadTimelineResourcesDetour( IntPtr timeline )
     {
-        byte ret;
+        ulong ret;
         var  old = _animationLoadCollection;
         try
         {
