@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
@@ -52,6 +53,9 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Queue redrawing of all actors of the given name with the given RedrawType.
     public void RedrawObject( string name, RedrawType setting );
+
+    // Queue redrawing of the specific actor with the given RedrawType. Should only be used when the actor is sure to be valid.
+    public void RedrawObject( GameObject gameObject, RedrawType setting );
 
     // Queue redrawing of the actor with the given object table index, if it exists, with the given RedrawType.
     public void RedrawObject( int tableIndex, RedrawType setting );
@@ -148,12 +152,11 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Set a temporary mod with the given paths, manipulations and priority and the name tag to all collections.
     // Can return Okay, InvalidGamePath, or InvalidManipulation.
-    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, HashSet< string > manipCodes,
-        int priority );
+    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, string manipString, int priority );
 
     // Set a temporary mod with the given paths, manipulations and priority and the name tag to the collection with the given name, which can be temporary.
     // Can return Okay, MissingCollection InvalidGamePath, or InvalidManipulation.
-    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, HashSet< string > manipCodes,
+    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, string manipString,
         int priority );
 
     // Remove the temporary mod with the given tag and priority from the temporary mods applying to all collections, if it exists.

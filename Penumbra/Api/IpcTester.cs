@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -281,6 +282,13 @@ public class IpcTester : IDisposable
                .InvokeAction( _redrawName, ( int )RedrawType.Redraw );
         }
 
+        DrawIntro( PenumbraIpc.LabelProviderRedrawObject, "Redraw Player Character" );
+        if( ImGui.Button( "Redraw##pc" ) && Dalamud.ClientState.LocalPlayer != null )
+        {
+            _pi.GetIpcSubscriber< GameObject, int, object? >( PenumbraIpc.LabelProviderRedrawObject )
+               .InvokeAction( Dalamud.ClientState.LocalPlayer, ( int )RedrawType.Redraw );
+        }
+
         DrawIntro( PenumbraIpc.LabelProviderRedrawIndex, "Redraw by Index" );
         var tmp = _redrawIndex;
         ImGui.SetNextItemWidth( 100 * ImGuiHelpers.GlobalScale );
@@ -448,7 +456,7 @@ public class IpcTester : IDisposable
             ImGui.OpenPopup( "Ipc Data" );
         }
 
-        DrawIntro(PenumbraIpc.LabelProviderGetMetaManipulations, "Meta Manipulations"  );
+        DrawIntro( PenumbraIpc.LabelProviderGetMetaManipulations, "Meta Manipulations" );
         if( ImGui.Button( "Copy to Clipboard" ) )
         {
             var base64 = _pi.GetIpcSubscriber< string, string >( PenumbraIpc.LabelProviderGetMetaManipulations )
@@ -697,21 +705,21 @@ public class IpcTester : IDisposable
         if( ImGui.Button( "Add##Mod" ) )
         {
             _lastTempError = _pi
-               .GetIpcSubscriber< string, string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >(
+               .GetIpcSubscriber< string, string, Dictionary< string, string >, string, int, PenumbraApiEc >(
                     PenumbraIpc.LabelProviderAddTemporaryMod )
                .InvokeFunc( _tempModName, _tempCollectionName,
                     new Dictionary< string, string > { { _tempGamePath, _tempFilePath } },
-                    _tempManipulation.Length > 0 ? new HashSet< string > { _tempManipulation } : new HashSet< string >(), int.MaxValue );
+                    _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue );
         }
 
         DrawIntro( PenumbraIpc.LabelProviderAddTemporaryModAll, "Add Temporary Mod to all Collections" );
         if( ImGui.Button( "Add##All" ) )
         {
             _lastTempError = _pi
-               .GetIpcSubscriber< string, IReadOnlyDictionary< string, string >, IReadOnlySet< string >, int, PenumbraApiEc >(
+               .GetIpcSubscriber< string, Dictionary< string, string >, string, int, PenumbraApiEc >(
                     PenumbraIpc.LabelProviderAddTemporaryModAll )
                .InvokeFunc( _tempModName, new Dictionary< string, string > { { _tempGamePath, _tempFilePath } },
-                    _tempManipulation.Length > 0 ? new HashSet< string > { _tempManipulation } : new HashSet< string >(), int.MaxValue );
+                    _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue );
         }
 
         DrawIntro( PenumbraIpc.LabelProviderRemoveTemporaryMod, "Remove Temporary Mod from specific Collection" );

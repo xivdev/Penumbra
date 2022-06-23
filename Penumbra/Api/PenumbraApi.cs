@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Lumina.Data;
 using Newtonsoft.Json;
@@ -71,6 +72,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         _penumbra!.ObjectReloader.RedrawObject( name, setting );
+    }
+
+    public void RedrawObject( GameObject? gameObject, RedrawType setting )
+    {
+        CheckInitialized();
+        _penumbra!.ObjectReloader.RedrawObject( gameObject, setting );
     }
 
     public void RedrawAll( RedrawType setting )
@@ -368,7 +375,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return PenumbraApiEc.Success;
     }
 
-    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, HashSet< string > manipCodes, int priority )
+    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, string manipString, int priority )
     {
         CheckInitialized();
         if( !ConvertPaths( paths, out var p ) )
@@ -376,7 +383,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.InvalidGamePath;
         }
 
-        if( !ConvertManips( manipCodes, out var m ) )
+        if( !ConvertManips( manipString, out var m ) )
         {
             return PenumbraApiEc.InvalidManipulation;
         }
@@ -388,7 +395,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         };
     }
 
-    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, HashSet< string > manipCodes,
+    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, string manipString,
         int priority )
     {
         CheckInitialized();
@@ -403,7 +410,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.InvalidGamePath;
         }
 
-        if( !ConvertManips( manipCodes, out var m ) )
+        if( !ConvertManips( manipString, out var m ) )
         {
             return PenumbraApiEc.InvalidManipulation;
         }
@@ -535,27 +542,31 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return true;
     }
 
-    // Convert manipulations from transmitted base64 strings to actual manipulations.
+    // Convert manipulations from a transmitted base64 string to actual manipulations.
+    // The empty string is treated as an empty set.
     // Only returns true if all conversions are successful and distinct.
-    private static bool ConvertManips( IReadOnlyCollection< string > manipStrings,
+    private static bool ConvertManips( string manipString,
         [NotNullWhen( true )] out HashSet< MetaManipulation >? manips )
     {
-        manips = new HashSet< MetaManipulation >( manipStrings.Count );
-        foreach( var m in manipStrings )
+        if( manipString.Length == 0 )
         {
-            if( Functions.FromCompressedBase64< MetaManipulation[] >( m, out var manipArray ) != MetaManipulation.CurrentVersion )
+            manips = new HashSet< MetaManipulation >();
+            return true;
+        }
+
+        if( Functions.FromCompressedBase64< MetaManipulation[] >( manipString, out var manipArray ) != MetaManipulation.CurrentVersion )
+        {
+            manips = null;
+            return false;
+        }
+
+        manips = new HashSet< MetaManipulation >( manipArray!.Length );
+        foreach( var manip in manipArray )
+        {
+            if( !manips.Add( manip ) )
             {
                 manips = null;
                 return false;
-            }
-
-            foreach( var manip in manipArray! )
-            {
-                if( !manips.Add( manip ) )
-                {
-                    manips = null;
-                    return false;
-                }
             }
         }
 

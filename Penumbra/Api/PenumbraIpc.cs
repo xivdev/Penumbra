@@ -116,15 +116,17 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
+    public const string LabelProviderRedrawObject      = "Penumbra.RedrawObject";
     public const string LabelProviderRedrawName        = "Penumbra.RedrawObjectByName";
     public const string LabelProviderRedrawIndex       = "Penumbra.RedrawObjectByIndex";
     public const string LabelProviderRedrawAll         = "Penumbra.RedrawAll";
     public const string LabelProviderGameObjectRedrawn = "Penumbra.GameObjectRedrawn";
 
-    internal ICallGateProvider< string, int, object? >? ProviderRedrawName;
-    internal ICallGateProvider< int, int, object? >?    ProviderRedrawIndex;
-    internal ICallGateProvider< int, object? >?         ProviderRedrawAll;
-    internal ICallGateProvider< IntPtr, int, object? >? ProviderGameObjectRedrawn;
+    internal ICallGateProvider< string, int, object? >?     ProviderRedrawName;
+    internal ICallGateProvider< GameObject, int, object? >? ProviderRedrawObject;
+    internal ICallGateProvider< int, int, object? >?        ProviderRedrawIndex;
+    internal ICallGateProvider< int, object? >?             ProviderRedrawAll;
+    internal ICallGateProvider< IntPtr, int, object? >?     ProviderGameObjectRedrawn;
 
     private static RedrawType CheckRedrawType( int value )
     {
@@ -147,6 +149,16 @@ public partial class PenumbraIpc
         catch( Exception e )
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawName}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderRedrawObject = pi.GetIpcProvider< GameObject, int, object? >( LabelProviderRedrawObject );
+            ProviderRedrawObject.RegisterAction( ( s, i ) => Api.RedrawObject( s, CheckRedrawType( i ) ) );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawObject}:\n{e}" );
         }
 
         try
@@ -186,6 +198,7 @@ public partial class PenumbraIpc
     private void DisposeRedrawProviders()
     {
         ProviderRedrawName?.UnregisterAction();
+        ProviderRedrawObject?.UnregisterAction();
         ProviderRedrawIndex?.UnregisterAction();
         ProviderRedrawAll?.UnregisterAction();
         Api.GameObjectRedrawn -= OnGameObjectRedrawn;
@@ -533,10 +546,10 @@ public partial class PenumbraIpc
     internal ICallGateProvider< string, string, bool, (PenumbraApiEc, string) >? ProviderCreateTemporaryCollection;
     internal ICallGateProvider< string, PenumbraApiEc >?                         ProviderRemoveTemporaryCollection;
 
-    internal ICallGateProvider< string, Dictionary< string, string >, HashSet< string >, int, PenumbraApiEc >?
+    internal ICallGateProvider< string, Dictionary< string, string >, string, int, PenumbraApiEc >?
         ProviderAddTemporaryModAll;
 
-    internal ICallGateProvider< string, string, Dictionary< string, string >, HashSet< string >, int, PenumbraApiEc >?
+    internal ICallGateProvider< string, string, Dictionary< string, string >, string, int, PenumbraApiEc >?
         ProviderAddTemporaryMod;
 
     internal ICallGateProvider< string, int, PenumbraApiEc >?         ProviderRemoveTemporaryModAll;
@@ -569,7 +582,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderAddTemporaryModAll =
-                pi.GetIpcProvider< string, Dictionary< string, string >, HashSet< string >, int, PenumbraApiEc >(
+                pi.GetIpcProvider< string, Dictionary< string, string >, string, int, PenumbraApiEc >(
                     LabelProviderAddTemporaryModAll );
             ProviderAddTemporaryModAll.RegisterFunc( Api.AddTemporaryModAll );
         }
@@ -581,7 +594,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderAddTemporaryMod =
-                pi.GetIpcProvider< string, string, Dictionary< string, string >, HashSet< string >, int, PenumbraApiEc >(
+                pi.GetIpcProvider< string, string, Dictionary< string, string >, string, int, PenumbraApiEc >(
                     LabelProviderAddTemporaryMod );
             ProviderAddTemporaryMod.RegisterFunc( Api.AddTemporaryMod );
         }
