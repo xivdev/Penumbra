@@ -1,12 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Dalamud.Configuration;
 using Dalamud.Logging;
+using Newtonsoft.Json;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Import;
+using Penumbra.Mods;
 using Penumbra.UI.Classes;
+using Penumbra.Util;
+using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
 
@@ -40,8 +45,10 @@ public partial class Configuration : IPluginConfiguration
     public bool EnableResourceLogging { get; set; } = false;
     public string ResourceLoggingFilter { get; set; } = string.Empty;
 
+    [JsonConverter( typeof( SortModeConverter ) )]
+    [JsonProperty( Order = int.MaxValue )]
+    public ISortMode< Mod > SortMode = ISortMode< Mod >.FoldersFirst;
 
-    public SortMode SortMode { get; set; } = SortMode.FoldersFirst;
     public bool ScaleModSelector { get; set; } = false;
     public float ModSelectorAbsoluteSize { get; set; } = Constants.DefaultAbsoluteSize;
     public int ModSelectorScaledSize { get; set; } = Constants.DefaultScaledSize;
@@ -65,9 +72,25 @@ public partial class Configuration : IPluginConfiguration
     // Includes adding new colors and migrating from old versions.
     public static Configuration Load()
     {
-        var iConfiguration = Dalamud.PluginInterface.GetPluginConfig();
-        var configuration  = iConfiguration as Configuration ?? new Configuration();
-        if( iConfiguration is { Version: Constants.CurrentVersion } )
+        void HandleDeserializationError( object? sender, ErrorEventArgs errorArgs )
+        {
+            PluginLog.Error(
+                $"Error parsing Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}" );
+            errorArgs.ErrorContext.Handled = true;
+        }
+
+        Configuration? configuration = null;
+        if( File.Exists( Dalamud.PluginInterface.ConfigFile.FullName ) )
+        {
+            var text = File.ReadAllText( Dalamud.PluginInterface.ConfigFile.FullName );
+            configuration = JsonConvert.DeserializeObject< Configuration >( text, new JsonSerializerSettings
+            {
+                Error = HandleDeserializationError,
+            } );
+        }
+
+        configuration ??= new Configuration();
+        if( configuration.Version == Constants.CurrentVersion )
         {
             configuration.AddColors( false );
             return configuration;
@@ -84,7 +107,8 @@ public partial class Configuration : IPluginConfiguration
     {
         try
         {
-            Dalamud.PluginInterface.SavePluginConfig( this );
+            var text = JsonConvert.SerializeObject( this, Formatting.Indented );
+            File.WriteAllText( Dalamud.PluginInterface.ConfigFile.FullName, text );
         }
         catch( Exception e )
         {
@@ -113,12 +137,48 @@ public partial class Configuration : IPluginConfiguration
     // Contains some default values or boundaries for config values.
     public static class Constants
     {
-        public const int   CurrentVersion      = 3;
+        public const int   CurrentVersion      = 4;
         public const float MaxAbsoluteSize     = 600;
         public const int   DefaultAbsoluteSize = 250;
         public const float MinAbsoluteSize     = 50;
         public const int   MaxScaledSize       = 80;
         public const int   DefaultScaledSize   = 20;
         public const int   MinScaledSize       = 5;
+
+        public static readonly ISortMode< Mod >[] ValidSortModes =
+        {
+            ISortMode< Mod >.FoldersFirst,
+            ISortMode< Mod >.Lexicographical,
+            new ModFileSystem.ImportDate(),
+            new ModFileSystem.InverseImportDate(),
+            ISortMode< Mod >.InverseFoldersFirst,
+            ISortMode< Mod >.InverseLexicographical,
+            ISortMode< Mod >.FoldersLast,
+            ISortMode< Mod >.InverseFoldersLast,
+            ISortMode< Mod >.InternalOrder,
+            ISortMode< Mod >.InverseInternalOrder,
+        };
+    }
+
+    private class SortModeConverter : JsonConverter< ISortMode< Mod > >
+    {
+        public override void WriteJson( JsonWriter writer, ISortMode< Mod >? value, JsonSerializer serializer )
+        {
+            value ??= ISortMode< Mod >.FoldersFirst;
+            serializer.Serialize( writer, value.GetType().Name );
+        }
+
+        public override ISortMode< Mod > ReadJson( JsonReader reader, Type objectType, ISortMode< Mod >? existingValue,
+            bool hasExistingValue,
+            JsonSerializer serializer )
+        {
+            var name = serializer.Deserialize< string >( reader );
+            if( name == null || !Constants.ValidSortModes.FindFirst( s => s.GetType().Name == name, out var mode ) )
+            {
+                return existingValue ?? ISortMode< Mod >.FoldersFirst;
+            }
+
+            return mode;
+        }
     }
 }

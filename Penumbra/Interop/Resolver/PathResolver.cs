@@ -76,6 +76,13 @@ public partial class PathResolver : IDisposable
 
     private bool HandleAnimationFile( ResourceType type, Utf8GamePath _, [NotNullWhen(true)] out ModCollection? collection )
     {
+        if( type == ResourceType.Atex )
+            if (_animationLoadCollection == null)
+                PluginLog.Information( $"ATEX {_} Default" );
+            else
+            {
+                PluginLog.Information( $"ATEX {_} {_animationLoadCollection?.Name}" );
+            }
         if( _animationLoadCollection != null )
         {
             switch( type )
