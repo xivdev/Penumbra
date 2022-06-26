@@ -62,7 +62,7 @@ public partial class ConfigWindow
         ImGui.SameLine();
         DrawInheritedCollectionButton( 3 * buttonSize );
         ImGui.SameLine();
-        DrawCollectionSelector( "##collectionSelector", 2 * buttonSize.X, ModCollection.Type.Current, false, null );
+        DrawCollectionSelector( "##collectionSelector", 2 * buttonSize.X, CollectionType.Current, false, null );
         if( !Penumbra.CollectionManager.CurrentCollectionInUse )
         {
             ImGuiUtil.DrawTextButton( "The currently selected collection is not used in any way.", -Vector2.UnitX, Colors.PressEnterWarningBg );
@@ -79,7 +79,7 @@ public partial class ConfigWindow
                              : "Set the current collection to the configured default collection.";
         if( ImGuiUtil.DrawDisabledButton( name, width, tt, isCurrent || isEmpty ) )
         {
-            Penumbra.CollectionManager.SetCollection( Penumbra.CollectionManager.Default, ModCollection.Type.Current );
+            Penumbra.CollectionManager.SetCollection( Penumbra.CollectionManager.Default, CollectionType.Current );
         }
     }
 
@@ -97,7 +97,7 @@ public partial class ConfigWindow
         };
         if( ImGuiUtil.DrawDisabledButton( name, width, tt, noModSelected || !modInherited ) )
         {
-            Penumbra.CollectionManager.SetCollection( collection, ModCollection.Type.Current );
+            Penumbra.CollectionManager.SetCollection( collection, CollectionType.Current );
         }
     }
 

@@ -13,20 +13,12 @@ namespace Penumbra.Collections;
 
 public partial class ModCollection
 {
-    public enum Type : byte
-    {
-        Inactive,  // A collection was added or removed
-        Default,   // The default collection was changed
-        Character, // A character collection was changed
-        Current,   // The current collection was changed.
-    }
-
     public sealed partial class Manager : IDisposable, IEnumerable< ModCollection >
     {
         // On addition, oldCollection is null. On deletion, newCollection is null.
-        // CharacterName is onls set for type == Character.
-        public delegate void CollectionChangeDelegate( Type type, ModCollection? oldCollection, ModCollection? newCollection,
-            string? characterName = null );
+        // CharacterName is only set for type == Character.
+        public delegate void CollectionChangeDelegate( CollectionType collectionType, ModCollection? oldCollection,
+            ModCollection? newCollection, string? characterName = null );
 
         private readonly Mod.Manager _modManager;
 
@@ -124,8 +116,8 @@ public partial class ModCollection
             _collections.Add( newCollection );
             newCollection.Save();
             PluginLog.Debug( "Added collection {Name:l}.", newCollection.Name );
-            CollectionChanged.Invoke( Type.Inactive, null, newCollection );
-            SetCollection( newCollection.Index, Type.Current );
+            CollectionChanged.Invoke( CollectionType.Inactive, null, newCollection );
+            SetCollection( newCollection.Index, CollectionType.Current );
             return true;
         }
 
@@ -148,17 +140,17 @@ public partial class ModCollection
 
             if( idx == Current.Index )
             {
-                SetCollection( DefaultName, Type.Current );
+                SetCollection( DefaultName, CollectionType.Current );
             }
 
             if( idx == Default.Index )
             {
-                SetCollection( Empty, Type.Default );
+                SetCollection( Empty, CollectionType.Default );
             }
 
             foreach( var (characterName, _) in _characters.Where( c => c.Value.Index == idx ).ToList() )
             {
-                SetCollection( Empty, Type.Character, characterName );
+                SetCollection( Empty, CollectionType.Character, characterName );
             }
 
             var collection = _collections[ idx ];
@@ -179,7 +171,7 @@ public partial class ModCollection
             }
 
             PluginLog.Debug( "Removed collection {Name:l}.", collection.Name );
-            CollectionChanged.Invoke( Type.Inactive, collection, null );
+            CollectionChanged.Invoke( CollectionType.Inactive, collection, null );
             return true;
         }
 

@@ -152,7 +152,7 @@ public partial class ConfigWindow
         {
             if( _newCurrentCollection != null )
             {
-                Penumbra.CollectionManager.SetCollection( _newCurrentCollection, ModCollection.Type.Current );
+                Penumbra.CollectionManager.SetCollection( _newCurrentCollection, CollectionType.Current );
                 _newCurrentCollection = null;
             }
 

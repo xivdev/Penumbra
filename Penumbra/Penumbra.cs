@@ -324,23 +324,34 @@ public class Penumbra : IDisposable
             return false;
         }
 
-        switch( type )
+        foreach( var t in Enum.GetValues< CollectionType >() )
         {
-            case "default":
-                if( collection == CollectionManager.Default )
-                {
-                    Dalamud.Chat.Print( $"{collection.Name} already is the default collection." );
-                    return false;
-                }
+            if( t is CollectionType.Inactive or CollectionType.Character
+            || !string.Equals( t.ToString(), type, StringComparison.OrdinalIgnoreCase ) )
+            {
+                continue;
+            }
 
-                CollectionManager.SetCollection( collection, ModCollection.Type.Default );
-                Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
-                return true;
-            default:
-                Dalamud.Chat.Print(
-                    "Second command argument is not default, the correct command format is: /penumbra collection default <collectionName>" );
+            var oldCollection = CollectionManager.ByType( t );
+            if( collection == oldCollection )
+            {
+                Dalamud.Chat.Print( $"{collection.Name} already is the {t.ToName()} Collection." );
                 return false;
+            }
+
+            if( oldCollection == null && t.IsSpecial() )
+            {
+                CollectionManager.CreateSpecialCollection( t );
+            }
+
+            CollectionManager.SetCollection( collection, t, null );
+            Dalamud.Chat.Print( $"Set {collection.Name} as {t.ToName()} Collection." );
+            return true;
         }
+
+        Dalamud.Chat.Print(
+            "Second command argument is not default, the correct command format is: /penumbra collection <collectionType> <collectionName>" );
+        return false;
     }
 
     private void OnCommand( string command, string rawArgs )

@@ -47,7 +47,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         Penumbra.ModManager.ModMetaChanged                    += OnModMetaChange;
         Penumbra.ModManager.ModDiscoveryStarted               += StoreCurrentSelection;
         Penumbra.ModManager.ModDiscoveryFinished              += RestoreLastSelection;
-        OnCollectionChange( ModCollection.Type.Current, null, Penumbra.CollectionManager.Current, null );
+        OnCollectionChange( CollectionType.Current, null, Penumbra.CollectionManager.Current, null );
     }
 
     public override void Dispose()
@@ -354,9 +354,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         OnSelectionChange( Selected, Selected, default );
     }
 
-    private void OnCollectionChange( ModCollection.Type type, ModCollection? oldCollection, ModCollection? newCollection, string? _ )
+    private void OnCollectionChange( CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string? _ )
     {
-        if( type != ModCollection.Type.Current || oldCollection == newCollection )
+        if( collectionType != CollectionType.Current || oldCollection == newCollection )
         {
             return;
         }

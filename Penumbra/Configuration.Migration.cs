@@ -182,7 +182,7 @@ public partial class Configuration
             DefaultCollection    = _data[ nameof( DefaultCollection ) ]?.ToObject< string >()                          ?? DefaultCollection;
             CharacterCollections = _data[ nameof( CharacterCollections ) ]?.ToObject< Dictionary< string, string > >() ?? CharacterCollections;
             ModCollection.Manager.SaveActiveCollections( DefaultCollection, CurrentCollection,
-                CharacterCollections.Select( kvp => ( kvp.Key, kvp.Value ) ) );
+                CharacterCollections.Select( kvp => ( kvp.Key, kvp.Value ) ), Array.Empty<(CollectionType, string)>() );
         }
 
         // Collections were introduced and the previous CurrentCollection got put into ModDirectory.
