@@ -504,6 +504,12 @@ public class Penumbra : IDisposable
             CollectionManager.Default.Index );
         sb.AppendFormat( "> **`Current Collection:          `** {0}... ({1})\n", CollectionName( CollectionManager.Current ),
             CollectionManager.Current.Index );
+        foreach( var type in CollectionTypeExtensions.Special )
+        {
+            var collection = CollectionManager.ByType( type );
+            if( collection != null )
+                sb.AppendFormat( "> **`{0,-29}`** {1}... ({2})\n", type.ToName(), CollectionName( collection ), collection.Index );
+        }
         foreach( var (name, collection) in CollectionManager.Characters )
         {
             sb.AppendFormat( "> **`{2,-29}`** {0}... ({1})\n", CollectionName( collection ),

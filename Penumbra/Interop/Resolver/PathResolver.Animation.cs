@@ -1,10 +1,6 @@
 using System;
-using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
@@ -13,6 +9,7 @@ namespace Penumbra.Interop.Resolver;
 public unsafe partial class PathResolver
 {
     private ModCollection? _animationLoadCollection;
+    private ModCollection? _lastAvfxCollection = null;
 
     public delegate ulong LoadTimelineResourcesDelegate( IntPtr timeline );
 
@@ -122,17 +119,5 @@ public unsafe partial class PathResolver
         _animationLoadCollection = IdentifyCollection( gameObject );
         SomeOtherAvfxHook!.Original( unk );
         _animationLoadCollection = last;
-    }
-
-    public delegate IntPtr SomeAtexDelegate( IntPtr a1, IntPtr a2, IntPtr a3, IntPtr a4, uint a5, IntPtr a6 );
-
-    [Signature( "E8 ?? ?? ?? ?? 84 C0 75 ?? 48 8B CE 41 B6" )]
-    public Hook< SomeAtexDelegate >? SomeAtexHook;
-
-    public IntPtr SomeAtexDetour( IntPtr a1, IntPtr a2, IntPtr a3, IntPtr a4, uint a5, IntPtr a6 )
-    {
-        var ret = SomeAtexHook!.Original( a1, a2, a3, a4, a5, a6 );
-        PluginLog.Information( $"{a1:X} {a2:X} {a3:X} {a4:X} {a5:X} {a6:X} {ret}" );
-        return ret;
     }
 }

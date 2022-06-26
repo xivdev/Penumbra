@@ -99,7 +99,6 @@ public unsafe partial class PathResolver
         LoadSomePapHook?.Enable();
         SomeActionLoadHook?.Enable();
         SomeOtherAvfxHook?.Enable();
-        SomeAtexHook?.Enable();
     }
 
     private void DisableDataHooks()
@@ -115,7 +114,6 @@ public unsafe partial class PathResolver
         LoadSomePapHook?.Disable();
         SomeActionLoadHook?.Disable();
         SomeOtherAvfxHook?.Disable();
-        SomeAtexHook?.Disable();
     }
 
     private void DisposeDataHooks()
@@ -130,7 +128,6 @@ public unsafe partial class PathResolver
         LoadSomePapHook?.Dispose();
         SomeActionLoadHook?.Dispose();
         SomeOtherAvfxHook?.Dispose();
-        SomeAtexHook?.Dispose();
     }
 
     // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
