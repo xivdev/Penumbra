@@ -62,13 +62,12 @@ public unsafe class CharacterUtility : IDisposable
     public CharacterUtility()
     {
         SignatureHelper.Initialise( this );
-
-        Dalamud.Framework.Update += LoadDefaultResources;
-        LoadingFinished          += () => PluginLog.Debug( "Loading of CharacterUtility finished." );
+        LoadingFinished += () => PluginLog.Debug( "Loading of CharacterUtility finished." );
+        LoadDefaultResources( true );
     }
 
     // We store the default data of the resources so we can always restore them.
-    private void LoadDefaultResources( object _ )
+    private void LoadDefaultResources( bool repeat )
     {
         var missingCount = 0;
         if( Address == null )
@@ -95,9 +94,14 @@ public unsafe class CharacterUtility : IDisposable
 
         if( missingCount == 0 )
         {
-            Dalamud.Framework.Update -= LoadDefaultResources;
-            Ready                    =  true;
+            Ready = true;
             LoadingFinished.Invoke();
+        }
+        else if( repeat )
+        {
+            PluginLog.Debug( "Custom load of character resources triggered." );
+            LoadCharacterResources();
+            LoadDefaultResources( false );
         }
     }
 

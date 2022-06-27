@@ -22,81 +22,25 @@ using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
+using CharacterUtility = Penumbra.Interop.CharacterUtility;
+using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
 namespace Penumbra;
 
-public class MainClass : IDalamudPlugin
+public class Penumbra : IDalamudPlugin
 {
-    private          Penumbra?        _penumbra;
-    private readonly CharacterUtility _characterUtility;
-    public static    bool             DevPenumbraExists;
-    public static    bool             IsNotInstalledPenumbra;
-
-    public MainClass( DalamudPluginInterface pluginInterface )
-    {
-        Dalamud.Initialize( pluginInterface );
-        DevPenumbraExists      = CheckDevPluginPenumbra();
-        IsNotInstalledPenumbra = CheckIsNotInstalled();
-        GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
-        _characterUtility = new CharacterUtility();
-        _characterUtility.LoadingFinished += ()
-            => _penumbra = new Penumbra( _characterUtility );
-    }
-
-    public void Dispose()
-    {
-        _penumbra?.Dispose();
-        _characterUtility.Dispose();
-    }
-
     public string Name
-        => Penumbra.Name;
+        => "Penumbra";
 
-    // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.
-    private static bool CheckDevPluginPenumbra()
-    {
-#if !DEBUG
-        var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
-        var dir = new DirectoryInfo( path );
-
-        try
-        {
-            return dir.Exists && dir.EnumerateFiles( "*.dll", SearchOption.AllDirectories ).Any();
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
-            return true;
-        }
-#else
-        return false;
-#endif
-    }
-
-    // Check if the loaded version of penumbra itself is in devPlugins.
-    private static bool CheckIsNotInstalled()
-    {
-#if !DEBUG
-        var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
-        if (!ret)
-            PluginLog.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
-        return !ret;
-#else
-        return false;
-#endif
-    }
-}
-
-public class Penumbra : IDisposable
-{
-    public const  string Name        = "Penumbra";
     private const string CommandName = "/penumbra";
 
     public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
 
     public static readonly string CommitHash =
         Assembly.GetExecutingAssembly().GetCustomAttribute< AssemblyInformationalVersionAttribute >()?.InformationalVersion ?? "Unknown";
+
+    public static bool DevPenumbraExists;
+    public static bool IsNotInstalledPenumbra;
 
     public static Configuration Config { get; private set; } = null!;
 
@@ -122,9 +66,12 @@ public class Penumbra : IDisposable
 
     internal WebServer? WebServer;
 
-    public Penumbra( CharacterUtility characterUtility )
+    public Penumbra( DalamudPluginInterface pluginInterface )
     {
-        CharacterUtility = characterUtility;
+        Dalamud.Initialize( pluginInterface );
+        GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
+        DevPenumbraExists      = CheckDevPluginPenumbra();
+        IsNotInstalledPenumbra = CheckIsNotInstalled();
 
         Framework = new FrameworkManager();
         Backup.CreateBackup( PenumbraBackupFiles() );
@@ -134,8 +81,10 @@ public class Penumbra : IDisposable
         TempMods          = new TempModManager();
         MetaFileManager   = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
-        ResourceLogger    = new ResourceLogger( ResourceLoader );
-        ModManager        = new Mod.Manager( Config.ModDirectory );
+        ResourceLoader.EnableHooks();
+        ResourceLogger   = new ResourceLogger( ResourceLoader );
+        CharacterUtility = new CharacterUtility();
+        ModManager       = new Mod.Manager( Config.ModDirectory );
         ModManager.DiscoverMods();
         CollectionManager = new ModCollection.Manager( ModManager );
         ModFileSystem     = ModFileSystem.Load();
@@ -151,16 +100,15 @@ public class Penumbra : IDisposable
 
         SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
 
-        if( Config.EnableHttpApi )
-        {
-            CreateWebServer();
-        }
-
-        ResourceLoader.EnableHooks();
         if( Config.EnableMods )
         {
             ResourceLoader.EnableReplacements();
             PathResolver.Enable();
+        }
+
+        if( Config.EnableHttpApi )
+        {
+            CreateWebServer();
         }
 
         if( Config.DebugMode )
@@ -508,8 +456,11 @@ public class Penumbra : IDisposable
         {
             var collection = CollectionManager.ByType( type );
             if( collection != null )
+            {
                 sb.AppendFormat( "> **`{0,-29}`** {1}... ({2})\n", type.ToName(), CollectionName( collection ), collection.Index );
+            }
         }
+
         foreach( var (name, collection) in CollectionManager.Characters )
         {
             sb.AppendFormat( "> **`{2,-29}`** {0}... ({1})\n", CollectionName( collection ),
@@ -522,5 +473,40 @@ public class Penumbra : IDisposable
         }
 
         return sb.ToString();
+    }
+
+    // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.
+    private static bool CheckDevPluginPenumbra()
+    {
+#if !DEBUG
+        var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
+        var dir = new DirectoryInfo( path );
+
+        try
+        {
+            return dir.Exists && dir.EnumerateFiles( "*.dll", SearchOption.AllDirectories ).Any();
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
+            return true;
+        }
+#else
+        return false;
+#endif
+    }
+
+    // Check if the loaded version of penumbra itself is in devPlugins.
+    private static bool CheckIsNotInstalled()
+    {
+#if !DEBUG
+        var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
+        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
+        if (!ret)
+            PluginLog.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
+        return !ret;
+#else
+        return false;
+#endif
     }
 }

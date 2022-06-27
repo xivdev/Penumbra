@@ -29,7 +29,8 @@ public unsafe partial class ResourceLoader
         [FieldOffset( 20 )]
         public uint SegmentLength;
 
-        public bool IsPartialRead => SegmentLength != 0;
+        public bool IsPartialRead
+            => SegmentLength != 0;
     }
 
     public delegate ResourceHandle* GetResourceSyncPrototype( ResourceManager* resourceManager, ResourceCategory* pCategoryId,
@@ -83,12 +84,25 @@ public unsafe partial class ResourceLoader
 
         ResourceRequested?.Invoke( gamePath, isSync );
 
+        // Force metadata tables to load synchronously and not be able to be replaced.
+        switch( *resourceType )
+        {
+            case ResourceType.Eqp:
+            case ResourceType.Gmp:
+            case ResourceType.Eqdp:
+            case ResourceType.Cmp:
+            case ResourceType.Est:
+                PluginLog.Verbose( "Forced resource {gamePath} to be loaded synchronously.", gamePath );
+                return CallOriginalHandler( true, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+        }
+
         // If no replacements are being made, we still want to be able to trigger the event.
         var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
         PathResolved?.Invoke( gamePath, *resourceType, resolvedPath, data );
         if( resolvedPath == null )
         {
-            var retUnmodified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+            var retUnmodified =
+                CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
             ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
             return retUnmodified;
         }
@@ -247,13 +261,15 @@ public unsafe partial class ResourceLoader
     private int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )
     {
         if( pGetResParams == null || !pGetResParams->IsPartialRead )
+        {
             return path.Crc32;
+        }
 
         // When the game requests file only partially, crc32 includes that information, in format of:
         // path/to/file.ext.hex_offset.hex_size
         // ex) music/ex4/BGM_EX4_System_Title.scd.381adc.30000
         return Utf8String.Join(
-            (byte)'.',
+            ( byte )'.',
             path,
             Utf8String.FromStringUnsafe( pGetResParams->SegmentOffset.ToString( "x" ), true ),
             Utf8String.FromStringUnsafe( pGetResParams->SegmentLength.ToString( "x" ), true )
