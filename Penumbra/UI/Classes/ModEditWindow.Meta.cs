@@ -244,9 +244,9 @@ public partial class ModEditWindow
             // Values
             ImGui.TableNextColumn();
             var (bit1, bit2) = defaultEntry.ToBits( _new.Slot );
-            Checkmark( "##eqdpCheck1", string.Empty, bit1, bit1, out _ );
+            Checkmark( "Material##eqdpCheck1", string.Empty, bit1, bit1, out _ );
             ImGui.SameLine();
-            Checkmark( "##eqdpCheck2", string.Empty, bit2, bit2, out _ );
+            Checkmark( "Model##eqdpCheck2", string.Empty, bit2, bit2, out _ );
         }
 
         public static void Draw( EqdpManipulation meta, Mod.Editor editor, Vector2 iconSize )
@@ -276,13 +276,13 @@ public partial class ModEditWindow
             var (defaultBit1, defaultBit2) = defaultEntry.ToBits( meta.Slot );
             var (bit1, bit2)               = meta.Entry.ToBits( meta.Slot );
             ImGui.TableNextColumn();
-            if( Checkmark( "##eqdpCheck1", string.Empty, bit1, defaultBit1, out var newBit1 ) )
+            if( Checkmark( "Material##eqdpCheck1", string.Empty, bit1, defaultBit1, out var newBit1 ) )
             {
                 editor.Meta.Change( meta with { Entry = Eqdp.FromSlotAndBits( meta.Slot, newBit1, bit2 ) } );
             }
 
             ImGui.SameLine();
-            if( Checkmark( "##eqdpCheck2", string.Empty, bit2, defaultBit2, out var newBit2 ) )
+            if( Checkmark( "Model##eqdpCheck2", string.Empty, bit2, defaultBit2, out var newBit2 ) )
             {
                 editor.Meta.Change( meta with { Entry = Eqdp.FromSlotAndBits( meta.Slot, bit1, newBit2 ) } );
             }
