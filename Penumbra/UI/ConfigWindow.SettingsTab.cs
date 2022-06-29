@@ -39,7 +39,7 @@ public partial class ConfigWindow
 
             DrawEnabledBox();
             DrawShowAdvancedBox();
-            Checkbox( "Fix Main Window", "Prevent the main window from being resized or moved.", Penumbra.Config.FixMainWindow, v =>
+            Checkbox( "Lock Main Window", "Prevent the main window from being resized or moved.", Penumbra.Config.FixMainWindow, v =>
             {
                 Penumbra.Config.FixMainWindow = v;
                 _window.Flags = v
