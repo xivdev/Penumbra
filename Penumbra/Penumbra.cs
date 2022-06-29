@@ -77,14 +77,14 @@ public class Penumbra : IDalamudPlugin
         Backup.CreateBackup( PenumbraBackupFiles() );
         Config = Configuration.Load();
 
-        ResidentResources = new ResidentResourceManager();
         TempMods          = new TempModManager();
         MetaFileManager   = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
         ResourceLoader.EnableHooks();
-        ResourceLogger   = new ResourceLogger( ResourceLoader );
-        CharacterUtility = new CharacterUtility();
-        ModManager       = new Mod.Manager( Config.ModDirectory );
+        ResourceLogger    = new ResourceLogger( ResourceLoader );
+        CharacterUtility  = new CharacterUtility();
+        ResidentResources = new ResidentResourceManager();
+        ModManager        = new Mod.Manager( Config.ModDirectory );
         ModManager.DiscoverMods();
         CollectionManager = new ModCollection.Manager( ModManager );
         ModFileSystem     = ModFileSystem.Load();
@@ -95,8 +95,6 @@ public class Penumbra : IDalamudPlugin
         {
             HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
         } );
-
-        ResidentResources.Reload();
 
         SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
 
@@ -122,7 +120,10 @@ public class Penumbra : IDalamudPlugin
             ResourceLoader.EnableFullLogging();
         }
 
-        ResidentResources.Reload();
+        if( CharacterUtility.Ready )
+        {
+            ResidentResources.Reload();
+        }
 
         Api = new PenumbraApi( this );
         Ipc = new PenumbraIpc( Dalamud.PluginInterface, Api );
@@ -165,12 +166,15 @@ public class Penumbra : IDalamudPlugin
 
         Config.EnableMods = true;
         ResourceLoader.EnableReplacements();
-        CollectionManager.Default.SetFiles();
-        ResidentResources.Reload();
         PathResolver.Enable();
-
         Config.Save();
-        ObjectReloader.RedrawAll( RedrawType.Redraw );
+        if( CharacterUtility.Ready )
+        {
+            CollectionManager.Default.SetFiles();
+            ResidentResources.Reload();
+            ObjectReloader.RedrawAll( RedrawType.Redraw );
+        }
+
         return true;
     }
 
@@ -183,12 +187,15 @@ public class Penumbra : IDalamudPlugin
 
         Config.EnableMods = false;
         ResourceLoader.DisableReplacements();
-        CharacterUtility.ResetAll();
-        ResidentResources.Reload();
         PathResolver.Disable();
-
         Config.Save();
-        ObjectReloader.RedrawAll( RedrawType.Redraw );
+        if( CharacterUtility.Ready )
+        {
+            CharacterUtility.ResetAll();
+            ResidentResources.Reload();
+            ObjectReloader.RedrawAll( RedrawType.Redraw );
+        }
+
         return true;
     }
 

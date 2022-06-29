@@ -1,106 +1,91 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
 public partial class MetaManager
 {
-    public struct MetaManagerEst : IDisposable
+    private EstFile? _estFaceFile = null;
+    private EstFile? _estHairFile = null;
+    private EstFile? _estBodyFile = null;
+    private EstFile? _estHeadFile = null;
+
+    private readonly List< EstManipulation > _estManipulations = new();
+
+    public void SetEstFiles()
     {
-        public EstFile? FaceFile = null;
-        public EstFile? HairFile = null;
-        public EstFile? BodyFile = null;
-        public EstFile? HeadFile = null;
+        SetFile( _estFaceFile, CharacterUtility.FaceEstIdx );
+        SetFile( _estHairFile, CharacterUtility.HairEstIdx );
+        SetFile( _estBodyFile, CharacterUtility.BodyEstIdx );
+        SetFile( _estHeadFile, CharacterUtility.HeadEstIdx );
+    }
 
-        public readonly Dictionary< EstManipulation, IMod > Manipulations = new();
+    public static void ResetEstFiles()
+    {
+        SetFile( null, CharacterUtility.FaceEstIdx );
+        SetFile( null, CharacterUtility.HairEstIdx );
+        SetFile( null, CharacterUtility.BodyEstIdx );
+        SetFile( null, CharacterUtility.HeadEstIdx );
+    }
 
-        public MetaManagerEst()
-        { }
+    public void ResetEst()
+    {
+        _estFaceFile?.Reset();
+        _estHairFile?.Reset();
+        _estBodyFile?.Reset();
+        _estHeadFile?.Reset();
+        _estManipulations.Clear();
+    }
 
-        [Conditional( "USE_EST" )]
-        public void SetFiles()
+    public bool ApplyMod( EstManipulation m )
+    {
+        _estManipulations.AddOrReplace( m );
+        var file = m.Slot switch
         {
-            SetFile( FaceFile, CharacterUtility.FaceEstIdx );
-            SetFile( HairFile, CharacterUtility.HairEstIdx );
-            SetFile( BodyFile, CharacterUtility.BodyEstIdx );
-            SetFile( HeadFile, CharacterUtility.HeadEstIdx );
-        }
+            EstManipulation.EstType.Hair => _estHairFile ??= new EstFile( EstManipulation.EstType.Hair ),
+            EstManipulation.EstType.Face => _estFaceFile ??= new EstFile( EstManipulation.EstType.Face ),
+            EstManipulation.EstType.Body => _estBodyFile ??= new EstFile( EstManipulation.EstType.Body ),
+            EstManipulation.EstType.Head => _estHeadFile ??= new EstFile( EstManipulation.EstType.Head ),
+            _                            => throw new ArgumentOutOfRangeException(),
+        };
+        return m.Apply( file );
+    }
 
-        [Conditional( "USE_EST" )]
-        public static void ResetFiles()
+    public bool RevertMod( EstManipulation m )
+    {
+        if( _estManipulations.Remove( m ) )
         {
-            SetFile( null, CharacterUtility.FaceEstIdx );
-            SetFile( null, CharacterUtility.HairEstIdx );
-            SetFile( null, CharacterUtility.BodyEstIdx );
-            SetFile( null, CharacterUtility.HeadEstIdx );
-        }
-
-        [Conditional( "USE_EST" )]
-        public void Reset()
-        {
-            FaceFile?.Reset();
-            HairFile?.Reset();
-            BodyFile?.Reset();
-            HeadFile?.Reset();
-            Manipulations.Clear();
-        }
-
-        public bool ApplyMod( EstManipulation m, IMod mod )
-        {
-#if USE_EST
-            Manipulations[ m ] = mod;
+            var def   = EstFile.GetDefault( m.Slot, Names.CombinedRace( m.Gender, m.Race ), m.SetId );
+            var manip = new EstManipulation( m.Gender, m.Race, m.Slot, m.SetId, def );
             var file = m.Slot switch
             {
-                EstManipulation.EstType.Hair => HairFile ??= new EstFile( EstManipulation.EstType.Hair ),
-                EstManipulation.EstType.Face => FaceFile ??= new EstFile( EstManipulation.EstType.Face ),
-                EstManipulation.EstType.Body => BodyFile ??= new EstFile( EstManipulation.EstType.Body ),
-                EstManipulation.EstType.Head => HeadFile ??= new EstFile( EstManipulation.EstType.Head ),
+                EstManipulation.EstType.Hair => _estHairFile!,
+                EstManipulation.EstType.Face => _estFaceFile!,
+                EstManipulation.EstType.Body => _estBodyFile!,
+                EstManipulation.EstType.Head => _estHeadFile!,
                 _                            => throw new ArgumentOutOfRangeException(),
             };
-            return m.Apply( file );
-#else
-            return false;
-#endif
+            return manip.Apply( file );
         }
 
-        public bool RevertMod( EstManipulation m )
-        {
-#if USE_EST
-            if( Manipulations.Remove( m ) )
-            {
-                var def   = EstFile.GetDefault( m.Slot, Names.CombinedRace( m.Gender, m.Race ), m.SetId );
-                var manip = new EstManipulation( m.Gender, m.Race, m.Slot, m.SetId, def );
-                var file = m.Slot switch
-                {
-                    EstManipulation.EstType.Hair => HairFile!,
-                    EstManipulation.EstType.Face => FaceFile!,
-                    EstManipulation.EstType.Body => BodyFile!,
-                    EstManipulation.EstType.Head => HeadFile!,
-                    _                            => throw new ArgumentOutOfRangeException(),
-                };
-                return manip.Apply( file );
-            }
-#endif
-            return false;
-        }
+        return false;
+    }
 
-        public void Dispose()
-        {
-            FaceFile?.Dispose();
-            HairFile?.Dispose();
-            BodyFile?.Dispose();
-            HeadFile?.Dispose();
-            FaceFile = null;
-            HairFile = null;
-            BodyFile = null;
-            HeadFile = null;
-            Manipulations.Clear();
-        }
+    public void DisposeEst()
+    {
+        _estFaceFile?.Dispose();
+        _estHairFile?.Dispose();
+        _estBodyFile?.Dispose();
+        _estHeadFile?.Dispose();
+        _estFaceFile = null;
+        _estHairFile = null;
+        _estBodyFile = null;
+        _estHeadFile = null;
+        _estManipulations.Clear();
     }
 }

@@ -456,7 +456,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var collection = Penumbra.TempMods.Collections.TryGetValue( characterName, out var c )
             ? c
             : Penumbra.CollectionManager.Character( characterName );
-        var set = collection.MetaCache?.Manipulations ?? Array.Empty< MetaManipulation >();
+        var set = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >();
         return Functions.ToCompressedBase64( set, MetaManipulation.CurrentVersion );
     }
 

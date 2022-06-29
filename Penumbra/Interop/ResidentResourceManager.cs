@@ -29,8 +29,11 @@ public unsafe class ResidentResourceManager
     // Reload certain player resources by force.
     public void Reload()
     {
-        PluginLog.Debug( "Reload of resident resources triggered." );
-        UnloadPlayerResources.Invoke( Address );
-        LoadPlayerResources.Invoke( Address );
+        if( Address != null && Address->NumResources > 0 )
+        {
+            PluginLog.Debug( "Reload of resident resources triggered." );
+            UnloadPlayerResources.Invoke( Address );
+            LoadPlayerResources.Invoke( Address );
+        }
     }
 }

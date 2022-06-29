@@ -175,7 +175,7 @@ public partial class ModCollection
 
             ++ChangeCounter;
 
-            if( _collection == Penumbra.CollectionManager.Default )
+            if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready )
             {
                 Penumbra.ResidentResources.Reload();
                 MetaManipulations.SetFiles();
@@ -237,7 +237,7 @@ public partial class ModCollection
             if( addMetaChanges )
             {
                 ++ChangeCounter;
-                if( _collection == Penumbra.CollectionManager.Default )
+                if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready )
                 {
                     Penumbra.ResidentResources.Reload();
                     MetaManipulations.SetFiles();
@@ -295,7 +295,7 @@ public partial class ModCollection
                     AddMetaFiles();
                 }
 
-                if( _collection == Penumbra.CollectionManager.Default )
+                if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready )
                 {
                     Penumbra.ResidentResources.Reload();
                     MetaManipulations.SetFiles();
@@ -441,7 +441,7 @@ public partial class ModCollection
 
         // Add all necessary meta file redirects.
         private void AddMetaFiles()
-            => MetaManipulations.Imc.SetFiles();
+            => MetaManipulations.SetImcFiles();
 
         // Identify and record all manipulated objects for this entire collection.
         private void SetChangedItems()

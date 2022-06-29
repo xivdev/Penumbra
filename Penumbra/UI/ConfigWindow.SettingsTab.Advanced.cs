@@ -135,7 +135,7 @@ public partial class ConfigWindow
 
         private static void DrawReloadResourceButton()
         {
-            if( ImGui.Button( "Reload Resident Resources" ) )
+            if( ImGui.Button( "Reload Resident Resources" ) && Penumbra.CharacterUtility.Ready )
             {
                 Penumbra.ResidentResources.Reload();
             }

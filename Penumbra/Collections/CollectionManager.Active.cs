@@ -110,8 +110,12 @@ public partial class ModCollection
             {
                 case CollectionType.Default:
                     Default = newCollection;
-                    Penumbra.ResidentResources.Reload();
-                    Default.SetFiles();
+                    if( Penumbra.CharacterUtility.Ready )
+                    {
+                        Penumbra.ResidentResources.Reload();
+                        Default.SetFiles();
+                    }
+
                     break;
                 case CollectionType.Current:
                     Current = newCollection;

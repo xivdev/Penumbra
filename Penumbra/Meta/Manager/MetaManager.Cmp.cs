@@ -1,73 +1,57 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using OtterGui.Filesystem;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
 public partial class MetaManager
 {
-    public struct MetaManagerCmp : IDisposable
+    private          CmpFile?                _cmpFile          = null;
+    private readonly List< RspManipulation > _cmpManipulations = new();
+
+    public void SetCmpFiles()
+        => SetFile( _cmpFile, CharacterUtility.HumanCmpIdx );
+
+    public static void ResetCmpFiles()
+        => SetFile( null, CharacterUtility.HumanCmpIdx );
+
+    public void ResetCmp()
     {
-        public          CmpFile?                           File          = null;
-        public readonly Dictionary< RspManipulation, IMod > Manipulations = new();
-
-        public MetaManagerCmp()
-        { }
-
-        [Conditional( "USE_CMP" )]
-        public void SetFiles()
-            => SetFile( File, CharacterUtility.HumanCmpIdx );
-
-        [Conditional( "USE_CMP" )]
-        public static void ResetFiles()
-            => SetFile( null, CharacterUtility.HumanCmpIdx );
-
-        [Conditional( "USE_CMP" )]
-        public void Reset()
+        if( _cmpFile == null )
         {
-            if( File == null )
-            {
-                return;
-            }
-
-            File.Reset( Manipulations.Keys.Select( m => ( m.SubRace, m.Attribute ) ) );
-            Manipulations.Clear();
+            return;
         }
 
-        public bool ApplyMod( RspManipulation m, IMod mod )
+        _cmpFile.Reset( _cmpManipulations.Select( m => ( m.SubRace, m.Attribute ) ) );
+        _cmpManipulations.Clear();
+    }
+
+    public bool ApplyMod( RspManipulation manip )
+    {
+        _cmpManipulations.AddOrReplace( manip );
+        _cmpFile ??= new CmpFile();
+        return manip.Apply( _cmpFile );
+    }
+
+    public bool RevertMod( RspManipulation manip )
+    {
+        if( _cmpManipulations.Remove( manip ) )
         {
-#if USE_CMP
-            Manipulations[ m ] =   mod;
-            File               ??= new CmpFile();
-            return m.Apply( File );
-#else
-            return false;
-#endif
+            var def = CmpFile.GetDefault( manip.SubRace, manip.Attribute );
+            manip = new RspManipulation( manip.SubRace, manip.Attribute, def );
+            return manip.Apply( _cmpFile! );
         }
 
-        public bool RevertMod( RspManipulation m )
-        {
-#if USE_CMP
-            if( Manipulations.Remove( m ) )
-            {
-                var def   = CmpFile.GetDefault( m.SubRace, m.Attribute );
-                var manip = new RspManipulation( m.SubRace, m.Attribute, def );
-                return manip.Apply( File! );
-            }
-#endif
-            return false;
-        }
+        return false;
+    }
 
-        public void Dispose()
-        {
-            File?.Dispose();
-            File = null;
-            Manipulations.Clear();
-        }
+    public void DisposeCmp()
+    {
+        _cmpFile?.Dispose();
+        _cmpFile = null;
+        _cmpManipulations.Clear();
     }
 }
