@@ -30,6 +30,7 @@ public unsafe partial class ResourceLoader : IDisposable
         ResourceRequested += LogPath;
         ResourceLoaded    += LogResource;
         FileLoaded        += LogLoadedFile;
+        ResourceHandleDestructorHook?.Enable();
         EnableHooks();
     }
 
@@ -44,6 +45,7 @@ public unsafe partial class ResourceLoader : IDisposable
         ResourceRequested -= LogPath;
         ResourceLoaded    -= LogResource;
         FileLoaded        -= LogLoadedFile;
+        ResourceHandleDestructorHook?.Disable();
     }
 
     public void EnableReplacements()

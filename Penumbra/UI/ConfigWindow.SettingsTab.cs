@@ -77,7 +77,6 @@ public partial class ConfigWindow
                 : newName.Any( c => ( symbol = c ) > ( char )0x7F )
                     ? ( $"Path contains invalid symbol {symbol}. Only ASCII is allowed.", false )
                     : ( $"Press Enter or Click Here to Save (Current Directory: {old})", true );
-
             return ( ImGui.Button( text, w ) || saved ) && valid;
         }
 

@@ -256,6 +256,7 @@ public unsafe partial class ResourceLoader
         ReadSqPackHook.Dispose();
         GetResourceSyncHook.Dispose();
         GetResourceAsyncHook.Dispose();
+        ResourceHandleDestructorHook?.Dispose();
     }
 
     private int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )

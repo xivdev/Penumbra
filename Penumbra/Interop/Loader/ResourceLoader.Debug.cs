@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -13,6 +14,23 @@ namespace Penumbra.Interop.Loader;
 
 public unsafe partial class ResourceLoader
 {
+    public delegate IntPtr ResourceHandleDestructor( ResourceHandle* handle );
+
+    [Signature( "48 89 5C 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 B8",
+        DetourName = nameof( ResourceHandleDestructorDetour ) )]
+    public static Hook< ResourceHandleDestructor >? ResourceHandleDestructorHook;
+
+    private IntPtr ResourceHandleDestructorDetour( ResourceHandle* handle )
+    {
+        if( handle != null )
+        {
+            PluginLog.Information( "[ResourceLoader] Destructing Resource Handle {Path:l} at 0x{Address:X} (Refcount {Refcount}) .", handle->FileName,
+                ( ulong )handle, handle->RefCount );
+        }
+
+        return ResourceHandleDestructorHook!.Original( handle );
+    }
+
     // A static pointer to the SE Resource Manager
     [Signature( "48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 32 C0", ScanType = ScanType.StaticAddress, UseFlags = SignatureUseFlags.Pointer )]
     public static ResourceManager** ResourceManager;
