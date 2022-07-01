@@ -8,7 +8,6 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
@@ -114,7 +113,7 @@ public unsafe partial class ResourceLoader
     // Try all resolve path subscribers or use the default replacer.
     private (FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
-        if( !DoReplacements || IsInIncRef )
+        if( !DoReplacements || IsInIncRef > 0 )
         {
             return ( null, null );
         }
@@ -270,15 +269,14 @@ public unsafe partial class ResourceLoader
     // This means, that if the path determined from that is different than the resources path,
     // a different resource gets loaded or incremented, while the IncRef'd resource stays at 0.
     // This causes some problems and is hopefully prevented with this.
-    public bool IsInIncRef { get; private set; } = false;
+    public int IsInIncRef { get; private set; } = 0;
     private readonly Hook< ResourceHandleDestructor > _incRefHook;
 
     private IntPtr ResourceHandleIncRefDetour( ResourceHandle* handle )
     {
-        var tmp = IsInIncRef;
-        IsInIncRef = true;
+        ++IsInIncRef;
         var ret = _incRefHook.Original( handle );
-        IsInIncRef = tmp;
+        --IsInIncRef;
         return ret;
     }
 }

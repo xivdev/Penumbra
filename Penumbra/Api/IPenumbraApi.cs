@@ -18,6 +18,8 @@ public delegate void ChangedItemHover( object? item );
 public delegate void ChangedItemClick( MouseButton button, object? item );
 public delegate void GameObjectRedrawn( IntPtr objectPtr, int objectTableIndex );
 public delegate void ModSettingChanged( ModSettingChange type, string collectionName, string modDirectory, bool inherited );
+public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr customize, IntPtr equipData );
+
 public enum PenumbraApiEc
 {
     Success            = 0,
@@ -50,12 +52,16 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Events that are fired before and after the content of a mod settings panel are drawn.
     // Both are fired inside the child window of the settings panel itself.
-    public event Action<string>? PreSettingsPanelDraw;
-    public event Action<string>? PostSettingsPanelDraw;
+    public event Action< string >? PreSettingsPanelDraw;
+    public event Action< string >? PostSettingsPanelDraw;
 
     // Triggered when the user clicks a listed changed object in a mod tab.
     public event ChangedItemClick? ChangedItemClicked;
     public event GameObjectRedrawn? GameObjectRedrawn;
+
+    // Triggered when a character base is created and a corresponding gameObject could be found,
+    // before the Draw Object is actually created, so customize and equipdata can be manipulated beforehand.
+    public event CreatingCharacterBaseDelegate? CreatingCharacterBase;
 
     // Queue redrawing of all actors of the given name with the given RedrawType.
     public void RedrawObject( string name, RedrawType setting );

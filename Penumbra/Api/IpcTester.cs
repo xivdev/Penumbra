@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -31,6 +30,7 @@ public class IpcTester : IDisposable
     private readonly ICallGateSubscriber< string, object? >                                 _postSettingsDraw;
     private readonly ICallGateSubscriber< IntPtr, int, object? >                            _redrawn;
     private readonly ICallGateSubscriber< ModSettingChange, string, string, bool, object? > _settingChanged;
+    private readonly ICallGateSubscriber< IntPtr, string, IntPtr, IntPtr, object? >         _characterBaseCreated;
 
     private readonly List< DateTimeOffset > _initializedList = new();
     private readonly List< DateTimeOffset > _disposedList    = new();
@@ -45,12 +45,15 @@ public class IpcTester : IDisposable
         _preSettingsDraw = _pi.GetIpcSubscriber< string, object? >( PenumbraIpc.LabelProviderPreSettingsDraw );
         _postSettingsDraw = _pi.GetIpcSubscriber< string, object? >( PenumbraIpc.LabelProviderPostSettingsDraw );
         _settingChanged = _pi.GetIpcSubscriber< ModSettingChange, string, string, bool, object? >( PenumbraIpc.LabelProviderModSettingChanged );
+        _characterBaseCreated =
+            _pi.GetIpcSubscriber< IntPtr, string, IntPtr, IntPtr, object? >( PenumbraIpc.LabelProviderCreatingCharacterBase );
         _initialized.Subscribe( AddInitialized );
         _disposed.Subscribe( AddDisposed );
         _redrawn.Subscribe( SetLastRedrawn );
         _preSettingsDraw.Subscribe( UpdateLastDrawnMod );
         _postSettingsDraw.Subscribe( UpdateLastDrawnMod );
         _settingChanged.Subscribe( UpdateLastModSetting );
+        _characterBaseCreated.Subscribe( UpdateLastCreated );
     }
 
     public void Dispose()
@@ -63,6 +66,7 @@ public class IpcTester : IDisposable
         _preSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
         _postSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
         _settingChanged.Unsubscribe( UpdateLastModSetting );
+        _characterBaseCreated.Unsubscribe( UpdateLastCreated );
     }
 
     private void AddInitialized()
@@ -165,7 +169,8 @@ public class IpcTester : IDisposable
         DrawIntro( PenumbraIpc.LabelProviderPostSettingsDraw, "Last Drawn Mod" );
         ImGui.TextUnformatted( _lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None" );
         DrawIntro( PenumbraIpc.LabelProviderApiVersion, "Current Version" );
-        ImGui.TextUnformatted( _pi.GetIpcSubscriber< int >( PenumbraIpc.LabelProviderApiVersion ).InvokeFunc().ToString() );
+        var (breaking, features) = _pi.GetIpcSubscriber< (int, int) >( PenumbraIpc.LabelProviderApiVersion ).InvokeFunc();
+        ImGui.TextUnformatted( $"{breaking}.{features:D4}" );
         DrawIntro( PenumbraIpc.LabelProviderGetModDirectory, "Current Mod Directory" );
         ImGui.TextUnformatted( _pi.GetIpcSubscriber< string >( PenumbraIpc.LabelProviderGetModDirectory ).InvokeFunc() );
         DrawIntro( PenumbraIpc.LabelProviderGetConfiguration, "Configuration" );
@@ -191,11 +196,20 @@ public class IpcTester : IDisposable
         }
     }
 
-    private string _currentResolvePath      = string.Empty;
-    private string _currentResolveCharacter = string.Empty;
-    private string _currentDrawObjectString = string.Empty;
-    private string _currentReversePath      = string.Empty;
-    private IntPtr _currentDrawObject       = IntPtr.Zero;
+    private string         _currentResolvePath        = string.Empty;
+    private string         _currentResolveCharacter   = string.Empty;
+    private string         _currentDrawObjectString   = string.Empty;
+    private string         _currentReversePath        = string.Empty;
+    private IntPtr         _currentDrawObject         = IntPtr.Zero;
+    private string         _lastCreatedGameObjectName = string.Empty;
+    private DateTimeOffset _lastCreatedGameObjectTime = DateTimeOffset.MaxValue;
+
+    private unsafe void UpdateLastCreated( IntPtr gameObject, string _, IntPtr _2, IntPtr _3 )
+    {
+        var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
+        _lastCreatedGameObjectName = new Utf8String( obj->GetName() ).ToString();
+        _lastCreatedGameObjectTime = DateTimeOffset.Now;
+    }
 
     private void DrawResolve()
     {
@@ -262,6 +276,12 @@ public class IpcTester : IDisposable
                     ImGui.SetTooltip( string.Join( "\n", list.Skip( 1 ) ) );
                 }
             }
+        }
+
+        DrawIntro( PenumbraIpc.LabelProviderCreatingCharacterBase, "Last Drawobject created" );
+        if( _lastCreatedGameObjectTime < DateTimeOffset.Now )
+        {
+            ImGui.TextUnformatted( $"for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}" );
         }
     }
 

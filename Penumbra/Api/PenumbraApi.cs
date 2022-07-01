@@ -28,10 +28,22 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     private readonly Dictionary< ModCollection, ModCollection.ModSettingChangeDelegate > _delegates = new();
 
-    public event Action<string>? PreSettingsPanelDraw;
-    public event Action<string>? PostSettingsPanelDraw;
-    public event GameObjectRedrawn? GameObjectRedrawn;
+    public event Action< string >? PreSettingsPanelDraw;
+    public event Action< string >? PostSettingsPanelDraw;
+
+    public event GameObjectRedrawn? GameObjectRedrawn
+    {
+        add => _penumbra!.ObjectReloader.GameObjectRedrawn += value;
+        remove => _penumbra!.ObjectReloader.GameObjectRedrawn -= value;
+    }
+
     public event ModSettingChanged? ModSettingChanged;
+
+    public event CreatingCharacterBaseDelegate? CreatingCharacterBase
+    {
+        add => _penumbra!.PathResolver.CreatingCharacterBase += value;
+        remove => _penumbra!.PathResolver.CreatingCharacterBase -= value;
+    }
 
     public bool Valid
         => _penumbra != null;
@@ -42,7 +54,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
            .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
           ?.GetValue( Dalamud.GameData );
-        _penumbra.ObjectReloader.GameObjectRedrawn += OnGameObjectRedrawn;
         foreach( var collection in Penumbra.CollectionManager )
         {
             SubscribeToCollection( collection );
@@ -54,7 +65,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public void Dispose()
     {
         Penumbra.CollectionManager.CollectionChanged -= SubscribeToNewCollections;
-        _penumbra!.ObjectReloader.GameObjectRedrawn  -= OnGameObjectRedrawn;
         _penumbra                                    =  null;
         _lumina                                      =  null;
         foreach( var collection in Penumbra.CollectionManager )
@@ -249,9 +259,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc AddMod( string modDirectory )
     {
         CheckInitialized();
-        var dir = new DirectoryInfo( Path.Combine(Penumbra.ModManager.BasePath.FullName, modDirectory) );
+        var dir = new DirectoryInfo( Path.Combine( Penumbra.ModManager.BasePath.FullName, modDirectory ) );
         if( !dir.Exists )
+        {
             return PenumbraApiEc.FileMissing;
+        }
 
         Penumbra.ModManager.AddMod( dir );
         return PenumbraApiEc.Success;
@@ -521,11 +533,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
     }
 
-    private void OnGameObjectRedrawn( IntPtr objectAddress, int objectTableIndex )
-    {
-        GameObjectRedrawn?.Invoke( objectAddress, objectTableIndex );
-    }
-
     // Resolve a path given by string for a specific collection.
     private static string ResolvePath( string path, Mod.Manager _, ModCollection collection )
     {
@@ -645,9 +652,9 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
     }
 
-    public void InvokePreSettingsPanel(string modDirectory)
-        => PreSettingsPanelDraw?.Invoke(modDirectory);
+    public void InvokePreSettingsPanel( string modDirectory )
+        => PreSettingsPanelDraw?.Invoke( modDirectory );
 
-    public void InvokePostSettingsPanel(string modDirectory)
-        => PostSettingsPanelDraw?.Invoke(modDirectory);
+    public void InvokePostSettingsPanel( string modDirectory )
+        => PostSettingsPanelDraw?.Invoke( modDirectory );
 }

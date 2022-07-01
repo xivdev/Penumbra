@@ -52,13 +52,13 @@ public partial class PenumbraIpc
     public const string LabelProviderPreSettingsDraw  = "Penumbra.PreSettingsDraw";
     public const string LabelProviderPostSettingsDraw = "Penumbra.PostSettingsDraw";
 
-    internal ICallGateProvider< object? >?       ProviderInitialized;
-    internal ICallGateProvider< object? >?       ProviderDisposed;
+    internal ICallGateProvider< object? >?                      ProviderInitialized;
+    internal ICallGateProvider< object? >?                      ProviderDisposed;
     internal ICallGateProvider< int >?           ProviderApiVersion;
-    internal ICallGateProvider< string >?        ProviderGetModDirectory;
-    internal ICallGateProvider< string >?        ProviderGetConfiguration;
-    internal ICallGateProvider<string, object?>? ProviderPreSettingsDraw;
-    internal ICallGateProvider<string, object?>? ProviderPostSettingsDraw;
+    internal ICallGateProvider< string >?                       ProviderGetModDirectory;
+    internal ICallGateProvider< string >?                       ProviderGetConfiguration;
+    internal ICallGateProvider< string, object? >?              ProviderPreSettingsDraw;
+    internal ICallGateProvider< string, object? >?              ProviderPostSettingsDraw;
 
     private void InitializeGeneralProviders( DalamudPluginInterface pi )
     {
@@ -82,7 +82,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderApiVersion = pi.GetIpcProvider< int >( LabelProviderApiVersion );
+            ProviderApiVersion = pi.GetIpcProvider< (int Breaking, int Features) >( LabelProviderApiVersion );
             ProviderApiVersion.RegisterFunc( () => Api.ApiVersion );
         }
         catch( Exception e )
@@ -112,7 +112,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderPreSettingsDraw  =  pi.GetIpcProvider<string, object?>( LabelProviderPreSettingsDraw );
+            ProviderPreSettingsDraw  =  pi.GetIpcProvider< string, object? >( LabelProviderPreSettingsDraw );
             Api.PreSettingsPanelDraw += InvokeSettingsPreDraw;
         }
         catch( Exception e )
@@ -122,7 +122,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderPostSettingsDraw  =  pi.GetIpcProvider<string, object?>( LabelProviderPostSettingsDraw );
+            ProviderPostSettingsDraw  =  pi.GetIpcProvider< string, object? >( LabelProviderPostSettingsDraw );
             Api.PostSettingsPanelDraw += InvokeSettingsPostDraw;
         }
         catch( Exception e )
@@ -136,6 +136,8 @@ public partial class PenumbraIpc
         ProviderGetConfiguration?.UnregisterFunc();
         ProviderGetModDirectory?.UnregisterFunc();
         ProviderApiVersion?.UnregisterFunc();
+        Api.PreSettingsPanelDraw  -= InvokeSettingsPreDraw;
+        Api.PostSettingsPanelDraw -= InvokeSettingsPostDraw;
     }
 }
 
@@ -232,21 +234,23 @@ public partial class PenumbraIpc
         ProviderRedrawObject?.UnregisterAction();
         ProviderRedrawIndex?.UnregisterAction();
         ProviderRedrawAll?.UnregisterAction();
-        Api.GameObjectRedrawn     -= OnGameObjectRedrawn;
+        Api.GameObjectRedrawn -= OnGameObjectRedrawn;
     }
 }
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderResolveDefault     = "Penumbra.ResolveDefaultPath";
-    public const string LabelProviderResolveCharacter   = "Penumbra.ResolveCharacterPath";
-    public const string LabelProviderGetDrawObjectInfo  = "Penumbra.GetDrawObjectInfo";
-    public const string LabelProviderReverseResolvePath = "Penumbra.ReverseResolvePath";
+    public const string LabelProviderResolveDefault        = "Penumbra.ResolveDefaultPath";
+    public const string LabelProviderResolveCharacter      = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderGetDrawObjectInfo     = "Penumbra.GetDrawObjectInfo";
+    public const string LabelProviderReverseResolvePath    = "Penumbra.ReverseResolvePath";
+    public const string LabelProviderCreatingCharacterBase = "Penumbra.CreatingCharacterBase";
 
-    internal ICallGateProvider< string, string >?                  ProviderResolveDefault;
-    internal ICallGateProvider< string, string, string >?          ProviderResolveCharacter;
-    internal ICallGateProvider< IntPtr, (IntPtr, string) >?        ProviderGetDrawObjectInfo;
-    internal ICallGateProvider< string, string, IList< string > >? ProviderReverseResolvePath;
+    internal ICallGateProvider< string, string >?                          ProviderResolveDefault;
+    internal ICallGateProvider< string, string, string >?                  ProviderResolveCharacter;
+    internal ICallGateProvider< IntPtr, (IntPtr, string) >?                ProviderGetDrawObjectInfo;
+    internal ICallGateProvider< string, string, IList< string > >?         ProviderReverseResolvePath;
+    internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
@@ -289,6 +293,16 @@ public partial class PenumbraIpc
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetDrawObjectInfo}:\n{e}" );
         }
+
+        try
+        {
+            ProviderCreatingCharacterBase =  pi.GetIpcProvider< IntPtr, string, IntPtr, IntPtr, object? >( LabelProviderCreatingCharacterBase );
+            Api.CreatingCharacterBase     += CreatingCharacterBaseEvent;
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreatingCharacterBase}:\n{e}" );
+        }
     }
 
     private void DisposeResolveProviders()
@@ -297,6 +311,12 @@ public partial class PenumbraIpc
         ProviderResolveDefault?.UnregisterFunc();
         ProviderResolveCharacter?.UnregisterFunc();
         ProviderReverseResolvePath?.UnregisterFunc();
+        Api.CreatingCharacterBase -= CreatingCharacterBaseEvent;
+    }
+
+    private void CreatingCharacterBaseEvent( IntPtr gameObject, ModCollection collection, IntPtr customize, IntPtr equipData )
+    {
+        ProviderCreatingCharacterBase?.SendMessage( gameObject, collection.Name, customize, equipData );
     }
 }
 

@@ -11,6 +11,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
@@ -28,11 +29,19 @@ public unsafe partial class PathResolver
     public Hook< CharacterBaseCreateDelegate >? CharacterBaseCreateHook;
 
     private ModCollection? _lastCreatedCollection;
+    public event CreatingCharacterBaseDelegate? CreatingCharacterBase;
+
 
     private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
     {
         using var cmp = MetaChanger.ChangeCmp( this, out _lastCreatedCollection );
-        var       ret = CharacterBaseCreateHook!.Original( a, b, c, d );
+
+        if( LastGameObject != null )
+        {
+            CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!, b, c );
+        }
+
+        var ret = CharacterBaseCreateHook!.Original( a, b, c, d );
         if( LastGameObject != null )
         {
             DrawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
