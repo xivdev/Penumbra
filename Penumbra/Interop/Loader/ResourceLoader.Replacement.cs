@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
@@ -113,7 +114,7 @@ public unsafe partial class ResourceLoader
     // Try all resolve path subscribers or use the default replacer.
     private (FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
-        if( !DoReplacements || IsInIncRef > 0 )
+        if( !DoReplacements || _isInIncRef > 0 )
         {
             return ( null, null );
         }
@@ -269,14 +270,17 @@ public unsafe partial class ResourceLoader
     // This means, that if the path determined from that is different than the resources path,
     // a different resource gets loaded or incremented, while the IncRef'd resource stays at 0.
     // This causes some problems and is hopefully prevented with this.
-    public int IsInIncRef { get; private set; } = 0;
+    private int _isInIncRef = 0;
+    public int IsInIncRef
+        => _isInIncRef;
+
     private readonly Hook< ResourceHandleDestructor > _incRefHook;
 
     private IntPtr ResourceHandleIncRefDetour( ResourceHandle* handle )
     {
-        ++IsInIncRef;
+        Interlocked.Increment(ref _isInIncRef);
         var ret = _incRefHook.Original( handle );
-        --IsInIncRef;
+        Interlocked.Decrement(ref _isInIncRef);
         return ret;
     }
 }
