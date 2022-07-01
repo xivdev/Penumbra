@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -114,7 +116,7 @@ public unsafe partial class ResourceLoader
     // Try all resolve path subscribers or use the default replacer.
     private (FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
-        if( !DoReplacements || _isInIncRef > 0 )
+        if( !DoReplacements || _incMode.Value )
         {
             return ( null, null );
         }
@@ -270,17 +272,19 @@ public unsafe partial class ResourceLoader
     // This means, that if the path determined from that is different than the resources path,
     // a different resource gets loaded or incremented, while the IncRef'd resource stays at 0.
     // This causes some problems and is hopefully prevented with this.
-    private int _isInIncRef = 0;
-    public int IsInIncRef
-        => _isInIncRef;
-
+    private readonly ThreadLocal< bool >              _incMode = new();
     private readonly Hook< ResourceHandleDestructor > _incRefHook;
 
     private IntPtr ResourceHandleIncRefDetour( ResourceHandle* handle )
     {
-        Interlocked.Increment(ref _isInIncRef);
+        if( handle->RefCount > 0 )
+        {
+            return _incRefHook.Original( handle );
+        }
+
+        _incMode.Value = true;
         var ret = _incRefHook.Original( handle );
-        Interlocked.Decrement(ref _isInIncRef);
+        _incMode.Value = false;
         return ret;
     }
 }

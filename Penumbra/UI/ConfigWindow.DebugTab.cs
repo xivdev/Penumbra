@@ -153,7 +153,6 @@ public partial class ConfigWindow
                 return;
             }
 
-            ImGui.TextUnformatted( $"In Increment RefCounter Mode: {Penumbra.ResourceLoader.IsInIncRef}" );
             using var drawTree = ImRaii.TreeNode( "Draw Object to Object" );
             if( drawTree )
             {
