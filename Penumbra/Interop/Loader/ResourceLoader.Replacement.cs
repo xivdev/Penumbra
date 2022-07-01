@@ -84,18 +84,6 @@ public unsafe partial class ResourceLoader
 
         ResourceRequested?.Invoke( gamePath, isSync );
 
-        // Force metadata tables to load synchronously and not be able to be replaced.
-        switch( *resourceType )
-        {
-            case ResourceType.Eqp:
-            case ResourceType.Gmp:
-            case ResourceType.Eqdp:
-            case ResourceType.Cmp:
-            case ResourceType.Est:
-                PluginLog.Verbose( "Forced resource {gamePath} to be loaded synchronously.", gamePath );
-                return CallOriginalHandler( true, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-        }
-
         // If no replacements are being made, we still want to be able to trigger the event.
         var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
         PathResolved?.Invoke( gamePath, *resourceType, resolvedPath, data );
@@ -126,7 +114,7 @@ public unsafe partial class ResourceLoader
     // Try all resolve path subscribers or use the default replacer.
     private (FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
-        if( !DoReplacements )
+        if( !DoReplacements || IsInIncRef )
         {
             return ( null, null );
         }
@@ -259,7 +247,7 @@ public unsafe partial class ResourceLoader
         ResourceHandleDestructorHook?.Dispose();
     }
 
-    private int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )
+    private static int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )
     {
         if( pGetResParams == null || !pGetResParams->IsPartialRead )
         {
@@ -275,5 +263,22 @@ public unsafe partial class ResourceLoader
             Utf8String.FromStringUnsafe( pGetResParams->SegmentOffset.ToString( "x" ), true ),
             Utf8String.FromStringUnsafe( pGetResParams->SegmentLength.ToString( "x" ), true )
         ).Crc32;
+    }
+
+
+    // A resource with ref count 0 that gets incremented goes through GetResourceAsync again.
+    // This means, that if the path determined from that is different than the resources path,
+    // a different resource gets loaded or incremented, while the IncRef'd resource stays at 0.
+    // This causes some problems and is hopefully prevented with this.
+    public bool IsInIncRef { get; private set; } = false;
+    private readonly Hook< ResourceHandleDestructor > _incRefHook;
+
+    private IntPtr ResourceHandleIncRefDetour( ResourceHandle* handle )
+    {
+        var tmp = IsInIncRef;
+        IsInIncRef = true;
+        var ret = _incRefHook.Original( handle );
+        IsInIncRef = tmp;
+        return ret;
     }
 }

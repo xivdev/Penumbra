@@ -1,4 +1,5 @@
 using System;
+using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
@@ -82,6 +83,7 @@ public unsafe partial class ResourceLoader : IDisposable
         ReadSqPackHook.Enable();
         GetResourceSyncHook.Enable();
         GetResourceAsyncHook.Enable();
+        _incRefHook.Enable();
     }
 
     public void DisableHooks()
@@ -95,11 +97,16 @@ public unsafe partial class ResourceLoader : IDisposable
         ReadSqPackHook.Disable();
         GetResourceSyncHook.Disable();
         GetResourceAsyncHook.Disable();
+        _incRefHook.Disable();
     }
 
     public ResourceLoader( Penumbra _ )
     {
         SignatureHelper.Initialise( this );
+        _decRefHook = new Hook< ResourceHandleDecRef >( ( IntPtr )FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.fpDecRef,
+            ResourceHandleDecRefDetour );
+        _incRefHook = new Hook< ResourceHandleDestructor >(
+            ( IntPtr )FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.fpIncRef, ResourceHandleIncRefDetour );
     }
 
     // Event fired whenever a resource is requested.

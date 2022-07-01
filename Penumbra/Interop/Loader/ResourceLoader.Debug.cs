@@ -14,6 +14,10 @@ namespace Penumbra.Interop.Loader;
 
 public unsafe partial class ResourceLoader
 {
+    // If in debug mode, this logs any resource at refcount 0 that gets decremented again, and skips the decrement instead.
+    private delegate byte                       ResourceHandleDecRef( ResourceHandle* handle );
+    private readonly Hook<ResourceHandleDecRef> _decRefHook;
+
     public delegate IntPtr ResourceHandleDestructor( ResourceHandle* handle );
 
     [Signature( "48 89 5C 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 B8",
@@ -24,8 +28,8 @@ public unsafe partial class ResourceLoader
     {
         if( handle != null )
         {
-            PluginLog.Information( "[ResourceLoader] Destructing Resource Handle {Path:l} at 0x{Address:X} (Refcount {Refcount}) .", handle->FileName,
-                ( ulong )handle, handle->RefCount );
+            PluginLog.Information( "[ResourceLoader] Destructing Resource Handle {Path:l} at 0x{Address:X} (Refcount {Refcount}) .",
+                handle->FileName, ( ulong )handle, handle->RefCount );
         }
 
         return ResourceHandleDestructorHook!.Original( handle );
@@ -54,11 +58,13 @@ public unsafe partial class ResourceLoader
 
     public void EnableDebug()
     {
+        _decRefHook?.Enable();
         ResourceLoaded += AddModifiedDebugInfo;
     }
 
     public void DisableDebug()
     {
+        _decRefHook?.Disable();
         ResourceLoaded -= AddModifiedDebugInfo;
     }
 
@@ -205,6 +211,18 @@ public unsafe partial class ResourceLoader
                 };
             }
         }
+    }
+
+    // Prevent resource management weirdness.
+    private byte ResourceHandleDecRefDetour( ResourceHandle* handle )
+    {
+        if( handle->RefCount != 0 )
+        {
+            return _decRefHook!.Original( handle );
+        }
+
+        PluginLog.Error( $"Caught decrease of Reference Counter for {handle->FileName} at 0x{( ulong )handle:X} below 0." );
+        return 1;
     }
 
     // Logging functions for EnableFullLogging.
