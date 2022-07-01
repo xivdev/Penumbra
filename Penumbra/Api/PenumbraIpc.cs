@@ -52,13 +52,13 @@ public partial class PenumbraIpc
     public const string LabelProviderPreSettingsDraw  = "Penumbra.PreSettingsDraw";
     public const string LabelProviderPostSettingsDraw = "Penumbra.PostSettingsDraw";
 
-    internal ICallGateProvider< object? >?                      ProviderInitialized;
-    internal ICallGateProvider< object? >?                      ProviderDisposed;
-    internal ICallGateProvider< int >?           ProviderApiVersion;
-    internal ICallGateProvider< string >?                       ProviderGetModDirectory;
-    internal ICallGateProvider< string >?                       ProviderGetConfiguration;
-    internal ICallGateProvider< string, object? >?              ProviderPreSettingsDraw;
-    internal ICallGateProvider< string, object? >?              ProviderPostSettingsDraw;
+    internal ICallGateProvider< object? >?         ProviderInitialized;
+    internal ICallGateProvider< object? >?         ProviderDisposed;
+    internal ICallGateProvider< int >?             ProviderApiVersion;
+    internal ICallGateProvider< string >?          ProviderGetModDirectory;
+    internal ICallGateProvider< string >?          ProviderGetConfiguration;
+    internal ICallGateProvider< string, object? >? ProviderPreSettingsDraw;
+    internal ICallGateProvider< string, object? >? ProviderPostSettingsDraw;
 
     private void InitializeGeneralProviders( DalamudPluginInterface pi )
     {
@@ -82,7 +82,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderApiVersion = pi.GetIpcProvider< (int Breaking, int Features) >( LabelProviderApiVersion );
+            ProviderApiVersion = pi.GetIpcProvider< int >( LabelProviderApiVersion );
             ProviderApiVersion.RegisterFunc( () => Api.ApiVersion );
         }
         catch( Exception e )

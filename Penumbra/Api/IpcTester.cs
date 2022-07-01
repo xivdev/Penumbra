@@ -169,8 +169,7 @@ public class IpcTester : IDisposable
         DrawIntro( PenumbraIpc.LabelProviderPostSettingsDraw, "Last Drawn Mod" );
         ImGui.TextUnformatted( _lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None" );
         DrawIntro( PenumbraIpc.LabelProviderApiVersion, "Current Version" );
-        var (breaking, features) = _pi.GetIpcSubscriber< (int, int) >( PenumbraIpc.LabelProviderApiVersion ).InvokeFunc();
-        ImGui.TextUnformatted( $"{breaking}.{features:D4}" );
+        ImGui.TextUnformatted( _pi.GetIpcSubscriber< int >( PenumbraIpc.LabelProviderApiVersion ).InvokeFunc().ToString() );
         DrawIntro( PenumbraIpc.LabelProviderGetModDirectory, "Current Mod Directory" );
         ImGui.TextUnformatted( _pi.GetIpcSubscriber< string >( PenumbraIpc.LabelProviderGetModDirectory ).InvokeFunc() );
         DrawIntro( PenumbraIpc.LabelProviderGetConfiguration, "Configuration" );
