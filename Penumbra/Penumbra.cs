@@ -136,6 +136,7 @@ public class Penumbra : IDalamudPlugin
         {
             PluginLog.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
         }
+        Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
     }
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
@@ -145,7 +146,6 @@ public class Penumbra : IDalamudPlugin
         system = new WindowSystem( Name );
         system.AddWindow( _configWindow );
         system.AddWindow( cfg.ModEditPopup );
-        Dalamud.PluginInterface.UiBuilder.Draw         += system.Draw;
         Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
     }
 
