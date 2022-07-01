@@ -21,11 +21,17 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public int ApiVersion
-        => 5;
+        => 6;
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
+
+    private readonly Dictionary< ModCollection, ModCollection.ModSettingChangeDelegate > _delegates = new();
+
+    public event Action<string>? PreSettingsPanelDraw;
+    public event Action<string>? PostSettingsPanelDraw;
     public event GameObjectRedrawn? GameObjectRedrawn;
+    public event ModSettingChanged? ModSettingChanged;
 
     public bool Valid
         => _penumbra != null;
@@ -37,13 +43,27 @@ public class PenumbraApi : IDisposable, IPenumbraApi
            .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
           ?.GetValue( Dalamud.GameData );
         _penumbra.ObjectReloader.GameObjectRedrawn += OnGameObjectRedrawn;
+        foreach( var collection in Penumbra.CollectionManager )
+        {
+            SubscribeToCollection( collection );
+        }
+
+        Penumbra.CollectionManager.CollectionChanged += SubscribeToNewCollections;
     }
 
     public void Dispose()
     {
-        _penumbra!.ObjectReloader.GameObjectRedrawn -= OnGameObjectRedrawn;
-        _penumbra                                   =  null;
-        _lumina                                     =  null;
+        Penumbra.CollectionManager.CollectionChanged -= SubscribeToNewCollections;
+        _penumbra!.ObjectReloader.GameObjectRedrawn  -= OnGameObjectRedrawn;
+        _penumbra                                    =  null;
+        _lumina                                      =  null;
+        foreach( var collection in Penumbra.CollectionManager )
+        {
+            if( _delegates.TryGetValue( collection, out var del ) )
+            {
+                collection.ModSettingChanged -= del;
+            }
+        }
     }
 
     public event ChangedItemClick? ChangedItemClicked;
@@ -212,6 +232,29 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var shareSettings = settings.ConvertToShareable( mod );
         return ( PenumbraApiEc.Success,
             ( shareSettings.Enabled, shareSettings.Priority, shareSettings.Settings, collection.Settings[ mod.Index ] != null ) );
+    }
+
+    public PenumbraApiEc ReloadMod( string modDirectory, string modName )
+    {
+        CheckInitialized();
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
+            return PenumbraApiEc.ModMissing;
+        }
+
+        Penumbra.ModManager.ReloadMod( mod.Index );
+        return PenumbraApiEc.Success;
+    }
+
+    public PenumbraApiEc AddMod( string modDirectory )
+    {
+        CheckInitialized();
+        var dir = new DirectoryInfo( Path.Combine(Penumbra.ModManager.BasePath.FullName, modDirectory) );
+        if( !dir.Exists )
+            return PenumbraApiEc.FileMissing;
+
+        Penumbra.ModManager.AddMod( dir );
+        return PenumbraApiEc.Success;
     }
 
     public PenumbraApiEc TryInheritMod( string collectionName, string modDirectory, string modName, bool inherit )
@@ -572,4 +615,39 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         return true;
     }
+
+    private void SubscribeToCollection( ModCollection c )
+    {
+        var name = c.Name;
+
+        void Del( ModSettingChange type, int idx, int _, int _2, bool inherited )
+            => ModSettingChanged?.Invoke( type, name, Penumbra.ModManager[ idx ].ModPath.Name, inherited );
+
+        _delegates[ c ]     =  Del;
+        c.ModSettingChanged += Del;
+    }
+
+    private void SubscribeToNewCollections( CollectionType type, ModCollection? oldCollection, ModCollection? newCollection, string? _ )
+    {
+        if( type != CollectionType.Inactive )
+        {
+            return;
+        }
+
+        if( oldCollection != null && _delegates.TryGetValue( oldCollection, out var del ) )
+        {
+            oldCollection.ModSettingChanged -= del;
+        }
+
+        if( newCollection != null )
+        {
+            SubscribeToCollection( newCollection );
+        }
+    }
+
+    public void InvokePreSettingsPanel(string modDirectory)
+        => PreSettingsPanelDraw?.Invoke(modDirectory);
+
+    public void InvokePostSettingsPanel(string modDirectory)
+        => PostSettingsPanelDraw?.Invoke(modDirectory);
 }

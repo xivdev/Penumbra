@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
+using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
 
@@ -16,7 +17,7 @@ public interface IPenumbraApiBase
 public delegate void ChangedItemHover( object? item );
 public delegate void ChangedItemClick( MouseButton button, object? item );
 public delegate void GameObjectRedrawn( IntPtr objectPtr, int objectTableIndex );
-
+public delegate void ModSettingChanged( ModSettingChange type, string collectionName, string modDirectory, bool inherited );
 public enum PenumbraApiEc
 {
     Success            = 0,
@@ -46,6 +47,11 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Triggered when the user hovers over a listed changed object in a mod tab.
     // Can be used to append tooltips.
     public event ChangedItemHover? ChangedItemTooltip;
+
+    // Events that are fired before and after the content of a mod settings panel are drawn.
+    // Both are fired inside the child window of the settings panel itself.
+    public event Action<string>? PreSettingsPanelDraw;
+    public event Action<string>? PostSettingsPanelDraw;
 
     // Triggered when the user clicks a listed changed object in a mod tab.
     public event ChangedItemClick? ChangedItemClicked;
@@ -101,6 +107,16 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain a list of all installed mods. The first string is their directory name, the second string is their mod name.
     public IList< (string, string) > GetModList();
 
+    // Try to reload an existing mod by its directory name or mod name.
+    // Can return ModMissing or success.
+    // Reload is the same as if triggered by button press and might delete the mod if it is not valid anymore.
+    public PenumbraApiEc ReloadMod( string modDirectory, string modName );
+
+    // Try to add a new mod inside the mod root directory (modDirectory should only be the name, not the full name).
+    // Returns FileMissing if the directory does not exist or success otherwise.
+    // Note that success does only imply a successful call, not a successful mod load.
+    public PenumbraApiEc AddMod( string modDirectory );
+
     // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
     // for the given collection associated with the character name, or the default collection.
     public string GetMetaManipulations( string characterName );
@@ -139,6 +155,8 @@ public interface IPenumbraApi : IPenumbraApiBase
     public PenumbraApiEc TrySetModSettings( string collectionName, string modDirectory, string modName, string optionGroupName,
         IReadOnlyList< string > options );
 
+    // This event gets fired when any setting in any collection changes.
+    public event ModSettingChanged? ModSettingChanged;
 
     // Create a temporary collection without actual settings but with a cache.
     // If no character collection for this character exists or forceOverwriteCharacter is true,

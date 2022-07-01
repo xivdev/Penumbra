@@ -49,6 +49,7 @@ public partial class ConfigWindow
 
             DrawInheritedWarning();
             ImGui.Dummy( _window._defaultSpace );
+            _window._penumbra.Api.InvokePreSettingsPanel( _mod.ModPath.Name );
             DrawEnabledInput();
             ImGui.SameLine();
             DrawPriorityInput();
@@ -64,6 +65,8 @@ public partial class ConfigWindow
             {
                 DrawMultiGroup( _mod.Groups[ idx ], idx );
             }
+
+            _window._penumbra.Api.InvokePostSettingsPanel(_mod.ModPath.Name);
         }
 
 

@@ -4,6 +4,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
+using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 
 namespace Penumbra.Api;
@@ -48,12 +49,16 @@ public partial class PenumbraIpc
     public const string LabelProviderApiVersion       = "Penumbra.ApiVersion";
     public const string LabelProviderGetModDirectory  = "Penumbra.GetModDirectory";
     public const string LabelProviderGetConfiguration = "Penumbra.GetConfiguration";
+    public const string LabelProviderPreSettingsDraw  = "Penumbra.PreSettingsDraw";
+    public const string LabelProviderPostSettingsDraw = "Penumbra.PostSettingsDraw";
 
-    internal ICallGateProvider< object? >? ProviderInitialized;
-    internal ICallGateProvider< object? >? ProviderDisposed;
-    internal ICallGateProvider< int >?     ProviderApiVersion;
-    internal ICallGateProvider< string >?  ProviderGetModDirectory;
-    internal ICallGateProvider< string >?  ProviderGetConfiguration;
+    internal ICallGateProvider< object? >?       ProviderInitialized;
+    internal ICallGateProvider< object? >?       ProviderDisposed;
+    internal ICallGateProvider< int >?           ProviderApiVersion;
+    internal ICallGateProvider< string >?        ProviderGetModDirectory;
+    internal ICallGateProvider< string >?        ProviderGetConfiguration;
+    internal ICallGateProvider<string, object?>? ProviderPreSettingsDraw;
+    internal ICallGateProvider<string, object?>? ProviderPostSettingsDraw;
 
     private void InitializeGeneralProviders( DalamudPluginInterface pi )
     {
@@ -103,6 +108,26 @@ public partial class PenumbraIpc
         catch( Exception e )
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetConfiguration}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderPreSettingsDraw  =  pi.GetIpcProvider<string, object?>( LabelProviderPreSettingsDraw );
+            Api.PreSettingsPanelDraw += InvokeSettingsPreDraw;
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderPreSettingsDraw}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderPostSettingsDraw  =  pi.GetIpcProvider<string, object?>( LabelProviderPostSettingsDraw );
+            Api.PostSettingsPanelDraw += InvokeSettingsPostDraw;
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderPostSettingsDraw}:\n{e}" );
         }
     }
 
@@ -195,13 +220,19 @@ public partial class PenumbraIpc
     private void OnGameObjectRedrawn( IntPtr objectAddress, int objectTableIndex )
         => ProviderGameObjectRedrawn?.SendMessage( objectAddress, objectTableIndex );
 
+    private void InvokeSettingsPreDraw( string modDirectory )
+        => ProviderPreSettingsDraw!.SendMessage( modDirectory );
+
+    private void InvokeSettingsPostDraw( string modDirectory )
+        => ProviderPostSettingsDraw!.SendMessage( modDirectory );
+
     private void DisposeRedrawProviders()
     {
         ProviderRedrawName?.UnregisterAction();
         ProviderRedrawObject?.UnregisterAction();
         ProviderRedrawIndex?.UnregisterAction();
         ProviderRedrawAll?.UnregisterAction();
-        Api.GameObjectRedrawn -= OnGameObjectRedrawn;
+        Api.GameObjectRedrawn     -= OnGameObjectRedrawn;
     }
 }
 
@@ -425,14 +456,21 @@ public partial class PenumbraIpc
 public partial class PenumbraIpc
 {
     public const string LabelProviderGetAvailableModSettings = "Penumbra.GetAvailableModSettings";
+    public const string LabelProviderReloadMod               = "Penumbra.ReloadMod";
+    public const string LabelProviderAddMod                  = "Penumbra.AddMod";
     public const string LabelProviderGetCurrentModSettings   = "Penumbra.GetCurrentModSettings";
     public const string LabelProviderTryInheritMod           = "Penumbra.TryInheritMod";
     public const string LabelProviderTrySetMod               = "Penumbra.TrySetMod";
     public const string LabelProviderTrySetModPriority       = "Penumbra.TrySetModPriority";
     public const string LabelProviderTrySetModSetting        = "Penumbra.TrySetModSetting";
     public const string LabelProviderTrySetModSettings       = "Penumbra.TrySetModSettings";
+    public const string LabelProviderModSettingChanged       = "Penumbra.ModSettingChanged";
+
+    internal ICallGateProvider< ModSettingChange, string, string, bool, object? >? ProviderModSettingChanged;
 
     internal ICallGateProvider< string, string, IDictionary< string, (IList< string >, Mods.SelectType) >? >? ProviderGetAvailableModSettings;
+    internal ICallGateProvider< string, string, PenumbraApiEc >?                                              ProviderReloadMod;
+    internal ICallGateProvider< string, PenumbraApiEc >?                                                      ProviderAddMod;
 
     internal ICallGateProvider< string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) >?
         ProviderGetCurrentModSettings;
@@ -447,6 +485,16 @@ public partial class PenumbraIpc
     {
         try
         {
+            ProviderModSettingChanged =  pi.GetIpcProvider< ModSettingChange, string, string, bool, object? >( LabelProviderModSettingChanged );
+            Api.ModSettingChanged     += InvokeModSettingChanged;
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderModSettingChanged}:\n{e}" );
+        }
+
+        try
+        {
             ProviderGetAvailableModSettings =
                 pi.GetIpcProvider< string, string, IDictionary< string, (IList< string >, Mods.SelectType) >? >(
                     LabelProviderGetAvailableModSettings );
@@ -455,6 +503,26 @@ public partial class PenumbraIpc
         catch( Exception e )
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetAvailableModSettings}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderReloadMod = pi.GetIpcProvider< string, string, PenumbraApiEc >( LabelProviderReloadMod );
+            ProviderReloadMod.RegisterFunc( Api.ReloadMod );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderReloadMod}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderAddMod = pi.GetIpcProvider< string, PenumbraApiEc >( LabelProviderAddMod );
+            ProviderAddMod.RegisterFunc( Api.AddMod );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
         }
 
         try
@@ -524,7 +592,10 @@ public partial class PenumbraIpc
 
     private void DisposeSettingProviders()
     {
+        Api.ModSettingChanged -= InvokeModSettingChanged;
         ProviderGetAvailableModSettings?.UnregisterFunc();
+        ProviderReloadMod?.UnregisterFunc();
+        ProviderAddMod?.UnregisterFunc();
         ProviderGetCurrentModSettings?.UnregisterFunc();
         ProviderTryInheritMod?.UnregisterFunc();
         ProviderTrySetMod?.UnregisterFunc();
@@ -532,6 +603,9 @@ public partial class PenumbraIpc
         ProviderTrySetModSetting?.UnregisterFunc();
         ProviderTrySetModSettings?.UnregisterFunc();
     }
+
+    private void InvokeModSettingChanged( ModSettingChange type, string collection, string mod, bool inherited )
+        => ProviderModSettingChanged?.SendMessage( type, collection, mod, inherited );
 }
 
 public partial class PenumbraIpc

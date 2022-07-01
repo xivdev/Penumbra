@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -12,6 +13,7 @@ using Dalamud.Plugin.Ipc;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
@@ -23,23 +25,32 @@ public class IpcTester : IDisposable
     private readonly PenumbraIpc            _ipc;
     private readonly DalamudPluginInterface _pi;
 
-    private readonly ICallGateSubscriber< object? >              _initialized;
-    private readonly ICallGateSubscriber< object? >              _disposed;
-    private readonly ICallGateSubscriber< IntPtr, int, object? > _redrawn;
+    private readonly ICallGateSubscriber< object? >                                         _initialized;
+    private readonly ICallGateSubscriber< object? >                                         _disposed;
+    private readonly ICallGateSubscriber< string, object? >                                 _preSettingsDraw;
+    private readonly ICallGateSubscriber< string, object? >                                 _postSettingsDraw;
+    private readonly ICallGateSubscriber< IntPtr, int, object? >                            _redrawn;
+    private readonly ICallGateSubscriber< ModSettingChange, string, string, bool, object? > _settingChanged;
 
     private readonly List< DateTimeOffset > _initializedList = new();
     private readonly List< DateTimeOffset > _disposedList    = new();
 
     public IpcTester( DalamudPluginInterface pi, PenumbraIpc ipc )
     {
-        _ipc         = ipc;
-        _pi          = pi;
+        _ipc = ipc;
+        _pi = pi;
         _initialized = _pi.GetIpcSubscriber< object? >( PenumbraIpc.LabelProviderInitialized );
-        _disposed    = _pi.GetIpcSubscriber< object? >( PenumbraIpc.LabelProviderDisposed );
-        _redrawn     = _pi.GetIpcSubscriber< IntPtr, int, object? >( PenumbraIpc.LabelProviderGameObjectRedrawn );
+        _disposed = _pi.GetIpcSubscriber< object? >( PenumbraIpc.LabelProviderDisposed );
+        _redrawn = _pi.GetIpcSubscriber< IntPtr, int, object? >( PenumbraIpc.LabelProviderGameObjectRedrawn );
+        _preSettingsDraw = _pi.GetIpcSubscriber< string, object? >( PenumbraIpc.LabelProviderPreSettingsDraw );
+        _postSettingsDraw = _pi.GetIpcSubscriber< string, object? >( PenumbraIpc.LabelProviderPostSettingsDraw );
+        _settingChanged = _pi.GetIpcSubscriber< ModSettingChange, string, string, bool, object? >( PenumbraIpc.LabelProviderModSettingChanged );
         _initialized.Subscribe( AddInitialized );
         _disposed.Subscribe( AddDisposed );
         _redrawn.Subscribe( SetLastRedrawn );
+        _preSettingsDraw.Subscribe( UpdateLastDrawnMod );
+        _postSettingsDraw.Subscribe( UpdateLastDrawnMod );
+        _settingChanged.Subscribe( UpdateLastModSetting );
     }
 
     public void Dispose()
@@ -49,6 +60,9 @@ public class IpcTester : IDisposable
         _redrawn.Subscribe( SetLastRedrawn );
         _tooltip?.Unsubscribe( AddedTooltip );
         _click?.Unsubscribe( AddedClick );
+        _preSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
+        _postSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
+        _settingChanged.Unsubscribe( UpdateLastModSetting );
     }
 
     private void AddInitialized()
@@ -111,7 +125,12 @@ public class IpcTester : IDisposable
         ImGui.TableNextColumn();
     }
 
-    private string _currentConfiguration = string.Empty;
+    private string         _currentConfiguration = string.Empty;
+    private string         _lastDrawnMod         = string.Empty;
+    private DateTimeOffset _lastDrawnModTime;
+
+    private void UpdateLastDrawnMod( string name )
+        => ( _lastDrawnMod, _lastDrawnModTime ) = ( name, DateTimeOffset.Now );
 
     private void DrawGeneral()
     {
@@ -143,6 +162,8 @@ public class IpcTester : IDisposable
 
         DrawList( PenumbraIpc.LabelProviderInitialized, "Last Initialized", _initializedList );
         DrawList( PenumbraIpc.LabelProviderDisposed, "Last Disposed", _disposedList );
+        DrawIntro( PenumbraIpc.LabelProviderPostSettingsDraw, "Last Drawn Mod" );
+        ImGui.TextUnformatted( _lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None" );
         DrawIntro( PenumbraIpc.LabelProviderApiVersion, "Current Version" );
         ImGui.TextUnformatted( _pi.GetIpcSubscriber< int >( PenumbraIpc.LabelProviderApiVersion ).InvokeFunc().ToString() );
         DrawIntro( PenumbraIpc.LabelProviderGetModDirectory, "Current Mod Directory" );
@@ -500,7 +521,22 @@ public class IpcTester : IDisposable
     private IDictionary< string, (IList< string >, SelectType) >? _availableSettings;
     private IDictionary< string, IList< string > >?               _currentSettings   = null;
     private PenumbraApiEc                                         _lastSettingsError = PenumbraApiEc.Success;
+    private ModSettingChange                                      _lastSettingChangeType;
+    private string                                                _lastSettingChangeCollection = string.Empty;
+    private string                                                _lastSettingChangeMod        = string.Empty;
+    private bool                                                  _lastSettingChangeInherited;
+    private DateTimeOffset                                        _lastSettingChange;
+    private PenumbraApiEc                                         _lastReloadEc = PenumbraApiEc.Success;
 
+
+    private void UpdateLastModSetting( ModSettingChange type, string collection, string mod, bool inherited )
+    {
+        _lastSettingChangeType       = type;
+        _lastSettingChangeCollection = collection;
+        _lastSettingChangeMod        = mod;
+        _lastSettingChangeInherited  = inherited;
+        _lastSettingChange           = DateTimeOffset.Now;
+    }
 
     private void DrawSetting()
     {
@@ -522,7 +558,10 @@ public class IpcTester : IDisposable
         }
 
         DrawIntro( "Last Error", _lastSettingsError.ToString() );
-
+        DrawIntro( PenumbraIpc.LabelProviderModSettingChanged, "Last Mod Setting Changed" );
+        ImGui.TextUnformatted( _lastSettingChangeMod.Length > 0
+            ? $"{_lastSettingChangeType} of {_lastSettingChangeMod} in {_lastSettingChangeCollection}{( _lastSettingChangeInherited ? " (Inherited)" : string.Empty )} at {_lastSettingChange}"
+            : "None" );
         DrawIntro( PenumbraIpc.LabelProviderGetAvailableModSettings, "Get Available Settings" );
         if( ImGui.Button( "Get##Available" ) )
         {
@@ -531,6 +570,16 @@ public class IpcTester : IDisposable
                     PenumbraIpc.LabelProviderGetAvailableModSettings ).InvokeFunc( _settingsModDirectory, _settingsModName );
             _lastSettingsError = _availableSettings == null ? PenumbraApiEc.ModMissing : PenumbraApiEc.Success;
         }
+
+        DrawIntro( PenumbraIpc.LabelProviderReloadMod, "Reload Mod" );
+        if( ImGui.Button( "Reload" ) )
+        {
+            _lastReloadEc = _pi.GetIpcSubscriber< string, string, PenumbraApiEc >( PenumbraIpc.LabelProviderReloadMod )
+               .InvokeFunc( _settingsModDirectory, _settingsModName );
+        }
+
+        ImGui.SameLine();
+        ImGui.TextUnformatted( _lastReloadEc.ToString() );
 
         DrawIntro( PenumbraIpc.LabelProviderGetCurrentModSettings, "Get Current Settings" );
         if( ImGui.Button( "Get##Current" ) )

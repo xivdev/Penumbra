@@ -1,20 +1,15 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reflection;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.Api;
-using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
-using Penumbra.Mods;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 
 namespace Penumbra.UI;
