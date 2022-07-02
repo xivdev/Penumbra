@@ -229,7 +229,7 @@ public class DdsFile
 public class TmpTexFile
 {
     public TexFile.TexHeader Header;
-    public byte[]            RgbaData;
+    public byte[]            RgbaData = Array.Empty< byte >();
 
     public void Load( BinaryReader br )
     {

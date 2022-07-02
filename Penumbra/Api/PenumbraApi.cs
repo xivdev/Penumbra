@@ -20,8 +20,8 @@ namespace Penumbra.Api;
 
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
-    public int ApiVersion
-        => 6;
+    public (int, int) ApiVersion
+        => ( 4, 8 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;

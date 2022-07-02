@@ -104,7 +104,7 @@ public class IpcTester : IDisposable
             return;
         }
 
-        ImGui.TextUnformatted( $"API Version: {_ipc.Api.ApiVersion}" );
+        ImGui.TextUnformatted( $"API Version: {_ipc.Api.ApiVersion.Breaking}.{_ipc.Api.ApiVersion.Feature:D4}" );
         ImGui.TextUnformatted( "Available subscriptions:" );
         using var indent = ImRaii.PushIndent();
 
@@ -168,8 +168,9 @@ public class IpcTester : IDisposable
         DrawList( PenumbraIpc.LabelProviderDisposed, "Last Disposed", _disposedList );
         DrawIntro( PenumbraIpc.LabelProviderPostSettingsDraw, "Last Drawn Mod" );
         ImGui.TextUnformatted( _lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None" );
-        DrawIntro( PenumbraIpc.LabelProviderApiVersion, "Current Version" );
-        ImGui.TextUnformatted( _pi.GetIpcSubscriber< int >( PenumbraIpc.LabelProviderApiVersion ).InvokeFunc().ToString() );
+        DrawIntro( PenumbraIpc.LabelProviderApiVersions, "Current Version" );
+        var (breaking, features) = _pi.GetIpcSubscriber< (int, int) >( PenumbraIpc.LabelProviderApiVersions ).InvokeFunc();
+        ImGui.TextUnformatted( $"{breaking}.{features:D4}" );
         DrawIntro( PenumbraIpc.LabelProviderGetModDirectory, "Current Mod Directory" );
         ImGui.TextUnformatted( _pi.GetIpcSubscriber< string >( PenumbraIpc.LabelProviderGetModDirectory ).InvokeFunc() );
         DrawIntro( PenumbraIpc.LabelProviderGetConfiguration, "Configuration" );

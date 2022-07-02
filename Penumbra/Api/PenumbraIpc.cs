@@ -47,18 +47,20 @@ public partial class PenumbraIpc
     public const string LabelProviderInitialized      = "Penumbra.Initialized";
     public const string LabelProviderDisposed         = "Penumbra.Disposed";
     public const string LabelProviderApiVersion       = "Penumbra.ApiVersion";
+    public const string LabelProviderApiVersions      = "Penumbra.ApiVersions";
     public const string LabelProviderGetModDirectory  = "Penumbra.GetModDirectory";
     public const string LabelProviderGetConfiguration = "Penumbra.GetConfiguration";
     public const string LabelProviderPreSettingsDraw  = "Penumbra.PreSettingsDraw";
     public const string LabelProviderPostSettingsDraw = "Penumbra.PostSettingsDraw";
 
-    internal ICallGateProvider< object? >?         ProviderInitialized;
-    internal ICallGateProvider< object? >?         ProviderDisposed;
-    internal ICallGateProvider< int >?             ProviderApiVersion;
-    internal ICallGateProvider< string >?          ProviderGetModDirectory;
-    internal ICallGateProvider< string >?          ProviderGetConfiguration;
-    internal ICallGateProvider< string, object? >? ProviderPreSettingsDraw;
-    internal ICallGateProvider< string, object? >? ProviderPostSettingsDraw;
+    internal ICallGateProvider< object? >?                      ProviderInitialized;
+    internal ICallGateProvider< object? >?                      ProviderDisposed;
+    internal ICallGateProvider< int >?                          ProviderApiVersion;
+    internal ICallGateProvider< (int Breaking, int Features) >? ProviderApiVersions;
+    internal ICallGateProvider< string >?                       ProviderGetModDirectory;
+    internal ICallGateProvider< string >?                       ProviderGetConfiguration;
+    internal ICallGateProvider< string, object? >?              ProviderPreSettingsDraw;
+    internal ICallGateProvider< string, object? >?              ProviderPostSettingsDraw;
 
     private void InitializeGeneralProviders( DalamudPluginInterface pi )
     {
@@ -83,11 +85,25 @@ public partial class PenumbraIpc
         try
         {
             ProviderApiVersion = pi.GetIpcProvider< int >( LabelProviderApiVersion );
-            ProviderApiVersion.RegisterFunc( () => Api.ApiVersion );
+            ProviderApiVersion.RegisterFunc( () =>
+            {
+                PluginLog.Warning( $"{LabelProviderApiVersion} is outdated. Please use {LabelProviderApiVersions} instead." );
+                return Api.ApiVersion.Breaking;
+            } );
         }
         catch( Exception e )
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderApiVersion}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderApiVersions = pi.GetIpcProvider< ( int, int ) >( LabelProviderApiVersions );
+            ProviderApiVersions.RegisterFunc( () => Api.ApiVersion );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderApiVersions}:\n{e}" );
         }
 
         try
@@ -136,6 +152,7 @@ public partial class PenumbraIpc
         ProviderGetConfiguration?.UnregisterFunc();
         ProviderGetModDirectory?.UnregisterFunc();
         ProviderApiVersion?.UnregisterFunc();
+        ProviderApiVersions?.UnregisterFunc();
         Api.PreSettingsPanelDraw  -= InvokeSettingsPreDraw;
         Api.PostSettingsPanelDraw -= InvokeSettingsPostDraw;
     }
