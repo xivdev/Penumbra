@@ -56,6 +56,7 @@ public partial class MetaManager : IDisposable, IEnumerable<KeyValuePair<MetaMan
         ResetEst();
         ResetCmp();
         ResetImc();
+        _manipulations.Clear();
     }
 
     public void Dispose()

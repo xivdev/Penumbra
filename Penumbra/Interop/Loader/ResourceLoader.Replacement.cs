@@ -247,6 +247,7 @@ public unsafe partial class ResourceLoader
         GetResourceSyncHook.Dispose();
         GetResourceAsyncHook.Dispose();
         ResourceHandleDestructorHook?.Dispose();
+        _incRefHook.Dispose();
     }
 
     private static int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )
