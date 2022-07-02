@@ -18,15 +18,20 @@ public class LaunchButton : IDisposable
         _configWindow = ui;
         _icon         = null;
         _entry        = null;
-        //Dalamud.Framework.RunOnTick( () =>
-        //{
-        //    _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
-        //        "tsmLogo.png" ) );
-        //    if( _icon != null )
-        //    {
-        //        _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
-        //    }
-        //} );
+
+        void CreateEntry()
+        {
+            _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
+                "tsmLogo.png" ) );
+            if( _icon != null )
+            {
+                _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
+            }
+
+            Dalamud.PluginInterface.UiBuilder.Draw -= CreateEntry;
+        }
+
+        Dalamud.PluginInterface.UiBuilder.Draw += CreateEntry;
     }
 
     private void OnTriggered()
