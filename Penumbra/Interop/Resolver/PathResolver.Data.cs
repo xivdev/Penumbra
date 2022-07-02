@@ -367,15 +367,7 @@ public unsafe partial class PathResolver
             if( character->ModelCharaId == 0 )
             {
                 // Check if the object is a non-player human NPC.
-                if( actor->ObjectKind != ( byte )ObjectKind.Player )
-                {
-                    collection = Penumbra.CollectionManager.ByType( CollectionType.NonPlayerCharacter );
-                    if( collection != null )
-                    {
-                        return true;
-                    }
-                }
-                else
+                if( actor->ObjectKind == ( byte )ObjectKind.Player )
                 {
                     // Check the subrace. If it does not fit any or no subrace collection is set, check the player character collection.
                     collection = ( SubRace )( ( Character* )actor )->CustomizeData[ 4 ] switch
@@ -399,6 +391,35 @@ public unsafe partial class PathResolver
                         _                       => null,
                     };
                     collection ??= Penumbra.CollectionManager.ByType( CollectionType.PlayerCharacter );
+                    if( collection != null )
+                    {
+                        return true;
+                    }
+                }
+                else
+                {
+                    // Check the subrace. If it does not fit any or no subrace collection is set, check the npn-player character collection.
+                    collection = ( SubRace )( ( Character* )actor )->CustomizeData[ 4 ] switch
+                    {
+                        SubRace.Midlander       => Penumbra.CollectionManager.ByType( CollectionType.MidlanderNpc ),
+                        SubRace.Highlander      => Penumbra.CollectionManager.ByType( CollectionType.HighlanderNpc ),
+                        SubRace.Wildwood        => Penumbra.CollectionManager.ByType( CollectionType.WildwoodNpc ),
+                        SubRace.Duskwight       => Penumbra.CollectionManager.ByType( CollectionType.DuskwightNpc ),
+                        SubRace.Plainsfolk      => Penumbra.CollectionManager.ByType( CollectionType.PlainsfolkNpc ),
+                        SubRace.Dunesfolk       => Penumbra.CollectionManager.ByType( CollectionType.DunesfolkNpc ),
+                        SubRace.SeekerOfTheSun  => Penumbra.CollectionManager.ByType( CollectionType.SeekerOfTheSunNpc ),
+                        SubRace.KeeperOfTheMoon => Penumbra.CollectionManager.ByType( CollectionType.KeeperOfTheMoonNpc ),
+                        SubRace.Seawolf         => Penumbra.CollectionManager.ByType( CollectionType.SeawolfNpc ),
+                        SubRace.Hellsguard      => Penumbra.CollectionManager.ByType( CollectionType.HellsguardNpc ),
+                        SubRace.Raen            => Penumbra.CollectionManager.ByType( CollectionType.RaenNpc ),
+                        SubRace.Xaela           => Penumbra.CollectionManager.ByType( CollectionType.XaelaNpc ),
+                        SubRace.Helion          => Penumbra.CollectionManager.ByType( CollectionType.HelionNpc ),
+                        SubRace.Lost            => Penumbra.CollectionManager.ByType( CollectionType.LostNpc ),
+                        SubRace.Rava            => Penumbra.CollectionManager.ByType( CollectionType.RavaNpc ),
+                        SubRace.Veena           => Penumbra.CollectionManager.ByType( CollectionType.VeenaNpc ),
+                        _                       => null,
+                    };
+                    collection ??= Penumbra.CollectionManager.ByType( CollectionType.NonPlayerCharacter );
                     if( collection != null )
                     {
                         return true;
