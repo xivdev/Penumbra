@@ -219,10 +219,9 @@ public partial class ConfigWindow
 
         public static void DrawDiscordButton( float width )
         {
-            const string discord = "Join Discord for Support";
             const string address = @"https://discord.gg/kVva7DHV4r";
             using var    color   = ImRaii.PushColor( ImGuiCol.Button, Colors.DiscordColor );
-            if( ImGui.Button( discord, new Vector2( width, 0 ) ) )
+            if( ImGui.Button( "Join Discord for Support", new Vector2( width, 0 ) ) )
             {
                 try
                 {
@@ -252,6 +251,33 @@ public partial class ConfigWindow
             }
         }
 
+        private static void DrawGuideButton( float width )
+        {
+            const string address = @"https://penumbra.ju.mp";
+            using var color = ImRaii.PushColor( ImGuiCol.Button, 0xFFCC648D )
+               .Push( ImGuiCol.ButtonHovered, 0xFFB070B0 )
+               .Push( ImGuiCol.ButtonActive, 0xFF9070E0 );
+            if( ImGui.Button( "Beginner's Guides", new Vector2( width, 0 ) ) )
+            {
+                try
+                {
+                    var process = new ProcessStartInfo( address )
+                    {
+                        UseShellExecute = true,
+                    };
+                    Process.Start( process );
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+
+            ImGuiUtil.HoverTooltip(
+                $"Open {address}\nImage and text based guides for most functionality of Penumbra made by Serenity.\n"
+              + "Not directly affiliated and potentially, but not usually out of date." );
+        }
+
         private static void DrawSupportButtons()
         {
             var width = ImGui.CalcTextSize( SupportInfoButtonText ).X + ImGui.GetStyle().FramePadding.X * 2;
@@ -260,11 +286,15 @@ public partial class ConfigWindow
                 width += ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemSpacing.X;
             }
 
-            ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, ImGui.GetFrameHeightWithSpacing() ) );
+            var xPos = ImGui.GetWindowWidth() - width;
+            ImGui.SetCursorPos( new Vector2( xPos, ImGui.GetFrameHeightWithSpacing() ) );
             DrawSupportButton();
 
-            ImGui.SetCursorPos( new Vector2( ImGui.GetWindowWidth() - width, 0 ) );
+            ImGui.SetCursorPos( new Vector2( xPos, 0 ) );
             DrawDiscordButton( width );
+
+            ImGui.SetCursorPos( new Vector2( xPos, 2 * ImGui.GetFrameHeightWithSpacing() ) );
+            DrawGuideButton( width );
         }
     }
 }
