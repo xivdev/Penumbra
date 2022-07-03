@@ -73,7 +73,8 @@ public class Penumbra : IDalamudPlugin
         DevPenumbraExists      = CheckDevPluginPenumbra();
         IsNotInstalledPenumbra = CheckIsNotInstalled();
 
-        Framework = new FrameworkManager();
+        Framework        = new FrameworkManager();
+        CharacterUtility = new CharacterUtility();
         Backup.CreateBackup( PenumbraBackupFiles() );
         Config = Configuration.Load();
 
@@ -82,7 +83,6 @@ public class Penumbra : IDalamudPlugin
         ResourceLoader    = new ResourceLoader( this );
         ResourceLoader.EnableHooks();
         ResourceLogger    = new ResourceLogger( ResourceLoader );
-        CharacterUtility  = new CharacterUtility();
         ResidentResources = new ResidentResourceManager();
         ModManager        = new Mod.Manager( Config.ModDirectory );
         ModManager.DiscoverMods();
