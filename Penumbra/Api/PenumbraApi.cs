@@ -628,7 +628,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var name = c.Name;
 
         void Del( ModSettingChange type, int idx, int _, int _2, bool inherited )
-            => ModSettingChanged?.Invoke( type, name, Penumbra.ModManager[ idx ].ModPath.Name, inherited );
+            => ModSettingChanged?.Invoke( type, name, idx >= 0 ? Penumbra.ModManager[ idx ].ModPath.Name : string.Empty, inherited );
 
         _delegates[ c ]     =  Del;
         c.ModSettingChanged += Del;
