@@ -87,32 +87,31 @@ public partial class MetaManager
 
     public bool RevertMod( ImcManipulation m )
     {
-#if USE_IMC
-        if( _imcManipulations.Remove( m ) )
+        if( !_imcManipulations.Remove( m ) )
         {
-            var path = m.GamePath();
-            if( !_imcFiles.TryGetValue( path, out var file ) )
-            {
-                return false;
-            }
-
-            var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant, out _ );
-            var manip = m with { Entry = def };
-            if( !manip.Apply( file ) )
-            {
-                return false;
-            }
-
-            var fullPath = CreateImcPath( path );
-            if( _collection.HasCache )
-            {
-                _collection.ForceFile( path, fullPath );
-            }
-
-            return true;
+            return false;
         }
-#endif
-        return false;
+
+        var path = m.GamePath();
+        if( !_imcFiles.TryGetValue( path, out var file ) )
+        {
+            return false;
+        }
+
+        var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant, out _ );
+        var manip = m with { Entry = def };
+        if( !manip.Apply( file ) )
+        {
+            return false;
+        }
+
+        var fullPath = CreateImcPath( path );
+        if( _collection.HasCache )
+        {
+            _collection.ForceFile( path, fullPath );
+        }
+
+        return true;
     }
 
     public void DisposeImc()

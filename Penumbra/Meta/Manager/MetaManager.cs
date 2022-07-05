@@ -10,7 +10,7 @@ using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
-public partial class MetaManager : IDisposable, IEnumerable<KeyValuePair<MetaManipulation, IMod>>
+public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaManipulation, IMod > >
 {
     private readonly Dictionary< MetaManipulation, IMod > _manipulations = new();
     private readonly ModCollection                        _collection;
@@ -25,7 +25,7 @@ public partial class MetaManager : IDisposable, IEnumerable<KeyValuePair<MetaMan
         => _manipulations.Keys;
 
 
-    public IEnumerator<KeyValuePair<MetaManipulation, IMod>> GetEnumerator()
+    public IEnumerator< KeyValuePair< MetaManipulation, IMod > > GetEnumerator()
         => _manipulations.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -133,6 +133,12 @@ public partial class MetaManager : IDisposable, IEnumerable<KeyValuePair<MetaMan
                 MetaManipulation.Type.Unknown => false,
                 _                             => false,
             };
+        }
+
+        if( Penumbra.CollectionManager.Default == _collection )
+        {
+            SetFiles();
+            Penumbra.ResidentResources.Reload();
         }
 
         Penumbra.CharacterUtility.LoadingFinished -= ApplyStoredManipulations;

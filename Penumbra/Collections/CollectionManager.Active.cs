@@ -72,25 +72,7 @@ public partial class ModCollection
                         ? c.Index
                         : Default.Index
                     : -1,
-                CollectionType.Yourself           => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.PlayerCharacter    => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.NonPlayerCharacter => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Midlander          => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Highlander         => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Wildwood           => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Duskwight          => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Plainsfolk         => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Dunesfolk          => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.SeekerOfTheSun     => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.KeeperOfTheMoon    => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Seawolf            => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Hellsguard         => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Raen               => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Xaela              => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Helion             => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Lost               => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Rava               => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
-                CollectionType.Veena              => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
+                _ when collectionType.IsSpecial() => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
                 _                                 => -1,
             };
 
@@ -146,71 +128,30 @@ public partial class ModCollection
         // Create a special collection if it does not exist and set it to Empty.
         public bool CreateSpecialCollection( CollectionType collectionType )
         {
-            switch( collectionType )
+            if( !collectionType.IsSpecial() || _specialCollections[( int )collectionType] != null )
             {
-                case CollectionType.Yourself:
-                case CollectionType.PlayerCharacter:
-                case CollectionType.NonPlayerCharacter:
-                case CollectionType.Midlander:
-                case CollectionType.Highlander:
-                case CollectionType.Wildwood:
-                case CollectionType.Duskwight:
-                case CollectionType.Plainsfolk:
-                case CollectionType.Dunesfolk:
-                case CollectionType.SeekerOfTheSun:
-                case CollectionType.KeeperOfTheMoon:
-                case CollectionType.Seawolf:
-                case CollectionType.Hellsguard:
-                case CollectionType.Raen:
-                case CollectionType.Xaela:
-                case CollectionType.Helion:
-                case CollectionType.Lost:
-                case CollectionType.Rava:
-                case CollectionType.Veena:
-                    if( _specialCollections[ ( int )collectionType ] != null )
-                    {
-                        return false;
-                    }
-
-                    _specialCollections[ ( int )collectionType ] = Empty;
-                    CollectionChanged.Invoke( collectionType, null, Empty, null );
-                    return true;
-                default: return false;
+                return false;
             }
+
+            _specialCollections[ ( int )collectionType ] = Empty;
+            CollectionChanged.Invoke( collectionType, null, Empty, null );
+            return true;
+
         }
 
         // Remove a special collection if it exists
         public void RemoveSpecialCollection( CollectionType collectionType )
         {
-            switch( collectionType )
+            if( !collectionType.IsSpecial() )
             {
-                case CollectionType.Yourself:
-                case CollectionType.PlayerCharacter:
-                case CollectionType.NonPlayerCharacter:
-                case CollectionType.Midlander:
-                case CollectionType.Highlander:
-                case CollectionType.Wildwood:
-                case CollectionType.Duskwight:
-                case CollectionType.Plainsfolk:
-                case CollectionType.Dunesfolk:
-                case CollectionType.SeekerOfTheSun:
-                case CollectionType.KeeperOfTheMoon:
-                case CollectionType.Seawolf:
-                case CollectionType.Hellsguard:
-                case CollectionType.Raen:
-                case CollectionType.Xaela:
-                case CollectionType.Helion:
-                case CollectionType.Lost:
-                case CollectionType.Rava:
-                case CollectionType.Veena:
-                    var old = _specialCollections[ ( int )collectionType ];
-                    if( old != null )
-                    {
-                        _specialCollections[ ( int )collectionType ] = null;
-                        CollectionChanged.Invoke( collectionType, old, null, null );
-                    }
+                return;
+            }
 
-                    return;
+            var old = _specialCollections[ ( int )collectionType ];
+            if( old != null )
+            {
+                _specialCollections[ ( int )collectionType ] = null;
+                CollectionChanged.Invoke( collectionType, old, null, null );
             }
         }
 

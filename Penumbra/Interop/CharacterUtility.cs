@@ -30,22 +30,12 @@ public unsafe class CharacterUtility : IDisposable
     // The defines are set in the project configuration.
     public static readonly int[] RelevantIndices
         = Array.Empty< int >()
-#if USE_EQP
            .Append( Structs.CharacterUtility.EqpIdx )
-#endif
-#if USE_GMP
            .Append( Structs.CharacterUtility.GmpIdx )
-#endif
-#if USE_EQDP
            .Concat( Enumerable.Range( Structs.CharacterUtility.EqdpStartIdx, Structs.CharacterUtility.NumEqdpFiles )
                .Where( i => i != 17 ) ) // TODO: Female Hrothgar
-#endif
-#if USE_CMP
            .Append( Structs.CharacterUtility.HumanCmpIdx )
-#endif
-#if USE_EST
            .Concat( Enumerable.Range( Structs.CharacterUtility.FaceEstIdx, 4 ) )
-#endif
            .ToArray();
 
     public static readonly int[] ReverseIndices

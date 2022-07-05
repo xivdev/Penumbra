@@ -250,7 +250,8 @@ public partial class ConfigWindow
             }
 
             foreach( var collection in Penumbra.CollectionManager
-                       .Where( c => Penumbra.CollectionManager.Current.CheckValidInheritance( c ) == ModCollection.ValidInheritance.Valid ) )
+                       .Where( c => Penumbra.CollectionManager.Current.CheckValidInheritance( c ) == ModCollection.ValidInheritance.Valid )
+                       .OrderBy( c => c.Name  ))
             {
                 if( ImGui.Selectable( collection.Name, _newInheritance == collection ) )
                 {

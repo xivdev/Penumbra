@@ -297,7 +297,7 @@ public unsafe partial class PathResolver
             // Housing Retainers
             if( Penumbra.Config.UseDefaultCollectionForRetainers
             && gameObject->ObjectKind == ( byte )ObjectKind.EventNpc
-            && gameObject->DataID is 1011832 or 1011021 ) // cf. "E8 ?? ?? ?? ?? 0F B6 F8 88 45"
+            && gameObject->DataID is 1011832 or 1011021 ) // cf. "E8 ?? ?? ?? ?? 0F B6 F8 88 45", male or female retainer
             {
                 return Penumbra.CollectionManager.Default;
             }
