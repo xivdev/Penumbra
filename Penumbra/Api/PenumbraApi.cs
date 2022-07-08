@@ -12,6 +12,7 @@ using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Resolver;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -21,7 +22,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 8 );
+        => ( 4, 9 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -129,7 +130,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             Penumbra.CollectionManager.Character( characterName ) );
     }
 
-    public IList< string > ReverseResolvePath( string path, string characterName )
+    public string[] ReverseResolvePath( string path, string characterName )
     {
         CheckInitialized();
         if( !Penumbra.Config.EnableMods )
@@ -138,7 +139,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         var ret = Penumbra.CollectionManager.Character( characterName ).ReverseResolvePath( new FullPath( path ) );
-        return ret.Select( r => r.ToString() ).ToList();
+        return ret.Select( r => r.ToString() ).ToArray();
+    }
+
+    public string[] ReverseResolvePathPlayer( string path )
+    {
+        CheckInitialized();
+        if( !Penumbra.Config.EnableMods )
+        {
+            return new[] { path };
+        }
+
+        var ret = PathResolver.PlayerCollection().ReverseResolvePath( new FullPath( path ) );
+        return ret.Select( r => r.ToString() ).ToArray();
     }
 
     public T? GetFile< T >( string gamePath ) where T : FileResource

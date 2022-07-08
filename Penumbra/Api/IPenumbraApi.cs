@@ -22,7 +22,9 @@ public delegate void ChangedItemHover( object? item );
 public delegate void ChangedItemClick( MouseButton button, object? item );
 public delegate void GameObjectRedrawn( IntPtr objectPtr, int objectTableIndex );
 public delegate void ModSettingChanged( ModSettingChange type, string collectionName, string modDirectory, bool inherited );
-public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr customize, IntPtr equipData );
+
+public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize,
+    IntPtr equipData );
 
 public enum PenumbraApiEc
 {
@@ -87,8 +89,12 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Returns the given gamePath if penumbra would not manipulate it.
     public string ResolvePath( string gamePath, string characterName );
 
-    // Reverse resolves a given modded local path into its replacement in form of all applicable game path for given character
-    public IList< string > ReverseResolvePath( string moddedPath, string characterName );
+    // Reverse resolves a given modded local path into its replacement in form of all applicable game paths for given character collection.
+    public string[] ReverseResolvePath( string moddedPath, string characterName );
+
+    // Reverse resolves a given modded local path into its replacement in form of all applicable game paths
+    // using the collection applying to the player character.
+    public string[] ReverseResolvePathPlayer( string moddedPath );
 
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath ) where T : FileResource;

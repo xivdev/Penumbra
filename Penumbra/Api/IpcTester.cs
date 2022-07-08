@@ -30,7 +30,7 @@ public class IpcTester : IDisposable
     private readonly ICallGateSubscriber< string, object? >                                 _postSettingsDraw;
     private readonly ICallGateSubscriber< IntPtr, int, object? >                            _redrawn;
     private readonly ICallGateSubscriber< ModSettingChange, string, string, bool, object? > _settingChanged;
-    private readonly ICallGateSubscriber< IntPtr, string, IntPtr, IntPtr, object? >         _characterBaseCreated;
+    private readonly ICallGateSubscriber< IntPtr, string, IntPtr, IntPtr, IntPtr, object? > _characterBaseCreated;
 
     private readonly List< DateTimeOffset > _initializedList = new();
     private readonly List< DateTimeOffset > _disposedList    = new();
@@ -46,7 +46,7 @@ public class IpcTester : IDisposable
         _postSettingsDraw = _pi.GetIpcSubscriber< string, object? >( PenumbraIpc.LabelProviderPostSettingsDraw );
         _settingChanged = _pi.GetIpcSubscriber< ModSettingChange, string, string, bool, object? >( PenumbraIpc.LabelProviderModSettingChanged );
         _characterBaseCreated =
-            _pi.GetIpcSubscriber< IntPtr, string, IntPtr, IntPtr, object? >( PenumbraIpc.LabelProviderCreatingCharacterBase );
+            _pi.GetIpcSubscriber< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >( PenumbraIpc.LabelProviderCreatingCharacterBase );
         _initialized.Subscribe( AddInitialized );
         _disposed.Subscribe( AddDisposed );
         _redrawn.Subscribe( SetLastRedrawn );
@@ -204,7 +204,7 @@ public class IpcTester : IDisposable
     private string         _lastCreatedGameObjectName = string.Empty;
     private DateTimeOffset _lastCreatedGameObjectTime = DateTimeOffset.MaxValue;
 
-    private unsafe void UpdateLastCreated( IntPtr gameObject, string _, IntPtr _2, IntPtr _3 )
+    private unsafe void UpdateLastCreated( IntPtr gameObject, string _, IntPtr _2, IntPtr _3, IntPtr _4 )
     {
         var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
         _lastCreatedGameObjectName = new Utf8String( obj->GetName() ).ToString();
@@ -268,6 +268,21 @@ public class IpcTester : IDisposable
         {
             var list = _pi.GetIpcSubscriber< string, string, string[] >( PenumbraIpc.LabelProviderReverseResolvePath )
                .InvokeFunc( _currentReversePath, _currentResolveCharacter );
+            if( list.Length > 0 )
+            {
+                ImGui.TextUnformatted( list[ 0 ] );
+                if( list.Length > 1 && ImGui.IsItemHovered() )
+                {
+                    ImGui.SetTooltip( string.Join( "\n", list.Skip( 1 ) ) );
+                }
+            }
+        }
+
+        DrawIntro( PenumbraIpc.LabelProviderReverseResolvePathPlayer, "Reversed Game Paths (Player)" );
+        if( _currentReversePath.Length > 0 )
+        {
+            var list = _pi.GetIpcSubscriber< string, string[] >( PenumbraIpc.LabelProviderReverseResolvePathPlayer )
+               .InvokeFunc( _currentReversePath );
             if( list.Length > 0 )
             {
                 ImGui.TextUnformatted( list[ 0 ] );

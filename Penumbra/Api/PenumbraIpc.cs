@@ -257,17 +257,19 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderResolveDefault        = "Penumbra.ResolveDefaultPath";
-    public const string LabelProviderResolveCharacter      = "Penumbra.ResolveCharacterPath";
-    public const string LabelProviderGetDrawObjectInfo     = "Penumbra.GetDrawObjectInfo";
-    public const string LabelProviderReverseResolvePath    = "Penumbra.ReverseResolvePath";
-    public const string LabelProviderCreatingCharacterBase = "Penumbra.CreatingCharacterBase";
+    public const string LabelProviderResolveDefault           = "Penumbra.ResolveDefaultPath";
+    public const string LabelProviderResolveCharacter         = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderGetDrawObjectInfo        = "Penumbra.GetDrawObjectInfo";
+    public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
+    public const string LabelProviderReverseResolvePathPlayer = "Penumbra.ReverseResolvePathPlayer";
+    public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
 
-    internal ICallGateProvider< string, string >?                          ProviderResolveDefault;
-    internal ICallGateProvider< string, string, string >?                  ProviderResolveCharacter;
-    internal ICallGateProvider< IntPtr, (IntPtr, string) >?                ProviderGetDrawObjectInfo;
-    internal ICallGateProvider< string, string, IList< string > >?         ProviderReverseResolvePath;
-    internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
+    internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
+    internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
+    internal ICallGateProvider< IntPtr, (IntPtr, string) >?                        ProviderGetDrawObjectInfo;
+    internal ICallGateProvider< string, string, string[] >?                        ProviderReverseResolvePath;
+    internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
+    internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
@@ -303,18 +305,29 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderReverseResolvePath = pi.GetIpcProvider< string, string, IList< string > >( LabelProviderReverseResolvePath );
+            ProviderReverseResolvePath = pi.GetIpcProvider< string, string, string[] >( LabelProviderReverseResolvePath );
             ProviderReverseResolvePath.RegisterFunc( Api.ReverseResolvePath );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetDrawObjectInfo}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderReverseResolvePath}:\n{e}" );
         }
 
         try
         {
-            ProviderCreatingCharacterBase =  pi.GetIpcProvider< IntPtr, string, IntPtr, IntPtr, object? >( LabelProviderCreatingCharacterBase );
-            Api.CreatingCharacterBase     += CreatingCharacterBaseEvent;
+            ProviderReverseResolvePathPlayer = pi.GetIpcProvider< string, string[] >( LabelProviderReverseResolvePathPlayer );
+            ProviderReverseResolvePathPlayer.RegisterFunc( Api.ReverseResolvePathPlayer );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderReverseResolvePathPlayer}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderCreatingCharacterBase =
+                pi.GetIpcProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >( LabelProviderCreatingCharacterBase );
+            Api.CreatingCharacterBase += CreatingCharacterBaseEvent;
         }
         catch( Exception e )
         {
@@ -328,12 +341,13 @@ public partial class PenumbraIpc
         ProviderResolveDefault?.UnregisterFunc();
         ProviderResolveCharacter?.UnregisterFunc();
         ProviderReverseResolvePath?.UnregisterFunc();
+        ProviderReverseResolvePathPlayer?.UnregisterFunc();
         Api.CreatingCharacterBase -= CreatingCharacterBaseEvent;
     }
 
-    private void CreatingCharacterBaseEvent( IntPtr gameObject, ModCollection collection, IntPtr customize, IntPtr equipData )
+    private void CreatingCharacterBaseEvent( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize, IntPtr equipData )
     {
-        ProviderCreatingCharacterBase?.SendMessage( gameObject, collection.Name, customize, equipData );
+        ProviderCreatingCharacterBase?.SendMessage( gameObject, collection.Name, modelId, customize, equipData );
     }
 }
 

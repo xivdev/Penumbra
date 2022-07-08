@@ -31,14 +31,14 @@ public unsafe partial class PathResolver
     private ModCollection? _lastCreatedCollection;
     public event CreatingCharacterBaseDelegate? CreatingCharacterBase;
 
-
     private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
     {
         using var cmp = MetaChanger.ChangeCmp( this, out _lastCreatedCollection );
 
         if( LastGameObject != null )
         {
-            CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!, b, c );
+            var modelPtr = &a;
+            CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!, ( IntPtr )modelPtr, b, c );
         }
 
         var ret = CharacterBaseCreateHook!.Original( a, b, c, d );
@@ -339,6 +339,30 @@ public unsafe partial class PathResolver
             PluginLog.Error( $"Error identifying collection:\n{e}" );
             return Penumbra.CollectionManager.Default;
         }
+    }
+
+    // Get the collection applying to the current player character
+    // or the default collection if no player exists.
+    public static ModCollection PlayerCollection()
+    {
+        var player = Dalamud.ClientState.LocalPlayer;
+        if( player == null )
+        {
+            return Penumbra.CollectionManager.Default;
+        }
+
+        var name = player.Name.TextValue;
+        if( CollectionByActorName( name, out var c ) )
+        {
+            return c;
+        }
+
+        if( CollectionByActor( name, ( GameObject* )player.Address, out c ) )
+        {
+            return c;
+        }
+
+        return Penumbra.CollectionManager.Default;
     }
 
     // Check both temporary and permanent character collections. Temporary first.
