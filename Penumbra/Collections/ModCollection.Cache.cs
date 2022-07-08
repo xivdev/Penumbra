@@ -32,9 +32,6 @@ public partial class ModCollection
         public SingleArray< ModConflicts > Conflicts( IMod mod )
             => _conflicts.TryGetValue( mod, out var c ) ? c : new SingleArray< ModConflicts >();
 
-        // Count the number of changes of the effective file list.
-        // This is used for material and imc changes.
-        public int ChangeCounter { get; private set; }
         private int _changedItemsSaveCounter = -1;
 
         // Obtain currently changed items. Computes them if they haven't been computed before.
@@ -55,7 +52,9 @@ public partial class ModCollection
             _collection.ModSettingChanged  += OnModSettingChange;
             _collection.InheritanceChanged += OnInheritanceChange;
             if( !Penumbra.CharacterUtility.Ready )
+            {
                 Penumbra.CharacterUtility.LoadingFinished += IncrementCounter;
+            }
         }
 
         public void Dispose()
@@ -176,7 +175,7 @@ public partial class ModCollection
 
             AddMetaFiles();
 
-            ++ChangeCounter;
+            ++_collection.ChangeCounter;
 
             if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready )
             {
@@ -239,7 +238,7 @@ public partial class ModCollection
 
             if( addMetaChanges )
             {
-                ++ChangeCounter;
+                ++_collection.ChangeCounter;
                 if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready )
                 {
                     Penumbra.ResidentResources.Reload();
@@ -292,7 +291,7 @@ public partial class ModCollection
 
             if( addMetaChanges )
             {
-                ++ChangeCounter;
+                ++_collection.ChangeCounter;
                 if( mod.TotalManipulations > 0 )
                 {
                     AddMetaFiles();
@@ -449,7 +448,7 @@ public partial class ModCollection
         // Increment the counter to ensure new files are loaded after applying meta changes.
         private void IncrementCounter()
         {
-            ++ChangeCounter;
+            ++_collection.ChangeCounter;
             Penumbra.CharacterUtility.LoadingFinished -= IncrementCounter;
         }
 
@@ -457,14 +456,14 @@ public partial class ModCollection
         // Identify and record all manipulated objects for this entire collection.
         private void SetChangedItems()
         {
-            if( _changedItemsSaveCounter == ChangeCounter )
+            if( _changedItemsSaveCounter == _collection.ChangeCounter )
             {
                 return;
             }
 
             try
             {
-                _changedItemsSaveCounter = ChangeCounter;
+                _changedItemsSaveCounter = _collection.ChangeCounter;
                 _changedItems.Clear();
                 // Skip IMCs because they would result in far too many false-positive items,
                 // since they are per set instead of per item-slot/item/variant.

@@ -113,7 +113,7 @@ public unsafe partial class PathResolver
     {
         if( nonDefault && type == ResourceType.Mtrl )
         {
-            var fullPath = new FullPath( $"|{collection.Name}_{collection.RecomputeCounter}|{path}" );
+            var fullPath = new FullPath( $"|{collection.Name}_{collection.ChangeCounter}|{path}" );
             data = ( fullPath, collection );
         }
         else

@@ -18,8 +18,9 @@ public partial class ModCollection
     public bool HasCache
         => _cache != null;
 
-    public int RecomputeCounter
-        => _cache?.ChangeCounter ?? 0;
+    // Count the number of changes of the effective file list.
+    // This is used for material and imc changes.
+    public int ChangeCounter { get; private set; }
 
     // Only create, do not update. 
     private void CreateCache()
