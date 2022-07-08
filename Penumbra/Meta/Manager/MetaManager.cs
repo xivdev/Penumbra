@@ -24,7 +24,6 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     public IReadOnlyCollection< MetaManipulation > Manipulations
         => _manipulations.Keys;
 
-
     public IEnumerator< KeyValuePair< MetaManipulation, IMod > > GetEnumerator()
         => _manipulations.GetEnumerator();
 
@@ -35,7 +34,10 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     {
         _collection = collection;
         SetupImcDelegate();
-        Penumbra.CharacterUtility.LoadingFinished += ApplyStoredManipulations;
+        if( !Penumbra.CharacterUtility.Ready )
+        {
+            Penumbra.CharacterUtility.LoadingFinished += ApplyStoredManipulations;
+        }
     }
 
     public void SetFiles()

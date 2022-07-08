@@ -51,15 +51,18 @@ public partial class ModCollection
         public Cache( ModCollection collection )
         {
             _collection                    =  collection;
-            MetaManipulations              =  new MetaManager( collection );
+            MetaManipulations              =  new MetaManager( _collection );
             _collection.ModSettingChanged  += OnModSettingChange;
             _collection.InheritanceChanged += OnInheritanceChange;
+            if( !Penumbra.CharacterUtility.Ready )
+                Penumbra.CharacterUtility.LoadingFinished += IncrementCounter;
         }
 
         public void Dispose()
         {
-            _collection.ModSettingChanged  -= OnModSettingChange;
-            _collection.InheritanceChanged -= OnInheritanceChange;
+            _collection.ModSettingChanged             -= OnModSettingChange;
+            _collection.InheritanceChanged            -= OnInheritanceChange;
+            Penumbra.CharacterUtility.LoadingFinished -= IncrementCounter;
         }
 
         // Resolve a given game path according to this collection.
@@ -442,6 +445,14 @@ public partial class ModCollection
         // Add all necessary meta file redirects.
         private void AddMetaFiles()
             => MetaManipulations.SetImcFiles();
+
+        // Increment the counter to ensure new files are loaded after applying meta changes.
+        private void IncrementCounter()
+        {
+            ++ChangeCounter;
+            Penumbra.CharacterUtility.LoadingFinished -= IncrementCounter;
+        }
+
 
         // Identify and record all manipulated objects for this entire collection.
         private void SetChangedItems()
