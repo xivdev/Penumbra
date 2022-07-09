@@ -262,7 +262,7 @@ public partial class PenumbraIpc
     public const string LabelProviderResolvePlayer            = "Penumbra.ResolvePlayerPath";
     public const string LabelProviderGetDrawObjectInfo        = "Penumbra.GetDrawObjectInfo";
     public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
-    public const string LabelProviderReverseResolvePathPlayer = "Penumbra.ReverseResolvePlayerPath";
+    public const string LabelProviderReverseResolvePlayerPath = "Penumbra.ReverseResolvePlayerPath";
     public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
 
     internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
@@ -327,12 +327,12 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderReverseResolvePathPlayer = pi.GetIpcProvider< string, string[] >( LabelProviderReverseResolvePathPlayer );
+            ProviderReverseResolvePathPlayer = pi.GetIpcProvider< string, string[] >( LabelProviderReverseResolvePlayerPath );
             ProviderReverseResolvePathPlayer.RegisterFunc( Api.ReverseResolvePlayerPath );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderReverseResolvePathPlayer}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderReverseResolvePlayerPath}:\n{e}" );
         }
 
         try
