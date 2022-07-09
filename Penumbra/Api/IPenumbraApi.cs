@@ -89,12 +89,16 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Returns the given gamePath if penumbra would not manipulate it.
     public string ResolvePath( string gamePath, string characterName );
 
+    // Resolve a given gamePath via Penumbra using any applicable character collections for the current character.
+    // Returns the given gamePath if penumbra would not manipulate it.
+    public string ResolvePlayerPath( string gamePath );
+
     // Reverse resolves a given modded local path into its replacement in form of all applicable game paths for given character collection.
     public string[] ReverseResolvePath( string moddedPath, string characterName );
 
     // Reverse resolves a given modded local path into its replacement in form of all applicable game paths
     // using the collection applying to the player character.
-    public string[] ReverseResolvePathPlayer( string moddedPath );
+    public string[] ReverseResolvePlayerPath( string moddedPath );
 
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath ) where T : FileResource;

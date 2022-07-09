@@ -278,10 +278,10 @@ public class IpcTester : IDisposable
             }
         }
 
-        DrawIntro( PenumbraIpc.LabelProviderReverseResolvePathPlayer, "Reversed Game Paths (Player)" );
+        DrawIntro( PenumbraIpc.LabelProviderReverseResolvePlayerPath, "Reversed Game Paths (Player)" );
         if( _currentReversePath.Length > 0 )
         {
-            var list = _pi.GetIpcSubscriber< string, string[] >( PenumbraIpc.LabelProviderReverseResolvePathPlayer )
+            var list = _pi.GetIpcSubscriber< string, string[] >( PenumbraIpc.LabelProviderReverseResolvePlayerPath )
                .InvokeFunc( _currentReversePath );
             if( list.Length > 0 )
             {

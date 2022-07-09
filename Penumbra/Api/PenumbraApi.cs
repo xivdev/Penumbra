@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Common.Configuration;
 using Lumina.Data;
 using Newtonsoft.Json;
 using OtterGui;
@@ -22,7 +23,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 9 );
+        => ( 4, 10 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -123,6 +124,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return ResolvePath( path, Penumbra.ModManager, Penumbra.CollectionManager.Default );
     }
 
+    public string ResolvePlayerPath( string path )
+    {
+        CheckInitialized();
+        return ResolvePath( path, Penumbra.ModManager, PathResolver.PlayerCollection() );
+    }
+
     public string ResolvePath( string path, string characterName )
     {
         CheckInitialized();
@@ -142,7 +149,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return ret.Select( r => r.ToString() ).ToArray();
     }
 
-    public string[] ReverseResolvePathPlayer( string path )
+    public string[] ReverseResolvePlayerPath( string path )
     {
         CheckInitialized();
         if( !Penumbra.Config.EnableMods )
