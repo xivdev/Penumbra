@@ -259,13 +259,15 @@ public partial class PenumbraIpc
 {
     public const string LabelProviderResolveDefault           = "Penumbra.ResolveDefaultPath";
     public const string LabelProviderResolveCharacter         = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderResolvePlayer            = "Penumbra.ResolvePlayerPath";
     public const string LabelProviderGetDrawObjectInfo        = "Penumbra.GetDrawObjectInfo";
     public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
-    public const string LabelProviderReverseResolvePathPlayer = "Penumbra.ReverseResolvePathPlayer";
+    public const string LabelProviderReverseResolvePathPlayer = "Penumbra.ReverseResolvePlayerPath";
     public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
 
     internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
     internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
+    internal ICallGateProvider< string, string >?                                  ProviderResolvePlayer;
     internal ICallGateProvider< IntPtr, (IntPtr, string) >?                        ProviderGetDrawObjectInfo;
     internal ICallGateProvider< string, string, string[] >?                        ProviderReverseResolvePath;
     internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
@@ -295,6 +297,16 @@ public partial class PenumbraIpc
 
         try
         {
+            ProviderResolvePlayer = pi.GetIpcProvider< string, string >( LabelProviderResolvePlayer );
+            ProviderResolvePlayer.RegisterFunc( Api.ResolvePlayerPath );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderResolveCharacter}:\n{e}" );
+        }
+
+        try
+        {
             ProviderGetDrawObjectInfo = pi.GetIpcProvider< IntPtr, (IntPtr, string) >( LabelProviderGetDrawObjectInfo );
             ProviderGetDrawObjectInfo.RegisterFunc( Api.GetDrawObjectInfo );
         }
@@ -316,7 +328,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderReverseResolvePathPlayer = pi.GetIpcProvider< string, string[] >( LabelProviderReverseResolvePathPlayer );
-            ProviderReverseResolvePathPlayer.RegisterFunc( Api.ReverseResolvePathPlayer );
+            ProviderReverseResolvePathPlayer.RegisterFunc( Api.ReverseResolvePlayerPath );
         }
         catch( Exception e )
         {
