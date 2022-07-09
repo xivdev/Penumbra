@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using OtterGui.Filesystem;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -11,62 +12,49 @@ namespace Penumbra.Meta.Manager;
 
 public partial class MetaManager
 {
-    public struct MetaManagerGmp : IDisposable
+    private          ExpandedGmpFile?        _gmpFile          = null;
+    private readonly List< GmpManipulation > _gmpManipulations = new();
+
+    public void SetGmpFiles()
+        => SetFile( _gmpFile, CharacterUtility.GmpIdx );
+
+    public static void ResetGmpFiles()
+        => SetFile( null, CharacterUtility.GmpIdx );
+
+    public void ResetGmp()
     {
-        public          ExpandedGmpFile?                   File          = null;
-        public readonly Dictionary< GmpManipulation, IMod > Manipulations = new();
-
-        public MetaManagerGmp()
-        { }
-
-
-        [Conditional( "USE_GMP" )]
-        public void SetFiles()
-            => SetFile( File, CharacterUtility.GmpIdx );
-
-        [Conditional( "USE_GMP" )]
-        public static void ResetFiles()
-            => SetFile( null, CharacterUtility.GmpIdx );
-
-        [Conditional( "USE_GMP" )]
-        public void Reset()
+        if( _gmpFile == null )
         {
-            if( File != null )
-            {
-                File.Reset( Manipulations.Keys.Select( m => ( int )m.SetId ) );
-                Manipulations.Clear();
-            }
+            return;
         }
 
-        public bool ApplyMod( GmpManipulation m, IMod mod )
+        _gmpFile.Reset( _gmpManipulations.Select( m => ( int )m.SetId ) );
+        _gmpManipulations.Clear();
+    }
+
+    public bool ApplyMod( GmpManipulation manip )
+    {
+        _gmpManipulations.AddOrReplace( manip );
+        _gmpFile ??= new ExpandedGmpFile();
+        return manip.Apply( _gmpFile );
+    }
+
+    public bool RevertMod( GmpManipulation manip )
+    {
+        if( _gmpManipulations.Remove( manip ) )
         {
-#if USE_GMP
-            Manipulations[ m ] =   mod;
-            File               ??= new ExpandedGmpFile();
-            return m.Apply( File );
-#else
-            return false;
-#endif
+            var def = ExpandedGmpFile.GetDefault( manip.SetId );
+            manip = new GmpManipulation( def, manip.SetId );
+            return manip.Apply( _gmpFile! );
         }
 
-        public bool RevertMod( GmpManipulation m )
-        {
-#if USE_GMP
-            if( Manipulations.Remove( m ) )
-            {
-                var def   = ExpandedGmpFile.GetDefault( m.SetId );
-                var manip = new GmpManipulation( def, m.SetId );
-                return manip.Apply( File! );
-            }
-#endif
-            return false;
-        }
+        return false;
+    }
 
-        public void Dispose()
-        {
-            File?.Dispose();
-            File = null;
-            Manipulations.Clear();
-        }
+    public void DisposeGmp()
+    {
+        _gmpFile?.Dispose();
+        _gmpFile = null;
+        _gmpManipulations.Clear();
     }
 }

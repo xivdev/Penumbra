@@ -93,18 +93,13 @@ public partial class ConfigWindow
     }
 
     // Draw a collection selector of a certain width for a certain type.
-    private static void DrawCollectionSelector( string label, float width, ModCollection.Type type, bool withEmpty, string? characterName )
+    private static void DrawCollectionSelector( string label, float width, CollectionType collectionType, bool withEmpty,
+        string? characterName )
     {
         ImGui.SetNextItemWidth( width );
-        var current = type switch
-        {
-            ModCollection.Type.Default   => Penumbra.CollectionManager.Default,
-            ModCollection.Type.Character => Penumbra.CollectionManager.Character( characterName ?? string.Empty ),
-            ModCollection.Type.Current   => Penumbra.CollectionManager.Current,
-            _                            => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
-        };
 
-        using var combo = ImRaii.Combo( label, current.Name );
+        var current = Penumbra.CollectionManager.ByType( collectionType, characterName );
+        using var combo = ImRaii.Combo( label, current?.Name ?? string.Empty );
         if( combo )
         {
             foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ).OrderBy( c => c.Name ) )
@@ -112,7 +107,7 @@ public partial class ConfigWindow
                 using var id = ImRaii.PushId( collection.Index );
                 if( ImGui.Selectable( collection.Name, collection == current ) )
                 {
-                    Penumbra.CollectionManager.SetCollection( collection, type, characterName );
+                    Penumbra.CollectionManager.SetCollection( collection, collectionType, characterName );
                 }
             }
         }
@@ -140,7 +135,7 @@ public partial class ConfigWindow
         }
 
         // Add Penumbra Root. This is not updated if the root changes right now.
-        fileManager.CustomSideBarItems.Add( ("Root Directory", Penumbra.Config.ModDirectory, FontAwesomeIcon.Gamepad, 0) );
+        fileManager.CustomSideBarItems.Add( ( "Root Directory", Penumbra.Config.ModDirectory, FontAwesomeIcon.Gamepad, 0 ) );
 
         // Remove Videos and Music.
         fileManager.CustomSideBarItems.Add( ( "Videos", string.Empty, 0, -1 ) );

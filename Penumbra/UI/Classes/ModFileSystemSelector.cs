@@ -14,7 +14,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using OtterGui.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.UI.Classes;
 
@@ -47,7 +47,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         Penumbra.ModManager.ModMetaChanged                    += OnModMetaChange;
         Penumbra.ModManager.ModDiscoveryStarted               += StoreCurrentSelection;
         Penumbra.ModManager.ModDiscoveryFinished              += RestoreLastSelection;
-        OnCollectionChange( ModCollection.Type.Current, null, Penumbra.CollectionManager.Current, null );
+        OnCollectionChange( CollectionType.Current, null, Penumbra.CollectionManager.Current, null );
     }
 
     public override void Dispose()
@@ -67,7 +67,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         => base.SelectedLeaf;
 
     // Customization points.
-    public override SortMode SortMode
+    public override ISortMode< Mod > SortMode
         => Penumbra.Config.SortMode;
 
     protected override uint ExpandedFolderColor
@@ -315,7 +315,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     // Helpers.
     private static void SetDescendants( ModFileSystem.Folder folder, bool enabled, bool inherit = false )
     {
-        var mods = folder.GetAllDescendants( SortMode.Lexicographical ).OfType< ModFileSystem.Leaf >().Select( l => l.Value );
+        var mods = folder.GetAllDescendants( ISortMode< Mod >.Lexicographical ).OfType< ModFileSystem.Leaf >().Select( l => l.Value );
         if( inherit )
         {
             Penumbra.CollectionManager.Current.SetMultipleModInheritances( mods, enabled );
@@ -354,9 +354,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         OnSelectionChange( Selected, Selected, default );
     }
 
-    private void OnCollectionChange( ModCollection.Type type, ModCollection? oldCollection, ModCollection? newCollection, string? _ )
+    private void OnCollectionChange( CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string? _ )
     {
-        if( type != ModCollection.Type.Current || oldCollection == newCollection )
+        if( collectionType != CollectionType.Current || oldCollection == newCollection )
         {
             return;
         }
@@ -404,7 +404,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     {
         if( _lastSelectedDirectory.Length > 0 )
         {
-            base.SelectedLeaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( SortMode.Lexicographical )
+            base.SelectedLeaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( ISortMode< Mod >.Lexicographical )
                .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.ModPath.FullName == _lastSelectedDirectory );
             OnSelectionChange( null, base.SelectedLeaf?.Value, default );
             _lastSelectedDirectory = string.Empty;
@@ -422,7 +422,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
         try
         {
-            var leaf = FileSystem.Root.GetChildren( SortMode.Lexicographical )
+            var leaf = FileSystem.Root.GetChildren( ISortMode< Mod >.Lexicographical )
                .FirstOrDefault( f => f is FileSystem< Mod >.Leaf l && l.Value == mod );
             if( leaf == null )
             {

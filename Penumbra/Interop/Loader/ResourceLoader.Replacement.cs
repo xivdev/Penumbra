@@ -1,14 +1,16 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
@@ -29,7 +31,8 @@ public unsafe partial class ResourceLoader
         [FieldOffset( 20 )]
         public uint SegmentLength;
 
-        public bool IsPartialRead => SegmentLength != 0;
+        public bool IsPartialRead
+            => SegmentLength != 0;
     }
 
     public delegate ResourceHandle* GetResourceSyncPrototype( ResourceManager* resourceManager, ResourceCategory* pCategoryId,
@@ -88,7 +91,8 @@ public unsafe partial class ResourceLoader
         PathResolved?.Invoke( gamePath, *resourceType, resolvedPath, data );
         if( resolvedPath == null )
         {
-            var retUnmodified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+            var retUnmodified =
+                CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
             ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
             return retUnmodified;
         }
@@ -112,7 +116,7 @@ public unsafe partial class ResourceLoader
     // Try all resolve path subscribers or use the default replacer.
     private (FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
-        if( !DoReplacements )
+        if( !DoReplacements || _incMode.Value )
         {
             return ( null, null );
         }
@@ -242,21 +246,46 @@ public unsafe partial class ResourceLoader
         ReadSqPackHook.Dispose();
         GetResourceSyncHook.Dispose();
         GetResourceAsyncHook.Dispose();
+        ResourceHandleDestructorHook?.Dispose();
+        _incRefHook.Dispose();
     }
 
-    private int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )
+    private static int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )
     {
         if( pGetResParams == null || !pGetResParams->IsPartialRead )
+        {
             return path.Crc32;
+        }
 
         // When the game requests file only partially, crc32 includes that information, in format of:
         // path/to/file.ext.hex_offset.hex_size
         // ex) music/ex4/BGM_EX4_System_Title.scd.381adc.30000
         return Utf8String.Join(
-            (byte)'.',
+            ( byte )'.',
             path,
             Utf8String.FromStringUnsafe( pGetResParams->SegmentOffset.ToString( "x" ), true ),
             Utf8String.FromStringUnsafe( pGetResParams->SegmentLength.ToString( "x" ), true )
         ).Crc32;
+    }
+
+
+    // A resource with ref count 0 that gets incremented goes through GetResourceAsync again.
+    // This means, that if the path determined from that is different than the resources path,
+    // a different resource gets loaded or incremented, while the IncRef'd resource stays at 0.
+    // This causes some problems and is hopefully prevented with this.
+    private readonly ThreadLocal< bool >              _incMode = new();
+    private readonly Hook< ResourceHandleDestructor > _incRefHook;
+
+    private IntPtr ResourceHandleIncRefDetour( ResourceHandle* handle )
+    {
+        if( handle->RefCount > 0 )
+        {
+            return _incRefHook.Original( handle );
+        }
+
+        _incMode.Value = true;
+        var ret = _incRefHook.Original( handle );
+        _incMode.Value = false;
+        return ret;
     }
 }

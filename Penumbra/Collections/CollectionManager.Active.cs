@@ -39,19 +39,41 @@ public partial class ModCollection
         public ModCollection Character( string name )
             => _characters.TryGetValue( name, out var c ) ? c : Default;
 
-        // Set a active collection, can be used to set Default, Current or Character collections.
-        private void SetCollection( int newIdx, Type type, string? characterName = null )
+        // Special Collections
+        private readonly ModCollection?[] _specialCollections = new ModCollection?[Enum.GetValues< CollectionType >().Length - 4];
+
+        // Return the configured collection for the given type or null.
+        public ModCollection? ByType( CollectionType type, string? name = null )
         {
-            var oldCollectionIdx = type switch
+            if( type.IsSpecial() )
             {
-                Type.Default => Default.Index,
-                Type.Current => Current.Index,
-                Type.Character => characterName?.Length > 0
+                return _specialCollections[ ( int )type ];
+            }
+
+            return type switch
+            {
+                CollectionType.Default   => Default,
+                CollectionType.Current   => Current,
+                CollectionType.Character => name != null ? _characters.TryGetValue( name, out var c ) ? c : null : null,
+                CollectionType.Inactive  => name != null ? ByName( name, out var c ) ? c : null : null,
+                _                        => null,
+            };
+        }
+
+        // Set a active collection, can be used to set Default, Current or Character collections.
+        private void SetCollection( int newIdx, CollectionType collectionType, string? characterName = null )
+        {
+            var oldCollectionIdx = collectionType switch
+            {
+                CollectionType.Default => Default.Index,
+                CollectionType.Current => Current.Index,
+                CollectionType.Character => characterName?.Length > 0
                     ? _characters.TryGetValue( characterName, out var c )
                         ? c.Index
                         : Default.Index
                     : -1,
-                _ => -1,
+                _ when collectionType.IsSpecial() => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
+                _                                 => -1,
             };
 
             if( oldCollectionIdx == -1 || newIdx == oldCollectionIdx )
@@ -66,31 +88,72 @@ public partial class ModCollection
             }
 
             RemoveCache( oldCollectionIdx );
-            switch( type )
+            switch( collectionType )
             {
-                case Type.Default:
+                case CollectionType.Default:
                     Default = newCollection;
-                    Penumbra.ResidentResources.Reload();
-                    Default.SetFiles();
+                    if( Penumbra.CharacterUtility.Ready )
+                    {
+                        Penumbra.ResidentResources.Reload();
+                        Default.SetFiles();
+                    }
+
                     break;
-                case Type.Current:
+                case CollectionType.Current:
                     Current = newCollection;
                     break;
-                case Type.Character:
+                case CollectionType.Character:
                     _characters[ characterName! ] = newCollection;
+                    break;
+                default:
+                    _specialCollections[ ( int )collectionType ] = newCollection;
                     break;
             }
 
-            
+
             UpdateCurrentCollectionInUse();
-            CollectionChanged.Invoke( type, this[ oldCollectionIdx ], newCollection, characterName );
+            CollectionChanged.Invoke( collectionType, this[ oldCollectionIdx ], newCollection, characterName );
         }
 
         private void UpdateCurrentCollectionInUse()
-            => CurrentCollectionInUse = Characters.Values.Prepend( Default ).SelectMany( c => c.GetFlattenedInheritance() ).Contains( Current );
+            => CurrentCollectionInUse = _specialCollections
+               .OfType< ModCollection >()
+               .Prepend( Default )
+               .Concat( Characters.Values )
+               .SelectMany( c => c.GetFlattenedInheritance() ).Contains( Current );
 
-        public void SetCollection( ModCollection collection, Type type, string? characterName = null )
-            => SetCollection( collection.Index, type, characterName );
+        public void SetCollection( ModCollection collection, CollectionType collectionType, string? characterName = null )
+            => SetCollection( collection.Index, collectionType, characterName );
+
+        // Create a special collection if it does not exist and set it to Empty.
+        public bool CreateSpecialCollection( CollectionType collectionType )
+        {
+            if( !collectionType.IsSpecial() || _specialCollections[( int )collectionType] != null )
+            {
+                return false;
+            }
+
+            _specialCollections[ ( int )collectionType ] = Empty;
+            CollectionChanged.Invoke( collectionType, null, Empty, null );
+            return true;
+
+        }
+
+        // Remove a special collection if it exists
+        public void RemoveSpecialCollection( CollectionType collectionType )
+        {
+            if( !collectionType.IsSpecial() )
+            {
+                return;
+            }
+
+            var old = _specialCollections[ ( int )collectionType ];
+            if( old != null )
+            {
+                _specialCollections[ ( int )collectionType ] = null;
+                CollectionChanged.Invoke( collectionType, old, null, null );
+            }
+        }
 
         // Create a new character collection. Returns false if the character name already has a collection.
         public bool CreateCharacterCollection( string characterName )
@@ -101,7 +164,7 @@ public partial class ModCollection
             }
 
             _characters[ characterName ] = Empty;
-            CollectionChanged.Invoke( Type.Character, null, Empty, characterName );
+            CollectionChanged.Invoke( CollectionType.Character, null, Empty, characterName );
             return true;
         }
 
@@ -112,7 +175,7 @@ public partial class ModCollection
             {
                 RemoveCache( collection.Index );
                 _characters.Remove( characterName );
-                CollectionChanged.Invoke( Type.Character, collection, null, characterName );
+                CollectionChanged.Invoke( CollectionType.Character, collection, null, characterName );
             }
         }
 
@@ -157,6 +220,25 @@ public partial class ModCollection
                 Current = this[ currentIdx ];
             }
 
+            // Load special collections.
+            foreach( var type in CollectionTypeExtensions.Special )
+            {
+                var typeName = jObject[ type.ToString() ]?.ToObject< string >();
+                if( typeName != null )
+                {
+                    var idx = GetIndexForCollectionName( typeName );
+                    if( idx < 0 )
+                    {
+                        PluginLog.Error( $"Last choice of {type.ToName()} Collection {typeName} is not available, removed." );
+                        configChanged = true;
+                    }
+                    else
+                    {
+                        _specialCollections[ ( int )type ] = this[ idx ];
+                    }
+                }
+            }
+
             // Load character collections. If a player name comes up multiple times, the last one is applied.
             var characters = jObject[ nameof( Characters ) ]?.ToObject< Dictionary< string, string > >() ?? new Dictionary< string, string >();
             foreach( var (player, collectionName) in characters )
@@ -187,10 +269,14 @@ public partial class ModCollection
         public void SaveActiveCollections()
         {
             Penumbra.Framework.RegisterDelayed( nameof( SaveActiveCollections ),
-                () => SaveActiveCollections( Default.Name, Current.Name, Characters.Select( kvp => ( kvp.Key, kvp.Value.Name ) ) ) );
+                () => SaveActiveCollections( Default.Name, Current.Name, Characters.Select( kvp => ( kvp.Key, kvp.Value.Name ) ),
+                    _specialCollections.WithIndex()
+                       .Where( c => c.Item1 != null )
+                       .Select( c => ( ( CollectionType )c.Item2, c.Item1!.Name ) ) ) );
         }
 
-        internal static void SaveActiveCollections( string def, string current, IEnumerable< (string, string) > characters )
+        internal static void SaveActiveCollections( string def, string current, IEnumerable< (string, string) > characters,
+            IEnumerable< (CollectionType, string) > special )
         {
             var file = ActiveCollectionFile;
             try
@@ -204,6 +290,12 @@ public partial class ModCollection
                 j.WriteValue( def );
                 j.WritePropertyName( nameof( Current ) );
                 j.WriteValue( current );
+                foreach( var (type, collection) in special )
+                {
+                    j.WritePropertyName( type.ToString() );
+                    j.WriteValue( collection );
+                }
+
                 j.WritePropertyName( nameof( Characters ) );
                 j.WriteStartObject();
                 foreach( var (character, collection) in characters )
@@ -246,9 +338,9 @@ public partial class ModCollection
 
 
         // Save if any of the active collections is changed.
-        private void SaveOnChange( Type type, ModCollection? _1, ModCollection? _2, string? _3 )
+        private void SaveOnChange( CollectionType collectionType, ModCollection? _1, ModCollection? _2, string? _3 )
         {
-            if( type != Type.Inactive )
+            if( collectionType != CollectionType.Inactive )
             {
                 SaveActiveCollections();
             }
@@ -261,7 +353,7 @@ public partial class ModCollection
             Default.CreateCache();
             Current.CreateCache();
 
-            foreach( var collection in _characters.Values )
+            foreach( var collection in _specialCollections.OfType< ModCollection >().Concat( _characters.Values ) )
             {
                 collection.CreateCache();
             }
@@ -269,7 +361,10 @@ public partial class ModCollection
 
         private void RemoveCache( int idx )
         {
-            if( idx != Default.Index && idx != Current.Index && _characters.Values.All( c => c.Index != idx ) )
+            if( idx != Default.Index
+            && idx  != Current.Index
+            && _specialCollections.All( c => c == null || c.Index != idx )
+            && _characters.Values.All( c => c.Index != idx ) )
             {
                 _collections[ idx ].ClearCache();
             }

@@ -8,6 +8,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
+using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 
 namespace Penumbra.UI;
@@ -110,22 +111,10 @@ public partial class ConfigWindow
             // If no meta manipulations are active, we can just draw the end dummy.
             if( m is { Count: > 0 } )
             {
-                // We can treat all meta manipulations the same,
-                // we are only really interested in their ToString function here.
-                static (object, IMod) Convert< T >( KeyValuePair< T, IMod > kvp )
-                    => ( kvp.Key!, kvp.Value );
-
-                var it = m.Cmp.Manipulations.Select( Convert )
-                   .Concat( m.Eqp.Manipulations.Select( Convert ) )
-                   .Concat( m.Eqdp.Manipulations.Select( Convert ) )
-                   .Concat( m.Gmp.Manipulations.Select( Convert ) )
-                   .Concat( m.Est.Manipulations.Select( Convert ) )
-                   .Concat( m.Imc.Manipulations.Select( Convert ) );
-
                 // Filters mean we can not use the known counts.
                 if( hasFilters )
                 {
-                    var it2 = it.Select( p => ( p.Item1.ToString() ?? string.Empty, p.Item2.Name ) );
+                    var it2 = m.Select( p => ( p.Key.ToString(), p.Value.Name ) );
                     if( stop >= 0 )
                     {
                         ImGuiClip.DrawEndDummy( stop + it2.Count( CheckFilters ), height );
@@ -144,7 +133,7 @@ public partial class ConfigWindow
                     }
                     else
                     {
-                        stop = ImGuiClip.ClippedDraw( it, skips, DrawLine, m.Count, ~stop );
+                        stop = ImGuiClip.ClippedDraw( m, skips, DrawLine, m.Count, ~stop );
                         ImGuiClip.DrawEndDummy( stop, height );
                     }
                 }
@@ -183,7 +172,7 @@ public partial class ConfigWindow
         }
 
         // Draw a line for a unfiltered/unconverted manipulation and mod-index pair.
-        private static void DrawLine( (object, IMod) pair )
+        private static void DrawLine( KeyValuePair< MetaManipulation, IMod > pair )
         {
             var (manipulation, mod) = pair;
             ImGui.TableNextColumn();

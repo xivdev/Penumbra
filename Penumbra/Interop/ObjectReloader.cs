@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects.Types;
+using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 
@@ -105,7 +106,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
     private readonly List< int > _afterGPoseQueue = new(GPoseSlots);
     private          int         _target          = -1;
 
-    public event Action< IntPtr, int >? GameObjectRedrawn;
+    public event GameObjectRedrawn? GameObjectRedrawn;
 
     public ObjectReloader()
         => Dalamud.Framework.Update += OnUpdateEvent;

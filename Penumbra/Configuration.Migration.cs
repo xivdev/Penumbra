@@ -27,6 +27,7 @@ public partial class Configuration
         public Dictionary< string, string > ModSortOrder         = new();
         public bool                         InvertModListOrder;
         public bool                         SortFoldersFirst;
+        public SortModeV3                   SortMode = SortModeV3.FoldersFirst;
 
         public static void Migrate( Configuration config )
         {
@@ -45,6 +46,31 @@ public partial class Configuration
             m.Version0To1();
             m.Version1To2();
             m.Version2To3();
+            m.Version3To4();
+        }
+
+        // SortMode was changed from an enum to a type.
+        private void Version3To4()
+        {
+            if( _config.Version != 3 )
+            {
+                return;
+            }
+
+            SortMode = _data[ nameof( SortMode ) ]?.ToObject< SortModeV3 >() ?? SortMode;
+            _config.SortMode = SortMode switch
+            {
+                SortModeV3.FoldersFirst           => ISortMode< Mod >.FoldersFirst,
+                SortModeV3.Lexicographical        => ISortMode< Mod >.Lexicographical,
+                SortModeV3.InverseFoldersFirst    => ISortMode< Mod >.InverseFoldersFirst,
+                SortModeV3.InverseLexicographical => ISortMode< Mod >.InverseLexicographical,
+                SortModeV3.FoldersLast            => ISortMode< Mod >.FoldersLast,
+                SortModeV3.InverseFoldersLast     => ISortMode< Mod >.InverseFoldersLast,
+                SortModeV3.InternalOrder          => ISortMode< Mod >.InternalOrder,
+                SortModeV3.InternalOrderInverse   => ISortMode< Mod >.InverseInternalOrder,
+                _                                 => ISortMode< Mod >.FoldersFirst,
+            };
+            _config.Version = 4;
         }
 
         // SortFoldersFirst was changed from a bool to the enum SortMode.
@@ -56,7 +82,7 @@ public partial class Configuration
             }
 
             SortFoldersFirst = _data[ nameof( SortFoldersFirst ) ]?.ToObject< bool >() ?? false;
-            _config.SortMode = SortFoldersFirst ? SortMode.FoldersFirst : SortMode.Lexicographical;
+            SortMode         = SortFoldersFirst ? SortModeV3.FoldersFirst : SortModeV3.Lexicographical;
             _config.Version  = 3;
         }
 
@@ -156,7 +182,7 @@ public partial class Configuration
             DefaultCollection    = _data[ nameof( DefaultCollection ) ]?.ToObject< string >()                          ?? DefaultCollection;
             CharacterCollections = _data[ nameof( CharacterCollections ) ]?.ToObject< Dictionary< string, string > >() ?? CharacterCollections;
             ModCollection.Manager.SaveActiveCollections( DefaultCollection, CurrentCollection,
-                CharacterCollections.Select( kvp => ( kvp.Key, kvp.Value ) ) );
+                CharacterCollections.Select( kvp => ( kvp.Key, kvp.Value ) ), Array.Empty< (CollectionType, string) >() );
         }
 
         // Collections were introduced and the previous CurrentCollection got put into ModDirectory.
@@ -241,6 +267,18 @@ public partial class Configuration
             {
                 PluginLog.Error( $"Could not create backup copy of config at {bakName}:\n{e}" );
             }
+        }
+
+        public enum SortModeV3 : byte
+        {
+            FoldersFirst           = 0x00,
+            Lexicographical        = 0x01,
+            InverseFoldersFirst    = 0x02,
+            InverseLexicographical = 0x03,
+            FoldersLast            = 0x04,
+            InverseFoldersLast     = 0x05,
+            InternalOrder          = 0x06,
+            InternalOrderInverse   = 0x07,
         }
     }
 }

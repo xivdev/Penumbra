@@ -11,7 +11,6 @@ public unsafe class CharacterUtility : IDisposable
     [Signature( "48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2", ScanType = ScanType.StaticAddress )]
     private readonly Structs.CharacterUtility** _characterUtilityAddress = null;
 
-
     // Only required for migration anymore.
     public delegate void LoadResources( Structs.CharacterUtility* address );
 
@@ -31,22 +30,12 @@ public unsafe class CharacterUtility : IDisposable
     // The defines are set in the project configuration.
     public static readonly int[] RelevantIndices
         = Array.Empty< int >()
-#if USE_EQP
            .Append( Structs.CharacterUtility.EqpIdx )
-#endif
-#if USE_GMP
            .Append( Structs.CharacterUtility.GmpIdx )
-#endif
-#if USE_EQDP
            .Concat( Enumerable.Range( Structs.CharacterUtility.EqdpStartIdx, Structs.CharacterUtility.NumEqdpFiles )
                .Where( i => i != 17 ) ) // TODO: Female Hrothgar
-#endif
-#if USE_CMP
            .Append( Structs.CharacterUtility.HumanCmpIdx )
-#endif
-#if USE_EST
            .Concat( Enumerable.Range( Structs.CharacterUtility.FaceEstIdx, 4 ) )
-#endif
            .ToArray();
 
     public static readonly int[] ReverseIndices
@@ -62,7 +51,6 @@ public unsafe class CharacterUtility : IDisposable
     public CharacterUtility()
     {
         SignatureHelper.Initialise( this );
-
         Dalamud.Framework.Update += LoadDefaultResources;
         LoadingFinished          += () => PluginLog.Debug( "Loading of CharacterUtility finished." );
     }
@@ -95,9 +83,9 @@ public unsafe class CharacterUtility : IDisposable
 
         if( missingCount == 0 )
         {
-            Dalamud.Framework.Update -= LoadDefaultResources;
-            Ready                    =  true;
+            Ready = true;
             LoadingFinished.Invoke();
+            Dalamud.Framework.Update -= LoadDefaultResources;
         }
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -45,6 +46,30 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
         Penumbra.ModManager.ModMetaChanged       -= OnMetaChange;
     }
 
+    public struct ImportDate : ISortMode< Mod >
+    {
+        public string Name
+            => "Import Date (Older First)";
+
+        public string Description
+            => "In each folder, sort all subfolders lexicographically, then sort all leaves using their import date.";
+
+        public IEnumerable< IPath > GetChildren( Folder f )
+            => f.GetSubFolders().Cast< IPath >().Concat( f.GetLeaves().OrderBy( l => l.Value.ImportDate ) );
+    }
+
+    public struct InverseImportDate : ISortMode< Mod >
+    {
+        public string Name
+            => "Import Date (Newer First)";
+
+        public string Description
+            => "In each folder, sort all subfolders lexicographically, then sort all leaves using their inverse import date.";
+
+        public IEnumerable< IPath > GetChildren( Folder f )
+            => f.GetSubFolders().Cast< IPath >().Concat( f.GetLeaves().OrderByDescending( l => l.Value.ImportDate ) );
+    }
+
     // Reload the whole filesystem from currently loaded mods and the current sort order file.
     // Used on construction and on mod rediscoveries.
     private void Reload()
@@ -72,7 +97,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
         if( type.HasFlag( MetaChangeType.Name ) && oldName != null )
         {
             var old = oldName.FixName();
-            if( Find( old, out var child ) && child is not Folder)
+            if( Find( old, out var child ) && child is not Folder )
             {
                 Rename( child, mod.Name.Text );
             }
@@ -97,7 +122,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
                 CreateLeaf( Root, name, mod );
                 break;
             case ModPathChangeType.Deleted:
-                var leaf = Root.GetAllDescendants( SortMode.Lexicographical ).OfType< Leaf >().FirstOrDefault( l => l.Value == mod );
+                var leaf = Root.GetAllDescendants( ISortMode< Mod >.Lexicographical ).OfType< Leaf >().FirstOrDefault( l => l.Value == mod );
                 if( leaf != null )
                 {
                     Delete( leaf );

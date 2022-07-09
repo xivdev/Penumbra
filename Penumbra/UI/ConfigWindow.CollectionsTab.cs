@@ -6,6 +6,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections;
+using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -33,9 +34,10 @@ public partial class ConfigWindow
 
 
         // Input text fields.
-        private string _newCollectionName = string.Empty;
-        private bool   _canAddCollection  = false;
-        private string _newCharacterName  = string.Empty;
+        private string          _newCollectionName = string.Empty;
+        private bool            _canAddCollection  = false;
+        private string          _newCharacterName  = string.Empty;
+        private CollectionType? _currentType       = CollectionType.Yourself;
 
         // Create a new collection that is either empty or a duplicate of the current collection.
         // Resets the new collection name.
@@ -104,7 +106,7 @@ public partial class ConfigWindow
 
         private void DrawCurrentCollectionSelector()
         {
-            DrawCollectionSelector( "##current", _window._inputTextWidth.X, ModCollection.Type.Current, false, null );
+            DrawCollectionSelector( "##current", _window._inputTextWidth.X, CollectionType.Current, false, null );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( "Current Collection",
                 "This collection will be modified when using the Installed Mods tab and making changes. It does not apply to anything by itself." );
@@ -112,10 +114,54 @@ public partial class ConfigWindow
 
         private void DrawDefaultCollectionSelector()
         {
-            DrawCollectionSelector( "##default", _window._inputTextWidth.X, ModCollection.Type.Default, true, null );
+            DrawCollectionSelector( "##default", _window._inputTextWidth.X, CollectionType.Default, true, null );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( "Default Collection",
                 "Mods in the default collection are loaded for any character that is not explicitly named in the character collections below.\n" );
+        }
+
+        // We do not check for valid character names.
+        private void DrawNewSpecialCollection()
+        {
+            const string description = "Special Collections apply to certain types of characters.\n"
+              + "All of them take precedence before the Default collection,\n"
+              + "but all character collections take precedence before them.";
+
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X );
+            if( _currentType == null || Penumbra.CollectionManager.ByType( _currentType.Value ) != null )
+            {
+                _currentType = CollectionTypeExtensions.Special.FindFirst( t => Penumbra.CollectionManager.ByType( t ) == null, out var t2 )
+                    ? t2
+                    : null;
+            }
+
+            if( _currentType == null )
+            {
+                return;
+            }
+
+            using( var combo = ImRaii.Combo( "##NewSpecial", _currentType.Value.ToName() ) )
+            {
+                if( combo )
+                {
+                    foreach( var type in CollectionTypeExtensions.Special.Where( t => Penumbra.CollectionManager.ByType( t ) == null ) )
+                    {
+                        if( ImGui.Selectable( type.ToName(), type == _currentType.Value ) )
+                        {
+                            _currentType = type;
+                        }
+                    }
+                }
+            }
+
+            ImGui.SameLine();
+            var disabled = _currentType == null;
+            var tt       = disabled ? "Please select a special collection type before creating the collection.\n\n" + description : description;
+            if( ImGuiUtil.DrawDisabledButton( "Create New Special Collection", Vector2.Zero, tt, disabled ) )
+            {
+                Penumbra.CollectionManager.CreateSpecialCollection( _currentType!.Value );
+                _currentType = null;
+            }
         }
 
         // We do not check for valid character names.
@@ -145,14 +191,36 @@ public partial class ConfigWindow
                 ImGui.Dummy( _window._defaultSpace );
                 DrawDefaultCollectionSelector();
                 ImGui.Dummy( _window._defaultSpace );
+                foreach( var type in CollectionTypeExtensions.Special )
+                {
+                    var collection = Penumbra.CollectionManager.ByType( type );
+                    if( collection != null )
+                    {
+                        using var id = ImRaii.PushId( ( int )type );
+                        DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, type, true, null );
+                        ImGui.SameLine();
+                        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
+                               false, true ) )
+                        {
+                            Penumbra.CollectionManager.RemoveSpecialCollection( type );
+                        }
+
+                        ImGui.SameLine();
+                        ImGui.AlignTextToFramePadding();
+                        ImGuiUtil.LabeledHelpMarker( type.ToName(), type.ToDescription() );
+                    }
+                }
+
+                DrawNewSpecialCollection();
+                ImGui.Dummy( _window._defaultSpace );
+
                 foreach( var name in Penumbra.CollectionManager.Characters.Keys.OrderBy( k => k ).ToArray() )
                 {
                     using var id = ImRaii.PushId( name );
-                    DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, ModCollection.Type.Character, true, name );
+                    DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, CollectionType.Character, true, name );
                     ImGui.SameLine();
                     if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
-                           false,
-                           true ) )
+                           false, true ) )
                     {
                         Penumbra.CollectionManager.RemoveCharacterCollection( name );
                     }
@@ -163,7 +231,7 @@ public partial class ConfigWindow
                 }
 
                 DrawNewCharacterCollection();
-                ImGui.NewLine();
+                ImGui.Dummy( _window._defaultSpace );
             }
         }
 

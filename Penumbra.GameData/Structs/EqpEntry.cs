@@ -11,7 +11,7 @@ public enum EqpEntry : ulong
 {
     BodyEnabled          = 0x00_01ul,
     BodyHideWaist        = 0x00_02ul,
-    _2                   = 0x00_04ul,
+    BodyHideThighs       = 0x00_04ul,
     BodyHideGlovesS      = 0x00_08ul,
     _4                   = 0x00_10ul,
     BodyHideGlovesM      = 0x00_20ul,
@@ -138,7 +138,7 @@ public static class Eqp
         {
             EqpEntry.BodyEnabled          => EquipSlot.Body,
             EqpEntry.BodyHideWaist        => EquipSlot.Body,
-            EqpEntry._2                   => EquipSlot.Body,
+            EqpEntry.BodyHideThighs       => EquipSlot.Body,
             EqpEntry.BodyHideGlovesS      => EquipSlot.Body,
             EqpEntry._4                   => EquipSlot.Body,
             EqpEntry.BodyHideGlovesM      => EquipSlot.Body,
@@ -217,7 +217,7 @@ public static class Eqp
         {
             EqpEntry.BodyEnabled          => "Enabled",
             EqpEntry.BodyHideWaist        => "Hide Waist",
-            EqpEntry._2                   => "Unknown 2",
+            EqpEntry.BodyHideThighs       => "Hide Thigh Pads",
             EqpEntry.BodyHideGlovesS      => "Hide Small Gloves",
             EqpEntry._4                   => "Unknown 4",
             EqpEntry.BodyHideGlovesM      => "Hide Medium Gloves",

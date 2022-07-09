@@ -1,94 +1,79 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Meta.Manager;
 
 public partial class MetaManager
 {
-    public struct MetaManagerEqdp : IDisposable
+    private readonly ExpandedEqdpFile?[] _eqdpFiles = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles - 2]; // TODO: female Hrothgar
+
+    private readonly List< EqdpManipulation > _eqdpManipulations = new();
+
+    public void SetEqdpFiles()
     {
-        public readonly ExpandedEqdpFile?[] Files = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles - 2]; // TODO: female Hrothgar
-
-        public readonly Dictionary< EqdpManipulation, IMod > Manipulations = new();
-
-        public MetaManagerEqdp()
-        { }
-
-        [Conditional( "USE_EQDP" )]
-        public void SetFiles()
+        for( var i = 0; i < CharacterUtility.EqdpIndices.Length; ++i )
         {
-            for( var i = 0; i < CharacterUtility.EqdpIndices.Length; ++i )
-            {
-                SetFile( Files[ i ], CharacterUtility.EqdpIndices[ i ] );
-            }
+            SetFile( _eqdpFiles[ i ], CharacterUtility.EqdpIndices[ i ] );
+        }
+    }
+
+    public static void ResetEqdpFiles()
+    {
+        foreach( var idx in CharacterUtility.EqdpIndices )
+        {
+            SetFile( null, idx );
+        }
+    }
+
+    public void ResetEqdp()
+    {
+        foreach( var file in _eqdpFiles )
+        {
+            file?.Reset( _eqdpManipulations.Where( m => m.FileIndex() == file.Index ).Select( m => ( int )m.SetId ) );
         }
 
-        [Conditional( "USE_EQDP" )]
-        public static void ResetFiles()
+        _eqdpManipulations.Clear();
+    }
+
+    public bool ApplyMod( EqdpManipulation manip )
+    {
+        _eqdpManipulations.AddOrReplace( manip );
+        var file = _eqdpFiles[ Array.IndexOf( CharacterUtility.EqdpIndices, manip.FileIndex() ) ] ??=
+            new ExpandedEqdpFile( Names.CombinedRace( manip.Gender, manip.Race ), manip.Slot.IsAccessory() ); // TODO: female Hrothgar
+        return manip.Apply( file );
+    }
+
+    public bool RevertMod( EqdpManipulation manip )
+    {
+        if( _eqdpManipulations.Remove( manip ) )
         {
-            foreach( var idx in CharacterUtility.EqdpIndices )
-            {
-                SetFile( null, idx );
-            }
+            var def  = ExpandedEqdpFile.GetDefault( Names.CombinedRace( manip.Gender, manip.Race ), manip.Slot.IsAccessory(), manip.SetId );
+            var file = _eqdpFiles[ Array.IndexOf( CharacterUtility.EqdpIndices, manip.FileIndex() ) ]!;
+            manip = new EqdpManipulation( def, manip.Slot, manip.Gender, manip.Race, manip.SetId );
+            return manip.Apply( file );
         }
 
-        [Conditional( "USE_EQDP" )]
-        public void Reset()
-        {
-            foreach( var file in Files )
-            {
-                file?.Reset( Manipulations.Keys.Where( m => m.FileIndex() == file.Index ).Select( m => ( int )m.SetId ) );
-            }
+        return false;
+    }
 
-            Manipulations.Clear();
+    public ExpandedEqdpFile? EqdpFile( GenderRace race, bool accessory )
+        => _eqdpFiles
+            [ Array.IndexOf( CharacterUtility.EqdpIndices, CharacterUtility.EqdpIdx( race, accessory ) ) ]; // TODO: female Hrothgar
+
+    public void DisposeEqdp()
+    {
+        for( var i = 0; i < _eqdpFiles.Length; ++i )
+        {
+            _eqdpFiles[ i ]?.Dispose();
+            _eqdpFiles[ i ] = null;
         }
 
-        public bool ApplyMod( EqdpManipulation m, IMod mod )
-        {
-#if USE_EQDP
-            Manipulations[ m ] = mod;
-            var file = Files[ Array.IndexOf( CharacterUtility.EqdpIndices, m.FileIndex() ) ] ??=
-                new ExpandedEqdpFile( Names.CombinedRace( m.Gender, m.Race ), m.Slot.IsAccessory() ); // TODO: female Hrothgar
-            return m.Apply( file );
-#else
-            return false;
-#endif
-        }
-
-        public bool RevertMod( EqdpManipulation m )
-        {
-#if USE_EQDP
-            if( Manipulations.Remove( m ) )
-            {
-                var def   = ExpandedEqdpFile.GetDefault( Names.CombinedRace( m.Gender, m.Race ), m.Slot.IsAccessory(), m.SetId );
-                var file  = Files[ Array.IndexOf( CharacterUtility.EqdpIndices, m.FileIndex() ) ]!;
-                var manip = new EqdpManipulation( def, m.Slot, m.Gender, m.Race, m.SetId );
-                return manip.Apply( file );
-            }
-#endif
-            return false;
-        }
-
-        public ExpandedEqdpFile? File( GenderRace race, bool accessory )
-            => Files[ Array.IndexOf( CharacterUtility.EqdpIndices, CharacterUtility.EqdpIdx( race, accessory ) ) ]; // TODO: female Hrothgar
-
-        public void Dispose()
-        {
-            for( var i = 0; i < Files.Length; ++i )
-            {
-                Files[ i ]?.Dispose();
-                Files[ i ] = null;
-            }
-
-            Manipulations.Clear();
-        }
+        _eqdpManipulations.Clear();
     }
 }

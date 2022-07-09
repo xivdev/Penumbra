@@ -4,9 +4,9 @@ using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
-using OtterGui.Filesystem;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -119,20 +119,19 @@ public partial class ConfigWindow
         {
             var sortMode = Penumbra.Config.SortMode;
             ImGui.SetNextItemWidth( _window._inputTextWidth.X );
-            using var combo = ImRaii.Combo( "##sortMode", sortMode.Data().Name );
+            using var combo = ImRaii.Combo( "##sortMode", sortMode.Name );
             if( combo )
             {
-                foreach( var val in Enum.GetValues< SortMode >() )
+                foreach( var val in Configuration.Constants.ValidSortModes )
                 {
-                    var (name, desc) = val.Data();
-                    if( ImGui.Selectable( name, val == sortMode ) && val != sortMode )
+                    if( ImGui.Selectable( val.Name, val.GetType() == sortMode.GetType() ) && val.GetType() != sortMode.GetType() )
                     {
                         Penumbra.Config.SortMode = val;
                         _window._selector.SetFilterDirty();
                         Penumbra.Config.Save();
                     }
 
-                    ImGuiUtil.HoverTooltip( desc );
+                    ImGuiUtil.HoverTooltip( val.Description );
                 }
             }
 

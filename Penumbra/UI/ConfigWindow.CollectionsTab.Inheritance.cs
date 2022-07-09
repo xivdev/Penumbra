@@ -152,7 +152,7 @@ public partial class ConfigWindow
         {
             if( _newCurrentCollection != null )
             {
-                Penumbra.CollectionManager.SetCollection( _newCurrentCollection, ModCollection.Type.Current );
+                Penumbra.CollectionManager.SetCollection( _newCurrentCollection, CollectionType.Current );
                 _newCurrentCollection = null;
             }
 
@@ -250,7 +250,8 @@ public partial class ConfigWindow
             }
 
             foreach( var collection in Penumbra.CollectionManager
-                       .Where( c => Penumbra.CollectionManager.Current.CheckValidInheritance( c ) == ModCollection.ValidInheritance.Valid ) )
+                       .Where( c => Penumbra.CollectionManager.Current.CheckValidInheritance( c ) == ModCollection.ValidInheritance.Valid )
+                       .OrderBy( c => c.Name  ))
             {
                 if( ImGui.Selectable( collection.Name, _newInheritance == collection ) )
                 {

@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
 using Lumina.Data;
 using Newtonsoft.Json;
@@ -11,6 +12,7 @@ using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Resolver;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -19,12 +21,30 @@ namespace Penumbra.Api;
 
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
-    public int ApiVersion
-        => 5;
+    public (int, int) ApiVersion
+        => ( 4, 9 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
-    public event GameObjectRedrawn? GameObjectRedrawn;
+
+    private readonly Dictionary< ModCollection, ModCollection.ModSettingChangeDelegate > _delegates = new();
+
+    public event Action< string >? PreSettingsPanelDraw;
+    public event Action< string >? PostSettingsPanelDraw;
+
+    public event GameObjectRedrawn? GameObjectRedrawn
+    {
+        add => _penumbra!.ObjectReloader.GameObjectRedrawn += value;
+        remove => _penumbra!.ObjectReloader.GameObjectRedrawn -= value;
+    }
+
+    public event ModSettingChanged? ModSettingChanged;
+
+    public event CreatingCharacterBaseDelegate? CreatingCharacterBase
+    {
+        add => _penumbra!.PathResolver.CreatingCharacterBase += value;
+        remove => _penumbra!.PathResolver.CreatingCharacterBase -= value;
+    }
 
     public bool Valid
         => _penumbra != null;
@@ -35,14 +55,26 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
            .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
           ?.GetValue( Dalamud.GameData );
-        _penumbra.ObjectReloader.GameObjectRedrawn += OnGameObjectRedrawn;
+        foreach( var collection in Penumbra.CollectionManager )
+        {
+            SubscribeToCollection( collection );
+        }
+
+        Penumbra.CollectionManager.CollectionChanged += SubscribeToNewCollections;
     }
 
     public void Dispose()
     {
-        _penumbra!.ObjectReloader.GameObjectRedrawn -= OnGameObjectRedrawn;
-        _penumbra                                   =  null;
-        _lumina                                     =  null;
+        Penumbra.CollectionManager.CollectionChanged -= SubscribeToNewCollections;
+        _penumbra                                    =  null;
+        _lumina                                      =  null;
+        foreach( var collection in Penumbra.CollectionManager )
+        {
+            if( _delegates.TryGetValue( collection, out var del ) )
+            {
+                collection.ModSettingChanged -= del;
+            }
+        }
     }
 
     public event ChangedItemClick? ChangedItemClicked;
@@ -73,6 +105,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _penumbra!.ObjectReloader.RedrawObject( name, setting );
     }
 
+    public void RedrawObject( GameObject? gameObject, RedrawType setting )
+    {
+        CheckInitialized();
+        _penumbra!.ObjectReloader.RedrawObject( gameObject, setting );
+    }
+
     public void RedrawAll( RedrawType setting )
     {
         CheckInitialized();
@@ -92,7 +130,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             Penumbra.CollectionManager.Character( characterName ) );
     }
 
-    public IList< string > ReverseResolvePath( string path, string characterName )
+    public string[] ReverseResolvePath( string path, string characterName )
     {
         CheckInitialized();
         if( !Penumbra.Config.EnableMods )
@@ -101,7 +139,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         var ret = Penumbra.CollectionManager.Character( characterName ).ReverseResolvePath( new FullPath( path ) );
-        return ret.Select( r => r.ToString() ).ToList();
+        return ret.Select( r => r.ToString() ).ToArray();
+    }
+
+    public string[] ReverseResolvePathPlayer( string path )
+    {
+        CheckInitialized();
+        if( !Penumbra.Config.EnableMods )
+        {
+            return new[] { path };
+        }
+
+        var ret = PathResolver.PlayerCollection().ReverseResolvePath( new FullPath( path ) );
+        return ret.Select( r => r.ToString() ).ToArray();
     }
 
     public T? GetFile< T >( string gamePath ) where T : FileResource
@@ -205,6 +255,31 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var shareSettings = settings.ConvertToShareable( mod );
         return ( PenumbraApiEc.Success,
             ( shareSettings.Enabled, shareSettings.Priority, shareSettings.Settings, collection.Settings[ mod.Index ] != null ) );
+    }
+
+    public PenumbraApiEc ReloadMod( string modDirectory, string modName )
+    {
+        CheckInitialized();
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
+            return PenumbraApiEc.ModMissing;
+        }
+
+        Penumbra.ModManager.ReloadMod( mod.Index );
+        return PenumbraApiEc.Success;
+    }
+
+    public PenumbraApiEc AddMod( string modDirectory )
+    {
+        CheckInitialized();
+        var dir = new DirectoryInfo( Path.Combine( Penumbra.ModManager.BasePath.FullName, modDirectory ) );
+        if( !dir.Exists )
+        {
+            return PenumbraApiEc.FileMissing;
+        }
+
+        Penumbra.ModManager.AddMod( dir );
+        return PenumbraApiEc.Success;
     }
 
     public PenumbraApiEc TryInheritMod( string collectionName, string modDirectory, string modName, bool inherit )
@@ -368,7 +443,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return PenumbraApiEc.Success;
     }
 
-    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, HashSet< string > manipCodes, int priority )
+    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, string manipString, int priority )
     {
         CheckInitialized();
         if( !ConvertPaths( paths, out var p ) )
@@ -376,7 +451,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.InvalidGamePath;
         }
 
-        if( !ConvertManips( manipCodes, out var m ) )
+        if( !ConvertManips( manipString, out var m ) )
         {
             return PenumbraApiEc.InvalidManipulation;
         }
@@ -388,7 +463,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         };
     }
 
-    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, HashSet< string > manipCodes,
+    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, string manipString,
         int priority )
     {
         CheckInitialized();
@@ -403,7 +478,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.InvalidGamePath;
         }
 
-        if( !ConvertManips( manipCodes, out var m ) )
+        if( !ConvertManips( manipString, out var m ) )
         {
             return PenumbraApiEc.InvalidManipulation;
         }
@@ -449,7 +524,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var collection = Penumbra.TempMods.Collections.TryGetValue( characterName, out var c )
             ? c
             : Penumbra.CollectionManager.Character( characterName );
-        var set = collection.MetaCache?.Manipulations ?? Array.Empty< MetaManipulation >();
+        var set = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >();
         return Functions.ToCompressedBase64( set, MetaManipulation.CurrentVersion );
     }
 
@@ -469,11 +544,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         {
             throw new Exception( "PluginShare is not initialized." );
         }
-    }
-
-    private void OnGameObjectRedrawn( IntPtr objectAddress, int objectTableIndex )
-    {
-        GameObjectRedrawn?.Invoke( objectAddress, objectTableIndex );
     }
 
     // Resolve a path given by string for a specific collection.
@@ -535,30 +605,69 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return true;
     }
 
-    // Convert manipulations from transmitted base64 strings to actual manipulations.
+    // Convert manipulations from a transmitted base64 string to actual manipulations.
+    // The empty string is treated as an empty set.
     // Only returns true if all conversions are successful and distinct.
-    private static bool ConvertManips( IReadOnlyCollection< string > manipStrings,
+    private static bool ConvertManips( string manipString,
         [NotNullWhen( true )] out HashSet< MetaManipulation >? manips )
     {
-        manips = new HashSet< MetaManipulation >( manipStrings.Count );
-        foreach( var m in manipStrings )
+        if( manipString.Length == 0 )
         {
-            if( Functions.FromCompressedBase64< MetaManipulation[] >( m, out var manipArray ) != MetaManipulation.CurrentVersion )
+            manips = new HashSet< MetaManipulation >();
+            return true;
+        }
+
+        if( Functions.FromCompressedBase64< MetaManipulation[] >( manipString, out var manipArray ) != MetaManipulation.CurrentVersion )
+        {
+            manips = null;
+            return false;
+        }
+
+        manips = new HashSet< MetaManipulation >( manipArray!.Length );
+        foreach( var manip in manipArray )
+        {
+            if( !manips.Add( manip ) )
             {
                 manips = null;
                 return false;
-            }
-
-            foreach( var manip in manipArray! )
-            {
-                if( !manips.Add( manip ) )
-                {
-                    manips = null;
-                    return false;
-                }
             }
         }
 
         return true;
     }
+
+    private void SubscribeToCollection( ModCollection c )
+    {
+        var name = c.Name;
+
+        void Del( ModSettingChange type, int idx, int _, int _2, bool inherited )
+            => ModSettingChanged?.Invoke( type, name, idx >= 0 ? Penumbra.ModManager[ idx ].ModPath.Name : string.Empty, inherited );
+
+        _delegates[ c ]     =  Del;
+        c.ModSettingChanged += Del;
+    }
+
+    private void SubscribeToNewCollections( CollectionType type, ModCollection? oldCollection, ModCollection? newCollection, string? _ )
+    {
+        if( type != CollectionType.Inactive )
+        {
+            return;
+        }
+
+        if( oldCollection != null && _delegates.TryGetValue( oldCollection, out var del ) )
+        {
+            oldCollection.ModSettingChanged -= del;
+        }
+
+        if( newCollection != null )
+        {
+            SubscribeToCollection( newCollection );
+        }
+    }
+
+    public void InvokePreSettingsPanel( string modDirectory )
+        => PreSettingsPanelDraw?.Invoke( modDirectory );
+
+    public void InvokePostSettingsPanel( string modDirectory )
+        => PostSettingsPanelDraw?.Invoke( modDirectory );
 }

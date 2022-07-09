@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
+using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
 
@@ -8,13 +10,21 @@ namespace Penumbra.Api;
 
 public interface IPenumbraApiBase
 {
-    public int ApiVersion { get; }
+    // The API version is staggered in two parts.
+    // The major/Breaking version only increments if there are changes breaking backwards compatibility.
+    // The minor/Feature version increments any time there is something added
+    // and resets when Breaking is incremented.
+    public (int Breaking, int Feature) ApiVersion { get; }
     public bool Valid { get; }
 }
 
 public delegate void ChangedItemHover( object? item );
 public delegate void ChangedItemClick( MouseButton button, object? item );
 public delegate void GameObjectRedrawn( IntPtr objectPtr, int objectTableIndex );
+public delegate void ModSettingChanged( ModSettingChange type, string collectionName, string modDirectory, bool inherited );
+
+public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize,
+    IntPtr equipData );
 
 public enum PenumbraApiEc
 {
@@ -46,12 +56,24 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Can be used to append tooltips.
     public event ChangedItemHover? ChangedItemTooltip;
 
+    // Events that are fired before and after the content of a mod settings panel are drawn.
+    // Both are fired inside the child window of the settings panel itself.
+    public event Action< string >? PreSettingsPanelDraw;
+    public event Action< string >? PostSettingsPanelDraw;
+
     // Triggered when the user clicks a listed changed object in a mod tab.
     public event ChangedItemClick? ChangedItemClicked;
     public event GameObjectRedrawn? GameObjectRedrawn;
 
+    // Triggered when a character base is created and a corresponding gameObject could be found,
+    // before the Draw Object is actually created, so customize and equipdata can be manipulated beforehand.
+    public event CreatingCharacterBaseDelegate? CreatingCharacterBase;
+
     // Queue redrawing of all actors of the given name with the given RedrawType.
     public void RedrawObject( string name, RedrawType setting );
+
+    // Queue redrawing of the specific actor with the given RedrawType. Should only be used when the actor is sure to be valid.
+    public void RedrawObject( GameObject gameObject, RedrawType setting );
 
     // Queue redrawing of the actor with the given object table index, if it exists, with the given RedrawType.
     public void RedrawObject( int tableIndex, RedrawType setting );
@@ -67,8 +89,12 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Returns the given gamePath if penumbra would not manipulate it.
     public string ResolvePath( string gamePath, string characterName );
 
-    // Reverse resolves a given modded local path into its replacement in form of all applicable game path for given character
-    public IList< string > ReverseResolvePath( string moddedPath, string characterName );
+    // Reverse resolves a given modded local path into its replacement in form of all applicable game paths for given character collection.
+    public string[] ReverseResolvePath( string moddedPath, string characterName );
+
+    // Reverse resolves a given modded local path into its replacement in form of all applicable game paths
+    // using the collection applying to the player character.
+    public string[] ReverseResolvePathPlayer( string moddedPath );
 
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath ) where T : FileResource;
@@ -96,6 +122,16 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Obtain a list of all installed mods. The first string is their directory name, the second string is their mod name.
     public IList< (string, string) > GetModList();
+
+    // Try to reload an existing mod by its directory name or mod name.
+    // Can return ModMissing or success.
+    // Reload is the same as if triggered by button press and might delete the mod if it is not valid anymore.
+    public PenumbraApiEc ReloadMod( string modDirectory, string modName );
+
+    // Try to add a new mod inside the mod root directory (modDirectory should only be the name, not the full name).
+    // Returns FileMissing if the directory does not exist or success otherwise.
+    // Note that success does only imply a successful call, not a successful mod load.
+    public PenumbraApiEc AddMod( string modDirectory );
 
     // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
     // for the given collection associated with the character name, or the default collection.
@@ -135,6 +171,8 @@ public interface IPenumbraApi : IPenumbraApiBase
     public PenumbraApiEc TrySetModSettings( string collectionName, string modDirectory, string modName, string optionGroupName,
         IReadOnlyList< string > options );
 
+    // This event gets fired when any setting in any collection changes.
+    public event ModSettingChanged? ModSettingChanged;
 
     // Create a temporary collection without actual settings but with a cache.
     // If no character collection for this character exists or forceOverwriteCharacter is true,
@@ -148,12 +186,11 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Set a temporary mod with the given paths, manipulations and priority and the name tag to all collections.
     // Can return Okay, InvalidGamePath, or InvalidManipulation.
-    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, HashSet< string > manipCodes,
-        int priority );
+    public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, string manipString, int priority );
 
     // Set a temporary mod with the given paths, manipulations and priority and the name tag to the collection with the given name, which can be temporary.
     // Can return Okay, MissingCollection InvalidGamePath, or InvalidManipulation.
-    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, HashSet< string > manipCodes,
+    public PenumbraApiEc AddTemporaryMod( string tag, string collectionName, Dictionary< string, string > paths, string manipString,
         int priority );
 
     // Remove the temporary mod with the given tag and priority from the temporary mods applying to all collections, if it exists.

@@ -44,7 +44,7 @@ public partial class PathResolver : IDisposable
          || PathCollections.TryRemove( gamePath.Path, out collection )
          || HandleAnimationFile( type, gamePath, out collection )
          || HandleDecalFile( type, gamePath, out collection );
-        if( !nonDefault || collection == null)
+        if( !nonDefault || collection == null )
         {
             collection = Penumbra.CollectionManager.Default;
         }
@@ -60,7 +60,7 @@ public partial class PathResolver : IDisposable
         return true;
     }
 
-    private bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, [NotNullWhen(true)] out ModCollection? collection )
+    private bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, [NotNullWhen( true )] out ModCollection? collection )
     {
         if( type                  == ResourceType.Tex
         && _lastCreatedCollection != null
@@ -74,20 +74,43 @@ public partial class PathResolver : IDisposable
         return false;
     }
 
-    private bool HandleAnimationFile( ResourceType type, Utf8GamePath _, [NotNullWhen(true)] out ModCollection? collection )
+    private bool HandleAnimationFile( ResourceType type, Utf8GamePath _, [NotNullWhen( true )] out ModCollection? collection )
     {
-        if( _animationLoadCollection != null )
+        switch( type )
         {
-            switch( type )
-            {
-                case ResourceType.Tmb:
-                case ResourceType.Pap:
-                case ResourceType.Avfx:
-                case ResourceType.Atex:
-                case ResourceType.Scd:
+            case ResourceType.Tmb:
+            case ResourceType.Pap:
+            case ResourceType.Scd:
+                if( _animationLoadCollection != null )
+                {
                     collection = _animationLoadCollection;
                     return true;
-            }
+                }
+
+                break;
+            case ResourceType.Avfx:
+                _lastAvfxCollection = _animationLoadCollection ?? Penumbra.CollectionManager.Default;
+                if( _animationLoadCollection != null )
+                {
+                    collection = _animationLoadCollection;
+                    return true;
+                }
+
+                break;
+            case ResourceType.Atex:
+                if( _lastAvfxCollection != null )
+                {
+                    collection = _lastAvfxCollection;
+                    return true;
+                }
+
+                if( _animationLoadCollection != null )
+                {
+                    collection = _animationLoadCollection;
+                    return true;
+                }
+
+                break;
         }
 
         collection = null;

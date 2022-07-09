@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -220,4 +219,16 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
             return Functions.MemCmpUnchecked( lhs, &other, sizeof( MetaManipulation ) );
         }
     }
+
+    public override string ToString()
+        => ManipulationType switch
+        {
+            Type.Eqp  => Eqp.ToString(),
+            Type.Gmp  => Gmp.ToString(),
+            Type.Eqdp => Eqdp.ToString(),
+            Type.Est  => Est.ToString(),
+            Type.Rsp  => Rsp.ToString(),
+            Type.Imc  => Imc.ToString(),
+            _         => throw new ArgumentOutOfRangeException(),
+        };
 }

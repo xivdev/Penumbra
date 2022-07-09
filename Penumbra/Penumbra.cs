@@ -22,81 +22,25 @@ using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
+using CharacterUtility = Penumbra.Interop.CharacterUtility;
+using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
 namespace Penumbra;
 
-public class MainClass : IDalamudPlugin
+public class Penumbra : IDalamudPlugin
 {
-    private          Penumbra?        _penumbra;
-    private readonly CharacterUtility _characterUtility;
-    public static    bool             DevPenumbraExists;
-    public static    bool             IsNotInstalledPenumbra;
-
-    public MainClass( DalamudPluginInterface pluginInterface )
-    {
-        Dalamud.Initialize( pluginInterface );
-        DevPenumbraExists      = CheckDevPluginPenumbra();
-        IsNotInstalledPenumbra = CheckIsNotInstalled();
-        GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
-        _characterUtility = new CharacterUtility();
-        _characterUtility.LoadingFinished += ()
-            => _penumbra = new Penumbra( _characterUtility );
-    }
-
-    public void Dispose()
-    {
-        _penumbra?.Dispose();
-        _characterUtility.Dispose();
-    }
-
     public string Name
-        => Penumbra.Name;
+        => "Penumbra";
 
-    // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.
-    private static bool CheckDevPluginPenumbra()
-    {
-#if !DEBUG
-        var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
-        var dir = new DirectoryInfo( path );
-
-        try
-        {
-            return dir.Exists && dir.EnumerateFiles( "*.dll", SearchOption.AllDirectories ).Any();
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
-            return true;
-        }
-#else
-        return false;
-#endif
-    }
-
-    // Check if the loaded version of penumbra itself is in devPlugins.
-    private static bool CheckIsNotInstalled()
-    {
-#if !DEBUG
-        var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
-        if (!ret)
-            PluginLog.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
-        return !ret;
-#else
-        return false;
-#endif
-    }
-}
-
-public class Penumbra : IDisposable
-{
-    public const  string Name        = "Penumbra";
     private const string CommandName = "/penumbra";
 
     public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
 
     public static readonly string CommitHash =
         Assembly.GetExecutingAssembly().GetCustomAttribute< AssemblyInformationalVersionAttribute >()?.InformationalVersion ?? "Unknown";
+
+    public static bool DevPenumbraExists;
+    public static bool IsNotInstalledPenumbra;
 
     public static Configuration Config { get; private set; } = null!;
 
@@ -122,19 +66,24 @@ public class Penumbra : IDisposable
 
     internal WebServer? WebServer;
 
-    public Penumbra( CharacterUtility characterUtility )
+    public Penumbra( DalamudPluginInterface pluginInterface )
     {
-        CharacterUtility = characterUtility;
+        Dalamud.Initialize( pluginInterface );
+        GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
+        DevPenumbraExists      = CheckDevPluginPenumbra();
+        IsNotInstalledPenumbra = CheckIsNotInstalled();
 
-        Framework = new FrameworkManager();
+        Framework        = new FrameworkManager();
+        CharacterUtility = new CharacterUtility();
         Backup.CreateBackup( PenumbraBackupFiles() );
         Config = Configuration.Load();
 
-        ResidentResources = new ResidentResourceManager();
         TempMods          = new TempModManager();
         MetaFileManager   = new MetaFileManager();
         ResourceLoader    = new ResourceLoader( this );
+        ResourceLoader.EnableHooks();
         ResourceLogger    = new ResourceLogger( ResourceLoader );
+        ResidentResources = new ResidentResourceManager();
         ModManager        = new Mod.Manager( Config.ModDirectory );
         ModManager.DiscoverMods();
         CollectionManager = new ModCollection.Manager( ModManager );
@@ -147,20 +96,17 @@ public class Penumbra : IDisposable
             HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
         } );
 
-        ResidentResources.Reload();
-
         SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
 
-        if( Config.EnableHttpApi )
-        {
-            CreateWebServer();
-        }
-
-        ResourceLoader.EnableHooks();
         if( Config.EnableMods )
         {
             ResourceLoader.EnableReplacements();
             PathResolver.Enable();
+        }
+
+        if( Config.EnableHttpApi )
+        {
+            CreateWebServer();
         }
 
         if( Config.DebugMode )
@@ -174,7 +120,10 @@ public class Penumbra : IDisposable
             ResourceLoader.EnableFullLogging();
         }
 
-        ResidentResources.Reload();
+        if( CharacterUtility.Ready )
+        {
+            ResidentResources.Reload();
+        }
 
         Api = new PenumbraApi( this );
         Ipc = new PenumbraIpc( Dalamud.PluginInterface, Api );
@@ -187,6 +136,7 @@ public class Penumbra : IDisposable
         {
             PluginLog.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
         }
+        Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
     }
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
@@ -196,7 +146,6 @@ public class Penumbra : IDisposable
         system = new WindowSystem( Name );
         system.AddWindow( _configWindow );
         system.AddWindow( cfg.ModEditPopup );
-        Dalamud.PluginInterface.UiBuilder.Draw         += system.Draw;
         Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
     }
 
@@ -217,12 +166,15 @@ public class Penumbra : IDisposable
 
         Config.EnableMods = true;
         ResourceLoader.EnableReplacements();
-        CollectionManager.Default.SetFiles();
-        ResidentResources.Reload();
         PathResolver.Enable();
-
         Config.Save();
-        ObjectReloader.RedrawAll( RedrawType.Redraw );
+        if( CharacterUtility.Ready )
+        {
+            CollectionManager.Default.SetFiles();
+            ResidentResources.Reload();
+            ObjectReloader.RedrawAll( RedrawType.Redraw );
+        }
+
         return true;
     }
 
@@ -235,12 +187,15 @@ public class Penumbra : IDisposable
 
         Config.EnableMods = false;
         ResourceLoader.DisableReplacements();
-        CharacterUtility.ResetAll();
-        ResidentResources.Reload();
         PathResolver.Disable();
-
         Config.Save();
-        ObjectReloader.RedrawAll( RedrawType.Redraw );
+        if( CharacterUtility.Ready )
+        {
+            CharacterUtility.ResetAll();
+            ResidentResources.Reload();
+            ObjectReloader.RedrawAll( RedrawType.Redraw );
+        }
+
         return true;
     }
 
@@ -324,23 +279,34 @@ public class Penumbra : IDisposable
             return false;
         }
 
-        switch( type )
+        foreach( var t in Enum.GetValues< CollectionType >() )
         {
-            case "default":
-                if( collection == CollectionManager.Default )
-                {
-                    Dalamud.Chat.Print( $"{collection.Name} already is the default collection." );
-                    return false;
-                }
+            if( t is CollectionType.Inactive or CollectionType.Character
+            || !string.Equals( t.ToString(), type, StringComparison.OrdinalIgnoreCase ) )
+            {
+                continue;
+            }
 
-                CollectionManager.SetCollection( collection, ModCollection.Type.Default );
-                Dalamud.Chat.Print( $"Set {collection.Name} as default collection." );
-                return true;
-            default:
-                Dalamud.Chat.Print(
-                    "Second command argument is not default, the correct command format is: /penumbra collection default <collectionName>" );
+            var oldCollection = CollectionManager.ByType( t );
+            if( collection == oldCollection )
+            {
+                Dalamud.Chat.Print( $"{collection.Name} already is the {t.ToName()} Collection." );
                 return false;
+            }
+
+            if( oldCollection == null && t.IsSpecial() )
+            {
+                CollectionManager.CreateSpecialCollection( t );
+            }
+
+            CollectionManager.SetCollection( collection, t, null );
+            Dalamud.Chat.Print( $"Set {collection.Name} as {t.ToName()} Collection." );
+            return true;
         }
+
+        Dalamud.Chat.Print(
+            "Second command argument is not default, the correct command format is: /penumbra collection <collectionType> <collectionName>" );
+        return false;
     }
 
     private void OnCommand( string command, string rawArgs )
@@ -493,6 +459,15 @@ public class Penumbra : IDisposable
             CollectionManager.Default.Index );
         sb.AppendFormat( "> **`Current Collection:          `** {0}... ({1})\n", CollectionName( CollectionManager.Current ),
             CollectionManager.Current.Index );
+        foreach( var type in CollectionTypeExtensions.Special )
+        {
+            var collection = CollectionManager.ByType( type );
+            if( collection != null )
+            {
+                sb.AppendFormat( "> **`{0,-29}`** {1}... ({2})\n", type.ToName(), CollectionName( collection ), collection.Index );
+            }
+        }
+
         foreach( var (name, collection) in CollectionManager.Characters )
         {
             sb.AppendFormat( "> **`{2,-29}`** {0}... ({1})\n", CollectionName( collection ),
@@ -505,5 +480,40 @@ public class Penumbra : IDisposable
         }
 
         return sb.ToString();
+    }
+
+    // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.
+    private static bool CheckDevPluginPenumbra()
+    {
+#if !DEBUG
+        var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
+        var dir = new DirectoryInfo( path );
+
+        try
+        {
+            return dir.Exists && dir.EnumerateFiles( "*.dll", SearchOption.AllDirectories ).Any();
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
+            return true;
+        }
+#else
+        return false;
+#endif
+    }
+
+    // Check if the loaded version of penumbra itself is in devPlugins.
+    private static bool CheckIsNotInstalled()
+    {
+#if !DEBUG
+        var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
+        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
+        if (!ret)
+            PluginLog.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
+        return !ret;
+#else
+        return false;
+#endif
     }
 }

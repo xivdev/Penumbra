@@ -1,15 +1,15 @@
 using System;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
+using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
 namespace Penumbra.Interop.Resolver;
 
 public unsafe partial class PathResolver
 {
     private ModCollection? _animationLoadCollection;
+    private ModCollection? _lastAvfxCollection = null;
 
     public delegate ulong LoadTimelineResourcesDelegate( IntPtr timeline );
 
@@ -21,7 +21,7 @@ public unsafe partial class PathResolver
     private ulong LoadTimelineResourcesDetour( IntPtr timeline )
     {
         ulong ret;
-        var  old = _animationLoadCollection;
+        var   old = _animationLoadCollection;
         try
         {
             var getGameObjectIdx = ( ( delegate* unmanaged < IntPtr, int>** )timeline )[ 0 ][ 28 ];
@@ -92,6 +92,7 @@ public unsafe partial class PathResolver
                 _animationLoadCollection = IdentifyCollection( ( GameObject* )( Dalamud.Objects[ actorIdx ]?.Address ?? IntPtr.Zero ) );
             }
         }
+
         LoadSomePapHook!.Original( a1, a2, a3, a4 );
         _animationLoadCollection = last;
     }
@@ -105,6 +106,18 @@ public unsafe partial class PathResolver
         var last = _animationLoadCollection;
         _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
         SomeActionLoadHook!.Original( gameObject );
+        _animationLoadCollection = last;
+    }
+
+    [Signature( "E8 ?? ?? ?? ?? 44 84 BB", DetourName = nameof( SomeOtherAvfxDetour ) )]
+    public Hook< CharacterBaseDestructorDelegate >? SomeOtherAvfxHook;
+
+    private void SomeOtherAvfxDetour( IntPtr unk )
+    {
+        var last       = _animationLoadCollection;
+        var gameObject = ( GameObject* )( unk - 0x8B0 );
+        _animationLoadCollection = IdentifyCollection( gameObject );
+        SomeOtherAvfxHook!.Original( unk );
         _animationLoadCollection = last;
     }
 }

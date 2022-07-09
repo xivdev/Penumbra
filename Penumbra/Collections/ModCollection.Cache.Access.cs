@@ -18,8 +18,9 @@ public partial class ModCollection
     public bool HasCache
         => _cache != null;
 
-    public int RecomputeCounter
-        => _cache?.ChangeCounter ?? 0;
+    // Count the number of changes of the effective file list.
+    // This is used for material and imc changes.
+    public int ChangeCounter { get; private set; }
 
     // Only create, do not update. 
     private void CreateCache()
@@ -116,68 +117,63 @@ public partial class ModCollection
     }
 
     // Set Metadata files.
-    [Conditional( "USE_EQP" )]
     public void SetEqpFiles()
     {
         if( _cache == null )
         {
-            MetaManager.MetaManagerEqp.ResetFiles();
+            MetaManager.ResetEqpFiles();
         }
         else
         {
-            _cache.MetaManipulations.Eqp.SetFiles();
+            _cache.MetaManipulations.SetEqpFiles();
         }
     }
 
-    [Conditional( "USE_EQDP" )]
     public void SetEqdpFiles()
     {
         if( _cache == null )
         {
-            MetaManager.MetaManagerEqdp.ResetFiles();
+            MetaManager.ResetEqdpFiles();
         }
         else
         {
-            _cache.MetaManipulations.Eqdp.SetFiles();
+            _cache.MetaManipulations.SetEqdpFiles();
         }
     }
 
-    [Conditional( "USE_GMP" )]
     public void SetGmpFiles()
     {
         if( _cache == null )
         {
-            MetaManager.MetaManagerGmp.ResetFiles();
+            MetaManager.ResetGmpFiles();
         }
         else
         {
-            _cache.MetaManipulations.Gmp.SetFiles();
+            _cache.MetaManipulations.SetGmpFiles();
         }
     }
 
-    [Conditional( "USE_EST" )]
     public void SetEstFiles()
     {
         if( _cache == null )
         {
-            MetaManager.MetaManagerEst.ResetFiles();
+            MetaManager.ResetEstFiles();
         }
         else
         {
-            _cache.MetaManipulations.Est.SetFiles();
+            _cache.MetaManipulations.SetEstFiles();
         }
     }
 
-    [Conditional( "USE_CMP" )]
     public void SetCmpFiles()
     {
         if( _cache == null )
         {
-            MetaManager.MetaManagerCmp.ResetFiles();
+            MetaManager.ResetCmpFiles();
         }
         else
         {
-            _cache.MetaManipulations.Cmp.SetFiles();
+            _cache.MetaManipulations.SetCmpFiles();
         }
     }
 

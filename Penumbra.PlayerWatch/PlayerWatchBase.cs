@@ -301,7 +301,11 @@ internal class PlayerWatchBase : IDisposable
 
             var id = GetId( character );
             SeenActors.Add( id );
+
+#if DEBUG
             PluginLog.Verbose( "Comparing Gear for {PlayerName:l} ({Id}) at 0x{Address:X}...", character.Name, id, character.Address.ToInt64() );
+#endif
+
             if( !watch.FoundActors.TryGetValue( id, out var equip ) )
             {
                 equip                   = new CharacterEquipment( character );

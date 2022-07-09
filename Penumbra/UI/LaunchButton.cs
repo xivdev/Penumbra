@@ -9,20 +9,29 @@ namespace Penumbra.UI;
 // using the Dalamud-provided collapsible submenu.
 public class LaunchButton : IDisposable
 {
-    private readonly ConfigWindow                  _configWindow;
-    private readonly TextureWrap?                          _icon;
-    private readonly TitleScreenMenu.TitleScreenMenuEntry? _entry;
+    private readonly ConfigWindow                          _configWindow;
+    private          TextureWrap?                          _icon;
+    private          TitleScreenMenu.TitleScreenMenuEntry? _entry;
 
     public LaunchButton( ConfigWindow ui )
     {
         _configWindow = ui;
+        _icon         = null;
+        _entry        = null;
 
-        _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
-            "tsmLogo.png" ) );
-        if( _icon != null )
+        void CreateEntry()
         {
-            _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
+            _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
+                "tsmLogo.png" ) );
+            if( _icon != null )
+            {
+                _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
+            }
+
+            Dalamud.PluginInterface.UiBuilder.Draw -= CreateEntry;
         }
+
+        Dalamud.PluginInterface.UiBuilder.Draw += CreateEntry;
     }
 
     private void OnTriggered()

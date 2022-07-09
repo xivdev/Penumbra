@@ -26,10 +26,8 @@ public unsafe class MetaFileManager : IDisposable
 
     // Allocate in the games space for file storage.
     // We only need this if using any meta file.
-#if USE_IMC || USE_CMP || USE_EQDP || USE_EQP || USE_EST || USE_GMP
     [Signature( "E8 ?? ?? ?? ?? 41 B9 ?? ?? ?? ?? 4C 8B C0" )]
     public IntPtr GetFileSpaceAddress;
-#endif
     public IMemorySpace* GetFileSpace()
         => ( ( delegate* unmanaged< IMemorySpace* > )GetFileSpaceAddress )();
 
@@ -41,10 +39,8 @@ public unsafe class MetaFileManager : IDisposable
 
 
     // We only need this for IMC files, since we need to hook their cleanup function.
-#if USE_IMC
     [Signature( "48 8D 05 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 89 03", ScanType = ScanType.StaticAddress )]
     public IntPtr* DefaultResourceHandleVTable;
-#endif
 
     public delegate void                  ClearResource( ResourceHandle* resource );
     public          Hook< ClearResource > ClearDefaultResourceHook = null!;
@@ -67,7 +63,6 @@ public unsafe class MetaFileManager : IDisposable
     }
 
     // Called when a new IMC is manipulated to store its data.
-    [Conditional( "USE_IMC" )]
     public void AddImcFile( ResourceHandle* resource, IntPtr data, int length )
     {
         PluginLog.Debug( "Storing data 0x{Data:X} of Length {Length} for {$Name:l} (0x{Resource:X}).", ( ulong )data, length,
@@ -76,14 +71,12 @@ public unsafe class MetaFileManager : IDisposable
     }
 
     // Initialize the hook at VFunc 25, which is called when default resources (and IMC resources do not overwrite it) destroy their data.
-    [Conditional( "USE_IMC" )]
     private void InitImc()
     {
         ClearDefaultResourceHook = new Hook< ClearResource >( DefaultResourceHandleVTable[ 25 ], ClearDefaultResourceDetour );
         ClearDefaultResourceHook.Enable();
     }
 
-    [Conditional( "USE_IMC" )]
     private void DisposeImc()
     {
         ClearDefaultResourceHook.Disable();

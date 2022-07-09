@@ -1,73 +1,58 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using OtterGui.Filesystem;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 
 public partial class MetaManager
 {
-    public struct MetaManagerEqp : IDisposable
+    private          ExpandedEqpFile?        _eqpFile          = null;
+    private readonly List< EqpManipulation > _eqpManipulations = new();
+
+    public void SetEqpFiles()
+        => SetFile( _eqpFile, CharacterUtility.EqpIdx );
+
+    public static void ResetEqpFiles()
+        => SetFile( null, CharacterUtility.EqpIdx );
+
+    public void ResetEqp()
     {
-        public          ExpandedEqpFile?                   File          = null;
-        public readonly Dictionary< EqpManipulation, IMod > Manipulations = new();
-
-        public MetaManagerEqp()
-        { }
-
-        [Conditional( "USE_EQP" )]
-        public void SetFiles()
-            => SetFile( File, CharacterUtility.EqpIdx );
-
-        [Conditional( "USE_EQP" )]
-        public static void ResetFiles()
-            => SetFile( null, CharacterUtility.EqpIdx );
-
-        [Conditional( "USE_EQP" )]
-        public void Reset()
+        if( _eqpFile == null )
         {
-            if( File == null )
-            {
-                return;
-            }
-
-            File.Reset( Manipulations.Keys.Select( m => ( int )m.SetId ) );
-            Manipulations.Clear();
+            return;
         }
 
-        public bool ApplyMod( EqpManipulation m, IMod mod )
+        _eqpFile.Reset( _eqpManipulations.Select( m => ( int )m.SetId ) );
+        _eqpManipulations.Clear();
+    }
+
+    public bool ApplyMod( EqpManipulation manip )
+    {
+        _eqpManipulations.AddOrReplace( manip );
+        _eqpFile ??= new ExpandedEqpFile();
+        return manip.Apply( _eqpFile );
+    }
+
+    public bool RevertMod( EqpManipulation manip )
+    {
+        var idx = _eqpManipulations.FindIndex( manip.Equals );
+        if( idx >= 0 )
         {
-#if USE_EQP
-            Manipulations[ m ] =   mod;
-            File               ??= new ExpandedEqpFile();
-            return m.Apply( File );
-#else
-            return false;
-#endif
+            var def = ExpandedEqpFile.GetDefault( manip.SetId );
+            manip = new EqpManipulation( def, manip.Slot, manip.SetId );
+            return manip.Apply( _eqpFile! );
         }
 
-        public bool RevertMod( EqpManipulation m )
-        {
-#if USE_EQP
-            if( Manipulations.Remove( m ) )
-            {
-                var def   = ExpandedEqpFile.GetDefault( m.SetId );
-                var manip = new EqpManipulation( def, m.Slot, m.SetId );
-                return manip.Apply( File! );
-            }
-#endif
-            return false;
-        }
+        return false;
+    }
 
-        public void Dispose()
-        {
-            File?.Dispose();
-            File = null;
-            Manipulations.Clear();
-        }
+    public void DisposeEqp()
+    {
+        _eqpFile?.Dispose();
+        _eqpFile = null;
+        _eqpManipulations.Clear();
     }
 }
