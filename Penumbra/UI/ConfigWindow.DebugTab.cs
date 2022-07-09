@@ -196,7 +196,7 @@ public partial class ConfigWindow
 
         // Draw information about the character utility class from SE,
         // displaying all files, their sizes, the default files and the default sizes.
-        public unsafe void DrawDebugCharacterUtility()
+        public static unsafe void DrawDebugCharacterUtility()
         {
             if( !ImGui.CollapsingHeader( "Character Utility" ) )
             {

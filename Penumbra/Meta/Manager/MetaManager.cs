@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Penumbra.Collections;
 using Penumbra.Meta.Files;
@@ -63,6 +64,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
 
     public void Dispose()
     {
+        _manipulations.Clear();
         Penumbra.CharacterUtility.LoadingFinished -= ApplyStoredManipulations;
         DisposeEqp();
         DisposeEqdp();
@@ -75,6 +77,12 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     public bool ApplyMod( MetaManipulation manip, IMod mod )
     {
         _manipulations[ manip ] = mod;
+        // Imc manipulations do not require character utility.
+        if( manip.ManipulationType == MetaManipulation.Type.Imc )
+        {
+            return ApplyMod( manip.Imc );
+        }
+
         if( !Penumbra.CharacterUtility.Ready )
         {
             return true;
@@ -87,7 +95,6 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
             MetaManipulation.Type.Eqdp    => ApplyMod( manip.Eqdp ),
             MetaManipulation.Type.Est     => ApplyMod( manip.Est ),
             MetaManipulation.Type.Rsp     => ApplyMod( manip.Rsp ),
-            MetaManipulation.Type.Imc     => ApplyMod( manip.Imc ),
             MetaManipulation.Type.Unknown => false,
             _                             => false,
         };
@@ -96,6 +103,12 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     public bool RevertMod( MetaManipulation manip )
     {
         var ret = _manipulations.Remove( manip );
+        // Imc manipulations do not require character utility.
+        if( manip.ManipulationType == MetaManipulation.Type.Imc )
+        {
+            return RevertMod( manip.Imc );
+        }
+
         if( !Penumbra.CharacterUtility.Ready )
         {
             return ret;
@@ -108,7 +121,6 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
             MetaManipulation.Type.Eqdp    => RevertMod( manip.Eqdp ),
             MetaManipulation.Type.Est     => RevertMod( manip.Est ),
             MetaManipulation.Type.Rsp     => RevertMod( manip.Rsp ),
-            MetaManipulation.Type.Imc     => RevertMod( manip.Imc ),
             MetaManipulation.Type.Unknown => false,
             _                             => false,
         };
@@ -122,7 +134,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
             return;
         }
 
-        foreach( var manip in Manipulations )
+        foreach( var manip in Manipulations.Where( m => m.ManipulationType != MetaManipulation.Type.Imc ) )
         {
             var _ = manip.ManipulationType switch
             {
@@ -131,7 +143,6 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
                 MetaManipulation.Type.Eqdp    => ApplyMod( manip.Eqdp ),
                 MetaManipulation.Type.Est     => ApplyMod( manip.Est ),
                 MetaManipulation.Type.Rsp     => ApplyMod( manip.Rsp ),
-                MetaManipulation.Type.Imc     => ApplyMod( manip.Imc ),
                 MetaManipulation.Type.Unknown => false,
                 _                             => false,
             };
