@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -109,7 +110,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     }
 }
 
-public sealed class ExpandedEqpFile : ExpandedEqpGmpBase
+public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 {
     public ExpandedEqpFile()
         : base( false )
@@ -120,6 +121,7 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase
         get => ( EqpEntry )GetInternal( idx );
         set => SetInternal( idx, ( ulong )value );
     }
+
 
     public static EqpEntry GetDefault( int setIdx )
         => ( EqpEntry )GetDefaultInternal( CharacterUtility.EqpIdx, setIdx, ( ulong )Eqp.DefaultEntry );
@@ -141,9 +143,18 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase
             this[ entry ] = GetDefault( entry );
         }
     }
+
+    public IEnumerator< EqpEntry > GetEnumerator()
+    {
+        for( var idx = 1; idx < Count; ++idx )
+            yield return this[ idx ];
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
 }
 
-public sealed class ExpandedGmpFile : ExpandedEqpGmpBase
+public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
 {
     public ExpandedGmpFile()
         : base( true )
@@ -165,4 +176,13 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase
             this[ entry ] = GetDefault( entry );
         }
     }
+
+    public IEnumerator<GmpEntry> GetEnumerator()
+    {
+        for( var idx = 1; idx < Count; ++idx )
+            yield return this[idx];
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
 }

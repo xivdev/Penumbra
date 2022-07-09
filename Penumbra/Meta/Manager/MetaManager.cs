@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Dalamud.Logging;
 using Penumbra.Collections;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -76,6 +77,11 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
 
     public bool ApplyMod( MetaManipulation manip, IMod mod )
     {
+        if( _manipulations.ContainsKey( manip ) )
+        {
+            _manipulations.Remove( manip );
+        }
+
         _manipulations[ manip ] = mod;
         // Imc manipulations do not require character utility.
         if( manip.ManipulationType == MetaManipulation.Type.Imc )
@@ -134,9 +140,10 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
             return;
         }
 
+        var loaded = 0;
         foreach( var manip in Manipulations.Where( m => m.ManipulationType != MetaManipulation.Type.Imc ) )
         {
-            var _ = manip.ManipulationType switch
+            loaded += manip.ManipulationType switch
             {
                 MetaManipulation.Type.Eqp     => ApplyMod( manip.Eqp ),
                 MetaManipulation.Type.Gmp     => ApplyMod( manip.Gmp ),
@@ -145,7 +152,9 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
                 MetaManipulation.Type.Rsp     => ApplyMod( manip.Rsp ),
                 MetaManipulation.Type.Unknown => false,
                 _                             => false,
-            };
+            }
+                ? 1
+                : 0;
         }
 
         if( Penumbra.CollectionManager.Default == _collection )
@@ -155,6 +164,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
         }
 
         Penumbra.CharacterUtility.LoadingFinished -= ApplyStoredManipulations;
+        PluginLog.Debug( "{Collection}: Loaded {Num} delayed meta manipulations.", _collection.Name, loaded );
     }
 
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
