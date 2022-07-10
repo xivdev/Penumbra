@@ -428,18 +428,20 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderGetMods                 = "Penumbra.GetMods";
-    public const string LabelProviderGetCollections          = "Penumbra.GetCollections";
-    public const string LabelProviderCurrentCollectionName   = "Penumbra.GetCurrentCollectionName";
-    public const string LabelProviderDefaultCollectionName   = "Penumbra.GetDefaultCollectionName";
-    public const string LabelProviderCharacterCollectionName = "Penumbra.GetCharacterCollectionName";
-    public const string LabelProviderGetMetaManipulations    = "Penumbra.GetMetaManipulations";
+    public const string LabelProviderGetMods                    = "Penumbra.GetMods";
+    public const string LabelProviderGetCollections             = "Penumbra.GetCollections";
+    public const string LabelProviderCurrentCollectionName      = "Penumbra.GetCurrentCollectionName";
+    public const string LabelProviderDefaultCollectionName      = "Penumbra.GetDefaultCollectionName";
+    public const string LabelProviderCharacterCollectionName    = "Penumbra.GetCharacterCollectionName";
+    public const string LabelProviderGetPlayerMetaManipulations = "Penumbra.GetPlayerMetaManipulations";
+    public const string LabelProviderGetMetaManipulations       = "Penumbra.GetMetaManipulations";
 
     internal ICallGateProvider< IList< (string, string) > >? ProviderGetMods;
     internal ICallGateProvider< IList< string > >?           ProviderGetCollections;
     internal ICallGateProvider< string >?                    ProviderCurrentCollectionName;
     internal ICallGateProvider< string >?                    ProviderDefaultCollectionName;
     internal ICallGateProvider< string, (string, bool) >?    ProviderCharacterCollectionName;
+    internal ICallGateProvider< string >?                    ProviderGetPlayerMetaManipulations;
     internal ICallGateProvider< string, string >?            ProviderGetMetaManipulations;
 
     private void InitializeDataProviders( DalamudPluginInterface pi )
@@ -451,7 +453,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetMods}:\n{e}" );
         }
 
         try
@@ -461,7 +463,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetCollections}:\n{e}" );
         }
 
         try
@@ -471,7 +473,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCurrentCollectionName}:\n{e}" );
         }
 
         try
@@ -481,7 +483,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderDefaultCollectionName}:\n{e}" );
         }
 
         try
@@ -491,7 +493,17 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCharacterCollectionName}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderGetPlayerMetaManipulations = pi.GetIpcProvider< string >( LabelProviderGetPlayerMetaManipulations );
+            ProviderGetPlayerMetaManipulations.RegisterFunc( Api.GetPlayerMetaManipulations );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetPlayerMetaManipulations}:\n{e}" );
         }
 
         try
@@ -501,7 +513,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetMetaManipulations}:\n{e}" );
         }
     }
 

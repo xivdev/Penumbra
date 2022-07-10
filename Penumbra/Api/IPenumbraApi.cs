@@ -138,6 +138,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     public PenumbraApiEc AddMod( string modDirectory );
 
     // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
+    // for the collection currently associated with the player.
+    public string GetPlayerMetaManipulations();
+
+    // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
     // for the given collection associated with the character name, or the default collection.
     public string GetMetaManipulations( string characterName );
 

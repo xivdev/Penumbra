@@ -23,7 +23,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 10 );
+        => ( 4, 11 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -54,8 +54,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         _penumbra = penumbra;
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
-           .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
-          ?.GetValue( Dalamud.GameData );
+            .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
+            ?.GetValue( Dalamud.GameData );
         foreach( var collection in Penumbra.CollectionManager )
         {
             SubscribeToCollection( collection );
@@ -429,7 +429,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         if( !forceOverwriteCharacter && Penumbra.CollectionManager.Characters.ContainsKey( character )
-        || Penumbra.TempMods.Collections.ContainsKey( character ) )
+           || Penumbra.TempMods.Collections.ContainsKey( character ) )
         {
             return ( PenumbraApiEc.CharacterCollectionExists, string.Empty );
         }
@@ -475,7 +475,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         if( !Penumbra.TempMods.Collections.Values.FindFirst( c => c.Name == collectionName, out var collection )
-        && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
+           && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
         {
             return PenumbraApiEc.CollectionMissing;
         }
@@ -512,7 +512,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         if( !Penumbra.TempMods.Collections.Values.FindFirst( c => c.Name == collectionName, out var collection )
-        && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
+           && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
         {
             return PenumbraApiEc.CollectionMissing;
         }
@@ -523,6 +523,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             RedirectResult.NotRegistered => PenumbraApiEc.NothingChanged,
             _                            => PenumbraApiEc.UnknownError,
         };
+    }
+
+    public string GetPlayerMetaManipulations()
+    {
+        CheckInitialized();
+        var collection = PathResolver.PlayerCollection();
+        var set        = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >();
+        return Functions.ToCompressedBase64( set, MetaManipulation.CurrentVersion );
     }
 
     public string GetMetaManipulations( string characterName )
