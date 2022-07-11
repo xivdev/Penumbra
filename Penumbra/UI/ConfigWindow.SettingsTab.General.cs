@@ -57,19 +57,19 @@ public partial class ConfigWindow
                     Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide = !v;
                 } );
             ImGui.Dummy( _window._defaultSpace );
-            Checkbox( "Use Character Collections in Character Window",
+            Checkbox( "Use Special Collections in Character Window",
                 "Use the character collection for your character's name in your main character window, if it is set.",
                 Penumbra.Config.UseCharacterCollectionInMainWindow, v => Penumbra.Config.UseCharacterCollectionInMainWindow = v );
-            Checkbox( "Use Character Collections in Adventurer Cards",
+            Checkbox( "Use Special Collections in Adventurer Cards",
                 "Use the appropriate character collection for the adventurer card you are currently looking at, based on the adventurer's name.",
                 Penumbra.Config.UseCharacterCollectionsInCards, v => Penumbra.Config.UseCharacterCollectionsInCards = v );
-            Checkbox( "Use Character Collections in Try-On Window",
+            Checkbox( "Use Special Collections in Try-On Window",
                 "Use the character collection for your character's name in your try-on, dye preview or glamour plate window, if it is set.",
                 Penumbra.Config.UseCharacterCollectionInTryOn, v => Penumbra.Config.UseCharacterCollectionInTryOn = v );
-            Checkbox( "Use Character Collections in Inspect Windows",
+            Checkbox( "Use Special Collections in Inspect Windows",
                 "Use the appropriate character collection for the character you are currently inspecting, based on their name.",
                 Penumbra.Config.UseCharacterCollectionInInspect, v => Penumbra.Config.UseCharacterCollectionInInspect = v );
-            Checkbox( "Use Character Collections based on Ownership",
+            Checkbox( "Use Special Collections based on Ownership",
                 "Use the owner's name to determine the appropriate character collection for mounts, companions and combat pets.",
                 Penumbra.Config.UseOwnerNameForCharacterCollection, v => Penumbra.Config.UseOwnerNameForCharacterCollection = v );
             Checkbox( "Prefer Named Collections over Ownership",
