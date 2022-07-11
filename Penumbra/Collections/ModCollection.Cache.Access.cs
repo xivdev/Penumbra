@@ -56,7 +56,7 @@ public partial class ModCollection
 
 
     // Clear the current cache.
-    private void ClearCache()
+    internal void ClearCache()
     {
         _cache?.Dispose();
         _cache = null;

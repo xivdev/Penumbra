@@ -87,7 +87,6 @@ public partial class ModCollection
                 newCollection.CreateCache();
             }
 
-            RemoveCache( oldCollectionIdx );
             switch( collectionType )
             {
                 case CollectionType.Default:
@@ -110,6 +109,7 @@ public partial class ModCollection
                     break;
             }
 
+            RemoveCache( oldCollectionIdx );
 
             UpdateCurrentCollectionInUse();
             CollectionChanged.Invoke( collectionType, this[ oldCollectionIdx ], newCollection, characterName );
@@ -128,7 +128,7 @@ public partial class ModCollection
         // Create a special collection if it does not exist and set it to Empty.
         public bool CreateSpecialCollection( CollectionType collectionType )
         {
-            if( !collectionType.IsSpecial() || _specialCollections[( int )collectionType] != null )
+            if( !collectionType.IsSpecial() || _specialCollections[ ( int )collectionType ] != null )
             {
                 return false;
             }
@@ -136,7 +136,6 @@ public partial class ModCollection
             _specialCollections[ ( int )collectionType ] = Empty;
             CollectionChanged.Invoke( collectionType, null, Empty, null );
             return true;
-
         }
 
         // Remove a special collection if it exists
@@ -361,7 +360,8 @@ public partial class ModCollection
 
         private void RemoveCache( int idx )
         {
-            if( idx != Default.Index
+            if( idx != Empty.Index
+            && idx  != Default.Index
             && idx  != Current.Index
             && _specialCollections.All( c => c == null || c.Index != idx )
             && _characters.Values.All( c => c.Index != idx ) )

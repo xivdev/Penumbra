@@ -59,6 +59,7 @@ public partial class ModCollection
 
         public void Dispose()
         {
+            MetaManipulations.Dispose();
             _collection.ModSettingChanged             -= OnModSettingChange;
             _collection.InheritanceChanged            -= OnInheritanceChange;
             Penumbra.CharacterUtility.LoadingFinished -= IncrementCounter;

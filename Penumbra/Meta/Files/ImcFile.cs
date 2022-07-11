@@ -229,7 +229,7 @@ public unsafe class ImcFile : MetaBaseFile
         resource->SetData( ( IntPtr )Data, Length );
         if( firstTime )
         {
-            Penumbra.MetaFileManager.AddImcFile( resource, data, length );
+            Penumbra.MetaFileManager.AddImcFile( resource, this, data, length );
         }
     }
 }

@@ -153,6 +153,7 @@ public class TempModManager
         if( _collections.Remove( characterName, out var c ) )
         {
             _mods.Remove( c );
+            c.ClearCache();
             return true;
         }
 

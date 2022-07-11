@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Filesystem;
@@ -118,9 +119,9 @@ public partial class MetaManager
     {
         foreach( var file in _imcFiles.Values )
         {
+            Penumbra.MetaFileManager.ResetByFile( file );
             file.Dispose();
         }
-
         _imcFiles.Clear();
         _imcManipulations.Clear();
         RestoreImcDelegate();
