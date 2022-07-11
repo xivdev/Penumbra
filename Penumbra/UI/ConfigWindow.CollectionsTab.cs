@@ -23,13 +23,18 @@ public partial class ConfigWindow
         public void Draw()
         {
             using var tab = ImRaii.TabItem( "Collections" );
+            OpenTutorial( 5 );
             if( !tab )
             {
                 return;
             }
 
-            DrawCharacterCollectionSelectors();
-            DrawMainSelectors();
+            using var child = ImRaii.Child( "##collections", -Vector2.One );
+            if( child )
+            {
+                DrawActiveCollectionSelectors();
+                DrawMainSelectors();
+            }
         }
 
 
@@ -106,6 +111,7 @@ public partial class ConfigWindow
 
         private void DrawCurrentCollectionSelector()
         {
+            using var group = ImRaii.Group();
             DrawCollectionSelector( "##current", _window._inputTextWidth.X, CollectionType.Current, false, null );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( "Current Collection",
@@ -114,6 +120,7 @@ public partial class ConfigWindow
 
         private void DrawDefaultCollectionSelector()
         {
+            using var group = ImRaii.Group();
             DrawCollectionSelector( "##default", _window._inputTextWidth.X, CollectionType.Default, true, null );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( "Default Collection",
@@ -183,34 +190,42 @@ public partial class ConfigWindow
             }
         }
 
-        private void DrawCharacterCollectionSelectors()
+        private void DrawActiveCollectionSelectors()
         {
             ImGui.Dummy( _window._defaultSpace );
-            if( ImGui.CollapsingHeader( "Active Collections", ImGuiTreeNodeFlags.DefaultOpen ) )
+            var open = ImGui.CollapsingHeader( "Active Collections" );
+            OpenTutorial( 9 );
+            if( !open )
             {
-                ImGui.Dummy( _window._defaultSpace );
-                DrawDefaultCollectionSelector();
-                ImGui.Dummy( _window._defaultSpace );
-                foreach( var type in CollectionTypeExtensions.Special )
+                return;
+            }
+
+            ImGui.Dummy( _window._defaultSpace );
+            DrawDefaultCollectionSelector();
+            OpenTutorial( 10 );
+            ImGui.Dummy( _window._defaultSpace );
+            foreach( var type in CollectionTypeExtensions.Special )
+            {
+                var collection = Penumbra.CollectionManager.ByType( type );
+                if( collection != null )
                 {
-                    var collection = Penumbra.CollectionManager.ByType( type );
-                    if( collection != null )
+                    using var id = ImRaii.PushId( ( int )type );
+                    DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, type, true, null );
+                    ImGui.SameLine();
+                    if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
+                           false, true ) )
                     {
-                        using var id = ImRaii.PushId( ( int )type );
-                        DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, type, true, null );
-                        ImGui.SameLine();
-                        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
-                               false, true ) )
-                        {
-                            Penumbra.CollectionManager.RemoveSpecialCollection( type );
-                        }
-
-                        ImGui.SameLine();
-                        ImGui.AlignTextToFramePadding();
-                        ImGuiUtil.LabeledHelpMarker( type.ToName(), type.ToDescription() );
+                        Penumbra.CollectionManager.RemoveSpecialCollection( type );
                     }
-                }
 
+                    ImGui.SameLine();
+                    ImGui.AlignTextToFramePadding();
+                    ImGuiUtil.LabeledHelpMarker( type.ToName(), type.ToDescription() );
+                }
+            }
+
+            using( var group = ImRaii.Group() )
+            {
                 DrawNewSpecialCollection();
                 ImGui.Dummy( _window._defaultSpace );
 
@@ -231,22 +246,31 @@ public partial class ConfigWindow
                 }
 
                 DrawNewCharacterCollection();
-                ImGui.Dummy( _window._defaultSpace );
             }
+
+            OpenTutorial( 11 );
+
+            ImGui.Dummy( _window._defaultSpace );
         }
 
         private void DrawMainSelectors()
         {
             ImGui.Dummy( _window._defaultSpace );
-            if( ImGui.CollapsingHeader( "Collection Settings", ImGuiTreeNodeFlags.DefaultOpen ) )
+            var open = ImGui.CollapsingHeader( "Collection Settings", ImGuiTreeNodeFlags.DefaultOpen );
+            OpenTutorial( 6 );
+            if( !open )
             {
-                ImGui.Dummy( _window._defaultSpace );
-                DrawCurrentCollectionSelector();
-                ImGui.Dummy( _window._defaultSpace );
-                DrawNewCollectionInput();
-                ImGui.Dummy( _window._defaultSpace );
-                DrawInheritanceBlock();
+                return;
             }
+
+            ImGui.Dummy( _window._defaultSpace );
+            DrawCurrentCollectionSelector();
+            OpenTutorial( 7 );
+            ImGui.Dummy( _window._defaultSpace );
+            DrawNewCollectionInput();
+            ImGui.Dummy( _window._defaultSpace );
+            DrawInheritanceBlock();
+            OpenTutorial( 8 );
         }
     }
 }

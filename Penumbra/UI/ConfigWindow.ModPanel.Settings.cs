@@ -36,6 +36,7 @@ public partial class ConfigWindow
         private void DrawSettingsTab()
         {
             using var tab = DrawTab( SettingsTabHeader, Tabs.Settings );
+            OpenTutorial( 17 );
             if( !tab )
             {
                 return;
@@ -51,8 +52,10 @@ public partial class ConfigWindow
             ImGui.Dummy( _window._defaultSpace );
             _window._penumbra.Api.InvokePreSettingsPanel( _mod.ModPath.Name );
             DrawEnabledInput();
+            OpenTutorial( 15 );
             ImGui.SameLine();
             DrawPriorityInput();
+            OpenTutorial( 16 );
             DrawRemoveSettings();
             ImGui.Dummy( _window._defaultSpace );
             for( var idx = 0; idx < _mod.Groups.Count; ++idx )
@@ -104,7 +107,8 @@ public partial class ConfigWindow
         // Priority is changed on deactivation of the input box.
         private void DrawPriorityInput()
         {
-            var priority = _currentPriority ?? _settings.Priority;
+            using var group    = ImRaii.Group();
+            var       priority = _currentPriority ?? _settings.Priority;
             ImGui.SetNextItemWidth( 50 * ImGuiHelpers.GlobalScale );
             if( ImGui.InputInt( "##Priority", ref priority, 0, 0 ) )
             {

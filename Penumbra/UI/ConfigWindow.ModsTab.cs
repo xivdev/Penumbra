@@ -22,6 +22,7 @@ public partial class ConfigWindow
         try
         {
             using var tab = ImRaii.TabItem( "Mods" );
+            OpenTutorial( 12 );
             if( !tab )
             {
                 return;

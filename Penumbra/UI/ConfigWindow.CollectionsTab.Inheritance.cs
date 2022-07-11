@@ -31,7 +31,8 @@ public partial class ConfigWindow
         // Draw the whole inheritance block.
         private void DrawInheritanceBlock()
         {
-            using var id = ImRaii.PushId( "##Inheritance" );
+            using var group = ImRaii.Group();
+            using var id    = ImRaii.PushId( "##Inheritance" );
             ImGui.TextUnformatted( "The current collection inherits from:" );
             DrawCurrentCollectionInheritance();
             DrawInheritanceTrashButton();

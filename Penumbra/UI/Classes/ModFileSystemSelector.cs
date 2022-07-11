@@ -199,8 +199,10 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     private void AddImportModButton( Vector2 size )
     {
-        if( !ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
-               "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true ) )
+        var button = ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
+               "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true );
+        ConfigWindow.OpenTutorial( 13 );
+        if (!button)
         {
             return;
         }
@@ -310,6 +312,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         {
             ImGui.OpenPopup( "ExtendedHelp" );
         }
+        ConfigWindow.OpenTutorial( 14 );
     }
 
     // Helpers.

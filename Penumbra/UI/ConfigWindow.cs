@@ -47,6 +47,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
             MinimumSize = new Vector2( 800, 600 ),
             MaximumSize = new Vector2( 4096, 2160 ),
         };
+        UpdateTutorialStep();
     }
 
     public override void Draw()
@@ -78,6 +79,10 @@ public sealed partial class ConfigWindow : Window, IDisposable
             }
             else
             {
+                OpenTutorial( 18 );
+                OpenTutorial( 19 );
+                OpenTutorial( 20 );
+                OpenTutorial( 21 );
                 using var bar = ImRaii.TabBar( string.Empty, ImGuiTabBarFlags.NoTooltip );
                 SetupSizes();
                 _settingsTab.Draw();

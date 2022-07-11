@@ -4,7 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiFileDialog;
+using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -131,7 +133,10 @@ public partial class ConfigWindow
         // as well as the directory picker button and the enter warning.
         private void DrawRootFolder()
         {
-            _newModDirectory ??= Penumbra.Config.ModDirectory;
+            if( _newModDirectory.IsNullOrEmpty() )
+            {
+                _newModDirectory = Penumbra.Config.ModDirectory;
+            }
 
             var       spacing = 3 * ImGuiHelpers.GlobalScale;
             using var group   = ImRaii.Group();
@@ -149,6 +154,7 @@ public partial class ConfigWindow
               + "It should also be placed near the root of a logical drive - the shorter the total path to this folder, the better.\n"
               + "Definitely do not place it in your Dalamud directory or any sub-directory thereof." );
             group.Dispose();
+            OpenTutorial( 1 );
             ImGui.SameLine();
             var pos = ImGui.GetCursorPosX();
             ImGui.NewLine();
@@ -181,20 +187,34 @@ public partial class ConfigWindow
             {
                 _window._penumbra.SetEnabled( enabled );
             }
+
+            OpenTutorial( 2 );
         }
 
         private static void DrawShowAdvancedBox()
         {
             var showAdvanced = Penumbra.Config.ShowAdvanced;
-            if( ImGui.Checkbox( "##showAdvanced", ref showAdvanced ) )
+            using( var _ = ImRaii.Group() )
             {
-                Penumbra.Config.ShowAdvanced = showAdvanced;
-                Penumbra.Config.Save();
+                if( ImGui.Checkbox( "##showAdvanced", ref showAdvanced ) )
+                {
+                    Penumbra.Config.ShowAdvanced = showAdvanced;
+                    Penumbra.Config.Save();
+                }
+
+                ImGui.SameLine();
+                const string tt = "Enable some advanced options in this window and in the mod selector.\n"
+                  + "This is required to enable manually editing any mod information.";
+
+                // Manually split due to tutorial.
+                ImGuiComponents.HelpMarker( tt );
+                OpenTutorial( 0 );
+                ImGui.SameLine();
+                ImGui.TextUnformatted( "Show Advanced Settings" );
+                ImGuiUtil.HoverTooltip( tt );
             }
 
-            ImGui.SameLine();
-            ImGuiUtil.LabeledHelpMarker( "Show Advanced Settings", "Enable some advanced options in this window and in the mod selector.\n"
-              + "This is required to enable manually editing any mod information." );
+            OpenTutorial( 3 );
         }
 
         private static void DrawColorSettings()
@@ -281,12 +301,12 @@ public partial class ConfigWindow
         private static void DrawSupportButtons()
         {
             var width = ImGui.CalcTextSize( SupportInfoButtonText ).X + ImGui.GetStyle().FramePadding.X * 2;
+            var xPos  = ImGui.GetWindowWidth()                        - width;
             if( ImGui.GetScrollMaxY() > 0 )
             {
-                width += ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().ItemSpacing.X;
+                xPos -= ImGui.GetStyle().ScrollbarSize + ImGui.GetStyle().FramePadding.X;
             }
 
-            var xPos = ImGui.GetWindowWidth() - width;
             ImGui.SetCursorPos( new Vector2( xPos, ImGui.GetFrameHeightWithSpacing() ) );
             DrawSupportButton();
 
@@ -295,6 +315,13 @@ public partial class ConfigWindow
 
             ImGui.SetCursorPos( new Vector2( xPos, 2 * ImGui.GetFrameHeightWithSpacing() ) );
             DrawGuideButton( width );
+
+            ImGui.SetCursorPos( new Vector2( xPos, 3 * ImGui.GetFrameHeightWithSpacing() ) );
+            if( ImGui.Button( "Restart Tutorial", new Vector2( width, 0 ) ) )
+            {
+                Penumbra.Config.TutorialStep = 0;
+                Penumbra.Config.Save();
+            }
         }
     }
 }

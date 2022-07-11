@@ -41,6 +41,8 @@ public partial class Configuration : IPluginConfiguration
     public bool DebugMode { get; set; } = false;
 #endif
 
+    public int TutorialStep { get; set; } = 0;
+
     public bool EnableFullResourceLogging { get; set; } = false;
     public bool EnableResourceLogging { get; set; } = false;
     public string ResourceLoggingFilter { get; set; } = string.Empty;

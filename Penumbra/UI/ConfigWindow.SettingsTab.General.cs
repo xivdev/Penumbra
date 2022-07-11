@@ -6,7 +6,6 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.Util;
 
 namespace Penumbra.UI;
 
@@ -32,8 +31,11 @@ public partial class ConfigWindow
         {
             if( !ImGui.CollapsingHeader( "General" ) )
             {
+                OpenTutorial( 4 );
                 return;
             }
+
+            OpenTutorial( 4 );
 
             Checkbox( "Hide Config Window when UI is Hidden",
                 "Hide the penumbra main window when you manually hide the in-game user interface.", Penumbra.Config.HideUiWhenUiHidden,
