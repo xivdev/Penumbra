@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using OtterGui.Widgets;
 using Penumbra.UI.Classes;
 
@@ -16,6 +17,7 @@ public partial class ConfigWindow
         }
     }
 
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
     public static void OpenTutorial( BasicTutorialSteps step )
         => Tutorial.Open( ( int )step, Penumbra.Config.TutorialStep, v =>
         {
