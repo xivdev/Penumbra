@@ -22,7 +22,7 @@ public partial class ConfigWindow
         try
         {
             using var tab = ImRaii.TabItem( "Mods" );
-            OpenTutorial( 12 );
+            OpenTutorial( BasicTutorialSteps.Mods );
             if( !tab )
             {
                 return;
@@ -59,11 +59,17 @@ public partial class ConfigWindow
         using var style      = ImRaii.PushStyle( ImGuiStyleVar.FrameRounding, 0 ).Push( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
         var       buttonSize = new Vector2( ImGui.GetContentRegionAvail().X / 8f, 0 );
 
-        DrawDefaultCollectionButton( 3 * buttonSize );
-        ImGui.SameLine();
-        DrawInheritedCollectionButton( 3 * buttonSize );
-        ImGui.SameLine();
-        DrawCollectionSelector( "##collectionSelector", 2 * buttonSize.X, CollectionType.Current, false, null );
+        using( var group = ImRaii.Group() )
+        {
+            DrawDefaultCollectionButton( 3 * buttonSize );
+            ImGui.SameLine();
+            DrawInheritedCollectionButton( 3 * buttonSize );
+            ImGui.SameLine();
+            DrawCollectionSelector( "##collectionSelector", 2 * buttonSize.X, CollectionType.Current, false, null );
+        }
+
+        OpenTutorial( BasicTutorialSteps.CollectionSelectors );
+
         if( !Penumbra.CollectionManager.CurrentCollectionInUse )
         {
             ImGuiUtil.DrawTextButton( "The currently selected collection is not used in any way.", -Vector2.UnitX, Colors.PressEnterWarningBg );

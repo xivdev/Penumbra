@@ -28,6 +28,10 @@ public partial class ConfigWindow
         public void Draw()
         {
             using var tab = ImRaii.TabItem( "Settings" );
+            OpenTutorial( BasicTutorialSteps.Fin );
+            OpenTutorial( BasicTutorialSteps.Faq1 );
+            OpenTutorial( BasicTutorialSteps.Faq2 );
+            OpenTutorial( BasicTutorialSteps.Faq3 );
             if( !tab )
             {
                 return;
@@ -154,7 +158,7 @@ public partial class ConfigWindow
               + "It should also be placed near the root of a logical drive - the shorter the total path to this folder, the better.\n"
               + "Definitely do not place it in your Dalamud directory or any sub-directory thereof." );
             group.Dispose();
-            OpenTutorial( 1 );
+            OpenTutorial( BasicTutorialSteps.ModDirectory );
             ImGui.SameLine();
             var pos = ImGui.GetCursorPosX();
             ImGui.NewLine();
@@ -188,7 +192,7 @@ public partial class ConfigWindow
                 _window._penumbra.SetEnabled( enabled );
             }
 
-            OpenTutorial( 2 );
+            OpenTutorial( BasicTutorialSteps.EnableMods );
         }
 
         private static void DrawShowAdvancedBox()
@@ -208,13 +212,13 @@ public partial class ConfigWindow
 
                 // Manually split due to tutorial.
                 ImGuiComponents.HelpMarker( tt );
-                OpenTutorial( 0 );
+                OpenTutorial( BasicTutorialSteps.GeneralTooltips );
                 ImGui.SameLine();
                 ImGui.TextUnformatted( "Show Advanced Settings" );
                 ImGuiUtil.HoverTooltip( tt );
             }
 
-            OpenTutorial( 3 );
+            OpenTutorial( BasicTutorialSteps.AdvancedSettings );
         }
 
         private static void DrawColorSettings()

@@ -36,7 +36,7 @@ public partial class ConfigWindow
         private void DrawSettingsTab()
         {
             using var tab = DrawTab( SettingsTabHeader, Tabs.Settings );
-            OpenTutorial( 17 );
+            OpenTutorial( BasicTutorialSteps.ModOptions );
             if( !tab )
             {
                 return;
@@ -52,10 +52,10 @@ public partial class ConfigWindow
             ImGui.Dummy( _window._defaultSpace );
             _window._penumbra.Api.InvokePreSettingsPanel( _mod.ModPath.Name );
             DrawEnabledInput();
-            OpenTutorial( 15 );
+            OpenTutorial( BasicTutorialSteps.EnablingMods );
             ImGui.SameLine();
             DrawPriorityInput();
-            OpenTutorial( 16 );
+            OpenTutorial( BasicTutorialSteps.Priority );
             DrawRemoveSettings();
             ImGui.Dummy( _window._defaultSpace );
             for( var idx = 0; idx < _mod.Groups.Count; ++idx )

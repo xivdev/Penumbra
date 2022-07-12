@@ -23,7 +23,7 @@ public partial class ConfigWindow
         public void Draw()
         {
             using var tab = ImRaii.TabItem( "Collections" );
-            OpenTutorial( 5 );
+            OpenTutorial( BasicTutorialSteps.Collections );
             if( !tab )
             {
                 return;
@@ -194,7 +194,7 @@ public partial class ConfigWindow
         {
             ImGui.Dummy( _window._defaultSpace );
             var open = ImGui.CollapsingHeader( "Active Collections" );
-            OpenTutorial( 9 );
+            OpenTutorial( BasicTutorialSteps.ActiveCollections );
             if( !open )
             {
                 return;
@@ -202,7 +202,7 @@ public partial class ConfigWindow
 
             ImGui.Dummy( _window._defaultSpace );
             DrawDefaultCollectionSelector();
-            OpenTutorial( 10 );
+            OpenTutorial( BasicTutorialSteps.DefaultCollection );
             ImGui.Dummy( _window._defaultSpace );
             foreach( var type in CollectionTypeExtensions.Special )
             {
@@ -248,7 +248,7 @@ public partial class ConfigWindow
                 DrawNewCharacterCollection();
             }
 
-            OpenTutorial( 11 );
+            OpenTutorial( BasicTutorialSteps.SpecialCollections );
 
             ImGui.Dummy( _window._defaultSpace );
         }
@@ -257,7 +257,7 @@ public partial class ConfigWindow
         {
             ImGui.Dummy( _window._defaultSpace );
             var open = ImGui.CollapsingHeader( "Collection Settings", ImGuiTreeNodeFlags.DefaultOpen );
-            OpenTutorial( 6 );
+            OpenTutorial( BasicTutorialSteps.EditingCollections );
             if( !open )
             {
                 return;
@@ -265,12 +265,12 @@ public partial class ConfigWindow
 
             ImGui.Dummy( _window._defaultSpace );
             DrawCurrentCollectionSelector();
-            OpenTutorial( 7 );
+            OpenTutorial( BasicTutorialSteps.CurrentCollection );
             ImGui.Dummy( _window._defaultSpace );
             DrawNewCollectionInput();
             ImGui.Dummy( _window._defaultSpace );
             DrawInheritanceBlock();
-            OpenTutorial( 8 );
+            OpenTutorial( BasicTutorialSteps.Inheritance );
         }
     }
 }

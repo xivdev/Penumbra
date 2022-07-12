@@ -246,22 +246,10 @@ public partial class ModFileSystemSelector
         return false;
     }
 
-    // Add the state filter combo-button to the right of the filter box.
-    protected override float CustomFilters( float width )
+    private void DrawFilterCombo( ref bool everything )
     {
-        var pos            = ImGui.GetCursorPos();
-        var remainingWidth = width - ImGui.GetFrameHeight();
-        var comboPos       = new Vector2( pos.X + remainingWidth, pos.Y );
-
-        var everything = _stateFilter == ModFilterExtensions.UnfilteredStateMods;
-
-        ImGui.SetCursorPos( comboPos );
-        // Draw combo button
-        using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.FilterActive, !everything );
         using var combo = ImRaii.Combo( "##filterCombo", string.Empty,
             ImGuiComboFlags.NoPreview | ImGuiComboFlags.PopupAlignLeft | ImGuiComboFlags.HeightLargest );
-        color.Pop();
-
         if( combo )
         {
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
@@ -285,8 +273,22 @@ public partial class ModFileSystemSelector
                 }
             }
         }
+    }
 
-        combo.Dispose();
+    // Add the state filter combo-button to the right of the filter box.
+    protected override float CustomFilters( float width )
+    {
+        var pos            = ImGui.GetCursorPos();
+        var remainingWidth = width - ImGui.GetFrameHeight();
+        var comboPos       = new Vector2( pos.X + remainingWidth, pos.Y );
+
+        var everything = _stateFilter == ModFilterExtensions.UnfilteredStateMods;
+
+        ImGui.SetCursorPos( comboPos );
+        // Draw combo button
+        using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.FilterActive, !everything );
+        DrawFilterCombo( ref everything );
+        ConfigWindow.OpenTutorial( ConfigWindow.BasicTutorialSteps.ModFilters );
         if( ImGui.IsItemClicked( ImGuiMouseButton.Right ) )
         {
             _stateFilter = ModFilterExtensions.UnfilteredStateMods;

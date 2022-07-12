@@ -79,10 +79,6 @@ public sealed partial class ConfigWindow : Window, IDisposable
             }
             else
             {
-                OpenTutorial( 18 );
-                OpenTutorial( 19 );
-                OpenTutorial( 20 );
-                OpenTutorial( 21 );
                 using var bar = ImRaii.TabBar( string.Empty, ImGuiTabBarFlags.NoTooltip );
                 SetupSizes();
                 _settingsTab.Draw();

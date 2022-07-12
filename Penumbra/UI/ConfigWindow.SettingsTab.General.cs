@@ -31,11 +31,11 @@ public partial class ConfigWindow
         {
             if( !ImGui.CollapsingHeader( "General" ) )
             {
-                OpenTutorial( 4 );
+                OpenTutorial( BasicTutorialSteps.GeneralSettings );
                 return;
             }
 
-            OpenTutorial( 4 );
+            OpenTutorial( BasicTutorialSteps.GeneralSettings );
 
             Checkbox( "Hide Config Window when UI is Hidden",
                 "Hide the penumbra main window when you manually hide the in-game user interface.", Penumbra.Config.HideUiWhenUiHidden,
