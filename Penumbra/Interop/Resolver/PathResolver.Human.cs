@@ -54,18 +54,18 @@ public unsafe partial class PathResolver
 
     private void SetupHumanHooks()
     {
-        ResolveDecalPathHook = new Hook< GeneralResolveDelegate >( DrawObjectHumanVTable[ ResolveDecalIdx ], ResolveDecalDetour );
-        ResolveEidPathHook   = new Hook< EidResolveDelegate >( DrawObjectHumanVTable[ ResolveEidIdx ], ResolveEidDetour );
-        ResolveImcPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectHumanVTable[ ResolveImcIdx ], ResolveImcDetour );
-        ResolveMPapPathHook  = new Hook< MPapResolveDelegate >( DrawObjectHumanVTable[ ResolveMPapIdx ], ResolveMPapDetour );
-        ResolveMdlPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectHumanVTable[ ResolveMdlIdx ], ResolveMdlDetour );
-        ResolveMtrlPathHook  = new Hook< MaterialResolveDetour >( DrawObjectHumanVTable[ ResolveMtrlIdx ], ResolveMtrlDetour );
-        ResolvePapPathHook   = new Hook< MaterialResolveDetour >( DrawObjectHumanVTable[ ResolvePapIdx ], ResolvePapDetour );
-        ResolvePhybPathHook  = new Hook< GeneralResolveDelegate >( DrawObjectHumanVTable[ ResolvePhybIdx ], ResolvePhybDetour );
-        ResolveSklbPathHook  = new Hook< GeneralResolveDelegate >( DrawObjectHumanVTable[ ResolveSklbIdx ], ResolveSklbDetour );
-        ResolveSkpPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectHumanVTable[ ResolveSkpIdx ], ResolveSkpDetour );
-        ResolveTmbPathHook   = new Hook< EidResolveDelegate >( DrawObjectHumanVTable[ ResolveTmbIdx ], ResolveTmbDetour );
-        ResolveVfxPathHook   = new Hook< MaterialResolveDetour >( DrawObjectHumanVTable[ ResolveVfxIdx ], ResolveVfxDetour );
+        ResolveDecalPathHook = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolveDecalIdx ], ResolveDecalDetour );
+        ResolveEidPathHook   = Hook< EidResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolveEidIdx ], ResolveEidDetour );
+        ResolveImcPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolveImcIdx ], ResolveImcDetour );
+        ResolveMPapPathHook  = Hook< MPapResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolveMPapIdx ], ResolveMPapDetour );
+        ResolveMdlPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolveMdlIdx ], ResolveMdlDetour );
+        ResolveMtrlPathHook  = Hook< MaterialResolveDetour >.FromAddress( DrawObjectHumanVTable[ ResolveMtrlIdx ], ResolveMtrlDetour );
+        ResolvePapPathHook   = Hook< MaterialResolveDetour >.FromAddress( DrawObjectHumanVTable[ ResolvePapIdx ], ResolvePapDetour );
+        ResolvePhybPathHook  = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolvePhybIdx ], ResolvePhybDetour );
+        ResolveSklbPathHook  = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolveSklbIdx ], ResolveSklbDetour );
+        ResolveSkpPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolveSkpIdx ], ResolveSkpDetour );
+        ResolveTmbPathHook   = Hook< EidResolveDelegate >.FromAddress( DrawObjectHumanVTable[ ResolveTmbIdx ], ResolveTmbDetour );
+        ResolveVfxPathHook   = Hook< MaterialResolveDetour >.FromAddress( DrawObjectHumanVTable[ ResolveVfxIdx ], ResolveVfxDetour );
     }
 
     private void EnableHumanHooks()

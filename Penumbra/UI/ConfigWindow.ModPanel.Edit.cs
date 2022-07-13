@@ -336,7 +336,7 @@ public partial class ConfigWindow
 
                 ImGui.SameLine();
                 if( ImGui.Button( "Cancel", buttonSize )
-                || ImGui.IsKeyPressed( ImGui.GetKeyIndex( ImGuiKey.Escape ) ) )
+                || ImGui.IsKeyPressed( ImGuiKey.Escape ) )
                 {
                     _newDescriptionIdx = Input.None;
                     _newDescription    = string.Empty;

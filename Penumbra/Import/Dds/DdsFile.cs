@@ -142,7 +142,7 @@ public class DdsFile
         using( var bw = new BinaryWriter( mem ) )
         {
             var (format, mipLength) = WriteTexHeader( bw );
-            var bytes = format == TexFile.TextureFormat.R8G8B8X8 ? RgbaData : _data;
+            var bytes = format == TexFile.TextureFormat.B8G8R8X8 ? RgbaData : _data;
 
             if( bytes.Length < mipLength )
             {
@@ -165,7 +165,7 @@ public class DdsFile
         }
 
         var mipCount = Header.MipMapCount;
-        if( format == TexFile.TextureFormat.R8G8B8X8 && ParseType != ParseType.R8G8B8A8 )
+        if( format == TexFile.TextureFormat.B8G8R8X8 && ParseType != ParseType.R8G8B8A8 )
         {
             mipCount = 1;
         }
@@ -206,21 +206,21 @@ public class DdsFile
             ParseType.DXT1        => ( TexFile.TextureFormat.DXT1, height * width / 2 ),
             ParseType.DXT3        => ( TexFile.TextureFormat.DXT3, height         * width * 2 ),
             ParseType.DXT5        => ( TexFile.TextureFormat.DXT5, height         * width * 2 ),
-            ParseType.BC4         => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
-            ParseType.BC5         => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
+            ParseType.BC4         => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
+            ParseType.BC5         => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
             ParseType.Greyscale   => ( TexFile.TextureFormat.A8, height           * width ),
-            ParseType.R4G4B4A4    => ( TexFile.TextureFormat.R4G4B4A4, height     * width * 2 ),
-            ParseType.B4G4R4A4    => ( TexFile.TextureFormat.R4G4B4A4, height     * width * 2 ),
-            ParseType.R5G5B5      => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
-            ParseType.B5G5R5      => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
-            ParseType.R5G6B5      => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
-            ParseType.B5G6R5      => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
-            ParseType.R5G5B5A1    => ( TexFile.TextureFormat.R5G5B5A1, height     * width * 2 ),
-            ParseType.B5G5R5A1    => ( TexFile.TextureFormat.R5G5B5A1, height     * width * 2 ),
-            ParseType.R8G8B8      => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
-            ParseType.B8G8R8      => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
-            ParseType.R8G8B8A8    => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
-            ParseType.B8G8R8A8    => ( TexFile.TextureFormat.R8G8B8X8, height     * width * 4 ),
+            ParseType.R4G4B4A4    => ( TexFile.TextureFormat.B4G4R4A4, height     * width * 2 ),
+            ParseType.B4G4R4A4    => ( TexFile.TextureFormat.B4G4R4A4, height     * width * 2 ),
+            ParseType.R5G5B5      => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
+            ParseType.B5G5R5      => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
+            ParseType.R5G6B5      => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
+            ParseType.B5G6R5      => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
+            ParseType.R5G5B5A1    => ( TexFile.TextureFormat.B5G5R5A1, height     * width * 2 ),
+            ParseType.B5G5R5A1    => ( TexFile.TextureFormat.B5G5R5A1, height     * width * 2 ),
+            ParseType.R8G8B8      => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
+            ParseType.B8G8R8      => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
+            ParseType.R8G8B8A8    => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
+            ParseType.B8G8R8A8    => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
             _                     => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
         };
     }
@@ -237,17 +237,17 @@ public class TmpTexFile
         var data = br.ReadBytes( ( int )( br.BaseStream.Length - br.BaseStream.Position ) );
         RgbaData = Header.Format switch
         {
-            TexFile.TextureFormat.L8        => ImageParsing.DecodeUncompressedGreyscale( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.A8        => ImageParsing.DecodeUncompressedGreyscale( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT1      => ImageParsing.DecodeDxt1( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT3      => ImageParsing.DecodeDxt3( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT5      => ImageParsing.DecodeDxt5( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.A8R8G8B8  => ImageParsing.DecodeUncompressedB8G8R8A8( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.R8G8B8X8  => ImageParsing.DecodeUncompressedR8G8B8A8( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.A8R8G8B82 => ImageParsing.DecodeUncompressedR8G8B8A8( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.R4G4B4A4  => ImageParsing.DecodeUncompressedR4G4B4A4( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.R5G5B5A1  => ImageParsing.DecodeUncompressedR5G5B5A1( data, Header.Height, Header.Width ),
-            _                               => throw new ArgumentOutOfRangeException(),
+            TexFile.TextureFormat.L8       => ImageParsing.DecodeUncompressedGreyscale( data, Header.Height, Header.Width ),
+            TexFile.TextureFormat.A8       => ImageParsing.DecodeUncompressedGreyscale( data, Header.Height, Header.Width ),
+            TexFile.TextureFormat.DXT1     => ImageParsing.DecodeDxt1( data, Header.Height, Header.Width ),
+            TexFile.TextureFormat.DXT3     => ImageParsing.DecodeDxt3( data, Header.Height, Header.Width ),
+            TexFile.TextureFormat.DXT5     => ImageParsing.DecodeDxt5( data, Header.Height, Header.Width ),
+            TexFile.TextureFormat.B8G8R8A8 => ImageParsing.DecodeUncompressedB8G8R8A8( data, Header.Height, Header.Width ),
+            TexFile.TextureFormat.B8G8R8X8 => ImageParsing.DecodeUncompressedR8G8B8A8( data, Header.Height, Header.Width ),
+            //TexFile.TextureFormat.A8R8G8B82 => ImageParsing.DecodeUncompressedR8G8B8A8( data, Header.Height, Header.Width ),
+            TexFile.TextureFormat.B4G4R4A4 => ImageParsing.DecodeUncompressedR4G4B4A4( data, Header.Height, Header.Width ),
+            TexFile.TextureFormat.B5G5R5A1 => ImageParsing.DecodeUncompressedR5G5B5A1( data, Header.Height, Header.Width ),
+            _                              => throw new ArgumentOutOfRangeException(),
         };
     }
 }

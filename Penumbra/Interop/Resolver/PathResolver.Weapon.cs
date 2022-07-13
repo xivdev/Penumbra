@@ -25,18 +25,18 @@ public unsafe partial class PathResolver
 
     private void SetupWeaponHooks()
     {
-        ResolveWeaponDecalPathHook = new Hook< GeneralResolveDelegate >( DrawObjectWeaponVTable[ ResolveDecalIdx ], ResolveWeaponDecalDetour );
-        ResolveWeaponEidPathHook   = new Hook< EidResolveDelegate >( DrawObjectWeaponVTable[ ResolveEidIdx ], ResolveWeaponEidDetour );
-        ResolveWeaponImcPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectWeaponVTable[ ResolveImcIdx ], ResolveWeaponImcDetour );
-        ResolveWeaponMPapPathHook  = new Hook< MPapResolveDelegate >( DrawObjectWeaponVTable[ ResolveMPapIdx ], ResolveWeaponMPapDetour );
-        ResolveWeaponMdlPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectWeaponVTable[ ResolveMdlIdx ], ResolveWeaponMdlDetour );
-        ResolveWeaponMtrlPathHook  = new Hook< MaterialResolveDetour >( DrawObjectWeaponVTable[ ResolveMtrlIdx ], ResolveWeaponMtrlDetour );
-        ResolveWeaponPapPathHook   = new Hook< MaterialResolveDetour >( DrawObjectWeaponVTable[ ResolvePapIdx ], ResolveWeaponPapDetour );
-        ResolveWeaponPhybPathHook  = new Hook< GeneralResolveDelegate >( DrawObjectWeaponVTable[ ResolvePhybIdx ], ResolveWeaponPhybDetour );
-        ResolveWeaponSklbPathHook  = new Hook< GeneralResolveDelegate >( DrawObjectWeaponVTable[ ResolveSklbIdx ], ResolveWeaponSklbDetour );
-        ResolveWeaponSkpPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectWeaponVTable[ ResolveSkpIdx ], ResolveWeaponSkpDetour );
-        ResolveWeaponTmbPathHook   = new Hook< EidResolveDelegate >( DrawObjectWeaponVTable[ ResolveTmbIdx ], ResolveWeaponTmbDetour );
-        ResolveWeaponVfxPathHook   = new Hook< MaterialResolveDetour >( DrawObjectWeaponVTable[ ResolveVfxIdx ], ResolveWeaponVfxDetour );
+        ResolveWeaponDecalPathHook = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolveDecalIdx ], ResolveWeaponDecalDetour );
+        ResolveWeaponEidPathHook   = Hook< EidResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolveEidIdx ], ResolveWeaponEidDetour );
+        ResolveWeaponImcPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolveImcIdx ], ResolveWeaponImcDetour );
+        ResolveWeaponMPapPathHook  = Hook< MPapResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolveMPapIdx ], ResolveWeaponMPapDetour );
+        ResolveWeaponMdlPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolveMdlIdx ], ResolveWeaponMdlDetour );
+        ResolveWeaponMtrlPathHook  = Hook< MaterialResolveDetour >.FromAddress( DrawObjectWeaponVTable[ ResolveMtrlIdx ], ResolveWeaponMtrlDetour );
+        ResolveWeaponPapPathHook   = Hook< MaterialResolveDetour >.FromAddress( DrawObjectWeaponVTable[ ResolvePapIdx ], ResolveWeaponPapDetour );
+        ResolveWeaponPhybPathHook  = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolvePhybIdx ], ResolveWeaponPhybDetour );
+        ResolveWeaponSklbPathHook  = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolveSklbIdx ], ResolveWeaponSklbDetour );
+        ResolveWeaponSkpPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolveSkpIdx ], ResolveWeaponSkpDetour );
+        ResolveWeaponTmbPathHook   = Hook< EidResolveDelegate >.FromAddress( DrawObjectWeaponVTable[ ResolveTmbIdx ], ResolveWeaponTmbDetour );
+        ResolveWeaponVfxPathHook   = Hook< MaterialResolveDetour >.FromAddress( DrawObjectWeaponVTable[ ResolveVfxIdx ], ResolveWeaponVfxDetour );
     }
 
     private void EnableWeaponHooks()

@@ -103,9 +103,10 @@ public unsafe partial class ResourceLoader : IDisposable
     public ResourceLoader( Penumbra _ )
     {
         SignatureHelper.Initialise( this );
-        _decRefHook = new Hook< ResourceHandleDecRef >( ( IntPtr )FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.fpDecRef,
+        _decRefHook = Hook< ResourceHandleDecRef >.FromAddress(
+            ( IntPtr )FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.fpDecRef,
             ResourceHandleDecRefDetour );
-        _incRefHook = new Hook< ResourceHandleDestructor >(
+        _incRefHook = Hook< ResourceHandleDestructor >.FromAddress(
             ( IntPtr )FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.fpIncRef, ResourceHandleIncRefDetour );
     }
 

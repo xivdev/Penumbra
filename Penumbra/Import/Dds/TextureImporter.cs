@@ -13,7 +13,7 @@ public class TextureImporter
         using var mem = new MemoryStream( target );
         using var bw  = new BinaryWriter( mem );
         bw.Write( ( uint )TexFile.Attribute.TextureType2D );
-        bw.Write( ( uint )TexFile.TextureFormat.A8R8G8B8 );
+        bw.Write( ( uint )TexFile.TextureFormat.B8G8R8X8 );
         bw.Write( ( ushort )width );
         bw.Write( ( ushort )height );
         bw.Write( ( ushort )1 );

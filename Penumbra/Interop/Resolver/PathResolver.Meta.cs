@@ -122,7 +122,7 @@ public unsafe partial class PathResolver
     private void SetupMetaHooks()
     {
         OnModelLoadCompleteHook =
-            new Hook< OnModelLoadCompleteDelegate >( DrawObjectHumanVTable[ OnModelLoadCompleteIdx ], OnModelLoadCompleteDetour );
+            Hook< OnModelLoadCompleteDelegate >.FromAddress( DrawObjectHumanVTable[ OnModelLoadCompleteIdx ], OnModelLoadCompleteDetour );
     }
 
     private void EnableMetaHooks()

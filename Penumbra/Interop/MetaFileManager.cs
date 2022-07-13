@@ -104,7 +104,7 @@ public unsafe class MetaFileManager : IDisposable
     // Initialize the hook at VFunc 25, which is called when default resources (and IMC resources do not overwrite it) destroy their data.
     private void InitImc()
     {
-        ClearDefaultResourceHook = new Hook< ClearResource >( DefaultResourceHandleVTable[ 25 ], ClearDefaultResourceDetour );
+        ClearDefaultResourceHook = Hook< ClearResource >.FromAddress( DefaultResourceHandleVTable[ 25 ], ClearDefaultResourceDetour );
         ClearDefaultResourceHook.Enable();
     }
 

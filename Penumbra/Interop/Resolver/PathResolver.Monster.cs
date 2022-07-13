@@ -24,18 +24,18 @@ public unsafe partial class PathResolver
 
     private void SetupMonsterHooks()
     {
-        ResolveMonsterDecalPathHook = new Hook<GeneralResolveDelegate>( DrawObjectMonsterVTable[ResolveDecalIdx], ResolveMonsterDecalDetour );
-        ResolveMonsterEidPathHook   = new Hook<EidResolveDelegate>( DrawObjectMonsterVTable[ResolveEidIdx], ResolveMonsterEidDetour );
-        ResolveMonsterImcPathHook   = new Hook<GeneralResolveDelegate>( DrawObjectMonsterVTable[ResolveImcIdx], ResolveMonsterImcDetour );
-        ResolveMonsterMPapPathHook  = new Hook<MPapResolveDelegate>( DrawObjectMonsterVTable[ResolveMPapIdx], ResolveMonsterMPapDetour );
-        ResolveMonsterMdlPathHook   = new Hook<GeneralResolveDelegate>( DrawObjectMonsterVTable[ResolveMdlIdx], ResolveMonsterMdlDetour );
-        ResolveMonsterMtrlPathHook  = new Hook<MaterialResolveDetour>( DrawObjectMonsterVTable[ResolveMtrlIdx], ResolveMonsterMtrlDetour );
-        ResolveMonsterPapPathHook   = new Hook<MaterialResolveDetour>( DrawObjectMonsterVTable[ResolvePapIdx], ResolveMonsterPapDetour );
-        ResolveMonsterPhybPathHook  = new Hook<GeneralResolveDelegate>( DrawObjectMonsterVTable[ResolvePhybIdx], ResolveMonsterPhybDetour );
-        ResolveMonsterSklbPathHook  = new Hook<GeneralResolveDelegate>( DrawObjectMonsterVTable[ResolveSklbIdx], ResolveMonsterSklbDetour );
-        ResolveMonsterSkpPathHook   = new Hook<GeneralResolveDelegate>( DrawObjectMonsterVTable[ResolveSkpIdx], ResolveMonsterSkpDetour );
-        ResolveMonsterTmbPathHook   = new Hook<EidResolveDelegate>( DrawObjectMonsterVTable[ResolveTmbIdx], ResolveMonsterTmbDetour );
-        ResolveMonsterVfxPathHook   = new Hook<MaterialResolveDetour>( DrawObjectMonsterVTable[ResolveVfxIdx], ResolveMonsterVfxDetour );
+        ResolveMonsterDecalPathHook = Hook<GeneralResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolveDecalIdx], ResolveMonsterDecalDetour );
+        ResolveMonsterEidPathHook   = Hook<EidResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolveEidIdx], ResolveMonsterEidDetour );
+        ResolveMonsterImcPathHook   = Hook<GeneralResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolveImcIdx], ResolveMonsterImcDetour );
+        ResolveMonsterMPapPathHook  = Hook<MPapResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolveMPapIdx], ResolveMonsterMPapDetour );
+        ResolveMonsterMdlPathHook   = Hook<GeneralResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolveMdlIdx], ResolveMonsterMdlDetour );
+        ResolveMonsterMtrlPathHook  = Hook<MaterialResolveDetour>.FromAddress( DrawObjectMonsterVTable[ResolveMtrlIdx], ResolveMonsterMtrlDetour );
+        ResolveMonsterPapPathHook   = Hook<MaterialResolveDetour>.FromAddress( DrawObjectMonsterVTable[ResolvePapIdx], ResolveMonsterPapDetour );
+        ResolveMonsterPhybPathHook  = Hook<GeneralResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolvePhybIdx], ResolveMonsterPhybDetour );
+        ResolveMonsterSklbPathHook  = Hook<GeneralResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolveSklbIdx], ResolveMonsterSklbDetour );
+        ResolveMonsterSkpPathHook   = Hook<GeneralResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolveSkpIdx], ResolveMonsterSkpDetour );
+        ResolveMonsterTmbPathHook   = Hook<EidResolveDelegate>.FromAddress( DrawObjectMonsterVTable[ResolveTmbIdx], ResolveMonsterTmbDetour );
+        ResolveMonsterVfxPathHook   = Hook<MaterialResolveDetour>.FromAddress( DrawObjectMonsterVTable[ResolveVfxIdx], ResolveMonsterVfxDetour );
     }
 
     private void EnableMonsterHooks()

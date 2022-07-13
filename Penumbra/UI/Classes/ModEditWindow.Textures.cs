@@ -181,7 +181,7 @@ public partial class ModEditWindow
                 return ( null, 0, 0 );
             }
 
-            var rgba = tex.Header.Format == TexFile.TextureFormat.A8R8G8B8
+            var rgba = tex.Header.Format == TexFile.TextureFormat.B8G8R8A8
                 ? ImageParsing.DecodeUncompressedR8G8B8A8( tex.ImageData, tex.Header.Height, tex.Header.Width )
                 : tex.GetRgbaImageData();
             return ( rgba, tex.Header.Width, tex.Header.Height );
@@ -436,7 +436,7 @@ public partial class ModEditWindow
             return;
         }
 
-        var leftRightWidth = new Vector2( ( ImGui.GetWindowContentRegionWidth() - ImGui.GetStyle().FramePadding.X * 4 ) / 3, -1 );
+        var leftRightWidth = new Vector2( ( ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - ImGui.GetStyle().FramePadding.X * 4 ) / 3, -1 );
         var imageSize      = new Vector2( leftRightWidth.X - ImGui.GetStyle().FramePadding.X * 2 );
         using( var child = ImRaii.Child( "ImageLeft", leftRightWidth, true ) )
         {

@@ -24,18 +24,18 @@ public unsafe partial class PathResolver
 
     private void SetupDemiHooks()
     {
-        ResolveDemiDecalPathHook = new Hook< GeneralResolveDelegate >( DrawObjectDemiVTable[ ResolveDecalIdx ], ResolveDemiDecalDetour );
-        ResolveDemiEidPathHook   = new Hook< EidResolveDelegate >( DrawObjectDemiVTable[ ResolveEidIdx ], ResolveDemiEidDetour );
-        ResolveDemiImcPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectDemiVTable[ ResolveImcIdx ], ResolveDemiImcDetour );
-        ResolveDemiMPapPathHook  = new Hook< MPapResolveDelegate >( DrawObjectDemiVTable[ ResolveMPapIdx ], ResolveDemiMPapDetour );
-        ResolveDemiMdlPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectDemiVTable[ ResolveMdlIdx ], ResolveDemiMdlDetour );
-        ResolveDemiMtrlPathHook  = new Hook< MaterialResolveDetour >( DrawObjectDemiVTable[ ResolveMtrlIdx ], ResolveDemiMtrlDetour );
-        ResolveDemiPapPathHook   = new Hook< MaterialResolveDetour >( DrawObjectDemiVTable[ ResolvePapIdx ], ResolveDemiPapDetour );
-        ResolveDemiPhybPathHook  = new Hook< GeneralResolveDelegate >( DrawObjectDemiVTable[ ResolvePhybIdx ], ResolveDemiPhybDetour );
-        ResolveDemiSklbPathHook  = new Hook< GeneralResolveDelegate >( DrawObjectDemiVTable[ ResolveSklbIdx ], ResolveDemiSklbDetour );
-        ResolveDemiSkpPathHook   = new Hook< GeneralResolveDelegate >( DrawObjectDemiVTable[ ResolveSkpIdx ], ResolveDemiSkpDetour );
-        ResolveDemiTmbPathHook   = new Hook< EidResolveDelegate >( DrawObjectDemiVTable[ ResolveTmbIdx ], ResolveDemiTmbDetour );
-        ResolveDemiVfxPathHook   = new Hook< MaterialResolveDetour >( DrawObjectDemiVTable[ ResolveVfxIdx ], ResolveDemiVfxDetour );
+        ResolveDemiDecalPathHook = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolveDecalIdx ], ResolveDemiDecalDetour );
+        ResolveDemiEidPathHook   = Hook< EidResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolveEidIdx ], ResolveDemiEidDetour );
+        ResolveDemiImcPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolveImcIdx ], ResolveDemiImcDetour );
+        ResolveDemiMPapPathHook  = Hook< MPapResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolveMPapIdx ], ResolveDemiMPapDetour );
+        ResolveDemiMdlPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolveMdlIdx ], ResolveDemiMdlDetour );
+        ResolveDemiMtrlPathHook  = Hook< MaterialResolveDetour >.FromAddress( DrawObjectDemiVTable[ ResolveMtrlIdx ], ResolveDemiMtrlDetour );
+        ResolveDemiPapPathHook   = Hook< MaterialResolveDetour >.FromAddress( DrawObjectDemiVTable[ ResolvePapIdx ], ResolveDemiPapDetour );
+        ResolveDemiPhybPathHook  = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolvePhybIdx ], ResolveDemiPhybDetour );
+        ResolveDemiSklbPathHook  = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolveSklbIdx ], ResolveDemiSklbDetour );
+        ResolveDemiSkpPathHook   = Hook< GeneralResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolveSkpIdx ], ResolveDemiSkpDetour );
+        ResolveDemiTmbPathHook   = Hook< EidResolveDelegate >.FromAddress( DrawObjectDemiVTable[ ResolveTmbIdx ], ResolveDemiTmbDetour );
+        ResolveDemiVfxPathHook   = Hook< MaterialResolveDetour >.FromAddress( DrawObjectDemiVTable[ ResolveVfxIdx ], ResolveDemiVfxDetour );
     }
 
     private void EnableDemiHooks()

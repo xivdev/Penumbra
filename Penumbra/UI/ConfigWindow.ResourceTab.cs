@@ -147,7 +147,7 @@ public partial class ConfigWindow
         private void SetTableWidths()
         {
             _hashColumnWidth = 100 * ImGuiHelpers.GlobalScale;
-            _pathColumnWidth = ImGui.GetWindowContentRegionWidth() - 300 * ImGuiHelpers.GlobalScale;
+            _pathColumnWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - 300 * ImGuiHelpers.GlobalScale;
             _refsColumnWidth = 30 * ImGuiHelpers.GlobalScale;
         }
     }
