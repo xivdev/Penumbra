@@ -11,6 +11,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Data.Parsing.Uld;
 using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
@@ -151,14 +152,11 @@ public unsafe partial class PathResolver
     // Check that a linked DrawObject still corresponds to the correct actor and that it still exists, otherwise remove it.
     private bool VerifyEntry( IntPtr drawObject, int gameObjectIdx, out GameObject* gameObject )
     {
-        var tmp = Dalamud.Objects[ gameObjectIdx ];
-        if( tmp != null )
+        gameObject = ( GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
+        var draw = ( DrawObject* )drawObject;
+        if( gameObject != null && gameObject->DrawObject == draw || gameObject->DrawObject == draw->Object.ParentObject )
         {
-            gameObject = ( GameObject* )tmp.Address;
-            if( gameObject->DrawObject == ( DrawObject* )drawObject )
-            {
-                return true;
-            }
+            return true;
         }
 
         gameObject = null;
@@ -294,45 +292,56 @@ public unsafe partial class PathResolver
 
         try
         {
-            // Housing Retainers
-            if( Penumbra.Config.UseDefaultCollectionForRetainers
-            && gameObject->ObjectKind == ( byte )ObjectKind.EventNpc
-            && gameObject->DataID is 1011832 or 1011021 ) // cf. "E8 ?? ?? ?? ?? 0F B6 F8 88 45", male or female retainer
+            // Login screen. Names are populated after actors are drawn,
+            // so it is not possible to fetch names from the ui list.
+            // Actors are also not named. So use Yourself > Players > Racial > Default.
+            if( !Dalamud.ClientState.IsLoggedIn )
             {
-                return Penumbra.CollectionManager.Default;
+                return Penumbra.CollectionManager.ByType( CollectionType.Yourself )
+                 ?? ( CollectionByActor( string.Empty, gameObject, out var c ) ? c : Penumbra.CollectionManager.Default );
             }
-
-            string? actorName = null;
-            if( Penumbra.Config.PreferNamedCollectionsOverOwners )
+            else
             {
-                // Early return if we prefer the actors own name over its owner.
-                actorName = new Utf8String( gameObject->Name ).ToString();
-                if( actorName.Length > 0
-                && CollectionByActorName( actorName, out var actorCollection ) )
+                // Housing Retainers
+                if( Penumbra.Config.UseDefaultCollectionForRetainers
+                && gameObject->ObjectKind == ( byte )ObjectKind.EventNpc
+                && gameObject->DataID is 1011832 or 1011021 ) // cf. "E8 ?? ?? ?? ?? 0F B6 F8 88 45", male or female retainer
                 {
-                    return actorCollection;
+                    return Penumbra.CollectionManager.Default;
                 }
-            }
 
-            // All these special cases are relevant for an empty name, so never collide with the above setting.
-            // Only OwnerName can be applied to something with a non-empty name, and that is the specific case we want to handle.
-            var actualName = gameObject->ObjectIndex switch
+                string? actorName = null;
+                if( Penumbra.Config.PreferNamedCollectionsOverOwners )
                 {
-                    240    => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
-                    241    => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
-                    242    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
-                    243    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // dye preview
-                    >= 200 => GetCutsceneName( gameObject ),
-                    _      => null,
+                    // Early return if we prefer the actors own name over its owner.
+                    actorName = new Utf8String( gameObject->Name ).ToString();
+                    if( actorName.Length > 0
+                    && CollectionByActorName( actorName, out var actorCollection ) )
+                    {
+                        return actorCollection;
+                    }
                 }
-             ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
-            // First check temporary character collections, then the own configuration, then special collections.
-            return CollectionByActorName( actualName, out var c )
-                ? c
-                : CollectionByActor( actualName, gameObject, out c )
+                // All these special cases are relevant for an empty name, so never collide with the above setting.
+                // Only OwnerName can be applied to something with a non-empty name, and that is the specific case we want to handle.
+                var actualName = gameObject->ObjectIndex switch
+                    {
+                        240    => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
+                        241    => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
+                        242    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
+                        243    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // dye preview
+                        >= 200 => GetCutsceneName( gameObject ),
+                        _      => null,
+                    }
+                 ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
+
+                // First check temporary character collections, then the own configuration, then special collections.
+                return CollectionByActorName( actualName, out var c )
                     ? c
-                    : Penumbra.CollectionManager.Default;
+                    : CollectionByActor( actualName, gameObject, out c )
+                        ? c
+                        : Penumbra.CollectionManager.Default;
+            }
         }
         catch( Exception e )
         {
@@ -459,7 +468,7 @@ public unsafe partial class PathResolver
     // Update collections linked to Game/DrawObjects due to a change in collection configuration.
     private void CheckCollections( CollectionType type, ModCollection? _1, ModCollection? _2, string? name )
     {
-        if( type is not (CollectionType.Character or CollectionType.Default) )
+        if( type is CollectionType.Inactive or CollectionType.Current )
         {
             return;
         }
@@ -515,12 +524,13 @@ public unsafe partial class PathResolver
     }
 
     // Find all current DrawObjects used in the GameObject table.
+    // We do not iterate the Dalamud table because it does not work when not logged in.
     private void InitializeDrawObjects()
     {
-        foreach( var gameObject in Dalamud.Objects )
+        for( var i = 0; i < Dalamud.Objects.Length; ++i )
         {
-            var ptr = ( GameObject* )gameObject.Address;
-            if( ptr->IsCharacter() && ptr->DrawObject != null )
+            var ptr = ( GameObject* )Dalamud.Objects.GetObjectAddress( i );
+            if( ptr != null && ptr->IsCharacter() && ptr->DrawObject != null )
             {
                 DrawObjectToObject[ ( IntPtr )ptr->DrawObject ] = ( IdentifyCollection( ptr ), ptr->ObjectIndex );
             }

@@ -3,11 +3,13 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.GameData.ByteString;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
@@ -166,9 +168,12 @@ public partial class ConfigWindow
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted( idx.ToString() );
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( Dalamud.Objects[ idx ]?.Address.ToString() ?? "NULL" );
+                        var obj = ( GameObject* )Dalamud.Objects.GetObjectAddress( idx );
+                        var (address, name) =
+                            obj != null ? ( $"0x{( ulong )obj:X}", new Utf8String( obj->Name ).ToString() ) : ( "NULL", "NULL" );
+                        ImGui.TextUnformatted( address );
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( Dalamud.Objects[ idx ]?.Name.ToString() ?? "NULL" );
+                        ImGui.TextUnformatted( name );
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted( c.Name );
                     }
@@ -399,6 +404,7 @@ public partial class ConfigWindow
             {
                 return;
             }
+
             _window._penumbra.Ipc.Tester.Draw();
         }
 
