@@ -56,21 +56,24 @@ public partial class ConfigWindow
             DrawChangedItemsTab();
             DrawConflictsTab();
             DrawEditModTab();
-            if( Penumbra.Config.ShowAdvanced && ImGui.TabItemButton( "Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
+            if( Penumbra.Config.ShowAdvanced )
             {
-                _window.ModEditPopup.ChangeMod( _mod );
-                _window.ModEditPopup.ChangeOption( -1, 0 );
-                _window.ModEditPopup.IsOpen = true;
-            }
+                if( ImGui.TabItemButton( "Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
+                {
+                    _window.ModEditPopup.ChangeMod( _mod );
+                    _window.ModEditPopup.ChangeOption( -1, 0 );
+                    _window.ModEditPopup.IsOpen = true;
+                }
 
-            ImGuiUtil.HoverTooltip(
-                "Clicking this will open a new window in which you can\nedit the following things per option for this mod:\n\n"
-              + "\t\t- file redirections\n"
-              + "\t\t- file swaps\n"
-              + "\t\t- metadata manipulations\n"
-              + "\t\t- model materials\n"
-              + "\t\t- duplicates\n"
-              + "\t\t- textures" );
+                ImGuiUtil.HoverTooltip(
+                    "Clicking this will open a new window in which you can\nedit the following things per option for this mod:\n\n"
+                  + "\t\t- file redirections\n"
+                  + "\t\t- file swaps\n"
+                  + "\t\t- metadata manipulations\n"
+                  + "\t\t- model materials\n"
+                  + "\t\t- duplicates\n"
+                  + "\t\t- textures" );
+            }
         }
 
         // Just a simple text box with the wrapped description, if it exists.
