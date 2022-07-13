@@ -154,7 +154,7 @@ public unsafe partial class PathResolver
     {
         gameObject = ( GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
         var draw = ( DrawObject* )drawObject;
-        if( gameObject != null && gameObject->DrawObject == draw || gameObject->DrawObject == draw->Object.ParentObject )
+        if( gameObject != null && gameObject->DrawObject == draw || draw != null && gameObject->DrawObject == draw->Object.ParentObject )
         {
             return true;
         }
