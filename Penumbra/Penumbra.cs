@@ -436,42 +436,36 @@ public class Penumbra : IDalamudPlugin
             ModManager.Sum( m => m.TotalManipulations ) );
         sb.AppendFormat( "> **`IMC Exceptions Thrown:       `** {0}\n", ImcExceptions );
 
-        string CollectionName( ModCollection c )
-            => c == ModCollection.Empty ? ModCollection.Empty.Name : c.Name.Length >= 2 ? c.Name[ ..2 ] : c.Name;
-
         string CharacterName( string name )
             => string.Join( " ", name.Split().Select( n => $"{n[ 0 ]}." ) ) + ':';
 
         void PrintCollection( ModCollection c )
-            => sb.AppendFormat( "**Collection {0}... ({1})**\n"
-              + "> **`Inheritances:                `** {2}\n"
-              + "> **`Enabled Mods:                `** {3}\n"
-              + "> **`Total Conflicts:             `** {4}\n"
-              + "> **`Solved Conflicts:            `** {5}\n",
-                CollectionName( c ), c.Index, c.Inheritance.Count, c.ActualSettings.Count( s => s is { Enabled: true } ),
+            => sb.AppendFormat( "**Collection {0}**\n"
+              + "> **`Inheritances:                `** {1}\n"
+              + "> **`Enabled Mods:                `** {2}\n"
+              + "> **`Total Conflicts:             `** {3}\n"
+              + "> **`Solved Conflicts:            `** {4}\n",
+                c.AnonymizedName, c.Inheritance.Count, c.ActualSettings.Count( s => s is { Enabled: true } ),
                 c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority ? 0 : x.Conflicts.Count ),
                 c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority || !x.Solved ? 0 : x.Conflicts.Count ) );
 
         sb.AppendLine( "**Collections**" );
         sb.AppendFormat( "> **`#Collections:                `** {0}\n", CollectionManager.Count - 1 );
         sb.AppendFormat( "> **`Active Collections:          `** {0}\n", CollectionManager.Count( c => c.HasCache ) );
-        sb.AppendFormat( "> **`Default Collection:          `** {0}... ({1})\n", CollectionName( CollectionManager.Default ),
-            CollectionManager.Default.Index );
-        sb.AppendFormat( "> **`Current Collection:          `** {0}... ({1})\n", CollectionName( CollectionManager.Current ),
-            CollectionManager.Current.Index );
+        sb.AppendFormat( "> **`Default Collection:          `** {0}\n", CollectionManager.Default.AnonymizedName);
+        sb.AppendFormat( "> **`Current Collection:          `** {0}\n", CollectionManager.Current.AnonymizedName);
         foreach( var type in CollectionTypeExtensions.Special )
         {
             var collection = CollectionManager.ByType( type );
             if( collection != null )
             {
-                sb.AppendFormat( "> **`{0,-29}`** {1}... ({2})\n", type.ToName(), CollectionName( collection ), collection.Index );
+                sb.AppendFormat( "> **`{0,-29}`** {1}\n", type.ToName(), collection.AnonymizedName );
             }
         }
 
         foreach( var (name, collection) in CollectionManager.Characters )
         {
-            sb.AppendFormat( "> **`{2,-29}`** {0}... ({1})\n", CollectionName( collection ),
-                collection.Index, CharacterName( name ) );
+            sb.AppendFormat( "> **`{2,-29}`** {0}\n", collection.AnonymizedName, CharacterName( name ) );
         }
 
         foreach( var collection in CollectionManager.Where( c => c.HasCache ) )

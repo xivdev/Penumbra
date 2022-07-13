@@ -28,7 +28,7 @@ public unsafe partial class ResourceLoader
     {
         if( handle != null )
         {
-            PluginLog.Information( "[ResourceLoader] Destructing Resource Handle {Path:l} at 0x{Address:X} (Refcount {Refcount}) .",
+            PluginLog.Information( "[ResourceLoader] Destructing Resource Handle {Path:l} at 0x{Address:X} (Refcount {Refcount}).",
                 handle->FileName, ( ulong )handle, handle->RefCount );
         }
 

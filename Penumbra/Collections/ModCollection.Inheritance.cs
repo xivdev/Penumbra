@@ -81,7 +81,7 @@ public partial class ModCollection
         collection.ModSettingChanged  += OnInheritedModSettingChange;
         collection.InheritanceChanged += OnInheritedInheritanceChange;
         InheritanceChanged.Invoke( false );
-        PluginLog.Debug( "Added {InheritedName:l} to {Name:l} inheritances.", collection.Name, Name );
+        PluginLog.Debug( "Added {InheritedName:l} to {Name:l} inheritances.", collection.AnonymizedName, AnonymizedName );
         return true;
     }
 
@@ -92,7 +92,7 @@ public partial class ModCollection
         inheritance.InheritanceChanged -= OnInheritedInheritanceChange;
         _inheritance.RemoveAt( idx );
         InheritanceChanged.Invoke( false );
-        PluginLog.Debug( "Removed {InheritedName:l} from {Name:l} inheritances.", inheritance.Name, Name );
+        PluginLog.Debug( "Removed {InheritedName:l} from {Name:l} inheritances.", inheritance.AnonymizedName, AnonymizedName );
     }
 
     // Order in the inheritance list is relevant.
@@ -101,7 +101,7 @@ public partial class ModCollection
         if( _inheritance.Move( from, to ) )
         {
             InheritanceChanged.Invoke( false );
-            PluginLog.Debug( "Moved {Name:l}s inheritance {From} to {To}.", Name, from, to );
+            PluginLog.Debug( "Moved {Name:l}s inheritance {From} to {To}.", AnonymizedName, from, to );
         }
     }
 

@@ -22,6 +22,11 @@ public partial class ModCollection
     // The collection name can contain invalid path characters,
     // but after removing those and going to lower case it has to be unique.
     public string Name { get; private init; }
+
+    // Get the first two letters of a collection name and its Index (or None if it is the empty collection).
+    public string AnonymizedName
+        => this == Empty ? Empty.Name : Name.Length > 2 ? $"{Name[..2]}... ({Index})" : $"{Name} ({Index})";
+
     public int Version { get; private set; }
     public int Index { get; private set; } = -1;
 

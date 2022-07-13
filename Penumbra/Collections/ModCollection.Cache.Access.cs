@@ -108,12 +108,12 @@ public partial class ModCollection
         }
 
         PluginLog.Debug( "[{Thread}] Recalculating effective file list for {CollectionName:l}",
-            Thread.CurrentThread.ManagedThreadId, Name );
+            Thread.CurrentThread.ManagedThreadId, AnonymizedName );
         _cache ??= new Cache( this );
         _cache.FullRecalculation();
 
         PluginLog.Debug( "[{Thread}] Recalculation of effective file list for {CollectionName:l} finished.",
-            Thread.CurrentThread.ManagedThreadId, Name );
+            Thread.CurrentThread.ManagedThreadId, AnonymizedName );
     }
 
     // Set Metadata files.
