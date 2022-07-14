@@ -258,7 +258,6 @@ public class Penumbra : IDalamudPlugin
 
         PathResolver.Dispose();
         ResourceLogger.Dispose();
-        MetaFileManager.Dispose();
         ResourceLoader.Dispose();
         CharacterUtility.Dispose();
 
