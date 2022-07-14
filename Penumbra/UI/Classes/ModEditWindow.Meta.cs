@@ -874,8 +874,9 @@ public partial class ModEditWindow
     {
         if( ImGui.Button( "Add from Clipboard" ) )
         {
-            var clipboard = ImGui.GetClipboardText();
-            var version   = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
+            var clipboard = ImGuiUtil.GetClipboardText();
+
+            var version = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
             if( version == MetaManipulation.CurrentVersion && manips != null )
             {
                 foreach( var manip in manips )
@@ -893,7 +894,7 @@ public partial class ModEditWindow
     {
         if( ImGui.Button( "Set from Clipboard" ) )
         {
-            var clipboard = ImGui.GetClipboardText();
+            var clipboard = ImGuiUtil.GetClipboardText();
             var version   = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
             if( version == MetaManipulation.CurrentVersion && manips != null )
             {
