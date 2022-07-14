@@ -6,8 +6,8 @@ using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using Penumbra.GameData.ByteString;
-using Penumbra.Util;
 
 namespace Penumbra.Mods;
 

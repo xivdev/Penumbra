@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using Penumbra.Util;
+using OtterGui;
 
 namespace Penumbra.Mods;
 

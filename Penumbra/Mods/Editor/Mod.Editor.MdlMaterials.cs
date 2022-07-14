@@ -5,10 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Dalamud.Logging;
+using OtterGui;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
-using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -99,7 +99,7 @@ public partial class Mod
             private readonly MdlFile _file;
             private readonly string[] _currentMaterials;
             private readonly IReadOnlyList<int> _materialIndices;
-            public bool Changed { get; private set; } = false;
+            public bool Changed { get; private set; }
 
             public IReadOnlyList<string> CurrentMaterials
                 => _currentMaterials;
