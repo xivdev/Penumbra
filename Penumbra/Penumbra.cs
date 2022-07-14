@@ -465,7 +465,7 @@ public class Penumbra : IDalamudPlugin
 
         foreach( var (name, collection) in CollectionManager.Characters )
         {
-            sb.AppendFormat( "> **`{2,-29}`** {0}\n", collection.AnonymizedName, CharacterName( name ) );
+            sb.AppendFormat( "> **`{1,-29}`** {0}\n", collection.AnonymizedName, CharacterName( name ) );
         }
 
         foreach( var collection in CollectionManager.Where( c => c.HasCache ) )
