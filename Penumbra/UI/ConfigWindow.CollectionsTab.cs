@@ -193,7 +193,7 @@ public partial class ConfigWindow
         private void DrawActiveCollectionSelectors()
         {
             ImGui.Dummy( _window._defaultSpace );
-            var open = ImGui.CollapsingHeader( "Active Collections" );
+            var open = ImGui.CollapsingHeader( "Active Collections", ImGuiTreeNodeFlags.DefaultOpen );
             OpenTutorial( BasicTutorialSteps.ActiveCollections );
             if( !open )
             {
