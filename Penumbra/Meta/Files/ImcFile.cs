@@ -220,15 +220,15 @@ public unsafe class ImcFile : MetaBaseFile
     public void Replace( ResourceHandle* resource )
     {
         var (data, length) = resource->GetData();
-        var newData = Penumbra.MetaFileManager.AllocateDefaultMemory( Length, 8 );
+        var newData = Penumbra.MetaFileManager.AllocateDefaultMemory( ActualLength, 8 );
         if( newData == null )
         {
             PluginLog.Error("Could not replace loaded IMC data at 0x{Data:X}, allocation failed."  );
             return;
         }
-        Functions.MemCpyUnchecked( newData, Data, Length );
+        Functions.MemCpyUnchecked( newData, Data, ActualLength );
 
         Penumbra.MetaFileManager.Free( data, length );
-        resource->SetData( ( IntPtr )newData, Length );
+        resource->SetData( ( IntPtr )newData, ActualLength );
     }
 }
