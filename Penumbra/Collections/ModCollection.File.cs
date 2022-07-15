@@ -67,7 +67,7 @@ public partial class ModCollection
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not save collection {Name}:\n{e}" );
+            PluginLog.Error( $"Could not save collection {AnonymizedName}:\n{e}" );
         }
     }
 
@@ -90,11 +90,11 @@ public partial class ModCollection
         try
         {
             file.Delete();
-            PluginLog.Information( "Deleted collection file {File:l} for {Name:l}.", file.FullName, Name );
+            PluginLog.Information( "Deleted collection file for {Name:l}.", AnonymizedName );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not delete collection file {file.FullName} for {Name}:\n{e}" );
+            PluginLog.Error( $"Could not delete collection file for {AnonymizedName}:\n{e}" );
         }
     }
 
@@ -105,7 +105,7 @@ public partial class ModCollection
         inheritance = Array.Empty< string >();
         if( !file.Exists )
         {
-            PluginLog.Error( $"Could not read collection because {file.FullName} does not exist." );
+            PluginLog.Error( $"Could not read collection because file does not exist." );
             return null;
         }
 
@@ -123,7 +123,7 @@ public partial class ModCollection
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not read collection information from {file.FullName}:\n{e}" );
+            PluginLog.Error( $"Could not read collection information from file:\n{e}" );
         }
 
         return null;
