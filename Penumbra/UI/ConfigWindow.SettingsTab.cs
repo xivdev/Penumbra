@@ -277,7 +277,7 @@ public partial class ConfigWindow
 
         private static void DrawGuideButton( float width )
         {
-            const string address = @"https://penumbra.ju.mp";
+            const string address = @"https://reniguide.info/";
             using var color = ImRaii.PushColor( ImGuiCol.Button, 0xFFCC648D )
                .Push( ImGuiCol.ButtonHovered, 0xFFB070B0 )
                .Push( ImGuiCol.ButtonActive, 0xFF9070E0 );
