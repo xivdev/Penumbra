@@ -18,7 +18,7 @@ Penumbra has support for most TexTools modpacks however this is provided on a be
 
 ## Installing 
 While this project is still a work in progress, you can use it by adding the following URL to the custom plugin repositories list in your Dalamud settings
-An image-based install (and usage) guide to do this is provided by unaffiliated user Serenity: https://penumbra.ju.mp/
+An image-based install (and usage) guide to do this is provided by unaffiliated user Serenity: https://reniguide.info/
 
 1. `/xlsettings` -> Experimental tab
 2. Copy and paste the repo.json link below
