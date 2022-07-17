@@ -474,7 +474,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         int priority )
     {
         CheckInitialized();
-        if( !Penumbra.TempMods.Collections.Values.FindFirst( c => c.Name == collectionName, out var collection )
+        if( !Penumbra.TempMods.CollectionByName( collectionName, out var collection )
            && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
         {
             return PenumbraApiEc.CollectionMissing;
@@ -511,7 +511,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc RemoveTemporaryMod( string tag, string collectionName, int priority )
     {
         CheckInitialized();
-        if( !Penumbra.TempMods.Collections.Values.FindFirst( c => c.Name == collectionName, out var collection )
+        if( !Penumbra.TempMods.CollectionByName( collectionName, out var collection )
            && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
         {
             return PenumbraApiEc.CollectionMissing;

@@ -1,4 +1,7 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
@@ -28,6 +31,9 @@ public class TempModManager
 
     public IReadOnlyDictionary< string, ModCollection > Collections
         => _collections;
+
+    public bool CollectionByName( string name, [NotNullWhen( true )] out ModCollection? collection )
+        => Collections.Values.FindFirst( c => string.Equals( c.Name, name, StringComparison.OrdinalIgnoreCase ), out collection );
 
     // These functions to check specific redirections or meta manipulations for existence are currently unused.
     //public bool IsRegistered( string tag, ModCollection? collection, Utf8GamePath gamePath, out FullPath? fullPath, out int priority )

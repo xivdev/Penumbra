@@ -82,8 +82,7 @@ public unsafe partial class PathResolver
 
         var lastUnderscore = split.LastIndexOf( ( byte )'_' );
         var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
-        if( Penumbra.TempMods.Collections.Values.FindFirst( c => string.Equals( c.Name, name, StringComparison.OrdinalIgnoreCase ),
-               out var collection )
+        if( Penumbra.TempMods.CollectionByName( name, out var collection )
         || Penumbra.CollectionManager.ByName( name, out collection ) )
         {
 #if DEBUG
