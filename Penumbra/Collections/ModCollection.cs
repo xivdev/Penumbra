@@ -42,6 +42,9 @@ public partial class ModCollection
     public bool HasUnusedSettings
         => _unusedSettings.Count > 0;
 
+    public int NumUnusedSettings
+        => _unusedSettings.Count;
+
     // Evaluates the settings along the whole inheritance tree.
     public IEnumerable< ModSettings? > ActualSettings
         => Enumerable.Range( 0, _settings.Count ).Select( i => this[ i ].Settings );
