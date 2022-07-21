@@ -11,11 +11,11 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Data.Parsing.Uld;
 using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
 namespace Penumbra.Interop.Resolver;
@@ -250,8 +250,9 @@ public unsafe partial class PathResolver
             return null;
         }
 
-        var pc = ( Character* )player.Address;
-        return pc->ClassJob == ( ( Character* )gameObject )->ClassJob ? player.Name.ToString() : null;
+        var customize1 = ( CustomizeData* )( ( Character* )gameObject )->CustomizeData;
+        var customize2 = ( CustomizeData* )( ( Character* )player.Address )->CustomizeData;
+        return customize1->Equals( *customize2 ) ? player.Name.ToString() : null;
     }
 
     // Identify the owner of a companion, mount or monster and apply the corresponding collection.
