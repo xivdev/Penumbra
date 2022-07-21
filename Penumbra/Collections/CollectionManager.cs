@@ -79,7 +79,7 @@ public partial class ModCollection
         // and no existing collection results in the same filename as name.
         public bool CanAddCollection( string name, out string fixedName )
         {
-            if( name.Length == 0 )
+            if( !IsValidName( name ) )
             {
                 fixedName = string.Empty;
                 return false;
@@ -156,7 +156,7 @@ public partial class ModCollection
             var collection = _collections[ idx ];
 
             // Clear own inheritances.
-            foreach(var inheritance in collection.Inheritance)
+            foreach( var inheritance in collection.Inheritance )
             {
                 collection.ClearSubscriptions( inheritance );
             }

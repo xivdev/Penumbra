@@ -85,7 +85,7 @@ public partial class ConfigWindow
               + "You can use multiple collections to quickly switch between sets of mods." );
 
             // Creation buttons.
-            var tt = _canAddCollection ? string.Empty : "Please enter a unique name before creating a collection.";
+            var tt = _canAddCollection ? string.Empty : "Please enter a unique name only consisting of symbols valid in a path but no '|' before creating a collection.";
             if( ImGuiUtil.DrawDisabledButton( "Create New Empty Collection", Vector2.Zero, tt, !_canAddCollection ) )
             {
                 CreateNewCollection( false );
