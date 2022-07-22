@@ -81,7 +81,7 @@ public partial class ModEditWindow
         }
     }
 
-    private string DrawFileTooltip( Mod.Editor.FileRegistry registry, ColorId color )
+    private static string DrawFileTooltip( Mod.Editor.FileRegistry registry, ColorId color )
     {
         (string, int) GetMulti()
         {

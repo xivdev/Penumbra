@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Windowing;
@@ -11,15 +12,16 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
 using Penumbra.Util;
+using static Penumbra.Mods.Mod;
 
 namespace Penumbra.UI.Classes;
 
 public partial class ModEditWindow : Window, IDisposable
 {
-    private const string      WindowBaseLabel = "###SubModEdit";
-    private       Mod.Editor? _editor;
-    private       Mod?        _mod;
-    private       Vector2     _iconSize = Vector2.Zero;
+    private const string  WindowBaseLabel = "###SubModEdit";
+    private       Editor? _editor;
+    private       Mod?    _mod;
+    private       Vector2 _iconSize = Vector2.Zero;
 
     public void ChangeMod( Mod mod )
     {
@@ -29,9 +31,9 @@ public partial class ModEditWindow : Window, IDisposable
         }
 
         _editor?.Dispose();
-        _editor    = new Mod.Editor( mod, -1, 0 );
-        _mod       = mod;
-        WindowName = $"{mod.Name}{WindowBaseLabel}";
+        _editor = new Editor( mod, -1, 0 );
+        _mod    = mod;
+
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = ImGuiHelpers.ScaledVector2( 1000, 600 ),
@@ -45,6 +47,73 @@ public partial class ModEditWindow : Window, IDisposable
 
     public override bool DrawConditions()
         => _editor != null;
+
+    public override void PreDraw()
+    {
+        var sb = new StringBuilder( 256 );
+
+        var redirections = 0;
+        var unused       = 0;
+        var size = _editor!.AvailableFiles.Sum( f =>
+        {
+            if( f.SubModUsage.Count > 0 )
+            {
+                redirections += f.SubModUsage.Count;
+            }
+            else
+            {
+                ++unused;
+            }
+
+            return f.FileSize;
+        } );
+        var manipulations = 0;
+        var subMods       = 0;
+        var swaps = _mod!.AllSubMods.Sum( m =>
+        {
+            ++subMods;
+            manipulations += m.Manipulations.Count;
+            return m.FileSwaps.Count;
+        } );
+        sb.Append( _mod!.Name );
+        if( subMods > 1 )
+        {
+            sb.AppendFormat( "   |   {0} Options", subMods );
+        }
+
+        if( size > 0 )
+        {
+            sb.AppendFormat( "   |   {0} Files ({1})", _editor.AvailableFiles.Count, Functions.HumanReadableSize( size ) );
+        }
+
+        if( unused > 0 )
+        {
+            sb.AppendFormat( "   |   {0} Unused Files", unused );
+        }
+
+        if( _editor.MissingFiles.Count > 0 )
+        {
+            sb.AppendFormat( "   |   {0} Missing Files", _editor.MissingFiles.Count );
+        }
+
+        if( redirections > 0 )
+        {
+            sb.AppendFormat( "   |   {0} Redirections", redirections );
+        }
+
+        if( manipulations > 0 )
+        {
+            sb.AppendFormat( "   |   {0} Manipulations", manipulations );
+        }
+
+        if( swaps > 0 )
+        {
+            sb.AppendFormat( "   |   {0} Swaps", swaps );
+        }
+
+        sb.Append( WindowBaseLabel );
+        WindowName = sb.ToString();
+    }
 
     public override void Draw()
     {
@@ -100,7 +169,7 @@ public partial class ModEditWindow : Window, IDisposable
             }
         }
 
-        public static void Draw( Mod.Editor editor, Vector2 buttonSize )
+        public static void Draw( Editor editor, Vector2 buttonSize )
         {
             DrawRaceCodeCombo( buttonSize );
             ImGui.SameLine();
@@ -110,7 +179,7 @@ public partial class ModEditWindow : Window, IDisposable
             ImGui.SetNextItemWidth( buttonSize.X );
             ImGui.InputTextWithHint( "##suffixTo", "To...", ref _materialSuffixTo, 32 );
             ImGui.SameLine();
-            var disabled = !Mod.Editor.ValidString( _materialSuffixTo );
+            var disabled = !Editor.ValidString( _materialSuffixTo );
             var tt = _materialSuffixTo.Length == 0
                 ? "Please enter a target suffix."
                 : _materialSuffixFrom == _materialSuffixTo
@@ -335,7 +404,7 @@ public partial class ModEditWindow : Window, IDisposable
             ImGui.TableNextColumn();
             ImGuiUtil.RightAlign( Functions.HumanReadableSize( size ) );
             ImGui.TableNextColumn();
-            using( var font = ImRaii.PushFont( UiBuilder.MonoFont ) )
+            using( var _ = ImRaii.PushFont( UiBuilder.MonoFont ) )
             {
                 if( ImGui.GetWindowWidth() > 2 * width )
                 {
@@ -398,7 +467,7 @@ public partial class ModEditWindow : Window, IDisposable
             return $"{group.Name}: {group[ _editor.OptionIdx ].Name}";
         }
 
-        using var combo      = ImRaii.Combo( "##optionSelector", GetLabel(), ImGuiComboFlags.NoArrowButton );
+        using var combo = ImRaii.Combo( "##optionSelector", GetLabel(), ImGuiComboFlags.NoArrowButton );
         if( !combo )
         {
             return;

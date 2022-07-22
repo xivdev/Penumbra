@@ -45,9 +45,9 @@ public partial class Mod
                 }
             }
 
-            _availableFiles.RemoveAll( p => !p.File.Exists );
             _duplicates.Clear();
             DeleteEmptyDirectories( _mod.ModPath );
+            UpdateFiles();
         }
 
         private void HandleDuplicate( FullPath duplicate, FullPath remaining, bool useModManager )
