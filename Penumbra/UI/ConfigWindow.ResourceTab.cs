@@ -119,14 +119,14 @@ public partial class ConfigWindow
 
         // Draw a full category for the resource manager.
         private unsafe void DrawCategoryContainer( ResourceCategory category,
-            StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* map )
+            StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* map, int idx )
         {
             if( map == null )
             {
                 return;
             }
 
-            using var tree = ImRaii.TreeNode( $"({( uint )category:D2}) {category} - {map->Count}###{( uint )category}" );
+            using var tree = ImRaii.TreeNode( $"({( uint )category:D2}) {category} (Ex {idx}) - {map->Count}###{( uint )category}_{idx}" );
             if( tree )
             {
                 SetTableWidths();

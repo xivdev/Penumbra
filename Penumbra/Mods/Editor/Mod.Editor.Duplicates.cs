@@ -235,7 +235,7 @@ public partial class Mod
 
         // Recursively delete all empty directories starting from the given directory.
         // Deletes inner directories first, so that a tree of empty directories is actually deleted.
-        private void DeleteEmptyDirectories( DirectoryInfo baseDir )
+        private static void DeleteEmptyDirectories( DirectoryInfo baseDir )
         {
             try
             {

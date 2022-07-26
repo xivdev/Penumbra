@@ -15,8 +15,8 @@ namespace Penumbra.Interop.Loader;
 public unsafe partial class ResourceLoader
 {
     // If in debug mode, this logs any resource at refcount 0 that gets decremented again, and skips the decrement instead.
-    private delegate byte                       ResourceHandleDecRef( ResourceHandle* handle );
-    private readonly Hook<ResourceHandleDecRef> _decRefHook;
+    private delegate byte                         ResourceHandleDecRef( ResourceHandle* handle );
+    private readonly Hook< ResourceHandleDecRef > _decRefHook;
 
     public delegate IntPtr ResourceHandleDestructor( ResourceHandle* handle );
 
@@ -146,8 +146,8 @@ public unsafe partial class ResourceLoader
     // Find a resource in the resource manager by its category, extension and crc-hash
     public static ResourceHandle* FindResource( ResourceCategory cat, ResourceType ext, uint crc32 )
     {
-        var manager = *ResourceManager;
-        var catIdx  = ( uint )cat >> 0x18;
+        ref var manager = ref *ResourceManager;
+        var     catIdx  = ( uint )cat >> 0x18;
         cat = ( ResourceCategory )( ushort )cat;
         var category = ( ResourceGraph.CategoryContainer* )manager->ResourceGraph->ContainerArray + ( int )cat;
         var extMap = FindInMap( ( StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* )category->CategoryMaps[ catIdx ],
@@ -161,18 +161,25 @@ public unsafe partial class ResourceLoader
         return ret == null ? null : ret->Value;
     }
 
-    public delegate void ExtMapAction( ResourceCategory category, StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* graph );
+    public delegate void ExtMapAction( ResourceCategory category, StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* graph, int idx );
     public delegate void ResourceMapAction( uint ext, StdMap< uint, Pointer< ResourceHandle > >* graph );
     public delegate void ResourceAction( uint crc32, ResourceHandle* graph );
 
     // Iteration functions through the resource manager.
     public static void IterateGraphs( ExtMapAction action )
     {
-        var manager = *ResourceManager;
+        ref var manager = ref *ResourceManager;
         foreach( var resourceType in Enum.GetValues< ResourceCategory >().SkipLast( 1 ) )
         {
             var graph = ( ResourceGraph.CategoryContainer* )manager->ResourceGraph->ContainerArray + ( int )resourceType;
-            action( resourceType, graph->MainMap );
+            for( var i = 0; i < 20; ++i )
+            {
+                var map = ( StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* )graph->CategoryMaps[ i ];
+                if( map != null )
+                {
+                    action( resourceType, map, i );
+                }
+            }
         }
     }
 
@@ -184,7 +191,7 @@ public unsafe partial class ResourceLoader
 
     public static void IterateResources( ResourceAction action )
     {
-        IterateGraphs( ( _, extMap )
+        IterateGraphs( ( _, extMap, _ )
             => IterateExtMap( extMap, ( _, resourceMap )
                 => IterateResourceMap( resourceMap, action ) ) );
     }
