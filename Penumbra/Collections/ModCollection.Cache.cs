@@ -276,8 +276,8 @@ public partial class ModCollection
                         case SelectType.Multi:
                         {
                             foreach( var (option, _) in group.WithIndex()
-                                       .OrderByDescending( p => group.OptionPriority( p.Item2 ) )
-                                       .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 ) )
+                                       .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 )
+                                       .OrderByDescending( p => group.OptionPriority( p.Item2 ) ) )
                             {
                                 AddSubMod( option, mod );
                             }

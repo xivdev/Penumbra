@@ -12,7 +12,6 @@ using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.UI.Classes;
 
