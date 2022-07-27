@@ -1,8 +1,12 @@
-﻿using System;
+using System;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Structs;
 
-namespace Glamourer;
+namespace Penumbra.GameData.Structs;
+
+public unsafe struct CharacterArmorData
+{
+    public fixed byte Data[40];
+}
 
 public readonly unsafe struct CharacterEquip
 {
@@ -11,81 +15,83 @@ public readonly unsafe struct CharacterEquip
     private readonly CharacterArmor* _armor;
 
     public IntPtr Address
-        => (IntPtr)_armor;
+        => ( IntPtr )_armor;
 
-    public ref CharacterArmor this[int idx]
-        => ref _armor[idx];
+    public ref CharacterArmor this[ int idx ]
+        => ref _armor[ idx ];
 
-    public ref CharacterArmor this[uint idx]
-        => ref _armor[idx];
+    public ref CharacterArmor this[ uint idx ]
+        => ref _armor[ idx ];
 
-    public ref CharacterArmor this[EquipSlot slot]
-        => ref _armor[IndexOf(slot)];
+    public ref CharacterArmor this[ EquipSlot slot ]
+        => ref _armor[ IndexOf( slot ) ];
 
 
     public ref CharacterArmor Head
-        => ref _armor[0];
+        => ref _armor[ 0 ];
 
     public ref CharacterArmor Body
-        => ref _armor[1];
+        => ref _armor[ 1 ];
 
     public ref CharacterArmor Hands
-        => ref _armor[2];
+        => ref _armor[ 2 ];
 
     public ref CharacterArmor Legs
-        => ref _armor[3];
+        => ref _armor[ 3 ];
 
     public ref CharacterArmor Feet
-        => ref _armor[4];
+        => ref _armor[ 4 ];
 
     public ref CharacterArmor Ears
-        => ref _armor[5];
+        => ref _armor[ 5 ];
 
     public ref CharacterArmor Neck
-        => ref _armor[6];
+        => ref _armor[ 6 ];
 
     public ref CharacterArmor Wrists
-        => ref _armor[7];
+        => ref _armor[ 7 ];
 
     public ref CharacterArmor RFinger
-        => ref _armor[8];
+        => ref _armor[ 8 ];
 
     public ref CharacterArmor LFinger
-        => ref _armor[9];
+        => ref _armor[ 9 ];
 
-    public CharacterEquip(CharacterArmor* val)
+    public CharacterEquip( CharacterArmor* val )
         => _armor = val;
 
-    public static implicit operator CharacterEquip(CharacterArmor* val)
+    public static implicit operator CharacterEquip( CharacterArmor* val )
         => new(val);
 
-    public static implicit operator CharacterEquip(IntPtr val)
-        => new((CharacterArmor*)val);
+    public static implicit operator CharacterEquip( IntPtr val )
+        => new(( CharacterArmor* )val);
 
-    public static implicit operator CharacterEquip(ReadOnlySpan<CharacterArmor> val)
+    public static implicit operator CharacterEquip( ReadOnlySpan< CharacterArmor > val )
     {
-        if (val.Length != 10)
-            throw new ArgumentException("Invalid number of equipment pieces in span.");
-
-        fixed (CharacterArmor* ptr = val)
+        if( val.Length != 10 )
         {
-            return new CharacterEquip(ptr);
+            throw new ArgumentException( "Invalid number of equipment pieces in span." );
+        }
+
+        fixed( CharacterArmor* ptr = val )
+        {
+            return new CharacterEquip( ptr );
         }
     }
 
-    public static implicit operator bool(CharacterEquip equip)
+    public static implicit operator bool( CharacterEquip equip )
         => equip._armor != null;
 
-    public static bool operator true(CharacterEquip equip)
+    public static bool operator true( CharacterEquip equip )
         => equip._armor != null;
 
-    public static bool operator false(CharacterEquip equip)
+    public static bool operator false( CharacterEquip equip )
         => equip._armor == null;
 
-    public static bool operator !(CharacterEquip equip)
+    public static bool operator !( CharacterEquip equip )
         => equip._armor == null;
 
-    private static int IndexOf(EquipSlot slot)
+    private static int IndexOf( EquipSlot slot )
     {
         return slot switch
         {
@@ -99,7 +105,7 @@ public readonly unsafe struct CharacterEquip
             EquipSlot.Wrists  => 7,
             EquipSlot.RFinger => 8,
             EquipSlot.LFinger => 9,
-            _                 => throw new ArgumentOutOfRangeException(nameof(slot), slot, null),
+            _                 => throw new ArgumentOutOfRangeException( nameof( slot ), slot, null ),
         };
     }
 }
