@@ -97,7 +97,7 @@ public partial class Mod
            .Select( f => ( Utf8GamePath.FromFile( f, optionFolder, out var gamePath, true ), gamePath, new FullPath( f ) ) )
            .Where( t => t.Item1 );
 
-        var mod = new SubMod
+        var mod = new SubMod(null!) // Mod is irrelevant here, only used for saving.
         {
             Name = option.Name,
         };
@@ -112,7 +112,7 @@ public partial class Mod
 
     // Create an empty sub mod for single groups with None options.
     internal static ISubMod CreateEmptySubMod( string name )
-        => new SubMod()
+        => new SubMod(null! ) // Mod is irrelevant here, only used for saving.
         {
             Name = name,
         };

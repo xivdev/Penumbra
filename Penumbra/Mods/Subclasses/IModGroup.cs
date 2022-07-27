@@ -97,4 +97,5 @@ public interface IModGroup : IEnumerable< ISubMod >
 
     public IModGroup Convert( SelectType type );
     public bool      MoveOption( int optionIdxFrom, int optionIdxTo );
+    public void      UpdatePositions(int from = 0);
 }

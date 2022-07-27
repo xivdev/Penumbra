@@ -18,7 +18,7 @@ public partial class Mod
     public IReadOnlyList< IModGroup > Groups
         => _groups;
 
-    private readonly SubMod            _default = new();
+    private readonly SubMod            _default;
     private readonly List< IModGroup > _groups  = new();
 
     public int TotalFileCount { get; private set; }
@@ -70,7 +70,7 @@ public partial class Mod
            .ToList();
     }
 
-    private static IModGroup? LoadModGroup( FileInfo file, DirectoryInfo basePath )
+    private static IModGroup? LoadModGroup( Mod mod, FileInfo file, int groupIdx )
     {
         if( !File.Exists( file.FullName ) )
         {
@@ -82,8 +82,8 @@ public partial class Mod
             var json = JObject.Parse( File.ReadAllText( file.FullName ) );
             switch( json[ nameof( Type ) ]?.ToObject< SelectType >() ?? SelectType.Single )
             {
-                case SelectType.Multi:  return MultiModGroup.Load( json, basePath );
-                case SelectType.Single: return SingleModGroup.Load( json, basePath );
+                case SelectType.Multi:  return MultiModGroup.Load( mod, json, groupIdx );
+                case SelectType.Single: return SingleModGroup.Load( mod, json, groupIdx );
             }
         }
         catch( Exception e )
@@ -100,7 +100,7 @@ public partial class Mod
         var changes = false;
         foreach( var file in GroupFiles )
         {
-            var group = LoadModGroup( file, ModPath );
+            var group = LoadModGroup( this, file, _groups.Count );
             if( group != null && _groups.All( g => g.Name != group.Name ) )
             {
                 changes = changes || group.FileName( ModPath, _groups.Count ) != file.FullName;

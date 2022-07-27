@@ -61,7 +61,7 @@ public partial class ConfigWindow
                 if( ImGui.TabItemButton( "Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
                 {
                     _window.ModEditPopup.ChangeMod( _mod );
-                    _window.ModEditPopup.ChangeOption( -1, 0 );
+                    _window.ModEditPopup.ChangeOption( _mod.Default );
                     _window.ModEditPopup.IsOpen = true;
                 }
 
@@ -142,7 +142,7 @@ public partial class ConfigWindow
                 {
                     var priority = conflict.Mod2.Index < 0
                         ? conflict.Mod2.Priority
-                        : Penumbra.CollectionManager.Current[conflict.Mod2.Index].Settings!.Priority;
+                        : Penumbra.CollectionManager.Current[ conflict.Mod2.Index ].Settings!.Priority;
                     ImGui.TextUnformatted( $"(Priority {priority})" );
                 }
 

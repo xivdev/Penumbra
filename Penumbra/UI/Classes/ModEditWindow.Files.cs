@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
@@ -23,6 +24,7 @@ public partial class ModEditWindow
     private          int                                _fileIdx       = -1;
     private          int                                _pathIdx       = -1;
     private          int                                _folderSkip    = 0;
+    private          bool                               _overviewMode  = false;
 
     private bool CheckFilter( Mod.Editor.FileRegistry registry )
         => _fileFilter.IsEmpty || registry.File.FullName.Contains( _fileFilter.Lower, StringComparison.OrdinalIgnoreCase );
@@ -47,7 +49,73 @@ public partial class ModEditWindow
             return;
         }
 
+        if( _overviewMode )
+            DrawFilesOverviewMode();
+        else
+            DrawFilesNormalMode();
+
+    }
+
+    private void DrawFilesOverviewMode()
+    {
+        using var list = ImRaii.Table( "##table", 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit );
+
+        if( !list )
+        {
+            return;
+        }
+
+        var idx = 0;
+        void Draw( Mod.Editor.FileRegistry registry )
+        {
+            if( registry.SubModUsage.Count == 0 )
+            {
+                using var id = ImRaii.PushId( idx++ );
+                ImGui.TableNextColumn();
+                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40000080 );
+                ImGui.Selectable( registry.RelPath.ToString() );
+                ImGui.TableNextColumn();
+                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40000080 );
+                ImGui.TextUnformatted( "Unused" );
+                ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40000080 );
+                ImGui.TableNextColumn();
+            }
+            else
+            {
+                foreach( var (mod, path) in registry.SubModUsage )
+                {
+                    using var id    = ImRaii.PushId( idx++ );
+                    var       color = mod == _editor.CurrentOption && _mod!.HasOptions;
+                    ImGui.TableNextColumn();
+                    if( color )
+                        ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40008000 );
+                    ImGui.Selectable( registry.RelPath.ToString() );
+                    ImGui.TableNextColumn();
+                    if( color )
+                        ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40008000 );
+                    ImGui.Selectable( path.ToString() );
+                    ImGui.TableNextColumn();
+                    if( color )
+                        ImGui.TableSetBgColor( ImGuiTableBgTarget.CellBg, 0x40008000 );
+                    ImGui.TextUnformatted( mod.Name );
+                }
+            }
+        }
+
+        bool Filter( Mod.Editor.FileRegistry registry )
+        {
+            return true;
+        }
+
+        var skips = ImGuiClip.GetNecessarySkips( ImGui.GetTextLineHeight() );
+        var end = ImGuiClip.FilteredClippedDraw( _editor!.AvailableFiles, skips, Filter, Draw, 0 );
+        ImGuiClip.DrawEndDummy( end, ImGui.GetTextLineHeight() );
+    }
+
+    private void DrawFilesNormalMode()
+    {
         using var list = ImRaii.Table( "##table", 1 );
+
         if( !list )
         {
             return;
@@ -68,7 +136,7 @@ public partial class ModEditWindow
             using var indent = ImRaii.PushIndent( 50f );
             for( var j = 0; j < registry.SubModUsage.Count; ++j )
             {
-                var (subMod, gamePath) = registry.SubModUsage[ j ];
+                var (subMod, gamePath) = registry.SubModUsage[j];
                 if( subMod != _editor.CurrentOption )
                 {
                     continue;
@@ -158,6 +226,7 @@ public partial class ModEditWindow
             {
                 _editor!.SetGamePath( _fileIdx, _pathIdx, path );
             }
+
             _fileIdx = -1;
             _pathIdx = -1;
         }
@@ -180,6 +249,7 @@ public partial class ModEditWindow
             {
                 _editor!.SetGamePath( _fileIdx, _pathIdx, path );
             }
+
             _fileIdx = -1;
             _pathIdx = -1;
         }
@@ -240,6 +310,13 @@ public partial class ModEditWindow
         }
 
         ImGuiUtil.HoverTooltip( "Revert all revertible changes since the last file or option reload or data refresh." );
+
+        ImGui.SameLine();
+        ImGui.Checkbox( "Overview Mode", ref _overviewMode );
+        if( _overviewMode )
+        {
+            return;
+        }
 
         ImGui.SetNextItemWidth( 250 * ImGuiHelpers.GlobalScale );
         LowerString.InputWithHint( "##filter", "Filter paths...", ref _fileFilter, Utf8GamePath.MaxGamePathLength );

@@ -270,7 +270,7 @@ public partial class Mod
             {
                 var mod = new Mod( modDirectory );
                 mod.Reload( out _ );
-                var editor = new Editor( mod, 0, 0 );
+                var editor = new Editor( mod, mod.Default );
                 editor.DuplicatesFinished = false;
                 editor.CheckDuplicates( editor.AvailableFiles.OrderByDescending( f => f.FileSize ).ToArray() );
                 editor.DeleteDuplicates( false );

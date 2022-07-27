@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using OtterGui.Filesystem;
 
 namespace Penumbra.Mods;
@@ -39,7 +40,7 @@ public partial class Mod
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-        public static SingleModGroup? Load( JObject json, DirectoryInfo basePath )
+        public static SingleModGroup? Load( Mod mod, JObject json, int groupIdx )
         {
             var options = json[ "Options" ];
             var ret = new SingleModGroup
@@ -57,8 +58,9 @@ public partial class Mod
             {
                 foreach( var child in options.Children() )
                 {
-                    var subMod = new SubMod();
-                    subMod.Load( basePath, child, out _ );
+                    var subMod = new SubMod( mod );
+                    subMod.SetPosition( groupIdx, ret.OptionData.Count );
+                    subMod.Load( mod.ModPath, child, out _ );
                     ret.OptionData.Add( subMod );
                 }
             }
@@ -85,6 +87,22 @@ public partial class Mod
         }
 
         public bool MoveOption( int optionIdxFrom, int optionIdxTo )
-            => OptionData.Move( optionIdxFrom, optionIdxTo );
+        {
+            if( !OptionData.Move( optionIdxFrom, optionIdxTo ) )
+            {
+                return false;
+            }
+
+            UpdatePositions( Math.Min( optionIdxFrom, optionIdxTo ) );
+            return true;
+        }
+
+        public void UpdatePositions( int from = 0 )
+        {
+            foreach( var (o, i) in OptionData.WithIndex().Skip( from ) )
+            {
+                o.SetPosition( o.GroupIdx, i );
+            }
+        }
     }
 }

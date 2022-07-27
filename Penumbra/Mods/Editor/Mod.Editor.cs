@@ -10,12 +10,11 @@ public partial class Mod : IMod
     {
         private readonly Mod _mod;
 
-        public Editor( Mod mod, int groupIdx, int optionIdx )
+        public Editor( Mod mod, ISubMod? option )
         {
-            _mod = mod;
-            SetSubMod( groupIdx, optionIdx );
-            GroupIdx = groupIdx;
-            _subMod  = _mod._default;
+            _mod    = mod;
+            _subMod = null!;
+            SetSubMod( option );
             UpdateFiles();
             ScanModels();
         }
