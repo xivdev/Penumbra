@@ -6,6 +6,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiFileDialog;
+using Dalamud.Logging;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
@@ -78,12 +79,59 @@ public partial class ConfigWindow
             using var color  = ImRaii.PushColor( ImGuiCol.Button, Colors.PressEnterWarningBg );
             var       w      = new Vector2( width, 0 );
             var       symbol = '\0';
-            var (text, valid) = newName.Length > RootDirectoryMaxLength
-                ? ( $"Path is too long. The maximum length is {RootDirectoryMaxLength}.", false )
-                : newName.Any( c => ( symbol = c ) > ( char )0x7F )
-                    ? ( $"Path contains invalid symbol {symbol}. Only ASCII is allowed.", false )
-                    : ( $"Press Enter or Click Here to Save (Current Directory: {old})", true );
+            var (text, valid) = CheckPath( newName, old );
+
             return ( ImGui.Button( text, w ) || saved ) && valid;
+        }
+
+        private static (string Text, bool Valid) CheckPath( string newName, string old )
+        {
+            static bool IsSubPathOf( string basePath, string subPath )
+            {
+                var rel = Path.GetRelativePath( basePath, subPath );
+                return rel == "." || (!rel.StartsWith( '.' ) && !Path.IsPathRooted( rel ));
+            }
+
+            if( newName.Length > RootDirectoryMaxLength )
+            {
+                return ( $"Path is too long. The maximum length is {RootDirectoryMaxLength}.", false );
+            }
+
+            if( Path.GetDirectoryName( newName ) == null )
+            {
+                return ( "Path may not be a drive root. Please add a directory.", false );
+            }
+
+            var symbol = '\0';
+            if( newName.Any( c => ( symbol = c ) > ( char )0x7F ) )
+            {
+                return ( $"Path contains invalid symbol {symbol}. Only ASCII is allowed.", false );
+            }
+
+            var desktop = Environment.GetFolderPath( Environment.SpecialFolder.Desktop );
+            if( IsSubPathOf( desktop, newName ) )
+            {
+                return ( "Path may not be on your Desktop.", false );
+            }
+
+            var dalamud = Dalamud.PluginInterface.ConfigDirectory.Parent!.Parent!;
+            if( IsSubPathOf( dalamud.FullName, newName ) )
+            {
+                return ( "Path may not be inside your Dalamud directories.", false );
+            }
+
+            if( Functions.GetDownloadsFolder( out var downloads ) && IsSubPathOf( downloads, newName ) )
+            {
+                return ( "Path may not be inside your Downloads folder.", false );
+            }
+
+            var gameDir = Dalamud.GameData.GameData.DataPath.Parent!.Parent!.FullName;
+            if( IsSubPathOf( gameDir, newName ) )
+            {
+                return ( "Path may not be inside your game folder.", false );
+            }
+
+            return ( $"Press Enter or Click Here to Save (Current Directory: {old})", true );
         }
 
         // Draw a directory picker button that toggles the directory picker.
