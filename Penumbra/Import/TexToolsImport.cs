@@ -1,14 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Dalamud.Logging;
-using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
 using Penumbra.Mods;
 using FileMode = System.IO.FileMode;
+using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
+using ZipArchiveEntry = SharpCompress.Archives.Zip.ZipArchiveEntry;
 
 namespace Penumbra.Import;
 
@@ -119,8 +121,13 @@ public partial class TexToolsImporter : IDisposable
     // Puts out warnings if extension does not correspond to data.
     private DirectoryInfo VerifyVersionAndImport( FileInfo modPackFile )
     {
+        if( modPackFile.Extension is ".zip" or ".7z" or ".rar" )
+        {
+            return HandleRegularArchive( modPackFile );
+        }
+
         using var zfs              = modPackFile.OpenRead();
-        using var extractedModPack = new ZipFile( zfs );
+        using var extractedModPack = ZipArchive.Open( zfs );
 
         var mpl = FindZipEntry( extractedModPack, "TTMPL.mpl" );
         if( mpl == null )
@@ -128,7 +135,7 @@ public partial class TexToolsImporter : IDisposable
             throw new FileNotFoundException( "ZIP does not contain a TTMPL.mpl file." );
         }
 
-        var modRaw = GetStringFromZipEntry( extractedModPack, mpl, Encoding.UTF8 );
+        var modRaw = GetStringFromZipEntry( mpl, Encoding.UTF8 );
 
         // At least a better validation than going by the extension.
         if( modRaw.Contains( "\"TTMPVersion\":" ) )
@@ -149,30 +156,14 @@ public partial class TexToolsImporter : IDisposable
         return ImportV1ModPack( modPackFile, extractedModPack, modRaw );
     }
 
-
     // You can in no way rely on any file paths in TTMPs so we need to just do this, sorry
-    private static ZipEntry? FindZipEntry( ZipFile file, string fileName )
-    {
-        for( var i = 0; i < file.Count; i++ )
-        {
-            var entry = file[ i ];
+    private static ZipArchiveEntry? FindZipEntry( ZipArchive file, string fileName )
+        => file.Entries.FirstOrDefault( e => !e.IsDirectory && e.Key.Contains( fileName ) );
 
-            if( entry.Name.Contains( fileName ) )
-            {
-                return entry;
-            }
-        }
-
-        return null;
-    }
-
-    private static Stream GetStreamFromZipEntry( ZipFile file, ZipEntry entry )
-        => file.GetInputStream( entry );
-
-    private static string GetStringFromZipEntry( ZipFile file, ZipEntry entry, Encoding encoding )
+    private static string GetStringFromZipEntry( ZipArchiveEntry entry, Encoding encoding )
     {
         using var ms = new MemoryStream();
-        using var s  = GetStreamFromZipEntry( file, entry );
+        using var s  = entry.OpenEntryStream();
         s.CopyTo( ms );
         return encoding.GetString( ms.ToArray() );
     }
@@ -191,7 +182,7 @@ public partial class TexToolsImporter : IDisposable
         _tmpFileStream = null;
     }
 
-    private StreamDisposer GetSqPackStreamStream( ZipFile file, string entryName )
+    private StreamDisposer GetSqPackStreamStream( ZipArchive file, string entryName )
     {
         State = ImporterState.WritingPackToDisk;
 
@@ -202,7 +193,7 @@ public partial class TexToolsImporter : IDisposable
             throw new FileNotFoundException( $"ZIP does not contain a file named {entryName}." );
         }
 
-        using var s = file.GetInputStream( entry );
+        using var s = entry.OpenEntryStream();
 
         WriteZipEntryToTempFile( s );
 
