@@ -2,6 +2,7 @@ using System;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
@@ -133,7 +134,7 @@ public unsafe partial class ResourceLoader : IDisposable
     // Resolving goes through all subscribed functions in arbitrary order until one returns true,
     // or uses default resolving if none return true.
     public delegate bool ResolvePathDelegate( Utf8GamePath path, ResourceCategory category, ResourceType type, int hash,
-        out (FullPath?, object?) ret );
+        out (FullPath?, ModCollection?) ret );
 
     public event ResolvePathDelegate? ResolvePathCustomization;
 
