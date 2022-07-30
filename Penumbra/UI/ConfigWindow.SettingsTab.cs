@@ -78,7 +78,6 @@ public partial class ConfigWindow
         {
             using var color  = ImRaii.PushColor( ImGuiCol.Button, Colors.PressEnterWarningBg );
             var       w      = new Vector2( width, 0 );
-            var       symbol = '\0';
             var (text, valid) = CheckPath( newName, old );
 
             return ( ImGui.Button( text, w ) || saved ) && valid;
