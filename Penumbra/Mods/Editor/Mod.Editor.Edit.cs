@@ -9,34 +9,16 @@ public partial class Mod
 {
     public partial class Editor
     {
-        public int GroupIdx { get; private set; } = -1;
-        public int OptionIdx { get; private set; }
-
-        private IModGroup? _modGroup;
-        private SubMod     _subMod;
+        private SubMod _subMod;
 
         public ISubMod CurrentOption
             => _subMod;
 
         public readonly Dictionary< Utf8GamePath, FullPath > CurrentSwaps = new();
 
-        public void SetSubMod( int groupIdx, int optionIdx )
+        public void SetSubMod( ISubMod? subMod )
         {
-            GroupIdx  = groupIdx;
-            OptionIdx = optionIdx;
-            if( groupIdx >= 0 && groupIdx < _mod.Groups.Count && optionIdx >= 0 && optionIdx < _mod.Groups[ groupIdx ].Count )
-            {
-                _modGroup = _mod.Groups[ groupIdx ];
-                _subMod   = ( SubMod )_modGroup![ optionIdx ];
-            }
-            else
-            {
-                GroupIdx  = -1;
-                OptionIdx = 0;
-                _modGroup = null;
-                _subMod   = _mod._default;
-            }
-
+            _subMod = subMod as SubMod ?? _mod._default;
             UpdateFiles();
             RevertSwaps();
             RevertManipulations();
@@ -54,11 +36,16 @@ public partial class Mod
                 }
             }
 
-            Penumbra.ModManager.OptionSetFiles( _mod, GroupIdx, OptionIdx, dict );
+            Penumbra.ModManager.OptionSetFiles( _mod, _subMod.GroupIdx, _subMod.OptionIdx, dict );
             if( num > 0 )
+            {
                 RevertFiles();
+            }
             else
+            {
                 FileChanges = false;
+            }
+
             return num;
         }
 
@@ -67,7 +54,7 @@ public partial class Mod
 
         public void ApplySwaps()
         {
-            Penumbra.ModManager.OptionSetFileSwaps( _mod, GroupIdx, OptionIdx, CurrentSwaps.ToDictionary( kvp => kvp.Key, kvp => kvp.Value ) );
+            Penumbra.ModManager.OptionSetFileSwaps( _mod, _subMod.GroupIdx, _subMod.OptionIdx, CurrentSwaps.ToDictionary( kvp => kvp.Key, kvp => kvp.Value ) );
         }
 
         public void RevertSwaps()

@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Logging;
+using OtterGui;
 using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
@@ -276,8 +276,8 @@ public partial class ModCollection
                         case SelectType.Multi:
                         {
                             foreach( var (option, _) in group.WithIndex()
-                                       .OrderByDescending( p => group.OptionPriority( p.Item2 ) )
-                                       .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 ) )
+                                       .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 )
+                                       .OrderByDescending( p => group.OptionPriority( p.Item2 ) ) )
                             {
                                 AddSubMod( option, mod );
                             }

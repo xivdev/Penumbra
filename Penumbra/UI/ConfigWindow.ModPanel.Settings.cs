@@ -69,7 +69,7 @@ public partial class ConfigWindow
                 DrawMultiGroup( _mod.Groups[ idx ], idx );
             }
 
-            _window._penumbra.Api.InvokePostSettingsPanel(_mod.ModPath.Name);
+            _window._penumbra.Api.InvokePostSettingsPanel( _mod.ModPath.Name );
         }
 
 
@@ -210,6 +210,28 @@ public partial class ConfigWindow
             }
 
             Widget.EndFramedGroup();
+            var label = $"##multi{groupIdx}";
+            if( ImGui.IsItemClicked( ImGuiMouseButton.Right ) )
+            {
+                ImGui.OpenPopup( $"##multi{groupIdx}" );
+            }
+
+            using var style = ImRaii.PushStyle( ImGuiStyleVar.PopupBorderSize, 1 );
+            using var popup = ImRaii.Popup( label );
+            if( popup )
+            {
+                ImGui.TextUnformatted( group.Name );
+                ImGui.Separator();
+                if( ImGui.Selectable( "Enable All" ) )
+                {
+                    Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( 1u << group.Count ) - 1u );
+                }
+
+                if( ImGui.Selectable( "Disable All" ) )
+                {
+                    Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, 0 );
+                }
+            }
         }
     }
 }

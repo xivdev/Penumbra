@@ -33,7 +33,7 @@ public partial class ConfigWindow
         {
             using var group = ImRaii.Group();
             using var id    = ImRaii.PushId( "##Inheritance" );
-            ImGui.TextUnformatted( "The current collection inherits from:" );
+            ImGui.TextUnformatted( $"The {SelectedCollection} inherits from:" );
             DrawCurrentCollectionInheritance();
             DrawInheritanceTrashButton();
             DrawNewInheritanceSelection();
@@ -187,10 +187,10 @@ public partial class ConfigWindow
             var tt = inheritance switch
             {
                 ModCollection.ValidInheritance.Empty     => "No valid collection to inherit from selected.",
-                ModCollection.ValidInheritance.Valid     => "Let the current collection inherit from the selected collection.",
+                ModCollection.ValidInheritance.Valid     => $"Let the {SelectedCollection} inherit from this collection.",
                 ModCollection.ValidInheritance.Self      => "The collection can not inherit from itself.",
-                ModCollection.ValidInheritance.Contained => "Already inheriting from the selected collection.",
-                ModCollection.ValidInheritance.Circle    => "Inheriting from selected collection would lead to cyclic inheritance.",
+                ModCollection.ValidInheritance.Contained => "Already inheriting from this collection.",
+                ModCollection.ValidInheritance.Circle    => "Inheriting from this collection would lead to cyclic inheritance.",
                 _                                        => string.Empty,
             };
             if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize, tt,
@@ -311,7 +311,7 @@ public partial class ConfigWindow
                 }
             }
 
-            ImGuiUtil.HoverTooltip( "Control + Right-Click to switch the current collection to this one."
+            ImGuiUtil.HoverTooltip( $"Control + Right-Click to switch the {SelectedCollection} to this one."
               + ( withDelete ? "\nControl + Shift + Right-Click to remove this inheritance." : string.Empty ) );
         }
     }

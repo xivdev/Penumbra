@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dalamud.Game;
+using Dalamud.Logging;
 
 namespace Penumbra.Util;
 
@@ -19,57 +20,81 @@ public class FrameworkManager : IDisposable
     // One action per frame will be executed.
     // On dispose, any remaining actions will be executed.
     public void RegisterDelayed( string tag, Action action )
-        => _delayed[ tag ] = action;
+    {
+        lock( _delayed )
+        {
+            _delayed[ tag ] = action;
+        }
+    }
 
     // Register an action that should be executed on the next frame.
     // All of those actions will be executed in the next frame.
     // If there are more than one, they will be launched in separated tasks, but waited for.
     public void RegisterImportant( string tag, Action action )
-        => _important[ tag ] = action;
+    {
+        lock( _important )
+        {
+            _important[ tag ] = action;
+        }
+    }
 
     public void Dispose()
     {
         Dalamud.Framework.Update -= OnUpdate;
-        HandleAll( _delayed );
+        foreach( var (_, action) in _delayed )
+        {
+            action();
+        }
+
+        _delayed.Clear();
     }
 
     private void OnUpdate( Framework _ )
     {
-        HandleOne();
-        HandleAllTasks( _important );
-    }
-
-    private void HandleOne()
-    {
-        if( _delayed.Count > 0 )
+        try
         {
-            var (key, action) = _delayed.First();
-            action();
-            _delayed.Remove( key );
+            HandleOne( _delayed );
+            HandleAllTasks( _important );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Problem saving data:\n{e}" );
         }
     }
 
-    private static void HandleAll( IDictionary< string, Action > dict )
+    private static void HandleOne( IDictionary< string, Action > dict )
     {
-        foreach( var (_, action) in dict )
+        if( dict.Count == 0 )
         {
-            action();
+            return;
         }
 
-        dict.Clear();
+        Action action;
+        lock( dict )
+        {
+            ( var key, action ) = dict.First();
+            dict.Remove( key );
+        }
+
+        action();
     }
 
     private static void HandleAllTasks( IDictionary< string, Action > dict )
     {
         if( dict.Count < 2 )
         {
-            HandleAll( dict );
+            HandleOne( dict );
         }
         else
         {
-            var tasks = dict.Values.Select( Task.Run ).ToArray();
+            Task[] tasks;
+            lock( dict )
+            {
+                tasks = dict.Values.Select( Task.Run ).ToArray();
+                dict.Clear();
+            }
+
             Task.WaitAll( tasks );
-            dict.Clear();
         }
     }
 }

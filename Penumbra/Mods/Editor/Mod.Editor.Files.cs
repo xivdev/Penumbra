@@ -120,7 +120,6 @@ public partial class Mod
                    .Select( f => FileRegistry.FromFile( _mod, f, out var r ) ? r : null )
                    .OfType< FileRegistry >() )
                .ToList();
-
             _usedPaths.Clear();
             FileChanges = false;
             foreach( var subMod in _mod.AllSubMods )
@@ -137,7 +136,7 @@ public partial class Mod
                     }
                     else
                     {
-                        var registry = _availableFiles.FirstOrDefault( x => x.File.Equals( file ) );
+                        var registry = _availableFiles.Find( x => x.File.Equals( file ) );
                         if( registry != null )
                         {
                             if( subMod == _subMod )
@@ -174,7 +173,7 @@ public partial class Mod
                 return false;
             }
 
-            if( (pathIdx == - 1 || pathIdx == registry.SubModUsage.Count) && !path.IsEmpty )
+            if( ( pathIdx == -1 || pathIdx == registry.SubModUsage.Count ) && !path.IsEmpty )
             {
                 registry.SubModUsage.Add( ( CurrentOption, path ) );
                 ++registry.CurrentUsage;

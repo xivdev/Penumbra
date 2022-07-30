@@ -5,12 +5,12 @@ using System.Linq;
 using Dalamud.Configuration;
 using Dalamud.Logging;
 using Newtonsoft.Json;
+using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Import;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
-using Penumbra.Util;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;

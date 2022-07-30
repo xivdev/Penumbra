@@ -4,10 +4,10 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Dalamud.Logging;
-using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
 using Penumbra.Mods;
 using Penumbra.Util;
+using SharpCompress.Archives.Zip;
 
 namespace Penumbra.Import;
 
@@ -16,7 +16,7 @@ public partial class TexToolsImporter
     private DirectoryInfo? _currentModDirectory;
 
     // Version 1 mod packs are a simple collection of files without much information.
-    private DirectoryInfo ImportV1ModPack( FileInfo modPackFile, ZipFile extractedModPack, string modRaw )
+    private DirectoryInfo ImportV1ModPack( FileInfo modPackFile, ZipArchive extractedModPack, string modRaw )
     {
         _currentOptionIdx  = 0;
         _currentNumOptions = 1;
@@ -46,7 +46,7 @@ public partial class TexToolsImporter
     }
 
     // Version 2 mod packs can either be simple or extended, import accordingly.
-    private DirectoryInfo ImportV2ModPack( FileInfo _, ZipFile extractedModPack, string modRaw )
+    private DirectoryInfo ImportV2ModPack( FileInfo _, ZipArchive extractedModPack, string modRaw )
     {
         var modList = JsonConvert.DeserializeObject< SimpleModPack >( modRaw, JsonSettings )!;
 
@@ -80,7 +80,7 @@ public partial class TexToolsImporter
     }
 
     // Simple V2 mod packs are basically the same as V1 mod packs.
-    private DirectoryInfo ImportSimpleV2ModPack( ZipFile extractedModPack, SimpleModPack modList )
+    private DirectoryInfo ImportSimpleV2ModPack( ZipArchive extractedModPack, SimpleModPack modList )
     {
         _currentOptionIdx  = 0;
         _currentNumOptions = 1;
@@ -125,7 +125,7 @@ public partial class TexToolsImporter
     }
 
     // Extended V2 mod packs contain multiple options that need to be handled separately.
-    private DirectoryInfo ImportExtendedV2ModPack( ZipFile extractedModPack, string modRaw )
+    private DirectoryInfo ImportExtendedV2ModPack( ZipArchive extractedModPack, string modRaw )
     {
         _currentOptionIdx = 0;
         PluginLog.Log( "    -> Importing Extended V2 ModPack" );

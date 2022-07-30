@@ -5,6 +5,7 @@ using Penumbra.Collections;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
 using System;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Logging;
 
@@ -43,13 +44,13 @@ public partial class ConfigWindow
         {
             PluginLog.Error( $"Exception thrown during ModPanel Render:\n{e}" );
             PluginLog.Error( $"{Penumbra.ModManager.Count} Mods\n"
-              + $"{Penumbra.CollectionManager.Current.Name} Current Collection\n"
+              + $"{Penumbra.CollectionManager.Current.AnonymizedName} Current Collection\n"
               + $"{Penumbra.CollectionManager.Current.Settings.Count} Settings\n"
-              + $"{_selector.SortMode} Sort Mode\n"
+              + $"{_selector.SortMode.Name} Sort Mode\n"
               + $"{_selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
               + $"{_selector.Selected?.Name     ?? "NULL"} Selected Mod\n"
-              + $"{string.Join( ", ", Penumbra.CollectionManager.Current.Inheritance )} Inheritances\n"
-              + $"{_selector.SelectedSettingCollection.Name} Collection\n" );
+              + $"{string.Join( ", ", Penumbra.CollectionManager.Current.Inheritance.Select(c => c.AnonymizedName) )} Inheritances\n"
+              + $"{_selector.SelectedSettingCollection.AnonymizedName} Collection\n" );
         }
     }
 

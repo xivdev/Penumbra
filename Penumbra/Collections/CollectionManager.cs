@@ -5,9 +5,9 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Dalamud.Logging;
+using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
@@ -79,7 +79,7 @@ public partial class ModCollection
         // and no existing collection results in the same filename as name.
         public bool CanAddCollection( string name, out string fixedName )
         {
-            if( name.Length == 0 )
+            if( !IsValidName( name ) )
             {
                 fixedName = string.Empty;
                 return false;
@@ -115,7 +115,7 @@ public partial class ModCollection
             newCollection.Index = _collections.Count;
             _collections.Add( newCollection );
             newCollection.Save();
-            PluginLog.Debug( "Added collection {Name:l}.", newCollection.Name );
+            PluginLog.Debug( "Added collection {Name:l}.", newCollection.AnonymizedName );
             CollectionChanged.Invoke( CollectionType.Inactive, null, newCollection );
             SetCollection( newCollection.Index, CollectionType.Current );
             return true;
@@ -154,8 +154,17 @@ public partial class ModCollection
             }
 
             var collection = _collections[ idx ];
+
+            // Clear own inheritances.
+            foreach( var inheritance in collection.Inheritance )
+            {
+                collection.ClearSubscriptions( inheritance );
+            }
+
             collection.Delete();
             _collections.RemoveAt( idx );
+
+            // Clear external inheritances.
             foreach( var c in _collections )
             {
                 var inheritedIdx = c._inheritance.IndexOf( collection );
@@ -170,7 +179,7 @@ public partial class ModCollection
                 }
             }
 
-            PluginLog.Debug( "Removed collection {Name:l}.", collection.Name );
+            PluginLog.Debug( "Removed collection {Name:l}.", collection.AnonymizedName );
             CollectionChanged.Invoke( CollectionType.Inactive, collection, null );
             return true;
         }

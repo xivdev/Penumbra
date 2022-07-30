@@ -88,11 +88,16 @@ public partial class ModCollection
     public void RemoveInheritance( int idx )
     {
         var inheritance = _inheritance[ idx ];
-        inheritance.ModSettingChanged  -= OnInheritedModSettingChange;
-        inheritance.InheritanceChanged -= OnInheritedInheritanceChange;
+        ClearSubscriptions( inheritance );
         _inheritance.RemoveAt( idx );
         InheritanceChanged.Invoke( false );
         PluginLog.Debug( "Removed {InheritedName:l} from {Name:l} inheritances.", inheritance.AnonymizedName, AnonymizedName );
+    }
+
+    private void ClearSubscriptions( ModCollection other )
+    {
+        other.ModSettingChanged  -= OnInheritedModSettingChange;
+        other.InheritanceChanged -= OnInheritedInheritanceChange;
     }
 
     // Order in the inheritance list is relevant.
@@ -115,6 +120,13 @@ public partial class ModCollection
                 ModSettingChanged.Invoke( type, modIdx, oldValue, groupIdx, true );
                 return;
             default:
+                if( modIdx < 0 || modIdx >= _settings.Count )
+                {
+                    PluginLog.Warning(
+                        $"Collection state broken, Mod {modIdx} in inheritance does not exist. ({_settings.Count} mods exist)." );
+                    return;
+                }
+
                 if( _settings[ modIdx ] == null )
                 {
                     ModSettingChanged.Invoke( type, modIdx, oldValue, groupIdx, true );

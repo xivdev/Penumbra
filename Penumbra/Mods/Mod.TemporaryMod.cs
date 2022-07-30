@@ -26,7 +26,10 @@ public sealed partial class Mod
         public IEnumerable< ISubMod > AllSubMods
             => new[] { Default };
 
-        private readonly SubMod _default = new();
+        private readonly SubMod _default;
+
+        public TemporaryMod()
+            => _default = new SubMod( this );
 
         public void SetFile( Utf8GamePath gamePath, FullPath fullPath )
             => _default.FileData[ gamePath ] = fullPath;

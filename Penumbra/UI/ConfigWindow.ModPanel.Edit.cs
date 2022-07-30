@@ -564,8 +564,8 @@ public partial class ConfigWindow
                         // Move from one group to another by deleting, then adding the option.
                         var sourceGroup  = _dragDropGroupIdx;
                         var sourceOption = _dragDropOptionIdx;
-                        var option       = @group[ _dragDropOptionIdx ];
-                        var priority     = @group.OptionPriority( _dragDropGroupIdx );
+                        var option       = group[ _dragDropOptionIdx ];
+                        var priority     = group.OptionPriority( _dragDropGroupIdx );
                         panel._delayedActions.Enqueue( () =>
                         {
                             Penumbra.ModManager.DeleteOption( panel._mod, sourceGroup, sourceOption );

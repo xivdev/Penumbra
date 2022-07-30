@@ -22,7 +22,10 @@ public partial class Mod
         => 0;
 
     private Mod( DirectoryInfo modPath )
-        => ModPath = modPath;
+    {
+        ModPath  = modPath;
+        _default = new SubMod( this );
+    }
 
     private static Mod? LoadMod( DirectoryInfo modPath )
     {

@@ -1,12 +1,22 @@
 using System;
 using System.Runtime.CompilerServices;
 using OtterGui.Widgets;
+using Penumbra.Collections;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
 public partial class ConfigWindow
 {
+    public const string SelectedCollection    = "Selected Collection";
+    public const string DefaultCollection     = "Base Collection";
+    public const string ActiveCollections     = "Active Collections";
+    public const string GroupAssignment       = "Group Assignment";
+    public const string CharacterGroups       = "Character Groups";
+    public const string ConditionalGroup      = "Group";
+    public const string ConditionalIndividual = "Character";
+    public const string IndividualAssignments = "Individual Assignments";
+
     private static void UpdateTutorialStep()
     {
         var tutorial = Tutorial.CurrentEnabledId( Penumbra.Config.TutorialStep );
@@ -38,7 +48,8 @@ public partial class ConfigWindow
         Inheritance,
         ActiveCollections,
         DefaultCollection,
-        SpecialCollections,
+        SpecialCollections1,
+        SpecialCollections2,
         Mods,
         ModImport,
         AdvancedHelp,
@@ -75,24 +86,29 @@ public partial class ConfigWindow
           + "Go here after setting up your root folder to continue the tutorial!" )
        .Register( "Initial Setup, Step 4: Editing Collections", "First, we need to open the Collection Settings.\n\n"
           + "In here, we can create new collections, delete collections, or make them inherit from each other." )
-       .Register( "Initial Setup, Step 5: Current Collection",
-            "We should already have a Default Collection, and for our simple setup, we do not need to do anything here.\n\n"
-          + "The current collection is the one we are currently editing. Any changes we make in our mod settings later in the next tab will edit this collection." )
+       .Register( $"Initial Setup, Step 5: {SelectedCollection}",
+            $"The {SelectedCollection} is the one we are currently editing. Any changes we make in our mod settings later in the next tab will edit this collection."
+          + $"We should already have a collection named {ModCollection.DefaultCollection} selected, and for our simple setup, we do not need to do anything here.\n\n" )
        .Register( "Inheritance",
             "This is a more advanced feature. Click the help button for more information, but we will ignore this for now." )
-       .Register( "Initial Setup, Step 6: Active Collections", "Active Collections are those that are actually in use at the moment.\n\n"
-          + "Any collection in use will apply to the game under certain conditions.\n\n"
-          + "The Current Collection is also active for technical reasons.\n\n"
+       .Register( $"Initial Setup, Step 6: {ActiveCollections}",
+            $"{ActiveCollections} are those that are actually assigned to conditions at the moment.\n\n"
+          + "Any collection assigned here will apply to the game under certain conditions.\n\n"
+          + $"The {SelectedCollection} is also active for technical reasons, while not necessarily being assigned to anything.\n\n"
           + "Open this now to continue." )
-       .Register( "Initial Setup, Step 7: Default Collection",
-            "The Default Collection - which should currently also be set to a collection named Default - is the main one.\n\n"
-          + "As long as no more specific collection applies to something, the mods from the Default Collection will be used.\n\n"
-          + "This is also the collection you need to use for all UI mods." )
-       .Register( "Special Collections",
-            "Special Collections are those that are used only for special characters in the game, either by specific conditions, or by name.\n\n"
-          + "We will skip this for now, but hovering over the creation buttons should explain how they work." )
+       .Register( $"Initial Setup, Step 7: {DefaultCollection}",
+            $"The {DefaultCollection} - which should currently be set to a collection named {ModCollection.DefaultCollection} - is the main one.\n\n"
+          + $"As long as no more specific conditions apply to an object in the game, the mods from the {DefaultCollection} will be used.\n\n"
+          + "This is also the collection you need to use for all UI mods, music mods or any mods not associated with a character in the game at all." )
+       .Register( GroupAssignment + 's',
+            "Collections assigned here are used for groups of characters for which specific conditions are met.\n\n"
+          + "The more specific the condition, the higher its priority (i.e. Your Character > Player Characters > Race).\n\n"
+          + $"{IndividualAssignments} always take precedence before groups.")
+       .Register( IndividualAssignments,
+            "Collections assigned here are used only for individual characters or NPCs that have the specified name.\n\n"
+          + "They may also apply to objects 'owned' by those characters, e.g. minions or mounts - see the general settings for options on this.\n\n" )
        .Register( "Initial Setup, Step 8: Mods", "Our last stop is the Mods tab, where you can import and setup your mods.\n\n"
-          + "Please go there after verifying that your Current Collection and Default Collection are setup to your liking." )
+          + $"Please go there after verifying that your {SelectedCollection} and {DefaultCollection} are setup to your liking." )
        .Register( "Initial Setup, Step 9: Mod Import",
             "Click this button to open a file selector with which to select TTMP mod files. You can select multiple at once.\n\n"
           + "It is not recommended to import huge mod packs of all your TexTools mods, but rather import the mods themselves, otherwise you lose out on a lot of Penumbra features!\n\n"
@@ -100,8 +116,8 @@ public partial class ConfigWindow
        .Register( "Advanced Help", "Click this button to get detailed information on what you can do in the mod selector.\n\n"
           + "Import and select a mod now to continue." )
        .Register( "Mod Filters", "You can filter the available mods by name, author, changed items or various attributes here." )
-       .Register( "Collection Selectors", "This row provides shortcuts to set your Current Collection.\n\n"
-          + "The first button sets it to your Default Collection (if any).\n\n"
+       .Register( "Collection Selectors", $"This row provides shortcuts to set your {SelectedCollection}.\n\n"
+          + $"The first button sets it to your {DefaultCollection} (if any).\n\n"
           + "The second button sets it to the collection the settings of the currently selected mod are inherited from (if any).\n\n"
           + "The third is a regular collection selector to let you choose among all your collections." )
        .Register( "Initial Setup, Step 11: Enabling Mods",

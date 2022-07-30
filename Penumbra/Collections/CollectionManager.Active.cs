@@ -5,8 +5,8 @@ using System.Linq;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Collections;
 

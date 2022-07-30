@@ -6,8 +6,8 @@ using System.Text.RegularExpressions;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using Penumbra.GameData.ByteString;
-using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -141,7 +141,7 @@ public sealed partial class Mod
                     mod._groups.Add( newMultiGroup );
                     foreach( var option in group.Options )
                     {
-                        newMultiGroup.PrioritizedOptions.Add( ( SubModFromOption( mod.ModPath, option, seenMetaFiles ), optionPriority++ ) );
+                        newMultiGroup.PrioritizedOptions.Add( ( SubModFromOption( mod, option, seenMetaFiles ), optionPriority++ ) );
                     }
 
                     break;
@@ -161,7 +161,7 @@ public sealed partial class Mod
                     mod._groups.Add( newSingleGroup );
                     foreach( var option in group.Options )
                     {
-                        newSingleGroup.OptionData.Add( SubModFromOption( mod.ModPath, option, seenMetaFiles ) );
+                        newSingleGroup.OptionData.Add( SubModFromOption( mod, option, seenMetaFiles ) );
                     }
 
                     break;
@@ -185,11 +185,11 @@ public sealed partial class Mod
             }
         }
 
-        private static SubMod SubModFromOption( DirectoryInfo basePath, OptionV0 option, HashSet< FullPath > seenMetaFiles )
+        private static SubMod SubModFromOption( Mod mod, OptionV0 option, HashSet< FullPath > seenMetaFiles )
         {
-            var subMod = new SubMod { Name = option.OptionName };
-            AddFilesToSubMod( subMod, basePath, option, seenMetaFiles );
-            subMod.IncorporateMetaChanges( basePath, false );
+            var subMod = new SubMod(mod) { Name = option.OptionName };
+            AddFilesToSubMod( subMod, mod.ModPath, option, seenMetaFiles );
+            subMod.IncorporateMetaChanges( mod.ModPath, false );
             return subMod;
         }
 

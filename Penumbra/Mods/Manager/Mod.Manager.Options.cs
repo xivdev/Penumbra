@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Logging;
+using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
@@ -77,6 +78,14 @@ public sealed partial class Mod
         {
             if( mod._groups.Move( groupIdxFrom, groupIdxTo ) )
             {
+                foreach( var (group, groupIdx) in mod._groups.WithIndex().Skip( Math.Min( groupIdxFrom, groupIdxTo ) ) )
+                {
+                    foreach( var (o, optionIdx) in group.OfType<SubMod>().WithIndex() )
+                    {
+                        o.SetPosition( groupIdx, optionIdx );
+                    }
+                }
+
                 ModOptionChanged.Invoke( ModOptionChangeType.GroupMoved, mod, groupIdxFrom, -1, groupIdxTo );
             }
         }
@@ -162,17 +171,19 @@ public sealed partial class Mod
 
         public void AddOption( Mod mod, int groupIdx, string newName )
         {
-            switch( mod._groups[ groupIdx ] )
+            var group = mod._groups[groupIdx];
+            switch( group )
             {
                 case SingleModGroup s:
-                    s.OptionData.Add( new SubMod { Name = newName } );
+                    s.OptionData.Add( new SubMod(mod) { Name = newName } );
                     break;
                 case MultiModGroup m:
-                    m.PrioritizedOptions.Add( ( new SubMod { Name = newName }, 0 ) );
+                    m.PrioritizedOptions.Add( ( new SubMod(mod) { Name = newName }, 0 ) );
                     break;
             }
 
-            ModOptionChanged.Invoke( ModOptionChangeType.OptionAdded, mod, groupIdx, mod._groups[ groupIdx ].Count - 1, -1 );
+            group.UpdatePositions( group.Count - 1 );
+            ModOptionChanged.Invoke( ModOptionChangeType.OptionAdded, mod, groupIdx, group.Count - 1, -1 );
         }
 
         public void AddOption( Mod mod, int groupIdx, ISubMod option, int priority = 0 )
@@ -182,15 +193,16 @@ public sealed partial class Mod
                 return;
             }
 
-            if( mod._groups[ groupIdx ].Count > 63 )
+            var group = mod._groups[ groupIdx ];
+            if( group.Count > 63 )
             {
                 PluginLog.Error(
-                    $"Could not add option {option.Name} to {mod._groups[ groupIdx ].Name} for mod {mod.Name}, "
+                    $"Could not add option {option.Name} to {group.Name} for mod {mod.Name}, "
                   + "since only up to 64 options are supported in one group." );
                 return;
             }
 
-            switch( mod._groups[ groupIdx ] )
+            switch( group )
             {
                 case SingleModGroup s:
                     s.OptionData.Add( o );
@@ -199,23 +211,25 @@ public sealed partial class Mod
                     m.PrioritizedOptions.Add( ( o, priority ) );
                     break;
             }
-
-            ModOptionChanged.Invoke( ModOptionChangeType.OptionAdded, mod, groupIdx, mod._groups[ groupIdx ].Count - 1, -1 );
+            group.UpdatePositions( group.Count - 1 );
+            ModOptionChanged.Invoke( ModOptionChangeType.OptionAdded, mod, groupIdx, group.Count - 1, -1 );
         }
 
         public void DeleteOption( Mod mod, int groupIdx, int optionIdx )
         {
+            var group = mod._groups[groupIdx];
             ModOptionChanged.Invoke( ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1 );
-            switch( mod._groups[ groupIdx ] )
+            switch( group )
             {
                 case SingleModGroup s:
                     s.OptionData.RemoveAt( optionIdx );
+
                     break;
                 case MultiModGroup m:
                     m.PrioritizedOptions.RemoveAt( optionIdx );
                     break;
             }
-
+            group.UpdatePositions( optionIdx );
             ModOptionChanged.Invoke( ModOptionChangeType.OptionDeleted, mod, groupIdx, optionIdx, -1 );
         }
 

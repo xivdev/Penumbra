@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OtterGui.Filesystem;
 using Penumbra.Mods;
 
 namespace Penumbra.Collections;
@@ -25,7 +26,7 @@ public partial class ModCollection
 
     // Get the first two letters of a collection name and its Index (or None if it is the empty collection).
     public string AnonymizedName
-        => this == Empty ? Empty.Name : Name.Length > 2 ? $"{Name[..2]}... ({Index})" : $"{Name} ({Index})";
+        => this == Empty ? Empty.Name : Name.Length > 2 ? $"{Name[ ..2 ]}... ({Index})" : $"{Name} ({Index})";
 
     public int Version { get; private set; }
     public int Index { get; private set; } = -1;
@@ -40,6 +41,9 @@ public partial class ModCollection
     // Returns whether there are settings not in use by any current mod.
     public bool HasUnusedSettings
         => _unusedSettings.Count > 0;
+
+    public int NumUnusedSettings
+        => _unusedSettings.Count;
 
     // Evaluates the settings along the whole inheritance tree.
     public IEnumerable< ModSettings? > ActualSettings
@@ -93,6 +97,11 @@ public partial class ModCollection
     // Duplicate the calling collection to a new, unique collection of a given name.
     public ModCollection Duplicate( string name )
         => new(name, this);
+
+    // Check if a name is valid to use for a collection.
+    // Does not check for uniqueness.
+    public static bool IsValidName( string name )
+        => name.Length > 0 && name.All( c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath()  );
 
     // Remove all settings for not currently-installed mods.
     public void CleanUnavailableSettings()

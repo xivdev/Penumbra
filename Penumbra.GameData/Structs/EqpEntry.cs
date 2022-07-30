@@ -200,12 +200,12 @@ public static class Eqp
             EqpEntry.HeadShowVieraHat      => EquipSlot.Head,
 
             // Currently unused.
-            EqpEntry._58                   => EquipSlot.Unknown,
-            EqpEntry._59                   => EquipSlot.Unknown,
-            EqpEntry._60                   => EquipSlot.Unknown,
-            EqpEntry._61                   => EquipSlot.Unknown,
-            EqpEntry._62                   => EquipSlot.Unknown,
-            EqpEntry._63                   => EquipSlot.Unknown,
+            EqpEntry._58 => EquipSlot.Unknown,
+            EqpEntry._59 => EquipSlot.Unknown,
+            EqpEntry._60 => EquipSlot.Unknown,
+            EqpEntry._61 => EquipSlot.Unknown,
+            EqpEntry._62 => EquipSlot.Unknown,
+            EqpEntry._63 => EquipSlot.Unknown,
 
             _ => EquipSlot.Unknown,
         };

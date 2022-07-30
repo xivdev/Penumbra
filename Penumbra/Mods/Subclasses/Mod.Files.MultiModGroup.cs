@@ -6,6 +6,7 @@ using System.Linq;
 using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using OtterGui.Filesystem;
 
 namespace Penumbra.Mods;
@@ -40,7 +41,7 @@ public partial class Mod
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-        public static MultiModGroup? Load( JObject json, DirectoryInfo basePath )
+        public static MultiModGroup? Load( Mod mod, JObject json, int groupIdx )
         {
             var options = json[ "Options" ];
             var ret = new MultiModGroup()
@@ -60,11 +61,14 @@ public partial class Mod
                 {
                     if( ret.PrioritizedOptions.Count == IModGroup.MaxMultiOptions )
                     {
-                        PluginLog.Warning($"Multi Group {ret.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options."  );
+                        PluginLog.Warning(
+                            $"Multi Group {ret.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options." );
                         break;
                     }
-                    var subMod = new SubMod();
-                    subMod.Load( basePath, child, out var priority );
+
+                    var subMod = new SubMod( mod );
+                    subMod.SetPosition( groupIdx, ret.PrioritizedOptions.Count );
+                    subMod.Load( mod.ModPath, child, out var priority );
                     ret.PrioritizedOptions.Add( ( subMod, priority ) );
                 }
             }
@@ -91,6 +95,22 @@ public partial class Mod
         }
 
         public bool MoveOption( int optionIdxFrom, int optionIdxTo )
-            => PrioritizedOptions.Move( optionIdxFrom, optionIdxTo );
+        {
+            if( !PrioritizedOptions.Move( optionIdxFrom, optionIdxTo ) )
+            {
+                return false;
+            }
+
+            UpdatePositions( Math.Min( optionIdxFrom, optionIdxTo ) );
+            return true;
+        }
+
+        public void UpdatePositions( int from = 0 )
+        {
+            foreach( var ((o, _), i) in PrioritizedOptions.WithIndex().Skip( from ) )
+            {
+                o.SetPosition( o.GroupIdx, i );
+            }
+        }
     }
 }

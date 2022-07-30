@@ -159,7 +159,7 @@ public partial class Mod
 
         public void ApplyManipulations()
         {
-            Meta.Apply( _mod, GroupIdx, OptionIdx );
+            Meta.Apply( _mod, _subMod.GroupIdx, _subMod.OptionIdx );
         }
     }
 }

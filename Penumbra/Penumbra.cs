@@ -13,6 +13,7 @@ using EmbedIO.WebApi;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
+using OtterGui.Classes;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
@@ -75,7 +76,7 @@ public class Penumbra : IDalamudPlugin
 
         Framework        = new FrameworkManager();
         CharacterUtility = new CharacterUtility();
-        Backup.CreateBackup( PenumbraBackupFiles() );
+        Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() );
         Config = Configuration.Load();
 
         TempMods          = new TempModManager();
@@ -258,7 +259,6 @@ public class Penumbra : IDalamudPlugin
 
         PathResolver.Dispose();
         ResourceLogger.Dispose();
-        MetaFileManager.Dispose();
         ResourceLoader.Dispose();
         CharacterUtility.Dispose();
 
@@ -465,7 +465,7 @@ public class Penumbra : IDalamudPlugin
 
         foreach( var (name, collection) in CollectionManager.Characters )
         {
-            sb.AppendFormat( "> **`{2,-29}`** {0}\n", collection.AnonymizedName, CharacterName( name ) );
+            sb.AppendFormat( "> **`{1,-29}`** {0}\n", collection.AnonymizedName, CharacterName( name ) );
         }
 
         foreach( var collection in CollectionManager.Where( c => c.HasCache ) )

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Conditions;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
@@ -129,9 +131,19 @@ public sealed unsafe partial class ObjectReloader : IDisposable
 
         *ActorDrawState( actor! ) |= DrawState.Invisibility;
 
-        if( IsGPoseActor( tableIndex ) )
+        var gPose = IsGPoseActor( tableIndex );
+        if( gPose )
         {
             DisableDraw( actor! );
+        }
+
+        if( actor is PlayerCharacter && Dalamud.Objects[ tableIndex + 1 ] is { ObjectKind: ObjectKind.MountType } mount )
+        {
+            *ActorDrawState( mount ) |= DrawState.Invisibility;
+            if( gPose )
+            {
+                DisableDraw( mount );
+            }
         }
     }
 
@@ -143,9 +155,20 @@ public sealed unsafe partial class ObjectReloader : IDisposable
         }
 
         *ActorDrawState( actor! ) &= ~DrawState.Invisibility;
-        if( IsGPoseActor( tableIndex ) )
+
+        var gPose = IsGPoseActor( tableIndex );
+        if( gPose )
         {
             EnableDraw( actor! );
+        }
+
+        if( actor is PlayerCharacter && Dalamud.Objects[ tableIndex + 1 ] is { ObjectKind: ObjectKind.MountType } mount )
+        {
+            *ActorDrawState( mount ) &= ~DrawState.Invisibility;
+            if( gPose )
+            {
+                EnableDraw( mount );
+            }
         }
 
         GameObjectRedrawn?.Invoke( actor!.Address, tableIndex );

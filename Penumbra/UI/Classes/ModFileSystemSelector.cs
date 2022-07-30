@@ -26,7 +26,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     public ModCollection SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
     public ModFileSystemSelector( ModFileSystem fileSystem )
-        : base( fileSystem )
+        : base( fileSystem, Dalamud.KeyState )
     {
         SubscribeRightClickFolder( EnableDescendants, 10 );
         SubscribeRightClickFolder( DisableDescendants, 10 );
@@ -212,7 +212,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             : Penumbra.Config.ModDirectory.Length         > 0                   ? Penumbra.Config.ModDirectory : null;
         _hasSetFolder = true;
 
-        _fileManager.OpenFileDialog( "Import Mod Pack", "TexTools Mod Packs{.ttmp,.ttmp2}", ( s, f ) =>
+        _fileManager.OpenFileDialog( "Import Mod Pack", "Mod Packs{.ttmp,.ttmp2,.zip,.7z,.rar},TexTools Mod Packs{.ttmp,.ttmp2},Archives{.zip,.7z,.rar}", ( s, f ) =>
         {
             if( s )
             {
@@ -407,9 +407,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     {
         if( _lastSelectedDirectory.Length > 0 )
         {
-            base.SelectedLeaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( ISortMode< Mod >.Lexicographical )
+            var leaf = ( ModFileSystem.Leaf? )FileSystem.Root.GetAllDescendants( ISortMode< Mod >.Lexicographical )
                .FirstOrDefault( l => l is ModFileSystem.Leaf m && m.Value.ModPath.FullName == _lastSelectedDirectory );
-            OnSelectionChange( null, base.SelectedLeaf?.Value, default );
+            Select( leaf );
             _lastSelectedDirectory = string.Empty;
         }
     }

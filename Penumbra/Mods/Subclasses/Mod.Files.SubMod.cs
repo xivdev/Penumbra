@@ -42,6 +42,7 @@ public partial class Mod
     private void LoadDefaultOption()
     {
         var defaultFile = DefaultFile;
+        _default.SetPosition( -1, 0 );
         try
         {
             if( !File.Exists( defaultFile ) )
@@ -72,9 +73,22 @@ public partial class Mod
     {
         public string Name { get; set; } = "Default";
 
+        public string FullName
+            => GroupIdx < 0 ? "Default Option" : $"{ParentMod.Groups[ GroupIdx ].Name}: {Name}";
+
+        internal IMod ParentMod { get; private init; }
+        internal int GroupIdx { get; private set; }
+        internal int OptionIdx { get; private set; }
+
+        public bool IsDefault
+            => GroupIdx < 0;
+
         public Dictionary< Utf8GamePath, FullPath > FileData         = new();
         public Dictionary< Utf8GamePath, FullPath > FileSwapData     = new();
         public HashSet< MetaManipulation >          ManipulationData = new();
+
+        public SubMod( IMod parentMod )
+            => ParentMod = parentMod;
 
         public IReadOnlyDictionary< Utf8GamePath, FullPath > Files
             => FileData;
@@ -85,25 +99,10 @@ public partial class Mod
         public IReadOnlySet< MetaManipulation > Manipulations
             => ManipulationData;
 
-        // Insert all changes from the other submod.
-        // Overwrites already existing changes in this mod.
-        public void MergeIn( ISubMod other )
+        public void SetPosition( int groupIdx, int optionIdx )
         {
-            foreach( var (key, value) in other.Files )
-            {
-                FileData[ key ] = value;
-            }
-
-            foreach( var (key, value) in other.FileSwaps )
-            {
-                FileSwapData[ key ] = value;
-            }
-
-            foreach( var manip in other.Manipulations )
-            {
-                ManipulationData.Remove( manip );
-                ManipulationData.Add( manip );
-            }
+            GroupIdx  = groupIdx;
+            OptionIdx = optionIdx;
         }
 
         public void Load( DirectoryInfo basePath, JToken json, out int priority )

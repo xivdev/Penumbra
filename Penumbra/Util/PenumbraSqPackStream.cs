@@ -282,6 +282,11 @@ public class PenumbraSqPackStream : IDisposable
 
     private void ReadTextureFile( PenumbraFileResource resource, MemoryStream ms )
     {
+        if( resource.FileInfo!.BlockCount == 0 )
+        {
+            return;
+        }
+
         var blocks = Reader.ReadStructures< LodBlock >( ( int )resource.FileInfo!.BlockCount );
 
         // if there is a mipmap header, the comp_offset

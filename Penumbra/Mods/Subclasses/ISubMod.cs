@@ -9,10 +9,13 @@ namespace Penumbra.Mods;
 public interface ISubMod
 {
     public string Name { get; }
+    public string FullName { get; }
 
     public IReadOnlyDictionary< Utf8GamePath, FullPath > Files { get; }
     public IReadOnlyDictionary< Utf8GamePath, FullPath > FileSwaps { get; }
     public IReadOnlySet< MetaManipulation > Manipulations { get; }
+
+    public bool IsDefault { get; }
 
     public static void WriteSubMod( JsonWriter j, JsonSerializer serializer, ISubMod mod, DirectoryInfo basePath, int? priority )
     {

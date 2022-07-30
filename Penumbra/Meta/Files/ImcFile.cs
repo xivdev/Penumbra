@@ -128,7 +128,6 @@ public unsafe class ImcFile : MetaBaseFile
             var newLength = ( ( ( ActualLength - 1 ) >> 7 ) + 1 ) << 7;
             PluginLog.Verbose( "Resized IMC {Path} from {Length} to {NewLength}.", Path, Length, newLength );
             ResizeResources( newLength );
-            ChangesSinceLoad = true;
         }
 
         var defaultPtr = ( ImcEntry* )( Data + PreambleSize );
@@ -218,18 +217,18 @@ public unsafe class ImcFile : MetaBaseFile
         }
     }
 
-    public void Replace( ResourceHandle* resource, bool firstTime )
+    public void Replace( ResourceHandle* resource )
     {
         var (data, length) = resource->GetData();
-        if( data == IntPtr.Zero )
+        var newData = Penumbra.MetaFileManager.AllocateDefaultMemory( ActualLength, 8 );
+        if( newData == null )
         {
+            PluginLog.Error("Could not replace loaded IMC data at 0x{Data:X}, allocation failed."  );
             return;
         }
+        Functions.MemCpyUnchecked( newData, Data, ActualLength );
 
-        resource->SetData( ( IntPtr )Data, Length );
-        if( firstTime )
-        {
-            Penumbra.MetaFileManager.AddImcFile( resource, this, data, length );
-        }
+        Penumbra.MetaFileManager.Free( data, length );
+        resource->SetData( ( IntPtr )newData, ActualLength );
     }
 }

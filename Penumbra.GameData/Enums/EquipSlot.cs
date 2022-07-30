@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection.Metadata.Ecma335;
+using Newtonsoft.Json;
 
 namespace Penumbra.GameData.Enums;
 
@@ -49,6 +50,22 @@ public static class EquipSlotExtensions
             8 => EquipSlot.RFinger,
             9 => EquipSlot.LFinger,
             _ => EquipSlot.Unknown,
+        };
+
+    public static uint ToIndex( this EquipSlot slot )
+        => slot switch
+        {
+            EquipSlot.Head    => 0,
+            EquipSlot.Body    => 1,
+            EquipSlot.Hands   => 2,
+            EquipSlot.Legs    => 3,
+            EquipSlot.Feet    => 4,
+            EquipSlot.Ears    => 5,
+            EquipSlot.Neck    => 6,
+            EquipSlot.Wrists  => 7,
+            EquipSlot.RFinger => 8,
+            EquipSlot.LFinger => 9,
+            _                 => uint.MaxValue,
         };
 
     public static string ToSuffix( this EquipSlot value )

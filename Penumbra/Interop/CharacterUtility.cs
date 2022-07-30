@@ -51,8 +51,12 @@ public unsafe class CharacterUtility : IDisposable
     public CharacterUtility()
     {
         SignatureHelper.Initialise( this );
-        Dalamud.Framework.Update += LoadDefaultResources;
-        LoadingFinished          += () => PluginLog.Debug( "Loading of CharacterUtility finished." );
+        LoadingFinished += () => PluginLog.Debug( "Loading of CharacterUtility finished." );
+        LoadDefaultResources( null! );
+        if( !Ready )
+        {
+            Dalamud.Framework.Update += LoadDefaultResources;
+        }
     }
 
     // We store the default data of the resources so we can always restore them.

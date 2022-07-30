@@ -119,9 +119,9 @@ public partial class MetaManager
     {
         foreach( var file in _imcFiles.Values )
         {
-            Penumbra.MetaFileManager.ResetByFile( file );
             file.Dispose();
         }
+
         _imcFiles.Clear();
         _imcManipulations.Clear();
         RestoreImcDelegate();
@@ -132,7 +132,6 @@ public partial class MetaManager
         if( _imcManagerCount++ == 0 )
         {
             Penumbra.ResourceLoader.ResourceLoadCustomization += ImcLoadHandler;
-            Penumbra.ResourceLoader.ResourceLoaded            += ImcResourceHandler;
         }
     }
 
@@ -141,7 +140,6 @@ public partial class MetaManager
         if( --_imcManagerCount == 0 )
         {
             Penumbra.ResourceLoader.ResourceLoadCustomization -= ImcLoadHandler;
-            Penumbra.ResourceLoader.ResourceLoaded            -= ImcResourceHandler;
         }
     }
 
@@ -163,33 +161,16 @@ public partial class MetaManager
 
         var lastUnderscore = split.LastIndexOf( ( byte )'_' );
         var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
-        if( Penumbra.CollectionManager.ByName( name, out var collection )
+        if( ( Penumbra.TempMods.CollectionByName( name, out var collection )
+            || Penumbra.CollectionManager.ByName( name, out collection ) )
         && collection.HasCache
         && collection.MetaCache!._imcFiles.TryGetValue( Utf8GamePath.FromSpan( path.Span, out var p ) ? p : Utf8GamePath.Empty, out var file ) )
         {
             PluginLog.Debug( "Loaded {GamePath:l} from file and replaced with IMC from collection {Collection:l}.", path,
-                collection.Name );
-            file.Replace( fileDescriptor->ResourceHandle, true );
-            file.ChangesSinceLoad = false;
+                collection.AnonymizedName );
+            file.Replace( fileDescriptor->ResourceHandle );
         }
 
         return true;
-    }
-
-    private static unsafe void ImcResourceHandler( ResourceHandle* resource, Utf8GamePath gamePath, FullPath? _2, object? resolveData )
-    {
-        // Only check imcs.
-        if( resource->FileType != ResourceType.Imc
-        || resolveData is not ModCollection { HasCache: true } collection
-        || !collection.MetaCache!._imcFiles.TryGetValue( gamePath, out var file )
-        || !file.ChangesSinceLoad )
-        {
-            return;
-        }
-
-        PluginLog.Debug( "File {GamePath:l} was already loaded but IMC in collection {Collection:l} was changed, so reloaded.", gamePath,
-            collection.Name );
-        file.Replace( resource, false );
-        file.ChangesSinceLoad = false;
     }
 }

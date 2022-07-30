@@ -45,9 +45,9 @@ public partial class Mod
                 }
             }
 
-            _availableFiles.RemoveAll( p => !p.File.Exists );
             _duplicates.Clear();
             DeleteEmptyDirectories( _mod.ModPath );
+            UpdateFiles();
         }
 
         private void HandleDuplicate( FullPath duplicate, FullPath remaining, bool useModManager )
@@ -235,7 +235,7 @@ public partial class Mod
 
         // Recursively delete all empty directories starting from the given directory.
         // Deletes inner directories first, so that a tree of empty directories is actually deleted.
-        private void DeleteEmptyDirectories( DirectoryInfo baseDir )
+        private static void DeleteEmptyDirectories( DirectoryInfo baseDir )
         {
             try
             {
@@ -270,7 +270,7 @@ public partial class Mod
             {
                 var mod = new Mod( modDirectory );
                 mod.Reload( out _ );
-                var editor = new Editor( mod, 0, 0 );
+                var editor = new Editor( mod, mod.Default );
                 editor.DuplicatesFinished = false;
                 editor.CheckDuplicates( editor.AvailableFiles.OrderByDescending( f => f.FileSize ).ToArray() );
                 editor.DeleteDuplicates( false );
