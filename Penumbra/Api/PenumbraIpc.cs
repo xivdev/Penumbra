@@ -12,11 +12,11 @@ namespace Penumbra.Api;
 public partial class PenumbraIpc : IDisposable
 {
     internal readonly IPenumbraApi Api;
-    internal readonly IpcTester    Tester;
+    internal readonly IpcTester Tester;
 
     public PenumbraIpc( DalamudPluginInterface pi, IPenumbraApi api )
     {
-        Api    = api;
+        Api = api;
         Tester = new IpcTester( pi, this );
         InitializeGeneralProviders( pi );
         InitializeResolveProviders( pi );
@@ -44,29 +44,29 @@ public partial class PenumbraIpc : IDisposable
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderInitialized      = "Penumbra.Initialized";
-    public const string LabelProviderDisposed         = "Penumbra.Disposed";
-    public const string LabelProviderApiVersion       = "Penumbra.ApiVersion";
-    public const string LabelProviderApiVersions      = "Penumbra.ApiVersions";
-    public const string LabelProviderGetModDirectory  = "Penumbra.GetModDirectory";
+    public const string LabelProviderInitialized = "Penumbra.Initialized";
+    public const string LabelProviderDisposed = "Penumbra.Disposed";
+    public const string LabelProviderApiVersion = "Penumbra.ApiVersion";
+    public const string LabelProviderApiVersions = "Penumbra.ApiVersions";
+    public const string LabelProviderGetModDirectory = "Penumbra.GetModDirectory";
     public const string LabelProviderGetConfiguration = "Penumbra.GetConfiguration";
-    public const string LabelProviderPreSettingsDraw  = "Penumbra.PreSettingsDraw";
+    public const string LabelProviderPreSettingsDraw = "Penumbra.PreSettingsDraw";
     public const string LabelProviderPostSettingsDraw = "Penumbra.PostSettingsDraw";
 
-    internal ICallGateProvider< object? >?                      ProviderInitialized;
-    internal ICallGateProvider< object? >?                      ProviderDisposed;
-    internal ICallGateProvider< int >?                          ProviderApiVersion;
-    internal ICallGateProvider< (int Breaking, int Features) >? ProviderApiVersions;
-    internal ICallGateProvider< string >?                       ProviderGetModDirectory;
-    internal ICallGateProvider< string >?                       ProviderGetConfiguration;
-    internal ICallGateProvider< string, object? >?              ProviderPreSettingsDraw;
-    internal ICallGateProvider< string, object? >?              ProviderPostSettingsDraw;
+    internal ICallGateProvider<object?>? ProviderInitialized;
+    internal ICallGateProvider<object?>? ProviderDisposed;
+    internal ICallGateProvider<int>? ProviderApiVersion;
+    internal ICallGateProvider<(int Breaking, int Features)>? ProviderApiVersions;
+    internal ICallGateProvider<string>? ProviderGetModDirectory;
+    internal ICallGateProvider<string>? ProviderGetConfiguration;
+    internal ICallGateProvider<string, object?>? ProviderPreSettingsDraw;
+    internal ICallGateProvider<string, object?>? ProviderPostSettingsDraw;
 
     private void InitializeGeneralProviders( DalamudPluginInterface pi )
     {
         try
         {
-            ProviderInitialized = pi.GetIpcProvider< object? >( LabelProviderInitialized );
+            ProviderInitialized = pi.GetIpcProvider<object?>( LabelProviderInitialized );
         }
         catch( Exception e )
         {
@@ -75,7 +75,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderDisposed = pi.GetIpcProvider< object? >( LabelProviderDisposed );
+            ProviderDisposed = pi.GetIpcProvider<object?>( LabelProviderDisposed );
         }
         catch( Exception e )
         {
@@ -84,7 +84,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderApiVersion = pi.GetIpcProvider< int >( LabelProviderApiVersion );
+            ProviderApiVersion = pi.GetIpcProvider<int>( LabelProviderApiVersion );
             ProviderApiVersion.RegisterFunc( () =>
             {
                 PluginLog.Warning( $"{LabelProviderApiVersion} is outdated. Please use {LabelProviderApiVersions} instead." );
@@ -98,7 +98,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderApiVersions = pi.GetIpcProvider< ( int, int ) >( LabelProviderApiVersions );
+            ProviderApiVersions = pi.GetIpcProvider<(int, int)>( LabelProviderApiVersions );
             ProviderApiVersions.RegisterFunc( () => Api.ApiVersion );
         }
         catch( Exception e )
@@ -108,7 +108,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetModDirectory = pi.GetIpcProvider< string >( LabelProviderGetModDirectory );
+            ProviderGetModDirectory = pi.GetIpcProvider<string>( LabelProviderGetModDirectory );
             ProviderGetModDirectory.RegisterFunc( Api.GetModDirectory );
         }
         catch( Exception e )
@@ -118,7 +118,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetConfiguration = pi.GetIpcProvider< string >( LabelProviderGetConfiguration );
+            ProviderGetConfiguration = pi.GetIpcProvider<string>( LabelProviderGetConfiguration );
             ProviderGetConfiguration.RegisterFunc( Api.GetConfiguration );
         }
         catch( Exception e )
@@ -128,7 +128,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderPreSettingsDraw  =  pi.GetIpcProvider< string, object? >( LabelProviderPreSettingsDraw );
+            ProviderPreSettingsDraw = pi.GetIpcProvider<string, object?>( LabelProviderPreSettingsDraw );
             Api.PreSettingsPanelDraw += InvokeSettingsPreDraw;
         }
         catch( Exception e )
@@ -138,7 +138,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderPostSettingsDraw  =  pi.GetIpcProvider< string, object? >( LabelProviderPostSettingsDraw );
+            ProviderPostSettingsDraw = pi.GetIpcProvider<string, object?>( LabelProviderPostSettingsDraw );
             Api.PostSettingsPanelDraw += InvokeSettingsPostDraw;
         }
         catch( Exception e )
@@ -153,24 +153,24 @@ public partial class PenumbraIpc
         ProviderGetModDirectory?.UnregisterFunc();
         ProviderApiVersion?.UnregisterFunc();
         ProviderApiVersions?.UnregisterFunc();
-        Api.PreSettingsPanelDraw  -= InvokeSettingsPreDraw;
+        Api.PreSettingsPanelDraw -= InvokeSettingsPreDraw;
         Api.PostSettingsPanelDraw -= InvokeSettingsPostDraw;
     }
 }
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderRedrawObject      = "Penumbra.RedrawObject";
-    public const string LabelProviderRedrawName        = "Penumbra.RedrawObjectByName";
-    public const string LabelProviderRedrawIndex       = "Penumbra.RedrawObjectByIndex";
-    public const string LabelProviderRedrawAll         = "Penumbra.RedrawAll";
+    public const string LabelProviderRedrawObject = "Penumbra.RedrawObject";
+    public const string LabelProviderRedrawName = "Penumbra.RedrawObjectByName";
+    public const string LabelProviderRedrawIndex = "Penumbra.RedrawObjectByIndex";
+    public const string LabelProviderRedrawAll = "Penumbra.RedrawAll";
     public const string LabelProviderGameObjectRedrawn = "Penumbra.GameObjectRedrawn";
 
-    internal ICallGateProvider< string, int, object? >?     ProviderRedrawName;
-    internal ICallGateProvider< GameObject, int, object? >? ProviderRedrawObject;
-    internal ICallGateProvider< int, int, object? >?        ProviderRedrawIndex;
-    internal ICallGateProvider< int, object? >?             ProviderRedrawAll;
-    internal ICallGateProvider< IntPtr, int, object? >?     ProviderGameObjectRedrawn;
+    internal ICallGateProvider<string, int, object?>? ProviderRedrawName;
+    internal ICallGateProvider<GameObject, int, object?>? ProviderRedrawObject;
+    internal ICallGateProvider<int, int, object?>? ProviderRedrawIndex;
+    internal ICallGateProvider<int, object?>? ProviderRedrawAll;
+    internal ICallGateProvider<IntPtr, int, object?>? ProviderGameObjectRedrawn;
 
     private static RedrawType CheckRedrawType( int value )
     {
@@ -187,7 +187,7 @@ public partial class PenumbraIpc
     {
         try
         {
-            ProviderRedrawName = pi.GetIpcProvider< string, int, object? >( LabelProviderRedrawName );
+            ProviderRedrawName = pi.GetIpcProvider<string, int, object?>( LabelProviderRedrawName );
             ProviderRedrawName.RegisterAction( ( s, i ) => Api.RedrawObject( s, CheckRedrawType( i ) ) );
         }
         catch( Exception e )
@@ -197,7 +197,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderRedrawObject = pi.GetIpcProvider< GameObject, int, object? >( LabelProviderRedrawObject );
+            ProviderRedrawObject = pi.GetIpcProvider<GameObject, int, object?>( LabelProviderRedrawObject );
             ProviderRedrawObject.RegisterAction( ( s, i ) => Api.RedrawObject( s, CheckRedrawType( i ) ) );
         }
         catch( Exception e )
@@ -207,7 +207,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderRedrawIndex = pi.GetIpcProvider< int, int, object? >( LabelProviderRedrawIndex );
+            ProviderRedrawIndex = pi.GetIpcProvider<int, int, object?>( LabelProviderRedrawIndex );
             ProviderRedrawIndex.RegisterAction( ( idx, i ) => Api.RedrawObject( idx, CheckRedrawType( i ) ) );
         }
         catch( Exception e )
@@ -217,7 +217,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderRedrawAll = pi.GetIpcProvider< int, object? >( LabelProviderRedrawAll );
+            ProviderRedrawAll = pi.GetIpcProvider<int, object?>( LabelProviderRedrawAll );
             ProviderRedrawAll.RegisterAction( i => Api.RedrawAll( CheckRedrawType( i ) ) );
         }
         catch( Exception e )
@@ -227,8 +227,8 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGameObjectRedrawn =  pi.GetIpcProvider< IntPtr, int, object? >( LabelProviderGameObjectRedrawn );
-            Api.GameObjectRedrawn     += OnGameObjectRedrawn;
+            ProviderGameObjectRedrawn = pi.GetIpcProvider<IntPtr, int, object?>( LabelProviderGameObjectRedrawn );
+            Api.GameObjectRedrawn += OnGameObjectRedrawn;
         }
         catch( Exception e )
         {
@@ -257,27 +257,27 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderResolveDefault           = "Penumbra.ResolveDefaultPath";
-    public const string LabelProviderResolveCharacter         = "Penumbra.ResolveCharacterPath";
-    public const string LabelProviderResolvePlayer            = "Penumbra.ResolvePlayerPath";
-    public const string LabelProviderGetDrawObjectInfo        = "Penumbra.GetDrawObjectInfo";
-    public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
+    public const string LabelProviderResolveDefault = "Penumbra.ResolveDefaultPath";
+    public const string LabelProviderResolveCharacter = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderResolvePlayer = "Penumbra.ResolvePlayerPath";
+    public const string LabelProviderGetDrawObjectInfo = "Penumbra.GetDrawObjectInfo";
+    public const string LabelProviderReverseResolvePath = "Penumbra.ReverseResolvePath";
     public const string LabelProviderReverseResolvePlayerPath = "Penumbra.ReverseResolvePlayerPath";
-    public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
+    public const string LabelProviderCreatingCharacterBase = "Penumbra.CreatingCharacterBase";
 
-    internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
-    internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
-    internal ICallGateProvider< string, string >?                                  ProviderResolvePlayer;
-    internal ICallGateProvider< IntPtr, (IntPtr, string) >?                        ProviderGetDrawObjectInfo;
-    internal ICallGateProvider< string, string, string[] >?                        ProviderReverseResolvePath;
-    internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
-    internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
+    internal ICallGateProvider<string, string>? ProviderResolveDefault;
+    internal ICallGateProvider<string, string, string>? ProviderResolveCharacter;
+    internal ICallGateProvider<string, string>? ProviderResolvePlayer;
+    internal ICallGateProvider<IntPtr, (IntPtr, string)>? ProviderGetDrawObjectInfo;
+    internal ICallGateProvider<string, string, string[]>? ProviderReverseResolvePath;
+    internal ICallGateProvider<string, string[]>? ProviderReverseResolvePathPlayer;
+    internal ICallGateProvider<IntPtr, string, IntPtr, IntPtr, IntPtr, object?>? ProviderCreatingCharacterBase;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
         try
         {
-            ProviderResolveDefault = pi.GetIpcProvider< string, string >( LabelProviderResolveDefault );
+            ProviderResolveDefault = pi.GetIpcProvider<string, string>( LabelProviderResolveDefault );
             ProviderResolveDefault.RegisterFunc( Api.ResolvePath );
         }
         catch( Exception e )
@@ -287,7 +287,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderResolveCharacter = pi.GetIpcProvider< string, string, string >( LabelProviderResolveCharacter );
+            ProviderResolveCharacter = pi.GetIpcProvider<string, string, string>( LabelProviderResolveCharacter );
             ProviderResolveCharacter.RegisterFunc( Api.ResolvePath );
         }
         catch( Exception e )
@@ -297,7 +297,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderResolvePlayer = pi.GetIpcProvider< string, string >( LabelProviderResolvePlayer );
+            ProviderResolvePlayer = pi.GetIpcProvider<string, string>( LabelProviderResolvePlayer );
             ProviderResolvePlayer.RegisterFunc( Api.ResolvePlayerPath );
         }
         catch( Exception e )
@@ -307,7 +307,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetDrawObjectInfo = pi.GetIpcProvider< IntPtr, (IntPtr, string) >( LabelProviderGetDrawObjectInfo );
+            ProviderGetDrawObjectInfo = pi.GetIpcProvider<IntPtr, (IntPtr, string)>( LabelProviderGetDrawObjectInfo );
             ProviderGetDrawObjectInfo.RegisterFunc( Api.GetDrawObjectInfo );
         }
         catch( Exception e )
@@ -317,7 +317,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderReverseResolvePath = pi.GetIpcProvider< string, string, string[] >( LabelProviderReverseResolvePath );
+            ProviderReverseResolvePath = pi.GetIpcProvider<string, string, string[]>( LabelProviderReverseResolvePath );
             ProviderReverseResolvePath.RegisterFunc( Api.ReverseResolvePath );
         }
         catch( Exception e )
@@ -327,7 +327,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderReverseResolvePathPlayer = pi.GetIpcProvider< string, string[] >( LabelProviderReverseResolvePlayerPath );
+            ProviderReverseResolvePathPlayer = pi.GetIpcProvider<string, string[]>( LabelProviderReverseResolvePlayerPath );
             ProviderReverseResolvePathPlayer.RegisterFunc( Api.ReverseResolvePlayerPath );
         }
         catch( Exception e )
@@ -338,7 +338,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderCreatingCharacterBase =
-                pi.GetIpcProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >( LabelProviderCreatingCharacterBase );
+                pi.GetIpcProvider<IntPtr, string, IntPtr, IntPtr, IntPtr, object?>( LabelProviderCreatingCharacterBase );
             Api.CreatingCharacterBase += CreatingCharacterBaseEvent;
         }
         catch( Exception e )
@@ -366,12 +366,14 @@ public partial class PenumbraIpc
 public partial class PenumbraIpc
 {
     public const string LabelProviderChangedItemTooltip = "Penumbra.ChangedItemTooltip";
-    public const string LabelProviderChangedItemClick   = "Penumbra.ChangedItemClick";
-    public const string LabelProviderGetChangedItems    = "Penumbra.GetChangedItems";
+    public const string LabelProviderChangedItemClick = "Penumbra.ChangedItemClick";
+    public const string LabelProviderGetChangedItems = "Penumbra.GetChangedItems";
+    public const string LabelProviderPlayerFileResourceResolved = "Penumbra.PlayerFileResourceResolved";
 
-    internal ICallGateProvider< ChangedItemType, uint, object? >?                 ProviderChangedItemTooltip;
-    internal ICallGateProvider< MouseButton, ChangedItemType, uint, object? >?    ProviderChangedItemClick;
-    internal ICallGateProvider< string, IReadOnlyDictionary< string, object? > >? ProviderGetChangedItems;
+    internal ICallGateProvider<ChangedItemType, uint, object?>? ProviderChangedItemTooltip;
+    internal ICallGateProvider<MouseButton, ChangedItemType, uint, object?>? ProviderChangedItemClick;
+    internal ICallGateProvider<string, IReadOnlyDictionary<string, object?>>? ProviderGetChangedItems;
+    internal ICallGateProvider<string, string, string>? ProviderPlayerFileResourceResolved;
 
     private void OnClick( MouseButton click, object? item )
     {
@@ -389,8 +391,8 @@ public partial class PenumbraIpc
     {
         try
         {
-            ProviderChangedItemTooltip =  pi.GetIpcProvider< ChangedItemType, uint, object? >( LabelProviderChangedItemTooltip );
-            Api.ChangedItemTooltip     += OnTooltip;
+            ProviderChangedItemTooltip = pi.GetIpcProvider<ChangedItemType, uint, object?>( LabelProviderChangedItemTooltip );
+            Api.ChangedItemTooltip += OnTooltip;
         }
         catch( Exception e )
         {
@@ -399,8 +401,8 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderChangedItemClick =  pi.GetIpcProvider< MouseButton, ChangedItemType, uint, object? >( LabelProviderChangedItemClick );
-            Api.ChangedItemClicked   += OnClick;
+            ProviderChangedItemClick = pi.GetIpcProvider<MouseButton, ChangedItemType, uint, object?>( LabelProviderChangedItemClick );
+            Api.ChangedItemClicked += OnClick;
         }
         catch( Exception e )
         {
@@ -409,17 +411,34 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetChangedItems = pi.GetIpcProvider< string, IReadOnlyDictionary< string, object? > >( LabelProviderGetChangedItems );
+            ProviderGetChangedItems = pi.GetIpcProvider<string, IReadOnlyDictionary<string, object?>>( LabelProviderGetChangedItems );
             ProviderGetChangedItems.RegisterFunc( Api.GetChangedItemsForCollection );
         }
         catch( Exception e )
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
         }
+
+        try
+        {
+            ProviderPlayerFileResourceResolved = pi.GetIpcProvider<string, string, string>( LabelProviderPlayerFileResourceResolved );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderPlayerFileResourceResolved}:\n{e}");
+        }
+
+        Api.PlayerFilePathResolved += OnFilePathResolved;
+    }
+
+    private void OnFilePathResolved( string gamePath, string localPath )
+    {
+        ProviderPlayerFileResourceResolved?.SendMessage( gamePath, localPath );
     }
 
     private void DisposeChangedItemProviders()
     {
+        Api.PlayerFilePathResolved -= OnFilePathResolved;
         ProviderGetChangedItems?.UnregisterFunc();
         Api.ChangedItemClicked -= OnClick;
         Api.ChangedItemTooltip -= OnTooltip;
@@ -428,27 +447,27 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderGetMods                    = "Penumbra.GetMods";
-    public const string LabelProviderGetCollections             = "Penumbra.GetCollections";
-    public const string LabelProviderCurrentCollectionName      = "Penumbra.GetCurrentCollectionName";
-    public const string LabelProviderDefaultCollectionName      = "Penumbra.GetDefaultCollectionName";
-    public const string LabelProviderCharacterCollectionName    = "Penumbra.GetCharacterCollectionName";
+    public const string LabelProviderGetMods = "Penumbra.GetMods";
+    public const string LabelProviderGetCollections = "Penumbra.GetCollections";
+    public const string LabelProviderCurrentCollectionName = "Penumbra.GetCurrentCollectionName";
+    public const string LabelProviderDefaultCollectionName = "Penumbra.GetDefaultCollectionName";
+    public const string LabelProviderCharacterCollectionName = "Penumbra.GetCharacterCollectionName";
     public const string LabelProviderGetPlayerMetaManipulations = "Penumbra.GetPlayerMetaManipulations";
-    public const string LabelProviderGetMetaManipulations       = "Penumbra.GetMetaManipulations";
+    public const string LabelProviderGetMetaManipulations = "Penumbra.GetMetaManipulations";
 
-    internal ICallGateProvider< IList< (string, string) > >? ProviderGetMods;
-    internal ICallGateProvider< IList< string > >?           ProviderGetCollections;
-    internal ICallGateProvider< string >?                    ProviderCurrentCollectionName;
-    internal ICallGateProvider< string >?                    ProviderDefaultCollectionName;
-    internal ICallGateProvider< string, (string, bool) >?    ProviderCharacterCollectionName;
-    internal ICallGateProvider< string >?                    ProviderGetPlayerMetaManipulations;
-    internal ICallGateProvider< string, string >?            ProviderGetMetaManipulations;
+    internal ICallGateProvider<IList<(string, string)>>? ProviderGetMods;
+    internal ICallGateProvider<IList<string>>? ProviderGetCollections;
+    internal ICallGateProvider<string>? ProviderCurrentCollectionName;
+    internal ICallGateProvider<string>? ProviderDefaultCollectionName;
+    internal ICallGateProvider<string, (string, bool)>? ProviderCharacterCollectionName;
+    internal ICallGateProvider<string>? ProviderGetPlayerMetaManipulations;
+    internal ICallGateProvider<string, string>? ProviderGetMetaManipulations;
 
     private void InitializeDataProviders( DalamudPluginInterface pi )
     {
         try
         {
-            ProviderGetMods = pi.GetIpcProvider< IList< (string, string) > >( LabelProviderGetMods );
+            ProviderGetMods = pi.GetIpcProvider<IList<(string, string)>>( LabelProviderGetMods );
             ProviderGetMods.RegisterFunc( Api.GetModList );
         }
         catch( Exception e )
@@ -458,7 +477,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetCollections = pi.GetIpcProvider< IList< string > >( LabelProviderGetCollections );
+            ProviderGetCollections = pi.GetIpcProvider<IList<string>>( LabelProviderGetCollections );
             ProviderGetCollections.RegisterFunc( Api.GetCollections );
         }
         catch( Exception e )
@@ -468,7 +487,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderCurrentCollectionName = pi.GetIpcProvider< string >( LabelProviderCurrentCollectionName );
+            ProviderCurrentCollectionName = pi.GetIpcProvider<string>( LabelProviderCurrentCollectionName );
             ProviderCurrentCollectionName.RegisterFunc( Api.GetCurrentCollection );
         }
         catch( Exception e )
@@ -478,7 +497,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderDefaultCollectionName = pi.GetIpcProvider< string >( LabelProviderDefaultCollectionName );
+            ProviderDefaultCollectionName = pi.GetIpcProvider<string>( LabelProviderDefaultCollectionName );
             ProviderDefaultCollectionName.RegisterFunc( Api.GetDefaultCollection );
         }
         catch( Exception e )
@@ -488,7 +507,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderCharacterCollectionName = pi.GetIpcProvider< string, (string, bool) >( LabelProviderCharacterCollectionName );
+            ProviderCharacterCollectionName = pi.GetIpcProvider<string, (string, bool)>( LabelProviderCharacterCollectionName );
             ProviderCharacterCollectionName.RegisterFunc( Api.GetCharacterCollection );
         }
         catch( Exception e )
@@ -498,7 +517,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetPlayerMetaManipulations = pi.GetIpcProvider< string >( LabelProviderGetPlayerMetaManipulations );
+            ProviderGetPlayerMetaManipulations = pi.GetIpcProvider<string>( LabelProviderGetPlayerMetaManipulations );
             ProviderGetPlayerMetaManipulations.RegisterFunc( Api.GetPlayerMetaManipulations );
         }
         catch( Exception e )
@@ -508,7 +527,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetMetaManipulations = pi.GetIpcProvider< string, string >( LabelProviderGetMetaManipulations );
+            ProviderGetMetaManipulations = pi.GetIpcProvider<string, string>( LabelProviderGetMetaManipulations );
             ProviderGetMetaManipulations.RegisterFunc( Api.GetMetaManipulations );
         }
         catch( Exception e )
@@ -531,37 +550,37 @@ public partial class PenumbraIpc
 public partial class PenumbraIpc
 {
     public const string LabelProviderGetAvailableModSettings = "Penumbra.GetAvailableModSettings";
-    public const string LabelProviderReloadMod               = "Penumbra.ReloadMod";
-    public const string LabelProviderAddMod                  = "Penumbra.AddMod";
-    public const string LabelProviderGetCurrentModSettings   = "Penumbra.GetCurrentModSettings";
-    public const string LabelProviderTryInheritMod           = "Penumbra.TryInheritMod";
-    public const string LabelProviderTrySetMod               = "Penumbra.TrySetMod";
-    public const string LabelProviderTrySetModPriority       = "Penumbra.TrySetModPriority";
-    public const string LabelProviderTrySetModSetting        = "Penumbra.TrySetModSetting";
-    public const string LabelProviderTrySetModSettings       = "Penumbra.TrySetModSettings";
-    public const string LabelProviderModSettingChanged       = "Penumbra.ModSettingChanged";
+    public const string LabelProviderReloadMod = "Penumbra.ReloadMod";
+    public const string LabelProviderAddMod = "Penumbra.AddMod";
+    public const string LabelProviderGetCurrentModSettings = "Penumbra.GetCurrentModSettings";
+    public const string LabelProviderTryInheritMod = "Penumbra.TryInheritMod";
+    public const string LabelProviderTrySetMod = "Penumbra.TrySetMod";
+    public const string LabelProviderTrySetModPriority = "Penumbra.TrySetModPriority";
+    public const string LabelProviderTrySetModSetting = "Penumbra.TrySetModSetting";
+    public const string LabelProviderTrySetModSettings = "Penumbra.TrySetModSettings";
+    public const string LabelProviderModSettingChanged = "Penumbra.ModSettingChanged";
 
-    internal ICallGateProvider< ModSettingChange, string, string, bool, object? >? ProviderModSettingChanged;
+    internal ICallGateProvider<ModSettingChange, string, string, bool, object?>? ProviderModSettingChanged;
 
-    internal ICallGateProvider< string, string, IDictionary< string, (IList< string >, Mods.SelectType) >? >? ProviderGetAvailableModSettings;
-    internal ICallGateProvider< string, string, PenumbraApiEc >?                                              ProviderReloadMod;
-    internal ICallGateProvider< string, PenumbraApiEc >?                                                      ProviderAddMod;
+    internal ICallGateProvider<string, string, IDictionary<string, (IList<string>, Mods.SelectType)>?>? ProviderGetAvailableModSettings;
+    internal ICallGateProvider<string, string, PenumbraApiEc>? ProviderReloadMod;
+    internal ICallGateProvider<string, PenumbraApiEc>? ProviderAddMod;
 
-    internal ICallGateProvider< string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) >?
+    internal ICallGateProvider<string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary<string, IList<string>>, bool)?)>?
         ProviderGetCurrentModSettings;
 
-    internal ICallGateProvider< string, string, string, bool, PenumbraApiEc >?                            ProviderTryInheritMod;
-    internal ICallGateProvider< string, string, string, bool, PenumbraApiEc >?                            ProviderTrySetMod;
-    internal ICallGateProvider< string, string, string, int, PenumbraApiEc >?                             ProviderTrySetModPriority;
-    internal ICallGateProvider< string, string, string, string, string, PenumbraApiEc >?                  ProviderTrySetModSetting;
-    internal ICallGateProvider< string, string, string, string, IReadOnlyList< string >, PenumbraApiEc >? ProviderTrySetModSettings;
+    internal ICallGateProvider<string, string, string, bool, PenumbraApiEc>? ProviderTryInheritMod;
+    internal ICallGateProvider<string, string, string, bool, PenumbraApiEc>? ProviderTrySetMod;
+    internal ICallGateProvider<string, string, string, int, PenumbraApiEc>? ProviderTrySetModPriority;
+    internal ICallGateProvider<string, string, string, string, string, PenumbraApiEc>? ProviderTrySetModSetting;
+    internal ICallGateProvider<string, string, string, string, IReadOnlyList<string>, PenumbraApiEc>? ProviderTrySetModSettings;
 
     private void InitializeSettingProviders( DalamudPluginInterface pi )
     {
         try
         {
-            ProviderModSettingChanged =  pi.GetIpcProvider< ModSettingChange, string, string, bool, object? >( LabelProviderModSettingChanged );
-            Api.ModSettingChanged     += InvokeModSettingChanged;
+            ProviderModSettingChanged = pi.GetIpcProvider<ModSettingChange, string, string, bool, object?>( LabelProviderModSettingChanged );
+            Api.ModSettingChanged += InvokeModSettingChanged;
         }
         catch( Exception e )
         {
@@ -571,7 +590,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderGetAvailableModSettings =
-                pi.GetIpcProvider< string, string, IDictionary< string, (IList< string >, Mods.SelectType) >? >(
+                pi.GetIpcProvider<string, string, IDictionary<string, (IList<string>, Mods.SelectType)>?>(
                     LabelProviderGetAvailableModSettings );
             ProviderGetAvailableModSettings.RegisterFunc( Api.GetAvailableModSettings );
         }
@@ -582,7 +601,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderReloadMod = pi.GetIpcProvider< string, string, PenumbraApiEc >( LabelProviderReloadMod );
+            ProviderReloadMod = pi.GetIpcProvider<string, string, PenumbraApiEc>( LabelProviderReloadMod );
             ProviderReloadMod.RegisterFunc( Api.ReloadMod );
         }
         catch( Exception e )
@@ -592,7 +611,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderAddMod = pi.GetIpcProvider< string, PenumbraApiEc >( LabelProviderAddMod );
+            ProviderAddMod = pi.GetIpcProvider<string, PenumbraApiEc>( LabelProviderAddMod );
             ProviderAddMod.RegisterFunc( Api.AddMod );
         }
         catch( Exception e )
@@ -603,7 +622,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderGetCurrentModSettings =
-                pi.GetIpcProvider< string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary< string, IList< string > >, bool)?) >(
+                pi.GetIpcProvider<string, string, string, bool, (PenumbraApiEc, (bool, int, IDictionary<string, IList<string>>, bool)?)>(
                     LabelProviderGetCurrentModSettings );
             ProviderGetCurrentModSettings.RegisterFunc( Api.GetCurrentModSettings );
         }
@@ -614,7 +633,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderTryInheritMod = pi.GetIpcProvider< string, string, string, bool, PenumbraApiEc >( LabelProviderTryInheritMod );
+            ProviderTryInheritMod = pi.GetIpcProvider<string, string, string, bool, PenumbraApiEc>( LabelProviderTryInheritMod );
             ProviderTryInheritMod.RegisterFunc( Api.TryInheritMod );
         }
         catch( Exception e )
@@ -624,7 +643,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderTrySetMod = pi.GetIpcProvider< string, string, string, bool, PenumbraApiEc >( LabelProviderTrySetMod );
+            ProviderTrySetMod = pi.GetIpcProvider<string, string, string, bool, PenumbraApiEc>( LabelProviderTrySetMod );
             ProviderTrySetMod.RegisterFunc( Api.TrySetMod );
         }
         catch( Exception e )
@@ -634,7 +653,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderTrySetModPriority = pi.GetIpcProvider< string, string, string, int, PenumbraApiEc >( LabelProviderTrySetModPriority );
+            ProviderTrySetModPriority = pi.GetIpcProvider<string, string, string, int, PenumbraApiEc>( LabelProviderTrySetModPriority );
             ProviderTrySetModPriority.RegisterFunc( Api.TrySetModPriority );
         }
         catch( Exception e )
@@ -645,7 +664,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderTrySetModSetting =
-                pi.GetIpcProvider< string, string, string, string, string, PenumbraApiEc >( LabelProviderTrySetModSetting );
+                pi.GetIpcProvider<string, string, string, string, string, PenumbraApiEc>( LabelProviderTrySetModSetting );
             ProviderTrySetModSetting.RegisterFunc( Api.TrySetModSetting );
         }
         catch( Exception e )
@@ -656,7 +675,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderTrySetModSettings =
-                pi.GetIpcProvider< string, string, string, string, IReadOnlyList< string >, PenumbraApiEc >( LabelProviderTrySetModSettings );
+                pi.GetIpcProvider<string, string, string, string, IReadOnlyList<string>, PenumbraApiEc>( LabelProviderTrySetModSettings );
             ProviderTrySetModSettings.RegisterFunc( Api.TrySetModSettings );
         }
         catch( Exception e )
@@ -687,29 +706,29 @@ public partial class PenumbraIpc
 {
     public const string LabelProviderCreateTemporaryCollection = "Penumbra.CreateTemporaryCollection";
     public const string LabelProviderRemoveTemporaryCollection = "Penumbra.RemoveTemporaryCollection";
-    public const string LabelProviderAddTemporaryModAll        = "Penumbra.AddTemporaryModAll";
-    public const string LabelProviderAddTemporaryMod           = "Penumbra.AddTemporaryMod";
-    public const string LabelProviderRemoveTemporaryModAll     = "Penumbra.RemoveTemporaryModAll";
-    public const string LabelProviderRemoveTemporaryMod        = "Penumbra.RemoveTemporaryMod";
+    public const string LabelProviderAddTemporaryModAll = "Penumbra.AddTemporaryModAll";
+    public const string LabelProviderAddTemporaryMod = "Penumbra.AddTemporaryMod";
+    public const string LabelProviderRemoveTemporaryModAll = "Penumbra.RemoveTemporaryModAll";
+    public const string LabelProviderRemoveTemporaryMod = "Penumbra.RemoveTemporaryMod";
 
-    internal ICallGateProvider< string, string, bool, (PenumbraApiEc, string) >? ProviderCreateTemporaryCollection;
-    internal ICallGateProvider< string, PenumbraApiEc >?                         ProviderRemoveTemporaryCollection;
+    internal ICallGateProvider<string, string, bool, (PenumbraApiEc, string)>? ProviderCreateTemporaryCollection;
+    internal ICallGateProvider<string, PenumbraApiEc>? ProviderRemoveTemporaryCollection;
 
-    internal ICallGateProvider< string, Dictionary< string, string >, string, int, PenumbraApiEc >?
+    internal ICallGateProvider<string, Dictionary<string, string>, string, int, PenumbraApiEc>?
         ProviderAddTemporaryModAll;
 
-    internal ICallGateProvider< string, string, Dictionary< string, string >, string, int, PenumbraApiEc >?
+    internal ICallGateProvider<string, string, Dictionary<string, string>, string, int, PenumbraApiEc>?
         ProviderAddTemporaryMod;
 
-    internal ICallGateProvider< string, int, PenumbraApiEc >?         ProviderRemoveTemporaryModAll;
-    internal ICallGateProvider< string, string, int, PenumbraApiEc >? ProviderRemoveTemporaryMod;
+    internal ICallGateProvider<string, int, PenumbraApiEc>? ProviderRemoveTemporaryModAll;
+    internal ICallGateProvider<string, string, int, PenumbraApiEc>? ProviderRemoveTemporaryMod;
 
     private void InitializeTempProviders( DalamudPluginInterface pi )
     {
         try
         {
             ProviderCreateTemporaryCollection =
-                pi.GetIpcProvider< string, string, bool, (PenumbraApiEc, string) >( LabelProviderCreateTemporaryCollection );
+                pi.GetIpcProvider<string, string, bool, (PenumbraApiEc, string)>( LabelProviderCreateTemporaryCollection );
             ProviderCreateTemporaryCollection.RegisterFunc( Api.CreateTemporaryCollection );
         }
         catch( Exception e )
@@ -720,7 +739,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderRemoveTemporaryCollection =
-                pi.GetIpcProvider< string, PenumbraApiEc >( LabelProviderRemoveTemporaryCollection );
+                pi.GetIpcProvider<string, PenumbraApiEc>( LabelProviderRemoveTemporaryCollection );
             ProviderRemoveTemporaryCollection.RegisterFunc( Api.RemoveTemporaryCollection );
         }
         catch( Exception e )
@@ -731,7 +750,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderAddTemporaryModAll =
-                pi.GetIpcProvider< string, Dictionary< string, string >, string, int, PenumbraApiEc >(
+                pi.GetIpcProvider<string, Dictionary<string, string>, string, int, PenumbraApiEc>(
                     LabelProviderAddTemporaryModAll );
             ProviderAddTemporaryModAll.RegisterFunc( Api.AddTemporaryModAll );
         }
@@ -743,7 +762,7 @@ public partial class PenumbraIpc
         try
         {
             ProviderAddTemporaryMod =
-                pi.GetIpcProvider< string, string, Dictionary< string, string >, string, int, PenumbraApiEc >(
+                pi.GetIpcProvider<string, string, Dictionary<string, string>, string, int, PenumbraApiEc>(
                     LabelProviderAddTemporaryMod );
             ProviderAddTemporaryMod.RegisterFunc( Api.AddTemporaryMod );
         }
@@ -754,7 +773,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderRemoveTemporaryModAll = pi.GetIpcProvider< string, int, PenumbraApiEc >( LabelProviderRemoveTemporaryModAll );
+            ProviderRemoveTemporaryModAll = pi.GetIpcProvider<string, int, PenumbraApiEc>( LabelProviderRemoveTemporaryModAll );
             ProviderRemoveTemporaryModAll.RegisterFunc( Api.RemoveTemporaryModAll );
         }
         catch( Exception e )
@@ -764,7 +783,7 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderRemoveTemporaryMod = pi.GetIpcProvider< string, string, int, PenumbraApiEc >( LabelProviderRemoveTemporaryMod );
+            ProviderRemoveTemporaryMod = pi.GetIpcProvider<string, string, int, PenumbraApiEc>( LabelProviderRemoveTemporaryMod );
             ProviderRemoveTemporaryMod.RegisterFunc( Api.RemoveTemporaryMod );
         }
         catch( Exception e )

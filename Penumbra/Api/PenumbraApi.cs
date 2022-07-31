@@ -6,7 +6,6 @@ using System.Linq;
 using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
-using FFXIVClientStructs.FFXIV.Common.Configuration;
 using Lumina.Data;
 using Newtonsoft.Json;
 using OtterGui;
@@ -16,7 +15,6 @@ using Penumbra.GameData.Enums;
 using Penumbra.Interop.Resolver;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using Penumbra.Util;
 
 namespace Penumbra.Api;
 
@@ -40,6 +38,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     public event ModSettingChanged? ModSettingChanged;
+    public event PlayerFileResourceResolved? PlayerFilePathResolved;
 
     public event CreatingCharacterBaseDelegate? CreatingCharacterBase
     {
@@ -56,17 +55,29 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
             .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
             ?.GetValue( Dalamud.GameData );
+
         foreach( var collection in Penumbra.CollectionManager )
         {
             SubscribeToCollection( collection );
         }
 
         Penumbra.CollectionManager.CollectionChanged += SubscribeToNewCollections;
+        Penumbra.ResourceLoader.PathResolved += OnPathResolved;
+    }
+
+    private void OnPathResolved( Utf8GamePath arg1, ResourceType arg2, FullPath? arg3, ModCollection? arg4 )
+    {
+        if( arg4 == null || arg3 == null || Dalamud.ClientState.LocalPlayer == null ) return;
+        if( arg4 == PathResolver.PlayerCollection() )
+        {
+            PlayerFilePathResolved?.Invoke( arg1.ToString(), arg3.Value.FullName );
+        }
     }
 
     public void Dispose()
     {
         Penumbra.CollectionManager.CollectionChanged -= SubscribeToNewCollections;
+        Penumbra.ResourceLoader.PathResolved -= OnPathResolved;
         _penumbra                                    =  null;
         _lumina                                      =  null;
         foreach( var collection in Penumbra.CollectionManager )

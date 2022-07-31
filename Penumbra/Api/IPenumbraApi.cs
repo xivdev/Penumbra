@@ -22,6 +22,7 @@ public delegate void ChangedItemHover( object? item );
 public delegate void ChangedItemClick( MouseButton button, object? item );
 public delegate void GameObjectRedrawn( IntPtr objectPtr, int objectTableIndex );
 public delegate void ModSettingChanged( ModSettingChange type, string collectionName, string modDirectory, bool inherited );
+public delegate void PlayerFileResourceResolved( string gamePath, string localPath );
 
 public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize,
     IntPtr equipData );
@@ -64,6 +65,9 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Triggered when the user clicks a listed changed object in a mod tab.
     public event ChangedItemClick? ChangedItemClicked;
     public event GameObjectRedrawn? GameObjectRedrawn;
+
+    // Fires when Penumbra resolves a path
+    public event PlayerFileResourceResolved? PlayerFilePathResolved;
 
     // Triggered when a character base is created and a corresponding gameObject could be found,
     // before the Draw Object is actually created, so customize and equipdata can be manipulated beforehand.
