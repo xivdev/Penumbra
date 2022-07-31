@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
@@ -224,7 +225,8 @@ public partial class ConfigWindow
                 ImGui.Separator();
                 if( ImGui.Selectable( "Enable All" ) )
                 {
-                    Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( 1u << group.Count ) - 1u );
+                    flags = group.Count == 32 ? uint.MaxValue : ( 1u << group.Count ) - 1u;
+                    Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, flags );
                 }
 
                 if( ImGui.Selectable( "Disable All" ) )
