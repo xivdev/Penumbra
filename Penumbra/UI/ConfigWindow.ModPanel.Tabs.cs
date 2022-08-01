@@ -49,31 +49,28 @@ public partial class ConfigWindow
               | ( _mod.ChangedItems.Count > 0 ? Tabs.ChangedItems : 0 )
               | ( _mod.Description.Length > 0 ? Tabs.Description : 0 )
               | ( _conflicts.Count        > 0 ? Tabs.Conflicts : 0 )
-              | ( Penumbra.Config.ShowAdvanced ? Tabs.Edit : 0 );
+              | Tabs.Edit;
 
             DrawSettingsTab();
             DrawDescriptionTab();
             DrawChangedItemsTab();
             DrawConflictsTab();
             DrawEditModTab();
-            if( Penumbra.Config.ShowAdvanced )
+            if( ImGui.TabItemButton( "Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
             {
-                if( ImGui.TabItemButton( "Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
-                {
-                    _window.ModEditPopup.ChangeMod( _mod );
-                    _window.ModEditPopup.ChangeOption( _mod.Default );
-                    _window.ModEditPopup.IsOpen = true;
-                }
-
-                ImGuiUtil.HoverTooltip(
-                    "Clicking this will open a new window in which you can\nedit the following things per option for this mod:\n\n"
-                  + "\t\t- file redirections\n"
-                  + "\t\t- file swaps\n"
-                  + "\t\t- metadata manipulations\n"
-                  + "\t\t- model materials\n"
-                  + "\t\t- duplicates\n"
-                  + "\t\t- textures" );
+                _window.ModEditPopup.ChangeMod( _mod );
+                _window.ModEditPopup.ChangeOption( _mod.Default );
+                _window.ModEditPopup.IsOpen = true;
             }
+
+            ImGuiUtil.HoverTooltip(
+                "Clicking this will open a new window in which you can\nedit the following things per option for this mod:\n\n"
+              + "\t\t- file redirections\n"
+              + "\t\t- file swaps\n"
+              + "\t\t- metadata manipulations\n"
+              + "\t\t- model materials\n"
+              + "\t\t- duplicates\n"
+              + "\t\t- textures" );
         }
 
         // Just a simple text box with the wrapped description, if it exists.

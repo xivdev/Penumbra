@@ -20,11 +20,6 @@ public partial class ConfigWindow
         // Draw the effective tab if ShowAdvanced is on.
         public void Draw()
         {
-            if( !Penumbra.Config.ShowAdvanced )
-            {
-                return;
-            }
-
             using var tab = ImRaii.TabItem( "Effective Changes" );
             if( !tab )
             {

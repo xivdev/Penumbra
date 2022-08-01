@@ -15,11 +15,11 @@ public partial class ConfigWindow
     {
         private void DrawAdvancedSettings()
         {
-            if( !Penumbra.Config.ShowAdvanced || !ImGui.CollapsingHeader( "Advanced" ) )
-            {
-                return;
-            }
+            var header = ImGui.CollapsingHeader( "Advanced" );
+            OpenTutorial( BasicTutorialSteps.AdvancedSettings );
 
+            if( !header )
+                return;
             Checkbox( "Auto Deduplicate on Import",
                 "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
                 Penumbra.Config.AutoDeduplicateOnImport, v => Penumbra.Config.AutoDeduplicateOnImport = v );

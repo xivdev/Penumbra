@@ -57,7 +57,7 @@ public partial class ConfigWindow
         // Only gets drawn when actually relevant.
         private static void DrawCleanCollectionButton( Vector2 width )
         {
-            if( Penumbra.Config.ShowAdvanced && Penumbra.CollectionManager.Current.HasUnusedSettings )
+            if( Penumbra.CollectionManager.Current.HasUnusedSettings )
             {
                 ImGui.SameLine();
                 if( ImGuiUtil.DrawDisabledButton(
