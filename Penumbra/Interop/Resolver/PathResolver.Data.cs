@@ -385,7 +385,9 @@ public unsafe partial class PathResolver
     {
         collection = null;
         // Check for the Yourself collection.
-        if( actor->ObjectIndex is 0 or ObjectReloader.GPosePlayerIdx || name == Dalamud.ClientState.LocalPlayer?.Name.ToString() )
+        if( actor->ObjectIndex == 0
+        || actor->ObjectIndex == ObjectReloader.GPosePlayerIdx && name.Length > 0
+        || name == Dalamud.ClientState.LocalPlayer?.Name.ToString() )
         {
             collection = Penumbra.CollectionManager.ByType( CollectionType.Yourself );
             if( collection != null )
