@@ -124,6 +124,9 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain the game object associated with a given draw object and the name of the collection associated with this game object.
     public (IntPtr, string) GetDrawObjectInfo( IntPtr drawObject );
 
+    // Obtain the parent game object index for an unnamed cutscene actor by its index.
+    public int GetCutsceneParentIndex( int actor );
+
     // Obtain a list of all installed mods. The first string is their directory name, the second string is their mod name.
     public IList< (string, string) > GetModList();
 

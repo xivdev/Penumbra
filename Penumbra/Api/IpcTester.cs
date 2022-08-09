@@ -201,6 +201,7 @@ public class IpcTester : IDisposable
     private string         _currentDrawObjectString   = string.Empty;
     private string         _currentReversePath        = string.Empty;
     private IntPtr         _currentDrawObject         = IntPtr.Zero;
+    private int            _currentCutsceneActor      = 0;
     private string         _lastCreatedGameObjectName = string.Empty;
     private DateTimeOffset _lastCreatedGameObjectTime = DateTimeOffset.MaxValue;
 
@@ -230,6 +231,8 @@ public class IpcTester : IDisposable
                 ? tmp
                 : IntPtr.Zero;
         }
+
+        ImGui.InputInt( "Cutscene Actor", ref _currentCutsceneActor, 0 );
 
         using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
         if( !table )
@@ -262,6 +265,10 @@ public class IpcTester : IDisposable
                .InvokeFunc( _currentDrawObject );
             ImGui.TextUnformatted( ptr == IntPtr.Zero ? $"No Actor Associated, {collection}" : $"{ptr:X}, {collection}" );
         }
+
+        DrawIntro( PenumbraIpc.LabelProviderGetDrawObjectInfo, "Cutscene Parent" );
+        ImGui.TextUnformatted( _pi.GetIpcSubscriber< int, int >( PenumbraIpc.LabelProviderGetCutsceneParentIndex )
+           .InvokeFunc( _currentCutsceneActor ).ToString() );
 
         DrawIntro( PenumbraIpc.LabelProviderReverseResolvePath, "Reversed Game Paths" );
         if( _currentReversePath.Length > 0 )

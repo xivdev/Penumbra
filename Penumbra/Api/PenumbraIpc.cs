@@ -261,6 +261,7 @@ public partial class PenumbraIpc
     public const string LabelProviderResolveCharacter         = "Penumbra.ResolveCharacterPath";
     public const string LabelProviderResolvePlayer            = "Penumbra.ResolvePlayerPath";
     public const string LabelProviderGetDrawObjectInfo        = "Penumbra.GetDrawObjectInfo";
+    public const string LabelProviderGetCutsceneParentIndex   = "Penumbra.GetCutsceneParentIndex";
     public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
     public const string LabelProviderReverseResolvePlayerPath = "Penumbra.ReverseResolvePlayerPath";
     public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
@@ -269,6 +270,7 @@ public partial class PenumbraIpc
     internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
     internal ICallGateProvider< string, string >?                                  ProviderResolvePlayer;
     internal ICallGateProvider< IntPtr, (IntPtr, string) >?                        ProviderGetDrawObjectInfo;
+    internal ICallGateProvider< int, int >?                                        ProviderGetCutsceneParentIndex;
     internal ICallGateProvider< string, string, string[] >?                        ProviderReverseResolvePath;
     internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
     internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
@@ -317,6 +319,16 @@ public partial class PenumbraIpc
 
         try
         {
+            ProviderGetCutsceneParentIndex = pi.GetIpcProvider<int, int>( LabelProviderGetCutsceneParentIndex );
+            ProviderGetCutsceneParentIndex.RegisterFunc( Api.GetCutsceneParentIndex );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetCutsceneParentIndex}:\n{e}" );
+        }
+
+        try
+        {
             ProviderReverseResolvePath = pi.GetIpcProvider< string, string, string[] >( LabelProviderReverseResolvePath );
             ProviderReverseResolvePath.RegisterFunc( Api.ReverseResolvePath );
         }
@@ -350,6 +362,7 @@ public partial class PenumbraIpc
     private void DisposeResolveProviders()
     {
         ProviderGetDrawObjectInfo?.UnregisterFunc();
+        ProviderGetCutsceneParentIndex?.UnregisterFunc();
         ProviderResolveDefault?.UnregisterFunc();
         ProviderResolveCharacter?.UnregisterFunc();
         ProviderReverseResolvePath?.UnregisterFunc();
