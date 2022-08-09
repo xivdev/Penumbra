@@ -84,6 +84,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Penumbra.Config.ModDirectory;
     }
 
+    public event Action< string, bool >? ModDirectoryChanged
+    {
+        add => Penumbra.ModManager.ModDirectoryChanged += value;
+        remove => Penumbra.ModManager.ModDirectoryChanged -= value;
+    }
+
     public string GetConfiguration()
     {
         CheckInitialized();

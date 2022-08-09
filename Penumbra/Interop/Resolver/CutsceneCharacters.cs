@@ -14,7 +14,7 @@ public class CutsceneCharacters : IDisposable
     public const int CutsceneSlots    = 40;
     public const int CutsceneEndIdx   = CutsceneStartIdx + CutsceneSlots;
 
-    private readonly short[] _copiedCharacters = Enumerable.Repeat( ( short )-1, ObjectReloader.CutsceneSlots ).ToArray();
+    private readonly short[] _copiedCharacters = Enumerable.Repeat( ( short )-1, CutsceneSlots ).ToArray();
 
     public IEnumerable< KeyValuePair< int, global::Dalamud.Game.ClientState.Objects.Types.GameObject > > Actors
         => Enumerable.Range( CutsceneStartIdx, CutsceneSlots )

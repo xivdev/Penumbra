@@ -49,6 +49,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain the currently set mod directory from the configuration.
     public string GetModDirectory();
 
+    // Fired whenever a mod directory change is finished.
+    // Gives the full path of the mod directory and whether Penumbra treats it as valid.
+    public event Action< string, bool >? ModDirectoryChanged;
+
     // Obtain the entire current penumbra configuration as a json encoded string.
     public string GetConfiguration();
 

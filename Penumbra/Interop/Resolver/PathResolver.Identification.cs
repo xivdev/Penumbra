@@ -190,7 +190,7 @@ public unsafe partial class PathResolver
                         242 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
                         243 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // dye preview
 
-                        >= ObjectReloader.CutsceneStartIdx and < ObjectReloader.CutsceneEndIdx => GetCutsceneName( gameObject ),
+                        >= CutsceneCharacters.CutsceneStartIdx and < CutsceneCharacters.CutsceneEndIdx => GetCutsceneName( gameObject ),
 
                         _ => null,
                     }
