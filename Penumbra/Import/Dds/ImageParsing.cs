@@ -12,9 +12,9 @@ public static partial class ImageParsing
     {
         var ret = new Rgba32
         {
-            R = ( byte )( c          & 0x1F ),
+            R = ( byte )( c >> 11 ),
             G = ( byte )( ( c >> 5 ) & 0x3F ),
-            B = ( byte )( c >> 11 ),
+            B = ( byte )( c          & 0x1F ),
             A = 0xFF,
         };
 
