@@ -225,29 +225,3 @@ public class DdsFile
         };
     }
 }
-
-public class TmpTexFile
-{
-    public TexFile.TexHeader Header;
-    public byte[]            RgbaData = Array.Empty< byte >();
-
-    public void Load( BinaryReader br )
-    {
-        Header = br.ReadStructure< TexFile.TexHeader >();
-        var data = br.ReadBytes( ( int )( br.BaseStream.Length - br.BaseStream.Position ) );
-        RgbaData = Header.Format switch
-        {
-            TexFile.TextureFormat.L8       => ImageParsing.DecodeUncompressedGreyscale( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.A8       => ImageParsing.DecodeUncompressedGreyscale( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT1     => ImageParsing.DecodeDxt1( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT3     => ImageParsing.DecodeDxt3( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT5     => ImageParsing.DecodeDxt5( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.B8G8R8A8 => ImageParsing.DecodeUncompressedB8G8R8A8( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.B8G8R8X8 => ImageParsing.DecodeUncompressedR8G8B8A8( data, Header.Height, Header.Width ),
-            //TexFile.TextureFormat.A8R8G8B82 => ImageParsing.DecodeUncompressedR8G8B8A8( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.B4G4R4A4 => ImageParsing.DecodeUncompressedR4G4B4A4( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.B5G5R5A1 => ImageParsing.DecodeUncompressedR5G5B5A1( data, Header.Height, Header.Width ),
-            _                              => throw new ArgumentOutOfRangeException(),
-        };
-    }
-}

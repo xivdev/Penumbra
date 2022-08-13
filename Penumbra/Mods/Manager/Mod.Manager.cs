@@ -34,6 +34,7 @@ public sealed partial class Mod
 
         public Manager( string modDirectory )
         {
+            ModDirectoryChanged += OnModDirectoryChange;
             SetBaseDirectory( modDirectory, true );
             ModOptionChanged += OnModOptionChange;
             ModPathChanged   += OnModPathChange;

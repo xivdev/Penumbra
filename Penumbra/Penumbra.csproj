@@ -1,18 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net5.0-windows</TargetFramework>
+        <TargetFramework>net6.0-windows</TargetFramework>
         <LangVersion>preview</LangVersion>
         <PlatformTarget>x64</PlatformTarget>
         <AssemblyTitle>Penumbra</AssemblyTitle>
         <Company>absolute gangstas</Company>
         <Product>Penumbra</Product>
-        <Copyright>Copyright © 2020</Copyright>
+        <Copyright>Copyright © 2022</Copyright>
         <FileVersion>1.0.0.0</FileVersion>
         <AssemblyVersion>1.0.0.0</AssemblyVersion>
         <OutputPath>bin\$(Configuration)\</OutputPath>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -25,36 +27,43 @@
         </Content>
     </ItemGroup>
 
+    <PropertyGroup>
+        <DalamudLibPath>$(AppData)\XIVLauncher\addon\Hooks\dev\</DalamudLibPath>
+    </PropertyGroup>
+
     <ItemGroup>
         <Reference Include="Dalamud">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
+            <HintPath>$(DalamudLibPath)Dalamud.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="ImGui.NET">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
+            <HintPath>$(DalamudLibPath)ImGui.NET.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="ImGuiScene">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\ImGuiScene.dll</HintPath>
+            <HintPath>$(DalamudLibPath)ImGuiScene.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Lumina">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
+            <HintPath>$(DalamudLibPath)Lumina.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="Lumina.Excel">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
+            <HintPath>$(DalamudLibPath)Lumina.Excel.dll</HintPath>
             <Private>False</Private>
         </Reference>
         <Reference Include="FFXIVClientStructs">
-            <HintPath>$(AppData)\XIVLauncher\addon\Hooks\dev\FFXIVClientStructs.dll</HintPath>
+            <HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
+            <Private>False</Private>
+        </Reference>
+        <Reference Include="Newtonsoft.Json">
+            <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
             <Private>False</Private>
         </Reference>
     </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="EmbedIO" Version="3.4.3" />
-        <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
         <PackageReference Include="SixLabors.ImageSharp" Version="2.1.2" />
         <PackageReference Include="SharpCompress" Version="0.32.1" />
     </ItemGroup>

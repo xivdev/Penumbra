@@ -93,6 +93,26 @@ public partial class ConfigWindow
             MoveDirectory.Draw( _mod, buttonSize );
 
             ImGui.Dummy( _window._defaultSpace );
+            DrawUpdateBibo( buttonSize );
+
+            ImGui.Dummy( _window._defaultSpace );
+        }
+
+        private void DrawUpdateBibo( Vector2 buttonSize)
+        {
+            if( ImGui.Button( "Update Bibo Material", buttonSize ) )
+            {
+                var editor = new Mod.Editor( _mod, null );
+                editor.ReplaceAllMaterials( "bibo", "b" );
+                editor.ReplaceAllMaterials( "bibopube", "c" );
+                editor.SaveAllModels();
+                _window.ModEditPopup.UpdateModels();
+            }
+
+            ImGuiUtil.HoverTooltip( "For every model in this mod, change all material names that end in a _b or _c suffix to a _bibo or _bibopube suffix respectively.\n"
+              + "Does nothing if the mod does not contain any such models or no model contains such materials.\n"
+              + "Use this for outdated mods made for old Bibo bodies.\n"
+              + "Go to Advanced Editing for more fine-tuned control over material assignment." );
         }
 
         private void BackupButtons( Vector2 buttonSize )

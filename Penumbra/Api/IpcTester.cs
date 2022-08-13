@@ -28,6 +28,7 @@ public class IpcTester : IDisposable
     private readonly ICallGateSubscriber< object? >                                         _disposed;
     private readonly ICallGateSubscriber< string, object? >                                 _preSettingsDraw;
     private readonly ICallGateSubscriber< string, object? >                                 _postSettingsDraw;
+    private readonly ICallGateSubscriber< string, bool, object? >                           _modDirectoryChanged;
     private readonly ICallGateSubscriber< IntPtr, int, object? >                            _redrawn;
     private readonly ICallGateSubscriber< ModSettingChange, string, string, bool, object? > _settingChanged;
     private readonly ICallGateSubscriber< IntPtr, string, IntPtr, IntPtr, IntPtr, object? > _characterBaseCreated;
@@ -45,6 +46,7 @@ public class IpcTester : IDisposable
         _preSettingsDraw = _pi.GetIpcSubscriber< string, object? >( PenumbraIpc.LabelProviderPreSettingsDraw );
         _postSettingsDraw = _pi.GetIpcSubscriber< string, object? >( PenumbraIpc.LabelProviderPostSettingsDraw );
         _settingChanged = _pi.GetIpcSubscriber< ModSettingChange, string, string, bool, object? >( PenumbraIpc.LabelProviderModSettingChanged );
+        _modDirectoryChanged = _pi.GetIpcSubscriber< string, bool, object? >( PenumbraIpc.LabelProviderModDirectoryChanged );
         _characterBaseCreated =
             _pi.GetIpcSubscriber< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >( PenumbraIpc.LabelProviderCreatingCharacterBase );
         _initialized.Subscribe( AddInitialized );
@@ -54,6 +56,7 @@ public class IpcTester : IDisposable
         _postSettingsDraw.Subscribe( UpdateLastDrawnMod );
         _settingChanged.Subscribe( UpdateLastModSetting );
         _characterBaseCreated.Subscribe( UpdateLastCreated );
+        _modDirectoryChanged.Subscribe( UpdateModDirectoryChanged );
     }
 
     public void Dispose()
@@ -67,6 +70,7 @@ public class IpcTester : IDisposable
         _postSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
         _settingChanged.Unsubscribe( UpdateLastModSetting );
         _characterBaseCreated.Unsubscribe( UpdateLastCreated );
+        _modDirectoryChanged.Unsubscribe( UpdateModDirectoryChanged );
     }
 
     private void AddInitialized()
@@ -131,10 +135,17 @@ public class IpcTester : IDisposable
 
     private string         _currentConfiguration = string.Empty;
     private string         _lastDrawnMod         = string.Empty;
-    private DateTimeOffset _lastDrawnModTime;
+    private DateTimeOffset _lastDrawnModTime     = DateTimeOffset.MinValue;
 
     private void UpdateLastDrawnMod( string name )
         => ( _lastDrawnMod, _lastDrawnModTime ) = ( name, DateTimeOffset.Now );
+
+    private string         _lastModDirectory      = string.Empty;
+    private bool           _lastModDirectoryValid = false;
+    private DateTimeOffset _lastModDirectoryTime  = DateTimeOffset.MinValue;
+
+    private void UpdateModDirectoryChanged( string path, bool valid )
+        => ( _lastModDirectory, _lastModDirectoryValid, _lastModDirectoryTime ) = ( path, valid, DateTimeOffset.Now );
 
     private void DrawGeneral()
     {
@@ -173,6 +184,10 @@ public class IpcTester : IDisposable
         ImGui.TextUnformatted( $"{breaking}.{features:D4}" );
         DrawIntro( PenumbraIpc.LabelProviderGetModDirectory, "Current Mod Directory" );
         ImGui.TextUnformatted( _pi.GetIpcSubscriber< string >( PenumbraIpc.LabelProviderGetModDirectory ).InvokeFunc() );
+        DrawIntro( PenumbraIpc.LabelProviderModDirectoryChanged, "Last Mod Directory Change" );
+        ImGui.TextUnformatted( _lastModDirectoryTime > DateTimeOffset.MinValue
+            ? $"{_lastModDirectory} ({( _lastModDirectoryValid ? "Valid" : "Invalid" )}) at {_lastModDirectoryTime}"
+            : "None" );
         DrawIntro( PenumbraIpc.LabelProviderGetConfiguration, "Configuration" );
         if( ImGui.Button( "Get" ) )
         {
@@ -201,6 +216,7 @@ public class IpcTester : IDisposable
     private string         _currentDrawObjectString   = string.Empty;
     private string         _currentReversePath        = string.Empty;
     private IntPtr         _currentDrawObject         = IntPtr.Zero;
+    private int            _currentCutsceneActor      = 0;
     private string         _lastCreatedGameObjectName = string.Empty;
     private DateTimeOffset _lastCreatedGameObjectTime = DateTimeOffset.MaxValue;
 
@@ -230,6 +246,8 @@ public class IpcTester : IDisposable
                 ? tmp
                 : IntPtr.Zero;
         }
+
+        ImGui.InputInt( "Cutscene Actor", ref _currentCutsceneActor, 0 );
 
         using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
         if( !table )
@@ -262,6 +280,10 @@ public class IpcTester : IDisposable
                .InvokeFunc( _currentDrawObject );
             ImGui.TextUnformatted( ptr == IntPtr.Zero ? $"No Actor Associated, {collection}" : $"{ptr:X}, {collection}" );
         }
+
+        DrawIntro( PenumbraIpc.LabelProviderGetDrawObjectInfo, "Cutscene Parent" );
+        ImGui.TextUnformatted( _pi.GetIpcSubscriber< int, int >( PenumbraIpc.LabelProviderGetCutsceneParentIndex )
+           .InvokeFunc( _currentCutsceneActor ).ToString() );
 
         DrawIntro( PenumbraIpc.LabelProviderReverseResolvePath, "Reversed Game Paths" );
         if( _currentReversePath.Length > 0 )

@@ -6,7 +6,6 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.ImGuiFileDialog;
-using Dalamud.Logging;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
@@ -45,7 +44,6 @@ public partial class ConfigWindow
             }
 
             DrawEnabledBox();
-            DrawShowAdvancedBox();
             Checkbox( "Lock Main Window", "Prevent the main window from being resized or moved.", Penumbra.Config.FixMainWindow, v =>
             {
                 Penumbra.Config.FixMainWindow = v;
@@ -76,8 +74,8 @@ public partial class ConfigWindow
         // Shows up only if the current input does not correspond to the current directory.
         private static bool DrawPressEnterWarning( string newName, string old, float width, bool saved )
         {
-            using var color  = ImRaii.PushColor( ImGuiCol.Button, Colors.PressEnterWarningBg );
-            var       w      = new Vector2( width, 0 );
+            using var color = ImRaii.PushColor( ImGuiCol.Button, Colors.PressEnterWarningBg );
+            var       w     = new Vector2( width, 0 );
             var (text, valid) = CheckPath( newName, old );
 
             return ( ImGui.Button( text, w ) || saved ) && valid;
@@ -88,7 +86,7 @@ public partial class ConfigWindow
             static bool IsSubPathOf( string basePath, string subPath )
             {
                 var rel = Path.GetRelativePath( basePath, subPath );
-                return rel == "." || (!rel.StartsWith( '.' ) && !Path.IsPathRooted( rel ));
+                return rel == "." || !rel.StartsWith( '.' ) && !Path.IsPathRooted( rel );
             }
 
             if( newName.Length > RootDirectoryMaxLength )
@@ -111,6 +109,13 @@ public partial class ConfigWindow
             if( IsSubPathOf( desktop, newName ) )
             {
                 return ( "Path may not be on your Desktop.", false );
+            }
+
+            var programFiles    = Environment.GetFolderPath( Environment.SpecialFolder.ProgramFiles );
+            var programFilesX86 = Environment.GetFolderPath( Environment.SpecialFolder.ProgramFilesX86 );
+            if( IsSubPathOf( programFiles, newName ) || IsSubPathOf( programFilesX86, newName ) )
+            {
+                return ( "Path may not be in ProgramFiles.", false );
             }
 
             var dalamud = Dalamud.PluginInterface.ConfigDirectory.Parent!.Parent!;
@@ -198,12 +203,19 @@ public partial class ConfigWindow
             DrawDirectoryPickerButton();
             style.Pop();
             ImGui.SameLine();
-            ImGuiUtil.LabeledHelpMarker( "Root Directory", "This is where Penumbra will store your extracted mod files.\n"
+
+            const string tt = "This is where Penumbra will store your extracted mod files.\n"
               + "TTMP files are not copied, just extracted.\n"
               + "This directory needs to be accessible and you need write access here.\n"
               + "It is recommended that this directory is placed on a fast hard drive, preferably an SSD.\n"
               + "It should also be placed near the root of a logical drive - the shorter the total path to this folder, the better.\n"
-              + "Definitely do not place it in your Dalamud directory or any sub-directory thereof." );
+              + "Definitely do not place it in your Dalamud directory or any sub-directory thereof.";
+            ImGuiComponents.HelpMarker( tt );
+            OpenTutorial( BasicTutorialSteps.GeneralTooltips );
+            ImGui.SameLine();
+            ImGui.TextUnformatted( "Root Directory" );
+            ImGuiUtil.HoverTooltip( tt );
+
             group.Dispose();
             OpenTutorial( BasicTutorialSteps.ModDirectory );
             ImGui.SameLine();
@@ -240,32 +252,6 @@ public partial class ConfigWindow
             }
 
             OpenTutorial( BasicTutorialSteps.EnableMods );
-        }
-
-        private static void DrawShowAdvancedBox()
-        {
-            var showAdvanced = Penumbra.Config.ShowAdvanced;
-            using( var _ = ImRaii.Group() )
-            {
-                if( ImGui.Checkbox( "##showAdvanced", ref showAdvanced ) )
-                {
-                    Penumbra.Config.ShowAdvanced = showAdvanced;
-                    Penumbra.Config.Save();
-                }
-
-                ImGui.SameLine();
-                const string tt = "Enable some advanced options in this window and in the mod selector.\n"
-                  + "This is required to enable manually editing any mod information.";
-
-                // Manually split due to tutorial.
-                ImGuiComponents.HelpMarker( tt );
-                OpenTutorial( BasicTutorialSteps.GeneralTooltips );
-                ImGui.SameLine();
-                ImGui.TextUnformatted( "Show Advanced Settings" );
-                ImGuiUtil.HoverTooltip( tt );
-            }
-
-            OpenTutorial( BasicTutorialSteps.AdvancedSettings );
         }
 
         private static void DrawColorSettings()

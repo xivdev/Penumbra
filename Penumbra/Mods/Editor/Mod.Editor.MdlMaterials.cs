@@ -69,7 +69,7 @@ public partial class Mod
         }
 
         // Find all model files in the mod that contain skin materials.
-        private void ScanModels()
+        public void ScanModels()
         {
             _modelFiles.Clear();
             foreach( var file in AvailableFiles.Where( f => f.File.Extension == ".mdl" ) )
