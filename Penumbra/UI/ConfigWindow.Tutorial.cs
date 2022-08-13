@@ -11,6 +11,7 @@ public partial class ConfigWindow
     public const string SelectedCollection    = "Selected Collection";
     public const string DefaultCollection     = "Base Collection";
     public const string ActiveCollections     = "Active Collections";
+    public const string AssignedCollections   = "Assigned Collections";
     public const string GroupAssignment       = "Group Assignment";
     public const string CharacterGroups       = "Character Groups";
     public const string ConditionalGroup      = "Group";

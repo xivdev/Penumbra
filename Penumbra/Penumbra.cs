@@ -79,9 +79,9 @@ public class Penumbra : IDalamudPlugin
         Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() );
         Config = Configuration.Load();
 
-        TempMods          = new TempModManager();
-        MetaFileManager   = new MetaFileManager();
-        ResourceLoader    = new ResourceLoader( this );
+        TempMods        = new TempModManager();
+        MetaFileManager = new MetaFileManager();
+        ResourceLoader  = new ResourceLoader( this );
         ResourceLoader.EnableHooks();
         ResourceLogger    = new ResourceLogger( ResourceLoader );
         ResidentResources = new ResidentResourceManager();
@@ -450,10 +450,10 @@ public class Penumbra : IDalamudPlugin
                 c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority || !x.Solved ? 0 : x.Conflicts.Count ) );
 
         sb.AppendLine( "**Collections**" );
-        sb.AppendFormat( "> **`#Collections:                `** {0}\n", CollectionManager.Count - 1 );
-        sb.AppendFormat( "> **`Active Collections:          `** {0}\n", CollectionManager.Count( c => c.HasCache ) );
-        sb.AppendFormat( "> **`Default Collection:          `** {0}\n", CollectionManager.Default.AnonymizedName);
-        sb.AppendFormat( "> **`Current Collection:          `** {0}\n", CollectionManager.Current.AnonymizedName);
+        sb.AppendFormat( "> **`#Collections:                 `** {0}\n", CollectionManager.Count - 1 );
+        sb.AppendFormat( "> **`Active Collections:           `** {0}\n", CollectionManager.Count( c => c.HasCache ) );
+        sb.AppendFormat( "> **`Base Collection:              `** {0}\n", CollectionManager.Default.AnonymizedName );
+        sb.AppendFormat( "> **`Selected Collection:          `** {0}\n", CollectionManager.Current.AnonymizedName );
         foreach( var type in CollectionTypeExtensions.Special )
         {
             var collection = CollectionManager.ByType( type );

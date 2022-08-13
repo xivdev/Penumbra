@@ -87,9 +87,9 @@ public partial class ConfigWindow
             var manager = Penumbra.ModManager;
             PrintValue( "Penumbra Version", $"{Penumbra.Version} {DebugVersionString}" );
             PrintValue( "Git Commit Hash", Penumbra.CommitHash );
-            PrintValue( "Current Collection", Penumbra.CollectionManager.Current.Name );
+            PrintValue( SelectedCollection, Penumbra.CollectionManager.Current.Name );
             PrintValue( "    has Cache", Penumbra.CollectionManager.Current.HasCache.ToString() );
-            PrintValue( "Default Collection", Penumbra.CollectionManager.Default.Name );
+            PrintValue( DefaultCollection, Penumbra.CollectionManager.Default.Name );
             PrintValue( "    has Cache", Penumbra.CollectionManager.Default.HasCache.ToString() );
             PrintValue( "Mod Manager BasePath", manager.BasePath.Name );
             PrintValue( "Mod Manager BasePath-Full", manager.BasePath.FullName );
