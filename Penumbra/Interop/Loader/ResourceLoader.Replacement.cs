@@ -9,7 +9,6 @@ using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
@@ -72,7 +71,7 @@ public unsafe partial class ResourceLoader
         }
     }
 
-    internal event Action< Utf8GamePath, ResourceType, FullPath?, ModCollection? >? PathResolved;
+    internal event Action< Utf8GamePath, ResourceType, FullPath?, object? >? PathResolved;
 
     private ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
@@ -108,14 +107,14 @@ public unsafe partial class ResourceLoader
 
 
     // Use the default method of path replacement.
-    public static (FullPath?, ModCollection?) DefaultResolver( Utf8GamePath path )
+    public static (FullPath?, object?) DefaultResolver( Utf8GamePath path )
     {
         var resolved = Penumbra.CollectionManager.Default.ResolvePath( path );
         return ( resolved, null );
     }
 
     // Try all resolve path subscribers or use the default replacer.
-    private (FullPath?, ModCollection?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
+    private (FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
         if( !DoReplacements || _incMode.Value )
         {

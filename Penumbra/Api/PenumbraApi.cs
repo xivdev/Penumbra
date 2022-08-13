@@ -64,7 +64,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         Penumbra.ResourceLoader.PathResolved += OnPathResolved;
     }
 
-    private void OnPathResolved( Utf8GamePath gamePath, ResourceType resourceType, FullPath? resolvedPath, ModCollection? modCollection )
+    private void OnPathResolved( Utf8GamePath gamePath, ResourceType resourceType, FullPath? resolvedPath, object? modCollection )
     {
         if( modCollection == null || resolvedPath == null  ) return;
         if( Dalamud.ClientState.LocalPlayer != null && modCollection == PathResolver.PlayerCollection() )
