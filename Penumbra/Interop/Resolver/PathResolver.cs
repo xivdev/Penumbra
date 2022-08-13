@@ -40,7 +40,7 @@ public partial class PathResolver : IDisposable
     }
 
     // The modified resolver that handles game path resolving.
-    private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, ModCollection? ) data )
+    private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, object? ) data )
     {
         // Check if the path was marked for a specific collection,
         // or if it is a file loaded by a material, and if we are currently in a material load,
