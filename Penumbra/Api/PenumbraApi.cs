@@ -42,8 +42,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public event CreatingCharacterBaseDelegate? CreatingCharacterBase
     {
-        add => _penumbra!.PathResolver.CreatingCharacterBase += value;
-        remove => _penumbra!.PathResolver.CreatingCharacterBase -= value;
+        add => PathResolver.DrawObjectState.CreatingCharacterBase += value;
+        remove => PathResolver.DrawObjectState.CreatingCharacterBase -= value;
     }
 
     public bool Valid
@@ -53,9 +53,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         _penumbra = penumbra;
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
-            .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
-            ?.GetValue( Dalamud.GameData );
-
+           .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
+          ?.GetValue( Dalamud.GameData );
         foreach( var collection in Penumbra.CollectionManager )
         {
             SubscribeToCollection( collection );
@@ -95,6 +94,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         return Penumbra.Config.ModDirectory;
+    }
+
+    public event Action< string, bool >? ModDirectoryChanged
+    {
+        add => Penumbra.ModManager.ModDirectoryChanged += value;
+        remove => Penumbra.ModManager.ModDirectoryChanged -= value;
     }
 
     public string GetConfiguration()
@@ -232,8 +237,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public (IntPtr, string) GetDrawObjectInfo( IntPtr drawObject )
     {
         CheckInitialized();
-        var (obj, collection) = _penumbra!.PathResolver.IdentifyDrawObject( drawObject );
+        var (obj, collection) = PathResolver.IdentifyDrawObject( drawObject );
         return ( obj, collection.Name );
+    }
+
+    public int GetCutsceneParentIndex( int actor )
+    {
+        CheckInitialized();
+        return _penumbra!.PathResolver.CutsceneActor( actor );
     }
 
     public IList< (string, string) > GetModList()
@@ -440,7 +451,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         if( !forceOverwriteCharacter && Penumbra.CollectionManager.Characters.ContainsKey( character )
-           || Penumbra.TempMods.Collections.ContainsKey( character ) )
+        || Penumbra.TempMods.Collections.ContainsKey( character ) )
         {
             return ( PenumbraApiEc.CharacterCollectionExists, string.Empty );
         }
@@ -486,7 +497,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         if( !Penumbra.TempMods.CollectionByName( collectionName, out var collection )
-           && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
+        && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
         {
             return PenumbraApiEc.CollectionMissing;
         }
@@ -523,7 +534,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         if( !Penumbra.TempMods.CollectionByName( collectionName, out var collection )
-           && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
+        && !Penumbra.CollectionManager.ByName( collectionName, out collection ) )
         {
             return PenumbraApiEc.CollectionMissing;
         }

@@ -45,6 +45,9 @@ public partial class ModEditWindow : Window, IDisposable
     public void ChangeOption( ISubMod? subMod )
         => _editor?.SetSubMod( subMod );
 
+    public void UpdateModels()
+        => _editor?.ScanModels();
+
     public override bool DrawConditions()
         => _editor != null;
 

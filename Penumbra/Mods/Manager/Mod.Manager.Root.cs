@@ -13,6 +13,7 @@ public sealed partial class Mod
 
         public event Action? ModDiscoveryStarted;
         public event Action? ModDiscoveryFinished;
+        public event Action< string, bool > ModDirectoryChanged;
 
         // Change the mod base directory and discover available mods.
         public void DiscoverMods( string newDir )
@@ -35,6 +36,10 @@ public sealed partial class Mod
             {
                 Valid    = false;
                 BasePath = new DirectoryInfo( "." );
+                if( Penumbra.Config.ModDirectory != BasePath.FullName )
+                {
+                    ModDirectoryChanged.Invoke( string.Empty, false );
+                }
             }
             else
             {
@@ -56,11 +61,17 @@ public sealed partial class Mod
                 Valid    = Directory.Exists( newDir.FullName );
                 if( Penumbra.Config.ModDirectory != BasePath.FullName )
                 {
-                    PluginLog.Information( "Set new mod base directory from {OldDirectory:l} to {NewDirectory:l}.", Penumbra.Config.ModDirectory, BasePath.FullName );
-                    Penumbra.Config.ModDirectory = BasePath.FullName;
-                    Penumbra.Config.Save();
+                    ModDirectoryChanged.Invoke( BasePath.FullName, Valid );
                 }
             }
+        }
+
+        private static void OnModDirectoryChange( string newPath, bool _ )
+        {
+            PluginLog.Information( "Set new mod base directory from {OldDirectory:l} to {NewDirectory:l}.",
+                Penumbra.Config.ModDirectory, newPath );
+            Penumbra.Config.ModDirectory = newPath;
+            Penumbra.Config.Save();
         }
 
         // Discover new mods.

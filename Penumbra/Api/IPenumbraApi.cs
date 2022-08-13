@@ -50,6 +50,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain the currently set mod directory from the configuration.
     public string GetModDirectory();
 
+    // Fired whenever a mod directory change is finished.
+    // Gives the full path of the mod directory and whether Penumbra treats it as valid.
+    public event Action< string, bool >? ModDirectoryChanged;
+
     // Obtain the entire current penumbra configuration as a json encoded string.
     public string GetConfiguration();
 
@@ -127,6 +131,9 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Obtain the game object associated with a given draw object and the name of the collection associated with this game object.
     public (IntPtr, string) GetDrawObjectInfo( IntPtr drawObject );
+
+    // Obtain the parent game object index for an unnamed cutscene actor by its index.
+    public int GetCutsceneParentIndex( int actor );
 
     // Obtain a list of all installed mods. The first string is their directory name, the second string is their mod name.
     public IList< (string, string) > GetModList();

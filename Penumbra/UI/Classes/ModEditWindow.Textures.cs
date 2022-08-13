@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
-using System.Reflection;
 using System.Threading.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -165,16 +164,6 @@ public partial class ModEditWindow
     {
         try
         {
-            if( fromDisk )
-            {
-                var       tmp    = new TmpTexFile();
-                using var stream = File.OpenRead( path );
-                using var br     = new BinaryReader( stream );
-                tmp.Load(br);
-                return (tmp.RgbaData, tmp.Header.Width, tmp.Header.Height);
-            }
-
-
             var tex = fromDisk ? Dalamud.GameData.GameData.GetFileFromDisk< TexFile >( path ) : Dalamud.GameData.GetFile< TexFile >( path );
             if( tex == null )
             {

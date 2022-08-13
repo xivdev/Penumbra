@@ -26,6 +26,7 @@ public partial class PenumbraIpc : IDisposable
         InitializeSettingProviders( pi );
         InitializeTempProviders( pi );
         ProviderInitialized?.SendMessage();
+        InvokeModDirectoryChanged( Penumbra.ModManager.BasePath.FullName, Penumbra.ModManager.Valid );
     }
 
     public void Dispose()
@@ -44,23 +45,25 @@ public partial class PenumbraIpc : IDisposable
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderInitialized = "Penumbra.Initialized";
-    public const string LabelProviderDisposed = "Penumbra.Disposed";
-    public const string LabelProviderApiVersion = "Penumbra.ApiVersion";
-    public const string LabelProviderApiVersions = "Penumbra.ApiVersions";
-    public const string LabelProviderGetModDirectory = "Penumbra.GetModDirectory";
-    public const string LabelProviderGetConfiguration = "Penumbra.GetConfiguration";
-    public const string LabelProviderPreSettingsDraw = "Penumbra.PreSettingsDraw";
-    public const string LabelProviderPostSettingsDraw = "Penumbra.PostSettingsDraw";
+    public const string LabelProviderInitialized         = "Penumbra.Initialized";
+    public const string LabelProviderDisposed            = "Penumbra.Disposed";
+    public const string LabelProviderApiVersion          = "Penumbra.ApiVersion";
+    public const string LabelProviderApiVersions         = "Penumbra.ApiVersions";
+    public const string LabelProviderGetModDirectory     = "Penumbra.GetModDirectory";
+    public const string LabelProviderModDirectoryChanged = "Penumbra.ModDirectoryChanged";
+    public const string LabelProviderGetConfiguration    = "Penumbra.GetConfiguration";
+    public const string LabelProviderPreSettingsDraw     = "Penumbra.PreSettingsDraw";
+    public const string LabelProviderPostSettingsDraw    = "Penumbra.PostSettingsDraw";
 
-    internal ICallGateProvider<object?>? ProviderInitialized;
-    internal ICallGateProvider<object?>? ProviderDisposed;
-    internal ICallGateProvider<int>? ProviderApiVersion;
-    internal ICallGateProvider<(int Breaking, int Features)>? ProviderApiVersions;
-    internal ICallGateProvider<string>? ProviderGetModDirectory;
-    internal ICallGateProvider<string>? ProviderGetConfiguration;
-    internal ICallGateProvider<string, object?>? ProviderPreSettingsDraw;
-    internal ICallGateProvider<string, object?>? ProviderPostSettingsDraw;
+    internal ICallGateProvider< object? >?                      ProviderInitialized;
+    internal ICallGateProvider< object? >?                      ProviderDisposed;
+    internal ICallGateProvider< int >?                          ProviderApiVersion;
+    internal ICallGateProvider< (int Breaking, int Features) >? ProviderApiVersions;
+    internal ICallGateProvider< string >?                       ProviderGetModDirectory;
+    internal ICallGateProvider< string, bool, object? >?        ProviderModDirectoryChanged;
+    internal ICallGateProvider< string >?                       ProviderGetConfiguration;
+    internal ICallGateProvider< string, object? >?              ProviderPreSettingsDraw;
+    internal ICallGateProvider< string, object? >?              ProviderPostSettingsDraw;
 
     private void InitializeGeneralProviders( DalamudPluginInterface pi )
     {
@@ -118,7 +121,17 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGetConfiguration = pi.GetIpcProvider<string>( LabelProviderGetConfiguration );
+            ProviderModDirectoryChanged =  pi.GetIpcProvider< string, bool, object? >( LabelProviderModDirectoryChanged );
+            Api.ModDirectoryChanged     += InvokeModDirectoryChanged;
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderModDirectoryChanged}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderGetConfiguration = pi.GetIpcProvider< string >( LabelProviderGetConfiguration );
             ProviderGetConfiguration.RegisterFunc( Api.GetConfiguration );
         }
         catch( Exception e )
@@ -155,7 +168,17 @@ public partial class PenumbraIpc
         ProviderApiVersions?.UnregisterFunc();
         Api.PreSettingsPanelDraw -= InvokeSettingsPreDraw;
         Api.PostSettingsPanelDraw -= InvokeSettingsPostDraw;
+        Api.ModDirectoryChanged   -= InvokeModDirectoryChanged;
     }
+
+    private void InvokeSettingsPreDraw( string modDirectory )
+        => ProviderPreSettingsDraw!.SendMessage( modDirectory );
+
+    private void InvokeSettingsPostDraw( string modDirectory )
+        => ProviderPostSettingsDraw!.SendMessage( modDirectory );
+
+    private void InvokeModDirectoryChanged( string modDirectory, bool valid )
+        => ProviderModDirectoryChanged?.SendMessage( modDirectory, valid );
 }
 
 public partial class PenumbraIpc
@@ -239,12 +262,6 @@ public partial class PenumbraIpc
     private void OnGameObjectRedrawn( IntPtr objectAddress, int objectTableIndex )
         => ProviderGameObjectRedrawn?.SendMessage( objectAddress, objectTableIndex );
 
-    private void InvokeSettingsPreDraw( string modDirectory )
-        => ProviderPreSettingsDraw!.SendMessage( modDirectory );
-
-    private void InvokeSettingsPostDraw( string modDirectory )
-        => ProviderPostSettingsDraw!.SendMessage( modDirectory );
-
     private void DisposeRedrawProviders()
     {
         ProviderRedrawName?.UnregisterAction();
@@ -257,21 +274,23 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderResolveDefault = "Penumbra.ResolveDefaultPath";
-    public const string LabelProviderResolveCharacter = "Penumbra.ResolveCharacterPath";
-    public const string LabelProviderResolvePlayer = "Penumbra.ResolvePlayerPath";
-    public const string LabelProviderGetDrawObjectInfo = "Penumbra.GetDrawObjectInfo";
-    public const string LabelProviderReverseResolvePath = "Penumbra.ReverseResolvePath";
+    public const string LabelProviderResolveDefault           = "Penumbra.ResolveDefaultPath";
+    public const string LabelProviderResolveCharacter         = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderResolvePlayer            = "Penumbra.ResolvePlayerPath";
+    public const string LabelProviderGetDrawObjectInfo        = "Penumbra.GetDrawObjectInfo";
+    public const string LabelProviderGetCutsceneParentIndex   = "Penumbra.GetCutsceneParentIndex";
+    public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
     public const string LabelProviderReverseResolvePlayerPath = "Penumbra.ReverseResolvePlayerPath";
     public const string LabelProviderCreatingCharacterBase = "Penumbra.CreatingCharacterBase";
 
-    internal ICallGateProvider<string, string>? ProviderResolveDefault;
-    internal ICallGateProvider<string, string, string>? ProviderResolveCharacter;
-    internal ICallGateProvider<string, string>? ProviderResolvePlayer;
-    internal ICallGateProvider<IntPtr, (IntPtr, string)>? ProviderGetDrawObjectInfo;
-    internal ICallGateProvider<string, string, string[]>? ProviderReverseResolvePath;
-    internal ICallGateProvider<string, string[]>? ProviderReverseResolvePathPlayer;
-    internal ICallGateProvider<IntPtr, string, IntPtr, IntPtr, IntPtr, object?>? ProviderCreatingCharacterBase;
+    internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
+    internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
+    internal ICallGateProvider< string, string >?                                  ProviderResolvePlayer;
+    internal ICallGateProvider< IntPtr, (IntPtr, string) >?                        ProviderGetDrawObjectInfo;
+    internal ICallGateProvider< int, int >?                                        ProviderGetCutsceneParentIndex;
+    internal ICallGateProvider< string, string, string[] >?                        ProviderReverseResolvePath;
+    internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
+    internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
@@ -317,7 +336,17 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderReverseResolvePath = pi.GetIpcProvider<string, string, string[]>( LabelProviderReverseResolvePath );
+            ProviderGetCutsceneParentIndex = pi.GetIpcProvider< int, int >( LabelProviderGetCutsceneParentIndex );
+            ProviderGetCutsceneParentIndex.RegisterFunc( Api.GetCutsceneParentIndex );
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetCutsceneParentIndex}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderReverseResolvePath = pi.GetIpcProvider< string, string, string[] >( LabelProviderReverseResolvePath );
             ProviderReverseResolvePath.RegisterFunc( Api.ReverseResolvePath );
         }
         catch( Exception e )
@@ -350,6 +379,7 @@ public partial class PenumbraIpc
     private void DisposeResolveProviders()
     {
         ProviderGetDrawObjectInfo?.UnregisterFunc();
+        ProviderGetCutsceneParentIndex?.UnregisterFunc();
         ProviderResolveDefault?.UnregisterFunc();
         ProviderResolveCharacter?.UnregisterFunc();
         ProviderReverseResolvePath?.UnregisterFunc();

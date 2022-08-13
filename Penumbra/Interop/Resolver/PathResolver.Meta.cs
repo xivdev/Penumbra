@@ -1,9 +1,8 @@
 using System;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Resolver;
@@ -33,136 +32,133 @@ namespace Penumbra.Interop.Resolver;
 
 public unsafe partial class PathResolver
 {
-    public delegate void UpdateModelDelegate( IntPtr drawObject );
-
-    [Signature( "48 8B ?? 56 48 83 ?? ?? ?? B9", DetourName = "UpdateModelsDetour" )]
-    public Hook< UpdateModelDelegate >? UpdateModelsHook;
-
-    private void UpdateModelsDetour( IntPtr drawObject )
+    public unsafe class MetaState : IDisposable
     {
-        // Shortcut because this is called all the time.
-        // Same thing is checked at the beginning of the original function.
-        if( *( int* )( drawObject + 0x90c ) == 0 )
+        private readonly PathResolver _parent;
+
+        public MetaState( PathResolver parent, IntPtr* humanVTable )
         {
-            return;
+            SignatureHelper.Initialise( this );
+            _parent                  = parent;
+            _onModelLoadCompleteHook = Hook< OnModelLoadCompleteDelegate >.FromAddress( humanVTable[ 58 ], OnModelLoadCompleteDetour );
         }
 
-        var collection = GetCollection( drawObject );
-        if( collection != null )
+        public void Enable()
         {
-            using var eqp  = MetaChanger.ChangeEqp( collection );
-            using var eqdp = MetaChanger.ChangeEqdp( collection );
-            UpdateModelsHook!.Original.Invoke( drawObject );
-        }
-        else
-        {
-            UpdateModelsHook!.Original.Invoke( drawObject );
-        }
-    }
-
-    [Signature( "40 ?? 48 83 ?? ?? ?? 81 ?? ?? ?? ?? ?? 48 8B ?? 74 ?? ?? 83 ?? ?? ?? ?? ?? ?? 74 ?? 4C",
-        DetourName = "GetEqpIndirectDetour" )]
-    public Hook< OnModelLoadCompleteDelegate >? GetEqpIndirectHook;
-
-    private void GetEqpIndirectDetour( IntPtr drawObject )
-    {
-        // Shortcut because this is also called all the time.
-        // Same thing is checked at the beginning of the original function.
-        if( ( *( byte* )( drawObject + 0xa30 ) & 1 ) == 0 || *( ulong* )( drawObject + 0xa28 ) == 0 )
-        {
-            return;
+            _getEqpIndirectHook.Enable();
+            _updateModelsHook.Enable();
+            _onModelLoadCompleteHook.Enable();
+            _setupVisorHook.Enable();
+            _rspSetupCharacterHook.Enable();
         }
 
-        using var eqp = MetaChanger.ChangeEqp( this, drawObject );
-        GetEqpIndirectHook!.Original( drawObject );
-    }
-
-    public Hook< OnModelLoadCompleteDelegate >? OnModelLoadCompleteHook;
-
-    private void OnModelLoadCompleteDetour( IntPtr drawObject )
-    {
-        var collection = GetCollection( drawObject );
-        if( collection != null )
+        public void Disable()
         {
-            using var eqp  = MetaChanger.ChangeEqp( collection );
-            using var eqdp = MetaChanger.ChangeEqdp( collection );
-            OnModelLoadCompleteHook!.Original.Invoke( drawObject );
-        }
-        else
-        {
-            OnModelLoadCompleteHook!.Original.Invoke( drawObject );
-        }
-    }
-
-    // GMP. This gets called every time when changing visor state, and it accesses the gmp file itself,
-    // but it only applies a changed gmp file after a redraw for some reason.
-    public delegate byte SetupVisorDelegate( IntPtr drawObject, ushort modelId, byte visorState );
-
-    [Signature( "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", DetourName = "SetupVisorDetour" )]
-    public Hook< SetupVisorDelegate >? SetupVisorHook;
-
-    private byte SetupVisorDetour( IntPtr drawObject, ushort modelId, byte visorState )
-    {
-        using var gmp = MetaChanger.ChangeGmp( this, drawObject );
-        return SetupVisorHook!.Original( drawObject, modelId, visorState );
-    }
-
-    // RSP
-    public delegate void RspSetupCharacterDelegate( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 );
-
-    [Signature( "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 88 54 24 ?? 57 41 56", DetourName = "RspSetupCharacterDetour" )]
-    public Hook< RspSetupCharacterDelegate >? RspSetupCharacterHook;
-
-    private void RspSetupCharacterDetour( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 )
-    {
-        using var rsp = MetaChanger.ChangeCmp( this, drawObject );
-        RspSetupCharacterHook!.Original( drawObject, unk2, unk3, unk4, unk5 );
-    }
-
-    private void SetupMetaHooks()
-    {
-        OnModelLoadCompleteHook =
-            Hook< OnModelLoadCompleteDelegate >.FromAddress( DrawObjectHumanVTable[ OnModelLoadCompleteIdx ], OnModelLoadCompleteDetour );
-    }
-
-    private void EnableMetaHooks()
-    {
-        GetEqpIndirectHook?.Enable();
-        UpdateModelsHook?.Enable();
-        OnModelLoadCompleteHook?.Enable();
-        SetupVisorHook?.Enable();
-        RspSetupCharacterHook?.Enable();
-    }
-
-    private void DisableMetaHooks()
-    {
-        GetEqpIndirectHook?.Disable();
-        UpdateModelsHook?.Disable();
-        OnModelLoadCompleteHook?.Disable();
-        SetupVisorHook?.Disable();
-        RspSetupCharacterHook?.Disable();
-    }
-
-    private void DisposeMetaHooks()
-    {
-        GetEqpIndirectHook?.Dispose();
-        UpdateModelsHook?.Dispose();
-        OnModelLoadCompleteHook?.Dispose();
-        SetupVisorHook?.Dispose();
-        RspSetupCharacterHook?.Dispose();
-    }
-
-    private ModCollection? GetCollection( IntPtr drawObject )
-    {
-        var parent = FindParent( drawObject, out var collection );
-        if( parent == null || collection == Penumbra.CollectionManager.Default )
-        {
-            return null;
+            _getEqpIndirectHook.Disable();
+            _updateModelsHook.Disable();
+            _onModelLoadCompleteHook.Disable();
+            _setupVisorHook.Disable();
+            _rspSetupCharacterHook.Disable();
         }
 
-        return collection.HasCache ? collection : null;
-    }
+        public void Dispose()
+        {
+            _getEqpIndirectHook.Dispose();
+            _updateModelsHook.Dispose();
+            _onModelLoadCompleteHook.Dispose();
+            _setupVisorHook.Dispose();
+            _rspSetupCharacterHook.Dispose();
+        }
 
+        private delegate void                                OnModelLoadCompleteDelegate( IntPtr drawObject );
+        private readonly Hook< OnModelLoadCompleteDelegate > _onModelLoadCompleteHook;
+
+        private void OnModelLoadCompleteDetour( IntPtr drawObject )
+        {
+            var collection = GetCollection( drawObject );
+            if( collection != null )
+            {
+                using var eqp  = MetaChanger.ChangeEqp( collection );
+                using var eqdp = MetaChanger.ChangeEqdp( collection );
+                _onModelLoadCompleteHook.Original.Invoke( drawObject );
+            }
+            else
+            {
+                _onModelLoadCompleteHook.Original.Invoke( drawObject );
+            }
+        }
+
+
+        private delegate void UpdateModelDelegate( IntPtr drawObject );
+
+        [Signature( "48 8B ?? 56 48 83 ?? ?? ?? B9", DetourName = nameof( UpdateModelsDetour ) )]
+        private readonly Hook< UpdateModelDelegate > _updateModelsHook = null!;
+
+        private void UpdateModelsDetour( IntPtr drawObject )
+        {
+            // Shortcut because this is called all the time.
+            // Same thing is checked at the beginning of the original function.
+            if( *( int* )( drawObject + 0x90c ) == 0 )
+            {
+                return;
+            }
+
+            var collection = GetCollection( drawObject );
+            if( collection != null )
+            {
+                using var eqp  = MetaChanger.ChangeEqp( collection );
+                using var eqdp = MetaChanger.ChangeEqdp( collection );
+                _updateModelsHook.Original.Invoke( drawObject );
+            }
+            else
+            {
+                _updateModelsHook.Original.Invoke( drawObject );
+            }
+        }
+
+        [Signature( "40 ?? 48 83 ?? ?? ?? 81 ?? ?? ?? ?? ?? 48 8B ?? 74 ?? ?? 83 ?? ?? ?? ?? ?? ?? 74 ?? 4C",
+            DetourName = nameof( GetEqpIndirectDetour ) )]
+        private readonly Hook< OnModelLoadCompleteDelegate > _getEqpIndirectHook = null!;
+
+        private void GetEqpIndirectDetour( IntPtr drawObject )
+        {
+            // Shortcut because this is also called all the time.
+            // Same thing is checked at the beginning of the original function.
+            if( ( *( byte* )( drawObject + 0xa30 ) & 1 ) == 0 || *( ulong* )( drawObject + 0xa28 ) == 0 )
+            {
+                return;
+            }
+
+            using var eqp = MetaChanger.ChangeEqp( _parent, drawObject );
+            _getEqpIndirectHook.Original( drawObject );
+        }
+
+
+        // GMP. This gets called every time when changing visor state, and it accesses the gmp file itself,
+        // but it only applies a changed gmp file after a redraw for some reason.
+        private delegate byte SetupVisorDelegate( IntPtr drawObject, ushort modelId, byte visorState );
+
+        [Signature( "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", DetourName = nameof( SetupVisorDetour ) )]
+        private readonly Hook< SetupVisorDelegate > _setupVisorHook = null!;
+
+        private byte SetupVisorDetour( IntPtr drawObject, ushort modelId, byte visorState )
+        {
+            using var gmp = MetaChanger.ChangeGmp( _parent, drawObject );
+            return _setupVisorHook.Original( drawObject, modelId, visorState );
+        }
+
+        // RSP
+        private delegate void RspSetupCharacterDelegate( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 );
+
+        [Signature( "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 88 54 24 ?? 57 41 56", DetourName = nameof( RspSetupCharacterDetour ) )]
+        private readonly Hook< RspSetupCharacterDelegate > _rspSetupCharacterHook = null!;
+
+        private void RspSetupCharacterDetour( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 )
+        {
+            using var rsp = MetaChanger.ChangeCmp( _parent, drawObject );
+            _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
+        }
+    }
 
     // Small helper to handle setting metadata and reverting it at the end of the function.
     // Since eqp and eqdp may be called multiple times in a row, we need to count them,
@@ -194,11 +190,12 @@ public unsafe partial class PathResolver
 
         public static MetaChanger ChangeEqp( PathResolver resolver, IntPtr drawObject )
         {
-            var collection = resolver.GetCollection( drawObject );
+            var collection = GetCollection( drawObject );
             if( collection != null )
             {
                 return ChangeEqp( collection );
             }
+
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
@@ -207,12 +204,13 @@ public unsafe partial class PathResolver
         {
             if( modelType < 10 )
             {
-                var collection = resolver.GetCollection( drawObject );
+                var collection = GetCollection( drawObject );
                 if( collection != null )
                 {
                     return ChangeEqdp( collection );
                 }
             }
+
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
@@ -224,31 +222,33 @@ public unsafe partial class PathResolver
 
         public static MetaChanger ChangeGmp( PathResolver resolver, IntPtr drawObject )
         {
-            var collection = resolver.GetCollection( drawObject );
+            var collection = GetCollection( drawObject );
             if( collection != null )
             {
                 collection.SetGmpFiles();
                 return new MetaChanger( MetaManipulation.Type.Gmp );
             }
+
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
         public static MetaChanger ChangeEst( PathResolver resolver, IntPtr drawObject )
         {
-            var collection = resolver.GetCollection( drawObject );
+            var collection = GetCollection( drawObject );
             if( collection != null )
             {
                 collection.SetEstFiles();
                 return new MetaChanger( MetaManipulation.Type.Est );
             }
+
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
-        public static MetaChanger ChangeCmp( PathResolver resolver, out ModCollection? collection )
+        public static MetaChanger ChangeCmp( GameObject* gameObject, out ModCollection? collection )
         {
-            if( resolver.LastGameObject != null )
+            if( gameObject != null )
             {
-                collection = IdentifyCollection( resolver.LastGameObject );
+                collection = IdentifyCollection( gameObject );
                 if( collection != Penumbra.CollectionManager.Default && collection.HasCache )
                 {
                     collection.SetCmpFiles();
@@ -265,12 +265,13 @@ public unsafe partial class PathResolver
 
         public static MetaChanger ChangeCmp( PathResolver resolver, IntPtr drawObject )
         {
-            var collection = resolver.GetCollection( drawObject );
+            var collection = GetCollection( drawObject );
             if( collection != null )
             {
                 collection.SetCmpFiles();
                 return new MetaChanger( MetaManipulation.Type.Rsp );
             }
+
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 

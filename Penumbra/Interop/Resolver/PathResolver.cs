@@ -1,7 +1,9 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
@@ -17,18 +19,24 @@ namespace Penumbra.Interop.Resolver;
 // to resolve paths for character collections.
 public partial class PathResolver : IDisposable
 {
-    private readonly ResourceLoader _loader;
     public bool Enabled { get; private set; }
 
-    public PathResolver( ResourceLoader loader )
+    private readonly        ResourceLoader     _loader;
+    private static readonly CutsceneCharacters Cutscenes   = new();
+    private static readonly DrawObjectState    DrawObjects = new();
+    private readonly        AnimationState     _animations;
+    private readonly        PathState          _paths;
+    private readonly        MetaState          _meta;
+    private readonly        MaterialState      _materials;
+
+    public unsafe PathResolver( ResourceLoader loader )
     {
-        _loader = loader;
         SignatureHelper.Initialise( this );
-        SetupHumanHooks();
-        SetupWeaponHooks();
-        SetupMonsterHooks();
-        SetupDemiHooks();
-        SetupMetaHooks();
+        _loader     = loader;
+        _animations = new AnimationState( DrawObjects );
+        _paths      = new PathState( this );
+        _meta       = new MetaState( this, _paths.HumanVTable );
+        _materials  = new MaterialState( _paths );
     }
 
     // The modified resolver that handles game path resolving.
@@ -40,10 +48,10 @@ public partial class PathResolver : IDisposable
         // If not use the default collection.
         // We can remove paths after they have actually been loaded.
         // A potential next request will add the path anew.
-        var nonDefault = HandleMaterialSubFiles( type, out var collection )
-         || PathCollections.TryRemove( gamePath.Path, out collection )
-         || HandleAnimationFile( type, gamePath, out collection )
-         || HandleDecalFile( type, gamePath, out collection );
+        var nonDefault = _materials.HandleSubFiles( type, out var collection )
+         || _paths.Consume( gamePath.Path, out collection )
+         || _animations.HandleFiles( type, gamePath, out collection )
+         || DrawObjects.HandleDecalFile( type, gamePath, out collection );
         if( !nonDefault || collection == null )
         {
             collection = Penumbra.CollectionManager.Default;
@@ -56,65 +64,8 @@ public partial class PathResolver : IDisposable
         // so that the functions loading tex and shpk can find that path and use its collection.
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path.ToString() : resolved.Value.FullName;
-        HandleMtrlCollection( collection, path, nonDefault, type, resolved, out data );
+        MaterialState.HandleCollection( collection, path, nonDefault, type, resolved, out data );
         return true;
-    }
-
-    private bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, [NotNullWhen( true )] out ModCollection? collection )
-    {
-        if( type                  == ResourceType.Tex
-        && _lastCreatedCollection != null
-        && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l', '_', 'f', 'a', 'c', 'e' ) )
-        {
-            collection = _lastCreatedCollection;
-            return true;
-        }
-
-        collection = null;
-        return false;
-    }
-
-    private bool HandleAnimationFile( ResourceType type, Utf8GamePath _, [NotNullWhen( true )] out ModCollection? collection )
-    {
-        switch( type )
-        {
-            case ResourceType.Tmb:
-            case ResourceType.Pap:
-            case ResourceType.Scd:
-                if( _animationLoadCollection != null )
-                {
-                    collection = _animationLoadCollection;
-                    return true;
-                }
-
-                break;
-            case ResourceType.Avfx:
-                _lastAvfxCollection = _animationLoadCollection ?? Penumbra.CollectionManager.Default;
-                if( _animationLoadCollection != null )
-                {
-                    collection = _animationLoadCollection;
-                    return true;
-                }
-
-                break;
-            case ResourceType.Atex:
-                if( _lastAvfxCollection != null )
-                {
-                    collection = _lastAvfxCollection;
-                    return true;
-                }
-
-                if( _animationLoadCollection != null )
-                {
-                    collection = _animationLoadCollection;
-                    return true;
-                }
-
-                break;
-        }
-
-        collection = null;
-        return false;
     }
 
     public void Enable()
@@ -125,15 +76,12 @@ public partial class PathResolver : IDisposable
         }
 
         Enabled = true;
-        InitializeDrawObjects();
-
-        EnableHumanHooks();
-        EnableWeaponHooks();
-        EnableMonsterHooks();
-        EnableDemiHooks();
-        EnableMtrlHooks();
-        EnableDataHooks();
-        EnableMetaHooks();
+        Cutscenes.Enable();
+        DrawObjects.Enable();
+        _animations.Enable();
+        _paths.Enable();
+        _meta.Enable();
+        _materials.Enable();
 
         _loader.ResolvePathCustomization += CharacterResolver;
         PluginLog.Debug( "Character Path Resolver enabled." );
@@ -147,16 +95,12 @@ public partial class PathResolver : IDisposable
         }
 
         Enabled = false;
-        DisableHumanHooks();
-        DisableWeaponHooks();
-        DisableMonsterHooks();
-        DisableDemiHooks();
-        DisableMtrlHooks();
-        DisableDataHooks();
-        DisableMetaHooks();
-
-        DrawObjectToObject.Clear();
-        PathCollections.Clear();
+        _animations.Disable();
+        DrawObjects.Disable();
+        Cutscenes.Disable();
+        _paths.Disable();
+        _meta.Disable();
+        _materials.Disable();
 
         _loader.ResolvePathCustomization -= CharacterResolver;
         PluginLog.Debug( "Character Path Resolver disabled." );
@@ -165,18 +109,60 @@ public partial class PathResolver : IDisposable
     public void Dispose()
     {
         Disable();
-        DisposeHumanHooks();
-        DisposeWeaponHooks();
-        DisposeMonsterHooks();
-        DisposeDemiHooks();
-        DisposeMtrlHooks();
-        DisposeDataHooks();
-        DisposeMetaHooks();
+        _paths.Dispose();
+        _animations.Dispose();
+        DrawObjects.Dispose();
+        Cutscenes.Dispose();
+        _meta.Dispose();
+        _materials.Dispose();
     }
 
-    public unsafe (IntPtr, ModCollection) IdentifyDrawObject( IntPtr drawObject )
+    public static unsafe (IntPtr, ModCollection) IdentifyDrawObject( IntPtr drawObject )
     {
         var parent = FindParent( drawObject, out var collection );
         return ( ( IntPtr )parent, collection );
     }
+
+    public int CutsceneActor( int idx )
+        => Cutscenes.GetParentIndex( idx );
+
+    // Use the stored information to find the GameObject and Collection linked to a DrawObject.
+    public static unsafe GameObject* FindParent( IntPtr drawObject, out ModCollection collection )
+    {
+        if( DrawObjects.TryGetValue( drawObject, out var data, out var gameObject ) )
+        {
+            collection = data.Item1;
+            return gameObject;
+        }
+
+        if( DrawObjects.LastGameObject != null
+        && ( DrawObjects.LastGameObject->DrawObject == null || DrawObjects.LastGameObject->DrawObject == ( DrawObject* )drawObject ) )
+        {
+            collection = IdentifyCollection( DrawObjects.LastGameObject );
+            return DrawObjects.LastGameObject;
+        }
+
+        collection = IdentifyCollection( null );
+        return null;
+    }
+
+    private static unsafe ModCollection? GetCollection( IntPtr drawObject )
+    {
+        var parent = FindParent( drawObject, out var collection );
+        if( parent == null || collection == Penumbra.CollectionManager.Default )
+        {
+            return null;
+        }
+
+        return collection.HasCache ? collection : null;
+    }
+
+    internal IEnumerable< KeyValuePair< Utf8String, ModCollection > > PathCollections
+        => _paths.Paths;
+
+    internal IEnumerable< KeyValuePair< IntPtr, (ModCollection, int) > > DrawObjectMap
+        => DrawObjects.DrawObjects;
+
+    internal IEnumerable< KeyValuePair< int, global::Dalamud.Game.ClientState.Objects.Types.GameObject > > CutsceneActors
+        => Cutscenes.Actors;
 }
