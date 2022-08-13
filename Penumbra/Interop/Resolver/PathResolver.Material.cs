@@ -43,7 +43,7 @@ public unsafe partial class PathResolver
 
         // Materials need to be set per collection so they can load their textures independently from each other.
         public static void HandleCollection( ModCollection collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
-            out (FullPath?, object?) data )
+            out (FullPath?, ModCollection?) data )
         {
             if( nonDefault && type == ResourceType.Mtrl )
             {
