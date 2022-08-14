@@ -19,7 +19,7 @@ public unsafe partial class PathResolver
     {
         public static event CreatingCharacterBaseDelegate? CreatingCharacterBase;
 
-        public IEnumerable< KeyValuePair< IntPtr, (ModCollection, int) > > DrawObjects
+        public IEnumerable<KeyValuePair<IntPtr, (ModCollection, int)>> DrawObjects
             => _drawObjectToObject;
 
         public int Count
@@ -39,35 +39,35 @@ public unsafe partial class PathResolver
 
 
         // Set and update a parent object if it exists and a last game object is set.
-        public ModCollection? CheckParentDrawObject( IntPtr drawObject, IntPtr parentObject )
+        public (IntPtr, ModCollection?) CheckParentDrawObject( IntPtr drawObject, IntPtr parentObject )
         {
             if( parentObject == IntPtr.Zero && LastGameObject != null )
             {
                 var collection = IdentifyCollection( LastGameObject );
-                _drawObjectToObject[ drawObject ] = ( collection, LastGameObject->ObjectIndex );
+                _drawObjectToObject[drawObject] = (collection.Item2, LastGameObject->ObjectIndex);
                 return collection;
             }
 
-            return null;
+            return (drawObject, null);
         }
 
 
-        public bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, [NotNullWhen( true )] out ModCollection? collection )
+        public bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, [NotNullWhen( true )] out (IntPtr, ModCollection?) collection )
         {
-            if( type                 == ResourceType.Tex
-            && LastCreatedCollection != null
+            if( type == ResourceType.Tex
+            && LastCreatedCollection.Item2 != null
             && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l', '_', 'f', 'a', 'c', 'e' ) )
             {
                 collection = LastCreatedCollection!;
                 return true;
             }
 
-            collection = null;
+            collection = (IntPtr.Zero, null);
             return false;
         }
 
 
-        public ModCollection? LastCreatedCollection
+        public (IntPtr, ModCollection?) LastCreatedCollection
             => _lastCreatedCollection;
 
         public GameObject* LastGameObject { get; private set; }
@@ -123,30 +123,32 @@ public unsafe partial class PathResolver
 
         // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
         // It contains any DrawObjects that correspond to a human actor, even those without specific collections.
-        private readonly Dictionary< IntPtr, (ModCollection, int) > _drawObjectToObject = new();
-        private          ModCollection?                             _lastCreatedCollection;
+        private readonly Dictionary<IntPtr, (ModCollection, int)> _drawObjectToObject = new();
+        private (IntPtr, ModCollection?) _lastCreatedCollection;
 
         // Keep track of created DrawObjects that are CharacterBase,
         // and use the last game object that called EnableDraw to link them.
         private delegate IntPtr CharacterBaseCreateDelegate( uint a, IntPtr b, IntPtr c, byte d );
 
         [Signature( "E8 ?? ?? ?? ?? 48 85 C0 74 21 C7 40", DetourName = nameof( CharacterBaseCreateDetour ) )]
-        private readonly Hook< CharacterBaseCreateDelegate > _characterBaseCreateHook = null!;
+        private readonly Hook<CharacterBaseCreateDelegate> _characterBaseCreateHook = null!;
 
         private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
         {
-            using var cmp = MetaChanger.ChangeCmp( LastGameObject, out _lastCreatedCollection );
+            using var cmp = MetaChanger.ChangeCmp( LastGameObject, out var lastCreatedCollection );
+
+            _lastCreatedCollection = (lastCreatedCollection);
 
             if( LastGameObject != null )
             {
                 var modelPtr = &a;
-                CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!, ( IntPtr )modelPtr, b, c );
+                CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.Item2!, ( IntPtr )modelPtr, b, c );
             }
 
             var ret = _characterBaseCreateHook.Original( a, b, c, d );
             if( LastGameObject != null )
             {
-                _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
+                _drawObjectToObject[ret] = (_lastCreatedCollection!.Item2!, LastGameObject->ObjectIndex);
             }
 
             return ret;
@@ -158,7 +160,7 @@ public unsafe partial class PathResolver
 
         [Signature( "E8 ?? ?? ?? ?? 40 F6 C7 01 74 3A 40 F6 C7 04 75 27 48 85 DB 74 2F 48 8B 05 ?? ?? ?? ?? 48 8B D3 48 8B 48 30",
             DetourName = nameof( CharacterBaseDestructorDetour ) )]
-        private readonly Hook< CharacterBaseDestructorDelegate > _characterBaseDestructorHook = null!;
+        private readonly Hook<CharacterBaseDestructorDelegate> _characterBaseDestructorHook = null!;
 
         private void CharacterBaseDestructorDetour( IntPtr drawBase )
         {
@@ -172,7 +174,7 @@ public unsafe partial class PathResolver
         private delegate void EnableDrawDelegate( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d );
 
         [Signature( "E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 85 C9 74 ?? 33 D2 E8 ?? ?? ?? ?? 84 C0", DetourName = nameof( EnableDrawDetour ) )]
-        private readonly Hook< EnableDrawDelegate > _enableDrawHook = null!;
+        private readonly Hook<EnableDrawDelegate> _enableDrawHook = null!;
 
         private void EnableDrawDetour( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d )
         {
@@ -187,7 +189,7 @@ public unsafe partial class PathResolver
         private delegate void WeaponReloadFunc( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 );
 
         [Signature( "E8 ?? ?? ?? ?? 44 8B 9F", DetourName = nameof( WeaponReloadDetour ) )]
-        private readonly Hook< WeaponReloadFunc > _weaponReloadHook = null!;
+        private readonly Hook<WeaponReloadFunc> _weaponReloadHook = null!;
 
         public void WeaponReloadDetour( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 )
         {
@@ -213,7 +215,7 @@ public unsafe partial class PathResolver
                 }
 
                 var newCollection = IdentifyCollection( obj );
-                _drawObjectToObject[ key ] = ( newCollection, idx );
+                _drawObjectToObject[key] = (newCollection.Item2, idx);
             }
         }
 
@@ -226,7 +228,7 @@ public unsafe partial class PathResolver
                 var ptr = ( GameObject* )Dalamud.Objects.GetObjectAddress( i );
                 if( ptr != null && ptr->IsCharacter() && ptr->DrawObject != null )
                 {
-                    _drawObjectToObject[ ( IntPtr )ptr->DrawObject ] = ( IdentifyCollection( ptr ), ptr->ObjectIndex );
+                    _drawObjectToObject[( IntPtr )ptr->DrawObject] = (IdentifyCollection( ptr ).Item2, ptr->ObjectIndex);
                 }
             }
         }

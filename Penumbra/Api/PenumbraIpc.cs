@@ -398,12 +398,12 @@ public partial class PenumbraIpc
     public const string LabelProviderChangedItemTooltip = "Penumbra.ChangedItemTooltip";
     public const string LabelProviderChangedItemClick = "Penumbra.ChangedItemClick";
     public const string LabelProviderGetChangedItems = "Penumbra.GetChangedItems";
-    public const string LabelProviderPlayerFileResourceResolved = "Penumbra.PlayerFileResourceResolved";
+    public const string LabelResourceLoaded = "Penumbra.ResourceLoaded";
 
     internal ICallGateProvider<ChangedItemType, uint, object?>? ProviderChangedItemTooltip;
     internal ICallGateProvider<MouseButton, ChangedItemType, uint, object?>? ProviderChangedItemClick;
     internal ICallGateProvider<string, IReadOnlyDictionary<string, object?>>? ProviderGetChangedItems;
-    internal ICallGateProvider<string, string, string>? ProviderPlayerFileResourceResolved;
+    internal ICallGateProvider<IntPtr, string, string, string>? ResourceLoaded;
 
     private void OnClick( MouseButton click, object? item )
     {
@@ -451,24 +451,24 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderPlayerFileResourceResolved = pi.GetIpcProvider<string, string, string>( LabelProviderPlayerFileResourceResolved );
+            ResourceLoaded = pi.GetIpcProvider<IntPtr, string, string, string>( LabelResourceLoaded );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderPlayerFileResourceResolved}:\n{e}");
+            PluginLog.Error( $"Error registering IPC provider for {LabelResourceLoaded}:\n{e}");
         }
 
-        Api.PlayerFilePathResolved += OnFilePathResolved;
+        Api.ResourceLoaded += OnResourceLoaded;
     }
 
-    private void OnFilePathResolved( string gamePath, string localPath )
+    private void OnResourceLoaded( IntPtr drawObject, string gamePath, string localPath )
     {
-        ProviderPlayerFileResourceResolved?.SendMessage( gamePath, localPath );
+        ResourceLoaded?.SendMessage( drawObject, gamePath, localPath );
     }
 
     private void DisposeChangedItemProviders()
     {
-        Api.PlayerFilePathResolved -= OnFilePathResolved;
+        Api.ResourceLoaded -= OnResourceLoaded;
         ProviderGetChangedItems?.UnregisterFunc();
         Api.ChangedItemClicked -= OnClick;
         Api.ChangedItemTooltip -= OnTooltip;

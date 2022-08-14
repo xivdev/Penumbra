@@ -226,9 +226,9 @@ public partial class PathResolver
         // Implementation
         [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
         private IntPtr ResolvePath( IntPtr drawObject, IntPtr path )
-            => _parent._paths.ResolvePath( FindParent( drawObject, out var collection ) == null
+            => _parent._paths.ResolvePath( drawObject, FindParent( drawObject, out var collection ) == null
                 ? Penumbra.CollectionManager.Default
-                : collection, path );
+                : collection.Item2, path );
 
         // Weapons have the characters DrawObject as a parent,
         // but that may not be set yet when creating a new object, so we have to do the same detour
@@ -239,20 +239,20 @@ public partial class PathResolver
             var parent = FindParent( drawObject, out var collection );
             if( parent != null )
             {
-                return _parent._paths.ResolvePath( collection, path );
+                return _parent._paths.ResolvePath( drawObject, collection.Item2, path );
             }
 
             var parentObject     = ( IntPtr )( ( DrawObject* )drawObject )->Object.ParentObject;
             var parentCollection = DrawObjects.CheckParentDrawObject( drawObject, parentObject );
-            if( parentCollection != null )
+            if( parentCollection.Item2 != null )
             {
-                return _parent._paths.ResolvePath( parentCollection, path );
+                return _parent._paths.ResolvePath( drawObject, parentCollection.Item2, path );
             }
 
             parent = FindParent( parentObject, out collection );
-            return _parent._paths.ResolvePath( parent == null
+            return _parent._paths.ResolvePath( drawObject, parent == null
                 ? Penumbra.CollectionManager.Default
-                : collection, path );
+                : collection.Item2, path );
         }
     }
 }

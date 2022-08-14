@@ -76,10 +76,10 @@ public unsafe partial class PathResolver
         private void OnModelLoadCompleteDetour( IntPtr drawObject )
         {
             var collection = GetCollection( drawObject );
-            if( collection != null )
+            if( collection.Item2 != null )
             {
-                using var eqp  = MetaChanger.ChangeEqp( collection );
-                using var eqdp = MetaChanger.ChangeEqdp( collection );
+                using var eqp  = MetaChanger.ChangeEqp( collection.Item2 );
+                using var eqdp = MetaChanger.ChangeEqdp( collection.Item2 );
                 _onModelLoadCompleteHook.Original.Invoke( drawObject );
             }
             else
@@ -104,10 +104,10 @@ public unsafe partial class PathResolver
             }
 
             var collection = GetCollection( drawObject );
-            if( collection != null )
+            if( collection.Item2 != null )
             {
-                using var eqp  = MetaChanger.ChangeEqp( collection );
-                using var eqdp = MetaChanger.ChangeEqdp( collection );
+                using var eqp  = MetaChanger.ChangeEqp( collection.Item2 );
+                using var eqdp = MetaChanger.ChangeEqdp( collection.Item2 );
                 _updateModelsHook.Original.Invoke( drawObject );
             }
             else
@@ -191,9 +191,9 @@ public unsafe partial class PathResolver
         public static MetaChanger ChangeEqp( PathResolver resolver, IntPtr drawObject )
         {
             var collection = GetCollection( drawObject );
-            if( collection != null )
+            if( collection.Item2 != null )
             {
-                return ChangeEqp( collection );
+                return ChangeEqp( collection.Item2 );
             }
 
             return new MetaChanger( MetaManipulation.Type.Unknown );
@@ -205,9 +205,9 @@ public unsafe partial class PathResolver
             if( modelType < 10 )
             {
                 var collection = GetCollection( drawObject );
-                if( collection != null )
+                if( collection.Item2 != null )
                 {
-                    return ChangeEqdp( collection );
+                    return ChangeEqdp( collection.Item2 );
                 }
             }
 
@@ -223,9 +223,9 @@ public unsafe partial class PathResolver
         public static MetaChanger ChangeGmp( PathResolver resolver, IntPtr drawObject )
         {
             var collection = GetCollection( drawObject );
-            if( collection != null )
+            if( collection.Item2 != null )
             {
-                collection.SetGmpFiles();
+                collection.Item2.SetGmpFiles();
                 return new MetaChanger( MetaManipulation.Type.Gmp );
             }
 
@@ -235,29 +235,29 @@ public unsafe partial class PathResolver
         public static MetaChanger ChangeEst( PathResolver resolver, IntPtr drawObject )
         {
             var collection = GetCollection( drawObject );
-            if( collection != null )
+            if( collection.Item2 != null )
             {
-                collection.SetEstFiles();
+                collection.Item2.SetEstFiles();
                 return new MetaChanger( MetaManipulation.Type.Est );
             }
 
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
-        public static MetaChanger ChangeCmp( GameObject* gameObject, out ModCollection? collection )
+        public static MetaChanger ChangeCmp( GameObject* gameObject, out (IntPtr, ModCollection?) collection )
         {
             if( gameObject != null )
             {
                 collection = IdentifyCollection( gameObject );
-                if( collection != Penumbra.CollectionManager.Default && collection.HasCache )
+                if( collection.Item2 != Penumbra.CollectionManager.Default && collection.Item2!.HasCache )
                 {
-                    collection.SetCmpFiles();
+                    collection.Item2.SetCmpFiles();
                     return new MetaChanger( MetaManipulation.Type.Rsp );
                 }
             }
             else
             {
-                collection = null;
+                collection = ((IntPtr)gameObject->DrawObject, null);
             }
 
             return new MetaChanger( MetaManipulation.Type.Unknown );
@@ -266,9 +266,9 @@ public unsafe partial class PathResolver
         public static MetaChanger ChangeCmp( PathResolver resolver, IntPtr drawObject )
         {
             var collection = GetCollection( drawObject );
-            if( collection != null )
+            if( collection.Item2 != null )
             {
-                collection.SetCmpFiles();
+                collection.Item2.SetCmpFiles();
                 return new MetaChanger( MetaManipulation.Type.Rsp );
             }
 

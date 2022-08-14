@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
@@ -21,26 +22,26 @@ public partial class PathResolver : IDisposable
 {
     public bool Enabled { get; private set; }
 
-    private readonly        ResourceLoader     _loader;
-    private static readonly CutsceneCharacters Cutscenes   = new();
-    private static readonly DrawObjectState    DrawObjects = new();
-    private readonly        AnimationState     _animations;
-    private readonly        PathState          _paths;
-    private readonly        MetaState          _meta;
-    private readonly        MaterialState      _materials;
+    private readonly ResourceLoader _loader;
+    private static readonly CutsceneCharacters Cutscenes = new();
+    private static readonly DrawObjectState DrawObjects = new();
+    private readonly AnimationState _animations;
+    private readonly PathState _paths;
+    private readonly MetaState _meta;
+    private readonly MaterialState _materials;
 
     public unsafe PathResolver( ResourceLoader loader )
     {
         SignatureHelper.Initialise( this );
-        _loader     = loader;
+        _loader = loader;
         _animations = new AnimationState( DrawObjects );
-        _paths      = new PathState( this );
-        _meta       = new MetaState( this, _paths.HumanVTable );
-        _materials  = new MaterialState( _paths );
+        _paths = new PathState( this );
+        _meta = new MetaState( this, _paths.HumanVTable );
+        _materials = new MaterialState( _paths );
     }
 
     // The modified resolver that handles game path resolving.
-    private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, object? ) data )
+    private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (IntPtr, FullPath?, object?) data )
     {
         // Check if the path was marked for a specific collection,
         // or if it is a file loaded by a material, and if we are currently in a material load,
@@ -52,19 +53,19 @@ public partial class PathResolver : IDisposable
          || _paths.Consume( gamePath.Path, out collection )
          || _animations.HandleFiles( type, gamePath, out collection )
          || DrawObjects.HandleDecalFile( type, gamePath, out collection );
-        if( !nonDefault || collection == null )
+        if( !nonDefault || collection.Item2 == null )
         {
-            collection = Penumbra.CollectionManager.Default;
+            collection = (IntPtr.Zero, Penumbra.CollectionManager.Default);
         }
 
         // Resolve using character/default collection first, otherwise forced, as usual.
-        var resolved = collection.ResolvePath( gamePath );
+        var resolved = collection.Item2.ResolvePath( gamePath );
 
         // Since mtrl files load their files separately, we need to add the new, resolved path
         // so that the functions loading tex and shpk can find that path and use its collection.
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path.ToString() : resolved.Value.FullName;
-        MaterialState.HandleCollection( collection, path, nonDefault, type, resolved, out data );
+        _materials.HandleCollection( collection, path, nonDefault, type, resolved, out data );
         return true;
     }
 
@@ -120,18 +121,18 @@ public partial class PathResolver : IDisposable
     public static unsafe (IntPtr, ModCollection) IdentifyDrawObject( IntPtr drawObject )
     {
         var parent = FindParent( drawObject, out var collection );
-        return ( ( IntPtr )parent, collection );
+        return (( IntPtr )parent, collection.Item2);
     }
 
     public int CutsceneActor( int idx )
         => Cutscenes.GetParentIndex( idx );
 
     // Use the stored information to find the GameObject and Collection linked to a DrawObject.
-    public static unsafe GameObject* FindParent( IntPtr drawObject, out ModCollection collection )
+    public static unsafe GameObject* FindParent( IntPtr drawObject, out (IntPtr, ModCollection) collection )
     {
         if( DrawObjects.TryGetValue( drawObject, out var data, out var gameObject ) )
         {
-            collection = data.Item1;
+            collection = (drawObject, data.Item1);
             return gameObject;
         }
 
@@ -146,23 +147,23 @@ public partial class PathResolver : IDisposable
         return null;
     }
 
-    private static unsafe ModCollection? GetCollection( IntPtr drawObject )
+    private static unsafe (IntPtr, ModCollection?) GetCollection( IntPtr drawObject )
     {
         var parent = FindParent( drawObject, out var collection );
-        if( parent == null || collection == Penumbra.CollectionManager.Default )
+        if( parent == null || collection.Item2 == Penumbra.CollectionManager.Default )
         {
-            return null;
+            return (drawObject, null);
         }
 
-        return collection.HasCache ? collection : null;
+        return collection.Item2.HasCache ? collection : (drawObject, null);
     }
 
-    internal IEnumerable< KeyValuePair< Utf8String, ModCollection > > PathCollections
-        => _paths.Paths;
+    internal IEnumerable<KeyValuePair<Utf8String, ModCollection?>> PathCollections
+        => _paths.Paths.Select( p => new KeyValuePair<Utf8String, ModCollection?>( p.Key, p.Value.Item2 ) );
 
-    internal IEnumerable< KeyValuePair< IntPtr, (ModCollection, int) > > DrawObjectMap
+    internal IEnumerable<KeyValuePair<IntPtr, (ModCollection, int)>> DrawObjectMap
         => DrawObjects.DrawObjects;
 
-    internal IEnumerable< KeyValuePair< int, global::Dalamud.Game.ClientState.Objects.Types.GameObject > > CutsceneActors
+    internal IEnumerable<KeyValuePair<int, global::Dalamud.Game.ClientState.Objects.Types.GameObject>> CutsceneActors
         => Cutscenes.Actors;
 }

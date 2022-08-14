@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Logging;
+using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using Lumina.Data;
 using Newtonsoft.Json;
 using OtterGui;
@@ -38,7 +39,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     public event ModSettingChanged? ModSettingChanged;
-    public event PlayerFileResourceResolved? PlayerFilePathResolved;
+    public event PlayerFileResourceResolved? ResourceLoaded;
 
     public event CreatingCharacterBaseDelegate? CreatingCharacterBase
     {
@@ -49,7 +50,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public bool Valid
         => _penumbra != null;
 
-    public PenumbraApi( Penumbra penumbra )
+    public unsafe PenumbraApi( Penumbra penumbra )
     {
         _penumbra = penumbra;
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
@@ -61,22 +62,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         Penumbra.CollectionManager.CollectionChanged += SubscribeToNewCollections;
-        Penumbra.ResourceLoader.PathResolved += OnPathResolved;
+        Penumbra.ResourceLoader.ResourceLoaded += OnResourceLoaded;
     }
 
-    private void OnPathResolved( Utf8GamePath gamePath, ResourceType resourceType, FullPath? resolvedPath, object? modCollection )
+    private unsafe void OnResourceLoaded( IntPtr drawObject, Interop.Structs.ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
+        object? resolveData )
     {
-        if( modCollection == null || resolvedPath == null  ) return;
-        if( Dalamud.ClientState.LocalPlayer != null && modCollection == PathResolver.PlayerCollection() )
-        {
-            PlayerFilePathResolved?.Invoke( gamePath.ToString(), resolvedPath.Value.FullName );
-        }
+        ResourceLoaded?.Invoke( drawObject, originalPath.Path.ToString(), manipulatedPath?.ToString() ?? originalPath.Path.ToString() );
     }
 
-    public void Dispose()
+    public unsafe void Dispose()
     {
         Penumbra.CollectionManager.CollectionChanged -= SubscribeToNewCollections;
-        Penumbra.ResourceLoader.PathResolved -= OnPathResolved;
+        Penumbra.ResourceLoader.ResourceLoaded -= OnResourceLoaded;
         _penumbra                                    =  null;
         _lumina                                      =  null;
         foreach( var collection in Penumbra.CollectionManager )

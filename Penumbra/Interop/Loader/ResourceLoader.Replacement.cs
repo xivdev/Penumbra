@@ -87,13 +87,18 @@ public unsafe partial class ResourceLoader
         ResourceRequested?.Invoke( gamePath, isSync );
 
         // If no replacements are being made, we still want to be able to trigger the event.
-        var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
+        var (drawObject, resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
+        if( resolvedPath != null )
+        {
+            Utf8GamePath.FromString( resolvedPath?.FullName.ToString() ?? string.Empty, out var resolvedGamePath, true );
+            drawObjectDict[resolvedGamePath.Path] = drawObject;
+        }
         PathResolved?.Invoke( gamePath, *resourceType, resolvedPath, data );
         if( resolvedPath == null )
         {
             var retUnmodified =
                 CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-            ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
+            ResourceLoaded?.Invoke( drawObject, ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
             return retUnmodified;
         }
 
@@ -101,24 +106,26 @@ public unsafe partial class ResourceLoader
         *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
         path          = resolvedPath.Value.InternalName.Path;
         var retModified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-        ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retModified, gamePath, resolvedPath.Value, data );
+        ResourceLoaded?.Invoke( drawObject, ( Structs.ResourceHandle* )retModified, gamePath, resolvedPath.Value, data );
         return retModified;
     }
 
+    private ConcurrentDictionary<Utf8String, IntPtr> drawObjectDict = new();
+
 
     // Use the default method of path replacement.
-    public static (FullPath?, object?) DefaultResolver( Utf8GamePath path )
+    public (IntPtr, FullPath?, object?) DefaultResolver( Utf8GamePath path )
     {
         var resolved = Penumbra.CollectionManager.Default.ResolvePath( path );
-        return ( resolved, null );
+        return ( IntPtr.Zero, resolved, null );
     }
 
     // Try all resolve path subscribers or use the default replacer.
-    private (FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
+    private (IntPtr, FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
         if( !DoReplacements || _incMode.Value )
         {
-            return ( null, null );
+            return ( IntPtr.Zero, null, null );
         }
 
         path = path.ToLower();
@@ -182,9 +189,14 @@ public unsafe partial class ResourceLoader
         fileDescriptor->ResourceHandle->FileNameData   = split[ 2 ].Path;
         fileDescriptor->ResourceHandle->FileNameLength = split[ 2 ].Length;
 
+        if(!drawObjectDict.TryRemove( gamePath.Path, out var lastDrawObject ))
+        {
+            lastDrawObject = IntPtr.Zero;
+        } 
+
         var funcFound = ResourceLoadCustomization.GetInvocationList()
            .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
-               .Invoke( split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, isSync, out ret ) );
+               .Invoke( lastDrawObject, split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, isSync, out ret ) );
 
         if( !funcFound )
         {

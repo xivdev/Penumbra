@@ -17,7 +17,7 @@ public unsafe partial class PathResolver
 {
     // Obtain the name of the current player, if one exists.
     private static string? GetPlayerName()
-        => Dalamud.Objects[ 0 ]?.Name.ToString();
+        => Dalamud.Objects[0]?.Name.ToString();
 
     // Obtain the name of the inspect target from its window, if it exists.
     private static string? GetInspectName()
@@ -39,10 +39,10 @@ public unsafe partial class PathResolver
             return null;
         }
 
-        var text = ( AtkTextNode* )ui->UldManager.NodeList[ 59 ];
+        var text = ( AtkTextNode* )ui->UldManager.NodeList[59];
         if( text == null || !text->AtkResNode.IsVisible )
         {
-            text = ( AtkTextNode* )ui->UldManager.NodeList[ 60 ];
+            text = ( AtkTextNode* )ui->UldManager.NodeList[60];
         }
 
         return text != null ? text->NodeText.ToString() : null;
@@ -56,9 +56,9 @@ public unsafe partial class PathResolver
             return null;
         }
 
-        var uiModule    = ( UIModule* )Dalamud.GameGui.GetUIModule();
+        var uiModule = ( UIModule* )Dalamud.GameGui.GetUIModule();
         var agentModule = uiModule->GetAgentModule();
-        var agent       = ( byte* )agentModule->GetAgentByInternalID( 393 );
+        var agent = ( byte* )agentModule->GetAgentByInternalID( 393 );
         if( agent == null )
         {
             return null;
@@ -90,19 +90,19 @@ public unsafe partial class PathResolver
     // and if so, return the player name.
     private static string? GetCutsceneName( GameObject* gameObject )
     {
-        if( gameObject->Name[ 0 ] != 0 || gameObject->ObjectKind != ( byte )ObjectKind.Player )
+        if( gameObject->Name[0] != 0 || gameObject->ObjectKind != ( byte )ObjectKind.Player )
         {
             return null;
         }
 
-        var parent = Cutscenes[ gameObject->ObjectIndex ];
+        var parent = Cutscenes[gameObject->ObjectIndex];
         if( parent != null )
         {
             return parent.Name.ToString();
         }
 
         // should not really happen but keep it in as a emergency case.
-        var player = Dalamud.Objects[ 0 ];
+        var player = Dalamud.Objects[0];
         if( player == null )
         {
             return null;
@@ -126,7 +126,7 @@ public unsafe partial class PathResolver
         GameObject* owner = null;
         if( ( ObjectKind )gameObject->GetObjectKind() is ObjectKind.Companion or ObjectKind.MountType && gameObject->ObjectIndex > 0 )
         {
-            owner = ( GameObject* )Dalamud.Objects[ gameObject->ObjectIndex - 1 ]?.Address;
+            owner = ( GameObject* )Dalamud.Objects[gameObject->ObjectIndex - 1]?.Address;
         }
         else if( gameObject->OwnerID != 0xE0000000 )
         {
@@ -142,11 +142,11 @@ public unsafe partial class PathResolver
     }
 
     // Identify the correct collection for a GameObject by index and name.
-    private static ModCollection IdentifyCollection( GameObject* gameObject )
+    private static (IntPtr, ModCollection) IdentifyCollection( GameObject* gameObject )
     {
         if( gameObject == null )
         {
-            return Penumbra.CollectionManager.Default;
+            return (IntPtr.Zero, Penumbra.CollectionManager.Default);
         }
 
         try
@@ -156,8 +156,8 @@ public unsafe partial class PathResolver
             // Actors are also not named. So use Yourself > Players > Racial > Default.
             if( !Dalamud.ClientState.IsLoggedIn )
             {
-                return Penumbra.CollectionManager.ByType( CollectionType.Yourself )
-                 ?? ( CollectionByActor( string.Empty, gameObject, out var c ) ? c : Penumbra.CollectionManager.Default );
+                return (( IntPtr )gameObject->DrawObject, Penumbra.CollectionManager.ByType( CollectionType.Yourself )
+                 ?? ( CollectionByActor( string.Empty, gameObject, out var c ) ? c : Penumbra.CollectionManager.Default ));
             }
             else
             {
@@ -166,7 +166,7 @@ public unsafe partial class PathResolver
                 && gameObject->ObjectKind == ( byte )ObjectKind.EventNpc
                 && gameObject->DataID is 1011832 or 1011021 ) // cf. "E8 ?? ?? ?? ?? 0F B6 F8 88 45", male or female retainer
                 {
-                    return Penumbra.CollectionManager.Default;
+                    return (( IntPtr )gameObject->DrawObject, Penumbra.CollectionManager.Default);
                 }
 
                 string? actorName = null;
@@ -177,37 +177,37 @@ public unsafe partial class PathResolver
                     if( actorName.Length > 0
                     && CollectionByActorName( actorName, out var actorCollection ) )
                     {
-                        return actorCollection;
+                        return (( IntPtr )gameObject->DrawObject, actorCollection);
                     }
                 }
 
                 // All these special cases are relevant for an empty name, so never collide with the above setting.
                 // Only OwnerName can be applied to something with a non-empty name, and that is the specific case we want to handle.
                 var actualName = gameObject->ObjectIndex switch
-                    {
-                        240 => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
-                        241 => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
-                        242 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
-                        243 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // dye preview
+                {
+                    240 => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
+                    241 => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
+                    242 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
+                    243 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // dye preview
 
-                        >= CutsceneCharacters.CutsceneStartIdx and < CutsceneCharacters.CutsceneEndIdx => GetCutsceneName( gameObject ),
+                    >= CutsceneCharacters.CutsceneStartIdx and < CutsceneCharacters.CutsceneEndIdx => GetCutsceneName( gameObject ),
 
-                        _ => null,
-                    }
+                    _ => null,
+                }
                  ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
                 // First check temporary character collections, then the own configuration, then special collections.
-                return CollectionByActorName( actualName, out var c )
+                return (( IntPtr )gameObject->DrawObject, CollectionByActorName( actualName, out var c )
                     ? c
                     : CollectionByActor( actualName, gameObject, out c )
                         ? c
-                        : Penumbra.CollectionManager.Default;
+                        : Penumbra.CollectionManager.Default);
             }
         }
         catch( Exception e )
         {
             PluginLog.Error( $"Error identifying collection:\n{e}" );
-            return Penumbra.CollectionManager.Default;
+            return (( IntPtr )gameObject->DrawObject, Penumbra.CollectionManager.Default);
         }
     }
 
@@ -266,25 +266,25 @@ public unsafe partial class PathResolver
                 if( actor->ObjectKind == ( byte )ObjectKind.Player )
                 {
                     // Check the subrace. If it does not fit any or no subrace collection is set, check the player character collection.
-                    collection = ( SubRace )( ( Character* )actor )->CustomizeData[ 4 ] switch
+                    collection = ( SubRace )( ( Character* )actor )->CustomizeData[4] switch
                     {
-                        SubRace.Midlander       => Penumbra.CollectionManager.ByType( CollectionType.Midlander ),
-                        SubRace.Highlander      => Penumbra.CollectionManager.ByType( CollectionType.Highlander ),
-                        SubRace.Wildwood        => Penumbra.CollectionManager.ByType( CollectionType.Wildwood ),
-                        SubRace.Duskwight       => Penumbra.CollectionManager.ByType( CollectionType.Duskwight ),
-                        SubRace.Plainsfolk      => Penumbra.CollectionManager.ByType( CollectionType.Plainsfolk ),
-                        SubRace.Dunesfolk       => Penumbra.CollectionManager.ByType( CollectionType.Dunesfolk ),
-                        SubRace.SeekerOfTheSun  => Penumbra.CollectionManager.ByType( CollectionType.SeekerOfTheSun ),
+                        SubRace.Midlander => Penumbra.CollectionManager.ByType( CollectionType.Midlander ),
+                        SubRace.Highlander => Penumbra.CollectionManager.ByType( CollectionType.Highlander ),
+                        SubRace.Wildwood => Penumbra.CollectionManager.ByType( CollectionType.Wildwood ),
+                        SubRace.Duskwight => Penumbra.CollectionManager.ByType( CollectionType.Duskwight ),
+                        SubRace.Plainsfolk => Penumbra.CollectionManager.ByType( CollectionType.Plainsfolk ),
+                        SubRace.Dunesfolk => Penumbra.CollectionManager.ByType( CollectionType.Dunesfolk ),
+                        SubRace.SeekerOfTheSun => Penumbra.CollectionManager.ByType( CollectionType.SeekerOfTheSun ),
                         SubRace.KeeperOfTheMoon => Penumbra.CollectionManager.ByType( CollectionType.KeeperOfTheMoon ),
-                        SubRace.Seawolf         => Penumbra.CollectionManager.ByType( CollectionType.Seawolf ),
-                        SubRace.Hellsguard      => Penumbra.CollectionManager.ByType( CollectionType.Hellsguard ),
-                        SubRace.Raen            => Penumbra.CollectionManager.ByType( CollectionType.Raen ),
-                        SubRace.Xaela           => Penumbra.CollectionManager.ByType( CollectionType.Xaela ),
-                        SubRace.Helion          => Penumbra.CollectionManager.ByType( CollectionType.Helion ),
-                        SubRace.Lost            => Penumbra.CollectionManager.ByType( CollectionType.Lost ),
-                        SubRace.Rava            => Penumbra.CollectionManager.ByType( CollectionType.Rava ),
-                        SubRace.Veena           => Penumbra.CollectionManager.ByType( CollectionType.Veena ),
-                        _                       => null,
+                        SubRace.Seawolf => Penumbra.CollectionManager.ByType( CollectionType.Seawolf ),
+                        SubRace.Hellsguard => Penumbra.CollectionManager.ByType( CollectionType.Hellsguard ),
+                        SubRace.Raen => Penumbra.CollectionManager.ByType( CollectionType.Raen ),
+                        SubRace.Xaela => Penumbra.CollectionManager.ByType( CollectionType.Xaela ),
+                        SubRace.Helion => Penumbra.CollectionManager.ByType( CollectionType.Helion ),
+                        SubRace.Lost => Penumbra.CollectionManager.ByType( CollectionType.Lost ),
+                        SubRace.Rava => Penumbra.CollectionManager.ByType( CollectionType.Rava ),
+                        SubRace.Veena => Penumbra.CollectionManager.ByType( CollectionType.Veena ),
+                        _ => null,
                     };
                     collection ??= Penumbra.CollectionManager.ByType( CollectionType.PlayerCharacter );
                     if( collection != null )
@@ -295,25 +295,25 @@ public unsafe partial class PathResolver
                 else
                 {
                     // Check the subrace. If it does not fit any or no subrace collection is set, check the npn-player character collection.
-                    collection = ( SubRace )( ( Character* )actor )->CustomizeData[ 4 ] switch
+                    collection = ( SubRace )( ( Character* )actor )->CustomizeData[4] switch
                     {
-                        SubRace.Midlander       => Penumbra.CollectionManager.ByType( CollectionType.MidlanderNpc ),
-                        SubRace.Highlander      => Penumbra.CollectionManager.ByType( CollectionType.HighlanderNpc ),
-                        SubRace.Wildwood        => Penumbra.CollectionManager.ByType( CollectionType.WildwoodNpc ),
-                        SubRace.Duskwight       => Penumbra.CollectionManager.ByType( CollectionType.DuskwightNpc ),
-                        SubRace.Plainsfolk      => Penumbra.CollectionManager.ByType( CollectionType.PlainsfolkNpc ),
-                        SubRace.Dunesfolk       => Penumbra.CollectionManager.ByType( CollectionType.DunesfolkNpc ),
-                        SubRace.SeekerOfTheSun  => Penumbra.CollectionManager.ByType( CollectionType.SeekerOfTheSunNpc ),
+                        SubRace.Midlander => Penumbra.CollectionManager.ByType( CollectionType.MidlanderNpc ),
+                        SubRace.Highlander => Penumbra.CollectionManager.ByType( CollectionType.HighlanderNpc ),
+                        SubRace.Wildwood => Penumbra.CollectionManager.ByType( CollectionType.WildwoodNpc ),
+                        SubRace.Duskwight => Penumbra.CollectionManager.ByType( CollectionType.DuskwightNpc ),
+                        SubRace.Plainsfolk => Penumbra.CollectionManager.ByType( CollectionType.PlainsfolkNpc ),
+                        SubRace.Dunesfolk => Penumbra.CollectionManager.ByType( CollectionType.DunesfolkNpc ),
+                        SubRace.SeekerOfTheSun => Penumbra.CollectionManager.ByType( CollectionType.SeekerOfTheSunNpc ),
                         SubRace.KeeperOfTheMoon => Penumbra.CollectionManager.ByType( CollectionType.KeeperOfTheMoonNpc ),
-                        SubRace.Seawolf         => Penumbra.CollectionManager.ByType( CollectionType.SeawolfNpc ),
-                        SubRace.Hellsguard      => Penumbra.CollectionManager.ByType( CollectionType.HellsguardNpc ),
-                        SubRace.Raen            => Penumbra.CollectionManager.ByType( CollectionType.RaenNpc ),
-                        SubRace.Xaela           => Penumbra.CollectionManager.ByType( CollectionType.XaelaNpc ),
-                        SubRace.Helion          => Penumbra.CollectionManager.ByType( CollectionType.HelionNpc ),
-                        SubRace.Lost            => Penumbra.CollectionManager.ByType( CollectionType.LostNpc ),
-                        SubRace.Rava            => Penumbra.CollectionManager.ByType( CollectionType.RavaNpc ),
-                        SubRace.Veena           => Penumbra.CollectionManager.ByType( CollectionType.VeenaNpc ),
-                        _                       => null,
+                        SubRace.Seawolf => Penumbra.CollectionManager.ByType( CollectionType.SeawolfNpc ),
+                        SubRace.Hellsguard => Penumbra.CollectionManager.ByType( CollectionType.HellsguardNpc ),
+                        SubRace.Raen => Penumbra.CollectionManager.ByType( CollectionType.RaenNpc ),
+                        SubRace.Xaela => Penumbra.CollectionManager.ByType( CollectionType.XaelaNpc ),
+                        SubRace.Helion => Penumbra.CollectionManager.ByType( CollectionType.HelionNpc ),
+                        SubRace.Lost => Penumbra.CollectionManager.ByType( CollectionType.LostNpc ),
+                        SubRace.Rava => Penumbra.CollectionManager.ByType( CollectionType.RavaNpc ),
+                        SubRace.Veena => Penumbra.CollectionManager.ByType( CollectionType.VeenaNpc ),
+                        _ => null,
                     };
                     collection ??= Penumbra.CollectionManager.ByType( CollectionType.NonPlayerCharacter );
                     if( collection != null )

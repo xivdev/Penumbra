@@ -42,6 +42,7 @@ public unsafe partial class ResourceLoader
     // Gather some debugging data about penumbra-loaded objects.
     public struct DebugData
     {
+        public IntPtr DrawObject;
         public Structs.ResourceHandle* OriginalResource;
         public Structs.ResourceHandle* ManipulatedResource;
         public Utf8GamePath            OriginalPath;
@@ -68,7 +69,7 @@ public unsafe partial class ResourceLoader
         ResourceLoaded -= AddModifiedDebugInfo;
     }
 
-    private void AddModifiedDebugInfo( Structs.ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
+    private void AddModifiedDebugInfo( IntPtr drawObject, Structs.ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
         object? resolverInfo )
     {
         if( manipulatedPath == null || manipulatedPath.Value.Crc64 == 0 )
@@ -81,8 +82,9 @@ public unsafe partial class ResourceLoader
         {
             var crc              = ( uint )originalPath.Path.Crc32;
             var originalResource = FindResource( handle->Category, handle->FileType, crc );
-            _debugList[ manipulatedPath.Value ] = new DebugData()
+            _debugList[manipulatedPath.Value] = new DebugData()
             {
+                DrawObject = drawObject,
                 OriginalResource    = ( Structs.ResourceHandle* )originalResource,
                 ManipulatedResource = handle,
                 Category            = handle->Category,
@@ -236,10 +238,13 @@ public unsafe partial class ResourceLoader
     private static void LogPath( Utf8GamePath path, bool synchronous )
         => PluginLog.Information( $"[ResourceLoader] Requested {path} {( synchronous ? "synchronously." : "asynchronously." )}" );
 
-    private static void LogResource( Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, object? _ )
+    private void LogResource( IntPtr drawObject, Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, object? _ )
     {
-        var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
-        PluginLog.Information( $"[ResourceLoader] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
+        if( manipulatedPath != null )
+        {
+            var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
+            PluginLog.Information( $"[ResourceLoader] DrawObject: {( ulong )drawObject:X}, Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
+        }
     }
 
     private static void LogLoadedFile( Utf8String path, bool success, bool custom )

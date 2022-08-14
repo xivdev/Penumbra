@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
@@ -32,15 +33,15 @@ public unsafe partial class PathResolver
         private readonly ResolverHooks _monster;
 
         // This map links files to their corresponding collection, if it is non-default.
-        private readonly ConcurrentDictionary< Utf8String, ModCollection > _pathCollections = new();
+        private readonly ConcurrentDictionary<Utf8String, (IntPtr, ModCollection?)> _pathCollections = new();
 
         public PathState( PathResolver parent )
         {
             SignatureHelper.Initialise( this );
-            _human     = new ResolverHooks( parent, HumanVTable, ResolverHooks.Type.Human );
-            _weapon    = new ResolverHooks( parent, _weaponVTable, ResolverHooks.Type.Weapon );
+            _human = new ResolverHooks( parent, HumanVTable, ResolverHooks.Type.Human );
+            _weapon = new ResolverHooks( parent, _weaponVTable, ResolverHooks.Type.Weapon );
             _demiHuman = new ResolverHooks( parent, _demiHumanVTable, ResolverHooks.Type.Other );
-            _monster   = new ResolverHooks( parent, _monsterVTable, ResolverHooks.Type.Other );
+            _monster = new ResolverHooks( parent, _monsterVTable, ResolverHooks.Type.Other );
         }
 
         public void Enable()
@@ -70,18 +71,18 @@ public unsafe partial class PathResolver
         public int Count
             => _pathCollections.Count;
 
-        public IEnumerable< KeyValuePair< Utf8String, ModCollection > > Paths
+        public IEnumerable<KeyValuePair<Utf8String, (IntPtr, ModCollection?)>> Paths
             => _pathCollections;
 
-        public bool TryGetValue( Utf8String path, [NotNullWhen( true )] out ModCollection? collection )
+        public bool TryGetValue( Utf8String path, [NotNullWhen( true )] out (IntPtr, ModCollection?) collection )
             => _pathCollections.TryGetValue( path, out collection );
 
-        public bool Consume( Utf8String path, [NotNullWhen( true )] out ModCollection? collection )
+        public bool Consume( Utf8String path, [NotNullWhen( true )] out (IntPtr, ModCollection?) collection )
             => _pathCollections.TryRemove( path, out collection );
 
         // Just add or remove the resolved path.
         [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
-        public IntPtr ResolvePath( ModCollection collection, IntPtr path )
+        public IntPtr ResolvePath( IntPtr drawObj, ModCollection collection, IntPtr path )
         {
             if( path == IntPtr.Zero )
             {
@@ -89,20 +90,20 @@ public unsafe partial class PathResolver
             }
 
             var gamePath = new Utf8String( ( byte* )path );
-            SetCollection( gamePath, collection );
+            SetCollection( drawObj, gamePath, collection );
             return path;
         }
 
         // Special handling for paths so that we do not store non-owned temporary strings in the dictionary.
-        public void SetCollection( Utf8String path, ModCollection collection )
+        public void SetCollection( IntPtr drawObj, Utf8String path, ModCollection collection )
         {
             if( _pathCollections.ContainsKey( path ) || path.IsOwned )
             {
-                _pathCollections[ path ] = collection;
+                _pathCollections[path] = (_pathCollections[path].Item1, collection);
             }
             else
             {
-                _pathCollections[ path.Clone() ] = collection;
+                _pathCollections[path.Clone()] = (drawObj, collection);
             }
         }
     }

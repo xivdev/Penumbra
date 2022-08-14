@@ -116,7 +116,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var table = ImRaii.Table( "##ReplacedResources", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+            using var table = ImRaii.Table( "##ReplacedResources", 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
                 -Vector2.UnitX );
             if( !table )
             {
@@ -144,6 +144,8 @@ public partial class ConfigWindow
                 ImGui.TextUnformatted( ( ( ulong )data.OriginalResource ).ToString( "X" ) );
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted( refCountOrig.ToString() );
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted( data.DrawObject.ToString("X") );
             }
         }
 
@@ -195,7 +197,7 @@ public partial class ConfigWindow
                             ImGui.TableNextColumn();
                             ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
                             ImGui.TableNextColumn();
-                            ImGui.TextUnformatted( collection.Name );
+                            ImGui.TextUnformatted( collection!.Name );
                         }
                     }
                 }

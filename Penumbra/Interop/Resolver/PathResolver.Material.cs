@@ -20,7 +20,7 @@ public unsafe partial class PathResolver
     {
         private readonly PathState _paths;
 
-        private ModCollection? _mtrlCollection;
+        private (IntPtr, ModCollection?) _mtrlCollection;
 
         public MaterialState( PathState paths )
         {
@@ -29,30 +29,30 @@ public unsafe partial class PathResolver
         }
 
         // Check specifically for shpk and tex files whether we are currently in a material load.
-        public bool HandleSubFiles( ResourceType type, [NotNullWhen( true )] out ModCollection? collection )
+        public bool HandleSubFiles( ResourceType type, [NotNullWhen( true )] out (IntPtr, ModCollection?) collection )
         {
-            if( _mtrlCollection != null && type is ResourceType.Tex or ResourceType.Shpk )
+            if( _mtrlCollection.Item2 != null && type is ResourceType.Tex or ResourceType.Shpk )
             {
                 collection = _mtrlCollection;
                 return true;
             }
 
-            collection = null;
+            collection = (IntPtr.Zero, null);
             return false;
         }
 
         // Materials need to be set per collection so they can load their textures independently from each other.
-        public static void HandleCollection( ModCollection collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
-            out (FullPath?, object?) data )
+        public void HandleCollection( (IntPtr, ModCollection?) collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
+            out (IntPtr, FullPath?, object?) data )
         {
             if( nonDefault && type == ResourceType.Mtrl )
             {
-                var fullPath = new FullPath( $"|{collection.Name}_{collection.ChangeCounter}|{path}" );
-                data = ( fullPath, collection );
+                var fullPath = new FullPath( $"|{collection.Item2!.Name}_{collection.Item2!.ChangeCounter}|{path}" );
+                data = ( collection.Item1, fullPath, collection );
             }
             else
             {
-                data = ( resolved, collection );
+                data = ( collection.Item1, resolved, collection );
             }
         }
 
@@ -79,7 +79,7 @@ public unsafe partial class PathResolver
 
         // We need to set the correct collection for the actual material path that is loaded
         // before actually loading the file.
-        public bool MtrlLoadHandler( Utf8String split, Utf8String path, ResourceManager* resourceManager,
+        public bool MtrlLoadHandler( IntPtr drawObject, Utf8String split, Utf8String path, ResourceManager* resourceManager,
             SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
         {
             ret = 0;
@@ -96,7 +96,7 @@ public unsafe partial class PathResolver
 #if DEBUG
                 PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", name, path );
 #endif
-                _paths.SetCollection( path, collection );
+                _paths.SetCollection( drawObject, path, collection );
             }
             else
             {
@@ -121,9 +121,9 @@ public unsafe partial class PathResolver
 
         private byte LoadMtrlTexDetour( IntPtr mtrlResourceHandle )
         {
-            LoadMtrlHelper( mtrlResourceHandle );
+            _mtrlCollection = LoadMtrlHelper( mtrlResourceHandle );
             var ret = _loadMtrlTexHook!.Original( mtrlResourceHandle );
-            _mtrlCollection = null;
+            _mtrlCollection = (IntPtr.Zero, null);
             return ret;
         }
 
@@ -133,22 +133,22 @@ public unsafe partial class PathResolver
 
         private byte LoadMtrlShpkDetour( IntPtr mtrlResourceHandle )
         {
-            LoadMtrlHelper( mtrlResourceHandle );
+            _mtrlCollection = LoadMtrlHelper( mtrlResourceHandle );
             var ret = _loadMtrlShpkHook!.Original( mtrlResourceHandle );
-            _mtrlCollection = null;
+            _mtrlCollection = (IntPtr.Zero, null);
             return ret;
         }
 
-        private void LoadMtrlHelper( IntPtr mtrlResourceHandle )
+        private (IntPtr, ModCollection?) LoadMtrlHelper( IntPtr mtrlResourceHandle )
         {
             if( mtrlResourceHandle == IntPtr.Zero )
             {
-                return;
+                return (IntPtr.Zero, null);
             }
 
             var mtrl     = ( MtrlResource* )mtrlResourceHandle;
             var mtrlPath = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
-            _mtrlCollection = _paths.TryGetValue( mtrlPath, out var c ) ? c : null;
+            return _paths.TryGetValue( mtrlPath, out var c ) ? c : (IntPtr.Zero, null);
         }
     }
 }

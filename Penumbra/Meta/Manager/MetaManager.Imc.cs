@@ -15,9 +15,9 @@ namespace Penumbra.Meta.Manager;
 
 public partial class MetaManager
 {
-    private readonly Dictionary< Utf8GamePath, ImcFile > _imcFiles         = new();
-    private readonly List< ImcManipulation >             _imcManipulations = new();
-    private static   int                                 _imcManagerCount;
+    private readonly Dictionary<Utf8GamePath, ImcFile> _imcFiles = new();
+    private readonly List<ImcManipulation> _imcManipulations = new();
+    private static int _imcManagerCount;
 
     public void SetImcFiles()
     {
@@ -69,7 +69,7 @@ public partial class MetaManager
                 return false;
             }
 
-            _imcFiles[ path ] = file;
+            _imcFiles[path] = file;
             var fullPath = CreateImcPath( path );
             if( _collection.HasCache )
             {
@@ -99,7 +99,7 @@ public partial class MetaManager
             return false;
         }
 
-        var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant, out _ );
+        var def = ImcFile.GetDefault( path, m.EquipSlot, m.Variant, out _ );
         var manip = m with { Entry = def };
         if( !manip.Apply( file ) )
         {
@@ -144,10 +144,10 @@ public partial class MetaManager
     }
 
     private FullPath CreateImcPath( Utf8GamePath path )
-        => new($"|{_collection.Name}_{_collection.ChangeCounter}|{path}");
+        => new( $"|{_collection.Name}_{_collection.ChangeCounter}|{path}" );
 
 
-    private static unsafe bool ImcLoadHandler( Utf8String split, Utf8String path, ResourceManager* resourceManager,
+    private static unsafe bool ImcLoadHandler( IntPtr drawObject, Utf8String split, Utf8String path, ResourceManager* resourceManager,
         SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
     {
         ret = 0;
@@ -160,7 +160,7 @@ public partial class MetaManager
         ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
 
         var lastUnderscore = split.LastIndexOf( ( byte )'_' );
-        var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
+        var name = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
         if( ( Penumbra.TempMods.CollectionByName( name, out var collection )
             || Penumbra.CollectionManager.ByName( name, out collection ) )
         && collection.HasCache

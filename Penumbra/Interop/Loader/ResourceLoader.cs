@@ -117,7 +117,7 @@ public unsafe partial class ResourceLoader : IDisposable
     // Event fired whenever a resource is returned.
     // If the path was manipulated by penumbra, manipulatedPath will be the file path of the loaded resource.
     // resolveData is additional data returned by the current ResolvePath function and is user-defined.
-    public delegate void ResourceLoadedDelegate( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
+    public delegate void ResourceLoadedDelegate( IntPtr drawObject, ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
         object? resolveData );
 
     public event ResourceLoadedDelegate? ResourceLoaded;
@@ -133,13 +133,13 @@ public unsafe partial class ResourceLoader : IDisposable
     // Resolving goes through all subscribed functions in arbitrary order until one returns true,
     // or uses default resolving if none return true.
     public delegate bool ResolvePathDelegate( Utf8GamePath path, ResourceCategory category, ResourceType type, int hash,
-        out (FullPath?, object?) ret );
+        out (IntPtr, FullPath?, object?) ret );
 
     public event ResolvePathDelegate? ResolvePathCustomization;
 
     // Customize file loading for any GamePaths that start with "|".
     // Same procedure as above.
-    public delegate bool ResourceLoadCustomizationDelegate( Utf8String split, Utf8String path, ResourceManager* resourceManager,
+    public delegate bool ResourceLoadCustomizationDelegate( IntPtr drawObject, Utf8String split, Utf8String path, ResourceManager* resourceManager,
         SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte retValue );
 
     public event ResourceLoadCustomizationDelegate? ResourceLoadCustomization;

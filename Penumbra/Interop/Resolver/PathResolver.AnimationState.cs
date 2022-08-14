@@ -15,8 +15,8 @@ public unsafe partial class PathResolver
     {
         private readonly DrawObjectState _drawObjectState;
 
-        private ModCollection? _animationLoadCollection;
-        private ModCollection? _lastAvfxCollection;
+        private (IntPtr, ModCollection?) _animationLoadCollection;
+        private (IntPtr, ModCollection?) _lastAvfxCollection;
 
         public AnimationState( DrawObjectState drawObjectState )
         {
@@ -24,14 +24,14 @@ public unsafe partial class PathResolver
             SignatureHelper.Initialise( this );
         }
 
-        public bool HandleFiles( ResourceType type, Utf8GamePath _, [NotNullWhen( true )] out ModCollection? collection )
+        public bool HandleFiles( ResourceType type, Utf8GamePath _, [NotNullWhen( true )] out (IntPtr, ModCollection?) collection )
         {
             switch( type )
             {
                 case ResourceType.Tmb:
                 case ResourceType.Pap:
                 case ResourceType.Scd:
-                    if( _animationLoadCollection != null )
+                    if( _animationLoadCollection.Item2 != null )
                     {
                         collection = _animationLoadCollection;
                         return true;
@@ -39,8 +39,8 @@ public unsafe partial class PathResolver
 
                     break;
                 case ResourceType.Avfx:
-                    _lastAvfxCollection = _animationLoadCollection ?? Penumbra.CollectionManager.Default;
-                    if( _animationLoadCollection != null )
+                    _lastAvfxCollection = _animationLoadCollection.Item2 == null ? (IntPtr.Zero, Penumbra.CollectionManager.Default) : _animationLoadCollection;
+                    if( _animationLoadCollection.Item2 != null )
                     {
                         collection = _animationLoadCollection;
                         return true;
@@ -48,13 +48,13 @@ public unsafe partial class PathResolver
 
                     break;
                 case ResourceType.Atex:
-                    if( _lastAvfxCollection != null )
+                    if( _lastAvfxCollection.Item2 != null )
                     {
                         collection = _lastAvfxCollection;
                         return true;
                     }
 
-                    if( _animationLoadCollection != null )
+                    if( _animationLoadCollection.Item2 != null )
                     {
                         collection = _animationLoadCollection;
                         return true;
@@ -63,7 +63,7 @@ public unsafe partial class PathResolver
                     break;
             }
 
-            collection = null;
+            collection = (IntPtr.Zero, null);
             return false;
         }
 
@@ -115,11 +115,11 @@ public unsafe partial class PathResolver
                 if( idx >= 0 && idx < Dalamud.Objects.Length )
                 {
                     var obj = Dalamud.Objects[ idx ];
-                    _animationLoadCollection = obj != null ? IdentifyCollection( ( GameObject* )obj.Address ) : null;
+                    _animationLoadCollection = obj != null ? IdentifyCollection( ( GameObject* )obj.Address ) : (IntPtr.Zero, null);
                 }
                 else
                 {
-                    _animationLoadCollection = null;
+                    _animationLoadCollection = (IntPtr.Zero, null);
                 }
             }
             finally
@@ -143,8 +143,8 @@ public unsafe partial class PathResolver
         private void CharacterBaseLoadAnimationDetour( IntPtr drawObject )
         {
             var last = _animationLoadCollection;
-            _animationLoadCollection = _drawObjectState.LastCreatedCollection
-             ?? ( FindParent( drawObject, out var collection ) != null ? collection : Penumbra.CollectionManager.Default );
+            _animationLoadCollection = _drawObjectState.LastCreatedCollection.Item2 == null
+             ? (drawObject, ( FindParent( drawObject, out var collection ) != null ? collection.Item2 : Penumbra.CollectionManager.Default )) : _drawObjectState.LastCreatedCollection;
             _characterBaseLoadAnimationHook!.Original( drawObject );
             _animationLoadCollection = last;
         }
