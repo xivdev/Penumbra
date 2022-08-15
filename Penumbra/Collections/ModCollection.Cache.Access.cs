@@ -87,7 +87,7 @@ public partial class ModCollection
             return true;
         }
 
-        PluginLog.Error( $"Could not add the redirection {path} to {fullPath}, the redirected path is too long." );
+        PluginLog.Error( $"The redirected path is too long to add the redirection\n\t{path}\n\t--> {fullPath}" );
         return false;
     }
 

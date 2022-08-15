@@ -35,7 +35,7 @@ public static unsafe partial class ByteStringFunctions
         var path = ( byte* )Marshal.AllocHGlobal( length + 1 );
         fixed( char* ptr = s )
         {
-            Encoding.UTF8.GetBytes( ptr, length, path, length + 1 );
+            Encoding.UTF8.GetBytes( ptr, s.Length, path, length + 1 );
         }
 
         path[ length ] = 0;
