@@ -67,7 +67,6 @@ public unsafe class ImcFile : MetaBaseFile
 
     public readonly Utf8GamePath Path;
     public readonly int          NumParts;
-    public          bool         ChangesSinceLoad = true;
 
     public ReadOnlySpan< ImcEntry > Span
         => new(( ImcEntry* )( Data + PreambleSize ), ( Length - PreambleSize ) / sizeof( ImcEntry ));

@@ -114,7 +114,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if( IdInput( "##eqpId", IdWidth, _new.SetId, out var setId, ExpandedEqpGmpBase.Count - 1 ) )
+            if( IdInput( "##eqpId", IdWidth, _new.SetId, out var setId, 1, ExpandedEqpGmpBase.Count - 1 ) )
             {
                 _new = _new with { SetId = setId };
             }
@@ -209,7 +209,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if( IdInput( "##eqdpId", IdWidth, _new.SetId, out var setId, ExpandedEqpGmpBase.Count - 1 ) )
+            if( IdInput( "##eqdpId", IdWidth, _new.SetId, out var setId, 0, ExpandedEqpGmpBase.Count - 1 ) )
             {
                 _new = _new with { SetId = setId };
             }
@@ -337,7 +337,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( "Object Type" );
 
             ImGui.TableNextColumn();
-            if( IdInput( "##imcId", IdWidth, _new.PrimaryId, out var setId, ushort.MaxValue ) )
+            if( IdInput( "##imcId", IdWidth, _new.PrimaryId, out var setId, 0, ushort.MaxValue ) )
             {
                 _new = _new with { PrimaryId = setId };
             }
@@ -360,7 +360,7 @@ public partial class ModEditWindow
             }
             else
             {
-                if( IdInput( "##imcId2", 100 * ImGuiHelpers.GlobalScale, _new.SecondaryId, out var setId2, ushort.MaxValue ) )
+                if( IdInput( "##imcId2", 100 * ImGuiHelpers.GlobalScale, _new.SecondaryId, out var setId2, 0, ushort.MaxValue ) )
                 {
                     _new = _new with { SecondaryId = setId2 };
                 }
@@ -369,7 +369,7 @@ public partial class ModEditWindow
             }
 
             ImGui.TableNextColumn();
-            if( IdInput( "##imcVariant", SmallIdWidth, _new.Variant, out var variant, byte.MaxValue ) )
+            if( IdInput( "##imcVariant", SmallIdWidth, _new.Variant, out var variant, 0, byte.MaxValue ) )
             {
                 _new = _new with { Variant = variant };
             }
@@ -518,7 +518,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if( IdInput( "##estId", IdWidth, _new.SetId, out var setId, ExpandedEqpGmpBase.Count - 1 ) )
+            if( IdInput( "##estId", IdWidth, _new.SetId, out var setId, 0, ExpandedEqpGmpBase.Count - 1 ) )
             {
                 _new = _new with { SetId = setId };
             }
@@ -616,7 +616,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if( IdInput( "##gmpId", IdWidth, _new.SetId, out var setId, ExpandedEqpGmpBase.Count - 1 ) )
+            if( IdInput( "##gmpId", IdWidth, _new.SetId, out var setId, 1, ExpandedEqpGmpBase.Count - 1 ) )
             {
                 _new = _new with { SetId = setId };
             }
@@ -810,13 +810,13 @@ public partial class ModEditWindow
 
     // A number input for ids with a optional max id of given width.
     // Returns true if newId changed against currentId.
-    private static bool IdInput( string label, float width, ushort currentId, out ushort newId, int maxId )
+    private static bool IdInput( string label, float width, ushort currentId, out ushort newId, int minId, int maxId )
     {
         int tmp = currentId;
         ImGui.SetNextItemWidth( width );
         if( ImGui.InputInt( label, ref tmp, 0 ) )
         {
-            tmp = Math.Clamp( tmp, 1, maxId );
+            tmp = Math.Clamp( tmp, minId, maxId );
         }
 
         newId = ( ushort )tmp;
