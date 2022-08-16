@@ -18,6 +18,7 @@ public unsafe partial class PathResolver
     public class DrawObjectState
     {
         public static event CreatingCharacterBaseDelegate? CreatingCharacterBase;
+        public static event CreatedCharacterBaseDelegate? CreatedCharacterBase;
 
         public IEnumerable< KeyValuePair< IntPtr, (ModCollection, int) > > DrawObjects
             => _drawObjectToObject;
@@ -147,6 +148,7 @@ public unsafe partial class PathResolver
             if( LastGameObject != null )
             {
                 _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
+                CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!, ret );
             }
 
             return ret;

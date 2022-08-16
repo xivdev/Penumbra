@@ -26,6 +26,8 @@ public delegate void ModSettingChanged( ModSettingChange type, string collection
 public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize,
     IntPtr equipData );
 
+public delegate void CreatedCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr drawObject );
+
 public enum PenumbraApiEc
 {
     Success            = 0,
@@ -72,6 +74,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Triggered when a character base is created and a corresponding gameObject could be found,
     // before the Draw Object is actually created, so customize and equipdata can be manipulated beforehand.
     public event CreatingCharacterBaseDelegate? CreatingCharacterBase;
+
+    // Triggered after a character base was created if a corresponding gameObject could be found,
+    // so you can apply flag changes after finishing.
+    public event CreatedCharacterBaseDelegate? CreatedCharacterBase;
 
     // Queue redrawing of all actors of the given name with the given RedrawType.
     public void RedrawObject( string name, RedrawType setting );
