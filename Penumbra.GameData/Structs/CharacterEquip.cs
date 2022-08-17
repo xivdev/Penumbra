@@ -104,9 +104,10 @@ public readonly unsafe struct CharacterEquip
         };
     }
 
-    public void Write( IntPtr target )
+
+    public void Load( CharacterEquip source )
     {
-        Functions.MemCpyUnchecked( ( void* )target, _armor, sizeof( CharacterArmor ) * 10 );
+        Functions.MemCpyUnchecked( _armor, source._armor, sizeof( CharacterArmor ) * 10 );
     }
 
     public bool Equals( CharacterEquip other )
