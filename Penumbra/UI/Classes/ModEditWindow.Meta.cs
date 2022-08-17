@@ -79,7 +79,6 @@ public partial class ModEditWindow
             if( table )
             {
                 drawNew( _editor!, _iconSize );
-                ImGui.Separator();
                 foreach( var (item, index) in items.ToArray().WithIndex() )
                 {
                     using var id = ImRaii.PushId( index );
@@ -119,7 +118,7 @@ public partial class ModEditWindow
                 _new = _new with { SetId = setId };
             }
 
-            ImGuiUtil.HoverTooltip( "Model Set ID" );
+            ImGuiUtil.HoverTooltip( "Model Set ID");
 
             ImGui.TableNextColumn();
             if( EqpEquipSlotCombo( "##eqpSlot", _new.Slot, out var slot ) )
@@ -127,9 +126,10 @@ public partial class ModEditWindow
                 _new = _new with { Slot = slot };
             }
 
-            ImGuiUtil.HoverTooltip( "Equip Slot" );
+            ImGuiUtil.HoverTooltip( "Equip Slot");
 
             // Values
+            using var disabled = ImRaii.Disabled();
             ImGui.TableNextColumn();
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
                 new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
@@ -241,6 +241,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( "Equip Slot" );
 
             // Values
+            using var disabled = ImRaii.Disabled();
             ImGui.TableNextColumn();
             var (bit1, bit2) = defaultEntry.ToBits( _new.Slot );
             Checkmark( "Material##eqdpCheck1", string.Empty, bit1, bit1, out _ );
@@ -377,6 +378,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( "Variant ID" );
 
             // Values
+            using var disabled = ImRaii.Disabled();
             ImGui.TableNextColumn();
             IntDragInput( "##imcMaterialId", "Material ID", SmallIdWidth, defaultEntry.Value.MaterialId, defaultEntry.Value.MaterialId, out _,
                 1, byte.MaxValue, 0f );
@@ -550,6 +552,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( "EST Type" );
 
             // Values
+            using var disabled = ImRaii.Disabled();
             ImGui.TableNextColumn();
             IntDragInput( "##estSkeleton", "Skeleton Index", IdWidth, _new.Entry, defaultEntry, out _, 0, ushort.MaxValue, 0.05f );
         }
@@ -577,7 +580,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( "EST Type" );
 
             // Values
-            var defaultEntry = EstFile.GetDefault( meta.Slot, Names.CombinedRace( meta.Gender, meta.Race ), meta.SetId );
+            var       defaultEntry = EstFile.GetDefault( meta.Slot, Names.CombinedRace( meta.Gender, meta.Race ), meta.SetId );
             ImGui.TableNextColumn();
             if( IntDragInput( "##estSkeleton", $"Skeleton Index\nDefault Value: {defaultEntry}", IdWidth, meta.Entry, defaultEntry,
                    out var entry, 0, ushort.MaxValue, 0.05f ) )
@@ -624,6 +627,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( "Model Set ID" );
 
             // Values
+            using var disabled = ImRaii.Disabled();
             ImGui.TableNextColumn();
             Checkmark( "##gmpEnabled", "Gimmick Enabled", defaultEntry.Enabled, defaultEntry.Enabled, out _ );
             ImGui.TableNextColumn();
@@ -743,6 +747,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( "Scaling Type" );
 
             // Values
+            using var disabled = ImRaii.Disabled();
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth( FloatWidth );
             ImGui.DragFloat( "##rspValue", ref defaultEntry, 0f );
@@ -831,7 +836,7 @@ public partial class ModEditWindow
             defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(), defaultValue != currentValue );
         newValue = currentValue;
         ImGui.Checkbox( label, ref newValue );
-        ImGuiUtil.HoverTooltip( tooltip );
+        ImGuiUtil.HoverTooltip( tooltip, ImGuiHoveredFlags.AllowWhenDisabled );
         return newValue != currentValue;
     }
 
@@ -850,7 +855,7 @@ public partial class ModEditWindow
             newValue = Math.Clamp( newValue, minValue, maxValue );
         }
 
-        ImGuiUtil.HoverTooltip( tooltip );
+        ImGuiUtil.HoverTooltip( tooltip, ImGuiHoveredFlags.AllowWhenDisabled );
 
         return newValue != currentValue;
     }
