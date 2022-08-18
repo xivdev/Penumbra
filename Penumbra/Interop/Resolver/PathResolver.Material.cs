@@ -122,7 +122,7 @@ public unsafe partial class PathResolver
         private byte LoadMtrlTexDetour( IntPtr mtrlResourceHandle )
         {
             LoadMtrlHelper( mtrlResourceHandle );
-            var ret = _loadMtrlTexHook!.Original( mtrlResourceHandle );
+            var ret = _loadMtrlTexHook.Original( mtrlResourceHandle );
             _mtrlCollection = null;
             return ret;
         }
@@ -134,7 +134,7 @@ public unsafe partial class PathResolver
         private byte LoadMtrlShpkDetour( IntPtr mtrlResourceHandle )
         {
             LoadMtrlHelper( mtrlResourceHandle );
-            var ret = _loadMtrlShpkHook!.Original( mtrlResourceHandle );
+            var ret = _loadMtrlShpkHook.Original( mtrlResourceHandle );
             _mtrlCollection = null;
             return ret;
         }

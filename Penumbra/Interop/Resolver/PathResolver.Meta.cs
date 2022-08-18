@@ -88,7 +88,6 @@ public unsafe partial class PathResolver
             }
         }
 
-
         private delegate void UpdateModelDelegate( IntPtr drawObject );
 
         [Signature( "48 8B ?? 56 48 83 ?? ?? ?? B9", DetourName = nameof( UpdateModelsDetour ) )]
