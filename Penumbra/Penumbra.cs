@@ -70,7 +70,7 @@ public class Penumbra : IDalamudPlugin
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
         Dalamud.Initialize( pluginInterface );
-        GameData.GameData.GetIdentifier( Dalamud.GameData, Dalamud.ClientState.ClientLanguage );
+        GameData.GameData.GetIdentifier( Dalamud.GameData );
         DevPenumbraExists      = CheckDevPluginPenumbra();
         IsNotInstalledPenumbra = CheckIsNotInstalled();
 

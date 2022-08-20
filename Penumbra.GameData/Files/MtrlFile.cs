@@ -1,17 +1,232 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Numerics;
 using System.Text;
 using Lumina.Data.Parsing;
 using Lumina.Extensions;
 
 namespace Penumbra.GameData.Files;
 
-public partial class MtrlFile
+public partial class MtrlFile : IWritable
 {
-    public struct ColorSet
+    public struct UvSet
     {
         public string Name;
         public ushort Index;
+    }
+
+    public unsafe struct ColorSet
+    {
+        public struct Row
+        {
+            public const int Size = 32;
+
+            private fixed ushort _data[16];
+
+            public Vector3 Diffuse
+            {
+                get => new(ToFloat( 0 ), ToFloat( 1 ), ToFloat( 2 ));
+                set
+                {
+                    _data[ 0 ] = FromFloat( value.X );
+                    _data[ 1 ] = FromFloat( value.Y );
+                    _data[ 2 ] = FromFloat( value.Z );
+                }
+            }
+
+            public Vector3 Specular
+            {
+                get => new(ToFloat( 4 ), ToFloat( 5 ), ToFloat( 6 ));
+                set
+                {
+                    _data[ 4 ] = FromFloat( value.X );
+                    _data[ 5 ] = FromFloat( value.Y );
+                    _data[ 6 ] = FromFloat( value.Z );
+                }
+            }
+
+            public Vector3 Emissive
+            {
+                get => new(ToFloat( 8 ), ToFloat( 9 ), ToFloat( 10 ));
+                set
+                {
+                    _data[ 8 ]  = FromFloat( value.X );
+                    _data[ 9 ]  = FromFloat( value.Y );
+                    _data[ 10 ] = FromFloat( value.Z );
+                }
+            }
+
+            public Vector2 MaterialRepeat
+            {
+                get => new(ToFloat( 12 ), ToFloat( 15 ));
+                set
+                {
+                    _data[ 12 ] = FromFloat( value.X );
+                    _data[ 15 ] = FromFloat( value.Y );
+                }
+            }
+
+            public Vector2 MaterialSkew
+            {
+                get => new(ToFloat( 13 ), ToFloat( 14 ));
+                set
+                {
+                    _data[ 13 ] = FromFloat( value.X );
+                    _data[ 14 ] = FromFloat( value.Y );
+                }
+            }
+
+            public float SpecularStrength
+            {
+                get => ToFloat( 3 );
+                set => _data[ 3 ] = FromFloat( value );
+            }
+
+            public float GlossStrength
+            {
+                get => ToFloat( 7 );
+                set => _data[ 7 ] = FromFloat( value );
+            }
+
+            public ushort TileSet
+            {
+                get => (ushort) (ToFloat(11) * 64f);
+                set => _data[ 11 ] = FromFloat(value / 64f);
+            }
+
+            private float ToFloat( int idx )
+                => ( float )BitConverter.UInt16BitsToHalf( _data[ idx ] );
+
+            private static ushort FromFloat( float x )
+                => BitConverter.HalfToUInt16Bits( ( Half )x );
+        }
+
+        public struct RowArray : IEnumerable< Row >
+        {
+            public const  int  NumRows = 16;
+            private fixed byte _rowData[NumRows * Row.Size];
+
+            public ref Row this[ int i ]
+            {
+                get
+                {
+                    fixed( byte* ptr = _rowData )
+                    {
+                        return ref ( ( Row* )ptr )[ i ];
+                    }
+                }
+            }
+
+            public IEnumerator< Row > GetEnumerator()
+            {
+                for( var i = 0; i < NumRows; ++i )
+                {
+                    yield return this[ i ];
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+                => GetEnumerator();
+
+            public ReadOnlySpan< byte > AsBytes()
+            {
+                fixed( byte* ptr = _rowData )
+                {
+                    return new ReadOnlySpan< byte >( ptr, NumRows * Row.Size );
+                }
+            }
+        }
+
+        public RowArray Rows;
+        public string   Name;
+        public ushort   Index;
+    }
+
+    public unsafe struct ColorDyeSet
+    {
+        public struct Row
+        {
+            private ushort _data;
+
+            public ushort Template
+            {
+                get => ( ushort )( _data >> 5 );
+                set => _data = ( ushort )( ( _data & 0x1F ) | ( value << 5 ) );
+            }
+
+            public bool Diffuse
+            {
+                get => ( _data & 0x01 ) != 0;
+                set => _data = ( ushort )( value ? _data | 0x01 : _data & 0xFFFE );
+            }
+
+            public bool Specular
+            {
+                get => ( _data & 0x02 ) != 0;
+                set => _data = ( ushort )( value ? _data | 0x02 : _data & 0xFFFD );
+            }
+
+            public bool Emissive
+            {
+                get => ( _data & 0x04 ) != 0;
+                set => _data = ( ushort )( value ? _data | 0x04 : _data & 0xFFFB );
+            }
+
+            public bool Gloss
+            {
+                get => ( _data & 0x08 ) != 0;
+                set => _data = ( ushort )( value ? _data | 0x08 : _data & 0xFFF7 );
+            }
+
+            public bool SpecularStrength
+            {
+                get => ( _data & 0x10 ) != 0;
+                set => _data = ( ushort )( value ? _data | 0x10 : _data & 0xFFEF );
+            }
+        }
+
+        public struct RowArray : IEnumerable< Row >
+        {
+            public const  int    NumRows = 16;
+            private fixed ushort _rowData[NumRows];
+
+            public ref Row this[ int i ]
+            {
+                get
+                {
+                    fixed( ushort* ptr = _rowData )
+                    {
+                        return ref ( ( Row* )ptr )[ i ];
+                    }
+                }
+            }
+
+            public IEnumerator< Row > GetEnumerator()
+            {
+                for( var i = 0; i < NumRows; ++i )
+                {
+                    yield return this[ i ];
+                }
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+                => GetEnumerator();
+
+            public ReadOnlySpan< byte > AsBytes()
+            {
+                fixed( ushort* ptr = _rowData )
+                {
+                    return new ReadOnlySpan< byte >( ptr, NumRows * sizeof( ushort ) );
+                }
+            }
+        }
+
+        public RowArray Rows;
+        public string   Name;
+        public ushort   Index;
     }
 
     public struct Texture
@@ -37,12 +252,12 @@ public partial class MtrlFile
     }
 
 
-    public uint Version;
+    public readonly uint Version;
 
     public Texture[]         Textures;
-    public ColorSet[]        UvColorSets;
+    public UvSet[]           UvSets;
     public ColorSet[]        ColorSets;
-    public ushort[]          ColorSetData;
+    public ColorDyeSet[]     ColorDyeSets;
     public ShaderPackageData ShaderPackage;
     public byte[]            AdditionalData;
 
@@ -61,9 +276,9 @@ public partial class MtrlFile
         var colorSetCount           = r.ReadByte();
         var additionalDataSize      = r.ReadByte();
 
-        Textures    = ReadTextureOffsets( r, textureCount, out var textureOffsets );
-        UvColorSets = ReadColorSetOffsets( r, uvSetCount, out var uvOffsets );
-        ColorSets   = ReadColorSetOffsets( r, colorSetCount, out var colorOffsets );
+        Textures  = ReadTextureOffsets( r, textureCount, out var textureOffsets );
+        UvSets    = ReadUvSetOffsets( r, uvSetCount, out var uvOffsets );
+        ColorSets = ReadColorSetOffsets( r, colorSetCount, out var colorOffsets );
 
         var strings = r.ReadBytes( stringTableSize );
         for( var i = 0; i < textureCount; ++i )
@@ -73,7 +288,7 @@ public partial class MtrlFile
 
         for( var i = 0; i < uvSetCount; ++i )
         {
-            UvColorSets[ i ].Name = UseOffset( strings, uvOffsets[ i ] );
+            UvSets[ i ].Name = UseOffset( strings, uvOffsets[ i ] );
         }
 
         for( var i = 0; i < colorSetCount; ++i )
@@ -81,10 +296,22 @@ public partial class MtrlFile
             ColorSets[ i ].Name = UseOffset( strings, colorOffsets[ i ] );
         }
 
+        ColorDyeSets = ColorSets.Length * ColorSet.RowArray.NumRows * ColorSet.Row.Size < dataSetSize
+            ? ColorSets.Select( c => new ColorDyeSet { Index = c.Index, Name = c.Name } ).ToArray()
+            : Array.Empty< ColorDyeSet >();
+
         ShaderPackage.Name = UseOffset( strings, shaderPackageNameOffset );
 
         AdditionalData = r.ReadBytes( additionalDataSize );
-        ColorSetData   = r.ReadStructuresAsArray< ushort >( dataSetSize / 2 );
+        for( var i = 0; i < ColorSets.Length; ++i )
+        {
+            ColorSets[ i ].Rows = r.ReadStructure< ColorSet.RowArray >();
+        }
+
+        for( var i = 0; i < ColorDyeSets.Length; ++i )
+        {
+            ColorDyeSets[ i ].Rows = r.ReadStructure< ColorDyeSet.RowArray >();
+        }
 
         var shaderValueListSize = r.ReadUInt16();
         var shaderKeyCount      = r.ReadUInt16();
@@ -106,6 +333,19 @@ public partial class MtrlFile
         {
             offsets[ i ]   = r.ReadUInt16();
             ret[ i ].Flags = r.ReadUInt16();
+        }
+
+        return ret;
+    }
+
+    private static UvSet[] ReadUvSetOffsets( BinaryReader r, int count, out ushort[] offsets )
+    {
+        var ret = new UvSet[count];
+        offsets = new ushort[count];
+        for( var i = 0; i < count; ++i )
+        {
+            offsets[ i ]   = r.ReadUInt16();
+            ret[ i ].Index = r.ReadUInt16();
         }
 
         return ret;

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,24 +23,38 @@ public partial class MtrlFile
                 cumulativeStringOffset += ( ushort )( texture.Path.Length + 1 );
             }
 
-            foreach( var colorSet in UvColorSets.Concat( ColorSets ) )
+            foreach( var set in UvSets )
             {
                 w.Write( cumulativeStringOffset );
-                w.Write( colorSet.Index );
-                cumulativeStringOffset += ( ushort )( colorSet.Name.Length + 1 );
+                w.Write( set.Index );
+                cumulativeStringOffset += ( ushort )( set.Name.Length + 1 );
+            }
+
+            foreach( var set in ColorSets )
+            {
+                w.Write( cumulativeStringOffset );
+                w.Write( set.Index );
+                cumulativeStringOffset += ( ushort )( set.Name.Length + 1 );
             }
 
             foreach( var text in Textures.Select( t => t.Path )
-                       .Concat( UvColorSets.Concat( ColorSets ).Select( c => c.Name ).Append( ShaderPackage.Name ) ) )
+                       .Concat( UvSets.Select( c => c.Name ) )
+                       .Concat( ColorSets.Select( c => c.Name ) )
+                       .Append( ShaderPackage.Name ) )
             {
                 w.Write( Encoding.UTF8.GetBytes( text ) );
                 w.Write( ( byte )'\0' );
             }
 
             w.Write( AdditionalData );
-            foreach( var color in ColorSetData )
+            foreach( var row in ColorSets.Select( c => c.Rows ) )
             {
-                w.Write( color );
+                w.Write( row.AsBytes() );
+            }
+
+            foreach( var row in ColorDyeSets.Select( c => c.Rows ) )
+            {
+                w.Write( row.AsBytes() );
             }
 
             w.Write( ( ushort )( ShaderPackage.ShaderValues.Length * 4 ) );
@@ -85,11 +100,12 @@ public partial class MtrlFile
         w.BaseStream.Seek( 0, SeekOrigin.Begin );
         w.Write( Version );
         w.Write( fileSize );
-        w.Write( ( ushort )( ColorSetData.Length * 2 ) );
+        w.Write( ( ushort )( ColorSets.Length * ColorSet.RowArray.NumRows    * ColorSet.Row.Size
+          + ColorDyeSets.Length               * ColorDyeSet.RowArray.NumRows * 2 ) );
         w.Write( ( ushort )( shaderPackageNameOffset + ShaderPackage.Name.Length + 1 ) );
         w.Write( shaderPackageNameOffset );
         w.Write( ( byte )Textures.Length );
-        w.Write( ( byte )UvColorSets.Length );
+        w.Write( ( byte )UvSets.Length );
         w.Write( ( byte )ColorSets.Length );
         w.Write( ( byte )AdditionalData.Length );
     }

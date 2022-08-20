@@ -7,7 +7,7 @@ using Lumina.Extensions;
 
 namespace Penumbra.GameData.Files;
 
-public partial class MdlFile
+public partial class MdlFile : IWritable
 {
     public const uint NumVertices    = 17;
     public const uint FileHeaderSize = 0x44;
