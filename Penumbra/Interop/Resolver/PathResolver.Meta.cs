@@ -2,6 +2,7 @@ using System;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 
@@ -26,7 +27,7 @@ namespace Penumbra.Interop.Resolver;
 // RSP tail entries seem to be obtained by "E8 ?? ?? ?? ?? 0F 28 F0 48 8B 05"
 // RSP bust size entries seem to be obtained by  "E8 ?? ?? ?? ?? F2 0F 10 44 24 ?? 8B 44 24 ?? F2 0F 11 45 ?? 89 45 ?? 83 FF"
 // they all are called by many functions, but the most relevant seem to be Human.SetupFromCharacterData, which is only called by CharacterBase.Create,
-// and RspSetupCharacter, which is hooked here.
+// ChangeCustomize and RspSetupCharacter, which is hooked here.
 
 // GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which has a DrawObject as its first parameter.
 
@@ -50,6 +51,7 @@ public unsafe partial class PathResolver
             _onModelLoadCompleteHook.Enable();
             _setupVisorHook.Enable();
             _rspSetupCharacterHook.Enable();
+            _changeCustomize.Enable();
         }
 
         public void Disable()
@@ -59,6 +61,7 @@ public unsafe partial class PathResolver
             _onModelLoadCompleteHook.Disable();
             _setupVisorHook.Disable();
             _rspSetupCharacterHook.Disable();
+            _changeCustomize.Disable();
         }
 
         public void Dispose()
@@ -68,6 +71,7 @@ public unsafe partial class PathResolver
             _onModelLoadCompleteHook.Dispose();
             _setupVisorHook.Dispose();
             _rspSetupCharacterHook.Dispose();
+            _changeCustomize.Dispose();
         }
 
         private delegate void                                OnModelLoadCompleteDelegate( IntPtr drawObject );
@@ -154,8 +158,29 @@ public unsafe partial class PathResolver
 
         private void RspSetupCharacterDetour( IntPtr drawObject, IntPtr unk2, float unk3, IntPtr unk4, byte unk5 )
         {
-            using var rsp = MetaChanger.ChangeCmp( _parent, drawObject );
-            _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
+            if( _inChangeCustomize )
+            {
+                using var rsp = MetaChanger.ChangeCmp( _parent, drawObject );
+                _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
+            }
+            else
+            {
+                _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
+            }
+        }
+
+        // ChangeCustomize calls RspSetupCharacter, so skip the additional cmp change.
+        private          bool _inChangeCustomize = false;
+        private delegate bool ChangeCustomizeDelegate( IntPtr human, IntPtr data, byte skipEquipment );
+
+        [Signature( "E8 ?? ?? ?? ?? 41 0F B6 C5 66 41 89 86", DetourName = nameof( ChangeCustomizeDetour ) )]
+        private readonly Hook< ChangeCustomizeDelegate > _changeCustomize = null!;
+
+        private bool ChangeCustomizeDetour( IntPtr human, IntPtr data, byte skipEquipment )
+        {
+            _inChangeCustomize = true;
+            using var rsp = MetaChanger.ChangeCmp( _parent, human );
+            return _changeCustomize.Original( human, data, skipEquipment );
         }
     }
 
