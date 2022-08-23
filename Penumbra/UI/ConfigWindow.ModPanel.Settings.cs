@@ -126,8 +126,8 @@ public partial class ConfigWindow
                 _currentPriority = null;
             }
 
-            ImGuiUtil.LabeledHelpMarker( "Priority", "Mods with higher priority take precedence before Mods with lower priority.\n"
-              + "That means, if Mod A should overwrite changes from Mod B, Mod A should have higher priority than Mod B." );
+            ImGuiUtil.LabeledHelpMarker( "Priority", "Mods with a higher number here take precedence before Mods with a lower number.\n"
+              + "That means, if Mod A should overwrite changes from Mod B, Mod A should have a higher priority number than Mod B." );
         }
 
         // Draw a button to remove the current settings and inherit them instead

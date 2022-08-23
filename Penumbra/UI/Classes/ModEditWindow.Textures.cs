@@ -242,7 +242,14 @@ public partial class ModEditWindow
 
         if( data != null )
         {
-            wrap = Dalamud.PluginInterface.UiBuilder.LoadImageRaw( data, width, height, 4 );
+            try
+            {
+                wrap = Dalamud.PluginInterface.UiBuilder.LoadImageRaw( data, width, height, 4 );
+            }
+            catch( Exception e )
+            {
+                PluginLog.Error( $"Could not load raw image:\n{e}" );
+            }
         }
 
         UpdateCenter();
@@ -356,7 +363,10 @@ public partial class ModEditWindow
         if( wrap != null )
         {
             ImGui.TextUnformatted( $"Image Dimensions: {wrap.Width} x {wrap.Height}" );
-            size = size with { Y = wrap.Height * size.X / wrap.Width };
+            size = size.X < wrap.Width
+                ? size with { Y = wrap.Height * size.X / wrap.Width }
+                : new Vector2( wrap.Width, wrap.Height );
+
             ImGui.Image( wrap.ImGuiHandle, size );
         }
         else if( path.Length > 0 )
@@ -425,8 +435,10 @@ public partial class ModEditWindow
             return;
         }
 
-        var leftRightWidth = new Vector2( ( ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - ImGui.GetStyle().FramePadding.X * 4 ) / 3, -1 );
-        var imageSize      = new Vector2( leftRightWidth.X - ImGui.GetStyle().FramePadding.X * 2 );
+        var leftRightWidth =
+            new Vector2(
+                ( ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - ImGui.GetStyle().FramePadding.X * 4 ) / 3, -1 );
+        var imageSize = new Vector2( leftRightWidth.X - ImGui.GetStyle().FramePadding.X * 2 );
         using( var child = ImRaii.Child( "ImageLeft", leftRightWidth, true ) )
         {
             if( child )

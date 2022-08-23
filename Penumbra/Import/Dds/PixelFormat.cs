@@ -26,6 +26,8 @@ public enum ParseType
     B8G8R8,
     R8G8B8A8,
     B8G8R8A8,
+
+    A16B16G16R16F,
 }
 
 [StructLayout( LayoutKind.Sequential )]
@@ -54,21 +56,21 @@ public struct PixelFormat
 
     public enum FourCCType : uint
     {
-        NoCompression = 0,
-        DXT1          = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '1' << 24 ),
-        DXT2          = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '2' << 24 ),
-        DXT3          = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '3' << 24 ),
-        DXT4          = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '4' << 24 ),
-        DXT5          = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '5' << 24 ),
-        DX10          = 'D' | ( 'X' << 8 ) | ( '1' << 16 ) | ( '0' << 24 ),
-        ATI1          = 'A' | ( 'T' << 8 ) | ( 'I' << 16 ) | ( '1' << 24 ),
-        BC4U          = 'B' | ( 'C' << 8 ) | ( '4' << 16 ) | ( 'U' << 24 ),
-        BC45          = 'B' | ( 'C' << 8 ) | ( '4' << 16 ) | ( '5' << 24 ),
-        ATI2          = 'A' | ( 'T' << 8 ) | ( 'I' << 16 ) | ( '2' << 24 ),
-        BC5U          = 'B' | ( 'C' << 8 ) | ( '5' << 16 ) | ( 'U' << 24 ),
-        BC55          = 'B' | ( 'C' << 8 ) | ( '5' << 16 ) | ( '5' << 24 ),
+        NoCompression    = 0,
+        DXT1             = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '1' << 24 ),
+        DXT2             = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '2' << 24 ),
+        DXT3             = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '3' << 24 ),
+        DXT4             = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '4' << 24 ),
+        DXT5             = 'D' | ( 'X' << 8 ) | ( 'T' << 16 ) | ( '5' << 24 ),
+        DX10             = 'D' | ( 'X' << 8 ) | ( '1' << 16 ) | ( '0' << 24 ),
+        ATI1             = 'A' | ( 'T' << 8 ) | ( 'I' << 16 ) | ( '1' << 24 ),
+        BC4U             = 'B' | ( 'C' << 8 ) | ( '4' << 16 ) | ( 'U' << 24 ),
+        BC45             = 'B' | ( 'C' << 8 ) | ( '4' << 16 ) | ( '5' << 24 ),
+        ATI2             = 'A' | ( 'T' << 8 ) | ( 'I' << 16 ) | ( '2' << 24 ),
+        BC5U             = 'B' | ( 'C' << 8 ) | ( '5' << 16 ) | ( 'U' << 24 ),
+        BC55             = 'B' | ( 'C' << 8 ) | ( '5' << 16 ) | ( '5' << 24 ),
+        D3D_A16B16G16R16 = 113,
     }
-
 
 
     public void Write( BinaryWriter bw )
@@ -87,20 +89,21 @@ public struct PixelFormat
     {
         return FourCC switch
         {
-            FourCCType.NoCompression => HandleUncompressed(),
-            FourCCType.DXT1          => ParseType.DXT1,
-            FourCCType.DXT2          => ParseType.Unsupported,
-            FourCCType.DXT3          => ParseType.DXT3,
-            FourCCType.DXT4          => ParseType.Unsupported,
-            FourCCType.DXT5          => ParseType.DXT5,
-            FourCCType.DX10          => dxt10?.ToParseType() ?? ParseType.Unsupported,
-            FourCCType.ATI1          => ParseType.BC4,
-            FourCCType.BC4U          => ParseType.BC4,
-            FourCCType.BC45          => ParseType.BC4,
-            FourCCType.ATI2          => ParseType.BC5,
-            FourCCType.BC5U          => ParseType.BC5,
-            FourCCType.BC55          => ParseType.BC5,
-            _                        => ParseType.Unsupported,
+            FourCCType.NoCompression    => HandleUncompressed(),
+            FourCCType.DXT1             => ParseType.DXT1,
+            FourCCType.DXT2             => ParseType.Unsupported,
+            FourCCType.DXT3             => ParseType.DXT3,
+            FourCCType.DXT4             => ParseType.Unsupported,
+            FourCCType.DXT5             => ParseType.DXT5,
+            FourCCType.DX10             => dxt10?.ToParseType() ?? ParseType.Unsupported,
+            FourCCType.ATI1             => ParseType.BC4,
+            FourCCType.BC4U             => ParseType.BC4,
+            FourCCType.BC45             => ParseType.BC4,
+            FourCCType.ATI2             => ParseType.BC5,
+            FourCCType.BC5U             => ParseType.BC5,
+            FourCCType.BC55             => ParseType.BC5,
+            FourCCType.D3D_A16B16G16R16 => ParseType.A16B16G16R16F,
+            _                           => ParseType.Unsupported,
         };
     }
 

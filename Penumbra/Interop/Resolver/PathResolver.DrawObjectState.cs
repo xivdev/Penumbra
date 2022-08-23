@@ -173,7 +173,7 @@ public unsafe partial class PathResolver
         // so we always keep track of the current GameObject to be able to link it to the DrawObject.
         private delegate void EnableDrawDelegate( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d );
 
-        [Signature( "E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 85 C9 74 ?? 33 D2 E8 ?? ?? ?? ?? 84 C0", DetourName = nameof( EnableDrawDetour ) )]
+        [Signature( "E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 85 C9 74 33 45 33 C0", DetourName = nameof( EnableDrawDetour ) )]
         private readonly Hook< EnableDrawDelegate > _enableDrawHook = null!;
 
         private void EnableDrawDetour( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d )

@@ -1,10 +1,12 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Dalamud.Logging;
+using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
@@ -15,6 +17,9 @@ namespace Penumbra.Interop.Resolver;
 
 public unsafe partial class PathResolver
 {
+    [Signature( "0F B7 0D ?? ?? ?? ?? C7 85", ScanType = ScanType.StaticAddress )]
+    private static ushort* _inspectTitleId = null!;
+
     // Obtain the name of the current player, if one exists.
     private static string? GetPlayerName()
         => Dalamud.Objects[ 0 ]?.Name.ToString();
@@ -34,17 +39,14 @@ public unsafe partial class PathResolver
         }
 
         var ui = ( AtkUnitBase* )addon;
-        if( ui->UldManager.NodeListCount < 60 )
+        if( ui->UldManager.NodeListCount <= 60 )
         {
             return null;
         }
 
-        var text = ( AtkTextNode* )ui->UldManager.NodeList[ 59 ];
-        if( text == null || !text->AtkResNode.IsVisible )
-        {
-            text = ( AtkTextNode* )ui->UldManager.NodeList[ 60 ];
-        }
+        var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 59 : 60;
 
+        var text = ( AtkTextNode* )ui->UldManager.NodeList[ nodeId ];
         return text != null ? text->NodeText.ToString() : null;
     }
 

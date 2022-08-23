@@ -577,4 +577,25 @@ public static partial class ImageParsing
 
         return ret;
     }
+
+    public static unsafe byte[] DecodeUncompressedA16B16G16R16F( ReadOnlySpan< byte > data, int height, int width )
+    {
+        Verify( data, height, width, 1, 8 );
+        var ret = new byte[data.Length / 2];
+        fixed( byte* r = ret, d = data )
+        {
+            var ptr   = r;
+            var input = ( Half* )d;
+            var end   = (Half*) (d + data.Length);
+            while( input != end )
+            {
+                *ptr++ = ( byte )( byte.MaxValue * (float) *input++ );
+                *ptr++ = ( byte )( byte.MaxValue * (float) *input++ );
+                *ptr++ = ( byte )( byte.MaxValue * (float) *input++ );
+                *ptr++ = ( byte )( byte.MaxValue * (float) *input++ );
+            }
+        }
+
+        return ret;
+    }
 }

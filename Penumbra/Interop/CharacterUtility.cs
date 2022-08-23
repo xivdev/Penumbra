@@ -8,7 +8,7 @@ namespace Penumbra.Interop;
 public unsafe class CharacterUtility : IDisposable
 {
     // A static pointer to the CharacterUtility address.
-    [Signature( "48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2", ScanType = ScanType.StaticAddress )]
+    [Signature( "48 8B 05 ?? ?? ?? ?? 83 B9", ScanType = ScanType.StaticAddress )]
     private readonly Structs.CharacterUtility** _characterUtilityAddress = null;
 
     // Only required for migration anymore.
