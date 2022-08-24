@@ -200,13 +200,13 @@ public unsafe partial class PathResolver
             _animationLoadCollection = last;
         }
 
-        [Signature( "E8 ?? ?? ?? ?? 44 84 BB", DetourName = nameof( SomeOtherAvfxDetour ) )]
+        [Signature( "E8 ?? ?? ?? ?? 44 84 A3", DetourName = nameof( SomeOtherAvfxDetour ) )]
         private readonly Hook< CharacterBaseNoArgumentDelegate > _someOtherAvfxHook = null!;
 
         private void SomeOtherAvfxDetour( IntPtr unk )
         {
             var last       = _animationLoadCollection;
-            var gameObject = ( GameObject* )( unk - 0x8B0 );
+            var gameObject = ( GameObject* )( unk - 0x8D0 );
             _animationLoadCollection = IdentifyCollection( gameObject );
             _someOtherAvfxHook.Original( unk );
             _animationLoadCollection = last;

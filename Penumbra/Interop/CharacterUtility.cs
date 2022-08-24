@@ -14,11 +14,11 @@ public unsafe class CharacterUtility : IDisposable
     // Only required for migration anymore.
     public delegate void LoadResources( Structs.CharacterUtility* address );
 
-    [Signature( "E8 ?? ?? ?? 00 48 8D 8E ?? ?? 00 00 E8 ?? ?? ?? 00 33 D2" )]
-    public readonly LoadResources? LoadCharacterResourcesFunc;
+    [Signature( "E8 ?? ?? ?? ?? 48 8D 8F ?? ?? ?? ?? E8 ?? ?? ?? ?? 33 D2 45 33 C0" )]
+    public readonly LoadResources LoadCharacterResourcesFunc = null!;
 
     public void LoadCharacterResources()
-        => LoadCharacterResourcesFunc?.Invoke( Address );
+        => LoadCharacterResourcesFunc.Invoke( Address );
 
     public Structs.CharacterUtility* Address
         => *_characterUtilityAddress;
