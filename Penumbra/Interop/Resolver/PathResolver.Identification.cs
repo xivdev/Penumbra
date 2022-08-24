@@ -11,6 +11,7 @@ using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using CustomizeData = Penumbra.GameData.Structs.CustomizeData;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
 namespace Penumbra.Interop.Resolver;
@@ -188,10 +189,10 @@ public unsafe partial class PathResolver
                 var actualName = gameObject->ObjectIndex switch
                     {
                         240 => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
-                        241 => GetInspectName() ?? GetCardName() ?? GetGlamourName(),                       // inspect, character card, glamour plate editor.
-                        242 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null,      // try-on
-                        243 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null,      // dye preview
-                        244 => Penumbra.Config.UseCharacterCollectionsInCards ? GetPlayerName() : null,     // portrait list and editor
+                        241 => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
+                        242 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
+                        243 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // dye preview
+                        244 => Penumbra.Config.UseCharacterCollectionsInCards ? GetPlayerName() : null, // portrait list and editor
                         >= CutsceneCharacters.CutsceneStartIdx and < CutsceneCharacters.CutsceneEndIdx => GetCutsceneName( gameObject ),
                         _ => null,
                     }
