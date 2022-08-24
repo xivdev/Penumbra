@@ -47,7 +47,6 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
                 throw new IndexOutOfRangeException();
             }
 
-            var x = new ReadOnlySpan< ushort >( ( ushort* )Data, Length           / 2 );
             return ( EqdpEntry )( *( ushort* )( Data + DataOffset + EqdpEntrySize * idx ) );
         }
         set

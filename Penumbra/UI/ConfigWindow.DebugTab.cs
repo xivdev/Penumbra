@@ -11,6 +11,7 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
 using Penumbra.Interop.Loader;
+using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 
@@ -86,9 +87,9 @@ public partial class ConfigWindow
             var manager = Penumbra.ModManager;
             PrintValue( "Penumbra Version", $"{Penumbra.Version} {DebugVersionString}" );
             PrintValue( "Git Commit Hash", Penumbra.CommitHash );
-            PrintValue( "Current Collection", Penumbra.CollectionManager.Current.Name );
+            PrintValue( SelectedCollection, Penumbra.CollectionManager.Current.Name );
             PrintValue( "    has Cache", Penumbra.CollectionManager.Current.HasCache.ToString() );
-            PrintValue( "Default Collection", Penumbra.CollectionManager.Default.Name );
+            PrintValue( DefaultCollection, Penumbra.CollectionManager.Default.Name );
             PrintValue( "    has Cache", Penumbra.CollectionManager.Default.HasCache.ToString() );
             PrintValue( "Mod Manager BasePath", manager.BasePath.Name );
             PrintValue( "Mod Manager BasePath-Full", manager.BasePath.FullName );
@@ -155,45 +156,63 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var drawTree = ImRaii.TreeNode( "Draw Object to Object" );
-            if( drawTree )
+            using( var drawTree = ImRaii.TreeNode( "Draw Object to Object" ) )
             {
-                using var table = ImRaii.Table( "###DrawObjectResolverTable", 5, ImGuiTableFlags.SizingFixedFit );
-                if( table )
+                if( drawTree )
                 {
-                    foreach( var (ptr, (c, idx)) in _window._penumbra.PathResolver.DrawObjectToObject )
+                    using var table = ImRaii.Table( "###DrawObjectResolverTable", 5, ImGuiTableFlags.SizingFixedFit );
+                    if( table )
                     {
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( ptr.ToString( "X" ) );
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( idx.ToString() );
-                        ImGui.TableNextColumn();
-                        var obj = ( GameObject* )Dalamud.Objects.GetObjectAddress( idx );
-                        var (address, name) =
-                            obj != null ? ( $"0x{( ulong )obj:X}", new Utf8String( obj->Name ).ToString() ) : ( "NULL", "NULL" );
-                        ImGui.TextUnformatted( address );
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( name );
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( c.Name );
+                        foreach( var (ptr, (c, idx)) in _window._penumbra.PathResolver.DrawObjectMap )
+                        {
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( ptr.ToString( "X" ) );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( idx.ToString() );
+                            ImGui.TableNextColumn();
+                            var obj = ( GameObject* )Dalamud.Objects.GetObjectAddress( idx );
+                            var (address, name) =
+                                obj != null ? ( $"0x{( ulong )obj:X}", new Utf8String( obj->Name ).ToString() ) : ( "NULL", "NULL" );
+                            ImGui.TextUnformatted( address );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( name );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( c.Name );
+                        }
                     }
                 }
             }
 
-            drawTree.Dispose();
-
-            using var pathTree = ImRaii.TreeNode( "Path Collections" );
-            if( pathTree )
+            using( var pathTree = ImRaii.TreeNode( "Path Collections" ) )
             {
-                using var table = ImRaii.Table( "###PathCollectionResolverTable", 2, ImGuiTableFlags.SizingFixedFit );
+                if( pathTree )
+                {
+                    using var table = ImRaii.Table( "###PathCollectionResolverTable", 2, ImGuiTableFlags.SizingFixedFit );
+                    if( table )
+                    {
+                        foreach( var (path, collection) in _window._penumbra.PathResolver.PathCollections )
+                        {
+                            ImGui.TableNextColumn();
+                            ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( collection.Name );
+                        }
+                    }
+                }
+            }
+
+            using var cutsceneTree = ImRaii.TreeNode( "Cutscene Actors" );
+            if( cutsceneTree )
+            {
+                using var table = ImRaii.Table( "###PCutsceneResolverTable", 2, ImGuiTableFlags.SizingFixedFit );
                 if( table )
                 {
-                    foreach( var (path, collection) in _window._penumbra.PathResolver.PathCollections )
+                    foreach( var (idx, actor) in _window._penumbra.PathResolver.CutsceneActors )
                     {
                         ImGui.TableNextColumn();
-                        ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
+                        ImGui.TextUnformatted( $"Cutscene Actor {idx}" );
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( collection.Name );
+                        ImGui.TextUnformatted( actor.Name.ToString() );
                     }
                 }
             }

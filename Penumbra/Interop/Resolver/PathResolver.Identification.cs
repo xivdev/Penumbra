@@ -1,17 +1,12 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using Penumbra.Api;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
@@ -22,147 +17,8 @@ namespace Penumbra.Interop.Resolver;
 
 public unsafe partial class PathResolver
 {
-    // Keep track of created DrawObjects that are CharacterBase,
-    // and use the last game object that called EnableDraw to link them.
-    public delegate IntPtr CharacterBaseCreateDelegate( uint a, IntPtr b, IntPtr c, byte d );
-
-    [Signature( "E8 ?? ?? ?? ?? 48 85 C0 74 21 C7 40", DetourName = "CharacterBaseCreateDetour" )]
-    public Hook< CharacterBaseCreateDelegate >? CharacterBaseCreateHook;
-
-    private ModCollection? _lastCreatedCollection;
-    public event CreatingCharacterBaseDelegate? CreatingCharacterBase;
-
-    private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
-    {
-        using var cmp = MetaChanger.ChangeCmp( this, out _lastCreatedCollection );
-
-        if( LastGameObject != null )
-        {
-            var modelPtr = &a;
-            CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!, ( IntPtr )modelPtr, b, c );
-        }
-
-        var ret = CharacterBaseCreateHook!.Original( a, b, c, d );
-        if( LastGameObject != null )
-        {
-            DrawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
-        }
-
-        return ret;
-    }
-
-
-    // Remove DrawObjects from the list when they are destroyed.
-    public delegate void CharacterBaseDestructorDelegate( IntPtr drawBase );
-
-    [Signature( "E8 ?? ?? ?? ?? 40 F6 C7 01 74 3A 40 F6 C7 04 75 27 48 85 DB 74 2F 48 8B 05 ?? ?? ?? ?? 48 8B D3 48 8B 48 30",
-        DetourName = "CharacterBaseDestructorDetour" )]
-    public Hook< CharacterBaseDestructorDelegate >? CharacterBaseDestructorHook;
-
-    private void CharacterBaseDestructorDetour( IntPtr drawBase )
-    {
-        DrawObjectToObject.Remove( drawBase );
-        CharacterBaseDestructorHook!.Original.Invoke( drawBase );
-    }
-
-
-    // EnableDraw is what creates DrawObjects for gameObjects,
-    // so we always keep track of the current GameObject to be able to link it to the DrawObject.
-    public delegate void EnableDrawDelegate( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d );
-
-    [Signature( "E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 85 C9 74 ?? 33 D2 E8 ?? ?? ?? ?? 84 C0" )]
-    public Hook< EnableDrawDelegate >? EnableDrawHook;
-
-    private void EnableDrawDetour( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d )
-    {
-        var oldObject = LastGameObject;
-        LastGameObject = ( GameObject* )gameObject;
-        EnableDrawHook!.Original.Invoke( gameObject, b, c, d );
-        LastGameObject = oldObject;
-    }
-
-    // Not fully understood. The game object the weapon is loaded for is seemingly found at a1 + 8,
-    // so we use that.
-    public delegate void WeaponReloadFunc( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 );
-
-    [Signature( "E8 ?? ?? ?? ?? 44 8B 9F" )]
-    public Hook< WeaponReloadFunc >? WeaponReloadHook;
-
-    public void WeaponReloadDetour( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 )
-    {
-        var oldGame = LastGameObject;
-        LastGameObject = *( GameObject** )( a1 + 8 );
-        WeaponReloadHook!.Original( a1, a2, a3, a4, a5, a6, a7 );
-        LastGameObject = oldGame;
-    }
-
-    private void EnableDataHooks()
-    {
-        CharacterBaseCreateHook?.Enable();
-        EnableDrawHook?.Enable();
-        CharacterBaseDestructorHook?.Enable();
-        WeaponReloadHook?.Enable();
-        Penumbra.CollectionManager.CollectionChanged += CheckCollections;
-        LoadTimelineResourcesHook?.Enable();
-        CharacterBaseLoadAnimationHook?.Enable();
-        LoadSomeAvfxHook?.Enable();
-        LoadSomePapHook?.Enable();
-        SomeActionLoadHook?.Enable();
-        SomeOtherAvfxHook?.Enable();
-    }
-
-    private void DisableDataHooks()
-    {
-        Penumbra.CollectionManager.CollectionChanged -= CheckCollections;
-        WeaponReloadHook?.Disable();
-        CharacterBaseCreateHook?.Disable();
-        EnableDrawHook?.Disable();
-        CharacterBaseDestructorHook?.Disable();
-        LoadTimelineResourcesHook?.Disable();
-        CharacterBaseLoadAnimationHook?.Disable();
-        LoadSomeAvfxHook?.Disable();
-        LoadSomePapHook?.Disable();
-        SomeActionLoadHook?.Disable();
-        SomeOtherAvfxHook?.Disable();
-    }
-
-    private void DisposeDataHooks()
-    {
-        WeaponReloadHook?.Dispose();
-        CharacterBaseCreateHook?.Dispose();
-        EnableDrawHook?.Dispose();
-        CharacterBaseDestructorHook?.Dispose();
-        LoadTimelineResourcesHook?.Dispose();
-        CharacterBaseLoadAnimationHook?.Dispose();
-        LoadSomeAvfxHook?.Dispose();
-        LoadSomePapHook?.Dispose();
-        SomeActionLoadHook?.Dispose();
-        SomeOtherAvfxHook?.Dispose();
-    }
-
-    // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
-    // It contains any DrawObjects that correspond to a human actor, even those without specific collections.
-    internal readonly Dictionary< IntPtr, (ModCollection, int) > DrawObjectToObject = new();
-
-    // This map links files to their corresponding collection, if it is non-default.
-    internal readonly ConcurrentDictionary< Utf8String, ModCollection > PathCollections = new();
-
-    internal GameObject* LastGameObject = null;
-
-    // Check that a linked DrawObject still corresponds to the correct actor and that it still exists, otherwise remove it.
-    private bool VerifyEntry( IntPtr drawObject, int gameObjectIdx, out GameObject* gameObject )
-    {
-        gameObject = ( GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
-        var draw = ( DrawObject* )drawObject;
-        if( gameObject != null && ( gameObject->DrawObject == draw || draw != null && gameObject->DrawObject == draw->Object.ParentObject ) )
-        {
-            return true;
-        }
-
-        gameObject = null;
-        DrawObjectToObject.Remove( drawObject );
-        return false;
-    }
+    [Signature( "0F B7 0D ?? ?? ?? ?? C7 85", ScanType = ScanType.StaticAddress )]
+    private static ushort* _inspectTitleId = null!;
 
     // Obtain the name of the current player, if one exists.
     private static string? GetPlayerName()
@@ -183,17 +39,14 @@ public unsafe partial class PathResolver
         }
 
         var ui = ( AtkUnitBase* )addon;
-        if( ui->UldManager.NodeListCount < 60 )
+        if( ui->UldManager.NodeListCount <= 60 )
         {
             return null;
         }
 
-        var text = ( AtkTextNode* )ui->UldManager.NodeList[ 59 ];
-        if( text == null || !text->AtkResNode.IsVisible )
-        {
-            text = ( AtkTextNode* )ui->UldManager.NodeList[ 60 ];
-        }
+        var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 59 : 60;
 
+        var text = ( AtkTextNode* )ui->UldManager.NodeList[ nodeId ];
         return text != null ? text->NodeText.ToString() : null;
     }
 
@@ -244,6 +97,13 @@ public unsafe partial class PathResolver
             return null;
         }
 
+        var parent = Cutscenes[ gameObject->ObjectIndex ];
+        if( parent != null )
+        {
+            return parent.Name.ToString();
+        }
+
+        // should not really happen but keep it in as a emergency case.
         var player = Dalamud.Objects[ 0 ];
         if( player == null )
         {
@@ -327,12 +187,13 @@ public unsafe partial class PathResolver
                 // Only OwnerName can be applied to something with a non-empty name, and that is the specific case we want to handle.
                 var actualName = gameObject->ObjectIndex switch
                     {
-                        240    => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
-                        241    => GetInspectName() ?? GetCardName() ?? GetGlamourName(), // inspect, character card, glamour plate editor.
-                        242    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // try-on
-                        243    => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null, // dye preview
-                        >= 200 => GetCutsceneName( gameObject ),
-                        _      => null,
+                        240 => Penumbra.Config.UseCharacterCollectionInMainWindow ? GetPlayerName() : null, // character window
+                        241 => GetInspectName() ?? GetCardName() ?? GetGlamourName(),                       // inspect, character card, glamour plate editor.
+                        242 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null,      // try-on
+                        243 => Penumbra.Config.UseCharacterCollectionInTryOn ? GetPlayerName() : null,      // dye preview
+                        244 => Penumbra.Config.UseCharacterCollectionsInCards ? GetPlayerName() : null,     // portrait list and editor
+                        >= CutsceneCharacters.CutsceneStartIdx and < CutsceneCharacters.CutsceneEndIdx => GetCutsceneName( gameObject ),
+                        _ => null,
                     }
                  ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
@@ -385,7 +246,9 @@ public unsafe partial class PathResolver
     {
         collection = null;
         // Check for the Yourself collection.
-        if( actor->ObjectIndex is 0 or ObjectReloader.GPosePlayerIdx || name == Dalamud.ClientState.LocalPlayer?.Name.ToString() )
+        if( actor->ObjectIndex == 0
+        || actor->ObjectIndex == ObjectReloader.GPosePlayerIdx && name.Length > 0
+        || name == Dalamud.ClientState.LocalPlayer?.Name.ToString() )
         {
             collection = Penumbra.CollectionManager.ByType( CollectionType.Yourself );
             if( collection != null )
@@ -463,78 +326,5 @@ public unsafe partial class PathResolver
         }
 
         return false;
-    }
-
-
-    // Update collections linked to Game/DrawObjects due to a change in collection configuration.
-    private void CheckCollections( CollectionType type, ModCollection? _1, ModCollection? _2, string? name )
-    {
-        if( type is CollectionType.Inactive or CollectionType.Current )
-        {
-            return;
-        }
-
-        foreach( var (key, (_, idx)) in DrawObjectToObject.ToArray() )
-        {
-            if( !VerifyEntry( key, idx, out var obj ) )
-            {
-                DrawObjectToObject.Remove( key );
-            }
-
-            var newCollection = IdentifyCollection( obj );
-            DrawObjectToObject[ key ] = ( newCollection, idx );
-        }
-    }
-
-    // Use the stored information to find the GameObject and Collection linked to a DrawObject.
-    private GameObject* FindParent( IntPtr drawObject, out ModCollection collection )
-    {
-        if( DrawObjectToObject.TryGetValue( drawObject, out var data ) )
-        {
-            var gameObjectIdx = data.Item2;
-            if( VerifyEntry( drawObject, gameObjectIdx, out var gameObject ) )
-            {
-                collection = data.Item1;
-                return gameObject;
-            }
-        }
-
-        if( LastGameObject != null && ( LastGameObject->DrawObject == null || LastGameObject->DrawObject == ( DrawObject* )drawObject ) )
-        {
-            collection = IdentifyCollection( LastGameObject );
-            return LastGameObject;
-        }
-
-
-        collection = IdentifyCollection( null );
-        return null;
-    }
-
-
-    // Special handling for paths so that we do not store non-owned temporary strings in the dictionary.
-    private void SetCollection( Utf8String path, ModCollection collection )
-    {
-        if( PathCollections.ContainsKey( path ) || path.IsOwned )
-        {
-            PathCollections[ path ] = collection;
-        }
-        else
-        {
-            PathCollections[ path.Clone() ] = collection;
-        }
-    }
-
-    // Find all current DrawObjects used in the GameObject table.
-    // We do not iterate the Dalamud table because it does not work when not logged in.
-    private void InitializeDrawObjects()
-    {
-        for( var i = 0; i < Dalamud.Objects.Length; ++i )
-        {
-            var ptr = ( GameObject* )Dalamud.Objects.GetObjectAddress( i );
-            if( ptr != null && ptr->IsCharacter() && ptr->DrawObject != null )
-            {
-                DrawObjectToObject[ ( IntPtr )ptr->DrawObject ] = ( IdentifyCollection( ptr ), ptr->ObjectIndex );
-            }
-        }
     }
 }

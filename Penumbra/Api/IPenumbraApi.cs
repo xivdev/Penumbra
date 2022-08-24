@@ -26,6 +26,8 @@ public delegate void ModSettingChanged( ModSettingChange type, string collection
 public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize,
     IntPtr equipData );
 
+public delegate void CreatedCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr drawObject );
+
 public enum PenumbraApiEc
 {
     Success            = 0,
@@ -49,6 +51,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain the currently set mod directory from the configuration.
     public string GetModDirectory();
 
+    // Fired whenever a mod directory change is finished.
+    // Gives the full path of the mod directory and whether Penumbra treats it as valid.
+    public event Action< string, bool >? ModDirectoryChanged;
+
     // Obtain the entire current penumbra configuration as a json encoded string.
     public string GetConfiguration();
 
@@ -68,6 +74,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Triggered when a character base is created and a corresponding gameObject could be found,
     // before the Draw Object is actually created, so customize and equipdata can be manipulated beforehand.
     public event CreatingCharacterBaseDelegate? CreatingCharacterBase;
+
+    // Triggered after a character base was created if a corresponding gameObject could be found,
+    // so you can apply flag changes after finishing.
+    public event CreatedCharacterBaseDelegate? CreatedCharacterBase;
 
     // Queue redrawing of all actors of the given name with the given RedrawType.
     public void RedrawObject( string name, RedrawType setting );
@@ -123,6 +133,9 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Obtain the game object associated with a given draw object and the name of the collection associated with this game object.
     public (IntPtr, string) GetDrawObjectInfo( IntPtr drawObject );
+
+    // Obtain the parent game object index for an unnamed cutscene actor by its index.
+    public int GetCutsceneParentIndex( int actor );
 
     // Obtain a list of all installed mods. The first string is their directory name, the second string is their mod name.
     public IList< (string, string) > GetModList();

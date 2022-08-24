@@ -1,8 +1,10 @@
 using System;
 using System.IO;
 using Lumina.Data.Files;
+using OtterGui;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using Functions = Penumbra.GameData.Util.Functions;
 
 namespace Penumbra.Import.Dds;
 
@@ -13,7 +15,7 @@ public class TextureImporter
         using var mem = new MemoryStream( target );
         using var bw  = new BinaryWriter( mem );
         bw.Write( ( uint )TexFile.Attribute.TextureType2D );
-        bw.Write( ( uint )TexFile.TextureFormat.B8G8R8X8 );
+        bw.Write( ( uint )TexFile.TextureFormat.B8G8R8A8 );
         bw.Write( ( ushort )width );
         bw.Write( ( ushort )height );
         bw.Write( ( ushort )1 );
@@ -71,15 +73,7 @@ public class TextureImporter
 
         texData = new byte[80 + width * height * 4];
         WriteHeader( texData, width, height );
-        // RGBA to BGRA.
-        for( var i = 0; i < rgba.Length; i += 4 )
-        {
-            texData[ 80 + i + 0 ] = rgba[ i + 2 ];
-            texData[ 80 + i + 1 ] = rgba[ i + 1 ];
-            texData[ 80 + i + 2 ] = rgba[ i + 0 ];
-            texData[ 80 + i + 3 ] = rgba[ i + 3 ];
-        }
-
+        rgba.CopyTo( texData.AsSpan( 80 ) );
         return true;
     }
 

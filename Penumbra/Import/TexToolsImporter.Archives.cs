@@ -111,7 +111,7 @@ public partial class TexToolsImporter
         using var t    = new StreamReader( e );
         using var j    = new JsonTextReader( t );
         var       obj  = JObject.Load( j );
-        var       name = obj[ nameof( Mod.Name ) ]?.Value< string >().RemoveInvalidPathSymbols() ?? string.Empty;
+        var       name = obj[ nameof( Mod.Name ) ]?.Value< string >()?.RemoveInvalidPathSymbols() ?? string.Empty;
         if( name.Length == 0 )
         {
             throw new Exception( "Invalid mod archive: mod meta has no name." );

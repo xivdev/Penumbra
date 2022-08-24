@@ -8,7 +8,7 @@
         "TestingAssemblyVersion": "1.0.0.0",
         "RepoUrl": "https://github.com/xivdev/Penumbra",
         "ApplicableVersion": "any",
-        "DalamudApiLevel": 6,
+        "DalamudApiLevel": 7,
         "IsHide": "False",
         "IsTestingExclusive": "False",
         "DownloadCount": 0,

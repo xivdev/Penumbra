@@ -17,8 +17,9 @@ public partial class Mod
     public partial class Editor
     {
         private static readonly Regex MaterialRegex = new(@"/mt_c(?'RaceCode'\d{4})b0001_(?'Suffix'.*?)\.mtrl", RegexOptions.Compiled);
-        private readonly List< MaterialInfo > _modelFiles = new();
-        public IReadOnlyList< MaterialInfo > ModelFiles
+        private readonly        List< ModelMaterialInfo > _modelFiles = new();
+
+        public IReadOnlyList< ModelMaterialInfo > ModelFiles
             => _modelFiles;
 
         // Non-ASCII encoding can not be used.
@@ -50,7 +51,9 @@ public partial class Mod
         public void ReplaceAllMaterials( string toSuffix, string fromSuffix = "", GenderRace raceCode = GenderRace.Unknown )
         {
             if( !ValidString( toSuffix ) )
+            {
                 return;
+            }
 
             foreach( var info in _modelFiles )
             {
@@ -62,17 +65,17 @@ public partial class Mod
                     && ( raceCode          == GenderRace.Unknown || raceCode.ToRaceCode() == match.Groups[ "RaceCode" ].Value )
                     && ( fromSuffix.Length == 0                  || fromSuffix            == match.Groups[ "Suffix" ].Value ) )
                     {
-                        info.SetMaterial( $"/mt_c{match.Groups["RaceCode"].Value}b0001_{toSuffix}.mtrl", i );
+                        info.SetMaterial( $"/mt_c{match.Groups[ "RaceCode" ].Value}b0001_{toSuffix}.mtrl", i );
                     }
                 }
             }
         }
 
         // Find all model files in the mod that contain skin materials.
-        private void ScanModels()
+        public void ScanModels()
         {
             _modelFiles.Clear();
-            foreach( var file in AvailableFiles.Where( f => f.File.Extension == ".mdl" ) )
+            foreach( var file in _mdlFiles.Where( f => f.File.Extension == ".mdl" ) )
             {
                 try
                 {
@@ -82,7 +85,7 @@ public partial class Mod
                        .Select( p => p.Item2 ).ToArray();
                     if( materials.Length > 0 )
                     {
-                        _modelFiles.Add( new MaterialInfo( file.File, mdlFile, materials ) );
+                        _modelFiles.Add( new ModelMaterialInfo( file.File, mdlFile, materials ) );
                     }
                 }
                 catch( Exception e )
@@ -93,22 +96,22 @@ public partial class Mod
         }
 
         // A class that collects information about skin materials in a model file and handle changes on them.
-        public class MaterialInfo
+        public class ModelMaterialInfo
         {
-            public readonly FullPath Path;
-            private readonly MdlFile _file;
-            private readonly string[] _currentMaterials;
-            private readonly IReadOnlyList<int> _materialIndices;
+            public readonly  FullPath             Path;
+            public readonly  MdlFile              File;
+            private readonly string[]             _currentMaterials;
+            private readonly IReadOnlyList< int > _materialIndices;
             public bool Changed { get; private set; }
 
-            public IReadOnlyList<string> CurrentMaterials
+            public IReadOnlyList< string > CurrentMaterials
                 => _currentMaterials;
 
-            private IEnumerable<string> DefaultMaterials
-                => _materialIndices.Select( i => _file.Materials[i] );
+            private IEnumerable< string > DefaultMaterials
+                => _materialIndices.Select( i => File.Materials[ i ] );
 
-            public (string Current, string Default) this[int idx]
-                => (_currentMaterials[idx], _file.Materials[_materialIndices[idx]]);
+            public (string Current, string Default) this[ int idx ]
+                => ( _currentMaterials[ idx ], File.Materials[ _materialIndices[ idx ] ] );
 
             public int Count
                 => _materialIndices.Count;
@@ -116,8 +119,8 @@ public partial class Mod
             // Set the skin material to a new value and flag changes appropriately.
             public void SetMaterial( string value, int materialIdx )
             {
-                var mat = _file.Materials[_materialIndices[materialIdx]];
-                _currentMaterials[materialIdx] = value;
+                var mat = File.Materials[ _materialIndices[ materialIdx ] ];
+                _currentMaterials[ materialIdx ] = value;
                 if( mat != value )
                 {
                     Changed = true;
@@ -138,12 +141,12 @@ public partial class Mod
 
                 foreach( var (idx, i) in _materialIndices.WithIndex() )
                 {
-                    _file.Materials[idx] = _currentMaterials[i];
+                    File.Materials[ idx ] = _currentMaterials[ i ];
                 }
 
                 try
                 {
-                    File.WriteAllBytes( Path.FullName, _file.Write() );
+                    System.IO.File.WriteAllBytes( Path.FullName, File.Write() );
                     Changed = false;
                 }
                 catch( Exception e )
@@ -157,23 +160,25 @@ public partial class Mod
             public void Restore()
             {
                 if( !Changed )
+                {
                     return;
+                }
 
                 foreach( var (idx, i) in _materialIndices.WithIndex() )
                 {
-                    _currentMaterials[i] = _file.Materials[idx];
+                    _currentMaterials[ i ] = File.Materials[ idx ];
                 }
+
                 Changed = false;
             }
 
-            public MaterialInfo( FullPath path, MdlFile file, IReadOnlyList<int> indices )
+            public ModelMaterialInfo( FullPath path, MdlFile file, IReadOnlyList< int > indices )
             {
-                Path = path;
-                _file = file;
-                _materialIndices = indices;
+                Path              = path;
+                File              = file;
+                _materialIndices  = indices;
                 _currentMaterials = DefaultMaterials.ToArray();
             }
         }
-
     }
 }

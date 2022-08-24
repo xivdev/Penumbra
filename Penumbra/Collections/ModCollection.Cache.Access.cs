@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Dalamud.Logging;
 using OtterGui.Classes;
@@ -70,7 +72,24 @@ public partial class ModCollection
 
     // Force a file to be resolved to a specific path regardless of conflicts.
     internal void ForceFile( Utf8GamePath path, FullPath fullPath )
-        => _cache!.ResolvedFiles[ path ] = new ModPath( Mod.ForcedFiles, fullPath );
+    {
+        if( CheckFullPath( path, fullPath ) )
+        {
+            _cache!.ResolvedFiles[ path ] = new ModPath( Mod.ForcedFiles, fullPath );
+        }
+    }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    private static bool CheckFullPath( Utf8GamePath path, FullPath fullPath )
+    {
+        if( fullPath.InternalName.Length < Utf8GamePath.MaxGamePathLength )
+        {
+            return true;
+        }
+
+        PluginLog.Error( $"The redirected path is too long to add the redirection\n\t{path}\n\t--> {fullPath}" );
+        return false;
+    }
 
     // Force a file resolve to be removed.
     internal void RemoveFile( Utf8GamePath path )

@@ -26,4 +26,10 @@ public readonly struct WeaponType : IEquatable< WeaponType >
 
     public override int GetHashCode()
         => Value.GetHashCode();
+
+    public static bool operator ==( WeaponType lhs, WeaponType rhs )
+        => lhs.Value == rhs.Value;
+
+    public static bool operator !=( WeaponType lhs, WeaponType rhs )
+        => lhs.Value != rhs.Value;
 }

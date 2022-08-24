@@ -326,6 +326,11 @@ public partial class ModCollection
         // Inside the same mod, conflicts are not recorded.
         private void AddFile( Utf8GamePath path, FullPath file, IMod mod )
         {
+            if( !CheckFullPath( path, file ) )
+            {
+                return;
+            }
+
             if( ResolvedFiles.TryAdd( path, new ModPath( mod, file ) ) )
             {
                 return;

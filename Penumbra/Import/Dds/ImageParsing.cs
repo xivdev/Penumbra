@@ -12,9 +12,9 @@ public static partial class ImageParsing
     {
         var ret = new Rgba32
         {
-            R = ( byte )( c          & 0x1F ),
+            R = ( byte )( c >> 11 ),
             G = ( byte )( ( c >> 5 ) & 0x3F ),
-            B = ( byte )( c >> 11 ),
+            B = ( byte )( c          & 0x1F ),
             A = 0xFF,
         };
 
@@ -572,6 +572,27 @@ public static partial class ImageParsing
                 *ptr++ = g;
                 *ptr++ = b;
                 *ptr++ = *input++;
+            }
+        }
+
+        return ret;
+    }
+
+    public static unsafe byte[] DecodeUncompressedA16B16G16R16F( ReadOnlySpan< byte > data, int height, int width )
+    {
+        Verify( data, height, width, 1, 8 );
+        var ret = new byte[data.Length / 2];
+        fixed( byte* r = ret, d = data )
+        {
+            var ptr   = r;
+            var input = ( Half* )d;
+            var end   = (Half*) (d + data.Length);
+            while( input != end )
+            {
+                *ptr++ = ( byte )( byte.MaxValue * (float) *input++ );
+                *ptr++ = ( byte )( byte.MaxValue * (float) *input++ );
+                *ptr++ = ( byte )( byte.MaxValue * (float) *input++ );
+                *ptr++ = ( byte )( byte.MaxValue * (float) *input++ );
             }
         }
 

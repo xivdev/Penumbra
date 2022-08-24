@@ -14,9 +14,9 @@ public static class GameData
     internal static          ObjectIdentification? Identification;
     internal static readonly GamePathParser        GamePathParser = new();
 
-    public static IObjectIdentifier GetIdentifier( DataManager dataManager, ClientLanguage clientLanguage )
+    public static IObjectIdentifier GetIdentifier( DataManager dataManager )
     {
-        Identification ??= new ObjectIdentification( dataManager, clientLanguage );
+        Identification ??= new ObjectIdentification( dataManager, dataManager.Language );
         return Identification;
     }
 

@@ -46,7 +46,9 @@ public class DdsFile
 
             ParseType.R8G8B8A8 => Header.Height * Header.Width * 4,
             ParseType.B8G8R8A8 => Header.Height * Header.Width * 4,
-            _                  => throw new ArgumentOutOfRangeException( nameof( ParseType ), ParseType, null ),
+
+            ParseType.A16B16G16R16F => Header.Height * Header.Width * 8,
+            _                       => throw new ArgumentOutOfRangeException( nameof( ParseType ), ParseType, null ),
         };
 
         if( Header.MipMapCount < level )
@@ -89,25 +91,26 @@ public class DdsFile
         return ParseType switch
         {
             ParseType.Unsupported => Array.Empty< byte >(),
-            ParseType.DXT1        => ImageParsing.DecodeDxt1( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.DXT3        => ImageParsing.DecodeDxt3( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.DXT5        => ImageParsing.DecodeDxt5( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.BC4         => ImageParsing.DecodeBc4( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.BC5         => ImageParsing.DecodeBc5( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.Greyscale   => ImageParsing.DecodeUncompressedGreyscale( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.R4G4B4A4    => ImageParsing.DecodeUncompressedR4G4B4A4( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.B4G4R4A4    => ImageParsing.DecodeUncompressedB4G4R4A4( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.R5G5B5      => ImageParsing.DecodeUncompressedR5G5B5( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.B5G5R5      => ImageParsing.DecodeUncompressedB5G5R5( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.R5G6B5      => ImageParsing.DecodeUncompressedR5G6B5( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.B5G6R5      => ImageParsing.DecodeUncompressedB5G6R5( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.R5G5B5A1    => ImageParsing.DecodeUncompressedR5G5B5A1( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.B5G5R5A1    => ImageParsing.DecodeUncompressedB5G5R5A1( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.R8G8B8      => ImageParsing.DecodeUncompressedR8G8B8( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.B8G8R8      => ImageParsing.DecodeUncompressedB8G8R8( MipMap( 0 ), Header.Height, Header.Width ),
-            ParseType.R8G8B8A8    => _data.Length == Header.Width * Header.Height * 4 ? _data : _data[ ..( Header.Width * Header.Height * 4 ) ],
-            ParseType.B8G8R8A8    => ImageParsing.DecodeUncompressedB8G8R8A8( MipMap( 0 ), Header.Height, Header.Width ),
-            _                     => throw new ArgumentOutOfRangeException(),
+            ParseType.DXT1 => ImageParsing.DecodeDxt1( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.DXT3 => ImageParsing.DecodeDxt3( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.DXT5 => ImageParsing.DecodeDxt5( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.BC4 => ImageParsing.DecodeBc4( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.BC5 => ImageParsing.DecodeBc5( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.Greyscale => ImageParsing.DecodeUncompressedGreyscale( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.R4G4B4A4 => ImageParsing.DecodeUncompressedR4G4B4A4( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.B4G4R4A4 => ImageParsing.DecodeUncompressedB4G4R4A4( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.R5G5B5 => ImageParsing.DecodeUncompressedR5G5B5( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.B5G5R5 => ImageParsing.DecodeUncompressedB5G5R5( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.R5G6B5 => ImageParsing.DecodeUncompressedR5G6B5( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.B5G6R5 => ImageParsing.DecodeUncompressedB5G6R5( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.R5G5B5A1 => ImageParsing.DecodeUncompressedR5G5B5A1( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.B5G5R5A1 => ImageParsing.DecodeUncompressedB5G5R5A1( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.R8G8B8 => ImageParsing.DecodeUncompressedR8G8B8( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.B8G8R8 => ImageParsing.DecodeUncompressedB8G8R8( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.R8G8B8A8 => _data.Length == Header.Width * Header.Height * 4 ? _data : _data[ ..( Header.Width * Header.Height * 4 ) ],
+            ParseType.B8G8R8A8 => ImageParsing.DecodeUncompressedB8G8R8A8( MipMap( 0 ), Header.Height, Header.Width ),
+            ParseType.A16B16G16R16F => ImageParsing.DecodeUncompressedA16B16G16R16F( MipMap( 0 ), Header.Height, Header.Width ),
+            _ => throw new ArgumentOutOfRangeException(),
         };
     }
 
@@ -125,6 +128,12 @@ public class DdsFile
             var header = br.ReadStructure< DdsHeader >();
             var dxt10  = header.PixelFormat.FourCC == PixelFormat.FourCCType.DX10 ? ( DXT10Header? )br.ReadStructure< DXT10Header >() : null;
             var type   = header.PixelFormat.ToParseType( dxt10 );
+
+            if( type == ParseType.Unsupported )
+            {
+                PluginLog.Error( "DDS format unsupported." );
+                return false;
+            }
 
             file = new DdsFile( type, header, br.ReadBytes( ( int )( br.BaseStream.Length - br.BaseStream.Position ) ), dxt10 );
             return true;
@@ -222,32 +231,6 @@ public class DdsFile
             ParseType.R8G8B8A8    => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
             ParseType.B8G8R8A8    => ( TexFile.TextureFormat.B8G8R8X8, height     * width * 4 ),
             _                     => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
-        };
-    }
-}
-
-public class TmpTexFile
-{
-    public TexFile.TexHeader Header;
-    public byte[]            RgbaData = Array.Empty< byte >();
-
-    public void Load( BinaryReader br )
-    {
-        Header = br.ReadStructure< TexFile.TexHeader >();
-        var data = br.ReadBytes( ( int )( br.BaseStream.Length - br.BaseStream.Position ) );
-        RgbaData = Header.Format switch
-        {
-            TexFile.TextureFormat.L8       => ImageParsing.DecodeUncompressedGreyscale( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.A8       => ImageParsing.DecodeUncompressedGreyscale( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT1     => ImageParsing.DecodeDxt1( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT3     => ImageParsing.DecodeDxt3( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.DXT5     => ImageParsing.DecodeDxt5( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.B8G8R8A8 => ImageParsing.DecodeUncompressedB8G8R8A8( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.B8G8R8X8 => ImageParsing.DecodeUncompressedR8G8B8A8( data, Header.Height, Header.Width ),
-            //TexFile.TextureFormat.A8R8G8B82 => ImageParsing.DecodeUncompressedR8G8B8A8( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.B4G4R4A4 => ImageParsing.DecodeUncompressedR4G4B4A4( data, Header.Height, Header.Width ),
-            TexFile.TextureFormat.B5G5R5A1 => ImageParsing.DecodeUncompressedR5G5B5A1( data, Header.Height, Header.Width ),
-            _                              => throw new ArgumentOutOfRangeException(),
         };
     }
 }
