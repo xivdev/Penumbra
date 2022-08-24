@@ -12,15 +12,15 @@ public unsafe struct CharacterUtility
     public static readonly int[] EqdpIndices
         = Enumerable.Range( EqdpStartIdx, NumEqdpFiles ).Where( i => i != EqdpStartIdx + 15 && i != EqdpStartIdx + 15 + NumEqdpFiles / 2 ).ToArray();
 
-    public const int NumResources = 85;
+    public const int NumResources = 86;
     public const int EqpIdx       = 0;
-    public const int GmpIdx       = 1;
-    public const int HumanCmpIdx  = 63;
-    public const int FaceEstIdx   = 64;
-    public const int HairEstIdx   = 65;
-    public const int HeadEstIdx   = 66;
-    public const int BodyEstIdx   = 67;
-    public const int EqdpStartIdx = 2;
+    public const int GmpIdx       = 2;
+    public const int HumanCmpIdx  = 64;
+    public const int FaceEstIdx   = 65;
+    public const int HairEstIdx   = 66;
+    public const int HeadEstIdx   = 67;
+    public const int BodyEstIdx   = 68;
+    public const int EqdpStartIdx = 3;
     public const int NumEqdpFiles = 2 * 28;
 
     public static int EqdpIdx( GenderRace raceCode, bool accessory )

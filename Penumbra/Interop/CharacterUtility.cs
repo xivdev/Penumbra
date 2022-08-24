@@ -33,7 +33,7 @@ public unsafe class CharacterUtility : IDisposable
            .Append( Structs.CharacterUtility.EqpIdx )
            .Append( Structs.CharacterUtility.GmpIdx )
            .Concat( Enumerable.Range( Structs.CharacterUtility.EqdpStartIdx, Structs.CharacterUtility.NumEqdpFiles )
-               .Where( i => i != 17 ) ) // TODO: Female Hrothgar
+               .Where( i => i is not Structs.CharacterUtility.EqdpStartIdx + 15 or Structs.CharacterUtility.EqdpStartIdx + 15 + Structs.CharacterUtility.NumEqdpFiles / 2 ) ) // TODO: Female Hrothgar
            .Append( Structs.CharacterUtility.HumanCmpIdx )
            .Concat( Enumerable.Range( Structs.CharacterUtility.FaceEstIdx, 4 ) )
            .ToArray();
