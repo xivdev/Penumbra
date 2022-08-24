@@ -221,7 +221,7 @@ public partial class ModEditWindow
             }
         }
 
-        return disabled && ret;
+        return !disabled && ret;
     }
 
 
@@ -233,7 +233,7 @@ public partial class ModEditWindow
         ImGui.NewLine();
         ret |= DrawMaterialColorSetChange( file, disabled );
 
-        return disabled && ret;
+        return !disabled && ret;
     }
 
     private static bool DrawMaterialTextureChange( MtrlFile file, bool disabled )
