@@ -160,11 +160,11 @@ public unsafe partial class PathResolver
         {
             if( _inChangeCustomize )
             {
-                using var rsp = MetaChanger.ChangeCmp( _parent, drawObject );
                 _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
             }
             else
             {
+                using var rsp = MetaChanger.ChangeCmp( _parent, drawObject );
                 _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
             }
         }

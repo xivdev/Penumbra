@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 
 namespace Penumbra.Meta.Manipulations;
@@ -119,8 +120,8 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
         return b != 0 ? b : Variant.CompareTo( other.Variant );
     }
 
-    public int FileIndex()
-        => -1;
+    public CharacterUtility.Index FileIndex()
+        => ( CharacterUtility.Index )( -1 );
 
     public Utf8GamePath GamePath()
     {

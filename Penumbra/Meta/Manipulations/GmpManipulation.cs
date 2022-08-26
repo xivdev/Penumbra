@@ -33,8 +33,8 @@ public readonly struct GmpManipulation : IMetaManipulation< GmpManipulation >
     public int CompareTo( GmpManipulation other )
         => SetId.CompareTo( other.SetId );
 
-    public int FileIndex()
-        => CharacterUtility.GmpIdx;
+    public CharacterUtility.Index FileIndex()
+        => CharacterUtility.Index.Gmp;
 
     public bool Apply( ExpandedGmpFile file )
     {

@@ -114,8 +114,8 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     public EqdpEntry GetDefault( int setIdx )
         => GetDefault( Index, setIdx );
 
-    public static EqdpEntry GetDefault( int fileIdx, int setIdx )
-        => GetDefault( ( byte* )Penumbra.CharacterUtility.DefaultResource( fileIdx ).Address, setIdx );
+    public static EqdpEntry GetDefault( Interop.CharacterUtility.InternalIndex idx, int setIdx )
+        => GetDefault( ( byte* )Penumbra.CharacterUtility.DefaultResource( idx ).Address, setIdx );
 
     public static EqdpEntry GetDefault( byte* data, int setIdx )
     {
@@ -139,5 +139,5 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     }
 
     public static EqdpEntry GetDefault( GenderRace raceCode, bool accessory, int setIdx )
-        => GetDefault( CharacterUtility.EqdpIdx( raceCode, accessory ), setIdx );
+        => GetDefault( Interop.CharacterUtility.ReverseIndices[ ( int )CharacterUtility.EqdpIdx( raceCode, accessory ) ], setIdx );
 }

@@ -8,87 +8,153 @@ namespace Penumbra.Interop.Structs;
 [StructLayout( LayoutKind.Explicit )]
 public unsafe struct CharacterUtility
 {
-    // TODO: female Hrothgar
-    public static readonly int[] EqdpIndices
-        = Enumerable.Range( EqdpStartIdx, NumEqdpFiles ).Where( i => i != EqdpStartIdx + 15 && i != EqdpStartIdx + 15 + NumEqdpFiles / 2 ).ToArray();
+    public enum Index : int
+    {
+        Eqp = 0,
+        Gmp = 2,
 
-    public const int NumResources = 86;
-    public const int EqpIdx       = 0;
-    public const int GmpIdx       = 2;
-    public const int HumanCmpIdx  = 64;
-    public const int FaceEstIdx   = 65;
-    public const int HairEstIdx   = 66;
-    public const int HeadEstIdx   = 67;
-    public const int BodyEstIdx   = 68;
-    public const int EqdpStartIdx = 3;
-    public const int NumEqdpFiles = 2 * 28;
+        Eqdp0101 = 3,
+        Eqdp0201,
+        Eqdp0301,
+        Eqdp0401,
+        Eqdp0501,
+        Eqdp0601,
+        Eqdp0701,
+        Eqdp0801,
+        Eqdp0901,
+        Eqdp1001,
+        Eqdp1101,
+        Eqdp1201,
+        Eqdp1301,
+        Eqdp1401,
+        Eqdp1501,
 
-    public static int EqdpIdx( GenderRace raceCode, bool accessory )
-        => ( accessory ? NumEqdpFiles / 2 : 0 )
-          + ( int )raceCode switch
-            {
-                0101 => EqdpStartIdx,
-                0201 => EqdpStartIdx + 1,
-                0301 => EqdpStartIdx + 2,
-                0401 => EqdpStartIdx + 3,
-                0501 => EqdpStartIdx + 4,
-                0601 => EqdpStartIdx + 5,
-                0701 => EqdpStartIdx + 6,
-                0801 => EqdpStartIdx + 7,
-                0901 => EqdpStartIdx + 8,
-                1001 => EqdpStartIdx + 9,
-                1101 => EqdpStartIdx + 10,
-                1201 => EqdpStartIdx + 11,
-                1301 => EqdpStartIdx + 12,
-                1401 => EqdpStartIdx + 13,
-                1501 => EqdpStartIdx + 14,
-                1601 => EqdpStartIdx + 15, // TODO: female Hrothgar
-                1701 => EqdpStartIdx + 16,
-                1801 => EqdpStartIdx + 17,
-                0104 => EqdpStartIdx + 18,
-                0204 => EqdpStartIdx + 19,
-                0504 => EqdpStartIdx + 20,
-                0604 => EqdpStartIdx + 21,
-                0704 => EqdpStartIdx + 22,
-                0804 => EqdpStartIdx + 23,
-                1304 => EqdpStartIdx + 24,
-                1404 => EqdpStartIdx + 25,
-                9104 => EqdpStartIdx + 26,
-                9204 => EqdpStartIdx + 27,
-                _    => -1,
-            };
+        //Eqdp1601, // TODO: female Hrothgar
+        Eqdp1701 = Eqdp1501 + 2,
+        Eqdp1801,
+        Eqdp0104,
+        Eqdp0204,
+        Eqdp0504,
+        Eqdp0604,
+        Eqdp0704,
+        Eqdp0804,
+        Eqdp1304,
+        Eqdp1404,
+        Eqdp9104,
+        Eqdp9204,
+
+        Eqdp0101Acc,
+        Eqdp0201Acc,
+        Eqdp0301Acc,
+        Eqdp0401Acc,
+        Eqdp0501Acc,
+        Eqdp0601Acc,
+        Eqdp0701Acc,
+        Eqdp0801Acc,
+        Eqdp0901Acc,
+        Eqdp1001Acc,
+        Eqdp1101Acc,
+        Eqdp1201Acc,
+        Eqdp1301Acc,
+        Eqdp1401Acc,
+        Eqdp1501Acc,
+
+        //Eqdp1601Acc, // TODO: female Hrothgar
+        Eqdp1701Acc = Eqdp1501Acc + 2,
+        Eqdp1801Acc,
+        Eqdp0104Acc,
+        Eqdp0204Acc,
+        Eqdp0504Acc,
+        Eqdp0604Acc,
+        Eqdp0704Acc,
+        Eqdp0804Acc,
+        Eqdp1304Acc,
+        Eqdp1404Acc,
+        Eqdp9104Acc,
+        Eqdp9204Acc,
+
+        HumanCmp = 64,
+        FaceEst,
+        HairEst,
+        HeadEst,
+        BodyEst,
+    }
+
+    public static readonly Index[] EqdpIndices = Enum.GetNames< Index >()
+       .Zip( Enum.GetValues< Index >() )
+       .Where( n => n.First.StartsWith( "Eqdp" ) )
+       .Select( n => n.Second ).ToArray();
+
+    public const int TotalNumResources = 87;
+
+    public static Index EqdpIdx( GenderRace raceCode, bool accessory )
+        => +( int )raceCode switch
+        {
+            0101 => accessory ? Index.Eqdp0101Acc : Index.Eqdp0101,
+            0201 => accessory ? Index.Eqdp0201Acc : Index.Eqdp0201,
+            0301 => accessory ? Index.Eqdp0301Acc : Index.Eqdp0301,
+            0401 => accessory ? Index.Eqdp0401Acc : Index.Eqdp0401,
+            0501 => accessory ? Index.Eqdp0501Acc : Index.Eqdp0501,
+            0601 => accessory ? Index.Eqdp0601Acc : Index.Eqdp0601,
+            0701 => accessory ? Index.Eqdp0701Acc : Index.Eqdp0701,
+            0801 => accessory ? Index.Eqdp0801Acc : Index.Eqdp0801,
+            0901 => accessory ? Index.Eqdp0901Acc : Index.Eqdp0901,
+            1001 => accessory ? Index.Eqdp1001Acc : Index.Eqdp1001,
+            1101 => accessory ? Index.Eqdp1101Acc : Index.Eqdp1101,
+            1201 => accessory ? Index.Eqdp1201Acc : Index.Eqdp1201,
+            1301 => accessory ? Index.Eqdp1301Acc : Index.Eqdp1301,
+            1401 => accessory ? Index.Eqdp1401Acc : Index.Eqdp1401,
+            1501 => accessory ? Index.Eqdp1501Acc : Index.Eqdp1501,
+            //1601 => accessory ? RelevantIndex.Eqdp1601Acc : RelevantIndex.Eqdp1601, Female Hrothgar
+            1701 => accessory ? Index.Eqdp1701Acc : Index.Eqdp1701,
+            1801 => accessory ? Index.Eqdp1801Acc : Index.Eqdp1801,
+            0104 => accessory ? Index.Eqdp0104Acc : Index.Eqdp0104,
+            0204 => accessory ? Index.Eqdp0204Acc : Index.Eqdp0204,
+            0504 => accessory ? Index.Eqdp0504Acc : Index.Eqdp0504,
+            0604 => accessory ? Index.Eqdp0604Acc : Index.Eqdp0604,
+            0704 => accessory ? Index.Eqdp0704Acc : Index.Eqdp0704,
+            0804 => accessory ? Index.Eqdp0804Acc : Index.Eqdp0804,
+            1304 => accessory ? Index.Eqdp1304Acc : Index.Eqdp1304,
+            1404 => accessory ? Index.Eqdp1404Acc : Index.Eqdp1404,
+            9104 => accessory ? Index.Eqdp9104Acc : Index.Eqdp9104,
+            9204 => accessory ? Index.Eqdp9204Acc : Index.Eqdp9204,
+            _    => ( Index )( -1 ),
+        };
 
     [FieldOffset( 0 )]
     public void* VTable;
 
     [FieldOffset( 8 )]
-    public fixed ulong Resources[NumResources];
+    public fixed ulong Resources[TotalNumResources];
 
-    [FieldOffset( 8 + EqpIdx * 8 )]
+    [FieldOffset( 8 + ( int )Index.Eqp * 8 )]
     public ResourceHandle* EqpResource;
 
-    [FieldOffset( 8 + GmpIdx * 8 )]
+    [FieldOffset( 8 + ( int )Index.Gmp * 8 )]
     public ResourceHandle* GmpResource;
 
     public ResourceHandle* Resource( int idx )
         => ( ResourceHandle* )Resources[ idx ];
 
-    public ResourceHandle* EqdpResource( GenderRace raceCode, bool accessory )
-        => Resource( EqdpIdx( raceCode, accessory ) );
+    public ResourceHandle* Resource( Index idx )
+        => Resource( ( int )idx );
 
-    [FieldOffset( 8 + HumanCmpIdx * 8 )]
+    public ResourceHandle* EqdpResource( GenderRace raceCode, bool accessory )
+        => Resource( ( int )EqdpIdx( raceCode, accessory ) );
+
+    [FieldOffset( 8 + ( int )Index.HumanCmp * 8 )]
     public ResourceHandle* HumanCmpResource;
 
-    [FieldOffset( 8 + FaceEstIdx * 8 )]
+    [FieldOffset( 8 + ( int )Index.FaceEst * 8 )]
     public ResourceHandle* FaceEstResource;
 
-    [FieldOffset( 8 + HairEstIdx * 8 )]
+    [FieldOffset( 8 + ( int )Index.HairEst * 8 )]
     public ResourceHandle* HairEstResource;
 
-    [FieldOffset( 8 + BodyEstIdx * 8 )]
+    [FieldOffset( 8 + ( int )Index.BodyEst * 8 )]
     public ResourceHandle* BodyEstResource;
 
-    [FieldOffset( 8 + HeadEstIdx * 8 )]
+    [FieldOffset( 8 + ( int )Index.HeadEst * 8 )]
     public ResourceHandle* HeadEstResource;
 
     // not included resources have no known use case.

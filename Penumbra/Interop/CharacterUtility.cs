@@ -7,6 +7,8 @@ namespace Penumbra.Interop;
 
 public unsafe class CharacterUtility : IDisposable
 {
+    public record struct InternalIndex( int Value );
+
     // A static pointer to the CharacterUtility address.
     [Signature( "48 8B 05 ?? ?? ?? ?? 83 B9", ScanType = ScanType.StaticAddress )]
     private readonly Structs.CharacterUtility** _characterUtilityAddress = null;
@@ -28,25 +30,22 @@ public unsafe class CharacterUtility : IDisposable
 
     // The relevant indices depend on which meta manipulations we allow for.
     // The defines are set in the project configuration.
-    public static readonly int[] RelevantIndices
-        = Array.Empty< int >()
-           .Append( Structs.CharacterUtility.EqpIdx )
-           .Append( Structs.CharacterUtility.GmpIdx )
-           .Concat( Enumerable.Range( Structs.CharacterUtility.EqdpStartIdx, Structs.CharacterUtility.NumEqdpFiles )
-               .Where( i => i is not Structs.CharacterUtility.EqdpStartIdx + 15 or Structs.CharacterUtility.EqdpStartIdx + 15 + Structs.CharacterUtility.NumEqdpFiles / 2 ) ) // TODO: Female Hrothgar
-           .Append( Structs.CharacterUtility.HumanCmpIdx )
-           .Concat( Enumerable.Range( Structs.CharacterUtility.FaceEstIdx, 4 ) )
+    public static readonly Structs.CharacterUtility.Index[]
+        RelevantIndices = Enum.GetValues< Structs.CharacterUtility.Index >();
+
+    public static readonly InternalIndex[] ReverseIndices
+        = Enumerable.Range( 0, Structs.CharacterUtility.TotalNumResources )
+           .Select( i => new InternalIndex( Array.IndexOf( RelevantIndices, (Structs.CharacterUtility.Index) i ) ) )
            .ToArray();
 
-    public static readonly int[] ReverseIndices
-        = Enumerable.Range( 0, Structs.CharacterUtility.NumResources )
-           .Select( i => Array.IndexOf( RelevantIndices, i ) ).ToArray();
 
+    private readonly (IntPtr Address, int Size)[] _defaultResources = new (IntPtr, int)[RelevantIndices.Length];
 
-    public readonly (IntPtr Address, int Size)[] DefaultResources = new (IntPtr, int)[RelevantIndices.Length];
+    public (IntPtr Address, int Size) DefaultResource( Structs.CharacterUtility.Index idx )
+        => _defaultResources[ ReverseIndices[ ( int )idx ].Value ];
 
-    public (IntPtr Address, int Size) DefaultResource( int fullIdx )
-        => DefaultResources[ ReverseIndices[ fullIdx ] ];
+    public (IntPtr Address, int Size) DefaultResource( InternalIndex idx )
+        => _defaultResources[ idx.Value ];
 
     public CharacterUtility()
     {
@@ -70,13 +69,13 @@ public unsafe class CharacterUtility : IDisposable
 
         for( var i = 0; i < RelevantIndices.Length; ++i )
         {
-            if( DefaultResources[ i ].Size == 0 )
+            if( _defaultResources[ i ].Size == 0 )
             {
-                var resource = ( Structs.ResourceHandle* )Address->Resources[ RelevantIndices[ i ] ];
+                var resource = Address->Resource( RelevantIndices[i] );
                 var data     = resource->GetData();
                 if( data.Data != IntPtr.Zero && data.Length != 0 )
                 {
-                    DefaultResources[ i ] = data;
+                    _defaultResources[ i ] = data;
                 }
                 else
                 {
@@ -94,7 +93,7 @@ public unsafe class CharacterUtility : IDisposable
     }
 
     // Set the data of one of the stored resources to a given pointer and length.
-    public bool SetResource( int resourceIdx, IntPtr data, int length )
+    public bool SetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
     {
         if( !Ready )
         {
@@ -109,7 +108,7 @@ public unsafe class CharacterUtility : IDisposable
     }
 
     // Reset the data of one of the stored resources to its default values.
-    public void ResetResource( int resourceIdx )
+    public void ResetResource( Structs.CharacterUtility.Index resourceIdx )
     {
         if( !Ready )
         {
@@ -117,8 +116,7 @@ public unsafe class CharacterUtility : IDisposable
             return;
         }
 
-        var relevantIdx = ReverseIndices[ resourceIdx ];
-        var (data, length) = DefaultResources[ relevantIdx ];
+        var (data, length) = DefaultResource( resourceIdx);
         var resource = Address->Resource( resourceIdx );
         PluginLog.Verbose( "Reset resource {Idx} to default at 0x{DefaultData:X} ({NewLength} bytes).", resourceIdx, ( ulong )data, length );
         resource->SetData( data, length );

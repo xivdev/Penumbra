@@ -1,14 +1,12 @@
 using System;
 using System.IO;
 using Lumina.Data.Files;
-using OtterGui;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Functions = Penumbra.GameData.Util.Functions;
 
 namespace Penumbra.Import.Dds;
 
-public class TextureImporter
+public static class TextureImporter
 {
     private static void WriteHeader( byte[] target, int width, int height )
     {
@@ -91,7 +89,4 @@ public class TextureImporter
         texData = buffer;
         return true;
     }
-
-    public void Import( string inputFile )
-    { }
 }

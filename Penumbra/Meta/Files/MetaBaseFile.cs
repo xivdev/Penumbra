@@ -1,6 +1,7 @@
 using System;
 using Dalamud.Memory;
 using Penumbra.GameData.Util;
+using CharacterUtility = Penumbra.Interop.CharacterUtility;
 
 namespace Penumbra.Meta.Files;
 
@@ -8,10 +9,10 @@ public unsafe class MetaBaseFile : IDisposable
 {
     public byte* Data { get; private set; }
     public int Length { get; private set; }
-    public int Index { get; }
+    public CharacterUtility.InternalIndex Index { get; }
 
-    public MetaBaseFile( int idx )
-        => Index = idx;
+    public MetaBaseFile( Interop.Structs.CharacterUtility.Index idx )
+        => Index = CharacterUtility.ReverseIndices[(int) idx];
 
     protected (IntPtr Data, int Length) DefaultData
         => Penumbra.CharacterUtility.DefaultResource( Index );

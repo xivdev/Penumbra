@@ -13,10 +13,10 @@ public partial class MetaManager
     private readonly List< RspManipulation > _cmpManipulations = new();
 
     public void SetCmpFiles()
-        => SetFile( _cmpFile, CharacterUtility.HumanCmpIdx );
+        => SetFile( _cmpFile, CharacterUtility.Index.HumanCmp );
 
     public static void ResetCmpFiles()
-        => SetFile( null, CharacterUtility.HumanCmpIdx );
+        => SetFile( null, CharacterUtility.Index.HumanCmp );
 
     public void ResetCmp()
     {

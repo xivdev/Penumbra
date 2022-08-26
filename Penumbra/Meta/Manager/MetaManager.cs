@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Dalamud.Logging;
 using Penumbra.Collections;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -168,7 +169,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     }
 
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
-    private static unsafe void SetFile( MetaBaseFile? file, int index )
+    private static unsafe void SetFile( MetaBaseFile? file, CharacterUtility.Index index )
     {
         if( file == null )
         {

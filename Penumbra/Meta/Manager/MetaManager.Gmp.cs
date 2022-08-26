@@ -16,10 +16,10 @@ public partial class MetaManager
     private readonly List< GmpManipulation > _gmpManipulations = new();
 
     public void SetGmpFiles()
-        => SetFile( _gmpFile, CharacterUtility.GmpIdx );
+        => SetFile( _gmpFile, CharacterUtility.Index.Gmp );
 
     public static void ResetGmpFiles()
-        => SetFile( null, CharacterUtility.GmpIdx );
+        => SetFile( null, CharacterUtility.Index.Gmp );
 
     public void ResetGmp()
     {

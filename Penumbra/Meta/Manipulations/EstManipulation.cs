@@ -13,10 +13,10 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
 {
     public enum EstType : byte
     {
-        Hair = CharacterUtility.HairEstIdx,
-        Face = CharacterUtility.FaceEstIdx,
-        Body = CharacterUtility.BodyEstIdx,
-        Head = CharacterUtility.HeadEstIdx,
+        Hair = CharacterUtility.Index.HairEst,
+        Face = CharacterUtility.Index.FaceEst,
+        Body = CharacterUtility.Index.BodyEst,
+        Head = CharacterUtility.Index.HeadEst,
     }
 
     public ushort Entry { get; init; } // SkeletonIdx.
@@ -76,8 +76,8 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
         return s != 0 ? s : SetId.CompareTo( other.SetId );
     }
 
-    public int FileIndex()
-        => ( int )Slot;
+    public CharacterUtility.Index FileIndex()
+        => ( CharacterUtility.Index )Slot;
 
     public bool Apply( EstFile file )
     {

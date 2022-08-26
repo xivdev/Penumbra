@@ -76,15 +76,15 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     }
 
     public ExpandedEqpGmpBase( bool gmp )
-        : base( gmp ? CharacterUtility.GmpIdx : CharacterUtility.EqpIdx )
+        : base( gmp ? CharacterUtility.Index.Gmp : CharacterUtility.Index.Eqp )
     {
         AllocateData( MaxSize );
         Reset();
     }
 
-    protected static ulong GetDefaultInternal( int fileIdx, int setIdx, ulong def )
+    protected static ulong GetDefaultInternal( Interop.CharacterUtility.InternalIndex fileIndex, int setIdx, ulong def )
     {
-        var data = ( byte* )Penumbra.CharacterUtility.DefaultResources[ fileIdx ].Address;
+        var data = ( byte* )Penumbra.CharacterUtility.DefaultResource(fileIndex).Address;
         if( setIdx == 0 )
         {
             setIdx = 1;
@@ -112,6 +112,9 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
 
 public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 {
+    public static readonly Interop.CharacterUtility.InternalIndex InternalIndex =
+        Interop.CharacterUtility.ReverseIndices[ (int) CharacterUtility.Index.Eqp ];
+
     public ExpandedEqpFile()
         : base( false )
     { }
@@ -124,7 +127,7 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 
 
     public static EqpEntry GetDefault( int setIdx )
-        => ( EqpEntry )GetDefaultInternal( CharacterUtility.EqpIdx, setIdx, ( ulong )Eqp.DefaultEntry );
+        => ( EqpEntry )GetDefaultInternal( InternalIndex, setIdx, ( ulong )Eqp.DefaultEntry );
 
     protected override unsafe void SetEmptyBlock( int idx )
     {
@@ -156,6 +159,9 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 
 public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
 {
+    public static readonly Interop.CharacterUtility.InternalIndex InternalIndex =
+        Interop.CharacterUtility.ReverseIndices[( int )CharacterUtility.Index.Gmp];
+
     public ExpandedGmpFile()
         : base( true )
     { }
@@ -167,7 +173,7 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
     }
 
     public static GmpEntry GetDefault( int setIdx )
-        => ( GmpEntry )GetDefaultInternal( CharacterUtility.GmpIdx, setIdx, ( ulong )GmpEntry.Default );
+        => ( GmpEntry )GetDefaultInternal( InternalIndex, setIdx, ( ulong )GmpEntry.Default );
 
     public void Reset( IEnumerable< int > entries )
     {

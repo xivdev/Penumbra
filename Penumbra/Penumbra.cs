@@ -69,75 +69,84 @@ public class Penumbra : IDalamudPlugin
 
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
-        Dalamud.Initialize( pluginInterface );
-        GameData.GameData.GetIdentifier( Dalamud.GameData );
-        DevPenumbraExists      = CheckDevPluginPenumbra();
-        IsNotInstalledPenumbra = CheckIsNotInstalled();
-
-        Framework        = new FrameworkManager();
-        CharacterUtility = new CharacterUtility();
-        Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() );
-        Config = Configuration.Load();
-
-        TempMods        = new TempModManager();
-        MetaFileManager = new MetaFileManager();
-        ResourceLoader  = new ResourceLoader( this );
-        ResourceLoader.EnableHooks();
-        ResourceLogger    = new ResourceLogger( ResourceLoader );
-        ResidentResources = new ResidentResourceManager();
-        ModManager        = new Mod.Manager( Config.ModDirectory );
-        ModManager.DiscoverMods();
-        CollectionManager = new ModCollection.Manager( ModManager );
-        ModFileSystem     = ModFileSystem.Load();
-        ObjectReloader    = new ObjectReloader();
-        PathResolver      = new PathResolver( ResourceLoader );
-
-        Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
+        try
         {
-            HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
-        } );
+            Dalamud.Initialize( pluginInterface );
+            GameData.GameData.GetIdentifier( Dalamud.GameData );
+            DevPenumbraExists      = CheckDevPluginPenumbra();
+            IsNotInstalledPenumbra = CheckIsNotInstalled();
 
-        SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
+            Framework        = new FrameworkManager();
+            CharacterUtility = new CharacterUtility();
+            Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() );
+            Config = Configuration.Load();
 
-        if( Config.EnableMods )
-        {
-            ResourceLoader.EnableReplacements();
-            PathResolver.Enable();
+            TempMods        = new TempModManager();
+            MetaFileManager = new MetaFileManager();
+            ResourceLoader  = new ResourceLoader( this );
+            ResourceLoader.EnableHooks();
+            ResourceLogger    = new ResourceLogger( ResourceLoader );
+            ResidentResources = new ResidentResourceManager();
+            ModManager        = new Mod.Manager( Config.ModDirectory );
+            ModManager.DiscoverMods();
+            CollectionManager = new ModCollection.Manager( ModManager );
+            ModFileSystem     = ModFileSystem.Load();
+            ObjectReloader    = new ObjectReloader();
+            PathResolver      = new PathResolver( ResourceLoader );
+
+            Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
+            {
+                HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
+            } );
+
+            SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
+
+            if( Config.EnableMods )
+            {
+                ResourceLoader.EnableReplacements();
+                PathResolver.Enable();
+            }
+
+            if( Config.EnableHttpApi )
+            {
+                CreateWebServer();
+            }
+
+            if( Config.DebugMode )
+            {
+                ResourceLoader.EnableDebug();
+                _configWindow.IsOpen = true;
+            }
+
+            if( Config.EnableFullResourceLogging )
+            {
+                ResourceLoader.EnableFullLogging();
+            }
+
+            if( CharacterUtility.Ready )
+            {
+                ResidentResources.Reload();
+            }
+
+            Api = new PenumbraApi( this );
+            Ipc = new PenumbraIpc( Dalamud.PluginInterface, Api );
+            SubscribeItemLinks();
+            if( ImcExceptions > 0 )
+            {
+                PluginLog.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
+            }
+            else
+            {
+                PluginLog.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
+            }
+
+            Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
         }
-
-        if( Config.EnableHttpApi )
+        catch
         {
-            CreateWebServer();
+            Dispose();
+            throw;
         }
-
-        if( Config.DebugMode )
-        {
-            ResourceLoader.EnableDebug();
-            _configWindow.IsOpen = true;
-        }
-
-        if( Config.EnableFullResourceLogging )
-        {
-            ResourceLoader.EnableFullLogging();
-        }
-
-        if( CharacterUtility.Ready )
-        {
-            ResidentResources.Reload();
-        }
-
-        Api = new PenumbraApi( this );
-        Ipc = new PenumbraIpc( Dalamud.PluginInterface, Api );
-        SubscribeItemLinks();
-        if( ImcExceptions > 0 )
-        {
-            PluginLog.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
-        }
-        else
-        {
-            PluginLog.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
-        }
-        Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
     }
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
@@ -154,8 +163,8 @@ public class Penumbra : IDalamudPlugin
     {
         Dalamud.PluginInterface.UiBuilder.Draw         -= _windowSystem.Draw;
         Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= _configWindow.Toggle;
-        _launchButton.Dispose();
-        _configWindow.Dispose();
+        _launchButton?.Dispose();
+        _configWindow?.Dispose();
     }
 
     public bool Enable()
@@ -249,18 +258,18 @@ public class Penumbra : IDalamudPlugin
     public void Dispose()
     {
         DisposeInterface();
-        Ipc.Dispose();
-        Api.Dispose();
-        ObjectReloader.Dispose();
-        ModFileSystem.Dispose();
-        CollectionManager.Dispose();
+        Ipc?.Dispose();
+        Api?.Dispose();
+        ObjectReloader?.Dispose();
+        ModFileSystem?.Dispose();
+        CollectionManager?.Dispose();
 
         Dalamud.Commands.RemoveHandler( CommandName );
 
-        PathResolver.Dispose();
-        ResourceLogger.Dispose();
-        ResourceLoader.Dispose();
-        CharacterUtility.Dispose();
+        PathResolver?.Dispose();
+        ResourceLogger?.Dispose();
+        ResourceLoader?.Dispose();
+        CharacterUtility?.Dispose();
 
         ShutdownWebServer();
     }

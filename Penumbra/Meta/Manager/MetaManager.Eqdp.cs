@@ -11,7 +11,7 @@ namespace Penumbra.Meta.Manager;
 
 public partial class MetaManager
 {
-    private readonly ExpandedEqdpFile?[] _eqdpFiles = new ExpandedEqdpFile?[CharacterUtility.NumEqdpFiles - 2]; // TODO: female Hrothgar
+    private readonly ExpandedEqdpFile?[] _eqdpFiles = new ExpandedEqdpFile[CharacterUtility.EqdpIndices.Length]; // TODO: female Hrothgar
 
     private readonly List< EqdpManipulation > _eqdpManipulations = new();
 
@@ -33,9 +33,10 @@ public partial class MetaManager
 
     public void ResetEqdp()
     {
-        foreach( var file in _eqdpFiles )
+        foreach( var file in _eqdpFiles.OfType<ExpandedEqdpFile>() )
         {
-            file?.Reset( _eqdpManipulations.Where( m => m.FileIndex() == file.Index ).Select( m => ( int )m.SetId ) );
+            var relevant = Interop.CharacterUtility.RelevantIndices[ file.Index.Value ];
+            file.Reset( _eqdpManipulations.Where( m => m.FileIndex() == relevant ).Select( m => ( int )m.SetId ) );
         }
 
         _eqdpManipulations.Clear();

@@ -19,18 +19,18 @@ public partial class MetaManager
 
     public void SetEstFiles()
     {
-        SetFile( _estFaceFile, CharacterUtility.FaceEstIdx );
-        SetFile( _estHairFile, CharacterUtility.HairEstIdx );
-        SetFile( _estBodyFile, CharacterUtility.BodyEstIdx );
-        SetFile( _estHeadFile, CharacterUtility.HeadEstIdx );
+        SetFile( _estFaceFile, CharacterUtility.Index.FaceEst );
+        SetFile( _estHairFile, CharacterUtility.Index.HairEst );
+        SetFile( _estBodyFile, CharacterUtility.Index.BodyEst );
+        SetFile( _estHeadFile, CharacterUtility.Index.HeadEst );
     }
 
     public static void ResetEstFiles()
     {
-        SetFile( null, CharacterUtility.FaceEstIdx );
-        SetFile( null, CharacterUtility.HairEstIdx );
-        SetFile( null, CharacterUtility.BodyEstIdx );
-        SetFile( null, CharacterUtility.HeadEstIdx );
+        SetFile( null, CharacterUtility.Index.FaceEst );
+        SetFile( null, CharacterUtility.Index.HairEst );
+        SetFile( null, CharacterUtility.Index.BodyEst );
+        SetFile( null, CharacterUtility.Index.HeadEst );
     }
 
     public void ResetEst()
