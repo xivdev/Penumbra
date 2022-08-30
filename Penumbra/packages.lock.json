@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "dependencies": {
+    "net6.0-windows7.0": {
+      "EmbedIO": {
+        "type": "Direct",
+        "requested": "[3.4.3, )",
+        "resolved": "3.4.3",
+        "contentHash": "YM6hpZNAfvbbixfG9T4lWDGfF0D/TqutbTROL4ogVcHKwPF1hp+xS3ABwd3cxxTxvDFkj/zZl57QgWuFA8Igxw==",
+        "dependencies": {
+          "Unosquare.Swan.Lite": "3.0.0"
+        }
+      },
+      "SharpCompress": {
+        "type": "Direct",
+        "requested": "[0.32.1, )",
+        "resolved": "0.32.1",
+        "contentHash": "9Cwj3lK/p7wkiBaQPCvaKINuHYuZ0ACDldA4M3o5ISSq7cjbbq3yqigTDBUoKjtyyXpqmQHUkw6fhLnjNF30ow=="
+      },
+      "SixLabors.ImageSharp": {
+        "type": "Direct",
+        "requested": "[2.1.2, )",
+        "resolved": "2.1.2",
+        "contentHash": "In0pC521LqJXJXZgFVHegvSzES10KkKRN31McxqA1+fKtKsNe+EShWavBFQnKRlXCdeAmfx/wDjLILbvCaq+8Q==",
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "5.0.0",
+          "System.Text.Encoding.CodePages": "5.0.0"
+        }
+      },
+      "Microsoft.NETCore.Platforms": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "VyPlqzH2wavqquTcYpkIIAQ6WdenuKoFN0BdYBbCWsclXacSOHNQn66Gt4z5NBqEYW0FAPm5rlvki9ZiCij5xQ=="
+      },
+      "System.Runtime.CompilerServices.Unsafe": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "ZD9TMpsmYJLrxbbmdvhwt9YEgG5WntEnZ/d1eH8JBX9LBp+Ju8BSBhUGbZMNVHHomWo2KVImJhTDl2hIgw/6MA=="
+      },
+      "System.Text.Encoding.CodePages": {
+        "type": "Transitive",
+        "resolved": "5.0.0",
+        "contentHash": "NyscU59xX6Uo91qvhOs2Ccho3AR2TnZPomo1Z0K6YpyztBPM/A5VbkzOO19sy3A3i1TtEnTxA7bCe3Us+r5MWg==",
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "5.0.0"
+        }
+      },
+      "System.ValueTuple": {
+        "type": "Transitive",
+        "resolved": "4.5.0",
+        "contentHash": "okurQJO6NRE/apDIP23ajJ0hpiNmJ+f0BwOlB/cSqTLQlw5upkf+5+96+iG2Jw40G1fCVCyPz/FhIABUjMR+RQ=="
+      },
+      "Unosquare.Swan.Lite": {
+        "type": "Transitive",
+        "resolved": "3.0.0",
+        "contentHash": "noPwJJl1Q9uparXy1ogtkmyAPGNfSGb0BLT1292nFH1jdMKje6o2kvvrQUvF9Xklj+IoiAI0UzF6Aqxlvo10lw==",
+        "dependencies": {
+          "System.ValueTuple": "4.5.0"
+        }
+      },
+      "DirectXTex": {
+        "type": "Project"
+      },
+      "directxtexc": {
+        "type": "Project",
+        "dependencies": {
+          "DirectXTex": "[1.0.0, )"
+        }
+      },
+      "ottergui": {
+        "type": "Project"
+      },
+      "ottertex": {
+        "type": "Project",
+        "dependencies": {
+          "DirectXTexC": "[1.0.0, )"
+        }
+      },
+      "penumbra.gamedata": {
+        "type": "Project"
+      }
+    }
+  }
+}
