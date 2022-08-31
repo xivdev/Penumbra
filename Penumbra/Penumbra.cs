@@ -141,6 +141,9 @@ public class Penumbra : IDalamudPlugin
             }
 
             Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
+
+            OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
+            PluginLog.Information( $"Loading native assembly from {OtterTex.NativeDll.Directory}." );
         }
         catch
         {
