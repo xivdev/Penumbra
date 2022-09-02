@@ -5,6 +5,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.Collections;
@@ -40,34 +41,27 @@ public unsafe partial class PathResolver
         }
 
         var ui = ( AtkUnitBase* )addon;
-        if( ui->UldManager.NodeListCount <= 60 )
-        {
-            return null;
-        }
+        var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 2u : 6u;
 
-        var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 59 : 60;
-
-        var text = ( AtkTextNode* )ui->UldManager.NodeList[ nodeId ];
+        var text = ( AtkTextNode* )ui->UldManager.SearchNodeById( nodeId );
         return text != null ? text->NodeText.ToString() : null;
     }
 
     // Obtain the name displayed in the Character Card from the agent.
     private static string? GetCardName()
     {
+        // TODO: Update to ClientStructs when merged.
         if( !Penumbra.Config.UseCharacterCollectionsInCards )
         {
             return null;
         }
 
-        var uiModule    = ( UIModule* )Dalamud.GameGui.GetUIModule();
-        var agentModule = uiModule->GetAgentModule();
-        var agent       = ( byte* )agentModule->GetAgentByInternalID( 393 );
+        var agent = AgentCharaCard.Instance();
         if( agent == null )
         {
             return null;
         }
-
-        var data = *( byte** )( agent + 0x28 );
+        var data = *( byte** )( (byte*) agent + 0x28 );
         if( data == null )
         {
             return null;
