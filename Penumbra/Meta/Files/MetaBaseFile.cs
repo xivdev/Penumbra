@@ -12,7 +12,7 @@ public unsafe class MetaBaseFile : IDisposable
     public CharacterUtility.InternalIndex Index { get; }
 
     public MetaBaseFile( Interop.Structs.CharacterUtility.Index idx )
-        => Index = CharacterUtility.ReverseIndices[(int) idx];
+        => Index = CharacterUtility.ReverseIndices[ ( int )idx ];
 
     protected (IntPtr Data, int Length) DefaultData
         => Penumbra.CharacterUtility.DefaultResource( Index );
