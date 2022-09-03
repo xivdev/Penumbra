@@ -319,7 +319,10 @@ public partial class ModEditWindow
         if( ImGuiUtil.DrawDisabledButton( "Apply Changes", Vector2.Zero, tt, !changes ) )
         {
             var failedFiles = _editor!.ApplyFiles();
-            PluginLog.Information( $"Failed to apply {failedFiles} file redirections to {_editor.CurrentOption.Name}." );
+            if( failedFiles > 0 )
+            {
+                PluginLog.Information( $"Failed to apply {failedFiles} file redirections to {_editor.CurrentOption.FullName}." );
+            }
         }
 
 

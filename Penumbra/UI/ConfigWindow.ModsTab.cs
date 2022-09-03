@@ -79,12 +79,12 @@ public partial class ConfigWindow
 
     private static void DrawDefaultCollectionButton( Vector2 width )
     {
-        var name      = $"Default Collection ({Penumbra.CollectionManager.Default.Name})";
+        var name      = $"{DefaultCollection} ({Penumbra.CollectionManager.Default.Name})";
         var isCurrent = Penumbra.CollectionManager.Default == Penumbra.CollectionManager.Current;
         var isEmpty   = Penumbra.CollectionManager.Default == ModCollection.Empty;
-        var tt = isCurrent ? "The current collection is already the configured default collection."
-            : isEmpty      ? "The default collection is configured to be empty."
-                             : "Set the current collection to the configured default collection.";
+        var tt = isCurrent ? $"The current collection is already the configured {DefaultCollection}."
+            : isEmpty      ? $"The {DefaultCollection} is configured to be empty."
+                             : $"Set the {SelectedCollection} to the configured {DefaultCollection}.";
         if( ImGuiUtil.DrawDisabledButton( name, width, tt, isCurrent || isEmpty ) )
         {
             Penumbra.CollectionManager.SetCollection( Penumbra.CollectionManager.Default, CollectionType.Current );

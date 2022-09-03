@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.Mods;
+using Penumbra.UI;
 
 namespace Penumbra.Collections;
 
@@ -196,7 +197,7 @@ public partial class ModCollection
             var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
             {
-                PluginLog.Error( $"Last choice of Default Collection {defaultName} is not available, reset to {Empty.Name}." );
+                PluginLog.Error( $"Last choice of {ConfigWindow.DefaultCollection} {defaultName} is not available, reset to {Empty.Name}." );
                 Default       = Empty;
                 configChanged = true;
             }
@@ -210,7 +211,7 @@ public partial class ModCollection
             var currentIdx  = GetIndexForCollectionName( currentName );
             if( currentIdx < 0 )
             {
-                PluginLog.Error( $"Last choice of Current Collection {currentName} is not available, reset to {DefaultCollection}." );
+                PluginLog.Error( $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}." );
                 Current       = DefaultName;
                 configChanged = true;
             }

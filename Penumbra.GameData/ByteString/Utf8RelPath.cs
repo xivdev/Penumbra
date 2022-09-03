@@ -36,7 +36,7 @@ public readonly struct Utf8RelPath : IEquatable< Utf8RelPath >, IComparable< Utf
             return true;
         }
 
-        var substring = s!.Replace( '/', '\\' ).TrimStart('\\');
+        var substring = s.Replace( '/', '\\' ).TrimStart('\\');
         if( substring.Length > MaxRelPathLength )
         {
             return false;

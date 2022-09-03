@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
-using Newtonsoft.Json;
 
 namespace Penumbra.GameData.Enums;
 
@@ -31,7 +29,9 @@ public enum EquipSlot : byte
     FullBody          = 19,
     BodyHands         = 20,
     BodyLegsFeet      = 21,
-    All               = 22, // Not officially existing
+    ChestHands        = 22,
+    Nothing           = 23,
+    All               = 24, // Not officially existing
 }
 
 public static class EquipSlotExtensions
@@ -111,7 +111,8 @@ public static class EquipSlotExtensions
             EquipSlot.FullBody          => EquipSlot.Body,
             EquipSlot.BodyHands         => EquipSlot.Body,
             EquipSlot.BodyLegsFeet      => EquipSlot.Body,
-            _                           => throw new InvalidEnumArgumentException(),
+            EquipSlot.ChestHands        => EquipSlot.Body,
+            _                           => throw new InvalidEnumArgumentException($"{value} ({(int) value}) is not valid."),
         };
     }
 

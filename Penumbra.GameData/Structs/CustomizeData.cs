@@ -17,7 +17,7 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
         }
     }
 
-    public void Write( void* target )
+    public readonly void Write( void* target )
     {
         fixed( byte* ptr = Data )
         {
@@ -25,20 +25,23 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
         }
     }
 
-    public CustomizeData Clone()
+    public readonly CustomizeData Clone()
     {
         var ret = new CustomizeData();
         Write( ret.Data );
         return ret;
     }
 
-    public bool Equals( CustomizeData other )
+    public readonly bool Equals( CustomizeData other )
     {
         fixed( byte* ptr = Data )
         {
             return Functions.MemCmpUnchecked( ptr, other.Data, Size ) == 0;
         }
     }
+
+    public static bool Equals( CustomizeData* lhs, CustomizeData* rhs )
+        => Functions.MemCmpUnchecked( lhs, rhs, Size ) == 0;
 
     public override bool Equals( object? obj )
         => obj is CustomizeData other && Equals( other );

@@ -2,12 +2,13 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using Lumina.Data;
 using Lumina.Data.Parsing;
 using Lumina.Extensions;
 
 namespace Penumbra.GameData.Files;
 
-public partial class MdlFile
+public partial class MdlFile : IWritable
 {
     public const uint NumVertices    = 17;
     public const uint FileHeaderSize = 0x44;
@@ -87,7 +88,7 @@ public partial class MdlFile
     public MdlFile( byte[] data )
     {
         using var stream = new MemoryStream( data );
-        using var r      = new BinaryReader( stream );
+        using var r      = new LuminaBinaryReader( stream );
 
         var header = LoadModelFileHeader( r );
         LodCount         = header.LodCount;
@@ -197,7 +198,7 @@ public partial class MdlFile
         RemainingData = r.ReadBytes( ( int )( r.BaseStream.Length - r.BaseStream.Position ) );
     }
 
-    private MdlStructs.ModelFileHeader LoadModelFileHeader( BinaryReader r )
+    private MdlStructs.ModelFileHeader LoadModelFileHeader( LuminaBinaryReader r )
     {
         var header = MdlStructs.ModelFileHeader.Read( r );
         Version                    = header.Version;
@@ -255,5 +256,4 @@ public partial class MdlFile
 
     public unsafe uint StackSize
         => ( uint )( VertexDeclarations.Length * NumVertices * sizeof( MdlStructs.VertexElement ) );
-
 }

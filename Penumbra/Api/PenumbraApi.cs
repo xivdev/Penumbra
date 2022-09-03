@@ -47,6 +47,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         remove => PathResolver.DrawObjectState.CreatingCharacterBase -= value;
     }
 
+    public event CreatedCharacterBaseDelegate? CreatedCharacterBase
+    {
+        add => PathResolver.DrawObjectState.CreatedCharacterBase += value;
+        remove => PathResolver.DrawObjectState.CreatedCharacterBase -= value;
+    }
+
     public bool Valid
         => _penumbra != null;
 

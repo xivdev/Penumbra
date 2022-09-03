@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
@@ -163,7 +164,9 @@ public unsafe partial class ResourceLoader
         return ret == null ? null : ret->Value;
     }
 
-    public delegate void ExtMapAction( ResourceCategory category, StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* graph, int idx );
+    public delegate void ExtMapAction( ResourceCategory category, StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* graph,
+        int idx );
+
     public delegate void ResourceMapAction( uint ext, StdMap< uint, Pointer< ResourceHandle > >* graph );
     public delegate void ResourceAction( uint crc32, ResourceHandle* graph );
 
@@ -225,9 +228,14 @@ public unsafe partial class ResourceLoader
     // Prevent resource management weirdness.
     private byte ResourceHandleDecRefDetour( ResourceHandle* handle )
     {
+        if( handle == null )
+        {
+            return 0;
+        }
+
         if( handle->RefCount != 0 )
         {
-            return _decRefHook!.Original( handle );
+            return _decRefHook.Original( handle );
         }
 
         PluginLog.Error( $"Caught decrease of Reference Counter for {handle->FileName} at 0x{( ulong )handle:X} below 0." );

@@ -3,12 +3,13 @@ using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Penumbra.GameData.Util;
+using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Manipulations;
 
 public interface IMetaManipulation
 {
-    public int FileIndex();
+    public CharacterUtility.Index FileIndex();
 }
 
 public interface IMetaManipulation< T >

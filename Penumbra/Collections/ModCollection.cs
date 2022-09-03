@@ -135,7 +135,7 @@ public partial class ModCollection
         var settings = _settings[ idx ];
         if( settings != null )
         {
-            _unusedSettings.Add( mod.ModPath.Name, new ModSettings.SavedSettings( settings, mod ) );
+            _unusedSettings[mod.ModPath.Name] = new ModSettings.SavedSettings( settings, mod );
         }
 
         _settings.RemoveAt( idx );

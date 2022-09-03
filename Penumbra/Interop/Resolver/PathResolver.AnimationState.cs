@@ -124,7 +124,7 @@ public unsafe partial class PathResolver
             }
             finally
             {
-                ret = _loadTimelineResourcesHook!.Original( timeline );
+                ret = _loadTimelineResourcesHook.Original( timeline );
             }
 
             _animationLoadCollection = old;
@@ -145,7 +145,7 @@ public unsafe partial class PathResolver
             var last = _animationLoadCollection;
             _animationLoadCollection = _drawObjectState.LastCreatedCollection.Item2 == null
              ? (drawObject, ( FindParent( drawObject, out var collection ) != null ? collection.Item2 : Penumbra.CollectionManager.Default )) : _drawObjectState.LastCreatedCollection;
-            _characterBaseLoadAnimationHook!.Original( drawObject );
+            _characterBaseLoadAnimationHook.Original( drawObject );
             _animationLoadCollection = last;
         }
 
@@ -159,7 +159,7 @@ public unsafe partial class PathResolver
         {
             var last = _animationLoadCollection;
             _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
-            var ret = _loadSomeAvfxHook!.Original( a1, gameObject, gameObject2, unk1, unk2, unk3 );
+            var ret = _loadSomeAvfxHook.Original( a1, gameObject, gameObject2, unk1, unk2, unk3 );
             _animationLoadCollection = last;
             return ret;
         }
@@ -184,7 +184,7 @@ public unsafe partial class PathResolver
                 }
             }
 
-            _loadSomePapHook!.Original( a1, a2, a3, a4 );
+            _loadSomePapHook.Original( a1, a2, a3, a4 );
             _animationLoadCollection = last;
         }
 
@@ -196,19 +196,19 @@ public unsafe partial class PathResolver
         {
             var last = _animationLoadCollection;
             _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
-            _someActionLoadHook!.Original( gameObject );
+            _someActionLoadHook.Original( gameObject );
             _animationLoadCollection = last;
         }
 
-        [Signature( "E8 ?? ?? ?? ?? 44 84 BB", DetourName = nameof( SomeOtherAvfxDetour ) )]
+        [Signature( "E8 ?? ?? ?? ?? 44 84 A3", DetourName = nameof( SomeOtherAvfxDetour ) )]
         private readonly Hook< CharacterBaseNoArgumentDelegate > _someOtherAvfxHook = null!;
 
         private void SomeOtherAvfxDetour( IntPtr unk )
         {
             var last       = _animationLoadCollection;
-            var gameObject = ( GameObject* )( unk - 0x8B0 );
+            var gameObject = ( GameObject* )( unk - 0x8D0 );
             _animationLoadCollection = IdentifyCollection( gameObject );
-            _someOtherAvfxHook!.Original( unk );
+            _someOtherAvfxHook.Original( unk );
             _animationLoadCollection = last;
         }
     }

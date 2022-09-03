@@ -88,7 +88,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            ImGui.TextWrapped( _mod.Description );
+            ImGuiUtil.TextWrapped( _mod.Description );
         }
 
         // A simple clipped list of changed items.

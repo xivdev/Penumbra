@@ -74,6 +74,8 @@ public partial class Mod
 
         public bool FileChanges { get; private set; }
         private          List< FileRegistry >    _availableFiles = null!;
+        private          List< FileRegistry >    _mtrlFiles      = null!;
+        private          List< FileRegistry >    _mdlFiles       = null!;
         private readonly HashSet< Utf8GamePath > _usedPaths      = new();
 
         // All paths that are used in 
@@ -81,6 +83,12 @@ public partial class Mod
 
         public IReadOnlySet< FullPath > MissingFiles
             => _missingFiles;
+
+        public IReadOnlyList< FileRegistry > MtrlFiles
+            => _mtrlFiles;
+
+        public IReadOnlyList< FileRegistry > MdlFiles
+            => _mdlFiles;
 
         // Remove all path redirections where the pointed-to file does not exist.
         public void RemoveMissingPaths()
@@ -121,6 +129,8 @@ public partial class Mod
                    .OfType< FileRegistry >() )
                .ToList();
             _usedPaths.Clear();
+            _mtrlFiles  = _availableFiles.Where( f => f.File.FullName.EndsWith( ".mtrl", StringComparison.OrdinalIgnoreCase ) ).ToList();
+            _mdlFiles   = _availableFiles.Where( f => f.File.FullName.EndsWith( ".mdl", StringComparison.OrdinalIgnoreCase ) ).ToList();
             FileChanges = false;
             foreach( var subMod in _mod.AllSubMods )
             {

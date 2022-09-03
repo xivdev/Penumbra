@@ -18,6 +18,7 @@ public unsafe partial class PathResolver
     public class DrawObjectState
     {
         public static event CreatingCharacterBaseDelegate? CreatingCharacterBase;
+        public static event CreatedCharacterBaseDelegate? CreatedCharacterBase;
 
         public IEnumerable<KeyValuePair<IntPtr, (ModCollection, int)>> DrawObjects
             => _drawObjectToObject;
@@ -148,7 +149,8 @@ public unsafe partial class PathResolver
             var ret = _characterBaseCreateHook.Original( a, b, c, d );
             if( LastGameObject != null )
             {
-                _drawObjectToObject[ret] = (_lastCreatedCollection!.Item2!, LastGameObject->ObjectIndex);
+                _drawObjectToObject[ ret ] = ( _lastCreatedCollection!.Item2, LastGameObject->ObjectIndex );
+                CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.Item2, ret );
             }
 
             return ret;
@@ -173,8 +175,8 @@ public unsafe partial class PathResolver
         // so we always keep track of the current GameObject to be able to link it to the DrawObject.
         private delegate void EnableDrawDelegate( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d );
 
-        [Signature( "E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 85 C9 74 ?? 33 D2 E8 ?? ?? ?? ?? 84 C0", DetourName = nameof( EnableDrawDetour ) )]
-        private readonly Hook<EnableDrawDelegate> _enableDrawHook = null!;
+        [Signature( "E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 85 C9 74 33 45 33 C0", DetourName = nameof( EnableDrawDetour ) )]
+        private readonly Hook< EnableDrawDelegate > _enableDrawHook = null!;
 
         private void EnableDrawDetour( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d )
         {

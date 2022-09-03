@@ -13,10 +13,10 @@ public partial class MetaManager
     private readonly List< EqpManipulation > _eqpManipulations = new();
 
     public void SetEqpFiles()
-        => SetFile( _eqpFile, CharacterUtility.EqpIdx );
+        => SetFile( _eqpFile, CharacterUtility.Index.Eqp );
 
     public static void ResetEqpFiles()
-        => SetFile( null, CharacterUtility.EqpIdx );
+        => SetFile( null, CharacterUtility.Index.Eqp );
 
     public void ResetEqp()
     {

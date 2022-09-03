@@ -32,6 +32,14 @@ public readonly struct CharacterWeapon : IEquatable< CharacterWeapon >
         Stain   = stain;
     }
 
+    public CharacterWeapon( ulong value )
+    {
+        Set     = ( SetId )value;
+        Type    = ( WeaponType )( value >> 16 );
+        Variant = ( ushort )( value     >> 32 );
+        Stain   = ( StainId )( value    >> 48 );
+    }
+
     public static readonly CharacterWeapon Empty = new(0, 0, 0, 0);
 
     public bool Equals( CharacterWeapon other )

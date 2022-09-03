@@ -200,9 +200,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     private void AddImportModButton( Vector2 size )
     {
         var button = ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
-               "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true );
+            "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true );
         ConfigWindow.OpenTutorial( ConfigWindow.BasicTutorialSteps.ModImport );
-        if (!button)
+        if( !button )
         {
             return;
         }
@@ -212,15 +212,16 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             : Penumbra.Config.ModDirectory.Length         > 0                   ? Penumbra.Config.ModDirectory : null;
         _hasSetFolder = true;
 
-        _fileManager.OpenFileDialog( "Import Mod Pack", "Mod Packs{.ttmp,.ttmp2,.zip,.7z,.rar},TexTools Mod Packs{.ttmp,.ttmp2},Archives{.zip,.7z,.rar}", ( s, f ) =>
-        {
-            if( s )
+        _fileManager.OpenFileDialog( "Import Mod Pack",
+            "Mod Packs{.ttmp,.ttmp2,.zip,.7z,.rar},TexTools Mod Packs{.ttmp,.ttmp2},Archives{.zip,.7z,.rar}", ( s, f ) =>
             {
-                _import = new TexToolsImporter( Penumbra.ModManager.BasePath, f.Count, f.Select( file => new FileInfo( file ) ),
-                    AddNewMod );
-                ImGui.OpenPopup( "Import Status" );
-            }
-        }, 0, modPath );
+                if( s )
+                {
+                    _import = new TexToolsImporter( Penumbra.ModManager.BasePath, f.Count, f.Select( file => new FileInfo( file ) ),
+                        AddNewMod );
+                    ImGui.OpenPopup( "Import Status" );
+                }
+            }, 0, modPath );
     }
 
     // Draw the progress information for import.
@@ -312,13 +313,20 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         {
             ImGui.OpenPopup( "ExtendedHelp" );
         }
+
         ConfigWindow.OpenTutorial( ConfigWindow.BasicTutorialSteps.AdvancedHelp );
     }
 
     // Helpers.
     private static void SetDescendants( ModFileSystem.Folder folder, bool enabled, bool inherit = false )
     {
-        var mods = folder.GetAllDescendants( ISortMode< Mod >.Lexicographical ).OfType< ModFileSystem.Leaf >().Select( l => l.Value );
+        var mods = folder.GetAllDescendants( ISortMode< Mod >.Lexicographical ).OfType< ModFileSystem.Leaf >().Select( l =>
+        {
+            // Any mod handled here should not stay new.
+            Penumbra.ModManager.NewMods.Remove( l.Value );
+            return l.Value;
+        } );
+
         if( inherit )
         {
             Penumbra.CollectionManager.Current.SetMultipleModInheritances( mods, enabled );

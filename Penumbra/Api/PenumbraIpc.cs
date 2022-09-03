@@ -281,7 +281,8 @@ public partial class PenumbraIpc
     public const string LabelProviderGetCutsceneParentIndex   = "Penumbra.GetCutsceneParentIndex";
     public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
     public const string LabelProviderReverseResolvePlayerPath = "Penumbra.ReverseResolvePlayerPath";
-    public const string LabelProviderCreatingCharacterBase = "Penumbra.CreatingCharacterBase";
+    public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
+    public const string LabelProviderCreatedCharacterBase     = "Penumbra.CreatedCharacterBase";
 
     internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
     internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
@@ -291,6 +292,7 @@ public partial class PenumbraIpc
     internal ICallGateProvider< string, string, string[] >?                        ProviderReverseResolvePath;
     internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
     internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
+    internal ICallGateProvider< IntPtr, string, IntPtr, object? >?                 ProviderCreatedCharacterBase;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
@@ -374,6 +376,17 @@ public partial class PenumbraIpc
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreatingCharacterBase}:\n{e}" );
         }
+
+        try
+        {
+            ProviderCreatedCharacterBase =
+                pi.GetIpcProvider< IntPtr, string, IntPtr, object? >( LabelProviderCreatedCharacterBase );
+            Api.CreatedCharacterBase += CreatedCharacterBaseEvent;
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreatedCharacterBase}:\n{e}" );
+        }
     }
 
     private void DisposeResolveProviders()
@@ -385,11 +398,17 @@ public partial class PenumbraIpc
         ProviderReverseResolvePath?.UnregisterFunc();
         ProviderReverseResolvePathPlayer?.UnregisterFunc();
         Api.CreatingCharacterBase -= CreatingCharacterBaseEvent;
+        Api.CreatedCharacterBase  -= CreatedCharacterBaseEvent;
     }
 
     private void CreatingCharacterBaseEvent( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize, IntPtr equipData )
     {
         ProviderCreatingCharacterBase?.SendMessage( gameObject, collection.Name, modelId, customize, equipData );
+    }
+
+    private void CreatedCharacterBaseEvent( IntPtr gameObject, ModCollection collection, IntPtr drawObject )
+    {
+        ProviderCreatedCharacterBase?.SendMessage( gameObject, collection.Name, drawObject );
     }
 }
 

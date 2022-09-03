@@ -11,6 +11,9 @@ namespace Penumbra.Meta.Files;
 // We only support manipulating the racial scaling parameters at the moment.
 public sealed unsafe class CmpFile : MetaBaseFile
 {
+    public static readonly Interop.CharacterUtility.InternalIndex InternalIndex =
+        Interop.CharacterUtility.ReverseIndices[ ( int )CharacterUtility.Index.HumanCmp ];
+
     private const int RacialScalingStart = 0x2A800;
 
     public float this[ SubRace subRace, RspAttribute attribute ]
@@ -31,7 +34,7 @@ public sealed unsafe class CmpFile : MetaBaseFile
     }
 
     public CmpFile()
-        : base( CharacterUtility.HumanCmpIdx )
+        : base( CharacterUtility.Index.HumanCmp )
     {
         AllocateData( DefaultData.Length );
         Reset();
@@ -39,7 +42,7 @@ public sealed unsafe class CmpFile : MetaBaseFile
 
     public static float GetDefault( SubRace subRace, RspAttribute attribute )
     {
-        var data = ( byte* )Penumbra.CharacterUtility.DefaultResource( CharacterUtility.HumanCmpIdx ).Address;
+        var data = ( byte* )Penumbra.CharacterUtility.DefaultResource( InternalIndex ).Address;
         return *( float* )( data + RacialScalingStart + ToRspIndex( subRace ) * RspEntry.ByteSize + ( int )attribute * 4 );
     }
 

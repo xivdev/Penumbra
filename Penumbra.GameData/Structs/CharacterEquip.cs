@@ -1,12 +1,8 @@
 using System;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Util;
 
 namespace Penumbra.GameData.Structs;
-
-public unsafe struct CharacterArmorData
-{
-    public fixed byte Data[40];
-}
 
 public readonly unsafe struct CharacterEquip
 {
@@ -25,7 +21,6 @@ public readonly unsafe struct CharacterEquip
 
     public ref CharacterArmor this[ EquipSlot slot ]
         => ref _armor[ IndexOf( slot ) ];
-
 
     public ref CharacterArmor Head
         => ref _armor[ 0 ];
@@ -108,4 +103,13 @@ public readonly unsafe struct CharacterEquip
             _                 => throw new ArgumentOutOfRangeException( nameof( slot ), slot, null ),
         };
     }
+
+
+    public void Load( CharacterEquip source )
+    {
+        Functions.MemCpyUnchecked( _armor, source._armor, sizeof( CharacterArmor ) * 10 );
+    }
+
+    public bool Equals( CharacterEquip other )
+        => Functions.MemCmpUnchecked( ( void* )_armor, ( void* )other._armor, sizeof( CharacterArmor ) * 10 ) == 0;
 }

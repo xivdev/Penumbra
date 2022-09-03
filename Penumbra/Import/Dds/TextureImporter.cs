@@ -1,14 +1,12 @@
 using System;
 using System.IO;
 using Lumina.Data.Files;
-using OtterGui;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using Functions = Penumbra.GameData.Util.Functions;
 
 namespace Penumbra.Import.Dds;
 
-public class TextureImporter
+public static class TextureImporter
 {
     private static void WriteHeader( byte[] target, int width, int height )
     {
@@ -30,39 +28,6 @@ public class TextureImporter
         }
     }
 
-    public static unsafe bool RgbaBytesToDds( byte[] rgba, int width, int height, out byte[] ddsData )
-    {
-        var header = new DdsHeader()
-        {
-            Caps1  = DdsHeader.DdsCaps1.Complex | DdsHeader.DdsCaps1.Texture | DdsHeader.DdsCaps1.MipMap,
-            Depth  = 1,
-            Flags  = DdsHeader.DdsFlags.Required | DdsHeader.DdsFlags.Pitch | DdsHeader.DdsFlags.MipMapCount,
-            Height = height,
-            Width  = width,
-            PixelFormat = new PixelFormat()
-            {
-                Flags       = PixelFormat.FormatFlags.AlphaPixels | PixelFormat.FormatFlags.RGB,
-                FourCC      = 0,
-                BBitMask    = 0x000000FF,
-                GBitMask    = 0x0000FF00,
-                RBitMask    = 0x00FF0000,
-                ABitMask    = 0xFF000000,
-                Size        = 32,
-                RgbBitCount = 32,
-            },
-        };
-        ddsData = new byte[4 + DdsHeader.Size + rgba.Length];
-        header.Write( ddsData, 0 );
-        rgba.CopyTo( ddsData, DdsHeader.Size + 4 );
-        for( var i = 0; i < rgba.Length; i += 4 )
-        {
-            ( ddsData[ DdsHeader.Size       + i ], ddsData[ DdsHeader.Size + i                            + 2 ] )
-                = ( ddsData[ DdsHeader.Size + i                            + 2 ], ddsData[ DdsHeader.Size + i ] );
-        }
-
-        return true;
-    }
-
     public static bool RgbaBytesToTex( byte[] rgba, int width, int height, out byte[] texData )
     {
         texData = Array.Empty< byte >();
@@ -74,6 +39,8 @@ public class TextureImporter
         texData = new byte[80 + width * height * 4];
         WriteHeader( texData, width, height );
         rgba.CopyTo( texData.AsSpan( 80 ) );
+        for( var i = 80; i < texData.Length; i += 4 )
+            (texData[ i  ], texData[i + 2]) = (texData[ i + 2], texData[i]);
         return true;
     }
 
@@ -91,7 +58,4 @@ public class TextureImporter
         texData = buffer;
         return true;
     }
-
-    public void Import( string inputFile )
-    { }
 }

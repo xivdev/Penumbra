@@ -10,6 +10,7 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Files;
 using Penumbra.Mods;
 using Penumbra.Util;
 using static Penumbra.Mods.Mod;
@@ -40,6 +41,8 @@ public partial class ModEditWindow : Window, IDisposable
             MaximumSize = 4000 * Vector2.One,
         };
         _selectedFiles.Clear();
+        _modelTab.Reset();
+        _materialTab.Reset();
     }
 
     public void ChangeOption( ISubMod? subMod )
@@ -132,7 +135,9 @@ public partial class ModEditWindow : Window, IDisposable
         DrawSwapTab();
         DrawMissingFilesTab();
         DrawDuplicatesTab();
-        DrawMaterialChangeTab();
+        DrawMaterialReassignmentTab();
+        _modelTab.Draw();
+        _materialTab.Draw();
         DrawTextureTab();
     }
 
@@ -223,118 +228,41 @@ public partial class ModEditWindow : Window, IDisposable
         }
     }
 
-    private void DrawMaterialChangeTab()
+    private void DrawMissingFilesTab()
     {
-        using var tab = ImRaii.TabItem( "Model Materials" );
-        if( !tab )
+        if( _editor!.MissingFiles.Count == 0 )
         {
             return;
         }
 
-        if( _editor!.ModelFiles.Count == 0 )
-        {
-            ImGui.NewLine();
-            ImGui.TextUnformatted( "No .mdl files detected." );
-        }
-        else
-        {
-            ImGui.NewLine();
-            MaterialSuffix.Draw( _editor, ImGuiHelpers.ScaledVector2( 175, 0 ) );
-            ImGui.NewLine();
-            using var child = ImRaii.Child( "##mdlFiles", -Vector2.One, true );
-            if( !child )
-            {
-                return;
-            }
-
-            using var table = ImRaii.Table( "##files", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit, -Vector2.One );
-            if( !table )
-            {
-                return;
-            }
-
-            var iconSize = ImGui.GetFrameHeight() * Vector2.One;
-            foreach( var (info, idx) in _editor.ModelFiles.WithIndex() )
-            {
-                using var id = ImRaii.PushId( idx );
-                ImGui.TableNextColumn();
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Save.ToIconString(), iconSize,
-                       "Save the changed mdl file.\nUse at own risk!", !info.Changed, true ) )
-                {
-                    info.Save();
-                }
-
-                ImGui.TableNextColumn();
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Recycle.ToIconString(), iconSize,
-                       "Restore current changes to default.", !info.Changed, true ) )
-                {
-                    info.Restore();
-                }
-
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( info.Path.FullName[ ( _mod!.ModPath.FullName.Length + 1 ).. ] );
-                ImGui.TableNextColumn();
-                ImGui.SetNextItemWidth( 400 * ImGuiHelpers.GlobalScale );
-                var tmp = info.CurrentMaterials[ 0 ];
-                if( ImGui.InputText( "##0", ref tmp, 64 ) )
-                {
-                    info.SetMaterial( tmp, 0 );
-                }
-
-                for( var i = 1; i < info.Count; ++i )
-                {
-                    ImGui.TableNextColumn();
-                    ImGui.TableNextColumn();
-                    ImGui.TableNextColumn();
-                    ImGui.TableNextColumn();
-                    ImGui.SetNextItemWidth( 400 * ImGuiHelpers.GlobalScale );
-                    tmp = info.CurrentMaterials[ i ];
-                    if( ImGui.InputText( $"##{i}", ref tmp, 64 ) )
-                    {
-                        info.SetMaterial( tmp, i );
-                    }
-                }
-            }
-        }
-    }
-
-    private void DrawMissingFilesTab()
-    {
         using var tab = ImRaii.TabItem( "Missing Files" );
         if( !tab )
         {
             return;
         }
 
-        if( _editor!.MissingFiles.Count == 0 )
+        ImGui.NewLine();
+        if( ImGui.Button( "Remove Missing Files from Mod" ) )
         {
-            ImGui.NewLine();
-            ImGui.TextUnformatted( "No missing files detected." );
+            _editor.RemoveMissingPaths();
         }
-        else
+
+        using var child = ImRaii.Child( "##unusedFiles", -Vector2.One, true );
+        if( !child )
         {
-            if( ImGui.Button( "Remove Missing Files from Mod" ) )
-            {
-                _editor.RemoveMissingPaths();
-            }
+            return;
+        }
 
-            using var child = ImRaii.Child( "##unusedFiles", -Vector2.One, true );
-            if( !child )
-            {
-                return;
-            }
+        using var table = ImRaii.Table( "##missingFiles", 1, ImGuiTableFlags.RowBg, -Vector2.One );
+        if( !table )
+        {
+            return;
+        }
 
-            using var table = ImRaii.Table( "##missingFiles", 1, ImGuiTableFlags.RowBg, -Vector2.One );
-            if( !table )
-            {
-                return;
-            }
-
-            foreach( var path in _editor.MissingFiles )
-            {
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( path.FullName );
-            }
+        foreach( var path in _editor.MissingFiles )
+        {
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted( path.FullName );
         }
     }
 
@@ -575,7 +503,12 @@ public partial class ModEditWindow : Window, IDisposable
 
     public ModEditWindow()
         : base( WindowBaseLabel )
-    { }
+    {
+        _materialTab = new FileEditor< MtrlFile >( "Materials (WIP)", ".mtrl", () => _editor?.MtrlFiles ?? Array.Empty< Editor.FileRegistry >(),
+            DrawMaterialPanel );
+        _modelTab = new FileEditor< MdlFile >( "Models (WIP)", ".mdl", () => _editor?.MdlFiles ?? Array.Empty< Editor.FileRegistry >(),
+            DrawModelPanel );
+    }
 
     public void Dispose()
     {

@@ -15,6 +15,7 @@
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
         <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -60,6 +61,9 @@
             <HintPath>$(DalamudLibPath)Newtonsoft.Json.dll</HintPath>
             <Private>False</Private>
         </Reference>
+        <Reference Include="OtterTex.dll">
+            <HintPath>lib\OtterTex.dll</HintPath>
+        </Reference>
     </ItemGroup>
 
     <ItemGroup>
@@ -74,8 +78,12 @@
     </ItemGroup>
 
     <ItemGroup>
+        <None Update="lib\DirectXTexC.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <TargetPath>DirectXTexC.dll</TargetPath>
+        </None>
         <None Update="Penumbra.json">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </None>
     </ItemGroup>
 

@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Meta.Files;
@@ -53,7 +54,7 @@ public sealed unsafe class EstFile : MetaBaseFile
             ResizeResources( Length + IncreaseSize );
         }
 
-        var control = ( Info* )( Data + 4 );
+        var control = ( Info* )( Data      + 4 );
         var entries = ( ushort* )( control + Count );
 
         for( var i = Count - 1; i >= idx; --i )
@@ -95,7 +96,7 @@ public sealed unsafe class EstFile : MetaBaseFile
 
         for( var i = idx; i < Count - 1; ++i )
         {
-            entries[i - 2] = entries[i + 1];
+            entries[ i - 2 ] = entries[ i + 1 ];
         }
 
         entries[ Count - 3 ] = 0;
@@ -174,7 +175,7 @@ public sealed unsafe class EstFile : MetaBaseFile
     }
 
     public EstFile( EstManipulation.EstType estType )
-        : base( ( int )estType )
+        : base( ( CharacterUtility.Index )estType )
     {
         var length = DefaultData.Length;
         AllocateData( length + IncreaseSize );
@@ -182,11 +183,11 @@ public sealed unsafe class EstFile : MetaBaseFile
     }
 
     public ushort GetDefault( GenderRace genderRace, ushort setId )
-        => GetDefault( ( EstManipulation.EstType )Index, genderRace, setId );
+        => GetDefault( Index, genderRace, setId );
 
-    public static ushort GetDefault( EstManipulation.EstType estType, GenderRace genderRace, ushort setId )
+    public static ushort GetDefault( Interop.CharacterUtility.InternalIndex index, GenderRace genderRace, ushort setId )
     {
-        var data  = ( byte* )Penumbra.CharacterUtility.DefaultResource( ( int )estType ).Address;
+        var data  = ( byte* )Penumbra.CharacterUtility.DefaultResource( index ).Address;
         var count = *( int* )data;
         var span  = new ReadOnlySpan< Info >( data + 4, count );
         var (idx, found) = FindEntry( span, genderRace, setId );
@@ -197,4 +198,10 @@ public sealed unsafe class EstFile : MetaBaseFile
 
         return *( ushort* )( data + 4 + count * EntryDescSize + idx * EntrySize );
     }
+
+    public static ushort GetDefault( CharacterUtility.Index index, GenderRace genderRace, ushort setId )
+        => GetDefault( Interop.CharacterUtility.ReverseIndices[ ( int )index ], genderRace, setId );
+
+    public static ushort GetDefault( EstManipulation.EstType estType, GenderRace genderRace, ushort setId )
+        => GetDefault( ( CharacterUtility.Index )estType, genderRace, setId );
 }

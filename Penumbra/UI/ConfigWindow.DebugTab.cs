@@ -87,9 +87,9 @@ public partial class ConfigWindow
             var manager = Penumbra.ModManager;
             PrintValue( "Penumbra Version", $"{Penumbra.Version} {DebugVersionString}" );
             PrintValue( "Git Commit Hash", Penumbra.CommitHash );
-            PrintValue( "Current Collection", Penumbra.CollectionManager.Current.Name );
+            PrintValue( SelectedCollection, Penumbra.CollectionManager.Current.Name );
             PrintValue( "    has Cache", Penumbra.CollectionManager.Current.HasCache.ToString() );
-            PrintValue( "Default Collection", Penumbra.CollectionManager.Default.Name );
+            PrintValue( DefaultCollection, Penumbra.CollectionManager.Default.Name );
             PrintValue( "    has Cache", Penumbra.CollectionManager.Default.HasCache.ToString() );
             PrintValue( "Mod Manager BasePath", manager.BasePath.Name );
             PrintValue( "Mod Manager BasePath-Full", manager.BasePath.FullName );
@@ -239,7 +239,8 @@ public partial class ConfigWindow
             for( var i = 0; i < CharacterUtility.RelevantIndices.Length; ++i )
             {
                 var idx      = CharacterUtility.RelevantIndices[ i ];
-                var resource = ( ResourceHandle* )Penumbra.CharacterUtility.Address->Resources[ idx ];
+                var intern   = new CharacterUtility.InternalIndex( i );
+                var resource = ( ResourceHandle* )Penumbra.CharacterUtility.Address->Resource(idx);
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted( $"0x{( ulong )resource:X}" );
                 ImGui.TableNextColumn();
@@ -261,18 +262,18 @@ public partial class ConfigWindow
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted( $"{resource->GetData().Length}" );
                 ImGui.TableNextColumn();
-                ImGui.Selectable( $"0x{Penumbra.CharacterUtility.DefaultResources[ i ].Address:X}" );
+                ImGui.Selectable( $"0x{Penumbra.CharacterUtility.DefaultResource(intern).Address:X}" );
                 if( ImGui.IsItemClicked() )
                 {
                     ImGui.SetClipboardText( string.Join( "\n",
-                        new ReadOnlySpan< byte >( ( byte* )Penumbra.CharacterUtility.DefaultResources[ i ].Address,
-                            Penumbra.CharacterUtility.DefaultResources[ i ].Size ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
+                        new ReadOnlySpan< byte >( ( byte* )Penumbra.CharacterUtility.DefaultResource(intern).Address,
+                            Penumbra.CharacterUtility.DefaultResource(intern).Size ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
                 }
 
                 ImGuiUtil.HoverTooltip( "Click to copy bytes to clipboard." );
 
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted( $"{Penumbra.CharacterUtility.DefaultResources[ i ].Size}" );
+                ImGui.TextUnformatted( $"{Penumbra.CharacterUtility.DefaultResource(intern).Size}" );
             }
         }
 

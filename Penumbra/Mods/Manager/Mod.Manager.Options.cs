@@ -70,6 +70,7 @@ public sealed partial class Mod
             var group = mod._groups[ groupIdx ];
             ModOptionChanged.Invoke( ModOptionChangeType.PrepareChange, mod, groupIdx, -1, -1 );
             mod._groups.RemoveAt( groupIdx );
+            UpdateSubModPositions( mod, groupIdx );
             group.DeleteFile( mod.ModPath, groupIdx );
             ModOptionChanged.Invoke( ModOptionChangeType.GroupDeleted, mod, groupIdx, -1, -1 );
         }
@@ -78,15 +79,19 @@ public sealed partial class Mod
         {
             if( mod._groups.Move( groupIdxFrom, groupIdxTo ) )
             {
-                foreach( var (group, groupIdx) in mod._groups.WithIndex().Skip( Math.Min( groupIdxFrom, groupIdxTo ) ) )
-                {
-                    foreach( var (o, optionIdx) in group.OfType<SubMod>().WithIndex() )
-                    {
-                        o.SetPosition( groupIdx, optionIdx );
-                    }
-                }
-
+                UpdateSubModPositions( mod, Math.Min( groupIdxFrom, groupIdxTo ) );
                 ModOptionChanged.Invoke( ModOptionChangeType.GroupMoved, mod, groupIdxFrom, -1, groupIdxTo );
+            }
+        }
+
+        private static void UpdateSubModPositions( Mod mod, int fromGroup )
+        {
+            foreach( var (group, groupIdx) in mod._groups.WithIndex().Skip( fromGroup ) )
+            {
+                foreach( var (o, optionIdx) in group.OfType<SubMod>().WithIndex() )
+                {
+                    o.SetPosition( groupIdx, optionIdx );
+                }
             }
         }
 
