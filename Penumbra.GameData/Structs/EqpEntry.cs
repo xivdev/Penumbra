@@ -24,7 +24,7 @@ public enum EqpEntry : ulong
     BodyShowBracelet         = 0x10_00ul,
     BodyShowTail             = 0x20_00ul,
     BodyDisableBreastPhysics = 0x40_00ul,
-    BodyHasVfxObject         = 0x80_00ul,
+    BodyUsesEvpTable         = 0x80_00ul,
     BodyMask                 = 0xFF_FFul,
 
     LegsEnabled      = 0x01ul << 16,
@@ -75,7 +75,7 @@ public enum EqpEntry : ulong
     _55                   = 0x00_80_00ul << 40,
     HeadShowHrothgarHat   = 0x01_00_00ul << 40,
     HeadShowVieraHat      = 0x02_00_00ul << 40,
-    HeadHasVfxObject      = 0x04_00_00ul << 40,
+    HeadUsesEvpTable      = 0x04_00_00ul << 40,
     _59                   = 0x08_00_00ul << 40,
     _60                   = 0x10_00_00ul << 40,
     _61                   = 0x20_00_00ul << 40,
@@ -151,7 +151,7 @@ public static class Eqp
             EqpEntry.BodyShowBracelet         => EquipSlot.Body,
             EqpEntry.BodyShowTail             => EquipSlot.Body,
             EqpEntry.BodyDisableBreastPhysics => EquipSlot.Body,
-            EqpEntry.BodyHasVfxObject         => EquipSlot.Body,
+            EqpEntry.BodyUsesEvpTable         => EquipSlot.Body,
 
             EqpEntry.LegsEnabled      => EquipSlot.Legs,
             EqpEntry.LegsHideKneePads => EquipSlot.Legs,
@@ -198,7 +198,7 @@ public static class Eqp
             EqpEntry._55                   => EquipSlot.Head,
             EqpEntry.HeadShowHrothgarHat   => EquipSlot.Head,
             EqpEntry.HeadShowVieraHat      => EquipSlot.Head,
-            EqpEntry.HeadHasVfxObject      => EquipSlot.Head,
+            EqpEntry.HeadUsesEvpTable      => EquipSlot.Head,
 
             // currently unused
             EqpEntry._59 => EquipSlot.Unknown,
@@ -230,7 +230,7 @@ public static class Eqp
             EqpEntry.BodyShowBracelet         => "Show Bracelet",
             EqpEntry.BodyShowTail             => "Show Tail",
             EqpEntry.BodyDisableBreastPhysics => "Disable Breast Physics",
-            EqpEntry.BodyHasVfxObject         => "Has Special Effects",
+            EqpEntry.BodyUsesEvpTable         => "Uses EVP Table",
 
             EqpEntry.LegsEnabled      => "Enabled",
             EqpEntry.LegsHideKneePads => "Hide Knee Pads",
@@ -277,7 +277,7 @@ public static class Eqp
             EqpEntry._55                   => "Unknown 55",
             EqpEntry.HeadShowHrothgarHat   => "Show on Hrothgar",
             EqpEntry.HeadShowVieraHat      => "Show on Viera",
-            EqpEntry.HeadHasVfxObject      => "Has Special Effects",
+            EqpEntry.HeadUsesEvpTable      => "Uses EVP Table",
 
             EqpEntry._59 => "Unknown 59",
             EqpEntry._60 => "Unknown 60",

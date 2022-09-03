@@ -8,7 +8,11 @@ using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
 using Penumbra.Mods;
 using SharpCompress.Archives;
+using SharpCompress.Archives.Rar;
+using SharpCompress.Archives.SevenZip;
+using SharpCompress.Archives.Zip;
 using SharpCompress.Common;
+using SharpCompress.Readers;
 
 namespace Penumbra.Import;
 
@@ -30,7 +34,14 @@ public partial class TexToolsImporter
         _currentModName    = modPackFile.Name;
         _currentGroupName  = string.Empty;
         _currentOptionName = DefaultTexToolsData.Name;
-        _currentNumFiles   = archive.Entries.Count( e => !e.IsDirectory );
+        _currentNumFiles =
+            archive switch
+            {
+                RarArchive r      => r.Entries.Count,
+                ZipArchive z      => z.Entries.Count,
+                SevenZipArchive s => s.Entries.Count,
+                _                 => archive.Entries.Count(),
+            };
         PluginLog.Log( $"    -> Importing {archive.Type} Archive." );
 
         _currentModDirectory = Mod.CreateModFolder( _baseDirectory, baseName );
@@ -42,18 +53,20 @@ public partial class TexToolsImporter
 
         State           = ImporterState.ExtractingModFiles;
         _currentFileIdx = 0;
-        foreach( var entry in archive.Entries )
+        var reader = archive.ExtractAllEntries();
+
+        while(reader.MoveToNextEntry())
         {
             _token.ThrowIfCancellationRequested();
 
-            if( entry.IsDirectory )
+            if( reader.Entry.IsDirectory )
             {
                 ++_currentFileIdx;
                 continue;
             }
 
-            PluginLog.Log( "        -> Extracting {0}", entry.Key );
-            entry.WriteToDirectory( _currentModDirectory.FullName, options );
+            PluginLog.Log( "        -> Extracting {0}", reader.Entry.Key );
+            reader.WriteEntryToDirectory( _currentModDirectory.FullName, options );
 
             ++_currentFileIdx;
         }

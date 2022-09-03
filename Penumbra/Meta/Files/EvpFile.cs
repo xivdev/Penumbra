@@ -9,7 +9,8 @@ namespace Penumbra.Meta.Files;
 // NumModels x [ModelId:ushort]
 //     Containing the relevant model IDs. Seems to be sorted.
 // NumModels x [DataArray]:512 Byte]
-// Containing Flags in each byte, 0x01 set for Body, 0x02 set for Helmet. Unsure where the index into this array comes from.
+// Containing Flags in each byte, 0x01 set for Body, 0x02 set for Helmet.
+// Each flag corresponds to a mount row from the Mounts table and determines whether the mount disables the effect.
 public unsafe class EvpFile : MetaBaseFile
 {
     public const int FlagArraySize = 512;

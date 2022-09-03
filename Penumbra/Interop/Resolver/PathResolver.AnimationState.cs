@@ -110,16 +110,19 @@ public unsafe partial class PathResolver
             var   old = _animationLoadCollection;
             try
             {
-                var getGameObjectIdx = ( ( delegate* unmanaged< IntPtr, int >** )timeline )[ 0 ][ 28 ];
-                var idx              = getGameObjectIdx( timeline );
-                if( idx >= 0 && idx < Dalamud.Objects.Length )
+                if( timeline != IntPtr.Zero )
                 {
-                    var obj = Dalamud.Objects[ idx ];
-                    _animationLoadCollection = obj != null ? IdentifyCollection( ( GameObject* )obj.Address ) : null;
-                }
-                else
-                {
-                    _animationLoadCollection = null;
+                    var getGameObjectIdx = ( ( delegate* unmanaged< IntPtr, int >** )timeline )[ 0 ][ 28 ];
+                    var idx              = getGameObjectIdx( timeline );
+                    if( idx >= 0 && idx < Dalamud.Objects.Length )
+                    {
+                        var obj = Dalamud.Objects[ idx ];
+                        _animationLoadCollection = obj != null ? IdentifyCollection( ( GameObject* )obj.Address ) : null;
+                    }
+                    else
+                    {
+                        _animationLoadCollection = null;
+                    }
                 }
             }
             finally
