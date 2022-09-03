@@ -227,7 +227,7 @@ public partial class PathResolver
         // Implementation
         [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
         private IntPtr ResolvePath( IntPtr drawObject, IntPtr path )
-            => _parent._paths.ResolvePath( (IntPtr?)FindParent( drawObject, out _), FindParent( drawObject, out var collection ) == null
+            => _parent._paths.ResolvePath( (IntPtr?)FindParent( drawObject, out _) ?? IntPtr.Zero, FindParent( drawObject, out var collection ) == null
                 ? Penumbra.CollectionManager.Default
                 : collection.ModCollection, path );
 
@@ -251,7 +251,7 @@ public partial class PathResolver
             }
 
             parent = FindParent( parentObject, out collection );
-            return _parent._paths.ResolvePath( (IntPtr?)parent, parent == null
+            return _parent._paths.ResolvePath( (IntPtr?)parent ?? IntPtr.Zero, parent == null
                 ? Penumbra.CollectionManager.Default
                 : collection.ModCollection, path );
         }
