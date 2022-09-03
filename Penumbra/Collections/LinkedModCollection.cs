@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 
 namespace Penumbra.Collections;
@@ -6,11 +6,7 @@ namespace Penumbra.Collections;
 public class LinkedModCollection
 {
     private IntPtr? _associatedGameObject;
-    public IntPtr AssociatedGameObject
-    {
-        get => _associatedGameObject ?? IntPtr.Zero;
-        set => _associatedGameObject = value;
-    }
+    public IntPtr AssociatedGameObject = IntPtr.Zero;
     public ModCollection ModCollection;
 
     public LinkedModCollection(ModCollection modCollection)
@@ -18,15 +14,13 @@ public class LinkedModCollection
         ModCollection = modCollection;
     }
 
-    public LinkedModCollection(IntPtr? gameObject, ModCollection collection)
+    public LinkedModCollection(IntPtr gameObject, ModCollection collection)
     {
-        AssociatedGameObject = gameObject ?? IntPtr.Zero;
+        AssociatedGameObject = gameObject;
         ModCollection = collection; 
     }
 
-    public unsafe LinkedModCollection(GameObject* gameObject, ModCollection collection)
+    public unsafe LinkedModCollection(GameObject* gameObject, ModCollection collection) : this((IntPtr)gameObject, collection)
     {
-        AssociatedGameObject = ( IntPtr )gameObject;
-        ModCollection = collection;
     }
 }

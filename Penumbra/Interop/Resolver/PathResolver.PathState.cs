@@ -81,7 +81,7 @@ public unsafe partial class PathResolver
 
         // Just add or remove the resolved path.
         [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
-        public IntPtr ResolvePath( IntPtr? gameObject, ModCollection collection, IntPtr path )
+        public IntPtr ResolvePath( IntPtr gameObject, ModCollection collection, IntPtr path )
         {
             if( path == IntPtr.Zero )
             {
@@ -94,7 +94,7 @@ public unsafe partial class PathResolver
         }
 
         // Special handling for paths so that we do not store non-owned temporary strings in the dictionary.
-        public void SetCollection( IntPtr? gameObject, Utf8String path, ModCollection collection )
+        public void SetCollection( IntPtr gameObject, Utf8String path, ModCollection collection )
         {
             if( _pathCollections.ContainsKey( path ) || path.IsOwned )
             {
