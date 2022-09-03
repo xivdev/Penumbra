@@ -13,6 +13,7 @@ using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Resolver;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 
@@ -21,7 +22,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 12 );
+        => ( 4, 13 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -54,7 +55,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public bool Valid
         => _penumbra != null;
 
-    public PenumbraApi( Penumbra penumbra )
+    public unsafe PenumbraApi( Penumbra penumbra )
     {
         _penumbra = penumbra;
         _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
@@ -66,10 +67,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         Penumbra.CollectionManager.CollectionChanged += SubscribeToNewCollections;
+        Penumbra.ResourceLoader.ResourceLoaded += OnResourceLoaded;
     }
 
-    public void Dispose()
+    public unsafe void Dispose()
     {
+        Penumbra.ResourceLoader.ResourceLoaded -= OnResourceLoaded;
         Penumbra.CollectionManager.CollectionChanged -= SubscribeToNewCollections;
         _penumbra                                    =  null;
         _lumina                                      =  null;
@@ -90,6 +93,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Penumbra.Config.ModDirectory;
     }
 
+    private unsafe void OnResourceLoaded( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath, LinkedModCollection? resolveData )
+    {
+        if( resolveData == null ) return;
+        GameObjectResourceResolved?.Invoke( resolveData.AssociatedGameObject, originalPath.ToString(), manipulatedPath?.ToString() ?? originalPath.ToString() );
+    }
+
     public event Action< string, bool >? ModDirectoryChanged
     {
         add => Penumbra.ModManager.ModDirectoryChanged += value;
@@ -103,6 +112,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     public event ChangedItemHover? ChangedItemTooltip;
+    public event GameObjectResourceResolvedDelegate? GameObjectResourceResolved;
 
     public void RedrawObject( int tableIndex, RedrawType setting )
     {
@@ -232,7 +242,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         var (obj, collection) = PathResolver.IdentifyDrawObject( drawObject );
-        return ( obj, collection.Name );
+        return ( obj, collection.ModCollection.Name );
     }
 
     public int GetCutsceneParentIndex( int actor )
