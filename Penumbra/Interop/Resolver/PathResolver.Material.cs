@@ -1,10 +1,10 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
@@ -97,11 +97,9 @@ public unsafe partial class PathResolver
 #if DEBUG
                 PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", name, path );
 #endif
-                IntPtr gameObjAddr = IntPtr.Zero;
-                if ( Dalamud.Objects.FindFirst(f => f.Name.TextValue == name, out var gameObj ) )
-                {
-                    gameObjAddr = gameObj.Address;
-                }
+                
+                var objFromObjTable = Dalamud.Objects.FirstOrDefault( f => f.Name.TextValue == name );
+                IntPtr gameObjAddr = objFromObjTable?.Address ?? IntPtr.Zero;
                 _paths.SetCollection( gameObjAddr, path, collection );
             }
             else
