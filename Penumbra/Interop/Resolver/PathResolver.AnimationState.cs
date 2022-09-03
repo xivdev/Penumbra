@@ -15,8 +15,8 @@ public unsafe partial class PathResolver
     {
         private readonly DrawObjectState _drawObjectState;
 
-        private ModCollection? _animationLoadCollection;
-        private ModCollection? _lastAvfxCollection;
+        private LinkedModCollection? _animationLoadCollection;
+        private LinkedModCollection? _lastAvfxCollection;
 
         public AnimationState( DrawObjectState drawObjectState )
         {
@@ -24,7 +24,7 @@ public unsafe partial class PathResolver
             SignatureHelper.Initialise( this );
         }
 
-        public bool HandleFiles( ResourceType type, Utf8GamePath _, [NotNullWhen( true )] out ModCollection? collection )
+        public bool HandleFiles( ResourceType type, Utf8GamePath _, [NotNullWhen( true )] out LinkedModCollection? collection )
         {
             switch( type )
             {
@@ -39,7 +39,7 @@ public unsafe partial class PathResolver
 
                     break;
                 case ResourceType.Avfx:
-                    _lastAvfxCollection = _animationLoadCollection ?? Penumbra.CollectionManager.Default;
+                    _lastAvfxCollection = _animationLoadCollection ?? new LinkedModCollection(Penumbra.CollectionManager.Default);
                     if( _animationLoadCollection != null )
                     {
                         collection = _animationLoadCollection;
@@ -147,7 +147,7 @@ public unsafe partial class PathResolver
         {
             var last = _animationLoadCollection;
             _animationLoadCollection = _drawObjectState.LastCreatedCollection
-             ?? ( FindParent( drawObject, out var collection ) != null ? collection : Penumbra.CollectionManager.Default );
+             ?? ( FindParent( drawObject, out var collection ) != null ? collection : new LinkedModCollection(Penumbra.CollectionManager.Default) );
             _characterBaseLoadAnimationHook.Original( drawObject );
             _animationLoadCollection = last;
         }

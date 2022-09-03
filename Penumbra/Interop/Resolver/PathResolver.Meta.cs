@@ -82,8 +82,8 @@ public unsafe partial class PathResolver
             var collection = GetCollection( drawObject );
             if( collection != null )
             {
-                using var eqp  = MetaChanger.ChangeEqp( collection );
-                using var eqdp = MetaChanger.ChangeEqdp( collection );
+                using var eqp  = MetaChanger.ChangeEqp( collection.ModCollection );
+                using var eqdp = MetaChanger.ChangeEqdp( collection.ModCollection );
                 _onModelLoadCompleteHook.Original.Invoke( drawObject );
             }
             else
@@ -109,8 +109,8 @@ public unsafe partial class PathResolver
             var collection = GetCollection( drawObject );
             if( collection != null )
             {
-                using var eqp  = MetaChanger.ChangeEqp( collection );
-                using var eqdp = MetaChanger.ChangeEqdp( collection );
+                using var eqp  = MetaChanger.ChangeEqp( collection.ModCollection );
+                using var eqdp = MetaChanger.ChangeEqdp( collection.ModCollection );
                 _updateModelsHook.Original.Invoke( drawObject );
             }
             else
@@ -217,7 +217,7 @@ public unsafe partial class PathResolver
             var collection = GetCollection( drawObject );
             if( collection != null )
             {
-                return ChangeEqp( collection );
+                return ChangeEqp( collection.ModCollection );
             }
 
             return new MetaChanger( MetaManipulation.Type.Unknown );
@@ -231,7 +231,7 @@ public unsafe partial class PathResolver
                 var collection = GetCollection( drawObject );
                 if( collection != null )
                 {
-                    return ChangeEqdp( collection );
+                    return ChangeEqdp( collection.ModCollection );
                 }
             }
 
@@ -249,7 +249,7 @@ public unsafe partial class PathResolver
             var collection = GetCollection( drawObject );
             if( collection != null )
             {
-                collection.SetGmpFiles();
+                collection.ModCollection.SetGmpFiles();
                 return new MetaChanger( MetaManipulation.Type.Gmp );
             }
 
@@ -261,21 +261,21 @@ public unsafe partial class PathResolver
             var collection = GetCollection( drawObject );
             if( collection != null )
             {
-                collection.SetEstFiles();
+                collection.ModCollection.SetEstFiles();
                 return new MetaChanger( MetaManipulation.Type.Est );
             }
 
             return new MetaChanger( MetaManipulation.Type.Unknown );
         }
 
-        public static MetaChanger ChangeCmp( GameObject* gameObject, out ModCollection? collection )
+        public static MetaChanger ChangeCmp( GameObject* gameObject, out LinkedModCollection? collection )
         {
             if( gameObject != null )
             {
                 collection = IdentifyCollection( gameObject );
-                if( collection != Penumbra.CollectionManager.Default && collection.HasCache )
+                if( collection.ModCollection != Penumbra.CollectionManager.Default && collection.ModCollection.HasCache )
                 {
-                    collection.SetCmpFiles();
+                    collection.ModCollection.SetCmpFiles();
                     return new MetaChanger( MetaManipulation.Type.Rsp );
                 }
             }
@@ -292,7 +292,7 @@ public unsafe partial class PathResolver
             var collection = GetCollection( drawObject );
             if( collection != null )
             {
-                collection.SetCmpFiles();
+                collection.ModCollection.SetCmpFiles();
                 return new MetaChanger( MetaManipulation.Type.Rsp );
             }
 

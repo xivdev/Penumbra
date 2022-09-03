@@ -139,11 +139,11 @@ public unsafe partial class PathResolver
     }
 
     // Identify the correct collection for a GameObject by index and name.
-    private static ModCollection IdentifyCollection( GameObject* gameObject )
+    private static LinkedModCollection IdentifyCollection( GameObject* gameObject )
     {
         if( gameObject == null )
         {
-            return Penumbra.CollectionManager.Default;
+            return new LinkedModCollection(Penumbra.CollectionManager.Default);
         }
 
         try
@@ -153,8 +153,8 @@ public unsafe partial class PathResolver
             // Actors are also not named. So use Yourself > Players > Racial > Default.
             if( !Dalamud.ClientState.IsLoggedIn )
             {
-                return Penumbra.CollectionManager.ByType( CollectionType.Yourself )
-                 ?? ( CollectionByActor( string.Empty, gameObject, out var c ) ? c : Penumbra.CollectionManager.Default );
+                return new LinkedModCollection(gameObject, Penumbra.CollectionManager.ByType( CollectionType.Yourself )
+                 ?? ( CollectionByActor( string.Empty, gameObject, out var c ) ? c : Penumbra.CollectionManager.Default ));
             }
             else
             {
@@ -163,7 +163,7 @@ public unsafe partial class PathResolver
                 && gameObject->ObjectKind == ( byte )ObjectKind.EventNpc
                 && gameObject->DataID is 1011832 or 1011021 ) // cf. "E8 ?? ?? ?? ?? 0F B6 F8 88 45", male or female retainer
                 {
-                    return Penumbra.CollectionManager.Default;
+                    return new LinkedModCollection((IntPtr)gameObject, Penumbra.CollectionManager.Default);
                 }
 
                 string? actorName = null;
@@ -174,7 +174,7 @@ public unsafe partial class PathResolver
                     if( actorName.Length > 0
                     && CollectionByActorName( actorName, out var actorCollection ) )
                     {
-                        return actorCollection;
+                        return new LinkedModCollection(gameObject, actorCollection);
                     }
                 }
 
@@ -193,17 +193,17 @@ public unsafe partial class PathResolver
                  ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
                 // First check temporary character collections, then the own configuration, then special collections.
-                return CollectionByActorName( actualName, out var c )
+                return new LinkedModCollection(gameObject, CollectionByActorName( actualName, out var c )
                     ? c
                     : CollectionByActor( actualName, gameObject, out c )
                         ? c
-                        : Penumbra.CollectionManager.Default;
+                        : Penumbra.CollectionManager.Default);
             }
         }
         catch( Exception e )
         {
             PluginLog.Error( $"Error identifying collection:\n{e}" );
-            return Penumbra.CollectionManager.Default;
+            return new LinkedModCollection(gameObject, Penumbra.CollectionManager.Default);
         }
     }
 

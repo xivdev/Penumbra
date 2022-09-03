@@ -2,6 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Penumbra.Collections;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -226,9 +227,9 @@ public partial class PathResolver
         // Implementation
         [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
         private IntPtr ResolvePath( IntPtr drawObject, IntPtr path )
-            => _parent._paths.ResolvePath( FindParent( drawObject, out var collection ) == null
+            => _parent._paths.ResolvePath( (IntPtr?)FindParent( drawObject, out _), FindParent( drawObject, out var collection ) == null
                 ? Penumbra.CollectionManager.Default
-                : collection, path );
+                : collection.ModCollection, path );
 
         // Weapons have the characters DrawObject as a parent,
         // but that may not be set yet when creating a new object, so we have to do the same detour
@@ -239,20 +240,20 @@ public partial class PathResolver
             var parent = FindParent( drawObject, out var collection );
             if( parent != null )
             {
-                return _parent._paths.ResolvePath( collection, path );
+                return _parent._paths.ResolvePath( (IntPtr)parent, collection.ModCollection, path );
             }
 
             var parentObject     = ( IntPtr )( ( DrawObject* )drawObject )->Object.ParentObject;
             var parentCollection = DrawObjects.CheckParentDrawObject( drawObject, parentObject );
             if( parentCollection != null )
             {
-                return _parent._paths.ResolvePath( parentCollection, path );
+                return _parent._paths.ResolvePath( (IntPtr)FindParent(parentObject, out _), parentCollection.ModCollection, path );
             }
 
             parent = FindParent( parentObject, out collection );
-            return _parent._paths.ResolvePath( parent == null
+            return _parent._paths.ResolvePath( (IntPtr?)parent, parent == null
                 ? Penumbra.CollectionManager.Default
-                : collection, path );
+                : collection.ModCollection, path );
         }
     }
 }

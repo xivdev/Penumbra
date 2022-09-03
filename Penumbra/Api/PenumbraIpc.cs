@@ -283,6 +283,7 @@ public partial class PenumbraIpc
     public const string LabelProviderReverseResolvePlayerPath = "Penumbra.ReverseResolvePlayerPath";
     public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
     public const string LabelProviderCreatedCharacterBase     = "Penumbra.CreatedCharacterBase";
+    public const string LabelProviderGameObjectResourcePathResolved = "Penumbra.GameObjectResourcePathResolved";
 
     internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
     internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
@@ -293,6 +294,7 @@ public partial class PenumbraIpc
     internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
     internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
     internal ICallGateProvider< IntPtr, string, IntPtr, object? >?                 ProviderCreatedCharacterBase;
+    internal ICallGateProvider<IntPtr, string, string, object?>? ProviderGameObjectResourcePathResolved;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
@@ -387,6 +389,21 @@ public partial class PenumbraIpc
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreatedCharacterBase}:\n{e}" );
         }
+
+        try
+        {
+            ProviderGameObjectResourcePathResolved = pi.GetIpcProvider<IntPtr, string, string, object?>( LabelProviderGameObjectResourcePathResolved );
+            Api.GameObjectResourceResolved += GameObjectResourceResolvdedEvent;
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGameObjectResourcePathResolved}:\n{e}" );
+        }
+    }
+
+    private void GameObjectResourceResolvdedEvent( IntPtr gameObject, string gamePath, string localPath )
+    {
+        ProviderGameObjectResourcePathResolved?.SendMessage( gameObject, gamePath, localPath );
     }
 
     private void DisposeResolveProviders()

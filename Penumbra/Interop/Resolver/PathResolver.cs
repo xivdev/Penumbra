@@ -40,7 +40,7 @@ public partial class PathResolver : IDisposable
     }
 
     // The modified resolver that handles game path resolving.
-    private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, object?) data )
+    private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, LinkedModCollection?) data )
     {
         // Check if the path was marked for a specific collection,
         // or if it is a file loaded by a material, and if we are currently in a material load,
@@ -54,11 +54,11 @@ public partial class PathResolver : IDisposable
          || DrawObjects.HandleDecalFile( type, gamePath, out collection );
         if( !nonDefault || collection == null )
         {
-            collection = Penumbra.CollectionManager.Default;
+            collection = new LinkedModCollection(Penumbra.CollectionManager.Default);
         }
 
         // Resolve using character/default collection first, otherwise forced, as usual.
-        var resolved = collection.ResolvePath( gamePath );
+        var resolved = collection.ModCollection.ResolvePath( gamePath );
 
         // Since mtrl files load their files separately, we need to add the new, resolved path
         // so that the functions loading tex and shpk can find that path and use its collection.
@@ -117,7 +117,7 @@ public partial class PathResolver : IDisposable
         _materials.Dispose();
     }
 
-    public static unsafe (IntPtr, ModCollection) IdentifyDrawObject( IntPtr drawObject )
+    public static unsafe (IntPtr, LinkedModCollection) IdentifyDrawObject( IntPtr drawObject )
     {
         var parent = FindParent( drawObject, out var collection );
         return ( ( IntPtr )parent, collection );
@@ -127,7 +127,7 @@ public partial class PathResolver : IDisposable
         => Cutscenes.GetParentIndex( idx );
 
     // Use the stored information to find the GameObject and Collection linked to a DrawObject.
-    public static unsafe GameObject* FindParent( IntPtr drawObject, out ModCollection collection )
+    public static unsafe GameObject* FindParent( IntPtr drawObject, out LinkedModCollection collection )
     {
         if( DrawObjects.TryGetValue( drawObject, out var data, out var gameObject ) )
         {
@@ -146,21 +146,21 @@ public partial class PathResolver : IDisposable
         return null;
     }
 
-    private static unsafe ModCollection? GetCollection( IntPtr drawObject )
+    private static unsafe LinkedModCollection? GetCollection( IntPtr drawObject )
     {
         var parent = FindParent( drawObject, out var collection );
-        if( parent == null || collection == Penumbra.CollectionManager.Default )
+        if( parent == null || collection.ModCollection == Penumbra.CollectionManager.Default )
         {
             return null;
         }
 
-        return collection.HasCache ? collection : null;
+        return collection.ModCollection.HasCache ? collection : null;
     }
 
-    internal IEnumerable< KeyValuePair< Utf8String, ModCollection > > PathCollections
+    internal IEnumerable< KeyValuePair< Utf8String, LinkedModCollection > > PathCollections
         => _paths.Paths;
 
-    internal IEnumerable< KeyValuePair< IntPtr, (ModCollection, int) > > DrawObjectMap
+    internal IEnumerable< KeyValuePair< IntPtr, (LinkedModCollection, int) > > DrawObjectMap
         => DrawObjects.DrawObjects;
 
     internal IEnumerable< KeyValuePair< int, global::Dalamud.Game.ClientState.Objects.Types.GameObject > > CutsceneActors

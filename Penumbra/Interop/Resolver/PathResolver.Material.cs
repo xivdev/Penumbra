@@ -4,6 +4,7 @@ using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
@@ -20,7 +21,7 @@ public unsafe partial class PathResolver
     {
         private readonly PathState _paths;
 
-        private ModCollection? _mtrlCollection;
+        private LinkedModCollection? _mtrlCollection;
 
         public MaterialState( PathState paths )
         {
@@ -29,7 +30,7 @@ public unsafe partial class PathResolver
         }
 
         // Check specifically for shpk and tex files whether we are currently in a material load.
-        public bool HandleSubFiles( ResourceType type, [NotNullWhen( true )] out ModCollection? collection )
+        public bool HandleSubFiles( ResourceType type, [NotNullWhen( true )] out LinkedModCollection? collection )
         {
             if( _mtrlCollection != null && type is ResourceType.Tex or ResourceType.Shpk )
             {
@@ -42,12 +43,12 @@ public unsafe partial class PathResolver
         }
 
         // Materials need to be set per collection so they can load their textures independently from each other.
-        public static void HandleCollection( ModCollection collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
-            out (FullPath?, object?) data )
+        public static void HandleCollection( LinkedModCollection collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
+            out (FullPath?, LinkedModCollection?) data )
         {
             if( nonDefault && type == ResourceType.Mtrl )
             {
-                var fullPath = new FullPath( $"|{collection.Name}_{collection.ChangeCounter}|{path}" );
+                var fullPath = new FullPath( $"|{collection.ModCollection.Name}_{collection.ModCollection.ChangeCounter}|{path}" );
                 data = ( fullPath, collection );
             }
             else
@@ -96,7 +97,12 @@ public unsafe partial class PathResolver
 #if DEBUG
                 PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", name, path );
 #endif
-                _paths.SetCollection( path, collection );
+                IntPtr gameObjAddr = IntPtr.Zero;
+                if ( Dalamud.Objects.FindFirst(f => f.Name.TextValue == name, out var gameObj ) )
+                {
+                    gameObjAddr = gameObj.Address;
+                }
+                _paths.SetCollection( gameObjAddr, path, collection );
             }
             else
             {

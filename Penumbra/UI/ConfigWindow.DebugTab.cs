@@ -177,7 +177,7 @@ public partial class ConfigWindow
                             ImGui.TableNextColumn();
                             ImGui.TextUnformatted( name );
                             ImGui.TableNextColumn();
-                            ImGui.TextUnformatted( c.Name );
+                            ImGui.TextUnformatted( c.ModCollection.Name );
                         }
                     }
                 }
@@ -195,7 +195,7 @@ public partial class ConfigWindow
                             ImGui.TableNextColumn();
                             ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
                             ImGui.TableNextColumn();
-                            ImGui.TextUnformatted( collection.Name );
+                            ImGui.TextUnformatted( collection.ModCollection.Name );
                         }
                     }
                 }

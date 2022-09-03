@@ -7,6 +7,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 
@@ -69,7 +70,7 @@ public unsafe partial class ResourceLoader
     }
 
     private void AddModifiedDebugInfo( Structs.ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
-        object? resolverInfo )
+        LinkedModCollection? resolverInfo )
     {
         if( manipulatedPath == null || manipulatedPath.Value.Crc64 == 0 )
         {
@@ -243,7 +244,7 @@ public unsafe partial class ResourceLoader
     private static void LogPath( Utf8GamePath path, bool synchronous )
         => PluginLog.Information( $"[ResourceLoader] Requested {path} {( synchronous ? "synchronously." : "asynchronously." )}" );
 
-    private static void LogResource( Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, object? _ )
+    private static void LogResource( Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, LinkedModCollection? _ )
     {
         var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
         PluginLog.Information( $"[ResourceLoader] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
