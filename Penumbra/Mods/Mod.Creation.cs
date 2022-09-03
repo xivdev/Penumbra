@@ -16,7 +16,7 @@ public partial class Mod
     //     - Not Empty
     //     - Unique, by appending (digit) for duplicates.
     //     - Containing no symbols invalid for FFXIV or windows paths.
-    internal static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName )
+    internal static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName, bool create = true )
     {
         var name = modListName;
         if( name.Length == 0 )
@@ -31,7 +31,11 @@ public partial class Mod
             throw new IOException( "Could not create mod folder: too many folders of the same name exist." );
         }
 
-        Directory.CreateDirectory( newModFolder );
+        if( create )
+        {
+            Directory.CreateDirectory( newModFolder );
+        }
+
         return new DirectoryInfo( newModFolder );
     }
 

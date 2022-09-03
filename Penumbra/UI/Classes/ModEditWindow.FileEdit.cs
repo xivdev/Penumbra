@@ -368,6 +368,16 @@ public partial class ModEditWindow
 
     private static bool DrawColorSetRow( MtrlFile file, int colorSetIdx, int rowIdx, bool disabled )
     {
+        static bool FixFloat( ref float val, float current )
+        {
+            if( val < 0 )
+            {
+                val = 0;
+            }
+
+            return val != current;
+        }
+
         using var id        = ImRaii.PushId( rowIdx );
         var       row       = file.ColorSets[ colorSetIdx ].Rows[ rowIdx ];
         var       hasDye    = file.ColorDyeSets.Length > colorSetIdx;
@@ -383,7 +393,7 @@ public partial class ModEditWindow
         ImGui.TextUnformatted( $"#{rowIdx + 1:D2}" );
 
         ImGui.TableNextColumn();
-        using var dis = ImRaii.Disabled(disabled);
+        using var dis = ImRaii.Disabled( disabled );
         ret |= ColorPicker( "##Diffuse", "Diffuse Color", row.Diffuse, c => file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].Diffuse = c );
         if( hasDye )
         {
@@ -397,7 +407,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         var tmpFloat = row.SpecularStrength;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##SpecularStrength", ref tmpFloat, 0.1f, 0f ) && tmpFloat != row.SpecularStrength )
+        if( ImGui.DragFloat( "##SpecularStrength", ref tmpFloat, 0.1f, 0f ) && FixFloat(ref tmpFloat, row.SpecularStrength) )
         {
             file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].SpecularStrength = tmpFloat;
             ret                                                           = true;
@@ -427,7 +437,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.GlossStrength;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##GlossStrength", ref tmpFloat, 0.1f, 0f ) && tmpFloat != row.GlossStrength )
+        if( ImGui.DragFloat( "##GlossStrength", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.GlossStrength ) )
         {
             file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].GlossStrength = tmpFloat;
             ret                                                        = true;
@@ -455,7 +465,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.MaterialRepeat.X;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##RepeatX", ref tmpFloat, 0.1f, 0f ) && tmpFloat != row.MaterialRepeat.X )
+        if( ImGui.DragFloat( "##RepeatX", ref tmpFloat, 0.1f, 0f ) && FixFloat(ref tmpFloat, row.MaterialRepeat.X) )
         {
             file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialRepeat = row.MaterialRepeat with { X = tmpFloat };
             ret                                                         = true;
@@ -465,7 +475,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         tmpFloat = row.MaterialRepeat.Y;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##RepeatY", ref tmpFloat, 0.1f, 0f ) && tmpFloat != row.MaterialRepeat.Y )
+        if( ImGui.DragFloat( "##RepeatY", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.MaterialRepeat.Y ) )
         {
             file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialRepeat = row.MaterialRepeat with { Y = tmpFloat };
             ret                                                         = true;
@@ -476,7 +486,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.MaterialSkew.X;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##SkewX", ref tmpFloat, 0.1f, 0f ) && tmpFloat != row.MaterialSkew.X )
+        if( ImGui.DragFloat( "##SkewX", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.MaterialSkew.X ) )
         {
             file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialSkew = row.MaterialSkew with { X = tmpFloat };
             ret                                                       = true;
@@ -487,7 +497,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         tmpFloat = row.MaterialSkew.Y;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##SkewY", ref tmpFloat, 0.1f, 0f ) && tmpFloat != row.MaterialSkew.Y )
+        if( ImGui.DragFloat( "##SkewY", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.MaterialSkew.Y ) )
         {
             file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialSkew = row.MaterialSkew with { Y = tmpFloat };
             ret                                                       = true;

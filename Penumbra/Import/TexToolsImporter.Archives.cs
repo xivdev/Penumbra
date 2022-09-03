@@ -29,6 +29,7 @@ public partial class TexToolsImporter
         using var archive = ArchiveFactory.Open( zfs );
 
         var baseName = FindArchiveModMeta( archive, out var leadDir );
+        var name     = string.Empty;
         _currentOptionIdx  = 0;
         _currentNumOptions = 1;
         _currentModName    = modPackFile.Name;
@@ -44,7 +45,7 @@ public partial class TexToolsImporter
             };
         PluginLog.Log( $"    -> Importing {archive.Type} Archive." );
 
-        _currentModDirectory = Mod.CreateModFolder( _baseDirectory, baseName );
+        _currentModDirectory = Mod.CreateModFolder( _baseDirectory, Path.GetRandomFileName() );
         var options = new ExtractionOptions()
         {
             ExtractFullPath = true,
@@ -55,32 +56,61 @@ public partial class TexToolsImporter
         _currentFileIdx = 0;
         var reader = archive.ExtractAllEntries();
 
-        while(reader.MoveToNextEntry())
+        while( reader.MoveToNextEntry() )
         {
             _token.ThrowIfCancellationRequested();
 
             if( reader.Entry.IsDirectory )
             {
-                ++_currentFileIdx;
+                --_currentNumFiles;
                 continue;
             }
 
             PluginLog.Log( "        -> Extracting {0}", reader.Entry.Key );
-            reader.WriteEntryToDirectory( _currentModDirectory.FullName, options );
+            // Check that the mod has a valid name in the meta.json file.
+            if( Path.GetFileName( reader.Entry.Key ) == "meta.json" )
+            {
+                using var s = new MemoryStream();
+                using var e = reader.OpenEntryStream();
+                e.CopyTo( s );
+                s.Seek( 0, SeekOrigin.Begin );
+                using var t   = new StreamReader( s );
+                using var j   = new JsonTextReader( t );
+                var       obj = JObject.Load( j );
+                name = obj[ nameof( Mod.Name ) ]?.Value< string >()?.RemoveInvalidPathSymbols() ?? string.Empty;
+                if( name.Length == 0 )
+                {
+                    throw new Exception( "Invalid mod archive: mod meta has no name." );
+                }
+
+                using var f = File.OpenWrite( Path.Combine( _currentModDirectory.FullName, reader.Entry.Key ) );
+                s.Seek( 0, SeekOrigin.Begin );
+                s.WriteTo( f );
+            }
+            else
+            {
+                reader.WriteEntryToDirectory( _currentModDirectory.FullName, options );
+            }
 
             ++_currentFileIdx;
         }
 
+        _token.ThrowIfCancellationRequested();
+        var oldName = _currentModDirectory.FullName;
+        // Use either the top-level directory as the mods base name, or the (fixed for path) name in the json.
         if( leadDir )
         {
-            _token.ThrowIfCancellationRequested();
-            var oldName = _currentModDirectory.FullName;
-            var tmpName = oldName + "__tmp";
-            Directory.Move( oldName, tmpName );
-            Directory.Move( Path.Combine( tmpName, baseName ), oldName );
-            Directory.Delete( tmpName );
-            _currentModDirectory = new DirectoryInfo( oldName );
+            _currentModDirectory = Mod.CreateModFolder( _baseDirectory, baseName, false );
+            Directory.Move( Path.Combine( oldName, baseName ), _currentModDirectory.FullName );
+            Directory.Delete( oldName );
         }
+        else
+        {
+            _currentModDirectory = Mod.CreateModFolder( _baseDirectory, name, false );
+            Directory.Move( oldName, _currentModDirectory.FullName );
+        }
+
+        _currentModDirectory.Refresh();
 
         return _currentModDirectory;
     }
@@ -88,7 +118,7 @@ public partial class TexToolsImporter
     // Search the archive for the meta.json file which needs to exist.
     private static string FindArchiveModMeta( IArchive archive, out bool leadDir )
     {
-        var entry = archive.Entries.FirstOrDefault( e => !e.IsDirectory && e.Key.EndsWith( "meta.json" ) );
+        var entry = archive.Entries.FirstOrDefault( e => !e.IsDirectory && Path.GetFileName( e.Key ) == "meta.json" );
         // None found.
         if( entry == null )
         {
@@ -119,18 +149,7 @@ public partial class TexToolsImporter
             }
         }
 
-        // Check that the mod has a valid name in the meta.json file.
-        using var e    = entry.OpenEntryStream();
-        using var t    = new StreamReader( e );
-        using var j    = new JsonTextReader( t );
-        var       obj  = JObject.Load( j );
-        var       name = obj[ nameof( Mod.Name ) ]?.Value< string >()?.RemoveInvalidPathSymbols() ?? string.Empty;
-        if( name.Length == 0 )
-        {
-            throw new Exception( "Invalid mod archive: mod meta has no name." );
-        }
 
-        // Use either the top-level directory as the mods base name, or the (fixed for path) name in the json.
-        return ret.Length == 0 ? name : ret;
+        return ret;
     }
 }

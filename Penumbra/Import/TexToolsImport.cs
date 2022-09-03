@@ -81,8 +81,8 @@ public partial class TexToolsImporter : IDisposable
 
     private void ImportFiles()
     {
-        State              = ImporterState.None;
-        _currentModPackIdx = 0;
+        State                    = ImporterState.None;
+        _currentModPackIdx       = 0;
         foreach( var file in _modPackFiles )
         {
             _currentModDirectory = null;

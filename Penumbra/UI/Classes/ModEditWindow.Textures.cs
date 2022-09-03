@@ -1,702 +1,99 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
-using System.Threading.Tasks;
-using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Logging;
-using Dalamud.Utility;
 using ImGuiNET;
-using ImGuiScene;
-using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
 using OtterTex;
-using Penumbra.GameData.ByteString;
-using Penumbra.Import.Dds;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.PixelFormats;
-using Image = SixLabors.ImageSharp.Image;
+using Penumbra.Import.Textures;
 
 namespace Penumbra.UI.Classes;
 
-public class Texture : IDisposable
-{
-    // Path to the file we tried to load.
-    public string Path = string.Empty;
-
-    // If the load failed, an exception is stored.
-    public Exception? LoadError = null;
-
-    // The pixels of the main image in RGBA order.
-    // Empty if LoadError != null or Path is empty.
-    public byte[] RGBAPixels = Array.Empty< byte >();
-
-    // The ImGui wrapper to load the image.
-    // null if LoadError != null or Path is empty.
-    public TextureWrap? TextureWrap = null;
-
-    // The base image in whatever format it has.
-    public object? BaseImage = null;
-
-    public Texture()
-    { }
-
-    public void Draw( Vector2 size )
-    {
-        if( TextureWrap != null )
-        {
-            ImGui.TextUnformatted( $"Image Dimensions: {TextureWrap.Width} x {TextureWrap.Height}" );
-            size = size.X < TextureWrap.Width
-                ? size with { Y = TextureWrap.Height * size.X / TextureWrap.Width }
-                : new Vector2( TextureWrap.Width, TextureWrap.Height );
-
-            ImGui.Image( TextureWrap.ImGuiHandle, size );
-        }
-        else if( LoadError != null )
-        {
-            ImGui.TextUnformatted( "Could not load file:" );
-            ImGuiUtil.TextColored( Colors.RegexWarningBorder, LoadError.ToString() );
-        }
-        else
-        {
-            ImGui.Dummy( size );
-        }
-    }
-
-    private void Clean()
-    {
-        RGBAPixels = Array.Empty< byte >();
-        TextureWrap?.Dispose();
-        TextureWrap = null;
-        ( BaseImage as IDisposable )?.Dispose();
-        BaseImage = null;
-        Loaded?.Invoke( false );
-    }
-
-    public void Dispose()
-        => Clean();
-
-    public event Action< bool >? Loaded;
-
-    private void Load( string path )
-    {
-        _tmpPath = null;
-        if( path == Path )
-        {
-            return;
-        }
-
-        Path = path;
-        Clean();
-        try
-        {
-            var _ = System.IO.Path.GetExtension( Path ) switch
-            {
-                ".dds" => LoadDds(),
-                ".png" => LoadPng(),
-                ".tex" => LoadTex(),
-                _      => true,
-            };
-            Loaded?.Invoke( true );
-        }
-        catch( Exception e )
-        {
-            LoadError = e;
-            Clean();
-        }
-    }
-
-    private bool LoadDds()
-    {
-        var scratch = ScratchImage.LoadDDS( Path );
-        BaseImage = scratch;
-        var rgba = scratch.GetRGBA( out var f ).ThrowIfError( f );
-        RGBAPixels = rgba.Pixels[ ..( f.Meta.Width * f.Meta.Height * f.Meta.Format.BitsPerPixel() / 8 ) ].ToArray();
-        CreateTextureWrap( f.Meta.Width, f.Meta.Height );
-        return true;
-    }
-
-    private bool LoadPng()
-    {
-        BaseImage = null;
-        using var stream = File.OpenRead( Path );
-        using var png    = Image.Load< Rgba32 >( stream );
-        RGBAPixels = new byte[png.Height * png.Width * 4];
-        png.CopyPixelDataTo( RGBAPixels );
-        CreateTextureWrap( png.Width, png.Height );
-        return true;
-    }
-
-    private bool LoadTex()
-    {
-        var tex = System.IO.Path.IsPathRooted( Path )
-            ? Dalamud.GameData.GameData.GetFileFromDisk< TexFile >( Path )
-            : Dalamud.GameData.GetFile< TexFile >( Path );
-        BaseImage  = tex ?? throw new Exception( "Could not read .tex file." );
-        RGBAPixels = tex.GetRgbaImageData();
-        CreateTextureWrap( tex.Header.Width, tex.Header.Height );
-        return true;
-    }
-
-    private void CreateTextureWrap( int width, int height )
-        => TextureWrap = Dalamud.PluginInterface.UiBuilder.LoadImageRaw( RGBAPixels, width, height, 4 );
-
-    private string? _tmpPath;
-
-    public void PathInputBox( string label, string hint, string tooltip, string startPath, FileDialogManager manager )
-    {
-        _tmpPath ??= Path;
-        using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( 3 * ImGuiHelpers.GlobalScale, 0 ) );
-        ImGui.SetNextItemWidth( -ImGui.GetFrameHeight() - 3 * ImGuiHelpers.GlobalScale );
-        ImGui.InputTextWithHint( label, hint, ref _tmpPath, Utf8GamePath.MaxGamePathLength );
-        if( ImGui.IsItemDeactivatedAfterEdit() )
-        {
-            Load( _tmpPath );
-        }
-
-        ImGuiUtil.HoverTooltip( tooltip );
-        ImGui.SameLine();
-        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Folder.ToIconString(), new Vector2( ImGui.GetFrameHeight() ), string.Empty, false,
-               true ) )
-        {
-            if( Penumbra.Config.DefaultModImportPath.Length > 0 )
-            {
-                startPath = Penumbra.Config.DefaultModImportPath;
-            }
-
-            var texture = this;
-
-            void UpdatePath( bool success, List< string > paths )
-            {
-                if( success && paths.Count > 0 )
-                {
-                    texture.Load( paths[ 0 ] );
-                }
-            }
-
-            manager.OpenFileDialog( "Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath );
-        }
-    }
-
-    public static Texture Combined( Texture left, Texture right, InputManipulations leftManips, InputManipulations rightManips )
-        => new();
-}
-
-public struct InputManipulations
-{
-    public InputManipulations()
-    { }
-
-    public Matrix4x4 _multiplier   = Matrix4x4.Identity;
-    public bool      _invert       = false;
-    public int       _offsetX      = 0;
-    public int       _offsetY      = 0;
-    public int       _outputWidth  = 0;
-    public int       _outputHeight = 0;
-
-
-    private static Vector4 CappedVector( IReadOnlyList< byte >? bytes, int offset, Matrix4x4 transform, bool invert )
-    {
-        if( bytes == null )
-        {
-            return Vector4.Zero;
-        }
-
-        var rgba        = new Rgba32( bytes[ offset ], bytes[ offset + 1 ], bytes[ offset + 2 ], bytes[ offset + 3 ] );
-        var transformed = Vector4.Transform( rgba.ToVector4(), transform );
-        if( invert )
-        {
-            transformed = new Vector4( 1 - transformed.X, 1 - transformed.Y, 1 - transformed.Z, transformed.W );
-        }
-
-        transformed.X = Math.Clamp( transformed.X, 0, 1 );
-        transformed.Y = Math.Clamp( transformed.Y, 0, 1 );
-        transformed.Z = Math.Clamp( transformed.Z, 0, 1 );
-        transformed.W = Math.Clamp( transformed.W, 0, 1 );
-        return transformed;
-    }
-
-    private static bool DragFloat( string label, float width, ref float value )
-    {
-        var tmp = value;
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( width );
-        if( ImGui.DragFloat( label, ref tmp, 0.001f, -1f, 1f ) )
-        {
-            value = tmp;
-        }
-
-        return ImGui.IsItemDeactivatedAfterEdit();
-    }
-
-
-    public bool DrawMatrixInput( float width )
-    {
-        using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.BordersInner | ImGuiTableFlags.SizingFixedFit );
-        if( !table )
-        {
-            return false;
-        }
-
-        var changes = false;
-
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center( "R" );
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center( "G" );
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center( "B" );
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center( "A" );
-
-        var inputWidth = width / 6;
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text( "R    " );
-        changes |= DragFloat( "##RR", inputWidth, ref _multiplier.M11 );
-        changes |= DragFloat( "##RG", inputWidth, ref _multiplier.M12 );
-        changes |= DragFloat( "##RB", inputWidth, ref _multiplier.M13 );
-        changes |= DragFloat( "##RA", inputWidth, ref _multiplier.M14 );
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text( "G    " );
-        changes |= DragFloat( "##GR", inputWidth, ref _multiplier.M21 );
-        changes |= DragFloat( "##GG", inputWidth, ref _multiplier.M22 );
-        changes |= DragFloat( "##GB", inputWidth, ref _multiplier.M23 );
-        changes |= DragFloat( "##GA", inputWidth, ref _multiplier.M24 );
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text( "B    " );
-        changes |= DragFloat( "##BR", inputWidth, ref _multiplier.M31 );
-        changes |= DragFloat( "##BG", inputWidth, ref _multiplier.M32 );
-        changes |= DragFloat( "##BB", inputWidth, ref _multiplier.M33 );
-        changes |= DragFloat( "##BA", inputWidth, ref _multiplier.M34 );
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text( "A    " );
-        changes |= DragFloat( "##AR", inputWidth, ref _multiplier.M41 );
-        changes |= DragFloat( "##AG", inputWidth, ref _multiplier.M42 );
-        changes |= DragFloat( "##AB", inputWidth, ref _multiplier.M43 );
-        changes |= DragFloat( "##AA", inputWidth, ref _multiplier.M44 );
-
-        return changes;
-    }
-}
-
 public partial class ModEditWindow
 {
-    private string _pathLeft  = string.Empty;
-    private string _pathRight = string.Empty;
+    private readonly Texture         _left  = new();
+    private readonly Texture         _right = new();
+    private readonly CombinedTexture _center;
 
-    private byte[]? _imageLeft;
-    private byte[]? _imageRight;
-    private byte[]? _imageCenter;
+    private readonly FileDialogManager _dialogManager    = ConfigWindow.SetupFileManager();
+    private          bool              _overlayCollapsed = true;
+    private          DXGIFormat        _currentFormat = DXGIFormat.R8G8B8A8UNorm;
 
-    private TextureWrap? _wrapLeft;
-    private TextureWrap? _wrapRight;
-    private TextureWrap? _wrapCenter;
-
-    private Matrix4x4 _multiplierLeft  = Matrix4x4.Identity;
-    private Matrix4x4 _multiplierRight = Matrix4x4.Identity;
-    private bool      _invertLeft      = false;
-    private bool      _invertRight     = false;
-    private int       _offsetX         = 0;
-    private int       _offsetY         = 0;
-
-    private readonly FileDialogManager _dialogManager = ConfigWindow.SetupFileManager();
-
-    private static bool DragFloat( string label, float width, ref float value )
+    private void DrawInputChild( string label, Texture tex, Vector2 size, Vector2 imageSize )
     {
-        var tmp = value;
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( width );
-        if( ImGui.DragFloat( label, ref tmp, 0.001f, -1f, 1f ) )
-        {
-            value = tmp;
-        }
-
-        return ImGui.IsItemDeactivatedAfterEdit();
-    }
-
-    private static bool DrawMatrixInput( float width, ref Matrix4x4 matrix )
-    {
-        using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.BordersInner | ImGuiTableFlags.SizingFixedFit );
-        if( !table )
-        {
-            return false;
-        }
-
-        var changes = false;
-
-        ImGui.TableNextColumn();
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center( "R" );
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center( "G" );
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center( "B" );
-        ImGui.TableNextColumn();
-        ImGuiUtil.Center( "A" );
-
-        var inputWidth = width / 6;
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text( "R    " );
-        changes |= DragFloat( "##RR", inputWidth, ref matrix.M11 );
-        changes |= DragFloat( "##RG", inputWidth, ref matrix.M12 );
-        changes |= DragFloat( "##RB", inputWidth, ref matrix.M13 );
-        changes |= DragFloat( "##RA", inputWidth, ref matrix.M14 );
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text( "G    " );
-        changes |= DragFloat( "##GR", inputWidth, ref matrix.M21 );
-        changes |= DragFloat( "##GG", inputWidth, ref matrix.M22 );
-        changes |= DragFloat( "##GB", inputWidth, ref matrix.M23 );
-        changes |= DragFloat( "##GA", inputWidth, ref matrix.M24 );
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text( "B    " );
-        changes |= DragFloat( "##BR", inputWidth, ref matrix.M31 );
-        changes |= DragFloat( "##BG", inputWidth, ref matrix.M32 );
-        changes |= DragFloat( "##BB", inputWidth, ref matrix.M33 );
-        changes |= DragFloat( "##BA", inputWidth, ref matrix.M34 );
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.Text( "A    " );
-        changes |= DragFloat( "##AR", inputWidth, ref matrix.M41 );
-        changes |= DragFloat( "##AG", inputWidth, ref matrix.M42 );
-        changes |= DragFloat( "##AB", inputWidth, ref matrix.M43 );
-        changes |= DragFloat( "##AA", inputWidth, ref matrix.M44 );
-
-        return changes;
-    }
-
-    private void PathInputBox( string label, string hint, string tooltip, int which )
-    {
-        var       tmp     = which == 0 ? _pathLeft : _pathRight;
-        using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( 3 * ImGuiHelpers.GlobalScale, 0 ) );
-        ImGui.SetNextItemWidth( -ImGui.GetFrameHeight() - 3 * ImGuiHelpers.GlobalScale );
-        ImGui.InputTextWithHint( label, hint, ref tmp, Utf8GamePath.MaxGamePathLength );
-        if( ImGui.IsItemDeactivatedAfterEdit() )
-        {
-            UpdateImage( tmp, which );
-        }
-
-        ImGuiUtil.HoverTooltip( tooltip );
-        ImGui.SameLine();
-        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Folder.ToIconString(), new Vector2( ImGui.GetFrameHeight() ), string.Empty, false,
-               true ) )
-        {
-            var startPath = Penumbra.Config.DefaultModImportPath.Length > 0 ? Penumbra.Config.DefaultModImportPath : _mod?.ModPath.FullName;
-
-            void UpdatePath( bool success, List< string > paths )
-            {
-                if( success && paths.Count > 0 )
-                {
-                    UpdateImage( paths[ 0 ], which );
-                }
-            }
-
-            _dialogManager.OpenFileDialog( "Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath );
-        }
-    }
-
-    private static (byte[]?, int, int) GetDdsRgbaData( string path )
-    {
-        try
-        {
-            if( !ScratchImage.LoadDDS( path, out var f ) )
-            {
-                return ( null, 0, 0 );
-            }
-
-            if( !f.GetRGBA( out f ) )
-            {
-                return ( null, 0, 0 );
-            }
-
-            return ( f.Pixels[ ..( f.Meta.Width * f.Meta.Height * 4 ) ].ToArray(), f.Meta.Width, f.Meta.Height );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not parse DDS {path} to RGBA:\n{e}" );
-            return ( null, 0, 0 );
-        }
-    }
-
-    private static ( byte[]?, int, int) GetTexRgbaData( string path, bool fromDisk )
-    {
-        try
-        {
-            var tex = fromDisk ? Dalamud.GameData.GameData.GetFileFromDisk< TexFile >( path ) : Dalamud.GameData.GetFile< TexFile >( path );
-            if( tex == null )
-            {
-                return ( null, 0, 0 );
-            }
-
-            var rgba = tex.GetRgbaImageData();
-            return ( rgba, tex.Header.Width, tex.Header.Height );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not parse TEX {path} to RGBA:\n{e}" );
-            return ( null, 0, 0 );
-        }
-    }
-
-    private static (byte[]?, int, int) GetPngRgbaData( string path )
-    {
-        try
-        {
-            using var stream = File.OpenRead( path );
-            using var png    = Image.Load< Rgba32 >( stream );
-            var       bytes  = new byte[png.Height * png.Width * 4];
-            png.CopyPixelDataTo( bytes );
-            return ( bytes, png.Width, png.Height );
-        }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not parse PNG {path} to RGBA:\n{e}" );
-            return ( null, 0, 0 );
-        }
-    }
-
-    private void UpdateImage( string newPath, int which )
-    {
-        if( which is < 0 or > 1 )
+        using var child = ImRaii.Child( label, size, true );
+        if( !child )
         {
             return;
         }
 
-        ref var path = ref which == 0 ? ref _pathLeft : ref _pathRight;
-        if( path == newPath )
+        using var id = ImRaii.PushId( label );
+        ImGuiUtil.DrawTextButton( label, new Vector2( -1, 0 ), ImGui.GetColorU32( ImGuiCol.FrameBg ) );
+        ImGui.NewLine();
+
+        tex.PathInputBox( "##input", "Import Image...", "Can import game paths as well as your own files.", _mod!.ModPath.FullName,
+            _dialogManager );
+
+        if( tex == _left )
         {
-            return;
-        }
-
-        path = newPath;
-        ref var data = ref which == 0 ? ref _imageLeft : ref _imageRight;
-        ref var wrap = ref which == 0 ? ref _wrapLeft : ref _wrapRight;
-
-        data = null;
-        wrap?.Dispose();
-        wrap = null;
-        var width  = 0;
-        var height = 0;
-
-        if( Path.IsPathRooted( path ) )
-        {
-            if( File.Exists( path ) )
-            {
-                ( data, width, height ) = Path.GetExtension( path ) switch
-                {
-                    ".dds" => GetDdsRgbaData( path ),
-                    ".png" => GetPngRgbaData( path ),
-                    ".tex" => GetTexRgbaData( path, true ),
-                    _      => ( null, 0, 0 ),
-                };
-            }
+            _center.DrawMatrixInputLeft( size.X );
         }
         else
         {
-            ( data, width, height ) = GetTexRgbaData( path, false );
+            _center.DrawMatrixInputRight( size.X );
         }
 
-        if( data != null )
+        ImGui.NewLine();
+        tex.Draw( imageSize );
+    }
+
+    private void DrawOutputChild( Vector2 size, Vector2 imageSize )
+    {
+        using var child = ImRaii.Child( "Output", size, true );
+        if( !child )
         {
-            try
+            return;
+        }
+
+        if( _center.IsLoaded )
+        {
+            if( ImGui.Button( "Save as TEX", -Vector2.UnitX ) )
             {
-                wrap = Dalamud.PluginInterface.UiBuilder.LoadImageRaw( data, width, height, 4 );
+                var fileName = Path.GetFileNameWithoutExtension( _left.Path.Length > 0 ? _left.Path : _right.Path );
+                _dialogManager.SaveFileDialog( "Save Texture as TEX...", ".tex", fileName, ".tex", ( a, b ) => { }, _mod!.ModPath.FullName );
             }
-            catch( Exception e )
+
+            if( ImGui.Button( "Save as DDS", -Vector2.UnitX ) )
             {
-                PluginLog.Error( $"Could not load raw image:\n{e}" );
+                var fileName = Path.GetFileNameWithoutExtension( _right.Path.Length > 0 ? _right.Path : _left.Path );
+                _dialogManager.SaveFileDialog( "Save Texture as DDS...", ".dds", fileName, ".dds", ( a, b ) => { if( a ) _center.SaveAsDDS( b, _currentFormat, false ); }, _mod!.ModPath.FullName );
             }
-        }
 
-        UpdateCenter();
-    }
-
-    private static Vector4 CappedVector( IReadOnlyList< byte >? bytes, int offset, Matrix4x4 transform, bool invert )
-    {
-        if( bytes == null )
-        {
-            return Vector4.Zero;
-        }
-
-        var rgba        = new Rgba32( bytes[ offset ], bytes[ offset + 1 ], bytes[ offset + 2 ], bytes[ offset + 3 ] );
-        var transformed = Vector4.Transform( rgba.ToVector4(), transform );
-        if( invert )
-        {
-            transformed = new Vector4( 1 - transformed.X, 1 - transformed.Y, 1 - transformed.Z, transformed.W );
-        }
-
-        transformed.X = Math.Clamp( transformed.X, 0, 1 );
-        transformed.Y = Math.Clamp( transformed.Y, 0, 1 );
-        transformed.Z = Math.Clamp( transformed.Z, 0, 1 );
-        transformed.W = Math.Clamp( transformed.W, 0, 1 );
-        return transformed;
-    }
-
-    private Vector4 DataLeft( int offset )
-        => CappedVector( _imageLeft, offset, _multiplierLeft, _invertLeft );
-
-    private Vector4 DataRight( int x, int y )
-    {
-        if( _imageRight == null )
-        {
-            return Vector4.Zero;
-        }
-
-        x -= _offsetX;
-        y -= _offsetY;
-        if( x < 0 || x >= _wrapRight!.Width || y < 0 || y >= _wrapRight!.Height )
-        {
-            return Vector4.Zero;
-        }
-
-        var offset = ( y * _wrapRight!.Width + x ) * 4;
-        return CappedVector( _imageRight, offset, _multiplierRight, _invertRight );
-    }
-
-    private void AddPixels( int width, int x, int y )
-    {
-        var offset = ( width * y + x ) * 4;
-        var left   = DataLeft( offset );
-        var right  = DataRight( x, y );
-        var alpha  = right.W + left.W * ( 1 - right.W );
-        if( alpha == 0 )
-        {
-            return;
-        }
-
-        var sum  = ( right * right.W + left * left.W * ( 1 - right.W ) ) / alpha;
-        var rgba = new Rgba32( sum with { W = alpha } );
-        _imageCenter![ offset ]     = rgba.R;
-        _imageCenter![ offset + 1 ] = rgba.G;
-        _imageCenter![ offset + 2 ] = rgba.B;
-        _imageCenter![ offset + 3 ] = rgba.A;
-    }
-
-    private void UpdateCenter()
-    {
-        if( _imageLeft != null && _imageRight == null && _multiplierLeft.IsIdentity && !_invertLeft )
-        {
-            _imageCenter = _imageLeft;
-            _wrapCenter  = _wrapLeft;
-            return;
-        }
-
-        if( _imageLeft == null && _imageRight != null && _multiplierRight.IsIdentity && !_invertRight )
-        {
-            _imageCenter = _imageRight;
-            _wrapCenter  = _wrapRight;
-            return;
-        }
-
-        if( !ReferenceEquals( _imageCenter, _imageLeft ) && !ReferenceEquals( _imageCenter, _imageRight ) )
-        {
-            _wrapCenter?.Dispose();
-        }
-
-        if( _imageLeft != null || _imageRight != null )
-        {
-            var (totalWidth, totalHeight) =
-                _imageLeft != null ? ( _wrapLeft!.Width, _wrapLeft.Height ) : ( _wrapRight!.Width, _wrapRight.Height );
-            _imageCenter = new byte[4 * totalWidth * totalHeight];
-
-            Parallel.For( 0, totalHeight - 1, ( y, _ ) =>
+            if( ImGui.Button( "Save as PNG", -Vector2.UnitX ) )
             {
-                for( var x = 0; x < totalWidth; ++x )
-                {
-                    AddPixels( totalWidth, x, y );
-                }
-            } );
-            _wrapCenter = Dalamud.PluginInterface.UiBuilder.LoadImageRaw( _imageCenter, totalWidth, totalHeight, 4 );
-            return;
-        }
-
-        _imageCenter = null;
-        _wrapCenter  = null;
-    }
-
-    private static void ScaledImage( string path, TextureWrap? wrap, Vector2 size )
-    {
-        if( wrap != null )
-        {
-            ImGui.TextUnformatted( $"Image Dimensions: {wrap.Width} x {wrap.Height}" );
-            size = size.X < wrap.Width
-                ? size with { Y = wrap.Height * size.X / wrap.Width }
-                : new Vector2( wrap.Width, wrap.Height );
-
-            ImGui.Image( wrap.ImGuiHandle, size );
-        }
-        else if( path.Length > 0 )
-        {
-            ImGui.TextUnformatted( "Could not load file." );
-        }
-        else
-        {
-            ImGui.Dummy( size );
-        }
-    }
-
-    private void SaveAs( bool success, string path, int type )
-    {
-        if( !success || _imageCenter == null || _wrapCenter == null )
-        {
-            return;
-        }
-
-        try
-        {
-            switch( type )
-            {
-                case 0:
-                    var img = Image.LoadPixelData< Rgba32 >( _imageCenter, _wrapCenter.Width, _wrapCenter.Height );
-                    img.Save( path, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression } );
-                    break;
-                case 1:
-                    if( TextureImporter.RgbaBytesToTex( _imageCenter, _wrapCenter.Width, _wrapCenter.Height, out var tex ) )
-                    {
-                        File.WriteAllBytes( path, tex );
-                    }
-
-                    break;
-                case 2:
-                    //ScratchImage.LoadDDS( _imageCenter,  )
-                    //if( TextureImporter.RgbaBytesToDds( _imageCenter, _wrapCenter.Width, _wrapCenter.Height, out var dds ) )
-                    //{
-                    //    File.WriteAllBytes( path, dds );
-                    //}
-
-                    break;
+                var fileName = Path.GetFileNameWithoutExtension( _right.Path.Length > 0 ? _right.Path : _left.Path );
+                _dialogManager.SaveFileDialog( "Save Texture as PNG...", ".png", fileName, ".png", ( a, b ) => { if (a) _center.SaveAsPng( b ); }, _mod!.ModPath.FullName );
             }
+
+            ImGui.NewLine();
         }
-        catch( Exception e )
-        {
-            PluginLog.Error( $"Could not save image to {path}:\n{e}" );
-        }
+
+        _center.Draw( imageSize );
     }
 
-    private void SaveAsPng( bool success, string path )
-        => SaveAs( success, path, 0 );
+    private Vector2 GetChildWidth()
+    {
+        var windowWidth = ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - ImGui.GetTextLineHeight();
+        if( _overlayCollapsed )
+        {
+            var width = windowWidth - ImGui.GetStyle().FramePadding.X * 3;
+            return new Vector2( width / 2, -1 );
+        }
 
-    private void SaveAsTex( bool success, string path )
-        => SaveAs( success, path, 1 );
-
-    private void SaveAsDds( bool success, string path )
-        => SaveAs( success, path, 2 );
+        return new Vector2( ( windowWidth - ImGui.GetStyle().FramePadding.X * 5 ) / 3, -1 );
+    }
 
     private void DrawTextureTab()
     {
@@ -708,78 +105,38 @@ public partial class ModEditWindow
             return;
         }
 
-        var leftRightWidth =
-            new Vector2(
-                ( ImGui.GetWindowContentRegionMax().X - ImGui.GetWindowContentRegionMin().X - ImGui.GetStyle().FramePadding.X * 4 ) / 3, -1 );
-        var imageSize = new Vector2( leftRightWidth.X - ImGui.GetStyle().FramePadding.X * 2 );
-        using( var child = ImRaii.Child( "ImageLeft", leftRightWidth, true ) )
+        try
         {
-            if( child )
+            var childWidth = GetChildWidth();
+            var imageSize  = new Vector2( childWidth.X - ImGui.GetStyle().FramePadding.X * 2 );
+            DrawInputChild( "Input Texture", _left, childWidth, imageSize );
+            ImGui.SameLine();
+            DrawOutputChild( childWidth, imageSize );
+            if( !_overlayCollapsed )
             {
-                PathInputBox( "##ImageLeft", "Import Image...", string.Empty, 0 );
-
-                ImGui.NewLine();
-                if( DrawMatrixInput( leftRightWidth.X, ref _multiplierLeft ) || ImGui.Checkbox( "Invert##Left", ref _invertLeft ) )
-                {
-                    UpdateCenter();
-                }
-
-                ImGui.NewLine();
-                ScaledImage( _pathLeft, _wrapLeft, imageSize );
+                ImGui.SameLine();
+                DrawInputChild( "Overlay Texture", _right, childWidth, imageSize );
             }
+
+            ImGui.SameLine();
+            DrawOverlayCollapseButton();
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Unknown Error while drawing textures:\n{e}" );
+        }
+    }
+
+    private void DrawOverlayCollapseButton()
+    {
+        var (label, tooltip) = _overlayCollapsed
+            ? ( ">", "Show a third panel in which you can import an additional texture as an overlay for the primary texture." )
+            : ( "<", "Hide the overlay texture panel and clear the currently loaded overlay texture, if any." );
+        if( ImGui.Button( label, new Vector2( ImGui.GetTextLineHeight(), ImGui.GetContentRegionAvail().Y ) ) )
+        {
+            _overlayCollapsed = !_overlayCollapsed;
         }
 
-        ImGui.SameLine();
-        using( var child = ImRaii.Child( "ImageMix", leftRightWidth, true ) )
-        {
-            if( child )
-            {
-                if( _wrapCenter == null && _wrapLeft != null && _wrapRight != null )
-                {
-                    ImGui.TextUnformatted( "Images have incompatible resolutions." );
-                }
-                else if( _wrapCenter != null )
-                {
-                    if( ImGui.Button( "Save as TEX", -Vector2.UnitX ) )
-                    {
-                        var fileName = Path.GetFileNameWithoutExtension( _pathLeft.Length > 0 ? _pathLeft : _pathRight );
-                        _dialogManager.SaveFileDialog( "Save Texture as TEX...", ".tex", fileName, ".tex", SaveAsTex, _mod!.ModPath.FullName );
-                    }
-
-                    if( ImGui.Button( "Save as PNG", -Vector2.UnitX ) )
-                    {
-                        var fileName = Path.GetFileNameWithoutExtension( _pathRight.Length > 0 ? _pathRight : _pathLeft );
-                        _dialogManager.SaveFileDialog( "Save Texture as PNG...", ".png", fileName, ".png", SaveAsPng, _mod!.ModPath.FullName );
-                    }
-
-                    if( ImGui.Button( "Save as DDS", -Vector2.UnitX ) )
-                    {
-                        var fileName = Path.GetFileNameWithoutExtension( _pathRight.Length > 0 ? _pathRight : _pathLeft );
-                        _dialogManager.SaveFileDialog( "Save Texture as DDS...", ".dds", fileName, ".dds", SaveAsDds, _mod!.ModPath.FullName );
-                    }
-
-                    ImGui.NewLine();
-                    ScaledImage( string.Empty, _wrapCenter, imageSize );
-                }
-            }
-        }
-
-        ImGui.SameLine();
-        using( var child = ImRaii.Child( "ImageRight", leftRightWidth, true ) )
-        {
-            if( child )
-            {
-                PathInputBox( "##ImageRight", "Import Image...", string.Empty, 1 );
-
-                ImGui.NewLine();
-                if( DrawMatrixInput( leftRightWidth.X, ref _multiplierRight ) || ImGui.Checkbox( "Invert##Right", ref _invertRight ) )
-                {
-                    UpdateCenter();
-                }
-
-                ImGui.NewLine();
-                ScaledImage( _pathRight, _wrapRight, imageSize );
-            }
-        }
+        ImGuiUtil.HoverTooltip( tooltip );
     }
 }

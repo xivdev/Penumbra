@@ -11,6 +11,7 @@ using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Textures;
 using Penumbra.Mods;
 using Penumbra.Util;
 using static Penumbra.Mods.Mod;
@@ -119,6 +120,12 @@ public partial class ModEditWindow : Window, IDisposable
 
         sb.Append( WindowBaseLabel );
         WindowName = sb.ToString();
+    }
+
+    public override void OnClose()
+    {
+        _left.Dispose();
+        _right.Dispose();
     }
 
     public override void Draw()
@@ -508,10 +515,14 @@ public partial class ModEditWindow : Window, IDisposable
             DrawMaterialPanel );
         _modelTab = new FileEditor< MdlFile >( "Models (WIP)", ".mdl", () => _editor?.MdlFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawModelPanel );
+        _center = new CombinedTexture( _left, _right );
     }
 
     public void Dispose()
     {
         _editor?.Dispose();
+        _left.Dispose();
+        _right.Dispose();
+        _center.Dispose();
     }
 }
