@@ -97,9 +97,15 @@ public unsafe partial class ResourceLoader
             return retUnmodified;
         }
 
-        // Replace the hash and path with the correct one for the replacement.
-        *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
-        path          = resolvedPath.Value.InternalName.Path;
+        // Replace the hash and path with the correct one for the replacement,
+        // but only for non-UI files. UI files can not reasonably be loaded multiple times at once,
+        // and seem to cause concurrency problems if multiple UI parts use the same resource for different use-cases.
+        if( *categoryId != ResourceCategory.Ui )
+        {
+            *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
+        }
+
+        path = resolvedPath.Value.InternalName.Path;
         var retModified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
         ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retModified, gamePath, resolvedPath.Value, data );
         return retModified;
