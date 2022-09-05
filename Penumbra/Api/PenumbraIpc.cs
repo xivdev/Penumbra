@@ -394,7 +394,7 @@ public partial class PenumbraIpc
         {
             ProviderGameObjectResourcePathResolved =
                 pi.GetIpcProvider< IntPtr, string, string, object? >( LabelProviderGameObjectResourcePathResolved );
-            Api.GameObjectResourceResolved += GameObjectResourceResolvdedEvent;
+            Api.GameObjectResourceResolved += GameObjectResourceResolvedEvent;
         }
         catch( Exception e )
         {
@@ -402,7 +402,7 @@ public partial class PenumbraIpc
         }
     }
 
-    private void GameObjectResourceResolvdedEvent( IntPtr gameObject, string gamePath, string localPath )
+    private void GameObjectResourceResolvedEvent( IntPtr gameObject, string gamePath, string localPath )
     {
         ProviderGameObjectResourcePathResolved?.SendMessage( gameObject, gamePath, localPath );
     }
@@ -415,8 +415,9 @@ public partial class PenumbraIpc
         ProviderResolveCharacter?.UnregisterFunc();
         ProviderReverseResolvePath?.UnregisterFunc();
         ProviderReverseResolvePathPlayer?.UnregisterFunc();
-        Api.CreatingCharacterBase -= CreatingCharacterBaseEvent;
-        Api.CreatedCharacterBase  -= CreatedCharacterBaseEvent;
+        Api.CreatingCharacterBase      -= CreatingCharacterBaseEvent;
+        Api.CreatedCharacterBase       -= CreatedCharacterBaseEvent;
+        Api.GameObjectResourceResolved -= GameObjectResourceResolvedEvent;
     }
 
     private void CreatingCharacterBaseEvent( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize, IntPtr equipData )
