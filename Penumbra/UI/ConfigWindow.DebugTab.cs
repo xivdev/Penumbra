@@ -422,6 +422,7 @@ public partial class ConfigWindow
         {
             if( !ImGui.CollapsingHeader( "IPC" ) )
             {
+                _window._penumbra.Ipc.Tester.UnsubscribeEvents();
                 return;
             }
 

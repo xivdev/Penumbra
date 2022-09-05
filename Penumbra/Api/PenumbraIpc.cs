@@ -274,15 +274,15 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderResolveDefault           = "Penumbra.ResolveDefaultPath";
-    public const string LabelProviderResolveCharacter         = "Penumbra.ResolveCharacterPath";
-    public const string LabelProviderResolvePlayer            = "Penumbra.ResolvePlayerPath";
-    public const string LabelProviderGetDrawObjectInfo        = "Penumbra.GetDrawObjectInfo";
-    public const string LabelProviderGetCutsceneParentIndex   = "Penumbra.GetCutsceneParentIndex";
-    public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
-    public const string LabelProviderReverseResolvePlayerPath = "Penumbra.ReverseResolvePlayerPath";
-    public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
-    public const string LabelProviderCreatedCharacterBase     = "Penumbra.CreatedCharacterBase";
+    public const string LabelProviderResolveDefault                 = "Penumbra.ResolveDefaultPath";
+    public const string LabelProviderResolveCharacter               = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderResolvePlayer                  = "Penumbra.ResolvePlayerPath";
+    public const string LabelProviderGetDrawObjectInfo              = "Penumbra.GetDrawObjectInfo";
+    public const string LabelProviderGetCutsceneParentIndex         = "Penumbra.GetCutsceneParentIndex";
+    public const string LabelProviderReverseResolvePath             = "Penumbra.ReverseResolvePath";
+    public const string LabelProviderReverseResolvePlayerPath       = "Penumbra.ReverseResolvePlayerPath";
+    public const string LabelProviderCreatingCharacterBase          = "Penumbra.CreatingCharacterBase";
+    public const string LabelProviderCreatedCharacterBase           = "Penumbra.CreatedCharacterBase";
     public const string LabelProviderGameObjectResourcePathResolved = "Penumbra.GameObjectResourcePathResolved";
 
     internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
@@ -294,7 +294,7 @@ public partial class PenumbraIpc
     internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
     internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
     internal ICallGateProvider< IntPtr, string, IntPtr, object? >?                 ProviderCreatedCharacterBase;
-    internal ICallGateProvider<IntPtr, string, string, object?>? ProviderGameObjectResourcePathResolved;
+    internal ICallGateProvider< IntPtr, string, string, object? >?                 ProviderGameObjectResourcePathResolved;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
@@ -392,7 +392,8 @@ public partial class PenumbraIpc
 
         try
         {
-            ProviderGameObjectResourcePathResolved = pi.GetIpcProvider<IntPtr, string, string, object?>( LabelProviderGameObjectResourcePathResolved );
+            ProviderGameObjectResourcePathResolved =
+                pi.GetIpcProvider< IntPtr, string, string, object? >( LabelProviderGameObjectResourcePathResolved );
             Api.GameObjectResourceResolved += GameObjectResourceResolvdedEvent;
         }
         catch( Exception e )

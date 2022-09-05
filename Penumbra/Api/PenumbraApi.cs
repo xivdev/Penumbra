@@ -96,8 +96,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private unsafe void OnResourceLoaded( ResourceHandle* _, Utf8GamePath originalPath, FullPath? manipulatedPath,
         ResolveData resolveData )
     {
-        GameObjectResourceResolved?.Invoke( resolveData.AssociatedGameObject, originalPath.ToString(),
-            manipulatedPath?.ToString() ?? originalPath.ToString() );
+        if( resolveData.AssociatedGameObject != IntPtr.Zero )
+        {
+            GameObjectResourceResolved?.Invoke( resolveData.AssociatedGameObject, originalPath.ToString(),
+                manipulatedPath?.ToString() ?? originalPath.ToString() );
+        }
     }
 
     public event Action< string, bool >? ModDirectoryChanged
