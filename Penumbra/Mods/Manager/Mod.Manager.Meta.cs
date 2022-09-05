@@ -12,7 +12,7 @@ public sealed partial class Mod
         public void ChangeModName( Index idx, string newName )
         {
             var mod = this[ idx ];
-            if( mod.Name != newName )
+            if( mod.Name.Text != newName )
             {
                 var oldName = mod.Name;
                 mod.Name = newName;

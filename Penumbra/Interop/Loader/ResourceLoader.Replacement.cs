@@ -153,7 +153,7 @@ public unsafe partial class ResourceLoader
     // We hook ReadSqPack to redirect rooted files to ReadFile.
     public delegate byte ReadSqPackPrototype( ResourceManager* resourceManager, SeFileDescriptor* pFileDesc, int priority, bool isSync );
 
-    [Signature( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3", DetourName = "ReadSqPackDetour" )]
+    [Signature( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3", DetourName = nameof(ReadSqPackDetour) )]
     public Hook< ReadSqPackPrototype > ReadSqPackHook = null!;
 
     private byte ReadSqPackDetour( ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync )
