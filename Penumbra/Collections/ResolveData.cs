@@ -5,23 +5,27 @@ namespace Penumbra.Collections;
 
 public readonly struct ResolveData
 {
-    public static readonly ResolveData Invalid = new(ModCollection.Empty);
+    public static readonly ResolveData Invalid = new();
 
-    public readonly ModCollection ModCollection;
-    public readonly IntPtr        AssociatedGameObject;
+    private readonly ModCollection? _modCollection;
+
+    public ModCollection ModCollection
+        => _modCollection ?? ModCollection.Empty;
+
+    public readonly IntPtr AssociatedGameObject;
 
     public bool Valid
-        => ModCollection != ModCollection.Empty;
+        => _modCollection != null;
 
     public ResolveData()
     {
-        ModCollection        = ModCollection.Empty;
+        _modCollection       = null!;
         AssociatedGameObject = IntPtr.Zero;
     }
 
     public ResolveData( ModCollection collection, IntPtr gameObject )
     {
-        ModCollection        = collection;
+        _modCollection       = collection;
         AssociatedGameObject = gameObject;
     }
 
