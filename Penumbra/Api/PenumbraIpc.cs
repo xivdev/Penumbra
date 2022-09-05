@@ -274,15 +274,16 @@ public partial class PenumbraIpc
 
 public partial class PenumbraIpc
 {
-    public const string LabelProviderResolveDefault           = "Penumbra.ResolveDefaultPath";
-    public const string LabelProviderResolveCharacter         = "Penumbra.ResolveCharacterPath";
-    public const string LabelProviderResolvePlayer            = "Penumbra.ResolvePlayerPath";
-    public const string LabelProviderGetDrawObjectInfo        = "Penumbra.GetDrawObjectInfo";
-    public const string LabelProviderGetCutsceneParentIndex   = "Penumbra.GetCutsceneParentIndex";
-    public const string LabelProviderReverseResolvePath       = "Penumbra.ReverseResolvePath";
-    public const string LabelProviderReverseResolvePlayerPath = "Penumbra.ReverseResolvePlayerPath";
-    public const string LabelProviderCreatingCharacterBase    = "Penumbra.CreatingCharacterBase";
-    public const string LabelProviderCreatedCharacterBase     = "Penumbra.CreatedCharacterBase";
+    public const string LabelProviderResolveDefault                 = "Penumbra.ResolveDefaultPath";
+    public const string LabelProviderResolveCharacter               = "Penumbra.ResolveCharacterPath";
+    public const string LabelProviderResolvePlayer                  = "Penumbra.ResolvePlayerPath";
+    public const string LabelProviderGetDrawObjectInfo              = "Penumbra.GetDrawObjectInfo";
+    public const string LabelProviderGetCutsceneParentIndex         = "Penumbra.GetCutsceneParentIndex";
+    public const string LabelProviderReverseResolvePath             = "Penumbra.ReverseResolvePath";
+    public const string LabelProviderReverseResolvePlayerPath       = "Penumbra.ReverseResolvePlayerPath";
+    public const string LabelProviderCreatingCharacterBase          = "Penumbra.CreatingCharacterBase";
+    public const string LabelProviderCreatedCharacterBase           = "Penumbra.CreatedCharacterBase";
+    public const string LabelProviderGameObjectResourcePathResolved = "Penumbra.GameObjectResourcePathResolved";
 
     internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
     internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
@@ -293,6 +294,7 @@ public partial class PenumbraIpc
     internal ICallGateProvider< string, string[] >?                                ProviderReverseResolvePathPlayer;
     internal ICallGateProvider< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >? ProviderCreatingCharacterBase;
     internal ICallGateProvider< IntPtr, string, IntPtr, object? >?                 ProviderCreatedCharacterBase;
+    internal ICallGateProvider< IntPtr, string, string, object? >?                 ProviderGameObjectResourcePathResolved;
 
     private void InitializeResolveProviders( DalamudPluginInterface pi )
     {
@@ -387,6 +389,22 @@ public partial class PenumbraIpc
         {
             PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreatedCharacterBase}:\n{e}" );
         }
+
+        try
+        {
+            ProviderGameObjectResourcePathResolved =
+                pi.GetIpcProvider< IntPtr, string, string, object? >( LabelProviderGameObjectResourcePathResolved );
+            Api.GameObjectResourceResolved += GameObjectResourceResolvedEvent;
+        }
+        catch( Exception e )
+        {
+            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGameObjectResourcePathResolved}:\n{e}" );
+        }
+    }
+
+    private void GameObjectResourceResolvedEvent( IntPtr gameObject, string gamePath, string localPath )
+    {
+        ProviderGameObjectResourcePathResolved?.SendMessage( gameObject, gamePath, localPath );
     }
 
     private void DisposeResolveProviders()
@@ -397,8 +415,9 @@ public partial class PenumbraIpc
         ProviderResolveCharacter?.UnregisterFunc();
         ProviderReverseResolvePath?.UnregisterFunc();
         ProviderReverseResolvePathPlayer?.UnregisterFunc();
-        Api.CreatingCharacterBase -= CreatingCharacterBaseEvent;
-        Api.CreatedCharacterBase  -= CreatedCharacterBaseEvent;
+        Api.CreatingCharacterBase      -= CreatingCharacterBaseEvent;
+        Api.CreatedCharacterBase       -= CreatedCharacterBaseEvent;
+        Api.GameObjectResourceResolved -= GameObjectResourceResolvedEvent;
     }
 
     private void CreatingCharacterBaseEvent( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize, IntPtr equipData )

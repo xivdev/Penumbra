@@ -33,9 +33,12 @@ public class IpcTester : IDisposable
     private readonly ICallGateSubscriber< ModSettingChange, string, string, bool, object? > _settingChanged;
     private readonly ICallGateSubscriber< IntPtr, string, IntPtr, IntPtr, IntPtr, object? > _characterBaseCreating;
     private readonly ICallGateSubscriber< IntPtr, string, IntPtr, object? >                 _characterBaseCreated;
+    private readonly ICallGateSubscriber< IntPtr, string, string, object? >                 _gameObjectResourcePathResolved;
 
     private readonly List< DateTimeOffset > _initializedList = new();
     private readonly List< DateTimeOffset > _disposedList    = new();
+    private          bool                   _subscribed      = false;
+
 
     public IpcTester( DalamudPluginInterface pi, PenumbraIpc ipc )
     {
@@ -51,31 +54,51 @@ public class IpcTester : IDisposable
         _characterBaseCreating =
             _pi.GetIpcSubscriber< IntPtr, string, IntPtr, IntPtr, IntPtr, object? >( PenumbraIpc.LabelProviderCreatingCharacterBase );
         _characterBaseCreated = _pi.GetIpcSubscriber< IntPtr, string, IntPtr, object? >( PenumbraIpc.LabelProviderCreatedCharacterBase );
-        _initialized.Subscribe( AddInitialized );
-        _disposed.Subscribe( AddDisposed );
-        _redrawn.Subscribe( SetLastRedrawn );
-        _preSettingsDraw.Subscribe( UpdateLastDrawnMod );
-        _postSettingsDraw.Subscribe( UpdateLastDrawnMod );
-        _settingChanged.Subscribe( UpdateLastModSetting );
-        _characterBaseCreating.Subscribe( UpdateLastCreated );
-        _characterBaseCreated.Subscribe( UpdateLastCreated2 );
-        _modDirectoryChanged.Subscribe( UpdateModDirectoryChanged );
+        _gameObjectResourcePathResolved =
+            _pi.GetIpcSubscriber< IntPtr, string, string, object? >( PenumbraIpc.LabelProviderGameObjectResourcePathResolved );
+    }
+
+    private void SubscribeEvents()
+    {
+        if( !_subscribed )
+        {
+
+            _initialized.Subscribe( AddInitialized );
+            _disposed.Subscribe( AddDisposed );
+            _redrawn.Subscribe( SetLastRedrawn );
+            _preSettingsDraw.Subscribe( UpdateLastDrawnMod );
+            _postSettingsDraw.Subscribe( UpdateLastDrawnMod );
+            _settingChanged.Subscribe( UpdateLastModSetting );
+            _characterBaseCreating.Subscribe( UpdateLastCreated );
+            _characterBaseCreated.Subscribe( UpdateLastCreated2 );
+            _modDirectoryChanged.Subscribe( UpdateModDirectoryChanged );
+            _gameObjectResourcePathResolved.Subscribe( UpdateGameObjectResourcePath );
+            _subscribed = true;
+        }
+    }
+
+    public void UnsubscribeEvents()
+    {
+        if( _subscribed )
+        {
+            _initialized.Unsubscribe( AddInitialized );
+            _disposed.Unsubscribe( AddDisposed );
+            _redrawn.Subscribe( SetLastRedrawn );
+            _tooltip?.Unsubscribe( AddedTooltip );
+            _click?.Unsubscribe( AddedClick );
+            _preSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
+            _postSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
+            _settingChanged.Unsubscribe( UpdateLastModSetting );
+            _characterBaseCreating.Unsubscribe( UpdateLastCreated );
+            _characterBaseCreated.Unsubscribe( UpdateLastCreated2 );
+            _modDirectoryChanged.Unsubscribe( UpdateModDirectoryChanged );
+            _gameObjectResourcePathResolved.Unsubscribe( UpdateGameObjectResourcePath );
+            _subscribed = false;
+        }
     }
 
     public void Dispose()
-    {
-        _initialized.Unsubscribe( AddInitialized );
-        _disposed.Unsubscribe( AddDisposed );
-        _redrawn.Subscribe( SetLastRedrawn );
-        _tooltip?.Unsubscribe( AddedTooltip );
-        _click?.Unsubscribe( AddedClick );
-        _preSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
-        _postSettingsDraw.Unsubscribe( UpdateLastDrawnMod );
-        _settingChanged.Unsubscribe( UpdateLastModSetting );
-        _characterBaseCreating.Unsubscribe( UpdateLastCreated );
-        _characterBaseCreated.Unsubscribe( UpdateLastCreated2 );
-        _modDirectoryChanged.Unsubscribe( UpdateModDirectoryChanged );
-    }
+        => UnsubscribeEvents();
 
     private void AddInitialized()
         => _initializedList.Add( DateTimeOffset.UtcNow );
@@ -87,6 +110,7 @@ public class IpcTester : IDisposable
     {
         try
         {
+            SubscribeEvents();
             DrawAvailable();
             DrawGeneral();
             DrawResolve();
@@ -224,6 +248,10 @@ public class IpcTester : IDisposable
     private string         _lastCreatedGameObjectName = string.Empty;
     private IntPtr         _lastCreatedDrawObject     = IntPtr.Zero;
     private DateTimeOffset _lastCreatedGameObjectTime = DateTimeOffset.MaxValue;
+    private string         _lastResolvedGamePath      = string.Empty;
+    private string         _lastResolvedFullPath      = string.Empty;
+    private string         _lastResolvedObject        = string.Empty;
+    private DateTimeOffset _lastResolvedGamePathTime  = DateTimeOffset.MaxValue;
 
     private unsafe void UpdateLastCreated( IntPtr gameObject, string _, IntPtr _2, IntPtr _3, IntPtr _4 )
     {
@@ -239,6 +267,15 @@ public class IpcTester : IDisposable
         _lastCreatedGameObjectName = new Utf8String( obj->GetName() ).ToString();
         _lastCreatedGameObjectTime = DateTimeOffset.Now;
         _lastCreatedDrawObject     = drawObject;
+    }
+
+    private unsafe void UpdateGameObjectResourcePath( IntPtr gameObject, string gamePath, string fullPath )
+    {
+        var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
+        _lastResolvedObject       = obj != null ? new Utf8String( obj->GetName() ).ToString() : "Unknown";
+        _lastResolvedGamePath     = gamePath;
+        _lastResolvedFullPath     = fullPath;
+        _lastResolvedGamePathTime = DateTimeOffset.Now;
     }
 
     private void DrawResolve()
@@ -335,6 +372,13 @@ public class IpcTester : IDisposable
             ImGui.TextUnformatted( _lastCreatedDrawObject != IntPtr.Zero
                 ? $"0x{_lastCreatedDrawObject:X} for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}"
                 : $"NULL for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}" );
+        }
+
+        DrawIntro( PenumbraIpc.LabelProviderGameObjectResourcePathResolved, "Last GamePath resolved" );
+        if( _lastResolvedGamePathTime < DateTimeOffset.Now )
+        {
+            ImGui.TextUnformatted(
+                $"{_lastResolvedGamePath} -> {_lastResolvedFullPath} for <{_lastResolvedObject}> at {_lastResolvedGamePathTime}" );
         }
     }
 

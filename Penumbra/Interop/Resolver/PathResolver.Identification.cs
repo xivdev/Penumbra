@@ -40,7 +40,7 @@ public unsafe partial class PathResolver
             return null;
         }
 
-        var ui = ( AtkUnitBase* )addon;
+        var ui     = ( AtkUnitBase* )addon;
         var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 2u : 6u;
 
         var text = ( AtkTextNode* )ui->UldManager.SearchNodeById( nodeId );
@@ -61,7 +61,8 @@ public unsafe partial class PathResolver
         {
             return null;
         }
-        var data = *( byte** )( (byte*) agent + 0x28 );
+
+        var data = *( byte** )( ( byte* )agent + 0x28 );
         if( data == null )
         {
             return null;
@@ -139,11 +140,11 @@ public unsafe partial class PathResolver
     }
 
     // Identify the correct collection for a GameObject by index and name.
-    private static ModCollection IdentifyCollection( GameObject* gameObject )
+    private static ResolveData IdentifyCollection( GameObject* gameObject )
     {
         if( gameObject == null )
         {
-            return Penumbra.CollectionManager.Default;
+            return new ResolveData( Penumbra.CollectionManager.Default );
         }
 
         try
@@ -153,8 +154,9 @@ public unsafe partial class PathResolver
             // Actors are also not named. So use Yourself > Players > Racial > Default.
             if( !Dalamud.ClientState.IsLoggedIn )
             {
-                return Penumbra.CollectionManager.ByType( CollectionType.Yourself )
+                var collection = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
                  ?? ( CollectionByActor( string.Empty, gameObject, out var c ) ? c : Penumbra.CollectionManager.Default );
+                return collection.ToResolveData( gameObject );
             }
             else
             {
@@ -163,7 +165,7 @@ public unsafe partial class PathResolver
                 && gameObject->ObjectKind == ( byte )ObjectKind.EventNpc
                 && gameObject->DataID is 1011832 or 1011021 ) // cf. "E8 ?? ?? ?? ?? 0F B6 F8 88 45", male or female retainer
                 {
-                    return Penumbra.CollectionManager.Default;
+                    return Penumbra.CollectionManager.Default.ToResolveData( gameObject );
                 }
 
                 string? actorName = null;
@@ -174,7 +176,7 @@ public unsafe partial class PathResolver
                     if( actorName.Length > 0
                     && CollectionByActorName( actorName, out var actorCollection ) )
                     {
-                        return actorCollection;
+                        return actorCollection.ToResolveData( gameObject );
                     }
                 }
 
@@ -193,17 +195,18 @@ public unsafe partial class PathResolver
                  ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
 
                 // First check temporary character collections, then the own configuration, then special collections.
-                return CollectionByActorName( actualName, out var c )
+                var collection = CollectionByActorName( actualName, out var c )
                     ? c
                     : CollectionByActor( actualName, gameObject, out c )
                         ? c
                         : Penumbra.CollectionManager.Default;
+                return collection.ToResolveData( gameObject );
             }
         }
         catch( Exception e )
         {
             PluginLog.Error( $"Error identifying collection:\n{e}" );
-            return Penumbra.CollectionManager.Default;
+            return Penumbra.CollectionManager.Default.ToResolveData( gameObject );
         }
     }
 

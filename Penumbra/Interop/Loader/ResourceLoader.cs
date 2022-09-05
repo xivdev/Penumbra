@@ -2,6 +2,7 @@ using System;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
@@ -116,9 +117,9 @@ public unsafe partial class ResourceLoader : IDisposable
 
     // Event fired whenever a resource is returned.
     // If the path was manipulated by penumbra, manipulatedPath will be the file path of the loaded resource.
-    // resolveData is additional data returned by the current ResolvePath function and is user-defined.
+    // resolveData is additional data returned by the current ResolvePath function which can contain the collection and associated game object.
     public delegate void ResourceLoadedDelegate( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
-        object? resolveData );
+        ResolveData resolveData );
 
     public event ResourceLoadedDelegate? ResourceLoaded;
 
@@ -133,7 +134,7 @@ public unsafe partial class ResourceLoader : IDisposable
     // Resolving goes through all subscribed functions in arbitrary order until one returns true,
     // or uses default resolving if none return true.
     public delegate bool ResolvePathDelegate( Utf8GamePath path, ResourceCategory category, ResourceType type, int hash,
-        out (FullPath?, object?) ret );
+        out (FullPath?, ResolveData) ret );
 
     public event ResolvePathDelegate? ResolvePathCustomization;
 

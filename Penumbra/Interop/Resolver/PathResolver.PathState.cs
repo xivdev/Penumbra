@@ -32,7 +32,7 @@ public unsafe partial class PathResolver
         private readonly ResolverHooks _monster;
 
         // This map links files to their corresponding collection, if it is non-default.
-        private readonly ConcurrentDictionary< Utf8String, ModCollection > _pathCollections = new();
+        private readonly ConcurrentDictionary< Utf8String, ResolveData > _pathCollections = new();
 
         public PathState( PathResolver parent )
         {
@@ -70,18 +70,18 @@ public unsafe partial class PathResolver
         public int Count
             => _pathCollections.Count;
 
-        public IEnumerable< KeyValuePair< Utf8String, ModCollection > > Paths
+        public IEnumerable< KeyValuePair< Utf8String, ResolveData > > Paths
             => _pathCollections;
 
-        public bool TryGetValue( Utf8String path, [NotNullWhen( true )] out ModCollection? collection )
+        public bool TryGetValue( Utf8String path, out ResolveData collection )
             => _pathCollections.TryGetValue( path, out collection );
 
-        public bool Consume( Utf8String path, [NotNullWhen( true )] out ModCollection? collection )
+        public bool Consume( Utf8String path, out ResolveData collection )
             => _pathCollections.TryRemove( path, out collection );
 
         // Just add or remove the resolved path.
         [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
-        public IntPtr ResolvePath( ModCollection collection, IntPtr path )
+        public IntPtr ResolvePath( IntPtr gameObject, ModCollection collection, IntPtr path )
         {
             if( path == IntPtr.Zero )
             {
@@ -89,20 +89,20 @@ public unsafe partial class PathResolver
             }
 
             var gamePath = new Utf8String( ( byte* )path );
-            SetCollection( gamePath, collection );
+            SetCollection( gameObject, gamePath, collection );
             return path;
         }
 
         // Special handling for paths so that we do not store non-owned temporary strings in the dictionary.
-        public void SetCollection( Utf8String path, ModCollection collection )
+        public void SetCollection( IntPtr gameObject, Utf8String path, ModCollection collection )
         {
             if( _pathCollections.ContainsKey( path ) || path.IsOwned )
             {
-                _pathCollections[ path ] = collection;
+                _pathCollections[ path ] = collection.ToResolveData( gameObject );
             }
             else
             {
-                _pathCollections[ path.Clone() ] = collection;
+                _pathCollections[ path.Clone() ] = collection.ToResolveData( gameObject );
             }
         }
     }

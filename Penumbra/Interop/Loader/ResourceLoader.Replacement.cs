@@ -9,6 +9,7 @@ using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
@@ -113,18 +114,18 @@ public unsafe partial class ResourceLoader
 
 
     // Use the default method of path replacement.
-    public static (FullPath?, object?) DefaultResolver( Utf8GamePath path )
+    public static (FullPath?, ResolveData) DefaultResolver( Utf8GamePath path )
     {
         var resolved = Penumbra.CollectionManager.Default.ResolvePath( path );
-        return ( resolved, null );
+        return ( resolved, Penumbra.CollectionManager.Default.ToResolveData() );
     }
 
     // Try all resolve path subscribers or use the default replacer.
-    private (FullPath?, object?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
+    private (FullPath?, ResolveData) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
         if( !DoReplacements || _incMode.Value )
         {
-            return ( null, null );
+            return ( null, ResolveData.Invalid );
         }
 
         path = path.ToLower();

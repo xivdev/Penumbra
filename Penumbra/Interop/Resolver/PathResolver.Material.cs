@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Dalamud.Hooking;
 using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
@@ -20,7 +21,7 @@ public unsafe partial class PathResolver
     {
         private readonly PathState _paths;
 
-        private ModCollection? _mtrlCollection;
+        private ResolveData _mtrlData = ResolveData.Invalid;
 
         public MaterialState( PathState paths )
         {
@@ -29,30 +30,30 @@ public unsafe partial class PathResolver
         }
 
         // Check specifically for shpk and tex files whether we are currently in a material load.
-        public bool HandleSubFiles( ResourceType type, [NotNullWhen( true )] out ModCollection? collection )
+        public bool HandleSubFiles( ResourceType type, out ResolveData collection )
         {
-            if( _mtrlCollection != null && type is ResourceType.Tex or ResourceType.Shpk )
+            if( _mtrlData.Valid && type is ResourceType.Tex or ResourceType.Shpk )
             {
-                collection = _mtrlCollection;
+                collection = _mtrlData;
                 return true;
             }
 
-            collection = null;
+            collection = ResolveData.Invalid;
             return false;
         }
 
         // Materials need to be set per collection so they can load their textures independently from each other.
-        public static void HandleCollection( ModCollection collection, string path, bool nonDefault, ResourceType type, FullPath? resolved,
-            out (FullPath?, object?) data )
+        public static void HandleCollection( ResolveData resolveData, string path, bool nonDefault, ResourceType type, FullPath? resolved,
+            out (FullPath?, ResolveData) data )
         {
             if( nonDefault && type == ResourceType.Mtrl )
             {
-                var fullPath = new FullPath( $"|{collection.Name}_{collection.ChangeCounter}|{path}" );
-                data = ( fullPath, collection );
+                var fullPath = new FullPath( $"|{resolveData.ModCollection.Name}_{resolveData.ModCollection.ChangeCounter}|{path}" );
+                data = ( fullPath, resolveData );
             }
             else
             {
-                data = ( resolved, collection );
+                data = ( resolved, resolveData );
             }
         }
 
@@ -73,8 +74,8 @@ public unsafe partial class PathResolver
         public void Dispose()
         {
             Disable();
-            _loadMtrlShpkHook?.Dispose();
-            _loadMtrlTexHook?.Dispose();
+            _loadMtrlShpkHook.Dispose();
+            _loadMtrlTexHook.Dispose();
         }
 
         // We need to set the correct collection for the actual material path that is loaded
@@ -96,7 +97,10 @@ public unsafe partial class PathResolver
 #if DEBUG
                 PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", name, path );
 #endif
-                _paths.SetCollection( path, collection );
+
+                var objFromObjTable = Dalamud.Objects.FirstOrDefault( f => f.Name.TextValue == name );
+                var gameObjAddr     = objFromObjTable?.Address ?? IntPtr.Zero;
+                _paths.SetCollection( gameObjAddr, path, collection );
             }
             else
             {
@@ -123,7 +127,7 @@ public unsafe partial class PathResolver
         {
             LoadMtrlHelper( mtrlResourceHandle );
             var ret = _loadMtrlTexHook.Original( mtrlResourceHandle );
-            _mtrlCollection = null;
+            _mtrlData = ResolveData.Invalid;
             return ret;
         }
 
@@ -135,7 +139,7 @@ public unsafe partial class PathResolver
         {
             LoadMtrlHelper( mtrlResourceHandle );
             var ret = _loadMtrlShpkHook.Original( mtrlResourceHandle );
-            _mtrlCollection = null;
+            _mtrlData = ResolveData.Invalid;
             return ret;
         }
 
@@ -148,7 +152,7 @@ public unsafe partial class PathResolver
 
             var mtrl     = ( MtrlResource* )mtrlResourceHandle;
             var mtrlPath = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
-            _mtrlCollection = _paths.TryGetValue( mtrlPath, out var c ) ? c : null;
+            _mtrlData = _paths.TryGetValue( mtrlPath, out var c ) ? c : ResolveData.Invalid;
         }
     }
 }

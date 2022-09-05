@@ -40,7 +40,7 @@ public partial class PathResolver : IDisposable
     }
 
     // The modified resolver that handles game path resolving.
-    private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, object?) data )
+    private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, ResolveData) data )
     {
         // Check if the path was marked for a specific collection,
         // or if it is a file loaded by a material, and if we are currently in a material load,
@@ -48,23 +48,23 @@ public partial class PathResolver : IDisposable
         // If not use the default collection.
         // We can remove paths after they have actually been loaded.
         // A potential next request will add the path anew.
-        var nonDefault = _materials.HandleSubFiles( type, out var collection )
-         || _paths.Consume( gamePath.Path, out collection )
-         || _animations.HandleFiles( type, gamePath, out collection )
-         || DrawObjects.HandleDecalFile( type, gamePath, out collection );
-        if( !nonDefault || collection == null )
+        var nonDefault = _materials.HandleSubFiles( type, out var resolveData )
+         || _paths.Consume( gamePath.Path, out resolveData )
+         || _animations.HandleFiles( type, gamePath, out resolveData )
+         || DrawObjects.HandleDecalFile( type, gamePath, out resolveData );
+        if( !nonDefault || !resolveData.Valid )
         {
-            collection = Penumbra.CollectionManager.Default;
+            resolveData = Penumbra.CollectionManager.Default.ToResolveData();
         }
 
         // Resolve using character/default collection first, otherwise forced, as usual.
-        var resolved = collection.ResolvePath( gamePath );
+        var resolved = resolveData.ModCollection.ResolvePath( gamePath );
 
         // Since mtrl files load their files separately, we need to add the new, resolved path
         // so that the functions loading tex and shpk can find that path and use its collection.
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path.ToString() : resolved.Value.FullName;
-        MaterialState.HandleCollection( collection, path, nonDefault, type, resolved, out data );
+        MaterialState.HandleCollection( resolveData, path, nonDefault, type, resolved, out data );
         return true;
     }
 
@@ -117,50 +117,50 @@ public partial class PathResolver : IDisposable
         _materials.Dispose();
     }
 
-    public static unsafe (IntPtr, ModCollection) IdentifyDrawObject( IntPtr drawObject )
+    public static unsafe (IntPtr, ResolveData) IdentifyDrawObject( IntPtr drawObject )
     {
-        var parent = FindParent( drawObject, out var collection );
-        return ( ( IntPtr )parent, collection );
+        var parent = FindParent( drawObject, out var resolveData );
+        return ( ( IntPtr )parent, resolveData );
     }
 
     public int CutsceneActor( int idx )
         => Cutscenes.GetParentIndex( idx );
 
     // Use the stored information to find the GameObject and Collection linked to a DrawObject.
-    public static unsafe GameObject* FindParent( IntPtr drawObject, out ModCollection collection )
+    public static unsafe GameObject* FindParent( IntPtr drawObject, out ResolveData resolveData )
     {
         if( DrawObjects.TryGetValue( drawObject, out var data, out var gameObject ) )
         {
-            collection = data.Item1;
+            resolveData = data.Item1;
             return gameObject;
         }
 
         if( DrawObjects.LastGameObject != null
         && ( DrawObjects.LastGameObject->DrawObject == null || DrawObjects.LastGameObject->DrawObject == ( DrawObject* )drawObject ) )
         {
-            collection = IdentifyCollection( DrawObjects.LastGameObject );
+            resolveData = IdentifyCollection( DrawObjects.LastGameObject );
             return DrawObjects.LastGameObject;
         }
 
-        collection = IdentifyCollection( null );
+        resolveData = IdentifyCollection( null );
         return null;
     }
 
-    private static unsafe ModCollection? GetCollection( IntPtr drawObject )
+    private static unsafe ResolveData GetResolveData( IntPtr drawObject )
     {
-        var parent = FindParent( drawObject, out var collection );
-        if( parent == null || collection == Penumbra.CollectionManager.Default )
+        var parent = FindParent( drawObject, out var resolveData );
+        if( parent == null || resolveData.ModCollection == Penumbra.CollectionManager.Default )
         {
-            return null;
+            return ResolveData.Invalid;
         }
 
-        return collection.HasCache ? collection : null;
+        return resolveData.ModCollection.HasCache ? resolveData : ResolveData.Invalid;
     }
 
-    internal IEnumerable< KeyValuePair< Utf8String, ModCollection > > PathCollections
+    internal IEnumerable< KeyValuePair< Utf8String, ResolveData > > PathCollections
         => _paths.Paths;
 
-    internal IEnumerable< KeyValuePair< IntPtr, (ModCollection, int) > > DrawObjectMap
+    internal IEnumerable< KeyValuePair< IntPtr, (ResolveData, int) > > DrawObjectMap
         => DrawObjects.DrawObjects;
 
     internal IEnumerable< KeyValuePair< int, global::Dalamud.Game.ClientState.Objects.Types.GameObject > > CutsceneActors

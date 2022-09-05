@@ -20,13 +20,13 @@ public unsafe partial class PathResolver
         public static event CreatingCharacterBaseDelegate? CreatingCharacterBase;
         public static event CreatedCharacterBaseDelegate? CreatedCharacterBase;
 
-        public IEnumerable< KeyValuePair< IntPtr, (ModCollection, int) > > DrawObjects
+        public IEnumerable< KeyValuePair< IntPtr, (ResolveData, int) > > DrawObjects
             => _drawObjectToObject;
 
         public int Count
             => _drawObjectToObject.Count;
 
-        public bool TryGetValue( IntPtr drawObject, out (ModCollection, int) value, out GameObject* gameObject )
+        public bool TryGetValue( IntPtr drawObject, out (ResolveData, int) value, out GameObject* gameObject )
         {
             gameObject = null;
             if( !_drawObjectToObject.TryGetValue( drawObject, out value ) )
@@ -40,7 +40,7 @@ public unsafe partial class PathResolver
 
 
         // Set and update a parent object if it exists and a last game object is set.
-        public ModCollection? CheckParentDrawObject( IntPtr drawObject, IntPtr parentObject )
+        public ResolveData CheckParentDrawObject( IntPtr drawObject, IntPtr parentObject )
         {
             if( parentObject == IntPtr.Zero && LastGameObject != null )
             {
@@ -49,26 +49,26 @@ public unsafe partial class PathResolver
                 return collection;
             }
 
-            return null;
+            return ResolveData.Invalid;
         }
 
 
-        public bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, [NotNullWhen( true )] out ModCollection? collection )
+        public bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, out ResolveData resolveData )
         {
             if( type                 == ResourceType.Tex
-            && LastCreatedCollection != null
+            && LastCreatedCollection.Valid
             && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l', '_', 'f', 'a', 'c', 'e' ) )
             {
-                collection = LastCreatedCollection!;
+                resolveData = LastCreatedCollection;
                 return true;
             }
 
-            collection = null;
+            resolveData = ResolveData.Invalid;
             return false;
         }
 
 
-        public ModCollection? LastCreatedCollection
+        public ResolveData LastCreatedCollection
             => _lastCreatedCollection;
 
         public GameObject* LastGameObject { get; private set; }
@@ -124,8 +124,8 @@ public unsafe partial class PathResolver
 
         // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
         // It contains any DrawObjects that correspond to a human actor, even those without specific collections.
-        private readonly Dictionary< IntPtr, (ModCollection, int) > _drawObjectToObject = new();
-        private          ModCollection?                             _lastCreatedCollection;
+        private readonly Dictionary< IntPtr, (ResolveData, int) > _drawObjectToObject = new();
+        private          ResolveData                              _lastCreatedCollection = ResolveData.Invalid;
 
         // Keep track of created DrawObjects that are CharacterBase,
         // and use the last game object that called EnableDraw to link them.
@@ -141,14 +141,14 @@ public unsafe partial class PathResolver
             if( LastGameObject != null )
             {
                 var modelPtr = &a;
-                CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!, ( IntPtr )modelPtr, b, c );
+                CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ( IntPtr )modelPtr, b, c );
             }
 
             var ret = _characterBaseCreateHook.Original( a, b, c, d );
             if( LastGameObject != null )
             {
                 _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
-                CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!, ret );
+                CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ret );
             }
 
             return ret;

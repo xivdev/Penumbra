@@ -27,6 +27,7 @@ public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollec
     IntPtr equipData );
 
 public delegate void CreatedCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr drawObject );
+public delegate void GameObjectResourceResolvedDelegate( IntPtr gameObject, string gamePath, string localPath );
 
 public enum PenumbraApiEc
 {
@@ -78,6 +79,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Triggered after a character base was created if a corresponding gameObject could be found,
     // so you can apply flag changes after finishing.
     public event CreatedCharacterBaseDelegate? CreatedCharacterBase;
+
+    // Triggered whenever a resource is redirected by Penumbra for a specific, identified game object.
+    // Does not trigger if the resource is not requested for a known game object.
+    public event GameObjectResourceResolvedDelegate? GameObjectResourceResolved;
 
     // Queue redrawing of all actors of the given name with the given RedrawType.
     public void RedrawObject( string name, RedrawType setting );
