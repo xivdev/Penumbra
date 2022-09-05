@@ -114,18 +114,18 @@ public unsafe partial class ResourceLoader
 
 
     // Use the default method of path replacement.
-    public static (FullPath?, LinkedModCollection?) DefaultResolver( Utf8GamePath path )
+    public static (FullPath?, ResolveData) DefaultResolver( Utf8GamePath path )
     {
         var resolved = Penumbra.CollectionManager.Default.ResolvePath( path );
-        return ( resolved, new LinkedModCollection( Penumbra.CollectionManager.Default ) );
+        return ( resolved, Penumbra.CollectionManager.Default.ToResolveData() );
     }
 
     // Try all resolve path subscribers or use the default replacer.
-    private (FullPath?, LinkedModCollection?) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
+    private (FullPath?, ResolveData) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
     {
         if( !DoReplacements || _incMode.Value )
         {
-            return ( null, null );
+            return ( null, ResolveData.Invalid );
         }
 
         path = path.ToLower();

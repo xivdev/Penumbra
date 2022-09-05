@@ -15,8 +15,8 @@ public unsafe partial class PathResolver
     {
         private readonly DrawObjectState _drawObjectState;
 
-        private LinkedModCollection? _animationLoadCollection;
-        private LinkedModCollection? _lastAvfxCollection;
+        private ResolveData _animationLoadData = ResolveData.Invalid;
+        private ResolveData _lastAvfxData      = ResolveData.Invalid;
 
         public AnimationState( DrawObjectState drawObjectState )
         {
@@ -24,46 +24,48 @@ public unsafe partial class PathResolver
             SignatureHelper.Initialise( this );
         }
 
-        public bool HandleFiles( ResourceType type, Utf8GamePath _, [NotNullWhen( true )] out LinkedModCollection? collection )
+        public bool HandleFiles( ResourceType type, Utf8GamePath _, out ResolveData resolveData )
         {
             switch( type )
             {
                 case ResourceType.Tmb:
                 case ResourceType.Pap:
                 case ResourceType.Scd:
-                    if( _animationLoadCollection != null )
+                    if( _animationLoadData.Valid )
                     {
-                        collection = _animationLoadCollection;
+                        resolveData = _animationLoadData;
                         return true;
                     }
 
                     break;
                 case ResourceType.Avfx:
-                    _lastAvfxCollection = _animationLoadCollection ?? new LinkedModCollection(Penumbra.CollectionManager.Default);
-                    if( _animationLoadCollection != null )
+                    _lastAvfxData = _animationLoadData.Valid
+                        ? _animationLoadData
+                        : Penumbra.CollectionManager.Default.ToResolveData();
+                    if( _animationLoadData.Valid )
                     {
-                        collection = _animationLoadCollection;
+                        resolveData = _animationLoadData;
                         return true;
                     }
 
                     break;
                 case ResourceType.Atex:
-                    if( _lastAvfxCollection != null )
+                    if( _lastAvfxData.Valid )
                     {
-                        collection = _lastAvfxCollection;
+                        resolveData = _lastAvfxData;
                         return true;
                     }
 
-                    if( _animationLoadCollection != null )
+                    if( _animationLoadData.Valid )
                     {
-                        collection = _animationLoadCollection;
+                        resolveData = _animationLoadData;
                         return true;
                     }
 
                     break;
             }
 
-            collection = null;
+            resolveData = ResolveData.Invalid;
             return false;
         }
 
@@ -107,7 +109,7 @@ public unsafe partial class PathResolver
         private ulong LoadTimelineResourcesDetour( IntPtr timeline )
         {
             ulong ret;
-            var   old = _animationLoadCollection;
+            var   old = _animationLoadData;
             try
             {
                 if( timeline != IntPtr.Zero )
@@ -117,11 +119,11 @@ public unsafe partial class PathResolver
                     if( idx >= 0 && idx < Dalamud.Objects.Length )
                     {
                         var obj = Dalamud.Objects[ idx ];
-                        _animationLoadCollection = obj != null ? IdentifyCollection( ( GameObject* )obj.Address ) : null;
+                        _animationLoadData = obj != null ? IdentifyCollection( ( GameObject* )obj.Address ) : ResolveData.Invalid;
                     }
                     else
                     {
-                        _animationLoadCollection = null;
+                        _animationLoadData = ResolveData.Invalid;
                     }
                 }
             }
@@ -130,7 +132,7 @@ public unsafe partial class PathResolver
                 ret = _loadTimelineResourcesHook.Original( timeline );
             }
 
-            _animationLoadCollection = old;
+            _animationLoadData = old;
 
             return ret;
         }
@@ -145,11 +147,14 @@ public unsafe partial class PathResolver
 
         private void CharacterBaseLoadAnimationDetour( IntPtr drawObject )
         {
-            var last = _animationLoadCollection;
-            _animationLoadCollection = _drawObjectState.LastCreatedCollection
-             ?? ( FindParent( drawObject, out var collection ) != null ? collection : new LinkedModCollection(Penumbra.CollectionManager.Default) );
+            var last = _animationLoadData;
+            _animationLoadData = _drawObjectState.LastCreatedCollection.Valid
+                ? _drawObjectState.LastCreatedCollection
+                : FindParent( drawObject, out var collection ) != null
+                    ? collection
+                    : Penumbra.CollectionManager.Default.ToResolveData();
             _characterBaseLoadAnimationHook.Original( drawObject );
-            _animationLoadCollection = last;
+            _animationLoadData = last;
         }
 
 
@@ -160,10 +165,10 @@ public unsafe partial class PathResolver
 
         private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 )
         {
-            var last = _animationLoadCollection;
-            _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
+            var last = _animationLoadData;
+            _animationLoadData = IdentifyCollection( ( GameObject* )gameObject );
             var ret = _loadSomeAvfxHook.Original( a1, gameObject, gameObject2, unk1, unk2, unk3 );
-            _animationLoadCollection = last;
+            _animationLoadData = last;
             return ret;
         }
 
@@ -177,18 +182,18 @@ public unsafe partial class PathResolver
         private void LoadSomePapDetour( IntPtr a1, int a2, IntPtr a3, int a4 )
         {
             var timelinePtr = a1 + 0x50;
-            var last        = _animationLoadCollection;
+            var last        = _animationLoadData;
             if( timelinePtr != IntPtr.Zero )
             {
                 var actorIdx = ( int )( *( *( ulong** )timelinePtr + 1 ) >> 3 );
                 if( actorIdx >= 0 && actorIdx < Dalamud.Objects.Length )
                 {
-                    _animationLoadCollection = IdentifyCollection( ( GameObject* )( Dalamud.Objects[ actorIdx ]?.Address ?? IntPtr.Zero ) );
+                    _animationLoadData = IdentifyCollection( ( GameObject* )( Dalamud.Objects[ actorIdx ]?.Address ?? IntPtr.Zero ) );
                 }
             }
 
             _loadSomePapHook.Original( a1, a2, a3, a4 );
-            _animationLoadCollection = last;
+            _animationLoadData = last;
         }
 
         // Seems to load character actions when zoning or changing class, maybe.
@@ -197,10 +202,10 @@ public unsafe partial class PathResolver
 
         private void SomeActionLoadDetour( IntPtr gameObject )
         {
-            var last = _animationLoadCollection;
-            _animationLoadCollection = IdentifyCollection( ( GameObject* )gameObject );
+            var last = _animationLoadData;
+            _animationLoadData = IdentifyCollection( ( GameObject* )gameObject );
             _someActionLoadHook.Original( gameObject );
-            _animationLoadCollection = last;
+            _animationLoadData = last;
         }
 
         [Signature( "E8 ?? ?? ?? ?? 44 84 A3", DetourName = nameof( SomeOtherAvfxDetour ) )]
@@ -208,11 +213,11 @@ public unsafe partial class PathResolver
 
         private void SomeOtherAvfxDetour( IntPtr unk )
         {
-            var last       = _animationLoadCollection;
+            var last       = _animationLoadData;
             var gameObject = ( GameObject* )( unk - 0x8D0 );
-            _animationLoadCollection = IdentifyCollection( gameObject );
+            _animationLoadData = IdentifyCollection( gameObject );
             _someOtherAvfxHook.Original( unk );
-            _animationLoadCollection = last;
+            _animationLoadData = last;
         }
     }
 }

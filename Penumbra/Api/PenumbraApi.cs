@@ -67,12 +67,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         Penumbra.CollectionManager.CollectionChanged += SubscribeToNewCollections;
-        Penumbra.ResourceLoader.ResourceLoaded += OnResourceLoaded;
+        Penumbra.ResourceLoader.ResourceLoaded       += OnResourceLoaded;
     }
 
     public unsafe void Dispose()
     {
-        Penumbra.ResourceLoader.ResourceLoaded -= OnResourceLoaded;
+        Penumbra.ResourceLoader.ResourceLoaded       -= OnResourceLoaded;
         Penumbra.CollectionManager.CollectionChanged -= SubscribeToNewCollections;
         _penumbra                                    =  null;
         _lumina                                      =  null;
@@ -93,10 +93,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Penumbra.Config.ModDirectory;
     }
 
-    private unsafe void OnResourceLoaded( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath, LinkedModCollection? resolveData )
+    private unsafe void OnResourceLoaded( ResourceHandle* _, Utf8GamePath originalPath, FullPath? manipulatedPath,
+        ResolveData resolveData )
     {
-        if( resolveData == null ) return;
-        GameObjectResourceResolved?.Invoke( resolveData.AssociatedGameObject, originalPath.ToString(), manipulatedPath?.ToString() ?? originalPath.ToString() );
+        GameObjectResourceResolved?.Invoke( resolveData.AssociatedGameObject, originalPath.ToString(),
+            manipulatedPath?.ToString() ?? originalPath.ToString() );
     }
 
     public event Action< string, bool >? ModDirectoryChanged
