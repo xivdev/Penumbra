@@ -359,6 +359,12 @@ public partial class ConfigWindow
                 Penumbra.Config.TutorialStep = 0;
                 Penumbra.Config.Save();
             }
+
+            ImGui.SetCursorPos( new Vector2( xPos, 4 * ImGui.GetFrameHeightWithSpacing() ) );
+            if( ImGui.Button( "Show Changelogs", new Vector2( width, 0 ) ) )
+            {
+                Penumbra.Config.LastSeenVersion = 0;
+            }
         }
     }
 }

@@ -124,6 +124,12 @@ public partial class Mod
             var lastSize = -1L;
             foreach( var file in files )
             {
+                // Skip any UI Files because deduplication causes weird crashes for those.
+                if( file.SubModUsage.Any( f => f.Item2.Path.StartsWith( 'u', 'i', '/' ) ) )
+                {
+                    continue;
+                }
+
                 if( DuplicatesFinished )
                 {
                     return;
@@ -260,7 +266,6 @@ public partial class Mod
                 PluginLog.Error( $"Could not delete empty directories in {baseDir.FullName}:\n{e}" );
             }
         }
-
 
 
         // Deduplicate a mod simply by its directory without any confirmation or waiting time.

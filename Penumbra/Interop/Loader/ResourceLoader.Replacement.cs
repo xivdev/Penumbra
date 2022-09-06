@@ -98,13 +98,8 @@ public unsafe partial class ResourceLoader
             return retUnmodified;
         }
 
-        // Replace the hash and path with the correct one for the replacement,
-        // but only for non-UI files. UI files can not reasonably be loaded multiple times at once,
-        // and seem to cause concurrency problems if multiple UI parts use the same resource for different use-cases.
-        if( *categoryId != ResourceCategory.Ui )
-        {
-            *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
-        }
+        // Replace the hash and path with the correct one for the replacement.
+        *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
 
         path = resolvedPath.Value.InternalName.Path;
         var retModified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
@@ -154,7 +149,7 @@ public unsafe partial class ResourceLoader
     // We hook ReadSqPack to redirect rooted files to ReadFile.
     public delegate byte ReadSqPackPrototype( ResourceManager* resourceManager, SeFileDescriptor* pFileDesc, int priority, bool isSync );
 
-    [Signature( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3", DetourName = nameof(ReadSqPackDetour) )]
+    [Signature( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3", DetourName = nameof( ReadSqPackDetour ) )]
     public Hook< ReadSqPackPrototype > ReadSqPackHook = null!;
 
     private byte ReadSqPackDetour( ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync )
@@ -188,10 +183,10 @@ public unsafe partial class ResourceLoader
         var  split = gamePath.Path.Split( ( byte )'|', 3, false );
         fileDescriptor->ResourceHandle->FileNameData   = split[ 2 ].Path;
         fileDescriptor->ResourceHandle->FileNameLength = split[ 2 ].Length;
-
-        var funcFound = ResourceLoadCustomization.GetInvocationList()
-           .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
-               .Invoke( split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, isSync, out ret ) );
+        var funcFound = fileDescriptor->ResourceHandle->Category != ResourceCategory.Ui
+         && ResourceLoadCustomization.GetInvocationList()
+               .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
+                   .Invoke( split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, isSync, out ret ) );
 
         if( !funcFound )
         {
@@ -227,8 +222,9 @@ public unsafe partial class ResourceLoader
         var fdPtr = ( char* )( fd + 0x21 );
         for( var i = 0; i < gamePath.Length; ++i )
         {
-            ( &fileDescriptor->Utf16FileName )[ i ] = ( char )gamePath.Path[ i ];
-            fdPtr[ i ]                              = ( char )gamePath.Path[ i ];
+            var c = ( char )gamePath.Path[ i ];
+            ( &fileDescriptor->Utf16FileName )[ i ] = c;
+            fdPtr[ i ]                              = c;
         }
 
         ( &fileDescriptor->Utf16FileName )[ gamePath.Length ] = '\0';

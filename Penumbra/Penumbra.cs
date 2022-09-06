@@ -159,6 +159,7 @@ public class Penumbra : IDalamudPlugin
         system = new WindowSystem( Name );
         system.AddWindow( _configWindow );
         system.AddWindow( cfg.ModEditPopup );
+        system.AddWindow( ConfigWindow.CreateChangelog() );
         Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
     }
 

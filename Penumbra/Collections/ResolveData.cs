@@ -1,5 +1,4 @@
 using System;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 
 namespace Penumbra.Collections;
 

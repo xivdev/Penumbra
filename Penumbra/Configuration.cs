@@ -8,8 +8,10 @@ using Newtonsoft.Json;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Widgets;
 using Penumbra.Import;
 using Penumbra.Mods;
+using Penumbra.UI;
 using Penumbra.UI.Classes;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
@@ -19,6 +21,8 @@ namespace Penumbra;
 public partial class Configuration : IPluginConfiguration
 {
     public int Version { get; set; } = Constants.CurrentVersion;
+
+    public int LastSeenVersion { get; set; } = ConfigWindow.LastChangelogVersion;
 
     public bool EnableMods { get; set; } = true;
     public string ModDirectory { get; set; } = string.Empty;
