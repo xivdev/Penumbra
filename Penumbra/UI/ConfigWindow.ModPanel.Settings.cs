@@ -168,10 +168,13 @@ public partial class ConfigWindow
             {
                 for( var idx2 = 0; idx2 < group.Count; ++idx2 )
                 {
+                    id.Push( idx2 );
                     if( ImGui.Selectable( group[ idx2 ].Name, idx2 == selectedOption ) )
                     {
                         Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx2 );
                     }
+
+                    id.Pop();
                 }
             }
 
@@ -201,6 +204,7 @@ public partial class ConfigWindow
             Widget.BeginFramedGroup( group.Name, group.Description );
             for( var idx2 = 0; idx2 < group.Count; ++idx2 )
             {
+                id.Push( idx2 );
                 var flag    = 1u << idx2;
                 var setting = ( flags & flag ) != 0;
                 if( ImGui.Checkbox( group[ idx2 ].Name, ref setting ) )
@@ -208,6 +212,8 @@ public partial class ConfigWindow
                     flags = setting ? flags | flag : flags & ~flag;
                     Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, flags );
                 }
+
+                id.Pop();
             }
 
             Widget.EndFramedGroup();
