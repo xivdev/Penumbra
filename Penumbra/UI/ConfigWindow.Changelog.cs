@@ -26,6 +26,12 @@ public partial class ConfigWindow
            .RegisterEntry( "Files in the UI category will no longer be deduplicated for the moment." )
            .RegisterHighlight( "If you experience UI-related crashes, please re-import your UI mods.", 1 )
            .RegisterEntry( "This is a temporary fix against those not-yet fully understood crashes and may be reworked later.", 1 )
+           .RegisterEntry( "On import, Penumbra will now show files with extensions '.ttmp', '.ttmp2' and '.pmp'. You can still select showing generic archive files."  )
+           .RegisterEntry( "Penumbra Mod Pack ('.pmp') files are meant to be renames of any of the archive types that could already be imported that contain the necessary Penumbra meta files.", 1  )
+           .RegisterHighlight( "If you distribute any mod as an archive specifically for Penumbra, you should change its extension to '.pmp'. Supported base archive types are ZIP, 7-Zip and RAR." , 1 )
+           .RegisterEntry( "Penumbra will now save mod backups with the file extension '.pmp'. They still are regular ZIP files.", 1 )
+           .RegisterEntry( "Existing backups in your current mod directory should be automatically renamed. If you manage multiple mod directories, you may need to migrate the other ones manually.", 1 )
            .RegisterEntry( "Fixed assigned collections not working correctly on adventurer plates." )
+           .RegisterEntry( "Fixed a wrongly displayed folder line in some circumstances." )
            .RegisterEntry( "Added some additional functionality for Mare Synchronos." );
 }
