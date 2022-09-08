@@ -9,6 +9,9 @@ public sealed partial class Mod
 {
     public sealed partial class Manager : IReadOnlyList< Mod >
     {
+        // Set when reading Config and migrating from v4 to v5.
+        public static bool MigrateModBackups = false;
+
         // An easily accessible set of new mods.
         // Mods are added when they are created or imported.
         // Mods are removed when they are deleted or when they are toggled in any collection.

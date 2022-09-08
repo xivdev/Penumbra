@@ -143,7 +143,7 @@ public class Penumbra : IDalamudPlugin
             Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 
             OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
-            PluginLog.Information( $"Loading native assembly from {OtterTex.NativeDll.Directory}." );
+            PluginLog.Information( $"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}." );
         }
         catch
         {
@@ -165,10 +165,17 @@ public class Penumbra : IDalamudPlugin
 
     private void DisposeInterface()
     {
-        Dalamud.PluginInterface.UiBuilder.Draw         -= _windowSystem.Draw;
-        Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= _configWindow.Toggle;
+        if( _windowSystem != null )
+        {
+            Dalamud.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
+        }
+
         _launchButton?.Dispose();
-        _configWindow?.Dispose();
+        if( _configWindow != null )
+        {
+            Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= _configWindow.Toggle;
+            _configWindow.Dispose();
+        }
     }
 
     public bool Enable()

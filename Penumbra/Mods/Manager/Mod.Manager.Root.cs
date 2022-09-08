@@ -99,6 +99,11 @@ public sealed partial class Mod
 
             ModDiscoveryFinished?.Invoke();
             PluginLog.Information( "Rediscovered mods." );
+
+            if( MigrateModBackups )
+            {
+                ModBackup.MigrateZipToPmp( this );
+            }
         }
     }
 }

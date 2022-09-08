@@ -200,7 +200,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     private void AddImportModButton( Vector2 size )
     {
         var button = ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
-            "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true );
+            "Import one or multiple mods from Tex Tools Mod Pack Files or Penumbra Mod Pack Files.", !Penumbra.ModManager.Valid, true );
         ConfigWindow.OpenTutorial( ConfigWindow.BasicTutorialSteps.ModImport );
         if( !button )
         {
@@ -213,7 +213,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         _hasSetFolder = true;
 
         _fileManager.OpenFileDialog( "Import Mod Pack",
-            "Mod Packs{.ttmp,.ttmp2,.zip,.7z,.rar},TexTools Mod Packs{.ttmp,.ttmp2},Archives{.zip,.7z,.rar}", ( s, f ) =>
+            "Mod Packs{.ttmp,.ttmp2,.pmp},TexTools Mod Packs{.ttmp,.ttmp2},Penumbra Mod Packs{.pmp},Archives{.zip,.7z,.rar}", ( s, f ) =>
             {
                 if( s )
                 {

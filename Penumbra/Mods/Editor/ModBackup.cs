@@ -18,8 +18,37 @@ public class ModBackup
     public ModBackup( Mod mod )
     {
         _mod   = mod;
-        Name   = mod.ModPath + ".zip";
+        Name   = _mod.ModPath + ".pmp";
         Exists = File.Exists( Name );
+    }
+
+    // Migrate file extensions.
+    public static void MigrateZipToPmp(Mod.Manager manager)
+    {
+        foreach( var mod in manager )
+        {
+            var pmpName = mod.ModPath + ".pmp";
+            var zipName = mod.ModPath + ".zip";
+            if( File.Exists( zipName ) )
+            {
+                try
+                {
+                    if( !File.Exists( pmpName ) )
+                    {
+                        File.Move( zipName, pmpName );
+                    }
+                    else
+                    {
+                        File.Delete( zipName );
+                    }
+                    PluginLog.Information( $"Migrated mod backup from {zipName} to {pmpName}." );
+                }
+                catch( Exception e )
+                {
+                    PluginLog.Warning( $"Could not migrate mod backup of {mod.ModPath} from .pmp to .zip:\n{e}" );
+                }
+            }
+        }
     }
 
     // Create a backup zip without blocking the main thread.

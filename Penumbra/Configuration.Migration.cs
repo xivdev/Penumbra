@@ -47,6 +47,15 @@ public partial class Configuration
             m.Version1To2();
             m.Version2To3();
             m.Version3To4();
+            m.Version4To5();
+        }
+
+        // Mod backup extension was changed from .zip to .pmp.
+        // Actual migration takes place in ModManager.
+        private void Version4To5()
+        {
+            Mod.Manager.MigrateModBackups = true;
+            _config.Version               = 5;
         }
 
         // SortMode was changed from an enum to a type.

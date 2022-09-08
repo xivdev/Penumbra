@@ -8,7 +8,6 @@ using Newtonsoft.Json;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
-using OtterGui.Widgets;
 using Penumbra.Import;
 using Penumbra.Mods;
 using Penumbra.UI;
@@ -142,7 +141,7 @@ public partial class Configuration : IPluginConfiguration
     // Contains some default values or boundaries for config values.
     public static class Constants
     {
-        public const int   CurrentVersion      = 4;
+        public const int   CurrentVersion      = 5;
         public const float MaxAbsoluteSize     = 600;
         public const int   DefaultAbsoluteSize = 250;
         public const float MinAbsoluteSize     = 50;
