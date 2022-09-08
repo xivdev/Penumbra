@@ -5,6 +5,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using ImGuiScene;
 using Lumina.Data.Files;
@@ -20,6 +21,15 @@ namespace Penumbra.Import.Textures;
 
 public class Texture : IDisposable
 {
+    public enum FileType
+    {
+        Unknown,
+        Dds,
+        Tex,
+        Png,
+        Bitmap,
+    }
+
     // Path to the file we tried to load.
     public string Path = string.Empty;
 
@@ -37,6 +47,9 @@ public class Texture : IDisposable
     // The base image in whatever format it has.
     public object? BaseImage = null;
 
+    // Original File Type.
+    public FileType Type = FileType.Unknown;
+
     // Whether the file is successfully loaded and drawable.
     public bool IsLoaded
         => TextureWrap != null;
@@ -48,21 +61,51 @@ public class Texture : IDisposable
     {
         if( TextureWrap != null )
         {
-            ImGui.TextUnformatted( $"Image Dimensions: {TextureWrap.Width} x {TextureWrap.Height}" );
             size = size.X < TextureWrap.Width
                 ? size with { Y = TextureWrap.Height * size.X / TextureWrap.Width }
                 : new Vector2( TextureWrap.Width, TextureWrap.Height );
 
             ImGui.Image( TextureWrap.ImGuiHandle, size );
+            DrawData();
         }
         else if( LoadError != null )
         {
             ImGui.TextUnformatted( "Could not load file:" );
             ImGuiUtil.TextColored( Colors.RegexWarningBorder, LoadError.ToString() );
         }
-        else
+    }
+
+    public void DrawData()
+    {
+        using var table = ImRaii.Table( "##data", 2, ImGuiTableFlags.SizingFixedFit );
+        ImGuiUtil.DrawTableColumn( "Width" );
+        ImGuiUtil.DrawTableColumn( TextureWrap!.Width.ToString() );
+        ImGuiUtil.DrawTableColumn( "Height" );
+        ImGuiUtil.DrawTableColumn( TextureWrap!.Height.ToString() );
+        ImGuiUtil.DrawTableColumn( "File Type" );
+        ImGuiUtil.DrawTableColumn( Type.ToString() );
+        ImGuiUtil.DrawTableColumn( "Bitmap Size" );
+        ImGuiUtil.DrawTableColumn( $"{Functions.HumanReadableSize( RGBAPixels.Length )} ({RGBAPixels.Length} Bytes)" );
+        switch( BaseImage )
         {
-            ImGui.Dummy( size );
+            case ScratchImage s:
+                ImGuiUtil.DrawTableColumn( "Format" );
+                ImGuiUtil.DrawTableColumn( s.Meta.Format.ToString() );
+                ImGuiUtil.DrawTableColumn( "Mip Levels" );
+                ImGuiUtil.DrawTableColumn( s.Meta.MipLevels.ToString() );
+                ImGuiUtil.DrawTableColumn( "Data Size" );
+                ImGuiUtil.DrawTableColumn( $"{Functions.HumanReadableSize( s.Pixels.Length )} ({s.Pixels.Length} Bytes)" );
+                ImGuiUtil.DrawTableColumn( "Number of Images" );
+                ImGuiUtil.DrawTableColumn( s.Images.Length.ToString() );
+                break;
+            case TexFile t:
+                ImGuiUtil.DrawTableColumn( "Format" );
+                ImGuiUtil.DrawTableColumn( t.Header.Format.ToString() );
+                ImGuiUtil.DrawTableColumn( "Mip Levels" );
+                ImGuiUtil.DrawTableColumn( t.Header.MipLevels.ToString()) ;
+                ImGuiUtil.DrawTableColumn( "Data Size" );
+                ImGuiUtil.DrawTableColumn( $"{Functions.HumanReadableSize( t.ImageData.Length )} ({t.ImageData.Length} Bytes)" );
+                break;
         }
     }
 
@@ -73,6 +116,7 @@ public class Texture : IDisposable
         TextureWrap = null;
         ( BaseImage as IDisposable )?.Dispose();
         BaseImage = null;
+        Type      = FileType.Unknown;
         Loaded?.Invoke( false );
     }
 
@@ -111,6 +155,7 @@ public class Texture : IDisposable
 
     private bool LoadDds()
     {
+        Type = FileType.Dds;
         var scratch = ScratchImage.LoadDDS( Path );
         BaseImage = scratch;
         var rgba = scratch.GetRGBA( out var f ).ThrowIfError( f );
@@ -121,6 +166,7 @@ public class Texture : IDisposable
 
     private bool LoadPng()
     {
+        Type      = FileType.Png;
         BaseImage = null;
         using var stream = File.OpenRead( Path );
         using var png    = Image.Load< Rgba32 >( stream );
@@ -132,6 +178,7 @@ public class Texture : IDisposable
 
     private bool LoadTex()
     {
+        Type = FileType.Tex;
         var tex = System.IO.Path.IsPathRooted( Path )
             ? Dalamud.GameData.GameData.GetFileFromDisk< TexFile >( Path )
             : Dalamud.GameData.GetFile< TexFile >( Path );
@@ -179,5 +226,73 @@ public class Texture : IDisposable
 
             manager.OpenFileDialog( "Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath );
         }
+    }
+}
+
+public static class ScratchImageExtensions
+{
+    public static Exception? SaveAsTex( this ScratchImage image, string path )
+    {
+        try
+        {
+            using var fileStream = File.OpenWrite( path );
+            using var bw         = new BinaryWriter( fileStream );
+
+            bw.Write( (uint) image.Meta.GetAttribute()  );
+            bw.Write( (uint) image.Meta.GetFormat()  );
+            bw.Write( (ushort) image.Meta.Width  );
+            bw.Write( (ushort) image.Meta.Height  );
+            bw.Write( (ushort) image.Meta.Depth  );
+            bw.Write( (ushort) image.Meta.MipLevels  );
+        }
+        catch( Exception e )
+        {
+            return e;
+        }
+
+        return null;
+    }
+
+    public static unsafe TexFile.TexHeader ToTexHeader( this ScratchImage image )
+    {
+        var ret = new TexFile.TexHeader()
+        {
+            Type   = image.Meta.GetAttribute(),
+            Format = image.Meta.GetFormat(),
+            Width  = ( ushort )image.Meta.Width,
+            Height = ( ushort )image.Meta.Height,
+            Depth  = ( ushort )image.Meta.Depth,
+        };
+        ret.LodOffset[ 0 ]       = 0;
+        ret.LodOffset[ 1 ]       = 1;
+        ret.LodOffset[ 2 ]       = 2;
+        //foreach(var surface in image.Images)
+        //    ret.OffsetToSurface[ 0 ] = 80 + (image.P);
+        return ret;
+    }
+
+    // Get all known flags for the TexFile.Attribute from the scratch image.
+    private static TexFile.Attribute GetAttribute( this TexMeta meta )
+    {
+        var ret = meta.Dimension switch
+        {
+            TexDimension.Tex1D => TexFile.Attribute.TextureType1D,
+            TexDimension.Tex2D => TexFile.Attribute.TextureType2D,
+            TexDimension.Tex3D => TexFile.Attribute.TextureType3D,
+            _                  => (TexFile.Attribute) 0,
+        };
+        if( meta.IsCubeMap )
+            ret |= TexFile.Attribute.TextureTypeCube;
+        if( meta.Format.IsDepthStencil() )
+            ret |= TexFile.Attribute.TextureDepthStencil;
+        return ret;
+    }
+
+    private static TexFile.TextureFormat GetFormat( this TexMeta meta )
+    {
+        return meta.Format switch
+        {
+            _ => TexFile.TextureFormat.Unknown,
+        };
     }
 }

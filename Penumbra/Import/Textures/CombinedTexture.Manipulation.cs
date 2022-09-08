@@ -95,7 +95,7 @@ public partial class CombinedTexture
             ? ( _left.TextureWrap!.Width, _left.TextureWrap!.Height )
             : ( _right.TextureWrap!.Width, _right.TextureWrap!.Height );
         _centerStorage.RGBAPixels = new byte[width * height * 4];
-
+        _centerStorage.Type       = Texture.FileType.Bitmap;
         if( _left.IsLoaded )
         {
             Parallel.For( 0, height, _right.IsLoaded ? AddPixelsMultiplied : MultiplyPixelsLeft );
