@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
@@ -62,7 +63,6 @@ public class IpcTester : IDisposable
     {
         if( !_subscribed )
         {
-
             _initialized.Subscribe( AddInitialized );
             _disposed.Subscribe( AddDisposed );
             _redrawn.Subscribe( SetLastRedrawn );
@@ -911,7 +911,7 @@ public class IpcTester : IDisposable
             return;
         }
 
-        using var table = ImRaii.Table( "##collTree", 4 );
+        using var table = ImRaii.Table( "##collTree", 5 );
         if( !table )
         {
             return;
@@ -927,6 +927,11 @@ public class IpcTester : IDisposable
             ImGui.TextUnformatted( collection.ResolvedFiles.Count.ToString() );
             ImGui.TableNextColumn();
             ImGui.TextUnformatted( collection.MetaCache?.Count.ToString() ?? "0" );
+            ImGui.TableNextColumn();
+            if( ImGui.Button( $"Save##{character}" ) )
+            {
+                Mod.TemporaryMod.SaveTempCollection( collection, character );
+            }
         }
     }
 
