@@ -44,7 +44,7 @@ public unsafe partial class PathResolver
         var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 2u : 6u;
 
         var text = ( AtkTextNode* )ui->UldManager.SearchNodeById( nodeId );
-        return text != null ? text->NodeText.ToString() : null;
+        return text != null && text->AtkResNode.Type == NodeType.Text ? text->NodeText.ToString() : null;
     }
 
     // Obtain the name displayed in the Character Card from the agent.
