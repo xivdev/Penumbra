@@ -18,7 +18,7 @@ namespace Penumbra.Interop.Resolver;
 public unsafe partial class PathResolver
 {
     [Signature( "0F B7 0D ?? ?? ?? ?? C7 85", ScanType = ScanType.StaticAddress )]
-    private static readonly ushort* InspectTitleId = null!;
+    private static ushort* _inspectTitleId = null!;
 
     // Obtain the name of the current player, if one exists.
     private static string? GetPlayerName()
@@ -39,7 +39,7 @@ public unsafe partial class PathResolver
         }
 
         var ui     = ( AtkUnitBase* )addon;
-        var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *InspectTitleId )?.IsPrefix == true ? 7u : 6u;
+        var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 7u : 6u;
 
         var text = ( AtkTextNode* )ui->UldManager.SearchNodeById( nodeId );
         return text != null && text->AtkResNode.Type == NodeType.Text ? text->NodeText.ToString() : null;

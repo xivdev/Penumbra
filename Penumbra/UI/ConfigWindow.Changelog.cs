@@ -26,6 +26,7 @@ public partial class ConfigWindow
            .RegisterEntry( "Files in the UI category will no longer be deduplicated for the moment." )
            .RegisterHighlight( "If you experience UI-related crashes, please re-import your UI mods.", 1 )
            .RegisterEntry( "This is a temporary fix against those not-yet fully understood crashes and may be reworked later.", 1 )
+           .RegisterHighlight( "There is still a possibility of UI related mods crashing the game, we are still investigating - they behave very weirdly. If you continue to experience crashing, try disabling your UI mods.", 1 )
            .RegisterEntry(
                 "On import, Penumbra will now show files with extensions '.ttmp', '.ttmp2' and '.pmp'. You can still select showing generic archive files." )
            .RegisterEntry(
@@ -41,6 +42,7 @@ public partial class ConfigWindow
            .RegisterEntry( "Fixed assigned collections not working correctly on adventurer plates." )
            .RegisterEntry( "Fixed a wrongly displayed folder line in some circumstances." )
            .RegisterEntry( "Fixed crash after deleting mod options." )
+           .RegisterEntry( "Fixed Inspect Window collections not working correctly." )
            .RegisterEntry( "Made identically named options selectable in mod configuration. Do not name your options identically." )
            .RegisterEntry( "Added some additional functionality for Mare Synchronos." );
 }
