@@ -335,7 +335,7 @@ public partial class ConfigWindow
               + "Not directly affiliated and potentially, but not usually out of date." );
         }
 
-        private static void DrawSupportButtons()
+        private void DrawSupportButtons()
         {
             var width = ImGui.CalcTextSize( SupportInfoButtonText ).X + ImGui.GetStyle().FramePadding.X * 2;
             var xPos  = ImGui.GetWindowWidth()                        - width;
@@ -363,7 +363,7 @@ public partial class ConfigWindow
             ImGui.SetCursorPos( new Vector2( xPos, 4 * ImGui.GetFrameHeightWithSpacing() ) );
             if( ImGui.Button( "Show Changelogs", new Vector2( width, 0 ) ) )
             {
-                Penumbra.Config.LastSeenVersion = 0;
+                _window._penumbra.ForceChangelogOpen();
             }
         }
     }

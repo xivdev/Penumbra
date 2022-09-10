@@ -16,9 +16,15 @@ public partial class ConfigWindow
         } );
 
         Add5_7_0( ret );
+        Add5_7_1( ret );
 
         return ret;
     }
+
+    private static void Add5_7_1( Changelog log )
+        => log.NextVersion( "Version 0.5.7.1" )
+           .RegisterEntry( "Fixed the Changelog window not considering UI Scale correctly." )
+           .RegisterEntry( "Reworked Changelog display slightly." );
 
     private static void Add5_7_0( Changelog log )
         => log.NextVersion( "Version 0.5.7.0" )
@@ -26,7 +32,9 @@ public partial class ConfigWindow
            .RegisterEntry( "Files in the UI category will no longer be deduplicated for the moment." )
            .RegisterHighlight( "If you experience UI-related crashes, please re-import your UI mods.", 1 )
            .RegisterEntry( "This is a temporary fix against those not-yet fully understood crashes and may be reworked later.", 1 )
-           .RegisterHighlight( "There is still a possibility of UI related mods crashing the game, we are still investigating - they behave very weirdly. If you continue to experience crashing, try disabling your UI mods.", 1 )
+           .RegisterHighlight(
+                "There is still a possibility of UI related mods crashing the game, we are still investigating - they behave very weirdly. If you continue to experience crashing, try disabling your UI mods.",
+                1 )
            .RegisterEntry(
                 "On import, Penumbra will now show files with extensions '.ttmp', '.ttmp2' and '.pmp'. You can still select showing generic archive files." )
            .RegisterEntry(

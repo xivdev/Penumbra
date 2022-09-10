@@ -14,6 +14,7 @@ using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
@@ -64,6 +65,7 @@ public class Penumbra : IDalamudPlugin
     private readonly ConfigWindow   _configWindow;
     private readonly LaunchButton   _launchButton;
     private readonly WindowSystem   _windowSystem;
+    private readonly Changelog      _changelog;
 
     internal WebServer? WebServer;
 
@@ -99,7 +101,7 @@ public class Penumbra : IDalamudPlugin
                 HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
             } );
 
-            SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
+            SetupInterface( out _configWindow, out _launchButton, out _windowSystem, out _changelog );
 
             if( Config.EnableMods )
             {
@@ -152,14 +154,15 @@ public class Penumbra : IDalamudPlugin
         }
     }
 
-    private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
+    private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system, out Changelog changelog )
     {
-        cfg    = new ConfigWindow( this );
-        btn    = new LaunchButton( _configWindow );
-        system = new WindowSystem( Name );
+        cfg       = new ConfigWindow( this );
+        btn       = new LaunchButton( _configWindow );
+        system    = new WindowSystem( Name );
+        changelog = ConfigWindow.CreateChangelog();
         system.AddWindow( _configWindow );
         system.AddWindow( cfg.ModEditPopup );
-        system.AddWindow( ConfigWindow.CreateChangelog() );
+        system.AddWindow( changelog );
         Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
     }
 
@@ -222,6 +225,9 @@ public class Penumbra : IDalamudPlugin
 
     public bool SetEnabled( bool enabled )
         => enabled ? Enable() : Disable();
+
+    public void ForceChangelogOpen()
+        => _changelog.ForceOpen = true;
 
     private void SubscribeItemLinks()
     {
