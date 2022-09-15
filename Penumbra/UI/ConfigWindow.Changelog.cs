@@ -20,6 +20,12 @@ public partial class ConfigWindow
         return ret;
     }
 
+    private static void Add5_8_0( Changelog log )
+        => log.NextVersion( "Version 0.5.8.0" )
+           .RegisterEntry( "Fixed an issue with Actor 201 using Your Character collections in cutscenes." )
+           .RegisterEntry( "Fixed issues with and improved mod option editing." )
+           .RegisterEntry( "Backend optimizations." );
+
     private static void Add5_7_1( Changelog log )
         => log.NextVersion( "Version 0.5.7.1" )
            .RegisterEntry( "Fixed the Changelog window not considering UI Scale correctly." )
