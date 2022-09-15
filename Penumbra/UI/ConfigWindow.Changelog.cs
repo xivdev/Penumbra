@@ -8,11 +8,13 @@ public partial class ConfigWindow
 
     public static Changelog CreateChangelog()
     {
-        var ret = new Changelog( "Penumbra Changelog", () => Penumbra.Config.LastSeenVersion, version =>
-        {
-            Penumbra.Config.LastSeenVersion = version;
-            Penumbra.Config.Save();
-        } );
+        var ret = new Changelog( "Penumbra Changelog", () => ( Penumbra.Config.LastSeenVersion, Penumbra.Config.ChangeLogDisplayType ),
+            ( version, type ) =>
+            {
+                Penumbra.Config.LastSeenVersion      = version;
+                Penumbra.Config.ChangeLogDisplayType = type;
+                Penumbra.Config.Save();
+            } );
 
         Add5_7_0( ret );
         Add5_7_1( ret );

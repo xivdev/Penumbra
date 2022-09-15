@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using OtterGui.Widgets;
 using Penumbra.Import;
 using Penumbra.Mods;
 using Penumbra.UI;
@@ -21,6 +22,7 @@ public partial class Configuration : IPluginConfiguration
     public int Version { get; set; } = Constants.CurrentVersion;
 
     public int LastSeenVersion { get; set; } = ConfigWindow.LastChangelogVersion;
+    public ChangeLogDisplayType ChangeLogDisplayType { get; set; } = ChangeLogDisplayType.New;
 
     public bool EnableMods { get; set; } = true;
     public string ModDirectory { get; set; } = string.Empty;
