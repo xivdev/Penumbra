@@ -5,7 +5,6 @@ using System.Numerics;
 using System.Threading.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
-using Dalamud.Logging;
 using Dalamud.Utility;
 using ImGuiNET;
 using ImGuiScene;
@@ -429,7 +428,7 @@ public partial class ModEditWindow
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not parse DDS {path} to RGBA:\n{e}" );
+            Penumbra.Log.Error( $"Could not parse DDS {path} to RGBA:\n{e}" );
             return ( null, 0, 0 );
         }
     }
@@ -449,7 +448,7 @@ public partial class ModEditWindow
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not parse TEX {path} to RGBA:\n{e}" );
+            Penumbra.Log.Error( $"Could not parse TEX {path} to RGBA:\n{e}" );
             return ( null, 0, 0 );
         }
     }
@@ -466,7 +465,7 @@ public partial class ModEditWindow
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not parse PNG {path} to RGBA:\n{e}" );
+            Penumbra.Log.Error( $"Could not parse PNG {path} to RGBA:\n{e}" );
             return ( null, 0, 0 );
         }
     }
@@ -520,7 +519,7 @@ public partial class ModEditWindow
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not load raw image:\n{e}" );
+                Penumbra.Log.Error( $"Could not load raw image:\n{e}" );
             }
         }
 
@@ -685,7 +684,7 @@ public partial class ModEditWindow
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not save image to {path}:\n{e}" );
+            Penumbra.Log.Error( $"Could not save image to {path}:\n{e}" );
         }
     }
 

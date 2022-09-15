@@ -1,12 +1,9 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using OtterGui.Filesystem;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Mods;
 
 namespace Penumbra.Meta.Manager;
 

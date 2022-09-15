@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
-using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
@@ -321,7 +320,7 @@ public partial class ModEditWindow
             var failedFiles = _editor!.ApplyFiles();
             if( failedFiles > 0 )
             {
-                PluginLog.Information( $"Failed to apply {failedFiles} file redirections to {_editor.CurrentOption.FullName}." );
+                Penumbra.Log.Information( $"Failed to apply {failedFiles} file redirections to {_editor.CurrentOption.FullName}." );
             }
         }
 

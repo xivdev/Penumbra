@@ -1,4 +1,3 @@
-using Lumina.Excel.GeneratedSheets;
 using OtterGui.Widgets;
 
 namespace Penumbra.UI;

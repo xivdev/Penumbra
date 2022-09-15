@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Penumbra.Mods;
 using Penumbra.Util;
@@ -24,7 +23,7 @@ public partial class TexToolsImporter
         _currentGroupName  = string.Empty;
         _currentOptionName = DefaultTexToolsData.DefaultOption;
 
-        PluginLog.Log( "    -> Importing V1 ModPack" );
+        Penumbra.Log.Information( "    -> Importing V1 ModPack" );
 
         var modListRaw = modRaw.Split(
             new[] { "\r\n", "\r", "\n" },
@@ -62,12 +61,12 @@ public partial class TexToolsImporter
 
         try
         {
-            PluginLog.Warning( $"Unknown TTMPVersion <{modList.TtmpVersion}> given, trying to export as simple mod pack." );
+            Penumbra.Log.Warning( $"Unknown TTMPVersion <{modList.TtmpVersion}> given, trying to export as simple mod pack." );
             return ImportSimpleV2ModPack( extractedModPack, modList );
         }
         catch( Exception e1 )
         {
-            PluginLog.Warning( $"Exporting as simple mod pack failed with following error, retrying as extended mod pack:\n{e1}" );
+            Penumbra.Log.Warning( $"Exporting as simple mod pack failed with following error, retrying as extended mod pack:\n{e1}" );
             try
             {
                 return ImportExtendedV2ModPack( extractedModPack, modRaw );
@@ -87,7 +86,7 @@ public partial class TexToolsImporter
         _currentModName    = modList.Name;
         _currentGroupName  = string.Empty;
         _currentOptionName = DefaultTexToolsData.DefaultOption;
-        PluginLog.Log( "    -> Importing Simple V2 ModPack" );
+        Penumbra.Log.Information( "    -> Importing Simple V2 ModPack" );
 
         _currentModDirectory = Mod.CreateModFolder( _baseDirectory, _currentModName );
         Mod.CreateMeta( _currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty( modList.Description )
@@ -128,7 +127,7 @@ public partial class TexToolsImporter
     private DirectoryInfo ImportExtendedV2ModPack( ZipArchive extractedModPack, string modRaw )
     {
         _currentOptionIdx = 0;
-        PluginLog.Log( "    -> Importing Extended V2 ModPack" );
+        Penumbra.Log.Information( "    -> Importing Extended V2 ModPack" );
 
         var modList = JsonConvert.DeserializeObject< ExtendedModPack >( modRaw, JsonSettings )!;
         _currentNumOptions = GetOptionCount( modList );
@@ -243,7 +242,7 @@ public partial class TexToolsImporter
             return;
         }
 
-        PluginLog.Log( "        -> Extracting {0} at {1}", mod.FullPath, mod.ModOffset.ToString( "X" ) );
+        Penumbra.Log.Information( $"        -> Extracting {mod.FullPath} at {mod.ModOffset:X}" );
 
         _token.ThrowIfCancellationRequested();
         var data = stream.ReadFile< PenumbraSqPackStream.PenumbraFileResource >( mod.ModOffset );

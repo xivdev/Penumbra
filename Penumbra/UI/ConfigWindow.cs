@@ -2,7 +2,6 @@ using System;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui.Raii;
 using Penumbra.UI.Classes;
@@ -92,7 +91,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Exception thrown during UI Render:\n{e}" );
+            Penumbra.Log.Error( $"Exception thrown during UI Render:\n{e}" );
         }
     }
 

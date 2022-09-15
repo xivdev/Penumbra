@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Dalamud.Logging;
 
 namespace Penumbra.Mods;
 
@@ -53,7 +52,7 @@ public sealed partial class Mod
                     }
                     catch( Exception e )
                     {
-                        PluginLog.Error( $"Could not create specified mod directory {newDir.FullName}:\n{e}" );
+                        Penumbra.Log.Error( $"Could not create specified mod directory {newDir.FullName}:\n{e}" );
                     }
                 }
 
@@ -68,8 +67,7 @@ public sealed partial class Mod
 
         private static void OnModDirectoryChange( string newPath, bool _ )
         {
-            PluginLog.Information( "Set new mod base directory from {OldDirectory:l} to {NewDirectory:l}.",
-                Penumbra.Config.ModDirectory, newPath );
+            Penumbra.Log.Information( $"Set new mod base directory from {Penumbra.Config.ModDirectory} to {newPath}." );
             Penumbra.Config.ModDirectory = newPath;
             Penumbra.Config.Save();
         }
@@ -98,7 +96,7 @@ public sealed partial class Mod
             }
 
             ModDiscoveryFinished?.Invoke();
-            PluginLog.Information( "Rediscovered mods." );
+            Penumbra.Log.Information( "Rediscovered mods." );
 
             if( MigrateModBackups )
             {

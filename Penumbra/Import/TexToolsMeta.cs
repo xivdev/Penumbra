@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Dalamud.Logging;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Import;
@@ -72,7 +71,7 @@ public partial class TexToolsMeta
         catch( Exception e )
         {
             FilePath = "";
-            PluginLog.Error( $"Error while parsing .meta file:\n{e}" );
+            Penumbra.Log.Error( $"Error while parsing .meta file:\n{e}" );
         }
     }
 

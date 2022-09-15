@@ -274,7 +274,7 @@ public partial class Mod
 //       }
 //       catch( Exception e )
 //       {
-//           PluginLog.Error( $"Could not split Mod:\n{e}" );
+//           Penumbra.Log.Error( $"Could not split Mod:\n{e}" );
 //       }
 //   }
 //
@@ -394,7 +394,7 @@ public partial class Mod
 //           }
 //       }
 //
-//       PluginLog.Information( $"File {relName1} and {relName2} are identical. Deleting the second." );
+//       Penumbra.Log.Information( $"File {relName1} and {relName2} are identical. Deleting the second." );
 //       f2.Delete();
 //   }
 //
@@ -498,7 +498,7 @@ public partial class Mod
 //       }
 //       catch( Exception e )
 //       {
-//           PluginLog.Error( $"Could not move file from {oldRelPath} to {newRelPath}:\n{e}" );
+//           Penumbra.Log.Error( $"Could not move file from {oldRelPath} to {newRelPath}:\n{e}" );
 //           return false;
 //       }
 //

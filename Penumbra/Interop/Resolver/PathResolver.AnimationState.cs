@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;

@@ -1,10 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Filesystem;
-using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
@@ -81,7 +78,7 @@ public partial class MetaManager
         catch( Exception e )
         {
             ++Penumbra.ImcExceptions;
-            PluginLog.Error( $"Could not apply IMC Manipulation:\n{e}" );
+            Penumbra.Log.Error( $"Could not apply IMC Manipulation:\n{e}" );
             return false;
         }
     }
@@ -156,7 +153,7 @@ public partial class MetaManager
             return false;
         }
 
-        PluginLog.Verbose( "Using ImcLoadHandler for path {$Path:l}.", path );
+        Penumbra.Log.Verbose( $"Using ImcLoadHandler for path {path}." );
         ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
 
         var lastUnderscore = split.LastIndexOf( ( byte )'_' );
@@ -166,8 +163,7 @@ public partial class MetaManager
         && collection.HasCache
         && collection.MetaCache!._imcFiles.TryGetValue( Utf8GamePath.FromSpan( path.Span, out var p ) ? p : Utf8GamePath.Empty, out var file ) )
         {
-            PluginLog.Debug( "Loaded {GamePath:l} from file and replaced with IMC from collection {Collection:l}.", path,
-                collection.AnonymizedName );
+            Penumbra.Log.Debug( $"Loaded {path} from file and replaced with IMC from collection {collection.AnonymizedName}." );
             file.Replace( fileDescriptor->ResourceHandle );
         }
 

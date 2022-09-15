@@ -1,6 +1,5 @@
 using System;
 using System.Text.RegularExpressions;
-using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 
 namespace Penumbra.Interop.Loader;
@@ -79,7 +78,7 @@ public class ResourceLogger : IDisposable
         var path = Match( data.Path );
         if( path != null )
         {
-            PluginLog.Information( $"{path} was requested {( synchronous ? "synchronously." : "asynchronously." )}" );
+            Penumbra.Log.Information( $"{path} was requested {( synchronous ? "synchronously." : "asynchronously." )}" );
         }
     }
 

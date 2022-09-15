@@ -5,7 +5,6 @@ using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
-using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -51,7 +50,7 @@ public partial class ConfigWindow
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Warning( e.Message );
+                    Penumbra.Log.Warning( e.Message );
                 }
             }
 

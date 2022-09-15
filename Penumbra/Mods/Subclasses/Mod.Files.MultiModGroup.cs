@@ -1,9 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
@@ -61,7 +59,7 @@ public partial class Mod
                 {
                     if( ret.PrioritizedOptions.Count == IModGroup.MaxMultiOptions )
                     {
-                        PluginLog.Warning(
+                        Penumbra.Log.Warning(
                             $"Multi Group {ret.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options." );
                         break;
                     }

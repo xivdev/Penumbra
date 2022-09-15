@@ -1,4 +1,3 @@
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 
 namespace Penumbra.Interop;
@@ -31,7 +30,7 @@ public unsafe class ResidentResourceManager
     {
         if( Address != null && Address->NumResources > 0 )
         {
-            PluginLog.Debug( "Reload of resident resources triggered." );
+            Penumbra.Log.Debug( "Reload of resident resources triggered." );
             UnloadPlayerResources.Invoke( Address );
             LoadPlayerResources.Invoke( Address );
         }

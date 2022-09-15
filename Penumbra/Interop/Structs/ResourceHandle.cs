@@ -2,7 +2,6 @@ using System;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Resolver;
 
 namespace Penumbra.Interop.Structs;
 

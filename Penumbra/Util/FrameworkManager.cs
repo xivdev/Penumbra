@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Dalamud.Game;
-using Dalamud.Logging;
 
 namespace Penumbra.Util;
 
@@ -58,7 +57,7 @@ public class FrameworkManager : IDisposable
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Problem saving data:\n{e}" );
+            Penumbra.Log.Error( $"Problem saving data:\n{e}" );
         }
     }
 

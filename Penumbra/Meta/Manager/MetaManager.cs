@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Dalamud.Logging;
 using Penumbra.Collections;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
@@ -165,7 +164,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
         }
 
         Penumbra.CharacterUtility.LoadingFinished -= ApplyStoredManipulations;
-        PluginLog.Debug( "{Collection}: Loaded {Num} delayed meta manipulations.", _collection.Name, loaded );
+        Penumbra.Log.Debug( $"{_collection.AnonymizedName}: Loaded {loaded} delayed meta manipulations." );
     }
 
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]

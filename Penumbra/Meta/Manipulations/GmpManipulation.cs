@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;

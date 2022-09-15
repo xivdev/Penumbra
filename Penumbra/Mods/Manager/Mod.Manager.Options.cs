@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Logging;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.GameData.ByteString;
@@ -201,7 +200,7 @@ public sealed partial class Mod
             var group = mod._groups[ groupIdx ];
             if( group.Count > 63 )
             {
-                PluginLog.Error(
+                Penumbra.Log.Error(
                     $"Could not add option {option.Name} to {group.Name} for mod {mod.Name}, "
                   + "since only up to 64 options are supported in one group." );
                 return;
@@ -307,7 +306,7 @@ public sealed partial class Mod
             {
                 if( message )
                 {
-                    PluginLog.Warning( $"Could not name option {newName} because option with same filename {path} already exists." );
+                    Penumbra.Log.Warning( $"Could not name option {newName} because option with same filename {path} already exists." );
                 }
 
                 return false;

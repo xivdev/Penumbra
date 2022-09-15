@@ -1,4 +1,3 @@
-using Dalamud.Logging;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 
@@ -22,7 +21,7 @@ public static unsafe class FontReloader
         }
         else
         {
-            PluginLog.Error( "Could not reload fonts, function could not be found." );
+            Penumbra.Log.Error( "Could not reload fonts, function could not be found." );
         }
     }
 

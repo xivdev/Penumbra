@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 
 namespace Penumbra.Interop;
@@ -50,7 +49,7 @@ public unsafe class CharacterUtility : IDisposable
     public CharacterUtility()
     {
         SignatureHelper.Initialise( this );
-        LoadingFinished += () => PluginLog.Debug( "Loading of CharacterUtility finished." );
+        LoadingFinished += () => Penumbra.Log.Debug( "Loading of CharacterUtility finished." );
         LoadDefaultResources( null! );
         if( !Ready )
         {
@@ -97,13 +96,13 @@ public unsafe class CharacterUtility : IDisposable
     {
         if( !Ready )
         {
-            PluginLog.Error( $"Can not set resource {resourceIdx}: CharacterUtility not ready yet." );
+            Penumbra.Log.Error( $"Can not set resource {resourceIdx}: CharacterUtility not ready yet." );
             return false;
         }
 
         var resource = Address->Resource( resourceIdx );
         var ret      = resource->SetData( data, length );
-        PluginLog.Verbose( "Set resource {Idx} to 0x{NewData:X} ({NewLength} bytes).", resourceIdx, ( ulong )data, length );
+        Penumbra.Log.Verbose( $"Set resource {resourceIdx} to 0x{( ulong )data:X} ({length} bytes).");
         return ret;
     }
 
@@ -112,13 +111,13 @@ public unsafe class CharacterUtility : IDisposable
     {
         if( !Ready )
         {
-            PluginLog.Error( $"Can not reset {resourceIdx}: CharacterUtility not ready yet." );
+            Penumbra.Log.Error( $"Can not reset {resourceIdx}: CharacterUtility not ready yet." );
             return;
         }
 
         var (data, length) = DefaultResource( resourceIdx);
         var resource = Address->Resource( resourceIdx );
-        PluginLog.Verbose( "Reset resource {Idx} to default at 0x{DefaultData:X} ({NewLength} bytes).", resourceIdx, ( ulong )data, length );
+        Penumbra.Log.Verbose( $"Reset resource {resourceIdx} to default at 0x{(ulong)data:X} ({length} bytes).");
         resource->SetData( data, length );
     }
 
@@ -127,7 +126,7 @@ public unsafe class CharacterUtility : IDisposable
     {
         if( !Ready )
         {
-            PluginLog.Error( "Can not reset all resources: CharacterUtility not ready yet." );
+            Penumbra.Log.Error( "Can not reset all resources: CharacterUtility not ready yet." );
             return;
         }
 
@@ -136,7 +135,7 @@ public unsafe class CharacterUtility : IDisposable
             ResetResource( idx );
         }
 
-        PluginLog.Debug( "Reset all CharacterUtility resources to default." );
+        Penumbra.Log.Debug( "Reset all CharacterUtility resources to default." );
     }
 
     public void Dispose()

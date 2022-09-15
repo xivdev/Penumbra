@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
-using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -134,7 +133,7 @@ public partial class ModEditWindow
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not parse {_fileType} file {_currentPath.File.FullName}:\n{e}" );
+                Penumbra.Log.Error( $"Could not parse {_fileType} file {_currentPath.File.FullName}:\n{e}" );
                 _currentFile = null;
             }
         }

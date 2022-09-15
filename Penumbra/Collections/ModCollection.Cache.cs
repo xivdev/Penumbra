@@ -1,13 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dalamud.Logging;
 using OtterGui;
 using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Penumbra.Collections;
 
@@ -496,7 +495,7 @@ public partial class ModCollection
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Unknown Error:\n{e}" );
+                Penumbra.Log.Error( $"Unknown Error:\n{e}" );
             }
         }
     }

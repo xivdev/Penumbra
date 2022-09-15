@@ -1,13 +1,12 @@
+using OtterGui;
+using OtterGui.Filesystem;
+using Penumbra.Mods;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
-using OtterGui;
-using OtterGui.Filesystem;
-using Penumbra.Mods;
 
 namespace Penumbra.Collections;
 
@@ -107,7 +106,7 @@ public partial class ModCollection
         {
             if( !CanAddCollection( name, out var fixedName ) )
             {
-                PluginLog.Warning( $"The new collection {name} would lead to the same path {fixedName} as one that already exists." );
+                Penumbra.Log.Warning( $"The new collection {name} would lead to the same path {fixedName} as one that already exists." );
                 return false;
             }
 
@@ -115,7 +114,7 @@ public partial class ModCollection
             newCollection.Index = _collections.Count;
             _collections.Add( newCollection );
             newCollection.Save();
-            PluginLog.Debug( "Added collection {Name:l}.", newCollection.AnonymizedName );
+            Penumbra.Log.Debug( $"Added collection {newCollection.AnonymizedName}." );
             CollectionChanged.Invoke( CollectionType.Inactive, null, newCollection );
             SetCollection( newCollection.Index, CollectionType.Current );
             return true;
@@ -128,13 +127,13 @@ public partial class ModCollection
         {
             if( idx <= Empty.Index || idx >= _collections.Count )
             {
-                PluginLog.Error( "Can not remove the empty collection." );
+                Penumbra.Log.Error( "Can not remove the empty collection." );
                 return false;
             }
 
             if( idx == DefaultName.Index )
             {
-                PluginLog.Error( "Can not remove the default collection." );
+                Penumbra.Log.Error( "Can not remove the default collection." );
                 return false;
             }
 
@@ -179,7 +178,7 @@ public partial class ModCollection
                 }
             }
 
-            PluginLog.Debug( "Removed collection {Name:l}.", collection.AnonymizedName );
+            Penumbra.Log.Debug( $"Removed collection {collection.AnonymizedName}." );
             CollectionChanged.Invoke( CollectionType.Inactive, collection, null );
             return true;
         }
@@ -335,12 +334,12 @@ public partial class ModCollection
                     if( !ByName( subCollectionName, out var subCollection ) )
                     {
                         changes = true;
-                        PluginLog.Warning( $"Inherited collection {subCollectionName} for {collection.Name} does not exist, removed." );
+                        Penumbra.Log.Warning( $"Inherited collection {subCollectionName} for {collection.Name} does not exist, removed." );
                     }
                     else if( !collection.AddInheritance( subCollection ) )
                     {
                         changes = true;
-                        PluginLog.Warning( $"{collection.Name} can not inherit from {subCollectionName}, removed." );
+                        Penumbra.Log.Warning( $"{collection.Name} can not inherit from {subCollectionName}, removed." );
                     }
                 }
 
@@ -370,12 +369,12 @@ public partial class ModCollection
 
                     if( file.Name != $"{collection.Name.RemoveInvalidPathSymbols()}.json" )
                     {
-                        PluginLog.Warning( $"Collection {file.Name} does not correspond to {collection.Name}." );
+                        Penumbra.Log.Warning( $"Collection {file.Name} does not correspond to {collection.Name}." );
                     }
 
                     if( this[ collection.Name ] != null )
                     {
-                        PluginLog.Warning( $"Duplicate collection found: {collection.Name} already exists." );
+                        Penumbra.Log.Warning( $"Duplicate collection found: {collection.Name} already exists." );
                     }
                     else
                     {

@@ -1,11 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
+using System;
+using System.Collections.Generic;
 
 namespace Penumbra.Api;
 
@@ -73,7 +72,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderInitialized}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderInitialized}:\n{e}" );
         }
 
         try
@@ -82,7 +81,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderDisposed}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderDisposed}:\n{e}" );
         }
 
         try
@@ -90,13 +89,13 @@ public partial class PenumbraIpc
             ProviderApiVersion = pi.GetIpcProvider< int >( LabelProviderApiVersion );
             ProviderApiVersion.RegisterFunc( () =>
             {
-                PluginLog.Warning( $"{LabelProviderApiVersion} is outdated. Please use {LabelProviderApiVersions} instead." );
+                Penumbra.Log.Warning( $"{LabelProviderApiVersion} is outdated. Please use {LabelProviderApiVersions} instead." );
                 return Api.ApiVersion.Breaking;
             } );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderApiVersion}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderApiVersion}:\n{e}" );
         }
 
         try
@@ -106,7 +105,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderApiVersions}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderApiVersions}:\n{e}" );
         }
 
         try
@@ -116,7 +115,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetModDirectory}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetModDirectory}:\n{e}" );
         }
 
         try
@@ -126,7 +125,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderModDirectoryChanged}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderModDirectoryChanged}:\n{e}" );
         }
 
         try
@@ -136,7 +135,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetConfiguration}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetConfiguration}:\n{e}" );
         }
 
         try
@@ -146,7 +145,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderPreSettingsDraw}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderPreSettingsDraw}:\n{e}" );
         }
 
         try
@@ -156,7 +155,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderPostSettingsDraw}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderPostSettingsDraw}:\n{e}" );
         }
     }
 
@@ -215,7 +214,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawName}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderRedrawName}:\n{e}" );
         }
 
         try
@@ -225,7 +224,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawObject}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderRedrawObject}:\n{e}" );
         }
 
         try
@@ -235,7 +234,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawName}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderRedrawName}:\n{e}" );
         }
 
         try
@@ -245,7 +244,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRedrawAll}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderRedrawAll}:\n{e}" );
         }
 
         try
@@ -255,7 +254,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGameObjectRedrawn}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGameObjectRedrawn}:\n{e}" );
         }
     }
 
@@ -305,7 +304,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderResolveDefault}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderResolveDefault}:\n{e}" );
         }
 
         try
@@ -315,7 +314,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderResolveCharacter}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderResolveCharacter}:\n{e}" );
         }
 
         try
@@ -325,7 +324,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderResolveCharacter}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderResolveCharacter}:\n{e}" );
         }
 
         try
@@ -335,7 +334,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetDrawObjectInfo}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetDrawObjectInfo}:\n{e}" );
         }
 
         try
@@ -345,7 +344,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetCutsceneParentIndex}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetCutsceneParentIndex}:\n{e}" );
         }
 
         try
@@ -355,7 +354,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderReverseResolvePath}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderReverseResolvePath}:\n{e}" );
         }
 
         try
@@ -365,7 +364,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderReverseResolvePlayerPath}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderReverseResolvePlayerPath}:\n{e}" );
         }
 
         try
@@ -376,7 +375,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreatingCharacterBase}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderCreatingCharacterBase}:\n{e}" );
         }
 
         try
@@ -387,7 +386,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreatedCharacterBase}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderCreatedCharacterBase}:\n{e}" );
         }
 
         try
@@ -398,7 +397,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGameObjectResourcePathResolved}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGameObjectResourcePathResolved}:\n{e}" );
         }
     }
 
@@ -462,7 +461,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemTooltip}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderChangedItemTooltip}:\n{e}" );
         }
 
         try
@@ -472,7 +471,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
         }
 
         try
@@ -482,7 +481,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
         }
     }
 
@@ -521,7 +520,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetMods}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetMods}:\n{e}" );
         }
 
         try
@@ -531,7 +530,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetCollections}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetCollections}:\n{e}" );
         }
 
         try
@@ -541,7 +540,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCurrentCollectionName}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderCurrentCollectionName}:\n{e}" );
         }
 
         try
@@ -551,7 +550,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderDefaultCollectionName}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderDefaultCollectionName}:\n{e}" );
         }
 
         try
@@ -561,7 +560,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCharacterCollectionName}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderCharacterCollectionName}:\n{e}" );
         }
 
         try
@@ -571,7 +570,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetPlayerMetaManipulations}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetPlayerMetaManipulations}:\n{e}" );
         }
 
         try
@@ -581,7 +580,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetMetaManipulations}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetMetaManipulations}:\n{e}" );
         }
     }
 
@@ -633,7 +632,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderModSettingChanged}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderModSettingChanged}:\n{e}" );
         }
 
         try
@@ -645,7 +644,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetAvailableModSettings}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetAvailableModSettings}:\n{e}" );
         }
 
         try
@@ -655,7 +654,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderReloadMod}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderReloadMod}:\n{e}" );
         }
 
         try
@@ -665,7 +664,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderChangedItemClick}:\n{e}" );
         }
 
         try
@@ -677,7 +676,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderGetCurrentModSettings}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderGetCurrentModSettings}:\n{e}" );
         }
 
         try
@@ -687,7 +686,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTryInheritMod}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderTryInheritMod}:\n{e}" );
         }
 
         try
@@ -697,7 +696,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTrySetMod}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderTrySetMod}:\n{e}" );
         }
 
         try
@@ -707,7 +706,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTrySetModPriority}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderTrySetModPriority}:\n{e}" );
         }
 
         try
@@ -718,7 +717,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTrySetModSetting}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderTrySetModSetting}:\n{e}" );
         }
 
         try
@@ -729,7 +728,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderTrySetModSettings}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderTrySetModSettings}:\n{e}" );
         }
     }
 
@@ -782,7 +781,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderCreateTemporaryCollection}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderCreateTemporaryCollection}:\n{e}" );
         }
 
         try
@@ -793,7 +792,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryCollection}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryCollection}:\n{e}" );
         }
 
         try
@@ -805,7 +804,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderAddTemporaryModAll}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderAddTemporaryModAll}:\n{e}" );
         }
 
         try
@@ -817,7 +816,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderAddTemporaryMod}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderAddTemporaryMod}:\n{e}" );
         }
 
         try
@@ -827,7 +826,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryModAll}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryModAll}:\n{e}" );
         }
 
         try
@@ -837,7 +836,7 @@ public partial class PenumbraIpc
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryMod}:\n{e}" );
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderRemoveTemporaryMod}:\n{e}" );
         }
     }
 

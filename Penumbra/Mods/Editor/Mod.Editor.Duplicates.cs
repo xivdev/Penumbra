@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 
 namespace Penumbra.Mods;
@@ -87,7 +86,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"[DeleteDuplicates] Could not delete duplicate {duplicate.FullName} of {remaining.FullName}:\n{e}" );
+                Penumbra.Log.Error( $"[DeleteDuplicates] Could not delete duplicate {duplicate.FullName} of {remaining.FullName}:\n{e}" );
             }
         }
 
@@ -100,7 +99,7 @@ public partial class Mod
             }
 
             changes = true;
-            PluginLog.Debug( "[DeleteDuplicates] Changing {GamePath:l} for {Mod:d}\n     : {Old:l}\n    -> {New:l}", key, _mod.Name, from, to );
+            Penumbra.Log.Debug( $"[DeleteDuplicates] Changing {key} for {_mod.Name}\n     : {from}\n    -> {to}" );
             return to;
         }
 
@@ -263,7 +262,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not delete empty directories in {baseDir.FullName}:\n{e}" );
+                Penumbra.Log.Error( $"Could not delete empty directories in {baseDir.FullName}:\n{e}" );
             }
         }
 
@@ -282,7 +281,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                PluginLog.Warning( $"Could not deduplicate mod {modDirectory.Name}:\n{e}" );
+                Penumbra.Log.Warning( $"Could not deduplicate mod {modDirectory.Name}:\n{e}" );
             }
         }
     }

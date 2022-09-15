@@ -3,7 +3,6 @@ using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api;

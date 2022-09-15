@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
 
 namespace Penumbra.Mods;
 
@@ -34,7 +33,7 @@ public partial class Mod
                     }
                     catch( Exception e )
                     {
-                        PluginLog.Error( $"Could not delete empty directory {dir!.FullName} to move {mod.Name} to it:\n{e}" );
+                        Penumbra.Log.Error( $"Could not delete empty directory {dir!.FullName} to move {mod.Name} to it:\n{e}" );
                         return;
                     }
 
@@ -55,7 +54,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not move {mod.Name} from {oldDirectory.Name} to {dir!.Name}:\n{e}" );
+                Penumbra.Log.Error( $"Could not move {mod.Name} from {oldDirectory.Name} to {dir!.Name}:\n{e}" );
                 return;
             }
 
@@ -63,7 +62,7 @@ public partial class Mod
             mod.ModPath = dir;
             if( !mod.Reload( out var metaChange ) )
             {
-                PluginLog.Error( $"Error reloading moved mod {mod.Name}." );
+                Penumbra.Log.Error( $"Error reloading moved mod {mod.Name}." );
                 return;
             }
 
@@ -81,10 +80,10 @@ public partial class Mod
             var mod     = this[ idx ];
             var oldName = mod.Name;
 
-            ModPathChanged.Invoke(ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath  );
+            ModPathChanged.Invoke( ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath );
             if( !mod.Reload( out var metaChange ) )
             {
-                PluginLog.Warning( mod.Name.Length == 0
+                Penumbra.Log.Warning( mod.Name.Length == 0
                     ? $"Reloading mod {oldName} has failed, new name is empty. Deleting instead."
                     : $"Reloading mod {oldName} failed, {mod.ModPath.FullName} does not exist anymore or it ha. Deleting instead." );
 
@@ -110,11 +109,11 @@ public partial class Mod
                 try
                 {
                     Directory.Delete( mod.ModPath.FullName, true );
-                    PluginLog.Debug( "Deleted directory {Directory:l} for {Name:l}.", mod.ModPath.FullName, mod.Name );
+                    Penumbra.Log.Debug( $"Deleted directory {mod.ModPath.FullName} for {mod.Name}.");
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Could not delete the mod {mod.ModPath.Name}:\n{e}" );
+                    Penumbra.Log.Error( $"Could not delete the mod {mod.ModPath.Name}:\n{e}" );
                 }
             }
 
@@ -125,7 +124,7 @@ public partial class Mod
                 --remainingMod.Index;
             }
 
-            PluginLog.Debug( "Deleted mod {Name:l}.", mod.Name );
+            Penumbra.Log.Debug( $"Deleted mod {mod.Name}." );
         }
 
         // Load a new mod and add it to the manager if successful.
@@ -145,7 +144,7 @@ public partial class Mod
             mod.Index = _mods.Count;
             _mods.Add( mod );
             ModPathChanged.Invoke( ModPathChangeType.Added, mod, null, mod.ModPath );
-            PluginLog.Debug( "Added new mod {Name:l} from {Directory:l}.", mod.Name, modFolder.FullName );
+            Penumbra.Log.Debug( $"Added new mod {mod.Name} from {modFolder.FullName}." );
         }
 
         public enum NewDirectoryState

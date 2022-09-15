@@ -6,7 +6,6 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections;
-using Penumbra.Util;
 
 namespace Penumbra.UI;
 

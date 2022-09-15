@@ -1,9 +1,7 @@
 using System;
 using System.IO;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui;
 using OtterGui.Classes;
 
 namespace Penumbra.Mods;
@@ -48,7 +46,7 @@ public sealed partial class Mod
         var metaFile = MetaFile;
         if( !File.Exists( metaFile.FullName ) )
         {
-            PluginLog.Debug( "No mod meta found for {ModLocation}.", ModPath.Name );
+            Penumbra.Log.Debug( $"No mod meta found for {ModPath.Name}." );
             return MetaChangeType.Deletion;
         }
 
@@ -115,7 +113,7 @@ public sealed partial class Mod
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not load mod meta:\n{e}" );
+            Penumbra.Log.Error( $"Could not load mod meta:\n{e}" );
             return MetaChangeType.Deletion;
         }
     }
@@ -142,7 +140,7 @@ public sealed partial class Mod
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not write meta file for mod {Name} to {metaFile.FullName}:\n{e}" );
+            Penumbra.Log.Error( $"Could not write meta file for mod {Name} to {metaFile.FullName}:\n{e}" );
         }
     }
 

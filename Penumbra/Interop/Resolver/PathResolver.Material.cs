@@ -1,8 +1,6 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
@@ -95,7 +93,7 @@ public unsafe partial class PathResolver
             || Penumbra.CollectionManager.ByName( name, out collection ) )
             {
 #if DEBUG
-                PluginLog.Verbose( "Using MtrlLoadHandler with collection {$Split:l} for path {$Path:l}.", name, path );
+                Penumbra.Log.Verbose( $"Using MtrlLoadHandler with collection {name} for path {path}." );
 #endif
 
                 var objFromObjTable = Dalamud.Objects.FirstOrDefault( f => f.Name.TextValue == name );
@@ -105,7 +103,7 @@ public unsafe partial class PathResolver
             else
             {
 #if DEBUG
-                PluginLog.Verbose( "Using MtrlLoadHandler with no collection for path {$Path:l}.", path );
+                Penumbra.Log.Verbose( $"Using MtrlLoadHandler with no collection for path {path}." );
 #endif
             }
 

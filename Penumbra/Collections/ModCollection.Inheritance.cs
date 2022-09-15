@@ -1,9 +1,8 @@
+using OtterGui.Filesystem;
+using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Logging;
-using OtterGui.Filesystem;
-using Penumbra.Mods;
 
 namespace Penumbra.Collections;
 
@@ -81,7 +80,7 @@ public partial class ModCollection
         collection.ModSettingChanged  += OnInheritedModSettingChange;
         collection.InheritanceChanged += OnInheritedInheritanceChange;
         InheritanceChanged.Invoke( false );
-        PluginLog.Debug( "Added {InheritedName:l} to {Name:l} inheritances.", collection.AnonymizedName, AnonymizedName );
+        Penumbra.Log.Debug( $"Added {collection.AnonymizedName} to {AnonymizedName} inheritances." );
         return true;
     }
 
@@ -91,7 +90,7 @@ public partial class ModCollection
         ClearSubscriptions( inheritance );
         _inheritance.RemoveAt( idx );
         InheritanceChanged.Invoke( false );
-        PluginLog.Debug( "Removed {InheritedName:l} from {Name:l} inheritances.", inheritance.AnonymizedName, AnonymizedName );
+        Penumbra.Log.Debug( $"Removed {inheritance.AnonymizedName} from {AnonymizedName} inheritances." );
     }
 
     private void ClearSubscriptions( ModCollection other )
@@ -106,7 +105,7 @@ public partial class ModCollection
         if( _inheritance.Move( from, to ) )
         {
             InheritanceChanged.Invoke( false );
-            PluginLog.Debug( "Moved {Name:l}s inheritance {From} to {To}.", AnonymizedName, from, to );
+            Penumbra.Log.Debug( $"Moved {AnonymizedName}s inheritance {from} to {to}." );
         }
     }
 
@@ -122,7 +121,7 @@ public partial class ModCollection
             default:
                 if( modIdx < 0 || modIdx >= _settings.Count )
                 {
-                    PluginLog.Warning(
+                    Penumbra.Log.Warning(
                         $"Collection state broken, Mod {modIdx} in inheritance does not exist. ({_settings.Count} mods exist)." );
                     return;
                 }

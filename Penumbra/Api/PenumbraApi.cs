@@ -1,11 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Logging;
 using Lumina.Data;
 using Newtonsoft.Json;
 using OtterGui;
@@ -16,6 +9,12 @@ using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 
 namespace Penumbra.Api;
 
@@ -206,12 +205,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                 return collection.ChangedItems.ToDictionary( kvp => kvp.Key, kvp => kvp.Value.Item2 );
             }
 
-            PluginLog.Warning( $"Collection {collectionName} does not exist or is not loaded." );
+            Penumbra.Log.Warning( $"Collection {collectionName} does not exist or is not loaded." );
             return new Dictionary< string, object? >();
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not obtain Changed Items for {collectionName}:\n{e}" );
+            Penumbra.Log.Error( $"Could not obtain Changed Items for {collectionName}:\n{e}" );
             throw;
         }
     }
@@ -619,7 +618,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
         catch( Exception e )
         {
-            PluginLog.Warning( $"Could not load file {resolvedPath}:\n{e}" );
+            Penumbra.Log.Warning( $"Could not load file {resolvedPath}:\n{e}" );
             return null;
         }
     }

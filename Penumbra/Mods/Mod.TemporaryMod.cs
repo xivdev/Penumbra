@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
@@ -91,11 +89,11 @@ public sealed partial class Mod
 
                 mod.SaveDefaultMod();
                 Penumbra.ModManager.AddMod( dir );
-                PluginLog.Information( $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Name}." );
+                Penumbra.Log.Information( $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Name}." );
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not save temporary collection {collection.Name} to permanent Mod:\n{e}" );
+                Penumbra.Log.Error( $"Could not save temporary collection {collection.Name} to permanent Mod:\n{e}" );
                 if( dir != null && Directory.Exists( dir.FullName ) )
                 {
                     try

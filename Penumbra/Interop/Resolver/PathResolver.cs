@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
@@ -84,7 +83,7 @@ public partial class PathResolver : IDisposable
         _materials.Enable();
 
         _loader.ResolvePathCustomization += CharacterResolver;
-        PluginLog.Debug( "Character Path Resolver enabled." );
+        Penumbra.Log.Debug( "Character Path Resolver enabled." );
     }
 
     public void Disable()
@@ -103,7 +102,7 @@ public partial class PathResolver : IDisposable
         _materials.Disable();
 
         _loader.ResolvePathCustomization -= CharacterResolver;
-        PluginLog.Debug( "Character Path Resolver disabled." );
+        Penumbra.Log.Debug( "Character Path Resolver disabled." );
     }
 
     public void Dispose()

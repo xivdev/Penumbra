@@ -2,7 +2,6 @@ using System;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 

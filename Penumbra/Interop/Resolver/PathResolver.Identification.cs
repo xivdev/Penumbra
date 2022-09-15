@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
@@ -203,7 +202,7 @@ public unsafe partial class PathResolver
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error identifying collection:\n{e}" );
+            Penumbra.Log.Error( $"Error identifying collection:\n{e}" );
             return Penumbra.CollectionManager.Default.ToResolveData( gameObject );
         }
     }

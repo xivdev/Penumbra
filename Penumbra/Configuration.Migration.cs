@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
@@ -126,7 +125,7 @@ public partial class Configuration
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Could not delete the outdated penumbrametatmp folder:\n{e}" );
+                    Penumbra.Log.Error( $"Could not delete the outdated penumbrametatmp folder:\n{e}" );
                 }
             }
         }
@@ -153,7 +152,7 @@ public partial class Configuration
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error(
+                    Penumbra.Log.Error(
                         $"Could not transfer forced collection {ForcedCollection} to inheritance of collection {collection}:\n{e}" );
                 }
             }
@@ -258,7 +257,7 @@ public partial class Configuration
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not migrate the old collection file to new collection files:\n{e}" );
+                Penumbra.Log.Error( $"Could not migrate the old collection file to new collection files:\n{e}" );
                 throw;
             }
         }
@@ -274,7 +273,7 @@ public partial class Configuration
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not create backup copy of config at {bakName}:\n{e}" );
+                Penumbra.Log.Error( $"Could not create backup copy of config at {bakName}:\n{e}" );
             }
         }
 

@@ -1,5 +1,4 @@
 using System.Linq;
-using System.Runtime.InteropServices;
 using Penumbra.GameData.Util;
 
 namespace Penumbra.GameData.ByteString;

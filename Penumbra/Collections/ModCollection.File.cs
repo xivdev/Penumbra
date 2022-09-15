@@ -1,13 +1,12 @@
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using OtterGui.Filesystem;
+using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Dalamud.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using OtterGui.Filesystem;
-using Penumbra.Mods;
 
 namespace Penumbra.Collections;
 
@@ -67,7 +66,7 @@ public partial class ModCollection
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not save collection {AnonymizedName}:\n{e}" );
+            Penumbra.Log.Error( $"Could not save collection {AnonymizedName}:\n{e}" );
         }
     }
 
@@ -90,11 +89,11 @@ public partial class ModCollection
         try
         {
             file.Delete();
-            PluginLog.Information( "Deleted collection file for {Name:l}.", AnonymizedName );
+            Penumbra.Log.Information( $"Deleted collection file for {AnonymizedName}." );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not delete collection file for {AnonymizedName}:\n{e}" );
+            Penumbra.Log.Error( $"Could not delete collection file for {AnonymizedName}:\n{e}" );
         }
     }
 
@@ -105,7 +104,7 @@ public partial class ModCollection
         inheritance = Array.Empty< string >();
         if( !file.Exists )
         {
-            PluginLog.Error( $"Could not read collection because file does not exist." );
+            Penumbra.Log.Error( "Could not read collection because file does not exist." );
             return null;
         }
 
@@ -123,7 +122,7 @@ public partial class ModCollection
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not read collection information from file:\n{e}" );
+            Penumbra.Log.Error( $"Could not read collection information from file:\n{e}" );
         }
 
         return null;

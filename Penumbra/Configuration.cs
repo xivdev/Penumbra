@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Configuration;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using OtterGui;
 using OtterGui.Classes;
@@ -78,7 +77,7 @@ public partial class Configuration : IPluginConfiguration
     {
         void HandleDeserializationError( object? sender, ErrorEventArgs errorArgs )
         {
-            PluginLog.Error(
+            Penumbra.Log.Error(
                 $"Error parsing Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}" );
             errorArgs.ErrorContext.Handled = true;
         }
@@ -116,7 +115,7 @@ public partial class Configuration : IPluginConfiguration
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not save plugin configuration:\n{e}" );
+            Penumbra.Log.Error( $"Could not save plugin configuration:\n{e}" );
         }
     }
 

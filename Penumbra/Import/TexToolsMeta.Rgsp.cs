@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Dalamud.Logging;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -14,7 +13,7 @@ public partial class TexToolsMeta
     {
         if( data.Length != 45 && data.Length != 42 )
         {
-            PluginLog.Error( "Error while parsing .rgsp file:\n\tInvalid number of bytes." );
+            Penumbra.Log.Error( "Error while parsing .rgsp file:\n\tInvalid number of bytes." );
             return Invalid;
         }
 
@@ -32,7 +31,7 @@ public partial class TexToolsMeta
         var subRace = ( SubRace )( version == 1 ? flag + 1 : br.ReadByte() + 1 );
         if( !Enum.IsDefined( typeof( SubRace ), subRace ) || subRace == SubRace.Unknown )
         {
-            PluginLog.Error( $"Error while parsing .rgsp file:\n\t{subRace} is not a valid SubRace." );
+            Penumbra.Log.Error( $"Error while parsing .rgsp file:\n\t{subRace} is not a valid SubRace." );
             return Invalid;
         }
 
@@ -40,7 +39,7 @@ public partial class TexToolsMeta
         var gender = br.ReadByte();
         if( gender != 1 && gender != 0 )
         {
-            PluginLog.Error( $"Error while parsing .rgsp file:\n\t{gender} is neither Male nor Female." );
+            Penumbra.Log.Error( $"Error while parsing .rgsp file:\n\t{gender} is neither Male nor Female." );
             return Invalid;
         }
 

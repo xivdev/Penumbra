@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using OtterGui.Filesystem;
 
@@ -50,11 +49,11 @@ public interface IModGroup : IEnumerable< ISubMod >
         try
         {
             File.Delete( file );
-            PluginLog.Debug( "Deleted group file {File:l} for group {GroupIdx}: {GroupName:l}.", file, groupIdx + 1, Name );
+            Penumbra.Log.Debug( $"Deleted group file {file} for group {groupIdx + 1}: {Name}." );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not delete file {file}:\n{e}" );
+            Penumbra.Log.Error( $"Could not delete file {file}:\n{e}" );
             throw;
         }
     }
@@ -92,7 +91,7 @@ public interface IModGroup : IEnumerable< ISubMod >
 
         j.WriteEndArray();
         j.WriteEndObject();
-        PluginLog.Debug( "Saved group file {File:l} for group {GroupIdx}: {GroupName:l}.", file, groupIdx + 1, group.Name );
+        Penumbra.Log.Debug( $"Saved group file {file} for group {groupIdx + 1}: {group.Name}." );
     }
 
     public IModGroup Convert( SelectType type );

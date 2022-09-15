@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Penumbra.Mods;
 using FileMode = System.IO.FileMode;
@@ -142,7 +141,7 @@ public partial class TexToolsImporter : IDisposable
         {
             if( modPackFile.Extension != ".ttmp2" )
             {
-                PluginLog.Warning( $"File {modPackFile.FullName} seems to be a V2 TTMP, but has the wrong extension." );
+                Penumbra.Log.Warning( $"File {modPackFile.FullName} seems to be a V2 TTMP, but has the wrong extension." );
             }
 
             return ImportV2ModPack( modPackFile, extractedModPack, modRaw );
@@ -150,7 +149,7 @@ public partial class TexToolsImporter : IDisposable
 
         if( modPackFile.Extension != ".ttmp" )
         {
-            PluginLog.Warning( $"File {modPackFile.FullName} seems to be a V1 TTMP, but has the wrong extension." );
+            Penumbra.Log.Warning( $"File {modPackFile.FullName} seems to be a V1 TTMP, but has the wrong extension." );
         }
 
         return ImportV1ModPack( modPackFile, extractedModPack, modRaw );

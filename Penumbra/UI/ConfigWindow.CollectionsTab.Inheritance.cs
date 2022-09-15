@@ -8,7 +8,6 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.UI.Classes;
-using Penumbra.Util;
 
 namespace Penumbra.UI;
 

@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.GameData.ByteString;
@@ -56,7 +55,7 @@ public partial class Mod
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not parse default file for {Name}:\n{e}" );
+            Penumbra.Log.Error( $"Could not parse default file for {Name}:\n{e}" );
         }
     }
 
@@ -196,8 +195,7 @@ public partial class Mod
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Could not incorporate meta changes in mod {basePath} from file {file.FullName}:\n{e}" );
-                    continue;
+                    Penumbra.Log.Error( $"Could not incorporate meta changes in mod {basePath} from file {file.FullName}:\n{e}" );
                 }
             }
         }
