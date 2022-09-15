@@ -477,7 +477,7 @@ public partial class ConfigWindow
                     EditOption( panel, group, groupIdx, optionIdx );
                 }
 
-                DrawNewOption( panel._mod, groupIdx, panel._window._iconButtonSize );
+                DrawNewOption( panel, groupIdx, panel._window._iconButtonSize );
             }
 
             // Draw a line for a single option.
@@ -518,9 +518,14 @@ public partial class ConfigWindow
             }
 
             // Draw the line to add a new option.
-            private static void DrawNewOption( Mod mod, int groupIdx, Vector2 iconButtonSize )
+            private static void DrawNewOption( ModPanel panel, int groupIdx, Vector2 iconButtonSize )
             {
+                var mod   = panel._mod;
+                var group = mod.Groups[ groupIdx ];
                 ImGui.TableNextColumn();
+                ImGui.AlignTextToFramePadding();
+                ImGui.Selectable( $"Option #{group.Count + 1}" );
+                Target( panel, group, groupIdx, group.Count );
                 ImGui.TableNextColumn();
                 ImGui.SetNextItemWidth( -1 );
                 var tmp = _newOptionNameIdx == groupIdx ? _newOptionName : string.Empty;
@@ -564,14 +569,13 @@ public partial class ConfigWindow
 
             private static void Target( ModPanel panel, IModGroup group, int groupIdx, int optionIdx )
             {
-                // TODO drag options to other groups without options.
                 using var target = ImRaii.DragDropTarget();
                 if( !target.Success || !ImGuiUtil.IsDropping( DragDropLabel ) )
                 {
                     return;
                 }
 
-                if( _dragDropGroupIdx >= 0 && _dragDropOptionIdx >= 0 )
+                if( _dragDropGroupIdx >= 0  && _dragDropOptionIdx >= 0 )
                 {
                     if( _dragDropGroupIdx == groupIdx )
                     {
@@ -580,15 +584,18 @@ public partial class ConfigWindow
                     }
                     else
                     {
-                        // Move from one group to another by deleting, then adding the option.
-                        var sourceGroup  = _dragDropGroupIdx;
-                        var sourceOption = _dragDropOptionIdx;
-                        var option       = group[ _dragDropOptionIdx ];
-                        var priority     = group.OptionPriority( _dragDropGroupIdx );
+                        // Move from one group to another by deleting, then adding, then moving the option.
+                        var sourceGroupIdx = _dragDropGroupIdx;
+                        var sourceOption   = _dragDropOptionIdx;
+                        var sourceGroup    = panel._mod.Groups[ sourceGroupIdx ];
+                        var currentCount   = group.Count;
+                        var option         = sourceGroup[sourceOption];
+                        var priority       = sourceGroup.OptionPriority( _dragDropGroupIdx );
                         panel._delayedActions.Enqueue( () =>
                         {
-                            Penumbra.ModManager.DeleteOption( panel._mod, sourceGroup, sourceOption );
+                            Penumbra.ModManager.DeleteOption( panel._mod, sourceGroupIdx, sourceOption );
                             Penumbra.ModManager.AddOption( panel._mod, groupIdx, option, priority );
+                            Penumbra.ModManager.MoveOption( panel._mod, groupIdx, currentCount, optionIdx );
                         } );
                     }
                 }

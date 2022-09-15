@@ -87,7 +87,7 @@ public sealed partial class Mod
         {
             foreach( var (group, groupIdx) in mod._groups.WithIndex().Skip( fromGroup ) )
             {
-                foreach( var (o, optionIdx) in group.OfType<SubMod>().WithIndex() )
+                foreach( var (o, optionIdx) in group.OfType< SubMod >().WithIndex() )
                 {
                     o.SetPosition( groupIdx, optionIdx );
                 }
@@ -175,18 +175,19 @@ public sealed partial class Mod
 
         public void AddOption( Mod mod, int groupIdx, string newName )
         {
-            var group = mod._groups[groupIdx];
+            var group  = mod._groups[ groupIdx ];
+            var subMod = new SubMod( mod ) { Name = newName };
+            subMod.SetPosition( groupIdx, group.Count );
             switch( group )
             {
                 case SingleModGroup s:
-                    s.OptionData.Add( new SubMod(mod) { Name = newName } );
+                    s.OptionData.Add( subMod );
                     break;
                 case MultiModGroup m:
-                    m.PrioritizedOptions.Add( ( new SubMod(mod) { Name = newName }, 0 ) );
+                    m.PrioritizedOptions.Add( ( subMod, 0 ) );
                     break;
             }
 
-            group.UpdatePositions( group.Count - 1 );
             ModOptionChanged.Invoke( ModOptionChangeType.OptionAdded, mod, groupIdx, group.Count - 1, -1 );
         }
 
@@ -206,6 +207,8 @@ public sealed partial class Mod
                 return;
             }
 
+            o.SetPosition( groupIdx, group.Count );
+
             switch( group )
             {
                 case SingleModGroup s:
@@ -215,13 +218,13 @@ public sealed partial class Mod
                     m.PrioritizedOptions.Add( ( o, priority ) );
                     break;
             }
-            group.UpdatePositions( group.Count - 1 );
+
             ModOptionChanged.Invoke( ModOptionChangeType.OptionAdded, mod, groupIdx, group.Count - 1, -1 );
         }
 
         public void DeleteOption( Mod mod, int groupIdx, int optionIdx )
         {
-            var group = mod._groups[groupIdx];
+            var group = mod._groups[ groupIdx ];
             ModOptionChanged.Invoke( ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1 );
             switch( group )
             {
@@ -233,6 +236,7 @@ public sealed partial class Mod
                     m.PrioritizedOptions.RemoveAt( optionIdx );
                     break;
             }
+
             group.UpdatePositions( optionIdx );
             ModOptionChanged.Invoke( ModOptionChangeType.OptionDeleted, mod, groupIdx, optionIdx, -1 );
         }
@@ -332,6 +336,11 @@ public sealed partial class Mod
 
         private static void OnModOptionChange( ModOptionChangeType type, Mod mod, int groupIdx, int _, int _2 )
         {
+            if( type == ModOptionChangeType.PrepareChange )
+            {
+                return;
+            }
+
             // File deletion is handled in the actual function.
             if( type is ModOptionChangeType.GroupDeleted or ModOptionChangeType.GroupMoved )
             {
