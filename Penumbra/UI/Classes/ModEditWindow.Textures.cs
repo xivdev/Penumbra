@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
@@ -34,6 +35,9 @@ public partial class ModEditWindow
 
         tex.PathInputBox( "##input", "Import Image...", "Can import game paths as well as your own files.", _mod!.ModPath.FullName,
             _dialogManager );
+        var files = _editor!.TexFiles.Select( f => f.File.FullName )
+           .Concat( _editor.TexFiles.SelectMany( f => f.SubModUsage.Select( p => p.Item2.ToString() ) ) );
+        tex.PathSelectBox( "##combo", "Select the textures included in this mod on your drive or the ones they replace from the game files.", files);
 
         if( tex == _left )
         {

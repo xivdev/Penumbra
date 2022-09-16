@@ -40,7 +40,7 @@ public partial class Mod
 
             public bool Equals( FileRegistry? other )
             {
-                if( ReferenceEquals( null, other ) )
+                if( other is null )
                 {
                     return false;
                 }
@@ -50,7 +50,7 @@ public partial class Mod
 
             public override bool Equals( object? obj )
             {
-                if( ReferenceEquals( null, obj ) )
+                if( obj is null )
                 {
                     return false;
                 }
@@ -75,6 +75,7 @@ public partial class Mod
         private          List< FileRegistry >    _availableFiles = null!;
         private          List< FileRegistry >    _mtrlFiles      = null!;
         private          List< FileRegistry >    _mdlFiles       = null!;
+        private          List<FileRegistry>      _texFiles       = null!;
         private readonly HashSet< Utf8GamePath > _usedPaths      = new();
 
         // All paths that are used in 
@@ -88,6 +89,9 @@ public partial class Mod
 
         public IReadOnlyList< FileRegistry > MdlFiles
             => _mdlFiles;
+
+        public IReadOnlyList<FileRegistry> TexFiles
+            => _texFiles;
 
         // Remove all path redirections where the pointed-to file does not exist.
         public void RemoveMissingPaths()
@@ -130,6 +134,7 @@ public partial class Mod
             _usedPaths.Clear();
             _mtrlFiles  = _availableFiles.Where( f => f.File.FullName.EndsWith( ".mtrl", StringComparison.OrdinalIgnoreCase ) ).ToList();
             _mdlFiles   = _availableFiles.Where( f => f.File.FullName.EndsWith( ".mdl", StringComparison.OrdinalIgnoreCase ) ).ToList();
+            _texFiles   = _availableFiles.Where( f => f.File.FullName.EndsWith( ".tex", StringComparison.OrdinalIgnoreCase ) ).ToList();
             FileChanges = false;
             foreach( var subMod in _mod.AllSubMods )
             {

@@ -5,7 +5,6 @@ using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using ImGuiScene;
 using Lumina.Data.Files;
@@ -19,7 +18,7 @@ using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
 
-public class Texture : IDisposable
+public sealed class Texture : IDisposable
 {
     public enum FileType
     {
@@ -193,10 +192,29 @@ public class Texture : IDisposable
 
     private string? _tmpPath;
 
+    public void PathSelectBox( string label, string tooltip, IEnumerable<string> paths )
+    {
+        ImGui.SetNextItemWidth( -0.0001f );
+        var startPath = Path.Length > 0 ? Path : "Choose a modded texture here...";
+        using var combo = ImRaii.Combo( label, startPath );
+        if( combo )
+        {
+            foreach( var (path, idx) in paths.WithIndex() )
+            {
+                using var id = ImRaii.PushId( idx );
+                if( ImGui.Selectable( path, path == startPath ) && path != startPath )
+                {
+                    Load( path );
+                }
+            }
+        }
+        ImGuiUtil.HoverTooltip( tooltip );
+    }
+
     public void PathInputBox( string label, string hint, string tooltip, string startPath, FileDialogManager manager )
     {
         _tmpPath ??= Path;
-        using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( 3 * ImGuiHelpers.GlobalScale, 0 ) );
+        using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
         ImGui.SetNextItemWidth( -ImGui.GetFrameHeight() - 3 * ImGuiHelpers.GlobalScale );
         ImGui.InputTextWithHint( label, hint, ref _tmpPath, Utf8GamePath.MaxGamePathLength );
         if( ImGui.IsItemDeactivatedAfterEdit() )
