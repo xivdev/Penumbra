@@ -70,7 +70,7 @@ public class ModSettings
                 var config = Settings[ groupIdx ];
                 Settings[ groupIdx ] = group.Type switch
                 {
-                    SelectType.Single => config >= optionIdx ? Math.Max( 0, config - 1 ) : config,
+                    SelectType.Single => config >= optionIdx ? (config > 1 ? config - 1 : 0) : config,
                     SelectType.Multi  => RemoveBit( config, optionIdx ),
                     _                 => config,
                 };

@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
@@ -68,7 +65,7 @@ public unsafe partial class ResourceLoader
     {
         if( local != game )
         {
-            PluginLog.Warning( "Hash function appears to have changed. Computed {Hash1:X8} vs Game {Hash2:X8} for {Path}.", local, game, path );
+            Penumbra.Log.Warning( $"Hash function appears to have changed. Computed {local:X8} vs Game {game:X8} for {path}." );
         }
     }
 
@@ -79,7 +76,7 @@ public unsafe partial class ResourceLoader
     {
         if( !Utf8GamePath.FromPointer( path, out var gamePath ) )
         {
-            PluginLog.Error( "Could not create GamePath from resource path." );
+            Penumbra.Log.Error( "Could not create GamePath from resource path." );
             return CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
         }
 
@@ -161,7 +158,7 @@ public unsafe partial class ResourceLoader
 
         if( fileDescriptor == null || fileDescriptor->ResourceHandle == null )
         {
-            PluginLog.Error( "Failure to load file from SqPack: invalid File Descriptor." );
+            Penumbra.Log.Error( "Failure to load file from SqPack: invalid File Descriptor." );
             return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
 

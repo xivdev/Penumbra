@@ -1,17 +1,14 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Structs;
 using CustomizeData = Penumbra.GameData.Structs.CustomizeData;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
@@ -41,10 +38,10 @@ public unsafe partial class PathResolver
         }
 
         var ui     = ( AtkUnitBase* )addon;
-        var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 2u : 6u;
+        var nodeId = Dalamud.GameData.GetExcelSheet< Title >()?.GetRow( *_inspectTitleId )?.IsPrefix == true ? 7u : 6u;
 
         var text = ( AtkTextNode* )ui->UldManager.SearchNodeById( nodeId );
-        return text != null ? text->NodeText.ToString() : null;
+        return text != null && text->AtkResNode.Type == NodeType.Text ? text->NodeText.ToString() : null;
     }
 
     // Obtain the name displayed in the Character Card from the agent.
@@ -205,7 +202,7 @@ public unsafe partial class PathResolver
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error identifying collection:\n{e}" );
+            Penumbra.Log.Error( $"Error identifying collection:\n{e}" );
             return Penumbra.CollectionManager.Default.ToResolveData( gameObject );
         }
     }
@@ -245,7 +242,7 @@ public unsafe partial class PathResolver
         collection = null;
         // Check for the Yourself collection.
         if( actor->ObjectIndex == 0
-        || actor->ObjectIndex == ObjectReloader.GPosePlayerIdx && name.Length > 0
+        || Cutscenes.GetParentIndex(actor->ObjectIndex) == 0
         || name == Dalamud.ClientState.LocalPlayer?.Name.ToString() )
         {
             collection = Penumbra.CollectionManager.ByType( CollectionType.Yourself );

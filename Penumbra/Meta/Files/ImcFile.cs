@@ -1,6 +1,5 @@
 using System;
 using System.Numerics;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
@@ -125,7 +124,7 @@ public unsafe class ImcFile : MetaBaseFile
         if( ActualLength > Length )
         {
             var newLength = ( ( ( ActualLength - 1 ) >> 7 ) + 1 ) << 7;
-            PluginLog.Verbose( "Resized IMC {Path} from {Length} to {NewLength}.", Path, Length, newLength );
+            Penumbra.Log.Verbose( $"Resized IMC {Path} from {Length} to {newLength}." );
             ResizeResources( newLength );
         }
 
@@ -135,7 +134,7 @@ public unsafe class ImcFile : MetaBaseFile
             Functions.MemCpyUnchecked( defaultPtr + i * NumParts, defaultPtr, NumParts * sizeof( ImcEntry ) );
         }
 
-        PluginLog.Verbose( "Expanded IMC {Path} from {Count} to {NewCount} variants.", Path, oldCount, numVariants );
+        Penumbra.Log.Verbose( $"Expanded IMC {Path} from {oldCount} to {numVariants} variants." );
         return true;
     }
 
@@ -151,7 +150,7 @@ public unsafe class ImcFile : MetaBaseFile
         var variantPtr = VariantPtr( Data, partIdx, variantIdx );
         if( variantPtr == null )
         {
-            PluginLog.Error( "Error during expansion of imc file." );
+            Penumbra.Log.Error( "Error during expansion of imc file." );
             return false;
         }
 
@@ -222,7 +221,7 @@ public unsafe class ImcFile : MetaBaseFile
         var newData = Penumbra.MetaFileManager.AllocateDefaultMemory( ActualLength, 8 );
         if( newData == null )
         {
-            PluginLog.Error("Could not replace loaded IMC data at 0x{Data:X}, allocation failed."  );
+            Penumbra.Log.Error($"Could not replace loaded IMC data at 0x{(ulong) resource:X}, allocation failed."  );
             return;
         }
         Functions.MemCpyUnchecked( newData, Data, ActualLength );

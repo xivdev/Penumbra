@@ -1,13 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.Mods;
 using Penumbra.UI;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace Penumbra.Collections;
 
@@ -197,7 +196,7 @@ public partial class ModCollection
             var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
             {
-                PluginLog.Error( $"Last choice of {ConfigWindow.DefaultCollection} {defaultName} is not available, reset to {Empty.Name}." );
+                Penumbra.Log.Error( $"Last choice of {ConfigWindow.DefaultCollection} {defaultName} is not available, reset to {Empty.Name}." );
                 Default       = Empty;
                 configChanged = true;
             }
@@ -211,7 +210,7 @@ public partial class ModCollection
             var currentIdx  = GetIndexForCollectionName( currentName );
             if( currentIdx < 0 )
             {
-                PluginLog.Error( $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}." );
+                Penumbra.Log.Error( $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}." );
                 Current       = DefaultName;
                 configChanged = true;
             }
@@ -229,7 +228,7 @@ public partial class ModCollection
                     var idx = GetIndexForCollectionName( typeName );
                     if( idx < 0 )
                     {
-                        PluginLog.Error( $"Last choice of {type.ToName()} Collection {typeName} is not available, removed." );
+                        Penumbra.Log.Error( $"Last choice of {type.ToName()} Collection {typeName} is not available, removed." );
                         configChanged = true;
                     }
                     else
@@ -246,7 +245,7 @@ public partial class ModCollection
                 var idx = GetIndexForCollectionName( collectionName );
                 if( idx < 0 )
                 {
-                    PluginLog.Error( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {Empty.Name}." );
+                    Penumbra.Log.Error( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {Empty.Name}." );
                     _characters.Add( player, Empty );
                     configChanged = true;
                 }
@@ -306,11 +305,11 @@ public partial class ModCollection
 
                 j.WriteEndObject();
                 j.WriteEndObject();
-                PluginLog.Verbose( "Active Collections saved." );
+                Penumbra.Log.Verbose( "Active Collections saved." );
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not save active collections to file {file}:\n{e}" );
+                Penumbra.Log.Error( $"Could not save active collections to file {file}:\n{e}" );
             }
         }
 
@@ -328,7 +327,7 @@ public partial class ModCollection
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Could not read active collections from file {file}:\n{e}" );
+                    Penumbra.Log.Error( $"Could not read active collections from file {file}:\n{e}" );
                 }
             }
 

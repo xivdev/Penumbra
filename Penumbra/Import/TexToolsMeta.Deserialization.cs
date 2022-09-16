@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using Dalamud.Logging;
 using Lumina.Extensions;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -166,7 +165,7 @@ public partial class TexToolsMeta
         }
         catch( Exception e )
         {
-            PluginLog.Warning(
+            Penumbra.Log.Warning(
                 $"Could not compute IMC manipulation for {metaFileInfo.PrimaryType} {metaFileInfo.PrimaryId}. This is in all likelihood due to TexTools corrupting your index files.\n"
               + $"If the following error looks like Lumina is having trouble to read an IMC file, please do a do-over in TexTools:\n{e}" );
         }

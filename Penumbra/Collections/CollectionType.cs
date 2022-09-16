@@ -1,6 +1,6 @@
+using Penumbra.GameData.Enums;
 using System;
 using System.Linq;
-using Penumbra.GameData.Enums;
 
 namespace Penumbra.Collections;
 

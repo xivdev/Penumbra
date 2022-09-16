@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Dalamud.Configuration;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using OtterGui;
 using OtterGui.Classes;
@@ -23,6 +22,7 @@ public partial class Configuration : IPluginConfiguration
     public int Version { get; set; } = Constants.CurrentVersion;
 
     public int LastSeenVersion { get; set; } = ConfigWindow.LastChangelogVersion;
+    public ChangeLogDisplayType ChangeLogDisplayType { get; set; } = ChangeLogDisplayType.New;
 
     public bool EnableMods { get; set; } = true;
     public string ModDirectory { get; set; } = string.Empty;
@@ -79,7 +79,7 @@ public partial class Configuration : IPluginConfiguration
     {
         void HandleDeserializationError( object? sender, ErrorEventArgs errorArgs )
         {
-            PluginLog.Error(
+            Penumbra.Log.Error(
                 $"Error parsing Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}" );
             errorArgs.ErrorContext.Handled = true;
         }
@@ -117,7 +117,7 @@ public partial class Configuration : IPluginConfiguration
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not save plugin configuration:\n{e}" );
+            Penumbra.Log.Error( $"Could not save plugin configuration:\n{e}" );
         }
     }
 
@@ -142,7 +142,7 @@ public partial class Configuration : IPluginConfiguration
     // Contains some default values or boundaries for config values.
     public static class Constants
     {
-        public const int   CurrentVersion      = 4;
+        public const int   CurrentVersion      = 5;
         public const float MaxAbsoluteSize     = 600;
         public const int   DefaultAbsoluteSize = 250;
         public const float MinAbsoluteSize     = 50;

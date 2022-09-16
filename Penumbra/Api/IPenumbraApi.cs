@@ -1,10 +1,10 @@
-using System;
-using System.Collections.Generic;
 using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
+using System;
+using System.Collections.Generic;
 
 namespace Penumbra.Api;
 

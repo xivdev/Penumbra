@@ -1,12 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Numerics;
-using System.Reflection;
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Interface;
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 using ImGuiNET;
@@ -16,6 +9,12 @@ using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Mods;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Numerics;
+using System.Reflection;
 
 namespace Penumbra.Api;
 
@@ -62,7 +61,6 @@ public class IpcTester : IDisposable
     {
         if( !_subscribed )
         {
-
             _initialized.Subscribe( AddInitialized );
             _disposed.Subscribe( AddDisposed );
             _redrawn.Subscribe( SetLastRedrawn );
@@ -124,7 +122,7 @@ public class IpcTester : IDisposable
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Error during IPC Tests:\n{e}" );
+            Penumbra.Log.Error( $"Error during IPC Tests:\n{e}" );
         }
     }
 
@@ -911,7 +909,7 @@ public class IpcTester : IDisposable
             return;
         }
 
-        using var table = ImRaii.Table( "##collTree", 4 );
+        using var table = ImRaii.Table( "##collTree", 5 );
         if( !table )
         {
             return;
@@ -927,6 +925,11 @@ public class IpcTester : IDisposable
             ImGui.TextUnformatted( collection.ResolvedFiles.Count.ToString() );
             ImGui.TableNextColumn();
             ImGui.TextUnformatted( collection.MetaCache?.Count.ToString() ?? "0" );
+            ImGui.TableNextColumn();
+            if( ImGui.Button( $"Save##{character}" ) )
+            {
+                Mod.TemporaryMod.SaveTempCollection( collection, character );
+            }
         }
     }
 

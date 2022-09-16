@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
@@ -13,7 +12,6 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.UI.Classes;
-using Penumbra.Util;
 
 namespace Penumbra.UI;
 

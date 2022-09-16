@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
 using Penumbra.GameData.ByteString;
 
 namespace Penumbra.Mods;
@@ -114,7 +113,7 @@ public partial class Mod
                 return true;
             }
 
-            PluginLog.Debug( "[RemoveMissingPaths] Removing {GamePath} -> {File} from {Mod}.", key, file, _mod.Name );
+            Penumbra.Log.Debug( $"[RemoveMissingPaths] Removing {key} -> {file} from {_mod.Name}." );
             return false;
         }
 
@@ -257,12 +256,12 @@ public partial class Mod
                 try
                 {
                     File.Delete( file.File.FullName );
-                    PluginLog.Debug( "[DeleteFiles] Deleted {File} from {Mod}.", file.File.FullName, _mod.Name );
+                    Penumbra.Log.Debug( $"[DeleteFiles] Deleted {file.File.FullName} from {_mod.Name}." );
                     ++deletions;
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"[DeleteFiles] Could not delete {file.File.FullName} from {_mod.Name}:\n{e}" );
+                    Penumbra.Log.Error( $"[DeleteFiles] Could not delete {file.File.FullName} from {_mod.Name}:\n{e}" );
                 }
             }
 

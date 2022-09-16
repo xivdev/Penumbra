@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using OtterGui.Classes;
+using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 
@@ -41,6 +44,68 @@ public sealed partial class Mod
         {
             _default.FileData         = dict;
             _default.ManipulationData = manips;
+        }
+
+        public static void SaveTempCollection( ModCollection collection, string? character = null )
+        {
+            DirectoryInfo? dir = null;
+            try
+            {
+                dir = CreateModFolder( Penumbra.ModManager.BasePath, collection.Name );
+                var fileDir = Directory.CreateDirectory( Path.Combine( dir.FullName, "files" ) );
+                CreateMeta( dir, collection.Name, character ?? Penumbra.Config.DefaultModAuthor,
+                    $"Mod generated from temporary collection {collection.Name} for {character ?? "Unknown Character"}.", null, null );
+                var mod        = new Mod( dir );
+                var defaultMod = mod._default;
+                foreach( var (gamePath, fullPath) in collection.ResolvedFiles )
+                {
+                    if( gamePath.Path.EndsWith( '.', 'i', 'm', 'c' ) )
+                    {
+                        continue;
+                    }
+
+                    var targetPath = fullPath.Path.FullName;
+                    if( fullPath.Path.Name.StartsWith( '|' ) )
+                    {
+                        targetPath = targetPath.Split( '|', 3, StringSplitOptions.RemoveEmptyEntries ).Last();
+                    }
+
+                    if( Path.IsPathRooted(targetPath) )
+                    {
+                        var target = Path.Combine( fileDir.FullName, Path.GetFileName(targetPath) );
+                        File.Copy( targetPath, target, true );
+                        defaultMod.FileData[ gamePath ] = new FullPath( target );
+                    }
+                    else
+                    {
+                        defaultMod.FileSwapData[ gamePath ] = new FullPath(targetPath);
+                    }
+                }
+
+                foreach( var manip in collection.MetaCache?.Manipulations ?? Array.Empty< MetaManipulation >() )
+                {
+                    defaultMod.ManipulationData.Add( manip );
+                }
+
+                mod.SaveDefaultMod();
+                Penumbra.ModManager.AddMod( dir );
+                Penumbra.Log.Information( $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Name}." );
+            }
+            catch( Exception e )
+            {
+                Penumbra.Log.Error( $"Could not save temporary collection {collection.Name} to permanent Mod:\n{e}" );
+                if( dir != null && Directory.Exists( dir.FullName ) )
+                {
+                    try
+                    {
+                        Directory.Delete( dir.FullName, true );
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
+            }
         }
     }
 }

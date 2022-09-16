@@ -1,6 +1,5 @@
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
-using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Filesystem;
@@ -14,7 +13,6 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using Penumbra.Util;
 
 namespace Penumbra.UI.Classes;
 
@@ -100,7 +98,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not create directory for new Mod {_newModName}:\n{e}" );
+                Penumbra.Log.Error( $"Could not create directory for new Mod {_newModName}:\n{e}" );
             }
         }
 
@@ -200,7 +198,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     private void AddImportModButton( Vector2 size )
     {
         var button = ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), size,
-            "Import one or multiple mods from Tex Tools Mod Pack Files.", !Penumbra.ModManager.Valid, true );
+            "Import one or multiple mods from Tex Tools Mod Pack Files or Penumbra Mod Pack Files.", !Penumbra.ModManager.Valid, true );
         ConfigWindow.OpenTutorial( ConfigWindow.BasicTutorialSteps.ModImport );
         if( !button )
         {
@@ -213,7 +211,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         _hasSetFolder = true;
 
         _fileManager.OpenFileDialog( "Import Mod Pack",
-            "Mod Packs{.ttmp,.ttmp2,.zip,.7z,.rar},TexTools Mod Packs{.ttmp,.ttmp2},Archives{.zip,.7z,.rar}", ( s, f ) =>
+            "Mod Packs{.ttmp,.ttmp2,.pmp},TexTools Mod Packs{.ttmp,.ttmp2},Penumbra Mod Packs{.pmp},Archives{.zip,.7z,.rar}", ( s, f ) =>
             {
                 if( s )
                 {
@@ -273,13 +271,13 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Error cleaning up failed mod extraction of {file.FullName} to {dir.FullName}:\n{e}" );
+                    Penumbra.Log.Error( $"Error cleaning up failed mod extraction of {file.FullName} to {dir.FullName}:\n{e}" );
                 }
             }
 
             if( error is not OperationCanceledException )
             {
-                PluginLog.Error( $"Error extracting {file.FullName}, mod skipped:\n{error}" );
+                Penumbra.Log.Error( $"Error extracting {file.FullName}, mod skipped:\n{error}" );
             }
         }
         else if( dir != null )
@@ -445,7 +443,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         }
         catch( Exception e )
         {
-            PluginLog.Warning(
+            Penumbra.Log.Warning(
                 $"Could not move newly imported mod {mod.Name} to default import folder {Penumbra.Config.DefaultImportFolder}:\n{e}" );
         }
     }

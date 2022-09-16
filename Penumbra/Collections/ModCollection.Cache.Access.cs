@@ -1,13 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using Dalamud.Logging;
 using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
+using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manager;
 using Penumbra.Mods;
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using Penumbra.Interop;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections;
 
@@ -29,7 +30,7 @@ public partial class ModCollection
         if( _cache == null )
         {
             CalculateEffectiveFileList();
-            PluginLog.Verbose( "Created new cache for collection {Name:l}.", Name );
+            Penumbra.Log.Verbose( $"Created new cache for collection {Name}." );
         }
     }
 
@@ -61,7 +62,7 @@ public partial class ModCollection
     {
         _cache?.Dispose();
         _cache = null;
-        PluginLog.Verbose( "Cleared cache of collection {Name:l}.", Name );
+        Penumbra.Log.Verbose( $"Cleared cache of collection {Name}." );
     }
 
     public IEnumerable< Utf8GamePath > ReverseResolvePath( FullPath path )
@@ -87,7 +88,7 @@ public partial class ModCollection
             return true;
         }
 
-        PluginLog.Error( $"The redirected path is too long to add the redirection\n\t{path}\n\t--> {fullPath}" );
+        Penumbra.Log.Error( $"The redirected path is too long to add the redirection\n\t{path}\n\t--> {fullPath}" );
         return false;
     }
 
@@ -125,13 +126,11 @@ public partial class ModCollection
             return;
         }
 
-        PluginLog.Debug( "[{Thread}] Recalculating effective file list for {CollectionName:l}",
-            Thread.CurrentThread.ManagedThreadId, AnonymizedName );
+        Penumbra.Log.Debug( $"[{Thread.CurrentThread.ManagedThreadId}] Recalculating effective file list for {AnonymizedName}" );
         _cache ??= new Cache( this );
         _cache.FullRecalculation();
 
-        PluginLog.Debug( "[{Thread}] Recalculation of effective file list for {CollectionName:l} finished.",
-            Thread.CurrentThread.ManagedThreadId, AnonymizedName );
+        Penumbra.Log.Debug( $"[{Thread.CurrentThread.ManagedThreadId}] Recalculation of effective file list for {AnonymizedName} finished." );
     }
 
     // Set Metadata files.
@@ -204,7 +203,24 @@ public partial class ModCollection
         else
         {
             _cache.MetaManipulations.SetFiles();
-            PluginLog.Debug( "Set CharacterUtility resources for collection {Name:l}.", Name );
+            Penumbra.Log.Debug( $"Set CharacterUtility resources for collection {Name}." );
         }
     }
+
+    // Used for short periods of changed files.
+    public CharacterUtility.List.MetaReverter? TemporarilySetEqdpFile( GenderRace genderRace, bool accessory )
+        => _cache?.MetaManipulations.TemporarilySetEqdpFile( genderRace, accessory );
+
+    public CharacterUtility.List.MetaReverter? TemporarilySetEqpFile()
+        => _cache?.MetaManipulations.TemporarilySetEqpFile();
+
+    public CharacterUtility.List.MetaReverter? TemporarilySetGmpFile()
+        => _cache?.MetaManipulations.TemporarilySetGmpFile();
+
+    public CharacterUtility.List.MetaReverter? TemporarilySetCmpFile()
+        => _cache?.MetaManipulations.TemporarilySetCmpFile();
+
+    public CharacterUtility.List.MetaReverter? TemporarilySetEstFile( EstManipulation.EstType type )
+        => _cache?.MetaManipulations.TemporarilySetEstFile( type );
+
 }

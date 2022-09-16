@@ -33,6 +33,20 @@ public partial class MetaManager
         SetFile( null, CharacterUtility.Index.HeadEst );
     }
 
+    public Interop.CharacterUtility.List.MetaReverter? TemporarilySetEstFile(EstManipulation.EstType type)
+    {
+        var (file, idx) = type switch
+        {
+            EstManipulation.EstType.Face => ( _estFaceFile, CharacterUtility.Index.FaceEst ),
+            EstManipulation.EstType.Hair => ( _estHairFile, CharacterUtility.Index.HairEst ),
+            EstManipulation.EstType.Body => ( _estBodyFile, CharacterUtility.Index.BodyEst ),
+            EstManipulation.EstType.Head => ( _estHeadFile, CharacterUtility.Index.HeadEst ),
+            _                            => ( null, 0 ),
+        };
+        
+        return idx != 0 ? TemporarilySetFile( file, idx ) : null;
+    }
+
     public void ResetEst()
     {
         _estFaceFile?.Reset();

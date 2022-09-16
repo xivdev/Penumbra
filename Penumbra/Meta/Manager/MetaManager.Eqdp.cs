@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
@@ -23,6 +24,21 @@ public partial class MetaManager
         }
     }
 
+    public Interop.CharacterUtility.List.MetaReverter? TemporarilySetEqdpFile( GenderRace genderRace, bool accessory )
+    {
+        var idx = CharacterUtility.EqdpIdx( genderRace, accessory );
+        if( ( int )idx != -1 )
+        {
+            var i = CharacterUtility.EqdpIndices.IndexOf( idx );
+            if( i != -1 )
+            {
+                return TemporarilySetFile( _eqdpFiles[ i ], idx );
+            }
+        }
+
+        return null;
+    }
+
     public static void ResetEqdpFiles()
     {
         foreach( var idx in CharacterUtility.EqdpIndices )
@@ -33,7 +49,7 @@ public partial class MetaManager
 
     public void ResetEqdp()
     {
-        foreach( var file in _eqdpFiles.OfType<ExpandedEqdpFile>() )
+        foreach( var file in _eqdpFiles.OfType< ExpandedEqdpFile >() )
         {
             var relevant = Interop.CharacterUtility.RelevantIndices[ file.Index.Value ];
             file.Reset( _eqdpManipulations.Where( m => m.FileIndex() == relevant ).Select( m => ( int )m.SetId ) );

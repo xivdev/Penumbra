@@ -1,6 +1,6 @@
-using System.Text.RegularExpressions;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
+using System.Text.RegularExpressions;
 
 namespace Penumbra.Import;
 

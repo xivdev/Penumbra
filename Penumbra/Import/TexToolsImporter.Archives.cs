@@ -1,7 +1,3 @@
-using System;
-using System.IO;
-using System.Linq;
-using Dalamud.Logging;
 using Dalamud.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,6 +9,9 @@ using SharpCompress.Archives.SevenZip;
 using SharpCompress.Archives.Zip;
 using SharpCompress.Common;
 using SharpCompress.Readers;
+using System;
+using System.IO;
+using System.Linq;
 
 namespace Penumbra.Import;
 
@@ -43,7 +42,7 @@ public partial class TexToolsImporter
                 SevenZipArchive s => s.Entries.Count,
                 _                 => archive.Entries.Count(),
             };
-        PluginLog.Log( $"    -> Importing {archive.Type} Archive." );
+        Penumbra.Log.Information( $"    -> Importing {archive.Type} Archive." );
 
         _currentModDirectory = Mod.CreateModFolder( _baseDirectory, Path.GetRandomFileName() );
         var options = new ExtractionOptions()
@@ -66,7 +65,7 @@ public partial class TexToolsImporter
                 continue;
             }
 
-            PluginLog.Log( "        -> Extracting {0}", reader.Entry.Key );
+            Penumbra.Log.Information( $"        -> Extracting {reader.Entry.Key}" );
             // Check that the mod has a valid name in the meta.json file.
             if( Path.GetFileName( reader.Entry.Key ) == "meta.json" )
             {

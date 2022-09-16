@@ -1,10 +1,9 @@
 using System;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using Penumbra.Collections;
-using Penumbra.Meta.Manipulations;
+using Penumbra.GameData.Enums;
+using ObjectType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -30,17 +29,13 @@ namespace Penumbra.Interop.Resolver;
 // ChangeCustomize and RspSetupCharacter, which is hooked here.
 
 // GMP Entries seem to be only used by "48 8B ?? 53 55 57 48 83 ?? ?? 48 8B", which has a DrawObject as its first parameter.
-
 public unsafe partial class PathResolver
 {
-    public unsafe class MetaState : IDisposable
+    public class MetaState : IDisposable
     {
-        private readonly PathResolver _parent;
-
-        public MetaState( PathResolver parent, IntPtr* humanVTable )
+        public MetaState( IntPtr* humanVTable )
         {
             SignatureHelper.Initialise( this );
-            _parent                  = parent;
             _onModelLoadCompleteHook = Hook< OnModelLoadCompleteDelegate >.FromAddress( humanVTable[ 58 ], OnModelLoadCompleteDetour );
         }
 
@@ -82,8 +77,10 @@ public unsafe partial class PathResolver
             var collection = GetResolveData( drawObject );
             if( collection.Valid )
             {
-                using var eqp  = MetaChanger.ChangeEqp( collection.ModCollection );
-                using var eqdp = MetaChanger.ChangeEqdp( collection.ModCollection );
+                var       race  = GetDrawObjectGenderRace( drawObject );
+                using var eqp   = collection.ModCollection.TemporarilySetEqpFile();
+                using var eqdp1 = collection.ModCollection.TemporarilySetEqdpFile( race, false );
+                using var eqdp2 = collection.ModCollection.TemporarilySetEqdpFile( race, true );
                 _onModelLoadCompleteHook.Original.Invoke( drawObject );
             }
             else
@@ -109,8 +106,10 @@ public unsafe partial class PathResolver
             var collection = GetResolveData( drawObject );
             if( collection.Valid )
             {
-                using var eqp  = MetaChanger.ChangeEqp( collection.ModCollection );
-                using var eqdp = MetaChanger.ChangeEqdp( collection.ModCollection );
+                var       race  = GetDrawObjectGenderRace( drawObject );
+                using var eqp   = collection.ModCollection.TemporarilySetEqpFile();
+                using var eqdp1 = collection.ModCollection.TemporarilySetEqdpFile( race, false );
+                using var eqdp2 = collection.ModCollection.TemporarilySetEqdpFile( race, true );
                 _updateModelsHook.Original.Invoke( drawObject );
             }
             else
@@ -118,6 +117,24 @@ public unsafe partial class PathResolver
                 _updateModelsHook.Original.Invoke( drawObject );
             }
         }
+
+        private static GenderRace GetDrawObjectGenderRace( IntPtr drawObject )
+        {
+            var draw = ( DrawObject* )drawObject;
+            if( draw->Object.GetObjectType() == ObjectType.CharacterBase )
+            {
+                var c = ( CharacterBase* )drawObject;
+                if( c->GetModelType() == CharacterBase.ModelType.Human )
+                {
+                    return GetHumanGenderRace( drawObject );
+                }
+            }
+
+            return GenderRace.Unknown;
+        }
+
+        public static GenderRace GetHumanGenderRace( IntPtr human )
+            => ( GenderRace )( ( Human* )human )->RaceSexId;
 
         [Signature( "40 ?? 48 83 ?? ?? ?? 81 ?? ?? ?? ?? ?? 48 8B ?? 74 ?? ?? 83 ?? ?? ?? ?? ?? ?? 74 ?? 4C",
             DetourName = nameof( GetEqpIndirectDetour ) )]
@@ -132,7 +149,8 @@ public unsafe partial class PathResolver
                 return;
             }
 
-            using var eqp = MetaChanger.ChangeEqp( _parent, drawObject );
+            var       resolveData = GetResolveData( drawObject );
+            using var eqp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetEqpFile() : null;
             _getEqpIndirectHook.Original( drawObject );
         }
 
@@ -146,7 +164,8 @@ public unsafe partial class PathResolver
 
         private byte SetupVisorDetour( IntPtr drawObject, ushort modelId, byte visorState )
         {
-            using var gmp = MetaChanger.ChangeGmp( _parent, drawObject );
+            var       resolveData = GetResolveData( drawObject );
+            using var eqp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetGmpFile() : null;
             return _setupVisorHook.Original( drawObject, modelId, visorState );
         }
 
@@ -164,13 +183,14 @@ public unsafe partial class PathResolver
             }
             else
             {
-                using var rsp = MetaChanger.ChangeCmp( _parent, drawObject );
+                var       resolveData = GetResolveData( drawObject );
+                using var eqp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetCmpFile() : null;
                 _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
             }
         }
 
         // ChangeCustomize calls RspSetupCharacter, so skip the additional cmp change.
-        private          bool _inChangeCustomize = false;
+        private          bool _inChangeCustomize;
         private delegate bool ChangeCustomizeDelegate( IntPtr human, IntPtr data, byte skipEquipment );
 
         [Signature( "E8 ?? ?? ?? ?? 41 0F B6 C5 66 41 89 86", DetourName = nameof( ChangeCustomizeDetour ) )]
@@ -179,154 +199,9 @@ public unsafe partial class PathResolver
         private bool ChangeCustomizeDetour( IntPtr human, IntPtr data, byte skipEquipment )
         {
             _inChangeCustomize = true;
-            using var rsp = MetaChanger.ChangeCmp( _parent, human );
+            var       resolveData = GetResolveData( human );
+            using var eqp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetEqpFile() : null;
             return _changeCustomize.Original( human, data, skipEquipment );
-        }
-    }
-
-    // Small helper to handle setting metadata and reverting it at the end of the function.
-    // Since eqp and eqdp may be called multiple times in a row, we need to count them,
-    // so that we do not reset the files too early.
-    private readonly struct MetaChanger : IDisposable
-    {
-        private static   int                   _eqpCounter;
-        private static   int                   _eqdpCounter;
-        private readonly MetaManipulation.Type _type;
-
-        private MetaChanger( MetaManipulation.Type type )
-        {
-            _type = type;
-            if( type == MetaManipulation.Type.Eqp )
-            {
-                ++_eqpCounter;
-            }
-            else if( type == MetaManipulation.Type.Eqdp )
-            {
-                ++_eqdpCounter;
-            }
-        }
-
-        public static MetaChanger ChangeEqp( ModCollection collection )
-        {
-            collection.SetEqpFiles();
-            return new MetaChanger( MetaManipulation.Type.Eqp );
-        }
-
-        public static MetaChanger ChangeEqp( PathResolver _, IntPtr drawObject )
-        {
-            var resolveData = GetResolveData( drawObject );
-            if( resolveData.Valid )
-            {
-                return ChangeEqp( resolveData.ModCollection );
-            }
-
-            return new MetaChanger( MetaManipulation.Type.Unknown );
-        }
-
-        // We only need to change anything if it is actually equipment here.
-        public static MetaChanger ChangeEqdp( PathResolver _, IntPtr drawObject, uint modelType )
-        {
-            if( modelType < 10 )
-            {
-                var collection = GetResolveData( drawObject );
-                if( collection.Valid )
-                {
-                    return ChangeEqdp( collection.ModCollection );
-                }
-            }
-
-            return new MetaChanger( MetaManipulation.Type.Unknown );
-        }
-
-        public static MetaChanger ChangeEqdp( ModCollection collection )
-        {
-            collection.SetEqdpFiles();
-            return new MetaChanger( MetaManipulation.Type.Eqdp );
-        }
-
-        public static MetaChanger ChangeGmp( PathResolver resolver, IntPtr drawObject )
-        {
-            var resolveData = GetResolveData( drawObject );
-            if( resolveData.Valid )
-            {
-                resolveData.ModCollection.SetGmpFiles();
-                return new MetaChanger( MetaManipulation.Type.Gmp );
-            }
-
-            return new MetaChanger( MetaManipulation.Type.Unknown );
-        }
-
-        public static MetaChanger ChangeEst( PathResolver resolver, IntPtr drawObject )
-        {
-            var resolveData = GetResolveData( drawObject );
-            if( resolveData.Valid )
-            {
-                resolveData.ModCollection.SetEstFiles();
-                return new MetaChanger( MetaManipulation.Type.Est );
-            }
-
-            return new MetaChanger( MetaManipulation.Type.Unknown );
-        }
-
-        public static MetaChanger ChangeCmp( GameObject* gameObject, out ResolveData resolveData )
-        {
-            if( gameObject != null )
-            {
-                resolveData = IdentifyCollection( gameObject );
-                if( resolveData.ModCollection != Penumbra.CollectionManager.Default && resolveData.ModCollection.HasCache )
-                {
-                    resolveData.ModCollection.SetCmpFiles();
-                    return new MetaChanger( MetaManipulation.Type.Rsp );
-                }
-            }
-            else
-            {
-                resolveData = ResolveData.Invalid;
-            }
-
-            return new MetaChanger( MetaManipulation.Type.Unknown );
-        }
-
-        public static MetaChanger ChangeCmp( PathResolver resolver, IntPtr drawObject )
-        {
-            var resolveData = GetResolveData( drawObject );
-            if( resolveData.Valid )
-            {
-                resolveData.ModCollection.SetCmpFiles();
-                return new MetaChanger( MetaManipulation.Type.Rsp );
-            }
-
-            return new MetaChanger( MetaManipulation.Type.Unknown );
-        }
-
-        public void Dispose()
-        {
-            switch( _type )
-            {
-                case MetaManipulation.Type.Eqdp:
-                    if( --_eqdpCounter == 0 )
-                    {
-                        Penumbra.CollectionManager.Default.SetEqdpFiles();
-                    }
-
-                    break;
-                case MetaManipulation.Type.Eqp:
-                    if( --_eqpCounter == 0 )
-                    {
-                        Penumbra.CollectionManager.Default.SetEqpFiles();
-                    }
-
-                    break;
-                case MetaManipulation.Type.Est:
-                    Penumbra.CollectionManager.Default.SetEstFiles();
-                    break;
-                case MetaManipulation.Type.Gmp:
-                    Penumbra.CollectionManager.Default.SetGmpFiles();
-                    break;
-                case MetaManipulation.Type.Rsp:
-                    Penumbra.CollectionManager.Default.SetCmpFiles();
-                    break;
-            }
         }
     }
 }

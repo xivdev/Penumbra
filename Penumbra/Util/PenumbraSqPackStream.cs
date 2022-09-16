@@ -334,14 +334,13 @@ public class PenumbraSqPackStream : IDisposable
         if( blockHeader.CompressedSize == 32000 )
         {
             dest.Write( Reader.ReadBytes( ( int )blockHeader.UncompressedSize ) );
-            return blockHeader.UncompressedSize;
         }
-
-        var data = Reader.ReadBytes( ( int )blockHeader.CompressedSize );
-
-        using( var compressedStream = new MemoryStream( data ) )
+        else
         {
-            using var zlibStream = new DeflateStream( compressedStream, CompressionMode.Decompress );
+            var data = Reader.ReadBytes( ( int )blockHeader.CompressedSize );
+
+            using var compressedStream = new MemoryStream( data );
+            using var zlibStream       = new DeflateStream( compressedStream, CompressionMode.Decompress );
             zlibStream.CopyTo( dest );
         }
 

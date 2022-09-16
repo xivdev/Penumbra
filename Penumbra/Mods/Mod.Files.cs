@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Logging;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.GameData.ByteString;
@@ -88,7 +87,7 @@ public partial class Mod
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not read mod group from {file.FullName}:\n{e}" );
+            Penumbra.Log.Error( $"Could not read mod group from {file.FullName}:\n{e}" );
         }
 
         return null;
@@ -133,7 +132,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                PluginLog.Error( $"Could not delete outdated group file {file}:\n{e}" );
+                Penumbra.Log.Error( $"Could not delete outdated group file {file}:\n{e}" );
             }
         }
 

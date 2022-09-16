@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Numerics;
 using Dalamud.Interface.ImGuiFileDialog;
-using Dalamud.Logging;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -123,7 +122,7 @@ public partial class ModEditWindow
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Unknown Error while drawing textures:\n{e}" );
+            Penumbra.Log.Error( $"Unknown Error while drawing textures:\n{e}" );
         }
     }
 

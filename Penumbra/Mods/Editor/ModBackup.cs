@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
-using Dalamud.Logging;
 
 namespace Penumbra.Mods;
 
@@ -18,8 +17,37 @@ public class ModBackup
     public ModBackup( Mod mod )
     {
         _mod   = mod;
-        Name   = mod.ModPath + ".zip";
+        Name   = _mod.ModPath + ".pmp";
         Exists = File.Exists( Name );
+    }
+
+    // Migrate file extensions.
+    public static void MigrateZipToPmp(Mod.Manager manager)
+    {
+        foreach( var mod in manager )
+        {
+            var pmpName = mod.ModPath + ".pmp";
+            var zipName = mod.ModPath + ".zip";
+            if( File.Exists( zipName ) )
+            {
+                try
+                {
+                    if( !File.Exists( pmpName ) )
+                    {
+                        File.Move( zipName, pmpName );
+                    }
+                    else
+                    {
+                        File.Delete( zipName );
+                    }
+                    Penumbra.Log.Information( $"Migrated mod backup from {zipName} to {pmpName}." );
+                }
+                catch( Exception e )
+                {
+                    Penumbra.Log.Warning( $"Could not migrate mod backup of {mod.ModPath} from .pmp to .zip:\n{e}" );
+                }
+            }
+        }
     }
 
     // Create a backup zip without blocking the main thread.
@@ -43,11 +71,11 @@ public class ModBackup
         {
             Delete();
             ZipFile.CreateFromDirectory( _mod.ModPath.FullName, Name, CompressionLevel.Optimal, false );
-            PluginLog.Debug( "Created backup file {backupName} from {modDirectory}.", Name, _mod.ModPath.FullName );
+            Penumbra.Log.Debug( $"Created backup file {Name} from {_mod.ModPath.FullName}.");
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not backup mod {_mod.Name} to \"{Name}\":\n{e}" );
+            Penumbra.Log.Error( $"Could not backup mod {_mod.Name} to \"{Name}\":\n{e}" );
         }
     }
 
@@ -62,11 +90,11 @@ public class ModBackup
         try
         {
             File.Delete( Name );
-            PluginLog.Debug( "Deleted backup file {backupName}.", Name );
+            Penumbra.Log.Debug( $"Deleted backup file {Name}." );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not delete file \"{Name}\":\n{e}" );
+            Penumbra.Log.Error( $"Could not delete file \"{Name}\":\n{e}" );
         }
     }
 
@@ -79,16 +107,16 @@ public class ModBackup
             if( Directory.Exists( _mod.ModPath.FullName ) )
             {
                 Directory.Delete( _mod.ModPath.FullName, true );
-                PluginLog.Debug( "Deleted mod folder {modFolder}.", _mod.ModPath.FullName );
+                Penumbra.Log.Debug( $"Deleted mod folder {_mod.ModPath.FullName}." );
             }
 
             ZipFile.ExtractToDirectory( Name, _mod.ModPath.FullName );
-            PluginLog.Debug( "Extracted backup file {backupName} to {modName}.", Name, _mod.ModPath.FullName );
+            Penumbra.Log.Debug( $"Extracted backup file {Name} to {_mod.ModPath.FullName}.");
             Penumbra.ModManager.ReloadMod( _mod.Index );
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not restore {_mod.Name} from backup \"{Name}\":\n{e}" );
+            Penumbra.Log.Error( $"Could not restore {_mod.Name} from backup \"{Name}\":\n{e}" );
         }
     }
 }

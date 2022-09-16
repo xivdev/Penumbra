@@ -1,5 +1,4 @@
 using System.IO;
-using Dalamud.Logging;
 
 namespace Penumbra.Mods;
 
@@ -32,7 +31,7 @@ public partial class Mod
         modPath.Refresh();
         if( !modPath.Exists )
         {
-            PluginLog.Error( $"Supplied mod directory {modPath} does not exist." );
+            Penumbra.Log.Error( $"Supplied mod directory {modPath} does not exist." );
             return null;
         }
 
@@ -40,7 +39,7 @@ public partial class Mod
         if( !mod.Reload( out _ ) )
         {
             // Can not be base path not existing because that is checked before.
-            PluginLog.Error( $"Mod at {modPath} without name is not supported." );
+            Penumbra.Log.Error( $"Mod at {modPath} without name is not supported." );
             return null;
         }
 

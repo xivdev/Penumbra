@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Text;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using EmbedIO;
 using EmbedIO.WebApi;
@@ -14,6 +13,8 @@ using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Log;
+using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
@@ -43,6 +44,7 @@ public class Penumbra : IDalamudPlugin
     public static bool DevPenumbraExists;
     public static bool IsNotInstalledPenumbra;
 
+    public static Logger Log { get; private set; } = null!;
     public static Configuration Config { get; private set; } = null!;
 
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
@@ -64,6 +66,7 @@ public class Penumbra : IDalamudPlugin
     private readonly ConfigWindow   _configWindow;
     private readonly LaunchButton   _launchButton;
     private readonly WindowSystem   _windowSystem;
+    private readonly Changelog      _changelog;
 
     internal WebServer? WebServer;
 
@@ -72,6 +75,7 @@ public class Penumbra : IDalamudPlugin
         try
         {
             Dalamud.Initialize( pluginInterface );
+            Log = new Logger();
             GameData.GameData.GetIdentifier( Dalamud.GameData );
             DevPenumbraExists      = CheckDevPluginPenumbra();
             IsNotInstalledPenumbra = CheckIsNotInstalled();
@@ -99,7 +103,7 @@ public class Penumbra : IDalamudPlugin
                 HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
             } );
 
-            SetupInterface( out _configWindow, out _launchButton, out _windowSystem );
+            SetupInterface( out _configWindow, out _launchButton, out _windowSystem, out _changelog );
 
             if( Config.EnableMods )
             {
@@ -133,17 +137,17 @@ public class Penumbra : IDalamudPlugin
             SubscribeItemLinks();
             if( ImcExceptions > 0 )
             {
-                PluginLog.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
+                Log.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
             }
             else
             {
-                PluginLog.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
+                Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
             }
 
             Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 
             OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
-            PluginLog.Information( $"Loading native assembly from {OtterTex.NativeDll.Directory}." );
+            Log.Information( $"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}." );
         }
         catch
         {
@@ -152,23 +156,31 @@ public class Penumbra : IDalamudPlugin
         }
     }
 
-    private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system )
+    private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system, out Changelog changelog )
     {
-        cfg    = new ConfigWindow( this );
-        btn    = new LaunchButton( _configWindow );
-        system = new WindowSystem( Name );
+        cfg       = new ConfigWindow( this );
+        btn       = new LaunchButton( _configWindow );
+        system    = new WindowSystem( Name );
+        changelog = ConfigWindow.CreateChangelog();
         system.AddWindow( _configWindow );
         system.AddWindow( cfg.ModEditPopup );
-        system.AddWindow( ConfigWindow.CreateChangelog() );
+        system.AddWindow( changelog );
         Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
     }
 
     private void DisposeInterface()
     {
-        Dalamud.PluginInterface.UiBuilder.Draw         -= _windowSystem.Draw;
-        Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= _configWindow.Toggle;
+        if( _windowSystem != null )
+        {
+            Dalamud.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
+        }
+
         _launchButton?.Dispose();
-        _configWindow?.Dispose();
+        if( _configWindow != null )
+        {
+            Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= _configWindow.Toggle;
+            _configWindow.Dispose();
+        }
     }
 
     public bool Enable()
@@ -216,6 +228,9 @@ public class Penumbra : IDalamudPlugin
     public bool SetEnabled( bool enabled )
         => enabled ? Enable() : Disable();
 
+    public void ForceChangelogOpen()
+        => _changelog.ForceOpen = true;
+
     private void SubscribeItemLinks()
     {
         Api.ChangedItemTooltip += it =>
@@ -248,7 +263,7 @@ public class Penumbra : IDalamudPlugin
                .WithController( () => new ModsController( this ) )
                .WithController( () => new RedrawController( this ) ) );
 
-        WebServer.StateChanged += ( _, e ) => PluginLog.Information( $"WebServer New State - {e.NewState}" );
+        WebServer.StateChanged += ( _, e ) => Log.Information( $"WebServer New State - {e.NewState}" );
 
         WebServer.RunAsync();
     }
@@ -502,7 +517,7 @@ public class Penumbra : IDalamudPlugin
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
+            Log.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
             return true;
         }
 #else
@@ -517,7 +532,7 @@ public class Penumbra : IDalamudPlugin
         var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
         var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
         if (!ret)
-            PluginLog.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
+            Log.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
         return !ret;
 #else
         return false;

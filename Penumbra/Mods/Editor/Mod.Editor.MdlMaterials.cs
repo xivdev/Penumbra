@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Dalamud.Logging;
 using OtterGui;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
@@ -90,7 +89,7 @@ public partial class Mod
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Unexpected error scanning {_mod.Name}'s {file.File.FullName} for materials:\n{e}" );
+                    Penumbra.Log.Error( $"Unexpected error scanning {_mod.Name}'s {file.File.FullName} for materials:\n{e}" );
                 }
             }
         }
@@ -152,7 +151,7 @@ public partial class Mod
                 catch( Exception e )
                 {
                     Restore();
-                    PluginLog.Error( $"Could not write manipulated .mdl file {Path.FullName}:\n{e}" );
+                    Penumbra.Log.Error( $"Could not write manipulated .mdl file {Path.FullName}:\n{e}" );
                 }
             }
 

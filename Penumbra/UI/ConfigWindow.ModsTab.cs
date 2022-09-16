@@ -7,7 +7,6 @@ using Penumbra.UI.Classes;
 using System;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Logging;
 
 namespace Penumbra.UI;
 
@@ -42,8 +41,8 @@ public partial class ConfigWindow
         }
         catch( Exception e )
         {
-            PluginLog.Error( $"Exception thrown during ModPanel Render:\n{e}" );
-            PluginLog.Error( $"{Penumbra.ModManager.Count} Mods\n"
+            Penumbra.Log.Error( $"Exception thrown during ModPanel Render:\n{e}" );
+            Penumbra.Log.Error( $"{Penumbra.ModManager.Count} Mods\n"
               + $"{Penumbra.CollectionManager.Current.AnonymizedName} Current Collection\n"
               + $"{Penumbra.CollectionManager.Current.Settings.Count} Settings\n"
               + $"{_selector.SortMode.Name} Sort Mode\n"

@@ -11,7 +11,6 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
 using Penumbra.Interop.Loader;
-using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 

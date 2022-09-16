@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Dalamud.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
@@ -37,7 +36,7 @@ public sealed partial class Mod
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Error( $"Could not rename group file {group.Name} to {newName} during migration:\n{e}" );
+                    Penumbra.Log.Error( $"Could not rename group file {group.Name} to {newName} during migration:\n{e}" );
                 }
             }
 
@@ -69,7 +68,7 @@ public sealed partial class Mod
                 if( unusedFile.ToGamePath( mod.ModPath, out var gamePath )
                 && !mod._default.FileData.TryAdd( gamePath, unusedFile ) )
                 {
-                    PluginLog.Error( $"Could not add {gamePath} because it already points to {mod._default.FileData[ gamePath ]}." );
+                    Penumbra.Log.Error( $"Could not add {gamePath} because it already points to {mod._default.FileData[ gamePath ]}." );
                 }
             }
 
@@ -95,7 +94,7 @@ public sealed partial class Mod
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Warning( $"Could not delete meta file {file.FullName} during migration:\n{e}" );
+                    Penumbra.Log.Warning( $"Could not delete meta file {file.FullName} during migration:\n{e}" );
                 }
             }
 
@@ -109,7 +108,7 @@ public sealed partial class Mod
                 }
                 catch( Exception e )
                 {
-                    PluginLog.Warning( $"Could not delete old meta file {oldMetaFile} during migration:\n{e}" );
+                    Penumbra.Log.Warning( $"Could not delete old meta file {oldMetaFile} during migration:\n{e}" );
                 }
             }
 

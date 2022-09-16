@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Dalamud.Logging;
 using OtterGui.Filesystem;
 
 namespace Penumbra.Mods;
@@ -19,7 +18,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     private void SaveFilesystem()
     {
         SaveToFile( new FileInfo( ModFileSystemFile ), SaveMod, true );
-        PluginLog.Verbose( "Saved mod filesystem." );
+        Penumbra.Log.Verbose( "Saved mod filesystem." );
     }
 
     private void Save()
@@ -79,7 +78,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
             Save();
         }
 
-        PluginLog.Debug( "Reloaded mod filesystem." );
+        Penumbra.Log.Debug( "Reloaded mod filesystem." );
     }
 
     // Save the filesystem on every filesystem change except full reloading.

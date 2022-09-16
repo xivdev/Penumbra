@@ -1,11 +1,10 @@
 using System;
 using System.Linq;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 
 namespace Penumbra.Interop;
 
-public unsafe class CharacterUtility : IDisposable
+public unsafe partial class CharacterUtility : IDisposable
 {
     public record struct InternalIndex( int Value );
 
@@ -35,22 +34,20 @@ public unsafe class CharacterUtility : IDisposable
 
     public static readonly InternalIndex[] ReverseIndices
         = Enumerable.Range( 0, Structs.CharacterUtility.TotalNumResources )
-           .Select( i => new InternalIndex( Array.IndexOf( RelevantIndices, (Structs.CharacterUtility.Index) i ) ) )
+           .Select( i => new InternalIndex( Array.IndexOf( RelevantIndices, ( Structs.CharacterUtility.Index )i ) ) )
            .ToArray();
 
-
-    private readonly (IntPtr Address, int Size)[] _defaultResources = new (IntPtr, int)[RelevantIndices.Length];
-
-    public (IntPtr Address, int Size) DefaultResource( Structs.CharacterUtility.Index idx )
-        => _defaultResources[ ReverseIndices[ ( int )idx ].Value ];
+    private readonly List[] _lists = Enumerable.Range( 0, RelevantIndices.Length )
+       .Select( idx => new List( new InternalIndex( idx ) ) )
+       .ToArray();
 
     public (IntPtr Address, int Size) DefaultResource( InternalIndex idx )
-        => _defaultResources[ idx.Value ];
+        => _lists[ idx.Value ].DefaultResource;
 
     public CharacterUtility()
     {
         SignatureHelper.Initialise( this );
-        LoadingFinished += () => PluginLog.Debug( "Loading of CharacterUtility finished." );
+        LoadingFinished += () => Penumbra.Log.Debug( "Loading of CharacterUtility finished." );
         LoadDefaultResources( null! );
         if( !Ready )
         {
@@ -61,30 +58,25 @@ public unsafe class CharacterUtility : IDisposable
     // We store the default data of the resources so we can always restore them.
     private void LoadDefaultResources( object _ )
     {
-        var missingCount = 0;
         if( Address == null )
         {
             return;
         }
 
+        var anyMissing = false;
         for( var i = 0; i < RelevantIndices.Length; ++i )
         {
-            if( _defaultResources[ i ].Size == 0 )
+            var list = _lists[ i ];
+            if( !list.Ready )
             {
-                var resource = Address->Resource( RelevantIndices[i] );
-                var data     = resource->GetData();
-                if( data.Data != IntPtr.Zero && data.Length != 0 )
-                {
-                    _defaultResources[ i ] = data;
-                }
-                else
-                {
-                    ++missingCount;
-                }
+                var resource = Address->Resource( RelevantIndices[ i ] );
+                var (data, length) = resource->GetData();
+                list.SetDefaultResource( data, length );
+                anyMissing |= !_lists[ i ].Ready;
             }
         }
 
-        if( missingCount == 0 )
+        if( !anyMissing )
         {
             Ready = true;
             LoadingFinished.Invoke();
@@ -92,51 +84,41 @@ public unsafe class CharacterUtility : IDisposable
         }
     }
 
-    // Set the data of one of the stored resources to a given pointer and length.
-    public bool SetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
+    public void SetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
     {
-        if( !Ready )
-        {
-            PluginLog.Error( $"Can not set resource {resourceIdx}: CharacterUtility not ready yet." );
-            return false;
-        }
-
-        var resource = Address->Resource( resourceIdx );
-        var ret      = resource->SetData( data, length );
-        PluginLog.Verbose( "Set resource {Idx} to 0x{NewData:X} ({NewLength} bytes).", resourceIdx, ( ulong )data, length );
-        return ret;
+        var idx  = ReverseIndices[( int )resourceIdx];
+        var list = _lists[idx.Value];
+        list.SetResource( data, length );
     }
 
-    // Reset the data of one of the stored resources to its default values.
     public void ResetResource( Structs.CharacterUtility.Index resourceIdx )
     {
-        if( !Ready )
-        {
-            PluginLog.Error( $"Can not reset {resourceIdx}: CharacterUtility not ready yet." );
-            return;
-        }
+        var idx  = ReverseIndices[( int )resourceIdx];
+        var list = _lists[idx.Value];
+        list.ResetResource();
+    }
 
-        var (data, length) = DefaultResource( resourceIdx);
-        var resource = Address->Resource( resourceIdx );
-        PluginLog.Verbose( "Reset resource {Idx} to default at 0x{DefaultData:X} ({NewLength} bytes).", resourceIdx, ( ulong )data, length );
-        resource->SetData( data, length );
+    public List.MetaReverter TemporarilySetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
+    {
+        var idx  = ReverseIndices[ ( int )resourceIdx ];
+        var list = _lists[ idx.Value ];
+        return list.TemporarilySetResource( data, length );
+    }
+
+    public List.MetaReverter TemporarilyResetResource( Structs.CharacterUtility.Index resourceIdx )
+    {
+        var idx  = ReverseIndices[ ( int )resourceIdx ];
+        var list = _lists[ idx.Value ];
+        return list.TemporarilyResetResource();
     }
 
     // Return all relevant resources to the default resource.
     public void ResetAll()
     {
-        if( !Ready )
+        foreach( var list in _lists )
         {
-            PluginLog.Error( "Can not reset all resources: CharacterUtility not ready yet." );
-            return;
+            list.Dispose();
         }
-
-        foreach( var idx in RelevantIndices )
-        {
-            ResetResource( idx );
-        }
-
-        PluginLog.Debug( "Reset all CharacterUtility resources to default." );
     }
 
     public void Dispose()

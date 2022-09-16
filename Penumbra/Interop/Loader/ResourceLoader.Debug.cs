@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Hooking;
-using Dalamud.Logging;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
@@ -20,7 +19,7 @@ public unsafe partial class ResourceLoader
     private readonly Hook< ResourceHandleDecRef > _decRefHook;
 
     public delegate IntPtr ResourceHandleDestructor( ResourceHandle* handle );
-
+    
     [Signature( "48 89 5C 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 B8",
         DetourName = nameof( ResourceHandleDestructorDetour ) )]
     public static Hook< ResourceHandleDestructor >? ResourceHandleDestructorHook;
@@ -29,8 +28,7 @@ public unsafe partial class ResourceLoader
     {
         if( handle != null )
         {
-            PluginLog.Information( "[ResourceLoader] Destructing Resource Handle {Path:l} at 0x{Address:X} (Refcount {Refcount}).",
-                handle->FileName, ( ulong )handle, handle->RefCount );
+            Penumbra.Log.Information( $"[ResourceLoader] Destructing Resource Handle {handle->FileName} at 0x{( ulong )handle:X} (Refcount {handle->RefCount}).");
         }
 
         return ResourceHandleDestructorHook!.Original( handle );
@@ -95,7 +93,7 @@ public unsafe partial class ResourceLoader
         }
         catch( Exception e )
         {
-            PluginLog.Error( e.ToString() );
+            Penumbra.Log.Error( e.ToString() );
         }
     }
 
@@ -236,22 +234,22 @@ public unsafe partial class ResourceLoader
             return _decRefHook.Original( handle );
         }
 
-        PluginLog.Error( $"Caught decrease of Reference Counter for {handle->FileName} at 0x{( ulong )handle:X} below 0." );
+        Penumbra.Log.Error( $"Caught decrease of Reference Counter for {handle->FileName} at 0x{( ulong )handle:X} below 0." );
         return 1;
     }
 
     // Logging functions for EnableFullLogging.
     private static void LogPath( Utf8GamePath path, bool synchronous )
-        => PluginLog.Information( $"[ResourceLoader] Requested {path} {( synchronous ? "synchronously." : "asynchronously." )}" );
+        => Penumbra.Log.Information( $"[ResourceLoader] Requested {path} {( synchronous ? "synchronously." : "asynchronously." )}" );
 
     private static void LogResource( Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData _ )
     {
         var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
-        PluginLog.Information( $"[ResourceLoader] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
+        Penumbra.Log.Information( $"[ResourceLoader] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
     }
 
     private static void LogLoadedFile( Utf8String path, bool success, bool custom )
-        => PluginLog.Information( success
+        => Penumbra.Log.Information( success
             ? $"[ResourceLoader] Loaded {path} from {( custom ? "local files" : "SqPack" )}"
             : $"[ResourceLoader] Failed to load {path} from {( custom ? "local files" : "SqPack" )}." );
 }

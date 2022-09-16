@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Dalamud;
 using Dalamud.Data;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
