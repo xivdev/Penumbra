@@ -18,6 +18,9 @@ public partial class MetaManager
     public static void ResetEqpFiles()
         => SetFile( null, CharacterUtility.Index.Eqp );
 
+    public Interop.CharacterUtility.List.MetaReverter TemporarilySetEqpFile()
+        => TemporarilySetFile( _eqpFile, CharacterUtility.Index.Eqp );
+
     public void ResetEqp()
     {
         if( _eqpFile == null )

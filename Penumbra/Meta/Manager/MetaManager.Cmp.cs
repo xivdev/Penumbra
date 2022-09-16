@@ -18,6 +18,9 @@ public partial class MetaManager
     public static void ResetCmpFiles()
         => SetFile( null, CharacterUtility.Index.HumanCmp );
 
+    public Interop.CharacterUtility.List.MetaReverter TemporarilySetCmpFile()
+        => TemporarilySetFile( _cmpFile, CharacterUtility.Index.HumanCmp );
+
     public void ResetCmp()
     {
         if( _cmpFile == null )

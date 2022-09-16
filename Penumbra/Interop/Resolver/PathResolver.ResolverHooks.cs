@@ -2,6 +2,9 @@ using System;
 using System.Runtime.CompilerServices;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using OtterGui.Classes;
+using Penumbra.GameData.Enums;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -140,34 +143,64 @@ public partial class PathResolver
 
         private IntPtr ResolveMdlHuman( IntPtr drawObject, IntPtr path, IntPtr unk3, uint modelType )
         {
-            using var eqdp = MetaChanger.ChangeEqdp( _parent, drawObject, modelType );
+            CharacterUtility.List.MetaReverter? Get()
+            {
+                if( modelType > 9 )
+                {
+                    return null;
+                }
+
+                var race = MetaState.GetHumanGenderRace( drawObject );
+                if( race == GenderRace.Unknown )
+                {
+                    return null;
+                }
+
+                var data = GetResolveData( drawObject );
+                return !data.Valid ? null : data.ModCollection.TemporarilySetEqdpFile( race, modelType > 4 );
+            }
+
+            using var eqdp = Get();
             return ResolvePath( drawObject, _resolveMdlPathHook.Original( drawObject, path, unk3, modelType ) );
         }
 
         private IntPtr ResolvePapHuman( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4, ulong unk5 )
         {
-            using var est = MetaChanger.ChangeEst( _parent, drawObject );
+            using var est = GetEstChanges( drawObject );
             return ResolvePath( drawObject, _resolvePapPathHook.Original( drawObject, path, unk3, unk4, unk5 ) );
         }
 
         private IntPtr ResolvePhybHuman( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
         {
-            using var est = MetaChanger.ChangeEst( _parent, drawObject );
+            using var est = GetEstChanges( drawObject );
             return ResolvePath( drawObject, _resolvePhybPathHook.Original( drawObject, path, unk3, unk4 ) );
         }
 
         private IntPtr ResolveSklbHuman( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
         {
-            using var est = MetaChanger.ChangeEst( _parent, drawObject );
+            using var est = GetEstChanges( drawObject );
             return ResolvePath( drawObject, _resolveSklbPathHook.Original( drawObject, path, unk3, unk4 ) );
         }
 
         private IntPtr ResolveSkpHuman( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
         {
-            using var est = MetaChanger.ChangeEst( _parent, drawObject );
+            using var est = GetEstChanges( drawObject );
             return ResolvePath( drawObject, _resolveSkpPathHook.Original( drawObject, path, unk3, unk4 ) );
         }
 
+        private DisposableContainer GetEstChanges( IntPtr drawObject )
+        {
+            var data = GetResolveData( drawObject );
+            if( !data.Valid )
+            {
+                return DisposableContainer.Empty;
+            }
+
+            return new DisposableContainer( data.ModCollection.TemporarilySetEstFile( EstManipulation.EstType.Face ),
+                data.ModCollection.TemporarilySetEstFile( EstManipulation.EstType.Body ),
+                data.ModCollection.TemporarilySetEstFile( EstManipulation.EstType.Hair ),
+                data.ModCollection.TemporarilySetEstFile( EstManipulation.EstType.Head ) );
+        }
 
         private IntPtr ResolveDecalWeapon( IntPtr drawObject, IntPtr path, IntPtr unk3, uint unk4 )
             => ResolveWeaponPath( drawObject, _resolveDecalPathHook.Original( drawObject, path, unk3, unk4 ) );
@@ -226,9 +259,10 @@ public partial class PathResolver
         // Implementation
         [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
         private IntPtr ResolvePath( IntPtr drawObject, IntPtr path )
-            => _parent._paths.ResolvePath( (IntPtr?)FindParent( drawObject, out _) ?? IntPtr.Zero, FindParent( drawObject, out var collection ) == null
-                ? Penumbra.CollectionManager.Default
-                : collection.ModCollection, path );
+            => _parent._paths.ResolvePath( ( IntPtr? )FindParent( drawObject, out _ ) ?? IntPtr.Zero,
+                FindParent( drawObject, out var collection ) == null
+                    ? Penumbra.CollectionManager.Default
+                    : collection.ModCollection, path );
 
         // Weapons have the characters DrawObject as a parent,
         // but that may not be set yet when creating a new object, so we have to do the same detour
@@ -239,18 +273,18 @@ public partial class PathResolver
             var parent = FindParent( drawObject, out var collection );
             if( parent != null )
             {
-                return _parent._paths.ResolvePath( (IntPtr)parent, collection.ModCollection, path );
+                return _parent._paths.ResolvePath( ( IntPtr )parent, collection.ModCollection, path );
             }
 
             var parentObject     = ( IntPtr )( ( DrawObject* )drawObject )->Object.ParentObject;
             var parentCollection = DrawObjects.CheckParentDrawObject( drawObject, parentObject );
             if( parentCollection.Valid )
             {
-                return _parent._paths.ResolvePath( (IntPtr)FindParent(parentObject, out _), parentCollection.ModCollection, path );
+                return _parent._paths.ResolvePath( ( IntPtr )FindParent( parentObject, out _ ), parentCollection.ModCollection, path );
             }
 
             parent = FindParent( parentObject, out collection );
-            return _parent._paths.ResolvePath( (IntPtr?)parent ?? IntPtr.Zero, parent == null
+            return _parent._paths.ResolvePath( ( IntPtr? )parent ?? IntPtr.Zero, parent == null
                 ? Penumbra.CollectionManager.Default
                 : collection.ModCollection, path );
         }

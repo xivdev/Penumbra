@@ -54,7 +54,7 @@ public unsafe partial class PathResolver
 
         public bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, out ResolveData resolveData )
         {
-            if( type                 == ResourceType.Tex
+            if( type == ResourceType.Tex
             && LastCreatedCollection.Valid
             && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l', '_', 'f', 'a', 'c', 'e' ) )
             {
@@ -123,7 +123,7 @@ public unsafe partial class PathResolver
 
         // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
         // It contains any DrawObjects that correspond to a human actor, even those without specific collections.
-        private readonly Dictionary< IntPtr, (ResolveData, int) > _drawObjectToObject = new();
+        private readonly Dictionary< IntPtr, (ResolveData, int) > _drawObjectToObject    = new();
         private          ResolveData                              _lastCreatedCollection = ResolveData.Invalid;
 
         // Keep track of created DrawObjects that are CharacterBase,
@@ -135,22 +135,37 @@ public unsafe partial class PathResolver
 
         private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
         {
-            using var cmp = MetaChanger.ChangeCmp( LastGameObject, out _lastCreatedCollection );
-
+            CharacterUtility.List.MetaReverter? cmp = null;
             if( LastGameObject != null )
             {
+                _lastCreatedCollection = IdentifyCollection( LastGameObject );
                 var modelPtr = &a;
-                CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ( IntPtr )modelPtr, b, c );
+                if( _lastCreatedCollection.ModCollection != Penumbra.CollectionManager.Default )
+                {
+                    cmp = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile();
+                }
+
+                try
+                {
+                    CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ( IntPtr )modelPtr, b, c );
+                }
+                catch( Exception e )
+                {
+                    Penumbra.Log.Error( $"Unknown Error during CreatingCharacterBase:\n{e}" );
+                }
             }
 
             var ret = _characterBaseCreateHook.Original( a, b, c, d );
-            if( LastGameObject != null )
+            using( cmp )
             {
-                _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
-                CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ret );
-            }
+                if( LastGameObject != null )
+                {
+                    _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
+                    CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ret );
+                }
 
-            return ret;
+                return ret;
+            }
         }
 
 

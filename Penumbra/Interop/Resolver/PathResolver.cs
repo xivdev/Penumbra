@@ -34,7 +34,7 @@ public partial class PathResolver : IDisposable
         _loader     = loader;
         _animations = new AnimationState( DrawObjects );
         _paths      = new PathState( this );
-        _meta       = new MetaState( this, _paths.HumanVTable );
+        _meta       = new MetaState( _paths.HumanVTable );
         _materials  = new MaterialState( _paths );
     }
 

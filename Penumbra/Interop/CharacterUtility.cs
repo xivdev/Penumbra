@@ -84,18 +84,32 @@ public unsafe partial class CharacterUtility : IDisposable
         }
     }
 
-    public List.MetaReverter SetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
+    public void SetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
     {
-        var idx  = ReverseIndices[ ( int )resourceIdx ];
-        var list = _lists[ idx.Value ];
-        return list.SetResource( data, length );
+        var idx  = ReverseIndices[( int )resourceIdx];
+        var list = _lists[idx.Value];
+        list.SetResource( data, length );
     }
 
-    public List.MetaReverter ResetResource( Structs.CharacterUtility.Index resourceIdx )
+    public void ResetResource( Structs.CharacterUtility.Index resourceIdx )
+    {
+        var idx  = ReverseIndices[( int )resourceIdx];
+        var list = _lists[idx.Value];
+        list.ResetResource();
+    }
+
+    public List.MetaReverter TemporarilySetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
     {
         var idx  = ReverseIndices[ ( int )resourceIdx ];
         var list = _lists[ idx.Value ];
-        return list.ResetResource();
+        return list.TemporarilySetResource( data, length );
+    }
+
+    public List.MetaReverter TemporarilyResetResource( Structs.CharacterUtility.Index resourceIdx )
+    {
+        var idx  = ReverseIndices[ ( int )resourceIdx ];
+        var list = _lists[ idx.Value ];
+        return list.TemporarilyResetResource();
     }
 
     // Return all relevant resources to the default resource.

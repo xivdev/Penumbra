@@ -18,6 +18,9 @@ public partial class MetaManager
     public static void ResetGmpFiles()
         => SetFile( null, CharacterUtility.Index.Gmp );
 
+    public Interop.CharacterUtility.List.MetaReverter TemporarilySetGmpFile()
+        => TemporarilySetFile( _gmpFile, CharacterUtility.Index.Gmp );
+
     public void ResetGmp()
     {
         if( _gmpFile == null )

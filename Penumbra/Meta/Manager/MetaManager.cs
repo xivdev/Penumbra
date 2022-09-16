@@ -179,4 +179,10 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
             Penumbra.CharacterUtility.SetResource( index, ( IntPtr )file.Data, file.Length );
         }
     }
+
+    [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
+    private static unsafe Interop.CharacterUtility.List.MetaReverter TemporarilySetFile( MetaBaseFile? file, CharacterUtility.Index index )
+        => file == null
+            ? Penumbra.CharacterUtility.TemporarilyResetResource( index )
+            : Penumbra.CharacterUtility.TemporarilySetResource( index, ( IntPtr )file.Data, file.Length );
 }

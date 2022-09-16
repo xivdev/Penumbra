@@ -1,11 +1,14 @@
 using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
+using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manager;
 using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Penumbra.Interop;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections;
 
@@ -203,4 +206,21 @@ public partial class ModCollection
             Penumbra.Log.Debug( $"Set CharacterUtility resources for collection {Name}." );
         }
     }
+
+    // Used for short periods of changed files.
+    public CharacterUtility.List.MetaReverter? TemporarilySetEqdpFile( GenderRace genderRace, bool accessory )
+        => _cache?.MetaManipulations.TemporarilySetEqdpFile( genderRace, accessory );
+
+    public CharacterUtility.List.MetaReverter? TemporarilySetEqpFile()
+        => _cache?.MetaManipulations.TemporarilySetEqpFile();
+
+    public CharacterUtility.List.MetaReverter? TemporarilySetGmpFile()
+        => _cache?.MetaManipulations.TemporarilySetGmpFile();
+
+    public CharacterUtility.List.MetaReverter? TemporarilySetCmpFile()
+        => _cache?.MetaManipulations.TemporarilySetCmpFile();
+
+    public CharacterUtility.List.MetaReverter? TemporarilySetEstFile( EstManipulation.EstType type )
+        => _cache?.MetaManipulations.TemporarilySetEstFile( type );
+
 }
