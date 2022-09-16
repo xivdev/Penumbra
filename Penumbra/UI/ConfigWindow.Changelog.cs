@@ -24,6 +24,7 @@ public partial class ConfigWindow
 
     private static void Add5_8_0( Changelog log )
         => log.NextVersion( "Version 0.5.8.0" )
+           .RegisterEntry( "Added choices what Change Logs are to be displayed. It is recommended to just keep showing all."  )
            .RegisterEntry( "Fixed an issue with Actor 201 using Your Character collections in cutscenes." )
            .RegisterEntry( "Fixed issues with and improved mod option editing." )
            .RegisterEntry( "Backend optimizations." );
