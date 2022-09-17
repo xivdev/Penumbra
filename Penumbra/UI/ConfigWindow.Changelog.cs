@@ -18,16 +18,29 @@ public partial class ConfigWindow
 
         Add5_7_0( ret );
         Add5_7_1( ret );
+        Add5_8_0( ret );
 
         return ret;
     }
 
     private static void Add5_8_0( Changelog log )
         => log.NextVersion( "Version 0.5.8.0" )
-           .RegisterEntry( "Added choices what Change Logs are to be displayed. It is recommended to just keep showing all."  )
+           .RegisterEntry( "Added choices what Change Logs are to be displayed. It is recommended to just keep showing all." )
+           .RegisterEntry( "Added an Interface Collection assignment." )
+           .RegisterEntry( "All your UI mods will have to be in the interface collection.", 1 )
+           .RegisterEntry( "Files that are categorized as UI files by the game will only check for redirections in this collection.", 1 )
+           .RegisterHighlight(
+                "Migration should have set your currently assigned Base Collection to the Interface Collection, please verify that.", 1 )
+           .RegisterEntry( "New API / IPC for the Interface Collection added.", 1 )
+           .RegisterHighlight( "API / IPC consumers should verify whether they need to change resolving to the new collection.", 1 )
+           .RegisterEntry(
+                "Added buttons for redrawing self or all as well as a tooltip to describe redraw options and a tutorial step for it." )
+           .RegisterEntry( "Collection Selectors now display None at the top if available."  )
            .RegisterEntry( "Fixed an issue with Actor 201 using Your Character collections in cutscenes." )
            .RegisterEntry( "Fixed issues with and improved mod option editing." )
-           .RegisterEntry( "Backend optimizations." );
+           .RegisterEntry( "Backend optimizations." )
+           .RegisterEntry( "Changed metadata change system again.", 1 )
+           .RegisterEntry( "Improved logging efficiency.", 1 );
 
     private static void Add5_7_1( Changelog log )
         => log.NextVersion( "Version 0.5.7.1" )

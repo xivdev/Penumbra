@@ -21,7 +21,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 13 );
+        => ( 4, 14 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -141,10 +141,16 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _penumbra!.ObjectReloader.RedrawAll( setting );
     }
 
-    public string ResolvePath( string path )
+    public string ResolveDefaultPath( string path )
     {
         CheckInitialized();
         return ResolvePath( path, Penumbra.ModManager, Penumbra.CollectionManager.Default );
+    }
+
+    public string ResolveInterfacePath( string path )
+    {
+        CheckInitialized();
+        return ResolvePath( path, Penumbra.ModManager, Penumbra.CollectionManager.Interface );
     }
 
     public string ResolvePlayerPath( string path )
@@ -185,7 +191,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     public T? GetFile< T >( string gamePath ) where T : FileResource
-        => GetFileIntern< T >( ResolvePath( gamePath ) );
+        => GetFileIntern< T >( ResolveDefaultPath( gamePath ) );
 
     public T? GetFile< T >( string gamePath, string characterName ) where T : FileResource
         => GetFileIntern< T >( ResolvePath( gamePath, characterName ) );
@@ -231,6 +237,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         return Penumbra.CollectionManager.Default.Name;
+    }
+
+    public string GetInterfaceCollection()
+    {
+        CheckInitialized();
+        return Penumbra.CollectionManager.Interface.Name;
     }
 
     public (string, bool) GetCharacterCollection( string characterName )

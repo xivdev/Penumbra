@@ -274,6 +274,7 @@ public partial class PenumbraIpc
 public partial class PenumbraIpc
 {
     public const string LabelProviderResolveDefault                 = "Penumbra.ResolveDefaultPath";
+    public const string LabelProviderResolveInterface               = "Penumbra.ResolveInterfacePath";
     public const string LabelProviderResolveCharacter               = "Penumbra.ResolveCharacterPath";
     public const string LabelProviderResolvePlayer                  = "Penumbra.ResolvePlayerPath";
     public const string LabelProviderGetDrawObjectInfo              = "Penumbra.GetDrawObjectInfo";
@@ -285,6 +286,7 @@ public partial class PenumbraIpc
     public const string LabelProviderGameObjectResourcePathResolved = "Penumbra.GameObjectResourcePathResolved";
 
     internal ICallGateProvider< string, string >?                                  ProviderResolveDefault;
+    internal ICallGateProvider< string, string >?                                  ProviderResolveInterface;
     internal ICallGateProvider< string, string, string >?                          ProviderResolveCharacter;
     internal ICallGateProvider< string, string >?                                  ProviderResolvePlayer;
     internal ICallGateProvider< IntPtr, (IntPtr, string) >?                        ProviderGetDrawObjectInfo;
@@ -300,11 +302,21 @@ public partial class PenumbraIpc
         try
         {
             ProviderResolveDefault = pi.GetIpcProvider< string, string >( LabelProviderResolveDefault );
-            ProviderResolveDefault.RegisterFunc( Api.ResolvePath );
+            ProviderResolveDefault.RegisterFunc( Api.ResolveDefaultPath );
         }
         catch( Exception e )
         {
             Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderResolveDefault}:\n{e}" );
+        }
+
+        try
+        {
+            ProviderResolveInterface = pi.GetIpcProvider< string, string >( LabelProviderResolveInterface );
+            ProviderResolveInterface.RegisterFunc( Api.ResolveInterfacePath );
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderResolveInterface}:\n{e}" );
         }
 
         try
@@ -411,6 +423,7 @@ public partial class PenumbraIpc
         ProviderGetDrawObjectInfo?.UnregisterFunc();
         ProviderGetCutsceneParentIndex?.UnregisterFunc();
         ProviderResolveDefault?.UnregisterFunc();
+        ProviderResolveInterface?.UnregisterFunc();
         ProviderResolveCharacter?.UnregisterFunc();
         ProviderReverseResolvePath?.UnregisterFunc();
         ProviderReverseResolvePathPlayer?.UnregisterFunc();
@@ -499,6 +512,7 @@ public partial class PenumbraIpc
     public const string LabelProviderGetCollections             = "Penumbra.GetCollections";
     public const string LabelProviderCurrentCollectionName      = "Penumbra.GetCurrentCollectionName";
     public const string LabelProviderDefaultCollectionName      = "Penumbra.GetDefaultCollectionName";
+    public const string LabelProviderInterfaceCollectionName    = "Penumbra.GetInterfaceCollectionName";
     public const string LabelProviderCharacterCollectionName    = "Penumbra.GetCharacterCollectionName";
     public const string LabelProviderGetPlayerMetaManipulations = "Penumbra.GetPlayerMetaManipulations";
     public const string LabelProviderGetMetaManipulations       = "Penumbra.GetMetaManipulations";
@@ -507,6 +521,7 @@ public partial class PenumbraIpc
     internal ICallGateProvider< IList< string > >?           ProviderGetCollections;
     internal ICallGateProvider< string >?                    ProviderCurrentCollectionName;
     internal ICallGateProvider< string >?                    ProviderDefaultCollectionName;
+    internal ICallGateProvider< string >?                    ProviderInterfaceCollectionName;
     internal ICallGateProvider< string, (string, bool) >?    ProviderCharacterCollectionName;
     internal ICallGateProvider< string >?                    ProviderGetPlayerMetaManipulations;
     internal ICallGateProvider< string, string >?            ProviderGetMetaManipulations;
@@ -555,6 +570,16 @@ public partial class PenumbraIpc
 
         try
         {
+            ProviderInterfaceCollectionName = pi.GetIpcProvider<string>( LabelProviderInterfaceCollectionName );
+            ProviderInterfaceCollectionName.RegisterFunc( Api.GetInterfaceCollection );
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Error( $"Error registering IPC provider for {LabelProviderInterfaceCollectionName}:\n{e}" );
+        }
+
+        try
+        {
             ProviderCharacterCollectionName = pi.GetIpcProvider< string, (string, bool) >( LabelProviderCharacterCollectionName );
             ProviderCharacterCollectionName.RegisterFunc( Api.GetCharacterCollection );
         }
@@ -590,6 +615,7 @@ public partial class PenumbraIpc
         ProviderGetCollections?.UnregisterFunc();
         ProviderCurrentCollectionName?.UnregisterFunc();
         ProviderDefaultCollectionName?.UnregisterFunc();
+        ProviderInterfaceCollectionName?.UnregisterFunc();
         ProviderCharacterCollectionName?.UnregisterFunc();
         ProviderGetMetaManipulations?.UnregisterFunc();
     }
