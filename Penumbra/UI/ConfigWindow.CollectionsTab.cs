@@ -129,8 +129,17 @@ public partial class ConfigWindow
             DrawCollectionSelector( "##default", _window._inputTextWidth.X, CollectionType.Default, true, null );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( DefaultCollection,
-                $"Mods in the {DefaultCollection} are loaded for anything that is not associated with a character in the game "
+                $"Mods in the {DefaultCollection} are loaded for anything that is not associated with the user interface or a character in the game,"
               + "as well as any character for whom no more specific conditions from below apply." );
+        }
+
+        private void DrawInterfaceCollectionSelector()
+        {
+            using var group = ImRaii.Group();
+            DrawCollectionSelector( "##interface", _window._inputTextWidth.X, CollectionType.Interface, true, null );
+            ImGui.SameLine();
+            ImGuiUtil.LabeledHelpMarker( InterfaceCollection,
+                $"Mods in the {InterfaceCollection} are loaded for any file that the game categorizes as an UI file. This is mostly icons as well as the tiles that generate the user interface windows themselves." );
         }
 
         // We do not check for valid character names.
@@ -272,6 +281,8 @@ public partial class ConfigWindow
             ImGui.Dummy( _window._defaultSpace );
             DrawDefaultCollectionSelector();
             OpenTutorial( BasicTutorialSteps.DefaultCollection );
+            DrawInterfaceCollectionSelector();
+            OpenTutorial( BasicTutorialSteps.InterfaceCollection );
             ImGui.Dummy( _window._defaultSpace );
 
             DrawSpecialAssignments();

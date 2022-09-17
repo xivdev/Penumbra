@@ -26,6 +26,9 @@ public partial class ModCollection
         // The collection used for general file redirections and all characters not specifically named.
         public ModCollection Default { get; private set; } = Empty;
 
+        // The collection used for all files categorized as UI files.
+        public ModCollection Interface { get; private set; } = Empty;
+
         // A single collection that can not be deleted as a fallback for the current collection.
         private ModCollection DefaultName { get; set; } = Empty;
 
@@ -53,6 +56,7 @@ public partial class ModCollection
             return type switch
             {
                 CollectionType.Default   => Default,
+                CollectionType.Interface => Interface,
                 CollectionType.Current   => Current,
                 CollectionType.Character => name != null ? _characters.TryGetValue( name, out var c ) ? c : null : null,
                 CollectionType.Inactive  => name != null ? ByName( name, out var c ) ? c : null : null,
@@ -65,8 +69,9 @@ public partial class ModCollection
         {
             var oldCollectionIdx = collectionType switch
             {
-                CollectionType.Default => Default.Index,
-                CollectionType.Current => Current.Index,
+                CollectionType.Default   => Default.Index,
+                CollectionType.Interface => Interface.Index,
+                CollectionType.Current   => Current.Index,
                 CollectionType.Character => characterName?.Length > 0
                     ? _characters.TryGetValue( characterName, out var c )
                         ? c.Index
@@ -98,6 +103,9 @@ public partial class ModCollection
                     }
 
                     break;
+                case CollectionType.Interface:
+                    Interface = newCollection;
+                    break;
                 case CollectionType.Current:
                     Current = newCollection;
                     break;
@@ -118,6 +126,7 @@ public partial class ModCollection
         private void UpdateCurrentCollectionInUse()
             => CurrentCollectionInUse = _specialCollections
                .OfType< ModCollection >()
+               .Prepend( Interface )
                .Prepend( Default )
                .Concat( Characters.Values )
                .SelectMany( c => c.GetFlattenedInheritance() ).Contains( Current );
@@ -192,7 +201,7 @@ public partial class ModCollection
             var configChanged = !ReadActiveCollections( out var jObject );
 
             // Load the default collection.
-            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? ( configChanged ? DefaultCollection : Empty.Name );
+            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? ( configChanged ? Empty.Name : DefaultCollection );
             var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
             {
@@ -205,12 +214,28 @@ public partial class ModCollection
                 Default = this[ defaultIdx ];
             }
 
+            // Load the interface collection.
+            var interfaceName = jObject[ nameof( Interface ) ]?.ToObject< string >() ?? (configChanged ? Empty.Name : Default.Name);
+            var interfaceIdx  = GetIndexForCollectionName( interfaceName );
+            if( interfaceIdx < 0 )
+            {
+                Penumbra.Log.Error(
+                    $"Last choice of {ConfigWindow.InterfaceCollection} {interfaceName} is not available, reset to {Empty.Name}." );
+                Interface     = Empty;
+                configChanged = true;
+            }
+            else
+            {
+                Interface = this[ interfaceIdx ];
+            }
+
             // Load the current collection.
             var currentName = jObject[ nameof( Current ) ]?.ToObject< string >() ?? DefaultCollection;
             var currentIdx  = GetIndexForCollectionName( currentName );
             if( currentIdx < 0 )
             {
-                Penumbra.Log.Error( $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}." );
+                Penumbra.Log.Error(
+                    $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}." );
                 Current       = DefaultName;
                 configChanged = true;
             }
@@ -268,13 +293,14 @@ public partial class ModCollection
         public void SaveActiveCollections()
         {
             Penumbra.Framework.RegisterDelayed( nameof( SaveActiveCollections ),
-                () => SaveActiveCollections( Default.Name, Current.Name, Characters.Select( kvp => ( kvp.Key, kvp.Value.Name ) ),
+                () => SaveActiveCollections( Default.Name, Interface.Name, Current.Name,
+                    Characters.Select( kvp => ( kvp.Key, kvp.Value.Name ) ),
                     _specialCollections.WithIndex()
                        .Where( c => c.Item1 != null )
                        .Select( c => ( ( CollectionType )c.Item2, c.Item1!.Name ) ) ) );
         }
 
-        internal static void SaveActiveCollections( string def, string current, IEnumerable< (string, string) > characters,
+        internal static void SaveActiveCollections( string def, string ui, string current, IEnumerable< (string, string) > characters,
             IEnumerable< (CollectionType, string) > special )
         {
             var file = ActiveCollectionFile;
@@ -287,6 +313,8 @@ public partial class ModCollection
                 j.WriteStartObject();
                 j.WritePropertyName( nameof( Default ) );
                 j.WriteValue( def );
+                j.WritePropertyName( nameof( Interface ) );
+                j.WriteValue( ui );
                 j.WritePropertyName( nameof( Current ) );
                 j.WriteValue( current );
                 foreach( var (type, collection) in special )
@@ -350,6 +378,7 @@ public partial class ModCollection
         private void CreateNecessaryCaches()
         {
             Default.CreateCache();
+            Interface.CreateCache();
             Current.CreateCache();
 
             foreach( var collection in _specialCollections.OfType< ModCollection >().Concat( _characters.Values ) )
@@ -362,6 +391,7 @@ public partial class ModCollection
         {
             if( idx != Empty.Index
             && idx  != Default.Index
+            && idx  != Interface.Index
             && idx  != Current.Index
             && _specialCollections.All( c => c == null || c.Index != idx )
             && _characters.Values.All( c => c.Index != idx ) )

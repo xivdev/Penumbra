@@ -121,6 +121,12 @@ public unsafe partial class ResourceLoader
         }
 
         path = path.ToLower();
+        if( category == ResourceCategory.Ui )
+        {
+            var resolved = Penumbra.CollectionManager.Interface.ResolvePath( path );
+            return ( resolved, Penumbra.CollectionManager.Interface.ToResolveData() );
+        }
+
         if( ResolvePathCustomization != null )
         {
             foreach( var resolver in ResolvePathCustomization.GetInvocationList() )
