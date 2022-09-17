@@ -11,6 +11,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.GameData.Enums;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
@@ -51,6 +52,8 @@ public partial class ConfigWindow
                     ? _window.Flags | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize
                     : _window.Flags & ~( ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize );
             } );
+
+            DrawRedrawButton();
 
             ImGui.NewLine();
             DrawRootFolder();
@@ -333,6 +336,34 @@ public partial class ConfigWindow
             ImGuiUtil.HoverTooltip(
                 $"Open {address}\nImage and text based guides for most functionality of Penumbra made by Serenity.\n"
               + "Not directly affiliated and potentially, but not usually out of date." );
+        }
+
+        private void DrawRedrawButton()
+        {
+            using( var group = ImRaii.Group() )
+            {
+                using var disabled = ImRaii.Disabled( Dalamud.ClientState.LocalPlayer == null );
+
+                if( ImGui.Button( "Redraw Self" ) )
+                {
+                    _window._penumbra.ObjectReloader.RedrawObject( "self", RedrawType.Redraw );
+                }
+
+                ImGuiUtil.HoverTooltip( "Executes '/penumbra redraw self'." );
+
+                ImGui.SameLine();
+                if( ImGui.Button( "Redraw All" ) )
+                {
+                    _window._penumbra.ObjectReloader.RedrawAll( RedrawType.Redraw );
+                }
+                ImGuiUtil.HoverTooltip( "Executes '/penumbra redraw'." );
+
+                ImGui.SameLine();
+
+                ImGuiComponents.HelpMarker( $"The supported modifiers for '/penumbra redraw' are:\n{SupportedRedrawModifiers}" );
+            }
+
+            OpenTutorial( BasicTutorialSteps.Redrawing );
         }
 
         private void DrawSupportButtons()

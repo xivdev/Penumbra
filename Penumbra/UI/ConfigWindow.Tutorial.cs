@@ -18,6 +18,12 @@ public partial class ConfigWindow
     public const string ConditionalIndividual = "Character";
     public const string IndividualAssignments = "Individual Assignments";
 
+    public const string SupportedRedrawModifiers = "    - 'self' or '<me>': your own character\n"
+      + "    - 'target' or '<t>': your target\n"
+      + "    - 'focus' or '<f>: your focus target\n"
+      + "    - 'mouseover' or '<mo>': the actor you are currently hovering\n"
+      + "    - any specific actor name to redraw all actors of that exactly matching name.";
+
     private static void UpdateTutorialStep()
     {
         var tutorial = Tutorial.CurrentEnabledId( Penumbra.Config.TutorialStep );
@@ -43,6 +49,7 @@ public partial class ConfigWindow
         EnableMods,
         AdvancedSettings,
         GeneralSettings,
+        Redrawing,
         Collections,
         EditingCollections,
         CurrentCollection,
@@ -82,6 +89,10 @@ public partial class ConfigWindow
           + "If you need to do any editing of your mods, you will have to turn it on later." )
        .Register( "General Settings", "Look through all of these settings before starting, they might help you a lot!\n\n"
           + "If you do not know what some of these do yet, return to this later!" )
+       .Register( "Redrawing",
+            "Whenever you change your mod configuration, changes do not immediately take effect. You will need to force the game to reload the relevant files (or if this is not possible, restart the game).\n\n"
+          + "For this, Penumbra has these buttons as well as the '/penumbra redraw' command, which redraws all actors at once. You can also use several modifiers described in the help marker instead.\n\n"
+          + "Feel free to use these slash commands (e.g. '/penumbra redraw self') as a macro, too." )
        .Register( "Initial Setup, Step 3: Collections", "Collections are lists of settings for your installed mods.\n\n"
           + "This is our next stop!\n\n"
           + "Go here after setting up your root folder to continue the tutorial!" )
@@ -104,7 +115,7 @@ public partial class ConfigWindow
        .Register( GroupAssignment + 's',
             "Collections assigned here are used for groups of characters for which specific conditions are met.\n\n"
           + "The more specific the condition, the higher its priority (i.e. Your Character > Player Characters > Race).\n\n"
-          + $"{IndividualAssignments} always take precedence before groups.")
+          + $"{IndividualAssignments} always take precedence before groups." )
        .Register( IndividualAssignments,
             "Collections assigned here are used only for individual characters or NPCs that have the specified name.\n\n"
           + "They may also apply to objects 'owned' by those characters, e.g. minions or mounts - see the general settings for options on this.\n\n" )
