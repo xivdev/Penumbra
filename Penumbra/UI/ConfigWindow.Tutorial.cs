@@ -19,7 +19,8 @@ public partial class ConfigWindow
     public const string ConditionalIndividual = "Character";
     public const string IndividualAssignments = "Individual Assignments";
 
-    public const string SupportedRedrawModifiers = "    - 'self' or '<me>': your own character\n"
+    public const string SupportedRedrawModifiers = "    - nothing, to redraw all characters\n"
+      + "    - 'self' or '<me>': your own character\n"
       + "    - 'target' or '<t>': your target\n"
       + "    - 'focus' or '<f>: your focus target\n"
       + "    - 'mouseover' or '<mo>': the actor you are currently hovering over\n"
@@ -50,7 +51,6 @@ public partial class ConfigWindow
         EnableMods,
         AdvancedSettings,
         GeneralSettings,
-        Redrawing,
         Collections,
         EditingCollections,
         CurrentCollection,
@@ -65,6 +65,7 @@ public partial class ConfigWindow
         AdvancedHelp,
         ModFilters,
         CollectionSelectors,
+        Redrawing,
         EnablingMods,
         Priority,
         ModOptions,
@@ -91,10 +92,6 @@ public partial class ConfigWindow
           + "If you need to do any editing of your mods, you will have to turn it on later." )
        .Register( "General Settings", "Look through all of these settings before starting, they might help you a lot!\n\n"
           + "If you do not know what some of these do yet, return to this later!" )
-       .Register( "Redrawing",
-            "Whenever you change your mod configuration, changes do not immediately take effect. You will need to force the game to reload the relevant files (or if this is not possible, restart the game).\n\n"
-          + "For this, Penumbra has these buttons as well as the '/penumbra redraw' command, which redraws all actors at once. You can also use several modifiers described in the help marker instead.\n\n"
-          + "Feel free to use these slash commands (e.g. '/penumbra redraw self') as a macro, too." )
        .Register( "Initial Setup, Step 3: Collections", "Collections are lists of settings for your installed mods.\n\n"
           + "This is our next stop!\n\n"
           + "Go here after setting up your root folder to continue the tutorial!" )
@@ -116,7 +113,7 @@ public partial class ConfigWindow
           + "This is also the collection you need to use for all mods that are not directly associated with any character in the game or the user interface, like music mods." )
        .Register( "Interface Collection",
             $"The {InterfaceCollection} - which should currently be set to None - is used exclusively for files categorized as 'UI' files by the game, which is mostly icons and the backgrounds for different UI windows etc.\n\n"
-          + $"If you have mods manipulating your interface, they should be enabled in the collection assigned to this slot. You can of course assign the same collection you assigned to the {DefaultCollection} to the {InterfaceCollection}, too, and enable all your UI mods in this one.")
+          + $"If you have mods manipulating your interface, they should be enabled in the collection assigned to this slot. You can of course assign the same collection you assigned to the {DefaultCollection} to the {InterfaceCollection}, too, and enable all your UI mods in this one." )
        .Register( GroupAssignment + 's',
             "Collections assigned here are used for groups of characters for which specific conditions are met.\n\n"
           + "The more specific the condition, the higher its priority (i.e. Your Character > Player Characters > Race).\n\n"
@@ -137,6 +134,10 @@ public partial class ConfigWindow
           + $"The first button sets it to your {DefaultCollection} (if any).\n\n"
           + "The second button sets it to the collection the settings of the currently selected mod are inherited from (if any).\n\n"
           + "The third is a regular collection selector to let you choose among all your collections." )
+       .Register( "Redrawing",
+            "Whenever you change your mod configuration, changes do not immediately take effect. You will need to force the game to reload the relevant files (or if this is not possible, restart the game).\n\n"
+          + "For this, Penumbra has these buttons as well as the '/penumbra redraw' command, which redraws all actors at once. You can also use several modifiers described in the help marker instead.\n\n"
+          + "Feel free to use these slash commands (e.g. '/penumbra redraw self') as a macro, too." )
        .Register( "Initial Setup, Step 11: Enabling Mods",
             "Enable a mod here. Disabled mods will not apply to anything in the current collection.\n\n"
           + "Mods can be enabled or disabled in a collection, or they can be unconfigured, in which case they will use Inheritance." )
