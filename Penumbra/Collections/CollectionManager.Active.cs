@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Penumbra.Collections;
 
@@ -215,7 +216,7 @@ public partial class ModCollection
             }
 
             // Load the interface collection.
-            var interfaceName = jObject[ nameof( Interface ) ]?.ToObject< string >() ?? (configChanged ? Empty.Name : Default.Name);
+            var interfaceName = jObject[ nameof( Interface ) ]?.ToObject< string >() ?? ( configChanged ? Empty.Name : Default.Name );
             var interfaceIdx  = GetIndexForCollectionName( interfaceName );
             if( interfaceIdx < 0 )
             {
@@ -285,8 +286,6 @@ public partial class ModCollection
             {
                 SaveActiveCollections();
             }
-
-            CreateNecessaryCaches();
         }
 
 
@@ -363,7 +362,6 @@ public partial class ModCollection
             return false;
         }
 
-
         // Save if any of the active collections is changed.
         private void SaveOnChange( CollectionType collectionType, ModCollection? _1, ModCollection? _2, string? _3 )
         {
@@ -373,18 +371,20 @@ public partial class ModCollection
             }
         }
 
-
-        // Cache handling.
-        private void CreateNecessaryCaches()
+        // Cache handling. Usually recreate caches on the next framework tick,
+        // but at launch create all of them at once.
+        public void CreateNecessaryCaches()
         {
-            Default.CreateCache();
-            Interface.CreateCache();
-            Current.CreateCache();
+            var tasks = _specialCollections.OfType< ModCollection >()
+               .Concat( _characters.Values )
+               .Prepend( Current )
+               .Prepend( Default )
+               .Prepend( Interface )
+               .Distinct()
+               .Select( c => Task.Run( c.CalculateEffectiveFileListInternal ) )
+               .ToArray();
 
-            foreach( var collection in _specialCollections.OfType< ModCollection >().Concat( _characters.Values ) )
-            {
-                collection.CreateCache();
-            }
+            Task.WaitAll( tasks );
         }
 
         private void RemoveCache( int idx )

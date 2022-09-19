@@ -56,7 +56,7 @@ public unsafe partial class PathResolver
         {
             if( type == ResourceType.Tex
             && LastCreatedCollection.Valid
-            && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l', '_', 'f', 'a', 'c', 'e' ) )
+            && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l' ) )
             {
                 resolveData = LastCreatedCollection;
                 return true;

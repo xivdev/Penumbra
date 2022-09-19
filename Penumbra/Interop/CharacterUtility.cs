@@ -78,9 +78,9 @@ public unsafe partial class CharacterUtility : IDisposable
 
         if( !anyMissing )
         {
-            Ready = true;
-            LoadingFinished.Invoke();
+            Ready                    =  true;
             Dalamud.Framework.Update -= LoadDefaultResources;
+            LoadingFinished.Invoke();
         }
     }
 

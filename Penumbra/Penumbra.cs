@@ -94,6 +94,7 @@ public class Penumbra : IDalamudPlugin
             ModManager        = new Mod.Manager( Config.ModDirectory );
             ModManager.DiscoverMods();
             CollectionManager = new ModCollection.Manager( ModManager );
+            CollectionManager.CreateNecessaryCaches();
             ModFileSystem     = ModFileSystem.Load();
             ObjectReloader    = new ObjectReloader();
             PathResolver      = new PathResolver( ResourceLoader );

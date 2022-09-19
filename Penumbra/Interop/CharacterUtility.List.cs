@@ -50,7 +50,8 @@ public unsafe partial class CharacterUtility
 
         public MetaReverter TemporarilyResetResource()
         {
-            Penumbra.Log.Verbose( $"Temporarily reset resource {GlobalIndex} to default at 0x{_defaultResourceData:X} ({_defaultResourceSize} bytes)." );
+            Penumbra.Log.Verbose(
+                $"Temporarily reset resource {GlobalIndex} to default at 0x{_defaultResourceData:X} ({_defaultResourceSize} bytes)." );
             var reverter = new MetaReverter( this );
             _entries.AddFirst( reverter );
             ResetResourceInternal();
@@ -83,6 +84,9 @@ public unsafe partial class CharacterUtility
         // Reset the currently stored data of this resource to its default values.
         private void ResetResourceInternal()
             => SetResourceInternal( _defaultResourceData, _defaultResourceSize );
+
+        private void SetResourceToDefaultCollection()
+            => Penumbra.CollectionManager.Default.SetMetaFile( GlobalIndex );
 
         public void Dispose()
         {
@@ -127,14 +131,14 @@ public unsafe partial class CharacterUtility
 
                 if( list.Count == 0 )
                 {
-                    List.ResetResourceInternal();
+                    List.SetResourceToDefaultCollection();
                 }
                 else
                 {
                     var next = list.First!.Value;
                     if( next.Resetter )
                     {
-                        List.ResetResourceInternal();
+                        List.SetResourceToDefaultCollection();
                     }
                     else
                     {
