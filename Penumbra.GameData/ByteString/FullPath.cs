@@ -31,6 +31,13 @@ public readonly struct FullPath : IComparable, IEquatable< FullPath >
         Crc64        = Functions.ComputeCrc64( InternalName.Span );
     }
 
+    public FullPath( Utf8GamePath path )
+    {
+        FullName     = path.ToString().Replace( '/', '\\' );
+        InternalName = path.Path;
+        Crc64        = Functions.ComputeCrc64( InternalName.Span );
+    }
+
     public bool Exists
         => File.Exists( FullName );
 

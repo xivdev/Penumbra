@@ -6,6 +6,22 @@ using Penumbra.GameData.Enums;
 namespace Penumbra.Interop.Structs;
 
 [StructLayout( LayoutKind.Explicit )]
+public unsafe struct TextureResourceHandle
+{
+    [FieldOffset( 0x0 )]
+    public ResourceHandle Handle;
+
+    [FieldOffset( 0x38 )]
+    public IntPtr Unk;
+
+    [FieldOffset( 0x118 )]
+    public IntPtr KernelTexture;
+
+    [FieldOffset( 0x20 )]
+    public IntPtr NewKernelTexture;
+}
+
+[StructLayout( LayoutKind.Explicit )]
 public unsafe struct ResourceHandle
 {
     [StructLayout( LayoutKind.Explicit )]
