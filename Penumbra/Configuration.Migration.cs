@@ -47,12 +47,35 @@ public partial class Configuration
             m.Version2To3();
             m.Version3To4();
             m.Version4To5();
+            m.Version5To6();
+        }
+
+        // A new tutorial step was inserted in the middle.
+        // The UI collection and a new tutorial for it was added.
+        // The migration for the UI collection itself happens in the ActiveCollections file.
+        private void Version5To6()
+        {
+            if( _config.Version != 5 )
+            {
+                return;
+            }
+            if( _config.TutorialStep == 25 )
+            {
+                _config.TutorialStep = 27;
+            }
+
+            _config.Version = 6;
         }
 
         // Mod backup extension was changed from .zip to .pmp.
         // Actual migration takes place in ModManager.
         private void Version4To5()
         {
+            if( _config.Version != 4 )
+            {
+                return;
+            }
+
             Mod.Manager.MigrateModBackups = true;
             _config.Version               = 5;
         }
@@ -189,7 +212,7 @@ public partial class Configuration
             CurrentCollection    = _data[ nameof( CurrentCollection ) ]?.ToObject< string >()                          ?? CurrentCollection;
             DefaultCollection    = _data[ nameof( DefaultCollection ) ]?.ToObject< string >()                          ?? DefaultCollection;
             CharacterCollections = _data[ nameof( CharacterCollections ) ]?.ToObject< Dictionary< string, string > >() ?? CharacterCollections;
-            ModCollection.Manager.SaveActiveCollections( DefaultCollection, CurrentCollection,
+            ModCollection.Manager.SaveActiveCollections( DefaultCollection, CurrentCollection, DefaultCollection,
                 CharacterCollections.Select( kvp => ( kvp.Key, kvp.Value ) ), Array.Empty< (CollectionType, string) >() );
         }
 

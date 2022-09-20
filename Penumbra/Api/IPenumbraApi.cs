@@ -96,9 +96,13 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Queue redrawing of all currently available actors with the given RedrawType.
     public void RedrawAll( RedrawType setting );
 
-    // Resolve a given gamePath via Penumbra using the Default and Forced collections.
+    // Resolve a given gamePath via Penumbra using the Default collection.
     // Returns the given gamePath if penumbra would not manipulate it.
-    public string ResolvePath( string gamePath );
+    public string ResolveDefaultPath( string gamePath );
+
+    // Resolve a given gamePath via Penumbra using the Interface collection.
+    // Returns the given gamePath if penumbra would not manipulate it.
+    public string ResolveInterfacePath( string gamePath );
 
     // Resolve a given gamePath via Penumbra using the character collection for the given name (if it exists) and the Forced collections.
     // Returns the given gamePath if penumbra would not manipulate it.
@@ -132,6 +136,9 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Obtain the name of the default collection.
     public string GetDefaultCollection();
+
+    // Obtain the name of the interface collection.
+    public string GetInterfaceCollection();
 
     // Obtain the name of the collection associated with characterName and whether it is configured or inferred from default.
     public (string, bool) GetCharacterCollection( string characterName );

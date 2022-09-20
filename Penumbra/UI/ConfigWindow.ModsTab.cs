@@ -7,6 +7,8 @@ using Penumbra.UI.Classes;
 using System;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface;
+using Penumbra.GameData.Enums;
 
 namespace Penumbra.UI;
 
@@ -33,11 +35,22 @@ public partial class ConfigWindow
             using var group = ImRaii.Group();
             DrawHeaderLine();
 
-            using var child = ImRaii.Child( "##ModsTabMod", -Vector2.One, true, ImGuiWindowFlags.HorizontalScrollbar );
-            if( child )
+            using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
+
+            using( var child = ImRaii.Child( "##ModsTabMod", new Vector2( -1, -ImGui.GetFrameHeight() ), true,
+                      ImGuiWindowFlags.HorizontalScrollbar ) )
             {
-                _modPanel.Draw( _selector );
+                style.Pop();
+                if( child )
+                {
+                    _modPanel.Draw( _selector );
+                }
+
+                style.Push( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
             }
+
+            style.Push( ImGuiStyleVar.FrameRounding, 0 );
+            DrawRedrawLine();
         }
         catch( Exception e )
         {
@@ -48,9 +61,60 @@ public partial class ConfigWindow
               + $"{_selector.SortMode.Name} Sort Mode\n"
               + $"{_selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
               + $"{_selector.Selected?.Name     ?? "NULL"} Selected Mod\n"
-              + $"{string.Join( ", ", Penumbra.CollectionManager.Current.Inheritance.Select(c => c.AnonymizedName) )} Inheritances\n"
+              + $"{string.Join( ", ", Penumbra.CollectionManager.Current.Inheritance.Select( c => c.AnonymizedName ) )} Inheritances\n"
               + $"{_selector.SelectedSettingCollection.AnonymizedName} Collection\n" );
         }
+    }
+
+    private void DrawRedrawLine()
+    {
+        var frameHeight = new Vector2( 0, ImGui.GetFrameHeight() );
+        var frameColor  = ImGui.GetColorU32( ImGuiCol.FrameBg );
+        using( var _ = ImRaii.Group() )
+        {
+            using( var font = ImRaii.PushFont( UiBuilder.IconFont ) )
+            {
+                ImGuiUtil.DrawTextButton( FontAwesomeIcon.InfoCircle.ToIconString(), frameHeight, frameColor );
+                ImGui.SameLine();
+            }
+
+            ImGuiUtil.DrawTextButton( "Redraw:        ", frameHeight, frameColor );
+        }
+
+        var hovered = ImGui.IsItemHovered();
+        OpenTutorial( BasicTutorialSteps.Redrawing );
+        if( hovered )
+        {
+            ImGui.SetTooltip( $"The supported modifiers for '/penumbra redraw' are:\n{SupportedRedrawModifiers}" );
+        }
+
+        void DrawButton( Vector2 size, string label, string lower )
+        {
+            if( ImGui.Button( label, size ) )
+            {
+                if( lower.Length > 0 )
+                {
+                    _penumbra.ObjectReloader.RedrawObject( lower, RedrawType.Redraw );
+                }
+                else
+                {
+                    _penumbra.ObjectReloader.RedrawAll( RedrawType.Redraw );
+                }
+            }
+
+            ImGuiUtil.HoverTooltip( lower.Length > 0 ? $"Execute '/penumbra redraw {lower}'." : $"Execute '/penumbra redraw'." );
+        }
+
+        using var disabled = ImRaii.Disabled( Dalamud.ClientState.LocalPlayer == null );
+        ImGui.SameLine();
+        var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 4 };
+        DrawButton( buttonWidth, "All", string.Empty );
+        ImGui.SameLine();
+        DrawButton( buttonWidth, "Self", "self" );
+        ImGui.SameLine();
+        DrawButton( buttonWidth, "Target", "target" );
+        ImGui.SameLine();
+        DrawButton( frameHeight with { X = ImGui.GetContentRegionAvail().X - 1 }, "Focus", "focus" );
     }
 
     // Draw the header line that can quick switch between collections.
@@ -59,7 +123,7 @@ public partial class ConfigWindow
         using var style      = ImRaii.PushStyle( ImGuiStyleVar.FrameRounding, 0 ).Push( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
         var       buttonSize = new Vector2( ImGui.GetContentRegionAvail().X / 8f, 0 );
 
-        using( var group = ImRaii.Group() )
+        using( var _ = ImRaii.Group() )
         {
             DrawDefaultCollectionButton( 3 * buttonSize );
             ImGui.SameLine();

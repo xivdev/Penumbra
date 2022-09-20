@@ -100,7 +100,10 @@ public partial class ConfigWindow
         using var combo = ImRaii.Combo( label, current?.Name ?? string.Empty );
         if( combo )
         {
-            foreach( var collection in Penumbra.CollectionManager.GetEnumeratorWithEmpty().Skip( withEmpty ? 0 : 1 ).OrderBy( c => c.Name ) )
+            var enumerator = Penumbra.CollectionManager.OrderBy( c => c.Name ).AsEnumerable();
+            if( withEmpty )
+                enumerator = enumerator.Prepend( ModCollection.Empty );
+            foreach( var collection in enumerator )
             {
                 using var id = ImRaii.PushId( collection.Index );
                 if( ImGui.Selectable( collection.Name, collection == current ) )

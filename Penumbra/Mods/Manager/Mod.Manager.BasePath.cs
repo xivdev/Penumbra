@@ -60,7 +60,7 @@ public partial class Mod
 
             dir.Refresh();
             mod.ModPath = dir;
-            if( !mod.Reload( out var metaChange ) )
+            if( !mod.Reload( false, out var metaChange ) )
             {
                 Penumbra.Log.Error( $"Error reloading moved mod {mod.Name}." );
                 return;
@@ -81,7 +81,7 @@ public partial class Mod
             var oldName = mod.Name;
 
             ModPathChanged.Invoke( ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath );
-            if( !mod.Reload( out var metaChange ) )
+            if( !mod.Reload( true, out var metaChange ) )
             {
                 Penumbra.Log.Warning( mod.Name.Length == 0
                     ? $"Reloading mod {oldName} has failed, new name is empty. Deleting instead."
@@ -135,7 +135,7 @@ public partial class Mod
                 return;
             }
 
-            var mod = LoadMod( modFolder );
+            var mod = LoadMod( modFolder, true );
             if( mod == null )
             {
                 return;

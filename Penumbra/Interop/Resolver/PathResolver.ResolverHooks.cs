@@ -143,21 +143,15 @@ public partial class PathResolver
 
         private IntPtr ResolveMdlHuman( IntPtr drawObject, IntPtr path, IntPtr unk3, uint modelType )
         {
-            CharacterUtility.List.MetaReverter? Get()
+            DisposableContainer Get()
             {
                 if( modelType > 9 )
                 {
-                    return null;
-                }
-
-                var race = MetaState.GetHumanGenderRace( drawObject );
-                if( race == GenderRace.Unknown )
-                {
-                    return null;
+                    return DisposableContainer.Empty;
                 }
 
                 var data = GetResolveData( drawObject );
-                return !data.Valid ? null : data.ModCollection.TemporarilySetEqdpFile( race, modelType > 4 );
+                return !data.Valid ? DisposableContainer.Empty : MetaState.ResolveEqdpData(data.ModCollection, MetaState.GetHumanGenderRace( drawObject ), modelType < 5, modelType > 4);
             }
 
             using var eqdp = Get();

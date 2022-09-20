@@ -311,6 +311,13 @@ public class IpcTester : IDisposable
                .InvokeFunc( _currentResolvePath ) );
         }
 
+        DrawIntro( PenumbraIpc.LabelProviderResolveInterface, "Interface Collection Resolve" );
+        if( _currentResolvePath.Length != 0 )
+        {
+            ImGui.TextUnformatted( _pi.GetIpcSubscriber< string, string >( PenumbraIpc.LabelProviderResolveInterface )
+               .InvokeFunc( _currentResolvePath ) );
+        }
+
         DrawIntro( PenumbraIpc.LabelProviderResolveCharacter, "Character Collection Resolve" );
         if( _currentResolvePath.Length != 0 && _currentResolveCharacter.Length != 0 )
         {
@@ -568,6 +575,8 @@ public class IpcTester : IDisposable
         ImGui.TextUnformatted( _pi.GetIpcSubscriber< string >( PenumbraIpc.LabelProviderCurrentCollectionName ).InvokeFunc() );
         DrawIntro( PenumbraIpc.LabelProviderDefaultCollectionName, "Default Collection" );
         ImGui.TextUnformatted( _pi.GetIpcSubscriber< string >( PenumbraIpc.LabelProviderDefaultCollectionName ).InvokeFunc() );
+        DrawIntro( PenumbraIpc.LabelProviderInterfaceCollectionName, "Interface Collection" );
+        ImGui.TextUnformatted( _pi.GetIpcSubscriber< string >( PenumbraIpc.LabelProviderInterfaceCollectionName ).InvokeFunc() );
         DrawIntro( PenumbraIpc.LabelProviderCharacterCollectionName, "Character" );
         ImGui.SetNextItemWidth( 200 * ImGuiHelpers.GlobalScale );
         ImGui.InputTextWithHint( "##characterCollectionName", "Character Name...", ref _characterCollectionName, 64 );

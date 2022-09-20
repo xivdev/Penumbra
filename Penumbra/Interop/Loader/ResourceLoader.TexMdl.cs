@@ -26,7 +26,7 @@ public unsafe partial class ResourceLoader
     // We use it to check against our stored CRC64s and if it corresponds, we return the custom flag.
     public delegate IntPtr CheckFileStatePrototype( IntPtr unk1, ulong crc64 );
 
-    [Signature( "E8 ?? ?? ?? ?? 48 85 c0 74 ?? 45 0f b6 ce 48 89 44 24", DetourName = "CheckFileStateDetour" )]
+    [Signature( "E8 ?? ?? ?? ?? 48 85 c0 74 ?? 45 0f b6 ce 48 89 44 24", DetourName = nameof(CheckFileStateDetour) )]
     public Hook< CheckFileStatePrototype > CheckFileStateHook = null!;
 
     private IntPtr CheckFileStateDetour( IntPtr ptr, ulong crc64 )
@@ -48,7 +48,7 @@ public unsafe partial class ResourceLoader
     // We hook the extern functions to just return the local one if given the custom flag as last argument.
     public delegate byte LoadTexFileExternPrototype( ResourceHandle* handle, int unk1, IntPtr unk2, bool unk3, IntPtr unk4 );
 
-    [Signature( "E8 ?? ?? ?? ?? 0F B6 E8 48 8B CB E8", DetourName = "LoadTexFileExternDetour" )]
+    [Signature( "E8 ?? ?? ?? ?? 0F B6 E8 48 8B CB E8", DetourName = nameof(LoadTexFileExternDetour) )]
     public Hook< LoadTexFileExternPrototype > LoadTexFileExternHook = null!;
 
     private byte LoadTexFileExternDetour( ResourceHandle* resourceHandle, int unk1, IntPtr unk2, bool unk3, IntPtr ptr )
@@ -59,7 +59,7 @@ public unsafe partial class ResourceLoader
     public delegate byte LoadMdlFileExternPrototype( ResourceHandle* handle, IntPtr unk1, bool unk2, IntPtr unk3 );
 
 
-    [Signature( "E8 ?? ?? ?? ?? EB 02 B0 F1", DetourName = "LoadMdlFileExternDetour" )]
+    [Signature( "E8 ?? ?? ?? ?? EB 02 B0 F1", DetourName = nameof(LoadMdlFileExternDetour) )]
     public Hook< LoadMdlFileExternPrototype > LoadMdlFileExternHook = null!;
 
     private byte LoadMdlFileExternDetour( ResourceHandle* resourceHandle, IntPtr unk1, bool unk2, IntPtr ptr )

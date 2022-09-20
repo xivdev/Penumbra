@@ -10,6 +10,7 @@ public partial class ConfigWindow
 {
     public const string SelectedCollection    = "Selected Collection";
     public const string DefaultCollection     = "Base Collection";
+    public const string InterfaceCollection   = "Interface Collection";
     public const string ActiveCollections     = "Active Collections";
     public const string AssignedCollections   = "Assigned Collections";
     public const string GroupAssignment       = "Group Assignment";
@@ -17,6 +18,13 @@ public partial class ConfigWindow
     public const string ConditionalGroup      = "Group";
     public const string ConditionalIndividual = "Character";
     public const string IndividualAssignments = "Individual Assignments";
+
+    public const string SupportedRedrawModifiers = "    - nothing, to redraw all characters\n"
+      + "    - 'self' or '<me>': your own character\n"
+      + "    - 'target' or '<t>': your target\n"
+      + "    - 'focus' or '<f>: your focus target\n"
+      + "    - 'mouseover' or '<mo>': the actor you are currently hovering over\n"
+      + "    - any specific actor name to redraw all actors of that exactly matching name.";
 
     private static void UpdateTutorialStep()
     {
@@ -49,6 +57,7 @@ public partial class ConfigWindow
         Inheritance,
         ActiveCollections,
         DefaultCollection,
+        InterfaceCollection,
         SpecialCollections1,
         SpecialCollections2,
         Mods,
@@ -56,6 +65,7 @@ public partial class ConfigWindow
         AdvancedHelp,
         ModFilters,
         CollectionSelectors,
+        Redrawing,
         EnablingMods,
         Priority,
         ModOptions,
@@ -100,11 +110,14 @@ public partial class ConfigWindow
        .Register( $"Initial Setup, Step 7: {DefaultCollection}",
             $"The {DefaultCollection} - which should currently be set to a collection named {ModCollection.DefaultCollection} - is the main one.\n\n"
           + $"As long as no more specific conditions apply to an object in the game, the mods from the {DefaultCollection} will be used.\n\n"
-          + "This is also the collection you need to use for all UI mods, music mods or any mods not associated with a character in the game at all." )
+          + "This is also the collection you need to use for all mods that are not directly associated with any character in the game or the user interface, like music mods." )
+       .Register( "Interface Collection",
+            $"The {InterfaceCollection} - which should currently be set to None - is used exclusively for files categorized as 'UI' files by the game, which is mostly icons and the backgrounds for different UI windows etc.\n\n"
+          + $"If you have mods manipulating your interface, they should be enabled in the collection assigned to this slot. You can of course assign the same collection you assigned to the {DefaultCollection} to the {InterfaceCollection}, too, and enable all your UI mods in this one." )
        .Register( GroupAssignment + 's',
             "Collections assigned here are used for groups of characters for which specific conditions are met.\n\n"
           + "The more specific the condition, the higher its priority (i.e. Your Character > Player Characters > Race).\n\n"
-          + $"{IndividualAssignments} always take precedence before groups.")
+          + $"{IndividualAssignments} always take precedence before groups." )
        .Register( IndividualAssignments,
             "Collections assigned here are used only for individual characters or NPCs that have the specified name.\n\n"
           + "They may also apply to objects 'owned' by those characters, e.g. minions or mounts - see the general settings for options on this.\n\n" )
@@ -121,6 +134,10 @@ public partial class ConfigWindow
           + $"The first button sets it to your {DefaultCollection} (if any).\n\n"
           + "The second button sets it to the collection the settings of the currently selected mod are inherited from (if any).\n\n"
           + "The third is a regular collection selector to let you choose among all your collections." )
+       .Register( "Redrawing",
+            "Whenever you change your mod configuration, changes do not immediately take effect. You will need to force the game to reload the relevant files (or if this is not possible, restart the game).\n\n"
+          + "For this, Penumbra has these buttons as well as the '/penumbra redraw' command, which redraws all actors at once. You can also use several modifiers described in the help marker instead.\n\n"
+          + "Feel free to use these slash commands (e.g. '/penumbra redraw self') as a macro, too." )
        .Register( "Initial Setup, Step 11: Enabling Mods",
             "Enable a mod here. Disabled mods will not apply to anything in the current collection.\n\n"
           + "Mods can be enabled or disabled in a collection, or they can be unconfigured, in which case they will use Inheritance." )

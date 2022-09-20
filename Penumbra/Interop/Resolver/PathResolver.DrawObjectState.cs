@@ -7,6 +7,7 @@ using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using OtterGui.Classes;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 
@@ -56,7 +57,7 @@ public unsafe partial class PathResolver
         {
             if( type == ResourceType.Tex
             && LastCreatedCollection.Valid
-            && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l', '_', 'f', 'a', 'c', 'e' ) )
+            && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l' ) )
             {
                 resolveData = LastCreatedCollection;
                 return true;
@@ -135,18 +136,19 @@ public unsafe partial class PathResolver
 
         private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
         {
-            CharacterUtility.List.MetaReverter? cmp = null;
+            var meta = DisposableContainer.Empty;
             if( LastGameObject != null )
             {
                 _lastCreatedCollection = IdentifyCollection( LastGameObject );
-                var modelPtr = &a;
-                if( _lastCreatedCollection.ModCollection != Penumbra.CollectionManager.Default )
-                {
-                    cmp = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile();
-                }
-
+                // Change the transparent or 1.0 Decal if necessary.
+                var decal = new CharacterUtility.DecalReverter( _lastCreatedCollection.ModCollection, UsesDecal( a, c ) );
+                // Change the rsp parameters if necessary.
+                meta = new DisposableContainer( _lastCreatedCollection.ModCollection != Penumbra.CollectionManager.Default
+                    ? _lastCreatedCollection.ModCollection.TemporarilySetCmpFile()
+                    : null, decal );
                 try
                 {
+                    var modelPtr = &a;
                     CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ( IntPtr )modelPtr, b, c );
                 }
                 catch( Exception e )
@@ -156,7 +158,7 @@ public unsafe partial class PathResolver
             }
 
             var ret = _characterBaseCreateHook.Original( a, b, c, d );
-            using( cmp )
+            using( meta )
             {
                 if( LastGameObject != null )
                 {
@@ -167,6 +169,11 @@ public unsafe partial class PathResolver
                 return ret;
             }
         }
+
+        // Check the customize array for the FaceCustomization byte and the last bit of that.
+        // Also check for humans.
+        public static bool UsesDecal( uint modelId, IntPtr customizeData )
+            => modelId == 0 && ( ( byte* )customizeData )[ 12 ] > 0x7F;
 
 
         // Remove DrawObjects from the list when they are destroyed.

@@ -133,67 +133,6 @@ public partial class ModCollection
         Penumbra.Log.Debug( $"[{Thread.CurrentThread.ManagedThreadId}] Recalculation of effective file list for {AnonymizedName} finished." );
     }
 
-    // Set Metadata files.
-    public void SetEqpFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.ResetEqpFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.SetEqpFiles();
-        }
-    }
-
-    public void SetEqdpFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.ResetEqdpFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.SetEqdpFiles();
-        }
-    }
-
-    public void SetGmpFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.ResetGmpFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.SetGmpFiles();
-        }
-    }
-
-    public void SetEstFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.ResetEstFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.SetEstFiles();
-        }
-    }
-
-    public void SetCmpFiles()
-    {
-        if( _cache == null )
-        {
-            MetaManager.ResetCmpFiles();
-        }
-        else
-        {
-            _cache.MetaManipulations.SetCmpFiles();
-        }
-    }
-
     public void SetFiles()
     {
         if( _cache == null )
@@ -204,6 +143,18 @@ public partial class ModCollection
         {
             _cache.MetaManipulations.SetFiles();
             Penumbra.Log.Debug( $"Set CharacterUtility resources for collection {Name}." );
+        }
+    }
+
+    public void SetMetaFile( Interop.Structs.CharacterUtility.Index idx )
+    {
+        if( _cache == null )
+        {
+            Penumbra.CharacterUtility.ResetResource( idx );
+        }
+        else
+        {
+            _cache.MetaManipulations.SetFile( idx );
         }
     }
 
@@ -222,5 +173,4 @@ public partial class ModCollection
 
     public CharacterUtility.List.MetaReverter? TemporarilySetEstFile( EstManipulation.EstType type )
         => _cache?.MetaManipulations.TemporarilySetEstFile( type );
-
 }

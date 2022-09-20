@@ -80,6 +80,9 @@ public unsafe struct CharacterUtility
         BodyEst,
     }
 
+    public const int IndexTransparentTex = 72;
+    public const int IndexDecalTex       = 73;
+
     public static readonly Index[] EqdpIndices = Enum.GetNames< Index >()
        .Zip( Enum.GetValues< Index >() )
        .Where( n => n.First.StartsWith( "Eqdp" ) )
@@ -156,6 +159,12 @@ public unsafe struct CharacterUtility
 
     [FieldOffset( 8 + ( int )Index.HeadEst * 8 )]
     public ResourceHandle* HeadEstResource;
+
+    [FieldOffset( 8 + IndexTransparentTex * 8 )]
+    public TextureResourceHandle* TransparentTexResource;
+
+    [FieldOffset( 8 + IndexDecalTex * 8 )]
+    public TextureResourceHandle* DecalTexResource;
 
     // not included resources have no known use case.
 }

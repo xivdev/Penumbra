@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using OtterGui;
 using Penumbra.Collections;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
@@ -83,17 +84,14 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
         }
 
         _manipulations[ manip ] = mod;
-        // Imc manipulations do not require character utility.
-        if( manip.ManipulationType == MetaManipulation.Type.Imc )
-        {
-            return ApplyMod( manip.Imc );
-        }
 
         if( !Penumbra.CharacterUtility.Ready )
         {
             return true;
         }
 
+        // Imc manipulations do not require character utility,
+        // but they do require the file space to be ready.
         return manip.ManipulationType switch
         {
             MetaManipulation.Type.Eqp     => ApplyMod( manip.Eqp ),
@@ -101,6 +99,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
             MetaManipulation.Type.Eqdp    => ApplyMod( manip.Eqdp ),
             MetaManipulation.Type.Est     => ApplyMod( manip.Est ),
             MetaManipulation.Type.Rsp     => ApplyMod( manip.Rsp ),
+            MetaManipulation.Type.Imc     => ApplyMod( manip.Imc ),
             MetaManipulation.Type.Unknown => false,
             _                             => false,
         };
@@ -109,17 +108,13 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     public bool RevertMod( MetaManipulation manip )
     {
         var ret = _manipulations.Remove( manip );
-        // Imc manipulations do not require character utility.
-        if( manip.ManipulationType == MetaManipulation.Type.Imc )
-        {
-            return RevertMod( manip.Imc );
-        }
-
         if( !Penumbra.CharacterUtility.Ready )
         {
             return ret;
         }
 
+        // Imc manipulations do not require character utility,
+        // but they do require the file space to be ready.
         return manip.ManipulationType switch
         {
             MetaManipulation.Type.Eqp     => RevertMod( manip.Eqp ),
@@ -127,6 +122,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
             MetaManipulation.Type.Eqdp    => RevertMod( manip.Eqdp ),
             MetaManipulation.Type.Est     => RevertMod( manip.Est ),
             MetaManipulation.Type.Rsp     => RevertMod( manip.Rsp ),
+            MetaManipulation.Type.Imc     => RevertMod( manip.Imc ),
             MetaManipulation.Type.Unknown => false,
             _                             => false,
         };
@@ -150,6 +146,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
                 MetaManipulation.Type.Eqdp    => ApplyMod( manip.Eqdp ),
                 MetaManipulation.Type.Est     => ApplyMod( manip.Est ),
                 MetaManipulation.Type.Rsp     => ApplyMod( manip.Rsp ),
+                MetaManipulation.Type.Imc     => ApplyMod( manip.Imc ),
                 MetaManipulation.Type.Unknown => false,
                 _                             => false,
             }
@@ -165,6 +162,42 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
 
         Penumbra.CharacterUtility.LoadingFinished -= ApplyStoredManipulations;
         Penumbra.Log.Debug( $"{_collection.AnonymizedName}: Loaded {loaded} delayed meta manipulations." );
+    }
+
+    public void SetFile( CharacterUtility.Index index )
+    {
+        switch( index )
+        {
+            case CharacterUtility.Index.Eqp:
+                SetFile( _eqpFile, index );
+                break;
+            case CharacterUtility.Index.Gmp:
+                SetFile( _gmpFile, index );
+                break;
+            case CharacterUtility.Index.HumanCmp:
+                SetFile( _cmpFile, index );
+                break;
+            case CharacterUtility.Index.FaceEst:
+                SetFile( _estFaceFile, index );
+                break;
+            case CharacterUtility.Index.HairEst:
+                SetFile( _estHairFile, index );
+                break;
+            case CharacterUtility.Index.HeadEst:
+                SetFile( _estHeadFile, index );
+                break;
+            case CharacterUtility.Index.BodyEst:
+                SetFile( _estBodyFile, index );
+                break;
+            default:
+                var i = CharacterUtility.EqdpIndices.IndexOf( index );
+                if( i != -1 )
+                {
+                    SetFile( _eqdpFiles[ i ], index );
+                }
+
+                break;
+        }
     }
 
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]

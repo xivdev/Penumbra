@@ -26,6 +26,8 @@ public unsafe partial class CharacterUtility : IDisposable
 
     public bool Ready { get; private set; }
     public event Action LoadingFinished;
+    private IntPtr _defaultTransparentResource;
+    private IntPtr _defaultDecalResource;
 
     // The relevant indices depend on which meta manipulations we allow for.
     // The defines are set in the project configuration.
@@ -76,25 +78,37 @@ public unsafe partial class CharacterUtility : IDisposable
             }
         }
 
+        if( _defaultTransparentResource == IntPtr.Zero )
+        {
+            _defaultTransparentResource =  ( IntPtr )Address->TransparentTexResource;
+            anyMissing                  |= _defaultTransparentResource == IntPtr.Zero;
+        }
+
+        if( _defaultDecalResource == IntPtr.Zero )
+        {
+            _defaultDecalResource =  ( IntPtr )Address->DecalTexResource;
+            anyMissing            |= _defaultDecalResource == IntPtr.Zero;
+        }
+
         if( !anyMissing )
         {
-            Ready = true;
-            LoadingFinished.Invoke();
+            Ready                    =  true;
             Dalamud.Framework.Update -= LoadDefaultResources;
+            LoadingFinished.Invoke();
         }
     }
 
     public void SetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
     {
-        var idx  = ReverseIndices[( int )resourceIdx];
-        var list = _lists[idx.Value];
+        var idx  = ReverseIndices[ ( int )resourceIdx ];
+        var list = _lists[ idx.Value ];
         list.SetResource( data, length );
     }
 
     public void ResetResource( Structs.CharacterUtility.Index resourceIdx )
     {
-        var idx  = ReverseIndices[( int )resourceIdx];
-        var list = _lists[idx.Value];
+        var idx  = ReverseIndices[ ( int )resourceIdx ];
+        var list = _lists[ idx.Value ];
         list.ResetResource();
     }
 
@@ -119,6 +133,9 @@ public unsafe partial class CharacterUtility : IDisposable
         {
             list.Dispose();
         }
+
+        Address->TransparentTexResource = ( Structs.TextureResourceHandle* )_defaultTransparentResource;
+        Address->DecalTexResource       = ( Structs.TextureResourceHandle* )_defaultDecalResource;
     }
 
     public void Dispose()

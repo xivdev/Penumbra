@@ -94,6 +94,7 @@ public class Penumbra : IDalamudPlugin
             ModManager        = new Mod.Manager( Config.ModDirectory );
             ModManager.DiscoverMods();
             CollectionManager = new ModCollection.Manager( ModManager );
+            CollectionManager.CreateNecessaryCaches();
             ModFileSystem     = ModFileSystem.Load();
             ObjectReloader    = new ObjectReloader();
             PathResolver      = new PathResolver( ResourceLoader );
@@ -276,6 +277,7 @@ public class Penumbra : IDalamudPlugin
 
     public void Dispose()
     {
+        ShutdownWebServer();
         DisposeInterface();
         Ipc?.Dispose();
         Api?.Dispose();
@@ -289,8 +291,6 @@ public class Penumbra : IDalamudPlugin
         ResourceLogger?.Dispose();
         ResourceLoader?.Dispose();
         CharacterUtility?.Dispose();
-
-        ShutdownWebServer();
     }
 
     public static bool SetCollection( string type, string collectionName )
@@ -481,6 +481,7 @@ public class Penumbra : IDalamudPlugin
         sb.AppendFormat( "> **`#Collections:                 `** {0}\n", CollectionManager.Count - 1 );
         sb.AppendFormat( "> **`Active Collections:           `** {0}\n", CollectionManager.Count( c => c.HasCache ) );
         sb.AppendFormat( "> **`Base Collection:              `** {0}\n", CollectionManager.Default.AnonymizedName );
+        sb.AppendFormat( "> **`Interface Collection:         `** {0}\n", CollectionManager.Interface.AnonymizedName );
         sb.AppendFormat( "> **`Selected Collection:          `** {0}\n", CollectionManager.Current.AnonymizedName );
         foreach( var type in CollectionTypeExtensions.Special )
         {

@@ -71,7 +71,13 @@ public unsafe partial class ResourceLoader
 
     private event Action< Utf8GamePath, ResourceType, FullPath?, object? >? PathResolved;
 
-    private ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
+    public ResourceHandle* ResolvePathSync( ResourceCategory category, ResourceType type, Utf8String path )
+    {
+        var hash = path.Crc32;
+        return GetResourceHandler( true, *ResourceManager, &category, &type, &hash, path.Path, null, false );
+    }
+
+    internal ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
     {
         if( !Utf8GamePath.FromPointer( path, out var gamePath ) )
@@ -86,7 +92,7 @@ public unsafe partial class ResourceLoader
 
         // If no replacements are being made, we still want to be able to trigger the event.
         var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
-        PathResolved?.Invoke( gamePath, *resourceType, resolvedPath, data );
+        PathResolved?.Invoke( gamePath, *resourceType, resolvedPath ?? ( gamePath.IsRooted() ? new FullPath( gamePath ) : null ), data );
         if( resolvedPath == null )
         {
             var retUnmodified =
@@ -121,6 +127,12 @@ public unsafe partial class ResourceLoader
         }
 
         path = path.ToLower();
+        if( category == ResourceCategory.Ui )
+        {
+            var resolved = Penumbra.CollectionManager.Interface.ResolvePath( path );
+            return ( resolved, Penumbra.CollectionManager.Interface.ToResolveData() );
+        }
+
         if( ResolvePathCustomization != null )
         {
             foreach( var resolver in ResolvePathCustomization.GetInvocationList() )
