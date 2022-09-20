@@ -267,7 +267,7 @@ public partial class Mod
 
             if( deletions > 0 )
             {
-                _mod.Reload( out _ );
+                _mod.Reload( false, out _ );
                 UpdateFiles();
             }
         }

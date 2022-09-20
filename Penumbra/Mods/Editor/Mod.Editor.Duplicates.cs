@@ -273,7 +273,7 @@ public partial class Mod
             try
             {
                 var mod = new Mod( modDirectory );
-                mod.Reload( out _ );
+                mod.Reload( true, out _ );
                 var editor = new Editor( mod, mod.Default );
                 editor.DuplicatesFinished = false;
                 editor.CheckDuplicates( editor.AvailableFiles.OrderByDescending( f => f.FileSize ).ToArray() );

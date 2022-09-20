@@ -202,7 +202,7 @@ public unsafe partial class PathResolver
             var       resolveData = GetResolveData( human );
             using var eqp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetEqpFile() : null;
             using var decals = resolveData.Valid
-                ? new CharacterUtility.DecalReverter( resolveData.ModCollection, DrawObjectState.UsesDecal(0, data) )
+                ? new CharacterUtility.DecalReverter( resolveData.ModCollection, DrawObjectState.UsesDecal( 0, data ) )
                 : null;
             return _changeCustomize.Original( human, data, skipEquipment );
         }

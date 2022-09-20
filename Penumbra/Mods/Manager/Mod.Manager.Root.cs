@@ -84,7 +84,7 @@ public sealed partial class Mod
             {
                 foreach( var modFolder in BasePath.EnumerateDirectories() )
                 {
-                    var mod = LoadMod( modFolder );
+                    var mod = LoadMod( modFolder, false );
                     if( mod == null )
                     {
                         continue;

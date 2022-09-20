@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 
 namespace Penumbra.Mods;
 
@@ -26,7 +27,7 @@ public partial class Mod
         _default = new SubMod( this );
     }
 
-    private static Mod? LoadMod( DirectoryInfo modPath )
+    private static Mod? LoadMod( DirectoryInfo modPath, bool incorporateMetaChanges )
     {
         modPath.Refresh();
         if( !modPath.Exists )
@@ -36,7 +37,7 @@ public partial class Mod
         }
 
         var mod = new Mod( modPath );
-        if( !mod.Reload( out _ ) )
+        if( !mod.Reload( incorporateMetaChanges, out _ ) )
         {
             // Can not be base path not existing because that is checked before.
             Penumbra.Log.Error( $"Mod at {modPath} without name is not supported." );
@@ -46,7 +47,7 @@ public partial class Mod
         return mod;
     }
 
-    private bool Reload( out MetaChangeType metaChange )
+    private bool Reload( bool incorporateMetaChanges, out MetaChangeType metaChange )
     {
         metaChange = MetaChangeType.Deletion;
         ModPath.Refresh();
@@ -63,8 +64,23 @@ public partial class Mod
 
         LoadDefaultOption();
         LoadAllGroups();
+        if( incorporateMetaChanges )
+        {
+            IncorporateAllMetaChanges( true );
+        }
+
         ComputeChangedItems();
         SetCounts();
         return true;
+    }
+
+    // Convert all .meta and .rgsp files to their respective meta changes and add them to their options.
+    // Deletes the source files if delete is true.
+    private void IncorporateAllMetaChanges( bool delete )
+    {
+        foreach( var subMod in AllSubMods.OfType< SubMod >() )
+        {
+            subMod.IncorporateMetaChanges( ModPath, delete );
+        }
     }
 }

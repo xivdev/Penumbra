@@ -122,7 +122,7 @@ public partial class Mod
     internal static void CreateDefaultFiles( DirectoryInfo directory )
     {
         var mod = new Mod( directory );
-        mod.Reload( out _ );
+        mod.Reload( false, out _ );
         foreach( var file in mod.FindUnusedFiles() )
         {
             if( Utf8GamePath.FromFile( new FileInfo( file.FullName ), directory, out var gamePath, true ) )
