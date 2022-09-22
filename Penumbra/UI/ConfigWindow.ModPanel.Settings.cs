@@ -160,7 +160,7 @@ public partial class ConfigWindow
             }
 
             using var id             = ImRaii.PushId( groupIdx );
-            var       selectedOption = _emptySetting ? 0 : ( int )_settings.Settings[ groupIdx ];
+            var       selectedOption = _emptySetting ? (int) group.DefaultSettings : ( int )_settings.Settings[ groupIdx ];
             ImGui.SetNextItemWidth( _window._inputTextWidth.X * 3 / 4 );
             using var combo = ImRaii.Combo( string.Empty, group[ selectedOption ].Name );
             if( combo )
@@ -199,7 +199,7 @@ public partial class ConfigWindow
             }
 
             using var id    = ImRaii.PushId( groupIdx );
-            var       flags = _emptySetting ? 0u : _settings.Settings[ groupIdx ];
+            var       flags = _emptySetting ? group.DefaultSettings : _settings.Settings[ groupIdx ];
             Widget.BeginFramedGroup( group.Name, group.Description );
             for( var idx2 = 0; idx2 < group.Count; ++idx2 )
             {

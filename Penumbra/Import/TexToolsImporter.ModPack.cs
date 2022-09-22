@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
+using OtterGui;
 using Penumbra.Mods;
 using Penumbra.Util;
 using SharpCompress.Archives.Zip;
@@ -166,16 +167,17 @@ public partial class TexToolsImporter
                     : ( 1 + allOptions.Count / IModGroup.MaxMultiOptions, IModGroup.MaxMultiOptions );
                 _currentGroupName = GetGroupName( group.GroupName, groupNames );
 
-                var optionIdx = 0;
+                var optionIdx       = 0;
                 for( var groupId = 0; groupId < numGroups; ++groupId )
                 {
-                    var name = numGroups == 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
+                    var name           = numGroups == 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
                     options.Clear();
                     var description = new StringBuilder();
                     var groupFolder = Mod.NewSubFolderName( _currentModDirectory, name )
                      ?? new DirectoryInfo( Path.Combine( _currentModDirectory.FullName,
                             numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}" ) );
 
+                    uint? defaultSettings = group.SelectionType == SelectType.Multi ? 0u : null;
                     for( var i = 0; i + optionIdx < allOptions.Count && i < maxOptions; ++i )
                     {
                         var option = allOptions[ i + optionIdx ];
@@ -189,6 +191,13 @@ public partial class TexToolsImporter
                         if( !string.IsNullOrEmpty( option.Description ) )
                         {
                             description.Append( '\n' );
+                        }
+
+                        if( option.IsChecked )
+                        {
+                            defaultSettings = group.SelectionType == SelectType.Multi
+                                ? ( defaultSettings!.Value | ( 1u << i ) )
+                                : ( uint )i;
                         }
 
                         ++_currentOptionIdx;
@@ -205,11 +214,12 @@ public partial class TexToolsImporter
                         {
                             _currentOptionName = empty.Name;
                             options.Insert( 0, Mod.CreateEmptySubMod( empty.Name ) );
+                            defaultSettings = defaultSettings == null ? 0 : defaultSettings.Value + 1;
                         }
                     }
 
                     Mod.CreateOptionGroup( _currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
-                        description.ToString(), options );
+                        defaultSettings ?? 0, description.ToString(), options );
                     ++groupPriority;
                 }
             }

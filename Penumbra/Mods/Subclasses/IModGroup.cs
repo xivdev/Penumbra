@@ -20,6 +20,7 @@ public interface IModGroup : IEnumerable< ISubMod >
     public string Description { get; }
     public SelectType Type { get; }
     public int Priority { get; }
+    public uint DefaultSettings { get; set; }
 
     public int OptionPriority( Index optionIdx );
 
@@ -60,7 +61,8 @@ public interface IModGroup : IEnumerable< ISubMod >
 
     public static void SaveDelayed( IModGroup group, DirectoryInfo basePath, int groupIdx )
     {
-        Penumbra.Framework.RegisterDelayed( $"{nameof( SaveModGroup )}_{basePath.Name}_{group.Name}", () => SaveModGroup( group, basePath, groupIdx ) );
+        Penumbra.Framework.RegisterDelayed( $"{nameof( SaveModGroup )}_{basePath.Name}_{group.Name}",
+            () => SaveModGroup( group, basePath, groupIdx ) );
     }
 
     public static void Save( IModGroup group, DirectoryInfo basePath, int groupIdx )
@@ -82,6 +84,8 @@ public interface IModGroup : IEnumerable< ISubMod >
         j.WriteValue( group.Priority );
         j.WritePropertyName( nameof( Type ) );
         j.WriteValue( group.Type.ToString() );
+        j.WritePropertyName( nameof( group.DefaultSettings ) );
+        j.WriteValue( group.DefaultSettings );
         j.WritePropertyName( "Options" );
         j.WriteStartArray();
         for( var idx = 0; idx < group.Count; ++idx )
@@ -96,5 +100,5 @@ public interface IModGroup : IEnumerable< ISubMod >
 
     public IModGroup Convert( SelectType type );
     public bool      MoveOption( int optionIdxFrom, int optionIdxTo );
-    public void      UpdatePositions(int from = 0);
+    public void      UpdatePositions( int from = 0 );
 }

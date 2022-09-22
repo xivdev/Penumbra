@@ -59,7 +59,7 @@ public partial class Mod
 
     // Create a file for an option group from given data.
     internal static void CreateOptionGroup( DirectoryInfo baseFolder, SelectType type, string name,
-        int priority, int index, string desc, IEnumerable< ISubMod > subMods )
+        int priority, int index, uint defaultSettings, string desc, IEnumerable< ISubMod > subMods )
     {
         switch( type )
         {
@@ -67,9 +67,10 @@ public partial class Mod
             {
                 var group = new MultiModGroup()
                 {
-                    Name        = name,
-                    Description = desc,
-                    Priority    = priority,
+                    Name            = name,
+                    Description     = desc,
+                    Priority        = priority,
+                    DefaultSettings = defaultSettings,
                 };
                 group.PrioritizedOptions.AddRange( subMods.OfType< SubMod >().Select( ( s, idx ) => ( s, idx ) ) );
                 IModGroup.Save( group, baseFolder, index );
@@ -79,9 +80,10 @@ public partial class Mod
             {
                 var group = new SingleModGroup()
                 {
-                    Name        = name,
-                    Description = desc,
-                    Priority    = priority,
+                    Name            = name,
+                    Description     = desc,
+                    Priority        = priority,
+                    DefaultSettings = defaultSettings,
                 };
                 group.OptionData.AddRange( subMods.OfType< SubMod >() );
                 IModGroup.Save( group, baseFolder, index );
