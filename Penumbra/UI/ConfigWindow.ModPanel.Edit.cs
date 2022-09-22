@@ -97,7 +97,7 @@ public partial class ConfigWindow
             ImGui.Dummy( _window._defaultSpace );
         }
 
-        private void DrawUpdateBibo( Vector2 buttonSize)
+        private void DrawUpdateBibo( Vector2 buttonSize )
         {
             if( ImGui.Button( "Update Bibo Material", buttonSize ) )
             {
@@ -108,7 +108,8 @@ public partial class ConfigWindow
                 _window.ModEditPopup.UpdateModels();
             }
 
-            ImGuiUtil.HoverTooltip( "For every model in this mod, change all material names that end in a _b or _c suffix to a _bibo or _bibopube suffix respectively.\n"
+            ImGuiUtil.HoverTooltip(
+                "For every model in this mod, change all material names that end in a _b or _c suffix to a _bibo or _bibopube suffix respectively.\n"
               + "Does nothing if the mod does not contain any such models or no model contains such materials.\n"
               + "Use this for outdated mods made for old Bibo bodies.\n"
               + "Go to Advanced Editing for more fine-tuned control over material assignment." );
@@ -459,15 +460,16 @@ public partial class ConfigWindow
 
             public static void Draw( ModPanel panel, int groupIdx )
             {
-                using var table = ImRaii.Table( string.Empty, 4, ImGuiTableFlags.SizingFixedFit );
+                using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.SizingFixedFit );
                 if( !table )
                 {
                     return;
                 }
 
                 ImGui.TableSetupColumn( "idx", ImGuiTableColumnFlags.WidthFixed, 60 * ImGuiHelpers.GlobalScale );
+                ImGui.TableSetupColumn( "default", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight() );
                 ImGui.TableSetupColumn( "name", ImGuiTableColumnFlags.WidthFixed,
-                    panel._window._inputTextWidth.X - 62 * ImGuiHelpers.GlobalScale );
+                    panel._window._inputTextWidth.X - 68 * ImGuiHelpers.GlobalScale - ImGui.GetFrameHeight() );
                 ImGui.TableSetupColumn( "delete", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
                 ImGui.TableSetupColumn( "priority", ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale );
 
@@ -490,6 +492,31 @@ public partial class ConfigWindow
                 ImGui.Selectable( $"Option #{optionIdx + 1}" );
                 Source( group, groupIdx, optionIdx );
                 Target( panel, group, groupIdx, optionIdx );
+
+                ImGui.TableNextColumn();
+
+
+                if( group.Type == SelectType.Single )
+                {
+                    if( ImGui.RadioButton( "##default", group.DefaultSettings == optionIdx ) )
+                    {
+                        Penumbra.ModManager.ChangeModGroupDefaultOption( panel._mod, groupIdx, ( uint )optionIdx );
+                    }
+
+                    ImGuiUtil.HoverTooltip( $"Set {option.Name} as the default choice for this group." );
+                }
+                else
+                {
+                    var isDefaultOption = ( ( group.DefaultSettings >> optionIdx ) & 1 ) != 0;
+                    if( ImGui.Checkbox( "##default", ref isDefaultOption ) )
+                    {
+                        Penumbra.ModManager.ChangeModGroupDefaultOption( panel._mod, groupIdx, isDefaultOption
+                            ? group.DefaultSettings | ( 1u << optionIdx )
+                            : group.DefaultSettings & ~( 1u << optionIdx ) );
+                    }
+
+                    ImGuiUtil.HoverTooltip( $"{( isDefaultOption ? "Disable" : "Enable" )} {option.Name} per default in this group." );
+                }
 
                 ImGui.TableNextColumn();
                 if( Input.Text( "##Name", groupIdx, optionIdx, option.Name, out var newOptionName, 256, -1 ) )
@@ -526,6 +553,7 @@ public partial class ConfigWindow
                 ImGui.AlignTextToFramePadding();
                 ImGui.Selectable( $"Option #{group.Count + 1}" );
                 Target( panel, group, groupIdx, group.Count );
+                ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
                 ImGui.SetNextItemWidth( -1 );
                 var tmp = _newOptionNameIdx == groupIdx ? _newOptionName : string.Empty;
@@ -575,7 +603,7 @@ public partial class ConfigWindow
                     return;
                 }
 
-                if( _dragDropGroupIdx >= 0  && _dragDropOptionIdx >= 0 )
+                if( _dragDropGroupIdx >= 0 && _dragDropOptionIdx >= 0 )
                 {
                     if( _dragDropGroupIdx == groupIdx )
                     {
@@ -589,7 +617,7 @@ public partial class ConfigWindow
                         var sourceOption   = _dragDropOptionIdx;
                         var sourceGroup    = panel._mod.Groups[ sourceGroupIdx ];
                         var currentCount   = group.Count;
-                        var option         = sourceGroup[sourceOption];
+                        var option         = sourceGroup[ sourceOption ];
                         var priority       = sourceGroup.OptionPriority( _dragDropGroupIdx );
                         panel._delayedActions.Enqueue( () =>
                         {

@@ -20,6 +20,7 @@ public partial class Mod
         public string Name { get; set; } = "Option";
         public string Description { get; set; } = "A mutually exclusive group of settings.";
         public int Priority { get; set; }
+        public uint DefaultSettings { get; set; }
 
         public readonly List< SubMod > OptionData = new();
 
@@ -44,9 +45,10 @@ public partial class Mod
             var options = json[ "Options" ];
             var ret = new SingleModGroup
             {
-                Name        = json[ nameof( Name ) ]?.ToObject< string >()        ?? string.Empty,
-                Description = json[ nameof( Description ) ]?.ToObject< string >() ?? string.Empty,
-                Priority    = json[ nameof( Priority ) ]?.ToObject< int >()       ?? 0,
+                Name            = json[ nameof( Name ) ]?.ToObject< string >()          ?? string.Empty,
+                Description     = json[ nameof( Description ) ]?.ToObject< string >()   ?? string.Empty,
+                Priority        = json[ nameof( Priority ) ]?.ToObject< int >()         ?? 0,
+                DefaultSettings = json[ nameof( DefaultSettings ) ]?.ToObject< uint >() ?? 0u,
             };
             if( ret.Name.Length == 0 )
             {
@@ -64,6 +66,9 @@ public partial class Mod
                 }
             }
 
+            if( ( int )ret.DefaultSettings >= ret.Count )
+                ret.DefaultSettings = 0;
+
             return ret;
         }
 
@@ -75,9 +80,10 @@ public partial class Mod
                 case SelectType.Multi:
                     var multi = new MultiModGroup()
                     {
-                        Name        = Name,
-                        Description = Description,
-                        Priority    = Priority,
+                        Name            = Name,
+                        Description     = Description,
+                        Priority        = Priority,
+                        DefaultSettings = 1u << ( int )DefaultSettings,
                     };
                     multi.PrioritizedOptions.AddRange( OptionData.Select( ( o, i ) => ( o, i ) ) );
                     return multi;
@@ -90,6 +96,23 @@ public partial class Mod
             if( !OptionData.Move( optionIdxFrom, optionIdxTo ) )
             {
                 return false;
+            }
+
+            // Update default settings with the move.
+            if( DefaultSettings == optionIdxFrom )
+            {
+                DefaultSettings = ( uint )optionIdxTo;
+            }
+            else if( optionIdxFrom < optionIdxTo )
+            {
+                if( DefaultSettings > optionIdxFrom && DefaultSettings <= optionIdxTo )
+                {
+                    --DefaultSettings;
+                }
+            }
+            else if( DefaultSettings < optionIdxFrom && DefaultSettings >= optionIdxTo )
+            {
+                ++DefaultSettings;
             }
 
             UpdatePositions( Math.Min( optionIdxFrom, optionIdxTo ) );

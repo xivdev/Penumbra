@@ -30,7 +30,7 @@ public class ModSettings
         {
             Enabled  = false,
             Priority = 0,
-            Settings = Enumerable.Repeat( 0u, mod.Groups.Count ).ToList(),
+            Settings = mod.Groups.Select( g => g.DefaultSettings ).ToList(),
         };
 
     // Automatically react to changes in a mods available options.
@@ -41,7 +41,7 @@ public class ModSettings
             case ModOptionChangeType.GroupRenamed: return true;
             case ModOptionChangeType.GroupAdded:
                 // Add new empty setting for new mod.
-                Settings.Insert( groupIdx, 0 );
+                Settings.Insert( groupIdx, mod.Groups[groupIdx].DefaultSettings );
                 return true;
             case ModOptionChangeType.GroupDeleted:
                 // Remove setting for deleted mod.
@@ -70,8 +70,8 @@ public class ModSettings
                 var config = Settings[ groupIdx ];
                 Settings[ groupIdx ] = group.Type switch
                 {
-                    SelectType.Single => config >= optionIdx ? (config > 1 ? config - 1 : 0) : config,
-                    SelectType.Multi  => RemoveBit( config, optionIdx ),
+                    SelectType.Single => config >= optionIdx ? config > 1 ? config - 1 : 0 : config,
+                    SelectType.Multi  => Functions.RemoveBit( config, optionIdx ),
                     _                 => config,
                 };
                 return config != Settings[ groupIdx ];
@@ -88,7 +88,7 @@ public class ModSettings
                 Settings[ groupIdx ] = group.Type switch
                 {
                     SelectType.Single => config == optionIdx ? ( uint )movedToIdx : config,
-                    SelectType.Multi  => MoveBit( config, optionIdx, movedToIdx ),
+                    SelectType.Multi  => Functions.MoveBit( config, optionIdx, movedToIdx ),
                     _                 => config,
                 };
                 return config != Settings[ groupIdx ];
@@ -112,27 +112,6 @@ public class ModSettings
         AddMissingSettings( groupIdx + 1 );
         var group = mod.Groups[ groupIdx ];
         Settings[ groupIdx ] = FixSetting( group, newValue );
-    }
-
-    // Remove a single bit, moving all further bits one down.
-    private static uint RemoveBit( uint config, int bit )
-    {
-        var lowMask  = ( 1u << bit ) - 1u;
-        var highMask = ~( ( 1u << ( bit + 1 ) ) - 1u );
-        var low      = config & lowMask;
-        var high     = ( config & highMask ) >> 1;
-        return low | high;
-    }
-
-    // Move a bit in an uint from its position to another, shifting other bits accordingly.
-    private static uint MoveBit( uint config, int bit1, int bit2 )
-    {
-        var enabled = ( config & ( 1 << bit1 ) ) != 0 ? 1u << bit2 : 0u;
-        config = RemoveBit( config, bit1 );
-        var lowMask = ( 1u << bit2 ) - 1u;
-        var low     = config & lowMask;
-        var high    = ( config & ~lowMask ) << 1;
-        return low | enabled | high;
     }
 
     // Add defaulted settings up to the required count.

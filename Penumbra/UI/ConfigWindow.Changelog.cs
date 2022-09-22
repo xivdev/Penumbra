@@ -33,11 +33,15 @@ public partial class ConfigWindow
                 "Migration should have set your currently assigned Base Collection to the Interface Collection, please verify that.", 1 )
            .RegisterEntry( "New API / IPC for the Interface Collection added.", 1 )
            .RegisterHighlight( "API / IPC consumers should verify whether they need to change resolving to the new collection.", 1 )
+           .RegisterEntry( "Files that the game loads super early should now be replaceable correctly via base or interface collection." )
+           .RegisterEntry( "The 1.0 neck tattoo file should now be replaceable, even in character collections. You can also replace the transparent texture used instead. (This was ugly.)"  )
            .RegisterEntry(
                 "Added buttons for redrawing self or all as well as a tooltip to describe redraw options and a tutorial step for it." )
            .RegisterEntry( "Collection Selectors now display None at the top if available."  )
+           .RegisterEntry( "Adding mods via API/IPC will now cause them to incorporate and then delete TexTools .meta and .rgsp files automatically."  )
            .RegisterEntry( "Fixed an issue with Actor 201 using Your Character collections in cutscenes." )
            .RegisterEntry( "Fixed issues with and improved mod option editing." )
+           .RegisterEntry( "Fixed some issues with and improved file redirection editing - you are now informed if you can not add a game path (because it is invalid or already in use)." )
            .RegisterEntry( "Backend optimizations." )
            .RegisterEntry( "Changed metadata change system again.", 1 )
            .RegisterEntry( "Improved logging efficiency.", 1 );

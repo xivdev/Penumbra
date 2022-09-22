@@ -39,6 +39,8 @@ public partial class Configuration : IPluginConfiguration
     public bool PreferNamedCollectionsOverOwners { get; set; } = true;
     public bool UseDefaultCollectionForRetainers { get; set; } = false;
 
+    public bool HideRedrawBar { get; set; } = false;
+
 #if DEBUG
     public bool DebugMode { get; set; } = true;
 #else

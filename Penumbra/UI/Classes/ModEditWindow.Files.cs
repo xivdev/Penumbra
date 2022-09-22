@@ -8,6 +8,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.GameData.ByteString;
+using Penumbra.GameData.Util;
 using Penumbra.Mods;
 
 namespace Penumbra.UI.Classes;
@@ -230,7 +231,7 @@ public partial class ModEditWindow
         using var id = ImRaii.PushId( j );
         ImGui.TableNextColumn();
         var tmp = _fileIdx == i && _pathIdx == j ? _gamePathEdit : gamePath.ToString();
-
+        var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
         ImGui.SetNextItemWidth( -1 );
         if( ImGui.InputText( string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength ) )
         {
@@ -251,11 +252,20 @@ public partial class ModEditWindow
             _fileIdx = -1;
             _pathIdx = -1;
         }
+        else if( _fileIdx == i && _pathIdx == j && ( !Utf8GamePath.FromString( _gamePathEdit, out var path, false )
+             || !path.IsEmpty && !path.Equals( gamePath ) && !_editor!.CanAddGamePath( path )) )
+        {
+            ImGui.SameLine();
+            ImGui.SetCursorPosX( pos );
+            using var font = ImRaii.PushFont( UiBuilder.IconFont );
+            ImGuiUtil.TextColored( 0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString() );
+        }
     }
 
     private void PrintNewGamePath( int i, Mod.Editor.FileRegistry registry, ISubMod subMod )
     {
         var tmp = _fileIdx == i && _pathIdx == -1 ? _gamePathEdit : string.Empty;
+        var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
         ImGui.SetNextItemWidth( -1 );
         if( ImGui.InputTextWithHint( "##new", "Add New Path...", ref tmp, Utf8GamePath.MaxGamePathLength ) )
         {
@@ -273,6 +283,14 @@ public partial class ModEditWindow
 
             _fileIdx = -1;
             _pathIdx = -1;
+        }
+        else if( _fileIdx == i && _pathIdx == -1 && (!Utf8GamePath.FromString( _gamePathEdit, out var path, false )
+             || !path.IsEmpty && !_editor!.CanAddGamePath( path )) )
+        {
+            ImGui.SameLine();
+            ImGui.SetCursorPosX( pos );
+            using var font = ImRaii.PushFont( UiBuilder.IconFont );
+            ImGuiUtil.TextColored( 0xFF0000FF, FontAwesomeIcon.TimesCircle.ToIconString() );
         }
     }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
@@ -20,6 +21,7 @@ public partial class Mod
         public string Name { get; set; } = "Group";
         public string Description { get; set; } = "A non-exclusive group of settings.";
         public int Priority { get; set; }
+        public uint DefaultSettings { get; set; }
 
         public int OptionPriority( Index idx )
             => PrioritizedOptions[ idx ].Priority;
@@ -44,9 +46,10 @@ public partial class Mod
             var options = json[ "Options" ];
             var ret = new MultiModGroup()
             {
-                Name        = json[ nameof( Name ) ]?.ToObject< string >()        ?? string.Empty,
-                Description = json[ nameof( Description ) ]?.ToObject< string >() ?? string.Empty,
-                Priority    = json[ nameof( Priority ) ]?.ToObject< int >()       ?? 0,
+                Name            = json[ nameof( Name ) ]?.ToObject< string >()          ?? string.Empty,
+                Description     = json[ nameof( Description ) ]?.ToObject< string >()   ?? string.Empty,
+                Priority        = json[ nameof( Priority ) ]?.ToObject< int >()         ?? 0,
+                DefaultSettings = json[ nameof( DefaultSettings ) ]?.ToObject< uint >() ?? 0,
             };
             if( ret.Name.Length == 0 )
             {
@@ -71,6 +74,8 @@ public partial class Mod
                 }
             }
 
+            ret.DefaultSettings = (uint) (ret.DefaultSettings & ( ( 1ul << ret.Count ) - 1 ));
+
             return ret;
         }
 
@@ -82,9 +87,10 @@ public partial class Mod
                 case SelectType.Single:
                     var multi = new SingleModGroup()
                     {
-                        Name        = Name,
-                        Description = Description,
-                        Priority    = Priority,
+                        Name            = Name,
+                        Description     = Description,
+                        Priority        = Priority,
+                        DefaultSettings = ( uint )Math.Max( Math.Min( Count - 1, BitOperations.TrailingZeroCount( DefaultSettings) ), 0 ),
                     };
                     multi.OptionData.AddRange( PrioritizedOptions.Select( p => p.Mod ) );
                     return multi;
@@ -99,6 +105,7 @@ public partial class Mod
                 return false;
             }
 
+            DefaultSettings = Functions.MoveBit( DefaultSettings, optionIdxFrom, optionIdxTo );
             UpdatePositions( Math.Min( optionIdxFrom, optionIdxTo ) );
             return true;
         }

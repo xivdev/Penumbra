@@ -28,6 +28,18 @@ public sealed partial class Mod
             ModOptionChanged.Invoke( ModOptionChangeType.GroupTypeChanged, mod, groupIdx, -1, -1 );
         }
 
+        public void ChangeModGroupDefaultOption( Mod mod, int groupIdx, uint defaultOption )
+        {
+            var group = mod._groups[groupIdx];
+            if( group.DefaultSettings == defaultOption )
+            {
+                return;
+            }
+
+            group.DefaultSettings = defaultOption;
+            ModOptionChanged.Invoke( ModOptionChangeType.DefaultOptionChanged, mod, groupIdx, -1, -1 );
+        }
+
         public void RenameModGroup( Mod mod, int groupIdx, string newName )
         {
             var group   = mod._groups[ groupIdx ];
