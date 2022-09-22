@@ -37,14 +37,7 @@ public partial class Mod
             }
 
             Penumbra.ModManager.OptionSetFiles( _mod, _subMod.GroupIdx, _subMod.OptionIdx, dict );
-            if( num > 0 )
-            {
-                RevertFiles();
-            }
-            else
-            {
-                FileChanges = false;
-            }
+            UpdateFiles();
 
             return num;
         }

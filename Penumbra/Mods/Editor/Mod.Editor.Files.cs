@@ -94,7 +94,7 @@ public partial class Mod
         {
             void HandleSubMod( ISubMod mod, int groupIdx, int optionIdx )
             {
-                var newDict = mod.Files.Where( kvp => CheckAgainstMissing( kvp.Value, kvp.Key ) )
+                var newDict = mod.Files.Where( kvp => CheckAgainstMissing( kvp.Value, kvp.Key, mod == _subMod ) )
                    .ToDictionary( kvp => kvp.Key, kvp => kvp.Value );
                 if( newDict.Count != mod.Files.Count )
                 {
@@ -106,11 +106,16 @@ public partial class Mod
             _missingFiles.Clear();
         }
 
-        private bool CheckAgainstMissing( FullPath file, Utf8GamePath key )
+        private bool CheckAgainstMissing( FullPath file, Utf8GamePath key, bool removeUsed )
         {
             if( !_missingFiles.Contains( file ) )
             {
                 return true;
+            }
+
+            if( removeUsed )
+            {
+                _usedPaths.Remove( key );
             }
 
             Penumbra.Log.Debug( $"[RemoveMissingPaths] Removing {key} -> {file} from {_mod.Name}." );
