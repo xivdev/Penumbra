@@ -37,8 +37,8 @@ public partial class ConfigWindow
 
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, Vector2.Zero );
 
-            using( var child = ImRaii.Child( "##ModsTabMod", new Vector2( -1, -ImGui.GetFrameHeight() ), true,
-                      ImGuiWindowFlags.HorizontalScrollbar ) )
+            using( var child = ImRaii.Child( "##ModsTabMod", new Vector2( -1, Penumbra.Config.HideRedrawBar ? 0 : -ImGui.GetFrameHeight() ),
+                      true, ImGuiWindowFlags.HorizontalScrollbar ) )
             {
                 style.Pop();
                 if( child )
@@ -68,6 +68,11 @@ public partial class ConfigWindow
 
     private void DrawRedrawLine()
     {
+        if( Penumbra.Config.HideRedrawBar )
+        {
+            return;
+        }
+
         var frameHeight = new Vector2( 0, ImGui.GetFrameHeight() );
         var frameColor  = ImGui.GetColorU32( ImGuiCol.FrameBg );
         using( var _ = ImRaii.Group() )

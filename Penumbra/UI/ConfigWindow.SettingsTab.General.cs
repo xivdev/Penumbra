@@ -59,6 +59,9 @@ public partial class ConfigWindow
                     Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide = !v;
                 } );
             ImGui.Dummy( _window._defaultSpace );
+            Checkbox( "Hide Redraw Bar in Mod Panel", "Hides the lower redraw buttons in the mod panel in your Mods tab.",
+                Penumbra.Config.HideRedrawBar, v => Penumbra.Config.HideRedrawBar = v );
+            ImGui.Dummy( _window._defaultSpace );
             Checkbox( $"Use {AssignedCollections} in Character Window",
                 "Use the character collection for your characters name or the Your Character collection in your main character window, if it is set.",
                 Penumbra.Config.UseCharacterCollectionInMainWindow, v => Penumbra.Config.UseCharacterCollectionInMainWindow = v );
