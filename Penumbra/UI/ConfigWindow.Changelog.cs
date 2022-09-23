@@ -33,6 +33,8 @@ public partial class ConfigWindow
                 "Migration should have set your currently assigned Base Collection to the Interface Collection, please verify that.", 1 )
            .RegisterEntry( "New API / IPC for the Interface Collection added.", 1 )
            .RegisterHighlight( "API / IPC consumers should verify whether they need to change resolving to the new collection.", 1 )
+           .RegisterHighlight(
+                "If other plugins are not using your interface collection yet, you can just keep Interface and Base the same collection for the time being." )
            .RegisterEntry(
                 "Mods can now have default settings for each option group, that are shown while the mod is unconfigured and taken as initial values when configured." )
            .RegisterEntry( "Default values are set when importing .ttmps from their default values, and can be changed in the Edit Mod tab.",
@@ -40,6 +42,13 @@ public partial class ConfigWindow
            .RegisterEntry( "Files that the game loads super early should now be replaceable correctly via base or interface collection." )
            .RegisterEntry(
                 "The 1.0 neck tattoo file should now be replaceable, even in character collections. You can also replace the transparent texture used instead. (This was ugly.)" )
+           .RegisterEntry( "Continued Work on the Texture Import/Export Tab:" )
+           .RegisterEntry( "Should work with lot more texture types for .dds and .tex files, most notably BC7 compression.", 1 )
+           .RegisterEntry( "Supports saving .tex and .dds files in multiple texture types and generating MipMaps for them.", 1 )
+           .RegisterEntry( "Interface reworked a bit, gives more information and the overlay side can be collapsed.", 1 )
+           .RegisterHighlight(
+                "May contain bugs or missing safeguards. Generally let me know what's missing, ugly, buggy, not working or could be improved. Not really feasible for me to test it all.",
+                1 )
            .RegisterEntry(
                 "Added buttons for redrawing self or all as well as a tooltip to describe redraw options and a tutorial step for it." )
            .RegisterEntry( "Collection Selectors now display None at the top if available." )
