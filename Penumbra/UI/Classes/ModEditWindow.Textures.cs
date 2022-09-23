@@ -21,7 +21,7 @@ public partial class ModEditWindow
     private readonly FileDialogManager _dialogManager    = ConfigWindow.SetupFileManager();
     private          bool              _overlayCollapsed = true;
 
-    private bool _addMipMaps = true;
+    private bool _addMipMaps    = true;
     private int  _currentSaveAs = 0;
 
     private static readonly (string, string)[] SaveAsStrings =
@@ -49,10 +49,10 @@ public partial class ModEditWindow
 
         tex.PathInputBox( "##input", "Import Image...", "Can import game paths as well as your own files.", _mod!.ModPath.FullName,
             _dialogManager );
-        var files = _editor!.TexFiles.Select( f => f.File.FullName )
-           .Concat( _editor.TexFiles.SelectMany( f => f.SubModUsage.Select( p => p.Item2.ToString() ) ) );
+        var files = _editor!.TexFiles.SelectMany( f => f.SubModUsage.Select( p => (p.Item2.ToString(), true) )
+           .Prepend( (f.File.FullName, false )));
         tex.PathSelectBox( "##combo", "Select the textures included in this mod on your drive or the ones they replace from the game files.",
-            files );
+            files, _mod.ModPath.FullName.Length + 1 );
 
         if( tex == _left )
         {

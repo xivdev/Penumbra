@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -130,17 +131,19 @@ public sealed class Texture : IDisposable
 
         Path = path;
         Clean();
+        if( path.Length == 0 )
+        {
+            return;
+        }
+
         try
         {
-            if( !File.Exists( path ) )
-                throw new FileNotFoundException();
-
             var _ = System.IO.Path.GetExtension( Path ) switch
             {
                 ".dds" => LoadDds(),
                 ".png" => LoadPng(),
                 ".tex" => LoadTex(),
-                _      => throw new Exception($"Extension {System.IO.Path.GetExtension( Path )} unknown."),
+                _      => throw new Exception( $"Extension {System.IO.Path.GetExtension( Path )} unknown." ),
             };
             Loaded?.Invoke( true );
         }
@@ -202,20 +205,40 @@ public sealed class Texture : IDisposable
 
     private string? _tmpPath;
 
-    public void PathSelectBox( string label, string tooltip, IEnumerable< string > paths )
+    public void PathSelectBox( string label, string tooltip, IEnumerable< (string, bool) > paths, int skipPrefix )
     {
         ImGui.SetNextItemWidth( -0.0001f );
-        var       startPath = Path.Length > 0 ? Path : "Choose a modded texture here...";
+        var       startPath = Path.Length > 0 ? Path : "Choose a modded texture from this mod here...";
         using var combo     = ImRaii.Combo( label, startPath );
         if( combo )
         {
-            foreach( var (path, idx) in paths.WithIndex() )
+            foreach( var ((path, game), idx) in paths.WithIndex() )
             {
-                using var id = ImRaii.PushId( idx );
-                if( ImGui.Selectable( path, path == startPath ) && path != startPath )
+                if( game )
                 {
-                    Load( path );
+                    if( !Dalamud.GameData.FileExists( path ) )
+                    {
+                        continue;
+                    }
                 }
+                else if( !File.Exists( path ) )
+                {
+                    continue;
+                }
+
+                using var id = ImRaii.PushId( idx );
+                using( var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.FolderExpanded.Value(), game ) )
+                {
+                    var p = game ? $"--> {path}" : path[ skipPrefix.. ];
+                    if( ImGui.Selectable( p, path == startPath ) && path != startPath )
+                    {
+                        Load( path );
+                    }
+                }
+
+                ImGuiUtil.HoverTooltip( game
+                    ? "This is a game path and refers to an unmanipulated file from your game data."
+                    : "This is a path to a modded file on your file system." );
             }
         }
 
