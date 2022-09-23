@@ -24,7 +24,7 @@ public static class TexFileParser
             throw new Exception( $"Could not obtain dimensionality from {header.Type}." );
         }
 
-        meta.MipLevels = CountMipLevels( data, in header );
+        meta.MipLevels = CountMipLevels( data, in meta, in header );
 
         var scratch = ScratchImage.Initialize( meta );
 
@@ -33,23 +33,38 @@ public static class TexFileParser
         return scratch;
     }
 
-    private static unsafe int CountMipLevels( Stream data, in TexFile.TexHeader header )
+    private static unsafe int CountMipLevels( Stream data, in TexMeta meta, in TexFile.TexHeader header )
     {
-        var lastOffset = 80u;
-        var levels     = 1;
-        for( var i = 1; i < 13; ++i )
+        var width  = meta.Width;
+        var height = meta.Height;
+        var bits   = meta.Format.BitsPerPixel();
+
+        var lastOffset = 0L;
+        var lastSize   = 80L;
+        for( var i = 0; i < 13; ++i )
         {
             var offset = header.OffsetToSurface[ i ];
-            var diff   = offset - lastOffset;
-            if( offset > 0 && offset < data.Length && diff > 0 )
+            if( offset == 0 )
             {
-                lastOffset = offset;
-                ++levels;
+                return i;
             }
-            else
+
+            var requiredSize = width * height * bits / 8;
+            if( offset + requiredSize > data.Length )
             {
-                return levels;
+                return i;
             }
+
+            var diff = offset - lastOffset;
+            if( diff != lastSize )
+            {
+                return i;
+            }
+
+            width      = Math.Max( width  / 2, 4 );
+            height     = Math.Max( height / 2, 4 );
+            lastOffset = offset;
+            lastSize   = requiredSize;
         }
 
         return 13;

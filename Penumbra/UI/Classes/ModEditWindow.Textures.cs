@@ -64,7 +64,11 @@ public partial class ModEditWindow
         }
 
         ImGui.NewLine();
-        tex.Draw( imageSize );
+        using var child2 = ImRaii.Child( "image" );
+        if( child2 )
+        {
+            tex.Draw( imageSize );
+        }
     }
 
     private void SaveAsCombo()
@@ -157,7 +161,11 @@ public partial class ModEditWindow
             ImGuiUtil.TextWrapped( _center.SaveException.ToString() );
         }
 
-        _center.Draw( imageSize );
+        using var child2 = ImRaii.Child( "image" );
+        if( child2 )
+        {
+            _center.Draw( imageSize );
+        }
     }
 
     private Vector2 GetChildWidth()
