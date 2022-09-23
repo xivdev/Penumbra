@@ -17,66 +17,6 @@ using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
 
-//public static class ScratchImageExtensions
-//{
-//    public static Exception? SaveAsTex( this ScratchImage image, string path )
-//    {
-//        try
-//        {
-//            using var fileStream = File.OpenWrite( path );
-//            using var bw = new BinaryWriter( fileStream );
-//
-//            bw.Write( ( uint )image.Meta.GetAttribute() );
-//            bw.Write( ( uint )image.Meta.GetFormat() );
-//            bw.Write( ( ushort )image.Meta.Width );
-//            bw.Write( ( ushort )image.Meta.Height );
-//            bw.Write( ( ushort )image.Meta.Depth );
-//            bw.Write( ( ushort )image.Meta.MipLevels );
-//        }
-//        catch( Exception e )
-//        {
-//            return e;
-//        }
-//
-//        return null;
-//    }
-//
-//    public static unsafe TexFile.TexHeader ToTexHeader( this ScratchImage image )
-//    {
-//        var ret = new TexFile.TexHeader()
-//        {
-//            Type = image.Meta.GetAttribute(),
-//            Format = image.Meta.GetFormat(),
-//            Width = ( ushort )image.Meta.Width,
-//            Height = ( ushort )image.Meta.Height,
-//            Depth = ( ushort )image.Meta.Depth,
-//        };
-//        ret.LodOffset[0] = 0;
-//        ret.LodOffset[1] = 1;
-//        ret.LodOffset[2] = 2;
-//        //foreach(var surface in image.Images)
-//        //    ret.OffsetToSurface[ 0 ] = 80 + (image.P);
-//        return ret;
-//    }
-//
-//    // Get all known flags for the TexFile.Attribute from the scratch image.
-//    private static TexFile.Attribute GetAttribute( this TexMeta meta )
-//    {
-//        var ret = meta.Dimension switch
-//        {
-//            TexDimension.Tex1D => TexFile.Attribute.TextureType1D,
-//            TexDimension.Tex2D => TexFile.Attribute.TextureType2D,
-//            TexDimension.Tex3D => TexFile.Attribute.TextureType3D,
-//            _ => ( TexFile.Attribute )0,
-//        };
-//        if( meta.IsCubeMap )
-//            ret |= TexFile.Attribute.TextureTypeCube;
-//        if( meta.Format.IsDepthStencil() )
-//            ret |= TexFile.Attribute.TextureDepthStencil;
-//        return ret;
-//    }
-//}
-
 public sealed class Texture : IDisposable
 {
     public enum FileType
@@ -111,9 +51,6 @@ public sealed class Texture : IDisposable
     // Whether the file is successfully loaded and drawable.
     public bool IsLoaded
         => TextureWrap != null;
-
-    public Texture()
-    { }
 
     public void Draw( Vector2 size )
     {
@@ -195,12 +132,15 @@ public sealed class Texture : IDisposable
         Clean();
         try
         {
+            if( !File.Exists( path ) )
+                throw new FileNotFoundException();
+
             var _ = System.IO.Path.GetExtension( Path ) switch
             {
                 ".dds" => LoadDds(),
                 ".png" => LoadPng(),
                 ".tex" => LoadTex(),
-                _      => true,
+                _      => throw new Exception($"Extension {System.IO.Path.GetExtension( Path )} unknown."),
             };
             Loaded?.Invoke( true );
         }

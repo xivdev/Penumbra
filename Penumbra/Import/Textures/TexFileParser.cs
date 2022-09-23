@@ -43,6 +43,26 @@ public static class TexFileParser
         }
     }
 
+    public static void Write( this TexFile.TexHeader header, BinaryWriter w )
+    {
+        w.Write( ( uint )header.Type );
+        w.Write( ( uint )header.Format );
+        w.Write( header.Width );
+        w.Write( header.Height );
+        w.Write( header.Depth );
+        w.Write( header.MipLevels );
+        unsafe
+        {
+            w.Write( header.LodOffset[ 0 ] );
+            w.Write( header.LodOffset[ 1 ] );
+            w.Write( header.LodOffset[ 2 ] );
+            for( var i = 0; i < 13; ++i )
+            {
+                w.Write( header.OffsetToSurface[ i ] );
+            }
+        }
+    }
+
     public static TexFile.TexHeader ToTexHeader( this TexMeta meta )
     {
         var ret = new TexFile.TexHeader()
@@ -50,7 +70,7 @@ public static class TexFileParser
             Height    = ( ushort )meta.Height,
             Width     = ( ushort )meta.Width,
             Depth     = ( ushort )Math.Max( meta.Depth, 1 ),
-            MipLevels = ( ushort )Math.Min(meta.MipLevels, 13),
+            MipLevels = ( ushort )Math.Min( meta.MipLevels, 12 ),
             Format    = meta.Format.ToTexFormat(),
             Type = meta.Dimension switch
             {
@@ -61,6 +81,31 @@ public static class TexFileParser
                 _                     => 0,
             },
         };
+        unsafe
+        {
+            ret.LodOffset[ 0 ] = 0;
+            ret.LodOffset[ 1 ] = 1;
+            ret.LodOffset[ 2 ] = 2;
+
+            ret.OffsetToSurface[ 0 ] = 80;
+            var size = meta.Format.BitsPerPixel() * meta.Width * meta.Height / 8;
+            for( var i = 1; i < meta.MipLevels; ++i )
+            {
+                ret.OffsetToSurface[ i ] =   ( uint )( 80 + size );
+                size                     >>= 2;
+                if( size == 0 )
+                {
+                    ret.MipLevels = ( ushort )i;
+                    break;
+                }
+            }
+
+            for( var i = ret.MipLevels; i < 13; ++i )
+            {
+                ret.OffsetToSurface[ i ] = 0;
+            }
+        }
+
         return ret;
     }
 

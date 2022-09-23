@@ -46,13 +46,9 @@ public partial class CombinedTexture
             var left   = DataLeft( offset );
             var right  = DataRight( x, y );
             var alpha  = right.W + left.W * ( 1 - right.W );
-            if( alpha == 0 )
-            {
-                return;
-            }
-
-            var sum  = ( right * right.W + left * left.W * ( 1 - right.W ) ) / alpha;
-            var rgba = new Rgba32( sum with { W = alpha } );
+            var rgba = alpha == 0
+                ? new Rgba32()
+                : new Rgba32( ( ( right * right.W + left * left.W * ( 1 - right.W ) ) / alpha ) with { W = alpha } );
             _centerStorage.RGBAPixels[ offset ]     = rgba.R;
             _centerStorage.RGBAPixels[ offset + 1 ] = rgba.G;
             _centerStorage.RGBAPixels[ offset + 2 ] = rgba.B;

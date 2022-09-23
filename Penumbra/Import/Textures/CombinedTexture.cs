@@ -1,5 +1,7 @@
 using System;
+using System.IO;
 using System.Numerics;
+using Lumina.Data.Files;
 using OtterTex;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
@@ -10,6 +12,14 @@ namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture : IDisposable
 {
+    public enum TextureSaveType
+    {
+        AsIs,
+        Bitmap,
+        BC5,
+        BC7,
+    }
+
     private enum Mode
     {
         Empty,
@@ -29,6 +39,8 @@ public partial class CombinedTexture : IDisposable
     public bool IsLoaded
         => _mode != Mode.Empty;
 
+    public Exception? SaveException { get; private set; } = null;
+
     public void Draw( Vector2 size )
     {
         if( _mode == Mode.Custom && !_centerStorage.IsLoaded )
@@ -44,81 +56,123 @@ public partial class CombinedTexture : IDisposable
 
     public void SaveAsPng( string path )
     {
-        if( !IsLoaded  || _current == null )
+        if( !IsLoaded || _current == null )
         {
             return;
         }
 
-        var image = Image.LoadPixelData< Rgba32 >( _current.RGBAPixels, _current.TextureWrap!.Width,
-            _current.TextureWrap!.Height );
-        image.Save( path, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression } );
+        try
+        {
+            var image = Image.LoadPixelData< Rgba32 >( _current.RGBAPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height );
+            image.Save( path, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression } );
+            SaveException = null;
+        }
+        catch( Exception e )
+        {
+            SaveException = e;
+        }
     }
 
-    public void SaveAsDDS( string path, DXGIFormat format, bool fast, float threshold = 0.5f )
+    private void SaveAs( string path, TextureSaveType type, bool mipMaps, bool writeTex )
     {
-        if( _current == null )
-            return;
-        switch( _mode )
+        if( _current == null || _mode == Mode.Empty )
         {
-            case Mode.Empty: return;
-            case Mode.LeftCopy:
-            case Mode.RightCopy:
-                if( _centerStorage.BaseImage is ScratchImage s )
-                {
-                    if( format != s.Meta.Format )
-                    {
-                        s = s.Convert( format, threshold );
-                    }
+            return;
+        }
 
-                    s.SaveDDS( path );
-                }
-                else
-                {
-                    var image = ScratchImage.FromRGBA( _current.RGBAPixels, _current.TextureWrap!.Width,
-                        _current.TextureWrap!.Height, out var i ).ThrowIfError( i );
-                    image.SaveDDS( path ).ThrowIfError();
-                }
+        try
+        {
+            if( _current.BaseImage is not ScratchImage s )
+            {
+                s = ScratchImage.FromRGBA( _current.RGBAPixels, _current.TextureWrap!.Width,
+                    _current.TextureWrap!.Height, out var i ).ThrowIfError( i );
+            }
 
-                break;
+            var tex = type switch
+            {
+                TextureSaveType.AsIs   => _current.Type is Texture.FileType.Bitmap or Texture.FileType.Png ? CreateUncompressed(s, mipMaps  ) : s,
+                TextureSaveType.Bitmap => CreateUncompressed( s, mipMaps ),
+                TextureSaveType.BC5    => CreateCompressed( s, mipMaps, false ),
+                TextureSaveType.BC7    => CreateCompressed( s, mipMaps, true ),
+                _                      => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
+            };
+
+            if( !writeTex )
+            {
+                tex.SaveDDS( path );
+            }
+            else
+            {
+                SaveTex( path, tex );
+            }
+
+            SaveException = null;
+        }
+        catch( Exception e )
+        {
+            SaveException = e;
         }
     }
 
-    //private void SaveAs( bool success, string path, int type )
-    //{
-    //    if( !success || _imageCenter == null || _wrapCenter == null )
-    //    {
-    //        return;
-    //    }
-    //
-    //    try
-    //    {
-    //        switch( type )
-    //        {
-    //            case 0:
-    //                var img = Image.LoadPixelData< Rgba32 >( _imageCenter, _wrapCenter.Width, _wrapCenter.Height );
-    //                img.Save( path, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression } );
-    //                break;
-    //            case 1:
-    //                if( TextureImporter.RgbaBytesToTex( _imageCenter, _wrapCenter.Width, _wrapCenter.Height, out var tex ) )
-    //                {
-    //                    File.WriteAllBytes( path, tex );
-    //                }
-    //
-    //                break;
-    //            case 2:
-    //                //ScratchImage.LoadDDS( _imageCenter,  )
-    //                //if( TextureImporter.RgbaBytesToDds( _imageCenter, _wrapCenter.Width, _wrapCenter.Height, out var dds ) )
-    ////{
-    //                //    File.WriteAllBytes( path, dds );
-    ////}
-    //
-    //                break;
-    //        }
-    //    }
-    //    catch( Exception e )
-    //    {
-    //        PluginLog.Error( $"Could not save image to {path}:\n{e}" );
-    //    }
+    private static void SaveTex( string path, ScratchImage input )
+    {
+        var header = input.Meta.ToTexHeader();
+        if( header.Format == TexFile.TextureFormat.Unknown )
+        {
+            throw new Exception( $"Could not save tex file with format {input.Meta.Format}, not convertible to a valid .tex formats." );
+        }
+
+        using var stream = File.OpenWrite( path );
+        using var w      = new BinaryWriter( stream );
+        header.Write( w );
+        w.Write( input.Pixels );
+    }
+
+    private static ScratchImage AddMipMaps( ScratchImage input, bool mipMaps )
+        => mipMaps ? input.GenerateMipMaps() : input;
+
+    private static ScratchImage CreateUncompressed( ScratchImage input, bool mipMaps )
+    {
+        if( input.Meta.Format == DXGIFormat.B8G8R8A8UNorm)
+            return AddMipMaps(input, mipMaps);
+
+        if( input.Meta.Format.IsCompressed() )
+        {
+            input = input.Decompress( DXGIFormat.B8G8R8A8UNorm );
+        }
+        else
+        {
+            input = input.Convert( DXGIFormat.B8G8R8A8UNorm );
+        }
+
+        return AddMipMaps( input, mipMaps );
+    }
+
+    private static ScratchImage CreateCompressed( ScratchImage input, bool mipMaps, bool bc7 )
+    {
+        var format = bc7 ? DXGIFormat.BC7UNorm : DXGIFormat.BC5UNorm;
+        if( input.Meta.Format == format)
+        {
+            return input;
+        }
+
+        if( input.Meta.Format.IsCompressed() )
+        {
+            input = input.Decompress( DXGIFormat.B8G8R8A8UNorm );
+        }
+
+        input = AddMipMaps( input, mipMaps );
+
+        return input.Compress( format, CompressFlags.BC7Quick | CompressFlags.Parallel );
+    }
+
+    public void SaveAsTex( string path, TextureSaveType type, bool mipMaps )
+        => SaveAs( path, type, mipMaps, true );
+
+    public void SaveAsDds( string path, TextureSaveType type, bool mipMaps )
+        => SaveAs( path, type, mipMaps, false );
+
 
     public CombinedTexture( Texture left, Texture right )
     {
