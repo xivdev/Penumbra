@@ -24,10 +24,35 @@ public static class TexFileParser
             throw new Exception( $"Could not obtain dimensionality from {header.Type}." );
         }
 
+        meta.MipLevels = CountMipLevels( data, in header );
+
         var scratch = ScratchImage.Initialize( meta );
+
         CopyData( scratch, r );
 
         return scratch;
+    }
+
+    private static unsafe int CountMipLevels( Stream data, in TexFile.TexHeader header )
+    {
+        var lastOffset = 80u;
+        var levels     = 1;
+        for( var i = 1; i < 13; ++i )
+        {
+            var offset = header.OffsetToSurface[ i ];
+            var diff   = offset - lastOffset;
+            if( offset > 0 && offset < data.Length && diff > 0 )
+            {
+                lastOffset = offset;
+                ++levels;
+            }
+            else
+            {
+                return levels;
+            }
+        }
+
+        return 13;
     }
 
     private static unsafe void CopyData( ScratchImage image, BinaryReader r )
