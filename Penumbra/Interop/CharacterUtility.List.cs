@@ -11,6 +11,9 @@ public unsafe partial class CharacterUtility
         public readonly  InternalIndex                  Index;
         public readonly  Structs.CharacterUtility.Index GlobalIndex;
 
+        public  IReadOnlyCollection< MetaReverter > Entries
+            => _entries;
+
         private IntPtr _defaultResourceData = IntPtr.Zero;
         private int    _defaultResourceSize = 0;
         public bool Ready { get; private set; } = false;
@@ -93,8 +96,8 @@ public unsafe partial class CharacterUtility
             if( _entries.Count > 0 )
             {
                 _entries.Clear();
-                ResetResourceInternal();
             }
+            ResetResourceInternal();
         }
 
         public sealed class MetaReverter : IDisposable

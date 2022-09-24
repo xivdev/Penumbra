@@ -160,7 +160,7 @@ public unsafe partial class PathResolver
             var ret = _characterBaseCreateHook.Original( a, b, c, d );
             using( meta )
             {
-                if( LastGameObject != null )
+                if( LastGameObject != null && ret != IntPtr.Zero )
                 {
                     _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
                     CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ret );

@@ -58,6 +58,8 @@ public partial class ConfigWindow
             ImGui.NewLine();
             DrawDebugCharacterUtility();
             ImGui.NewLine();
+            DrawDebugTabMetaLists();
+            ImGui.NewLine();
             DrawDebugResidentResources();
             ImGui.NewLine();
             DrawResourceProblems();
@@ -237,7 +239,7 @@ public partial class ConfigWindow
             {
                 var idx      = CharacterUtility.RelevantIndices[ i ];
                 var intern   = new CharacterUtility.InternalIndex( i );
-                var resource = ( ResourceHandle* )Penumbra.CharacterUtility.Address->Resource(idx);
+                var resource = ( ResourceHandle* )Penumbra.CharacterUtility.Address->Resource( idx );
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted( $"0x{( ulong )resource:X}" );
                 ImGui.TableNextColumn();
@@ -259,18 +261,39 @@ public partial class ConfigWindow
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted( $"{resource->GetData().Length}" );
                 ImGui.TableNextColumn();
-                ImGui.Selectable( $"0x{Penumbra.CharacterUtility.DefaultResource(intern).Address:X}" );
+                ImGui.Selectable( $"0x{Penumbra.CharacterUtility.DefaultResource( intern ).Address:X}" );
                 if( ImGui.IsItemClicked() )
                 {
                     ImGui.SetClipboardText( string.Join( "\n",
-                        new ReadOnlySpan< byte >( ( byte* )Penumbra.CharacterUtility.DefaultResource(intern).Address,
-                            Penumbra.CharacterUtility.DefaultResource(intern).Size ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
+                        new ReadOnlySpan< byte >( ( byte* )Penumbra.CharacterUtility.DefaultResource( intern ).Address,
+                            Penumbra.CharacterUtility.DefaultResource( intern ).Size ).ToArray().Select( b => b.ToString( "X2" ) ) ) );
                 }
 
                 ImGuiUtil.HoverTooltip( "Click to copy bytes to clipboard." );
 
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted( $"{Penumbra.CharacterUtility.DefaultResource(intern).Size}" );
+                ImGui.TextUnformatted( $"{Penumbra.CharacterUtility.DefaultResource( intern ).Size}" );
+            }
+        }
+
+        private static void DrawDebugTabMetaLists()
+        {
+            if( !ImGui.CollapsingHeader( "Metadata Changes" ) )
+            {
+                return;
+            }
+
+            using var table = ImRaii.Table( "##DebugMetaTable", 3, ImGuiTableFlags.SizingFixedFit );
+            if( !table )
+            {
+                return;
+            }
+
+            foreach( var list in Penumbra.CharacterUtility.Lists )
+            {
+                ImGuiUtil.DrawTableColumn( list.GlobalIndex.ToString() );
+                ImGuiUtil.DrawTableColumn( list.Entries.Count.ToString() );
+                ImGuiUtil.DrawTableColumn( string.Join( ", ", list.Entries.Select( e => $"0x{e.Data:X}" ) ) );
             }
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Utility.Signatures;
 
@@ -42,6 +43,9 @@ public unsafe partial class CharacterUtility : IDisposable
     private readonly List[] _lists = Enumerable.Range( 0, RelevantIndices.Length )
        .Select( idx => new List( new InternalIndex( idx ) ) )
        .ToArray();
+
+    public IReadOnlyList< List > Lists
+        => _lists;
 
     public (IntPtr Address, int Size) DefaultResource( InternalIndex idx )
         => _lists[ idx.Value ].DefaultResource;
