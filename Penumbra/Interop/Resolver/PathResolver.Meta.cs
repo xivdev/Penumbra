@@ -165,7 +165,7 @@ public unsafe partial class PathResolver
         private byte SetupVisorDetour( IntPtr drawObject, ushort modelId, byte visorState )
         {
             var       resolveData = GetResolveData( drawObject );
-            using var eqp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetGmpFile() : null;
+            using var gmp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetGmpFile() : null;
             return _setupVisorHook.Original( drawObject, modelId, visorState );
         }
 
@@ -184,7 +184,7 @@ public unsafe partial class PathResolver
             else
             {
                 var       resolveData = GetResolveData( drawObject );
-                using var eqp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetCmpFile() : null;
+                using var cmp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetCmpFile() : null;
                 _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
             }
         }
@@ -200,7 +200,7 @@ public unsafe partial class PathResolver
         {
             _inChangeCustomize = true;
             var       resolveData = GetResolveData( human );
-            using var eqp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetEqpFile() : null;
+            using var cmp         = resolveData.Valid ? resolveData.ModCollection.TemporarilySetCmpFile() : null;
             using var decals = resolveData.Valid
                 ? new CharacterUtility.DecalReverter( resolveData.ModCollection, DrawObjectState.UsesDecal( 0, data ) )
                 : null;

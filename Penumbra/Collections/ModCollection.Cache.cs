@@ -177,7 +177,7 @@ public partial class ModCollection
 
             ++_collection.ChangeCounter;
 
-            if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready )
+            if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
             {
                 Penumbra.ResidentResources.Reload();
                 MetaManipulations.SetFiles();
@@ -239,7 +239,7 @@ public partial class ModCollection
             if( addMetaChanges )
             {
                 ++_collection.ChangeCounter;
-                if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready )
+                if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods  )
                 {
                     Penumbra.ResidentResources.Reload();
                     MetaManipulations.SetFiles();
@@ -297,7 +297,7 @@ public partial class ModCollection
                     AddMetaFiles();
                 }
 
-                if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready )
+                if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
                 {
                     Penumbra.ResidentResources.Reload();
                     MetaManipulations.SetFiles();

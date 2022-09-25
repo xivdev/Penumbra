@@ -11,7 +11,7 @@ public unsafe partial class CharacterUtility
         public readonly  InternalIndex                  Index;
         public readonly  Structs.CharacterUtility.Index GlobalIndex;
 
-        public  IReadOnlyCollection< MetaReverter > Entries
+        public IReadOnlyCollection< MetaReverter > Entries
             => _entries;
 
         private IntPtr _defaultResourceData = IntPtr.Zero;
@@ -95,8 +95,14 @@ public unsafe partial class CharacterUtility
         {
             if( _entries.Count > 0 )
             {
+                foreach( var entry in _entries )
+                {
+                    entry.Disposed = true;
+                }
+
                 _entries.Clear();
             }
+
             ResetResourceInternal();
         }
 
@@ -106,6 +112,7 @@ public unsafe partial class CharacterUtility
             public readonly IntPtr Data;
             public readonly int    Length;
             public readonly bool   Resetter;
+            public          bool   Disposed;
 
             public MetaReverter( List list, IntPtr data, int length )
             {
@@ -124,29 +131,34 @@ public unsafe partial class CharacterUtility
 
             public void Dispose()
             {
-                var list       = List._entries;
-                var wasCurrent = ReferenceEquals( this, list.First?.Value );
-                list.Remove( this );
-                if( !wasCurrent )
+                if( !Disposed )
                 {
-                    return;
-                }
+                    var list       = List._entries;
+                    var wasCurrent = ReferenceEquals( this, list.First?.Value );
+                    list.Remove( this );
+                    if( !wasCurrent )
+                    {
+                        return;
+                    }
 
-                if( list.Count == 0 )
-                {
-                    List.SetResourceToDefaultCollection();
-                }
-                else
-                {
-                    var next = list.First!.Value;
-                    if( next.Resetter )
+                    if( list.Count == 0 )
                     {
                         List.SetResourceToDefaultCollection();
                     }
                     else
                     {
-                        List.SetResourceInternal( next.Data, next.Length );
+                        var next = list.First!.Value;
+                        if( next.Resetter )
+                        {
+                            List.SetResourceToDefaultCollection();
+                        }
+                        else
+                        {
+                            List.SetResourceInternal( next.Data, next.Length );
+                        }
                     }
+
+                    Disposed = true;
                 }
             }
         }

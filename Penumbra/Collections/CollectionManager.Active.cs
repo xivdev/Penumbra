@@ -97,7 +97,7 @@ public partial class ModCollection
             {
                 case CollectionType.Default:
                     Default = newCollection;
-                    if( Penumbra.CharacterUtility.Ready )
+                    if( Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods)
                     {
                         Penumbra.ResidentResources.Reload();
                         Default.SetFiles();
