@@ -250,7 +250,7 @@ public sealed class Texture : IDisposable
         _tmpPath ??= Path;
         using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
             new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
-        ImGui.SetNextItemWidth( -ImGui.GetFrameHeight() - 3 * ImGuiHelpers.GlobalScale );
+        ImGui.SetNextItemWidth( -2 * ImGui.GetFrameHeight() - 7 * ImGuiHelpers.GlobalScale );
         ImGui.InputTextWithHint( label, hint, ref _tmpPath, Utf8GamePath.MaxGamePathLength );
         if( ImGui.IsItemDeactivatedAfterEdit() )
         {
@@ -278,6 +278,16 @@ public sealed class Texture : IDisposable
             }
 
             manager.OpenFileDialog( "Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath );
+        }
+
+        ImGui.SameLine();
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Recycle.ToIconString(), new Vector2( ImGui.GetFrameHeight() ),
+               "Reload the currently selected path.", false,
+               true ) )
+        {
+            var path = Path;
+            Path = string.Empty;
+            Load( path );
         }
     }
 }
