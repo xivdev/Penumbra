@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -46,14 +47,19 @@ public partial class MtrlFile
             }
 
             w.Write( AdditionalData );
-            foreach( var row in ColorSets.Select( c => c.Rows ) )
+            var dataSetSize = 0;
+            foreach( var row in ColorSets.Where( c => c.HasRows ).Select( c => c.Rows ) )
             {
-                w.Write( row.AsBytes() );
+                var span = row.AsBytes();
+                w.Write( span );
+                dataSetSize += span.Length;
             }
 
             foreach( var row in ColorDyeSets.Select( c => c.Rows ) )
             {
-                w.Write( row.AsBytes() );
+                var span = row.AsBytes();
+                w.Write( span );
+                dataSetSize += span.Length;
             }
 
             w.Write( ( ushort )( ShaderPackage.ShaderValues.Length * 4 ) );
@@ -88,19 +94,18 @@ public partial class MtrlFile
                 w.Write( value );
             }
 
-            WriteHeader( w, ( ushort )w.BaseStream.Position, cumulativeStringOffset );
+            WriteHeader( w, ( ushort )w.BaseStream.Position, dataSetSize, cumulativeStringOffset );
         }
 
         return stream.ToArray();
     }
 
-    private void WriteHeader( BinaryWriter w, ushort fileSize, ushort shaderPackageNameOffset )
+    private void WriteHeader( BinaryWriter w, ushort fileSize, int dataSetSize, ushort shaderPackageNameOffset )
     {
         w.BaseStream.Seek( 0, SeekOrigin.Begin );
         w.Write( Version );
         w.Write( fileSize );
-        w.Write( ( ushort )( ColorSets.Length * ColorSet.RowArray.NumRows    * ColorSet.Row.Size
-          + ColorDyeSets.Length               * ColorDyeSet.RowArray.NumRows * 2 ) );
+        w.Write( ( ushort )dataSetSize );
         w.Write( ( ushort )( shaderPackageNameOffset + ShaderPackage.Name.Length + 1 ) );
         w.Write( shaderPackageNameOffset );
         w.Write( ( byte )Textures.Length );

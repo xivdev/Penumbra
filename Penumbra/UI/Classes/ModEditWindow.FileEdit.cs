@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
@@ -259,7 +260,7 @@ public partial class ModEditWindow
 
     private static bool DrawMaterialColorSetChange( MtrlFile file, bool disabled )
     {
-        if( file.ColorSets.Length == 0 )
+        if( !file.ColorSets.Any(c => c.HasRows ) )
         {
             return false;
         }

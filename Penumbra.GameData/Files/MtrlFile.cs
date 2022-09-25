@@ -143,6 +143,7 @@ public partial class MtrlFile : IWritable
         public RowArray Rows;
         public string   Name;
         public ushort   Index;
+        public bool     HasRows;
     }
 
     public unsafe struct ColorDyeSet
@@ -305,7 +306,15 @@ public partial class MtrlFile : IWritable
         AdditionalData = r.ReadBytes( additionalDataSize );
         for( var i = 0; i < ColorSets.Length; ++i )
         {
-            ColorSets[ i ].Rows = r.ReadStructure< ColorSet.RowArray >();
+            if( stream.Position + ColorSet.RowArray.NumRows * ColorSet.Row.Size <= stream.Length )
+            {
+                ColorSets[ i ].Rows    = r.ReadStructure< ColorSet.RowArray >();
+                ColorSets[ i ].HasRows = true;
+            }
+            else
+            {
+                ColorSets[i].HasRows = false;
+            }
         }
 
         for( var i = 0; i < ColorDyeSets.Length; ++i )
