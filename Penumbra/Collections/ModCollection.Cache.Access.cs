@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Penumbra.Interop;
+using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections;
@@ -159,18 +160,23 @@ public partial class ModCollection
     }
 
     // Used for short periods of changed files.
-    public CharacterUtility.List.MetaReverter? TemporarilySetEqdpFile( GenderRace genderRace, bool accessory )
-        => _cache?.MetaManipulations.TemporarilySetEqdpFile( genderRace, accessory );
+    public CharacterUtility.List.MetaReverter TemporarilySetEqdpFile( GenderRace genderRace, bool accessory )
+        => _cache?.MetaManipulations.TemporarilySetEqdpFile( genderRace, accessory )
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource( Interop.Structs.CharacterUtility.EqdpIdx( genderRace, accessory ) );
 
-    public CharacterUtility.List.MetaReverter? TemporarilySetEqpFile()
-        => _cache?.MetaManipulations.TemporarilySetEqpFile();
+    public CharacterUtility.List.MetaReverter TemporarilySetEqpFile()
+        => _cache?.MetaManipulations.TemporarilySetEqpFile()
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource( Interop.Structs.CharacterUtility.Index.Eqp );
 
-    public CharacterUtility.List.MetaReverter? TemporarilySetGmpFile()
-        => _cache?.MetaManipulations.TemporarilySetGmpFile();
+    public CharacterUtility.List.MetaReverter TemporarilySetGmpFile()
+        => _cache?.MetaManipulations.TemporarilySetGmpFile()
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource( Interop.Structs.CharacterUtility.Index.Gmp );
 
-    public CharacterUtility.List.MetaReverter? TemporarilySetCmpFile()
-        => _cache?.MetaManipulations.TemporarilySetCmpFile();
+    public CharacterUtility.List.MetaReverter TemporarilySetCmpFile()
+        => _cache?.MetaManipulations.TemporarilySetCmpFile()
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource( Interop.Structs.CharacterUtility.Index.HumanCmp );
 
-    public CharacterUtility.List.MetaReverter? TemporarilySetEstFile( EstManipulation.EstType type )
-        => _cache?.MetaManipulations.TemporarilySetEstFile( type );
+    public CharacterUtility.List.MetaReverter TemporarilySetEstFile( EstManipulation.EstType type )
+        => _cache?.MetaManipulations.TemporarilySetEstFile( type )
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource( ( Interop.Structs.CharacterUtility.Index )type );
 }

@@ -147,13 +147,8 @@ public partial class PathResolver : IDisposable
 
     private static unsafe ResolveData GetResolveData( IntPtr drawObject )
     {
-        var parent = FindParent( drawObject, out var resolveData );
-        if( parent == null || resolveData.ModCollection == Penumbra.CollectionManager.Default )
-        {
-            return ResolveData.Invalid;
-        }
-
-        return resolveData.ModCollection.HasCache ? resolveData : ResolveData.Invalid;
+        var _ = FindParent( drawObject, out var resolveData );
+        return resolveData;
     }
 
     internal IEnumerable< KeyValuePair< Utf8String, ResolveData > > PathCollections
