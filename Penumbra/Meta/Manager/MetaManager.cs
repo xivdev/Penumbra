@@ -154,6 +154,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
                 : 0;
         }
 
+        SetImcFiles();
         if( Penumbra.CollectionManager.Default == _collection )
         {
             SetFiles();
