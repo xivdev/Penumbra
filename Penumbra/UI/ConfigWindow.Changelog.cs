@@ -19,14 +19,14 @@ public partial class ConfigWindow
         Add5_7_0( ret );
         Add5_7_1( ret );
         Add5_8_0( ret );
-        Add5_8_5( ret );
+        Add5_8_6( ret );
 
         return ret;
     }
 
-    private static void Add5_8_5( Changelog log )
-        => log.NextVersion( "Version 0.5.8.5" )
-           .RegisterEntry( "Fixed some problems with metadata reloading and reverting and IMC files. (5.8.1 to 5.8.5)." )
+    private static void Add5_8_6( Changelog log )
+        => log.NextVersion( "Version 0.5.8.6" )
+           .RegisterEntry( "Fixed some problems with metadata reloading and reverting and IMC files. (5.8.1 to 5.8.6)." )
            .RegisterHighlight(
                 "If you encounter any issues, please try completely restarting your game after updating (not just relogging), before reporting them.",
                 1 );

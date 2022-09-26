@@ -137,7 +137,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
         }
 
         var loaded = 0;
-        foreach( var manip in Manipulations.Where( m => m.ManipulationType != MetaManipulation.Type.Imc ) )
+        foreach( var manip in Manipulations )
         {
             loaded += manip.ManipulationType switch
             {
@@ -154,7 +154,6 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
                 : 0;
         }
 
-        SetImcFiles();
         if( Penumbra.CollectionManager.Default == _collection )
         {
             SetFiles();
