@@ -151,7 +151,7 @@ public partial class PathResolver
                 }
 
                 var data = GetResolveData( drawObject );
-                return !data.Valid ? DisposableContainer.Empty : MetaState.ResolveEqdpData(data.ModCollection, MetaState.GetHumanGenderRace( drawObject ), modelType < 5, modelType > 4);
+                return MetaState.ResolveEqdpData(data.ModCollection, MetaState.GetHumanGenderRace( drawObject ), modelType < 5, modelType > 4);
             }
 
             using var eqdp = Get();
@@ -182,14 +182,9 @@ public partial class PathResolver
             return ResolvePath( drawObject, _resolveSkpPathHook.Original( drawObject, path, unk3, unk4 ) );
         }
 
-        private DisposableContainer GetEstChanges( IntPtr drawObject )
+        private static DisposableContainer GetEstChanges( IntPtr drawObject )
         {
             var data = GetResolveData( drawObject );
-            if( !data.Valid )
-            {
-                return DisposableContainer.Empty;
-            }
-
             return new DisposableContainer( data.ModCollection.TemporarilySetEstFile( EstManipulation.EstType.Face ),
                 data.ModCollection.TemporarilySetEstFile( EstManipulation.EstType.Body ),
                 data.ModCollection.TemporarilySetEstFile( EstManipulation.EstType.Hair ),

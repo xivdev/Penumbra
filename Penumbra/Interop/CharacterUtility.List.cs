@@ -150,7 +150,7 @@ public unsafe partial class CharacterUtility
                         var next = list.First!.Value;
                         if( next.Resetter )
                         {
-                            List.SetResourceToDefaultCollection();
+                            List.ResetResourceInternal();
                         }
                         else
                         {
