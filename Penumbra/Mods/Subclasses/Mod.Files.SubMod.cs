@@ -154,43 +154,41 @@ public partial class Mod
         {
             foreach( var (key, file) in Files.ToList() )
             {
+                var ext1 = key.Extension().AsciiToLower().ToString();
+                var ext2 = file.Extension.ToLowerInvariant();
                 try
                 {
-                    switch( file.Extension )
+                    if( ext1 == ".meta" || ext2 == ".meta" )
                     {
-                        case ".meta":
-                            FileData.Remove( key );
-                            if( !file.Exists )
-                            {
-                                continue;
-                            }
+                        FileData.Remove( key );
+                        if( !file.Exists )
+                        {
+                            continue;
+                        }
 
-                            var meta = new TexToolsMeta( File.ReadAllBytes( file.FullName ) );
-                            if( delete )
-                            {
-                                File.Delete( file.FullName );
-                            }
+                        var meta = new TexToolsMeta( File.ReadAllBytes( file.FullName ) );
+                        if( delete )
+                        {
+                            File.Delete( file.FullName );
+                        }
 
-                            ManipulationData.UnionWith( meta.MetaManipulations );
+                        ManipulationData.UnionWith( meta.MetaManipulations );
+                    }
+                    else if( ext1 == ".rgsp" || ext2 == ".rgsp" )
+                    {
+                        FileData.Remove( key );
+                        if( !file.Exists )
+                        {
+                            continue;
+                        }
 
-                            break;
-                        case ".rgsp":
-                            FileData.Remove( key );
-                            if( !file.Exists )
-                            {
-                                continue;
-                            }
+                        var rgsp = TexToolsMeta.FromRgspFile( file.FullName, File.ReadAllBytes( file.FullName ) );
+                        if( delete )
+                        {
+                            File.Delete( file.FullName );
+                        }
 
-                            var rgsp = TexToolsMeta.FromRgspFile( file.FullName, File.ReadAllBytes( file.FullName ) );
-                            if( delete )
-                            {
-                                File.Delete( file.FullName );
-                            }
-
-                            ManipulationData.UnionWith( rgsp.MetaManipulations );
-
-                            break;
-                        default: continue;
+                        ManipulationData.UnionWith( rgsp.MetaManipulations );
                     }
                 }
                 catch( Exception e )
