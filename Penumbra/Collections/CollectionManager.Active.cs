@@ -97,7 +97,7 @@ public partial class ModCollection
             {
                 case CollectionType.Default:
                     Default = newCollection;
-                    if( Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods)
+                    if( Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
                     {
                         Penumbra.ResidentResources.Reload();
                         Default.SetFiles();
@@ -202,7 +202,7 @@ public partial class ModCollection
             var configChanged = !ReadActiveCollections( out var jObject );
 
             // Load the default collection.
-            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? ( configChanged ? Empty.Name : DefaultCollection );
+            var defaultName = jObject[ nameof( Default ) ]?.ToObject< string >() ?? ( configChanged ? DefaultCollection : Empty.Name );
             var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
             {
@@ -216,7 +216,7 @@ public partial class ModCollection
             }
 
             // Load the interface collection.
-            var interfaceName = jObject[ nameof( Interface ) ]?.ToObject< string >() ?? ( configChanged ? Empty.Name : Default.Name );
+            var interfaceName = jObject[ nameof( Interface ) ]?.ToObject< string >() ?? Default.Name;
             var interfaceIdx  = GetIndexForCollectionName( interfaceName );
             if( interfaceIdx < 0 )
             {
