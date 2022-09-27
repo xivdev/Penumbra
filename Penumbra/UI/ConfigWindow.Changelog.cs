@@ -20,9 +20,16 @@ public partial class ConfigWindow
         Add5_7_1( ret );
         Add5_8_0( ret );
         Add5_8_7( ret );
+        Add5_9_0( ret );
 
         return ret;
     }
+
+    private static void Add5_9_0( Changelog log )
+        => log.NextVersion( "Version 0.5.9.0" )
+           .RegisterEntry( "Special Collections are now split between male and female." )
+           .RegisterEntry( "Fix a bug where the Base and Interface Collection were set to None instead of Default on a fresh install." )
+           .RegisterEntry( "TexTools .meta and .rgsp files are now incorporated based on file- and game path extensions." );
 
     private static void Add5_8_7( Changelog log )
         => log.NextVersion( "Version 0.5.8.7" )

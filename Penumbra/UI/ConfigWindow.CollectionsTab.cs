@@ -38,10 +38,10 @@ public partial class ConfigWindow
 
 
         // Input text fields.
-        private string          _newCollectionName = string.Empty;
-        private bool            _canAddCollection  = false;
-        private string          _newCharacterName  = string.Empty;
-        private CollectionType? _currentType       = CollectionType.Yourself;
+        private string                            _newCollectionName = string.Empty;
+        private bool                              _canAddCollection  = false;
+        private string                            _newCharacterName  = string.Empty;
+        private (CollectionType, string, string)? _currentType       = CollectionTypeExtensions.Special.First();
 
         // Create a new collection that is either empty or a duplicate of the current collection.
         // Resets the new collection name.
@@ -150,9 +150,10 @@ public partial class ConfigWindow
               + $"but all {IndividualAssignments} take precedence before them.";
 
             ImGui.SetNextItemWidth( _window._inputTextWidth.X );
-            if( _currentType == null || Penumbra.CollectionManager.ByType( _currentType.Value ) != null )
+            if( _currentType == null || Penumbra.CollectionManager.ByType( _currentType.Value.Item1 ) != null )
             {
-                _currentType = CollectionTypeExtensions.Special.FindFirst( t => Penumbra.CollectionManager.ByType( t ) == null, out var t2 )
+                _currentType = CollectionTypeExtensions.Special.FindFirst( t => Penumbra.CollectionManager.ByType( t.Item1 ) == null,
+                    out var t2 )
                     ? t2
                     : null;
             }
@@ -162,16 +163,17 @@ public partial class ConfigWindow
                 return;
             }
 
-            using( var combo = ImRaii.Combo( "##NewSpecial", _currentType.Value.ToName() ) )
+            using( var combo = ImRaii.Combo( "##NewSpecial", _currentType.Value.Item2 ) )
             {
                 if( combo )
                 {
-                    foreach( var type in CollectionTypeExtensions.Special.Where( t => Penumbra.CollectionManager.ByType( t ) == null ) )
+                    foreach( var type in CollectionTypeExtensions.Special.Where( t => Penumbra.CollectionManager.ByType( t.Item1 ) == null ) )
                     {
-                        if( ImGui.Selectable( type.ToName(), type == _currentType.Value ) )
+                        if( ImGui.Selectable( type.Item2, type.Item1 == _currentType.Value.Item1 ) )
                         {
                             _currentType = type;
                         }
+                        ImGuiUtil.HoverTooltip( type.Item3 );
                     }
                 }
             }
@@ -183,7 +185,7 @@ public partial class ConfigWindow
                 : description;
             if( ImGuiUtil.DrawDisabledButton( $"Assign {ConditionalGroup}", new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 ), tt, disabled ) )
             {
-                Penumbra.CollectionManager.CreateSpecialCollection( _currentType!.Value );
+                Penumbra.CollectionManager.CreateSpecialCollection( _currentType!.Value.Item1 );
                 _currentType = null;
             }
         }
@@ -212,7 +214,7 @@ public partial class ConfigWindow
 
         private void DrawSpecialCollections()
         {
-            foreach( var type in CollectionTypeExtensions.Special )
+            foreach( var (type, name, desc) in CollectionTypeExtensions.Special )
             {
                 var collection = Penumbra.CollectionManager.ByType( type );
                 if( collection != null )
@@ -228,7 +230,7 @@ public partial class ConfigWindow
 
                     ImGui.SameLine();
                     ImGui.AlignTextToFramePadding();
-                    ImGuiUtil.LabeledHelpMarker( type.ToName(), type.ToDescription() );
+                    ImGuiUtil.LabeledHelpMarker( name, desc );
                 }
             }
         }
@@ -246,7 +248,7 @@ public partial class ConfigWindow
         private void DrawIndividualAssignments()
         {
             using var _ = ImRaii.Group();
-            ImGui.TextUnformatted( $"Individual {ConditionalIndividual}s"  );
+            ImGui.TextUnformatted( $"Individual {ConditionalIndividual}s" );
             ImGui.Separator();
             foreach( var name in Penumbra.CollectionManager.Characters.Keys.OrderBy( k => k ).ToArray() )
             {

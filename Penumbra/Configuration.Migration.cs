@@ -48,7 +48,19 @@ public partial class Configuration
             m.Version3To4();
             m.Version4To5();
             m.Version5To6();
+            m.Version6To7();
         }
+
+        // Gendered special collections were added.
+        private void Version6To7()
+        {
+            if( _config.Version != 6 )
+                return;
+
+            ModCollection.Manager.MigrateUngenderedCollections();
+            _config.Version = 7;
+        }
+
 
         // A new tutorial step was inserted in the middle.
         // The UI collection and a new tutorial for it was added.

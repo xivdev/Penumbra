@@ -202,7 +202,7 @@ public static class RaceEnumExtensions
             SubRace.Midlander       => "Midlander",
             SubRace.Highlander      => "Highlander",
             SubRace.Wildwood        => "Wildwood",
-            SubRace.Duskwight       => "Duskwright",
+            SubRace.Duskwight       => "Duskwight",
             SubRace.Plainsfolk      => "Plainsfolk",
             SubRace.Dunesfolk       => "Dunesfolk",
             SubRace.SeekerOfTheSun  => "Seeker Of The Sun",

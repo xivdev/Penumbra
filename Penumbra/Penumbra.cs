@@ -483,12 +483,12 @@ public class Penumbra : IDalamudPlugin
         sb.AppendFormat( "> **`Base Collection:              `** {0}\n", CollectionManager.Default.AnonymizedName );
         sb.AppendFormat( "> **`Interface Collection:         `** {0}\n", CollectionManager.Interface.AnonymizedName );
         sb.AppendFormat( "> **`Selected Collection:          `** {0}\n", CollectionManager.Current.AnonymizedName );
-        foreach( var type in CollectionTypeExtensions.Special )
+        foreach( var (type, name, _) in CollectionTypeExtensions.Special )
         {
             var collection = CollectionManager.ByType( type );
             if( collection != null )
             {
-                sb.AppendFormat( "> **`{0,-29}`** {1}\n", type.ToName(), collection.AnonymizedName );
+                sb.AppendFormat( "> **`{0,-29}`** {1}\n", name, collection.AnonymizedName );
             }
         }
 

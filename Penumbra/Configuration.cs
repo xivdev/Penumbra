@@ -144,7 +144,7 @@ public partial class Configuration : IPluginConfiguration
     // Contains some default values or boundaries for config values.
     public static class Constants
     {
-        public const int   CurrentVersion      = 6;
+        public const int   CurrentVersion      = 7;
         public const float MaxAbsoluteSize     = 600;
         public const int   DefaultAbsoluteSize = 250;
         public const float MinAbsoluteSize     = 50;

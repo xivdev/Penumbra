@@ -195,7 +195,7 @@ public partial class ModCollection
         public static string ActiveCollectionFile
             => Path.Combine( Dalamud.PluginInterface.ConfigDirectory.FullName, "active_collections.json" );
 
-        // Load default, current and character collections from config.
+        // Load default, current, special, and character collections from config.
         // Then create caches. If a collection does not exist anymore, reset it to an appropriate default.
         private void LoadCollections()
         {
@@ -246,7 +246,7 @@ public partial class ModCollection
             }
 
             // Load special collections.
-            foreach( var type in CollectionTypeExtensions.Special )
+            foreach( var (type, name, _) in CollectionTypeExtensions.Special )
             {
                 var typeName = jObject[ type.ToString() ]?.ToObject< string >();
                 if( typeName != null )
@@ -254,7 +254,7 @@ public partial class ModCollection
                     var idx = GetIndexForCollectionName( typeName );
                     if( idx < 0 )
                     {
-                        Penumbra.Log.Error( $"Last choice of {type.ToName()} Collection {typeName} is not available, removed." );
+                        Penumbra.Log.Error( $"Last choice of {name} Collection {typeName} is not available, removed." );
                         configChanged = true;
                     }
                     else
@@ -286,6 +286,30 @@ public partial class ModCollection
             {
                 SaveActiveCollections();
             }
+        }
+
+        // Migrate ungendered collections to Male and Female for 0.5.9.0.
+        public static void MigrateUngenderedCollections()
+        {
+            if( !ReadActiveCollections( out var jObject ) )
+                return;
+
+            foreach( var (type, _, _) in CollectionTypeExtensions.Special.Where( t => t.Item2.StartsWith( "Male " ) ) )
+            {
+                var oldName = type.ToString()[ 5.. ];
+                var value = jObject[oldName];
+                if( value == null )
+                    continue;
+
+                jObject.Remove( oldName );
+                jObject.Add( "Male" + oldName, value  );
+                jObject.Add( "Female" + oldName, value  );
+            }
+
+            using var stream = File.Open( ActiveCollectionFile, FileMode.Truncate );
+            using var writer = new StreamWriter( stream );
+            using var j      = new JsonTextWriter( writer );
+            jObject.WriteTo( j );
         }
 
 
