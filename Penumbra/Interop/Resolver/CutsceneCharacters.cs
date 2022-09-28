@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
@@ -22,7 +23,10 @@ public class CutsceneCharacters : IDisposable
            .Select( i => KeyValuePair.Create( i, this[ i ] ?? Dalamud.Objects[ i ]! ) );
 
     public CutsceneCharacters()
-        => SignatureHelper.Initialise( this );
+    {
+        SignatureHelper.Initialise( this );
+        Dalamud.Conditions.ConditionChange += Reset;
+    }
 
     // Get the related actor to a cutscene actor.
     // Does not check for valid input index.
@@ -48,6 +52,36 @@ public class CutsceneCharacters : IDisposable
         return -1;
     }
 
+    public void Reset( ConditionFlag flag, bool value )
+    {
+        switch( flag )
+        {
+            case ConditionFlag.BetweenAreas:
+            case ConditionFlag.BetweenAreas51:
+                if( !value )
+                {
+                    return;
+                }
+
+                break;
+            case ConditionFlag.OccupiedInCutSceneEvent:
+            case ConditionFlag.WatchingCutscene:
+            case ConditionFlag.WatchingCutscene78:
+                if( value )
+                {
+                    return;
+                }
+
+                break;
+            default: return;
+        }
+
+        for( var i = 0; i < _copiedCharacters.Length; ++i )
+        {
+            _copiedCharacters[ i ] = -1;
+        }
+    }
+
     public void Enable()
         => _copyCharacterHook.Enable();
 
@@ -55,8 +89,10 @@ public class CutsceneCharacters : IDisposable
         => _copyCharacterHook.Disable();
 
     public void Dispose()
-        => _copyCharacterHook.Dispose();
-
+    {
+        _copyCharacterHook.Dispose();
+        Dalamud.Conditions.ConditionChange -= Reset;
+    }
 
     private unsafe delegate ulong CopyCharacterDelegate( GameObject* target, GameObject* source, uint unk );
 
@@ -73,6 +109,7 @@ public class CutsceneCharacters : IDisposable
                     ? -1
                     : source->ObjectIndex;
                 _copiedCharacters[ target->ObjectIndex - CutsceneStartIdx ] = ( short )parent;
+                Penumbra.Log.Debug( $"Set cutscene character {target->ObjectIndex} to {parent}." );
             }
         }
         catch
