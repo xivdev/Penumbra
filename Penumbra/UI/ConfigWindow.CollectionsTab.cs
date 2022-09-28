@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
@@ -5,6 +6,7 @@ using Dalamud.Interface.Components;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.Collections;
 
 namespace Penumbra.UI;
@@ -38,10 +40,9 @@ public partial class ConfigWindow
 
 
         // Input text fields.
-        private string                            _newCollectionName = string.Empty;
-        private bool                              _canAddCollection  = false;
-        private string                            _newCharacterName  = string.Empty;
-        private (CollectionType, string, string)? _currentType       = CollectionTypeExtensions.Special.First();
+        private string _newCollectionName = string.Empty;
+        private bool   _canAddCollection  = false;
+        private string _newCharacterName  = string.Empty;
 
         // Create a new collection that is either empty or a duplicate of the current collection.
         // Resets the new collection name.
@@ -142,6 +143,34 @@ public partial class ConfigWindow
                 $"Mods in the {InterfaceCollection} are loaded for any file that the game categorizes as an UI file. This is mostly icons as well as the tiles that generate the user interface windows themselves." );
         }
 
+        private sealed class SpecialCombo : FilteredCombo< (CollectionType, string, string) >
+        {
+            public (CollectionType, string, string)? CurrentType
+                => CollectionTypeExtensions.Special[ CurrentIdx ];
+
+            public int CurrentIdx = 0;
+
+            public SpecialCombo( string label, float unscaledWidth )
+                : base( label, unscaledWidth, CollectionTypeExtensions.Special )
+            { }
+
+            public void Draw()
+                => Draw( CurrentIdx );
+
+            protected override void Select( int globalIdx )
+            {
+                CurrentIdx = globalIdx;
+            }
+
+            protected override string ToString( (CollectionType, string, string) obj )
+                => obj.Item2;
+
+            protected override bool IsVisible( (CollectionType, string, string) obj )
+                => Filter.IsContained( obj.Item2 ) && Penumbra.CollectionManager.ByType( obj.Item1 ) == null;
+        }
+
+        private readonly SpecialCombo _specialCollectionCombo = new("##NewSpecial", 350);
+
         // We do not check for valid character names.
         private void DrawNewSpecialCollection()
         {
@@ -150,43 +179,29 @@ public partial class ConfigWindow
               + $"but all {IndividualAssignments} take precedence before them.";
 
             ImGui.SetNextItemWidth( _window._inputTextWidth.X );
-            if( _currentType == null || Penumbra.CollectionManager.ByType( _currentType.Value.Item1 ) != null )
+            if( _specialCollectionCombo.CurrentIdx                                                  == -1
+            || Penumbra.CollectionManager.ByType( _specialCollectionCombo.CurrentType!.Value.Item1 ) != null )
             {
-                _currentType = CollectionTypeExtensions.Special.FindFirst( t => Penumbra.CollectionManager.ByType( t.Item1 ) == null,
-                    out var t2 )
-                    ? t2
-                    : null;
+                _specialCollectionCombo.ResetFilter();
+                _specialCollectionCombo.CurrentIdx = CollectionTypeExtensions.Special
+                   .IndexOf( t => Penumbra.CollectionManager.ByType( t.Item1 ) == null );
             }
 
-            if( _currentType == null )
+            if( _specialCollectionCombo.CurrentType == null )
             {
                 return;
             }
 
-            using( var combo = ImRaii.Combo( "##NewSpecial", _currentType.Value.Item2 ) )
-            {
-                if( combo )
-                {
-                    foreach( var type in CollectionTypeExtensions.Special.Where( t => Penumbra.CollectionManager.ByType( t.Item1 ) == null ) )
-                    {
-                        if( ImGui.Selectable( type.Item2, type.Item1 == _currentType.Value.Item1 ) )
-                        {
-                            _currentType = type;
-                        }
-                        ImGuiUtil.HoverTooltip( type.Item3 );
-                    }
-                }
-            }
-
+            _specialCollectionCombo.Draw();
             ImGui.SameLine();
-            var disabled = _currentType == null;
+            var disabled = _specialCollectionCombo.CurrentType == null;
             var tt = disabled
                 ? $"Please select a condition for a {GroupAssignment} before creating the collection.\n\n" + description
                 : description;
             if( ImGuiUtil.DrawDisabledButton( $"Assign {ConditionalGroup}", new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 ), tt, disabled ) )
             {
-                Penumbra.CollectionManager.CreateSpecialCollection( _currentType!.Value.Item1 );
-                _currentType = null;
+                Penumbra.CollectionManager.CreateSpecialCollection( _specialCollectionCombo.CurrentType!.Value.Item1 );
+                _specialCollectionCombo.CurrentIdx = -1;
             }
         }
 
@@ -226,6 +241,7 @@ public partial class ConfigWindow
                            false, true ) )
                     {
                         Penumbra.CollectionManager.RemoveSpecialCollection( type );
+                        _specialCollectionCombo.ResetFilter();
                     }
 
                     ImGui.SameLine();

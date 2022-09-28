@@ -292,23 +292,28 @@ public partial class ModCollection
         public static void MigrateUngenderedCollections()
         {
             if( !ReadActiveCollections( out var jObject ) )
+            {
                 return;
+            }
 
             foreach( var (type, _, _) in CollectionTypeExtensions.Special.Where( t => t.Item2.StartsWith( "Male " ) ) )
             {
-                var oldName = type.ToString()[ 5.. ];
-                var value = jObject[oldName];
+                var oldName = type.ToString()[ 4.. ];
+                var value   = jObject[ oldName ];
                 if( value == null )
+                {
                     continue;
+                }
 
                 jObject.Remove( oldName );
-                jObject.Add( "Male" + oldName, value  );
-                jObject.Add( "Female" + oldName, value  );
+                jObject.Add( "Male"   + oldName, value );
+                jObject.Add( "Female" + oldName, value );
             }
 
             using var stream = File.Open( ActiveCollectionFile, FileMode.Truncate );
             using var writer = new StreamWriter( stream );
             using var j      = new JsonTextWriter( writer );
+            j.Formatting = Formatting.Indented;
             jObject.WriteTo( j );
         }
 
