@@ -29,6 +29,7 @@ public partial class ConfigWindow
         => log.NextVersion( "Version 0.5.9.0" )
            .RegisterEntry( "Special Collections are now split between male and female." )
            .RegisterEntry( "Fix a bug where the Base and Interface Collection were set to None instead of Default on a fresh install." )
+           .RegisterEntry( "Fix a bug where cutscene actors were not properly reset and could be misidentified across multiple cutscenes." )
            .RegisterEntry( "TexTools .meta and .rgsp files are now incorporated based on file- and game path extensions." );
 
     private static void Add5_8_7( Changelog log )
