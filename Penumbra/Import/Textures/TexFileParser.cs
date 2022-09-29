@@ -61,8 +61,8 @@ public static class TexFileParser
                 return i;
             }
 
-            width      = Math.Max( width  / 2, 4 );
-            height     = Math.Max( height / 2, 4 );
+            width      = Math.Max( width  / 2, 1 );
+            height     = Math.Max( height / 2, 1 );
             lastOffset = offset;
             lastSize   = requiredSize;
         }
@@ -103,8 +103,9 @@ public static class TexFileParser
         }
     }
 
-    public static TexFile.TexHeader ToTexHeader( this TexMeta meta )
+    public static TexFile.TexHeader ToTexHeader( this ScratchImage scratch )
     {
+        var meta = scratch.Meta;
         var ret = new TexFile.TexHeader()
         {
             Height    = ( ushort )meta.Height,
@@ -121,33 +122,32 @@ public static class TexFileParser
                 _                     => 0,
             },
         };
-        unsafe
-        {
-            ret.LodOffset[ 0 ] = 0;
-            ret.LodOffset[ 1 ] = 1;
-            ret.LodOffset[ 2 ] = 2;
 
-            ret.OffsetToSurface[ 0 ] = 80;
-            var size = meta.Format.BitsPerPixel() * meta.Width * meta.Height / 8;
-            for( var i = 1; i < meta.MipLevels; ++i )
-            {
-                ret.OffsetToSurface[ i ] =   ( uint )( 80 + size );
-                size                     >>= 2;
-                if( size == 0 )
-                {
-                    ret.MipLevels = ( ushort )i;
-                    break;
-                }
-            }
-
-            for( var i = ret.MipLevels; i < 13; ++i )
-            {
-                ret.OffsetToSurface[ i ] = 0;
-            }
-        }
+        ret.FillSurfaceOffsets( scratch );
 
         return ret;
     }
+
+    private static unsafe void FillSurfaceOffsets( this ref TexFile.TexHeader header, ScratchImage scratch )
+    {
+        var idx = 0;
+        fixed( byte* ptr = scratch.Pixels )
+        {
+            foreach( var image in scratch.Images )
+            {
+                var offset = ( byte* )image.Pixels             - ptr;
+                header.OffsetToSurface[ idx++ ] = ( uint )( 80 + offset );
+            }
+        }
+
+        for( ; idx < 13; ++idx )
+            header.OffsetToSurface[ idx ] = 0;
+
+        header.LodOffset[ 0 ] = 0;
+        header.LodOffset[ 1 ] = 1;
+        header.LodOffset[ 2 ] = 2;
+    }
+
 
     public static TexMeta ToTexMeta( this TexFile.TexHeader header )
         => new()

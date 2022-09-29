@@ -91,11 +91,11 @@ public partial class CombinedTexture : IDisposable
 
             var tex = type switch
             {
-                TextureSaveType.AsIs   => _current.Type is Texture.FileType.Bitmap or Texture.FileType.Png ? CreateUncompressed(s, mipMaps  ) : s,
+                TextureSaveType.AsIs => _current.Type is Texture.FileType.Bitmap or Texture.FileType.Png ? CreateUncompressed( s, mipMaps ) : s,
                 TextureSaveType.Bitmap => CreateUncompressed( s, mipMaps ),
-                TextureSaveType.BC5    => CreateCompressed( s, mipMaps, false ),
-                TextureSaveType.BC7    => CreateCompressed( s, mipMaps, true ),
-                _                      => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
+                TextureSaveType.BC5 => CreateCompressed( s, mipMaps, false ),
+                TextureSaveType.BC7 => CreateCompressed( s, mipMaps, true ),
+                _ => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
             };
 
             if( !writeTex )
@@ -117,25 +117,29 @@ public partial class CombinedTexture : IDisposable
 
     private static void SaveTex( string path, ScratchImage input )
     {
-        var header = input.Meta.ToTexHeader();
+        var header = input.ToTexHeader();
         if( header.Format == TexFile.TextureFormat.Unknown )
         {
             throw new Exception( $"Could not save tex file with format {input.Meta.Format}, not convertible to a valid .tex formats." );
         }
 
-        using var stream = File.OpenWrite( path );
+        using var stream = File.Open( path, File.Exists(path) ? FileMode.Truncate : FileMode.CreateNew);
         using var w      = new BinaryWriter( stream );
         header.Write( w );
         w.Write( input.Pixels );
     }
 
     private static ScratchImage AddMipMaps( ScratchImage input, bool mipMaps )
-        => mipMaps ? input.GenerateMipMaps() : input;
+        => mipMaps
+            ? input.GenerateMipMaps( Math.Min( 13, 1 + BitOperations.Log2( ( uint )Math.Max( input.Meta.Width, input.Meta.Height ) ) ) )
+            : input;
 
     private static ScratchImage CreateUncompressed( ScratchImage input, bool mipMaps )
     {
-        if( input.Meta.Format == DXGIFormat.B8G8R8A8UNorm)
-            return AddMipMaps(input, mipMaps);
+        if( input.Meta.Format == DXGIFormat.B8G8R8A8UNorm )
+        {
+            return AddMipMaps( input, mipMaps );
+        }
 
         if( input.Meta.Format.IsCompressed() )
         {
@@ -151,8 +155,8 @@ public partial class CombinedTexture : IDisposable
 
     private static ScratchImage CreateCompressed( ScratchImage input, bool mipMaps, bool bc7 )
     {
-        var format = bc7 ? DXGIFormat.BC7UNorm : DXGIFormat.BC5UNorm;
-        if( input.Meta.Format == format)
+        var format = bc7 ? DXGIFormat.BC7UNorm : DXGIFormat.BC3UNorm;
+        if( input.Meta.Format == format )
         {
             return input;
         }
