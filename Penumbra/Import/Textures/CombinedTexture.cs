@@ -131,7 +131,7 @@ public partial class CombinedTexture : IDisposable
 
     private static ScratchImage AddMipMaps( ScratchImage input, bool mipMaps )
         => mipMaps
-            ? input.GenerateMipMaps( Math.Min( 13, 1 + BitOperations.Log2( ( uint )Math.Max( input.Meta.Width, input.Meta.Height ) ) ) )
+            ? input.GenerateMipMaps( Math.Min( 13, 1 + BitOperations.Log2( ( uint )Math.Max( input.Meta.Width, input.Meta.Height ) ) ), FilterFlags.SeparateAlpha )
             : input;
 
     private static ScratchImage CreateUncompressed( ScratchImage input, bool mipMaps )

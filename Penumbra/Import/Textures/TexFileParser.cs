@@ -41,6 +41,7 @@ public static class TexFileParser
 
         var lastOffset = 0L;
         var lastSize   = 80L;
+        var minSize    = meta.Format.IsCompressed() ? 4 : 1;
         for( var i = 0; i < 13; ++i )
         {
             var offset = header.OffsetToSurface[ i ];
@@ -61,8 +62,8 @@ public static class TexFileParser
                 return i;
             }
 
-            width      = Math.Max( width  / 2, 1 );
-            height     = Math.Max( height / 2, 1 );
+            width      = Math.Max( width  / 2, minSize );
+            height     = Math.Max( height / 2, minSize );
             lastOffset = offset;
             lastSize   = requiredSize;
         }
