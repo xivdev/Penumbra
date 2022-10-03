@@ -138,7 +138,7 @@ public sealed class Texture : IDisposable
 
         try
         {
-            var _ = System.IO.Path.GetExtension( Path ) switch
+            var _ = System.IO.Path.GetExtension( Path ).ToLowerInvariant() switch
             {
                 ".dds" => LoadDds(),
                 ".png" => LoadPng(),

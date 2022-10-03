@@ -25,6 +25,10 @@ public static class TexFileParser
         }
 
         meta.MipLevels = CountMipLevels( data, in meta, in header );
+        if( meta.MipLevels == 0 )
+        {
+            throw new Exception( "Could not load file. Image is corrupted and does not contain enough data for its size." );
+        }
 
         var scratch = ScratchImage.Initialize( meta );
 
@@ -142,7 +146,9 @@ public static class TexFileParser
         }
 
         for( ; idx < 13; ++idx )
+        {
             header.OffsetToSurface[ idx ] = 0;
+        }
 
         header.LodOffset[ 0 ] = 0;
         header.LodOffset[ 1 ] = 1;

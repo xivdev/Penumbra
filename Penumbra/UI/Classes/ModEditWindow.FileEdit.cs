@@ -349,7 +349,7 @@ public partial class ModEditWindow
                 fixed( byte* ptr = data )
                 {
                     file.ColorSets[ colorSetIdx ].Rows[ rowIdx ] = *( MtrlFile.ColorSet.Row* )ptr;
-                    if( file.ColorDyeSets.Length <= colorSetIdx )
+                    if( colorSetIdx < file.ColorDyeSets.Length )
                     {
                         file.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ] = *( MtrlFile.ColorDyeSet.Row* )( ptr + MtrlFile.ColorSet.Row.Size );
                     }

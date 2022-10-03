@@ -5,6 +5,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections;
@@ -143,30 +144,36 @@ public partial class ConfigWindow
                 $"Mods in the {InterfaceCollection} are loaded for any file that the game categorizes as an UI file. This is mostly icons as well as the tiles that generate the user interface windows themselves." );
         }
 
-        private sealed class SpecialCombo : FilteredCombo< (CollectionType, string, string) >
+        private sealed class SpecialCombo : FilterComboBase< (CollectionType, string, string) >
         {
             public (CollectionType, string, string)? CurrentType
                 => CollectionTypeExtensions.Special[ CurrentIdx ];
 
-            public int CurrentIdx = 0;
+            public           int    CurrentIdx = 0;
+            private readonly float  _unscaledWidth;
+            private readonly string _label;
 
             public SpecialCombo( string label, float unscaledWidth )
-                : base( label, unscaledWidth, CollectionTypeExtensions.Special )
-            { }
+                : base( CollectionTypeExtensions.Special, false )
+            {
+                _label         = label;
+                _unscaledWidth = unscaledWidth;
+            }
 
             public void Draw()
-                => Draw( CurrentIdx );
-
-            protected override void Select( int globalIdx )
             {
-                CurrentIdx = globalIdx;
+                var preview = CurrentIdx >= 0 ? Items[ CurrentIdx ].Item2 : string.Empty;
+                Draw(_label, preview, ref CurrentIdx, _unscaledWidth * ImGuiHelpers.GlobalScale, ImGui.GetTextLineHeightWithSpacing());
             }
 
             protected override string ToString( (CollectionType, string, string) obj )
                 => obj.Item2;
 
-            protected override bool IsVisible( (CollectionType, string, string) obj )
-                => Filter.IsContained( obj.Item2 ) && Penumbra.CollectionManager.ByType( obj.Item1 ) == null;
+            protected override bool IsVisible( int globalIdx, LowerString filter )
+            {
+                var obj = Items[ globalIdx ];
+                return filter.IsContained( obj.Item2 ) && Penumbra.CollectionManager.ByType( obj.Item1 ) == null;
+            }
         }
 
         private readonly SpecialCombo _specialCollectionCombo = new("##NewSpecial", 350);
