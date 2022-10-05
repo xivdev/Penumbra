@@ -21,6 +21,7 @@ public partial class ConfigWindow
         Add5_8_0( ret );
         Add5_8_7( ret );
         Add5_9_0( ret );
+        Add5_10_0( ret );
 
         return ret;
     }
@@ -36,7 +37,7 @@ public partial class ConfigWindow
            .RegisterEntry( "Fixed texture import being case sensitive on the extension." )
            .RegisterEntry( "Fixed special collection selector increasing in size on non-default UI styling." )
            .RegisterEntry( "Fixed color set rows not importing the dye values during material editing." )
-           .RegisterEntry( "Other miscallaneous small fixes." );
+           .RegisterEntry( "Other miscellaneous small fixes." );
 
     private static void Add5_9_0( Changelog log )
         => log.NextVersion( "Version 0.5.9.0" )
