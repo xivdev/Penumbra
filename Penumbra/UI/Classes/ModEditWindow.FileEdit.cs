@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
@@ -260,11 +261,14 @@ public partial class ModEditWindow
 
     private static bool DrawMaterialColorSetChange( MtrlFile file, bool disabled )
     {
-        if( !file.ColorSets.Any(c => c.HasRows ) )
+        if( !file.ColorSets.Any( c => c.HasRows ) )
         {
             return false;
         }
 
+        ColorSetCopyAllClipboardButton( file, 0  );
+        ImGui.SameLine();
+        var ret = ColorSetPasteAllClipboardButton( file, 0 );
         using var table = ImRaii.Table( "##ColorSets", 10,
             ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV );
         if( !table )
@@ -293,7 +297,6 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         ImGui.TableHeader( "Dye" );
 
-        var ret = false;
         for( var j = 0; j < file.ColorSets.Length; ++j )
         {
             using var _ = ImRaii.PushId( j );
@@ -305,6 +308,68 @@ public partial class ModEditWindow
         }
 
         return ret;
+    }
+
+    private static void ColorSetCopyAllClipboardButton( MtrlFile file, int colorSetIdx )
+    {
+        if( !ImGui.Button( "Export All Rows to Clipboard" ) )
+        {
+            return;
+        }
+
+        try
+        {
+            var data1 = file.ColorSets[ colorSetIdx ].Rows.AsBytes();
+            var data2 = file.ColorDyeSets.Length > colorSetIdx ? file.ColorDyeSets[ colorSetIdx ].Rows.AsBytes() : ReadOnlySpan< byte >.Empty;
+            var array = new byte[data1.Length + data2.Length];
+            data1.TryCopyTo( array );
+            data2.TryCopyTo( array.AsSpan( data1.Length ) );
+            var text = Convert.ToBase64String( array );
+            ImGui.SetClipboardText( text );
+        }
+        catch
+        {
+            // ignored
+        }
+    }
+
+    private static unsafe bool ColorSetPasteAllClipboardButton( MtrlFile file, int colorSetIdx )
+    {
+        if( !ImGui.Button( "Import All Rows from Clipboard" ) || file.ColorSets.Length <= colorSetIdx )
+        {
+            return false;
+        }
+
+        try
+        {
+            var text = ImGui.GetClipboardText();
+            var data = Convert.FromBase64String( text );
+            if( data.Length < Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() )
+            {
+                return false;
+            }
+
+            ref var rows = ref file.ColorSets[ colorSetIdx ].Rows;
+            fixed( void* ptr = data, output = &rows )
+            {
+                Functions.MemCpyUnchecked( output, ptr, Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() );
+                if( data.Length >= Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() + Marshal.SizeOf< MtrlFile.ColorDyeSet.RowArray >()
+                   && file.ColorDyeSets.Length > colorSetIdx)
+                {
+                    ref var dyeRows = ref file.ColorDyeSets[ colorSetIdx ].Rows;
+                    fixed( void* output2 = &dyeRows )
+                    {
+                        Functions.MemCpyUnchecked( output2, (byte*) ptr + Marshal.SizeOf<MtrlFile.ColorSet.RowArray>(), Marshal.SizeOf<MtrlFile.ColorDyeSet.RowArray>() );
+                    }
+                }
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private static unsafe void ColorSetCopyClipboardButton( MtrlFile.ColorSet.Row row, MtrlFile.ColorDyeSet.Row dye )
@@ -407,7 +472,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         var tmpFloat = row.SpecularStrength;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##SpecularStrength", ref tmpFloat, 0.1f, 0f ) && FixFloat(ref tmpFloat, row.SpecularStrength) )
+        if( ImGui.DragFloat( "##SpecularStrength", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.SpecularStrength ) )
         {
             file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].SpecularStrength = tmpFloat;
             ret                                                           = true;
@@ -465,7 +530,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.MaterialRepeat.X;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##RepeatX", ref tmpFloat, 0.1f, 0f ) && FixFloat(ref tmpFloat, row.MaterialRepeat.X) )
+        if( ImGui.DragFloat( "##RepeatX", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.MaterialRepeat.X ) )
         {
             file.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialRepeat = row.MaterialRepeat with { X = tmpFloat };
             ret                                                         = true;

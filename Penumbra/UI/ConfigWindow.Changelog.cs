@@ -25,6 +25,19 @@ public partial class ConfigWindow
         return ret;
     }
 
+    private static void Add5_10_0( Changelog log )
+        => log.NextVersion( "Version 0.5.10.0" )
+           .RegisterEntry( "Renamed backup functionality to export functionality." )
+           .RegisterEntry( "A default export directory can now optionally be specified." )
+           .RegisterEntry( "If left blank, exports will still be stored in your mod directory.", 1 )
+           .RegisterEntry( "Existing exports corresponding to existing mods will be moved automatically if the export directory is changed.",
+                1 )
+           .RegisterEntry( "Added buttons to export and import all color set rows at once during material editing." )
+           .RegisterEntry( "Fixed texture import being case sensitive on the extension." )
+           .RegisterEntry( "Fixed special collection selector increasing in size on non-default UI styling." )
+           .RegisterEntry( "Fixed color set rows not importing the dye values during material editing." )
+           .RegisterEntry( "Other miscallaneous small fixes." );
+
     private static void Add5_9_0( Changelog log )
         => log.NextVersion( "Version 0.5.9.0" )
            .RegisterEntry( "Special Collections are now split between male and female." )
