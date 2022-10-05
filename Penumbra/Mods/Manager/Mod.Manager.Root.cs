@@ -1,3 +1,4 @@
+using ImGuizmoNET;
 using System;
 using System.IO;
 
@@ -8,6 +9,11 @@ public sealed partial class Mod
     public sealed partial class Manager
     {
         public DirectoryInfo BasePath { get; private set; } = null!;
+        private DirectoryInfo? _exportDirectory;
+
+        public DirectoryInfo ExportDirectory
+            => _exportDirectory ?? BasePath;
+
         public bool Valid { get; private set; }
 
         public event Action? ModDiscoveryStarted;
@@ -102,6 +108,50 @@ public sealed partial class Mod
             {
                 ModBackup.MigrateZipToPmp( this );
             }
+        }
+
+        public void UpdateExportDirectory( string newDirectory )
+        {
+            if( newDirectory.Length == 0 )
+            {
+                if( _exportDirectory == null )
+                {
+                    return;
+                }
+
+                _exportDirectory                = null;
+                Penumbra.Config.ExportDirectory = string.Empty;
+                Penumbra.Config.Save();
+                return;
+            }
+
+            var dir = new DirectoryInfo( newDirectory );
+            if( dir.FullName.Equals( _exportDirectory?.FullName, StringComparison.OrdinalIgnoreCase ) )
+            {
+                return;
+            }
+
+            if( !dir.Exists )
+            {
+                try
+                {
+                    Directory.CreateDirectory( dir.FullName );
+                }
+                catch( Exception e )
+                {
+                    Penumbra.Log.Error( $"Could not create Export Directory:\n{e}" );
+                    return;
+                }
+            }
+
+            foreach( var mod in _mods )
+            {
+                new ModBackup( mod ).Move( dir.FullName );
+            }
+
+            _exportDirectory                = dir;
+            Penumbra.Config.ExportDirectory = dir.FullName;
+            Penumbra.Config.Save();
         }
     }
 }

@@ -58,6 +58,8 @@ public partial class Mod
                 return;
             }
 
+            new ModBackup( mod ).Move( null, dir.Name );
+
             dir.Refresh();
             mod.ModPath = dir;
             if( !mod.Reload( false, out var metaChange ) )
@@ -109,7 +111,7 @@ public partial class Mod
                 try
                 {
                     Directory.Delete( mod.ModPath.FullName, true );
-                    Penumbra.Log.Debug( $"Deleted directory {mod.ModPath.FullName} for {mod.Name}.");
+                    Penumbra.Log.Debug( $"Deleted directory {mod.ModPath.FullName} for {mod.Name}." );
                 }
                 catch( Exception e )
                 {

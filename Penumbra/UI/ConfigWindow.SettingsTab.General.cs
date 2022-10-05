@@ -111,6 +111,7 @@ public partial class ConfigWindow
             DrawDefaultModImportPath();
             DrawDefaultModAuthor();
             DrawDefaultModImportFolder();
+            DrawDefaultModExportPath();
 
             ImGui.NewLine();
         }
@@ -226,6 +227,56 @@ public partial class ConfigWindow
             style.Pop();
             ImGuiUtil.LabeledHelpMarker( "Default Mod Import Directory",
                 "Set the directory that gets opened when using the file picker to import mods for the first time." );
+        }
+
+        private string _tempExportDirectory = string.Empty;
+
+        private void DrawDefaultModExportPath()
+        {
+            var       tmp     = Penumbra.Config.ExportDirectory;
+            var       spacing = new Vector2( 3 * ImGuiHelpers.GlobalScale );
+            using var style   = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, spacing );
+            ImGui.SetNextItemWidth( _window._inputTextWidth.X - _window._iconButtonSize.X - spacing.X );
+            if( ImGui.InputText( "##defaultModExport", ref tmp, 256 ) )
+            {
+                _tempExportDirectory = tmp;
+            }
+
+            if( ImGui.IsItemDeactivatedAfterEdit() )
+            {
+                Penumbra.ModManager.UpdateExportDirectory( _tempExportDirectory );
+            }
+
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( $"{FontAwesomeIcon.Folder.ToIconString()}##export", _window._iconButtonSize,
+                   "Select a directory via dialog.", false, true ) )
+            {
+                if( _dialogOpen )
+                {
+                    _dialogManager.Reset();
+                    _dialogOpen = false;
+                }
+                else
+                {
+                    var startDir = Penumbra.Config.ExportDirectory.Length > 0 && Directory.Exists( Penumbra.Config.ExportDirectory )
+                        ? Penumbra.Config.ExportDirectory
+                        : Directory.Exists( Penumbra.Config.ModDirectory )
+                            ? Penumbra.Config.ModDirectory
+                            : ".";
+
+                    _dialogManager.OpenFolderDialog( "Choose Default Export Directory", ( b, s ) =>
+                    {
+                        Penumbra.ModManager.UpdateExportDirectory( b ? s : Penumbra.Config.ExportDirectory );
+                        _dialogOpen = false;
+                    }, startDir );
+                    _dialogOpen = true;
+                }
+            }
+
+            style.Pop();
+            ImGuiUtil.LabeledHelpMarker( "Default Mod Export Directory",
+                "Set the directory mods get saved to when using the export function or loaded from when reimporting backups.\n"
+              + "Keep this empty to use the root directory." );
         }
 
         private void DrawDefaultModAuthor()
