@@ -25,6 +25,32 @@ public sealed unsafe partial class Utf8String
             ? new Utf8String().Setup( ByteStringFunctions.AsciiToLower( _path, Length ), Length, null, true, true, true, IsAsciiInternal )
             : this;
 
+    // Convert the ascii portion of the string to mixed case (i.e. capitalize every first letter in a word)
+    // Clones the string.
+    public Utf8String AsciiToMixed()
+    {
+        var length = Length;
+        if( length == 0 )
+        {
+            return Empty;
+        }
+
+        var ret                = Clone();
+        var previousWhitespace = true;
+        var end                = ret.Path + length;
+        for( var ptr = ret.Path; ptr < end; ++ptr )
+        {
+            if( previousWhitespace )
+            {
+                *ptr = ByteStringFunctions.AsciiToUpper( *ptr );
+            }
+
+            previousWhitespace = char.IsWhiteSpace( ( char )*ptr );
+        }
+
+        return ret;
+    }
+
     // Convert the ascii portion of the string to lowercase.
     // Guaranteed to create an owned copy.
     public Utf8String AsciiToLowerClone()
@@ -37,7 +63,7 @@ public sealed unsafe partial class Utf8String
     {
         var ret = new Utf8String();
         ret._length = _length | OwnedFlag | NullTerminatedFlag;
-        ret._path   = ByteStringFunctions.CopyString(Path, Length);
+        ret._path   = ByteStringFunctions.CopyString( Path, Length );
         ret._crc32  = Crc32;
         return ret;
     }

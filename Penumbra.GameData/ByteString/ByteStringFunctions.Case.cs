@@ -9,6 +9,10 @@ public static unsafe partial class ByteStringFunctions
        .Select( i => ( byte )char.ToLowerInvariant( ( char )i ) )
        .ToArray();
 
+    private static readonly byte[] AsciiUpperCaseBytes = Enumerable.Range( 0, 256 )
+       .Select( i => ( byte )char.ToUpperInvariant( ( char )i ) )
+       .ToArray();
+
     // Convert a byte to its ASCII-lowercase version.
     public static byte AsciiToLower( byte b )
         => AsciiLowerCaseBytes[ b ];
@@ -16,6 +20,14 @@ public static unsafe partial class ByteStringFunctions
     // Check if a byte is ASCII-lowercase.
     public static bool AsciiIsLower( byte b )
         => AsciiToLower( b ) == b;
+
+    // Convert a byte to its ASCII-uppercase version.
+    public static byte AsciiToUpper( byte b )
+        => AsciiUpperCaseBytes[ b ];
+
+    // Check if a byte is ASCII-uppercase.
+    public static bool AsciiIsUpper( byte b )
+        => AsciiToUpper( b ) == b;
 
     // Check if a byte array of given length is ASCII-lowercase.
     public static bool IsAsciiLowerCase( byte* path, int length )
