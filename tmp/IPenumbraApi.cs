@@ -1,63 +1,28 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Lumina.Data;
-using Penumbra.Collections;
-using Penumbra.GameData.Enums;
-using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.Api;
 
-public interface IPenumbraApiBase
-{
-    // The API version is staggered in two parts.
-    // The major/Breaking version only increments if there are changes breaking backwards compatibility.
-    // The minor/Feature version increments any time there is something added
-    // and resets when Breaking is incremented.
-    public (int Breaking, int Feature) ApiVersion { get; }
-    public bool Valid { get; }
-}
-
-public delegate void ChangedItemHover( object? item );
-public delegate void ChangedItemClick( MouseButton button, object? item );
-public delegate void GameObjectRedrawn( IntPtr objectPtr, int objectTableIndex );
-public delegate void ModSettingChanged( ModSettingChange type, string collectionName, string modDirectory, bool inherited );
-
-public delegate void CreatingCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr modelId, IntPtr customize,
-    IntPtr equipData );
-
-public delegate void CreatedCharacterBaseDelegate( IntPtr gameObject, ModCollection collection, IntPtr drawObject );
-public delegate void GameObjectResourceResolvedDelegate( IntPtr gameObject, string gamePath, string localPath );
-
-public enum PenumbraApiEc
-{
-    Success            = 0,
-    NothingChanged     = 1,
-    CollectionMissing  = 2,
-    ModMissing         = 3,
-    OptionGroupMissing = 4,
-    OptionMissing      = 5,
-
-    CharacterCollectionExists = 6,
-    LowerPriority             = 7,
-    InvalidGamePath           = 8,
-    FileMissing               = 9,
-    InvalidManipulation       = 10,
-    InvalidArgument           = 11,
-    UnknownError              = 255,
-}
-
 public interface IPenumbraApi : IPenumbraApiBase
 {
+    #region Game State
+
     // Obtain the currently set mod directory from the configuration.
     public string GetModDirectory();
+
+    // Obtain the entire current penumbra configuration as a json encoded string.
+    public string GetConfiguration();
 
     // Fired whenever a mod directory change is finished.
     // Gives the full path of the mod directory and whether Penumbra treats it as valid.
     public event Action< string, bool >? ModDirectoryChanged;
 
-    // Obtain the entire current penumbra configuration as a json encoded string.
-    public string GetConfiguration();
+    #endregion
+
+    #region UI
 
     // Triggered when the user hovers over a listed changed object in a mod tab.
     // Can be used to append tooltips.
@@ -70,7 +35,35 @@ public interface IPenumbraApi : IPenumbraApiBase
 
     // Triggered when the user clicks a listed changed object in a mod tab.
     public event ChangedItemClick? ChangedItemClicked;
+
+    #endregion
+
+    #region Redrawing
+
+    // Queue redrawing of all actors of the given name with the given RedrawType.
+    public void RedrawObject( string name, RedrawType setting );
+
+    // Queue redrawing of the specific actor with the given RedrawType. Should only be used when the actor is sure to be valid.
+    public void RedrawObject( GameObject gameObject, RedrawType setting );
+
+    // Queue redrawing of the actor with the given object table index, if it exists, with the given RedrawType.
+    public void RedrawObject( int tableIndex, RedrawType setting );
+
+    // Queue redrawing of all currently available actors with the given RedrawType.
+    public void RedrawAll( RedrawType setting );
+
+    // Triggered whenever a game object is redrawn via Penumbra.
     public event GameObjectRedrawn? GameObjectRedrawn;
+
+    #endregion
+
+    #region Game State
+
+    // Obtain the game object associated with a given draw object and the name of the collection associated with this game object.
+    public (IntPtr, string) GetDrawObjectInfo( IntPtr drawObject );
+
+    // Obtain the parent game object index for an unnamed cutscene actor by its index.
+    public int GetCutsceneParentIndex( int actor );
 
     // Triggered when a character base is created and a corresponding gameObject could be found,
     // before the Draw Object is actually created, so customize and equipdata can be manipulated beforehand.
@@ -84,17 +77,9 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Does not trigger if the resource is not requested for a known game object.
     public event GameObjectResourceResolvedDelegate? GameObjectResourceResolved;
 
-    // Queue redrawing of all actors of the given name with the given RedrawType.
-    public void RedrawObject( string name, RedrawType setting );
+    #endregion
 
-    // Queue redrawing of the specific actor with the given RedrawType. Should only be used when the actor is sure to be valid.
-    public void RedrawObject( GameObject gameObject, RedrawType setting );
-
-    // Queue redrawing of the actor with the given object table index, if it exists, with the given RedrawType.
-    public void RedrawObject( int tableIndex, RedrawType setting );
-
-    // Queue redrawing of all currently available actors with the given RedrawType.
-    public void RedrawAll( RedrawType setting );
+    #region Resolving
 
     // Resolve a given gamePath via Penumbra using the Default collection.
     // Returns the given gamePath if penumbra would not manipulate it.
@@ -125,8 +110,9 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Try to load a given gamePath with the resolved path from Penumbra.
     public T? GetFile< T >( string gamePath, string characterName ) where T : FileResource;
 
-    // Gets a dictionary of effected items from a collection
-    public IReadOnlyDictionary< string, object? > GetChangedItemsForCollection( string collectionName );
+    #endregion
+
+    #region Collections
 
     // Obtain a list of the names of all currently installed collections.
     public IList< string > GetCollections();
@@ -143,11 +129,24 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Obtain the name of the collection associated with characterName and whether it is configured or inferred from default.
     public (string, bool) GetCharacterCollection( string characterName );
 
-    // Obtain the game object associated with a given draw object and the name of the collection associated with this game object.
-    public (IntPtr, string) GetDrawObjectInfo( IntPtr drawObject );
+    // Gets a dictionary of effected items from a collection
+    public IReadOnlyDictionary< string, object? > GetChangedItemsForCollection( string collectionName );
 
-    // Obtain the parent game object index for an unnamed cutscene actor by its index.
-    public int GetCutsceneParentIndex( int actor );
+    #endregion
+
+    #region Meta
+
+    // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
+    // for the collection currently associated with the player.
+    public string GetPlayerMetaManipulations();
+
+    // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
+    // for the given collection associated with the character name, or the default collection.
+    public string GetMetaManipulations( string characterName );
+
+    #endregion
+
+    #region Mods
 
     // Obtain a list of all installed mods. The first string is their directory name, the second string is their mod name.
     public IList< (string, string) > GetModList();
@@ -162,20 +161,29 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Note that success does only imply a successful call, not a successful mod load.
     public PenumbraApiEc AddMod( string modDirectory );
 
-    // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
-    // for the collection currently associated with the player.
-    public string GetPlayerMetaManipulations();
+    // Try to delete a mod given by its modDirectory or its name.
+    // Returns NothingDone if the mod can not be found or success otherwise.
+    // Note that success does only imply a successful call, not successful deletion.
+    public PenumbraApiEc DeleteMod( string modDirectory, string modName );
 
-    // Obtain a base64 encoded, zipped json-string with a prepended version-byte of the current manipulations
-    // for the given collection associated with the character name, or the default collection.
-    public string GetMetaManipulations( string characterName );
+    // Get the internal full filesystem path including search order for the specified mod.
+    // If success is returned, the second return value contains the full path
+    // and a bool indicating whether this is the default path (false) or a manually set one (true).
+    // Can return ModMissing or Success.
+    public (PenumbraApiEc, string, bool) GetModPath( string modDirectory, string modName );
 
+    // Set the internal search order and filesystem path of the specified mod to the given path.
+    // Returns InvalidArgument if newPath is empty, ModMissing if the mod can not be found,
+    // PathRenameFailed if newPath could not be set and Success otherwise.
+    public PenumbraApiEc SetModPath( string modDirectory, string modName, string newPath );
 
-    // ############## Mod Settings #################
+    #endregion
+
+    #region Mod Settings
 
     // Obtain the potential settings of a mod specified by its directory name first or mod name second.
     // Returns null if the mod could not be found.
-    public IDictionary< string, (IList< string >, SelectType) >? GetAvailableModSettings( string modDirectory, string modName );
+    public IDictionary< string, (IList< string >, GroupType) >? GetAvailableModSettings( string modDirectory, string modName );
 
     // Obtain the enabled state, the priority, the settings of a mod specified by its directory name first or mod name second,
     // and whether these settings are inherited, or null if the collection does not set them at all.
@@ -207,6 +215,10 @@ public interface IPenumbraApi : IPenumbraApiBase
     // This event gets fired when any setting in any collection changes.
     public event ModSettingChanged? ModSettingChanged;
 
+    #endregion
+
+    #region Temporary
+
     // Create a temporary collection without actual settings but with a cache.
     // If no character collection for this character exists or forceOverwriteCharacter is true,
     // associate this collection to a specific character.
@@ -233,4 +245,6 @@ public interface IPenumbraApi : IPenumbraApiBase
     // Remove the temporary mod with the given tag and priority from the temporary mods applying to the collection of the given name, which can be temporary.
     // Can return Okay or NothingDone.
     public PenumbraApiEc RemoveTemporaryMod( string tag, string collectionName, int priority );
+
+    #endregion
 }

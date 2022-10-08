@@ -1,8 +1,8 @@
 using EmbedIO;
 using EmbedIO.Routing;
 using EmbedIO.WebApi;
-using Penumbra.GameData.Enums;
 using System.Threading.Tasks;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.Api;
 

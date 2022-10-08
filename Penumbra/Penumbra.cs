@@ -16,6 +16,7 @@ using OtterGui.Classes;
 using OtterGui.Log;
 using OtterGui.Widgets;
 using Penumbra.Api;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop;
 using Penumbra.UI;
@@ -57,16 +58,16 @@ public class Penumbra : IDalamudPlugin
     public static FrameworkManager Framework { get; private set; } = null!;
     public static int ImcExceptions = 0;
 
-    public readonly  ResourceLogger ResourceLogger;
-    public readonly  PathResolver   PathResolver;
-    public readonly  ObjectReloader ObjectReloader;
-    public readonly  ModFileSystem  ModFileSystem;
-    public readonly  PenumbraApi    Api;
-    public readonly  PenumbraIpc    Ipc;
-    private readonly ConfigWindow   _configWindow;
-    private readonly LaunchButton   _launchButton;
-    private readonly WindowSystem   _windowSystem;
-    private readonly Changelog      _changelog;
+    public readonly  ResourceLogger       ResourceLogger;
+    public readonly  PathResolver         PathResolver;
+    public readonly  ObjectReloader       ObjectReloader;
+    public readonly  ModFileSystem        ModFileSystem;
+    public readonly  PenumbraApi          Api;
+    public readonly  PenumbraIpcProviders IpcProviders;
+    private readonly ConfigWindow         _configWindow;
+    private readonly LaunchButton         _launchButton;
+    private readonly WindowSystem         _windowSystem;
+    private readonly Changelog            _changelog;
 
     internal WebServer? WebServer;
 
@@ -95,9 +96,9 @@ public class Penumbra : IDalamudPlugin
             ModManager.DiscoverMods();
             CollectionManager = new ModCollection.Manager( ModManager );
             CollectionManager.CreateNecessaryCaches();
-            ModFileSystem     = ModFileSystem.Load();
-            ObjectReloader    = new ObjectReloader();
-            PathResolver      = new PathResolver( ResourceLoader );
+            ModFileSystem  = ModFileSystem.Load();
+            ObjectReloader = new ObjectReloader();
+            PathResolver   = new PathResolver( ResourceLoader );
 
             Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
             {
@@ -133,8 +134,8 @@ public class Penumbra : IDalamudPlugin
                 ResidentResources.Reload();
             }
 
-            Api = new PenumbraApi( this );
-            Ipc = new PenumbraIpc( Dalamud.PluginInterface, Api );
+            Api          = new PenumbraApi( this );
+            IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
             SubscribeItemLinks();
             if( ImcExceptions > 0 )
             {
@@ -279,7 +280,7 @@ public class Penumbra : IDalamudPlugin
     {
         ShutdownWebServer();
         DisposeInterface();
-        Ipc?.Dispose();
+        IpcProviders?.Dispose();
         Api?.Dispose();
         ObjectReloader?.Dispose();
         ModFileSystem?.Dispose();

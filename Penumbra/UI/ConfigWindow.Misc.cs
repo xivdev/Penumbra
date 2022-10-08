@@ -7,6 +7,7 @@ using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;

@@ -2,3 +2,7 @@
 	path = OtterGui
 	url = git@github.com:Ottermandias/OtterGui.git
 	branch = main
+[submodule "Penumbra.Api"]
+	path = Penumbra.Api
+	url = git@github.com:Ottermandias/Penumbra.Api.git
+	branch = main

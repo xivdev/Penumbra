@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Util;
@@ -16,7 +17,7 @@ public sealed partial class Mod
         public delegate void ModOptionChangeDelegate( ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx );
         public event ModOptionChangeDelegate ModOptionChanged;
 
-        public void ChangeModGroupType( Mod mod, int groupIdx, SelectType type )
+        public void ChangeModGroupType( Mod mod, int groupIdx, GroupType type )
         {
             var group = mod._groups[ groupIdx ];
             if( group.Type == type )
@@ -61,7 +62,7 @@ public sealed partial class Mod
             ModOptionChanged.Invoke( ModOptionChangeType.GroupRenamed, mod, groupIdx, -1, -1 );
         }
 
-        public void AddModGroup( Mod mod, SelectType type, string newName )
+        public void AddModGroup( Mod mod, GroupType type, string newName )
         {
             if( !VerifyFileName( mod, null, newName, true ) )
             {
@@ -70,7 +71,7 @@ public sealed partial class Mod
 
             var maxPriority = mod._groups.Count == 0 ? 0 : mod._groups.Max( o => o.Priority ) + 1;
 
-            mod._groups.Add( type == SelectType.Multi
+            mod._groups.Add( type == GroupType.Multi
                 ? new MultiModGroup { Name  = newName, Priority = maxPriority }
                 : new SingleModGroup { Name = newName, Priority = maxPriority } );
             ModOptionChanged.Invoke( ModOptionChangeType.GroupAdded, mod, mod._groups.Count - 1, -1, -1 );

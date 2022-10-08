@@ -8,6 +8,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 
 namespace Penumbra.UI;

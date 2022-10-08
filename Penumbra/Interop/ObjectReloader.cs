@@ -6,6 +6,7 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.Api;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 

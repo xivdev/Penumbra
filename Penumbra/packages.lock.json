@@ -58,26 +58,17 @@
           "System.ValueTuple": "4.5.0"
         }
       },
-      "DirectXTex": {
-        "type": "Project"
-      },
-      "directxtexc": {
-        "type": "Project",
-        "dependencies": {
-          "DirectXTex": "[1.0.0, )"
-        }
-      },
       "ottergui": {
         "type": "Project"
       },
-      "ottertex": {
-        "type": "Project",
-        "dependencies": {
-          "DirectXTexC": "[1.0.0, )"
-        }
+      "penumbra.api": {
+        "type": "Project"
       },
       "penumbra.gamedata": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Penumbra.Api": "[1.0.0, )"
+        }
       }
     }
   }

@@ -5,6 +5,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
@@ -154,7 +155,7 @@ public partial class ConfigWindow
         // If a description is provided, add a help marker besides it.
         private void DrawSingleGroup( IModGroup group, int groupIdx )
         {
-            if( group.Type != SelectType.Single || !group.IsOption )
+            if( group.Type != GroupType.Single || !group.IsOption )
             {
                 return;
             }
@@ -193,7 +194,7 @@ public partial class ConfigWindow
         // If a description is provided, add a help marker in the title.
         private void DrawMultiGroup( IModGroup group, int groupIdx )
         {
-            if( group.Type != SelectType.Multi || !group.IsOption )
+            if( group.Type != GroupType.Multi || !group.IsOption )
             {
                 return;
             }

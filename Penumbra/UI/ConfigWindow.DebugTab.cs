@@ -444,11 +444,11 @@ public partial class ConfigWindow
         {
             if( !ImGui.CollapsingHeader( "IPC" ) )
             {
-                _window._penumbra.Ipc.Tester.UnsubscribeEvents();
+                _window._penumbra.IpcProviders.Tester.UnsubscribeEvents();
                 return;
             }
 
-            _window._penumbra.Ipc.Tester.Draw();
+            _window._penumbra.IpcProviders.Tester.Draw();
         }
 
         // Helper to print a property and its value in a 2-column table.

@@ -7,6 +7,7 @@ using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.Collections;
 
@@ -269,10 +270,10 @@ public partial class ModCollection
                     var config = settings.Settings[ groupIndex ];
                     switch( group.Type )
                     {
-                        case SelectType.Single:
+                        case GroupType.Single:
                             AddSubMod( group[ ( int )config ], mod );
                             break;
-                        case SelectType.Multi:
+                        case GroupType.Multi:
                         {
                             foreach( var (option, _) in group.WithIndex()
                                        .Where( p => ( ( 1 << p.Item2 ) & config ) != 0 )

@@ -5,6 +5,7 @@ using System.Text;
 using Dalamud.Utility;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.ByteString;
 using Penumbra.Import;
 
@@ -62,12 +63,12 @@ public partial class Mod
     }
 
     // Create a file for an option group from given data.
-    internal static void CreateOptionGroup( DirectoryInfo baseFolder, SelectType type, string name,
+    internal static void CreateOptionGroup( DirectoryInfo baseFolder, GroupType type, string name,
         int priority, int index, uint defaultSettings, string desc, IEnumerable< ISubMod > subMods )
     {
         switch( type )
         {
-            case SelectType.Multi:
+            case GroupType.Multi:
             {
                 var group = new MultiModGroup()
                 {
@@ -80,7 +81,7 @@ public partial class Mod
                 IModGroup.Save( group, baseFolder, index );
                 break;
             }
-            case SelectType.Single:
+            case GroupType.Single:
             {
                 var group = new SingleModGroup()
                 {

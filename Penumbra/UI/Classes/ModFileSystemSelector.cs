@@ -13,6 +13,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.UI.Classes;
 

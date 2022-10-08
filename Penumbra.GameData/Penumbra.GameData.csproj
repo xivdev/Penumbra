@@ -35,6 +35,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Penumbra.Api\Penumbra.Api.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Reference Include="Dalamud">
             <HintPath>$(DalamudLibPath)Dalamud.dll</HintPath>
             <Private>False</Private>

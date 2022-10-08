@@ -3,14 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using OtterGui.Filesystem;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.Mods;
-
-public enum SelectType
-{
-    Single,
-    Multi,
-}
 
 public interface IModGroup : IEnumerable< ISubMod >
 {
@@ -18,7 +13,7 @@ public interface IModGroup : IEnumerable< ISubMod >
 
     public string Name { get; }
     public string Description { get; }
-    public SelectType Type { get; }
+    public GroupType Type { get; }
     public int Priority { get; }
     public uint DefaultSettings { get; set; }
 
@@ -31,8 +26,8 @@ public interface IModGroup : IEnumerable< ISubMod >
     public bool IsOption
         => Type switch
         {
-            SelectType.Single => Count > 1,
-            SelectType.Multi  => Count > 0,
+            GroupType.Single => Count > 1,
+            GroupType.Multi  => Count > 0,
             _                 => false,
         };
 
@@ -90,7 +85,7 @@ public interface IModGroup : IEnumerable< ISubMod >
         j.WriteStartArray();
         for( var idx = 0; idx < group.Count; ++idx )
         {
-            ISubMod.WriteSubMod( j, serializer, group[ idx ], basePath, group.Type == SelectType.Multi ? group.OptionPriority( idx ) : null );
+            ISubMod.WriteSubMod( j, serializer, group[ idx ], basePath, group.Type == GroupType.Multi ? group.OptionPriority( idx ) : null );
         }
 
         j.WriteEndArray();
@@ -98,7 +93,7 @@ public interface IModGroup : IEnumerable< ISubMod >
         Penumbra.Log.Debug( $"Saved group file {file} for group {groupIdx + 1}: {group.Name}." );
     }
 
-    public IModGroup Convert( SelectType type );
+    public IModGroup Convert( GroupType type );
     public bool      MoveOption( int optionIdxFrom, int optionIdxTo );
     public void      UpdatePositions( int from = 0 );
 }

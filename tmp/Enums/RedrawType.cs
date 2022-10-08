@@ -1,4 +1,4 @@
-namespace Penumbra.GameData.Enums;
+namespace Penumbra.Api.Enums;
 
 public enum RedrawType
 {

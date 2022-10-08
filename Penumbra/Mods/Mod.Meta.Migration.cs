@@ -6,6 +6,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.ByteString;
 
 namespace Penumbra.Mods;
@@ -128,7 +129,7 @@ public sealed partial class Mod
 
             switch( group.SelectionType )
             {
-                case SelectType.Multi:
+                case GroupType.Multi:
 
                     var optionPriority = 0;
                     var newMultiGroup = new MultiModGroup()
@@ -144,7 +145,7 @@ public sealed partial class Mod
                     }
 
                     break;
-                case SelectType.Single:
+                case GroupType.Single:
                     if( group.Options.Count == 1 )
                     {
                         AddFilesToSubMod( mod._default, mod.ModPath, group.Options[ 0 ], seenMetaFiles );
@@ -209,7 +210,7 @@ public sealed partial class Mod
             public string GroupName = string.Empty;
 
             [JsonConverter( typeof( Newtonsoft.Json.Converters.StringEnumConverter ) )]
-            public SelectType SelectionType = SelectType.Single;
+            public GroupType SelectionType = GroupType.Single;
 
             public List< OptionV0 > Options = new();
 

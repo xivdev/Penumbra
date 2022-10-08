@@ -8,6 +8,7 @@ using Dalamud.Interface.Components;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Api.Enums;
 using Penumbra.Mods;
 
 namespace Penumbra.UI;
@@ -236,7 +237,7 @@ public partial class ConfigWindow
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), window._iconButtonSize,
                        tt, !nameValid, true ) )
                 {
-                    Penumbra.ModManager.AddModGroup( mod, SelectType.Single, _newGroupName );
+                    Penumbra.ModManager.AddModGroup( mod, GroupType.Single, _newGroupName );
                     Reset();
                 }
             }
@@ -496,7 +497,7 @@ public partial class ConfigWindow
                 ImGui.TableNextColumn();
 
 
-                if( group.Type == SelectType.Single )
+                if( group.Type == GroupType.Single )
                 {
                     if( ImGui.RadioButton( "##default", group.DefaultSettings == optionIdx ) )
                     {
@@ -532,7 +533,7 @@ public partial class ConfigWindow
                 }
 
                 ImGui.TableNextColumn();
-                if( group.Type == SelectType.Multi )
+                if( group.Type == GroupType.Multi )
                 {
                     if( Input.Priority( "##Priority", groupIdx, optionIdx, group.OptionPriority( optionIdx ), out var priority,
                            50 * ImGuiHelpers.GlobalScale ) )
@@ -564,7 +565,7 @@ public partial class ConfigWindow
                 }
 
                 ImGui.TableNextColumn();
-                var canAddGroup = mod.Groups[ groupIdx ].Type != SelectType.Multi || mod.Groups[ groupIdx ].Count < IModGroup.MaxMultiOptions;
+                var canAddGroup = mod.Groups[ groupIdx ].Type != GroupType.Multi || mod.Groups[ groupIdx ].Count < IModGroup.MaxMultiOptions;
                 var validName   = _newOptionName.Length       > 0 && _newOptionNameIdx                            == groupIdx;
                 var tt = canAddGroup
                     ? validName ? "Add a new option to this group." : "Please enter a name for the new option."
@@ -636,11 +637,11 @@ public partial class ConfigWindow
         // Draw a combo to select single or multi group and switch between them.
         private void DrawGroupCombo( IModGroup group, int groupIdx )
         {
-            static string GroupTypeName( SelectType type )
+            static string GroupTypeName( GroupType type )
                 => type switch
                 {
-                    SelectType.Single => "Single Group",
-                    SelectType.Multi  => "Multi Group",
+                    GroupType.Single => "Single Group",
+                    GroupType.Multi  => "Multi Group",
                     _                 => "Unknown",
                 };
 
@@ -651,16 +652,16 @@ public partial class ConfigWindow
                 return;
             }
 
-            if( ImGui.Selectable( GroupTypeName( SelectType.Single ), group.Type == SelectType.Single ) )
+            if( ImGui.Selectable( GroupTypeName( GroupType.Single ), group.Type == GroupType.Single ) )
             {
-                Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, SelectType.Single );
+                Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, GroupType.Single );
             }
 
             var       canSwitchToMulti = group.Count <= IModGroup.MaxMultiOptions;
             using var style            = ImRaii.PushStyle( ImGuiStyleVar.Alpha, 0.5f, !canSwitchToMulti );
-            if( ImGui.Selectable( GroupTypeName( SelectType.Multi ), group.Type == SelectType.Multi ) && canSwitchToMulti )
+            if( ImGui.Selectable( GroupTypeName( GroupType.Multi ), group.Type == GroupType.Multi ) && canSwitchToMulti )
             {
-                Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, SelectType.Multi );
+                Penumbra.ModManager.ChangeModGroupType( _mod, groupIdx, GroupType.Multi );
             }
 
             style.Pop();

@@ -149,7 +149,7 @@ public unsafe partial class PathResolver
                 try
                 {
                     var modelPtr = &a;
-                    CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ( IntPtr )modelPtr, b, c );
+                    CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection.Name, ( IntPtr )modelPtr, b, c );
                 }
                 catch( Exception e )
                 {
@@ -163,7 +163,7 @@ public unsafe partial class PathResolver
                 if( LastGameObject != null && ret != IntPtr.Zero )
                 {
                     _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
-                    CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection, ret );
+                    CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection.Name, ret );
                 }
 
                 return ret;

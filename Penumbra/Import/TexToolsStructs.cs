@@ -1,4 +1,5 @@
 using System;
+using Penumbra.Api.Enums;
 using Penumbra.Mods;
 
 namespace Penumbra.Import;
@@ -34,7 +35,7 @@ internal class ModPackPage
 internal class ModGroup
 {
     public string       GroupName     = string.Empty;
-    public SelectType   SelectionType = SelectType.Single;
+    public GroupType   SelectionType = GroupType.Single;
     public OptionList[] OptionList    = Array.Empty< OptionList >();
 }
 
@@ -46,7 +47,7 @@ internal class OptionList
     public string      ImagePath     = string.Empty;
     public SimpleMod[] ModsJsons     = Array.Empty< SimpleMod >();
     public string      GroupName     = string.Empty;
-    public SelectType  SelectionType = SelectType.Single;
+    public GroupType  SelectionType = GroupType.Single;
     public bool        IsChecked     = false;
 }
 

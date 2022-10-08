@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using OtterGui;
 using OtterGui.Filesystem;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.Mods;
 
@@ -56,8 +57,8 @@ public class ModSettings
                 var config = Settings[ groupIdx ];
                 Settings[ groupIdx ] = group.Type switch
                 {
-                    SelectType.Single => ( uint )Math.Max( Math.Min( group.Count - 1, BitOperations.TrailingZeroCount( config ) ), 0 ),
-                    SelectType.Multi  => 1u << ( int )config,
+                    GroupType.Single => ( uint )Math.Max( Math.Min( group.Count - 1, BitOperations.TrailingZeroCount( config ) ), 0 ),
+                    GroupType.Multi  => 1u << ( int )config,
                     _                 => config,
                 };
                 return config != Settings[ groupIdx ];
@@ -70,8 +71,8 @@ public class ModSettings
                 var config = Settings[ groupIdx ];
                 Settings[ groupIdx ] = group.Type switch
                 {
-                    SelectType.Single => config >= optionIdx ? config > 1 ? config - 1 : 0 : config,
-                    SelectType.Multi  => Functions.RemoveBit( config, optionIdx ),
+                    GroupType.Single => config >= optionIdx ? config > 1 ? config - 1 : 0 : config,
+                    GroupType.Multi  => Functions.RemoveBit( config, optionIdx ),
                     _                 => config,
                 };
                 return config != Settings[ groupIdx ];
@@ -87,8 +88,8 @@ public class ModSettings
                 var config = Settings[ groupIdx ];
                 Settings[ groupIdx ] = group.Type switch
                 {
-                    SelectType.Single => config == optionIdx ? ( uint )movedToIdx : config,
-                    SelectType.Multi  => Functions.MoveBit( config, optionIdx, movedToIdx ),
+                    GroupType.Single => config == optionIdx ? ( uint )movedToIdx : config,
+                    GroupType.Multi  => Functions.MoveBit( config, optionIdx, movedToIdx ),
                     _                 => config,
                 };
                 return config != Settings[ groupIdx ];
@@ -101,8 +102,8 @@ public class ModSettings
     private static uint FixSetting( IModGroup group, uint value )
         => group.Type switch
         {
-            SelectType.Single => ( uint )Math.Min( value, group.Count       - 1 ),
-            SelectType.Multi  => ( uint )( value & ( ( 1ul << group.Count ) - 1 ) ),
+            GroupType.Single => ( uint )Math.Min( value, group.Count       - 1 ),
+            GroupType.Multi  => ( uint )( value & ( ( 1ul << group.Count ) - 1 ) ),
             _                 => value,
         };
 
@@ -202,7 +203,7 @@ public class ModSettings
             }
 
             var group = mod.Groups[ idx ];
-            if( group.Type == SelectType.Single && setting < group.Count )
+            if( group.Type == GroupType.Single && setting < group.Count )
             {
                 dict.Add( group.Name, new[] { group[ ( int )setting ].Name } );
             }

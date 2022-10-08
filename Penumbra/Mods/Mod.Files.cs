@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using OtterGui;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 
@@ -79,10 +80,10 @@ public partial class Mod
         try
         {
             var json = JObject.Parse( File.ReadAllText( file.FullName ) );
-            switch( json[ nameof( Type ) ]?.ToObject< SelectType >() ?? SelectType.Single )
+            switch( json[ nameof( Type ) ]?.ToObject< GroupType >() ?? GroupType.Single )
             {
-                case SelectType.Multi:  return MultiModGroup.Load( mod, json, groupIdx );
-                case SelectType.Single: return SingleModGroup.Load( mod, json, groupIdx );
+                case GroupType.Multi:  return MultiModGroup.Load( mod, json, groupIdx );
+                case GroupType.Single: return SingleModGroup.Load( mod, json, groupIdx );
             }
         }
         catch( Exception e )

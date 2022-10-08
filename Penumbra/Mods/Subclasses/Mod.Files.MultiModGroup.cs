@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.Mods;
 
@@ -15,8 +16,8 @@ public partial class Mod
     // Groups that allow all available options to be selected at once.
     private sealed class MultiModGroup : IModGroup
     {
-        public SelectType Type
-            => SelectType.Multi;
+        public GroupType Type
+            => GroupType.Multi;
 
         public string Name { get; set; } = "Group";
         public string Description { get; set; } = "A non-exclusive group of settings.";
@@ -79,12 +80,12 @@ public partial class Mod
             return ret;
         }
 
-        public IModGroup Convert( SelectType type )
+        public IModGroup Convert( GroupType type )
         {
             switch( type )
             {
-                case SelectType.Multi: return this;
-                case SelectType.Single:
+                case GroupType.Multi: return this;
+                case GroupType.Single:
                     var multi = new SingleModGroup()
                     {
                         Name            = Name,

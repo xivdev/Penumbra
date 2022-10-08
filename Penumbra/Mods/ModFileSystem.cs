@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -121,8 +122,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
                 CreateLeaf( Root, name, mod );
                 break;
             case ModPathChangeType.Deleted:
-                var leaf = Root.GetAllDescendants( ISortMode< Mod >.Lexicographical ).OfType< Leaf >().FirstOrDefault( l => l.Value == mod );
-                if( leaf != null )
+                if( FindLeaf( mod, out var leaf ) )
                 {
                     Delete( leaf );
                 }
@@ -137,6 +137,16 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
         }
     }
 
+    // Search the entire filesystem for the leaf corresponding to a mod.
+    public bool FindLeaf( Mod mod, [NotNullWhen( true )] out Leaf? leaf )
+    {
+        leaf = Root.GetAllDescendants( ISortMode< Mod >.Lexicographical )
+           .OfType< Leaf >()
+           .FirstOrDefault( l => l.Value == mod );
+        return leaf != null;
+    }
+
+
     // Used for saving and loading.
     private static string ModToIdentifier( Mod mod )
         => mod.ModPath.Name;
@@ -144,15 +154,16 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     private static string ModToName( Mod mod )
         => mod.Name.Text.FixName();
 
-    private static (string, bool) SaveMod( Mod mod, string fullPath )
+    // Return whether a mod has a custom path or is just a numbered default path.
+    public static bool ModHasDefaultPath( Mod mod, string fullPath )
     {
         var regex = new Regex( $@"^{Regex.Escape( ModToName( mod ) )}( \(\d+\))?$" );
-        // Only save pairs with non-default paths.
-        if( regex.IsMatch( fullPath ) )
-        {
-            return ( string.Empty, false );
-        }
-
-        return ( ModToIdentifier( mod ), true );
+        return regex.IsMatch( fullPath );
     }
+
+    private static (string, bool) SaveMod( Mod mod, string fullPath )
+        // Only save pairs with non-default paths.
+        => ModHasDefaultPath( mod, fullPath )
+            ? ( string.Empty, false )
+            : ( ModToIdentifier( mod ), true );
 }

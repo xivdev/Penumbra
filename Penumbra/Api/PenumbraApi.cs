@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Enums;
 using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
@@ -15,6 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Penumbra.Api.Enums;
 
 namespace Penumbra.Api;
 
@@ -272,7 +272,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Penumbra.ModManager.Select( m => ( m.ModPath.Name, m.Name.Text ) ).ToArray();
     }
 
-    public IDictionary< string, (IList< string >, SelectType) >? GetAvailableModSettings( string modDirectory, string modName )
+    public IDictionary< string, (IList< string >, GroupType) >? GetAvailableModSettings( string modDirectory, string modName )
     {
         CheckInitialized();
         return Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod )
@@ -328,6 +328,56 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         Penumbra.ModManager.AddMod( dir );
         return PenumbraApiEc.Success;
+    }
+
+    public PenumbraApiEc DeleteMod( string modDirectory, string modName )
+    {
+        CheckInitialized();
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+            return PenumbraApiEc.NothingChanged;
+
+        Penumbra.ModManager.DeleteMod( mod.Index );
+        return PenumbraApiEc.Success;
+    }
+
+
+    public (PenumbraApiEc, string, bool) GetModPath( string modDirectory, string modName )
+    {
+        CheckInitialized();
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod )
+        || !_penumbra!.ModFileSystem.FindLeaf( mod, out var leaf ) )
+        {
+            return ( PenumbraApiEc.ModMissing, string.Empty, false );
+        }
+
+        var fullPath = leaf.FullName();
+
+        return ( PenumbraApiEc.Success, fullPath, !ModFileSystem.ModHasDefaultPath( mod, fullPath ) );
+    }
+
+    public PenumbraApiEc SetModPath( string modDirectory, string modName, string newPath )
+    {
+        CheckInitialized();
+        if( newPath.Length == 0 )
+        {
+            return PenumbraApiEc.InvalidArgument;
+        }
+
+        if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod )
+        || !_penumbra!.ModFileSystem.FindLeaf( mod, out var leaf ) )
+        {
+            return PenumbraApiEc.ModMissing;
+        }
+
+        try
+        {
+            _penumbra.ModFileSystem.RenameAndMove( leaf, newPath );
+            return PenumbraApiEc.Success;
+        }
+        catch
+        {
+            return PenumbraApiEc.PathRenameFailed;
+        }
     }
 
     public PenumbraApiEc TryInheritMod( string collectionName, string modDirectory, string modName, bool inherit )
@@ -405,7 +455,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.OptionMissing;
         }
 
-        var setting = mod.Groups[ groupIdx ].Type == SelectType.Multi ? 1u << optionIdx : ( uint )optionIdx;
+        var setting = mod.Groups[ groupIdx ].Type == GroupType.Multi ? 1u << optionIdx : ( uint )optionIdx;
 
         return collection.SetModSetting( mod.Index, groupIdx, setting ) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
     }
@@ -433,7 +483,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var group = mod.Groups[ groupIdx ];
 
         uint setting = 0;
-        if( group.Type == SelectType.Single )
+        if( group.Type == GroupType.Single )
         {
             var optionIdx = optionNames.Count == 0 ? -1 : group.IndexOf( o => o.Name == optionNames[ ^1 ] );
             if( optionIdx < 0 )

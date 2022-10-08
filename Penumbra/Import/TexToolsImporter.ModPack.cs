@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Newtonsoft.Json;
 using OtterGui;
+using Penumbra.Api.Enums;
 using Penumbra.Mods;
 using Penumbra.Util;
 using SharpCompress.Archives.Zip;
@@ -162,7 +163,7 @@ public partial class TexToolsImporter
             foreach( var group in page.ModGroups.Where( group => group.GroupName.Length > 0 && group.OptionList.Length > 0 ) )
             {
                 var allOptions = group.OptionList.Where( option => option.Name.Length > 0 && option.ModsJsons.Length > 0 ).ToList();
-                var (numGroups, maxOptions) = group.SelectionType == SelectType.Single
+                var (numGroups, maxOptions) = group.SelectionType == GroupType.Single
                     ? ( 1, allOptions.Count )
                     : ( 1 + allOptions.Count / IModGroup.MaxMultiOptions, IModGroup.MaxMultiOptions );
                 _currentGroupName = GetGroupName( group.GroupName, groupNames );
@@ -177,7 +178,7 @@ public partial class TexToolsImporter
                      ?? new DirectoryInfo( Path.Combine( _currentModDirectory.FullName,
                             numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}" ) );
 
-                    uint? defaultSettings = group.SelectionType == SelectType.Multi ? 0u : null;
+                    uint? defaultSettings = group.SelectionType == GroupType.Multi ? 0u : null;
                     for( var i = 0; i + optionIdx < allOptions.Count && i < maxOptions; ++i )
                     {
                         var option = allOptions[ i + optionIdx ];
@@ -195,7 +196,7 @@ public partial class TexToolsImporter
 
                         if( option.IsChecked )
                         {
-                            defaultSettings = group.SelectionType == SelectType.Multi
+                            defaultSettings = group.SelectionType == GroupType.Multi
                                 ? ( defaultSettings!.Value | ( 1u << i ) )
                                 : ( uint )i;
                         }
@@ -207,7 +208,7 @@ public partial class TexToolsImporter
 
                     // Handle empty options for single select groups without creating a folder for them.
                     // We only want one of those at most, and it should usually be the first option.
-                    if( group.SelectionType == SelectType.Single )
+                    if( group.SelectionType == GroupType.Single )
                     {
                         var empty = group.OptionList.FirstOrDefault( o => o.Name.Length > 0 && o.ModsJsons.Length == 0 );
                         if( empty != null )
