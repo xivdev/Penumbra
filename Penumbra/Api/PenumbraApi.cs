@@ -31,13 +31,13 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public event Action< string >? PreSettingsPanelDraw;
     public event Action< string >? PostSettingsPanelDraw;
 
-    public event GameObjectRedrawn? GameObjectRedrawn
+    public event GameObjectRedrawnDelegate? GameObjectRedrawn
     {
         add => _penumbra!.ObjectReloader.GameObjectRedrawn += value;
         remove => _penumbra!.ObjectReloader.GameObjectRedrawn -= value;
     }
 
-    public event ModSettingChanged? ModSettingChanged;
+    public event ModSettingChangedDelegate? ModSettingChanged;
 
     public event CreatingCharacterBaseDelegate? CreatingCharacterBase
     {
@@ -260,10 +260,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return ( obj, collection.ModCollection.Name );
     }
 
-    public int GetCutsceneParentIndex( int actor )
+    public int GetCutsceneParentIndex( int actorIdx )
     {
         CheckInitialized();
-        return _penumbra!.PathResolver.CutsceneActor( actor );
+        return _penumbra!.PathResolver.CutsceneActor( actorIdx );
     }
 
     public IList< (string, string) > GetModList()

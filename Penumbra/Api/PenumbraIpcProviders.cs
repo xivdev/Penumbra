@@ -163,7 +163,6 @@ public class PenumbraIpcProviders : IDisposable
         SetModPath = Ipc.SetModPath.Provider( pi, Api.SetModPath );
 
         // ModSettings
-
         GetAvailableModSettings = Ipc.GetAvailableModSettings.Provider( pi, Api.GetAvailableModSettings );
         GetCurrentModSettings   = Ipc.GetCurrentModSettings.Provider( pi, Api.GetCurrentModSettings );
         TryInheritMod           = Ipc.TryInheritMod.Provider( pi, Api.TryInheritMod );
@@ -190,6 +189,8 @@ public class PenumbraIpcProviders : IDisposable
 
     public void Dispose()
     {
+        Tester.Dispose();
+
         // Plugin State
         Initialized.Dispose();
         ApiVersion.Dispose();
@@ -268,7 +269,6 @@ public class PenumbraIpcProviders : IDisposable
 
         Disposed.Invoke();
         Disposed.Dispose();
-        Tester.Dispose();
     }
 
     // Wrappers

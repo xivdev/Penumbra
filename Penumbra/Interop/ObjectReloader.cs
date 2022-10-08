@@ -109,7 +109,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
     private readonly List< int > _afterGPoseQueue = new(GPoseSlots);
     private          int         _target          = -1;
 
-    public event GameObjectRedrawn? GameObjectRedrawn;
+    public event GameObjectRedrawnDelegate? GameObjectRedrawn;
 
     public ObjectReloader()
         => Dalamud.Framework.Update += OnUpdateEvent;
