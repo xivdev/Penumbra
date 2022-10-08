@@ -21,7 +21,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 14 );
+        => ( 4, 15 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
