@@ -55,4 +55,26 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
             return HashCode.Combine( *p, p[ 1 ], p[ 2 ], p[ 3 ], p[ 4 ], p[ 5 ], u );
         }
     }
+
+    public string WriteBase64()
+    {
+        fixed( byte* ptr = Data )
+        {
+            var data = new ReadOnlySpan< byte >( ptr, Size );
+            return Convert.ToBase64String( data );
+        }
+    }
+
+    public bool LoadBase64( string base64 )
+    {
+        var buffer = stackalloc byte[Size];
+        var span   = new Span< byte >( buffer, Size );
+        if( !Convert.TryFromBase64String( base64, span, out var written ) || written != Size )
+        {
+            return false;
+        }
+
+        Read( buffer );
+        return true;
+    }
 }
