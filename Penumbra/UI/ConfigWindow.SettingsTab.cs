@@ -97,7 +97,7 @@ public partial class ConfigWindow
 
             if( Path.GetDirectoryName( newName ) == null )
             {
-                return ( "Path may not be a drive root. Please add a directory.", false );
+                return ( "Path is not allowed to be a drive root. Please add a directory.", false );
             }
 
             var symbol = '\0';
@@ -109,31 +109,31 @@ public partial class ConfigWindow
             var desktop = Environment.GetFolderPath( Environment.SpecialFolder.Desktop );
             if( IsSubPathOf( desktop, newName ) )
             {
-                return ( "Path may not be on your Desktop.", false );
+                return ( "Path is not allowed to be on your Desktop.", false );
             }
 
             var programFiles    = Environment.GetFolderPath( Environment.SpecialFolder.ProgramFiles );
             var programFilesX86 = Environment.GetFolderPath( Environment.SpecialFolder.ProgramFilesX86 );
             if( IsSubPathOf( programFiles, newName ) || IsSubPathOf( programFilesX86, newName ) )
             {
-                return ( "Path may not be in ProgramFiles.", false );
+                return ( "Path is not allowed to be in ProgramFiles.", false );
             }
 
             var dalamud = Dalamud.PluginInterface.ConfigDirectory.Parent!.Parent!;
             if( IsSubPathOf( dalamud.FullName, newName ) )
             {
-                return ( "Path may not be inside your Dalamud directories.", false );
+                return ( "Path is not allowed to be inside your Dalamud directories.", false );
             }
 
             if( Functions.GetDownloadsFolder( out var downloads ) && IsSubPathOf( downloads, newName ) )
             {
-                return ( "Path may not be inside your Downloads folder.", false );
+                return ( "Path is not allowed to be inside your Downloads folder.", false );
             }
 
             var gameDir = Dalamud.GameData.GameData.DataPath.Parent!.Parent!.FullName;
             if( IsSubPathOf( gameDir, newName ) )
             {
-                return ( "Path may not be inside your game folder.", false );
+                return ( "Path is not allowed to be inside your game folder.", false );
             }
 
             return ( $"Press Enter or Click Here to Save (Current Directory: {old})", true );
