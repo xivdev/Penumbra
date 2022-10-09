@@ -12,27 +12,31 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout( LayoutKind.Sequential, Pack = 1 )]
 public readonly struct EqdpManipulation : IMetaManipulation< EqdpManipulation >
 {
-    public EqdpEntry Entry { get; init; }
+    public EqdpEntry Entry { get; private init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public Gender Gender { get; init; }
+    public Gender Gender { get; private init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public ModelRace Race { get; init; }
+    public ModelRace Race { get; private init; }
 
-    public ushort SetId { get; init; }
+    public ushort SetId { get; private init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public EquipSlot Slot { get; init; }
+    public EquipSlot Slot { get; private init; }
 
+    [JsonConstructor]
     public EqdpManipulation( EqdpEntry entry, EquipSlot slot, Gender gender, ModelRace race, ushort setId )
     {
-        Entry  = Eqdp.Mask( slot ) & entry;
         Gender = gender;
         Race   = race;
         SetId  = setId;
         Slot   = slot;
+        Entry  = Eqdp.Mask( Slot ) & entry;
     }
+
+    public EqdpManipulation Copy( EqdpEntry entry )
+        => new(entry, Slot, Gender, Race, SetId);
 
     public override string ToString()
         => $"Eqdp - {SetId} - {Slot} - {Race.ToName()} - {Gender.ToName()}";

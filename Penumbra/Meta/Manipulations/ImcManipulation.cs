@@ -12,19 +12,19 @@ namespace Penumbra.Meta.Manipulations;
 [StructLayout( LayoutKind.Sequential, Pack = 1 )]
 public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
 {
-    public ImcEntry Entry { get; init; }
-    public ushort PrimaryId { get; init; }
-    public ushort Variant { get; init; }
-    public ushort SecondaryId { get; init; }
+    public ImcEntry Entry { get; private init; }
+    public ushort PrimaryId { get; private init; }
+    public ushort Variant { get; private init; }
+    public ushort SecondaryId { get; private init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public ObjectType ObjectType { get; init; }
+    public ObjectType ObjectType { get; private init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public EquipSlot EquipSlot { get; init; }
+    public EquipSlot EquipSlot { get; private init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
-    public BodySlot BodySlot { get; init; }
+    public BodySlot BodySlot { get; private init; }
 
     public ImcManipulation( EquipSlot equipSlot, ushort variant, ushort primaryId, ImcEntry entry )
     {
@@ -70,6 +70,9 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
             EquipSlot   = EquipSlot.Unknown;
         }
     }
+
+    public ImcManipulation Copy( ImcEntry entry )
+        => new(ObjectType, BodySlot, PrimaryId, SecondaryId, Variant, EquipSlot, entry);
 
     public override string ToString()
         => ObjectType is ObjectType.Equipment or ObjectType.Accessory

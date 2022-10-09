@@ -97,7 +97,7 @@ public partial class MetaManager
         }
 
         var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant, out _ );
-        var manip = m with { Entry = def };
+        var manip = m.Copy( def );
         if( !manip.Apply( file ) )
         {
             return false;
