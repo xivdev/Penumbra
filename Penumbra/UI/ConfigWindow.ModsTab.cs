@@ -71,6 +71,7 @@ public partial class ConfigWindow
     {
         if( Penumbra.Config.HideRedrawBar )
         {
+            SkipTutorial( BasicTutorialSteps.Redrawing );
             return;
         }
 

@@ -44,6 +44,14 @@ public partial class ConfigWindow
             Penumbra.Config.Save();
         } );
 
+    [MethodImpl( MethodImplOptions.AggressiveInlining )]
+    public static void SkipTutorial( BasicTutorialSteps step )
+        => Tutorial.Skip( ( int )step, Penumbra.Config.TutorialStep, v =>
+        {
+            Penumbra.Config.TutorialStep = v;
+            Penumbra.Config.Save();
+        } );
+
     public enum BasicTutorialSteps
     {
         GeneralTooltips,
@@ -88,8 +96,7 @@ public partial class ConfigWindow
           + "The mod directory should be a short path - like 'C:\\FFXIVMods' - on your fastest available drive. Faster drives improve performance.\n\n"
           + "The folder should be an empty folder no other applications write to." )
        .Register( "Initial Setup, Step 2: Enable Mods", "Do not forget to enable your mods in case they are not." )
-       .Register( "Advanced Settings", "When you are just starting, you should leave this off.\n\n"
-          + "If you need to do any editing of your mods, you will have to turn it on later." )
+       .Deprecated()
        .Register( "General Settings", "Look through all of these settings before starting, they might help you a lot!\n\n"
           + "If you do not know what some of these do yet, return to this later!" )
        .Register( "Initial Setup, Step 3: Collections", "Collections are lists of settings for your installed mods.\n\n"
