@@ -451,13 +451,22 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     private static void DrawHelpPopup()
     {
-        ImGuiUtil.HelpPopup( "ExtendedHelp", new Vector2( 1000 * ImGuiHelpers.GlobalScale, 33.5f * ImGui.GetTextLineHeightWithSpacing() ), () =>
+        ImGuiUtil.HelpPopup( "ExtendedHelp", new Vector2( 1000 * ImGuiHelpers.GlobalScale, 34.5f * ImGui.GetTextLineHeightWithSpacing() ), () =>
         {
+            ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
+            ImGui.TextUnformatted( "Mod Management" );
+            ImGui.BulletText( "You can create empty mods or import mods with the buttons in this row." );
+            using var indent = ImRaii.PushIndent();
+            ImGui.BulletText( "Supported formats for import are: .ttmp, .ttmp2, .pmp." );
+            ImGui.BulletText( "You can also support .zip, .7z or .rar archives, but only if they already contain Penumbra-styled mods with appropriate metadata." );
+            indent.Pop( 1 );
+            ImGui.BulletText( "You can also create empty mod folders and delete mods." );
+            ImGui.BulletText( "For further editing of mods, select them and use the Edit Mod tab in the panel or the Advanced Editing popup." );
             ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
             ImGui.TextUnformatted( "Mod Selector" );
             ImGui.BulletText( "Select a mod to obtain more information or change settings." );
             ImGui.BulletText( "Names are colored according to your config and their current state in the collection:" );
-            using var indent = ImRaii.PushIndent();
+            indent.Push();
             ImGuiUtil.BulletTextColored( ColorId.EnabledMod.Value(), "enabled in the current collection." );
             ImGuiUtil.BulletTextColored( ColorId.DisabledMod.Value(), "disabled in the current collection." );
             ImGuiUtil.BulletTextColored( ColorId.InheritedMod.Value(), "enabled due to inheritance from another collection." );
@@ -489,13 +498,6 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             ImGui.BulletText( "You can enter a:[string] to filter for Mod Authors instead." );
             indent.Pop( 1 );
             ImGui.BulletText( "Use the expandable menu beside the input to filter for mods fulfilling specific criteria." );
-            ImGui.Dummy( Vector2.UnitY * ImGui.GetTextLineHeight() );
-            ImGui.TextUnformatted( "Mod Management" );
-            ImGui.BulletText( "You can create empty mods or import TTMP-based mods with the buttons in this row." );
-            ImGui.BulletText(
-                "You can import penumbra-based mods by moving the corresponding folder into your mod directory in a file explorer, then rediscovering mods." );
-            ImGui.BulletText(
-                "If you enable Advanced Options in the Settings tab, you can toggle Edit Mode to manipulate your selected mod even further." );
         } );
     }
 }

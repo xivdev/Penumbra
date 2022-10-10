@@ -26,6 +26,13 @@ public partial class ConfigWindow
         return ret;
     }
 
+    private static void Add5_11_0( Changelog log )
+        => log.NextVersion( "Version 0.5.11.0" )
+           .RegisterEntry( "Meta Manipulation editing now highlights if the selected ID is 0 or 1." )
+           .RegisterEntry( "Fixed a bug when manually adding EQP or EQDP entries to Mods." )
+           .RegisterEntry( "Updated some tooltips and hints." )
+           .RegisterEntry( "Backend changes regarding API/IPC, consumers can but do not need to use the Penumbra.Api library as a submodule." );
+
     private static void Add5_10_0( Changelog log )
         => log.NextVersion( "Version 0.5.10.0" )
            .RegisterEntry( "Renamed backup functionality to export functionality." )
