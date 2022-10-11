@@ -1,6 +1,5 @@
 using Dalamud.Game.ClientState.Objects.Types;
 using Dalamud.Plugin;
-using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using System;
 using System.Collections.Generic;
@@ -21,6 +20,8 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly EventProvider                                Disposed;
     internal readonly FuncProvider< int >                          ApiVersion;
     internal readonly FuncProvider< (int Breaking, int Features) > ApiVersions;
+    internal readonly FuncProvider< bool >                         GetEnabledState;
+    internal readonly EventProvider< bool >                        EnabledChange;
 
     // Configuration
     internal readonly FuncProvider< string >        GetModDirectory;
@@ -98,10 +99,12 @@ public class PenumbraIpcProviders : IDisposable
         Api = api;
 
         // Plugin State
-        Initialized = Ipc.Initialized.Provider( pi );
-        Disposed    = Ipc.Disposed.Provider( pi );
-        ApiVersion  = Ipc.ApiVersion.Provider( pi, DeprecatedVersion );
-        ApiVersions = Ipc.ApiVersions.Provider( pi, () => Api.ApiVersion );
+        Initialized     = Ipc.Initialized.Provider( pi );
+        Disposed        = Ipc.Disposed.Provider( pi );
+        ApiVersion      = Ipc.ApiVersion.Provider( pi, DeprecatedVersion );
+        ApiVersions     = Ipc.ApiVersions.Provider( pi, () => Api.ApiVersion );
+        GetEnabledState = Ipc.GetEnabledState.Provider( pi, Api.GetEnabledState );
+        EnabledChange   = Ipc.EnabledChange.Provider( pi, () => Api.EnabledChange += EnabledChangeEvent, () => Api.EnabledChange -= EnabledChangeEvent );
 
         // Configuration
         GetModDirectory     = Ipc.GetModDirectory.Provider( pi, Api.GetModDirectory );
@@ -195,6 +198,8 @@ public class PenumbraIpcProviders : IDisposable
         Initialized.Dispose();
         ApiVersion.Dispose();
         ApiVersions.Dispose();
+        GetEnabledState.Dispose();
+        EnabledChange.Dispose();
 
         // Configuration
         GetModDirectory.Dispose();
@@ -289,6 +294,9 @@ public class PenumbraIpcProviders : IDisposable
         var (type, id) = ChangedItemExtensions.ChangedItemToTypeAndId( item );
         ChangedItemTooltip.Invoke( type, id );
     }
+
+    private void EnabledChangeEvent( bool value )
+        => EnabledChange.Invoke( value );
 
     private void OnGameObjectRedrawn( IntPtr objectAddress, int objectTableIndex )
         => GameObjectRedrawn.Invoke( objectAddress, objectTableIndex );

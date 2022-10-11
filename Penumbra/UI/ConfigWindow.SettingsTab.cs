@@ -11,7 +11,6 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.GameData.Enums;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;

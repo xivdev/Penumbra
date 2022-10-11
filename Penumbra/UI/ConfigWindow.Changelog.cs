@@ -31,7 +31,9 @@ public partial class ConfigWindow
            .RegisterEntry( "Meta Manipulation editing now highlights if the selected ID is 0 or 1." )
            .RegisterEntry( "Fixed a bug when manually adding EQP or EQDP entries to Mods." )
            .RegisterEntry( "Updated some tooltips and hints." )
-           .RegisterEntry( "Backend changes regarding API/IPC, consumers can but do not need to use the Penumbra.Api library as a submodule." );
+           .RegisterEntry( "Backend changes regarding API/IPC, consumers can but do not need to use the Penumbra.Api library as a submodule." )
+           .RegisterEntry( "Added API to delete mods and read and set their pseudo-filesystem paths.", 1 )
+           .RegisterEntry( "Added API to check Penumbras enabled state and updates to it.", 1 );
 
     private static void Add5_10_0( Changelog log )
         => log.NextVersion( "Version 0.5.10.0" )

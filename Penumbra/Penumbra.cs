@@ -25,6 +25,7 @@ using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
+using Action = System.Action;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
@@ -185,6 +186,8 @@ public class Penumbra : IDalamudPlugin
         }
     }
 
+    public event Action< bool >? EnabledChange;
+
     public bool Enable()
     {
         if( Config.EnableMods )
@@ -202,6 +205,7 @@ public class Penumbra : IDalamudPlugin
             ResidentResources.Reload();
             ObjectReloader.RedrawAll( RedrawType.Redraw );
         }
+        EnabledChange?.Invoke( true );
 
         return true;
     }
@@ -223,6 +227,7 @@ public class Penumbra : IDalamudPlugin
             ResidentResources.Reload();
             ObjectReloader.RedrawAll( RedrawType.Redraw );
         }
+        EnabledChange?.Invoke( false );
 
         return true;
     }

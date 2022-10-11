@@ -81,6 +81,7 @@ public class IpcTester : IDisposable
         {
             _pluginState.Initialized.Enable();
             _pluginState.Disposed.Enable();
+            _pluginState.EnabledChange.Enable();
             _redrawing.Redrawn.Enable();
             _ui.PreSettingsDraw.Enable();
             _ui.PostSettingsDraw.Enable();
@@ -99,6 +100,7 @@ public class IpcTester : IDisposable
         {
             _pluginState.Initialized.Disable();
             _pluginState.Disposed.Disable();
+            _pluginState.EnabledChange.Disable();
             _redrawing.Redrawn.Disable();
             _ui.PreSettingsDraw.Disable();
             _ui.PostSettingsDraw.Disable();
@@ -117,6 +119,7 @@ public class IpcTester : IDisposable
     {
         _pluginState.Initialized.Dispose();
         _pluginState.Disposed.Dispose();
+        _pluginState.EnabledChange.Dispose();
         _redrawing.Redrawn.Dispose();
         _ui.PreSettingsDraw.Dispose();
         _ui.PostSettingsDraw.Dispose();
@@ -142,18 +145,23 @@ public class IpcTester : IDisposable
 
     private class PluginState
     {
-        private readonly DalamudPluginInterface _pi;
-        public readonly  EventSubscriber        Initialized;
-        public readonly  EventSubscriber        Disposed;
+        private readonly DalamudPluginInterface  _pi;
+        public readonly  EventSubscriber         Initialized;
+        public readonly  EventSubscriber         Disposed;
+        public readonly  EventSubscriber< bool > EnabledChange;
 
         private readonly List< DateTimeOffset > _initializedList = new();
         private readonly List< DateTimeOffset > _disposedList    = new();
 
+        private DateTimeOffset _lastEnabledChange = DateTimeOffset.UnixEpoch;
+        private bool?          _lastEnabledValue;
+
         public PluginState( DalamudPluginInterface pi )
         {
-            _pi         = pi;
-            Initialized = Ipc.Initialized.Subscriber( pi, AddInitialized );
-            Disposed    = Ipc.Disposed.Subscriber( pi, AddDisposed );
+            _pi           = pi;
+            Initialized   = Ipc.Initialized.Subscriber( pi, AddInitialized );
+            Disposed      = Ipc.Disposed.Subscriber( pi, AddDisposed );
+            EnabledChange = Ipc.EnabledChange.Subscriber( pi, SetLastEnabled );
         }
 
         public void Draw()
@@ -193,6 +201,10 @@ public class IpcTester : IDisposable
             DrawIntro( Ipc.ApiVersions.Label, "Current Version" );
             var (breaking, features) = Ipc.ApiVersions.Subscriber( _pi ).Invoke();
             ImGui.TextUnformatted( $"{breaking}.{features:D4}" );
+            DrawIntro( Ipc.GetEnabledState.Label, "Current State" );
+            ImGui.TextUnformatted( $"{Ipc.GetEnabledState.Subscriber( _pi ).Invoke()}" );
+            DrawIntro( Ipc.EnabledChange.Label, "Last Change" );
+            ImGui.TextUnformatted( _lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never" );
         }
 
         private void AddInitialized()
@@ -200,6 +212,9 @@ public class IpcTester : IDisposable
 
         private void AddDisposed()
             => _disposedList.Add( DateTimeOffset.UtcNow );
+
+        private void SetLastEnabled( bool val )
+            => ( _lastEnabledChange, _lastEnabledValue ) = ( DateTimeOffset.Now, val );
     }
 
     private class Configuration

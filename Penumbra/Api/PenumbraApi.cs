@@ -33,22 +33,46 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public event GameObjectRedrawnDelegate? GameObjectRedrawn
     {
-        add => _penumbra!.ObjectReloader.GameObjectRedrawn += value;
-        remove => _penumbra!.ObjectReloader.GameObjectRedrawn -= value;
+        add
+        {
+            CheckInitialized();
+            _penumbra!.ObjectReloader.GameObjectRedrawn += value;
+        }
+        remove
+        {
+            CheckInitialized();
+            _penumbra!.ObjectReloader.GameObjectRedrawn -= value;
+        }
     }
 
     public event ModSettingChangedDelegate? ModSettingChanged;
 
     public event CreatingCharacterBaseDelegate? CreatingCharacterBase
     {
-        add => PathResolver.DrawObjectState.CreatingCharacterBase += value;
-        remove => PathResolver.DrawObjectState.CreatingCharacterBase -= value;
+        add
+        {
+            CheckInitialized();
+            PathResolver.DrawObjectState.CreatingCharacterBase += value;
+        }
+        remove
+        {
+            CheckInitialized();
+            PathResolver.DrawObjectState.CreatingCharacterBase -= value;
+        }
     }
 
     public event CreatedCharacterBaseDelegate? CreatedCharacterBase
     {
-        add => PathResolver.DrawObjectState.CreatedCharacterBase += value;
-        remove => PathResolver.DrawObjectState.CreatedCharacterBase -= value;
+        add
+        {
+            CheckInitialized();
+            PathResolver.DrawObjectState.CreatedCharacterBase += value;
+        }
+        remove
+        {
+            CheckInitialized();
+            PathResolver.DrawObjectState.CreatedCharacterBase -= value;
+        }
     }
 
     public bool Valid
@@ -104,8 +128,33 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public event Action< string, bool >? ModDirectoryChanged
     {
-        add => Penumbra.ModManager.ModDirectoryChanged += value;
-        remove => Penumbra.ModManager.ModDirectoryChanged -= value;
+        add
+        {
+            CheckInitialized();
+            Penumbra.ModManager.ModDirectoryChanged += value;
+        }
+        remove
+        {
+            CheckInitialized();
+            Penumbra.ModManager.ModDirectoryChanged -= value;
+        }
+    }
+
+    public bool GetEnabledState()
+        => Penumbra.Config.EnableMods;
+
+    public event Action< bool >? EnabledChange
+    {
+        add
+        {
+            CheckInitialized();
+            _penumbra!.EnabledChange += value;
+        }
+        remove
+        {
+            CheckInitialized();
+            _penumbra!.EnabledChange -= value;
+        }
     }
 
     public string GetConfiguration()
@@ -334,7 +383,9 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         if( !Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+        {
             return PenumbraApiEc.NothingChanged;
+        }
 
         Penumbra.ModManager.DeleteMod( mod.Index );
         return PenumbraApiEc.Success;
