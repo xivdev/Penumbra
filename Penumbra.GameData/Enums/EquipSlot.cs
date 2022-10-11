@@ -39,33 +39,37 @@ public static class EquipSlotExtensions
     public static EquipSlot ToEquipSlot( this uint value )
         => value switch
         {
-            0 => EquipSlot.Head,
-            1 => EquipSlot.Body,
-            2 => EquipSlot.Hands,
-            3 => EquipSlot.Legs,
-            4 => EquipSlot.Feet,
-            5 => EquipSlot.Ears,
-            6 => EquipSlot.Neck,
-            7 => EquipSlot.Wrists,
-            8 => EquipSlot.RFinger,
-            9 => EquipSlot.LFinger,
-            _ => EquipSlot.Unknown,
+            0  => EquipSlot.Head,
+            1  => EquipSlot.Body,
+            2  => EquipSlot.Hands,
+            3  => EquipSlot.Legs,
+            4  => EquipSlot.Feet,
+            5  => EquipSlot.Ears,
+            6  => EquipSlot.Neck,
+            7  => EquipSlot.Wrists,
+            8  => EquipSlot.RFinger,
+            9  => EquipSlot.LFinger,
+            10 => EquipSlot.MainHand,
+            11 => EquipSlot.OffHand,
+            _  => EquipSlot.Unknown,
         };
 
     public static uint ToIndex( this EquipSlot slot )
         => slot switch
         {
-            EquipSlot.Head    => 0,
-            EquipSlot.Body    => 1,
-            EquipSlot.Hands   => 2,
-            EquipSlot.Legs    => 3,
-            EquipSlot.Feet    => 4,
-            EquipSlot.Ears    => 5,
-            EquipSlot.Neck    => 6,
-            EquipSlot.Wrists  => 7,
-            EquipSlot.RFinger => 8,
-            EquipSlot.LFinger => 9,
-            _                 => uint.MaxValue,
+            EquipSlot.Head     => 0,
+            EquipSlot.Body     => 1,
+            EquipSlot.Hands    => 2,
+            EquipSlot.Legs     => 3,
+            EquipSlot.Feet     => 4,
+            EquipSlot.Ears     => 5,
+            EquipSlot.Neck     => 6,
+            EquipSlot.Wrists   => 7,
+            EquipSlot.RFinger  => 8,
+            EquipSlot.LFinger  => 9,
+            EquipSlot.MainHand => 10,
+            EquipSlot.OffHand  => 11,
+            _                  => uint.MaxValue,
         };
 
     public static string ToSuffix( this EquipSlot value )
@@ -112,7 +116,7 @@ public static class EquipSlotExtensions
             EquipSlot.BodyHands         => EquipSlot.Body,
             EquipSlot.BodyLegsFeet      => EquipSlot.Body,
             EquipSlot.ChestHands        => EquipSlot.Body,
-            _                           => throw new InvalidEnumArgumentException($"{value} ({(int) value}) is not valid."),
+            _                           => throw new InvalidEnumArgumentException( $"{value} ({( int )value}) is not valid." ),
         };
     }
 
