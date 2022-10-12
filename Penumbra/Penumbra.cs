@@ -17,7 +17,6 @@ using OtterGui.Log;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Enums;
 using Penumbra.Interop;
 using Penumbra.UI;
 using Penumbra.Util;
@@ -25,7 +24,6 @@ using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
-using Action = System.Action;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
@@ -57,7 +55,7 @@ public class Penumbra : IDalamudPlugin
     public static TempModManager TempMods { get; private set; } = null!;
     public static ResourceLoader ResourceLoader { get; private set; } = null!;
     public static FrameworkManager Framework { get; private set; } = null!;
-    public static int ImcExceptions = 0;
+    public static readonly List< Exception > ImcExceptions = new();
 
     public readonly  ResourceLogger       ResourceLogger;
     public readonly  PathResolver         PathResolver;
@@ -134,11 +132,10 @@ public class Penumbra : IDalamudPlugin
             {
                 ResidentResources.Reload();
             }
-
             Api          = new PenumbraApi( this );
             IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
             SubscribeItemLinks();
-            if( ImcExceptions > 0 )
+            if( ImcExceptions.Count > 0 )
             {
                 Log.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
             }
@@ -205,6 +202,7 @@ public class Penumbra : IDalamudPlugin
             ResidentResources.Reload();
             ObjectReloader.RedrawAll( RedrawType.Redraw );
         }
+
         EnabledChange?.Invoke( true );
 
         return true;
@@ -227,6 +225,7 @@ public class Penumbra : IDalamudPlugin
             ResidentResources.Reload();
             ObjectReloader.RedrawAll( RedrawType.Redraw );
         }
+
         EnabledChange?.Invoke( false );
 
         return true;

@@ -5,6 +5,7 @@ using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Meta.Files;
 
@@ -52,6 +53,24 @@ public readonly struct ImcEntry : IEquatable< ImcEntry >
         AttributeMask       = attributeMask;
         SoundId             = soundId;
     }
+}
+
+public class ImcException : Exception
+{
+    public readonly ImcManipulation Manipulation;
+    public readonly string          GamePath;
+
+    public ImcException( ImcManipulation manip, Utf8GamePath path )
+    {
+        Manipulation = manip;
+        GamePath     = path.ToString();
+    }
+
+    public override string Message
+        => "Could not obtain default Imc File.\n"
+          + "        Either the default file does not exist (possibly for offhand files from TexTools) or the installation is corrupted.\n"
+          + $"        Game Path:  {GamePath}\n"
+          + $"        Manipulation: {Manipulation}";
 }
 
 public unsafe class ImcFile : MetaBaseFile
@@ -174,16 +193,14 @@ public unsafe class ImcFile : MetaBaseFile
         }
     }
 
-    public ImcFile( Utf8GamePath path )
+    public ImcFile( ImcManipulation manip )
         : base( 0 )
     {
-        Path = path;
-        var file = Dalamud.GameData.GetFile( path.ToString() );
+        Path = manip.GamePath();
+        var file = Dalamud.GameData.GetFile( Path.ToString() );
         if( file == null )
         {
-            throw new Exception(
-                "Could not obtain default Imc File.\n"
-              + "Either the default file does not exist (possibly for offhand files from TexTools) or the installation is corrupted." );
+            throw new ImcException( manip, Path );
         }
 
         fixed( byte* ptr = file.Data )
@@ -211,6 +228,7 @@ public unsafe class ImcFile : MetaBaseFile
                 exists = true;
                 return *entry;
             }
+
             return new ImcEntry();
         }
     }
@@ -221,9 +239,10 @@ public unsafe class ImcFile : MetaBaseFile
         var newData = Penumbra.MetaFileManager.AllocateDefaultMemory( ActualLength, 8 );
         if( newData == null )
         {
-            Penumbra.Log.Error($"Could not replace loaded IMC data at 0x{(ulong) resource:X}, allocation failed."  );
+            Penumbra.Log.Error( $"Could not replace loaded IMC data at 0x{( ulong )resource:X}, allocation failed." );
             return;
         }
+
         Functions.MemCpyUnchecked( newData, Data, ActualLength );
 
         Penumbra.MetaFileManager.Free( data, length );

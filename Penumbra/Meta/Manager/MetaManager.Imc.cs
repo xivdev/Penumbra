@@ -58,7 +58,7 @@ public partial class MetaManager
         {
             if( !_imcFiles.TryGetValue( path, out var file ) )
             {
-                file = new ImcFile( path );
+                file = new ImcFile( manip );
             }
 
             if( !manip.Apply( file ) )
@@ -75,12 +75,17 @@ public partial class MetaManager
 
             return true;
         }
+        catch( ImcException e )
+        {
+            Penumbra.ImcExceptions.Add( e );
+            Penumbra.Log.Error( e.ToString() );
+        }
         catch( Exception e )
         {
-            ++Penumbra.ImcExceptions;
-            Penumbra.Log.Error( $"Could not apply IMC Manipulation:\n{e}" );
-            return false;
+            Penumbra.Log.Error( $"Could not apply IMC Manipulation {manip}:\n{e}" );
         }
+
+        return false;
     }
 
     public bool RevertMod( ImcManipulation m )

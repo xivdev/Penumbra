@@ -132,7 +132,7 @@ public partial class TexToolsMeta
         {
             if( metaFileInfo.PrimaryType is ObjectType.Equipment or ObjectType.Accessory )
             {
-                var def = new ImcFile( new ImcManipulation( metaFileInfo.EquipSlot, i, metaFileInfo.PrimaryId, new ImcEntry() ).GamePath() );
+                var def = new ImcFile( new ImcManipulation( metaFileInfo.EquipSlot, i, metaFileInfo.PrimaryId, new ImcEntry() ) );
                 var partIdx = ImcFile.PartIndex( metaFileInfo.EquipSlot );
                 foreach( var value in values )
                 {
@@ -148,7 +148,7 @@ public partial class TexToolsMeta
             {
                 var def = new ImcFile( new ImcManipulation( metaFileInfo.PrimaryType, metaFileInfo.SecondaryType, metaFileInfo.PrimaryId,
                     metaFileInfo.SecondaryId, i,
-                    new ImcEntry() ).GamePath() );
+                    new ImcEntry() ) );
                 foreach( var value in values )
                 {
                     if( !value.Equals( def.GetEntry( 0, i ) ) )
