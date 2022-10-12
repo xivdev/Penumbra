@@ -332,7 +332,7 @@ public partial class ModEditWindow
             ret                      = true;
         }
 
-        ImGui.SameLine(200 * ImGuiHelpers.GlobalScale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
+        ImGui.SameLine( 200 * ImGuiHelpers.GlobalScale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X );
         tmp = ( file.ShaderPackage.Flags & backfaceBit ) != 0;
         if( ImGui.Checkbox( "Hide Backfaces", ref tmp ) )
         {

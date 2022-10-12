@@ -293,6 +293,9 @@ internal class ObjectIdentification : IObjectIdentifier
                     case CustomizationType.Iris when race == ModelRace.Unknown:
                         set[ $"Customization: All Eyes (Catchlight)" ] = null;
                         break;
+                    case CustomizationType.DecalEquip:
+                        set[ $"Equipment Decal {info.PrimaryId}" ] = null;
+                        break;
                     default:
                     {
                         var customizationString = race == ModelRace.Unknown
