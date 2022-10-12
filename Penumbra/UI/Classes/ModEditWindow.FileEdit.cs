@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -32,7 +33,7 @@ public partial class ModEditWindow
         private bool                     _changed;
 
         private string _defaultPath = string.Empty;
-        private bool   _inInput     = false;
+        private bool   _inInput;
         private T?     _defaultFile;
 
         private IReadOnlyList< Mod.Editor.FileRegistry > _list = null!;
@@ -230,9 +231,14 @@ public partial class ModEditWindow
     {
         var ret = DrawMaterialTextureChange( file, disabled );
 
+        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
+        ret |= DrawBackFaceAndTransparency( file, disabled );
 
-        ImGui.NewLine();
+        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
         ret |= DrawMaterialColorSetChange( file, disabled );
+
+        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
+        ret |= DrawOtherMaterialDetails( file, disabled );
 
         return !disabled && ret;
     }
@@ -266,7 +272,7 @@ public partial class ModEditWindow
             return false;
         }
 
-        ColorSetCopyAllClipboardButton( file, 0  );
+        ColorSetCopyAllClipboardButton( file, 0 );
         ImGui.SameLine();
         var ret = ColorSetPasteAllClipboardButton( file, 0 );
         using var table = ImRaii.Table( "##ColorSets", 10,
@@ -310,9 +316,110 @@ public partial class ModEditWindow
         return ret;
     }
 
+    private static bool DrawBackFaceAndTransparency( MtrlFile file, bool disabled )
+    {
+        const uint transparencyBit = 0x10;
+        const uint backfaceBit     = 0x01;
+
+        var ret = false;
+
+        using var dis = ImRaii.Disabled( disabled );
+
+        var tmp = ( file.ShaderPackage.Flags & transparencyBit ) != 0;
+        if( ImGui.Checkbox( "Enable Transparency", ref tmp ) )
+        {
+            file.ShaderPackage.Flags = tmp ? file.ShaderPackage.Flags | transparencyBit : file.ShaderPackage.Flags & ~transparencyBit;
+            ret                      = true;
+        }
+
+        ImGui.SameLine(200 * ImGuiHelpers.GlobalScale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X);
+        tmp = ( file.ShaderPackage.Flags & backfaceBit ) != 0;
+        if( ImGui.Checkbox( "Hide Backfaces", ref tmp ) )
+        {
+            file.ShaderPackage.Flags = tmp ? file.ShaderPackage.Flags | backfaceBit : file.ShaderPackage.Flags & ~backfaceBit;
+            ret                      = true;
+        }
+
+        return ret;
+    }
+
+    private static bool DrawOtherMaterialDetails( MtrlFile file, bool _ )
+    {
+        if( !ImGui.CollapsingHeader( "Further Content" ) )
+        {
+            return false;
+        }
+
+        using( var sets = ImRaii.TreeNode( "UV Sets", ImGuiTreeNodeFlags.DefaultOpen ) )
+        {
+            if( sets )
+            {
+                foreach( var set in file.UvSets )
+                {
+                    ImRaii.TreeNode( $"#{set.Index:D2} - {set.Name}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                }
+            }
+        }
+
+        using( var shaders = ImRaii.TreeNode( "Shaders", ImGuiTreeNodeFlags.DefaultOpen ) )
+        {
+            if( shaders )
+            {
+                ImRaii.TreeNode( $"Name: {file.ShaderPackage.Name}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                ImRaii.TreeNode( $"Flags: {file.ShaderPackage.Flags:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                foreach( var (key, idx) in file.ShaderPackage.ShaderKeys.WithIndex() )
+                {
+                    using var t = ImRaii.TreeNode( $"Shader Key #{idx}" );
+                    if( t )
+                    {
+                        ImRaii.TreeNode( $"Category: {key.Category}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        ImRaii.TreeNode( $"Value: {key.Value}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                    }
+                }
+
+                foreach( var (constant, idx) in file.ShaderPackage.Constants.WithIndex() )
+                {
+                    using var t = ImRaii.TreeNode( $"Constant #{idx}" );
+                    if( t )
+                    {
+                        ImRaii.TreeNode( $"Category: {constant.Id}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        ImRaii.TreeNode( $"Value: 0x{constant.Value:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                    }
+                }
+
+                foreach( var (sampler, idx) in file.ShaderPackage.Samplers.WithIndex() )
+                {
+                    using var t = ImRaii.TreeNode( $"Sampler #{idx}" );
+                    if( t )
+                    {
+                        ImRaii.TreeNode( $"ID: {sampler.SamplerId}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        ImRaii.TreeNode( $"Texture Index: {sampler.TextureIndex}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        ImRaii.TreeNode( $"Flags: 0x{sampler.Flags:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                    }
+                }
+
+                foreach( var (value, idx) in file.ShaderPackage.ShaderValues.WithIndex() )
+                {
+                    ImRaii.TreeNode( $"Value #{idx}: {value.ToString( CultureInfo.InvariantCulture )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                }
+            }
+        }
+
+        if( file.AdditionalData.Length > 0 )
+        {
+            using var t = ImRaii.TreeNode( "Additional Data" );
+            if( t )
+            {
+                ImRaii.TreeNode( string.Join( ' ', file.AdditionalData.Select( c => $"{c:X2}" ) ), ImGuiTreeNodeFlags.Leaf ).Dispose();
+            }
+        }
+
+        return false;
+    }
+
     private static void ColorSetCopyAllClipboardButton( MtrlFile file, int colorSetIdx )
     {
-        if( !ImGui.Button( "Export All Rows to Clipboard" ) )
+        if( !ImGui.Button( "Export All Rows to Clipboard", ImGuiHelpers.ScaledVector2( 200, 0 ) ) )
         {
             return;
         }
@@ -335,7 +442,7 @@ public partial class ModEditWindow
 
     private static unsafe bool ColorSetPasteAllClipboardButton( MtrlFile file, int colorSetIdx )
     {
-        if( !ImGui.Button( "Import All Rows from Clipboard" ) || file.ColorSets.Length <= colorSetIdx )
+        if( !ImGui.Button( "Import All Rows from Clipboard", ImGuiHelpers.ScaledVector2( 200, 0 ) ) || file.ColorSets.Length <= colorSetIdx )
         {
             return false;
         }
@@ -353,13 +460,13 @@ public partial class ModEditWindow
             fixed( void* ptr = data, output = &rows )
             {
                 Functions.MemCpyUnchecked( output, ptr, Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() );
-                if( data.Length >= Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() + Marshal.SizeOf< MtrlFile.ColorDyeSet.RowArray >()
-                   && file.ColorDyeSets.Length > colorSetIdx)
+                if( data.Length             >= Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() + Marshal.SizeOf< MtrlFile.ColorDyeSet.RowArray >()
+                && file.ColorDyeSets.Length > colorSetIdx )
                 {
                     ref var dyeRows = ref file.ColorDyeSets[ colorSetIdx ].Rows;
                     fixed( void* output2 = &dyeRows )
                     {
-                        Functions.MemCpyUnchecked( output2, (byte*) ptr + Marshal.SizeOf<MtrlFile.ColorSet.RowArray>(), Marshal.SizeOf<MtrlFile.ColorDyeSet.RowArray>() );
+                        Functions.MemCpyUnchecked( output2, ( byte* )ptr + Marshal.SizeOf< MtrlFile.ColorSet.RowArray >(), Marshal.SizeOf< MtrlFile.ColorDyeSet.RowArray >() );
                     }
                 }
             }

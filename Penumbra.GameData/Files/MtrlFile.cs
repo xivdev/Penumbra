@@ -249,7 +249,7 @@ public partial class MtrlFile : IWritable
         public Constant[]  Constants;
         public Sampler[]   Samplers;
         public float[]     ShaderValues;
-        public uint        Unk;
+        public uint        Flags;
     }
 
 
@@ -326,7 +326,7 @@ public partial class MtrlFile : IWritable
         var shaderKeyCount      = r.ReadUInt16();
         var constantCount       = r.ReadUInt16();
         var samplerCount        = r.ReadUInt16();
-        ShaderPackage.Unk = r.ReadUInt32();
+        ShaderPackage.Flags = r.ReadUInt32();
 
         ShaderPackage.ShaderKeys   = r.ReadStructuresAsArray< ShaderKey >( shaderKeyCount );
         ShaderPackage.Constants    = r.ReadStructuresAsArray< Constant >( constantCount );

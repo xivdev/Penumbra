@@ -66,7 +66,7 @@ public partial class MtrlFile
             w.Write( ( ushort )ShaderPackage.ShaderKeys.Length );
             w.Write( ( ushort )ShaderPackage.Constants.Length );
             w.Write( ( ushort )ShaderPackage.Samplers.Length );
-            w.Write( ShaderPackage.Unk );
+            w.Write( ShaderPackage.Flags );
 
             foreach( var key in ShaderPackage.ShaderKeys )
             {
