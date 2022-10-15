@@ -7,6 +7,7 @@ using System.Text;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
+using Dalamud.Utility;
 using EmbedIO;
 using EmbedIO.WebApi;
 using ImGuiNET;
@@ -132,6 +133,7 @@ public class Penumbra : IDalamudPlugin
             {
                 ResidentResources.Reload();
             }
+
             Api          = new PenumbraApi( this );
             IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
             SubscribeItemLinks();
@@ -298,11 +300,30 @@ public class Penumbra : IDalamudPlugin
         CharacterUtility?.Dispose();
     }
 
-    public static bool SetCollection( string type, string collectionName )
+    public static bool SetCollection( string typeName, string collectionName )
     {
-        type           = type.ToLowerInvariant();
-        collectionName = collectionName.ToLowerInvariant();
+        if( !Enum.TryParse< CollectionType >( typeName, true, out var type ) || type == CollectionType.Inactive )
+        {
+            Dalamud.Chat.Print(
+                "Second command argument is not a valid collection type, the correct command format is: /penumbra collection <collectionType> <collectionName> [| characterName]" );
+            return false;
+        }
 
+        string? characterName = null;
+        if( type is CollectionType.Character )
+        {
+            var split = collectionName.Split( '|', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
+            if( split.Length < 2 || split[ 0 ].Length == 0 || split[ 1 ].Length == 0 )
+            {
+                Dalamud.Chat.Print( "You need to provide a collection and a character name in the form of 'collection | character' to set a character collection." );
+                return false;
+            }
+
+            collectionName = split[ 0 ];
+            characterName  = split[ 1 ];
+        }
+
+        collectionName = collectionName.ToLowerInvariant();
         var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.OrdinalIgnoreCase )
             ? ModCollection.Empty
             : CollectionManager[ collectionName ];
@@ -312,34 +333,21 @@ public class Penumbra : IDalamudPlugin
             return false;
         }
 
-        foreach( var t in Enum.GetValues< CollectionType >() )
+        var oldCollection = CollectionManager.ByType( type, characterName );
+        if( collection == oldCollection )
         {
-            if( t is CollectionType.Inactive or CollectionType.Character
-            || !string.Equals( t.ToString(), type, StringComparison.OrdinalIgnoreCase ) )
-            {
-                continue;
-            }
-
-            var oldCollection = CollectionManager.ByType( t );
-            if( collection == oldCollection )
-            {
-                Dalamud.Chat.Print( $"{collection.Name} already is the {t.ToName()} Collection." );
-                return false;
-            }
-
-            if( oldCollection == null && t.IsSpecial() )
-            {
-                CollectionManager.CreateSpecialCollection( t );
-            }
-
-            CollectionManager.SetCollection( collection, t, null );
-            Dalamud.Chat.Print( $"Set {collection.Name} as {t.ToName()} Collection." );
-            return true;
+            Dalamud.Chat.Print( $"{collection.Name} already is the {type.ToName()} Collection." );
+            return false;
         }
 
-        Dalamud.Chat.Print(
-            "Second command argument is not default, the correct command format is: /penumbra collection <collectionType> <collectionName>" );
-        return false;
+        if( oldCollection == null && type.IsSpecial() )
+        {
+            CollectionManager.CreateSpecialCollection( type );
+        }
+
+        CollectionManager.SetCollection( collection, type, characterName );
+        Dalamud.Chat.Print( $"Set {collection.Name} as {type.ToName()} Collection{( characterName != null ? $" for {characterName}." : "." )}" );
+        return true;
     }
 
     private void OnCommand( string command, string rawArgs )
@@ -419,7 +427,7 @@ public class Penumbra : IDalamudPlugin
                     else
                     {
                         Dalamud.Chat.Print( "Missing arguments, the correct command format is:"
-                          + " /penumbra collection {default} <collectionName>" );
+                          + " /penumbra collection {default} <collectionName> [|characterName]" );
                     }
 
                     break;
