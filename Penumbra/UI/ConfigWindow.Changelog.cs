@@ -34,6 +34,7 @@ public partial class ConfigWindow
            .RegisterEntry( "Updated some tooltips and hints." )
            .RegisterEntry( "Improved handling of IMC exception problems." )
            .RegisterEntry( "Fixed a bug with misidentification of equipment decals." )
+           .RegisterEntry( "Character collections can now be set via chat command, too. (/penumbra collection character <collection name> | <character name>)" )
            .RegisterEntry( "Backend changes regarding API/IPC, consumers can but do not need to use the Penumbra.Api library as a submodule." )
            .RegisterEntry( "Added API to delete mods and read and set their pseudo-filesystem paths.", 1 )
            .RegisterEntry( "Added API to check Penumbras enabled state and updates to it.", 1 );

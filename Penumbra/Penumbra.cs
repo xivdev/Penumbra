@@ -340,9 +340,16 @@ public class Penumbra : IDalamudPlugin
             return false;
         }
 
-        if( oldCollection == null && type.IsSpecial() )
+        if( oldCollection == null )
         {
-            CollectionManager.CreateSpecialCollection( type );
+            if( type.IsSpecial() )
+            {
+                CollectionManager.CreateSpecialCollection( type );
+            }
+            else if( type is CollectionType.Character )
+            {
+                CollectionManager.CreateCharacterCollection( characterName! );
+            }
         }
 
         CollectionManager.SetCollection( collection, type, characterName );
