@@ -29,8 +29,9 @@ public partial class ModFileSystemSelector
     private void SetFilterTooltip()
     {
         FilterTooltip = "Filter mods for those where their full paths or names contain the given substring.\n"
-          + "Enter n:[string] to filter only for mod names and no paths.\n"
           + "Enter c:[string] to filter for mods changing specific items.\n"
+          + "Enter t:[string] to filter for mods set to specific tags.\n"
+          + "Enter n:[string] to filter only for mod names and no paths.\n"
           + "Enter a:[string] to filter for mods by specific authors.";
     }
 
@@ -49,6 +50,8 @@ public partial class ModFileSystemSelector
                     'A' => filterValue.Length == 2 ? ( LowerString.Empty, -1 ) : ( new LowerString( filterValue[ 2.. ] ), 2 ),
                     'c' => filterValue.Length == 2 ? ( LowerString.Empty, -1 ) : ( new LowerString( filterValue[ 2.. ] ), 3 ),
                     'C' => filterValue.Length == 2 ? ( LowerString.Empty, -1 ) : ( new LowerString( filterValue[ 2.. ] ), 3 ),
+                    't' => filterValue.Length == 2 ? ( LowerString.Empty, -1 ) : ( new LowerString( filterValue[ 2.. ] ), 4 ),
+                    'T' => filterValue.Length == 2 ? ( LowerString.Empty, -1 ) : ( new LowerString( filterValue[ 2.. ] ), 4 ),
                     _   => ( new LowerString( filterValue ), 0 ),
                 },
             _ => ( new LowerString( filterValue ), 0 ),
@@ -96,7 +99,8 @@ public partial class ModFileSystemSelector
             0  => !( leaf.FullName().Contains( _modFilter.Lower, IgnoreCase ) || mod.Name.Contains( _modFilter ) ),
             1  => !mod.Name.Contains( _modFilter ),
             2  => !mod.Author.Contains( _modFilter ),
-            3  => !mod.LowerChangedItemsString.Contains( _modFilter.Lower, IgnoreCase ),
+            3  => !mod.LowerChangedItemsString.Contains( _modFilter.Lower ),
+            4  => !mod.AllTagsLower.Contains( _modFilter.Lower ),
             _  => false, // Should never happen
         };
     }
@@ -139,6 +143,13 @@ public partial class ModFileSystemSelector
         || CheckFlags( mod.TotalManipulations, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations )
         || CheckFlags( mod.HasOptions ? 1 : 0, ModFilter.HasNoConfig, ModFilter.HasConfig )
         || CheckFlags( isNew ? 1 : 0, ModFilter.NotNew, ModFilter.IsNew ) )
+        {
+            return true;
+        }
+
+        // Handle Favoritism
+        if( !_stateFilter.HasFlag( ModFilter.Favorite )   && mod.Favorite
+        || !_stateFilter.HasFlag( ModFilter.NotFavorite ) && !mod.Favorite )
         {
             return true;
         }

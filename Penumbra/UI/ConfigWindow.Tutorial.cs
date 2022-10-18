@@ -81,6 +81,8 @@ public partial class ConfigWindow
         Faq1,
         Faq2,
         Faq3,
+        Favorites,
+        Tags,
     }
 
     public static readonly Tutorial Tutorial = new Tutorial()
@@ -159,5 +161,7 @@ public partial class ConfigWindow
        .Register( "FAQ 2",
             "It is advised to not use TexTools and Penumbra at the same time. Penumbra may refuse to work if TexTools broke your game indices." )
        .Register( "FAQ 3", "Penumbra can change the skin material a mod uses. This is under advanced editing." )
+       .Register( "Favorites", "You can now toggle mods as favorites using this button. You can filter for favorited mods in the mod selector. Favorites are stored locally, not within the mod, but independently of collections."  )
+       .Register( "Tags", "Mods can now have two types of tags:\n\n- Local Tags are those that you can set for yourself. They are stored locally and are not saved in any way in the mod directory itself.\n- Mod Tags are stored in the mod metadata, are set by the mod creator and are exported together with the mod, they can only be edited in the Edit Mod tab.\n\nIf a mod has a tag in its Mod Tags, this overwrites any identical Local Tags.\n\nYou can filter for tags in the mod selector via 't:text'."  )
        .EnsureSize( Enum.GetValues< BasicTutorialSteps >().Length );
 }

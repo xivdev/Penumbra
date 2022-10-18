@@ -1,9 +1,11 @@
 using System;
 using System.Numerics;
+using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -36,10 +38,12 @@ public partial class ConfigWindow
         private static readonly Utf8String ChangedItemsTabHeader = Utf8String.FromStringUnsafe( "Changed Items", false );
         private static readonly Utf8String EditModTabHeader      = Utf8String.FromStringUnsafe( "Edit Mod", false );
 
+        private readonly TagButtons _modTags = new();
+
         private void DrawTabBar()
         {
-            ImGui.Dummy( _window._defaultSpace );
-            using var tabBar = ImRaii.TabBar( "##ModTabs" );
+            var       tabBarHeight = ImGui.GetCursorPosY();
+            using var tabBar       = ImRaii.TabBar( "##ModTabs" );
             if( !tabBar )
             {
                 return;
@@ -47,8 +51,8 @@ public partial class ConfigWindow
 
             _availableTabs = Tabs.Settings
               | ( _mod.ChangedItems.Count > 0 ? Tabs.ChangedItems : 0 )
-              | ( _mod.Description.Length > 0 ? Tabs.Description : 0 )
-              | ( _conflicts.Count        > 0 ? Tabs.Conflicts : 0 )
+              | Tabs.Description
+              | ( _conflicts.Count > 0 ? Tabs.Conflicts : 0 )
               | Tabs.Edit;
 
             DrawSettingsTab();
@@ -56,6 +60,12 @@ public partial class ConfigWindow
             DrawChangedItemsTab();
             DrawConflictsTab();
             DrawEditModTab();
+            DrawAdvancedEditingButton();
+            DrawFavoriteButton( tabBarHeight );
+        }
+
+        private void DrawAdvancedEditingButton()
+        {
             if( ImGui.TabItemButton( "Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip ) )
             {
                 _window.ModEditPopup.ChangeMod( _mod );
@@ -73,6 +83,44 @@ public partial class ConfigWindow
               + "\t\t- textures" );
         }
 
+        private void DrawFavoriteButton( float height )
+        {
+            var oldPos = ImGui.GetCursorPos();
+
+            using( var font = ImRaii.PushFont( UiBuilder.IconFont ) )
+            {
+                var size   = ImGui.CalcTextSize( FontAwesomeIcon.Star.ToIconString() ) + ImGui.GetStyle().FramePadding * 2;
+                var newPos = new Vector2( ImGui.GetWindowWidth() - size.X - ImGui.GetStyle().ItemSpacing.X, height );
+                if( ImGui.GetScrollMaxX() > 0 )
+                {
+                    newPos.X += ImGui.GetScrollX();
+                }
+
+                var rectUpper = ImGui.GetWindowPos() + newPos;
+                var color = ImGui.IsMouseHoveringRect( rectUpper, rectUpper + size ) ? ImGui.GetColorU32( ImGuiCol.Text ) :
+                    _mod.Favorite                                                    ? 0xFF00FFFF : ImGui.GetColorU32( ImGuiCol.TextDisabled );
+                using var c = ImRaii.PushColor( ImGuiCol.Text, color )
+                   .Push( ImGuiCol.Button, 0 )
+                   .Push( ImGuiCol.ButtonHovered, 0 )
+                   .Push( ImGuiCol.ButtonActive, 0 );
+
+                ImGui.SetCursorPos( newPos );
+                if( ImGui.Button( FontAwesomeIcon.Star.ToIconString() ) )
+                {
+                    Penumbra.ModManager.ChangeModFavorite( _mod.Index, !_mod.Favorite );
+                }
+            }
+
+            var hovered = ImGui.IsItemHovered();
+            OpenTutorial( BasicTutorialSteps.Favorites );
+
+            if( hovered )
+            {
+                ImGui.SetTooltip( "Favorite" );
+            }
+        }
+
+
         // Just a simple text box with the wrapped description, if it exists.
         private void DrawDescriptionTab()
         {
@@ -87,6 +135,26 @@ public partial class ConfigWindow
             {
                 return;
             }
+
+            ImGui.Dummy( ImGuiHelpers.ScaledVector2( 2 ) );
+
+            ImGui.Dummy( ImGuiHelpers.ScaledVector2( 2 ) );
+            var tagIdx = _localTags.Draw( "Local Tags: ", "Custom tags you can set personally that will not be exported to the mod data but only set for you.\n"
+              + "If the mod already contains a local tag in its own tags, the local tag will be ignored.", _mod.LocalTags,
+                out var editedTag );
+            OpenTutorial( BasicTutorialSteps.Tags );
+            if( tagIdx >= 0 )
+            {
+                Penumbra.ModManager.ChangeLocalTag( _mod.Index, tagIdx, editedTag );
+            }
+            if( _mod.ModTags.Count > 0 )
+            {
+                _modTags.Draw( "Mod Tags: ", "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod.", _mod.ModTags, out var _, false,
+                    ImGui.CalcTextSize( "Local " ).X - ImGui.CalcTextSize( "Mod " ).X );
+            }
+
+            ImGui.Dummy( ImGuiHelpers.ScaledVector2( 2 ) );
+            ImGui.Separator();
 
             ImGuiUtil.TextWrapped( _mod.Description );
         }

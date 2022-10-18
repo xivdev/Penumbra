@@ -58,16 +58,20 @@ public partial class ConfigWindow
             DrawPriorityInput();
             OpenTutorial( BasicTutorialSteps.Priority );
             DrawRemoveSettings();
-            ImGui.Dummy( _window._defaultSpace );
-            for( var idx = 0; idx < _mod.Groups.Count; ++idx )
-            {
-                DrawSingleGroup( _mod.Groups[ idx ], idx );
-            }
 
-            ImGui.Dummy( _window._defaultSpace );
-            for( var idx = 0; idx < _mod.Groups.Count; ++idx )
+            if( _mod.Groups.Count > 0 )
             {
-                DrawMultiGroup( _mod.Groups[ idx ], idx );
+                ImGui.Dummy( _window._defaultSpace );
+                for( var idx = 0; idx < _mod.Groups.Count; ++idx )
+                {
+                    DrawSingleGroup( _mod.Groups[ idx ], idx );
+                }
+
+                ImGui.Dummy( _window._defaultSpace );
+                for( var idx = 0; idx < _mod.Groups.Count; ++idx )
+                {
+                    DrawMultiGroup( _mod.Groups[ idx ], idx );
+                }
             }
 
             _window._penumbra.Api.InvokePostSettingsPanel( _mod.ModPath.Name );

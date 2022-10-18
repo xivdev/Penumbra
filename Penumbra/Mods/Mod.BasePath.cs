@@ -47,20 +47,22 @@ public partial class Mod
         return mod;
     }
 
-    private bool Reload( bool incorporateMetaChanges, out MetaChangeType metaChange )
+    private bool Reload( bool incorporateMetaChanges, out ModDataChangeType modDataChange )
     {
-        metaChange = MetaChangeType.Deletion;
+        modDataChange = ModDataChangeType.Deletion;
         ModPath.Refresh();
         if( !ModPath.Exists )
         {
             return false;
         }
 
-        metaChange = LoadMeta();
-        if( metaChange.HasFlag( MetaChangeType.Deletion ) || Name.Length == 0 )
+        modDataChange = LoadMeta();
+        if( modDataChange.HasFlag( ModDataChangeType.Deletion ) || Name.Length == 0 )
         {
             return false;
         }
+
+        LoadLocalData();
 
         LoadDefaultOption();
         LoadAllGroups();

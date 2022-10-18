@@ -43,7 +43,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         Penumbra.CollectionManager.CollectionChanged          += OnCollectionChange;
         Penumbra.CollectionManager.Current.ModSettingChanged  += OnSettingChange;
         Penumbra.CollectionManager.Current.InheritanceChanged += OnInheritanceChange;
-        Penumbra.ModManager.ModMetaChanged                    += OnModMetaChange;
+        Penumbra.ModManager.ModDataChanged                    += OnModDataChange;
         Penumbra.ModManager.ModDiscoveryStarted               += StoreCurrentSelection;
         Penumbra.ModManager.ModDiscoveryFinished              += RestoreLastSelection;
         OnCollectionChange( CollectionType.Current, null, Penumbra.CollectionManager.Current, null );
@@ -54,7 +54,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         base.Dispose();
         Penumbra.ModManager.ModDiscoveryStarted               -= StoreCurrentSelection;
         Penumbra.ModManager.ModDiscoveryFinished              -= RestoreLastSelection;
-        Penumbra.ModManager.ModMetaChanged                    -= OnModMetaChange;
+        Penumbra.ModManager.ModDataChanged                    -= OnModDataChange;
         Penumbra.CollectionManager.Current.ModSettingChanged  -= OnSettingChange;
         Penumbra.CollectionManager.Current.InheritanceChanged -= OnInheritanceChange;
         Penumbra.CollectionManager.CollectionChanged          -= OnCollectionChange;
@@ -120,7 +120,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         var       flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
         using var c     = ImRaii.PushColor( ImGuiCol.Text, state.Color.Value() );
         using var id    = ImRaii.PushId( leaf.Value.Index );
-        using var _     = ImRaii.TreeNode( leaf.Value.Name, flags );
+        ImRaii.TreeNode( leaf.Value.Name, flags ).Dispose();
     }
 
 
@@ -347,12 +347,15 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         }
     }
 
-    private void OnModMetaChange( MetaChangeType type, Mod mod, string? oldName )
+    private void OnModDataChange( ModDataChangeType type, Mod mod, string? oldName )
     {
         switch( type )
         {
-            case MetaChangeType.Name:
-            case MetaChangeType.Author:
+            case ModDataChangeType.Name:
+            case ModDataChangeType.Author:
+            case ModDataChangeType.ModTags:
+            case ModDataChangeType.LocalTags:
+            case ModDataChangeType.Favorite:
                 SetFilterDirty();
                 break;
         }

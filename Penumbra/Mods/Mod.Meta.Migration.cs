@@ -16,7 +16,20 @@ public sealed partial class Mod
     private static class Migration
     {
         public static bool Migrate( Mod mod, JObject json )
-            => MigrateV0ToV1( mod, json ) || MigrateV1ToV2( mod );
+            => MigrateV0ToV1( mod, json ) || MigrateV1ToV2( mod ) || MigrateV2ToV3( mod );
+
+        private static bool MigrateV2ToV3( Mod mod )
+        {
+            if( mod.FileVersion > 2 )
+            {
+                return false;
+            }
+
+            // Remove import time.
+            mod.FileVersion = 3;
+            mod.SaveMeta();
+            return true;
+        }
 
         private static bool MigrateV1ToV2( Mod mod )
         {
@@ -56,8 +69,8 @@ public sealed partial class Mod
 
             var swaps = json[ "FileSwaps" ]?.ToObject< Dictionary< Utf8GamePath, FullPath > >()
              ?? new Dictionary< Utf8GamePath, FullPath >();
-            var groups = json[ "Groups" ]?.ToObject< Dictionary< string, OptionGroupV0 > >() ?? new Dictionary< string, OptionGroupV0 >();
-            var priority = 1;
+            var groups        = json[ "Groups" ]?.ToObject< Dictionary< string, OptionGroupV0 > >() ?? new Dictionary< string, OptionGroupV0 >();
+            var priority      = 1;
             var seenMetaFiles = new HashSet< FullPath >();
             foreach( var group in groups.Values )
             {
@@ -187,7 +200,7 @@ public sealed partial class Mod
 
         private static SubMod SubModFromOption( Mod mod, OptionV0 option, HashSet< FullPath > seenMetaFiles )
         {
-            var subMod = new SubMod(mod) { Name = option.OptionName };
+            var subMod = new SubMod( mod ) { Name = option.OptionName };
             AddFilesToSubMod( subMod, mod.ModPath, option, seenMetaFiles );
             subMod.IncorporateMetaChanges( mod.ModPath, false );
             return subMod;

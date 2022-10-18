@@ -6,8 +6,8 @@ public sealed partial class Mod
 {
     public partial class Manager
     {
-        public delegate void ModMetaChangeDelegate( MetaChangeType type, Mod mod, string? oldName );
-        public event ModMetaChangeDelegate? ModMetaChanged;
+        public delegate void ModDataChangeDelegate( ModDataChangeType type, Mod mod, string? oldName );
+        public event ModDataChangeDelegate? ModDataChanged;
 
         public void ChangeModName( Index idx, string newName )
         {
@@ -17,7 +17,7 @@ public sealed partial class Mod
                 var oldName = mod.Name;
                 mod.Name = newName;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Name, mod, oldName.Text );
+                ModDataChanged?.Invoke( ModDataChangeType.Name, mod, oldName.Text );
             }
         }
 
@@ -28,7 +28,7 @@ public sealed partial class Mod
             {
                 mod.Author = newAuthor;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Author, mod, null );
+                ModDataChanged?.Invoke( ModDataChangeType.Author, mod, null );
             }
         }
 
@@ -39,7 +39,7 @@ public sealed partial class Mod
             {
                 mod.Description = newDescription;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Description, mod, null );
+                ModDataChanged?.Invoke( ModDataChangeType.Description, mod, null );
             }
         }
 
@@ -50,7 +50,7 @@ public sealed partial class Mod
             {
                 mod.Version = newVersion;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Version, mod, null );
+                ModDataChanged?.Invoke( ModDataChangeType.Version, mod, null );
             }
         }
 
@@ -61,8 +61,11 @@ public sealed partial class Mod
             {
                 mod.Website = newWebsite;
                 mod.SaveMeta();
-                ModMetaChanged?.Invoke( MetaChangeType.Website, mod, null );
+                ModDataChanged?.Invoke( ModDataChangeType.Website, mod, null );
             }
         }
+
+        public void ChangeModTag( Index idx, int tagIdx, string newTag )
+            => ChangeTag( idx, tagIdx, newTag, false );
     }
 }

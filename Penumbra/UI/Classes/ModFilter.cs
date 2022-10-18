@@ -7,33 +7,37 @@ public enum ModFilter
 {
     Enabled                = 1 << 0,
     Disabled               = 1 << 1,
-    NoConflict             = 1 << 2,
-    SolvedConflict         = 1 << 3,
-    UnsolvedConflict       = 1 << 4,
-    HasNoMetaManipulations = 1 << 5,
-    HasMetaManipulations   = 1 << 6,
-    HasNoFileSwaps         = 1 << 7,
-    HasFileSwaps           = 1 << 8,
-    HasConfig              = 1 << 9,
-    HasNoConfig            = 1 << 10,
-    HasNoFiles             = 1 << 11,
-    HasFiles               = 1 << 12,
-    IsNew                  = 1 << 13,
-    NotNew                 = 1 << 14,
-    Inherited              = 1 << 15,
-    Uninherited            = 1 << 16,
-    Undefined              = 1 << 17,
+    Favorite               = 1 << 2,
+    NotFavorite            = 1 << 3,
+    NoConflict             = 1 << 4,
+    SolvedConflict         = 1 << 5,
+    UnsolvedConflict       = 1 << 6,
+    HasNoMetaManipulations = 1 << 7,
+    HasMetaManipulations   = 1 << 8,
+    HasNoFileSwaps         = 1 << 9,
+    HasFileSwaps           = 1 << 10,
+    HasConfig              = 1 << 11,
+    HasNoConfig            = 1 << 12,
+    HasNoFiles             = 1 << 13,
+    HasFiles               = 1 << 14,
+    IsNew                  = 1 << 15,
+    NotNew                 = 1 << 16,
+    Inherited              = 1 << 17,
+    Uninherited            = 1 << 18,
+    Undefined              = 1 << 19,
 };
 
 public static class ModFilterExtensions
 {
-    public const ModFilter UnfilteredStateMods = ( ModFilter )( ( 1 << 18 ) - 1 );
+    public const ModFilter UnfilteredStateMods = ( ModFilter )( ( 1 << 20 ) - 1 );
 
     public static string ToName( this ModFilter filter )
         => filter switch
         {
             ModFilter.Enabled                => "Enabled",
             ModFilter.Disabled               => "Disabled",
+            ModFilter.Favorite               => "Favorite",
+            ModFilter.NotFavorite            => "No Favorite",
             ModFilter.NoConflict             => "No Conflicts",
             ModFilter.SolvedConflict         => "Solved Conflicts",
             ModFilter.UnsolvedConflict       => "Unsolved Conflicts",

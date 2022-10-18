@@ -58,6 +58,7 @@ public partial class Mod
                 return;
             }
 
+            MoveDataFile( oldDirectory, BasePath );
             new ModBackup( mod ).Move( null, dir.Name );
 
             dir.Refresh();
@@ -69,9 +70,9 @@ public partial class Mod
             }
 
             ModPathChanged.Invoke( ModPathChangeType.Moved, mod, oldDirectory, BasePath );
-            if( metaChange != MetaChangeType.None )
+            if( metaChange != ModDataChangeType.None )
             {
-                ModMetaChanged?.Invoke( metaChange, mod, oldName );
+                ModDataChanged?.Invoke( metaChange, mod, oldName );
             }
         }
 
@@ -94,9 +95,9 @@ public partial class Mod
             }
 
             ModPathChanged.Invoke( ModPathChangeType.Reloaded, mod, mod.ModPath, mod.ModPath );
-            if( metaChange != MetaChangeType.None )
+            if( metaChange != ModDataChangeType.None )
             {
-                ModMetaChanged?.Invoke( metaChange, mod, oldName );
+                ModDataChanged?.Invoke( metaChange, mod, oldName );
             }
         }
 
@@ -211,6 +212,13 @@ public partial class Mod
                     break;
                 case ModPathChangeType.Deleted:
                     NewMods.Remove( mod );
+                    break;
+                case ModPathChangeType.Moved:
+                    if( oldDirectory != null && newDirectory != null )
+                    {
+                        MoveDataFile( oldDirectory, newDirectory );
+                    }
+
                     break;
             }
         }

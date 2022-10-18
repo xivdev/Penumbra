@@ -454,6 +454,7 @@ public class Penumbra : IDalamudPlugin
         var list = Directory.Exists( collectionDir )
             ? new DirectoryInfo( collectionDir ).EnumerateFiles( "*.json" ).ToList()
             : new List< FileInfo >();
+        list.AddRange( Mod.LocalDataDirectory.Exists ? Mod.LocalDataDirectory.EnumerateFiles( "*.json" ) : Enumerable.Empty< FileInfo >() );
         list.Add( Dalamud.PluginInterface.ConfigFile );
         list.Add( new FileInfo( ModFileSystem.ModFileSystemFile ) );
         list.Add( new FileInfo( ModCollection.Manager.ActiveCollectionFile ) );

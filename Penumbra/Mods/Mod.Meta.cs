@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
@@ -7,17 +9,21 @@ using OtterGui.Classes;
 namespace Penumbra.Mods;
 
 [Flags]
-public enum MetaChangeType : ushort
+public enum ModDataChangeType : ushort
 {
-    None        = 0x00,
-    Name        = 0x01,
-    Author      = 0x02,
-    Description = 0x04,
-    Version     = 0x08,
-    Website     = 0x10,
-    Deletion    = 0x20,
-    Migration   = 0x40,
-    ImportDate  = 0x80,
+    None        = 0x0000,
+    Name        = 0x0001,
+    Author      = 0x0002,
+    Description = 0x0004,
+    Version     = 0x0008,
+    Website     = 0x0010,
+    Deletion    = 0x0020,
+    Migration   = 0x0040,
+    ModTags     = 0x0080,
+    ImportDate  = 0x0100,
+    Favorite    = 0x0200,
+    LocalTags   = 0x0400,
+    Note        = 0x0800,
 }
 
 public sealed partial class Mod
@@ -29,25 +35,25 @@ public sealed partial class Mod
         Priority = int.MaxValue,
     };
 
-    public const uint CurrentFileVersion = 1;
+    public const uint CurrentFileVersion = 3;
     public uint FileVersion { get; private set; } = CurrentFileVersion;
     public LowerString Name { get; private set; } = "New Mod";
     public LowerString Author { get; private set; } = LowerString.Empty;
     public string Description { get; private set; } = string.Empty;
     public string Version { get; private set; } = string.Empty;
     public string Website { get; private set; } = string.Empty;
-    public long ImportDate { get; private set; } = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+    public IReadOnlyList< string > ModTags { get; private set; } = Array.Empty< string >();
 
     internal FileInfo MetaFile
         => new(Path.Combine( ModPath.FullName, "meta.json" ));
 
-    private MetaChangeType LoadMeta()
+    private ModDataChangeType LoadMeta()
     {
         var metaFile = MetaFile;
         if( !File.Exists( metaFile.FullName ) )
         {
             Penumbra.Log.Debug( $"No mod meta found for {ModPath.Name}." );
-            return MetaChangeType.Deletion;
+            return ModDataChangeType.Deletion;
         }
 
         try
@@ -61,36 +67,37 @@ public sealed partial class Mod
             var newVersion     = json[ nameof( Version ) ]?.Value< string >()     ?? string.Empty;
             var newWebsite     = json[ nameof( Website ) ]?.Value< string >()     ?? string.Empty;
             var newFileVersion = json[ nameof( FileVersion ) ]?.Value< uint >()   ?? 0;
-            var importDate     = json[ nameof( ImportDate ) ]?.Value< long >()    ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var importDate     = json[ nameof( ImportDate ) ]?.Value< long >();
+            var modTags        = json[ nameof( ModTags ) ]?.Values< string >().OfType< string >();
 
-            MetaChangeType changes = 0;
+            ModDataChangeType changes = 0;
             if( Name != newName )
             {
-                changes |= MetaChangeType.Name;
+                changes |= ModDataChangeType.Name;
                 Name    =  newName;
             }
 
             if( Author != newAuthor )
             {
-                changes |= MetaChangeType.Author;
+                changes |= ModDataChangeType.Author;
                 Author  =  newAuthor;
             }
 
             if( Description != newDescription )
             {
-                changes     |= MetaChangeType.Description;
+                changes     |= ModDataChangeType.Description;
                 Description =  newDescription;
             }
 
             if( Version != newVersion )
             {
-                changes |= MetaChangeType.Version;
+                changes |= ModDataChangeType.Version;
                 Version =  newVersion;
             }
 
             if( Website != newWebsite )
             {
-                changes |= MetaChangeType.Website;
+                changes |= ModDataChangeType.Website;
                 Website =  newWebsite;
             }
 
@@ -99,22 +106,24 @@ public sealed partial class Mod
                 FileVersion = newFileVersion;
                 if( Migration.Migrate( this, json ) )
                 {
-                    changes |= MetaChangeType.Migration;
+                    changes |= ModDataChangeType.Migration;
                 }
             }
 
-            if( ImportDate != importDate )
+            if( importDate != null && ImportDate != importDate.Value )
             {
-                ImportDate =  importDate;
-                changes    |= MetaChangeType.ImportDate;
+                ImportDate =  importDate.Value;
+                changes    |= ModDataChangeType.ImportDate;
             }
+
+            changes |= UpdateTags( modTags, null );
 
             return changes;
         }
         catch( Exception e )
         {
             Penumbra.Log.Error( $"Could not load mod meta:\n{e}" );
-            return MetaChangeType.Deletion;
+            return ModDataChangeType.Deletion;
         }
     }
 
@@ -134,7 +143,7 @@ public sealed partial class Mod
                 { nameof( Description ), JToken.FromObject( Description ) },
                 { nameof( Version ), JToken.FromObject( Version ) },
                 { nameof( Website ), JToken.FromObject( Website ) },
-                { nameof( ImportDate ), JToken.FromObject( ImportDate ) },
+                { nameof( ModTags ), JToken.FromObject( ModTags ) },
             };
             File.WriteAllText( metaFile.FullName, jObject.ToString( Formatting.Indented ) );
         }

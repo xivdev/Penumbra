@@ -56,6 +56,13 @@ public partial class ConfigWindow
             }
 
             ImGui.Dummy( _window._defaultSpace );
+            var tagIdx = _modTags.Draw( "Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags, out var editedTag );
+            if( tagIdx >= 0 )
+            {
+                Penumbra.ModManager.ChangeModTag( _mod.Index, tagIdx, editedTag );
+            }
+
+            ImGui.Dummy( _window._defaultSpace );
             AddOptionGroup.Draw( _window, _mod );
             ImGui.Dummy( _window._defaultSpace );
 
@@ -566,7 +573,7 @@ public partial class ConfigWindow
 
                 ImGui.TableNextColumn();
                 var canAddGroup = mod.Groups[ groupIdx ].Type != GroupType.Multi || mod.Groups[ groupIdx ].Count < IModGroup.MaxMultiOptions;
-                var validName   = _newOptionName.Length       > 0 && _newOptionNameIdx                            == groupIdx;
+                var validName   = _newOptionName.Length       > 0 && _newOptionNameIdx                           == groupIdx;
                 var tt = canAddGroup
                     ? validName ? "Add a new option to this group." : "Please enter a name for the new option."
                     : $"Can not add more than {IModGroup.MaxMultiOptions} options to a multi group.";
@@ -642,7 +649,7 @@ public partial class ConfigWindow
                 {
                     GroupType.Single => "Single Group",
                     GroupType.Multi  => "Multi Group",
-                    _                 => "Unknown",
+                    _                => "Unknown",
                 };
 
             ImGui.SetNextItemWidth( _window._inputTextWidth.X - 3 * _window._iconButtonSize.X - 12 * ImGuiHelpers.GlobalScale );

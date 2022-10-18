@@ -8,8 +8,8 @@ using System;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using OtterGui.Widgets;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Enums;
 
 namespace Penumbra.UI;
 
@@ -198,9 +198,10 @@ public partial class ConfigWindow
     {
         private readonly ConfigWindow _window;
 
-        private bool               _valid;
-        private ModFileSystem.Leaf _leaf = null!;
-        private Mod                _mod  = null!;
+        private          bool               _valid;
+        private          ModFileSystem.Leaf _leaf      = null!;
+        private          Mod                _mod       = null!;
+        private readonly TagButtons         _localTags = new();
 
         public ModPanel( ConfigWindow window )
             => _window = window;

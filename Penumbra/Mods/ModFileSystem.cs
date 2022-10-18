@@ -33,7 +33,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
 
         ret.Changed                              += ret.OnChange;
         Penumbra.ModManager.ModDiscoveryFinished += ret.Reload;
-        Penumbra.ModManager.ModMetaChanged       += ret.OnMetaChange;
+        Penumbra.ModManager.ModDataChanged       += ret.OnDataChange;
         Penumbra.ModManager.ModPathChanged       += ret.OnModPathChange;
 
         return ret;
@@ -43,7 +43,7 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     {
         Penumbra.ModManager.ModPathChanged       -= OnModPathChange;
         Penumbra.ModManager.ModDiscoveryFinished -= Reload;
-        Penumbra.ModManager.ModMetaChanged       -= OnMetaChange;
+        Penumbra.ModManager.ModDataChanged       -= OnDataChange;
     }
 
     public struct ImportDate : ISortMode< Mod >
@@ -92,9 +92,9 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     }
 
     // Update sort order when defaulted mod names change.
-    private void OnMetaChange( MetaChangeType type, Mod mod, string? oldName )
+    private void OnDataChange( ModDataChangeType type, Mod mod, string? oldName )
     {
-        if( type.HasFlag( MetaChangeType.Name ) && oldName != null )
+        if( type.HasFlag( ModDataChangeType.Name ) && oldName != null )
         {
             var old = oldName.FixName();
             if( Find( old, out var child ) && child is not Folder )

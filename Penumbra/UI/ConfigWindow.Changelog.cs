@@ -22,12 +22,19 @@ public partial class ConfigWindow
         Add5_8_7( ret );
         Add5_9_0( ret );
         Add5_10_0( ret );
+        Add5_11_0( ret );
 
         return ret;
     }
 
     private static void Add5_11_0( Changelog log )
         => log.NextVersion( "Version 0.5.11.0" )
+           .RegisterEntry(
+                "Added local data storage for mods in the plugin config folder. This information is not exported together with your mod, but not dependent on collections." )
+           .RegisterEntry( "Moved the import date from mod metadata to local data.", 1 )
+           .RegisterEntry( "Added Favorites. You can declare mods as favorites and filter for them.", 1 )
+           .RegisterEntry( "Added Local Tags. You can apply custom Tags to mods and filter for them.", 1 )
+           .RegisterEntry( "Added Mod Tags. Mod Creators (and the Edit Mod tab) can set tags that are stored in the mod meta data and are thus exported." )
            .RegisterEntry( "Add backface and transparency toggles to .mtrl editing, as well as a info section." )
            .RegisterEntry( "Meta Manipulation editing now highlights if the selected ID is 0 or 1." )
            .RegisterEntry( "Fixed a bug when manually adding EQP or EQDP entries to Mods." )
