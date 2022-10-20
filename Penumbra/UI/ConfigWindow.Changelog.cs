@@ -23,9 +23,20 @@ public partial class ConfigWindow
         Add5_9_0( ret );
         Add5_10_0( ret );
         Add5_11_0( ret );
+        Add5_11_1( ret );
 
         return ret;
     }
+
+    private static void Add5_11_1( Changelog log )
+        => log.NextVersion( "Version 0.5.11.1" )
+           .RegisterEntry(
+                "The 0.5.11.0 Update exposed an issue in Penumbras file-saving scheme that rarely could cause some, most or even all of your mods to lose their group information." )
+           .RegisterEntry( "If this has happened to you, you will need to reimport affected mods, or manually restore their groups. I am very sorry for that.", 1 )
+           .RegisterEntry(
+                "I believe the problem is fixed with 0.5.11.1, but I can not be sure since it would occur only rarely. For the same reason, a testing build would not help (as it also did not with 0.5.11.0 itself).",
+                1 )
+           .RegisterHighlight( "If you do encounter this or similar problems in 0.5.11.1, please immediately let me know in Discord so I can revert the update again.", 1 );
 
     private static void Add5_11_0( Changelog log )
         => log.NextVersion( "Version 0.5.11.0" )
