@@ -7,7 +7,6 @@ using System.Text;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-using Dalamud.Utility;
 using EmbedIO;
 using EmbedIO.WebApi;
 using ImGuiNET;
@@ -291,6 +290,7 @@ public class Penumbra : IDalamudPlugin
         ObjectReloader?.Dispose();
         ModFileSystem?.Dispose();
         CollectionManager?.Dispose();
+        Framework?.Dispose();
 
         Dalamud.Commands.RemoveHandler( CommandName );
 

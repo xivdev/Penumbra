@@ -139,7 +139,7 @@ public partial class Mod
 
         foreach( var (group, index) in _groups.WithIndex() )
         {
-            IModGroup.SaveDelayed( group, ModPath, index );
+            IModGroup.Save( group, ModPath, index );
         }
     }
 }

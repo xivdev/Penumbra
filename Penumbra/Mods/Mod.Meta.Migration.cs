@@ -16,7 +16,16 @@ public sealed partial class Mod
     private static class Migration
     {
         public static bool Migrate( Mod mod, JObject json )
-            => MigrateV0ToV1( mod, json ) || MigrateV1ToV2( mod ) || MigrateV2ToV3( mod );
+        {
+            var ret = MigrateV0ToV1( mod, json ) || MigrateV1ToV2( mod ) || MigrateV2ToV3( mod );
+            if( ret )
+            {
+                // Immediately save on migration.
+                mod.SaveMetaFile();
+            }
+
+            return ret;
+        }
 
         private static bool MigrateV2ToV3( Mod mod )
         {
@@ -27,10 +36,11 @@ public sealed partial class Mod
 
             // Remove import time.
             mod.FileVersion = 3;
-            mod.SaveMeta();
             return true;
         }
 
+
+        private static readonly Regex GroupRegex = new( @"group_\d{3}_", RegexOptions.Compiled );
         private static bool MigrateV1ToV2( Mod mod )
         {
             if( mod.FileVersion > 1 )
@@ -38,24 +48,26 @@ public sealed partial class Mod
                 return false;
             }
 
-            foreach( var (group, index) in mod.GroupFiles.WithIndex().ToArray() )
+            if (!mod.GroupFiles.All( g => GroupRegex.IsMatch( g.Name )))
             {
-                var newName = Regex.Replace( group.Name, "^group_", $"group_{index + 1:D3}_", RegexOptions.Compiled );
-                try
+                foreach( var (group, index) in mod.GroupFiles.WithIndex().ToArray() )
                 {
-                    if( newName != group.Name )
+                    var newName = Regex.Replace( group.Name, "^group_", $"group_{index + 1:D3}_", RegexOptions.Compiled );
+                    try
                     {
-                        group.MoveTo( Path.Combine( group.DirectoryName ?? string.Empty, newName ), false );
+                        if( newName != group.Name )
+                        {
+                            group.MoveTo( Path.Combine( group.DirectoryName ?? string.Empty, newName ), false );
+                        }
                     }
-                }
-                catch( Exception e )
-                {
-                    Penumbra.Log.Error( $"Could not rename group file {group.Name} to {newName} during migration:\n{e}" );
+                    catch( Exception e )
+                    {
+                        Penumbra.Log.Error( $"Could not rename group file {group.Name} to {newName} during migration:\n{e}" );
+                    }
                 }
             }
 
             mod.FileVersion = 2;
-            mod.SaveMeta();
 
             return true;
         }
@@ -128,7 +140,7 @@ public sealed partial class Mod
 
             mod.FileVersion = 1;
             mod.SaveDefaultMod();
-            mod.SaveMeta();
+            mod.SaveMetaFile();
 
             return true;
         }
