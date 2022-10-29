@@ -3,8 +3,8 @@ using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.GameData.ByteString;
 using Penumbra.Interop;
+using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
@@ -21,6 +22,8 @@ using Penumbra.Interop;
 using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
+using Penumbra.GameData;
+using Penumbra.GameData.Actors;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
@@ -55,6 +58,8 @@ public class Penumbra : IDalamudPlugin
     public static TempModManager TempMods { get; private set; } = null!;
     public static ResourceLoader ResourceLoader { get; private set; } = null!;
     public static FrameworkManager Framework { get; private set; } = null!;
+    public static ActorManager Actors { get; private set; } = null!;
+
     public static readonly List< Exception > ImcExceptions = new();
 
     public readonly  ResourceLogger       ResourceLogger;
@@ -98,6 +103,7 @@ public class Penumbra : IDalamudPlugin
             ModFileSystem  = ModFileSystem.Load();
             ObjectReloader = new ObjectReloader();
             PathResolver   = new PathResolver( ResourceLoader );
+            Actors         = new ActorManager( Dalamud.Objects, Dalamud.ClientState, Dalamud.GameData, u => ( short )PathResolver.CutsceneActor( u ) );
 
             Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
             {
@@ -144,7 +150,7 @@ public class Penumbra : IDalamudPlugin
             {
                 Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
             }
-
+            
             Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 
             OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
@@ -283,6 +289,8 @@ public class Penumbra : IDalamudPlugin
 
     public void Dispose()
     {
+        Dalamud.PluginInterface.RelinquishData( "test1" );
+        Framework?.Dispose();
         ShutdownWebServer();
         DisposeInterface();
         IpcProviders?.Dispose();
@@ -290,7 +298,6 @@ public class Penumbra : IDalamudPlugin
         ObjectReloader?.Dispose();
         ModFileSystem?.Dispose();
         CollectionManager?.Dispose();
-        Framework?.Dispose();
 
         Dalamud.Commands.RemoveHandler( CommandName );
 

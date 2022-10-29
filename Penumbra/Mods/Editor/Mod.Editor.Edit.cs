@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using Penumbra.GameData.ByteString;
+using Penumbra.String.Classes;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;

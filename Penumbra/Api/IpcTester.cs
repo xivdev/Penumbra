@@ -3,7 +3,6 @@ using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.GameData.ByteString;
 using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
@@ -12,6 +11,8 @@ using System.Linq;
 using System.Numerics;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
+using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Api;
 
@@ -536,7 +537,7 @@ public class IpcTester : IDisposable
         private unsafe void UpdateLastCreated( IntPtr gameObject, string _, IntPtr _2, IntPtr _3, IntPtr _4 )
         {
             var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
-            _lastCreatedGameObjectName = new Utf8String( obj->GetName() ).ToString();
+            _lastCreatedGameObjectName = new ByteString( obj->GetName() ).ToString();
             _lastCreatedGameObjectTime = DateTimeOffset.Now;
             _lastCreatedDrawObject     = IntPtr.Zero;
         }
@@ -544,7 +545,7 @@ public class IpcTester : IDisposable
         private unsafe void UpdateLastCreated2( IntPtr gameObject, string _, IntPtr drawObject )
         {
             var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
-            _lastCreatedGameObjectName = new Utf8String( obj->GetName() ).ToString();
+            _lastCreatedGameObjectName = new ByteString( obj->GetName() ).ToString();
             _lastCreatedGameObjectTime = DateTimeOffset.Now;
             _lastCreatedDrawObject     = drawObject;
         }
@@ -552,7 +553,7 @@ public class IpcTester : IDisposable
         private unsafe void UpdateGameObjectResourcePath( IntPtr gameObject, string gamePath, string fullPath )
         {
             var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
-            _lastResolvedObject       = obj != null ? new Utf8String( obj->GetName() ).ToString() : "Unknown";
+            _lastResolvedObject       = obj != null ? new ByteString( obj->GetName() ).ToString() : "Unknown";
             _lastResolvedGamePath     = gamePath;
             _lastResolvedFullPath     = fullPath;
             _lastResolvedGamePathTime = DateTimeOffset.Now;

@@ -9,9 +9,9 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.GameData.ByteString;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
+using Penumbra.String;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 
 namespace Penumbra.UI;
@@ -55,6 +55,8 @@ public partial class ConfigWindow
             DrawDebugTabReplacedResources();
             ImGui.NewLine();
             DrawPathResolverDebug();
+            ImGui.NewLine();
+            DrawActorsDebug();
             ImGui.NewLine();
             DrawDebugCharacterUtility();
             ImGui.NewLine();
@@ -148,6 +150,31 @@ public partial class ConfigWindow
             }
         }
 
+        private static unsafe void DrawActorsDebug()
+        {
+            if( !ImGui.CollapsingHeader( "Actors" ) )
+            {
+                return;
+            }
+
+            using var table = ImRaii.Table( "##actors", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+                -Vector2.UnitX );
+            if( !table )
+            {
+                return;
+            }
+
+            foreach( var obj in Dalamud.Objects )
+            {
+                ImGuiUtil.DrawTableColumn( $"{( ( GameObject* )obj.Address )->ObjectIndex}" );
+                ImGuiUtil.DrawTableColumn( $"0x{obj.Address:X}" );
+                var identifier = Penumbra.Actors.FromObject( obj );
+                ImGuiUtil.DrawTableColumn( Penumbra.Actors.ToString( identifier ) );
+                ImGuiUtil.DrawTableColumn( identifier.DataId.ToString() );
+
+            }
+        }
+
         // Draw information about which draw objects correspond to which game objects
         // and which paths are due to be loaded by which collection.
         private unsafe void DrawPathResolverDebug()
@@ -173,7 +200,7 @@ public partial class ConfigWindow
                             ImGui.TableNextColumn();
                             var obj = ( GameObject* )Dalamud.Objects.GetObjectAddress( idx );
                             var (address, name) =
-                                obj != null ? ( $"0x{( ulong )obj:X}", new Utf8String( obj->Name ).ToString() ) : ( "NULL", "NULL" );
+                                obj != null ? ( $"0x{( ulong )obj:X}", new ByteString( obj->Name ).ToString() ) : ( "NULL", "NULL" );
                             ImGui.TextUnformatted( address );
                             ImGui.TableNextColumn();
                             ImGui.TextUnformatted( name );

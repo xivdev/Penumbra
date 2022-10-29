@@ -67,8 +67,12 @@
       "penumbra.gamedata": {
         "type": "Project",
         "dependencies": {
-          "Penumbra.Api": "[1.0.0, )"
+          "Penumbra.Api": "[1.0.0, )",
+          "Penumbra.String": "[1.0.0, )"
         }
+      },
+      "penumbra.string": {
+        "type": "Project"
       }
     }
   }

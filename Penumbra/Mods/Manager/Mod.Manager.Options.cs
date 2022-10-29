@@ -4,8 +4,8 @@ using System.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;

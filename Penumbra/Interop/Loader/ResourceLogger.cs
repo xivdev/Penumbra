@@ -1,6 +1,7 @@
 using System;
 using System.Text.RegularExpressions;
-using Penumbra.GameData.ByteString;
+using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Loader;
 
@@ -84,7 +85,7 @@ public class ResourceLogger : IDisposable
 
     // Returns the converted string if the filter matches, and null otherwise.
     // The filter matches if it is empty, if it is a valid and matching regex or if the given string contains it.
-    private string? Match( Utf8String data )
+    private string? Match( ByteString data )
     {
         var s = data.ToString();
         return Filter.Length == 0 || ( _filterRegex?.IsMatch( s ) ?? s.Contains( Filter, StringComparison.OrdinalIgnoreCase ) )

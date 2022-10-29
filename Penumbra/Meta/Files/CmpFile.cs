@@ -4,6 +4,7 @@ using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
 using System.Collections.Generic;
+using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
 
@@ -23,7 +24,7 @@ public sealed unsafe class CmpFile : MetaBaseFile
     }
 
     public override void Reset()
-        => Functions.MemCpyUnchecked( Data, ( byte* )DefaultData.Data, DefaultData.Length );
+        => MemoryUtility.MemCpyUnchecked( Data, ( byte* )DefaultData.Data, DefaultData.Length );
 
     public void Reset( IEnumerable< (SubRace, RspAttribute) > entries )
     {

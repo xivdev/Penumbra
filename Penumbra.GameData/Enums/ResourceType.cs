@@ -1,6 +1,7 @@
 using System;
 using System.IO;
-using Penumbra.GameData.ByteString;
+using Penumbra.String;
+using Penumbra.String.Functions;
 
 namespace Penumbra.GameData.Enums;
 
@@ -93,10 +94,10 @@ public static class ResourceTypeExtensions
         };
     }
 
-    public static ResourceType FromString( Utf8String path )
+    public static ResourceType FromString( ByteString path )
     {
         var extIdx = path.LastIndexOf( ( byte )'.' );
-        var ext    = extIdx == -1 ? path : extIdx == path.Length - 1 ? Utf8String.Empty : path.Substring( extIdx + 1 );
+        var ext    = extIdx == -1 ? path : extIdx == path.Length - 1 ? ByteString.Empty : path.Substring( extIdx + 1 );
 
         return ext.Length switch
         {

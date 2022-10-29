@@ -1,11 +1,12 @@
 using System;
 using System.Numerics;
 using Newtonsoft.Json;
-using Penumbra.GameData.ByteString;
+using OtterGui;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
+using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
 
@@ -150,7 +151,7 @@ public unsafe class ImcFile : MetaBaseFile
         var defaultPtr = ( ImcEntry* )( Data + PreambleSize );
         for( var i = oldCount + 1; i < numVariants + 1; ++i )
         {
-            Functions.MemCpyUnchecked( defaultPtr + i * NumParts, defaultPtr, NumParts * sizeof( ImcEntry ) );
+            MemoryUtility.MemCpyUnchecked( defaultPtr + i * NumParts, defaultPtr, NumParts * sizeof( ImcEntry ) );
         }
 
         Penumbra.Log.Verbose( $"Expanded IMC {Path} from {oldCount} to {numVariants} variants." );
@@ -188,8 +189,8 @@ public unsafe class ImcFile : MetaBaseFile
         var file = Dalamud.GameData.GetFile( Path.ToString() );
         fixed( byte* ptr = file!.Data )
         {
-            Functions.MemCpyUnchecked( Data, ptr, file.Data.Length );
-            Functions.MemSet( Data + file.Data.Length, 0, Length - file.Data.Length );
+            MemoryUtility.MemCpyUnchecked( Data, ptr, file.Data.Length );
+            MemoryUtility.MemSet( Data + file.Data.Length, 0, Length - file.Data.Length );
         }
     }
 
@@ -207,7 +208,7 @@ public unsafe class ImcFile : MetaBaseFile
         {
             NumParts = BitOperations.PopCount( *( ushort* )( ptr + 2 ) );
             AllocateData( file.Data.Length );
-            Functions.MemCpyUnchecked( Data, ptr, file.Data.Length );
+            MemoryUtility.MemCpyUnchecked( Data, ptr, file.Data.Length );
         }
     }
 
@@ -243,7 +244,7 @@ public unsafe class ImcFile : MetaBaseFile
             return;
         }
 
-        Functions.MemCpyUnchecked( newData, Data, ActualLength );
+        MemoryUtility.MemCpyUnchecked( newData, Data, ActualLength );
 
         Penumbra.MetaFileManager.Free( data, length );
         resource->SetData( ( IntPtr )newData, ActualLength );

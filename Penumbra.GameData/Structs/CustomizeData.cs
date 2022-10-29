@@ -1,5 +1,5 @@
 using System;
-using Penumbra.GameData.Util;
+using Penumbra.String.Functions;
 
 namespace Penumbra.GameData.Structs;
 
@@ -13,7 +13,7 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
     {
         fixed( byte* ptr = Data )
         {
-            Functions.MemCpyUnchecked( ptr, source, Size );
+            MemoryUtility.MemCpyUnchecked( ptr, source, Size );
         }
     }
 
@@ -21,7 +21,7 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
     {
         fixed( byte* ptr = Data )
         {
-            Functions.MemCpyUnchecked( target, ptr, Size );
+            MemoryUtility.MemCpyUnchecked( target, ptr, Size );
         }
     }
 
@@ -36,12 +36,12 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
     {
         fixed( byte* ptr = Data )
         {
-            return Functions.MemCmpUnchecked( ptr, other.Data, Size ) == 0;
+            return MemoryUtility.MemCmpUnchecked( ptr, other.Data, Size ) == 0;
         }
     }
 
     public static bool Equals( CustomizeData* lhs, CustomizeData* rhs )
-        => Functions.MemCmpUnchecked( lhs, rhs, Size ) == 0;
+        => MemoryUtility.MemCmpUnchecked( lhs, rhs, Size ) == 0;
 
     public override bool Equals( object? obj )
         => obj is CustomizeData other && Equals( other );

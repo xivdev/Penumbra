@@ -5,8 +5,8 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 

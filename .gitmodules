@@ -6,3 +6,7 @@
 	path = Penumbra.Api
 	url = git@github.com:Ottermandias/Penumbra.Api.git
 	branch = main
+[submodule "Penumbra.String"]
+	path = Penumbra.String
+	url = git@github.com:Ottermandias/Penumbra.String.git
+	branch = main

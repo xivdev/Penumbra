@@ -3,7 +3,6 @@ using Lumina.Data;
 using Newtonsoft.Json;
 using OtterGui;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
@@ -15,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Penumbra.Api.Enums;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Api;
 

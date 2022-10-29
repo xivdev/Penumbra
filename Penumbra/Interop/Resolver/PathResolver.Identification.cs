@@ -7,8 +7,8 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.String;
 using CustomizeData = Penumbra.GameData.Structs.CustomizeData;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
@@ -66,7 +66,7 @@ public unsafe partial class PathResolver
         }
 
         var block = data + 0x7A;
-        return new Utf8String( block ).ToString();
+        return new ByteString( block ).ToString();
     }
 
     // Obtain the name of the player character if the glamour plate edit window is open.
@@ -130,7 +130,7 @@ public unsafe partial class PathResolver
 
         if( owner != null )
         {
-            return new Utf8String( owner->Name ).ToString();
+            return new ByteString( owner->Name ).ToString();
         }
 
         return null;
@@ -169,7 +169,7 @@ public unsafe partial class PathResolver
                 if( Penumbra.Config.PreferNamedCollectionsOverOwners )
                 {
                     // Early return if we prefer the actors own name over its owner.
-                    actorName = new Utf8String( gameObject->Name ).ToString();
+                    actorName = new ByteString( gameObject->Name ).ToString();
                     if( actorName.Length > 0
                     && CollectionByActorName( actorName, out var actorCollection ) )
                     {
@@ -189,7 +189,7 @@ public unsafe partial class PathResolver
                         >= CutsceneCharacters.CutsceneStartIdx and < CutsceneCharacters.CutsceneEndIdx => GetCutsceneName( gameObject ),
                         _ => null,
                     }
-                 ?? GetOwnerName( gameObject ) ?? actorName ?? new Utf8String( gameObject->Name ).ToString();
+                 ?? GetOwnerName( gameObject ) ?? actorName ?? new ByteString( gameObject->Name ).ToString();
 
                 // First check temporary character collections, then the own configuration, then special collections.
                 var collection = CollectionByActorName( actualName, out var c )

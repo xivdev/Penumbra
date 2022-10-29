@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
-using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 

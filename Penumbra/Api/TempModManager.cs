@@ -1,11 +1,11 @@
 using OtterGui;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Api;
 

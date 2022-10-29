@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -11,7 +10,7 @@ using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
 using OtterTex;
-using Penumbra.GameData.ByteString;
+using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
+using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Manipulations;
 
@@ -217,7 +218,7 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
     {
         fixed( MetaManipulation* lhs = &this )
         {
-            return Functions.MemCmpUnchecked( lhs, &other, sizeof( MetaManipulation ) );
+            return MemoryUtility.MemCmpUnchecked( lhs, &other, sizeof( MetaManipulation ) );
         }
     }
 

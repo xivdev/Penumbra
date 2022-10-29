@@ -6,8 +6,8 @@ using Dalamud.Utility;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.ByteString;
 using Penumbra.Import;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 

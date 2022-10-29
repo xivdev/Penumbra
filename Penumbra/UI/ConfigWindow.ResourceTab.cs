@@ -8,8 +8,8 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.GameData.ByteString;
 using Penumbra.Interop.Loader;
+using Penumbra.String.Classes;
 
 namespace Penumbra.UI;
 

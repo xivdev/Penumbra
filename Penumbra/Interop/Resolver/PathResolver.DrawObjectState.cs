@@ -8,8 +8,8 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -57,7 +57,7 @@ public unsafe partial class PathResolver
         {
             if( type == ResourceType.Tex
             && LastCreatedCollection.Valid
-            && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( 'd', 'e', 'c', 'a', 'l' ) )
+            && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( "decal"u8 ) )
             {
                 resolveData = LastCreatedCollection;
                 return true;

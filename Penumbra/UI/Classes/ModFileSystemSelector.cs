@@ -32,6 +32,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         SubscribeRightClickFolder( InheritDescendants, 15 );
         SubscribeRightClickFolder( OwnDescendants, 15 );
         SubscribeRightClickFolder( SetDefaultImportFolder, 100 );
+        SubscribeRightClickLeaf( ToggleLeafFavorite, 0 );
         SubscribeRightClickMain( ClearDefaultImportFolder, 100 );
         AddButton( AddNewModButton, 0 );
         AddButton( AddImportModButton, 1 );
@@ -117,9 +118,10 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
 
     protected override void DrawLeafName( FileSystem< Mod >.Leaf leaf, in ModState state, bool selected )
     {
-        var       flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
-        using var c     = ImRaii.PushColor( ImGuiCol.Text, state.Color.Value() );
-        using var id    = ImRaii.PushId( leaf.Value.Index );
+        var flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
+        using var c = ImRaii.PushColor( ImGuiCol.Text, state.Color.Value() )
+           .Push( ImGuiCol.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite );
+        using var id = ImRaii.PushId( leaf.Value.Index );
         ImRaii.TreeNode( leaf.Value.Name, flags ).Dispose();
     }
 
@@ -154,6 +156,14 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         if( ImGui.MenuItem( "Stop Inheriting Descendants" ) )
         {
             SetDescendants( folder, false, true );
+        }
+    }
+
+    private static void ToggleLeafFavorite( FileSystem< Mod >.Leaf mod )
+    {
+        if( ImGui.MenuItem( mod.Value.Favorite ? "Remove Favorite" : "Mark as Favorite" ) )
+        {
+            Penumbra.ModManager.ChangeModFavorite( mod.Value.Index, !mod.Value.Favorite );
         }
     }
 

@@ -5,6 +5,7 @@ using System.Numerics;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
+using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
 
@@ -49,7 +50,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
 
     protected virtual void SetEmptyBlock( int idx )
     {
-        Functions.MemSet( Data + idx * BlockSize * EntrySize, 0, BlockSize * EntrySize );
+        MemoryUtility.MemSet( Data + idx * BlockSize * EntrySize, 0, BlockSize * EntrySize );
     }
 
     public sealed override void Reset()
@@ -62,7 +63,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
             var collapsed = ( ( controlBlock >> i ) & 1 ) == 0;
             if( !collapsed )
             {
-                Functions.MemCpyUnchecked( Data + i * BlockSize * EntrySize, ptr + expandedBlocks * BlockSize * EntrySize, BlockSize * EntrySize );
+                MemoryUtility.MemCpyUnchecked( Data + i * BlockSize * EntrySize, ptr + expandedBlocks * BlockSize * EntrySize, BlockSize * EntrySize );
                 expandedBlocks++;
             }
             else

@@ -3,9 +3,10 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Loader;
 
@@ -127,7 +128,7 @@ public unsafe partial class ResourceLoader : IDisposable
     // Event fired whenever a resource is newly loaded.
     // Success indicates the return value of the loading function (which does not imply that the resource was actually successfully loaded)
     // custom is true if the file was loaded from local files instead of the default SqPacks.
-    public delegate void FileLoadedDelegate( Utf8String path, bool success, bool custom );
+    public delegate void FileLoadedDelegate( ByteString path, bool success, bool custom );
     public event FileLoadedDelegate? FileLoaded;
 
     // Customization point to control how path resolving is handled.
@@ -140,7 +141,7 @@ public unsafe partial class ResourceLoader : IDisposable
 
     // Customize file loading for any GamePaths that start with "|".
     // Same procedure as above.
-    public delegate bool ResourceLoadCustomizationDelegate( Utf8String split, Utf8String path, ResourceManager* resourceManager,
+    public delegate bool ResourceLoadCustomizationDelegate( ByteString split, ByteString path, ResourceManager* resourceManager,
         SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte retValue );
 
     public event ResourceLoadCustomizationDelegate? ResourceLoadCustomization;

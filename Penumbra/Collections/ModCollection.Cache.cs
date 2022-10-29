@@ -1,6 +1,5 @@
 using OtterGui;
 using OtterGui.Classes;
-using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -8,6 +7,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Util;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Collections;
 
@@ -240,7 +241,7 @@ public partial class ModCollection
             if( addMetaChanges )
             {
                 ++_collection.ChangeCounter;
-                if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods  )
+                if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
                 {
                     Penumbra.ResidentResources.Reload();
                     MetaManipulations.SetFiles();
@@ -413,7 +414,7 @@ public partial class ModCollection
                 // Add the same conflict list to both conflict directions.
                 var conflictList = new List< object > { data };
                 _conflicts[ addedMod ] = addedConflicts.Append( new ModConflicts( existingMod, conflictList, existingPriority < addedPriority,
-                    existingPriority != addedPriority ) );
+                    existingPriority                                                                                          != addedPriority ) );
                 _conflicts[ existingMod ] = existingConflicts.Append( new ModConflicts( addedMod, conflictList,
                     existingPriority >= addedPriority,
                     existingPriority != addedPriority ) );
@@ -474,9 +475,9 @@ public partial class ModCollection
                 // Skip IMCs because they would result in far too many false-positive items,
                 // since they are per set instead of per item-slot/item/variant.
                 var identifier = GameData.GameData.GetIdentifier();
-                foreach( var (resolved, modPath) in ResolvedFiles.Where( file => !file.Key.Path.EndsWith( 'i', 'm', 'c' ) ) )
+                foreach( var (resolved, modPath) in ResolvedFiles.Where( file => !file.Key.Path.EndsWith( "imc"u8 ) ) )
                 {
-                    foreach( var (name, obj) in identifier.Identify( resolved.ToGamePath() ) )
+                    foreach( var (name, obj) in identifier.Identify( new GamePath( resolved.ToString() ) ) )
                     {
                         if( !_changedItems.TryGetValue( name, out var data ) )
                         {

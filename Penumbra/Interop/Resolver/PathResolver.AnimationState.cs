@@ -2,8 +2,8 @@ using System;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.String.Classes;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
 namespace Penumbra.Interop.Resolver;

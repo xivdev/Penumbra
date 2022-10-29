@@ -5,9 +5,10 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
+using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -151,7 +152,7 @@ public partial class PathResolver : IDisposable
         return resolveData;
     }
 
-    internal IEnumerable< KeyValuePair< Utf8String, ResolveData > > PathCollections
+    internal IEnumerable< KeyValuePair< ByteString, ResolveData > > PathCollections
         => _paths.Paths;
 
     internal IEnumerable< KeyValuePair< IntPtr, (ResolveData, int) > > DrawObjectMap

@@ -7,9 +7,8 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
-using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Util;
 using Penumbra.Mods;
+using Penumbra.String.Classes;
 
 namespace Penumbra.UI.Classes;
 

@@ -9,10 +9,10 @@ using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Files;
 using Penumbra.Mods;
-using Functions = Penumbra.GameData.Util.Functions;
+using Penumbra.String.Classes;
+using Penumbra.String.Functions;
 
 namespace Penumbra.UI.Classes;
 
@@ -459,14 +459,14 @@ public partial class ModEditWindow
             ref var rows = ref file.ColorSets[ colorSetIdx ].Rows;
             fixed( void* ptr = data, output = &rows )
             {
-                Functions.MemCpyUnchecked( output, ptr, Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() );
+                MemoryUtility.MemCpyUnchecked( output, ptr, Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() );
                 if( data.Length             >= Marshal.SizeOf< MtrlFile.ColorSet.RowArray >() + Marshal.SizeOf< MtrlFile.ColorDyeSet.RowArray >()
                 && file.ColorDyeSets.Length > colorSetIdx )
                 {
                     ref var dyeRows = ref file.ColorDyeSets[ colorSetIdx ].Rows;
                     fixed( void* output2 = &dyeRows )
                     {
-                        Functions.MemCpyUnchecked( output2, ( byte* )ptr + Marshal.SizeOf< MtrlFile.ColorSet.RowArray >(), Marshal.SizeOf< MtrlFile.ColorDyeSet.RowArray >() );
+                        MemoryUtility.MemCpyUnchecked( output2, ( byte* )ptr + Marshal.SizeOf< MtrlFile.ColorSet.RowArray >(), Marshal.SizeOf< MtrlFile.ColorDyeSet.RowArray >() );
                     }
                 }
             }
@@ -489,8 +489,8 @@ public partial class ModEditWindow
                 var data = new byte[MtrlFile.ColorSet.Row.Size + 2];
                 fixed( byte* ptr = data )
                 {
-                    Functions.MemCpyUnchecked( ptr, &row, MtrlFile.ColorSet.Row.Size );
-                    Functions.MemCpyUnchecked( ptr + MtrlFile.ColorSet.Row.Size, &dye, 2 );
+                    MemoryUtility.MemCpyUnchecked( ptr, &row, MtrlFile.ColorSet.Row.Size );
+                    MemoryUtility.MemCpyUnchecked( ptr + MtrlFile.ColorSet.Row.Size, &dye, 2 );
                 }
 
                 var text = Convert.ToBase64String( data );

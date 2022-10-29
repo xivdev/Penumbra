@@ -1,6 +1,7 @@
 using System;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
+using Penumbra.String.Functions;
 
 namespace Penumbra.GameData.Structs;
 
@@ -107,9 +108,9 @@ public readonly unsafe struct CharacterEquip
 
     public void Load( CharacterEquip source )
     {
-        Functions.MemCpyUnchecked( _armor, source._armor, sizeof( CharacterArmor ) * 10 );
+        MemoryUtility.MemCpyUnchecked( _armor, source._armor, sizeof( CharacterArmor ) * 10 );
     }
 
     public bool Equals( CharacterEquip other )
-        => Functions.MemCmpUnchecked( ( void* )_armor, ( void* )other._armor, sizeof( CharacterArmor ) * 10 ) == 0;
+        => MemoryUtility.MemCmpUnchecked( ( void* )_armor, ( void* )other._armor, sizeof( CharacterArmor ) * 10 ) == 0;
 }

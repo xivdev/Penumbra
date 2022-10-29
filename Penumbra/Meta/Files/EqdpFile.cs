@@ -4,6 +4,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
+using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
 
@@ -63,7 +64,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     public override void Reset()
     {
         var def = ( byte* )DefaultData.Data;
-        Functions.MemCpyUnchecked( Data, def, IdentifierSize + PreambleSize );
+        MemoryUtility.MemCpyUnchecked( Data, def, IdentifierSize + PreambleSize );
 
         var controlPtr   = ( ushort* )( def + IdentifierSize + PreambleSize );
         var dataBasePtr  = controlPtr + BlockCount;
@@ -73,18 +74,18 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
         {
             if( controlPtr[ i ] == CollapsedBlock )
             {
-                Functions.MemSet( myDataPtr, 0, BlockSize * EqdpEntrySize );
+                MemoryUtility.MemSet( myDataPtr, 0, BlockSize * EqdpEntrySize );
             }
             else
             {
-                Functions.MemCpyUnchecked( myDataPtr, dataBasePtr + controlPtr[ i ], BlockSize * EqdpEntrySize );
+                MemoryUtility.MemCpyUnchecked( myDataPtr, dataBasePtr + controlPtr[ i ], BlockSize * EqdpEntrySize );
             }
 
             myControlPtr[ i ] =  ( ushort )( i * BlockSize );
             myDataPtr         += BlockSize;
         }
 
-        Functions.MemSet( myDataPtr, 0, Length - ( int )( ( byte* )myDataPtr - Data ) );
+        MemoryUtility.MemSet( myDataPtr, 0, Length - ( int )( ( byte* )myDataPtr - Data ) );
     }
 
     public void Reset( IEnumerable< int > entries )

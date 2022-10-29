@@ -4,8 +4,8 @@ using System.IO;
 using System.Linq;
 using OtterGui.Classes;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
@@ -59,7 +59,7 @@ public sealed partial class Mod
                 var defaultMod = mod._default;
                 foreach( var (gamePath, fullPath) in collection.ResolvedFiles )
                 {
-                    if( gamePath.Path.EndsWith( '.', 'i', 'm', 'c' ) )
+                    if( gamePath.Path.EndsWith( ".imc"u8 ) )
                     {
                         continue;
                     }

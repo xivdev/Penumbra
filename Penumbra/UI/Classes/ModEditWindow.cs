@@ -8,11 +8,11 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
 using Penumbra.Mods;
+using Penumbra.String.Classes;
 using Penumbra.Util;
 using static Penumbra.Mods.Mod;
 

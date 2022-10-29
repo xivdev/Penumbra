@@ -7,9 +7,10 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.String;
+using Penumbra.String.Classes;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
@@ -71,7 +72,7 @@ public unsafe partial class ResourceLoader
 
     private event Action< Utf8GamePath, ResourceType, FullPath?, object? >? PathResolved;
 
-    public ResourceHandle* ResolvePathSync( ResourceCategory category, ResourceType type, Utf8String path )
+    public ResourceHandle* ResolvePathSync( ResourceCategory category, ResourceType type, ByteString path )
     {
         var hash = path.Crc32;
         return GetResourceHandler( true, *ResourceManager, &category, &type, &hash, path.Path, null, false );
@@ -209,7 +210,7 @@ public unsafe partial class ResourceLoader
     }
 
     // Load the resource from an SqPack and trigger the FileLoaded event.
-    private byte DefaultResourceLoad( Utf8String path, ResourceManager* resourceManager,
+    private byte DefaultResourceLoad( ByteString path, ResourceManager* resourceManager,
         SeFileDescriptor* fileDescriptor, int priority, bool isSync )
     {
         var ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
@@ -218,7 +219,7 @@ public unsafe partial class ResourceLoader
     }
 
     // Load the resource from a path on the users hard drives.
-    private byte DefaultRootedResourceLoad( Utf8String gamePath, ResourceManager* resourceManager,
+    private byte DefaultRootedResourceLoad( ByteString gamePath, ResourceManager* resourceManager,
         SeFileDescriptor* fileDescriptor, int priority, bool isSync )
     {
         // Specify that we are loading unpacked files from the drive.
@@ -246,7 +247,7 @@ public unsafe partial class ResourceLoader
     }
 
     // Load a resource by its path. If it is rooted, it will be loaded from the drive, otherwise from the SqPack.
-    internal byte DefaultLoadResource( Utf8String gamePath, ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority,
+    internal byte DefaultLoadResource( ByteString gamePath, ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority,
         bool isSync )
         => Utf8GamePath.IsRooted( gamePath )
             ? DefaultRootedResourceLoad( gamePath, resourceManager, fileDescriptor, priority, isSync )
@@ -262,7 +263,7 @@ public unsafe partial class ResourceLoader
         _incRefHook.Dispose();
     }
 
-    private static int ComputeHash( Utf8String path, GetResourceParameters* pGetResParams )
+    private static int ComputeHash( ByteString path, GetResourceParameters* pGetResParams )
     {
         if( pGetResParams == null || !pGetResParams->IsPartialRead )
         {
@@ -272,11 +273,11 @@ public unsafe partial class ResourceLoader
         // When the game requests file only partially, crc32 includes that information, in format of:
         // path/to/file.ext.hex_offset.hex_size
         // ex) music/ex4/BGM_EX4_System_Title.scd.381adc.30000
-        return Utf8String.Join(
+        return ByteString.Join(
             ( byte )'.',
             path,
-            Utf8String.FromStringUnsafe( pGetResParams->SegmentOffset.ToString( "x" ), true ),
-            Utf8String.FromStringUnsafe( pGetResParams->SegmentLength.ToString( "x" ), true )
+            ByteString.FromStringUnsafe( pGetResParams->SegmentOffset.ToString( "x" ), true ),
+            ByteString.FromStringUnsafe( pGetResParams->SegmentLength.ToString( "x" ), true )
         ).Crc32;
     }
 

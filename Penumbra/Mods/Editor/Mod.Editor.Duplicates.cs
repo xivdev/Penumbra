@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using Penumbra.GameData.ByteString;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
@@ -124,7 +124,7 @@ public partial class Mod
             foreach( var file in files )
             {
                 // Skip any UI Files because deduplication causes weird crashes for those.
-                if( file.SubModUsage.Any( f => f.Item2.Path.StartsWith( 'u', 'i', '/' ) ) )
+                if( file.SubModUsage.Any( f => f.Item2.Path.StartsWith( "ui/"u8 ) ) )
                 {
                     continue;
                 }

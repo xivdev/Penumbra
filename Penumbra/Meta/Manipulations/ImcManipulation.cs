@@ -2,10 +2,10 @@ using System;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Meta.Manipulations;
 

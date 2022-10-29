@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
+using Penumbra.String;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -31,7 +31,7 @@ public unsafe partial class PathResolver
         private readonly ResolverHooks _monster;
 
         // This map links files to their corresponding collection, if it is non-default.
-        private readonly ConcurrentDictionary< Utf8String, ResolveData > _pathCollections = new();
+        private readonly ConcurrentDictionary< ByteString, ResolveData > _pathCollections = new();
 
         public PathState( PathResolver parent )
         {
@@ -69,13 +69,13 @@ public unsafe partial class PathResolver
         public int Count
             => _pathCollections.Count;
 
-        public IEnumerable< KeyValuePair< Utf8String, ResolveData > > Paths
+        public IEnumerable< KeyValuePair< ByteString, ResolveData > > Paths
             => _pathCollections;
 
-        public bool TryGetValue( Utf8String path, out ResolveData collection )
+        public bool TryGetValue( ByteString path, out ResolveData collection )
             => _pathCollections.TryGetValue( path, out collection );
 
-        public bool Consume( Utf8String path, out ResolveData collection )
+        public bool Consume( ByteString path, out ResolveData collection )
             => _pathCollections.TryRemove( path, out collection );
 
         // Just add or remove the resolved path.
@@ -87,13 +87,13 @@ public unsafe partial class PathResolver
                 return path;
             }
 
-            var gamePath = new Utf8String( ( byte* )path );
+            var gamePath = new ByteString( ( byte* )path );
             SetCollection( gameObject, gamePath, collection );
             return path;
         }
 
         // Special handling for paths so that we do not store non-owned temporary strings in the dictionary.
-        public void SetCollection( IntPtr gameObject, Utf8String path, ModCollection collection )
+        public void SetCollection( IntPtr gameObject, ByteString path, ModCollection collection )
         {
             if( _pathCollections.ContainsKey( path ) || path.IsOwned )
             {

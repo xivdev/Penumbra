@@ -9,17 +9,16 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
-using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.String;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
 public partial class ConfigWindow
 {
-    // Draw text given by a Utf8String.
-    internal static unsafe void Text( Utf8String s )
+    // Draw text given by a ByteString.
+    internal static unsafe void Text( ByteString s )
         => ImGuiNative.igTextUnformatted( s.Path, s.Path + s.Length );
 
     // Draw text given by a byte pointer.
@@ -30,8 +29,8 @@ public partial class ConfigWindow
     private static unsafe void Text( ResourceHandle* resource )
         => Text( resource->FileName(), resource->FileNameLength );
 
-    // Draw a Utf8String as a selectable.
-    internal static unsafe bool Selectable( Utf8String s, bool selected )
+    // Draw a ByteString as a selectable.
+    internal static unsafe bool Selectable( ByteString s, bool selected )
     {
         var tmp = ( byte )( selected ? 1 : 0 );
         return ImGuiNative.igSelectable_Bool( s.Path, tmp, ImGuiSelectableFlags.None, Vector2.Zero ) != 0;
@@ -77,8 +76,8 @@ public partial class ConfigWindow
     }
 
     // A selectable that copies its text to clipboard on selection and provides a on-hover tooltip about that,
-    // using an Utf8String.
-    private static unsafe void CopyOnClickSelectable( Utf8String text )
+    // using an ByteString.
+    private static unsafe void CopyOnClickSelectable( ByteString text )
     {
         if( ImGuiNative.igSelectable_Bool( text.Path, 0, ImGuiSelectableFlags.None, Vector2.Zero ) != 0 )
         {

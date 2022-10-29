@@ -7,9 +7,9 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using Penumbra.String.Classes;
 
 namespace Penumbra.UI;
 

@@ -4,6 +4,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
+using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
 
@@ -170,8 +171,8 @@ public sealed unsafe class EstFile : MetaBaseFile
     {
         var (d, length) = DefaultData;
         var data = ( byte* )d;
-        Functions.MemCpyUnchecked( Data, data, length );
-        Functions.MemSet( Data + length, 0, Length - length );
+        MemoryUtility.MemCpyUnchecked( Data, data, length );
+        MemoryUtility.MemSet( Data + length, 0, Length - length );
     }
 
     public EstFile( EstManipulation.EstType estType )

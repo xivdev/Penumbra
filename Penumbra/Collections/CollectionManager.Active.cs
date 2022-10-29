@@ -143,8 +143,8 @@ public partial class ModCollection
                 return false;
             }
 
-            _specialCollections[ ( int )collectionType ] = Empty;
-            CollectionChanged.Invoke( collectionType, null, Empty, null );
+            _specialCollections[ ( int )collectionType ] = Default;
+            CollectionChanged.Invoke( collectionType, null, Default, null );
             return true;
         }
 
@@ -172,8 +172,8 @@ public partial class ModCollection
                 return false;
             }
 
-            _characters[ characterName ] = Empty;
-            CollectionChanged.Invoke( CollectionType.Character, null, Empty, characterName );
+            _characters[ characterName ] = Default;
+            CollectionChanged.Invoke( CollectionType.Character, null, Default, characterName );
             return true;
         }
 

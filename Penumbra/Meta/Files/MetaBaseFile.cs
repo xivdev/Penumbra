@@ -1,6 +1,7 @@
 using System;
 using Dalamud.Memory;
 using Penumbra.GameData.Util;
+using Penumbra.String.Functions;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 
 namespace Penumbra.Meta.Files;
@@ -57,12 +58,12 @@ public unsafe class MetaBaseFile : IDisposable
         var data = ( byte* )Penumbra.MetaFileManager.AllocateFileMemory( ( ulong )newLength );
         if( newLength > Length )
         {
-            Functions.MemCpyUnchecked( data, Data, Length );
-            Functions.MemSet( data + Length, 0, newLength - Length );
+            MemoryUtility.MemCpyUnchecked( data, Data, Length );
+            MemoryUtility.MemSet( data + Length, 0, newLength - Length );
         }
         else
         {
-            Functions.MemCpyUnchecked( data, Data, newLength );
+            MemoryUtility.MemCpyUnchecked( data, Data, newLength );
         }
 
         ReleaseUnmanagedResources();

@@ -4,9 +4,10 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -78,7 +79,7 @@ public unsafe partial class PathResolver
 
         // We need to set the correct collection for the actual material path that is loaded
         // before actually loading the file.
-        public bool MtrlLoadHandler( Utf8String split, Utf8String path, ResourceManager* resourceManager,
+        public bool MtrlLoadHandler( ByteString split, ByteString path, ResourceManager* resourceManager,
             SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
         {
             ret = 0;
@@ -149,7 +150,7 @@ public unsafe partial class PathResolver
             }
 
             var mtrl     = ( MtrlResource* )mtrlResourceHandle;
-            var mtrlPath = Utf8String.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
+            var mtrlPath = ByteString.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
             _mtrlData = _paths.TryGetValue( mtrlPath, out var c ) ? c : ResolveData.Invalid;
         }
     }

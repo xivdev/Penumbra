@@ -7,8 +7,9 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using Penumbra.Collections;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
+using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Loader;
 
@@ -19,7 +20,7 @@ public unsafe partial class ResourceLoader
     private readonly Hook< ResourceHandleDecRef > _decRefHook;
 
     public delegate IntPtr ResourceHandleDestructor( ResourceHandle* handle );
-    
+
     [Signature( "48 89 5C 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 B8",
         DetourName = nameof( ResourceHandleDestructorDetour ) )]
     public static Hook< ResourceHandleDestructor >? ResourceHandleDestructorHook;
@@ -28,7 +29,7 @@ public unsafe partial class ResourceLoader
     {
         if( handle != null )
         {
-            Penumbra.Log.Information( $"[ResourceLoader] Destructing Resource Handle {handle->FileName} at 0x{( ulong )handle:X} (Refcount {handle->RefCount}).");
+            Penumbra.Log.Information( $"[ResourceLoader] Destructing Resource Handle {handle->FileName} at 0x{( ulong )handle:X} (Refcount {handle->RefCount})." );
         }
 
         return ResourceHandleDestructorHook!.Original( handle );
@@ -248,7 +249,7 @@ public unsafe partial class ResourceLoader
         Penumbra.Log.Information( $"[ResourceLoader] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
     }
 
-    private static void LogLoadedFile( Utf8String path, bool success, bool custom )
+    private static void LogLoadedFile( ByteString path, bool success, bool custom )
         => Penumbra.Log.Information( success
             ? $"[ResourceLoader] Loaded {path} from {( custom ? "local files" : "SqPack" )}"
             : $"[ResourceLoader] Failed to load {path} from {( custom ? "local files" : "SqPack" )}." );

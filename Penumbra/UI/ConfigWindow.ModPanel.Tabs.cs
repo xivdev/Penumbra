@@ -6,9 +6,10 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.GameData.ByteString;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using Penumbra.String;
+using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
@@ -32,11 +33,11 @@ public partial class ConfigWindow
         private Tabs _availableTabs = 0;
 
         // Required to use tabs that can not be closed but have a flag to set them open.
-        private static readonly Utf8String ConflictTabHeader     = Utf8String.FromStringUnsafe( "Conflicts", false );
-        private static readonly Utf8String DescriptionTabHeader  = Utf8String.FromStringUnsafe( "Description", false );
-        private static readonly Utf8String SettingsTabHeader     = Utf8String.FromStringUnsafe( "Settings", false );
-        private static readonly Utf8String ChangedItemsTabHeader = Utf8String.FromStringUnsafe( "Changed Items", false );
-        private static readonly Utf8String EditModTabHeader      = Utf8String.FromStringUnsafe( "Edit Mod", false );
+        private static readonly ByteString ConflictTabHeader     = ByteString.FromSpanUnsafe( "Conflicts"u8, true, false, true );
+        private static readonly ByteString DescriptionTabHeader  = ByteString.FromSpanUnsafe( "Description"u8, true, false, true );
+        private static readonly ByteString SettingsTabHeader     = ByteString.FromSpanUnsafe( "Settings"u8, true, false, true );
+        private static readonly ByteString ChangedItemsTabHeader = ByteString.FromSpanUnsafe( "Changed Items"u8, true, false, true );
+        private static readonly ByteString EditModTabHeader      = ByteString.FromSpanUnsafe( "Edit Mod"u8, true, false, true );
 
         private readonly TagButtons _modTags = new();
 
@@ -147,6 +148,7 @@ public partial class ConfigWindow
             {
                 Penumbra.ModManager.ChangeLocalTag( _mod.Index, tagIdx, editedTag );
             }
+
             if( _mod.ModTags.Count > 0 )
             {
                 _modTags.Draw( "Mod Tags: ", "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod.", _mod.ModTags, out var _, false,
@@ -226,7 +228,7 @@ public partial class ConfigWindow
 
 
         // Draw a tab by given name if it is available, and deal with changing the preferred tab.
-        private ImRaii.IEndObject DrawTab( Utf8String name, Tabs flag )
+        private ImRaii.IEndObject DrawTab( ByteString name, Tabs flag )
         {
             if( !_availableTabs.HasFlag( flag ) )
             {

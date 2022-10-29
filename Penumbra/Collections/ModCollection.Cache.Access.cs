@@ -1,5 +1,4 @@
 using OtterGui.Classes;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manager;
 using Penumbra.Mods;
@@ -8,8 +7,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Penumbra.Interop;
-using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Collections;
 

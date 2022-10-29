@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Penumbra.GameData.Util;
 
 namespace Penumbra.Mods;
 
@@ -14,7 +15,7 @@ public sealed partial class Mod
         ChangedItems.Clear();
         foreach( var gamePath in AllRedirects )
         {
-            identifier.Identify( ChangedItems, gamePath.ToGamePath() );
+            identifier.Identify( ChangedItems, new GamePath(gamePath.ToString()) );
         }
 
         // TODO: manipulations

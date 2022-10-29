@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui.Filesystem;
-using Penumbra.GameData.ByteString;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Meta.Manager;
 
@@ -149,7 +150,7 @@ public partial class MetaManager
         => new($"|{_collection.Name}_{_collection.ChangeCounter}|{path}");
 
 
-    private static unsafe bool ImcLoadHandler( Utf8String split, Utf8String path, ResourceManager* resourceManager,
+    private static unsafe bool ImcLoadHandler( ByteString split, ByteString path, ResourceManager* resourceManager,
         SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
     {
         ret = 0;
