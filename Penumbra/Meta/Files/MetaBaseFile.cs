@@ -1,6 +1,5 @@
 using System;
 using Dalamud.Memory;
-using Penumbra.GameData.Util;
 using Penumbra.String.Functions;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 

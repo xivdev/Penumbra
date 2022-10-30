@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Util;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Collections;
@@ -474,10 +473,10 @@ public partial class ModCollection
                 _changedItems.Clear();
                 // Skip IMCs because they would result in far too many false-positive items,
                 // since they are per set instead of per item-slot/item/variant.
-                var identifier = GameData.GameData.GetIdentifier();
+                var identifier = Penumbra.Identifier;
                 foreach( var (resolved, modPath) in ResolvedFiles.Where( file => !file.Key.Path.EndsWith( "imc"u8 ) ) )
                 {
-                    foreach( var (name, obj) in identifier.Identify( new GamePath( resolved.ToString() ) ) )
+                    foreach( var (name, obj) in identifier.Identify( resolved.ToString() ) )
                     {
                         if( !_changedItems.TryGetValue( name, out var data ) )
                         {

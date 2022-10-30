@@ -1,4 +1,5 @@
 using System;
+using Dalamud.Data;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.Api.Enums;
 using Action = Lumina.Excel.GeneratedSheets.Action;
@@ -18,13 +19,13 @@ public static class ChangedItemExtensions
         };
     }
 
-    public static object? GetObject( this ChangedItemType type, uint id )
+    public static object? GetObject( this ChangedItemType type, DataManager manager, uint id )
     {
         return type switch
         {
             ChangedItemType.None          => null,
-            ChangedItemType.Item          => ObjectIdentification.DataManager?.GetExcelSheet< Item >()?.GetRow( id ),
-            ChangedItemType.Action        => ObjectIdentification.DataManager?.GetExcelSheet< Action >()?.GetRow( id ),
+            ChangedItemType.Item          => manager.GetExcelSheet< Item >()?.GetRow( id ),
+            ChangedItemType.Action        => manager.GetExcelSheet< Action >()?.GetRow( id ),
             ChangedItemType.Customization => null,
             _                             => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
         };

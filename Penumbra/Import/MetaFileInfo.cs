@@ -1,5 +1,4 @@
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Util;
 using System.Text.RegularExpressions;
 
 namespace Penumbra.Import;
@@ -54,10 +53,6 @@ public class MetaFileInfo
     }
 
     public MetaFileInfo( string fileName )
-        : this( new GamePath( fileName ) )
-    { }
-
-    public MetaFileInfo( GamePath fileName )
     {
         // Set the primary type from the gamePath start.
         PrimaryType   = GameData.GameData.GetGamePathParser().PathToObjectType( fileName );

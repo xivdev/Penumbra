@@ -59,6 +59,7 @@ public class Penumbra : IDalamudPlugin
     public static ResourceLoader ResourceLoader { get; private set; } = null!;
     public static FrameworkManager Framework { get; private set; } = null!;
     public static ActorManager Actors { get; private set; } = null!;
+    public static IObjectIdentifier Identifier { get; private set; } = null!;
 
     public static readonly List< Exception > ImcExceptions = new();
 
@@ -80,8 +81,8 @@ public class Penumbra : IDalamudPlugin
         try
         {
             Dalamud.Initialize( pluginInterface );
-            Log = new Logger();
-            GameData.GameData.GetIdentifier( Dalamud.GameData );
+            Log                    = new Logger();
+            Identifier             = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData );
             DevPenumbraExists      = CheckDevPluginPenumbra();
             IsNotInstalledPenumbra = CheckIsNotInstalled();
 

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using Penumbra.GameData.Structs;
-using Penumbra.GameData.Util;
 using Penumbra.Interop.Structs;
 using Penumbra.String.Functions;
 

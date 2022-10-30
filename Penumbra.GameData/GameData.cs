@@ -1,48 +1,73 @@
 using System;
 using System.Collections.Generic;
+using Dalamud;
 using Dalamud.Data;
+using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using Penumbra.GameData.Util;
 
 namespace Penumbra.GameData;
 
 public static class GameData
 {
-    internal static          ObjectIdentification? Identification;
-    internal static readonly GamePathParser        GamePathParser = new();
+    /// <summary>
+    /// Obtain an object identifier that can link a game path to game objects that use it, using your client language.
+    /// </summary>
+    public static IObjectIdentifier GetIdentifier(DalamudPluginInterface pluginInterface, DataManager dataManager)
+        => new ObjectIdentification(pluginInterface, dataManager, dataManager.Language);
 
-    public static IObjectIdentifier GetIdentifier( DataManager dataManager )
-    {
-        Identification ??= new ObjectIdentification( dataManager, dataManager.Language );
-        return Identification;
-    }
+    /// <summary>
+    /// Obtain an object identifier that can link a game path to game objects that use it using the given language.
+    /// </summary>
+    public static IObjectIdentifier GetIdentifier(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
+        => new ObjectIdentification(pluginInterface, dataManager, language);
 
-    public static IObjectIdentifier GetIdentifier()
-    {
-        if( Identification == null )
-        {
-            throw new Exception( "Object Identification was not initialized." );
-        }
-
-        return Identification;
-    }
-
+    /// <summary>
+    /// Obtain a parser for game paths.
+    /// </summary>
     public static IGamePathParser GetGamePathParser()
-        => GamePathParser;
+        => new GamePathParser();
 }
 
-public interface IObjectIdentifier
+public interface IObjectIdentifier : IDisposable
 {
-    public void                          Identify( IDictionary< string, object? > set, GamePath path );
-    public Dictionary< string, object? > Identify( GamePath path );
-    public Item?                         Identify( SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot );
+    /// <summary>
+    /// An accessible parser for game paths.
+    /// </summary>
+    public IGamePathParser GamePathParser { get; }
+
+    /// <summary>
+    /// Add all known game objects using the given game path to the dictionary.
+    /// </summary>
+    /// <param name="set">A pre-existing dictionary to which names (and optional linked objects) can be added.</param>
+    /// <param name="path">The game path to identify.</param>
+    public void Identify(IDictionary<string, object?> set, string path);
+
+    /// <summary>
+    /// Return named information and possibly linked objects for all known game objects using the given path.
+    /// </summary>
+    /// <param name="path">The game path to identify.</param>
+    public Dictionary<string, object?> Identify(string path);
+
+    /// <summary>
+    /// Identify an equippable item by its model values.
+    /// </summary>
+    /// <param name="setId">The primary model ID for the piece of equipment.</param>
+    /// <param name="weaponType">The secondary model ID for weapons, WeaponType.Zero for equipment and accessories.</param>
+    /// <param name="variant">The variant ID of the model.</param>
+    /// <param name="slot">The equipment slot the piece of equipment uses.</param>
+    /// <returns></returns>
+    public IReadOnlyList<Item>? Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot);
+
+    /// <inheritdoc cref="Identify(SetId, WeaponType, ushort, EquipSlot)"/>
+    public IReadOnlyList<Item>? Identify(SetId setId, ushort variant, EquipSlot slot)
+        => Identify(setId, 0, variant, slot);
 }
 
 public interface IGamePathParser
 {
-    public ObjectType     PathToObjectType( GamePath path );
-    public GameObjectInfo GetFileInfo( GamePath path );
-    public string         VfxToKey( GamePath path );
+    public ObjectType     PathToObjectType(string path);
+    public GameObjectInfo GetFileInfo(string path);
+    public string         VfxToKey(string path);
 }

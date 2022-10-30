@@ -1,6 +1,5 @@
 using System;
 using Penumbra.GameData.Enums;
-using Penumbra.GameData.Util;
 using Penumbra.String.Functions;
 
 namespace Penumbra.GameData.Structs;
