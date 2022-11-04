@@ -160,9 +160,8 @@ public partial class Mod
         {
             return replacement + replacement;
         }
-
         StringBuilder sb = new(s.Length);
-        foreach( var c in s )
+        foreach( var c in s.Normalize(NormalizationForm.FormKC) )
         {
             if( c.IsInvalidAscii() || c.IsInvalidInPath() )
             {
