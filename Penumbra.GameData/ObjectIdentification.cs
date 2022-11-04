@@ -49,7 +49,7 @@ internal class ObjectIdentification : IObjectIdentifier
                 var (begin, _) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_weapons,
                     ((ulong)setId << 32) | ((ulong)weaponType << 16) | variant,
                     0xFFFFFFFFFFFF);
-                return begin >= 0 ? _weapons[begin].Item2 : null;
+                return begin >= 0 ? _weapons[begin].Item2 : Array.Empty<Item>();
             }
             default:
             {

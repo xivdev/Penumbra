@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Penumbra.GameData.Actors;
+using Penumbra.String;
 
 namespace Penumbra.Collections;
 
@@ -20,20 +21,34 @@ public class IndividualCollections
     public readonly  Dictionary< ActorIdentifier, ModCollection >                                                         Individuals;
 
     public IndividualCollections( ActorManager manager )
-    {
-        _manager = manager;
-    }
+        => _manager = manager;
 
     public bool CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, uint dataId )
     {
-        _manager.
+        return false;
     }
 
-    public bool CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, IReadOnlyList< uint > dataIds )
+    public bool Add( string displayName, ActorIdentifier identifier, ModCollection collection )
+        => Add( displayName, identifier, collection, Array.Empty< uint >() );
+
+    public bool Add( string displayName, ActorIdentifier identifier, ModCollection collection, IEnumerable< uint > additionalIds )
     {
+        if( Individuals.ContainsKey( identifier ) )
+        {
+            return false;
+        }
 
+        //var identifiers = additionalIds
+        //   .Select( id => CanAdd( identifier.Type, identifier.PlayerName, identifier.HomeWorld, identifier.Kind, id, out var value ) ? value : ActorIdentifier.Invalid )
+        //   .Prepend( identifier )
+        //   .ToArray();
+        //if( identifiers.Any( i => !i.IsValid || i.DataId == identifier.DataId ) )
+        //{
+        //    return false;
+        //}
+
+        return true;
     }
-
 }
 
 public partial class ModCollection

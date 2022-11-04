@@ -1,8 +1,10 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Runtime.Serialization;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
+using Lumina.Excel.GeneratedSheets;
 using Newtonsoft.Json.Linq;
 using Penumbra.String;
 
@@ -157,7 +159,8 @@ public partial class ActorManager
                         ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID);
                 }
 
-                return CreateNpc(ObjectKind.BattleNpc, ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID, actor->ObjectIndex);
+                return CreateNpc(ObjectKind.BattleNpc, ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID,
+                    actor->ObjectIndex);
             }
             case ObjectKind.EventNpc: return CreateNpc(ObjectKind.EventNpc, actor->DataID, actor->ObjectIndex);
             case ObjectKind.MountType:
@@ -206,7 +209,7 @@ public partial class ActorManager
 
     public ActorIdentifier CreatePlayer(ByteString name, ushort homeWorld)
     {
-        if (!VerifyWorld(homeWorld) || !VerifyPlayerName(name))
+        if (!VerifyWorld(homeWorld) || !VerifyPlayerName(name.Span))
             return ActorIdentifier.Invalid;
 
         return new ActorIdentifier(IdentifierType.Player, ObjectKind.Player, homeWorld, 0, name);
@@ -230,26 +233,25 @@ public partial class ActorManager
 
     public ActorIdentifier CreateOwned(ByteString ownerName, ushort homeWorld, ObjectKind kind, uint dataId)
     {
-        if (!VerifyWorld(homeWorld) || !VerifyPlayerName(ownerName) || !VerifyOwnedData(kind, dataId))
+        if (!VerifyWorld(homeWorld) || !VerifyPlayerName(ownerName.Span) || !VerifyOwnedData(kind, dataId))
             return ActorIdentifier.Invalid;
 
         return new ActorIdentifier(IdentifierType.Owned, kind, homeWorld, dataId, ownerName);
     }
 
     /// <summary> Checks SE naming rules. </summary>
-    private static bool VerifyPlayerName(ByteString name)
+    public static bool VerifyPlayerName(ReadOnlySpan<byte> name)
     {
         // Total no more than 20 characters + space.
         if (name.Length is < 5 or > 21)
             return false;
 
-        var split = name.Split((byte)' ');
-
         // Forename and surname, no more spaces.
-        if (split.Count != 2)
+        var splitIndex = name.IndexOf((byte)' ');
+        if (splitIndex < 0 || name[(splitIndex + 1)..].IndexOf((byte)' ') >= 0)
             return false;
 
-        static bool CheckNamePart(ByteString part)
+        static bool CheckNamePart(ReadOnlySpan<byte> part)
         {
             // Each name part at least 2 and at most 15 characters.
             if (part.Length is < 2 or > 15)
@@ -260,27 +262,83 @@ public partial class ActorManager
                 return false;
 
             // Every other symbol needs to be lowercase letter, hyphen or apostrophe.
-            if (part.Skip(1).Any(c => c != (byte)'\'' && c != (byte)'-' && c is < (byte)'a' or > (byte)'z'))
-                return false;
+            var last = (byte)'\0';
+            for (var i = 1; i < part.Length; ++i)
+            {
+                var current = part[i];
+                if (current is not ((byte)'\'' or (byte)'-' or (>= (byte)'a' and <= (byte)'z')))
+                    return false;
 
-            var hyphens = part.Split((byte)'-');
-            // Apostrophes can not be used in succession, after or before apostrophes.
-            return !hyphens.Any(p => p.Length == 0 || p[0] == (byte)'\'' || p.Last() == (byte)'\'');
+                // Hyphens can not be used in succession, after or before apostrophes or as the last symbol.
+                if (last is (byte)'\'' && current is (byte)'-')
+                    return false;
+                if (last is (byte)'-' && current is (byte)'-' or (byte)'\'')
+                    return false;
+
+                last = current;
+            }
+
+            return part[^1] != (byte)'-';
         }
 
-        return CheckNamePart(split[0]) && CheckNamePart(split[1]);
+        return CheckNamePart(name[..splitIndex]) && CheckNamePart(name[(splitIndex + 1)..]);
+    }
+
+    /// <summary> Checks SE naming rules. </summary>
+    public static bool VerifyPlayerName(ReadOnlySpan<char> name)
+    {
+        // Total no more than 20 characters + space.
+        if (name.Length is < 5 or > 21)
+            return false;
+
+        // Forename and surname, no more spaces.
+        var splitIndex = name.IndexOf(' ');
+        if (splitIndex < 0 || name[(splitIndex + 1)..].IndexOf(' ') >= 0)
+            return false;
+
+        static bool CheckNamePart(ReadOnlySpan<char> part)
+        {
+            // Each name part at least 2 and at most 15 characters.
+            if (part.Length is < 2 or > 15)
+                return false;
+
+            // Each part starting with capitalized letter.
+            if (part[0] is < 'A' or > 'Z')
+                return false;
+
+            // Every other symbol needs to be lowercase letter, hyphen or apostrophe.
+            var last = '\0';
+            for (var i = 1; i < part.Length; ++i)
+            {
+                var current = part[i];
+                if (current is not ('\'' or '-' or (>= 'a' and <= 'z')))
+                    return false;
+
+                // Hyphens can not be used in succession, after or before apostrophes or as the last symbol.
+                if (last is '\'' && current is '-')
+                    return false;
+                if (last is '-' && current is '-' or '\'')
+                    return false;
+
+                last = current;
+            }
+
+            return part[^1] != '-';
+        }
+
+        return CheckNamePart(name[..splitIndex]) && CheckNamePart(name[(splitIndex + 1)..]);
     }
 
     /// <summary> Checks if the world is a valid public world or ushort.MaxValue (any world). </summary>
-    private bool VerifyWorld(ushort worldId)
+    public bool VerifyWorld(ushort worldId)
         => Worlds.ContainsKey(worldId);
 
     /// <summary> Verify that the enum value is a specific actor and return the name if it is. </summary>
-    private static bool VerifySpecial(SpecialActor actor)
+    public static bool VerifySpecial(SpecialActor actor)
         => actor is >= SpecialActor.CharacterScreen and <= SpecialActor.Portrait;
 
     /// <summary> Verify that the object index is a valid index for an NPC. </summary>
-    private static bool VerifyIndex(ushort index)
+    public static bool VerifyIndex(ushort index)
     {
         return index switch
         {
@@ -291,7 +349,7 @@ public partial class ActorManager
     }
 
     /// <summary> Verify that the object kind is a valid owned object, and the corresponding data Id. </summary>
-    private bool VerifyOwnedData(ObjectKind kind, uint dataId)
+    public bool VerifyOwnedData(ObjectKind kind, uint dataId)
     {
         return kind switch
         {
@@ -302,7 +360,7 @@ public partial class ActorManager
         };
     }
 
-    private bool VerifyNpcData(ObjectKind kind, uint dataId)
+    public bool VerifyNpcData(ObjectKind kind, uint dataId)
         => kind switch
         {
             ObjectKind.BattleNpc => BNpcs.ContainsKey(dataId),
