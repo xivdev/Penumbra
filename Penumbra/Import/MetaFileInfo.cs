@@ -55,7 +55,7 @@ public class MetaFileInfo
     public MetaFileInfo( string fileName )
     {
         // Set the primary type from the gamePath start.
-        PrimaryType   = GameData.GameData.GetGamePathParser().PathToObjectType( fileName );
+        PrimaryType   = Penumbra.GamePathParser.PathToObjectType( fileName );
         PrimaryId     = 0;
         SecondaryType = BodySlot.Unknown;
         SecondaryId   = 0;

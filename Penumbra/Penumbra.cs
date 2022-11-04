@@ -60,6 +60,7 @@ public class Penumbra : IDalamudPlugin
     public static FrameworkManager Framework { get; private set; } = null!;
     public static ActorManager Actors { get; private set; } = null!;
     public static IObjectIdentifier Identifier { get; private set; } = null!;
+    public static IGamePathParser GamePathParser { get; private set; } = null!;
 
     public static readonly List< Exception > ImcExceptions = new();
 
@@ -83,6 +84,7 @@ public class Penumbra : IDalamudPlugin
             Dalamud.Initialize( pluginInterface );
             Log                    = new Logger();
             Identifier             = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData );
+            GamePathParser         = GameData.GameData.GetGamePathParser();
             DevPenumbraExists      = CheckDevPluginPenumbra();
             IsNotInstalledPenumbra = CheckIsNotInstalled();
 

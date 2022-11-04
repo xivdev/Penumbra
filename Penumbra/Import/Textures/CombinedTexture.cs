@@ -16,7 +16,7 @@ public partial class CombinedTexture : IDisposable
     {
         AsIs,
         Bitmap,
-        BC5,
+        BC3,
         BC7,
     }
 
@@ -93,7 +93,7 @@ public partial class CombinedTexture : IDisposable
             {
                 TextureSaveType.AsIs => _current.Type is Texture.FileType.Bitmap or Texture.FileType.Png ? CreateUncompressed( s, mipMaps ) : s,
                 TextureSaveType.Bitmap => CreateUncompressed( s, mipMaps ),
-                TextureSaveType.BC5 => CreateCompressed( s, mipMaps, false ),
+                TextureSaveType.BC3 => CreateCompressed( s, mipMaps, false ),
                 TextureSaveType.BC7 => CreateCompressed( s, mipMaps, true ),
                 _ => throw new ArgumentOutOfRangeException( nameof( type ), type, null ),
             };

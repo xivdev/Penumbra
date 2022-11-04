@@ -1,6 +1,5 @@
 using System;
 using Penumbra.Api.Enums;
-using Penumbra.Mods;
 
 namespace Penumbra.Import;
 
