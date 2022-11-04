@@ -38,7 +38,7 @@ internal class ObjectIdentification : IObjectIdentifier
         return ret;
     }
 
-    public IReadOnlyList<Item>? Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot)
+    public IReadOnlyList<Item> Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot)
     {
         switch (slot)
         {
@@ -55,7 +55,7 @@ internal class ObjectIdentification : IObjectIdentifier
                 var (begin, _) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_equipment,
                     ((ulong)setId << 32) | ((ulong)slot.ToSlot() << 16) | variant,
                     0xFFFFFFFFFFFF);
-                return begin >= 0 ? _equipment[begin].Item2 : null;
+                return begin >= 0 ? _equipment[begin].Item2 : Array.Empty<Item>();
             }
         }
     }
@@ -69,11 +69,7 @@ internal class ObjectIdentification : IObjectIdentifier
     private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> _weapons;
     private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> _equipment;
     private readonly IReadOnlyDictionary<string, IReadOnlyList<Action>>     _actions;
-
-    private readonly string _weaponsTag;
-    private readonly string _equipmentTag;
-    private readonly string _actionsTag;
-    private          bool   _disposed = false;
+    private          bool                                                   _disposed = false;
 
     public ObjectIdentification(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
     {
@@ -81,39 +77,9 @@ internal class ObjectIdentification : IObjectIdentifier
         _dataManager     = dataManager;
         _language        = language;
 
-        _weaponsTag   = $"Penumbra.Identification.Weapons.{_language}.V{Version}";
-        _equipmentTag = $"Penumbra.Identification.Equipment.{_language}.V{Version}";
-        _actionsTag   = $"Penumbra.Identification.Actions.{_language}.V{Version}";
-
-        try
-        {
-            _weapons = pluginInterface.GetOrCreateData(_weaponsTag, CreateWeaponList);
-        }
-        catch (Exception ex)
-        {
-            PluginLog.Error($"Error creating shared identification data for weapons:\n{ex}");
-            _weapons = CreateWeaponList();
-        }
-
-        try
-        {
-            _equipment = pluginInterface.GetOrCreateData(_equipmentTag, CreateEquipmentList);
-        }
-        catch (Exception ex)
-        {
-            PluginLog.Error($"Error creating shared identification data for equipment:\n{ex}");
-            _equipment = CreateEquipmentList();
-        }
-
-        try
-        {
-            _actions = pluginInterface.GetOrCreateData(_actionsTag, CreateActionList);
-        }
-        catch (Exception ex)
-        {
-            PluginLog.Error($"Error creating shared identification data for actions:\n{ex}");
-            _actions = CreateActionList();
-        }
+        _weapons   = TryCatchData("Weapons",   CreateWeaponList);
+        _equipment = TryCatchData("Equipment", CreateEquipmentList);
+        _actions   = TryCatchData("Actions",   CreateActionList);
     }
 
     public void Dispose()
@@ -122,14 +88,30 @@ internal class ObjectIdentification : IObjectIdentifier
             return;
 
         GC.SuppressFinalize(this);
-        _pluginInterface.RelinquishData(_weaponsTag);
-        _pluginInterface.RelinquishData(_equipmentTag);
-        _pluginInterface.RelinquishData(_actionsTag);
+        _pluginInterface.RelinquishData(GetVersionedTag("Weapons"));
+        _pluginInterface.RelinquishData(GetVersionedTag("Equipment"));
+        _pluginInterface.RelinquishData(GetVersionedTag("Actions"));
         _disposed = true;
     }
 
     ~ObjectIdentification()
         => Dispose();
+
+    private string GetVersionedTag(string tag)
+        => $"Penumbra.Identification.{tag}.{_language}.V{Version}";
+
+    private T TryCatchData<T>(string tag, Func<T> func) where T : class
+    {
+        try
+        {
+            return _pluginInterface.GetOrCreateData(GetVersionedTag(tag), func);
+        }
+        catch (Exception ex)
+        {
+            PluginLog.Error($"Error creating shared identification data for {tag}:\n{ex}");
+            return func();
+        }
+    }
 
     private static bool Add(IDictionary<ulong, HashSet<Item>> dict, ulong key, Item item)
     {
@@ -181,7 +163,7 @@ internal class ObjectIdentification : IObjectIdentifier
         var storage = new SortedList<ulong, HashSet<Item>>();
         foreach (var item in items)
         {
-            switch (((EquipSlot)item.EquipSlotCategory.Row).ToSlot())
+            switch ((EquipSlot)item.EquipSlotCategory.Row)
             {
                 // Accessories
                 case EquipSlot.RFinger:

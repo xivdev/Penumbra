@@ -104,7 +104,7 @@ public class Penumbra : IDalamudPlugin
             ModFileSystem  = ModFileSystem.Load();
             ObjectReloader = new ObjectReloader();
             PathResolver   = new PathResolver( ResourceLoader );
-            Actors         = new ActorManager( Dalamud.Objects, Dalamud.ClientState, Dalamud.GameData, u => ( short )PathResolver.CutsceneActor( u ) );
+            Actors         = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.GameData, u => ( short )PathResolver.CutsceneActor( u ) );
 
             Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
             {
@@ -290,7 +290,8 @@ public class Penumbra : IDalamudPlugin
 
     public void Dispose()
     {
-        Dalamud.PluginInterface.RelinquishData( "test1" );
+        Actors?.Dispose();
+        Identifier?.Dispose();
         Framework?.Dispose();
         ShutdownWebServer();
         DisposeInterface();
