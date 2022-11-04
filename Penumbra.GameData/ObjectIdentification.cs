@@ -7,6 +7,7 @@ using Penumbra.GameData.Structs;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Utility;
@@ -66,10 +67,11 @@ internal class ObjectIdentification : IObjectIdentifier
     private readonly DalamudPluginInterface _pluginInterface;
     private readonly ClientLanguage         _language;
 
-    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> _weapons;
-    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> _equipment;
-    private readonly IReadOnlyDictionary<string, IReadOnlyList<Action>>     _actions;
-    private          bool                                                   _disposed = false;
+    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)>                _weapons;
+    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)>                _equipment;
+    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<(ObjectKind Kind, uint Id)>)> _models;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<Action>>                    _actions;
+    private          bool                                                                  _disposed = false;
 
     public ObjectIdentification(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
     {
@@ -80,6 +82,7 @@ internal class ObjectIdentification : IObjectIdentifier
         _weapons   = TryCatchData("Weapons",   CreateWeaponList);
         _equipment = TryCatchData("Equipment", CreateEquipmentList);
         _actions   = TryCatchData("Actions",   CreateActionList);
+        _models    = TryCatchData("Models",    CreateModelList);
     }
 
     public void Dispose()
@@ -91,6 +94,7 @@ internal class ObjectIdentification : IObjectIdentifier
         _pluginInterface.RelinquishData(GetVersionedTag("Weapons"));
         _pluginInterface.RelinquishData(GetVersionedTag("Equipment"));
         _pluginInterface.RelinquishData(GetVersionedTag("Actions"));
+        _pluginInterface.RelinquishData(GetVersionedTag("Models"));
         _disposed = true;
     }
 
@@ -219,6 +223,31 @@ internal class ObjectIdentification : IObjectIdentifier
         }
 
         return storage.ToDictionary(kvp => kvp.Key, kvp => (IReadOnlyList<Action>)kvp.Value.ToArray());
+    }
+
+    private static ulong ModelValue(ModelChara row)
+        => row.Type | ((ulong) row.Model << 8) | ((ulong) row.Base << 24) | ((ulong) row.Variant << 32);
+
+    private static IEnumerable<(ulong, ObjectKind, uint)> BattleNpcToName(ulong model, uint bNpc)
+        => Enumerable.Repeat((model, ObjectKind.BattleNpc, bNpc), 1);
+
+    private IReadOnlyList<(ulong Key, IReadOnlyList<(ObjectKind Kind, uint Id)>)> CreateModelList()
+    {
+        var sheetBNpc = _dataManager.GetExcelSheet<BNpcBase>(_language)!;
+        var sheetENpc = _dataManager.GetExcelSheet<ENpcBase>(_language)!;
+        var sheetCompanion = _dataManager.GetExcelSheet<Companion>(_language)!;
+        var sheetMount = _dataManager.GetExcelSheet<Mount>(_language)!;
+        var sheetModel = _dataManager.GetExcelSheet<ModelChara>(_language)!;
+
+        var modelCharaToModel = sheetModel.ToDictionary(m => m.RowId, ModelValue);
+
+        return sheetENpc.Select(e => (modelCharaToModel[e.ModelChara.Row], ObjectKind.EventNpc, e.RowId))
+            .Concat(sheetCompanion.Select(c => (modelCharaToModel[c.Model.Row], ObjectKind.Companion, c.RowId)))
+            .Concat(sheetMount.Select(c => (modelCharaToModel[c.ModelChara.Row], ObjectKind.MountType, c.RowId)))
+            .Concat(sheetBNpc.SelectMany(c => BattleNpcToName(modelCharaToModel[c.ModelChara.Row], c.RowId)))
+            .GroupBy(t => t.Item1)
+            .Select(g => (g.Key, (IReadOnlyList<(ObjectKind, uint)>)g.Select(p => (p.Item2, p.Item3)).ToArray()))
+            .ToArray();
     }
 
     private class Comparer : IComparer<(ulong, IReadOnlyList<Item>)>

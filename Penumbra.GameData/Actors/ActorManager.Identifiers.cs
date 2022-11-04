@@ -194,6 +194,16 @@ public partial class ActorManager
     public unsafe ActorIdentifier FromObject(GameObject? actor)
         => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero));
 
+    public ActorIdentifier CreateIndividual(IdentifierType type, ByteString name, ushort homeWorld, ObjectKind kind, uint dataId)
+        => type switch
+        {
+            IdentifierType.Player  => CreatePlayer(name, homeWorld),
+            IdentifierType.Owned   => CreateOwned(name, homeWorld, kind, dataId),
+            IdentifierType.Special => CreateSpecial((SpecialActor)homeWorld),
+            IdentifierType.Npc     => CreateNpc(kind, dataId, homeWorld),
+            _                      => ActorIdentifier.Invalid,
+        };
+
     public ActorIdentifier CreatePlayer(ByteString name, ushort homeWorld)
     {
         if (!VerifyWorld(homeWorld) || !VerifyPlayerName(name))

@@ -8,8 +8,33 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Dalamud.Game.ClientState.Objects.Enums;
+using Penumbra.GameData.Actors;
 
 namespace Penumbra.Collections;
+
+public class IndividualCollections
+{
+    private readonly ActorManager                                                                                         _manager;
+    public readonly  List< (string DisplayName, ModCollection Collection, IReadOnlyList< ActorIdentifier > Identifiers) > Assignments;
+    public readonly  Dictionary< ActorIdentifier, ModCollection >                                                         Individuals;
+
+    public IndividualCollections( ActorManager manager )
+    {
+        _manager = manager;
+    }
+
+    public bool CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, uint dataId )
+    {
+        _manager.
+    }
+
+    public bool CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, IReadOnlyList< uint > dataIds )
+    {
+
+    }
+
+}
 
 public partial class ModCollection
 {
