@@ -626,7 +626,7 @@ public partial class ConfigWindow
                         var sourceGroup    = panel._mod.Groups[ sourceGroupIdx ];
                         var currentCount   = group.Count;
                         var option         = sourceGroup[ sourceOption ];
-                        var priority       = sourceGroup.OptionPriority( _dragDropGroupIdx );
+                        var priority       = sourceGroup.OptionPriority( _dragDropOptionIdx );
                         panel._delayedActions.Enqueue( () =>
                         {
                             Penumbra.ModManager.DeleteOption( panel._mod, sourceGroupIdx, sourceOption );
