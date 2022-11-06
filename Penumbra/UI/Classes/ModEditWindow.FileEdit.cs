@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Dalamud.Interface;
+using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -27,24 +28,30 @@ public partial class ModEditWindow
         private readonly string                                           _fileType;
         private readonly Func< IReadOnlyList< Mod.Editor.FileRegistry > > _getFiles;
         private readonly Func< T, bool, bool >                            _drawEdit;
+        private readonly Func< string >                                   _getInitialPath;
 
         private Mod.Editor.FileRegistry? _currentPath;
         private T?                       _currentFile;
+        private Exception?               _currentException;
         private bool                     _changed;
 
-        private string _defaultPath = string.Empty;
-        private bool   _inInput;
-        private T?     _defaultFile;
+        private string     _defaultPath = string.Empty;
+        private bool       _inInput;
+        private T?         _defaultFile;
+        private Exception? _defaultException;
 
         private IReadOnlyList< Mod.Editor.FileRegistry > _list = null!;
 
+        private readonly FileDialogManager _fileDialog = ConfigWindow.SetupFileManager();
+
         public FileEditor( string tabName, string fileType, Func< IReadOnlyList< Mod.Editor.FileRegistry > > getFiles,
-            Func< T, bool, bool > drawEdit )
+            Func< T, bool, bool > drawEdit, Func< string > getInitialPath )
         {
-            _tabName  = tabName;
-            _fileType = fileType;
-            _getFiles = getFiles;
-            _drawEdit = drawEdit;
+            _tabName        = tabName;
+            _fileType       = fileType;
+            _getFiles       = getFiles;
+            _drawEdit       = drawEdit;
+            _getInitialPath = getInitialPath;
         }
 
         public void Draw()
@@ -75,31 +82,64 @@ public partial class ModEditWindow
 
         private void DefaultInput()
         {
-            ImGui.SetNextItemWidth( ImGui.GetContentRegionAvail().X );
+            using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = 3 * ImGuiHelpers.GlobalScale } );
+            ImGui.SetNextItemWidth( ImGui.GetContentRegionAvail().X - 3 * ImGuiHelpers.GlobalScale - ImGui.GetFrameHeight() );
             ImGui.InputTextWithHint( "##defaultInput", "Input game path to compare...", ref _defaultPath, Utf8GamePath.MaxGamePathLength );
             _inInput = ImGui.IsItemActive();
             if( ImGui.IsItemDeactivatedAfterEdit() && _defaultPath.Length > 0 )
             {
+                _fileDialog.Reset();
                 try
                 {
                     var file = Dalamud.GameData.GetFile( _defaultPath );
                     if( file != null )
                     {
-                        _defaultFile = Activator.CreateInstance( typeof( T ), file.Data ) as T;
+                        _defaultException = null;
+                        _defaultFile      = Activator.CreateInstance( typeof( T ), file.Data ) as T;
+                    }
+                    else
+                    {
+                        _defaultFile      = null;
+                        _defaultException = new Exception( "File does not exist." );
                     }
                 }
-                catch
+                catch( Exception e )
                 {
-                    _defaultFile = null;
+                    _defaultFile      = null;
+                    _defaultException = e;
                 }
             }
+
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Save.ToIconString(), new Vector2( ImGui.GetFrameHeight() ), "Export this file.", _defaultFile == null, true ) )
+            {
+                _fileDialog.SaveFileDialog( $"Export {_defaultPath} to...", _fileType, Path.GetFileNameWithoutExtension( _defaultPath ), _fileType, ( success, name ) =>
+                {
+                    if( !success )
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        File.WriteAllBytes( name, _defaultFile?.Write() ?? throw new Exception( "File invalid." ) );
+                    }
+                    catch( Exception e )
+                    {
+                        Penumbra.Log.Error( $"Could not export {_defaultPath}:\n{e}" );
+                    }
+                }, _getInitialPath() );
+            }
+
+            _fileDialog.Draw();
         }
 
         public void Reset()
         {
-            _currentPath = null;
-            _currentFile = null;
-            _changed     = false;
+            _currentException = null;
+            _currentPath      = null;
+            _currentFile      = null;
+            _changed          = false;
         }
 
         private void DrawFileSelectCombo()
@@ -127,8 +167,9 @@ public partial class ModEditWindow
                 return;
             }
 
-            _changed     = false;
-            _currentPath = path;
+            _changed          = false;
+            _currentPath      = path;
+            _currentException = null;
             try
             {
                 var bytes = File.ReadAllBytes( _currentPath.File.FullName );
@@ -136,8 +177,8 @@ public partial class ModEditWindow
             }
             catch( Exception e )
             {
-                Penumbra.Log.Error( $"Could not parse {_fileType} file {_currentPath.File.FullName}:\n{e}" );
-                _currentFile = null;
+                _currentFile      = null;
+                _currentException = e;
             }
         }
 
@@ -175,6 +216,11 @@ public partial class ModEditWindow
                 if( _currentFile == null )
                 {
                     ImGui.TextUnformatted( $"Could not parse selected {_fileType} file." );
+                    if( _currentException != null )
+                    {
+                        using var tab = ImRaii.PushIndent();
+                        ImGuiUtil.TextWrapped( _currentException.ToString() );
+                    }
                 }
                 else
                 {
@@ -195,7 +241,12 @@ public partial class ModEditWindow
 
                 if( _defaultFile == null )
                 {
-                    ImGui.TextUnformatted( $"Could not parse provided  {_fileType} game file." );
+                    ImGui.TextUnformatted( $"Could not parse provided {_fileType} game file:\n" );
+                    if( _defaultException != null )
+                    {
+                        using var tab = ImRaii.PushIndent();
+                        ImGuiUtil.TextWrapped( _defaultException.ToString() );
+                    }
                 }
                 else
                 {
