@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
@@ -7,6 +8,7 @@ using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Interop.Structs;
@@ -90,29 +92,32 @@ public partial class ConfigWindow
         }
     }
 
+    private sealed class CollectionSelector : FilterComboCache< ModCollection >
+    {
+        public CollectionSelector( IEnumerable< ModCollection > items )
+            : base( items )
+        { }
+
+        public void Draw( string label, float width, CollectionType type, string? characterName )
+        {
+            var current = Penumbra.CollectionManager.ByType( type, characterName );
+            if( Draw( label, current?.Name ?? string.Empty, width, ImGui.GetTextLineHeightWithSpacing() ) && CurrentSelection != null )
+            {
+                Penumbra.CollectionManager.SetCollection( CurrentSelection, type, characterName );
+            }
+        }
+
+        protected override string ToString( ModCollection obj )
+            => obj.Name;
+    }
+
+    private static readonly CollectionSelector CollectionsWithEmpty = new(Penumbra.CollectionManager.OrderBy( c => c.Name ).Prepend( ModCollection.Empty ));
+    private static readonly CollectionSelector Collections          = new(Penumbra.CollectionManager.OrderBy( c => c.Name ));
+
     // Draw a collection selector of a certain width for a certain type.
     private static void DrawCollectionSelector( string label, float width, CollectionType collectionType, bool withEmpty,
         string? characterName )
-    {
-        ImGui.SetNextItemWidth( width );
-
-        var current = Penumbra.CollectionManager.ByType( collectionType, characterName );
-        using var combo = ImRaii.Combo( label, current?.Name ?? string.Empty );
-        if( combo )
-        {
-            var enumerator = Penumbra.CollectionManager.OrderBy( c => c.Name ).AsEnumerable();
-            if( withEmpty )
-                enumerator = enumerator.Prepend( ModCollection.Empty );
-            foreach( var collection in enumerator )
-            {
-                using var id = ImRaii.PushId( collection.Index );
-                if( ImGui.Selectable( collection.Name, collection == current ) )
-                {
-                    Penumbra.CollectionManager.SetCollection( collection, collectionType, characterName );
-                }
-            }
-        }
-    }
+        => ( withEmpty ? CollectionsWithEmpty : Collections ).Draw( label, width, collectionType, characterName );
 
     // Set up the file selector with the right flags and custom side bar items.
     public static FileDialogManager SetupFileManager()
