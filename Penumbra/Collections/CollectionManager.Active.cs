@@ -17,15 +17,64 @@ namespace Penumbra.Collections;
 public class IndividualCollections
 {
     private readonly ActorManager                                                                                         _manager;
-    public readonly  List< (string DisplayName, ModCollection Collection, IReadOnlyList< ActorIdentifier > Identifiers) > Assignments;
-    public readonly  Dictionary< ActorIdentifier, ModCollection >                                                         Individuals;
+    private readonly List< (string DisplayName, ModCollection Collection, IReadOnlyList< ActorIdentifier > Identifiers) > _assignments = new();
+    private readonly Dictionary< ActorIdentifier, ModCollection >                                                         _individuals = new();
+
+    public IReadOnlyList< (string DisplayName, ModCollection Collection, IReadOnlyList< ActorIdentifier > Identifiers) > Assignments
+        => _assignments;
+
+    public IReadOnlyDictionary< ActorIdentifier, ModCollection > Individuals
+        => _individuals;
 
     public IndividualCollections( ActorManager manager )
         => _manager = manager;
 
-    public bool CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, uint dataId )
+    public bool CanAdd( ActorIdentifier identifier )
+        => identifier.IsValid && !Individuals.ContainsKey( identifier );
+
+    public bool CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, IEnumerable< uint > dataIds, out ActorIdentifier[] identifiers )
     {
-        return false;
+        identifiers = Array.Empty< ActorIdentifier >();
+
+        switch( type )
+        {
+            case IdentifierType.Player:
+            {
+                if( !ByteString.FromString( name, out var playerName ) )
+                {
+                    return false;
+                }
+
+                var identifier = _manager.CreatePlayer( playerName, homeWorld );
+                if( !CanAdd( identifier ) )
+                {
+                    return false;
+                }
+
+                identifiers = new[] { identifier };
+                return true;
+            }
+            //case IdentifierType.Owned:
+            //{
+            //    if( !ByteString.FromString( name, out var ownerName ) )
+            //    {
+            //        return false;
+            //    }
+            //
+            //    identifiers = dataIds.Select( id => _manager.CreateOwned( ownerName, homeWorld, kind, id ) ).ToArray();
+            //    return 
+            //    identifier  = _manager.CreateIndividual( type, byteName, homeWorld, kind, dataId );
+            //    return CanAdd( identifier );
+            //}
+            //case IdentifierType.Npc:
+            //{
+            //    identifier = _manager.CreateIndividual( IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, kind, dataId );
+            //    return CanAdd( identifier );
+            //}
+            default:
+                identifiers = Array.Empty< ActorIdentifier >();
+                return false;
+        }
     }
 
     public bool Add( string displayName, ActorIdentifier identifier, ModCollection collection )
