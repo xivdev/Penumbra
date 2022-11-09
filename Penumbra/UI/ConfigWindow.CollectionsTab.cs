@@ -39,11 +39,9 @@ public partial class ConfigWindow
             }
         }
 
-
         // Input text fields.
         private string _newCollectionName = string.Empty;
         private bool   _canAddCollection  = false;
-        private string _newCharacterName  = string.Empty;
 
         // Create a new collection that is either empty or a duplicate of the current collection.
         // Resets the new collection name.
@@ -212,28 +210,6 @@ public partial class ConfigWindow
             }
         }
 
-        // We do not check for valid character names.
-        private void DrawNewCharacterCollection()
-        {
-            const string description = "Character Collections apply specifically to individual game objects of the given name.\n"
-              + $"More general {GroupAssignment} or the {DefaultCollection} do not apply if an .\n"
-              + "Certain actors - like the ones in cutscenes or preview windows - will try to use appropriate character collections.\n";
-
-            ImGui.SetNextItemWidth( _window._inputTextWidth.X );
-            ImGui.InputTextWithHint( "##NewCharacter", "Character Name...", ref _newCharacterName, 32 );
-            ImGui.SameLine();
-            var disabled = _newCharacterName.Length == 0;
-            var tt = disabled
-                ? $"Please enter the name of a {ConditionalIndividual} before assigning the collection.\n\n" + description
-                : description;
-            if( ImGuiUtil.DrawDisabledButton( $"Assign {ConditionalIndividual}", new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 ), tt,
-                   disabled ) )
-            {
-                Penumbra.CollectionManager.CreateCharacterCollection( _newCharacterName );
-                _newCharacterName = string.Empty;
-            }
-        }
-
         private void DrawSpecialCollections()
         {
             foreach( var (type, name, desc) in CollectionTypeExtensions.Special )
@@ -266,31 +242,6 @@ public partial class ConfigWindow
             DrawSpecialCollections();
             ImGui.Dummy( Vector2.Zero );
             DrawNewSpecialCollection();
-        }
-
-        private void DrawIndividualAssignments()
-        {
-            using var _ = ImRaii.Group();
-            ImGui.TextUnformatted( $"Individual {ConditionalIndividual}s" );
-            ImGui.Separator();
-            foreach( var name in Penumbra.CollectionManager.Characters.Keys.OrderBy( k => k ).ToArray() )
-            {
-                using var id = ImRaii.PushId( name );
-                DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, CollectionType.Character, true, name );
-                ImGui.SameLine();
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
-                       false, true ) )
-                {
-                    Penumbra.CollectionManager.RemoveCharacterCollection( name );
-                }
-
-                ImGui.SameLine();
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted( name );
-            }
-
-            ImGui.Dummy( Vector2.Zero );
-            DrawNewCharacterCollection();
         }
 
         private void DrawActiveCollectionSelectors()

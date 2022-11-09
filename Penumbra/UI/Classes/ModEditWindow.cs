@@ -20,10 +20,10 @@ namespace Penumbra.UI.Classes;
 
 public partial class ModEditWindow : Window, IDisposable
 {
-    private const string  WindowBaseLabel = "###SubModEdit";
-    private       Editor? _editor;
-    private       Mod?    _mod;
-    private       Vector2 _iconSize = Vector2.Zero;
+    private const    string       WindowBaseLabel = "###SubModEdit";
+    private          Editor?      _editor;
+    private          Mod?         _mod;
+    private          Vector2      _iconSize = Vector2.Zero;
 
     public void ChangeMod( Mod mod )
     {
@@ -85,37 +85,37 @@ public partial class ModEditWindow : Window, IDisposable
         sb.Append( _mod!.Name );
         if( subMods > 1 )
         {
-            sb.AppendFormat( "   |   {0} Options", subMods );
+            sb.Append( $"   |   {subMods} Options" );
         }
 
         if( size > 0 )
         {
-            sb.AppendFormat( "   |   {0} Files ({1})", _editor.AvailableFiles.Count, Functions.HumanReadableSize( size ) );
+            sb.Append( $"   |   {_editor.AvailableFiles.Count} Files ({Functions.HumanReadableSize( size )})" );
         }
 
         if( unused > 0 )
         {
-            sb.AppendFormat( "   |   {0} Unused Files", unused );
+            sb.Append( $"   |   {unused} Unused Files" );
         }
 
         if( _editor.MissingFiles.Count > 0 )
         {
-            sb.AppendFormat( "   |   {0} Missing Files", _editor.MissingFiles.Count );
+            sb.Append( $"   |   {_editor.MissingFiles.Count} Missing Files" );
         }
 
         if( redirections > 0 )
         {
-            sb.AppendFormat( "   |   {0} Redirections", redirections );
+            sb.Append( $"   |   {redirections} Redirections" );
         }
 
         if( manipulations > 0 )
         {
-            sb.AppendFormat( "   |   {0} Manipulations", manipulations );
+            sb.Append( $"   |   {manipulations} Manipulations" );
         }
 
         if( swaps > 0 )
         {
-            sb.AppendFormat( "   |   {0} Swaps", swaps );
+            sb.Append( $"   |   {swaps} Swaps" );
         }
 
         sb.Append( WindowBaseLabel );

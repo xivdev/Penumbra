@@ -26,7 +26,6 @@ public partial class ModEditWindow
     private          LowerString                        _fileOverviewFilter2 = LowerString.Empty;
     private          LowerString                        _fileOverviewFilter3 = LowerString.Empty;
 
-
     private bool CheckFilter( Mod.Editor.FileRegistry registry )
         => _fileFilter.IsEmpty || registry.File.FullName.Contains( _fileFilter.Lower, StringComparison.OrdinalIgnoreCase );
 

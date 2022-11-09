@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.GameData.Files;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
@@ -59,6 +60,8 @@ public partial class ConfigWindow
             DrawActorsDebug();
             ImGui.NewLine();
             DrawDebugCharacterUtility();
+            ImGui.NewLine();
+            DrawStainTemplates();
             ImGui.NewLine();
             DrawDebugTabMetaLists();
             ImGui.NewLine();
@@ -171,7 +174,6 @@ public partial class ConfigWindow
                 var identifier = Penumbra.Actors.FromObject( obj );
                 ImGuiUtil.DrawTableColumn( Penumbra.Actors.ToString( identifier ) );
                 ImGuiUtil.DrawTableColumn( identifier.DataId.ToString() );
-
             }
         }
 
@@ -242,6 +244,47 @@ public partial class ConfigWindow
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted( actor.Name.ToString() );
                     }
+                }
+            }
+        }
+
+        private static unsafe void DrawStainTemplates()
+        {
+            if( !ImGui.CollapsingHeader( "Staining Templates" ) )
+            {
+                return;
+            }
+
+            foreach( var (key, data) in Penumbra.StainManager.StmFile.Entries )
+            {
+                using var tree = ImRaii.TreeNode( $"Template {key}" );
+                if( !tree )
+                {
+                    continue;
+                }
+
+                using var table = ImRaii.Table( "##table", 5, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg );
+                if( !table )
+                {
+                    continue;
+                }
+
+                for( var i = 0; i < StmFile.StainingTemplateEntry.NumElements; ++i )
+                {
+                    var (r, g, b) = data.DiffuseEntries[ i ];
+                    ImGuiUtil.DrawTableColumn( $"{r:F6} | {g:F6} | {b:F6}" );
+
+                    ( r, g, b ) = data.SpecularEntries[ i ];
+                    ImGuiUtil.DrawTableColumn( $"{r:F6} | {g:F6} | {b:F6}" );
+
+                    ( r, g, b ) = data.EmissiveEntries[ i ];
+                    ImGuiUtil.DrawTableColumn( $"{r:F6} | {g:F6} | {b:F6}" );
+
+                    var a = data.SpecularPowerEntries[ i ];
+                    ImGuiUtil.DrawTableColumn( $"{a:F6}" );
+
+                    a = data.GlossEntries[ i ];
+                    ImGuiUtil.DrawTableColumn( $"{a:F6}" );
                 }
             }
         }
