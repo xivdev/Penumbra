@@ -61,6 +61,7 @@ public class Penumbra : IDalamudPlugin
     public static ActorManager Actors { get; private set; } = null!;
     public static IObjectIdentifier Identifier { get; private set; } = null!;
     public static IGamePathParser GamePathParser { get; private set; } = null!;
+    public static StainManager StainManager { get; private set; } = null!;
 
     public static readonly List< Exception > ImcExceptions = new();
 
@@ -85,6 +86,7 @@ public class Penumbra : IDalamudPlugin
             Log                    = new Logger();
             Identifier             = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData );
             GamePathParser         = GameData.GameData.GetGamePathParser();
+            StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData );
             DevPenumbraExists      = CheckDevPluginPenumbra();
             IsNotInstalledPenumbra = CheckIsNotInstalled();
 
@@ -292,6 +294,7 @@ public class Penumbra : IDalamudPlugin
 
     public void Dispose()
     {
+        StainManager?.Dispose();
         Actors?.Dispose();
         Identifier?.Dispose();
         Framework?.Dispose();

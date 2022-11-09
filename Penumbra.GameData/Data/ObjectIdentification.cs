@@ -8,14 +8,13 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Utility;
 using Action = Lumina.Excel.GeneratedSheets.Action;
 
-namespace Penumbra.GameData;
+namespace Penumbra.GameData.Data;
 
-internal class ObjectIdentification : IObjectIdentifier
+internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 {
     public IGamePathParser GamePathParser { get; } = new GamePathParser();
 
@@ -45,76 +44,42 @@ internal class ObjectIdentification : IObjectIdentifier
         {
             case EquipSlot.MainHand:
             case EquipSlot.OffHand:
-            {
-                var (begin, _) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_weapons,
-                    ((ulong)setId << 32) | ((ulong)weaponType << 16) | variant,
-                    0xFFFFFFFFFFFF);
-                return begin >= 0 ? _weapons[begin].Item2 : Array.Empty<Item>();
-            }
+                {
+                    var (begin, _) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_weapons,
+                        (ulong)setId << 32 | (ulong)weaponType << 16 | variant,
+                        0xFFFFFFFFFFFF);
+                    return begin >= 0 ? _weapons[begin].Item2 : Array.Empty<Item>();
+                }
             default:
-            {
-                var (begin, _) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_equipment,
-                    ((ulong)setId << 32) | ((ulong)slot.ToSlot() << 16) | variant,
-                    0xFFFFFFFFFFFF);
-                return begin >= 0 ? _equipment[begin].Item2 : Array.Empty<Item>();
-            }
+                {
+                    var (begin, _) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_equipment,
+                        (ulong)setId << 32 | (ulong)slot.ToSlot() << 16 | variant,
+                        0xFFFFFFFFFFFF);
+                    return begin >= 0 ? _equipment[begin].Item2 : Array.Empty<Item>();
+                }
         }
     }
 
-    private const int Version = 1;
-
-    private readonly DataManager            _dataManager;
-    private readonly DalamudPluginInterface _pluginInterface;
-    private readonly ClientLanguage         _language;
-
-    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)>                _weapons;
-    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)>                _equipment;
+    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> _weapons;
+    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> _equipment;
     private readonly IReadOnlyList<(ulong Key, IReadOnlyList<(ObjectKind Kind, uint Id)>)> _models;
-    private readonly IReadOnlyDictionary<string, IReadOnlyList<Action>>                    _actions;
-    private          bool                                                                  _disposed = false;
+    private readonly IReadOnlyDictionary<string, IReadOnlyList<Action>> _actions;
 
     public ObjectIdentification(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
+        : base(pluginInterface, language, 1)
     {
-        _pluginInterface = pluginInterface;
-        _dataManager     = dataManager;
-        _language        = language;
-
-        _weapons   = TryCatchData("Weapons",   CreateWeaponList);
-        _equipment = TryCatchData("Equipment", CreateEquipmentList);
-        _actions   = TryCatchData("Actions",   CreateActionList);
-        _models    = TryCatchData("Models",    CreateModelList);
+        _weapons = TryCatchData("Weapons", () => CreateWeaponList(dataManager));
+        _equipment = TryCatchData("Equipment", () => CreateEquipmentList(dataManager));
+        _actions = TryCatchData("Actions", () => CreateActionList(dataManager));
+        _models = TryCatchData("Models", () => CreateModelList(dataManager));
     }
 
-    public void Dispose()
+    protected override void DisposeInternal()
     {
-        if (_disposed)
-            return;
-
-        GC.SuppressFinalize(this);
-        _pluginInterface.RelinquishData(GetVersionedTag("Weapons"));
-        _pluginInterface.RelinquishData(GetVersionedTag("Equipment"));
-        _pluginInterface.RelinquishData(GetVersionedTag("Actions"));
-        _pluginInterface.RelinquishData(GetVersionedTag("Models"));
-        _disposed = true;
-    }
-
-    ~ObjectIdentification()
-        => Dispose();
-
-    private string GetVersionedTag(string tag)
-        => $"Penumbra.Identification.{tag}.{_language}.V{Version}";
-
-    private T TryCatchData<T>(string tag, Func<T> func) where T : class
-    {
-        try
-        {
-            return _pluginInterface.GetOrCreateData(GetVersionedTag(tag), func);
-        }
-        catch (Exception ex)
-        {
-            PluginLog.Error($"Error creating shared identification data for {tag}:\n{ex}");
-            return func();
-        }
+        DisposeTag("Weapons");
+        DisposeTag("Equipment");
+        DisposeTag("Actions");
+        DisposeTag("Models");
     }
 
     private static bool Add(IDictionary<ulong, HashSet<Item>> dict, ulong key, Item item)
@@ -128,25 +93,25 @@ internal class ObjectIdentification : IObjectIdentifier
 
     private static ulong EquipmentKey(Item i)
     {
-        var model   = (ulong)((Lumina.Data.Parsing.Quad)i.ModelMain).A;
+        var model = (ulong)((Lumina.Data.Parsing.Quad)i.ModelMain).A;
         var variant = (ulong)((Lumina.Data.Parsing.Quad)i.ModelMain).B;
-        var slot    = (ulong)((EquipSlot)i.EquipSlotCategory.Row).ToSlot();
-        return (model << 32) | (slot << 16) | variant;
+        var slot = (ulong)((EquipSlot)i.EquipSlotCategory.Row).ToSlot();
+        return model << 32 | slot << 16 | variant;
     }
 
     private static ulong WeaponKey(Item i, bool offhand)
     {
-        var quad    = offhand ? (Lumina.Data.Parsing.Quad)i.ModelSub : (Lumina.Data.Parsing.Quad)i.ModelMain;
-        var model   = (ulong)quad.A;
-        var type    = (ulong)quad.B;
+        var quad = offhand ? (Lumina.Data.Parsing.Quad)i.ModelSub : (Lumina.Data.Parsing.Quad)i.ModelMain;
+        var model = (ulong)quad.A;
+        var type = (ulong)quad.B;
         var variant = (ulong)quad.C;
 
-        return (model << 32) | (type << 16) | variant;
+        return model << 32 | type << 16 | variant;
     }
 
-    private IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> CreateWeaponList()
+    private IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> CreateWeaponList(DataManager gameData)
     {
-        var items   = _dataManager.GetExcelSheet<Item>(_language)!;
+        var items = gameData.GetExcelSheet<Item>(Language)!;
         var storage = new SortedList<ulong, HashSet<Item>>();
         foreach (var item in items.Where(i
                      => (EquipSlot)i.EquipSlotCategory.Row is EquipSlot.MainHand or EquipSlot.OffHand or EquipSlot.BothHand))
@@ -161,9 +126,9 @@ internal class ObjectIdentification : IObjectIdentifier
         return storage.Select(kvp => (kvp.Key, (IReadOnlyList<Item>)kvp.Value.ToArray())).ToList();
     }
 
-    private IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> CreateEquipmentList()
+    private IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> CreateEquipmentList(DataManager gameData)
     {
-        var items   = _dataManager.GetExcelSheet<Item>(_language)!;
+        var items = gameData.GetExcelSheet<Item>(Language)!;
         var storage = new SortedList<ulong, HashSet<Item>>();
         foreach (var item in items)
         {
@@ -195,9 +160,9 @@ internal class ObjectIdentification : IObjectIdentifier
         return storage.Select(kvp => (kvp.Key, (IReadOnlyList<Item>)kvp.Value.ToArray())).ToList();
     }
 
-    private IReadOnlyDictionary<string, IReadOnlyList<Action>> CreateActionList()
+    private IReadOnlyDictionary<string, IReadOnlyList<Action>> CreateActionList(DataManager gameData)
     {
-        var sheet   = _dataManager.GetExcelSheet<Action>(_language)!;
+        var sheet = gameData.GetExcelSheet<Action>(Language)!;
         var storage = new Dictionary<string, HashSet<Action>>((int)sheet.RowCount);
 
         void AddAction(string? key, Action action)
@@ -215,29 +180,29 @@ internal class ObjectIdentification : IObjectIdentifier
         foreach (var action in sheet.Where(a => !a.Name.RawData.IsEmpty))
         {
             var startKey = action.AnimationStart?.Value?.Name?.Value?.Key.ToDalamudString().ToString();
-            var endKey   = action.AnimationEnd?.Value?.Key.ToDalamudString().ToString();
-            var hitKey   = action.ActionTimelineHit?.Value?.Key.ToDalamudString().ToString();
+            var endKey = action.AnimationEnd?.Value?.Key.ToDalamudString().ToString();
+            var hitKey = action.ActionTimelineHit?.Value?.Key.ToDalamudString().ToString();
             AddAction(startKey, action);
-            AddAction(endKey,   action);
-            AddAction(hitKey,   action);
+            AddAction(endKey, action);
+            AddAction(hitKey, action);
         }
 
         return storage.ToDictionary(kvp => kvp.Key, kvp => (IReadOnlyList<Action>)kvp.Value.ToArray());
     }
 
     private static ulong ModelValue(ModelChara row)
-        => row.Type | ((ulong) row.Model << 8) | ((ulong) row.Base << 24) | ((ulong) row.Variant << 32);
+        => row.Type | (ulong)row.Model << 8 | (ulong)row.Base << 24 | (ulong)row.Variant << 32;
 
     private static IEnumerable<(ulong, ObjectKind, uint)> BattleNpcToName(ulong model, uint bNpc)
         => Enumerable.Repeat((model, ObjectKind.BattleNpc, bNpc), 1);
 
-    private IReadOnlyList<(ulong Key, IReadOnlyList<(ObjectKind Kind, uint Id)>)> CreateModelList()
+    private IReadOnlyList<(ulong Key, IReadOnlyList<(ObjectKind Kind, uint Id)>)> CreateModelList(DataManager gameData)
     {
-        var sheetBNpc = _dataManager.GetExcelSheet<BNpcBase>(_language)!;
-        var sheetENpc = _dataManager.GetExcelSheet<ENpcBase>(_language)!;
-        var sheetCompanion = _dataManager.GetExcelSheet<Companion>(_language)!;
-        var sheetMount = _dataManager.GetExcelSheet<Mount>(_language)!;
-        var sheetModel = _dataManager.GetExcelSheet<ModelChara>(_language)!;
+        var sheetBNpc = gameData.GetExcelSheet<BNpcBase>(Language)!;
+        var sheetENpc = gameData.GetExcelSheet<ENpcBase>(Language)!;
+        var sheetCompanion = gameData.GetExcelSheet<Companion>(Language)!;
+        var sheetMount = gameData.GetExcelSheet<Mount>(Language)!;
+        var sheetModel = gameData.GetExcelSheet<ModelChara>(Language)!;
 
         var modelCharaToModel = sheetModel.ToDictionary(m => m.RowId, ModelValue);
 
@@ -259,7 +224,7 @@ internal class ObjectIdentification : IObjectIdentifier
     private static (int, int) FindIndexRange(List<(ulong, IReadOnlyList<Item>)> list, ulong key, ulong mask)
     {
         var maskedKey = key & mask;
-        var idx       = list.BinarySearch(0, list.Count, (key, null!), new Comparer());
+        var idx = list.BinarySearch(0, list.Count, (key, null!), new Comparer());
         if (idx < 0)
         {
             if (~idx == list.Count || maskedKey != (list[~idx].Item1 & mask))
@@ -277,17 +242,17 @@ internal class ObjectIdentification : IObjectIdentifier
 
     private void FindEquipment(IDictionary<string, object?> set, GameObjectInfo info)
     {
-        var key  = (ulong)info.PrimaryId << 32;
+        var key = (ulong)info.PrimaryId << 32;
         var mask = 0xFFFF00000000ul;
         if (info.EquipSlot != EquipSlot.Unknown)
         {
-            key  |= (ulong)info.EquipSlot.ToSlot() << 16;
+            key |= (ulong)info.EquipSlot.ToSlot() << 16;
             mask |= 0xFFFF0000;
         }
 
         if (info.Variant != 0)
         {
-            key  |= info.Variant;
+            key |= info.Variant;
             mask |= 0xFFFF;
         }
 
@@ -304,17 +269,17 @@ internal class ObjectIdentification : IObjectIdentifier
 
     private void FindWeapon(IDictionary<string, object?> set, GameObjectInfo info)
     {
-        var key  = (ulong)info.PrimaryId << 32;
+        var key = (ulong)info.PrimaryId << 32;
         var mask = 0xFFFF00000000ul;
         if (info.SecondaryId != 0)
         {
-            key  |= (ulong)info.SecondaryId << 16;
+            key |= (ulong)info.SecondaryId << 16;
             mask |= 0xFFFF0000;
         }
 
         if (info.Variant != 0)
         {
-            key  |= info.Variant;
+            key |= info.Variant;
             mask |= 0xFFFF;
         }
 
@@ -384,7 +349,7 @@ internal class ObjectIdentification : IObjectIdentifier
                 break;
             case ObjectType.Character:
                 var (gender, race) = info.GenderRace.Split();
-                var raceString   = race != ModelRace.Unknown ? race.ToName() + " " : "";
+                var raceString = race != ModelRace.Unknown ? race.ToName() + " " : "";
                 var genderString = gender != Gender.Unknown ? gender.ToName() + " " : "Player ";
                 switch (info.CustomizationType)
                 {
@@ -401,15 +366,15 @@ internal class ObjectIdentification : IObjectIdentifier
                         set[$"Equipment Decal {info.PrimaryId}"] = null;
                         break;
                     default:
-                    {
-                        var customizationString = race == ModelRace.Unknown
-                         || info.BodySlot == BodySlot.Unknown
-                         || info.CustomizationType == CustomizationType.Unknown
-                                ? "Customization: Unknown"
-                                : $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
-                        set[customizationString] = null;
-                        break;
-                    }
+                        {
+                            var customizationString = race == ModelRace.Unknown
+                             || info.BodySlot == BodySlot.Unknown
+                             || info.CustomizationType == CustomizationType.Unknown
+                                    ? "Customization: Unknown"
+                                    : $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
+                            set[customizationString] = null;
+                            break;
+                        }
                 }
 
                 break;

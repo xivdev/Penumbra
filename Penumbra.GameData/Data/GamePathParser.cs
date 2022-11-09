@@ -8,7 +8,7 @@ using Dalamud.Logging;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 
-namespace Penumbra.GameData;
+namespace Penumbra.GameData.Data;
 
 internal class GamePathParser : IGamePathParser
 {
@@ -17,7 +17,7 @@ internal class GamePathParser : IGamePathParser
         path = path.ToLowerInvariant().Replace('\\', '/');
 
         var (fileType, objectType, match) = ParseGamePath(path);
-        if (match == null || !match.Success)
+        if (match is not { Success: true })
             return new GameObjectInfo
             {
                 FileType   = fileType,
@@ -84,20 +84,20 @@ internal class GamePathParser : IGamePathParser
     // language=regex
     private readonly IReadOnlyDictionary<FileType, IReadOnlyDictionary<ObjectType, IReadOnlyList<Regex>>> _regexes = new Dictionary<FileType, IReadOnlyDictionary<ObjectType, IReadOnlyList<Regex>>>()
     {
-        [FileType.Font] = new Dictionary<ObjectType, IReadOnlyList<Regex>> 
+        [FileType.Font] = new Dictionary<ObjectType, IReadOnlyList<Regex>>
         {
-            [ObjectType.Font] = CreateRegexes( @"common/font/(?'fontname'.*)_(?'id'\d\d)(_lobby)?\.fdt"),
+            [ObjectType.Font] = CreateRegexes(@"common/font/(?'fontname'.*)_(?'id'\d\d)(_lobby)?\.fdt"),
         },
         [FileType.Texture] = new Dictionary<ObjectType, IReadOnlyList<Regex>>
         {
-            [ObjectType.Icon]      = CreateRegexes( @"ui/icon/(?'group'\d*)(/(?'lang'[a-z]{2}))?(/(?'hq'hq))?/(?'id'\d*)(?'hr'_hr1)?\.tex"),
-            [ObjectType.Map]       = CreateRegexes( @"ui/map/(?'id'[a-z0-9]{4})/(?'variant'\d{2})/\k'id'\k'variant'(?'suffix'[a-z])?(_[a-z])?\.tex"),
-            [ObjectType.Weapon]    = CreateRegexes( @"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/texture/v(?'variant'\d{2})_w\k'id'b\k'weapon'(_[a-z])?_[a-z]\.tex"),
-            [ObjectType.Monster]   = CreateRegexes( @"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/texture/v(?'variant'\d{2})_m\k'monster'b\k'id'(_[a-z])?_[a-z]\.tex"),
-            [ObjectType.Equipment] = CreateRegexes( @"chara/equipment/e(?'id'\d{4})/texture/v(?'variant'\d{2})_c(?'race'\d{4})e\k'id'_(?'slot'[a-z]{3})(_[a-z])?_[a-z]\.tex"),
-            [ObjectType.DemiHuman] = CreateRegexes( @"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/texture/v(?'variant'\d{2})_d\k'id'e\k'equip'_(?'slot'[a-z]{3})(_[a-z])?_[a-z]\.tex"),
-            [ObjectType.Accessory] = CreateRegexes( @"chara/accessory/a(?'id'\d{4})/texture/v(?'variant'\d{2})_c(?'race'\d{4})a\k'id'_(?'slot'[a-z]{3})_[a-z]\.tex"),
-            [ObjectType.Character] = CreateRegexes( @"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/texture/(?'minus'(--)?)(v(?'variant'\d{2})_)?c\k'race'\k'typeabr'\k'id'(_(?'slot'[a-z]{3}))?(_[a-z])?_[a-z]\.tex"
+            [ObjectType.Icon] = CreateRegexes(@"ui/icon/(?'group'\d*)(/(?'lang'[a-z]{2}))?(/(?'hq'hq))?/(?'id'\d*)(?'hr'_hr1)?\.tex"),
+            [ObjectType.Map] = CreateRegexes(@"ui/map/(?'id'[a-z0-9]{4})/(?'variant'\d{2})/\k'id'\k'variant'(?'suffix'[a-z])?(_[a-z])?\.tex"),
+            [ObjectType.Weapon] = CreateRegexes(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/texture/v(?'variant'\d{2})_w\k'id'b\k'weapon'(_[a-z])?_[a-z]\.tex"),
+            [ObjectType.Monster] = CreateRegexes(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/texture/v(?'variant'\d{2})_m\k'monster'b\k'id'(_[a-z])?_[a-z]\.tex"),
+            [ObjectType.Equipment] = CreateRegexes(@"chara/equipment/e(?'id'\d{4})/texture/v(?'variant'\d{2})_c(?'race'\d{4})e\k'id'_(?'slot'[a-z]{3})(_[a-z])?_[a-z]\.tex"),
+            [ObjectType.DemiHuman] = CreateRegexes(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/texture/v(?'variant'\d{2})_d\k'id'e\k'equip'_(?'slot'[a-z]{3})(_[a-z])?_[a-z]\.tex"),
+            [ObjectType.Accessory] = CreateRegexes(@"chara/accessory/a(?'id'\d{4})/texture/v(?'variant'\d{2})_c(?'race'\d{4})a\k'id'_(?'slot'[a-z]{3})_[a-z]\.tex"),
+            [ObjectType.Character] = CreateRegexes(@"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/texture/(?'minus'(--)?)(v(?'variant'\d{2})_)?c\k'race'\k'typeabr'\k'id'(_(?'slot'[a-z]{3}))?(_[a-z])?_[a-z]\.tex"
                                                   , @"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/texture"
                                                   , @"chara/common/texture/skin(?'skin'.*)\.tex"
                                                   , @"chara/common/texture/(?'catchlight'catchlight)(.*)\.tex"
@@ -105,8 +105,8 @@ internal class GamePathParser : IGamePathParser
         },
         [FileType.Model] = new Dictionary<ObjectType, IReadOnlyList<Regex>>
         {
-            [ObjectType.Weapon]    = CreateRegexes(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/model/w\k'id'b\k'weapon'\.mdl"),
-            [ObjectType.Monster]   = CreateRegexes(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/model/m\k'monster'b\k'id'\.mdl"),
+            [ObjectType.Weapon] = CreateRegexes(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/model/w\k'id'b\k'weapon'\.mdl"),
+            [ObjectType.Monster] = CreateRegexes(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/model/m\k'monster'b\k'id'\.mdl"),
             [ObjectType.Equipment] = CreateRegexes(@"chara/equipment/e(?'id'\d{4})/model/c(?'race'\d{4})e\k'id'_(?'slot'[a-z]{3})\.mdl"),
             [ObjectType.DemiHuman] = CreateRegexes(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/model/d\k'id'e\k'equip'_(?'slot'[a-z]{3})\.mdl"),
             [ObjectType.Accessory] = CreateRegexes(@"chara/accessory/a(?'id'\d{4})/model/c(?'race'\d{4})a\k'id'_(?'slot'[a-z]{3})\.mdl"),
@@ -114,8 +114,8 @@ internal class GamePathParser : IGamePathParser
         },
         [FileType.Material] = new Dictionary<ObjectType, IReadOnlyList<Regex>>
         {
-            [ObjectType.Weapon]    = CreateRegexes(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/material/v(?'variant'\d{4})/mt_w\k'id'b\k'weapon'_[a-z]\.mtrl"),
-            [ObjectType.Monster]   = CreateRegexes(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/material/v(?'variant'\d{4})/mt_m\k'monster'b\k'id'_[a-z]\.mtrl"),
+            [ObjectType.Weapon] = CreateRegexes(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/material/v(?'variant'\d{4})/mt_w\k'id'b\k'weapon'_[a-z]\.mtrl"),
+            [ObjectType.Monster] = CreateRegexes(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/material/v(?'variant'\d{4})/mt_m\k'monster'b\k'id'_[a-z]\.mtrl"),
             [ObjectType.Equipment] = CreateRegexes(@"chara/equipment/e(?'id'\d{4})/material/v(?'variant'\d{4})/mt_c(?'race'\d{4})e\k'id'_(?'slot'[a-z]{3})_[a-z]\.mtrl"),
             [ObjectType.DemiHuman] = CreateRegexes(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/material/v(?'variant'\d{4})/mt_d\k'id'e\k'equip'_(?'slot'[a-z]{3})_[a-z]\.mtrl"),
             [ObjectType.Accessory] = CreateRegexes(@"chara/accessory/a(?'id'\d{4})/material/v(?'variant'\d{4})/mt_c(?'race'\d{4})a\k'id'_(?'slot'[a-z]{3})_[a-z]\.mtrl"),
@@ -123,8 +123,8 @@ internal class GamePathParser : IGamePathParser
         },
         [FileType.Imc] = new Dictionary<ObjectType, IReadOnlyList<Regex>>
         {
-            [ObjectType.Weapon]    = CreateRegexes(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/b\k'weapon'\.imc"),
-            [ObjectType.Monster]   = CreateRegexes(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/b\k'id'\.imc"),
+            [ObjectType.Weapon] = CreateRegexes(@"chara/weapon/w(?'id'\d{4})/obj/body/b(?'weapon'\d{4})/b\k'weapon'\.imc"),
+            [ObjectType.Monster] = CreateRegexes(@"chara/monster/m(?'monster'\d{4})/obj/body/b(?'id'\d{4})/b\k'id'\.imc"),
             [ObjectType.Equipment] = CreateRegexes(@"chara/equipment/e(?'id'\d{4})/e\k'id'\.imc"),
             [ObjectType.DemiHuman] = CreateRegexes(@"chara/demihuman/d(?'id'\d{4})/obj/equipment/e(?'equip'\d{4})/e\k'equip'\.imc"),
             [ObjectType.Accessory] = CreateRegexes(@"chara/accessory/a(?'id'\d{4})/a\k'id'\.imc"),
@@ -225,7 +225,7 @@ internal class GamePathParser : IGamePathParser
     {
         var weaponId = ushort.Parse(groups["weapon"].Value);
         var setId    = ushort.Parse(groups["id"].Value);
-        if (fileType == FileType.Imc || fileType == FileType.Model)
+        if (fileType is FileType.Imc or FileType.Model)
             return GameObjectInfo.Weapon(fileType, setId, weaponId);
 
         var variant = byte.Parse(groups["variant"].Value);
@@ -236,7 +236,7 @@ internal class GamePathParser : IGamePathParser
     {
         var monsterId = ushort.Parse(groups["monster"].Value);
         var bodyId    = ushort.Parse(groups["id"].Value);
-        if (fileType == FileType.Imc || fileType == FileType.Model)
+        if (fileType is FileType.Imc or FileType.Model)
             return GameObjectInfo.Monster(fileType, monsterId, bodyId);
 
         var variant = byte.Parse(groups["variant"].Value);
@@ -322,5 +322,7 @@ internal class GamePathParser : IGamePathParser
 
 
     private readonly Regex _vfxRegexTmb = new(@"chara[\/]action[\/](?'key'[^\s]+?)\.tmb", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-    private readonly Regex _vfxRegexPap = new(@"chara[\/]human[\/]c0101[\/]animation[\/]a0001[\/][^\s]+?[\/](?'key'[^\s]+?)\.pap", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private readonly Regex _vfxRegexPap = new(@"chara[\/]human[\/]c0101[\/]animation[\/]a0001[\/][^\s]+?[\/](?'key'[^\s]+?)\.pap",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
 }

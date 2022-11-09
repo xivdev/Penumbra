@@ -20,10 +20,10 @@ public partial class MdlFile : IWritable
         public ushort[] ShapeMeshStartIndex;
         public ushort[] ShapeMeshCount;
 
-        public Shape( MdlStructs.ShapeStruct data, uint[] offsets, string[] strings )
+        public Shape(MdlStructs.ShapeStruct data, uint[] offsets, string[] strings)
         {
-            var idx = offsets.AsSpan().IndexOf( data.StringOffset );
-            ShapeName           = idx >= 0 ? strings[ idx ] : string.Empty;
+            var idx = offsets.AsSpan().IndexOf(data.StringOffset);
+            ShapeName           = idx >= 0 ? strings[idx] : string.Empty;
             ShapeMeshStartIndex = data.ShapeMeshStartIndex;
             ShapeMeshCount      = data.ShapeMeshCount;
         }
@@ -85,144 +85,128 @@ public partial class MdlFile : IWritable
     // Raw, unparsed data.
     public byte[] RemainingData;
 
-    public MdlFile( byte[] data )
+    public MdlFile(byte[] data)
     {
-        using var stream = new MemoryStream( data );
-        using var r      = new LuminaBinaryReader( stream );
+        using var stream = new MemoryStream(data);
+        using var r      = new LuminaBinaryReader(stream);
 
-        var header = LoadModelFileHeader( r );
+        var header = LoadModelFileHeader(r);
         LodCount         = header.LodCount;
         VertexBufferSize = header.VertexBufferSize;
         IndexBufferSize  = header.IndexBufferSize;
         VertexOffset     = header.VertexOffset;
         IndexOffset      = header.IndexOffset;
-        for( var i = 0; i < 3; ++i )
+        for (var i = 0; i < 3; ++i)
         {
-            if( VertexOffset[ i ] > 0 )
-            {
-                VertexOffset[ i ] -= header.RuntimeSize;
-            }
+            if (VertexOffset[i] > 0)
+                VertexOffset[i] -= header.RuntimeSize;
 
-            if( IndexOffset[ i ] > 0 )
-            {
-                IndexOffset[ i ] -= header.RuntimeSize;
-            }
+            if (IndexOffset[i] > 0)
+                IndexOffset[i] -= header.RuntimeSize;
         }
 
         VertexDeclarations = new MdlStructs.VertexDeclarationStruct[header.VertexDeclarationCount];
-        for( var i = 0; i < header.VertexDeclarationCount; ++i )
-        {
-            VertexDeclarations[ i ] = MdlStructs.VertexDeclarationStruct.Read( r );
-        }
+        for (var i = 0; i < header.VertexDeclarationCount; ++i)
+            VertexDeclarations[i] = MdlStructs.VertexDeclarationStruct.Read(r);
 
-        var (offsets, strings) = LoadStrings( r );
+        var (offsets, strings) = LoadStrings(r);
 
-        var modelHeader = LoadModelHeader( r );
+        var modelHeader = LoadModelHeader(r);
         ElementIds = new MdlStructs.ElementIdStruct[modelHeader.ElementIdCount];
-        for( var i = 0; i < modelHeader.ElementIdCount; i++ )
-        {
-            ElementIds[ i ] = MdlStructs.ElementIdStruct.Read( r );
-        }
+        for (var i = 0; i < modelHeader.ElementIdCount; i++)
+            ElementIds[i] = MdlStructs.ElementIdStruct.Read(r);
 
-        Lods = r.ReadStructuresAsArray< MdlStructs.LodStruct >( 3 );
+        Lods = r.ReadStructuresAsArray<MdlStructs.LodStruct>(3);
         ExtraLods = modelHeader.ExtraLodEnabled
-            ? r.ReadStructuresAsArray< MdlStructs.ExtraLodStruct >( 3 )
-            : Array.Empty< MdlStructs.ExtraLodStruct >();
+            ? r.ReadStructuresAsArray<MdlStructs.ExtraLodStruct>(3)
+            : Array.Empty<MdlStructs.ExtraLodStruct>();
 
         Meshes = new MdlStructs.MeshStruct[modelHeader.MeshCount];
-        for( var i = 0; i < modelHeader.MeshCount; i++ )
-        {
-            Meshes[ i ] = MdlStructs.MeshStruct.Read( r );
-        }
+        for (var i = 0; i < modelHeader.MeshCount; i++)
+            Meshes[i] = MdlStructs.MeshStruct.Read(r);
 
         Attributes = new string[modelHeader.AttributeCount];
-        for( var i = 0; i < modelHeader.AttributeCount; ++i )
+        for (var i = 0; i < modelHeader.AttributeCount; ++i)
         {
             var offset    = r.ReadUInt32();
-            var stringIdx = offsets.AsSpan().IndexOf( offset );
-            Attributes[ i ] = stringIdx >= 0 ? strings[ stringIdx ] : string.Empty;
+            var stringIdx = offsets.AsSpan().IndexOf(offset);
+            Attributes[i] = stringIdx >= 0 ? strings[stringIdx] : string.Empty;
         }
 
-        TerrainShadowMeshes    = r.ReadStructuresAsArray< MdlStructs.TerrainShadowMeshStruct >( modelHeader.TerrainShadowMeshCount );
-        SubMeshes              = r.ReadStructuresAsArray< MdlStructs.SubmeshStruct >( modelHeader.SubmeshCount );
-        TerrainShadowSubMeshes = r.ReadStructuresAsArray< MdlStructs.TerrainShadowSubmeshStruct >( modelHeader.TerrainShadowSubmeshCount );
+        TerrainShadowMeshes    = r.ReadStructuresAsArray<MdlStructs.TerrainShadowMeshStruct>(modelHeader.TerrainShadowMeshCount);
+        SubMeshes              = r.ReadStructuresAsArray<MdlStructs.SubmeshStruct>(modelHeader.SubmeshCount);
+        TerrainShadowSubMeshes = r.ReadStructuresAsArray<MdlStructs.TerrainShadowSubmeshStruct>(modelHeader.TerrainShadowSubmeshCount);
 
         Materials = new string[modelHeader.MaterialCount];
-        for( var i = 0; i < modelHeader.MaterialCount; ++i )
+        for (var i = 0; i < modelHeader.MaterialCount; ++i)
         {
             var offset    = r.ReadUInt32();
-            var stringIdx = offsets.AsSpan().IndexOf( offset );
-            Materials[ i ] = stringIdx >= 0 ? strings[ stringIdx ] : string.Empty;
+            var stringIdx = offsets.AsSpan().IndexOf(offset);
+            Materials[i] = stringIdx >= 0 ? strings[stringIdx] : string.Empty;
         }
 
         Bones = new string[modelHeader.BoneCount];
-        for( var i = 0; i < modelHeader.BoneCount; ++i )
+        for (var i = 0; i < modelHeader.BoneCount; ++i)
         {
             var offset    = r.ReadUInt32();
-            var stringIdx = offsets.AsSpan().IndexOf( offset );
-            Bones[ i ] = stringIdx >= 0 ? strings[ stringIdx ] : string.Empty;
+            var stringIdx = offsets.AsSpan().IndexOf(offset);
+            Bones[i] = stringIdx >= 0 ? strings[stringIdx] : string.Empty;
         }
 
         BoneTables = new MdlStructs.BoneTableStruct[modelHeader.BoneTableCount];
-        for( var i = 0; i < modelHeader.BoneTableCount; i++ )
-        {
-            BoneTables[ i ] = MdlStructs.BoneTableStruct.Read( r );
-        }
+        for (var i = 0; i < modelHeader.BoneTableCount; i++)
+            BoneTables[i] = MdlStructs.BoneTableStruct.Read(r);
 
         Shapes = new Shape[modelHeader.ShapeCount];
-        for( var i = 0; i < modelHeader.ShapeCount; i++ )
-        {
-            Shapes[ i ] = new Shape( MdlStructs.ShapeStruct.Read( r ), offsets, strings );
-        }
+        for (var i = 0; i < modelHeader.ShapeCount; i++)
+            Shapes[i] = new Shape(MdlStructs.ShapeStruct.Read(r), offsets, strings);
 
-        ShapeMeshes = r.ReadStructuresAsArray< MdlStructs.ShapeMeshStruct >( modelHeader.ShapeMeshCount );
-        ShapeValues = r.ReadStructuresAsArray< MdlStructs.ShapeValueStruct >( modelHeader.ShapeValueCount );
+        ShapeMeshes = r.ReadStructuresAsArray<MdlStructs.ShapeMeshStruct>(modelHeader.ShapeMeshCount);
+        ShapeValues = r.ReadStructuresAsArray<MdlStructs.ShapeValueStruct>(modelHeader.ShapeValueCount);
 
         var submeshBoneMapSize = r.ReadUInt32();
-        SubMeshBoneMap = r.ReadStructures< ushort >( ( int )submeshBoneMapSize / 2 ).ToArray();
+        SubMeshBoneMap = r.ReadStructures<ushort>((int)submeshBoneMapSize / 2).ToArray();
 
         var paddingAmount = r.ReadByte();
-        r.Seek( r.BaseStream.Position + paddingAmount );
+        r.Seek(r.BaseStream.Position + paddingAmount);
 
         // Dunno what this first one is for?
-        BoundingBoxes            = MdlStructs.BoundingBoxStruct.Read( r );
-        ModelBoundingBoxes       = MdlStructs.BoundingBoxStruct.Read( r );
-        WaterBoundingBoxes       = MdlStructs.BoundingBoxStruct.Read( r );
-        VerticalFogBoundingBoxes = MdlStructs.BoundingBoxStruct.Read( r );
+        BoundingBoxes            = MdlStructs.BoundingBoxStruct.Read(r);
+        ModelBoundingBoxes       = MdlStructs.BoundingBoxStruct.Read(r);
+        WaterBoundingBoxes       = MdlStructs.BoundingBoxStruct.Read(r);
+        VerticalFogBoundingBoxes = MdlStructs.BoundingBoxStruct.Read(r);
         BoneBoundingBoxes        = new MdlStructs.BoundingBoxStruct[modelHeader.BoneCount];
-        for( var i = 0; i < modelHeader.BoneCount; i++ )
-        {
-            BoneBoundingBoxes[ i ] = MdlStructs.BoundingBoxStruct.Read( r );
-        }
+        for (var i = 0; i < modelHeader.BoneCount; i++)
+            BoneBoundingBoxes[i] = MdlStructs.BoundingBoxStruct.Read(r);
 
-        RemainingData = r.ReadBytes( ( int )( r.BaseStream.Length - r.BaseStream.Position ) );
+        RemainingData = r.ReadBytes((int)(r.BaseStream.Length - r.BaseStream.Position));
     }
 
-    private MdlStructs.ModelFileHeader LoadModelFileHeader( LuminaBinaryReader r )
+    private MdlStructs.ModelFileHeader LoadModelFileHeader(LuminaBinaryReader r)
     {
-        var header = MdlStructs.ModelFileHeader.Read( r );
+        var header = MdlStructs.ModelFileHeader.Read(r);
         Version                    = header.Version;
         EnableIndexBufferStreaming = header.EnableIndexBufferStreaming;
         EnableEdgeGeometry         = header.EnableEdgeGeometry;
         return header;
     }
 
-    private MdlStructs.ModelHeader LoadModelHeader( BinaryReader r )
+    private MdlStructs.ModelHeader LoadModelHeader(BinaryReader r)
     {
-        var modelHeader = r.ReadStructure< MdlStructs.ModelHeader >();
+        var modelHeader = r.ReadStructure<MdlStructs.ModelHeader>();
         Radius = modelHeader.Radius;
-        Flags1 = ( MdlStructs.ModelFlags1 )( modelHeader.GetType()
-               .GetField( "Flags1", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public )?.GetValue( modelHeader )
-         ?? 0 );
-        Flags2 = ( MdlStructs.ModelFlags2 )( modelHeader.GetType()
-               .GetField( "Flags2", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public )?.GetValue( modelHeader )
-         ?? 0 );
+        Flags1 = (MdlStructs.ModelFlags1)(modelHeader.GetType()
+                .GetField("Flags1", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)?.GetValue(modelHeader)
+         ?? 0);
+        Flags2 = (MdlStructs.ModelFlags2)(modelHeader.GetType()
+                .GetField("Flags2", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)?.GetValue(modelHeader)
+         ?? 0);
         ModelClipOutDistance  = modelHeader.ModelClipOutDistance;
         ShadowClipOutDistance = modelHeader.ShadowClipOutDistance;
         Unknown4              = modelHeader.Unknown4;
-        Unknown5 = ( byte )( modelHeader.GetType()
-               .GetField( "Unknown5", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public )?.GetValue( modelHeader )
-         ?? 0 );
+        Unknown5 = (byte)(modelHeader.GetType()
+                .GetField("Unknown5", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)?.GetValue(modelHeader)
+         ?? 0);
         Unknown6                   = modelHeader.Unknown6;
         Unknown7                   = modelHeader.Unknown7;
         Unknown8                   = modelHeader.Unknown8;
@@ -233,27 +217,27 @@ public partial class MdlFile : IWritable
         return modelHeader;
     }
 
-    private static (uint[], string[]) LoadStrings( BinaryReader r )
+    private static (uint[], string[]) LoadStrings(BinaryReader r)
     {
         var stringCount = r.ReadUInt16();
         r.ReadUInt16();
-        var stringSize = ( int )r.ReadUInt32();
-        var stringData = r.ReadBytes( stringSize );
+        var stringSize = (int)r.ReadUInt32();
+        var stringData = r.ReadBytes(stringSize);
         var start      = 0;
         var strings    = new string[stringCount];
         var offsets    = new uint[stringCount];
-        for( var i = 0; i < stringCount; ++i )
+        for (var i = 0; i < stringCount; ++i)
         {
-            var span = stringData.AsSpan( start );
-            var idx  = span.IndexOf( ( byte )'\0' );
-            strings[ i ] = Encoding.UTF8.GetString( span[ ..idx ] );
-            offsets[ i ] = ( uint )start;
-            start        = start + idx + 1;
+            var span = stringData.AsSpan(start);
+            var idx  = span.IndexOf((byte)'\0');
+            strings[i] = Encoding.UTF8.GetString(span[..idx]);
+            offsets[i] = (uint)start;
+            start      = start + idx + 1;
         }
 
-        return ( offsets, strings );
+        return (offsets, strings);
     }
 
     public unsafe uint StackSize
-        => ( uint )( VertexDeclarations.Length * NumVertices * sizeof( MdlStructs.VertexElement ) );
+        => (uint)(VertexDeclarations.Length * NumVertices * sizeof(MdlStructs.VertexElement));
 }

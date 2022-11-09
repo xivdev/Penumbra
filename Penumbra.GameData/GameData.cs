@@ -4,6 +4,7 @@ using Dalamud;
 using Dalamud.Data;
 using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 
