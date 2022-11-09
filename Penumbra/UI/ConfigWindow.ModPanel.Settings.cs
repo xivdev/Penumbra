@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
@@ -61,19 +62,24 @@ public partial class ConfigWindow
 
             if( _mod.Groups.Count > 0 )
             {
-                ImGui.Dummy( _window._defaultSpace );
-                for( var idx = 0; idx < _mod.Groups.Count; ++idx )
+                var useDummy = true;
+                foreach(var (group, idx) in _mod.Groups.WithIndex().Where(g => g.Value.Type == GroupType.Single && g.Value.IsOption  ))
                 {
-                    DrawSingleGroup( _mod.Groups[ idx ], idx );
+                    ImGuiUtil.Dummy( _window._defaultSpace, useDummy );
+                    useDummy = false;
+                    DrawSingleGroup( group, idx );
                 }
 
-                ImGui.Dummy( _window._defaultSpace );
-                for( var idx = 0; idx < _mod.Groups.Count; ++idx )
+                useDummy = true;
+                foreach( var (group, idx) in _mod.Groups.WithIndex().Where( g => g.Value.Type == GroupType.Multi && g.Value.IsOption ) )
                 {
-                    DrawMultiGroup( _mod.Groups[ idx ], idx );
+                    ImGuiUtil.Dummy( _window._defaultSpace, useDummy );
+                    useDummy = false;
+                    DrawMultiGroup( group, idx );
                 }
             }
 
+            ImGui.Dummy( _window._defaultSpace );
             _window._penumbra.Api.InvokePostSettingsPanel( _mod.ModPath.Name );
         }
 
@@ -159,13 +165,8 @@ public partial class ConfigWindow
         // If a description is provided, add a help marker besides it.
         private void DrawSingleGroup( IModGroup group, int groupIdx )
         {
-            if( group.Type != GroupType.Single || !group.IsOption )
-            {
-                return;
-            }
-
             using var id             = ImRaii.PushId( groupIdx );
-            var       selectedOption = _emptySetting ? (int) group.DefaultSettings : ( int )_settings.Settings[ groupIdx ];
+            var       selectedOption = _emptySetting ? ( int )group.DefaultSettings : ( int )_settings.Settings[ groupIdx ];
             ImGui.SetNextItemWidth( _window._inputTextWidth.X * 3 / 4 );
             using var combo = ImRaii.Combo( string.Empty, group[ selectedOption ].Name );
             if( combo )
@@ -198,11 +199,6 @@ public partial class ConfigWindow
         // If a description is provided, add a help marker in the title.
         private void DrawMultiGroup( IModGroup group, int groupIdx )
         {
-            if( group.Type != GroupType.Multi || !group.IsOption )
-            {
-                return;
-            }
-
             using var id    = ImRaii.PushId( groupIdx );
             var       flags = _emptySetting ? group.DefaultSettings : _settings.Settings[ groupIdx ];
             Widget.BeginFramedGroup( group.Name, group.Description );
