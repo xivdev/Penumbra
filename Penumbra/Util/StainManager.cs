@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Data;
 using Dalamud.Plugin;
 using OtterGui.Widgets;
@@ -9,15 +11,24 @@ namespace Penumbra.Util;
 
 public class StainManager : IDisposable
 {
-    public readonly StainData         StainData;
-    public readonly FilterComboColors Combo;
-    public readonly StmFile           StmFile;
-
-    public StainManager(DalamudPluginInterface pluginInterface, DataManager dataManager)
+    public sealed class StainTemplateCombo : FilterComboCache< ushort >
     {
-        StainData = new StainData( pluginInterface, dataManager, dataManager.Language );
-        Combo     = new FilterComboColors( 140, StainData.Data );
-        StmFile   = new StmFile( dataManager );
+        public StainTemplateCombo( IEnumerable< ushort > items )
+            : base( items )
+        { }
+    }
+
+    public readonly StainData          StainData;
+    public readonly FilterComboColors  StainCombo;
+    public readonly StmFile            StmFile;
+    public readonly StainTemplateCombo TemplateCombo;
+
+    public StainManager( DalamudPluginInterface pluginInterface, DataManager dataManager )
+    {
+        StainData     = new StainData( pluginInterface, dataManager, dataManager.Language );
+        StainCombo    = new FilterComboColors( 140, StainData.Data.Prepend( new KeyValuePair< byte, (string Name, uint Dye, bool Gloss) >( 0, ( "None", 0, false ) ) ) );
+        StmFile       = new StmFile( dataManager );
+        TemplateCombo = new StainTemplateCombo( StmFile.Entries.Keys.Prepend( ( ushort )0 ) );
     }
 
     public void Dispose()

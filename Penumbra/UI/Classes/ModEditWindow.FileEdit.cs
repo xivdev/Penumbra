@@ -8,9 +8,12 @@ using System.Runtime.InteropServices;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
+using Lumina.Data.Parsing.Layer;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
@@ -326,7 +329,14 @@ public partial class ModEditWindow
         ColorSetCopyAllClipboardButton( file, 0 );
         ImGui.SameLine();
         var ret = ColorSetPasteAllClipboardButton( file, 0 );
-        using var table = ImRaii.Table( "##ColorSets", 10,
+        ImGui.SameLine();
+        ImGui.Dummy( ImGuiHelpers.ScaledVector2( 10, 0 ) );
+        ImGui.SameLine();
+        Penumbra.StainManager.StainCombo.Draw( "Preview Dye", Penumbra.StainManager.StainCombo.CurrentSelection.Value.Color, true );
+        ImGui.SameLine();
+        ImGui.Button( "Apply Preview Dyes." );
+
+        using var table = ImRaii.Table( "##ColorSets", 11,
             ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV );
         if( !table )
         {
@@ -353,6 +363,8 @@ public partial class ModEditWindow
         ImGui.TableHeader( "Skew" );
         ImGui.TableNextColumn();
         ImGui.TableHeader( "Dye" );
+        ImGui.TableNextColumn();
+        ImGui.TableHeader( "Dye Preview" );
 
         for( var j = 0; j < file.ColorSets.Length; ++j )
         {
@@ -731,17 +743,37 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         if( hasDye )
         {
-            tmpInt = dye.Template;
-            ImGui.SetNextItemWidth( intSize );
-            if( ImGui.InputInt( "##DyeTemplate", ref tmpInt, 0, 0 )
-            && tmpInt != dye.Template
-            && tmpInt is >= 0 and <= ushort.MaxValue )
+            if( Penumbra.StainManager.TemplateCombo.Draw( "##dyeTemplate", dye.Template.ToString(), intSize
+                    + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton ) )
             {
-                file.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ].Template = ( ushort )tmpInt;
+                file.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ].Template = Penumbra.StainManager.TemplateCombo.CurrentSelection;
                 ret                                                      = true;
             }
 
             ImGuiUtil.HoverTooltip( "Dye Template", ImGuiHoveredFlags.AllowWhenDisabled );
+
+            ImGui.TableNextColumn();
+            var stain = Penumbra.StainManager.StainCombo.CurrentSelection.Key;
+            if( stain != 0 && Penumbra.StainManager.StmFile.Entries.TryGetValue( dye.Template, out var entry ) )
+            {
+                var       values = entry[ ( int )stain ];
+                using var _      = ImRaii.Disabled();
+                ColorPicker( "##diffusePreview", string.Empty, values.Diffuse, c => { } );
+                ImGui.SameLine();
+                ColorPicker( "##specularPreview", string.Empty, values.Specular, c => { } );
+                ImGui.SameLine();
+                ColorPicker( "##emissivePreview", string.Empty, values.Emissive, c => { } );
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth( floatSize );
+                ImGui.DragFloat( "##specularStrength", ref values.SpecularPower );
+                ImGui.SameLine();
+                ImGui.SetNextItemWidth( floatSize );
+                ImGui.DragFloat( "##gloss", ref values.Gloss );
+            }
+        }
+        else
+        {
+            ImGui.TableNextColumn();
         }
 
 

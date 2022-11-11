@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Numerics;
 using Dalamud.Data;
 using Lumina.Extensions;
 using Penumbra.GameData.Structs;
@@ -14,11 +15,11 @@ public partial class StmFile
 
     public record struct DyePack
     {
-        public uint  Diffuse;
-        public uint  Specular;
-        public uint  Emissive;
-        public float SpecularPower;
-        public float Gloss;
+        public Vector3 Diffuse;
+        public Vector3 Specular;
+        public Vector3 Emissive;
+        public float   SpecularPower;
+        public float   Gloss;
     }
 
     public readonly struct StainingTemplateEntry
@@ -31,9 +32,6 @@ public partial class StmFile
         public readonly IReadOnlyList<Half>                     SpecularPowerEntries;
         public readonly IReadOnlyList<Half>                     GlossEntries;
 
-        private static uint HalfToByte(Half value)
-            => (byte)((float)value * byte.MaxValue + 0.5f);
-
         public DyePack this[StainId idx]
             => this[(int)idx.Value];
 
@@ -41,16 +39,20 @@ public partial class StmFile
         {
             get
             {
+                if (idx is <= 0 or > NumElements)
+                    return default;
+
+                --idx;
                 var (dr, dg, db) = DiffuseEntries[idx];
                 var (sr, sg, sb) = SpecularEntries[idx];
                 var (er, eg, eb) = EmissiveEntries[idx];
                 var sp = SpecularPowerEntries[idx];
                 var g  = GlossEntries[idx];
-                return new DyePack()
+                return new DyePack
                 {
-                    Diffuse       = 0xFF000000u | HalfToByte(dr) | (HalfToByte(dg) << 8) | (HalfToByte(db) << 16),
-                    Emissive      = 0xFF000000u | HalfToByte(sr) | (HalfToByte(sg) << 8) | (HalfToByte(sb) << 16),
-                    Specular      = 0xFF000000u | HalfToByte(er) | (HalfToByte(eg) << 8) | (HalfToByte(eb) << 16),
+                    Diffuse       = new Vector3((float)dr, (float)dg, (float)db),
+                    Emissive      = new Vector3((float)sr, (float)sg, (float)sb),
+                    Specular      = new Vector3((float)er, (float)eg, (float)eb),
                     SpecularPower = (float)sp,
                     Gloss         = (float)g,
                 };
