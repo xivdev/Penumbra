@@ -410,15 +410,15 @@ public class Penumbra : IDalamudPlugin
                 case "enable":
                 {
                     Dalamud.Chat.Print( Enable()
-                        ? "Your mods are already enabled. To disable your mods, please run the following command instead: /penumbra disable"
-                        : modsEnabled );
+                        ? modsEnabled
+                        : "Your mods are already enabled. To disable your mods, please run the following command instead: /penumbra disable" );
                     break;
                 }
                 case "disable":
                 {
                     Dalamud.Chat.Print( Disable()
-                        ? "Your mods are already disabled. To enable your mods, please run the following command instead: /penumbra enable"
-                        : modsDisabled );
+                        ? modsDisabled
+                        : "Your mods are already disabled. To enable your mods, please run the following command instead: /penumbra enable" );
                     break;
                 }
                 case "toggle":
