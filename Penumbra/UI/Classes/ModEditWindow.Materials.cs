@@ -1,20 +1,13 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Dalamud.Interface;
-using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
-using Lumina.Data.Parsing.Layer;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Widgets;
 using Penumbra.GameData.Files;
-using Penumbra.GameData.Structs;
-using Penumbra.Mods;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 
@@ -23,263 +16,6 @@ namespace Penumbra.UI.Classes;
 public partial class ModEditWindow
 {
     private readonly FileEditor< MtrlFile > _materialTab;
-    private readonly FileEditor< MdlFile >  _modelTab;
-
-    private class FileEditor< T > where T : class, IWritable
-    {
-        private readonly string                                           _tabName;
-        private readonly string                                           _fileType;
-        private readonly Func< IReadOnlyList< Mod.Editor.FileRegistry > > _getFiles;
-        private readonly Func< T, bool, bool >                            _drawEdit;
-        private readonly Func< string >                                   _getInitialPath;
-
-        private Mod.Editor.FileRegistry? _currentPath;
-        private T?                       _currentFile;
-        private Exception?               _currentException;
-        private bool                     _changed;
-
-        private string     _defaultPath = string.Empty;
-        private bool       _inInput;
-        private T?         _defaultFile;
-        private Exception? _defaultException;
-
-        private IReadOnlyList< Mod.Editor.FileRegistry > _list = null!;
-
-        private readonly FileDialogManager _fileDialog = ConfigWindow.SetupFileManager();
-
-        public FileEditor( string tabName, string fileType, Func< IReadOnlyList< Mod.Editor.FileRegistry > > getFiles,
-            Func< T, bool, bool > drawEdit, Func< string > getInitialPath )
-        {
-            _tabName        = tabName;
-            _fileType       = fileType;
-            _getFiles       = getFiles;
-            _drawEdit       = drawEdit;
-            _getInitialPath = getInitialPath;
-        }
-
-        public void Draw()
-        {
-            _list = _getFiles();
-            if( _list.Count == 0 )
-            {
-                return;
-            }
-
-            using var tab = ImRaii.TabItem( _tabName );
-            if( !tab )
-            {
-                return;
-            }
-
-            ImGui.NewLine();
-            DrawFileSelectCombo();
-            SaveButton();
-            ImGui.SameLine();
-            ResetButton();
-            ImGui.SameLine();
-            DefaultInput();
-            ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-
-            DrawFilePanel();
-        }
-
-        private void DefaultInput()
-        {
-            using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = 3 * ImGuiHelpers.GlobalScale } );
-            ImGui.SetNextItemWidth( ImGui.GetContentRegionAvail().X - 3 * ImGuiHelpers.GlobalScale - ImGui.GetFrameHeight() );
-            ImGui.InputTextWithHint( "##defaultInput", "Input game path to compare...", ref _defaultPath, Utf8GamePath.MaxGamePathLength );
-            _inInput = ImGui.IsItemActive();
-            if( ImGui.IsItemDeactivatedAfterEdit() && _defaultPath.Length > 0 )
-            {
-                _fileDialog.Reset();
-                try
-                {
-                    var file = Dalamud.GameData.GetFile( _defaultPath );
-                    if( file != null )
-                    {
-                        _defaultException = null;
-                        _defaultFile      = Activator.CreateInstance( typeof( T ), file.Data ) as T;
-                    }
-                    else
-                    {
-                        _defaultFile      = null;
-                        _defaultException = new Exception( "File does not exist." );
-                    }
-                }
-                catch( Exception e )
-                {
-                    _defaultFile      = null;
-                    _defaultException = e;
-                }
-            }
-
-            ImGui.SameLine();
-            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Save.ToIconString(), new Vector2( ImGui.GetFrameHeight() ), "Export this file.", _defaultFile == null, true ) )
-            {
-                _fileDialog.SaveFileDialog( $"Export {_defaultPath} to...", _fileType, Path.GetFileNameWithoutExtension( _defaultPath ), _fileType, ( success, name ) =>
-                {
-                    if( !success )
-                    {
-                        return;
-                    }
-
-                    try
-                    {
-                        File.WriteAllBytes( name, _defaultFile?.Write() ?? throw new Exception( "File invalid." ) );
-                    }
-                    catch( Exception e )
-                    {
-                        Penumbra.Log.Error( $"Could not export {_defaultPath}:\n{e}" );
-                    }
-                }, _getInitialPath() );
-            }
-
-            _fileDialog.Draw();
-        }
-
-        public void Reset()
-        {
-            _currentException = null;
-            _currentPath      = null;
-            _currentFile      = null;
-            _changed          = false;
-        }
-
-        private void DrawFileSelectCombo()
-        {
-            ImGui.SetNextItemWidth( ImGui.GetContentRegionAvail().X );
-            using var combo = ImRaii.Combo( "##fileSelect", _currentPath?.RelPath.ToString() ?? $"Select {_fileType} File..." );
-            if( !combo )
-            {
-                return;
-            }
-
-            foreach( var file in _list )
-            {
-                if( ImGui.Selectable( file.RelPath.ToString(), ReferenceEquals( file, _currentPath ) ) )
-                {
-                    UpdateCurrentFile( file );
-                }
-            }
-        }
-
-        private void UpdateCurrentFile( Mod.Editor.FileRegistry path )
-        {
-            if( ReferenceEquals( _currentPath, path ) )
-            {
-                return;
-            }
-
-            _changed          = false;
-            _currentPath      = path;
-            _currentException = null;
-            try
-            {
-                var bytes = File.ReadAllBytes( _currentPath.File.FullName );
-                _currentFile = Activator.CreateInstance( typeof( T ), bytes ) as T;
-            }
-            catch( Exception e )
-            {
-                _currentFile      = null;
-                _currentException = e;
-            }
-        }
-
-        private void SaveButton()
-        {
-            if( ImGuiUtil.DrawDisabledButton( "Save to File", Vector2.Zero,
-                   $"Save the selected {_fileType} file with all changes applied. This is not revertible.", !_changed ) )
-            {
-                File.WriteAllBytes( _currentPath!.File.FullName, _currentFile!.Write() );
-                _changed = false;
-            }
-        }
-
-        private void ResetButton()
-        {
-            if( ImGuiUtil.DrawDisabledButton( "Reset Changes", Vector2.Zero,
-                   $"Reset all changes made to the {_fileType} file.", !_changed ) )
-            {
-                var tmp = _currentPath;
-                _currentPath = null;
-                UpdateCurrentFile( tmp! );
-            }
-        }
-
-        private void DrawFilePanel()
-        {
-            using var child = ImRaii.Child( "##filePanel", -Vector2.One, true );
-            if( !child )
-            {
-                return;
-            }
-
-            if( _currentPath != null )
-            {
-                if( _currentFile == null )
-                {
-                    ImGui.TextUnformatted( $"Could not parse selected {_fileType} file." );
-                    if( _currentException != null )
-                    {
-                        using var tab = ImRaii.PushIndent();
-                        ImGuiUtil.TextWrapped( _currentException.ToString() );
-                    }
-                }
-                else
-                {
-                    using var id = ImRaii.PushId( 0 );
-                    _changed |= _drawEdit( _currentFile, false );
-                }
-            }
-
-            if( !_inInput && _defaultPath.Length > 0 )
-            {
-                if( _currentPath != null )
-                {
-                    ImGui.NewLine();
-                    ImGui.NewLine();
-                    ImGui.TextUnformatted( $"Preview of {_defaultPath}:" );
-                    ImGui.Separator();
-                }
-
-                if( _defaultFile == null )
-                {
-                    ImGui.TextUnformatted( $"Could not parse provided {_fileType} game file:\n" );
-                    if( _defaultException != null )
-                    {
-                        using var tab = ImRaii.PushIndent();
-                        ImGuiUtil.TextWrapped( _defaultException.ToString() );
-                    }
-                }
-                else
-                {
-                    using var id = ImRaii.PushId( 1 );
-                    _drawEdit( _defaultFile, true );
-                }
-            }
-        }
-    }
-
-    private static bool DrawModelPanel( MdlFile file, bool disabled )
-    {
-        var ret = false;
-        for( var i = 0; i < file.Materials.Length; ++i )
-        {
-            using var id  = ImRaii.PushId( i );
-            var       tmp = file.Materials[ i ];
-            if( ImGui.InputText( string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength,
-                   disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None )
-            && tmp.Length > 0
-            && tmp        != file.Materials[ i ] )
-            {
-                file.Materials[ i ] = tmp;
-                ret                 = true;
-            }
-        }
-
-        return !disabled && ret;
-    }
-
 
     private static bool DrawMaterialPanel( MtrlFile file, bool disabled )
     {
@@ -330,11 +66,9 @@ public partial class ModEditWindow
         ImGui.SameLine();
         var ret = ColorSetPasteAllClipboardButton( file, 0 );
         ImGui.SameLine();
-        ImGui.Dummy( ImGuiHelpers.ScaledVector2( 10, 0 ) );
+        ImGui.Dummy( ImGuiHelpers.ScaledVector2( 20, 0 ) );
         ImGui.SameLine();
-        Penumbra.StainManager.StainCombo.Draw( "Preview Dye", Penumbra.StainManager.StainCombo.CurrentSelection.Value.Color, true );
-        ImGui.SameLine();
-        ImGui.Button( "Apply Preview Dyes." );
+        ret |= DrawPreviewDye( file, disabled );
 
         using var table = ImRaii.Table( "##ColorSets", 11,
             ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV );
@@ -501,6 +235,30 @@ public partial class ModEditWindow
         {
             // ignored
         }
+    }
+
+    private static bool DrawPreviewDye( MtrlFile file, bool disabled )
+    {
+        var (dyeId, (name, dyeColor, _)) = Penumbra.StainManager.StainCombo.CurrentSelection;
+        var tt = dyeId == 0 ? "Select a preview dye first." : "Apply all preview values corresponding to the dye template and chosen dye where dyeing is enabled.";
+        if( ImGuiUtil.DrawDisabledButton( "Apply Preview Dye", Vector2.Zero, tt, disabled || dyeId == 0 ) )
+        {
+            var ret = false;
+            for( var j = 0; j < file.ColorDyeSets.Length; ++j )
+            {
+                for( var i = 0; i < MtrlFile.ColorSet.RowArray.NumRows; ++i )
+                {
+                    ret |= file.ApplyDyeTemplate( Penumbra.StainManager.StmFile, j, i, dyeId );
+                }
+            }
+
+            return ret;
+        }
+
+        ImGui.SameLine();
+        var label = dyeId == 0 ? "Preview Dye###previewDye" : $"{name} (Preview)###previewDye";
+        Penumbra.StainManager.StainCombo.Draw( label, dyeColor, true );
+        return false;
     }
 
     private static unsafe bool ColorSetPasteAllClipboardButton( MtrlFile file, int colorSetIdx )
@@ -744,7 +502,7 @@ public partial class ModEditWindow
         if( hasDye )
         {
             if( Penumbra.StainManager.TemplateCombo.Draw( "##dyeTemplate", dye.Template.ToString(), intSize
-                    + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton ) )
+                 + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton ) )
             {
                 file.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ].Template = Penumbra.StainManager.TemplateCombo.CurrentSelection;
                 ret                                                      = true;
@@ -753,23 +511,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( "Dye Template", ImGuiHoveredFlags.AllowWhenDisabled );
 
             ImGui.TableNextColumn();
-            var stain = Penumbra.StainManager.StainCombo.CurrentSelection.Key;
-            if( stain != 0 && Penumbra.StainManager.StmFile.Entries.TryGetValue( dye.Template, out var entry ) )
-            {
-                var       values = entry[ ( int )stain ];
-                using var _      = ImRaii.Disabled();
-                ColorPicker( "##diffusePreview", string.Empty, values.Diffuse, c => { } );
-                ImGui.SameLine();
-                ColorPicker( "##specularPreview", string.Empty, values.Specular, c => { } );
-                ImGui.SameLine();
-                ColorPicker( "##emissivePreview", string.Empty, values.Emissive, c => { } );
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth( floatSize );
-                ImGui.DragFloat( "##specularStrength", ref values.SpecularPower );
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth( floatSize );
-                ImGui.DragFloat( "##gloss", ref values.Gloss );
-            }
+            ret |= DrawDyePreview( file, colorSetIdx, rowIdx, disabled, dye, floatSize );
         }
         else
         {
@@ -780,7 +522,40 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private static bool ColorPicker( string label, string tooltip, Vector3 input, Action< Vector3 > setter )
+    private static bool DrawDyePreview( MtrlFile file, int colorSetIdx, int rowIdx, bool disabled, MtrlFile.ColorDyeSet.Row dye, float floatSize )
+    {
+        var stain = Penumbra.StainManager.StainCombo.CurrentSelection.Key;
+        if( stain == 0 || !Penumbra.StainManager.StmFile.Entries.TryGetValue( dye.Template, out var entry ) )
+        {
+            return false;
+        }
+
+        var       values = entry[ ( int )stain ];
+        using var style  = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing / 2 );
+
+        var ret = ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.PaintBrush.ToIconString(), new Vector2( ImGui.GetFrameHeight() ),
+            "Apply the selected dye to this row.", disabled, true );
+
+        ret = ret && file.ApplyDyeTemplate( Penumbra.StainManager.StmFile, colorSetIdx, rowIdx, stain );
+
+        ImGui.SameLine();
+        ColorPicker( "##diffusePreview", string.Empty, values.Diffuse, _ => { }, "D" );
+        ImGui.SameLine();
+        ColorPicker( "##specularPreview", string.Empty, values.Specular, _ => { }, "S" );
+        ImGui.SameLine();
+        ColorPicker( "##emissivePreview", string.Empty, values.Emissive, _ => { }, "E" );
+        ImGui.SameLine();
+        using var dis = ImRaii.Disabled();
+        ImGui.SetNextItemWidth( floatSize );
+        ImGui.DragFloat( "##gloss", ref values.Gloss, 0, 0, 0, "%.2f G" );
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth( floatSize );
+        ImGui.DragFloat( "##specularStrength", ref values.SpecularPower, 0, 0, 0, "%.2f S" );
+
+        return ret;
+    }
+
+    private static bool ColorPicker( string label, string tooltip, Vector3 input, Action< Vector3 > setter, string letter = "" )
     {
         var ret = false;
         var tmp = input;
@@ -790,6 +565,14 @@ public partial class ModEditWindow
         {
             setter( tmp );
             ret = true;
+        }
+
+        if( letter.Length > 0 && ImGui.IsItemVisible() )
+        {
+            var textSize  = ImGui.CalcTextSize( letter );
+            var center    = ImGui.GetItemRectMin() + ( ImGui.GetItemRectSize() - textSize ) / 2;
+            var textColor = input.LengthSquared() < 0.25f ? 0x80FFFFFFu : 0x80000000u;
+            ImGui.GetWindowDrawList().AddText( center, textColor, letter );
         }
 
         ImGuiUtil.HoverTooltip( tooltip, ImGuiHoveredFlags.AllowWhenDisabled );

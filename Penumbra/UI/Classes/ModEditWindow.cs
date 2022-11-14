@@ -38,7 +38,7 @@ public partial class ModEditWindow : Window, IDisposable
 
         SizeConstraints = new WindowSizeConstraints
         {
-            MinimumSize = ImGuiHelpers.ScaledVector2( 1000, 600 ),
+            MinimumSize = new Vector2( 1240, 600 ),
             MaximumSize = 4000 * Vector2.One,
         };
         _selectedFiles.Clear();
