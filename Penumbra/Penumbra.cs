@@ -8,6 +8,7 @@ using System.Text;
 using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
+using Dalamud.Utility;
 using EmbedIO;
 using EmbedIO.WebApi;
 using ImGuiNET;
@@ -34,6 +35,7 @@ namespace Penumbra;
 
 public class Penumbra : IDalamudPlugin
 {
+    public const string Repository = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
     public string Name
         => "Penumbra";
 
@@ -46,6 +48,7 @@ public class Penumbra : IDalamudPlugin
 
     public static bool DevPenumbraExists;
     public static bool IsNotInstalledPenumbra;
+    public static bool IsValidSourceRepo;
 
     public static Logger Log { get; private set; } = null!;
     public static Configuration Config { get; private set; } = null!;
@@ -84,11 +87,12 @@ public class Penumbra : IDalamudPlugin
         {
             Dalamud.Initialize( pluginInterface );
             Log                    = new Logger();
+            DevPenumbraExists      = CheckDevPluginPenumbra();
+            IsNotInstalledPenumbra = CheckIsNotInstalled();
+            IsValidSourceRepo      = CheckSourceRepo();
             Identifier             = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData );
             GamePathParser         = GameData.GameData.GetGamePathParser();
             StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData );
-            DevPenumbraExists      = CheckDevPluginPenumbra();
-            IsNotInstalledPenumbra = CheckIsNotInstalled();
 
             Framework        = new FrameworkManager();
             CharacterUtility = new CharacterUtility();
@@ -153,9 +157,9 @@ public class Penumbra : IDalamudPlugin
             }
             else
             {
-                Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded." );
+                Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded from {pluginInterface.SourceRepository}." );
             }
-            
+
             Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 
             OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
@@ -561,7 +565,7 @@ public class Penumbra : IDalamudPlugin
 #endif
     }
 
-    // Check if the loaded version of penumbra itself is in devPlugins.
+    // Check if the loaded version of Penumbra itself is in devPlugins.
     private static bool CheckIsNotInstalled()
     {
 #if !DEBUG
@@ -572,6 +576,22 @@ public class Penumbra : IDalamudPlugin
         return !ret;
 #else
         return false;
+#endif
+    }
+
+    // Check if the loaded version of Penumbra is installed from a valid source repo.
+    private static bool CheckSourceRepo()
+    {
+#if !DEBUG
+        return Dalamud.PluginInterface.SourceRepository.Trim().ToLowerInvariant() switch
+        {
+            null                                                                 => false,
+            Repository => true,
+            "https://raw.githubusercontent.com/xivdev/Penumbra/test/repo.json"   => true,
+            _                                                                    => false,
+        };
+#else
+        return true;
 #endif
     }
 }

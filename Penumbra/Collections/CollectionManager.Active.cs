@@ -8,102 +8,15 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Dalamud.Game.ClientState.Objects.Enums;
-using Penumbra.GameData.Actors;
-using Penumbra.String;
 
 namespace Penumbra.Collections;
-
-public class IndividualCollections
-{
-    private readonly ActorManager                                                                                         _manager;
-    private readonly List< (string DisplayName, ModCollection Collection, IReadOnlyList< ActorIdentifier > Identifiers) > _assignments = new();
-    private readonly Dictionary< ActorIdentifier, ModCollection >                                                         _individuals = new();
-
-    public IReadOnlyList< (string DisplayName, ModCollection Collection, IReadOnlyList< ActorIdentifier > Identifiers) > Assignments
-        => _assignments;
-
-    public IReadOnlyDictionary< ActorIdentifier, ModCollection > Individuals
-        => _individuals;
-
-    public IndividualCollections( ActorManager manager )
-        => _manager = manager;
-
-    public bool CanAdd( ActorIdentifier identifier )
-        => identifier.IsValid && !Individuals.ContainsKey( identifier );
-
-    public bool CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, IEnumerable< uint > dataIds, out ActorIdentifier[] identifiers )
-    {
-        identifiers = Array.Empty< ActorIdentifier >();
-
-        switch( type )
-        {
-            case IdentifierType.Player:
-            {
-                if( !ByteString.FromString( name, out var playerName ) )
-                {
-                    return false;
-                }
-
-                var identifier = _manager.CreatePlayer( playerName, homeWorld );
-                if( !CanAdd( identifier ) )
-                {
-                    return false;
-                }
-
-                identifiers = new[] { identifier };
-                return true;
-            }
-            //case IdentifierType.Owned:
-            //{
-            //    if( !ByteString.FromString( name, out var ownerName ) )
-            //    {
-            //        return false;
-            //    }
-            //
-            //    identifiers = dataIds.Select( id => _manager.CreateOwned( ownerName, homeWorld, kind, id ) ).ToArray();
-            //    return 
-            //    identifier  = _manager.CreateIndividual( type, byteName, homeWorld, kind, dataId );
-            //    return CanAdd( identifier );
-            //}
-            //case IdentifierType.Npc:
-            //{
-            //    identifier = _manager.CreateIndividual( IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, kind, dataId );
-            //    return CanAdd( identifier );
-            //}
-            default:
-                identifiers = Array.Empty< ActorIdentifier >();
-                return false;
-        }
-    }
-
-    public bool Add( string displayName, ActorIdentifier identifier, ModCollection collection )
-        => Add( displayName, identifier, collection, Array.Empty< uint >() );
-
-    public bool Add( string displayName, ActorIdentifier identifier, ModCollection collection, IEnumerable< uint > additionalIds )
-    {
-        if( Individuals.ContainsKey( identifier ) )
-        {
-            return false;
-        }
-
-        //var identifiers = additionalIds
-        //   .Select( id => CanAdd( identifier.Type, identifier.PlayerName, identifier.HomeWorld, identifier.Kind, id, out var value ) ? value : ActorIdentifier.Invalid )
-        //   .Prepend( identifier )
-        //   .ToArray();
-        //if( identifiers.Any( i => !i.IsValid || i.DataId == identifier.DataId ) )
-        //{
-        //    return false;
-        //}
-
-        return true;
-    }
-}
 
 public partial class ModCollection
 {
     public sealed partial class Manager
     {
+        public const int Version = 1;
+
         // Is invoked after the collections actually changed.
         public event CollectionChangeDelegate CollectionChanged;
 
@@ -404,6 +317,35 @@ public partial class ModCollection
             using var j      = new JsonTextWriter( writer );
             j.Formatting = Formatting.Indented;
             jObject.WriteTo( j );
+        }
+
+        // Migrate individual collections to Identifiers for 0.6.0.
+        private bool MigrateIndividualCollections(JObject jObject, out IndividualCollections collections)
+        {
+            var version = jObject[ nameof( Version ) ]?.Value< int >() ?? 0;
+            collections = new IndividualCollections( Penumbra.Actors );
+            if( version > 0 )
+                return false;
+
+            // Load character collections. If a player name comes up multiple times, the last one is applied.
+            var characters    = jObject[nameof( Characters )]?.ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
+            var dict          = new Dictionary< string, ModCollection >( characters.Count );
+            foreach( var (player, collectionName) in characters )
+            {
+                var idx = GetIndexForCollectionName( collectionName );
+                if( idx < 0 )
+                {
+                    Penumbra.Log.Error( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {Empty.Name}." );
+                    dict.Add( player, Empty );
+                }
+                else
+                {
+                    dict.Add( player, this[idx] );
+                }
+            }
+
+            collections.Migrate0To1( dict );
+            return true;
         }
 
 
