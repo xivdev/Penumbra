@@ -59,7 +59,7 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
             {
                 IdentifierType.Player  => $"{PlayerName} ({HomeWorld})",
                 IdentifierType.Owned   => $"{PlayerName}s {Kind} {DataId} ({HomeWorld})",
-                IdentifierType.Special => ActorManager.ToName(Special),
+                IdentifierType.Special => Special.ToName(),
                 IdentifierType.Npc =>
                     Index == ushort.MaxValue
                         ? $"{Kind} #{DataId}"
@@ -147,4 +147,39 @@ public static class ActorManagerExtensions
             _ => false,
         };
     }
+
+    public static string ToName(this ObjectKind kind)
+        => kind switch
+        {
+            ObjectKind.None      => "Unknown",
+            ObjectKind.BattleNpc => "Battle NPC",
+            ObjectKind.EventNpc  => "Event NPC",
+            ObjectKind.MountType => "Mount",
+            ObjectKind.Companion => "Companion",
+            _                    => kind.ToString(),
+        };
+
+    public static string ToName(this IdentifierType type)
+        => type switch
+        {
+            IdentifierType.Player  => "Player",
+            IdentifierType.Owned   => "Owned NPC",
+            IdentifierType.Special => "Special Actor",
+            IdentifierType.Npc     => "NPC",
+            _                      => "Invalid",
+        };
+
+    /// <summary>
+    /// Fixed names for special actors.
+    /// </summary>
+    public static string ToName(this SpecialActor actor)
+        => actor switch
+        {
+            SpecialActor.CharacterScreen => "Character Screen Actor",
+            SpecialActor.ExamineScreen   => "Examine Screen Actor",
+            SpecialActor.FittingRoom     => "Fitting Room Actor",
+            SpecialActor.DyePreview      => "Dye Preview Actor",
+            SpecialActor.Portrait        => "Portrait Actor",
+            _                            => "Invalid",
+        };
 }

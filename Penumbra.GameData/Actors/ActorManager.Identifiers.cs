@@ -52,6 +52,12 @@ public partial class ActorManager
     }
 
     /// <summary>
+    /// Return the world name including the All Worlds option.
+    /// </summary>
+    public string ToWorldName(ushort worldId)
+        => worldId == ushort.MaxValue ? "Any World" : Worlds.TryGetValue(worldId, out var name) ? name : "Invalid";
+
+    /// <summary>
     /// Use stored data to convert an ActorIdentifier to a string.
     /// </summary>
     public string ToString(ActorIdentifier id)
@@ -59,12 +65,12 @@ public partial class ActorManager
         return id.Type switch
         {
             IdentifierType.Player => id.HomeWorld != _clientState.LocalPlayer?.HomeWorld.Id
-                ? $"{id.PlayerName} ({Worlds[id.HomeWorld]})"
+                ? $"{id.PlayerName} ({ToWorldName(id.HomeWorld)})"
                 : id.PlayerName.ToString(),
             IdentifierType.Owned => id.HomeWorld != _clientState.LocalPlayer?.HomeWorld.Id
-                ? $"{id.PlayerName} ({Worlds[id.HomeWorld]})'s {ToName(id.Kind, id.DataId)}"
-                : $"{id.PlayerName}s {ToName(id.Kind,                           id.DataId)}",
-            IdentifierType.Special => ToName(id.Special),
+                ? $"{id.PlayerName} ({ToWorldName(id.HomeWorld)})'s {ToName(id.Kind, id.DataId)}"
+                : $"{id.PlayerName}s {ToName(id.Kind,                                id.DataId)}",
+            IdentifierType.Special => id.Special.ToName(),
             IdentifierType.Npc =>
                 id.Index == ushort.MaxValue
                     ? ToName(id.Kind, id.DataId)
@@ -73,20 +79,6 @@ public partial class ActorManager
         };
     }
 
-
-    /// <summary>
-    /// Fixed names for special actors.
-    /// </summary>
-    public static string ToName(SpecialActor actor)
-        => actor switch
-        {
-            SpecialActor.CharacterScreen => "Character Screen Actor",
-            SpecialActor.ExamineScreen   => "Examine Screen Actor",
-            SpecialActor.FittingRoom     => "Fitting Room Actor",
-            SpecialActor.DyePreview      => "Dye Preview Actor",
-            SpecialActor.Portrait        => "Portrait Actor",
-            _                            => "Invalid",
-        };
 
     /// <summary>
     /// Convert a given ID for a certain ObjectKind to a name.
@@ -328,7 +320,7 @@ public partial class ActorManager
 
     /// <summary> Checks if the world is a valid public world or ushort.MaxValue (any world). </summary>
     public bool VerifyWorld(ushort worldId)
-        => Worlds.ContainsKey(worldId);
+        => worldId == ushort.MaxValue || Worlds.ContainsKey(worldId);
 
     /// <summary> Verify that the enum value is a specific actor and return the name if it is. </summary>
     public static bool VerifySpecial(SpecialActor actor)
@@ -339,6 +331,7 @@ public partial class ActorManager
     {
         return index switch
         {
+            ushort.MaxValue                 => true,
             < 200                           => index % 2 == 0,
             > (ushort)SpecialActor.Portrait => index < 426,
             _                               => false,
@@ -360,6 +353,8 @@ public partial class ActorManager
     public bool VerifyNpcData(ObjectKind kind, uint dataId)
         => kind switch
         {
+            ObjectKind.MountType => Mounts.ContainsKey(dataId),
+            ObjectKind.Companion => Companions.ContainsKey(dataId),
             ObjectKind.BattleNpc => BNpcs.ContainsKey(dataId),
             ObjectKind.EventNpc  => ENpcs.ContainsKey(dataId),
             _                    => false,

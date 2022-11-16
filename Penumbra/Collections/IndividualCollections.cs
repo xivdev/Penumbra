@@ -1,39 +1,13 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
-using Dalamud.Game.ClientState.Objects.Types;
-using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Actors;
 using Penumbra.String;
 
 namespace Penumbra.Collections;
 
-public partial class IndividualCollections
-{
-    public const int Version = 1;
-
-    internal void Migrate0To1( Dictionary< string, ModCollection > old )
-    {
-        foreach( var (name, collection) in old )
-        {
-            if( ActorManager.VerifyPlayerName( name ) )
-            {
-                var identifier = _manager.CreatePlayer( ByteString.FromStringUnsafe( name, false ), ushort.MaxValue );
-                if( Add( name, new[] { identifier }, collection ) )
-                {
-                    var shortName = string.Join( " ", name.Split().Select( n => $"{n[0]}." ) );
-                    Penumbra.Log.Information( $"Migrated {shortName} ({collection.AnonymizedName}) to Player Identifier." );
-                    continue;
-                }
-            }
-
-        }
-    }
-}
-
-public sealed partial class IndividualCollections : IReadOnlyList< (string DisplayName, ModCollection Collection) >
+public sealed partial class IndividualCollections
 {
     private readonly ActorManager                                                                                   _manager;
     private readonly SortedList< string, (IReadOnlyList< ActorIdentifier > Identifiers, ModCollection Collection) > _assignments = new();
@@ -48,10 +22,34 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
     public IndividualCollections( ActorManager manager )
         => _manager = manager;
 
-    public bool CanAdd( params ActorIdentifier[] identifiers )
-        => identifiers.Length > 0 && identifiers.All( i => i.IsValid && !Individuals.ContainsKey( i ) );
+    public enum AddResult
+    {
+        Valid,
+        AlreadySet,
+        Invalid,
+    }
 
-    public bool CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, IEnumerable< uint > dataIds, out ActorIdentifier[] identifiers )
+    public AddResult CanAdd( params ActorIdentifier[] identifiers )
+    {
+        if( identifiers.Length == 0 )
+        {
+            return AddResult.Invalid;
+        }
+
+        if( identifiers.Any( i => !i.IsValid ) )
+        {
+            return AddResult.Invalid;
+        }
+
+        if( identifiers.Any( Individuals.ContainsKey ) )
+        {
+            return AddResult.AlreadySet;
+        }
+
+        return AddResult.Valid;
+    }
+
+    public AddResult CanAdd( IdentifierType type, string name, ushort homeWorld, ObjectKind kind, IEnumerable< uint > dataIds, out ActorIdentifier[] identifiers )
     {
         identifiers = Array.Empty< ActorIdentifier >();
 
@@ -60,7 +58,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
             case IdentifierType.Player:
                 if( !ByteString.FromString( name, out var playerName ) )
                 {
-                    return false;
+                    return AddResult.Invalid;
                 }
 
                 var identifier = _manager.CreatePlayer( playerName, homeWorld );
@@ -69,7 +67,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
             case IdentifierType.Owned:
                 if( !ByteString.FromString( name, out var ownerName ) )
                 {
-                    return false;
+                    return AddResult.Invalid;
                 }
 
                 identifiers = dataIds.Select( id => _manager.CreateOwned( ownerName, homeWorld, kind, id ) ).ToArray();
@@ -119,7 +117,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
 
     public bool Add( string displayName, ActorIdentifier[] identifiers, ModCollection collection )
     {
-        if( !CanAdd( identifiers ) || _assignments.ContainsKey( displayName ) )
+        if( CanAdd( identifiers ) != AddResult.Valid || _assignments.ContainsKey( displayName ) )
         {
             return false;
         }
@@ -177,49 +175,4 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
 
         return true;
     }
-
-    public IEnumerator< (string DisplayName, ModCollection Collection) > GetEnumerator()
-        => _assignments.Select( kvp => ( kvp.Key, kvp.Value.Collection ) ).GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator()
-        => GetEnumerator();
-
-    public int Count
-        => _assignments.Count;
-
-    public (string DisplayName, ModCollection Collection) this[ int index ]
-        => ( _assignments.Keys[ index ], _assignments.Values[ index ].Collection );
-
-    public bool TryGetCollection( ActorIdentifier identifier, out ModCollection? collection )
-    {
-        collection = null;
-        if( !identifier.IsValid )
-        {
-            return false;
-        }
-
-        if( _individuals.TryGetValue( identifier, out collection ) )
-        {
-            return true;
-        }
-
-        if( identifier.Type is not (IdentifierType.Player or IdentifierType.Owned) )
-        {
-            return false;
-        }
-
-        identifier = _manager.CreateIndividual( identifier.Type, identifier.PlayerName, ushort.MaxValue, identifier.Kind, identifier.DataId );
-        if( identifier.IsValid && _individuals.TryGetValue( identifier, out collection ) )
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    public bool TryGetCollection( GameObject? gameObject, out ModCollection? collection )
-        => TryGetCollection( _manager.FromObject( gameObject ), out collection );
-
-    public unsafe bool TryGetCollection( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection )
-        => TryGetCollection( _manager.FromObject( gameObject ), out collection );
 }

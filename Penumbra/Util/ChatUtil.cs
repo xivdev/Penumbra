@@ -1,8 +1,13 @@
+using System;
 using System.Collections.Generic;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Interface;
+using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
+using OtterGui.Log;
 
 namespace Penumbra.Util;
 
@@ -31,5 +36,20 @@ public static class ChatUtil
         {
             Message = payload,
         } );
+    }
+
+    public static void NotificationMessage( string content, string? title = null, NotificationType type = NotificationType.None )
+    {
+        var logLevel = type switch
+        {
+            NotificationType.None    => Logger.LogLevel.Information,
+            NotificationType.Success => Logger.LogLevel.Information,
+            NotificationType.Warning => Logger.LogLevel.Warning,
+            NotificationType.Error   => Logger.LogLevel.Error,
+            NotificationType.Info    => Logger.LogLevel.Information,
+            _                        => Logger.LogLevel.Debug,
+        };
+        Dalamud.PluginInterface.UiBuilder.AddNotification( content, title, type );
+        Penumbra.Log.Message( logLevel, title.IsNullOrEmpty() ? content : $"[{title}] {content}" );
     }
 }

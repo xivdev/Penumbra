@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.GameData.Actors;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
@@ -166,6 +167,24 @@ public partial class ConfigWindow
             {
                 return;
             }
+
+            static void DrawSpecial( string name, ActorIdentifier id )
+            {
+                if( !id.IsValid )
+                {
+                    return;
+                }
+
+                ImGuiUtil.DrawTableColumn( name );
+                ImGuiUtil.DrawTableColumn( string.Empty );
+                ImGuiUtil.DrawTableColumn( Penumbra.Actors.ToString( id ) );
+                ImGuiUtil.DrawTableColumn( string.Empty );
+            }
+
+            DrawSpecial( "Current Player", Penumbra.Actors.GetCurrentPlayer() );
+            DrawSpecial( "Current Inspect", Penumbra.Actors.GetInspectPlayer() );
+            DrawSpecial( "Current Card", Penumbra.Actors.GetCardPlayer() );
+            DrawSpecial( "Current Glamour", Penumbra.Actors.GetGlamourPlayer() );
 
             foreach( var obj in Dalamud.Objects )
             {

@@ -37,6 +37,7 @@ public partial class ModCollection
 
         // The list of character collections.
         private readonly Dictionary< string, ModCollection > _characters = new();
+        public readonly  IndividualCollections               Individuals = new(Penumbra.Actors);
 
         public IReadOnlyDictionary< string, ModCollection > Characters
             => _characters;
@@ -288,6 +289,8 @@ public partial class ModCollection
             {
                 SaveActiveCollections();
             }
+
+            MigrateIndividualCollections( jObject );
         }
 
         // Migrate ungendered collections to Male and Female for 0.5.9.0.
@@ -320,13 +323,12 @@ public partial class ModCollection
         }
 
         // Migrate individual collections to Identifiers for 0.6.0.
-        private bool MigrateIndividualCollections(JObject jObject, out IndividualCollections collections)
+        private bool MigrateIndividualCollections(JObject jObject)
         {
             var version = jObject[ nameof( Version ) ]?.Value< int >() ?? 0;
-            collections = new IndividualCollections( Penumbra.Actors );
             if( version > 0 )
                 return false;
-
+            
             // Load character collections. If a player name comes up multiple times, the last one is applied.
             var characters    = jObject[nameof( Characters )]?.ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
             var dict          = new Dictionary< string, ModCollection >( characters.Count );
@@ -340,14 +342,13 @@ public partial class ModCollection
                 }
                 else
                 {
-                    dict.Add( player, this[idx] );
+                    dict.Add( player, this[ idx ] );
                 }
             }
-
-            collections.Migrate0To1( dict );
+            
+            Individuals.Migrate0To1( dict );
             return true;
         }
-
 
         public void SaveActiveCollections()
         {

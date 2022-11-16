@@ -36,6 +36,7 @@ namespace Penumbra;
 public class Penumbra : IDalamudPlugin
 {
     public const string Repository = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
+
     public string Name
         => "Penumbra";
 
@@ -93,6 +94,7 @@ public class Penumbra : IDalamudPlugin
             Identifier             = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData );
             GamePathParser         = GameData.GameData.GetGamePathParser();
             StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData );
+            Actors                 = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.GameData, Dalamud.GameGui, ResolveCutscene );
 
             Framework        = new FrameworkManager();
             CharacterUtility = new CharacterUtility();
@@ -112,7 +114,6 @@ public class Penumbra : IDalamudPlugin
             ModFileSystem  = ModFileSystem.Load();
             ObjectReloader = new ObjectReloader();
             PathResolver   = new PathResolver( ResourceLoader );
-            Actors         = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.GameData, u => ( short )PathResolver.CutsceneActor( u ) );
 
             Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
             {
@@ -295,6 +296,9 @@ public class Penumbra : IDalamudPlugin
         WebServer?.Dispose();
         WebServer = null;
     }
+
+    private short ResolveCutscene( ushort index )
+        => ( short )PathResolver.CutsceneActor( index );
 
     public void Dispose()
     {
@@ -586,7 +590,7 @@ public class Penumbra : IDalamudPlugin
         return Dalamud.PluginInterface.SourceRepository.Trim().ToLowerInvariant() switch
         {
             null                                                                 => false,
-            Repository => true,
+            Repository                                                           => true,
             "https://raw.githubusercontent.com/xivdev/Penumbra/test/repo.json"   => true,
             _                                                                    => false,
         };

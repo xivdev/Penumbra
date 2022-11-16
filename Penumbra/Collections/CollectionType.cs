@@ -94,11 +94,12 @@ public enum CollectionType : byte
     MaleVeenaNpc,
     FemaleVeenaNpc,
 
-    Inactive,  // A collection was added or removed
-    Default,   // The default collection was changed
-    Interface, // The ui collection was changed
-    Character, // A character collection was changed
-    Current,   // The current collection was changed
+    Inactive,   // A collection was added or removed
+    Default,    // The default collection was changed
+    Interface,  // The ui collection was changed
+    Character,  // A character collection was changed
+    Individual, // An Individual collection was changed
+    Current,    // The current collection was changed
 }
 
 public static class CollectionTypeExtensions
