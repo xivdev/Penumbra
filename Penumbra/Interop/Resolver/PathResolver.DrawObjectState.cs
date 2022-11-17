@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
+using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.String.Classes;
 
@@ -221,9 +222,9 @@ public unsafe partial class PathResolver
         }
 
         // Update collections linked to Game/DrawObjects due to a change in collection configuration.
-        private void CheckCollections( CollectionType type, ModCollection? _1, ModCollection? _2, string? name )
+        private void CheckCollections( CollectionType type, ModCollection? _1, ModCollection? _2, string _3 )
         {
-            if( type is CollectionType.Inactive or CollectionType.Current )
+            if( type is CollectionType.Inactive or CollectionType.Current or CollectionType.Interface )
             {
                 return;
             }

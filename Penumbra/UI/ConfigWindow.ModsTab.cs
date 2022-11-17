@@ -136,7 +136,7 @@ public partial class ConfigWindow
             ImGui.SameLine();
             DrawInheritedCollectionButton( 3 * buttonSize );
             ImGui.SameLine();
-            DrawCollectionSelector( "##collectionSelector", 2 * buttonSize.X, CollectionType.Current, false, null );
+            DrawCollectionSelector( "##collectionSelector", 2 * buttonSize.X, CollectionType.Current, false );
         }
 
         OpenTutorial( BasicTutorialSteps.CollectionSelectors );

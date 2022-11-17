@@ -37,7 +37,8 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
             IdentifierType.Player => HomeWorld == other.HomeWorld && PlayerName.EqualsCi(other.PlayerName),
             IdentifierType.Owned => HomeWorld == other.HomeWorld && PlayerName.EqualsCi(other.PlayerName) && Manager.DataIdEquals(this, other),
             IdentifierType.Special => Special == other.Special,
-            IdentifierType.Npc => Manager.DataIdEquals(this, other) && (Index == other.Index || Index == ushort.MaxValue || other.Index == ushort.MaxValue),
+            IdentifierType.Npc => Manager.DataIdEquals(this, other)
+             && (Index == other.Index || Index == ushort.MaxValue || other.Index == ushort.MaxValue),
             _ => false,
         };
     }
@@ -107,8 +108,9 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
                 ret.Add(nameof(Special), Special.ToString());
                 return ret;
             case IdentifierType.Npc:
-                ret.Add(nameof(Kind),   Kind.ToString());
-                ret.Add(nameof(Index),  Index);
+                ret.Add(nameof(Kind), Kind.ToString());
+                if (Index != ushort.MaxValue)
+                    ret.Add(nameof(Index), Index);
                 ret.Add(nameof(DataId), DataId);
                 return ret;
         }

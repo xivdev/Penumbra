@@ -11,6 +11,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.GameData.Actors;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.UI.Classes;
@@ -98,12 +99,21 @@ public partial class ConfigWindow
             : base( items )
         { }
 
-        public void Draw( string label, float width, CollectionType type, string? characterName )
+        public void Draw( string label, float width, int individualIdx )
         {
-            var current = Penumbra.CollectionManager.ByType( type, characterName );
+            var (_, collection) = Penumbra.CollectionManager.Individuals[ individualIdx ];
+            if( Draw( label, collection.Name, width, ImGui.GetTextLineHeightWithSpacing() ) && CurrentSelection != null )
+            {
+                Penumbra.CollectionManager.SetCollection( CurrentSelection, CollectionType.Individual, individualIdx );
+            }
+        }
+
+        public void Draw( string label, float width, CollectionType type )
+        {
+            var current = Penumbra.CollectionManager.ByType( type, ActorIdentifier.Invalid );
             if( Draw( label, current?.Name ?? string.Empty, width, ImGui.GetTextLineHeightWithSpacing() ) && CurrentSelection != null )
             {
-                Penumbra.CollectionManager.SetCollection( CurrentSelection, type, characterName );
+                Penumbra.CollectionManager.SetCollection( CurrentSelection, type );
             }
         }
 
@@ -115,9 +125,8 @@ public partial class ConfigWindow
     private static readonly CollectionSelector Collections          = new(Penumbra.CollectionManager.OrderBy( c => c.Name ));
 
     // Draw a collection selector of a certain width for a certain type.
-    private static void DrawCollectionSelector( string label, float width, CollectionType collectionType, bool withEmpty,
-        string? characterName )
-        => ( withEmpty ? CollectionsWithEmpty : Collections ).Draw( label, width, collectionType, characterName );
+    private static void DrawCollectionSelector( string label, float width, CollectionType collectionType, bool withEmpty )
+        => ( withEmpty ? CollectionsWithEmpty : Collections ).Draw( label, width, collectionType );
 
     // Set up the file selector with the right flags and custom side bar items.
     public static FileDialogManager SetupFileManager()

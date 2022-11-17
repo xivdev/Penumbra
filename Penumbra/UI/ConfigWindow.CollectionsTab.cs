@@ -1,5 +1,3 @@
-using System;
-using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
@@ -41,7 +39,7 @@ public partial class ConfigWindow
 
         // Input text fields.
         private string _newCollectionName = string.Empty;
-        private bool   _canAddCollection  = false;
+        private bool   _canAddCollection;
 
         // Create a new collection that is either empty or a duplicate of the current collection.
         // Resets the new collection name.
@@ -103,7 +101,7 @@ public partial class ConfigWindow
         private void DrawCurrentCollectionSelector( Vector2 width )
         {
             using var group = ImRaii.Group();
-            DrawCollectionSelector( "##current", _window._inputTextWidth.X, CollectionType.Current, false, null );
+            DrawCollectionSelector( "##current", _window._inputTextWidth.X, CollectionType.Current, false );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( SelectedCollection,
                 "This collection will be modified when using the Installed Mods tab and making changes.\nIt is not automatically assigned to anything." );
@@ -126,7 +124,7 @@ public partial class ConfigWindow
         private void DrawDefaultCollectionSelector()
         {
             using var group = ImRaii.Group();
-            DrawCollectionSelector( "##default", _window._inputTextWidth.X, CollectionType.Default, true, null );
+            DrawCollectionSelector( "##default", _window._inputTextWidth.X, CollectionType.Default, true );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( DefaultCollection,
                 $"Mods in the {DefaultCollection} are loaded for anything that is not associated with the user interface or a character in the game,"
@@ -136,7 +134,7 @@ public partial class ConfigWindow
         private void DrawInterfaceCollectionSelector()
         {
             using var group = ImRaii.Group();
-            DrawCollectionSelector( "##interface", _window._inputTextWidth.X, CollectionType.Interface, true, null );
+            DrawCollectionSelector( "##interface", _window._inputTextWidth.X, CollectionType.Interface, true );
             ImGui.SameLine();
             ImGuiUtil.LabeledHelpMarker( InterfaceCollection,
                 $"Mods in the {InterfaceCollection} are loaded for any file that the game categorizes as an UI file. This is mostly icons as well as the tiles that generate the user interface windows themselves." );
@@ -147,7 +145,7 @@ public partial class ConfigWindow
             public (CollectionType, string, string)? CurrentType
                 => CollectionTypeExtensions.Special[ CurrentIdx ];
 
-            public           int    CurrentIdx = 0;
+            public           int    CurrentIdx;
             private readonly float  _unscaledWidth;
             private readonly string _label;
 
@@ -219,7 +217,7 @@ public partial class ConfigWindow
                 if( collection != null )
                 {
                     using var id = ImRaii.PushId( ( int )type );
-                    DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, type, true, null );
+                    DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, type, true );
                     ImGui.SameLine();
                     if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
                            false, true ) )

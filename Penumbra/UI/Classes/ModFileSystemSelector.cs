@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using Penumbra.Api.Enums;
+using Penumbra.GameData.Actors;
 
 namespace Penumbra.UI.Classes;
 
@@ -47,7 +48,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         Penumbra.ModManager.ModDataChanged                    += OnModDataChange;
         Penumbra.ModManager.ModDiscoveryStarted               += StoreCurrentSelection;
         Penumbra.ModManager.ModDiscoveryFinished              += RestoreLastSelection;
-        OnCollectionChange( CollectionType.Current, null, Penumbra.CollectionManager.Current, null );
+        OnCollectionChange( CollectionType.Current, null, Penumbra.CollectionManager.Current, "" );
     }
 
     public override void Dispose()
@@ -377,7 +378,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         OnSelectionChange( Selected, Selected, default );
     }
 
-    private void OnCollectionChange( CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string? _ )
+    private void OnCollectionChange( CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string _ )
     {
         if( collectionType != CollectionType.Current || oldCollection == newCollection )
         {

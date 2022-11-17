@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using Penumbra.GameData.Actors;
 
 namespace Penumbra.Collections;
 
@@ -15,9 +16,9 @@ public partial class ModCollection
     public sealed partial class Manager : IDisposable, IEnumerable< ModCollection >
     {
         // On addition, oldCollection is null. On deletion, newCollection is null.
-        // CharacterName is only set for type == Character.
+        // displayName is only set for type == Individual.
         public delegate void CollectionChangeDelegate( CollectionType collectionType, ModCollection? oldCollection,
-            ModCollection? newCollection, string? characterName = null );
+            ModCollection? newCollection, string displayName = "" );
 
         private readonly Mod.Manager _modManager;
 
@@ -139,19 +140,21 @@ public partial class ModCollection
 
             if( idx == Current.Index )
             {
-                SetCollection( DefaultName, CollectionType.Current );
+                SetCollection( DefaultName.Index, CollectionType.Current );
             }
 
             if( idx == Default.Index )
             {
-                SetCollection( Empty, CollectionType.Default );
+                SetCollection( Empty.Index, CollectionType.Default );
             }
 
-            foreach( var (characterName, _) in _characters.Where( c => c.Value.Index == idx ).ToList() )
+            for( var i = 0; i < Individuals.Count; ++i )
             {
-                SetCollection( Empty, CollectionType.Individual, characterName );
+                if( Individuals[ i ].Collection.Index == idx )
+                {
+                    Individuals.ChangeCollection( i, Empty );
+                }
             }
-
             var collection = _collections[ idx ];
 
             // Clear own inheritances.

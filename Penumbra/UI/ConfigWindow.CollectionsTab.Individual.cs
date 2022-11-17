@@ -11,7 +11,6 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface.Components;
 using OtterGui.Widgets;
 using Penumbra.GameData.Actors;
-using Lumina.Data.Parsing;
 
 namespace Penumbra.UI;
 
@@ -110,6 +109,7 @@ public partial class ConfigWindow
             return ret;
         }
 
+        private int _individualDragDropIdx = -1;
 
         private void DrawIndividualAssignments()
         {
@@ -124,19 +124,42 @@ public partial class ConfigWindow
             ImGui.Separator();
             for( var i = 0; i < Penumbra.CollectionManager.Individuals.Count; ++i )
             {
-                var (name, collection) = Penumbra.CollectionManager.Individuals[ i ];
+                var (name, _) = Penumbra.CollectionManager.Individuals[ i ];
                 using var id = ImRaii.PushId( i );
-                DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, CollectionType.Individual, true, name );
+                CollectionsWithEmpty.Draw( string.Empty, _window._inputTextWidth.X, i );
                 ImGui.SameLine();
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
                        false, true ) )
                 {
-                    Penumbra.CollectionManager.Individuals.Delete( i );
+                    Penumbra.CollectionManager.RemoveIndividualCollection( i );
                 }
 
                 ImGui.SameLine();
                 ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted( name );
+                ImGui.Selectable( name );
+                using( var source = ImRaii.DragDropSource() )
+                {
+                    if( source )
+                    {
+                        ImGui.SetDragDropPayload( "Individual", IntPtr.Zero, 0 );
+                        _individualDragDropIdx = i;
+                    }
+                }
+
+                using( var target = ImRaii.DragDropTarget() )
+                {
+                    if( !target.Success || !ImGuiUtil.IsDropping( "Individual" ) )
+                    {
+                        continue;
+                    }
+
+                    if( _individualDragDropIdx >= 0 )
+                    {
+                        Penumbra.CollectionManager.MoveIndividualCollection( _individualDragDropIdx, i );
+                    }
+
+                    _individualDragDropIdx = -1;
+                }
             }
 
             ImGui.Dummy( Vector2.Zero );

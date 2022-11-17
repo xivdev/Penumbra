@@ -12,7 +12,7 @@ namespace Penumbra.Collections;
 public sealed partial class IndividualCollections : IReadOnlyList< (string DisplayName, ModCollection Collection) >
 {
     public IEnumerator< (string DisplayName, ModCollection Collection) > GetEnumerator()
-        => _assignments.Select( kvp => ( kvp.Key, kvp.Value.Collection ) ).GetEnumerator();
+        => _assignments.Select( t => ( t.DisplayName, t.Collection ) ).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
@@ -21,7 +21,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
         => _assignments.Count;
 
     public (string DisplayName, ModCollection Collection) this[ int index ]
-        => ( _assignments.Keys[ index ], _assignments.Values[ index ].Collection );
+        => ( _assignments[ index ].DisplayName, _assignments[ index ].Collection );
 
     public bool TryGetCollection( ActorIdentifier identifier, [NotNullWhen( true )] out ModCollection? collection )
     {
@@ -36,7 +36,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                 }
 
                 // Handle generic NPC
-                var npcIdentifier = _manager.CreateIndividualUnchecked( IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, identifier.Kind, identifier.DataId );
+                var npcIdentifier = _actorManager.CreateIndividualUnchecked( IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, identifier.Kind, identifier.DataId );
                 if( npcIdentifier.IsValid && _individuals.TryGetValue( npcIdentifier, out collection ) )
                 {
                     return true;
@@ -45,7 +45,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                 // Handle Ownership.
                 if( Penumbra.Config.UseOwnerNameForCharacterCollection )
                 {
-                    identifier = _manager.CreateIndividualUnchecked( IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld, ObjectKind.None, uint.MaxValue );
+                    identifier = _actorManager.CreateIndividualUnchecked( IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld, ObjectKind.None, uint.MaxValue );
                     return CheckWorlds( identifier, out collection );
                 }
 
@@ -59,12 +59,12 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                     case SpecialActor.FittingRoom when Penumbra.Config.UseCharacterCollectionInTryOn:
                     case SpecialActor.DyePreview when Penumbra.Config.UseCharacterCollectionInTryOn:
                     case SpecialActor.Portrait when Penumbra.Config.UseCharacterCollectionsInCards:
-                        return CheckWorlds( _manager.GetCurrentPlayer(), out collection );
+                        return CheckWorlds( _actorManager.GetCurrentPlayer(), out collection );
                     case SpecialActor.ExamineScreen:
                     {
-                        return CheckWorlds( _manager.GetInspectPlayer(), out collection! )
-                         || CheckWorlds( _manager.GetCardPlayer(), out collection! )
-                         || CheckWorlds( _manager.GetGlamourPlayer(), out collection! );
+                        return CheckWorlds( _actorManager.GetInspectPlayer(), out collection! )
+                         || CheckWorlds( _actorManager.GetCardPlayer(), out collection! )
+                         || CheckWorlds( _actorManager.GetGlamourPlayer(), out collection! );
                     }
                 }
 
@@ -76,10 +76,10 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
     }
 
     public bool TryGetCollection( GameObject? gameObject, out ModCollection? collection )
-        => TryGetCollection( _manager.FromObject( gameObject ), out collection );
+        => TryGetCollection( _actorManager.FromObject( gameObject ), out collection );
 
     public unsafe bool TryGetCollection( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection )
-        => TryGetCollection( _manager.FromObject( gameObject ), out collection );
+        => TryGetCollection( _actorManager.FromObject( gameObject ), out collection );
 
     private bool CheckWorlds( ActorIdentifier identifier, out ModCollection? collection )
     {
@@ -94,7 +94,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
             return true;
         }
 
-        identifier = _manager.CreateIndividualUnchecked( identifier.Type, identifier.PlayerName, ushort.MaxValue, identifier.Kind, identifier.DataId );
+        identifier = _actorManager.CreateIndividualUnchecked( identifier.Type, identifier.PlayerName, ushort.MaxValue, identifier.Kind, identifier.DataId );
         if( identifier.IsValid && _individuals.TryGetValue( identifier, out collection ) )
         {
             return true;

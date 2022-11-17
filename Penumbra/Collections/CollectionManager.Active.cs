@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Dalamud.Interface.Internal.Notifications;
+using Penumbra.GameData.Actors;
+using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
@@ -36,21 +39,20 @@ public partial class ModCollection
         private ModCollection DefaultName { get; set; } = Empty;
 
         // The list of character collections.
-        private readonly Dictionary< string, ModCollection > _characters = new();
-        public readonly  IndividualCollections               Individuals = new(Penumbra.Actors);
+        public readonly IndividualCollections Individuals = new(Penumbra.Actors);
 
-        public IReadOnlyDictionary< string, ModCollection > Characters
-            => _characters;
-
-        // If a name does not correspond to a character, return the default collection instead.
-        public ModCollection Character( string name )
-            => _characters.TryGetValue( name, out var c ) ? c : Default;
+        public ModCollection Individual( ActorIdentifier identifier )
+            => Individuals.TryGetCollection( identifier, out var c ) ? c : Default;
 
         // Special Collections
         private readonly ModCollection?[] _specialCollections = new ModCollection?[Enum.GetValues< CollectionType >().Length - 4];
 
         // Return the configured collection for the given type or null.
-        public ModCollection? ByType( CollectionType type, string? name = null )
+        // Does not handle Inactive, use ByName instead.
+        public ModCollection? ByType( CollectionType type )
+            => ByType( type, ActorIdentifier.Invalid );
+
+        public ModCollection? ByType( CollectionType type, ActorIdentifier identifier )
         {
             if( type.IsSpecial() )
             {
@@ -59,28 +61,23 @@ public partial class ModCollection
 
             return type switch
             {
-                CollectionType.Default   => Default,
-                CollectionType.Interface => Interface,
-                CollectionType.Current   => Current,
-                CollectionType.Individual => name != null ? _characters.TryGetValue( name, out var c ) ? c : null : null,
-                CollectionType.Inactive  => name != null ? ByName( name, out var c ) ? c : null : null,
-                _                        => null,
+                CollectionType.Default    => Default,
+                CollectionType.Interface  => Interface,
+                CollectionType.Current    => Current,
+                CollectionType.Individual => identifier.IsValid ? Individuals.TryGetCollection( identifier, out var c ) ? c : null : null,
+                _                         => null,
             };
         }
 
-        // Set a active collection, can be used to set Default, Current or Character collections.
-        private void SetCollection( int newIdx, CollectionType collectionType, string? characterName = null )
+        // Set a active collection, can be used to set Default, Current, Interface, Special, or Individual collections.
+        private void SetCollection( int newIdx, CollectionType collectionType, int individualIndex = -1 )
         {
             var oldCollectionIdx = collectionType switch
             {
-                CollectionType.Default   => Default.Index,
-                CollectionType.Interface => Interface.Index,
-                CollectionType.Current   => Current.Index,
-                CollectionType.Individual => characterName?.Length > 0
-                    ? _characters.TryGetValue( characterName, out var c )
-                        ? c.Index
-                        : Default.Index
-                    : -1,
+                CollectionType.Default            => Default.Index,
+                CollectionType.Interface          => Interface.Index,
+                CollectionType.Current            => Current.Index,
+                CollectionType.Individual         => individualIndex < 0 || individualIndex >= Individuals.Count ? -1 : Individuals[ individualIndex ].Collection.Index,
                 _ when collectionType.IsSpecial() => _specialCollections[ ( int )collectionType ]?.Index ?? Default.Index,
                 _                                 => -1,
             };
@@ -114,7 +111,12 @@ public partial class ModCollection
                     Current = newCollection;
                     break;
                 case CollectionType.Individual:
-                    _characters[ characterName! ] = newCollection;
+                    if( !Individuals.ChangeCollection( individualIndex, newCollection ) )
+                    {
+                        RemoveCache( newIdx );
+                        return;
+                    }
+
                     break;
                 default:
                     _specialCollections[ ( int )collectionType ] = newCollection;
@@ -124,7 +126,7 @@ public partial class ModCollection
             RemoveCache( oldCollectionIdx );
 
             UpdateCurrentCollectionInUse();
-            CollectionChanged.Invoke( collectionType, this[ oldCollectionIdx ], newCollection, characterName );
+            CollectionChanged.Invoke( collectionType, this[ oldCollectionIdx ], newCollection, Individuals[ individualIndex ].DisplayName );
         }
 
         private void UpdateCurrentCollectionInUse()
@@ -132,11 +134,11 @@ public partial class ModCollection
                .OfType< ModCollection >()
                .Prepend( Interface )
                .Prepend( Default )
-               .Concat( Characters.Values )
+               .Concat( Individuals.Assignments.Select( kvp => kvp.Collection ) )
                .SelectMany( c => c.GetFlattenedInheritance() ).Contains( Current );
 
-        public void SetCollection( ModCollection collection, CollectionType collectionType, string? characterName = null )
-            => SetCollection( collection.Index, collectionType, characterName );
+        public void SetCollection( ModCollection collection, CollectionType collectionType, int individualIndex = -1 )
+            => SetCollection( collection.Index, collectionType, individualIndex );
 
         // Create a special collection if it does not exist and set it to Empty.
         public bool CreateSpecialCollection( CollectionType collectionType )
@@ -147,7 +149,7 @@ public partial class ModCollection
             }
 
             _specialCollections[ ( int )collectionType ] = Default;
-            CollectionChanged.Invoke( collectionType, null, Default, null );
+            CollectionChanged.Invoke( collectionType, null, Default );
             return true;
         }
 
@@ -163,31 +165,38 @@ public partial class ModCollection
             if( old != null )
             {
                 _specialCollections[ ( int )collectionType ] = null;
-                CollectionChanged.Invoke( collectionType, old, null, null );
+                CollectionChanged.Invoke( collectionType, old, null );
             }
         }
 
-        // Create a new character collection. Returns false if the character name already has a collection.
-        public bool CreateCharacterCollection( string characterName )
+        // Wrappers around Individual Collection handling.
+        public void CreateIndividualCollection( ActorIdentifier[] identifiers )
         {
-            if( _characters.ContainsKey( characterName ) )
+            if( Individuals.Add( identifiers, Default ) )
             {
-                return false;
+                CollectionChanged.Invoke( CollectionType.Individual, null, Default, Individuals.Last().DisplayName );
             }
-
-            _characters[ characterName ] = Default;
-            CollectionChanged.Invoke( CollectionType.Individual, null, Default, characterName );
-            return true;
         }
 
-        // Remove a character collection if it exists.
-        public void RemoveCharacterCollection( string characterName )
+        public void RemoveIndividualCollection( int individualIndex )
         {
-            if( _characters.TryGetValue( characterName, out var collection ) )
+            if( individualIndex < 0 || individualIndex >= Individuals.Count )
             {
-                RemoveCache( collection.Index );
-                _characters.Remove( characterName );
-                CollectionChanged.Invoke( CollectionType.Individual, collection, null, characterName );
+                return;
+            }
+
+            var (name, old) = Individuals[ individualIndex ];
+            if( Individuals.Delete( individualIndex ) )
+            {
+                CollectionChanged.Invoke( CollectionType.Individual, old, null, name );
+            }
+        }
+
+        public void MoveIndividualCollection( int from, int to )
+        {
+            if( Individuals.Move( from, to ) )
+            {
+                SaveActiveCollections();
             }
         }
 
@@ -209,7 +218,8 @@ public partial class ModCollection
             var defaultIdx  = GetIndexForCollectionName( defaultName );
             if( defaultIdx < 0 )
             {
-                Penumbra.Log.Error( $"Last choice of {ConfigWindow.DefaultCollection} {defaultName} is not available, reset to {Empty.Name}." );
+                ChatUtil.NotificationMessage( $"Last choice of {ConfigWindow.DefaultCollection} {defaultName} is not available, reset to {Empty.Name}.", "Load Failure",
+                    NotificationType.Warning );
                 Default       = Empty;
                 configChanged = true;
             }
@@ -223,8 +233,8 @@ public partial class ModCollection
             var interfaceIdx  = GetIndexForCollectionName( interfaceName );
             if( interfaceIdx < 0 )
             {
-                Penumbra.Log.Error(
-                    $"Last choice of {ConfigWindow.InterfaceCollection} {interfaceName} is not available, reset to {Empty.Name}." );
+                ChatUtil.NotificationMessage(
+                    $"Last choice of {ConfigWindow.InterfaceCollection} {interfaceName} is not available, reset to {Empty.Name}.", "Load Failure", NotificationType.Warning );
                 Interface     = Empty;
                 configChanged = true;
             }
@@ -238,8 +248,8 @@ public partial class ModCollection
             var currentIdx  = GetIndexForCollectionName( currentName );
             if( currentIdx < 0 )
             {
-                Penumbra.Log.Error(
-                    $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}." );
+                ChatUtil.NotificationMessage(
+                    $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}.", "Load Failure", NotificationType.Warning );
                 Current       = DefaultName;
                 configChanged = true;
             }
@@ -257,7 +267,7 @@ public partial class ModCollection
                     var idx = GetIndexForCollectionName( typeName );
                     if( idx < 0 )
                     {
-                        Penumbra.Log.Error( $"Last choice of {name} Collection {typeName} is not available, removed." );
+                        ChatUtil.NotificationMessage( $"Last choice of {name} Collection {typeName} is not available, removed.", "Load Failure", NotificationType.Warning );
                         configChanged = true;
                     }
                     else
@@ -267,30 +277,14 @@ public partial class ModCollection
                 }
             }
 
-            // Load character collections. If a player name comes up multiple times, the last one is applied.
-            var characters = jObject[ nameof( Characters ) ]?.ToObject< Dictionary< string, string > >() ?? new Dictionary< string, string >();
-            foreach( var (player, collectionName) in characters )
-            {
-                var idx = GetIndexForCollectionName( collectionName );
-                if( idx < 0 )
-                {
-                    Penumbra.Log.Error( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {Empty.Name}." );
-                    _characters.Add( player, Empty );
-                    configChanged = true;
-                }
-                else
-                {
-                    _characters.Add( player, this[ idx ] );
-                }
-            }
+            configChanged |= MigrateIndividualCollections( jObject );
+            configChanged |= Individuals.ReadJObject( jObject[ nameof( Individuals ) ] as JArray, this );
 
             // Save any changes and create all required caches.
             if( configChanged )
             {
                 SaveActiveCollections();
             }
-
-            MigrateIndividualCollections( jObject );
         }
 
         // Migrate ungendered collections to Male and Female for 0.5.9.0.
@@ -323,21 +317,24 @@ public partial class ModCollection
         }
 
         // Migrate individual collections to Identifiers for 0.6.0.
-        private bool MigrateIndividualCollections(JObject jObject)
+        private bool MigrateIndividualCollections( JObject jObject )
         {
             var version = jObject[ nameof( Version ) ]?.Value< int >() ?? 0;
             if( version > 0 )
+            {
                 return false;
-            
+            }
+
             // Load character collections. If a player name comes up multiple times, the last one is applied.
-            var characters    = jObject[nameof( Characters )]?.ToObject<Dictionary<string, string>>() ?? new Dictionary<string, string>();
-            var dict          = new Dictionary< string, ModCollection >( characters.Count );
+            var characters = jObject[ "Characters" ]?.ToObject< Dictionary< string, string > >() ?? new Dictionary< string, string >();
+            var dict       = new Dictionary< string, ModCollection >( characters.Count );
             foreach( var (player, collectionName) in characters )
             {
                 var idx = GetIndexForCollectionName( collectionName );
                 if( idx < 0 )
                 {
-                    Penumbra.Log.Error( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {Empty.Name}." );
+                    ChatUtil.NotificationMessage( $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {Empty.Name}.", "Load Failure",
+                        NotificationType.Warning );
                     dict.Add( player, Empty );
                 }
                 else
@@ -345,7 +342,7 @@ public partial class ModCollection
                     dict.Add( player, this[ idx ] );
                 }
             }
-            
+
             Individuals.Migrate0To1( dict );
             return true;
         }
@@ -353,46 +350,32 @@ public partial class ModCollection
         public void SaveActiveCollections()
         {
             Penumbra.Framework.RegisterDelayed( nameof( SaveActiveCollections ),
-                () => SaveActiveCollections( Default.Name, Interface.Name, Current.Name,
-                    Characters.Select( kvp => ( kvp.Key, kvp.Value.Name ) ),
-                    _specialCollections.WithIndex()
-                       .Where( c => c.Item1 != null )
-                       .Select( c => ( ( CollectionType )c.Item2, c.Item1!.Name ) ) ) );
+                SaveActiveCollectionsInternal );
         }
 
-        internal static void SaveActiveCollections( string def, string ui, string current, IEnumerable< (string, string) > characters,
-            IEnumerable< (CollectionType, string) > special )
+        internal void SaveActiveCollectionsInternal()
         {
             var file = ActiveCollectionFile;
             try
             {
+                var jObj = new JObject
+                {
+                    { nameof( Version ), Version },
+                    { nameof( Default ), Default.Name },
+                    { nameof( Interface ), Interface.Name },
+                    { nameof( Current ), Current.Name },
+                };
+                foreach( var (type, collection) in _specialCollections.WithIndex().Where( p => p.Value != null ).Select( p => ( ( CollectionType )p.Index, p.Value! ) ) )
+                {
+                    jObj.Add( type.ToString(), collection.Name );
+                }
+
+                jObj.Add( nameof( Individuals ), Individuals.ToJObject() );
                 using var stream = File.Open( file, File.Exists( file ) ? FileMode.Truncate : FileMode.CreateNew );
                 using var writer = new StreamWriter( stream );
-                using var j      = new JsonTextWriter( writer );
-                j.Formatting = Formatting.Indented;
-                j.WriteStartObject();
-                j.WritePropertyName( nameof( Default ) );
-                j.WriteValue( def );
-                j.WritePropertyName( nameof( Interface ) );
-                j.WriteValue( ui );
-                j.WritePropertyName( nameof( Current ) );
-                j.WriteValue( current );
-                foreach( var (type, collection) in special )
-                {
-                    j.WritePropertyName( type.ToString() );
-                    j.WriteValue( collection );
-                }
-
-                j.WritePropertyName( nameof( Characters ) );
-                j.WriteStartObject();
-                foreach( var (character, collection) in characters )
-                {
-                    j.WritePropertyName( character, true );
-                    j.WriteValue( collection );
-                }
-
-                j.WriteEndObject();
-                j.WriteEndObject();
+                using var j = new JsonTextWriter( writer )
+                    { Formatting = Formatting.Indented };
+                jObj.WriteTo( j );
                 Penumbra.Log.Verbose( "Active Collections saved." );
             }
             catch( Exception e )
@@ -424,7 +407,7 @@ public partial class ModCollection
         }
 
         // Save if any of the active collections is changed.
-        private void SaveOnChange( CollectionType collectionType, ModCollection? _1, ModCollection? _2, string? _3 )
+        private void SaveOnChange( CollectionType collectionType, ModCollection? _1, ModCollection? _2, string _3 )
         {
             if( collectionType != CollectionType.Inactive )
             {
@@ -437,7 +420,7 @@ public partial class ModCollection
         public void CreateNecessaryCaches()
         {
             var tasks = _specialCollections.OfType< ModCollection >()
-               .Concat( _characters.Values )
+               .Concat( Individuals.Select( p => p.Collection ) )
                .Prepend( Current )
                .Prepend( Default )
                .Prepend( Interface )
@@ -455,7 +438,7 @@ public partial class ModCollection
             && idx  != Interface.Index
             && idx  != Current.Index
             && _specialCollections.All( c => c == null || c.Index != idx )
-            && _characters.Values.All( c => c.Index != idx ) )
+            && Individuals.Select( p => p.Collection ).All( c => c.Index != idx ) )
             {
                 _collections[ idx ].ClearCache();
             }

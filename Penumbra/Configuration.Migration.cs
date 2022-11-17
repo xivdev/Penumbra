@@ -224,8 +224,50 @@ public partial class Configuration
             CurrentCollection    = _data[ nameof( CurrentCollection ) ]?.ToObject< string >()                          ?? CurrentCollection;
             DefaultCollection    = _data[ nameof( DefaultCollection ) ]?.ToObject< string >()                          ?? DefaultCollection;
             CharacterCollections = _data[ nameof( CharacterCollections ) ]?.ToObject< Dictionary< string, string > >() ?? CharacterCollections;
-            ModCollection.Manager.SaveActiveCollections( DefaultCollection, CurrentCollection, DefaultCollection,
+            SaveActiveCollectionsV0( DefaultCollection, CurrentCollection, DefaultCollection,
                 CharacterCollections.Select( kvp => ( kvp.Key, kvp.Value ) ), Array.Empty< (CollectionType, string) >() );
+        }
+
+        // Outdated saving using the Characters list.
+        private static void SaveActiveCollectionsV0( string def, string ui, string current, IEnumerable<(string, string)> characters,
+            IEnumerable<(CollectionType, string)> special )
+        {
+            var file = ModCollection.Manager.ActiveCollectionFile;
+            try
+            {
+                using var stream = File.Open( file, File.Exists( file ) ? FileMode.Truncate : FileMode.CreateNew );
+                using var writer = new StreamWriter( stream );
+                using var j      = new JsonTextWriter( writer );
+                j.Formatting = Formatting.Indented;
+                j.WriteStartObject();
+                j.WritePropertyName( nameof( ModCollection.Manager.Default ) );
+                j.WriteValue( def );
+                j.WritePropertyName( nameof( ModCollection.Manager.Interface ) );
+                j.WriteValue( ui );
+                j.WritePropertyName( nameof( ModCollection.Manager.Current ) );
+                j.WriteValue( current );
+                foreach( var (type, collection) in special )
+                {
+                    j.WritePropertyName( type.ToString() );
+                    j.WriteValue( collection );
+                }
+
+                j.WritePropertyName( "Characters" );
+                j.WriteStartObject();
+                foreach( var (character, collection) in characters )
+                {
+                    j.WritePropertyName( character, true );
+                    j.WriteValue( collection );
+                }
+
+                j.WriteEndObject();
+                j.WriteEndObject();
+                Penumbra.Log.Verbose( "Active Collections saved." );
+            }
+            catch( Exception e )
+            {
+                Penumbra.Log.Error( $"Could not save active collections to file {file}:\n{e}" );
+            }
         }
 
         // Collections were introduced and the previous CurrentCollection got put into ModDirectory.

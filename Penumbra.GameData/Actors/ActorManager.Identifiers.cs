@@ -14,40 +14,41 @@ public partial class ActorManager
     /// </summary>
     /// <param name="data">A parsed JObject</param>
     /// <returns>ActorIdentifier.Invalid if the JObject can not be converted, a valid ActorIdentifier otherwise.</returns>
-    public ActorIdentifier FromJson(JObject data)
+    public ActorIdentifier FromJson(JObject? data)
     {
-        var type = data[nameof(ActorIdentifier.Type)]?.Value<IdentifierType>() ?? IdentifierType.Invalid;
+        if (data == null)
+            return ActorIdentifier.Invalid;
+
+        var type = data[nameof(ActorIdentifier.Type)]?.ToObject<IdentifierType>() ?? IdentifierType.Invalid;
         switch (type)
         {
             case IdentifierType.Player:
             {
-                var name      = ByteString.FromStringUnsafe(data[nameof(ActorIdentifier.PlayerName)]?.Value<string>(), false);
-                var homeWorld = data[nameof(ActorIdentifier.HomeWorld)]?.Value<ushort>() ?? 0;
+                var name      = ByteString.FromStringUnsafe(data[nameof(ActorIdentifier.PlayerName)]?.ToObject<string>(), false);
+                var homeWorld = data[nameof(ActorIdentifier.HomeWorld)]?.ToObject<ushort>() ?? 0;
                 return CreatePlayer(name, homeWorld);
             }
             case IdentifierType.Owned:
             {
-                var name      = ByteString.FromStringUnsafe(data[nameof(ActorIdentifier.PlayerName)]?.Value<string>(), false);
-                var homeWorld = data[nameof(ActorIdentifier.HomeWorld)]?.Value<ushort>() ?? 0;
-                var kind      = data[nameof(ActorIdentifier.Kind)]?.Value<ObjectKind>() ?? ObjectKind.CardStand;
-                var dataId    = data[nameof(ActorIdentifier.DataId)]?.Value<uint>() ?? 0;
+                var name      = ByteString.FromStringUnsafe(data[nameof(ActorIdentifier.PlayerName)]?.ToObject<string>(), false);
+                var homeWorld = data[nameof(ActorIdentifier.HomeWorld)]?.ToObject<ushort>() ?? 0;
+                var kind      = data[nameof(ActorIdentifier.Kind)]?.ToObject<ObjectKind>() ?? ObjectKind.CardStand;
+                var dataId    = data[nameof(ActorIdentifier.DataId)]?.ToObject<uint>() ?? 0;
                 return CreateOwned(name, homeWorld, kind, dataId);
             }
             case IdentifierType.Special:
             {
-                var special = data[nameof(ActorIdentifier.Special)]?.Value<SpecialActor>() ?? 0;
+                var special = data[nameof(ActorIdentifier.Special)]?.ToObject<SpecialActor>() ?? 0;
                 return CreateSpecial(special);
             }
             case IdentifierType.Npc:
             {
-                var index  = data[nameof(ActorIdentifier.Index)]?.Value<ushort>() ?? ushort.MaxValue;
-                var kind   = data[nameof(ActorIdentifier.Kind)]?.Value<ObjectKind>() ?? ObjectKind.CardStand;
-                var dataId = data[nameof(ActorIdentifier.DataId)]?.Value<uint>() ?? 0;
+                var index  = data[nameof(ActorIdentifier.Index)]?.ToObject<ushort>() ?? ushort.MaxValue;
+                var kind   = data[nameof(ActorIdentifier.Kind)]?.ToObject<ObjectKind>() ?? ObjectKind.CardStand;
+                var dataId = data[nameof(ActorIdentifier.DataId)]?.ToObject<uint>() ?? 0;
                 return CreateNpc(kind, dataId, index);
             }
-            case IdentifierType.Invalid:
-            default:
-                return ActorIdentifier.Invalid;
+            default: return ActorIdentifier.Invalid;
         }
     }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface.Internal.Notifications;
+using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Actors;
 using Penumbra.String;
 using Penumbra.Util;
@@ -11,7 +12,66 @@ namespace Penumbra.Collections;
 
 public partial class IndividualCollections
 {
-    public const int Version = 1;
+    public JArray ToJObject()
+    {
+        var ret = new JArray();
+        foreach( var (name, identifiers, collection) in Assignments )
+        {
+            var tmp = identifiers[0].ToJson();
+            tmp.Add( "Collection", collection.Name );
+            tmp.Add( "Display", name );
+            ret.Add( tmp );
+        }
+
+        return ret;
+    }
+
+    public bool ReadJObject( JArray? obj, ModCollection.Manager manager )
+    {
+        if( obj == null )
+        {
+            return true;
+        }
+
+        var changes = false;
+        foreach( var data in obj )
+        {
+            try
+            {
+                var identifier = Penumbra.Actors.FromJson( data as JObject );
+                var group      = GetGroup( identifier );
+                if( group.Length == 0 || group.Any( i => !i.IsValid ) )
+                {
+                    changes = true;
+                    ChatUtil.NotificationMessage( "Could not load an unknown individual collection, removed.", "Load Failure", NotificationType.Warning );
+                    continue;
+                }
+
+                var collectionName = data[ "Collection" ]?.ToObject< string >() ?? string.Empty;
+                if( collectionName.Length == 0 || !manager.ByName( collectionName, out var collection ) )
+                {
+                    changes = true;
+                    ChatUtil.NotificationMessage( $"Could not load the collection \"{collectionName}\" as individual collection for {identifier}, set to None.", "Load Failure",
+                        NotificationType.Warning );
+                    continue;
+                }
+
+                if( !Add( group, collection ) )
+                {
+                    changes = true;
+                    ChatUtil.NotificationMessage( $"Could not add an individual collection for {identifier}, removed.", "Load Failure",
+                        NotificationType.Warning );
+                }
+            }
+            catch( Exception e )
+            {
+                changes = true;
+                ChatUtil.NotificationMessage( $"Could not load an unknown individual collection, removed:\n{e}", "Load Failure", NotificationType.Error );
+            }
+        }
+
+        return changes;
+    }
 
     internal void Migrate0To1( Dictionary< string, ModCollection > old )
     {
@@ -28,30 +88,30 @@ public partial class IndividualCollections
             var kind      = ObjectKind.None;
             var lowerName = name.ToLowerInvariant();
             // Prefer matching NPC names, fewer false positives than preferring players.
-            if( FindDataId( lowerName, _manager.Companions, out var dataId ) )
+            if( FindDataId( lowerName, _actorManager.Companions, out var dataId ) )
             {
                 kind = ObjectKind.Companion;
             }
-            else if( FindDataId( lowerName, _manager.Mounts, out dataId ) )
+            else if( FindDataId( lowerName, _actorManager.Mounts, out dataId ) )
             {
                 kind = ObjectKind.MountType;
             }
-            else if( FindDataId( lowerName, _manager.BNpcs, out dataId ) )
+            else if( FindDataId( lowerName, _actorManager.BNpcs, out dataId ) )
             {
                 kind = ObjectKind.BattleNpc;
             }
-            else if( FindDataId( lowerName, _manager.ENpcs, out dataId ) )
+            else if( FindDataId( lowerName, _actorManager.ENpcs, out dataId ) )
             {
                 kind = ObjectKind.EventNpc;
             }
 
-            var identifier = _manager.CreateNpc( kind, dataId );
+            var identifier = _actorManager.CreateNpc( kind, dataId );
             if( identifier.IsValid )
             {
                 // If the name corresponds to a valid npc, add it as a group. If this fails, notify users.
                 var group = GetGroup( identifier );
                 var ids   = string.Join( ", ", group.Select( i => i.DataId.ToString() ) );
-                if( Add( $"{_manager.ToName( kind, dataId )} ({kind.ToName()})", group, collection ) )
+                if( Add( $"{_actorManager.ToName( kind, dataId )} ({kind.ToName()})", group, collection ) )
                 {
                     Penumbra.Log.Information( $"Migrated {name} ({kind.ToName()}) to NPC Identifiers [{ids}]." );
                 }
@@ -65,10 +125,10 @@ public partial class IndividualCollections
             // If it is not a valid NPC name, check if it can be a player name.
             else if( ActorManager.VerifyPlayerName( name ) )
             {
-                identifier = _manager.CreatePlayer( ByteString.FromStringUnsafe( name, false ), ushort.MaxValue );
+                identifier = _actorManager.CreatePlayer( ByteString.FromStringUnsafe( name, false ), ushort.MaxValue );
                 var shortName = string.Join( " ", name.Split().Select( n => $"{n[ 0 ]}." ) );
                 // Try to migrate the player name without logging full names.
-                if( Add( $"{name} ({_manager.ToWorldName( identifier.HomeWorld )})", new[] { identifier }, collection ) )
+                if( Add( $"{name} ({_actorManager.ToWorldName( identifier.HomeWorld )})", new[] { identifier }, collection ) )
                 {
                     Penumbra.Log.Information( $"Migrated {shortName} ({collection.AnonymizedName}) to Player Identifier." );
                 }

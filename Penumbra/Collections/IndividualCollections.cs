@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
+using OtterGui.Filesystem;
 using Penumbra.GameData.Actors;
 using Penumbra.String;
 
@@ -9,18 +10,18 @@ namespace Penumbra.Collections;
 
 public sealed partial class IndividualCollections
 {
-    private readonly ActorManager                                                                                   _manager;
-    private readonly SortedList< string, (IReadOnlyList< ActorIdentifier > Identifiers, ModCollection Collection) > _assignments = new();
-    private readonly Dictionary< ActorIdentifier, ModCollection >                                                   _individuals = new();
+    private readonly ActorManager                                                                                         _actorManager;
+    private readonly List< (string DisplayName, IReadOnlyList< ActorIdentifier > Identifiers, ModCollection Collection) > _assignments = new();
+    private readonly Dictionary< ActorIdentifier, ModCollection >                                                         _individuals = new();
 
-    public IReadOnlyDictionary< string, (IReadOnlyList< ActorIdentifier > Identifiers, ModCollection Collection) > Assignments
+    public IReadOnlyList< (string DisplayName, IReadOnlyList< ActorIdentifier > Identifiers, ModCollection Collection) > Assignments
         => _assignments;
 
     public IReadOnlyDictionary< ActorIdentifier, ModCollection > Individuals
         => _individuals;
 
-    public IndividualCollections( ActorManager manager )
-        => _manager = manager;
+    public IndividualCollections( ActorManager actorManager )
+        => _actorManager = actorManager;
 
     public enum AddResult
     {
@@ -61,7 +62,7 @@ public sealed partial class IndividualCollections
                     return AddResult.Invalid;
                 }
 
-                var identifier = _manager.CreatePlayer( playerName, homeWorld );
+                var identifier = _actorManager.CreatePlayer( playerName, homeWorld );
                 identifiers = new[] { identifier };
                 break;
             case IdentifierType.Owned:
@@ -70,10 +71,10 @@ public sealed partial class IndividualCollections
                     return AddResult.Invalid;
                 }
 
-                identifiers = dataIds.Select( id => _manager.CreateOwned( ownerName, homeWorld, kind, id ) ).ToArray();
+                identifiers = dataIds.Select( id => _actorManager.CreateOwned( ownerName, homeWorld, kind, id ) ).ToArray();
                 break;
             case IdentifierType.Npc:
-                identifiers = dataIds.Select( id => _manager.CreateIndividual( IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, kind, id ) ).ToArray();
+                identifiers = dataIds.Select( id => _actorManager.CreateIndividual( IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, kind, id ) ).ToArray();
                 break;
             default:
                 identifiers = Array.Empty< ActorIdentifier >();
@@ -109,38 +110,33 @@ public sealed partial class IndividualCollections
         {
             IdentifierType.Player  => new[] { identifier.CreatePermanent() },
             IdentifierType.Special => new[] { identifier },
-            IdentifierType.Owned   => CreateNpcs( _manager, identifier.CreatePermanent() ),
-            IdentifierType.Npc     => CreateNpcs( _manager, identifier ),
+            IdentifierType.Owned   => CreateNpcs( _actorManager, identifier.CreatePermanent() ),
+            IdentifierType.Npc     => CreateNpcs( _actorManager, identifier ),
             _                      => Array.Empty< ActorIdentifier >(),
         };
     }
 
-    public bool Add( ActorIdentifier[] identifiers, ModCollection collection )
+    internal bool Add( ActorIdentifier[] identifiers, ModCollection collection )
     {
         if( identifiers.Length == 0 || !identifiers[ 0 ].IsValid )
         {
             return false;
         }
 
-        var name = identifiers[ 0 ].Type switch
-        {
-            IdentifierType.Player => $"{identifiers[ 0 ].PlayerName} ({_manager.ToWorldName( identifiers[ 0 ].HomeWorld )})",
-            IdentifierType.Owned =>
-                $"{identifiers[ 0 ].PlayerName} ({_manager.ToWorldName( identifiers[ 0 ].HomeWorld )})'s {_manager.ToName( identifiers[ 0 ].Kind, identifiers[ 0 ].DataId )}",
-            IdentifierType.Npc => $"{_manager.ToName( identifiers[ 0 ].Kind, identifiers[ 0 ].DataId )} ({identifiers[ 0 ].Kind})",
-            _                  => string.Empty,
-        };
+        var name = DisplayString( identifiers[ 0 ] );
         return Add( name, identifiers, collection );
     }
 
     private bool Add( string displayName, ActorIdentifier[] identifiers, ModCollection collection )
     {
-        if( CanAdd( identifiers ) != AddResult.Valid || displayName.Length == 0 || _assignments.ContainsKey( displayName ) )
+        if( CanAdd( identifiers ) != AddResult.Valid
+        || displayName.Length     == 0
+        || _assignments.Any( a => a.DisplayName.Equals( displayName, StringComparison.OrdinalIgnoreCase ) ) )
         {
             return false;
         }
 
-        _assignments.Add( displayName, ( identifiers, collection ) );
+        _assignments.Add( ( displayName, identifiers, collection ) );
         foreach( var identifier in identifiers )
         {
             _individuals.Add( identifier, collection );
@@ -149,21 +145,21 @@ public sealed partial class IndividualCollections
         return true;
     }
 
-    public bool ChangeCollection( string displayName, ModCollection newCollection )
-    {
-        var displayIndex = _assignments.IndexOfKey( displayName );
-        return ChangeCollection( displayIndex, newCollection );
-    }
+    internal bool ChangeCollection( ActorIdentifier identifier, ModCollection newCollection )
+        => ChangeCollection( DisplayString( identifier ), newCollection );
 
-    public bool ChangeCollection( int displayIndex, ModCollection newCollection )
+    internal bool ChangeCollection( string displayName, ModCollection newCollection )
+        => ChangeCollection( _assignments.FindIndex( t => t.DisplayName.Equals( displayName, StringComparison.OrdinalIgnoreCase ) ), newCollection );
+
+    internal bool ChangeCollection( int displayIndex, ModCollection newCollection )
     {
-        if( displayIndex < 0 || displayIndex >= _assignments.Count || _assignments.Values[ displayIndex ].Collection == newCollection )
+        if( displayIndex < 0 || displayIndex >= _assignments.Count || _assignments[ displayIndex ].Collection == newCollection )
         {
             return false;
         }
 
-        _assignments.Values[ displayIndex ] = _assignments.Values[ displayIndex ] with { Collection = newCollection };
-        foreach( var identifier in _assignments.Values[ displayIndex ].Identifiers )
+        _assignments[ displayIndex ] = _assignments[ displayIndex ] with { Collection = newCollection };
+        foreach( var identifier in _assignments[ displayIndex ].Identifiers )
         {
             _individuals[ identifier ] = newCollection;
         }
@@ -171,20 +167,20 @@ public sealed partial class IndividualCollections
         return true;
     }
 
-    public bool Delete( string displayName )
-    {
-        var displayIndex = _assignments.IndexOfKey( displayName );
-        return Delete( displayIndex );
-    }
+    internal bool Delete( ActorIdentifier identifier )
+        => Delete( DisplayString( identifier ) );
 
-    public bool Delete( int displayIndex )
+    internal bool Delete( string displayName )
+        => Delete( _assignments.FindIndex( t => t.DisplayName.Equals( displayName, StringComparison.OrdinalIgnoreCase ) ) );
+
+    internal bool Delete( int displayIndex )
     {
         if( displayIndex < 0 || displayIndex >= _assignments.Count )
         {
             return false;
         }
 
-        var (identifiers, _) = _assignments.Values[ displayIndex ];
+        var (name, identifiers, _) = _assignments[ displayIndex ];
         _assignments.RemoveAt( displayIndex );
         foreach( var identifier in identifiers )
         {
@@ -192,5 +188,20 @@ public sealed partial class IndividualCollections
         }
 
         return true;
+    }
+
+    internal bool Move( int from, int to )
+        => _assignments.Move( from, to );
+
+    private string DisplayString( ActorIdentifier identifier )
+    {
+        return identifier.Type switch
+        {
+            IdentifierType.Player => $"{identifier.PlayerName} ({_actorManager.ToWorldName( identifier.HomeWorld )})",
+            IdentifierType.Owned =>
+                $"{identifier.PlayerName} ({_actorManager.ToWorldName( identifier.HomeWorld )})'s {_actorManager.ToName( identifier.Kind, identifier.DataId )}",
+            IdentifierType.Npc => $"{_actorManager.ToName( identifier.Kind, identifier.DataId )} ({identifier.Kind.ToName()})",
+            _                  => string.Empty,
+        };
     }
 }

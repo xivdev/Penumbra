@@ -355,26 +355,27 @@ public class Penumbra : IDalamudPlugin
             return false;
         }
 
-        var oldCollection = CollectionManager.ByType( type, characterName );
-        if( collection == oldCollection )
-        {
-            Dalamud.Chat.Print( $"{collection.Name} already is the {type.ToName()} Collection." );
-            return false;
-        }
-
-        if( oldCollection == null )
-        {
-            if( type.IsSpecial() )
-            {
-                CollectionManager.CreateSpecialCollection( type );
-            }
-            else if( type is CollectionType.Individual )
-            {
-                CollectionManager.CreateCharacterCollection( characterName! );
-            }
-        }
-
-        CollectionManager.SetCollection( collection, type, characterName );
+        // TODO
+        //var oldCollection = CollectionManager.ByType( type, characterName );
+        //if( collection == oldCollection )
+        //{
+        //    Dalamud.Chat.Print( $"{collection.Name} already is the {type.ToName()} Collection." );
+        //    return false;
+        //}
+        //
+        //if( oldCollection == null )
+        //{
+        //    if( type.IsSpecial() )
+        //    {
+        //        CollectionManager.CreateSpecialCollection( type );
+        //    }
+        //    else if( type is CollectionType.Individual )
+        //    {
+        //        CollectionManager.CreateIndividualCollection( characterName! );
+        //    }
+        //}
+        //
+        //CollectionManager.SetCollection( collection, type, characterName );
         Dalamud.Chat.Print( $"Set {collection.Name} as {type.ToName()} Collection{( characterName != null ? $" for {characterName}." : "." )}" );
         return true;
     }
@@ -507,8 +508,15 @@ public class Penumbra : IDalamudPlugin
             ModManager.Sum( m => m.TotalManipulations ) );
         sb.AppendFormat( "> **`IMC Exceptions Thrown:       `** {0}\n", ImcExceptions );
 
-        string CharacterName( string name )
-            => string.Join( " ", name.Split().Select( n => $"{n[ 0 ]}." ) ) + ':';
+        string CharacterName( ActorIdentifier id, string name )
+        {
+            if( id.Type is IdentifierType.Player or IdentifierType.Owned )
+            {
+                return string.Join( " ", name.Split( ' ', 3 ).Select( n => $"{n[ 0 ]}." ) ) + ':';
+            }
+
+            return name + ':';
+        }
 
         void PrintCollection( ModCollection c )
             => sb.AppendFormat( "**Collection {0}**\n"
@@ -535,9 +543,9 @@ public class Penumbra : IDalamudPlugin
             }
         }
 
-        foreach( var (name, collection) in CollectionManager.Characters )
+        foreach( var (name, id, collection) in CollectionManager.Individuals.Assignments )
         {
-            sb.AppendFormat( "> **`{1,-29}`** {0}\n", collection.AnonymizedName, CharacterName( name ) );
+            sb.AppendFormat( "> **`{1,-29}`** {0}\n", collection.AnonymizedName, CharacterName( id[ 0 ], name ) );
         }
 
         foreach( var collection in CollectionManager.Where( c => c.HasCache ) )
