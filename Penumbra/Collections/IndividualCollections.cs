@@ -102,7 +102,7 @@ public sealed partial class IndividualCollections
                 _                    => throw new NotImplementedException(),
             };
             return table.Where( kvp => kvp.Value == name )
-               .Select( kvp => manager.CreateIndividual( identifier.Type, identifier.PlayerName, identifier.HomeWorld, identifier.Kind, kvp.Key ) ).ToArray();
+               .Select( kvp => manager.CreateIndividualUnchecked( identifier.Type, identifier.PlayerName, identifier.HomeWorld, identifier.Kind, kvp.Key ) ).ToArray();
         }
 
         return identifier.Type switch
@@ -115,9 +115,27 @@ public sealed partial class IndividualCollections
         };
     }
 
-    public bool Add( string displayName, ActorIdentifier[] identifiers, ModCollection collection )
+    public bool Add( ActorIdentifier[] identifiers, ModCollection collection )
     {
-        if( CanAdd( identifiers ) != AddResult.Valid || _assignments.ContainsKey( displayName ) )
+        if( identifiers.Length == 0 || !identifiers[ 0 ].IsValid )
+        {
+            return false;
+        }
+
+        var name = identifiers[ 0 ].Type switch
+        {
+            IdentifierType.Player => $"{identifiers[ 0 ].PlayerName} ({_manager.ToWorldName( identifiers[ 0 ].HomeWorld )})",
+            IdentifierType.Owned =>
+                $"{identifiers[ 0 ].PlayerName} ({_manager.ToWorldName( identifiers[ 0 ].HomeWorld )})'s {_manager.ToName( identifiers[ 0 ].Kind, identifiers[ 0 ].DataId )}",
+            IdentifierType.Npc => $"{_manager.ToName( identifiers[ 0 ].Kind, identifiers[ 0 ].DataId )} ({identifiers[ 0 ].Kind})",
+            _                  => string.Empty,
+        };
+        return Add( name, identifiers, collection );
+    }
+
+    private bool Add( string displayName, ActorIdentifier[] identifiers, ModCollection collection )
+    {
+        if( CanAdd( identifiers ) != AddResult.Valid || displayName.Length == 0 || _assignments.ContainsKey( displayName ) )
         {
             return false;
         }

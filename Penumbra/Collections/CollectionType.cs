@@ -97,8 +97,7 @@ public enum CollectionType : byte
     Inactive,   // A collection was added or removed
     Default,    // The default collection was changed
     Interface,  // The ui collection was changed
-    Character,  // A character collection was changed
-    Individual, // An Individual collection was changed
+    Individual, // An individual collection was changed
     Current,    // The current collection was changed
 }
 
@@ -288,7 +287,7 @@ public static class CollectionTypeExtensions
             CollectionType.Inactive                 => "Collection",
             CollectionType.Default                  => "Default",
             CollectionType.Interface                => "Interface",
-            CollectionType.Character                => "Character",
+            CollectionType.Individual                => "Character",
             CollectionType.Current                  => "Current",
             _                                       => string.Empty,
         };

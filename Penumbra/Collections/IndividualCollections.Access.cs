@@ -105,7 +105,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
             return true;
         }
 
-        identifier = _manager.CreateIndividual( identifier.Type, identifier.PlayerName, ushort.MaxValue, identifier.Kind, identifier.DataId );
+        identifier = _manager.CreateIndividualUnchecked( identifier.Type, identifier.PlayerName, ushort.MaxValue, identifier.Kind, identifier.DataId );
         if( identifier.IsValid && _individuals.TryGetValue( identifier, out collection ) )
         {
             return true;

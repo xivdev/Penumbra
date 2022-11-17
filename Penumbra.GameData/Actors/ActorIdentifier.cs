@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Enums;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Newtonsoft.Json.Linq;
 using Penumbra.String;
 
@@ -58,12 +60,12 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
          ?? Type switch
             {
                 IdentifierType.Player  => $"{PlayerName} ({HomeWorld})",
-                IdentifierType.Owned   => $"{PlayerName}s {Kind} {DataId} ({HomeWorld})",
+                IdentifierType.Owned   => $"{PlayerName}s {Kind.ToName()} {DataId} ({HomeWorld})",
                 IdentifierType.Special => Special.ToName(),
                 IdentifierType.Npc =>
                     Index == ushort.MaxValue
-                        ? $"{Kind} #{DataId}"
-                        : $"{Kind} #{DataId} at {Index}",
+                        ? $"{Kind.ToName()} #{DataId}"
+                        : $"{Kind.ToName()} #{DataId} at {Index}",
                 _ => "Invalid",
             };
 
@@ -86,7 +88,6 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
         DataId     = data;
         PlayerName = playerName;
     }
-
 
     public JObject ToJson()
     {
@@ -130,22 +131,19 @@ public static class ActorManagerExtensions
         if (manager == null)
             return lhs.Kind == rhs.Kind && lhs.DataId == rhs.DataId || lhs.DataId == uint.MaxValue || rhs.DataId == uint.MaxValue;
 
-        return lhs.Kind switch
+        var dict = lhs.Kind switch
         {
-            ObjectKind.MountType => manager.Mounts.TryGetValue(lhs.DataId, out var lhsName)
-             && manager.Mounts.TryGetValue(rhs.DataId,                     out var rhsName)
-             && lhsName.Equals(rhsName, StringComparison.OrdinalIgnoreCase),
-            ObjectKind.Companion => manager.Companions.TryGetValue(lhs.DataId, out var lhsName)
-             && manager.Companions.TryGetValue(rhs.DataId,                     out var rhsName)
-             && lhsName.Equals(rhsName, StringComparison.OrdinalIgnoreCase),
-            ObjectKind.BattleNpc => manager.BNpcs.TryGetValue(lhs.DataId, out var lhsName)
-             && manager.BNpcs.TryGetValue(rhs.DataId,                     out var rhsName)
-             && lhsName.Equals(rhsName, StringComparison.OrdinalIgnoreCase),
-            ObjectKind.EventNpc => manager.ENpcs.TryGetValue(lhs.DataId, out var lhsName)
-             && manager.ENpcs.TryGetValue(rhs.DataId,                    out var rhsName)
-             && lhsName.Equals(rhsName, StringComparison.OrdinalIgnoreCase),
-            _ => false,
+            ObjectKind.MountType => manager.Mounts,
+            ObjectKind.Companion => manager.Companions,
+            (ObjectKind)15       => manager.Ornaments, // TODO: CS Update
+            ObjectKind.BattleNpc => manager.BNpcs,
+            ObjectKind.EventNpc  => manager.ENpcs,
+            _                    => new Dictionary<uint, string>(),
         };
+
+        return dict.TryGetValue(lhs.DataId, out var lhsName)
+         && dict.TryGetValue(rhs.DataId,    out var rhsName)
+         && lhsName.Equals(rhsName, StringComparison.OrdinalIgnoreCase);
     }
 
     public static string ToName(this ObjectKind kind)
@@ -156,6 +154,7 @@ public static class ActorManagerExtensions
             ObjectKind.EventNpc  => "Event NPC",
             ObjectKind.MountType => "Mount",
             ObjectKind.Companion => "Companion",
+            (ObjectKind)15       => "Accessory", // TODO: CS update
             _                    => kind.ToString(),
         };
 

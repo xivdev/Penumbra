@@ -161,7 +161,7 @@ public partial class ConfigWindow
             public void Draw()
             {
                 var preview = CurrentIdx >= 0 ? Items[ CurrentIdx ].Item2 : string.Empty;
-                Draw(_label, preview, ref CurrentIdx, _unscaledWidth * ImGuiHelpers.GlobalScale, ImGui.GetTextLineHeightWithSpacing());
+                Draw( _label, preview, ref CurrentIdx, _unscaledWidth * ImGuiHelpers.GlobalScale, ImGui.GetTextLineHeightWithSpacing() );
             }
 
             protected override string ToString( (CollectionType, string, string) obj )
@@ -176,15 +176,16 @@ public partial class ConfigWindow
 
         private readonly SpecialCombo _specialCollectionCombo = new("##NewSpecial", 350);
 
+        private const string CharacterGroupDescription = $"{CharacterGroups} apply to certain types of characters based on a condition.\n"
+          + $"All of them take precedence before the {DefaultCollection},\n"
+          + $"but all {IndividualAssignments} take precedence before them.";
+
+
         // We do not check for valid character names.
         private void DrawNewSpecialCollection()
         {
-            const string description = $"{CharacterGroups} apply to certain types of characters based on a condition.\n"
-              + $"All of them take precedence before the {DefaultCollection},\n"
-              + $"but all {IndividualAssignments} take precedence before them.";
-
             ImGui.SetNextItemWidth( _window._inputTextWidth.X );
-            if( _specialCollectionCombo.CurrentIdx                                                  == -1
+            if( _specialCollectionCombo.CurrentIdx                                                   == -1
             || Penumbra.CollectionManager.ByType( _specialCollectionCombo.CurrentType!.Value.Item1 ) != null )
             {
                 _specialCollectionCombo.ResetFilter();
@@ -201,8 +202,8 @@ public partial class ConfigWindow
             ImGui.SameLine();
             var disabled = _specialCollectionCombo.CurrentType == null;
             var tt = disabled
-                ? $"Please select a condition for a {GroupAssignment} before creating the collection.\n\n" + description
-                : description;
+                ? $"Please select a condition for a {GroupAssignment} before creating the collection.\n\n" + CharacterGroupDescription
+                : CharacterGroupDescription;
             if( ImGuiUtil.DrawDisabledButton( $"Assign {ConditionalGroup}", new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 ), tt, disabled ) )
             {
                 Penumbra.CollectionManager.CreateSpecialCollection( _specialCollectionCombo.CurrentType!.Value.Item1 );
@@ -237,7 +238,9 @@ public partial class ConfigWindow
         private void DrawSpecialAssignments()
         {
             using var _ = ImRaii.Group();
+            ImGui.AlignTextToFramePadding();
             ImGui.TextUnformatted( CharacterGroups );
+            ImGuiComponents.HelpMarker( CharacterGroupDescription );
             ImGui.Separator();
             DrawSpecialCollections();
             ImGui.Dummy( Vector2.Zero );

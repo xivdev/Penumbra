@@ -52,7 +52,7 @@ public partial class ActorManager
     }
 
     /// <summary>
-    /// Return the world name including the All Worlds option.
+    /// Return the world name including the Any World option.
     /// </summary>
     public string ToWorldName(ushort worldId)
         => worldId == ushort.MaxValue ? "Any World" : Worlds.TryGetValue(worldId, out var name) ? name : "Invalid";
@@ -98,6 +98,7 @@ public partial class ActorManager
         {
             ObjectKind.MountType => Mounts.TryGetValue(dataId, out name),
             ObjectKind.Companion => Companions.TryGetValue(dataId, out name),
+            (ObjectKind)15       => Ornaments.TryGetValue(dataId, out name), // TODO: CS Update
             ObjectKind.BattleNpc => BNpcs.TryGetValue(dataId, out name),
             ObjectKind.EventNpc  => ENpcs.TryGetValue(dataId, out name),
             _                    => false,
@@ -154,6 +155,7 @@ public partial class ActorManager
             case ObjectKind.EventNpc: return CreateNpc(ObjectKind.EventNpc, actor->DataID, actor->ObjectIndex);
             case ObjectKind.MountType:
             case ObjectKind.Companion:
+            case (ObjectKind)15: // TODO: CS Update
             {
                 if (actor->ObjectIndex % 2 == 0)
                     return ActorIdentifier.Invalid;
@@ -173,11 +175,12 @@ public partial class ActorManager
     /// Obtain the current companion ID for an object by its actor and owner.
     /// </summary>
     private unsafe uint GetCompanionId(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor,
-        FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner)
+        FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner) // TODO: CS Update
     {
         return (ObjectKind)actor->ObjectKind switch
         {
-            ObjectKind.MountType => *(ushort*)((byte*)owner + 0x668),
+            ObjectKind.MountType => *(ushort*)((byte*)owner + 0x650 + 0x18),
+            (ObjectKind)15       => *(ushort*)((byte*)owner + 0x860 + 0x18),
             ObjectKind.Companion => *(ushort*)((byte*)actor + 0x1AAC),
             _                    => actor->DataID,
         };
@@ -195,6 +198,12 @@ public partial class ActorManager
             IdentifierType.Npc     => CreateNpc(kind, dataId, homeWorld),
             _                      => ActorIdentifier.Invalid,
         };
+
+    /// <summary>
+    /// Only use this if you are sure the input is valid.
+    /// </summary>
+    public ActorIdentifier CreateIndividualUnchecked(IdentifierType type, ByteString name, ushort homeWorld, ObjectKind kind, uint dataId)
+        => new(type, kind, homeWorld, dataId, name);
 
     public ActorIdentifier CreatePlayer(ByteString name, ushort homeWorld)
     {
@@ -345,6 +354,7 @@ public partial class ActorManager
         {
             ObjectKind.MountType => Mounts.ContainsKey(dataId),
             ObjectKind.Companion => Companions.ContainsKey(dataId),
+            (ObjectKind)15       => Ornaments.ContainsKey(dataId), // TODO: CS Update
             ObjectKind.BattleNpc => BNpcs.ContainsKey(dataId),
             _                    => false,
         };
@@ -355,6 +365,7 @@ public partial class ActorManager
         {
             ObjectKind.MountType => Mounts.ContainsKey(dataId),
             ObjectKind.Companion => Companions.ContainsKey(dataId),
+            (ObjectKind)15       => Ornaments.ContainsKey(dataId), // TODO: CS Update
             ObjectKind.BattleNpc => BNpcs.ContainsKey(dataId),
             ObjectKind.EventNpc  => ENpcs.ContainsKey(dataId),
             _                    => false,

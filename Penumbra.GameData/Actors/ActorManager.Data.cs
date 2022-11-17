@@ -2,18 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using Dalamud;
 using Dalamud.Data;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.Gui;
 using Dalamud.Plugin;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
+using Lumina.Text;
 using Penumbra.GameData.Data;
 using Penumbra.String;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
@@ -30,6 +31,9 @@ public sealed partial class ActorManager : DataSharer
 
     /// <summary> Valid Companion names in title case by companion id. </summary>
     public IReadOnlyDictionary<uint, string> Companions { get; }
+
+    /// <summary> Valid ornament names by id. </summary>
+    public IReadOnlyDictionary<uint, string> Ornaments { get; }
 
     /// <summary> Valid BNPC names in title case by BNPC Name id. </summary>
     public IReadOnlyDictionary<uint, string> BNpcs { get; }
@@ -54,6 +58,7 @@ public sealed partial class ActorManager : DataSharer
         Worlds     = TryCatchData("Worlds",     () => CreateWorldData(gameData));
         Mounts     = TryCatchData("Mounts",     () => CreateMountData(gameData));
         Companions = TryCatchData("Companions", () => CreateCompanionData(gameData));
+        Ornaments  = TryCatchData("Ornaments",  () => CreateOrnamentData(gameData));
         BNpcs      = TryCatchData("BNpcs",      () => CreateBNpcData(gameData));
         ENpcs      = TryCatchData("ENpcs",      () => CreateENpcData(gameData));
 
@@ -98,6 +103,7 @@ public sealed partial class ActorManager : DataSharer
         DisposeTag("Worlds");
         DisposeTag("Mounts");
         DisposeTag("Companions");
+        DisposeTag("Ornaments");
         DisposeTag("BNpcs");
         DisposeTag("ENpcs");
     }
@@ -119,22 +125,50 @@ public sealed partial class ActorManager : DataSharer
     private IReadOnlyDictionary<uint, string> CreateMountData(DataManager gameData)
         => gameData.GetExcelSheet<Mount>(Language)!
             .Where(m => m.Singular.RawData.Length > 0 && m.Order >= 0)
-            .ToDictionary(m => m.RowId, m => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(m.Singular.ToDalamudString().ToString()));
+            .ToDictionary(m => m.RowId, m => ToTitleCaseExtended(m.Singular, m.Article));
 
     private IReadOnlyDictionary<uint, string> CreateCompanionData(DataManager gameData)
         => gameData.GetExcelSheet<Companion>(Language)!
             .Where(c => c.Singular.RawData.Length > 0 && c.Order < ushort.MaxValue)
-            .ToDictionary(c => c.RowId, c => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(c.Singular.ToDalamudString().ToString()));
+            .ToDictionary(c => c.RowId, c => ToTitleCaseExtended(c.Singular, c.Article));
+
+    private IReadOnlyDictionary<uint, string> CreateOrnamentData(DataManager gameData)
+        => gameData.GetExcelSheet<Ornament>(Language)!
+            .Where(o => o.Singular.RawData.Length > 0)
+            .ToDictionary(o => o.RowId, o => ToTitleCaseExtended(o.Singular, o.Article));
 
     private IReadOnlyDictionary<uint, string> CreateBNpcData(DataManager gameData)
         => gameData.GetExcelSheet<BNpcName>(Language)!
             .Where(n => n.Singular.RawData.Length > 0)
-            .ToDictionary(n => n.RowId, n => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(n.Singular.ToDalamudString().ToString()));
+            .ToDictionary(n => n.RowId, n => ToTitleCaseExtended(n.Singular, n.Article));
 
     private IReadOnlyDictionary<uint, string> CreateENpcData(DataManager gameData)
         => gameData.GetExcelSheet<ENpcResident>(Language)!
             .Where(e => e.Singular.RawData.Length > 0)
-            .ToDictionary(e => e.RowId, e => CultureInfo.InvariantCulture.TextInfo.ToTitleCase(e.Singular.ToDalamudString().ToString()));
+            .ToDictionary(e => e.RowId, e => ToTitleCaseExtended(e.Singular, e.Article));
+
+    private static string ToTitleCaseExtended(SeString s, sbyte article)
+    {
+        if (article == 1)
+            return s.ToDalamudString().ToString();
+
+        var sb        = new StringBuilder(s.ToDalamudString().ToString());
+        var lastSpace = true;
+        for (var i = 0; i < sb.Length; ++i)
+        {
+            if (sb[i] == ' ')
+            {
+                lastSpace = true;
+            }
+            else if (lastSpace)
+            {
+                lastSpace = false;
+                sb[i]     = char.ToUpperInvariant(sb[i]);
+            }
+        }
+
+        return sb.ToString();
+    }
 
 
     [Signature("0F B7 0D ?? ?? ?? ?? C7 85", ScanType = ScanType.StaticAddress)]

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Penumbra.GameData.Actors;
 
 namespace Penumbra.Collections;
 
@@ -43,8 +44,8 @@ public partial class ModCollection
             => _characters;
 
         // If a name does not correspond to a character, return the default collection instead.
-        public ModCollection Character( string name )
-            => _characters.TryGetValue( name, out var c ) ? c : Default;
+        public ModCollection Individual( ActorIdentifier identifier )
+            => Individuals.Individuals.TryGetValue( identifier, out var c ) ? c : Default;
 
         // Special Collections
         private readonly ModCollection?[] _specialCollections = new ModCollection?[Enum.GetValues< CollectionType >().Length - 4];
@@ -62,7 +63,7 @@ public partial class ModCollection
                 CollectionType.Default   => Default,
                 CollectionType.Interface => Interface,
                 CollectionType.Current   => Current,
-                CollectionType.Character => name != null ? _characters.TryGetValue( name, out var c ) ? c : null : null,
+                CollectionType.Individual => name != null ? _characters.TryGetValue( name, out var c ) ? c : null : null,
                 CollectionType.Inactive  => name != null ? ByName( name, out var c ) ? c : null : null,
                 _                        => null,
             };
@@ -76,7 +77,7 @@ public partial class ModCollection
                 CollectionType.Default   => Default.Index,
                 CollectionType.Interface => Interface.Index,
                 CollectionType.Current   => Current.Index,
-                CollectionType.Character => characterName?.Length > 0
+                CollectionType.Individual => characterName?.Length > 0
                     ? _characters.TryGetValue( characterName, out var c )
                         ? c.Index
                         : Default.Index
@@ -113,7 +114,7 @@ public partial class ModCollection
                 case CollectionType.Current:
                     Current = newCollection;
                     break;
-                case CollectionType.Character:
+                case CollectionType.Individual:
                     _characters[ characterName! ] = newCollection;
                     break;
                 default:
@@ -176,7 +177,7 @@ public partial class ModCollection
             }
 
             _characters[ characterName ] = Default;
-            CollectionChanged.Invoke( CollectionType.Character, null, Default, characterName );
+            CollectionChanged.Invoke( CollectionType.Individual, null, Default, characterName );
             return true;
         }
 
@@ -187,7 +188,7 @@ public partial class ModCollection
             {
                 RemoveCache( collection.Index );
                 _characters.Remove( characterName );
-                CollectionChanged.Invoke( CollectionType.Character, collection, null, characterName );
+                CollectionChanged.Invoke( CollectionType.Individual, collection, null, characterName );
             }
         }
 
