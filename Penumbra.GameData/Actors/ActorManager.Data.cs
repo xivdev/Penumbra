@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Text;
 using Dalamud;
@@ -70,7 +69,10 @@ public sealed partial class ActorManager : DataSharer
     public unsafe ActorIdentifier GetCurrentPlayer()
     {
         var address = (Character*)(_objects[0]?.Address ?? IntPtr.Zero);
-        return address == null ? ActorIdentifier.Invalid : CreatePlayer(new ByteString(address->GameObject.Name), address->HomeWorld);
+        return address == null
+            ? ActorIdentifier.Invalid
+            : CreateIndividualUnchecked(IdentifierType.Player, new ByteString(address->GameObject.Name), address->HomeWorld,
+                ObjectKind.None,                               uint.MaxValue);
     }
 
     public ActorIdentifier GetInspectPlayer()

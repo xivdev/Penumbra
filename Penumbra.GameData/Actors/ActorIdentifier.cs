@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Enums;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Newtonsoft.Json.Linq;
 using Penumbra.String;
 
@@ -38,7 +37,7 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
             IdentifierType.Player => HomeWorld == other.HomeWorld && PlayerName.EqualsCi(other.PlayerName),
             IdentifierType.Owned => HomeWorld == other.HomeWorld && PlayerName.EqualsCi(other.PlayerName) && Manager.DataIdEquals(this, other),
             IdentifierType.Special => Special == other.Special,
-            IdentifierType.Npc => Index == other.Index && DataId == other.DataId && Manager.DataIdEquals(this, other),
+            IdentifierType.Npc => Manager.DataIdEquals(this, other) && (Index == other.Index || Index == ushort.MaxValue || other.Index == ushort.MaxValue),
             _ => false,
         };
     }
@@ -75,7 +74,7 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
             IdentifierType.Player  => HashCode.Combine(IdentifierType.Player,  PlayerName, HomeWorld),
             IdentifierType.Owned   => HashCode.Combine(IdentifierType.Owned,   Kind,       PlayerName, HomeWorld, DataId),
             IdentifierType.Special => HashCode.Combine(IdentifierType.Special, Special),
-            IdentifierType.Npc     => HashCode.Combine(IdentifierType.Npc,     Kind, Index, DataId),
+            IdentifierType.Npc     => HashCode.Combine(IdentifierType.Npc,     Kind, DataId),
             _                      => 0,
         };
 

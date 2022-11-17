@@ -2,8 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Actors;
+using Penumbra.String;
 
 namespace Penumbra.Collections;
 
@@ -34,8 +36,8 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                 }
 
                 // Handle generic NPC
-                var npcIdentifier = _manager.CreateNpc( identifier.Kind, identifier.DataId );
-                if( npcIdentifier.IsValid && _individuals.TryGetValue( identifier, out collection ) )
+                var npcIdentifier = _manager.CreateIndividualUnchecked( IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, identifier.Kind, identifier.DataId );
+                if( npcIdentifier.IsValid && _individuals.TryGetValue( npcIdentifier, out collection ) )
                 {
                     return true;
                 }
@@ -43,7 +45,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                 // Handle Ownership.
                 if( Penumbra.Config.UseOwnerNameForCharacterCollection )
                 {
-                    identifier = _manager.CreatePlayer( identifier.PlayerName, identifier.HomeWorld );
+                    identifier = _manager.CreateIndividualUnchecked( IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld, ObjectKind.None, uint.MaxValue );
                     return CheckWorlds( identifier, out collection );
                 }
 
@@ -60,22 +62,9 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                         return CheckWorlds( _manager.GetCurrentPlayer(), out collection );
                     case SpecialActor.ExamineScreen:
                     {
-                        if( CheckWorlds( _manager.GetInspectPlayer(), out collection! ) )
-                        {
-                            return true;
-                        }
-
-                        if( CheckWorlds( _manager.GetCardPlayer(), out collection! ) )
-                        {
-                            return true;
-                        }
-
-                        if( CheckWorlds( _manager.GetGlamourPlayer(), out collection! ) )
-                        {
-                            return true;
-                        }
-
-                        break;
+                        return CheckWorlds( _manager.GetInspectPlayer(), out collection! )
+                         || CheckWorlds( _manager.GetCardPlayer(), out collection! )
+                         || CheckWorlds( _manager.GetGlamourPlayer(), out collection! );
                     }
                 }
 

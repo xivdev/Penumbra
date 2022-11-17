@@ -1,9 +1,14 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Dalamud.Data;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Lumina.Excel.GeneratedSheets;
+using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
@@ -24,10 +29,14 @@ public partial class PathResolver : IDisposable
     private readonly        ResourceLoader     _loader;
     private static readonly CutsceneCharacters Cutscenes   = new();
     private static readonly DrawObjectState    DrawObjects = new();
+    private static readonly BitArray           ValidHumanModels;
     private readonly        AnimationState     _animations;
     private readonly        PathState          _paths;
     private readonly        MetaState          _meta;
     private readonly        MaterialState      _materials;
+
+    static PathResolver()
+        => ValidHumanModels = GetValidHumanModels( Dalamud.GameData );
 
     public unsafe PathResolver( ResourceLoader loader )
     {

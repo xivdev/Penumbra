@@ -332,7 +332,7 @@ public class Penumbra : IDalamudPlugin
         }
 
         string? characterName = null;
-        if( type is CollectionType.Character )
+        if( type is CollectionType.Individual )
         {
             var split = collectionName.Split( '|', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
             if( split.Length < 2 || split[ 0 ].Length == 0 || split[ 1 ].Length == 0 )
@@ -368,7 +368,7 @@ public class Penumbra : IDalamudPlugin
             {
                 CollectionManager.CreateSpecialCollection( type );
             }
-            else if( type is CollectionType.Character )
+            else if( type is CollectionType.Individual )
             {
                 CollectionManager.CreateCharacterCollection( characterName! );
             }

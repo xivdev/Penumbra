@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Penumbra.GameData.Actors;
 
 namespace Penumbra.Collections;
 
@@ -44,8 +43,8 @@ public partial class ModCollection
             => _characters;
 
         // If a name does not correspond to a character, return the default collection instead.
-        public ModCollection Individual( ActorIdentifier identifier )
-            => Individuals.Individuals.TryGetValue( identifier, out var c ) ? c : Default;
+        public ModCollection Character( string name )
+            => _characters.TryGetValue( name, out var c ) ? c : Default;
 
         // Special Collections
         private readonly ModCollection?[] _specialCollections = new ModCollection?[Enum.GetValues< CollectionType >().Length - 4];

@@ -149,7 +149,7 @@ public partial class ModCollection
 
             foreach( var (characterName, _) in _characters.Where( c => c.Value.Index == idx ).ToList() )
             {
-                SetCollection( Empty, CollectionType.Character, characterName );
+                SetCollection( Empty, CollectionType.Individual, characterName );
             }
 
             var collection = _collections[ idx ];

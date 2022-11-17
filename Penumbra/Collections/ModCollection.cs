@@ -172,4 +172,7 @@ public partial class ModCollection
             Save();
         }
     }
+
+    public override string ToString()
+        => Name;
 }
