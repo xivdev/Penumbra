@@ -38,7 +38,7 @@ public unsafe partial class PathResolver
             }
             else
             {
-                var identifier = Penumbra.Actors.FromObject( gameObject );
+                var identifier = Penumbra.Actors.FromObject( gameObject, false );
                 var collection = CollectionByIdentifier( identifier )
                  ?? CheckYourself( identifier, gameObject )
                  ?? CollectionByAttributes( gameObject )

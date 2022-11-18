@@ -107,9 +107,9 @@ public partial class ActorManager
     }
 
     /// <summary>
-    /// Compute an ActorIdentifier from a GameObject.
+    /// Compute an ActorIdentifier from a GameObject. If check is true, the values are checked for validity.
     /// </summary>
-    public unsafe ActorIdentifier FromObject(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor)
+    public unsafe ActorIdentifier FromObject(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor, bool check = true)
     {
         if (actor == null)
             return ActorIdentifier.Invalid;
@@ -119,11 +119,11 @@ public partial class ActorManager
         {
             var parentIdx = _toParentIdx(idx);
             if (parentIdx >= 0)
-                return FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_objects.GetObjectAddress(parentIdx));
+                return FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_objects.GetObjectAddress(parentIdx), check);
         }
         else if (idx is >= (ushort)SpecialActor.CharacterScreen and <= (ushort)SpecialActor.Portrait)
         {
-            return CreateSpecial((SpecialActor)idx);
+            return CreateIndividualUnchecked(IdentifierType.Special, ByteString.Empty, idx, ObjectKind.None, uint.MaxValue);
         }
 
         switch ((ObjectKind)actor->ObjectKind)
@@ -132,7 +132,9 @@ public partial class ActorManager
             {
                 var name      = new ByteString(actor->Name);
                 var homeWorld = ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->HomeWorld;
-                return CreatePlayer(name, homeWorld);
+                return check
+                    ? CreatePlayer(name, homeWorld)
+                    : CreateIndividualUnchecked(IdentifierType.Player, name, homeWorld, ObjectKind.None, uint.MaxValue);
             }
             case ObjectKind.BattleNpc:
             {
@@ -146,14 +148,24 @@ public partial class ActorManager
 
                     var name      = new ByteString(owner->GameObject.Name);
                     var homeWorld = owner->HomeWorld;
-                    return CreateOwned(name, homeWorld, ObjectKind.BattleNpc,
-                        ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID);
+                    return check
+                        ? CreateOwned(name, homeWorld, ObjectKind.BattleNpc,
+                            ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID)
+                        : CreateIndividualUnchecked(IdentifierType.Owned, name, homeWorld, ObjectKind.BattleNpc,
+                            ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID);
                 }
 
-                return CreateNpc(ObjectKind.BattleNpc, ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID,
-                    actor->ObjectIndex);
+                return check
+                    ? CreateNpc(ObjectKind.BattleNpc, ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID,
+                        actor->ObjectIndex)
+                    : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, actor->ObjectIndex, ObjectKind.BattleNpc,
+                        ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID);
             }
-            case ObjectKind.EventNpc: return CreateNpc(ObjectKind.EventNpc, actor->DataID, actor->ObjectIndex);
+            case ObjectKind.EventNpc:
+                return check
+                    ? CreateNpc(ObjectKind.EventNpc, actor->DataID, actor->ObjectIndex)
+                    : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, actor->ObjectIndex, ObjectKind.EventNpc,
+                        actor->ObjectIndex);
             case ObjectKind.MountType:
             case ObjectKind.Companion:
             case (ObjectKind)15: // TODO: CS Update
@@ -166,7 +178,10 @@ public partial class ActorManager
                     return ActorIdentifier.Invalid;
 
                 var dataId = GetCompanionId(actor, &owner->GameObject);
-                return CreateOwned(new ByteString(owner->GameObject.Name), owner->HomeWorld, (ObjectKind)actor->ObjectKind, dataId);
+                return check
+                    ? CreateOwned(new ByteString(owner->GameObject.Name), owner->HomeWorld, (ObjectKind)actor->ObjectKind, dataId)
+                    : CreateIndividualUnchecked(IdentifierType.Owned, new ByteString(owner->GameObject.Name), owner->HomeWorld,
+                        (ObjectKind)actor->ObjectKind,                dataId);
             }
             default: return ActorIdentifier.Invalid;
         }
@@ -187,8 +202,8 @@ public partial class ActorManager
         };
     }
 
-    public unsafe ActorIdentifier FromObject(GameObject? actor)
-        => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero));
+    public unsafe ActorIdentifier FromObject(GameObject? actor, bool check = true)
+        => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), check);
 
     public ActorIdentifier CreateIndividual(IdentifierType type, ByteString name, ushort homeWorld, ObjectKind kind, uint dataId)
         => type switch

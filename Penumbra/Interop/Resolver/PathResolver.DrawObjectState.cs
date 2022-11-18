@@ -8,7 +8,6 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
-using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.String.Classes;
 

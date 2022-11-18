@@ -190,7 +190,7 @@ public partial class ConfigWindow
             {
                 ImGuiUtil.DrawTableColumn( $"{( ( GameObject* )obj.Address )->ObjectIndex}" );
                 ImGuiUtil.DrawTableColumn( $"0x{obj.Address:X}" );
-                var identifier = Penumbra.Actors.FromObject( obj );
+                var identifier = Penumbra.Actors.FromObject( obj, true );
                 ImGuiUtil.DrawTableColumn( Penumbra.Actors.ToString( identifier ) );
                 ImGuiUtil.DrawTableColumn( identifier.DataId.ToString() );
             }
