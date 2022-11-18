@@ -371,7 +371,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc AddMod( string modDirectory )
     {
         CheckInitialized();
-        var dir = new DirectoryInfo( Path.Join( Penumbra.ModManager.BasePath.FullName, modDirectory ) );
+        var dir = new DirectoryInfo( Path.Join( Penumbra.ModManager.BasePath.FullName, Path.GetFileName(modDirectory) ) );
         if( !dir.Exists )
         {
             return PenumbraApiEc.FileMissing;
