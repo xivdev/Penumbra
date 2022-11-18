@@ -12,6 +12,7 @@ using OtterGui.Raii;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.Loader;
+using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
@@ -245,6 +246,23 @@ public partial class ConfigWindow
                             ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
                             ImGui.TableNextColumn();
                             ImGui.TextUnformatted( collection.ModCollection.Name );
+                        }
+                    }
+                }
+            }
+
+            using( var identifiedTree = ImRaii.TreeNode( "Identified Collections" ) )
+            {
+                if( identifiedTree )
+                {
+                    using var table = ImRaii.Table( "##PathCollectionsIdentifiedTable", 3, ImGuiTableFlags.SizingFixedFit );
+                    if( table )
+                    {
+                        foreach( var (address, identifier, collection) in PathResolver.IdentifiedCache )
+                        {
+                            ImGuiUtil.DrawTableColumn( $"0x{address:X}" );
+                            ImGuiUtil.DrawTableColumn( identifier.ToString() );
+                            ImGuiUtil.DrawTableColumn( collection.Name );
                         }
                     }
                 }

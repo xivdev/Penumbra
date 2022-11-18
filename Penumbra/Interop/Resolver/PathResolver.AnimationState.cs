@@ -118,7 +118,7 @@ public unsafe partial class PathResolver
                     if( idx >= 0 && idx < Dalamud.Objects.Length )
                     {
                         var obj = Dalamud.Objects[ idx ];
-                        _animationLoadData = obj != null ? IdentifyCollection( ( GameObject* )obj.Address ) : ResolveData.Invalid;
+                        _animationLoadData = obj != null ? IdentifyCollection( ( GameObject* )obj.Address, true ) : ResolveData.Invalid;
                     }
                     else
                     {
@@ -165,7 +165,7 @@ public unsafe partial class PathResolver
         private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 )
         {
             var last = _animationLoadData;
-            _animationLoadData = IdentifyCollection( ( GameObject* )gameObject );
+            _animationLoadData = IdentifyCollection( ( GameObject* )gameObject, true );
             var ret = _loadSomeAvfxHook.Original( a1, gameObject, gameObject2, unk1, unk2, unk3 );
             _animationLoadData = last;
             return ret;
@@ -187,7 +187,7 @@ public unsafe partial class PathResolver
                 var actorIdx = ( int )( *( *( ulong** )timelinePtr + 1 ) >> 3 );
                 if( actorIdx >= 0 && actorIdx < Dalamud.Objects.Length )
                 {
-                    _animationLoadData = IdentifyCollection( ( GameObject* )( Dalamud.Objects[ actorIdx ]?.Address ?? IntPtr.Zero ) );
+                    _animationLoadData = IdentifyCollection( ( GameObject* )( Dalamud.Objects[ actorIdx ]?.Address ?? IntPtr.Zero ), true );
                 }
             }
 
@@ -202,7 +202,7 @@ public unsafe partial class PathResolver
         private void SomeActionLoadDetour( IntPtr gameObject )
         {
             var last = _animationLoadData;
-            _animationLoadData = IdentifyCollection( ( GameObject* )gameObject );
+            _animationLoadData = IdentifyCollection( ( GameObject* )gameObject, true );
             _someActionLoadHook.Original( gameObject );
             _animationLoadData = last;
         }
@@ -214,7 +214,7 @@ public unsafe partial class PathResolver
         {
             var last       = _animationLoadData;
             var gameObject = ( GameObject* )( unk - 0x8D0 );
-            _animationLoadData = IdentifyCollection( gameObject );
+            _animationLoadData = IdentifyCollection( gameObject, true );
             _someOtherAvfxHook.Original( unk );
             _animationLoadData = last;
         }

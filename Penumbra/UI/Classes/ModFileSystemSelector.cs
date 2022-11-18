@@ -14,7 +14,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using Penumbra.Api.Enums;
-using Penumbra.GameData.Actors;
 
 namespace Penumbra.UI.Classes;
 

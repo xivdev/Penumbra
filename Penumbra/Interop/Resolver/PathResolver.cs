@@ -26,14 +26,15 @@ public partial class PathResolver : IDisposable
 {
     public bool Enabled { get; private set; }
 
-    private readonly        ResourceLoader     _loader;
-    private static readonly CutsceneCharacters Cutscenes   = new();
-    private static readonly DrawObjectState    DrawObjects = new();
-    private static readonly BitArray           ValidHumanModels;
-    private readonly        AnimationState     _animations;
-    private readonly        PathState          _paths;
-    private readonly        MetaState          _meta;
-    private readonly        MaterialState      _materials;
+    private readonly         ResourceLoader            _loader;
+    private static readonly  CutsceneCharacters        Cutscenes   = new();
+    private static readonly  DrawObjectState           DrawObjects = new();
+    private static readonly  BitArray                  ValidHumanModels;
+    internal static readonly IdentifiedCollectionCache IdentifiedCache = new();
+    private readonly         AnimationState            _animations;
+    private readonly         PathState                 _paths;
+    private readonly         MetaState                 _meta;
+    private readonly         MaterialState             _materials;
 
     static PathResolver()
         => ValidHumanModels = GetValidHumanModels( Dalamud.GameData );
@@ -87,6 +88,7 @@ public partial class PathResolver : IDisposable
         Enabled = true;
         Cutscenes.Enable();
         DrawObjects.Enable();
+        IdentifiedCache.Enable();
         _animations.Enable();
         _paths.Enable();
         _meta.Enable();
@@ -107,6 +109,7 @@ public partial class PathResolver : IDisposable
         _animations.Disable();
         DrawObjects.Disable();
         Cutscenes.Disable();
+        IdentifiedCache.Disable();
         _paths.Disable();
         _meta.Disable();
         _materials.Disable();
@@ -122,6 +125,7 @@ public partial class PathResolver : IDisposable
         _animations.Dispose();
         DrawObjects.Dispose();
         Cutscenes.Dispose();
+        IdentifiedCache.Dispose();
         _meta.Dispose();
         _materials.Dispose();
     }
@@ -147,11 +151,11 @@ public partial class PathResolver : IDisposable
         if( DrawObjects.LastGameObject != null
         && ( DrawObjects.LastGameObject->DrawObject == null || DrawObjects.LastGameObject->DrawObject == ( DrawObject* )drawObject ) )
         {
-            resolveData = IdentifyCollection( DrawObjects.LastGameObject );
+            resolveData = IdentifyCollection( DrawObjects.LastGameObject, true );
             return DrawObjects.LastGameObject;
         }
 
-        resolveData = IdentifyCollection( null );
+        resolveData = IdentifyCollection( null, true );
         return null;
     }
 

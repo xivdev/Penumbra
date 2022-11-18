@@ -162,10 +162,15 @@ public partial class ActorManager
                         ((FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)actor)->NameID);
             }
             case ObjectKind.EventNpc:
+            {
+                var dataId = actor->DataID;
+                // Special case for squadron that is also in the game functions, cf. E8 ?? ?? ?? ?? 89 87 ?? ?? ?? ?? 4C 89 BF
+                if (dataId == 0xf845d)
+                    dataId = actor->GetNpcID();
                 return check
-                    ? CreateNpc(ObjectKind.EventNpc, actor->DataID, actor->ObjectIndex)
-                    : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, actor->ObjectIndex, ObjectKind.EventNpc,
-                        actor->ObjectIndex);
+                    ? CreateNpc(ObjectKind.EventNpc, dataId, actor->ObjectIndex)
+                    : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, actor->ObjectIndex, ObjectKind.EventNpc, dataId);
+            }
             case ObjectKind.MountType:
             case ObjectKind.Companion:
             case (ObjectKind)15: // TODO: CS Update

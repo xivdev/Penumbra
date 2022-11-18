@@ -99,6 +99,7 @@ public enum CollectionType : byte
     Interface,  // The ui collection was changed
     Individual, // An individual collection was changed
     Current,    // The current collection was changed
+    Temporary,  // A temporary collections was set or deleted via IPC
 }
 
 public static class CollectionTypeExtensions

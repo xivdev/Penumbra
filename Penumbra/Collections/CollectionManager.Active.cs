@@ -126,7 +126,7 @@ public partial class ModCollection
             RemoveCache( oldCollectionIdx );
 
             UpdateCurrentCollectionInUse();
-            CollectionChanged.Invoke( collectionType, this[ oldCollectionIdx ], newCollection, Individuals[ individualIndex ].DisplayName );
+            CollectionChanged.Invoke( collectionType, this[ oldCollectionIdx ], newCollection, collectionType == CollectionType.Individual ? Individuals[ individualIndex ].DisplayName : string.Empty );
         }
 
         private void UpdateCurrentCollectionInUse()

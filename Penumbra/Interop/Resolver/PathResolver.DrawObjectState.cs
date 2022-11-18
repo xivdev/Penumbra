@@ -44,7 +44,7 @@ public unsafe partial class PathResolver
         {
             if( parentObject == IntPtr.Zero && LastGameObject != null )
             {
-                var collection = IdentifyCollection( LastGameObject );
+                var collection = IdentifyCollection( LastGameObject, true );
                 _drawObjectToObject[ drawObject ] = ( collection, LastGameObject->ObjectIndex );
                 return collection;
             }
@@ -86,6 +86,7 @@ public unsafe partial class PathResolver
             _weaponReloadHook.Enable();
             InitializeDrawObjects();
             Penumbra.CollectionManager.CollectionChanged += CheckCollections;
+            Penumbra.TempMods.CollectionChanged          += CheckCollections;
         }
 
         public void Disable()
@@ -95,6 +96,7 @@ public unsafe partial class PathResolver
             _enableDrawHook.Disable();
             _weaponReloadHook.Disable();
             Penumbra.CollectionManager.CollectionChanged -= CheckCollections;
+            Penumbra.TempMods.CollectionChanged          -= CheckCollections;
         }
 
         public void Dispose()
@@ -139,7 +141,7 @@ public unsafe partial class PathResolver
             var meta = DisposableContainer.Empty;
             if( LastGameObject != null )
             {
-                _lastCreatedCollection = IdentifyCollection( LastGameObject );
+                _lastCreatedCollection = IdentifyCollection( LastGameObject, false );
                 // Change the transparent or 1.0 Decal if necessary.
                 var decal = new CharacterUtility.DecalReverter( _lastCreatedCollection.ModCollection, UsesDecal( a, c ) );
                 // Change the rsp parameters if necessary.
@@ -235,7 +237,7 @@ public unsafe partial class PathResolver
                     _drawObjectToObject.Remove( key );
                 }
 
-                var newCollection = IdentifyCollection( obj );
+                var newCollection = IdentifyCollection( obj, false );
                 _drawObjectToObject[ key ] = ( newCollection, idx );
             }
         }
@@ -249,7 +251,7 @@ public unsafe partial class PathResolver
                 var ptr = ( GameObject* )Dalamud.Objects.GetObjectAddress( i );
                 if( ptr != null && ptr->IsCharacter() && ptr->DrawObject != null )
                 {
-                    _drawObjectToObject[ ( IntPtr )ptr->DrawObject ] = ( IdentifyCollection( ptr ), ptr->ObjectIndex );
+                    _drawObjectToObject[ ( IntPtr )ptr->DrawObject ] = ( IdentifyCollection( ptr, false ), ptr->ObjectIndex );
                 }
             }
         }

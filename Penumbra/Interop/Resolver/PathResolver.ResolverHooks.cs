@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using Dalamud.Hooking;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
-using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Interop.Resolver;

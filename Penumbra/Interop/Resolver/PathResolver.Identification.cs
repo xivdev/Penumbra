@@ -17,7 +17,7 @@ namespace Penumbra.Interop.Resolver;
 public unsafe partial class PathResolver
 {
     // Identify the correct collection for a GameObject by index and name.
-    private static ResolveData IdentifyCollection( GameObject* gameObject )
+    private static ResolveData IdentifyCollection( GameObject* gameObject, bool useCache )
     {
         if( gameObject == null )
         {
@@ -26,6 +26,11 @@ public unsafe partial class PathResolver
 
         try
         {
+            if( useCache && IdentifiedCache.TryGetValue( gameObject, out var data ) )
+            {
+                return data;
+            }
+
             // Login screen. Names are populated after actors are drawn,
             // so it is not possible to fetch names from the ui list.
             // Actors are also not named. So use Yourself > Players > Racial > Default.
@@ -34,7 +39,7 @@ public unsafe partial class PathResolver
                 var collection = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
                  ?? CollectionByAttributes( gameObject )
                  ?? Penumbra.CollectionManager.Default;
-                return collection.ToResolveData( gameObject );
+                return IdentifiedCache.Set( collection, ActorIdentifier.Invalid, gameObject );
             }
             else
             {
@@ -44,7 +49,7 @@ public unsafe partial class PathResolver
                  ?? CollectionByAttributes( gameObject )
                  ?? CheckOwnedCollection( identifier, gameObject )
                  ?? Penumbra.CollectionManager.Default;
-                return collection.ToResolveData( gameObject );
+                return IdentifiedCache.Set( collection, identifier, gameObject );
             }
         }
         catch( Exception e )
