@@ -371,7 +371,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc AddMod( string modDirectory )
     {
         CheckInitialized();
-        var dir = new DirectoryInfo( Path.Combine( Penumbra.ModManager.BasePath.FullName, modDirectory ) );
+        var dir = new DirectoryInfo( Path.Join( Penumbra.ModManager.BasePath.FullName, modDirectory ) );
         if( !dir.Exists )
         {
             return PenumbraApiEc.FileMissing;
@@ -572,7 +572,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return ( PenumbraApiEc.InvalidArgument, string.Empty );
         }
 
-        if( !forceOverwriteCharacter && Penumbra.CollectionManager.Individuals.Individuals.ContainsKey( NameToIdentifier(character) )
+        if( !forceOverwriteCharacter && Penumbra.CollectionManager.Individuals.Individuals.ContainsKey( NameToIdentifier( character ) )
         || Penumbra.TempMods.Collections.ContainsKey( character ) )
         {
             return ( PenumbraApiEc.CharacterCollectionExists, string.Empty );
@@ -682,7 +682,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         CheckInitialized();
         var collection = Penumbra.TempMods.Collections.TryGetValue( characterName, out var c )
             ? c
-            : Penumbra.CollectionManager.Individual( NameToIdentifier(characterName) );
+            : Penumbra.CollectionManager.Individual( NameToIdentifier( characterName ) );
         var set = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >();
         return Functions.ToCompressedBase64( set, MetaManipulation.CurrentVersion );
     }
