@@ -521,7 +521,7 @@ public class Penumbra : IDalamudPlugin
             if( id.Type is IdentifierType.Player or IdentifierType.Owned )
             {
                 var parts = name.Split( ' ', 3 );
-                return string.Join( " ", parts.Length != 3 ? parts.Select( n => $"{n[ 0 ]}." ) : parts[ ..2 ].Select( n => $"{n[ 0 ]}." ).Append( parts[2] ) );
+                return string.Join( " ", parts.Length != 3 ? parts.Select( n => $"{n[ 0 ]}." ) : parts[ ..2 ].Select( n => $"{n[ 0 ]}." ).Append( parts[ 2 ] ) );
             }
 
             return name + ':';
