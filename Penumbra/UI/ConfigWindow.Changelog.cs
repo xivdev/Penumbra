@@ -24,9 +24,37 @@ public partial class ConfigWindow
         Add5_10_0( ret );
         Add5_11_0( ret );
         Add5_11_1( ret );
+        Add6_0_0( ret );
 
         return ret;
     }
+
+    private static void Add6_0_0( Changelog log )
+        => log.NextVersion( "Version 0.6.0.0" )
+           .RegisterEntry( "Revamped Individual Collections:" )
+           .RegisterEntry( "You can now specify individual collections for players (by name) of specific worlds or any world.", 1 )
+           .RegisterEntry( "You can also specify NPCs (by grouped name and type of NPC), and owned NPCs (by specifying an NPC and a Player).", 1 )
+           .RegisterHighlight(
+                "Migration should move all current names that correspond to NPCs to the appropriate NPC group and all names that can be valid Player names to a Player of any world.",
+                1 )
+           .RegisterHighlight(
+                "Please look through your Individual Collections to verify everything migrated correctly and corresponds to the game object you want. You might also want to change the 'Player (Any World)' collections to your specific homeworld.",
+                1 )
+           .RegisterEntry( "You can also manually sort your Individual Collections by drag and drop now.", 1 )
+           .RegisterEntry( "This new system is a pretty big rework, so please report any discrepancies or bugs you find.", 1 )
+           .RegisterEntry( "These changes made the specific ownership settings for Retainers and for preferring named over ownership obsolete.", 1  )
+           .RegisterEntry( "General ownership can still be toggled and should apply in order of: Owned NPC > Owner (if enabled) > General NPC.", 1  )
+           .RegisterEntry( "Added Dye Previews for in-game dyes and dyeing templates in Material Editing." )
+           .RegisterEntry( "Added Export buttons to .mdl and .mtrl previews in Advanced Editing." )
+           .RegisterEntry( "Collection selectors can now be filtered by name." )
+           .RegisterEntry( "Try to use Unicode normalization before replacing invalid path symbols on import for somewhat nicer paths." )
+           .RegisterEntry( "Improved interface for group settings (minimally)." )
+           .RegisterEntry( "Prevent a bug that allowed IPC to add Mods from outside the Penumbra root folder." )
+           .RegisterEntry( "Improved Support Info somewhat." )
+           .RegisterEntry( "Fixed a bug when dragging options during mod edit." )
+           .RegisterEntry( "Fixed a bug where sometimes the valid folder check caused issues." )
+           .RegisterEntry( "Fixed a bug where the /penumbra enable/disable command displayed the wrong message (functionality unchanged)." )
+           .RegisterEntry( "A lot of big backend changes." );
 
     private static void Add5_11_1( Changelog log )
         => log.NextVersion( "Version 0.5.11.1" )

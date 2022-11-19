@@ -170,7 +170,7 @@ public partial class ModCollection
         }
 
         // Wrappers around Individual Collection handling.
-        public void CreateIndividualCollection( ActorIdentifier[] identifiers )
+        public void CreateIndividualCollection( params ActorIdentifier[] identifiers )
         {
             if( Individuals.Add( identifiers, Default ) )
             {

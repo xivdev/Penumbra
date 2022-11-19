@@ -85,6 +85,11 @@ public partial class ConfigWindow
         {
             static bool IsSubPathOf( string basePath, string subPath )
             {
+                if( basePath.Length == 0 )
+                {
+                    return false;
+                }
+
                 var rel = Path.GetRelativePath( basePath, subPath );
                 return rel == "." || !rel.StartsWith( '.' ) && !Path.IsPathRooted( rel );
             }

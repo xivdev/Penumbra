@@ -28,6 +28,7 @@ using Penumbra.GameData.Actors;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
+using Penumbra.String;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
@@ -337,7 +338,7 @@ public class Penumbra : IDalamudPlugin
             var split = collectionName.Split( '|', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
             if( split.Length < 2 || split[ 0 ].Length == 0 || split[ 1 ].Length == 0 )
             {
-                Dalamud.Chat.Print( "You need to provide a collection and a character name in the form of 'collection | character' to set a character collection." );
+                Dalamud.Chat.Print( "You need to provide a collection and a character name in the form of 'collection | name' to set an individual collection." );
                 return false;
             }
 
@@ -355,27 +356,33 @@ public class Penumbra : IDalamudPlugin
             return false;
         }
 
-        // TODO
-        //var oldCollection = CollectionManager.ByType( type, characterName );
-        //if( collection == oldCollection )
-        //{
-        //    Dalamud.Chat.Print( $"{collection.Name} already is the {type.ToName()} Collection." );
-        //    return false;
-        //}
-        //
-        //if( oldCollection == null )
-        //{
-        //    if( type.IsSpecial() )
-        //    {
-        //        CollectionManager.CreateSpecialCollection( type );
-        //    }
-        //    else if( type is CollectionType.Individual )
-        //    {
-        //        CollectionManager.CreateIndividualCollection( characterName! );
-        //    }
-        //}
-        //
-        //CollectionManager.SetCollection( collection, type, characterName );
+        var identifier = Actors.CreatePlayer( ByteString.FromStringUnsafe( characterName, false ), ushort.MaxValue );
+        if( !identifier.IsValid )
+        {
+            Dalamud.Chat.Print( $"{characterName} is not a valid character name." );
+            return false;
+        }
+
+        var oldCollection = CollectionManager.ByType( type, identifier );
+        if( collection == oldCollection )
+        {
+            Dalamud.Chat.Print( $"{collection.Name} already is the {type.ToName()} Collection." );
+            return false;
+        }
+
+        if( oldCollection == null )
+        {
+            if( type.IsSpecial() )
+            {
+                CollectionManager.CreateSpecialCollection( type );
+            }
+            else if( type is CollectionType.Individual )
+            {
+                CollectionManager.CreateIndividualCollection( identifier );
+            }
+        }
+
+        CollectionManager.SetCollection( collection, type, CollectionManager.Individuals.Count - 1 );
         Dalamud.Chat.Print( $"Set {collection.Name} as {type.ToName()} Collection{( characterName != null ? $" for {characterName}." : "." )}" );
         return true;
     }
@@ -490,62 +497,61 @@ public class Penumbra : IDalamudPlugin
         var exists = Config.ModDirectory.Length > 0 && Directory.Exists( Config.ModDirectory );
         var drive  = exists ? new DriveInfo( new DirectoryInfo( Config.ModDirectory ).Root.FullName ) : null;
         sb.AppendLine( "**Settings**" );
-        sb.AppendFormat( "> **`Plugin Version:              `** {0}\n", Version );
-        sb.AppendFormat( "> **`Commit Hash:                 `** {0}\n", CommitHash );
-        sb.AppendFormat( "> **`Enable Mods:                 `** {0}\n", Config.EnableMods );
-        sb.AppendFormat( "> **`Enable HTTP API:             `** {0}\n", Config.EnableHttpApi );
-        sb.AppendFormat( "> **`Root Directory:              `** `{0}`, {1}\n", Config.ModDirectory, exists ? "Exists" : "Not Existing" );
-        sb.AppendFormat( "> **`Free Drive Space:            `** {0}\n",
-            drive != null ? Functions.HumanReadableSize( drive.AvailableFreeSpace ) : "Unknown" );
+        sb.Append( $"> **`Plugin Version:              `** {Version}\n" );
+        sb.Append( $"> **`Commit Hash:                 `** {CommitHash}\n" );
+        sb.Append( $"> **`Enable Mods:                 `** {Config.EnableMods}\n" );
+        sb.Append( $"> **`Enable HTTP API:             `** {Config.EnableHttpApi}\n" );
+        sb.Append( $"> **`Root Directory:              `** `{Config.ModDirectory}`, {( exists ? "Exists" : "Not Existing" )}\n" );
+        sb.Append( $"> **`Free Drive Space:            `** {( drive != null ? Functions.HumanReadableSize( drive.AvailableFreeSpace ) : "Unknown" )}\n" );
+        sb.Append( $"> **`Auto-Deduplication:          `** {Config.AutoDeduplicateOnImport}\n" );
+        sb.Append( $"> **`Debug Mode:                  `** {Config.DebugMode}\n" );
+        sb.Append( $"> **`Logging:                     `** Full: {Config.EnableFullResourceLogging}, Resource: {Config.EnableResourceLogging}\n" );
+        sb.Append( $"> **`Use Ownership:               `** {Config.UseOwnerNameForCharacterCollection}\n" );
         sb.AppendLine( "**Mods**" );
-        sb.AppendFormat( "> **`Installed Mods:              `** {0}\n", ModManager.Count );
-        sb.AppendFormat( "> **`Mods with Config:            `** {0}\n", ModManager.Count( m => m.HasOptions ) );
-        sb.AppendFormat( "> **`Mods with File Redirections: `** {0}, Total: {1}\n", ModManager.Count( m => m.TotalFileCount > 0 ),
-            ModManager.Sum( m => m.TotalFileCount ) );
-        sb.AppendFormat( "> **`Mods with FileSwaps:         `** {0}, Total: {1}\n", ModManager.Count( m => m.TotalSwapCount > 0 ),
-            ModManager.Sum( m => m.TotalSwapCount ) );
-        sb.AppendFormat( "> **`Mods with Meta Manipulations:`** {0}, Total {1}\n", ModManager.Count( m => m.TotalManipulations > 0 ),
-            ModManager.Sum( m => m.TotalManipulations ) );
-        sb.AppendFormat( "> **`IMC Exceptions Thrown:       `** {0}\n", ImcExceptions );
+        sb.Append( $"> **`Installed Mods:              `** {ModManager.Count}\n" );
+        sb.Append( $"> **`Mods with Config:            `** {ModManager.Count( m => m.HasOptions )}\n" );
+        sb.Append( $"> **`Mods with File Redirections: `** {ModManager.Count( m => m.TotalFileCount     > 0 )}, Total: {ModManager.Sum( m => m.TotalFileCount )}\n" );
+        sb.Append( $"> **`Mods with FileSwaps:         `** {ModManager.Count( m => m.TotalSwapCount     > 0 )}, Total: {ModManager.Sum( m => m.TotalSwapCount )}\n" );
+        sb.Append( $"> **`Mods with Meta Manipulations:`** {ModManager.Count( m => m.TotalManipulations > 0 )}, Total {ModManager.Sum( m => m.TotalManipulations )}\n" );
+        sb.Append( $"> **`IMC Exceptions Thrown:       `** {ImcExceptions.Count}\n" );
+        sb.Append( $"> **`#Temp Mods:                  `** {TempMods.Mods.Sum( kvp => kvp.Value.Count ) + TempMods.ModsForAllCollections.Count}\n" );
 
         string CharacterName( ActorIdentifier id, string name )
         {
             if( id.Type is IdentifierType.Player or IdentifierType.Owned )
             {
-                return string.Join( " ", name.Split( ' ', 3 ).Select( n => $"{n[ 0 ]}." ) ) + ':';
+                var parts = name.Split( ' ', 3 );
+                return string.Join( " ", parts.Length != 3 ? parts.Select( n => $"{n[ 0 ]}." ) : parts[ ..2 ].Select( n => $"{n[ 0 ]}." ).Append( parts[2] ) );
             }
 
             return name + ':';
         }
 
         void PrintCollection( ModCollection c )
-            => sb.AppendFormat( "**Collection {0}**\n"
-              + "> **`Inheritances:                `** {1}\n"
-              + "> **`Enabled Mods:                `** {2}\n"
-              + "> **`Total Conflicts:             `** {3}\n"
-              + "> **`Solved Conflicts:            `** {4}\n",
-                c.AnonymizedName, c.Inheritance.Count, c.ActualSettings.Count( s => s is { Enabled: true } ),
-                c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority ? 0 : x.Conflicts.Count ),
-                c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority || !x.Solved ? 0 : x.Conflicts.Count ) );
+            => sb.Append( $"**Collection {c.AnonymizedName}**\n"
+              + $"> **`Inheritances:                 `** {c.Inheritance.Count}\n"
+              + $"> **`Enabled Mods:                 `** {c.ActualSettings.Count( s => s is { Enabled: true } )}\n"
+              + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority ? 0 : x.Conflicts.Count )}/{c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority || !x.Solved ? 0 : x.Conflicts.Count )}\n" );
 
         sb.AppendLine( "**Collections**" );
-        sb.AppendFormat( "> **`#Collections:                 `** {0}\n", CollectionManager.Count - 1 );
-        sb.AppendFormat( "> **`Active Collections:           `** {0}\n", CollectionManager.Count( c => c.HasCache ) );
-        sb.AppendFormat( "> **`Base Collection:              `** {0}\n", CollectionManager.Default.AnonymizedName );
-        sb.AppendFormat( "> **`Interface Collection:         `** {0}\n", CollectionManager.Interface.AnonymizedName );
-        sb.AppendFormat( "> **`Selected Collection:          `** {0}\n", CollectionManager.Current.AnonymizedName );
+        sb.Append( $"> **`#Collections:                 `** {CollectionManager.Count - 1}\n" );
+        sb.Append( $"> **`#Temp Collections:            `** {TempMods.CustomCollections.Count}\n" );
+        sb.Append( $"> **`Active Collections:           `** {CollectionManager.Count( c => c.HasCache )}\n" );
+        sb.Append( $"> **`Base Collection:              `** {CollectionManager.Default.AnonymizedName}\n" );
+        sb.Append( $"> **`Interface Collection:         `** {CollectionManager.Interface.AnonymizedName}\n" );
+        sb.Append( $"> **`Selected Collection:          `** {CollectionManager.Current.AnonymizedName}\n" );
         foreach( var (type, name, _) in CollectionTypeExtensions.Special )
         {
             var collection = CollectionManager.ByType( type );
             if( collection != null )
             {
-                sb.AppendFormat( "> **`{0,-29}`** {1}\n", name, collection.AnonymizedName );
+                sb.Append( $"> **`{name,-30}`** {collection.AnonymizedName}\n" );
             }
         }
 
         foreach( var (name, id, collection) in CollectionManager.Individuals.Assignments )
         {
-            sb.AppendFormat( "> **`{1,-29}`** {0}\n", collection.AnonymizedName, CharacterName( id[ 0 ], name ) );
+            sb.Append( $"> **`{CharacterName( id[ 0 ], name ),-30}`** {collection.AnonymizedName}\n" );
         }
 
         foreach( var collection in CollectionManager.Where( c => c.HasCache ) )
