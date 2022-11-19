@@ -1,10 +1,11 @@
-using OtterGui;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using Penumbra.GameData.Actors;
+using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Api;
@@ -21,7 +22,10 @@ public class TempModManager
 {
     private readonly Dictionary< ModCollection, List< Mod.TemporaryMod > > _mods                  = new();
     private readonly List< Mod.TemporaryMod >                              _modsForAllCollections = new();
-    private readonly Dictionary< string, ModCollection >                   _collections           = new();
+    private readonly Dictionary< string, ModCollection >                   _customCollections     = new();
+    public readonly  IndividualCollections                                 Collections            = new(Penumbra.Actors);
+
+    public event ModCollection.Manager.CollectionChangeDelegate? CollectionChanged;
 
     public IReadOnlyDictionary< ModCollection, List< Mod.TemporaryMod > > Mods
         => _mods;
@@ -29,13 +33,11 @@ public class TempModManager
     public IReadOnlyList< Mod.TemporaryMod > ModsForAllCollections
         => _modsForAllCollections;
 
-    public IReadOnlyDictionary< string, ModCollection > Collections
-        => _collections;
+    public IReadOnlyDictionary< string, ModCollection > CustomCollections
+        => _customCollections;
 
     public bool CollectionByName( string name, [NotNullWhen( true )] out ModCollection? collection )
-        => Collections.Values.FindFirst( c => string.Equals( c.Name, name, StringComparison.OrdinalIgnoreCase ), out collection );
-
-    public event ModCollection.Manager.CollectionChangeDelegate? CollectionChanged;
+        => _customCollections.TryGetValue( name, out collection );
 
     // These functions to check specific redirections or meta manipulations for existence are currently unused.
     //public bool IsRegistered( string tag, ModCollection? collection, Utf8GamePath gamePath, out FullPath? fullPath, out int priority )
@@ -149,25 +151,85 @@ public class TempModManager
         return RedirectResult.Success;
     }
 
-    public string SetTemporaryCollection( string tag, string characterName )
+    public string CreateTemporaryCollection( string tag, string customName )
     {
-        var collection = ModCollection.CreateNewTemporary( tag, characterName );
-        _collections[ characterName ] = collection;
-        CollectionChanged?.Invoke(CollectionType.Temporary, null, collection );
+        var collection = ModCollection.CreateNewTemporary( tag, customName );
+        if( _customCollections.ContainsKey( collection.Name ) )
+        {
+            collection.ClearCache();
+            return string.Empty;
+        }
+        _customCollections.Add( collection.Name, collection );
         return collection.Name;
     }
 
-    public bool RemoveTemporaryCollection( string characterName )
+    public bool RemoveTemporaryCollection( string collectionName )
     {
-        if( _collections.Remove( characterName, out var c ) )
+        if( !_customCollections.Remove( collectionName, out var collection ) )
         {
-            _mods.Remove( c );
-            c.ClearCache();
-            CollectionChanged?.Invoke( CollectionType.Temporary, c, null );
+            return false;
+        }
+
+        _mods.Remove( collection );
+        collection.ClearCache();
+        for( var i = 0; i < Collections.Count; ++i )
+        {
+            if( Collections[ i ].Collection == collection )
+            {
+                CollectionChanged?.Invoke( CollectionType.Temporary, collection, null, Collections[ i ].DisplayName );
+                Collections.Delete( i );
+            }
+        }
+
+        return true;
+    }
+
+    public bool AddIdentifier( ModCollection collection, params ActorIdentifier[] identifiers )
+    {
+        if( Collections.Add( identifiers, collection ) )
+        {
+            CollectionChanged?.Invoke( CollectionType.Temporary, null, collection, Collections.Last().DisplayName );
             return true;
         }
 
         return false;
+    }
+
+    public bool AddIdentifier( string collectionName, params ActorIdentifier[] identifiers )
+    {
+        if( !_customCollections.TryGetValue( collectionName, out var collection ) )
+        {
+            return false;
+        }
+
+        return AddIdentifier( collection, identifiers );
+    }
+
+    public bool AddIdentifier( string collectionName, string characterName, ushort worldId = ushort.MaxValue )
+    {
+        if( !ByteString.FromString( characterName, out var byteString, false ) )
+        {
+            return false;
+        }
+
+        var identifier = Penumbra.Actors.CreatePlayer( byteString, worldId );
+        if( !identifier.IsValid )
+        {
+            return false;
+        }
+
+        return AddIdentifier( collectionName, identifier );
+    }
+
+    internal bool RemoveByCharacterName( string characterName, ushort worldId = ushort.MaxValue )
+    {
+        if( !ByteString.FromString( characterName, out var byteString, false ) )
+        {
+            return false;
+        }
+
+        var identifier = Penumbra.Actors.CreatePlayer( byteString, worldId );
+        return Collections.Individuals.TryGetValue( identifier, out var collection ) && RemoveTemporaryCollection( collection.Name );
     }
 
 

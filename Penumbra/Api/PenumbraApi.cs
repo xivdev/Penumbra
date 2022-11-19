@@ -210,14 +210,22 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return ResolvePath( path, Penumbra.ModManager, PathResolver.PlayerCollection() );
     }
 
+    // TODO: cleanup when incrementing API level
     public string ResolvePath( string path, string characterName )
+        => ResolvePath( path, characterName, ushort.MaxValue );
+
+    public string ResolvePath( string path, string characterName, ushort worldId )
     {
         CheckInitialized();
         return ResolvePath( path, Penumbra.ModManager,
-            Penumbra.CollectionManager.Individual( NameToIdentifier( characterName ) ) );
+            Penumbra.CollectionManager.Individual( NameToIdentifier( characterName, worldId ) ) );
     }
 
+    // TODO: cleanup when incrementing API level
     public string[] ReverseResolvePath( string path, string characterName )
+        => ReverseResolvePath( path, characterName, ushort.MaxValue );
+
+    public string[] ReverseResolvePath( string path, string characterName, ushort worldId )
     {
         CheckInitialized();
         if( !Penumbra.Config.EnableMods )
@@ -225,7 +233,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return new[] { path };
         }
 
-        var ret = Penumbra.CollectionManager.Individual( NameToIdentifier( characterName ) ).ReverseResolvePath( new FullPath( path ) );
+        var ret = Penumbra.CollectionManager.Individual( NameToIdentifier( characterName, worldId ) ).ReverseResolvePath( new FullPath( path ) );
         return ret.Select( r => r.ToString() ).ToArray();
     }
 
@@ -296,10 +304,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Penumbra.CollectionManager.Interface.Name;
     }
 
+    // TODO: cleanup when incrementing API level
     public (string, bool) GetCharacterCollection( string characterName )
+        => GetCharacterCollection( characterName, ushort.MaxValue );
+
+    public (string, bool) GetCharacterCollection( string characterName, ushort worldId )
     {
         CheckInitialized();
-        return Penumbra.CollectionManager.Individuals.TryGetCollection( NameToIdentifier( characterName ), out var collection )
+        return Penumbra.CollectionManager.Individuals.TryGetCollection( NameToIdentifier( characterName, worldId ), out var collection )
             ? ( collection.Name, true )
             : ( Penumbra.CollectionManager.Default.Name, false );
     }
@@ -371,7 +383,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc AddMod( string modDirectory )
     {
         CheckInitialized();
-        var dir = new DirectoryInfo( Path.Join( Penumbra.ModManager.BasePath.FullName, Path.GetFileName(modDirectory) ) );
+        var dir = new DirectoryInfo( Path.Join( Penumbra.ModManager.BasePath.FullName, Path.GetFileName( modDirectory ) ) );
         if( !dir.Exists )
         {
             return PenumbraApiEc.FileMissing;
@@ -564,34 +576,50 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     public (PenumbraApiEc, string) CreateTemporaryCollection( string tag, string character, bool forceOverwriteCharacter )
+        => CreateTemporaryCollection( tag, character, forceOverwriteCharacter, ushort.MaxValue );
+
+    public (PenumbraApiEc, string) CreateTemporaryCollection( string tag, string character, bool forceOverwriteCharacter, ushort worldId )
     {
         CheckInitialized();
 
-        if( character.Length is 0 or > 32 || tag.Length == 0 )
+        if( !ActorManager.VerifyPlayerName( character.AsSpan() ) || tag.Length == 0 )
         {
             return ( PenumbraApiEc.InvalidArgument, string.Empty );
         }
 
-        if( !forceOverwriteCharacter && Penumbra.CollectionManager.Individuals.Individuals.ContainsKey( NameToIdentifier( character ) )
-        || Penumbra.TempMods.Collections.ContainsKey( character ) )
+        var identifier = NameToIdentifier( character, worldId );
+        if( !identifier.IsValid )
+        {
+            return ( PenumbraApiEc.InvalidArgument, string.Empty );
+        }
+
+        if( !forceOverwriteCharacter && Penumbra.CollectionManager.Individuals.Individuals.ContainsKey( identifier )
+        || Penumbra.TempMods.Collections.Individuals.ContainsKey( identifier ) )
         {
             return ( PenumbraApiEc.CharacterCollectionExists, string.Empty );
         }
 
-        var name = Penumbra.TempMods.SetTemporaryCollection( tag, character );
-        return ( PenumbraApiEc.Success, name );
+        var name = Penumbra.TempMods.CreateTemporaryCollection( tag, character );
+        if( name.Length == 0 )
+        {
+            return ( PenumbraApiEc.CharacterCollectionExists, string.Empty );
+        }
+
+        if( Penumbra.TempMods.AddIdentifier( name, identifier ) )
+        {
+            return ( PenumbraApiEc.Success, name );
+        }
+
+        Penumbra.TempMods.RemoveTemporaryCollection( name );
+        return ( PenumbraApiEc.UnknownError, string.Empty );
     }
 
     public PenumbraApiEc RemoveTemporaryCollection( string character )
     {
         CheckInitialized();
-        if( !Penumbra.TempMods.Collections.ContainsKey( character ) )
-        {
-            return PenumbraApiEc.NothingChanged;
-        }
-
-        Penumbra.TempMods.RemoveTemporaryCollection( character );
-        return PenumbraApiEc.Success;
+        return Penumbra.TempMods.RemoveByCharacterName( character )
+            ? PenumbraApiEc.Success
+            : PenumbraApiEc.NothingChanged;
     }
 
     public PenumbraApiEc AddTemporaryModAll( string tag, Dictionary< string, string > paths, string manipString, int priority )
@@ -677,12 +705,17 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Functions.ToCompressedBase64( set, MetaManipulation.CurrentVersion );
     }
 
+    // TODO: cleanup when incrementing API
     public string GetMetaManipulations( string characterName )
+        => GetMetaManipulations( characterName, ushort.MaxValue );
+
+    public string GetMetaManipulations( string characterName, ushort worldId )
     {
         CheckInitialized();
-        var collection = Penumbra.TempMods.Collections.TryGetValue( characterName, out var c )
+        var identifier = NameToIdentifier( characterName, worldId );
+        var collection = Penumbra.TempMods.Collections.TryGetCollection( identifier, out var c )
             ? c
-            : Penumbra.CollectionManager.Individual( NameToIdentifier( characterName ) );
+            : Penumbra.CollectionManager.Individual( identifier );
         var set = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >();
         return Functions.ToCompressedBase64( set, MetaManipulation.CurrentVersion );
     }
@@ -830,10 +863,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public void InvokePostSettingsPanel( string modDirectory )
         => PostSettingsPanelDraw?.Invoke( modDirectory );
 
-    // TODO
-    private static ActorIdentifier NameToIdentifier( string name )
+    // TODO: replace all usages with ActorIdentifier stuff when incrementing API
+    private static ActorIdentifier NameToIdentifier( string name, ushort worldId )
     {
+        // Verified to be valid name beforehand.
         var b = ByteString.FromStringUnsafe( name, false );
-        return Penumbra.Actors.CreatePlayer( b, ( ushort )( Dalamud.ClientState.LocalPlayer?.HomeWorld.Id ?? ushort.MaxValue ) );
+        return Penumbra.Actors.CreatePlayer( b, worldId );
     }
 }
