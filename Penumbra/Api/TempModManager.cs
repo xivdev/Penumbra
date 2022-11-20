@@ -37,7 +37,7 @@ public class TempModManager
         => _customCollections;
 
     public bool CollectionByName( string name, [NotNullWhen( true )] out ModCollection? collection )
-        => _customCollections.TryGetValue( name, out collection );
+        => _customCollections.TryGetValue( name.ToLowerInvariant(), out collection );
 
     // These functions to check specific redirections or meta manipulations for existence are currently unused.
     //public bool IsRegistered( string tag, ModCollection? collection, Utf8GamePath gamePath, out FullPath? fullPath, out int priority )
@@ -154,18 +154,18 @@ public class TempModManager
     public string CreateTemporaryCollection( string tag, string customName )
     {
         var collection = ModCollection.CreateNewTemporary( tag, customName );
-        if( _customCollections.ContainsKey( collection.Name ) )
+        if( _customCollections.TryAdd( collection.Name.ToLowerInvariant(), collection ) )
         {
-            collection.ClearCache();
-            return string.Empty;
+            return collection.Name;
         }
-        _customCollections.Add( collection.Name, collection );
-        return collection.Name;
+
+        collection.ClearCache();
+        return string.Empty;
     }
 
     public bool RemoveTemporaryCollection( string collectionName )
     {
-        if( !_customCollections.Remove( collectionName, out var collection ) )
+        if( !_customCollections.Remove( collectionName.ToLowerInvariant(), out var collection ) )
         {
             return false;
         }
@@ -197,7 +197,7 @@ public class TempModManager
 
     public bool AddIdentifier( string collectionName, params ActorIdentifier[] identifiers )
     {
-        if( !_customCollections.TryGetValue( collectionName, out var collection ) )
+        if( !_customCollections.TryGetValue( collectionName.ToLowerInvariant(), out var collection ) )
         {
             return false;
         }

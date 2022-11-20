@@ -128,8 +128,8 @@ public partial class ConfigWindow
           + "The more specific the condition, the higher its priority (i.e. Your Character > Player Characters > Race).\n\n"
           + $"{IndividualAssignments} always take precedence before groups." )
        .Register( IndividualAssignments,
-            "Collections assigned here are used only for individual characters or NPCs that have the specified name.\n\n"
-          + "They may also apply to objects 'owned' by those characters, e.g. minions or mounts - see the general settings for options on this.\n\n" )
+            "Collections assigned here are used only for individual players or NPCs that fulfill the given criteria.\n\n"
+          + "They may also apply to objects 'owned' by those characters implicitly, e.g. minions or mounts - see the general settings for options on this.\n\n" )
        .Register( "Initial Setup, Step 8: Mods", "Our last stop is the Mods tab, where you can import and setup your mods.\n\n"
           + $"Please go there after verifying that your {SelectedCollection} and {DefaultCollection} are setup to your liking." )
        .Register( "Initial Setup, Step 9: Mod Import",

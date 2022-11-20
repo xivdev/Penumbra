@@ -13,6 +13,8 @@ using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Swan;
+using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Api;
 
@@ -1132,6 +1134,17 @@ public class IpcTester : IDisposable
                     _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue );
             }
 
+            DrawIntro( Ipc.CreateTemporaryCollection.Label, "Copy Existing Collection" );
+            if( ImGuiUtil.DrawDisabledButton( "Copy##Collection", Vector2.Zero, "Copies the effective list from the collection named in Temporary Mod Name...",
+                   !Penumbra.CollectionManager.ByName( _tempModName, out var copyCollection ) )
+            && copyCollection is { HasCache: true } )
+            {
+                var files = copyCollection.ResolvedFiles.ToDictionary( kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString() );
+                var manips = Functions.ToCompressedBase64( copyCollection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >(),
+                    MetaManipulation.CurrentVersion );
+                _lastTempError = Ipc.AddTemporaryMod.Subscriber( _pi ).Invoke( _tempModName, _tempCollectionName, files, manips, 999 );
+            }
+
             DrawIntro( Ipc.AddTemporaryModAll.Label, "Add Temporary Mod to all Collections" );
             if( ImGui.Button( "Add##All" ) )
             {
@@ -1154,7 +1167,7 @@ public class IpcTester : IDisposable
 
         public void DrawCollections()
         {
-            using var collTree = ImRaii.TreeNode( "Collections" );
+            using var collTree = ImRaii.TreeNode( "Collections##TempCollections" );
             if( !collTree )
             {
                 return;
@@ -1166,27 +1179,25 @@ public class IpcTester : IDisposable
                 return;
             }
 
-            foreach( var (character, collection) in Penumbra.TempMods.Collections )
+            foreach( var collection in Penumbra.TempMods.CustomCollections.Values )
             {
                 ImGui.TableNextColumn();
-                ImGui.TextUnformatted( character );
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( collection.Name );
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( collection.ResolvedFiles.Count.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( collection.MetaCache?.Count.ToString() ?? "0" );
-                ImGui.TableNextColumn();
-                if( ImGui.Button( $"Save##{character}" ) )
+                var character = Penumbra.TempMods.Collections.Where( p => p.Collection == collection ).Select( p => p.DisplayName ).FirstOrDefault() ?? "Unknown";
+                if( ImGui.Button( $"Save##{collection.Name}" ) )
                 {
                     Mod.TemporaryMod.SaveTempCollection( collection, character );
                 }
+
+                ImGuiUtil.DrawTableColumn( collection.Name );
+                ImGuiUtil.DrawTableColumn( collection.ResolvedFiles.Count.ToString() );
+                ImGuiUtil.DrawTableColumn( collection.MetaCache?.Count.ToString() ?? "0" );
+                ImGuiUtil.DrawTableColumn( string.Join( ", ", Penumbra.TempMods.Collections.Where( p => p.Collection == collection ).Select( c => c.DisplayName ) ) );
             }
         }
 
         public void DrawMods()
         {
-            using var modTree = ImRaii.TreeNode( "Mods" );
+            using var modTree = ImRaii.TreeNode( "Mods##TempMods" );
             if( !modTree )
             {
                 return;

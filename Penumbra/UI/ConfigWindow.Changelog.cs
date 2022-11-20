@@ -50,6 +50,7 @@ public partial class ConfigWindow
            .RegisterEntry( "Try to use Unicode normalization before replacing invalid path symbols on import for somewhat nicer paths." )
            .RegisterEntry( "Improved interface for group settings (minimally)." )
            .RegisterEntry( "Prevent a bug that allowed IPC to add Mods from outside the Penumbra root folder." )
+           .RegisterEntry( "New Special or Individual Assignments now default to your current Base assignment instead of None."  )
            .RegisterEntry( "Improved Support Info somewhat." )
            .RegisterEntry( "Fixed a bug when dragging options during mod edit." )
            .RegisterEntry( "Fixed a bug where sometimes the valid folder check caused issues." )
