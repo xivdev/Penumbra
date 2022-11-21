@@ -62,8 +62,15 @@ public sealed partial class IndividualCollections
                     return AddResult.Invalid;
                 }
 
-                var identifier = _actorManager.CreatePlayer( playerName, homeWorld );
-                identifiers = new[] { identifier };
+                identifiers = new[] { _actorManager.CreatePlayer( playerName, homeWorld ) };
+                break;
+            case IdentifierType.Retainer:
+                if( !ByteString.FromString( name, out var retainerName ) )
+                {
+                    return AddResult.Invalid;
+                }
+
+                identifiers = new[] { _actorManager.CreateRetainer( retainerName ) };
                 break;
             case IdentifierType.Owned:
                 if( !ByteString.FromString( name, out var ownerName ) )
@@ -108,11 +115,12 @@ public sealed partial class IndividualCollections
 
         return identifier.Type switch
         {
-            IdentifierType.Player  => new[] { identifier.CreatePermanent() },
-            IdentifierType.Special => new[] { identifier },
-            IdentifierType.Owned   => CreateNpcs( _actorManager, identifier.CreatePermanent() ),
-            IdentifierType.Npc     => CreateNpcs( _actorManager, identifier ),
-            _                      => Array.Empty< ActorIdentifier >(),
+            IdentifierType.Player   => new[] { identifier.CreatePermanent() },
+            IdentifierType.Special  => new[] { identifier },
+            IdentifierType.Retainer => new[] { identifier.CreatePermanent() },
+            IdentifierType.Owned    => CreateNpcs( _actorManager, identifier.CreatePermanent() ),
+            IdentifierType.Npc      => CreateNpcs( _actorManager, identifier ),
+            _                       => Array.Empty< ActorIdentifier >(),
         };
     }
 
@@ -197,7 +205,8 @@ public sealed partial class IndividualCollections
     {
         return identifier.Type switch
         {
-            IdentifierType.Player => $"{identifier.PlayerName} ({_actorManager.ToWorldName( identifier.HomeWorld )})",
+            IdentifierType.Player   => $"{identifier.PlayerName} ({_actorManager.ToWorldName( identifier.HomeWorld )})",
+            IdentifierType.Retainer => $"{identifier.PlayerName} (Retainer)",
             IdentifierType.Owned =>
                 $"{identifier.PlayerName} ({_actorManager.ToWorldName( identifier.HomeWorld )})'s {_actorManager.ToName( identifier.Kind, identifier.DataId )}",
             IdentifierType.Npc => $"{_actorManager.ToName( identifier.Kind, identifier.DataId )} ({identifier.Kind.ToName()})",

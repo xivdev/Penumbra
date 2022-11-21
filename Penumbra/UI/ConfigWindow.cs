@@ -137,6 +137,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     {
         _selector.Dispose();
         _modPanel.Dispose();
+        _collectionsTab.Dispose();
         ModEditPopup.Dispose();
     }
 

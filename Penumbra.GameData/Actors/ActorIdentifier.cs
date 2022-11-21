@@ -25,7 +25,7 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
     // @formatter:on
 
     public ActorIdentifier CreatePermanent()
-        => new(Type, Kind, Index, DataId, PlayerName.Clone());
+        => new(Type, Kind, Index, DataId, PlayerName.IsEmpty ? PlayerName : PlayerName.Clone());
 
     public bool Equals(ActorIdentifier other)
     {
@@ -35,11 +35,13 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
         return Type switch
         {
             IdentifierType.Player => HomeWorld == other.HomeWorld && PlayerName.EqualsCi(other.PlayerName),
+            IdentifierType.Retainer => PlayerName.EqualsCi(other.PlayerName),
             IdentifierType.Owned => HomeWorld == other.HomeWorld && PlayerName.EqualsCi(other.PlayerName) && Manager.DataIdEquals(this, other),
             IdentifierType.Special => Special == other.Special,
             IdentifierType.Npc => Manager.DataIdEquals(this, other)
              && (Index == other.Index || Index == ushort.MaxValue || other.Index == ushort.MaxValue),
-            _ => false,
+            IdentifierType.UnkObject => PlayerName.EqualsCi(other.PlayerName) && Index == other.Index,
+            _                        => false,
         };
     }
 
@@ -53,30 +55,36 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
         => !lhs.Equals(rhs);
 
     public bool IsValid
-        => Type != IdentifierType.Invalid;
+        => Type is not (IdentifierType.UnkObject or IdentifierType.Invalid);
 
     public override string ToString()
         => Manager?.ToString(this)
          ?? Type switch
             {
-                IdentifierType.Player  => $"{PlayerName} ({HomeWorld})",
-                IdentifierType.Owned   => $"{PlayerName}s {Kind.ToName()} {DataId} ({HomeWorld})",
-                IdentifierType.Special => Special.ToName(),
+                IdentifierType.Player   => $"{PlayerName} ({HomeWorld})",
+                IdentifierType.Retainer => $"{PlayerName} (Retainer)",
+                IdentifierType.Owned    => $"{PlayerName}s {Kind.ToName()} {DataId} ({HomeWorld})",
+                IdentifierType.Special  => Special.ToName(),
                 IdentifierType.Npc =>
                     Index == ushort.MaxValue
                         ? $"{Kind.ToName()} #{DataId}"
                         : $"{Kind.ToName()} #{DataId} at {Index}",
+                IdentifierType.UnkObject => PlayerName.IsEmpty
+                    ? $"Unknown Object at {Index}"
+                    : $"{PlayerName} at {Index}",
                 _ => "Invalid",
             };
 
     public override int GetHashCode()
         => Type switch
         {
-            IdentifierType.Player  => HashCode.Combine(IdentifierType.Player,  PlayerName, HomeWorld),
-            IdentifierType.Owned   => HashCode.Combine(IdentifierType.Owned,   Kind,       PlayerName, HomeWorld, DataId),
-            IdentifierType.Special => HashCode.Combine(IdentifierType.Special, Special),
-            IdentifierType.Npc     => HashCode.Combine(IdentifierType.Npc,     Kind, DataId),
-            _                      => 0,
+            IdentifierType.Player    => HashCode.Combine(IdentifierType.Player,    PlayerName, HomeWorld),
+            IdentifierType.Retainer  => HashCode.Combine(IdentifierType.Player,    PlayerName),
+            IdentifierType.Owned     => HashCode.Combine(IdentifierType.Owned,     Kind, PlayerName, HomeWorld, DataId),
+            IdentifierType.Special   => HashCode.Combine(IdentifierType.Special,   Special),
+            IdentifierType.Npc       => HashCode.Combine(IdentifierType.Npc,       Kind,       DataId),
+            IdentifierType.UnkObject => HashCode.Combine(IdentifierType.UnkObject, PlayerName, Index),
+            _                        => 0,
         };
 
     internal ActorIdentifier(IdentifierType type, ObjectKind kind, ushort index, uint data, ByteString playerName)
@@ -98,6 +106,9 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
                 ret.Add(nameof(PlayerName), PlayerName.ToString());
                 ret.Add(nameof(HomeWorld),  HomeWorld);
                 return ret;
+            case IdentifierType.Retainer:
+                ret.Add(nameof(PlayerName), PlayerName.ToString());
+                return ret;
             case IdentifierType.Owned:
                 ret.Add(nameof(PlayerName), PlayerName.ToString());
                 ret.Add(nameof(HomeWorld),  HomeWorld);
@@ -112,6 +123,10 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
                 if (Index != ushort.MaxValue)
                     ret.Add(nameof(Index), Index);
                 ret.Add(nameof(DataId), DataId);
+                return ret;
+            case IdentifierType.UnkObject:
+                ret.Add(nameof(PlayerName), PlayerName.ToString());
+                ret.Add(nameof(Index),      Index);
                 return ret;
         }
 
@@ -162,11 +177,13 @@ public static class ActorManagerExtensions
     public static string ToName(this IdentifierType type)
         => type switch
         {
-            IdentifierType.Player  => "Player",
-            IdentifierType.Owned   => "Owned NPC",
-            IdentifierType.Special => "Special Actor",
-            IdentifierType.Npc     => "NPC",
-            _                      => "Invalid",
+            IdentifierType.Player    => "Player",
+            IdentifierType.Retainer  => "Retainer (Bell)",
+            IdentifierType.Owned     => "Owned NPC",
+            IdentifierType.Special   => "Special Actor",
+            IdentifierType.Npc       => "NPC",
+            IdentifierType.UnkObject => "Unknown Object",
+            _                        => "Invalid",
         };
 
     /// <summary>

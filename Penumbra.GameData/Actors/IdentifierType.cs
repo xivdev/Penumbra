@@ -7,4 +7,6 @@ public enum IdentifierType : byte
     Owned,
     Special,
     Npc,
+    Retainer,
+    UnkObject,
 };

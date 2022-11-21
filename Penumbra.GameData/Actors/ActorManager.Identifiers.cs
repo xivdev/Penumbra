@@ -28,6 +28,11 @@ public partial class ActorManager
                 var homeWorld = data[nameof(ActorIdentifier.HomeWorld)]?.ToObject<ushort>() ?? 0;
                 return CreatePlayer(name, homeWorld);
             }
+            case IdentifierType.Retainer:
+            {
+                var name = ByteString.FromStringUnsafe(data[nameof(ActorIdentifier.PlayerName)]?.ToObject<string>(), false);
+                return CreateRetainer(name);
+            }
             case IdentifierType.Owned:
             {
                 var name      = ByteString.FromStringUnsafe(data[nameof(ActorIdentifier.PlayerName)]?.ToObject<string>(), false);
@@ -47,6 +52,12 @@ public partial class ActorManager
                 var kind   = data[nameof(ActorIdentifier.Kind)]?.ToObject<ObjectKind>() ?? ObjectKind.CardStand;
                 var dataId = data[nameof(ActorIdentifier.DataId)]?.ToObject<uint>() ?? 0;
                 return CreateNpc(kind, dataId, index);
+            }
+            case IdentifierType.UnkObject:
+            {
+                var index = data[nameof(ActorIdentifier.Index)]?.ToObject<ushort>() ?? ushort.MaxValue;
+                var name  = ByteString.FromStringUnsafe(data[nameof(ActorIdentifier.PlayerName)]?.ToObject<string>(), false);
+                return CreateIndividualUnchecked(IdentifierType.UnkObject, name, index, ObjectKind.None, 0);
             }
             default: return ActorIdentifier.Invalid;
         }
@@ -68,6 +79,7 @@ public partial class ActorManager
             IdentifierType.Player => id.HomeWorld != _clientState.LocalPlayer?.HomeWorld.Id
                 ? $"{id.PlayerName} ({ToWorldName(id.HomeWorld)})"
                 : id.PlayerName.ToString(),
+            IdentifierType.Retainer => id.PlayerName.ToString(),
             IdentifierType.Owned => id.HomeWorld != _clientState.LocalPlayer?.HomeWorld.Id
                 ? $"{id.PlayerName} ({ToWorldName(id.HomeWorld)})'s {ToName(id.Kind, id.DataId)}"
                 : $"{id.PlayerName}s {ToName(id.Kind,                                id.DataId)}",
@@ -76,6 +88,9 @@ public partial class ActorManager
                 id.Index == ushort.MaxValue
                     ? ToName(id.Kind, id.DataId)
                     : $"{ToName(id.Kind, id.DataId)} at {id.Index}",
+            IdentifierType.UnkObject => id.PlayerName.IsEmpty
+                ? $"Unknown Object at {id.Index}"
+                : $"{id.PlayerName} at {id.Index}",
             _ => "Invalid",
         };
     }
@@ -188,7 +203,19 @@ public partial class ActorManager
                     : CreateIndividualUnchecked(IdentifierType.Owned, new ByteString(owner->GameObject.Name), owner->HomeWorld,
                         (ObjectKind)actor->ObjectKind,                dataId);
             }
-            default: return ActorIdentifier.Invalid;
+            case ObjectKind.Retainer:
+            {
+                var name = new ByteString(actor->Name);
+                return check
+                    ? CreateRetainer(name)
+                    : CreateIndividualUnchecked(IdentifierType.Retainer, name, 0, ObjectKind.None, uint.MaxValue);
+            }
+            default:
+            {
+                var name  = new ByteString(actor->Name);
+                var index = actor->ObjectIndex;
+                return CreateIndividualUnchecked(IdentifierType.UnkObject, name, index, ObjectKind.None, 0);
+            }
         }
     }
 
@@ -213,11 +240,13 @@ public partial class ActorManager
     public ActorIdentifier CreateIndividual(IdentifierType type, ByteString name, ushort homeWorld, ObjectKind kind, uint dataId)
         => type switch
         {
-            IdentifierType.Player  => CreatePlayer(name, homeWorld),
-            IdentifierType.Owned   => CreateOwned(name, homeWorld, kind, dataId),
-            IdentifierType.Special => CreateSpecial((SpecialActor)homeWorld),
-            IdentifierType.Npc     => CreateNpc(kind, dataId, homeWorld),
-            _                      => ActorIdentifier.Invalid,
+            IdentifierType.Player    => CreatePlayer(name, homeWorld),
+            IdentifierType.Retainer  => CreateRetainer(name),
+            IdentifierType.Owned     => CreateOwned(name, homeWorld, kind, dataId),
+            IdentifierType.Special   => CreateSpecial((SpecialActor)homeWorld),
+            IdentifierType.Npc       => CreateNpc(kind, dataId, homeWorld),
+            IdentifierType.UnkObject => CreateIndividualUnchecked(IdentifierType.UnkObject, name, homeWorld, ObjectKind.None, 0),
+            _                        => ActorIdentifier.Invalid,
         };
 
     /// <summary>
@@ -232,6 +261,14 @@ public partial class ActorManager
             return ActorIdentifier.Invalid;
 
         return new ActorIdentifier(IdentifierType.Player, ObjectKind.Player, homeWorld, 0, name);
+    }
+
+    public ActorIdentifier CreateRetainer(ByteString name)
+    {
+        if (!VerifyRetainerName(name.Span))
+            return ActorIdentifier.Invalid;
+
+        return new ActorIdentifier(IdentifierType.Retainer, ObjectKind.Retainer, 0, 0, name);
     }
 
     public ActorIdentifier CreateSpecial(SpecialActor actor)
@@ -270,37 +307,7 @@ public partial class ActorManager
         if (splitIndex < 0 || name[(splitIndex + 1)..].IndexOf((byte)' ') >= 0)
             return false;
 
-        static bool CheckNamePart(ReadOnlySpan<byte> part)
-        {
-            // Each name part at least 2 and at most 15 characters.
-            if (part.Length is < 2 or > 15)
-                return false;
-
-            // Each part starting with capitalized letter.
-            if (part[0] is < (byte)'A' or > (byte)'Z')
-                return false;
-
-            // Every other symbol needs to be lowercase letter, hyphen or apostrophe.
-            var last = (byte)'\0';
-            for (var i = 1; i < part.Length; ++i)
-            {
-                var current = part[i];
-                if (current is not ((byte)'\'' or (byte)'-' or (>= (byte)'a' and <= (byte)'z')))
-                    return false;
-
-                // Hyphens can not be used in succession, after or before apostrophes or as the last symbol.
-                if (last is (byte)'\'' && current is (byte)'-')
-                    return false;
-                if (last is (byte)'-' && current is (byte)'-' or (byte)'\'')
-                    return false;
-
-                last = current;
-            }
-
-            return part[^1] != (byte)'-';
-        }
-
-        return CheckNamePart(name[..splitIndex]) && CheckNamePart(name[(splitIndex + 1)..]);
+        return CheckNamePart(name[..splitIndex], 2, 15) && CheckNamePart(name[(splitIndex + 1)..], 2, 15);
     }
 
     /// <summary> Checks SE naming rules. </summary>
@@ -315,37 +322,75 @@ public partial class ActorManager
         if (splitIndex < 0 || name[(splitIndex + 1)..].IndexOf(' ') >= 0)
             return false;
 
-        static bool CheckNamePart(ReadOnlySpan<char> part)
+        return CheckNamePart(name[..splitIndex], 2, 15) && CheckNamePart(name[(splitIndex + 1)..], 2, 15);
+    }
+
+    /// <summary> Checks SE naming rules. </summary>
+    public static bool VerifyRetainerName(ReadOnlySpan<byte> name)
+        => CheckNamePart(name, 3, 20);
+
+    /// <summary> Checks SE naming rules. </summary>
+    public static bool VerifyRetainerName(ReadOnlySpan<char> name)
+        => CheckNamePart(name, 3, 20);
+
+    private static bool CheckNamePart(ReadOnlySpan<char> part, int minLength, int maxLength)
+    {
+        // Each name part at least 2 and at most 15 characters for players, and at least 3 and at most 20 characters for retainers.
+        if (part.Length < minLength || part.Length > maxLength)
+            return false;
+
+        // Each part starting with capitalized letter.
+        if (part[0] is < 'A' or > 'Z')
+            return false;
+
+        // Every other symbol needs to be lowercase letter, hyphen or apostrophe.
+        var last = '\0';
+        for (var i = 1; i < part.Length; ++i)
         {
-            // Each name part at least 2 and at most 15 characters.
-            if (part.Length is < 2 or > 15)
+            var current = part[i];
+            if (current is not ('\'' or '-' or (>= 'a' and <= 'z')))
                 return false;
 
-            // Each part starting with capitalized letter.
-            if (part[0] is < 'A' or > 'Z')
+            // Hyphens can not be used in succession, after or before apostrophes or as the last symbol.
+            if (last is '\'' && current is '-')
+                return false;
+            if (last is '-' && current is '-' or '\'')
                 return false;
 
-            // Every other symbol needs to be lowercase letter, hyphen or apostrophe.
-            var last = '\0';
-            for (var i = 1; i < part.Length; ++i)
-            {
-                var current = part[i];
-                if (current is not ('\'' or '-' or (>= 'a' and <= 'z')))
-                    return false;
-
-                // Hyphens can not be used in succession, after or before apostrophes or as the last symbol.
-                if (last is '\'' && current is '-')
-                    return false;
-                if (last is '-' && current is '-' or '\'')
-                    return false;
-
-                last = current;
-            }
-
-            return part[^1] != '-';
+            last = current;
         }
 
-        return CheckNamePart(name[..splitIndex]) && CheckNamePart(name[(splitIndex + 1)..]);
+        return part[^1] != '-';
+    }
+
+    private static bool CheckNamePart(ReadOnlySpan<byte> part, int minLength, int maxLength)
+    {
+        // Each name part at least 2 and at most 15 characters for players, and at least 3 and at most 20 characters for retainers.
+        if (part.Length < minLength || part.Length > maxLength)
+            return false;
+
+        // Each part starting with capitalized letter.
+        if (part[0] is < (byte)'A' or > (byte)'Z')
+            return false;
+
+        // Every other symbol needs to be lowercase letter, hyphen or apostrophe.
+        var last = (byte)'\0';
+        for (var i = 1; i < part.Length; ++i)
+        {
+            var current = part[i];
+            if (current is not ((byte)'\'' or (byte)'-' or (>= (byte)'a' and <= (byte)'z')))
+                return false;
+
+            // Hyphens can not be used in succession, after or before apostrophes or as the last symbol.
+            if (last is (byte)'\'' && current is (byte)'-')
+                return false;
+            if (last is (byte)'-' && current is (byte)'-' or (byte)'\'')
+                return false;
+
+            last = current;
+        }
+
+        return part[^1] != (byte)'-';
     }
 
     /// <summary> Checks if the world is a valid public world or ushort.MaxValue (any world). </summary>

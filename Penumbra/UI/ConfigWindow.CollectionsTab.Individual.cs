@@ -75,17 +75,21 @@ public partial class ConfigWindow
         private readonly NpcCombo   _bnpcCombo      = new("##bnpcCombo", Penumbra.Actors.BNpcs);
         private readonly NpcCombo   _enpcCombo      = new("##enpcCombo", Penumbra.Actors.ENpcs);
 
-        private const string NewPlayerTooltipEmpty   = "Please enter a valid player name and choose an available world or 'Any World'.";
-        private const string NewPlayerTooltipInvalid = "The entered name is not a valid name for a player character.";
-        private const string AlreadyAssigned         = "The Individual you specified has already been assigned a collection.";
-        private const string NewNpcTooltipEmpty      = "Please select a valid NPC from the drop down menu first.";
+        private const string NewPlayerTooltipEmpty     = "Please enter a valid player name and choose an available world or 'Any World'.";
+        private const string NewRetainerTooltipEmpty   = "Please enter a valid retainer name.";
+        private const string NewPlayerTooltipInvalid   = "The entered name is not a valid name for a player character.";
+        private const string NewRetainerTooltipInvalid = "The entered name is not a valid name for a retainer.";
+        private const string AlreadyAssigned           = "The Individual you specified has already been assigned a collection.";
+        private const string NewNpcTooltipEmpty        = "Please select a valid NPC from the drop down menu first.";
 
-        private ActorIdentifier[] _newPlayerIdentifiers = Array.Empty< ActorIdentifier >();
-        private string            _newPlayerTooltip     = NewPlayerTooltipEmpty;
-        private ActorIdentifier[] _newNpcIdentifiers    = Array.Empty< ActorIdentifier >();
-        private string            _newNpcTooltip        = NewNpcTooltipEmpty;
-        private ActorIdentifier[] _newOwnedIdentifiers  = Array.Empty< ActorIdentifier >();
-        private string            _newOwnedTooltip      = NewPlayerTooltipEmpty;
+        private ActorIdentifier[] _newPlayerIdentifiers   = Array.Empty< ActorIdentifier >();
+        private string            _newPlayerTooltip       = NewPlayerTooltipEmpty;
+        private ActorIdentifier[] _newRetainerIdentifiers = Array.Empty< ActorIdentifier >();
+        private string            _newRetainerTooltip     = NewRetainerTooltipEmpty;
+        private ActorIdentifier[] _newNpcIdentifiers      = Array.Empty< ActorIdentifier >();
+        private string            _newNpcTooltip          = NewNpcTooltipEmpty;
+        private ActorIdentifier[] _newOwnedIdentifiers    = Array.Empty< ActorIdentifier >();
+        private string            _newOwnedTooltip        = NewPlayerTooltipEmpty;
 
         private bool DrawNewObjectKindOptions( float width )
         {
@@ -201,16 +205,22 @@ public partial class ConfigWindow
 
         private bool DrawNewOwnedCollection( Vector2 buttonWidth )
         {
-            var oldPos = ImGui.GetCursorPos();
-            ImGui.SameLine();
-            ImGui.SetCursorPos( ImGui.GetCursorPos() + new Vector2( -ImGui.GetStyle().ItemSpacing.X / 2, ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.Y ) / 2 );
             if( ImGuiUtil.DrawDisabledButton( "Assign Owned NPC", buttonWidth, _newOwnedTooltip, _newOwnedIdentifiers.Length == 0 || _newOwnedTooltip.Length > 0 ) )
             {
                 Penumbra.CollectionManager.Individuals.Add( _newOwnedIdentifiers, Penumbra.CollectionManager.Default );
                 return true;
             }
 
-            ImGui.SetCursorPos( oldPos );
+            return false;
+        }
+
+        private bool DrawNewRetainerCollection( Vector2 buttonWidth )
+        {
+            if( ImGuiUtil.DrawDisabledButton( "Assign Bell Retainer", buttonWidth, _newRetainerTooltip, _newRetainerIdentifiers.Length == 0 || _newRetainerTooltip.Length > 0 ) )
+            {
+                Penumbra.CollectionManager.Individuals.Add( _newRetainerIdentifiers, Penumbra.CollectionManager.Default );
+                return true;
+            }
 
             return false;
         }
@@ -228,13 +238,19 @@ public partial class ConfigWindow
 
         private void DrawNewIndividualCollection()
         {
-            var width       = ( _window._inputTextWidth.X - 2 * ImGui.GetStyle().ItemSpacing.X ) / 3;
-            var buttonWidth = new Vector2( 90                 * ImGuiHelpers.GlobalScale, 0 );
+            var width = ( _window._inputTextWidth.X - 2 * ImGui.GetStyle().ItemSpacing.X ) / 3;
+
+            var buttonWidth1 = new Vector2( 90  * ImGuiHelpers.GlobalScale, 0 );
+            var buttonWidth2 = new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 );
 
             var combo  = GetNpcCombo( _newKind );
-            var change = DrawNewPlayerCollection( buttonWidth, width );
-            change |= DrawNewOwnedCollection( Vector2.Zero );
-            change |= DrawNewNpcCollection( combo, buttonWidth, width );
+            var change = DrawNewPlayerCollection( buttonWidth1, width );
+            ImGui.SameLine();
+            change |= DrawNewRetainerCollection( buttonWidth2 );
+
+            change |= DrawNewNpcCollection( combo, buttonWidth1, width );
+            ImGui.SameLine();
+            change |= DrawNewOwnedCollection( buttonWidth2 );
 
             if( change )
             {
@@ -250,6 +266,14 @@ public partial class ConfigWindow
                 {
                     _ when _newCharacterName.Length == 0       => NewPlayerTooltipEmpty,
                     IndividualCollections.AddResult.Invalid    => NewPlayerTooltipInvalid,
+                    IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
+                    _                                          => string.Empty,
+                };
+            _newRetainerTooltip = Penumbra.CollectionManager.Individuals.CanAdd( IdentifierType.Retainer, _newCharacterName, _worldCombo.CurrentSelection.Key, ObjectKind.None,
+                    Array.Empty< uint >(), out _newRetainerIdentifiers ) switch
+                {
+                    _ when _newCharacterName.Length == 0       => NewRetainerTooltipEmpty,
+                    IndividualCollections.AddResult.Invalid    => NewRetainerTooltipInvalid,
                     IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
                     _                                          => string.Empty,
                 };
@@ -277,6 +301,12 @@ public partial class ConfigWindow
                 _newNpcIdentifiers   = Array.Empty< ActorIdentifier >();
                 _newOwnedIdentifiers = Array.Empty< ActorIdentifier >();
             }
+        }
+
+        private void UpdateIdentifiers( CollectionType type, ModCollection? _1, ModCollection? _2, string _3 )
+        {
+            if( type == CollectionType.Individual )
+                UpdateIdentifiers();
         }
     }
 }

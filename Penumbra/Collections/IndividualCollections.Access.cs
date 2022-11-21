@@ -28,6 +28,20 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
         switch( identifier.Type )
         {
             case IdentifierType.Player: return CheckWorlds( identifier, out collection );
+            case IdentifierType.Retainer:
+            {
+                if( _individuals.TryGetValue( identifier, out collection ) )
+                {
+                    return true;
+                }
+
+                if( Penumbra.Config.UseOwnerNameForCharacterCollection )
+                {
+                    return CheckWorlds( _actorManager.GetCurrentPlayer(), out collection );
+                }
+
+                break;
+            }
             case IdentifierType.Owned:
             {
                 if( CheckWorlds( identifier, out collection! ) )

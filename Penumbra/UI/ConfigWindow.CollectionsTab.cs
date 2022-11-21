@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
@@ -13,12 +14,19 @@ namespace Penumbra.UI;
 public partial class ConfigWindow
 {
     // Encapsulate for less pollution.
-    private partial class CollectionsTab
+    private partial class CollectionsTab : IDisposable
     {
         private readonly ConfigWindow _window;
 
         public CollectionsTab( ConfigWindow window )
-            => _window = window;
+        {
+            _window = window;
+
+            Penumbra.CollectionManager.CollectionChanged += UpdateIdentifiers;
+        }
+
+        public void Dispose()
+            => Penumbra.CollectionManager.CollectionChanged -= UpdateIdentifiers;
 
         public void Draw()
         {
