@@ -151,9 +151,14 @@ public class TempModManager
         return RedirectResult.Success;
     }
 
-    public string CreateTemporaryCollection( string tag, string customName )
+    public string CreateTemporaryCollection( string name )
     {
-        var collection = ModCollection.CreateNewTemporary( tag, customName );
+        if( Penumbra.CollectionManager.ByName( name, out _ ) )
+        {
+            return string.Empty;
+        }
+
+        var collection = ModCollection.CreateNewTemporary( name );
         if( _customCollections.TryAdd( collection.Name.ToLowerInvariant(), collection ) )
         {
             return collection.Name;

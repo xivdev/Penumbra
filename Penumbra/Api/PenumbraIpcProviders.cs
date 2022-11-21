@@ -89,6 +89,9 @@ public class PenumbraIpcProviders : IDisposable
     // Temporary
     internal readonly FuncProvider< string, string, bool, (PenumbraApiEc, string) >                            CreateTemporaryCollection;
     internal readonly FuncProvider< string, PenumbraApiEc >                                                    RemoveTemporaryCollection;
+    internal readonly FuncProvider< string, PenumbraApiEc >                                                    CreateNamedTemporaryCollection;
+    internal readonly FuncProvider< string, PenumbraApiEc >                                                    RemoveTemporaryCollectionByName;
+    internal readonly FuncProvider< string, int, bool, PenumbraApiEc >                                         AssignTemporaryCollection;
     internal readonly FuncProvider< string, Dictionary< string, string >, string, int, PenumbraApiEc >         AddTemporaryModAll;
     internal readonly FuncProvider< string, string, Dictionary< string, string >, string, int, PenumbraApiEc > AddTemporaryMod;
     internal readonly FuncProvider< string, int, PenumbraApiEc >                                               RemoveTemporaryModAll;
@@ -178,12 +181,15 @@ public class PenumbraIpcProviders : IDisposable
             () => Api.ModSettingChanged -= ModSettingChangedEvent );
 
         // Temporary
-        CreateTemporaryCollection = Ipc.CreateTemporaryCollection.Provider( pi, Api.CreateTemporaryCollection );
-        RemoveTemporaryCollection = Ipc.RemoveTemporaryCollection.Provider( pi, Api.RemoveTemporaryCollection );
-        AddTemporaryModAll        = Ipc.AddTemporaryModAll.Provider( pi, Api.AddTemporaryModAll );
-        AddTemporaryMod           = Ipc.AddTemporaryMod.Provider( pi, Api.AddTemporaryMod );
-        RemoveTemporaryModAll     = Ipc.RemoveTemporaryModAll.Provider( pi, Api.RemoveTemporaryModAll );
-        RemoveTemporaryMod        = Ipc.RemoveTemporaryMod.Provider( pi, Api.RemoveTemporaryMod );
+        CreateTemporaryCollection       = Ipc.CreateTemporaryCollection.Provider( pi, Api.CreateTemporaryCollection );
+        RemoveTemporaryCollection       = Ipc.RemoveTemporaryCollection.Provider( pi, Api.RemoveTemporaryCollection );
+        CreateNamedTemporaryCollection  = Ipc.CreateNamedTemporaryCollection.Provider( pi, Api.CreateNamedTemporaryCollection );
+        RemoveTemporaryCollectionByName = Ipc.RemoveTemporaryCollectionByName.Provider( pi, Api.RemoveTemporaryCollectionByName );
+        AssignTemporaryCollection       = Ipc.AssignTemporaryCollection.Provider( pi, Api.AssignTemporaryCollection );
+        AddTemporaryModAll              = Ipc.AddTemporaryModAll.Provider( pi, Api.AddTemporaryModAll );
+        AddTemporaryMod                 = Ipc.AddTemporaryMod.Provider( pi, Api.AddTemporaryMod );
+        RemoveTemporaryModAll           = Ipc.RemoveTemporaryModAll.Provider( pi, Api.RemoveTemporaryModAll );
+        RemoveTemporaryMod              = Ipc.RemoveTemporaryMod.Provider( pi, Api.RemoveTemporaryMod );
 
         Tester = new IpcTester( pi, this );
 
@@ -267,6 +273,9 @@ public class PenumbraIpcProviders : IDisposable
         // Temporary
         CreateTemporaryCollection.Dispose();
         RemoveTemporaryCollection.Dispose();
+        CreateNamedTemporaryCollection.Dispose();
+        RemoveTemporaryCollectionByName.Dispose();
+        AssignTemporaryCollection.Dispose();
         AddTemporaryModAll.Dispose();
         AddTemporaryMod.Dispose();
         RemoveTemporaryModAll.Dispose();

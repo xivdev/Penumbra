@@ -23,7 +23,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 15 );
+        => ( 4, 16 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -575,10 +575,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return collection.SetModSetting( mod.Index, groupIdx, setting ) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
     }
 
-    public (PenumbraApiEc, string) CreateTemporaryCollection( string tag, string character, bool forceOverwriteCharacter )
-        => CreateTemporaryCollection( tag, character, forceOverwriteCharacter, ushort.MaxValue );
 
-    public (PenumbraApiEc, string) CreateTemporaryCollection( string tag, string character, bool forceOverwriteCharacter, ushort worldId )
+    public (PenumbraApiEc, string) CreateTemporaryCollection( string tag, string character, bool forceOverwriteCharacter )
     {
         CheckInitialized();
 
@@ -587,7 +585,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return ( PenumbraApiEc.InvalidArgument, string.Empty );
         }
 
-        var identifier = NameToIdentifier( character, worldId );
+        var identifier = NameToIdentifier( character, ushort.MaxValue );
         if( !identifier.IsValid )
         {
             return ( PenumbraApiEc.InvalidArgument, string.Empty );
@@ -599,10 +597,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return ( PenumbraApiEc.CharacterCollectionExists, string.Empty );
         }
 
-        var name = Penumbra.TempMods.CreateTemporaryCollection( tag, character );
-        if( name.Length == 0 )
+        var name = $"{tag}_{character}";
+        var ret  = CreateNamedTemporaryCollection( name );
+        if( ret != PenumbraApiEc.Success )
         {
-            return ( PenumbraApiEc.CharacterCollectionExists, string.Empty );
+            return ( ret, name );
         }
 
         if( Penumbra.TempMods.AddIdentifier( name, identifier ) )
@@ -614,10 +613,63 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return ( PenumbraApiEc.UnknownError, string.Empty );
     }
 
+    public PenumbraApiEc CreateNamedTemporaryCollection( string name )
+    {
+        CheckInitialized();
+        if( name.Length == 0 || Mod.ReplaceBadXivSymbols( name ) != name )
+        {
+            return PenumbraApiEc.InvalidArgument;
+        }
+
+        return Penumbra.TempMods.CreateTemporaryCollection( name ).Length > 0
+            ? PenumbraApiEc.Success
+            : PenumbraApiEc.CollectionExists;
+    }
+
+    public PenumbraApiEc AssignTemporaryCollection( string collectionName, int actorIndex, bool forceAssignment )
+    {
+        CheckInitialized();
+
+        if( actorIndex < 0 || actorIndex >= Dalamud.Objects.Length )
+        {
+            return PenumbraApiEc.InvalidArgument;
+        }
+
+        var identifier = Penumbra.Actors.FromObject( Dalamud.Objects[ actorIndex ] );
+        if( !identifier.IsValid )
+        {
+            return PenumbraApiEc.InvalidArgument;
+        }
+
+        if( !Penumbra.TempMods.CollectionByName( collectionName, out var collection ) )
+        {
+            return PenumbraApiEc.CollectionMissing;
+        }
+
+        if( !forceAssignment
+        && ( Penumbra.TempMods.Collections.Individuals.ContainsKey( identifier ) || Penumbra.CollectionManager.Individuals.Individuals.ContainsKey( identifier ) ) )
+        {
+            return PenumbraApiEc.CharacterCollectionExists;
+        }
+
+        var group = Penumbra.TempMods.Collections.GetGroup( identifier );
+        return Penumbra.TempMods.AddIdentifier( collection, group )
+            ? PenumbraApiEc.Success
+            : PenumbraApiEc.UnknownError;
+    }
+
     public PenumbraApiEc RemoveTemporaryCollection( string character )
     {
         CheckInitialized();
         return Penumbra.TempMods.RemoveByCharacterName( character )
+            ? PenumbraApiEc.Success
+            : PenumbraApiEc.NothingChanged;
+    }
+
+    public PenumbraApiEc RemoveTemporaryCollectionByName( string name )
+    {
+        CheckInitialized();
+        return Penumbra.TempMods.RemoveTemporaryCollection( name )
             ? PenumbraApiEc.Success
             : PenumbraApiEc.NothingChanged;
     }

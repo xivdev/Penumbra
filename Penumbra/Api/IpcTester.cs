@@ -1087,6 +1087,7 @@ public class IpcTester : IDisposable
         private string        _tempFilePath       = "test/success.mtrl";
         private string        _tempManipulation   = string.Empty;
         private PenumbraApiEc _lastTempError;
+        private int           _tempActorIndex = 0;
         private bool          _forceOverwrite;
 
         public void Draw()
@@ -1099,6 +1100,7 @@ public class IpcTester : IDisposable
 
             ImGui.InputTextWithHint( "##tempCollection", "Collection Name...", ref _tempCollectionName, 128 );
             ImGui.InputTextWithHint( "##tempCollectionChar", "Collection Character...", ref _tempCharacterName, 32 );
+            ImGui.InputInt( "##tempActorIndex", ref _tempActorIndex, 0, 0 );
             ImGui.InputTextWithHint( "##tempMod", "Temporary Mod Name...", ref _tempModName, 32 );
             ImGui.InputTextWithHint( "##tempGame", "Game Path...", ref _tempGamePath, 256 );
             ImGui.InputTextWithHint( "##tempFile", "File Path...", ref _tempFilePath, 256 );
@@ -1115,15 +1117,34 @@ public class IpcTester : IDisposable
             DrawIntro( "Last Error", _lastTempError.ToString() );
             DrawIntro( "Last Created Collection", LastCreatedCollectionName );
             DrawIntro( Ipc.CreateTemporaryCollection.Label, "Create Temporary Collection" );
+#pragma warning disable 0612
             if( ImGui.Button( "Create##Collection" ) )
             {
                 ( _lastTempError, LastCreatedCollectionName ) = Ipc.CreateTemporaryCollection.Subscriber( _pi ).Invoke( _tempCollectionName, _tempCharacterName, _forceOverwrite );
+            }
+
+            DrawIntro( Ipc.CreateNamedTemporaryCollection.Label, "Create Named Temporary Collection" );
+            if( ImGui.Button( "Create##NamedCollection" ) )
+            {
+                _lastTempError = Ipc.CreateNamedTemporaryCollection.Subscriber( _pi ).Invoke( _tempCollectionName );
             }
 
             DrawIntro( Ipc.RemoveTemporaryCollection.Label, "Remove Temporary Collection from Character" );
             if( ImGui.Button( "Delete##Collection" ) )
             {
                 _lastTempError = Ipc.RemoveTemporaryCollection.Subscriber( _pi ).Invoke( _tempCharacterName );
+            }
+#pragma warning restore 0612
+            DrawIntro( Ipc.RemoveTemporaryCollectionByName.Label, "Remove Temporary Collection" );
+            if( ImGui.Button( "Delete##NamedCollection" ) )
+            {
+                _lastTempError = Ipc.RemoveTemporaryCollectionByName.Subscriber( _pi ).Invoke( _tempCollectionName );
+            }
+
+            DrawIntro( Ipc.AssignTemporaryCollection.Label, "Assign Temporary Collection" );
+            if( ImGui.Button( "Assign##NamedCollection" ) )
+            {
+                _lastTempError = Ipc.AssignTemporaryCollection.Subscriber( _pi ).Invoke( _tempCollectionName, _tempActorIndex, _forceOverwrite );
             }
 
             DrawIntro( Ipc.AddTemporaryMod.Label, "Add Temporary Mod to specific Collection" );
