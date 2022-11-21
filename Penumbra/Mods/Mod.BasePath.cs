@@ -40,7 +40,7 @@ public partial class Mod
         if( !mod.Reload( incorporateMetaChanges, out _ ) )
         {
             // Can not be base path not existing because that is checked before.
-            Penumbra.Log.Error( $"Mod at {modPath} without name is not supported." );
+            Penumbra.Log.Warning( $"Mod at {modPath} without name is not supported." );
             return null;
         }
 
