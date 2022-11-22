@@ -333,6 +333,7 @@ public class Penumbra : IDalamudPlugin
         }
 
         string? characterName = null;
+        var     identifier    = ActorIdentifier.Invalid;
         if( type is CollectionType.Individual )
         {
             var split = collectionName.Split( '|', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
@@ -344,6 +345,13 @@ public class Penumbra : IDalamudPlugin
 
             collectionName = split[ 0 ];
             characterName  = split[ 1 ];
+
+            identifier     = Actors.CreatePlayer( ByteString.FromStringUnsafe( characterName, false ), ushort.MaxValue );
+            if( !identifier.IsValid )
+            {
+                Dalamud.Chat.Print( $"{characterName} is not a valid character name." );
+                return false;
+            }
         }
 
         collectionName = collectionName.ToLowerInvariant();
@@ -353,13 +361,6 @@ public class Penumbra : IDalamudPlugin
         if( collection == null )
         {
             Dalamud.Chat.Print( $"The collection {collection} does not exist." );
-            return false;
-        }
-
-        var identifier = Actors.CreatePlayer( ByteString.FromStringUnsafe( characterName, false ), ushort.MaxValue );
-        if( !identifier.IsValid )
-        {
-            Dalamud.Chat.Print( $"{characterName} is not a valid character name." );
             return false;
         }
 
