@@ -13,10 +13,17 @@ namespace Penumbra.Mods;
 
 public partial class Mod
 {
-    // Create and return a new directory based on the given directory and name, that is
-    //     - Not Empty
-    //     - Unique, by appending (digit) for duplicates.
-    //     - Containing no symbols invalid for FFXIV or windows paths.
+    /// <summary>
+    /// Create and return a new directory based on the given directory and name, that is <br/>
+    ///    - Not Empty.<br/>
+    ///    - Unique, by appending (digit) for duplicates.<br/>
+    ///    - Containing no symbols invalid for FFXIV or windows paths.<br/>
+    /// </summary>
+    /// <param name="outDirectory"></param>
+    /// <param name="modListName"></param>
+    /// <param name="create"></param>
+    /// <returns></returns>
+    /// <exception cref="IOException"></exception>
     internal static DirectoryInfo CreateModFolder( DirectoryInfo outDirectory, string modListName, bool create = true )
     {
         var name = modListName;
@@ -160,8 +167,9 @@ public partial class Mod
         {
             return replacement + replacement;
         }
+
         StringBuilder sb = new(s.Length);
-        foreach( var c in s.Normalize(NormalizationForm.FormKC) )
+        foreach( var c in s.Normalize( NormalizationForm.FormKC ) )
         {
             if( c.IsInvalidAscii() || c.IsInvalidInPath() )
             {

@@ -20,10 +20,11 @@ namespace Penumbra.UI.Classes;
 
 public partial class ModEditWindow : Window, IDisposable
 {
-    private const    string       WindowBaseLabel = "###SubModEdit";
-    private          Editor?      _editor;
-    private          Mod?         _mod;
-    private          Vector2      _iconSize = Vector2.Zero;
+    private const string  WindowBaseLabel = "###SubModEdit";
+    private       Editor? _editor;
+    private       Mod?    _mod;
+    private       Vector2 _iconSize         = Vector2.Zero;
+    private       bool    _allowReduplicate = false;
 
     public void ChangeMod( Mod mod )
     {
@@ -118,6 +119,7 @@ public partial class ModEditWindow : Window, IDisposable
             sb.Append( $"   |   {swaps} Swaps" );
         }
 
+        _allowReduplicate = redirections != _editor.AvailableFiles.Count || _editor.MissingFiles.Count > 0;
         sb.Append( WindowBaseLabel );
         WindowName = sb.ToString();
     }
@@ -286,6 +288,15 @@ public partial class ModEditWindow : Window, IDisposable
                !_editor.DuplicatesFinished ) )
         {
             _editor.StartDuplicateCheck();
+        }
+
+        const string desc = "Tries to create a unique copy of a file for every game path manipulated and put them in [Groupname]/[Optionname]/[GamePath] order.\n"
+          + "This will also delete all unused files and directories if it succeeds.\n"
+          + "Care was taken that a failure should not destroy the mod but revert to its original state, but you use this at your own risk anyway.";
+        if( ImGuiUtil.DrawDisabledButton( "Re-Duplicate and Normalize Mod", Vector2.Zero, desc, !_allowReduplicate ) )
+        {
+            _mod!.Normalize( Penumbra.ModManager );
+            _editor.RevertFiles();
         }
 
         if( !_editor.DuplicatesFinished )
