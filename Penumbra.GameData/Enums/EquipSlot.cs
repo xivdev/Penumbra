@@ -36,7 +36,7 @@ public enum EquipSlot : byte
 
 public static class EquipSlotExtensions
 {
-    public static EquipSlot ToEquipSlot( this uint value )
+    public static EquipSlot ToEquipSlot(this uint value)
         => value switch
         {
             0  => EquipSlot.Head,
@@ -54,7 +54,7 @@ public static class EquipSlotExtensions
             _  => EquipSlot.Unknown,
         };
 
-    public static uint ToIndex( this EquipSlot slot )
+    public static uint ToIndex(this EquipSlot slot)
         => slot switch
         {
             EquipSlot.Head     => 0,
@@ -72,7 +72,7 @@ public static class EquipSlotExtensions
             _                  => uint.MaxValue,
         };
 
-    public static string ToSuffix( this EquipSlot value )
+    public static string ToSuffix(this EquipSlot value)
     {
         return value switch
         {
@@ -90,7 +90,7 @@ public static class EquipSlotExtensions
         };
     }
 
-    public static EquipSlot ToSlot( this EquipSlot value )
+    public static EquipSlot ToSlot(this EquipSlot value)
     {
         return value switch
         {
@@ -116,11 +116,11 @@ public static class EquipSlotExtensions
             EquipSlot.BodyHands         => EquipSlot.Body,
             EquipSlot.BodyLegsFeet      => EquipSlot.Body,
             EquipSlot.ChestHands        => EquipSlot.Body,
-            _                           => throw new InvalidEnumArgumentException( $"{value} ({( int )value}) is not valid." ),
+            _                           => throw new InvalidEnumArgumentException($"{value} ({(int)value}) is not valid."),
         };
     }
 
-    public static string ToName( this EquipSlot value )
+    public static string ToName(this EquipSlot value)
     {
         return value switch
         {
@@ -150,7 +150,7 @@ public static class EquipSlotExtensions
         };
     }
 
-    public static bool IsEquipment( this EquipSlot value )
+    public static bool IsEquipment(this EquipSlot value)
     {
         return value switch
         {
@@ -163,7 +163,7 @@ public static class EquipSlotExtensions
         };
     }
 
-    public static bool IsAccessory( this EquipSlot value )
+    public static bool IsAccessory(this EquipSlot value)
     {
         return value switch
         {
@@ -176,14 +176,40 @@ public static class EquipSlotExtensions
         };
     }
 
-    public static readonly EquipSlot[] EquipmentSlots = Enum.GetValues< EquipSlot >().Where( e => e.IsEquipment() ).ToArray();
-    public static readonly EquipSlot[] AccessorySlots = Enum.GetValues< EquipSlot >().Where( e => e.IsAccessory() ).ToArray();
-    public static readonly EquipSlot[] EqdpSlots      = EquipmentSlots.Concat( AccessorySlots ).ToArray();
+    public static bool IsEquipmentPiece(this EquipSlot value)
+    {
+        return value switch
+        {
+            // Accessories
+            EquipSlot.RFinger => true,
+            EquipSlot.Wrists  => true,
+            EquipSlot.Ears    => true,
+            EquipSlot.Neck    => true,
+            // Equipment
+            EquipSlot.Head              => true,
+            EquipSlot.Body              => true,
+            EquipSlot.Hands             => true,
+            EquipSlot.Legs              => true,
+            EquipSlot.Feet              => true,
+            EquipSlot.BodyHands         => true,
+            EquipSlot.BodyHandsLegsFeet => true,
+            EquipSlot.BodyLegsFeet      => true,
+            EquipSlot.FullBody          => true,
+            EquipSlot.HeadBody          => true,
+            EquipSlot.LegsFeet          => true,
+            EquipSlot.ChestHands        => true,
+            _                           => false,
+        };
+    }
+
+    public static readonly EquipSlot[] EquipmentSlots = Enum.GetValues<EquipSlot>().Where(e => e.IsEquipment()).ToArray();
+    public static readonly EquipSlot[] AccessorySlots = Enum.GetValues<EquipSlot>().Where(e => e.IsAccessory()).ToArray();
+    public static readonly EquipSlot[] EqdpSlots      = EquipmentSlots.Concat(AccessorySlots).ToArray();
 }
 
 public static partial class Names
 {
-    public static readonly Dictionary< string, EquipSlot > SuffixToEquipSlot = new()
+    public static readonly Dictionary<string, EquipSlot> SuffixToEquipSlot = new()
     {
         { EquipSlot.Head.ToSuffix(), EquipSlot.Head },
         { EquipSlot.Hands.ToSuffix(), EquipSlot.Hands },

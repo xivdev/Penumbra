@@ -16,6 +16,7 @@ using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
+using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
 namespace Penumbra.UI;
 
@@ -193,7 +194,8 @@ public partial class ConfigWindow
                 ImGuiUtil.DrawTableColumn( $"0x{obj.Address:X}" );
                 var identifier = Penumbra.Actors.FromObject( obj, true );
                 ImGuiUtil.DrawTableColumn( Penumbra.Actors.ToString( identifier ) );
-                ImGuiUtil.DrawTableColumn( identifier.DataId.ToString() );
+                var id = obj.ObjectKind == ObjectKind.BattleNpc ? $"{identifier.DataId} | {obj.DataId}" : identifier.DataId.ToString();
+                ImGuiUtil.DrawTableColumn( id );
             }
         }
 

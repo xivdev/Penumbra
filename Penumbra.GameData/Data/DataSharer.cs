@@ -5,18 +5,22 @@ using Dalamud.Plugin;
 
 namespace Penumbra.GameData.Data;
 
+/// <summary>
+/// A container base class that shares data through Dalamud but cares about the used language and version.
+/// Inheritors should dispose their Dalamud Shares in DisposeInternal via DisposeTag and add them in their constructor via TryCatchData.
+/// </summary>
 public abstract class DataSharer : IDisposable
 {
-    private readonly DalamudPluginInterface _pluginInterface;
-    private readonly int _version;
-    protected readonly ClientLanguage Language;
-    private bool _disposed;
+    protected readonly DalamudPluginInterface PluginInterface;
+    protected readonly int                    Version;
+    protected readonly ClientLanguage         Language;
+    private            bool                   _disposed;
 
     protected DataSharer(DalamudPluginInterface pluginInterface, ClientLanguage language, int version)
     {
-        _pluginInterface = pluginInterface;
-        Language = language;
-        _version = version;
+        PluginInterface = pluginInterface;
+        Language        = language;
+        Version         = version;
     }
 
     protected virtual void DisposeInternal()
@@ -36,16 +40,13 @@ public abstract class DataSharer : IDisposable
         => Dispose();
 
     protected void DisposeTag(string tag)
-        => _pluginInterface.RelinquishData(GetVersionedTag(tag));
-
-    private string GetVersionedTag(string tag)
-        => $"Penumbra.GameData.{tag}.{Language}.V{_version}";
+        => PluginInterface.RelinquishData(GetVersionedTag(tag, Language, Version));
 
     protected T TryCatchData<T>(string tag, Func<T> func) where T : class
     {
         try
         {
-            return _pluginInterface.GetOrCreateData(GetVersionedTag(tag), func);
+            return PluginInterface.GetOrCreateData(GetVersionedTag(tag, Language, Version), func);
         }
         catch (Exception ex)
         {
@@ -53,4 +54,24 @@ public abstract class DataSharer : IDisposable
             return func();
         }
     }
+
+    public static void DisposeTag(DalamudPluginInterface pi, string tag, ClientLanguage language, int version)
+        => pi.RelinquishData(GetVersionedTag(tag, language, version));
+
+    public static T TryCatchData<T>(DalamudPluginInterface pi, string tag, ClientLanguage language, int version, Func<T> func)
+        where T : class
+    {
+        try
+        {
+            return pi.GetOrCreateData(GetVersionedTag(tag, language, version), func);
+        }
+        catch (Exception ex)
+        {
+            PluginLog.Error($"Error creating shared actor data for {tag}:\n{ex}");
+            return func();
+        }
+    }
+
+    private static string GetVersionedTag(string tag, ClientLanguage language, int version)
+        => $"Penumbra.GameData.{tag}.{language}.V{version}";
 }

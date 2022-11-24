@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
 using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
 
@@ -44,10 +46,10 @@ public partial class ConfigWindow
             }
 
             ImGui.TableNextColumn();
-            if( item.Value.Item2 is Item it )
+            if( DrawChangedItemObject( item.Value.Item2, out var text ) )
             {
                 using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.ItemId.Value() );
-                ImGuiUtil.RightAlign( $"({( ( Quad )it.ModelMain ).A})" );
+                ImGuiUtil.RightAlign( text );
             }
         }
 
@@ -84,8 +86,8 @@ public partial class ConfigWindow
 
         const ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.NoResize | ImGuiTableColumnFlags.WidthFixed;
         ImGui.TableSetupColumn( "items", flags, 400 * ImGuiHelpers.GlobalScale );
-        ImGui.TableSetupColumn( "mods", flags, varWidth - 100 * ImGuiHelpers.GlobalScale );
-        ImGui.TableSetupColumn( "id", flags, 100 * ImGuiHelpers.GlobalScale );
+        ImGui.TableSetupColumn( "mods", flags, varWidth - 120 * ImGuiHelpers.GlobalScale );
+        ImGui.TableSetupColumn( "id", flags, 120 * ImGuiHelpers.GlobalScale );
 
         var items = Penumbra.CollectionManager.Current.ChangedItems;
         var rest = _changedItemFilter.IsEmpty && _changedItemModFilter.IsEmpty

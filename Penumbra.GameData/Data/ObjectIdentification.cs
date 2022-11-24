@@ -10,13 +10,41 @@ using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Plugin;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using Penumbra.GameData.Actors;
 using Action = Lumina.Excel.GeneratedSheets.Action;
+using ObjectType = Penumbra.GameData.Enums.ObjectType;
 
 namespace Penumbra.GameData.Data;
 
 internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 {
-    public IGamePathParser GamePathParser { get; } = new GamePathParser();
+    public const int IdentificationVersion = 1;
+
+    public           IGamePathParser                                              GamePathParser { get; } = new GamePathParser();
+    public readonly  IReadOnlyList<IReadOnlyList<uint>>                           BnpcNames;
+    public readonly  IReadOnlyList<IReadOnlyList<(string Name, ObjectKind Kind)>> ModelCharaToObjects;
+    public readonly  IReadOnlyDictionary<string, IReadOnlyList<Action>>           Actions;
+    private readonly ActorManager.ActorManagerData                                _actorData;
+
+
+    private readonly EquipmentIdentificationList _equipment;
+    private readonly WeaponIdentificationList    _weapons;
+    private readonly ModelIdentificationList     _modelIdentifierToModelChara;
+
+    public ObjectIdentification(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
+        : base(pluginInterface, language, IdentificationVersion)
+    {
+        _actorData = new ActorManager.ActorManagerData(pluginInterface, dataManager, language);
+        _equipment = new EquipmentIdentificationList(pluginInterface, language, dataManager);
+        _weapons   = new WeaponIdentificationList(pluginInterface, language, dataManager);
+        Actions    = TryCatchData("Actions", () => CreateActionList(dataManager));
+        _equipment = new EquipmentIdentificationList(pluginInterface, language, dataManager);
+
+        _modelIdentifierToModelChara = new ModelIdentificationList(pluginInterface, language, dataManager);
+        BnpcNames                    = TryCatchData("BNpcNames",    NpcNames.CreateNames);
+        ModelCharaToObjects          = TryCatchData("ModelObjects", () => CreateModelObjects(_actorData, dataManager, language));
+    }
 
     public void Identify(IDictionary<string, object?> set, string path)
     {
@@ -38,48 +66,25 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
         return ret;
     }
 
-    public IReadOnlyList<Item> Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot)
-    {
-        switch (slot)
+    public IEnumerable<Item> Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot)
+        => slot switch
         {
-            case EquipSlot.MainHand:
-            case EquipSlot.OffHand:
-                {
-                    var (begin, _) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_weapons,
-                        (ulong)setId << 32 | (ulong)weaponType << 16 | variant,
-                        0xFFFFFFFFFFFF);
-                    return begin >= 0 ? _weapons[begin].Item2 : Array.Empty<Item>();
-                }
-            default:
-                {
-                    var (begin, _) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_equipment,
-                        (ulong)setId << 32 | (ulong)slot.ToSlot() << 16 | variant,
-                        0xFFFFFFFFFFFF);
-                    return begin >= 0 ? _equipment[begin].Item2 : Array.Empty<Item>();
-                }
-        }
-    }
-
-    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> _weapons;
-    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> _equipment;
-    private readonly IReadOnlyList<(ulong Key, IReadOnlyList<(ObjectKind Kind, uint Id)>)> _models;
-    private readonly IReadOnlyDictionary<string, IReadOnlyList<Action>> _actions;
-
-    public ObjectIdentification(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
-        : base(pluginInterface, language, 1)
-    {
-        _weapons = TryCatchData("Weapons", () => CreateWeaponList(dataManager));
-        _equipment = TryCatchData("Equipment", () => CreateEquipmentList(dataManager));
-        _actions = TryCatchData("Actions", () => CreateActionList(dataManager));
-        _models = TryCatchData("Models", () => CreateModelList(dataManager));
-    }
+            EquipSlot.MainHand => _weapons.Between(setId, weaponType, (byte)variant),
+            EquipSlot.OffHand  => _weapons.Between(setId, weaponType, (byte)variant),
+            _                  => _equipment.Between(setId, slot, (byte)variant),
+        };
 
     protected override void DisposeInternal()
     {
-        DisposeTag("Weapons");
-        DisposeTag("Equipment");
+        _actorData.Dispose();
+        _weapons.Dispose(PluginInterface, Language);
+        _equipment.Dispose(PluginInterface, Language);
         DisposeTag("Actions");
         DisposeTag("Models");
+
+        _modelIdentifierToModelChara.Dispose(PluginInterface, Language);
+        DisposeTag("BNpcNames");
+        DisposeTag("ModelObjects");
     }
 
     private static bool Add(IDictionary<ulong, HashSet<Item>> dict, ulong key, Item item)
@@ -93,25 +98,25 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 
     private static ulong EquipmentKey(Item i)
     {
-        var model = (ulong)((Lumina.Data.Parsing.Quad)i.ModelMain).A;
+        var model   = (ulong)((Lumina.Data.Parsing.Quad)i.ModelMain).A;
         var variant = (ulong)((Lumina.Data.Parsing.Quad)i.ModelMain).B;
-        var slot = (ulong)((EquipSlot)i.EquipSlotCategory.Row).ToSlot();
-        return model << 32 | slot << 16 | variant;
+        var slot    = (ulong)((EquipSlot)i.EquipSlotCategory.Row).ToSlot();
+        return (model << 32) | (slot << 16) | variant;
     }
 
     private static ulong WeaponKey(Item i, bool offhand)
     {
-        var quad = offhand ? (Lumina.Data.Parsing.Quad)i.ModelSub : (Lumina.Data.Parsing.Quad)i.ModelMain;
-        var model = (ulong)quad.A;
-        var type = (ulong)quad.B;
+        var quad    = offhand ? (Lumina.Data.Parsing.Quad)i.ModelSub : (Lumina.Data.Parsing.Quad)i.ModelMain;
+        var model   = (ulong)quad.A;
+        var type    = (ulong)quad.B;
         var variant = (ulong)quad.C;
 
-        return model << 32 | type << 16 | variant;
+        return (model << 32) | (type << 16) | variant;
     }
 
     private IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> CreateWeaponList(DataManager gameData)
     {
-        var items = gameData.GetExcelSheet<Item>(Language)!;
+        var items   = gameData.GetExcelSheet<Item>(Language)!;
         var storage = new SortedList<ulong, HashSet<Item>>();
         foreach (var item in items.Where(i
                      => (EquipSlot)i.EquipSlotCategory.Row is EquipSlot.MainHand or EquipSlot.OffHand or EquipSlot.BothHand))
@@ -128,7 +133,7 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 
     private IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> CreateEquipmentList(DataManager gameData)
     {
-        var items = gameData.GetExcelSheet<Item>(Language)!;
+        var items   = gameData.GetExcelSheet<Item>(Language)!;
         var storage = new SortedList<ulong, HashSet<Item>>();
         foreach (var item in items)
         {
@@ -162,7 +167,7 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 
     private IReadOnlyDictionary<string, IReadOnlyList<Action>> CreateActionList(DataManager gameData)
     {
-        var sheet = gameData.GetExcelSheet<Action>(Language)!;
+        var sheet   = gameData.GetExcelSheet<Action>(Language)!;
         var storage = new Dictionary<string, HashSet<Action>>((int)sheet.RowCount);
 
         void AddAction(string? key, Action action)
@@ -180,39 +185,14 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
         foreach (var action in sheet.Where(a => !a.Name.RawData.IsEmpty))
         {
             var startKey = action.AnimationStart?.Value?.Name?.Value?.Key.ToDalamudString().ToString();
-            var endKey = action.AnimationEnd?.Value?.Key.ToDalamudString().ToString();
-            var hitKey = action.ActionTimelineHit?.Value?.Key.ToDalamudString().ToString();
+            var endKey   = action.AnimationEnd?.Value?.Key.ToDalamudString().ToString();
+            var hitKey   = action.ActionTimelineHit?.Value?.Key.ToDalamudString().ToString();
             AddAction(startKey, action);
-            AddAction(endKey, action);
-            AddAction(hitKey, action);
+            AddAction(endKey,   action);
+            AddAction(hitKey,   action);
         }
 
         return storage.ToDictionary(kvp => kvp.Key, kvp => (IReadOnlyList<Action>)kvp.Value.ToArray());
-    }
-
-    private static ulong ModelValue(ModelChara row)
-        => row.Type | (ulong)row.Model << 8 | (ulong)row.Base << 24 | (ulong)row.Variant << 32;
-
-    private static IEnumerable<(ulong, ObjectKind, uint)> BattleNpcToName(ulong model, uint bNpc)
-        => Enumerable.Repeat((model, ObjectKind.BattleNpc, bNpc), 1);
-
-    private IReadOnlyList<(ulong Key, IReadOnlyList<(ObjectKind Kind, uint Id)>)> CreateModelList(DataManager gameData)
-    {
-        var sheetBNpc = gameData.GetExcelSheet<BNpcBase>(Language)!;
-        var sheetENpc = gameData.GetExcelSheet<ENpcBase>(Language)!;
-        var sheetCompanion = gameData.GetExcelSheet<Companion>(Language)!;
-        var sheetMount = gameData.GetExcelSheet<Mount>(Language)!;
-        var sheetModel = gameData.GetExcelSheet<ModelChara>(Language)!;
-
-        var modelCharaToModel = sheetModel.ToDictionary(m => m.RowId, ModelValue);
-
-        return sheetENpc.Select(e => (modelCharaToModel[e.ModelChara.Row], ObjectKind.EventNpc, e.RowId))
-            .Concat(sheetCompanion.Select(c => (modelCharaToModel[c.Model.Row], ObjectKind.Companion, c.RowId)))
-            .Concat(sheetMount.Select(c => (modelCharaToModel[c.ModelChara.Row], ObjectKind.MountType, c.RowId)))
-            .Concat(sheetBNpc.SelectMany(c => BattleNpcToName(modelCharaToModel[c.ModelChara.Row], c.RowId)))
-            .GroupBy(t => t.Item1)
-            .Select(g => (g.Key, (IReadOnlyList<(ObjectKind, uint)>)g.Select(p => (p.Item2, p.Item3)).ToArray()))
-            .ToArray();
     }
 
     private class Comparer : IComparer<(ulong, IReadOnlyList<Item>)>
@@ -221,10 +201,13 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
             => x.Item1.CompareTo(y.Item1);
     }
 
+    private static readonly Comparer _arrayComparer = new();
+
+
     private static (int, int) FindIndexRange(List<(ulong, IReadOnlyList<Item>)> list, ulong key, ulong mask)
     {
         var maskedKey = key & mask;
-        var idx = list.BinarySearch(0, list.Count, (key, null!), new Comparer());
+        var idx       = list.BinarySearch(0, list.Count, (key, null!), _arrayComparer);
         if (idx < 0)
         {
             if (~idx == list.Count || maskedKey != (list[~idx].Item1 & mask))
@@ -242,55 +225,30 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 
     private void FindEquipment(IDictionary<string, object?> set, GameObjectInfo info)
     {
-        var key = (ulong)info.PrimaryId << 32;
-        var mask = 0xFFFF00000000ul;
-        if (info.EquipSlot != EquipSlot.Unknown)
-        {
-            key |= (ulong)info.EquipSlot.ToSlot() << 16;
-            mask |= 0xFFFF0000;
-        }
-
-        if (info.Variant != 0)
-        {
-            key |= info.Variant;
-            mask |= 0xFFFF;
-        }
-
-        var (start, end) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_equipment, key, mask);
-        if (start == -1)
-            return;
-
-        for (; start < end; ++start)
-        {
-            foreach (var item in _equipment[start].Item2)
-                set[item.Name.ToString()] = item;
-        }
+        var items = _equipment.Between(info.PrimaryId, info.EquipSlot, info.Variant);
+        foreach (var item in items)
+            set[item.Name.ToString()] = item;
     }
 
     private void FindWeapon(IDictionary<string, object?> set, GameObjectInfo info)
     {
-        var key = (ulong)info.PrimaryId << 32;
-        var mask = 0xFFFF00000000ul;
-        if (info.SecondaryId != 0)
-        {
-            key |= (ulong)info.SecondaryId << 16;
-            mask |= 0xFFFF0000;
-        }
+        var items = _weapons.Between(info.PrimaryId, info.SecondaryId, info.Variant);
+        foreach (var item in items)
+            set[item.Name.ToString()] = item;
+    }
 
-        if (info.Variant != 0)
-        {
-            key |= info.Variant;
-            mask |= 0xFFFF;
-        }
-
-        var (start, end) = FindIndexRange((List<(ulong, IReadOnlyList<Item>)>)_weapons, key, mask);
-        if (start == -1)
+    private void FindModel(IDictionary<string, object?> set, GameObjectInfo info)
+    {
+        var type = info.ObjectType.ToModelType();
+        if (type is 0 or CharacterBase.ModelType.Weapon)
             return;
 
-        for (; start < end; ++start)
+        var models = _modelIdentifierToModelChara.Between(type, info.PrimaryId, (byte)info.SecondaryId, info.Variant);
+        foreach (var model in models.Where(m => m.RowId < ModelCharaToObjects.Count))
         {
-            foreach (var item in _weapons[start].Item2)
-                set[item.Name.ToString()] = item;
+            var objectList = ModelCharaToObjects[(int)model.RowId];
+            foreach (var (name, kind) in objectList)
+                set[$"{name} ({kind.ToName()})"] = model;
         }
     }
 
@@ -332,10 +290,10 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
                 AddCounterString(set, info.ObjectType.ToString());
                 break;
             case ObjectType.DemiHuman:
-                set[$"Demi Human: {info.PrimaryId}"] = null;
+                FindModel(set, info);
                 break;
             case ObjectType.Monster:
-                set[$"Monster: {info.PrimaryId}"] = null;
+                FindModel(set, info);
                 break;
             case ObjectType.Icon:
                 set[$"Icon: {info.IconId}"] = null;
@@ -349,7 +307,7 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
                 break;
             case ObjectType.Character:
                 var (gender, race) = info.GenderRace.Split();
-                var raceString = race != ModelRace.Unknown ? race.ToName() + " " : "";
+                var raceString   = race != ModelRace.Unknown ? race.ToName() + " " : "";
                 var genderString = gender != Gender.Unknown ? gender.ToName() + " " : "Player ";
                 switch (info.CustomizationType)
                 {
@@ -366,15 +324,15 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
                         set[$"Equipment Decal {info.PrimaryId}"] = null;
                         break;
                     default:
-                        {
-                            var customizationString = race == ModelRace.Unknown
-                             || info.BodySlot == BodySlot.Unknown
-                             || info.CustomizationType == CustomizationType.Unknown
-                                    ? "Customization: Unknown"
-                                    : $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
-                            set[customizationString] = null;
-                            break;
-                        }
+                    {
+                        var customizationString = race == ModelRace.Unknown
+                         || info.BodySlot == BodySlot.Unknown
+                         || info.CustomizationType == CustomizationType.Unknown
+                                ? "Customization: Unknown"
+                                : $"Customization: {race} {gender} {info.BodySlot} ({info.CustomizationType}) {info.PrimaryId}";
+                        set[customizationString] = null;
+                        break;
+                    }
                 }
 
                 break;
@@ -386,10 +344,74 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
     private void IdentifyVfx(IDictionary<string, object?> set, string path)
     {
         var key = GamePathParser.VfxToKey(path);
-        if (key.Length == 0 || !_actions.TryGetValue(key, out var actions))
+        if (key.Length == 0 || !Actions.TryGetValue(key, out var actions))
             return;
 
         foreach (var action in actions)
             set[$"Action: {action.Name}"] = action;
+    }
+
+    private IReadOnlyList<IReadOnlyList<(string Name, ObjectKind Kind)>> CreateModelObjects(ActorManager.ActorManagerData actors,
+        DataManager gameData,
+        ClientLanguage language)
+    {
+        var modelSheet     = gameData.GetExcelSheet<ModelChara>(language)!;
+        var bnpcSheet      = gameData.GetExcelSheet<BNpcBase>(language)!;
+        var enpcSheet      = gameData.GetExcelSheet<ENpcBase>(language)!;
+        var ornamentSheet  = gameData.GetExcelSheet<Ornament>(language)!;
+        var mountSheet     = gameData.GetExcelSheet<Mount>(language)!;
+        var companionSheet = gameData.GetExcelSheet<Companion>(language)!;
+        var ret            = new List<HashSet<(string Name, ObjectKind Kind)>>((int)modelSheet.RowCount);
+
+        for (var i = -1; i < modelSheet.Last().RowId; ++i)
+            ret.Add(new HashSet<(string Name, ObjectKind Kind)>());
+
+        void Add(int modelChara, ObjectKind kind, uint dataId)
+        {
+            if (modelChara == 0 || modelChara >= ret.Count)
+                return;
+
+            if (actors.TryGetName(kind, dataId, out var name))
+                ret[modelChara].Add((name, kind));
+        }
+
+        foreach (var ornament in ornamentSheet)
+            Add(ornament.Model, (ObjectKind)15, ornament.RowId);
+
+        foreach (var mount in mountSheet)
+            Add((int)mount.ModelChara.Row, ObjectKind.MountType, mount.RowId);
+
+        foreach (var companion in companionSheet)
+            Add((int)companion.Model.Row, ObjectKind.Companion, companion.RowId);
+
+        foreach (var enpc in enpcSheet)
+            Add((int)enpc.ModelChara.Row, ObjectKind.EventNpc, enpc.RowId);
+
+        foreach (var bnpc in bnpcSheet.Where(b => b.RowId < BnpcNames.Count))
+        {
+            foreach (var name in BnpcNames[(int)bnpc.RowId])
+                Add((int)bnpc.ModelChara.Row, ObjectKind.BattleNpc, name);
+        }
+
+        return ret.Select(s => s.Count > 0
+            ? s.ToArray()
+            : Array.Empty<(string Name, ObjectKind Kind)>()).ToArray();
+    }
+
+    public static unsafe ulong KeyFromCharacterBase(CharacterBase* drawObject)
+    {
+        var type = (*(delegate* unmanaged<CharacterBase*, uint>**)drawObject)[50](drawObject);
+        var unk  = (ulong)*((byte*)drawObject + 0x8E8) << 8;
+        return type switch
+        {
+            1 => type | unk,
+            2 => type | unk | ((ulong)*(ushort*)((byte*)drawObject + 0x908) << 16),
+            3 => type
+              | unk
+              | ((ulong)*(ushort*)((byte*)drawObject + 0x8F0) << 16)
+              | ((ulong)**(ushort**)((byte*)drawObject + 0x910) << 32)
+              | ((ulong)**(ushort**)((byte*)drawObject + 0x910) << 40),
+            _ => 0u,
+        };
     }
 }

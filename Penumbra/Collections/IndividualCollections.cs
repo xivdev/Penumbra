@@ -100,13 +100,14 @@ public sealed partial class IndividualCollections
 
         static ActorIdentifier[] CreateNpcs( ActorManager manager, ActorIdentifier identifier )
         {
-            var name = manager.ToName( identifier.Kind, identifier.DataId );
+            var name = manager.Data.ToName( identifier.Kind, identifier.DataId );
             var table = identifier.Kind switch
             {
-                ObjectKind.BattleNpc => manager.BNpcs,
-                ObjectKind.EventNpc  => manager.ENpcs,
-                ObjectKind.Companion => manager.Companions,
-                ObjectKind.MountType => manager.Mounts,
+                ObjectKind.BattleNpc => manager.Data.BNpcs,
+                ObjectKind.EventNpc  => manager.Data.ENpcs,
+                ObjectKind.Companion => manager.Data.Companions,
+                ObjectKind.MountType => manager.Data.Mounts,
+                ( ObjectKind )15     => manager.Data.Ornaments,
                 _                    => throw new NotImplementedException(),
             };
             return table.Where( kvp => kvp.Value == name )
@@ -205,11 +206,11 @@ public sealed partial class IndividualCollections
     {
         return identifier.Type switch
         {
-            IdentifierType.Player   => $"{identifier.PlayerName} ({_actorManager.ToWorldName( identifier.HomeWorld )})",
+            IdentifierType.Player   => $"{identifier.PlayerName} ({_actorManager.Data.ToWorldName( identifier.HomeWorld )})",
             IdentifierType.Retainer => $"{identifier.PlayerName} (Retainer)",
             IdentifierType.Owned =>
-                $"{identifier.PlayerName} ({_actorManager.ToWorldName( identifier.HomeWorld )})'s {_actorManager.ToName( identifier.Kind, identifier.DataId )}",
-            IdentifierType.Npc => $"{_actorManager.ToName( identifier.Kind, identifier.DataId )} ({identifier.Kind.ToName()})",
+                $"{identifier.PlayerName} ({_actorManager.Data.ToWorldName( identifier.HomeWorld )})'s {_actorManager.Data.ToName( identifier.Kind, identifier.DataId )}",
+            IdentifierType.Npc => $"{_actorManager.Data.ToName( identifier.Kind, identifier.DataId )} ({identifier.Kind.ToName()})",
             _                  => string.Empty,
         };
     }

@@ -68,12 +68,12 @@ public partial class ConfigWindow
         private string     _newCharacterName = string.Empty;
         private ObjectKind _newKind          = ObjectKind.BattleNpc;
 
-        private readonly WorldCombo _worldCombo     = new(Penumbra.Actors.Worlds);
-        private readonly NpcCombo   _mountCombo     = new("##mountCombo", Penumbra.Actors.Mounts);
-        private readonly NpcCombo   _companionCombo = new("##companionCombo", Penumbra.Actors.Companions);
-        private readonly NpcCombo   _ornamentCombo  = new("##ornamentCombo", Penumbra.Actors.Ornaments);
-        private readonly NpcCombo   _bnpcCombo      = new("##bnpcCombo", Penumbra.Actors.BNpcs);
-        private readonly NpcCombo   _enpcCombo      = new("##enpcCombo", Penumbra.Actors.ENpcs);
+        private readonly WorldCombo _worldCombo     = new(Penumbra.Actors.Data.Worlds);
+        private readonly NpcCombo   _mountCombo     = new("##mountCombo", Penumbra.Actors.Data.Mounts );
+        private readonly NpcCombo   _companionCombo = new("##companionCombo", Penumbra.Actors.Data.Companions );
+        private readonly NpcCombo   _ornamentCombo  = new("##ornamentCombo", Penumbra.Actors.Data.Ornaments );
+        private readonly NpcCombo   _bnpcCombo      = new("##bnpcCombo", Penumbra.Actors.Data.BNpcs );
+        private readonly NpcCombo   _enpcCombo      = new("##enpcCombo", Penumbra.Actors.Data.ENpcs );
 
         private const string NewPlayerTooltipEmpty     = "Please enter a valid player name and choose an available world or 'Any World'.";
         private const string NewRetainerTooltipEmpty   = "Please enter a valid retainer name.";

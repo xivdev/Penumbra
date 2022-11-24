@@ -88,19 +88,19 @@ public partial class IndividualCollections
             var kind      = ObjectKind.None;
             var lowerName = name.ToLowerInvariant();
             // Prefer matching NPC names, fewer false positives than preferring players.
-            if( FindDataId( lowerName, _actorManager.Companions, out var dataId ) )
+            if( FindDataId( lowerName, _actorManager.Data.Companions, out var dataId ) )
             {
                 kind = ObjectKind.Companion;
             }
-            else if( FindDataId( lowerName, _actorManager.Mounts, out dataId ) )
+            else if( FindDataId( lowerName, _actorManager.Data.Mounts, out dataId ) )
             {
                 kind = ObjectKind.MountType;
             }
-            else if( FindDataId( lowerName, _actorManager.BNpcs, out dataId ) )
+            else if( FindDataId( lowerName, _actorManager.Data.BNpcs, out dataId ) )
             {
                 kind = ObjectKind.BattleNpc;
             }
-            else if( FindDataId( lowerName, _actorManager.ENpcs, out dataId ) )
+            else if( FindDataId( lowerName, _actorManager.Data.ENpcs, out dataId ) )
             {
                 kind = ObjectKind.EventNpc;
             }
@@ -111,7 +111,7 @@ public partial class IndividualCollections
                 // If the name corresponds to a valid npc, add it as a group. If this fails, notify users.
                 var group = GetGroup( identifier );
                 var ids   = string.Join( ", ", group.Select( i => i.DataId.ToString() ) );
-                if( Add( $"{_actorManager.ToName( kind, dataId )} ({kind.ToName()})", group, collection ) )
+                if( Add( $"{_actorManager.Data.ToName( kind, dataId )} ({kind.ToName()})", group, collection ) )
                 {
                     Penumbra.Log.Information( $"Migrated {name} ({kind.ToName()}) to NPC Identifiers [{ids}]." );
                 }
@@ -128,7 +128,7 @@ public partial class IndividualCollections
                 identifier = _actorManager.CreatePlayer( ByteString.FromStringUnsafe( name, false ), ushort.MaxValue );
                 var shortName = string.Join( " ", name.Split().Select( n => $"{n[ 0 ]}." ) );
                 // Try to migrate the player name without logging full names.
-                if( Add( $"{name} ({_actorManager.ToWorldName( identifier.HomeWorld )})", new[] { identifier }, collection ) )
+                if( Add( $"{name} ({_actorManager.Data.ToWorldName( identifier.HomeWorld )})", new[] { identifier }, collection ) )
                 {
                     Penumbra.Log.Information( $"Migrated {shortName} ({collection.AnonymizedName}) to Player Identifier." );
                 }

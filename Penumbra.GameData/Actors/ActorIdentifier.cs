@@ -149,11 +149,11 @@ public static class ActorManagerExtensions
 
         var dict = lhs.Kind switch
         {
-            ObjectKind.MountType => manager.Mounts,
-            ObjectKind.Companion => manager.Companions,
-            (ObjectKind)15       => manager.Ornaments, // TODO: CS Update
-            ObjectKind.BattleNpc => manager.BNpcs,
-            ObjectKind.EventNpc  => manager.ENpcs,
+            ObjectKind.MountType => manager.Data.Mounts,
+            ObjectKind.Companion => manager.Data.Companions,
+            (ObjectKind)15       => manager.Data.Ornaments, // TODO: CS Update
+            ObjectKind.BattleNpc => manager.Data.BNpcs,
+            ObjectKind.EventNpc  => manager.Data.ENpcs,
             _                    => new Dictionary<uint, string>(),
         };
 

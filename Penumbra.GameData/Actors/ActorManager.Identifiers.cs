@@ -64,12 +64,6 @@ public partial class ActorManager
     }
 
     /// <summary>
-    /// Return the world name including the Any World option.
-    /// </summary>
-    public string ToWorldName(ushort worldId)
-        => worldId == ushort.MaxValue ? "Any World" : Worlds.TryGetValue(worldId, out var name) ? name : "Invalid";
-
-    /// <summary>
     /// Use stored data to convert an ActorIdentifier to a string.
     /// </summary>
     public string ToString(ActorIdentifier id)
@@ -77,47 +71,21 @@ public partial class ActorManager
         return id.Type switch
         {
             IdentifierType.Player => id.HomeWorld != _clientState.LocalPlayer?.HomeWorld.Id
-                ? $"{id.PlayerName} ({ToWorldName(id.HomeWorld)})"
+                ? $"{id.PlayerName} ({Data.ToWorldName(id.HomeWorld)})"
                 : id.PlayerName.ToString(),
             IdentifierType.Retainer => id.PlayerName.ToString(),
             IdentifierType.Owned => id.HomeWorld != _clientState.LocalPlayer?.HomeWorld.Id
-                ? $"{id.PlayerName} ({ToWorldName(id.HomeWorld)})'s {ToName(id.Kind, id.DataId)}"
-                : $"{id.PlayerName}s {ToName(id.Kind,                                id.DataId)}",
+                ? $"{id.PlayerName} ({Data.ToWorldName(id.HomeWorld)})'s {Data.ToName(id.Kind, id.DataId)}"
+                : $"{id.PlayerName}s {Data.ToName(id.Kind,                                id.DataId)}",
             IdentifierType.Special => id.Special.ToName(),
             IdentifierType.Npc =>
                 id.Index == ushort.MaxValue
-                    ? ToName(id.Kind, id.DataId)
-                    : $"{ToName(id.Kind, id.DataId)} at {id.Index}",
+                    ? Data.ToName(id.Kind, id.DataId)
+                    : $"{Data.ToName(id.Kind, id.DataId)} at {id.Index}",
             IdentifierType.UnkObject => id.PlayerName.IsEmpty
                 ? $"Unknown Object at {id.Index}"
                 : $"{id.PlayerName} at {id.Index}",
             _ => "Invalid",
-        };
-    }
-
-
-    /// <summary>
-    /// Convert a given ID for a certain ObjectKind to a name.
-    /// </summary>
-    /// <returns>Invalid or a valid name.</returns>
-    public string ToName(ObjectKind kind, uint dataId)
-        => TryGetName(kind, dataId, out var ret) ? ret : "Invalid";
-
-
-    /// <summary>
-    /// Convert a given ID for a certain ObjectKind to a name.
-    /// </summary>
-    public bool TryGetName(ObjectKind kind, uint dataId, [NotNullWhen(true)] out string? name)
-    {
-        name = null;
-        return kind switch
-        {
-            ObjectKind.MountType => Mounts.TryGetValue(dataId, out name),
-            ObjectKind.Companion => Companions.TryGetValue(dataId, out name),
-            (ObjectKind)15       => Ornaments.TryGetValue(dataId, out name), // TODO: CS Update
-            ObjectKind.BattleNpc => BNpcs.TryGetValue(dataId, out name),
-            ObjectKind.EventNpc  => ENpcs.TryGetValue(dataId, out name),
-            _                    => false,
         };
     }
 
@@ -395,7 +363,7 @@ public partial class ActorManager
 
     /// <summary> Checks if the world is a valid public world or ushort.MaxValue (any world). </summary>
     public bool VerifyWorld(ushort worldId)
-        => worldId == ushort.MaxValue || Worlds.ContainsKey(worldId);
+        => worldId == ushort.MaxValue || Data.Worlds.ContainsKey(worldId);
 
     /// <summary> Verify that the enum value is a specific actor and return the name if it is. </summary>
     public static bool VerifySpecial(SpecialActor actor)
@@ -418,10 +386,10 @@ public partial class ActorManager
     {
         return kind switch
         {
-            ObjectKind.MountType => Mounts.ContainsKey(dataId),
-            ObjectKind.Companion => Companions.ContainsKey(dataId),
-            (ObjectKind)15       => Ornaments.ContainsKey(dataId), // TODO: CS Update
-            ObjectKind.BattleNpc => BNpcs.ContainsKey(dataId),
+            ObjectKind.MountType => Data.Mounts.ContainsKey(dataId),
+            ObjectKind.Companion => Data.Companions.ContainsKey(dataId),
+            (ObjectKind)15       => Data.Ornaments.ContainsKey(dataId), // TODO: CS Update
+            ObjectKind.BattleNpc => Data.BNpcs.ContainsKey(dataId),
             _                    => false,
         };
     }
@@ -429,11 +397,11 @@ public partial class ActorManager
     public bool VerifyNpcData(ObjectKind kind, uint dataId)
         => kind switch
         {
-            ObjectKind.MountType => Mounts.ContainsKey(dataId),
-            ObjectKind.Companion => Companions.ContainsKey(dataId),
-            (ObjectKind)15       => Ornaments.ContainsKey(dataId), // TODO: CS Update
-            ObjectKind.BattleNpc => BNpcs.ContainsKey(dataId),
-            ObjectKind.EventNpc  => ENpcs.ContainsKey(dataId),
+            ObjectKind.MountType => Data.Mounts.ContainsKey(dataId),
+            ObjectKind.Companion => Data.Companions.ContainsKey(dataId),
+            (ObjectKind)15       => Data.Ornaments.ContainsKey(dataId), // TODO: CS Update
+            ObjectKind.BattleNpc => Data.BNpcs.ContainsKey(dataId),
+            ObjectKind.EventNpc  => Data.ENpcs.ContainsKey(dataId),
             _                    => false,
         };
 }

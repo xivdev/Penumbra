@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
 using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
@@ -12,6 +13,7 @@ using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.UI.Classes;
@@ -71,10 +73,27 @@ public partial class ConfigWindow
             }
         }
 
-        if( data is Item it && drawId )
+        if( drawId && DrawChangedItemObject( data, out var text ) )
         {
             ImGui.SameLine( ImGui.GetContentRegionAvail().X );
-            ImGuiUtil.RightJustify( $"({( ( Quad )it.ModelMain ).A})", ColorId.ItemId.Value() );
+            ImGuiUtil.RightJustify( text, ColorId.ItemId.Value() );
+        }
+    }
+
+    private static bool DrawChangedItemObject( object? obj, out string text )
+    {
+        switch( obj )
+        {
+            case Item it:
+                var quad = ( Quad )it.ModelMain;
+                text = quad.C == 0 ? $"({quad.A}-{quad.B})" : $"({quad.A}-{quad.B}-{quad.C})";
+                return true;
+            case ModelChara m:
+                text = $"({( ( CharacterBase.ModelType )m.Type ).ToName()} {m.Model}-{m.Base}-{m.Variant})";
+                return true;
+            default:
+                text = string.Empty;
+                return false;
         }
     }
 
