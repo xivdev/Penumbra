@@ -144,10 +144,8 @@ public unsafe partial class PathResolver
                 _lastCreatedCollection = IdentifyCollection( LastGameObject, false );
                 // Change the transparent or 1.0 Decal if necessary.
                 var decal = new CharacterUtility.DecalReverter( _lastCreatedCollection.ModCollection, UsesDecal( a, c ) );
-                // Change the rsp parameters if necessary.
-                meta = new DisposableContainer( _lastCreatedCollection.ModCollection != Penumbra.CollectionManager.Default
-                    ? _lastCreatedCollection.ModCollection.TemporarilySetCmpFile()
-                    : null, decal );
+                // Change the rsp parameters.
+                meta = new DisposableContainer( _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(), decal );
                 try
                 {
                     var modelPtr = &a;
@@ -160,16 +158,19 @@ public unsafe partial class PathResolver
             }
 
             var ret = _characterBaseCreateHook.Original( a, b, c, d );
-            using( meta )
+            try
             {
                 if( LastGameObject != null && ret != IntPtr.Zero )
                 {
                     _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
                     CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection.Name, ret );
                 }
-
-                return ret;
             }
+            finally
+            {
+                meta.Dispose();
+            }
+            return ret;
         }
 
         // Check the customize array for the FaceCustomization byte and the last bit of that.

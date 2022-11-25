@@ -188,7 +188,9 @@ public unsafe partial class PathResolver
             var       resolveData = GetResolveData( human );
             using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile();
             using var decals = new CharacterUtility.DecalReverter( resolveData.ModCollection, DrawObjectState.UsesDecal( 0, data ) );
-            return _changeCustomize.Original( human, data, skipEquipment );
+            var ret = _changeCustomize.Original( human, data, skipEquipment );
+            _inChangeCustomize = false;
+            return ret;
         }
 
         public static DisposableContainer ResolveEqdpData( ModCollection collection, GenderRace race, bool equipment, bool accessory )
