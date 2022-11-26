@@ -293,7 +293,12 @@ public partial class ModEditWindow : Window, IDisposable
         const string desc = "Tries to create a unique copy of a file for every game path manipulated and put them in [Groupname]/[Optionname]/[GamePath] order.\n"
           + "This will also delete all unused files and directories if it succeeds.\n"
           + "Care was taken that a failure should not destroy the mod but revert to its original state, but you use this at your own risk anyway.";
-        if( ImGuiUtil.DrawDisabledButton( "Re-Duplicate and Normalize Mod", Vector2.Zero, desc, !_allowReduplicate ) )
+
+        var modifier = Penumbra.Config.DeleteModModifier.IsActive();
+
+        var tt = _allowReduplicate ? desc : modifier ? desc : desc + $"\n\nNo duplicates detected! Hold {Penumbra.Config.DeleteModModifier} to force normalization anyway.";
+
+        if( ImGuiUtil.DrawDisabledButton( "Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier ) )
         {
             _mod!.Normalize( Penumbra.ModManager );
             _editor.RevertFiles();
