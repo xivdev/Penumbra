@@ -17,18 +17,22 @@ namespace Penumbra.UI.Classes;
 
 public partial class ModEditWindow
 {
-    private const string ModelSetIdTooltip       = "Model Set ID - You can usually find this as the 'e####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that.";
-    private const string PrimaryIdTooltip        = "Primary ID - You can usually find this as the 'x####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that.";
-    private const string ModelSetIdTooltipShort  = "Model Set ID";
-    private const string EquipSlotTooltip        = "Equip Slot";
-    private const string ModelRaceTooltip        = "Model Race";
-    private const string GenderTooltip           = "Gender";
-    private const string ObjectTypeTooltip       = "Object Type";
-    private const string SecondaryIdTooltip      = "Secondary ID";
-    private const string VariantIdTooltip        = "Variant ID";
-    private const string EstTypeTooltip          = "EST Type";
-    private const string RacialTribeTooltip      = "Racial Tribe";
-    private const string ScalingTypeTooltip      = "Scaling Type";
+    private const string ModelSetIdTooltip =
+        "Model Set ID - You can usually find this as the 'e####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that.";
+
+    private const string PrimaryIdTooltip =
+        "Primary ID - You can usually find this as the 'x####' part of an item path.\nThis should generally not be left <= 1 unless you explicitly want that.";
+
+    private const string ModelSetIdTooltipShort = "Model Set ID";
+    private const string EquipSlotTooltip       = "Equip Slot";
+    private const string ModelRaceTooltip       = "Model Race";
+    private const string GenderTooltip          = "Gender";
+    private const string ObjectTypeTooltip      = "Object Type";
+    private const string SecondaryIdTooltip     = "Secondary ID";
+    private const string VariantIdTooltip       = "Variant ID";
+    private const string EstTypeTooltip         = "EST Type";
+    private const string RacialTribeTooltip     = "Racial Tribe";
+    private const string ScalingTypeTooltip     = "Scaling Type";
 
     private void DrawMetaTab()
     {
@@ -61,6 +65,11 @@ public partial class ModEditWindow
         SetFromClipboardButton();
         ImGui.SameLine();
         CopyToClipboardButton( "Copy all current manipulations to clipboard.", _iconSize, _editor.Meta.Recombine() );
+        ImGui.SameLine();
+        if( ImGui.Button( "Write as TexTools Files" ) )
+        {
+            _mod!.WriteAllTexToolsMeta();
+        }
 
         using var child = ImRaii.Child( "##meta", -Vector2.One, true );
         if( !child )

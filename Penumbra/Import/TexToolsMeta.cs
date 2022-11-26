@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Import;
@@ -18,7 +19,7 @@ namespace Penumbra.Import;
 public partial class TexToolsMeta
 {
     // An empty TexToolsMeta.
-    public static readonly TexToolsMeta Invalid = new( string.Empty, 0 );
+    public static readonly TexToolsMeta Invalid = new(string.Empty, 0);
 
     // The info class determines the files or table locations the changes need to apply to from the filename.
 
@@ -84,7 +85,7 @@ public partial class TexToolsMeta
     // Read a null terminated string from a binary reader.
     private static string ReadNullTerminated( BinaryReader reader )
     {
-        var builder = new System.Text.StringBuilder();
+        var builder = new StringBuilder();
         for( var c = reader.ReadChar(); c != 0; c = reader.ReadChar() )
         {
             builder.Append( c );

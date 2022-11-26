@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
@@ -56,6 +57,37 @@ public partial class Mod
         catch( Exception e )
         {
             Penumbra.Log.Error( $"Could not parse default file for {Name}:\n{e}" );
+        }
+    }
+
+    public void WriteAllTexToolsMeta()
+    {
+        try
+        {
+            _default.WriteTexToolsMeta( ModPath );
+            foreach( var group in Groups )
+            {
+                var dir = NewOptionDirectory( ModPath, group.Name );
+                if( !dir.Exists )
+                {
+                    dir.Create();
+                }
+
+                foreach( var option in group.OfType< SubMod >() )
+                {
+                    var optionDir = NewOptionDirectory( dir, option.Name );
+                    if( !optionDir.Exists )
+                    {
+                        optionDir.Create();
+                    }
+
+                    option.WriteTexToolsMeta( optionDir );
+                }
+            }
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Error( $"Error writing TexToolsMeta:\n{e}" );
         }
     }
 
@@ -195,6 +227,71 @@ public partial class Mod
                 {
                     Penumbra.Log.Error( $"Could not incorporate meta changes in mod {basePath} from file {file.FullName}:\n{e}" );
                 }
+            }
+        }
+
+        public void WriteTexToolsMeta( DirectoryInfo basePath, bool test = false )
+        {
+            var files = TexToolsMeta.ConvertToTexTools( Manipulations );
+
+            foreach( var (file, data) in files )
+            {
+                var path = Path.Combine( basePath.FullName, file );
+                try
+                {
+                    Directory.CreateDirectory( Path.GetDirectoryName( path )! );
+                    File.WriteAllBytes( path, data );
+                }
+                catch( Exception e )
+                {
+                    Penumbra.Log.Error( $"Could not write meta file {path}:\n{e}" );
+                }
+            }
+
+            if( test )
+            {
+                TestMetaWriting( files );
+            }
+        }
+
+        [Conditional("DEBUG")]
+        private void TestMetaWriting( Dictionary< string, byte[] > files )
+        {
+            var meta = new HashSet< MetaManipulation >( Manipulations.Count );
+            foreach( var (file, data) in files )
+            {
+                try
+                {
+                    var x = file.EndsWith( "rgsp" ) ? TexToolsMeta.FromRgspFile( file, data ) : new TexToolsMeta( data );
+                    meta.UnionWith( x.MetaManipulations );
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
+
+            if( !Manipulations.SetEquals( meta ) )
+            {
+                Penumbra.Log.Information( "Meta Sets do not equal." );
+                foreach( var (m1, m2) in Manipulations.Zip( meta ) )
+                {
+                    Penumbra.Log.Information( $"{m1} {m1.EntryToString()} | {m2} {m2.EntryToString()}" );
+                }
+
+                foreach( var m in Manipulations.Skip( meta.Count ) )
+                {
+                    Penumbra.Log.Information( $"{m} {m.EntryToString()} " );
+                }
+
+                foreach( var m in meta.Skip( Manipulations.Count ) )
+                {
+                    Penumbra.Log.Information( $"{m} {m.EntryToString()} " );
+                }
+            }
+            else
+            {
+                Penumbra.Log.Information( "Meta Sets are equal." );
             }
         }
     }

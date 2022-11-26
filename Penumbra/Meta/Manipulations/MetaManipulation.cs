@@ -232,4 +232,16 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
             Type.Imc  => Imc.ToString(),
             _         => throw new ArgumentOutOfRangeException(),
         };
+
+    public string EntryToString()
+        => ManipulationType switch
+        {
+            Type.Imc  => $"{Imc.Entry.DecalId}-{Imc.Entry.MaterialId}-{Imc.Entry.VfxId}-{Imc.Entry.SoundId}-{Imc.Entry.MaterialAnimationId}-{Imc.Entry.AttributeMask}",
+            Type.Eqdp => $"{(ushort) Eqdp.Entry:X}",
+            Type.Eqp  => $"{(ulong)Eqp.Entry:X}",
+            Type.Est  => $"{Est.Entry}",
+            Type.Gmp  => $"{Gmp.Entry.Value}",
+            Type.Rsp  => $"{Rsp.Entry}",
+            _         => string.Empty,
+        };
 }

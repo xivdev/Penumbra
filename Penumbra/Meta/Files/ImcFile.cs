@@ -1,7 +1,6 @@
 using System;
 using System.Numerics;
 using Newtonsoft.Json;
-using OtterGui;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
@@ -14,26 +13,26 @@ public readonly struct ImcEntry : IEquatable< ImcEntry >
 {
     public byte MaterialId { get; init; }
     public byte DecalId { get; init; }
-    private readonly ushort _attributeAndSound;
+    public readonly ushort AttributeAndSound;
     public byte VfxId { get; init; }
     public byte MaterialAnimationId { get; init; }
 
     public ushort AttributeMask
     {
-        get => ( ushort )( _attributeAndSound & 0x3FF );
-        init => _attributeAndSound = ( ushort )( ( _attributeAndSound & ~0x3FF ) | ( value & 0x3FF ) );
+        get => ( ushort )( AttributeAndSound & 0x3FF );
+        init => AttributeAndSound = ( ushort )( ( AttributeAndSound & ~0x3FF ) | ( value & 0x3FF ) );
     }
 
     public byte SoundId
     {
-        get => ( byte )( _attributeAndSound >> 10 );
-        init => _attributeAndSound = ( ushort )( AttributeMask | ( value << 10 ) );
+        get => ( byte )( AttributeAndSound >> 10 );
+        init => AttributeAndSound = ( ushort )( AttributeMask | ( value << 10 ) );
     }
 
     public bool Equals( ImcEntry other )
         => MaterialId           == other.MaterialId
          && DecalId             == other.DecalId
-         && _attributeAndSound  == other._attributeAndSound
+         && AttributeAndSound   == other.AttributeAndSound
          && VfxId               == other.VfxId
          && MaterialAnimationId == other.MaterialAnimationId;
 
@@ -41,14 +40,14 @@ public readonly struct ImcEntry : IEquatable< ImcEntry >
         => obj is ImcEntry other && Equals( other );
 
     public override int GetHashCode()
-        => HashCode.Combine( MaterialId, DecalId, _attributeAndSound, VfxId, MaterialAnimationId );
+        => HashCode.Combine( MaterialId, DecalId, AttributeAndSound, VfxId, MaterialAnimationId );
 
     [JsonConstructor]
     public ImcEntry( byte materialId, byte decalId, ushort attributeMask, byte soundId, byte vfxId, byte materialAnimationId )
     {
         MaterialId          = materialId;
         DecalId             = decalId;
-        _attributeAndSound  = 0;
+        AttributeAndSound   = 0;
         VfxId               = vfxId;
         MaterialAnimationId = materialAnimationId;
         AttributeMask       = attributeMask;
