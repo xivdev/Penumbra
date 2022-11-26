@@ -363,11 +363,7 @@ public partial class ModEditWindow
     {
         static bool FixFloat( ref float val, float current )
         {
-            if( val < 0 )
-            {
-                val = 0;
-            }
-
+            val = ( float )( Half )val;
             return val != current;
         }
 

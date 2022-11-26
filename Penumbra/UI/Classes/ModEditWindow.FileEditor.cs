@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -149,6 +150,29 @@ public partial class ModEditWindow
                 if( ImGui.Selectable( file.RelPath.ToString(), ReferenceEquals( file, _currentPath ) ) )
                 {
                     UpdateCurrentFile( file );
+                }
+
+                if( ImGui.IsItemHovered() )
+                {
+                    using var tt = ImRaii.Tooltip();
+                    ImGui.TextUnformatted( "All Game Paths" );
+                    ImGui.Separator();
+                    using var t = ImRaii.Table( "##Tooltip", 2, ImGuiTableFlags.SizingFixedFit );
+                    foreach( var (option, gamePath) in file.SubModUsage )
+                    {
+                        ImGui.TableNextColumn();
+                        ConfigWindow.Text( gamePath.Path );
+                        ImGui.TableNextColumn();
+                        using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.ItemId.Value() );
+                        ImGui.TextUnformatted( option.FullName );
+                    }
+                }
+
+                if( file.SubModUsage.Count > 0 )
+                {
+                    ImGui.SameLine();
+                    using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.ItemId.Value() );
+                    ImGuiUtil.RightAlign( file.SubModUsage[ 0 ].Item2.Path.ToString() );
                 }
             }
         }
