@@ -80,9 +80,15 @@ public partial class Mod
     // Deletes the source files if delete is true.
     private void IncorporateAllMetaChanges( bool delete )
     {
+        var changes = false;
         foreach( var subMod in AllSubMods.OfType< SubMod >() )
         {
-            subMod.IncorporateMetaChanges( ModPath, delete );
+            changes |= subMod.IncorporateMetaChanges( ModPath, delete );
+        }
+
+        if( changes )
+        {
+            SaveAllGroups();
         }
     }
 }
