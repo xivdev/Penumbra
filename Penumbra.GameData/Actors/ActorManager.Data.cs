@@ -172,7 +172,7 @@ public sealed partial class ActorManager : IDisposable
 
     public unsafe ActorIdentifier GetCurrentPlayer()
     {
-        var address = (Character*)(_objects[0]?.Address ?? IntPtr.Zero);
+        var address = (Character*)_objects.GetObjectAddress(0);
         return address == null
             ? ActorIdentifier.Invalid
             : CreateIndividualUnchecked(IdentifierType.Player, new ByteString(address->GameObject.Name), address->HomeWorld,

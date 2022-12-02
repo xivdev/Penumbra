@@ -63,14 +63,17 @@ public unsafe partial class PathResolver
     // or the default collection if no player exists.
     public static ModCollection PlayerCollection()
     {
-        var player = Penumbra.Actors.GetCurrentPlayer();
-        if( !player.IsValid )
+        var gameObject = ( GameObject* )Dalamud.Objects.GetObjectAddress( 0 );
+        if( gameObject == null )
         {
-            return Penumbra.CollectionManager.Default;
+            return Penumbra.CollectionManager.ByType( CollectionType.Yourself )
+             ?? Penumbra.CollectionManager.Default;
         }
 
+        var player = Penumbra.Actors.GetCurrentPlayer();
         return CollectionByIdentifier( player )
-         ?? CollectionByAttributes( ( GameObject* )Dalamud.Objects[ 0 ]!.Address )
+         ?? CheckYourself( player, gameObject )
+         ?? CollectionByAttributes( gameObject )
          ?? Penumbra.CollectionManager.Default;
     }
 
