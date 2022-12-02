@@ -93,6 +93,9 @@ public class IpcTester : IDisposable
             _gameState.CharacterBaseCreated.Enable();
             _configuration.ModDirectoryChanged.Enable();
             _gameState.GameObjectResourcePathResolved.Enable();
+            _mods.DeleteSubscriber.Enable();
+            _mods.AddSubscriber.Enable();
+            _mods.MoveSubscriber.Enable();
             _subscribed = true;
         }
     }
@@ -114,6 +117,9 @@ public class IpcTester : IDisposable
             _gameState.CharacterBaseCreated.Disable();
             _configuration.ModDirectoryChanged.Disable();
             _gameState.GameObjectResourcePathResolved.Disable();
+            _mods.DeleteSubscriber.Disable();
+            _mods.AddSubscriber.Disable();
+            _mods.MoveSubscriber.Disable();
             _subscribed = false;
         }
     }
@@ -133,6 +139,9 @@ public class IpcTester : IDisposable
         _gameState.CharacterBaseCreated.Dispose();
         _configuration.ModDirectoryChanged.Dispose();
         _gameState.GameObjectResourcePathResolved.Dispose();
+        _mods.DeleteSubscriber.Dispose();
+        _mods.AddSubscriber.Dispose();
+        _mods.MoveSubscriber.Dispose();
         _subscribed = false;
     }
 
@@ -536,29 +545,33 @@ public class IpcTester : IDisposable
             }
         }
 
-        private unsafe void UpdateLastCreated( IntPtr gameObject, string _, IntPtr _2, IntPtr _3, IntPtr _4 )
+        private void UpdateLastCreated( IntPtr gameObject, string _, IntPtr _2, IntPtr _3, IntPtr _4 )
         {
-            var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
-            _lastCreatedGameObjectName = new ByteString( obj->GetName() ).ToString();
+            _lastCreatedGameObjectName = GetObjectName( gameObject );
             _lastCreatedGameObjectTime = DateTimeOffset.Now;
             _lastCreatedDrawObject     = IntPtr.Zero;
         }
 
-        private unsafe void UpdateLastCreated2( IntPtr gameObject, string _, IntPtr drawObject )
+        private void UpdateLastCreated2( IntPtr gameObject, string _, IntPtr drawObject )
         {
-            var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
-            _lastCreatedGameObjectName = new ByteString( obj->GetName() ).ToString();
+            _lastCreatedGameObjectName = GetObjectName( gameObject );
             _lastCreatedGameObjectTime = DateTimeOffset.Now;
             _lastCreatedDrawObject     = drawObject;
         }
 
-        private unsafe void UpdateGameObjectResourcePath( IntPtr gameObject, string gamePath, string fullPath )
+        private void UpdateGameObjectResourcePath( IntPtr gameObject, string gamePath, string fullPath )
         {
-            var obj = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
-            _lastResolvedObject       = obj != null ? new ByteString( obj->GetName() ).ToString() : "Unknown";
+            _lastResolvedObject       = GetObjectName( gameObject );
             _lastResolvedGamePath     = gamePath;
             _lastResolvedFullPath     = fullPath;
             _lastResolvedGamePathTime = DateTimeOffset.Now;
+        }
+
+        private static unsafe string GetObjectName( IntPtr gameObject )
+        {
+            var obj  = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
+            var name = obj != null ? obj->GetName() : null;
+            return name != null ? new ByteString( name ).ToString() : "Unknown";
         }
     }
 
@@ -799,8 +812,38 @@ public class IpcTester : IDisposable
         private PenumbraApiEc             _lastSetPathEc;
         private IList< (string, string) > _mods = new List< (string, string) >();
 
+        public readonly EventSubscriber< string >         DeleteSubscriber;
+        public readonly EventSubscriber< string >         AddSubscriber;
+        public readonly EventSubscriber< string, string > MoveSubscriber;
+
+        private DateTimeOffset _lastDeletedModTime = DateTimeOffset.UnixEpoch;
+        private string         _lastDeletedMod     = string.Empty;
+        private DateTimeOffset _lastAddedModTime   = DateTimeOffset.UnixEpoch;
+        private string         _lastAddedMod       = string.Empty;
+        private DateTimeOffset _lastMovedModTime   = DateTimeOffset.UnixEpoch;
+        private string         _lastMovedModFrom   = string.Empty;
+        private string         _lastMovedModTo     = string.Empty;
+
         public Mods( DalamudPluginInterface pi )
-            => _pi = pi;
+        {
+            _pi = pi;
+            DeleteSubscriber = Ipc.ModDeleted.Subscriber( pi, s =>
+            {
+                _lastDeletedModTime = DateTimeOffset.UtcNow;
+                _lastDeletedMod     = s;
+            } );
+            AddSubscriber = Ipc.ModAdded.Subscriber( pi, s =>
+            {
+                _lastAddedModTime = DateTimeOffset.UtcNow;
+                _lastAddedMod     = s;
+            } );
+            MoveSubscriber = Ipc.ModMoved.Subscriber( pi, ( s1, s2 ) =>
+            {
+                _lastMovedModTime = DateTimeOffset.UtcNow;
+                _lastMovedModFrom = s1;
+                _lastMovedModTo   = s2;
+            } );
+        }
 
         public void Draw()
         {
@@ -866,6 +909,23 @@ public class IpcTester : IDisposable
             ImGui.SameLine();
             ImGui.TextUnformatted( _lastSetPathEc.ToString() );
 
+            DrawIntro( Ipc.ModDeleted.Label, "Last Mod Deleted" );
+            if( _lastDeletedModTime > DateTimeOffset.UnixEpoch )
+            {
+                ImGui.TextUnformatted( $"{_lastDeletedMod} at {_lastDeletedModTime}" );
+            }
+
+            DrawIntro( Ipc.ModAdded.Label, "Last Mod Added" );
+            if( _lastAddedModTime > DateTimeOffset.UnixEpoch )
+            {
+                ImGui.TextUnformatted( $"{_lastAddedMod} at {_lastAddedModTime}" );
+            }
+
+            DrawIntro( Ipc.ModMoved.Label, "Last Mod Moved" );
+            if( _lastMovedModTime > DateTimeOffset.UnixEpoch )
+            {
+                ImGui.TextUnformatted( $"{_lastMovedModFrom} -> {_lastMovedModTo} at {_lastMovedModTime}" );
+            }
 
             DrawModsPopup();
         }

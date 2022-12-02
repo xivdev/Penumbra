@@ -75,6 +75,9 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider< string, string, PenumbraApiEc >                 DeleteMod;
     internal readonly FuncProvider< string, string, (PenumbraApiEc, string, bool) > GetModPath;
     internal readonly FuncProvider< string, string, string, PenumbraApiEc >         SetModPath;
+    internal readonly EventProvider< string >                                       ModDeleted;
+    internal readonly EventProvider< string >                                       ModAdded;
+    internal readonly EventProvider< string, string >                               ModMoved;
 
     // ModSettings
     internal readonly FuncProvider< string, string, IDictionary< string, (IList< string >, GroupType) >? >   GetAvailableModSettings;
@@ -167,6 +170,9 @@ public class PenumbraIpcProviders : IDisposable
         DeleteMod  = Ipc.DeleteMod.Provider( pi, Api.DeleteMod );
         GetModPath = Ipc.GetModPath.Provider( pi, Api.GetModPath );
         SetModPath = Ipc.SetModPath.Provider( pi, Api.SetModPath );
+        ModDeleted = Ipc.ModDeleted.Provider( pi, () => Api.ModDeleted += ModDeletedEvent, () => Api.ModDeleted -= ModDeletedEvent );
+        ModAdded   = Ipc.ModAdded.Provider( pi, () => Api.ModAdded     += ModAddedEvent, () => Api.ModAdded     -= ModAddedEvent );
+        ModMoved   = Ipc.ModMoved.Provider( pi, () => Api.ModMoved     += ModMovedEvent, () => Api.ModMoved     -= ModMovedEvent );
 
         // ModSettings
         GetAvailableModSettings = Ipc.GetAvailableModSettings.Provider( pi, Api.GetAvailableModSettings );
@@ -259,6 +265,9 @@ public class PenumbraIpcProviders : IDisposable
         DeleteMod.Dispose();
         GetModPath.Dispose();
         SetModPath.Dispose();
+        ModDeleted.Dispose();
+        ModAdded.Dispose();
+        ModMoved.Dispose();
 
         // ModSettings
         GetAvailableModSettings.Dispose();
@@ -321,4 +330,13 @@ public class PenumbraIpcProviders : IDisposable
 
     private void ModSettingChangedEvent( ModSettingChange type, string collection, string mod, bool inherited )
         => ModSettingChanged.Invoke( type, collection, mod, inherited );
+
+    private void ModDeletedEvent( string name )
+        => ModDeleted.Invoke( name );
+
+    private void ModAddedEvent( string name )
+        => ModAdded.Invoke( name );
+
+    private void ModMovedEvent( string from, string to )
+        => ModMoved.Invoke( from, to );
 }

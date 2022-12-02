@@ -58,7 +58,7 @@ public partial class Mod
                 return;
             }
 
-            MoveDataFile( oldDirectory, BasePath );
+            MoveDataFile( oldDirectory, dir );
             new ModBackup( mod ).Move( null, dir.Name );
 
             dir.Refresh();
@@ -69,7 +69,7 @@ public partial class Mod
                 return;
             }
 
-            ModPathChanged.Invoke( ModPathChangeType.Moved, mod, oldDirectory, BasePath );
+            ModPathChanged.Invoke( ModPathChangeType.Moved, mod, oldDirectory, dir );
             if( metaChange != ModDataChangeType.None )
             {
                 ModDataChanged?.Invoke( metaChange, mod, oldName );

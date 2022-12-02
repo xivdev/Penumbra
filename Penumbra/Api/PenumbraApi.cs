@@ -93,12 +93,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         Penumbra.CollectionManager.CollectionChanged += SubscribeToNewCollections;
         Penumbra.ResourceLoader.ResourceLoaded       += OnResourceLoaded;
+        Penumbra.ModManager.ModPathChanged           += ModPathChangeSubscriber;
     }
 
     public unsafe void Dispose()
     {
         Penumbra.ResourceLoader.ResourceLoaded       -= OnResourceLoaded;
         Penumbra.CollectionManager.CollectionChanged -= SubscribeToNewCollections;
+        Penumbra.ModManager.ModPathChanged           -= ModPathChangeSubscriber;
         _penumbra                                    =  null;
         _lumina                                      =  null;
         foreach( var collection in Penumbra.CollectionManager )
@@ -405,6 +407,26 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return PenumbraApiEc.Success;
     }
 
+    public event Action< string >? ModDeleted;
+    public event Action< string >? ModAdded;
+    public event Action< string, string >? ModMoved;
+
+    private void ModPathChangeSubscriber( ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
+        DirectoryInfo? newDirectory )
+    {
+        switch( type )
+        {
+            case ModPathChangeType.Deleted when oldDirectory != null:
+                ModDeleted?.Invoke( oldDirectory.Name );
+                break;
+            case ModPathChangeType.Added when newDirectory != null:
+                ModAdded?.Invoke( newDirectory.Name );
+                break;
+            case ModPathChangeType.Moved when newDirectory != null && oldDirectory != null:
+                ModMoved?.Invoke( oldDirectory.Name, newDirectory.Name );
+                break;
+        }
+    }
 
     public (PenumbraApiEc, string, bool) GetModPath( string modDirectory, string modName )
     {
