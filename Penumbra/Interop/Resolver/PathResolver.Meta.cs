@@ -78,9 +78,9 @@ public unsafe partial class PathResolver
 
         private void OnModelLoadCompleteDetour( IntPtr drawObject )
         {
-            var collection = GetResolveData( drawObject );
-            using var eqp  = collection.ModCollection.TemporarilySetEqpFile();
-            using var eqdp = ResolveEqdpData( collection.ModCollection, GetDrawObjectGenderRace( drawObject ), true, true );
+            var       collection = GetResolveData( drawObject );
+            using var eqp        = collection.ModCollection.TemporarilySetEqpFile();
+            using var eqdp       = ResolveEqdpData( collection.ModCollection, GetDrawObjectGenderRace( drawObject ), true, true );
             _onModelLoadCompleteHook.Original.Invoke( drawObject );
         }
 
@@ -98,9 +98,9 @@ public unsafe partial class PathResolver
                 return;
             }
 
-            var collection = GetResolveData( drawObject );
-            using var eqp  = collection.ModCollection.TemporarilySetEqpFile();
-            using var eqdp = ResolveEqdpData( collection.ModCollection, GetDrawObjectGenderRace( drawObject ), true, true );
+            var       collection = GetResolveData( drawObject );
+            using var eqp        = collection.ModCollection.TemporarilySetEqpFile();
+            using var eqdp       = ResolveEqdpData( collection.ModCollection, GetDrawObjectGenderRace( drawObject ), true, true );
             _updateModelsHook.Original.Invoke( drawObject );
         }
 
@@ -187,75 +187,27 @@ public unsafe partial class PathResolver
             _inChangeCustomize = true;
             var       resolveData = GetResolveData( human );
             using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile();
-            using var decals = new CharacterUtility.DecalReverter( resolveData.ModCollection, DrawObjectState.UsesDecal( 0, data ) );
-            var ret = _changeCustomize.Original( human, data, skipEquipment );
+            using var decals      = new CharacterUtility.DecalReverter( resolveData.ModCollection, DrawObjectState.UsesDecal( 0, data ) );
+            var       ret         = _changeCustomize.Original( human, data, skipEquipment );
             _inChangeCustomize = false;
             return ret;
         }
 
         public static DisposableContainer ResolveEqdpData( ModCollection collection, GenderRace race, bool equipment, bool accessory )
         {
-            DisposableContainer Convert( params GenderRace[] races )
+            var races = race.Dependencies();
+            if( races.Length == 0 )
             {
-                var equipmentEnumerable =
-                    equipment
-                        ? races.Select( r => collection.TemporarilySetEqdpFile( r, false ) )
-                        : Array.Empty< IDisposable? >().AsEnumerable();
-                var accessoryEnumerable =
-                    accessory
-                        ? races.Select( r => collection.TemporarilySetEqdpFile( r, true ) )
-                        : Array.Empty< IDisposable? >().AsEnumerable();
-                return new DisposableContainer( equipmentEnumerable.Concat( accessoryEnumerable ) );
+                return DisposableContainer.Empty;
             }
 
-            return race switch
-            {
-                // @formatter:off
-                MidlanderMale  => Convert( MidlanderMale ),
-                HighlanderMale => Convert( MidlanderMale, HighlanderMale ),
-                ElezenMale     => Convert( MidlanderMale, ElezenMale ),
-                MiqoteMale     => Convert( MidlanderMale, MiqoteMale ),
-                RoegadynMale   => Convert( MidlanderMale, RoegadynMale ),
-                LalafellMale   => Convert( MidlanderMale, LalafellMale ),
-                AuRaMale       => Convert( MidlanderMale, AuRaMale ),
-                HrothgarMale   => Convert( MidlanderMale, RoegadynMale, HrothgarMale ),
-                VieraMale      => Convert( MidlanderMale, VieraMale ),
-
-                MidlanderFemale  => Convert( MidlanderMale, MidlanderFemale ),
-                HighlanderFemale => Convert( MidlanderMale, MidlanderFemale, HighlanderFemale ),
-                ElezenFemale     => Convert( MidlanderMale, MidlanderFemale, ElezenFemale ),
-                MiqoteFemale     => Convert( MidlanderMale, MidlanderFemale, MiqoteFemale ),
-                RoegadynFemale   => Convert( MidlanderMale, MidlanderFemale, RoegadynFemale ),
-                LalafellFemale   => Convert( MidlanderMale, LalafellMale, LalafellFemale ),
-                AuRaFemale       => Convert( MidlanderMale, MidlanderFemale, AuRaFemale ),
-                HrothgarFemale   => Convert( MidlanderMale, MidlanderFemale, RoegadynFemale, HrothgarFemale ),
-                VieraFemale      => Convert( MidlanderMale, MidlanderFemale, VieraFemale ),
-
-                MidlanderMaleNpc  => Convert( MidlanderMale, MidlanderMaleNpc ),
-                HighlanderMaleNpc => Convert( MidlanderMale, MidlanderMaleNpc, HighlanderMale, HighlanderMaleNpc ),
-                ElezenMaleNpc     => Convert( MidlanderMale, MidlanderMaleNpc, ElezenMale, ElezenMaleNpc ),
-                MiqoteMaleNpc     => Convert( MidlanderMale, MidlanderMaleNpc, MiqoteMale, MiqoteMaleNpc ),
-                RoegadynMaleNpc   => Convert( MidlanderMale, MidlanderMaleNpc, RoegadynMale, RoegadynMaleNpc ),
-                LalafellMaleNpc   => Convert( MidlanderMale, MidlanderMaleNpc, LalafellMale, LalafellMaleNpc ),
-                AuRaMaleNpc       => Convert( MidlanderMale, MidlanderMaleNpc, AuRaMale, AuRaMaleNpc ),
-                HrothgarMaleNpc   => Convert( MidlanderMale, MidlanderMaleNpc, RoegadynMaleNpc, RoegadynMale, HrothgarMale, HrothgarMaleNpc ),
-                VieraMaleNpc      => Convert( MidlanderMale, MidlanderMaleNpc, VieraMale, VieraMaleNpc ),
-
-                MidlanderFemaleNpc  => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc ),
-                HighlanderFemaleNpc => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc, HighlanderFemale, HighlanderFemaleNpc ),
-                ElezenFemaleNpc     => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc, ElezenFemale, ElezenFemaleNpc ),
-                MiqoteFemaleNpc     => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc, MiqoteFemale, MiqoteFemaleNpc ),
-                RoegadynFemaleNpc   => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc, RoegadynFemale, RoegadynFemaleNpc ),
-                LalafellFemaleNpc   => Convert( MidlanderMale, MidlanderMaleNpc, LalafellMale, LalafellMaleNpc, LalafellFemale, LalafellFemaleNpc ),
-                AuRaFemaleNpc       => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc, AuRaFemale, AuRaFemaleNpc ),
-                HrothgarFemaleNpc   => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc, RoegadynFemale, RoegadynFemaleNpc, HrothgarFemale, HrothgarFemaleNpc ),
-                VieraFemaleNpc      => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc, VieraFemale, VieraFemaleNpc ),
-
-                UnknownMaleNpc   => Convert( MidlanderMale, MidlanderMaleNpc, UnknownMaleNpc ),
-                UnknownFemaleNpc => Convert( MidlanderMale, MidlanderMaleNpc, MidlanderFemale, MidlanderFemaleNpc, UnknownFemaleNpc ),
-                _                => DisposableContainer.Empty,
-                // @formatter:on
-            };
+            var equipmentEnumerable = equipment
+                ? races.Select( r => collection.TemporarilySetEqdpFile( r, false ) )
+                : Array.Empty< IDisposable? >().AsEnumerable();
+            var accessoryEnumerable = accessory
+                ? races.Select( r => collection.TemporarilySetEqdpFile( r, true ) )
+                : Array.Empty< IDisposable? >().AsEnumerable();
+            return new DisposableContainer( equipmentEnumerable.Concat( accessoryEnumerable ) );
         }
     }
 }

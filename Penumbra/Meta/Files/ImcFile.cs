@@ -2,58 +2,13 @@ using System;
 using System.Numerics;
 using Newtonsoft.Json;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
-
-public readonly struct ImcEntry : IEquatable< ImcEntry >
-{
-    public byte MaterialId { get; init; }
-    public byte DecalId { get; init; }
-    public readonly ushort AttributeAndSound;
-    public byte VfxId { get; init; }
-    public byte MaterialAnimationId { get; init; }
-
-    public ushort AttributeMask
-    {
-        get => ( ushort )( AttributeAndSound & 0x3FF );
-        init => AttributeAndSound = ( ushort )( ( AttributeAndSound & ~0x3FF ) | ( value & 0x3FF ) );
-    }
-
-    public byte SoundId
-    {
-        get => ( byte )( AttributeAndSound >> 10 );
-        init => AttributeAndSound = ( ushort )( AttributeMask | ( value << 10 ) );
-    }
-
-    public bool Equals( ImcEntry other )
-        => MaterialId           == other.MaterialId
-         && DecalId             == other.DecalId
-         && AttributeAndSound   == other.AttributeAndSound
-         && VfxId               == other.VfxId
-         && MaterialAnimationId == other.MaterialAnimationId;
-
-    public override bool Equals( object? obj )
-        => obj is ImcEntry other && Equals( other );
-
-    public override int GetHashCode()
-        => HashCode.Combine( MaterialId, DecalId, AttributeAndSound, VfxId, MaterialAnimationId );
-
-    [JsonConstructor]
-    public ImcEntry( byte materialId, byte decalId, ushort attributeMask, byte soundId, byte vfxId, byte materialAnimationId )
-    {
-        MaterialId          = materialId;
-        DecalId             = decalId;
-        AttributeAndSound   = 0;
-        VfxId               = vfxId;
-        MaterialAnimationId = materialAnimationId;
-        AttributeMask       = attributeMask;
-        SoundId             = soundId;
-    }
-}
 
 public class ImcException : Exception
 {
@@ -212,8 +167,11 @@ public unsafe class ImcFile : MetaBaseFile
     }
 
     public static ImcEntry GetDefault( Utf8GamePath path, EquipSlot slot, int variantIdx, out bool exists )
+        => GetDefault( path.ToString(), slot, variantIdx, out exists );
+
+    public static ImcEntry GetDefault( string path, EquipSlot slot, int variantIdx, out bool exists )
     {
-        var file = Dalamud.GameData.GetFile( path.ToString() );
+        var file = Dalamud.GameData.GetFile( path );
         exists = false;
         if( file == null )
         {

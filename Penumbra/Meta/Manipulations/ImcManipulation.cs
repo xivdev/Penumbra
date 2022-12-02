@@ -2,7 +2,9 @@ using System;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.String.Classes;
@@ -130,25 +132,12 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
     {
         return ObjectType switch
         {
-            ObjectType.Accessory => Utf8GamePath.FromString( $"chara/accessory/a{PrimaryId:D4}/a{PrimaryId:D4}.imc", out var p )
-                ? p
-                : Utf8GamePath.Empty,
-            ObjectType.Equipment => Utf8GamePath.FromString( $"chara/equipment/e{PrimaryId:D4}/e{PrimaryId:D4}.imc", out var p )
-                ? p
-                : Utf8GamePath.Empty,
-            ObjectType.DemiHuman => Utf8GamePath.FromString(
-                $"chara/demihuman/d{PrimaryId:D4}/obj/equipment/e{SecondaryId:D4}/e{SecondaryId:D4}.imc", out var p )
-                ? p
-                : Utf8GamePath.Empty,
-            ObjectType.Monster => Utf8GamePath.FromString( $"chara/monster/m{PrimaryId:D4}/obj/body/b{SecondaryId:D4}/b{SecondaryId:D4}.imc",
-                out var p )
-                ? p
-                : Utf8GamePath.Empty,
-            ObjectType.Weapon => Utf8GamePath.FromString( $"chara/weapon/w{PrimaryId:D4}/obj/body/b{SecondaryId:D4}/b{SecondaryId:D4}.imc",
-                out var p )
-                ? p
-                : Utf8GamePath.Empty,
-            _ => throw new NotImplementedException(),
+            ObjectType.Accessory => Utf8GamePath.FromString( GamePaths.Accessory.Imc.Path( PrimaryId ), out var p ) ? p : Utf8GamePath.Empty,
+            ObjectType.Equipment => Utf8GamePath.FromString( GamePaths.Equipment.Imc.Path( PrimaryId ), out var p ) ? p : Utf8GamePath.Empty,
+            ObjectType.DemiHuman => Utf8GamePath.FromString( GamePaths.DemiHuman.Imc.Path( PrimaryId, SecondaryId ), out var p ) ? p : Utf8GamePath.Empty,
+            ObjectType.Monster   => Utf8GamePath.FromString( GamePaths.Monster.Imc.Path( PrimaryId, SecondaryId ), out var p ) ? p : Utf8GamePath.Empty,
+            ObjectType.Weapon    => Utf8GamePath.FromString( GamePaths.Weapon.Imc.Path( PrimaryId, SecondaryId ), out var p ) ? p : Utf8GamePath.Empty,
+            _                    => throw new NotImplementedException(),
         };
     }
 

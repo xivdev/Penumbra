@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -16,8 +17,7 @@ public enum BodySlot : byte
 public static class BodySlotEnumExtension
 {
     public static string ToSuffix( this BodySlot value )
-    {
-        return value switch
+        => value switch
         {
             BodySlot.Zear => "zear",
             BodySlot.Face => "face",
@@ -26,7 +26,17 @@ public static class BodySlotEnumExtension
             BodySlot.Tail => "tail",
             _             => throw new InvalidEnumArgumentException(),
         };
-    }
+
+    public static char ToAbbreviation(this BodySlot value)
+        => value switch
+        {
+            BodySlot.Hair => 'h',
+            BodySlot.Face => 'f',
+            BodySlot.Tail => 't',
+            BodySlot.Body => 'b',
+            BodySlot.Zear => 'z',
+            _             => throw new InvalidEnumArgumentException(),
+        };
 }
 
 public static partial class Names
