@@ -278,6 +278,11 @@ public partial class ConfigWindow
                 return true;
             }
 
+            ImGui.SameLine();
+            ImGuiComponents.HelpMarker( "- Bell Retainers also apply to Mannequins named after them, but not to outdoor retainers, since they only carry their owners name.\n"
+              + "- Some NPCs are available as Battle- and Event NPCs and need to be setup for both if desired.\n"
+              + "- Battle- and Event NPCs may apply to more than one ID if they share the same name. This is language dependent. If you change your clients language, verify that your collections are still correctly assigned." );
+
             return false;
         }
 

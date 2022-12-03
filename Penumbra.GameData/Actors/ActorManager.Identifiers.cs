@@ -345,7 +345,7 @@ public partial class ActorManager
             last = current;
         }
 
-        return part[^1] != '-';
+        return true;
     }
 
     private static bool CheckNamePart(ReadOnlySpan<byte> part, int minLength, int maxLength)
@@ -375,7 +375,7 @@ public partial class ActorManager
             last = current;
         }
 
-        return part[^1] != (byte)'-';
+        return true;
     }
 
     /// <summary> Checks if the world is a valid public world or ushort.MaxValue (any world). </summary>
