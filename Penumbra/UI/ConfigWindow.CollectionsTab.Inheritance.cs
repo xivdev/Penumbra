@@ -194,7 +194,7 @@ public partial class ConfigWindow
             };
             if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), _window._iconButtonSize, tt,
                    inheritance != ModCollection.ValidInheritance.Valid, true )
-            && Penumbra.CollectionManager.Current.AddInheritance( _newInheritance! ) )
+            && Penumbra.CollectionManager.Current.AddInheritance( _newInheritance!, true ) )
             {
                 _newInheritance = null;
             }

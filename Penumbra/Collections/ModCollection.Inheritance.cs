@@ -69,7 +69,7 @@ public partial class ModCollection
     // Add a new collection to the inheritance list.
     // We do not check if this collection would be visited before,
     // only that it is unique in the list itself.
-    public bool AddInheritance( ModCollection collection )
+    public bool AddInheritance( ModCollection collection, bool invokeEvent )
     {
         if( CheckValidInheritance( collection ) != ValidInheritance.Valid )
         {
@@ -80,7 +80,11 @@ public partial class ModCollection
         // Changes in inherited collections may need to trigger further changes here.
         collection.ModSettingChanged  += OnInheritedModSettingChange;
         collection.InheritanceChanged += OnInheritedInheritanceChange;
-        InheritanceChanged.Invoke( false );
+        if( invokeEvent )
+        {
+            InheritanceChanged.Invoke( false );
+        }
+
         Penumbra.Log.Debug( $"Added {collection.AnonymizedName} to {AnonymizedName} inheritances." );
         return true;
     }

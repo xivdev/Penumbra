@@ -25,6 +25,7 @@ public partial class ModCollection
     {
         try
         {
+            Penumbra.Log.Debug( $"Saving collection {AnonymizedName}..." );
             var file = FileName;
             file.Directory?.Create();
             using var s = file.Exists ? file.Open( FileMode.Truncate ) : file.Open( FileMode.CreateNew );

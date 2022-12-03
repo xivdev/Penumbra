@@ -339,7 +339,7 @@ public partial class ModCollection
                         changes = true;
                         Penumbra.Log.Warning( $"Inherited collection {subCollectionName} for {collection.Name} does not exist, removed." );
                     }
-                    else if( !collection.AddInheritance( subCollection ) )
+                    else if( !collection.AddInheritance( subCollection, false ) )
                     {
                         changes = true;
                         Penumbra.Log.Warning( $"{collection.Name} can not inherit from {subCollectionName}, removed." );
