@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -114,7 +115,7 @@ public partial class ConfigWindow
 
     private sealed class CollectionSelector : FilterComboCache< ModCollection >
     {
-        public CollectionSelector( IEnumerable< ModCollection > items )
+        public CollectionSelector( Func<IReadOnlyList<ModCollection>> items )
             : base( items )
         { }
 
@@ -140,8 +141,8 @@ public partial class ConfigWindow
             => obj.Name;
     }
 
-    private static readonly CollectionSelector CollectionsWithEmpty = new(Penumbra.CollectionManager.OrderBy( c => c.Name ).Prepend( ModCollection.Empty ));
-    private static readonly CollectionSelector Collections          = new(Penumbra.CollectionManager.OrderBy( c => c.Name ));
+    private static readonly CollectionSelector CollectionsWithEmpty = new(() => Penumbra.CollectionManager.OrderBy( c => c.Name ).Prepend( ModCollection.Empty ).ToList());
+    private static readonly CollectionSelector Collections          = new(() => Penumbra.CollectionManager.OrderBy( c => c.Name ).ToList());
 
     // Draw a collection selector of a certain width for a certain type.
     private static void DrawCollectionSelector( string label, float width, CollectionType collectionType, bool withEmpty )
