@@ -69,11 +69,11 @@ public partial class ConfigWindow
         private ObjectKind _newKind          = ObjectKind.BattleNpc;
 
         private readonly WorldCombo _worldCombo     = new(Penumbra.Actors.Data.Worlds);
-        private readonly NpcCombo   _mountCombo     = new("##mountCombo", Penumbra.Actors.Data.Mounts );
-        private readonly NpcCombo   _companionCombo = new("##companionCombo", Penumbra.Actors.Data.Companions );
-        private readonly NpcCombo   _ornamentCombo  = new("##ornamentCombo", Penumbra.Actors.Data.Ornaments );
-        private readonly NpcCombo   _bnpcCombo      = new("##bnpcCombo", Penumbra.Actors.Data.BNpcs );
-        private readonly NpcCombo   _enpcCombo      = new("##enpcCombo", Penumbra.Actors.Data.ENpcs );
+        private readonly NpcCombo   _mountCombo     = new("##mountCombo", Penumbra.Actors.Data.Mounts);
+        private readonly NpcCombo   _companionCombo = new("##companionCombo", Penumbra.Actors.Data.Companions);
+        private readonly NpcCombo   _ornamentCombo  = new("##ornamentCombo", Penumbra.Actors.Data.Ornaments);
+        private readonly NpcCombo   _bnpcCombo      = new("##bnpcCombo", Penumbra.Actors.Data.BNpcs);
+        private readonly NpcCombo   _enpcCombo      = new("##enpcCombo", Penumbra.Actors.Data.ENpcs);
 
         private const string NewPlayerTooltipEmpty     = "Please enter a valid player name and choose an available world or 'Any World'.";
         private const string NewRetainerTooltipEmpty   = "Please enter a valid retainer name.";
@@ -166,7 +166,7 @@ public partial class ConfigWindow
                 }
             }
 
-            ImGui.Dummy( Vector2.Zero );
+            ImGui.Dummy( _window._defaultSpace );
             DrawNewIndividualCollection();
         }
 
@@ -243,11 +243,13 @@ public partial class ConfigWindow
             var buttonWidth1 = new Vector2( 90  * ImGuiHelpers.GlobalScale, 0 );
             var buttonWidth2 = new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 );
 
-            var combo  = GetNpcCombo( _newKind );
-            var change = DrawNewPlayerCollection( buttonWidth1, width );
+            var change = DrawNewCurrentPlayerCollection();
+
+            change |= DrawNewPlayerCollection( buttonWidth1, width );
             ImGui.SameLine();
             change |= DrawNewRetainerCollection( buttonWidth2 );
 
+            var combo = GetNpcCombo( _newKind );
             change |= DrawNewNpcCollection( combo, buttonWidth1, width );
             ImGui.SameLine();
             change |= DrawNewOwnedCollection( buttonWidth2 );
@@ -256,6 +258,27 @@ public partial class ConfigWindow
             {
                 UpdateIdentifiers();
             }
+        }
+
+        private bool DrawNewCurrentPlayerCollection()
+        {
+            var player = Penumbra.Actors.GetCurrentPlayer();
+            var result = Penumbra.CollectionManager.Individuals.CanAdd( player );
+            var tt = result switch
+            {
+                IndividualCollections.AddResult.Valid      => $"Assign a collection to {player}.",
+                IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
+                IndividualCollections.AddResult.Invalid    => "No logged-in character detected.",
+                _                                          => string.Empty,
+            };
+
+            if( ImGuiUtil.DrawDisabledButton( "Assign Currently Played Character", _window._inputTextWidth, tt, result != IndividualCollections.AddResult.Valid ) )
+            {
+                Penumbra.CollectionManager.Individuals.Add( new[] { player }, Penumbra.CollectionManager.Default );
+                return true;
+            }
+
+            return false;
         }
 
         private void UpdateIdentifiers()
@@ -306,7 +329,9 @@ public partial class ConfigWindow
         private void UpdateIdentifiers( CollectionType type, ModCollection? _1, ModCollection? _2, string _3 )
         {
             if( type == CollectionType.Individual )
+            {
                 UpdateIdentifiers();
+            }
         }
     }
 }
