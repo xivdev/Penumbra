@@ -333,7 +333,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public (string, bool) GetCharacterCollection( string characterName, ushort worldId )
     {
         CheckInitialized();
-        return Penumbra.CollectionManager.Individuals.TryGetCollection( NameToIdentifier( characterName, worldId ), out var collection )
+        return Penumbra.CollectionManager.Individuals.TryGetCollection( NameToIdentifier( characterName, worldId ), out var collection, out _ )
             ? ( collection.Name, true )
             : ( Penumbra.CollectionManager.Default.Name, false );
     }
@@ -807,7 +807,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         var identifier = NameToIdentifier( characterName, worldId );
-        var collection = Penumbra.TempMods.Collections.TryGetCollection( identifier, out var c )
+        var collection = Penumbra.TempMods.Collections.TryGetCollection( identifier, out var c, out _ )
             ? c
             : Penumbra.CollectionManager.Individual( identifier );
         var set = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >();

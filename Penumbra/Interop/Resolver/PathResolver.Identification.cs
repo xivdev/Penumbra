@@ -44,8 +44,8 @@ public unsafe partial class PathResolver
             else
             {
                 var identifier = Penumbra.Actors.FromObject( gameObject, false );
-                var collection = CollectionByIdentifier( identifier )
-                 ?? CheckYourself( identifier, gameObject )
+                var collection = CollectionByIdentifier( identifier, out var specialIdentifier )
+                 ?? CheckYourself( identifier.Type == IdentifierType.Special ? specialIdentifier : identifier, gameObject )
                  ?? CollectionByAttributes( gameObject )
                  ?? CheckOwnedCollection( identifier, gameObject )
                  ?? Penumbra.CollectionManager.Default;
@@ -71,16 +71,16 @@ public unsafe partial class PathResolver
         }
 
         var player = Penumbra.Actors.GetCurrentPlayer();
-        return CollectionByIdentifier( player )
+        return CollectionByIdentifier( player, out _ )
          ?? CheckYourself( player, gameObject )
          ?? CollectionByAttributes( gameObject )
          ?? Penumbra.CollectionManager.Default;
     }
 
     // Check both temporary and permanent character collections. Temporary first.
-    private static ModCollection? CollectionByIdentifier( ActorIdentifier identifier )
-        => Penumbra.TempMods.Collections.TryGetCollection( identifier, out var collection )
-         || Penumbra.CollectionManager.Individuals.TryGetCollection( identifier, out collection )
+    private static ModCollection? CollectionByIdentifier( ActorIdentifier identifier, out ActorIdentifier specialIdentifier )
+        => Penumbra.TempMods.Collections.TryGetCollection( identifier, out var collection, out specialIdentifier )
+         || Penumbra.CollectionManager.Individuals.TryGetCollection( identifier, out collection, out specialIdentifier )
                 ? collection
                 : null;
 

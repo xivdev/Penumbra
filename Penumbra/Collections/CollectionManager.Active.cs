@@ -42,7 +42,7 @@ public partial class ModCollection
         public readonly IndividualCollections Individuals = new(Penumbra.Actors);
 
         public ModCollection Individual( ActorIdentifier identifier )
-            => Individuals.TryGetCollection( identifier, out var c ) ? c : Default;
+            => Individuals.TryGetCollection( identifier, out var c, out _ ) ? c : Default;
 
         // Special Collections
         private readonly ModCollection?[] _specialCollections = new ModCollection?[Enum.GetValues< CollectionType >().Length - 4];
@@ -64,7 +64,7 @@ public partial class ModCollection
                 CollectionType.Default    => Default,
                 CollectionType.Interface  => Interface,
                 CollectionType.Current    => Current,
-                CollectionType.Individual => identifier.IsValid ? Individuals.TryGetCollection( identifier, out var c ) ? c : null : null,
+                CollectionType.Individual => identifier.IsValid ? Individuals.TryGetCollection( identifier, out var c, out _ ) ? c : null : null,
                 _                         => null,
             };
         }

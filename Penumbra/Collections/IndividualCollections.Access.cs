@@ -23,8 +23,9 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
     public (string DisplayName, ModCollection Collection) this[ int index ]
         => ( _assignments[ index ].DisplayName, _assignments[ index ].Collection );
 
-    public bool TryGetCollection( ActorIdentifier identifier, [NotNullWhen( true )] out ModCollection? collection )
+    public bool TryGetCollection( ActorIdentifier identifier, [NotNullWhen( true )] out ModCollection? collection, out ActorIdentifier specialIdentifier )
     {
+        specialIdentifier = ActorIdentifier.Invalid;
         switch( identifier.Type )
         {
             case IdentifierType.Player: return CheckWorlds( identifier, out collection );
@@ -73,12 +74,12 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                     case SpecialActor.FittingRoom when Penumbra.Config.UseCharacterCollectionInTryOn:
                     case SpecialActor.DyePreview when Penumbra.Config.UseCharacterCollectionInTryOn:
                     case SpecialActor.Portrait when Penumbra.Config.UseCharacterCollectionsInCards:
-                        return CheckWorlds( _actorManager.GetCurrentPlayer(), out collection );
+                        return CheckWorlds( specialIdentifier = _actorManager.GetCurrentPlayer(), out collection );
                     case SpecialActor.ExamineScreen:
                     {
-                        return CheckWorlds( _actorManager.GetInspectPlayer(), out collection! )
-                         || CheckWorlds( _actorManager.GetCardPlayer(), out collection! )
-                         || CheckWorlds( _actorManager.GetGlamourPlayer(), out collection! );
+                        return CheckWorlds( specialIdentifier = _actorManager.GetInspectPlayer(), out collection! )
+                         || CheckWorlds( specialIdentifier = _actorManager.GetCardPlayer(), out collection! )
+                         || CheckWorlds( specialIdentifier = _actorManager.GetGlamourPlayer(), out collection! );
                     }
                 }
 
@@ -89,11 +90,11 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
         return false;
     }
 
-    public bool TryGetCollection( GameObject? gameObject, out ModCollection? collection )
-        => TryGetCollection( _actorManager.FromObject( gameObject, false ), out collection );
+    public bool TryGetCollection( GameObject? gameObject, out ModCollection? collection, out ActorIdentifier specialIdentifier )
+        => TryGetCollection( _actorManager.FromObject( gameObject, false ), out collection, out specialIdentifier );
 
-    public unsafe bool TryGetCollection( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection )
-        => TryGetCollection( _actorManager.FromObject( gameObject, false ), out collection );
+    public unsafe bool TryGetCollection( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection, out ActorIdentifier specialIdentifier )
+        => TryGetCollection( _actorManager.FromObject( gameObject, false ), out collection, out specialIdentifier );
 
     private bool CheckWorlds( ActorIdentifier identifier, out ModCollection? collection )
     {
