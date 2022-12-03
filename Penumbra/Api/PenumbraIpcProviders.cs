@@ -52,9 +52,11 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider< string, string >           ResolveDefaultPath;
     internal readonly FuncProvider< string, string >           ResolveInterfacePath;
     internal readonly FuncProvider< string, string >           ResolvePlayerPath;
+    internal readonly FuncProvider< string, int, string >      ResolveGameObjectPath;
     internal readonly FuncProvider< string, string, string >   ResolveCharacterPath;
     internal readonly FuncProvider< string, string, string[] > ReverseResolvePath;
-    internal readonly FuncProvider< string, string[] >         ReverseResolvePathPlayer;
+    internal readonly FuncProvider< string, int, string[] >    ReverseResolveGameObjectPath;
+    internal readonly FuncProvider< string, string[] >         ReverseResolvePlayerPath;
 
     // Collections
     internal readonly FuncProvider< IList< string > >                                GetCollections;
@@ -67,6 +69,7 @@ public class PenumbraIpcProviders : IDisposable
     // Meta
     internal readonly FuncProvider< string >         GetPlayerMetaManipulations;
     internal readonly FuncProvider< string, string > GetMetaManipulations;
+    internal readonly FuncProvider< int, string >    GetGameObjectMetaManipulations;
 
     // Mods
     internal readonly FuncProvider< IList< (string, string) > >                     GetMods;
@@ -144,12 +147,14 @@ public class PenumbraIpcProviders : IDisposable
             () => Api.GameObjectResourceResolved -= GameObjectResourceResolvedEvent );
 
         // Resolve
-        ResolveDefaultPath       = Ipc.ResolveDefaultPath.Provider( pi, Api.ResolveDefaultPath );
-        ResolveInterfacePath     = Ipc.ResolveInterfacePath.Provider( pi, Api.ResolveInterfacePath );
-        ResolvePlayerPath        = Ipc.ResolvePlayerPath.Provider( pi, Api.ResolvePlayerPath );
-        ResolveCharacterPath     = Ipc.ResolveCharacterPath.Provider( pi, Api.ResolvePath );
-        ReverseResolvePath       = Ipc.ReverseResolvePath.Provider( pi, Api.ReverseResolvePath );
-        ReverseResolvePathPlayer = Ipc.ReverseResolvePlayerPath.Provider( pi, Api.ReverseResolvePlayerPath );
+        ResolveDefaultPath           = Ipc.ResolveDefaultPath.Provider( pi, Api.ResolveDefaultPath );
+        ResolveInterfacePath         = Ipc.ResolveInterfacePath.Provider( pi, Api.ResolveInterfacePath );
+        ResolvePlayerPath            = Ipc.ResolvePlayerPath.Provider( pi, Api.ResolvePlayerPath );
+        ResolveGameObjectPath        = Ipc.ResolveGameObjectPath.Provider( pi, Api.ResolveGameObjectPath );
+        ResolveCharacterPath         = Ipc.ResolveCharacterPath.Provider( pi, Api.ResolvePath );
+        ReverseResolvePath           = Ipc.ReverseResolvePath.Provider( pi, Api.ReverseResolvePath );
+        ReverseResolveGameObjectPath = Ipc.ReverseResolveGameObjectPath.Provider( pi, Api.ReverseResolveGameObjectPath );
+        ReverseResolvePlayerPath     = Ipc.ReverseResolvePlayerPath.Provider( pi, Api.ReverseResolvePlayerPath );
 
         // Collections
         GetCollections             = Ipc.GetCollections.Provider( pi, Api.GetCollections );
@@ -160,8 +165,9 @@ public class PenumbraIpcProviders : IDisposable
         GetChangedItems            = Ipc.GetChangedItems.Provider( pi, Api.GetChangedItemsForCollection );
 
         // Meta
-        GetPlayerMetaManipulations = Ipc.GetPlayerMetaManipulations.Provider( pi, Api.GetPlayerMetaManipulations );
-        GetMetaManipulations       = Ipc.GetMetaManipulations.Provider( pi, Api.GetMetaManipulations );
+        GetPlayerMetaManipulations     = Ipc.GetPlayerMetaManipulations.Provider( pi, Api.GetPlayerMetaManipulations );
+        GetMetaManipulations           = Ipc.GetMetaManipulations.Provider( pi, Api.GetMetaManipulations );
+        GetGameObjectMetaManipulations = Ipc.GetGameObjectMetaManipulations.Provider( pi, Api.GetGameObjectMetaManipulations );
 
         // Mods
         GetMods    = Ipc.GetMods.Provider( pi, Api.GetModList );
@@ -242,9 +248,11 @@ public class PenumbraIpcProviders : IDisposable
         ResolveDefaultPath.Dispose();
         ResolveInterfacePath.Dispose();
         ResolvePlayerPath.Dispose();
+        ResolveGameObjectPath.Dispose();
         ResolveCharacterPath.Dispose();
         ReverseResolvePath.Dispose();
-        ReverseResolvePathPlayer.Dispose();
+        ReverseResolveGameObjectPath.Dispose();
+        ReverseResolvePlayerPath.Dispose();
 
         // Collections
         GetCollections.Dispose();
@@ -257,6 +265,7 @@ public class PenumbraIpcProviders : IDisposable
         // Meta
         GetPlayerMetaManipulations.Dispose();
         GetMetaManipulations.Dispose();
+        GetGameObjectMetaManipulations.Dispose();
 
         // Mods
         GetMods.Dispose();

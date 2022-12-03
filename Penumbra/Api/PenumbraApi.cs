@@ -23,7 +23,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 16 );
+        => ( 4, 17 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -216,6 +216,13 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public string ResolvePath( string path, string characterName )
         => ResolvePath( path, characterName, ushort.MaxValue );
 
+    public string ResolveGameObjectPath( string path, int gameObjectIdx )
+    {
+        CheckInitialized();
+        AssociatedCollection( gameObjectIdx, out var collection );
+        return ResolvePath( path, Penumbra.ModManager, collection );
+    }
+
     public string ResolvePath( string path, string characterName, ushort worldId )
     {
         CheckInitialized();
@@ -236,6 +243,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         var ret = Penumbra.CollectionManager.Individual( NameToIdentifier( characterName, worldId ) ).ReverseResolvePath( new FullPath( path ) );
+        return ret.Select( r => r.ToString() ).ToArray();
+    }
+
+    public string[] ReverseResolveGameObjectPath( string path, int gameObjectIdx )
+    {
+        CheckInitialized();
+        if( !Penumbra.Config.EnableMods )
+        {
+            return new[] { path };
+        }
+
+        AssociatedCollection( gameObjectIdx, out var collection );
+        var ret = collection.ReverseResolvePath( new FullPath( path ) );
         return ret.Select( r => r.ToString() ).ToArray();
     }
 
@@ -794,6 +814,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Functions.ToCompressedBase64( set, MetaManipulation.CurrentVersion );
     }
 
+    public string GetGameObjectMetaManipulations( int gameObjectIdx )
+    {
+        CheckInitialized();
+        AssociatedCollection( gameObjectIdx, out var collection );
+        var set = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >();
+        return Functions.ToCompressedBase64( set, MetaManipulation.CurrentVersion );
+    }
+
     internal bool HasTooltip
         => ChangedItemTooltip != null;
 
@@ -810,6 +838,26 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         {
             throw new Exception( "PluginShare is not initialized." );
         }
+    }
+
+    // Return the collection associated to a current game object. If it does not exist, return the default collection.
+    // If the index is invalid, returns false and the default collection.
+    private unsafe bool AssociatedCollection( int gameObjectIdx, out ModCollection collection )
+    {
+        collection = Penumbra.CollectionManager.Default;
+        if( gameObjectIdx < 0 || gameObjectIdx >= Dalamud.Objects.Length )
+        {
+            return false;
+        }
+
+        var ptr  = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
+        var data = PathResolver.IdentifyCollection( ptr, false );
+        if( data.Valid )
+        {
+            collection = data.ModCollection;
+        }
+
+        return true;
     }
 
     // Resolve a path given by string for a specific collection.

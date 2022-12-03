@@ -13,7 +13,6 @@ using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Swan;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Api;
@@ -582,6 +581,7 @@ public class IpcTester : IDisposable
         private string _currentResolvePath      = string.Empty;
         private string _currentResolveCharacter = string.Empty;
         private string _currentReversePath      = string.Empty;
+        private int    _currentReverseIdx       = 0;
 
         public Resolve( DalamudPluginInterface pi )
             => _pi = pi;
@@ -598,6 +598,7 @@ public class IpcTester : IDisposable
             ImGui.InputTextWithHint( "##resolveCharacter", "Character Name (leave blank for default)...", ref _currentResolveCharacter, 32 );
             ImGui.InputTextWithHint( "##resolveInversePath", "Reverse-resolve this path...", ref _currentReversePath,
                 Utf8GamePath.MaxGamePathLength );
+            ImGui.InputInt( "##resolveIdx", ref _currentReverseIdx, 0, 0 );
             using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
             if( !table )
             {
@@ -628,6 +629,12 @@ public class IpcTester : IDisposable
                 ImGui.TextUnformatted( Ipc.ResolveCharacterPath.Subscriber( _pi ).Invoke( _currentResolvePath, _currentResolveCharacter ) );
             }
 
+            DrawIntro( Ipc.ResolveGameObjectPath.Label, "Game Object Collection Resolve" );
+            if( _currentResolvePath.Length != 0 )
+            {
+                ImGui.TextUnformatted( Ipc.ResolveGameObjectPath.Subscriber( _pi ).Invoke( _currentResolvePath, _currentReverseIdx ) );
+            }
+
             DrawIntro( Ipc.ReverseResolvePath.Label, "Reversed Game Paths" );
             if( _currentReversePath.Length > 0 )
             {
@@ -646,6 +653,20 @@ public class IpcTester : IDisposable
             if( _currentReversePath.Length > 0 )
             {
                 var list = Ipc.ReverseResolvePlayerPath.Subscriber( _pi ).Invoke( _currentReversePath );
+                if( list.Length > 0 )
+                {
+                    ImGui.TextUnformatted( list[ 0 ] );
+                    if( list.Length > 1 && ImGui.IsItemHovered() )
+                    {
+                        ImGui.SetTooltip( string.Join( "\n", list.Skip( 1 ) ) );
+                    }
+                }
+            }
+
+            DrawIntro( Ipc.ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)" );
+            if( _currentReversePath.Length > 0 )
+            {
+                var list = Ipc.ReverseResolveGameObjectPath.Subscriber( _pi ).Invoke( _currentReversePath, _currentReverseIdx );
                 if( list.Length > 0 )
                 {
                     ImGui.TextUnformatted( list[ 0 ] );
@@ -763,7 +784,8 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
 
-        private string _characterName = string.Empty;
+        private string _characterName   = string.Empty;
+        private int    _gameObjectIndex = 0;
 
         public Meta( DalamudPluginInterface pi )
             => _pi = pi;
@@ -777,6 +799,7 @@ public class IpcTester : IDisposable
             }
 
             ImGui.InputTextWithHint( "##characterName", "Character Name...", ref _characterName, 64 );
+            ImGui.InputInt( "##metaIdx", ref _gameObjectIndex, 0, 0 );
             using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
             if( !table )
             {
@@ -794,6 +817,13 @@ public class IpcTester : IDisposable
             if( ImGui.Button( "Copy to Clipboard##Player" ) )
             {
                 var base64 = Ipc.GetPlayerMetaManipulations.Subscriber( _pi ).Invoke();
+                ImGui.SetClipboardText( base64 );
+            }
+
+            DrawIntro( Ipc.GetGameObjectMetaManipulations.Label, "Game Object Manipulations" );
+            if( ImGui.Button( "Copy to Clipboard##GameObject" ) )
+            {
+                var base64 = Ipc.GetGameObjectMetaManipulations.Subscriber( _pi ).Invoke( _gameObjectIndex );
                 ImGui.SetClipboardText( base64 );
             }
         }

@@ -17,7 +17,7 @@ namespace Penumbra.Interop.Resolver;
 public unsafe partial class PathResolver
 {
     // Identify the correct collection for a GameObject by index and name.
-    private static ResolveData IdentifyCollection( GameObject* gameObject, bool useCache )
+    public static ResolveData IdentifyCollection( GameObject* gameObject, bool useCache )
     {
         if( gameObject == null )
         {
