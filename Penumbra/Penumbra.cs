@@ -34,7 +34,9 @@ namespace Penumbra;
 
 public class Penumbra : IDalamudPlugin
 {
-    public const string Repository = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
+    public const string Repository          = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
+    public const string RepositoryLower     = "https://raw.githubusercontent.com/xivdev/penumbra/master/repo.json";
+    public const string TestRepositoryLower = "https://raw.githubusercontent.com/xivdev/penumbra/test/repo.json";
 
     public string Name
         => "Penumbra";
@@ -344,7 +346,7 @@ public class Penumbra : IDalamudPlugin
             collectionName = split[ 0 ];
             characterName  = split[ 1 ];
 
-            identifier     = Actors.CreatePlayer( ByteString.FromStringUnsafe( characterName, false ), ushort.MaxValue );
+            identifier = Actors.CreatePlayer( ByteString.FromStringUnsafe( characterName, false ), ushort.MaxValue );
             if( !identifier.IsValid )
             {
                 Dalamud.Chat.Print( $"{characterName} is not a valid character name." );
@@ -566,7 +568,7 @@ public class Penumbra : IDalamudPlugin
     {
 #if !DEBUG
         var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
-        var dir = new DirectoryInfo( path );
+        var dir  = new DirectoryInfo( path );
 
         try
         {
@@ -587,9 +589,12 @@ public class Penumbra : IDalamudPlugin
     {
 #if !DEBUG
         var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
-        if (!ret)
-            Log.Error($"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"."  );
+        var ret              = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
+        if( !ret )
+        {
+            Log.Error( $"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"." );
+        }
+
         return !ret;
 #else
         return false;
@@ -602,10 +607,10 @@ public class Penumbra : IDalamudPlugin
 #if !DEBUG
         return Dalamud.PluginInterface.SourceRepository.Trim().ToLowerInvariant() switch
         {
-            null                                                                 => false,
-            Repository                                                           => true,
-            "https://raw.githubusercontent.com/xivdev/Penumbra/test/repo.json"   => true,
-            _                                                                    => false,
+            null                => false,
+            RepositoryLower     => true,
+            TestRepositoryLower => true,
+            _                   => false,
         };
 #else
         return true;
