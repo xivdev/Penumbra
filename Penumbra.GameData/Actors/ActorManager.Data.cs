@@ -234,4 +234,24 @@ public sealed partial class ActorManager : IDisposable
 
     private static unsafe ushort InspectWorldId
         => *_inspectWorldId;
+
+    public static readonly IReadOnlySet<uint> MannequinIds = new HashSet<uint>()
+    {
+        1026228u,
+        1026229u,
+        1026986u,
+        1026987u,
+        1026988u,
+        1026989u,
+        1032291u,
+        1032292u,
+        1032293u,
+        1032294u,
+        1033046u,
+        1033047u,
+        1033658u,
+        1033659u,
+        1007137u,
+        // TODO: Female Hrothgar
+    };
 }

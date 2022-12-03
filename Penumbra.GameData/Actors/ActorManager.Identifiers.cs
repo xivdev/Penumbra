@@ -76,7 +76,7 @@ public partial class ActorManager
             IdentifierType.Retainer => id.PlayerName.ToString(),
             IdentifierType.Owned => id.HomeWorld != _clientState.LocalPlayer?.HomeWorld.Id
                 ? $"{id.PlayerName} ({Data.ToWorldName(id.HomeWorld)})'s {Data.ToName(id.Kind, id.DataId)}"
-                : $"{id.PlayerName}s {Data.ToName(id.Kind,                                id.DataId)}",
+                : $"{id.PlayerName}s {Data.ToName(id.Kind,                                     id.DataId)}",
             IdentifierType.Special => id.Special.ToName(),
             IdentifierType.Npc =>
                 id.Index == ushort.MaxValue
@@ -150,6 +150,23 @@ public partial class ActorManager
                 // Special case for squadron that is also in the game functions, cf. E8 ?? ?? ?? ?? 89 87 ?? ?? ?? ?? 4C 89 BF
                 if (dataId == 0xf845d)
                     dataId = actor->GetNpcID();
+                if (MannequinIds.Contains(dataId))
+                {
+                    static ByteString Get(byte* ptr)
+                        => ptr == null ? ByteString.Empty : new ByteString(ptr);
+
+                    var actualName   = Get(actor->GetName());
+                    var retainerName = Get(actor->Name);
+                    if (!actualName.Equals(retainerName))
+                    {
+                        var ident = check
+                            ? CreateRetainer(retainerName)
+                            : CreateIndividualUnchecked(IdentifierType.Retainer, retainerName, actor->ObjectIndex, ObjectKind.EventNpc, dataId);
+                        if (ident.IsValid)
+                            return ident;
+                    }
+                }
+
                 return check
                     ? CreateNpc(ObjectKind.EventNpc, dataId, actor->ObjectIndex)
                     : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, actor->ObjectIndex, ObjectKind.EventNpc, dataId);
