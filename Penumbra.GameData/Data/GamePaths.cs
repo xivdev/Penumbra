@@ -91,7 +91,7 @@ public static partial class GamePaths
             // public static partial Regex Regex();
 
             public static string Path(SetId demiId, SetId equipId)
-                => $"chara/demihuman/d{demiId.Value:D4}/obj/equipment/e{equipId.Value:D4}/b{equipId.Value:D4}.imc";
+                => $"chara/demihuman/d{demiId.Value:D4}/obj/equipment/e{equipId.Value:D4}/e{equipId.Value:D4}.imc";
         }
 
         public static partial class Mdl
