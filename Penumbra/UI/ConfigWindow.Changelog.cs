@@ -25,9 +25,18 @@ public partial class ConfigWindow
         Add5_11_0( ret );
         Add5_11_1( ret );
         Add6_0_0( ret );
+        Add6_0_2( ret );
 
         return ret;
     }
+
+    private static void Add6_0_2( Changelog log )
+        => log.NextVersion( "Version 0.6.0.2" )
+           .RegisterEntry( "Let Bell Retainer collections apply to retainer-named mannequins." )
+           .RegisterEntry( "Added a few informations to a help marker for new individual assignments." )
+           .RegisterEntry( "Fix bug with Demi Human IMC paths." )
+           .RegisterEntry( "Fix Yourself collection not applying to UI actors." )
+           .RegisterEntry( "Fix Yourself collection not applying during aesthetician." );
 
     private static void Add6_0_0( Changelog log )
         => log.NextVersion( "Version 0.6.0.0" )
