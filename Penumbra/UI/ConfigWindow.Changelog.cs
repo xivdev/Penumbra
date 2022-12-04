@@ -26,9 +26,19 @@ public partial class ConfigWindow
         Add5_11_1( ret );
         Add6_0_0( ret );
         Add6_0_2( ret );
+        Add6_0_5( ret );
 
         return ret;
     }
+
+    private static void Add6_0_5( Changelog log )
+        => log.NextVersion( "Version 0.6.0.5" )
+           .RegisterEntry( "Allow hyphen as last character in player and retainer names." )
+           .RegisterEntry( "Fix various bugs with ownership and GPose." )
+           .RegisterEntry( "Fix collection selectors not updating for new or deleted collections in some cases." )
+           .RegisterEntry( "Fix Chocobos not being recognized correctly." )
+           .RegisterEntry( "Fix some problems with UI actors." )
+           .RegisterEntry( "Fix problems with aesthetician again." );
 
     private static void Add6_0_2( Changelog log )
         => log.NextVersion( "Version 0.6.0.2" )
