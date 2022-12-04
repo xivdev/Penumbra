@@ -26,6 +26,12 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
     public bool TryGetCollection( ActorIdentifier identifier, [NotNullWhen( true )] out ModCollection? collection, out ActorIdentifier specialIdentifier )
     {
         specialIdentifier = ActorIdentifier.Invalid;
+        if( Count == 0 )
+        {
+            collection = null;
+            return false;
+        }
+
         switch( identifier.Type )
         {
             case IdentifierType.Player: return CheckWorlds( identifier, out collection );
@@ -94,7 +100,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
         => TryGetCollection( _actorManager.FromObject( gameObject, false ), out collection, out specialIdentifier );
 
     public unsafe bool TryGetCollection( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection, out ActorIdentifier specialIdentifier )
-        => TryGetCollection( _actorManager.FromObject( gameObject, false ), out collection, out specialIdentifier );
+        => TryGetCollection( _actorManager.FromObject( gameObject, out _, false ), out collection, out specialIdentifier );
 
     private bool CheckWorlds( ActorIdentifier identifier, out ModCollection? collection )
     {

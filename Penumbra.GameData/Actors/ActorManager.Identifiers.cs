@@ -109,8 +109,10 @@ public partial class ActorManager
     /// <summary>
     /// Compute an ActorIdentifier from a GameObject. If check is true, the values are checked for validity.
     /// </summary>
-    public unsafe ActorIdentifier FromObject(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor, bool check = true)
+    public unsafe ActorIdentifier FromObject(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor,
+        out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner, bool check = true)
     {
+        owner = null;
         if (actor == null)
             return ActorIdentifier.Invalid;
 
@@ -136,13 +138,13 @@ public partial class ActorManager
                 var nameId = actor->DataID == 952 ? 780 : ((Character*)actor)->NameID;
                 if (ownerId != 0xE0000000)
                 {
-                    var owner = (Character*)HandleCutscene(
+                    owner = HandleCutscene(
                         (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(_objects.SearchById(ownerId)?.Address ?? IntPtr.Zero));
                     if (owner == null)
                         return ActorIdentifier.Invalid;
 
-                    var name      = new ByteString(owner->GameObject.Name);
-                    var homeWorld = owner->HomeWorld;
+                    var name      = new ByteString(owner->Name);
+                    var homeWorld = ((Character*)owner)->HomeWorld;
                     return check
                         ? CreateOwned(name, homeWorld, ObjectKind.BattleNpc, nameId)
                         : CreateIndividualUnchecked(IdentifierType.Owned, name, homeWorld, ObjectKind.BattleNpc, nameId);
@@ -183,16 +185,18 @@ public partial class ActorManager
             case ObjectKind.Companion:
             case (ObjectKind)15: // TODO: CS Update
             {
-                var owner = (Character*)HandleCutscene(
+                owner = HandleCutscene(
                     (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_objects.GetObjectAddress(actor->ObjectIndex - 1));
                 if (owner == null)
                     return ActorIdentifier.Invalid;
 
-                var dataId = GetCompanionId(actor, &owner->GameObject);
+                var dataId    = GetCompanionId(actor, owner);
+                var name      = new ByteString(owner->Name);
+                var homeWorld = ((Character*)owner)->HomeWorld;
+                var kind      = (ObjectKind)actor->ObjectKind;
                 return check
-                    ? CreateOwned(new ByteString(owner->GameObject.Name), owner->HomeWorld, (ObjectKind)actor->ObjectKind, dataId)
-                    : CreateIndividualUnchecked(IdentifierType.Owned, new ByteString(owner->GameObject.Name), owner->HomeWorld,
-                        (ObjectKind)actor->ObjectKind,                dataId);
+                    ? CreateOwned(name, homeWorld, kind, dataId)
+                    : CreateIndividualUnchecked(IdentifierType.Owned, name, homeWorld, kind, dataId);
             }
             case ObjectKind.Retainer:
             {
@@ -225,8 +229,12 @@ public partial class ActorManager
         };
     }
 
+    public unsafe ActorIdentifier FromObject(GameObject? actor, out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner,
+        bool check = true)
+        => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), out owner, check);
+
     public unsafe ActorIdentifier FromObject(GameObject? actor, bool check = true)
-        => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), check);
+        => FromObject(actor, out _, check);
 
     public ActorIdentifier CreateIndividual(IdentifierType type, ByteString name, ushort homeWorld, ObjectKind kind, uint dataId)
         => type switch

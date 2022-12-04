@@ -43,11 +43,11 @@ public unsafe partial class PathResolver
             }
             else
             {
-                var identifier = Penumbra.Actors.FromObject( gameObject, false );
+                var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, false );
                 var collection = CollectionByIdentifier( identifier, out var specialIdentifier )
                  ?? CheckYourself( identifier.Type == IdentifierType.Special ? specialIdentifier : identifier, gameObject )
                  ?? CollectionByAttributes( gameObject )
-                 ?? CheckOwnedCollection( identifier, gameObject )
+                 ?? CheckOwnedCollection( identifier, owner )
                  ?? Penumbra.CollectionManager.Default;
                 return IdentifiedCache.Set( collection, identifier, gameObject );
             }
@@ -124,23 +124,9 @@ public unsafe partial class PathResolver
     }
 
     // Get the collection applying to the owner if it is available.
-    private static ModCollection? CheckOwnedCollection( ActorIdentifier identifier, GameObject* obj )
+    private static ModCollection? CheckOwnedCollection( ActorIdentifier identifier, GameObject* owner )
     {
-        if( identifier.Type != IdentifierType.Owned || !Penumbra.Config.UseOwnerNameForCharacterCollection )
-        {
-            return null;
-        }
-
-        var owner = identifier.Kind switch
-        {
-            ObjectKind.BattleNpc when obj->OwnerID         != 0xE0000000 => ( GameObject* )( Dalamud.Objects.SearchById( obj->OwnerID )?.Address ?? IntPtr.Zero ),
-            ObjectKind.MountType when obj->ObjectIndex % 2 == 1          => ( GameObject* )Dalamud.Objects.GetObjectAddress( obj->ObjectIndex - 1 ),
-            ObjectKind.Companion when obj->ObjectIndex % 2 == 1          => ( GameObject* )Dalamud.Objects.GetObjectAddress( obj->ObjectIndex - 1 ),
-            ( ObjectKind )15 when obj->ObjectIndex     % 2 == 1          => ( GameObject* )Dalamud.Objects.GetObjectAddress( obj->ObjectIndex - 1 ), // TODO: CS Update
-            _                                                            => null,
-        };
-
-        if( owner == null )
+        if( identifier.Type != IdentifierType.Owned || !Penumbra.Config.UseOwnerNameForCharacterCollection || owner == null )
         {
             return null;
         }
