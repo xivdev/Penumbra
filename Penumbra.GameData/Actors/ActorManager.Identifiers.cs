@@ -121,7 +121,8 @@ public partial class ActorManager
         if (idx is >= (ushort)SpecialActor.CharacterScreen and <= (ushort)SpecialActor.Portrait)
             return CreateIndividualUnchecked(IdentifierType.Special, ByteString.Empty, idx, ObjectKind.None, uint.MaxValue);
 
-        switch ((ObjectKind)actor->ObjectKind)
+        var kind = (ObjectKind)actor->ObjectKind;
+        switch (kind)
         {
             case ObjectKind.Player:
             {
@@ -193,7 +194,6 @@ public partial class ActorManager
                 var dataId    = GetCompanionId(actor, owner);
                 var name      = new ByteString(owner->Name);
                 var homeWorld = ((Character*)owner)->HomeWorld;
-                var kind      = (ObjectKind)actor->ObjectKind;
                 return check
                     ? CreateOwned(name, homeWorld, kind, dataId)
                     : CreateIndividualUnchecked(IdentifierType.Owned, name, homeWorld, kind, dataId);

@@ -44,8 +44,9 @@ public unsafe partial class PathResolver
             else
             {
                 var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, false );
-                var collection = CollectionByIdentifier( identifier, out var specialIdentifier )
-                 ?? CheckYourself( identifier.Type == IdentifierType.Special ? specialIdentifier : identifier, gameObject )
+                identifier = Penumbra.CollectionManager.Individuals.ConvertSpecialIdentifier( identifier );
+                var collection = CollectionByIdentifier( identifier )
+                 ?? CheckYourself( identifier, gameObject )
                  ?? CollectionByAttributes( gameObject )
                  ?? CheckOwnedCollection( identifier, owner )
                  ?? Penumbra.CollectionManager.Default;
@@ -71,16 +72,16 @@ public unsafe partial class PathResolver
         }
 
         var player = Penumbra.Actors.GetCurrentPlayer();
-        return CollectionByIdentifier( player, out _ )
+        return CollectionByIdentifier( player )
          ?? CheckYourself( player, gameObject )
          ?? CollectionByAttributes( gameObject )
          ?? Penumbra.CollectionManager.Default;
     }
 
     // Check both temporary and permanent character collections. Temporary first.
-    private static ModCollection? CollectionByIdentifier( ActorIdentifier identifier, out ActorIdentifier specialIdentifier )
-        => Penumbra.TempMods.Collections.TryGetCollection( identifier, out var collection, out specialIdentifier )
-         || Penumbra.CollectionManager.Individuals.TryGetCollection( identifier, out collection, out specialIdentifier )
+    private static ModCollection? CollectionByIdentifier( ActorIdentifier identifier )
+        => Penumbra.TempMods.Collections.TryGetCollection( identifier, out var collection )
+         || Penumbra.CollectionManager.Individuals.TryGetCollection( identifier, out collection )
                 ? collection
                 : null;
 
@@ -143,7 +144,7 @@ public unsafe partial class PathResolver
     {
         var sheet = gameData.GetExcelSheet< ModelChara >()!;
         var ret   = new BitArray( ( int )sheet.RowCount, false );
-        foreach( var (row, idx) in sheet.WithIndex().Where( p => p.Value.Type == ( byte )CharacterBase.ModelType.Human ) )
+        foreach( var (_, idx) in sheet.WithIndex().Where( p => p.Value.Type == ( byte )CharacterBase.ModelType.Human ) )
         {
             ret[ idx ] = true;
         }
