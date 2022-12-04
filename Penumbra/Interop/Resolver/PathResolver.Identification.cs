@@ -34,7 +34,7 @@ public unsafe partial class PathResolver
             // Login screen. Names are populated after actors are drawn,
             // so it is not possible to fetch names from the ui list.
             // Actors are also not named. So use Yourself > Players > Racial > Default.
-            if( !Dalamud.ClientState.IsLoggedIn || Dalamud.GameGui.GetAddonByName( "_CharaMakeTitle", 1 ) != IntPtr.Zero )
+            if( !Dalamud.ClientState.IsLoggedIn || Dalamud.GameGui.GetAddonByName( "ScreenLog", 1 ) == IntPtr.Zero )
             {
                 var collection = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
                  ?? CollectionByAttributes( gameObject )
