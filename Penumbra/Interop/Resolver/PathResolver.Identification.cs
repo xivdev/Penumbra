@@ -34,24 +34,33 @@ public unsafe partial class PathResolver
             // Login screen. Names are populated after actors are drawn,
             // so it is not possible to fetch names from the ui list.
             // Actors are also not named. So use Yourself > Players > Racial > Default.
-            if( !Dalamud.ClientState.IsLoggedIn || Dalamud.GameGui.GetAddonByName( "ScreenLog", 1 ) == IntPtr.Zero )
+            if( !Dalamud.ClientState.IsLoggedIn )
             {
-                var collection = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
+                var collection2 = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
                  ?? CollectionByAttributes( gameObject )
                  ?? Penumbra.CollectionManager.Default;
-                return IdentifiedCache.Set( collection, ActorIdentifier.Invalid, gameObject );
+                return IdentifiedCache.Set( collection2, ActorIdentifier.Invalid, gameObject );
             }
-            else
+
+            // Aesthetician. The relevant actor is yourself, so use player collection when possible.
+            if( Dalamud.GameGui.GetAddonByName( "ScreenLog", 1 ) == IntPtr.Zero )
             {
-                var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, false );
-                identifier = Penumbra.CollectionManager.Individuals.ConvertSpecialIdentifier( identifier );
-                var collection = CollectionByIdentifier( identifier )
-                 ?? CheckYourself( identifier, gameObject )
+                var player = Penumbra.Actors.GetCurrentPlayer();
+                var collection2 = ( player.IsValid ? CollectionByIdentifier( player ) : null )
+                 ?? Penumbra.CollectionManager.ByType( CollectionType.Yourself )
                  ?? CollectionByAttributes( gameObject )
-                 ?? CheckOwnedCollection( identifier, owner )
                  ?? Penumbra.CollectionManager.Default;
-                return IdentifiedCache.Set( collection, identifier, gameObject );
+                return IdentifiedCache.Set( collection2, ActorIdentifier.Invalid, gameObject );
             }
+
+            var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, false );
+            identifier = Penumbra.CollectionManager.Individuals.ConvertSpecialIdentifier( identifier );
+            var collection = CollectionByIdentifier( identifier )
+             ?? CheckYourself( identifier, gameObject )
+             ?? CollectionByAttributes( gameObject )
+             ?? CheckOwnedCollection( identifier, owner )
+             ?? Penumbra.CollectionManager.Default;
+            return IdentifiedCache.Set( collection, identifier, gameObject );
         }
         catch( Exception e )
         {
