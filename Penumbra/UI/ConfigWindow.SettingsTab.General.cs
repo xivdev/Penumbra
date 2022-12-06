@@ -236,7 +236,7 @@ public partial class ConfigWindow
 
             if( ImGui.IsItemDeactivatedAfterEdit() )
             {
-                Penumbra.ModManager.UpdateExportDirectory( _tempExportDirectory );
+                Penumbra.ModManager.UpdateExportDirectory( _tempExportDirectory, true );
             }
 
             ImGui.SameLine();
@@ -258,7 +258,7 @@ public partial class ConfigWindow
 
                     _dialogManager.OpenFolderDialog( "Choose Default Export Directory", ( b, s ) =>
                     {
-                        Penumbra.ModManager.UpdateExportDirectory( b ? s : Penumbra.Config.ExportDirectory );
+                        Penumbra.ModManager.UpdateExportDirectory( b ? s : Penumbra.Config.ExportDirectory, true );
                         _dialogOpen = false;
                     }, startDir );
                     _dialogOpen = true;

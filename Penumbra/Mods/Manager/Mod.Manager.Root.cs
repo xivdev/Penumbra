@@ -1,4 +1,3 @@
-using ImGuizmoNET;
 using System;
 using System.IO;
 
@@ -110,7 +109,7 @@ public sealed partial class Mod
             }
         }
 
-        public void UpdateExportDirectory( string newDirectory )
+        public void UpdateExportDirectory( string newDirectory, bool change )
         {
             if( newDirectory.Length == 0 )
             {
@@ -144,14 +143,21 @@ public sealed partial class Mod
                 }
             }
 
-            foreach( var mod in _mods )
+            if( change )
             {
-                new ModBackup( mod ).Move( dir.FullName );
+                foreach( var mod in _mods )
+                {
+                    new ModBackup( mod ).Move( dir.FullName );
+                }
             }
 
-            _exportDirectory                = dir;
-            Penumbra.Config.ExportDirectory = dir.FullName;
-            Penumbra.Config.Save();
+            _exportDirectory = dir;
+
+            if( change )
+            {
+                Penumbra.Config.ExportDirectory = dir.FullName;
+                Penumbra.Config.Save();
+            }
         }
     }
 }

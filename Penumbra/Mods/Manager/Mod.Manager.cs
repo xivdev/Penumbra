@@ -39,6 +39,7 @@ public sealed partial class Mod
         {
             ModDirectoryChanged += OnModDirectoryChange;
             SetBaseDirectory( modDirectory, true );
+            UpdateExportDirectory( Penumbra.Config.ExportDirectory, false );
             ModOptionChanged += OnModOptionChange;
             ModPathChanged   += OnModPathChange;
         }
