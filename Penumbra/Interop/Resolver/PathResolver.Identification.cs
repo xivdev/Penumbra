@@ -53,7 +53,7 @@ public unsafe partial class PathResolver
                 return IdentifiedCache.Set( collection2, ActorIdentifier.Invalid, gameObject );
             }
 
-            var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, false );
+            var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, true, false );
             identifier = Penumbra.CollectionManager.Individuals.ConvertSpecialIdentifier( identifier );
             var collection = CollectionByIdentifier( identifier )
              ?? CheckYourself( identifier, gameObject )

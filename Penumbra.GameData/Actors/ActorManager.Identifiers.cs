@@ -110,7 +110,7 @@ public partial class ActorManager
     /// Compute an ActorIdentifier from a GameObject. If check is true, the values are checked for validity.
     /// </summary>
     public unsafe ActorIdentifier FromObject(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor,
-        out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner, bool check = true)
+        out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner, bool allowPlayerNpc, bool check)
     {
         owner = null;
         if (actor == null)
@@ -149,6 +149,19 @@ public partial class ActorManager
                     return check
                         ? CreateOwned(name, homeWorld, ObjectKind.BattleNpc, nameId)
                         : CreateIndividualUnchecked(IdentifierType.Owned, name, homeWorld, ObjectKind.BattleNpc, nameId);
+                }
+
+                // Hack to support Anamnesis changing ObjectKind for NPC faces.
+                if (nameId == 0 && allowPlayerNpc)
+                {
+                    var name      = new ByteString(actor->Name);
+                    if (!name.IsEmpty)
+                    {
+                        var homeWorld = ((Character*)actor)->HomeWorld;
+                        return check
+                            ? CreatePlayer(name, homeWorld)
+                            : CreateIndividualUnchecked(IdentifierType.Player, name, homeWorld, ObjectKind.None, uint.MaxValue);
+                    }
                 }
 
                 return check
@@ -230,11 +243,11 @@ public partial class ActorManager
     }
 
     public unsafe ActorIdentifier FromObject(GameObject? actor, out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner,
-        bool check = true)
-        => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), out owner, check);
+        bool allowPlayerNpc, bool check)
+        => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), out owner, allowPlayerNpc, check);
 
-    public unsafe ActorIdentifier FromObject(GameObject? actor, bool check = true)
-        => FromObject(actor, out _, check);
+    public unsafe ActorIdentifier FromObject(GameObject? actor, bool allowPlayerNpc, bool check)
+        => FromObject(actor, out _, allowPlayerNpc, check);
 
     public ActorIdentifier CreateIndividual(IdentifierType type, ByteString name, ushort homeWorld, ObjectKind kind, uint dataId)
         => type switch

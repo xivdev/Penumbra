@@ -192,7 +192,7 @@ public partial class ConfigWindow
             {
                 ImGuiUtil.DrawTableColumn( $"{( ( GameObject* )obj.Address )->ObjectIndex}" );
                 ImGuiUtil.DrawTableColumn( $"0x{obj.Address:X}" );
-                var identifier = Penumbra.Actors.FromObject( obj, true );
+                var identifier = Penumbra.Actors.FromObject( obj, false, true );
                 ImGuiUtil.DrawTableColumn( Penumbra.Actors.ToString( identifier ) );
                 var id = obj.ObjectKind == ObjectKind.BattleNpc ? $"{identifier.DataId} | {obj.DataId}" : identifier.DataId.ToString();
                 ImGuiUtil.DrawTableColumn( id );

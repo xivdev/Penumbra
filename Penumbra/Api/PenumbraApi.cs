@@ -677,7 +677,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.InvalidArgument;
         }
 
-        var identifier = Penumbra.Actors.FromObject( Dalamud.Objects[ actorIndex ] );
+        var identifier = Penumbra.Actors.FromObject( Dalamud.Objects[ actorIndex ], false, false );
         if( !identifier.IsValid )
         {
             return PenumbraApiEc.InvalidArgument;
