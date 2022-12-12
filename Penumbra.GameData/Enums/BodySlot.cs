@@ -37,6 +37,17 @@ public static class BodySlotEnumExtension
             BodySlot.Zear => 'z',
             _             => throw new InvalidEnumArgumentException(),
         };
+
+    public static CustomizationType ToCustomizationType(this BodySlot value)
+        => value switch
+        {
+            BodySlot.Hair => CustomizationType.Hair,
+            BodySlot.Face => CustomizationType.Face,
+            BodySlot.Tail => CustomizationType.Tail,
+            BodySlot.Body => CustomizationType.Body,
+            BodySlot.Zear => CustomizationType.Zear,
+            _             => throw new ArgumentOutOfRangeException(nameof(value), value, null)
+        };
 }
 
 public static partial class Names

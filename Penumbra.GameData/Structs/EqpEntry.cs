@@ -87,39 +87,42 @@ public enum EqpEntry : ulong
 public static class Eqp
 {
     // cf. Client::Graphics::Scene::CharacterUtility.GetSlotEqpFlags
-    public const EqpEntry DefaultEntry = ( EqpEntry )0x3fe00070603f00;
+    public const EqpEntry DefaultEntry = (EqpEntry)0x3fe00070603f00;
 
-    public static (int, int) BytesAndOffset( EquipSlot slot )
+    public static (int, int) BytesAndOffset(EquipSlot slot)
     {
         return slot switch
         {
-            EquipSlot.Body  => ( 2, 0 ),
-            EquipSlot.Legs  => ( 1, 2 ),
-            EquipSlot.Hands => ( 1, 3 ),
-            EquipSlot.Feet  => ( 1, 4 ),
-            EquipSlot.Head  => ( 3, 5 ),
+            EquipSlot.Body  => (2, 0),
+            EquipSlot.Legs  => (1, 2),
+            EquipSlot.Hands => (1, 3),
+            EquipSlot.Feet  => (1, 4),
+            EquipSlot.Head  => (3, 5),
             _               => throw new InvalidEnumArgumentException(),
         };
     }
 
-    public static EqpEntry FromSlotAndBytes( EquipSlot slot, byte[] value )
+    public static EqpEntry ShiftAndMask(this EqpEntry entry, EquipSlot slot)
+    {
+        var (_, offset) = BytesAndOffset(slot);
+        var mask = Mask(slot);
+        return (EqpEntry)((ulong)(entry & mask) >> (offset * 8));
+    }
+
+    public static EqpEntry FromSlotAndBytes(EquipSlot slot, byte[] value)
     {
         EqpEntry ret = 0;
-        var (bytes, offset) = BytesAndOffset( slot );
-        if( bytes != value.Length )
-        {
+        var (bytes, offset) = BytesAndOffset(slot);
+        if (bytes != value.Length)
             throw new ArgumentException();
-        }
 
-        for( var i = 0; i < bytes; ++i )
-        {
-            ret |= ( EqpEntry )( ( ulong )value[ i ] << ( ( offset + i ) * 8 ) );
-        }
+        for (var i = 0; i < bytes; ++i)
+            ret |= (EqpEntry)((ulong)value[i] << ((offset + i) * 8));
 
         return ret;
     }
 
-    public static EqpEntry Mask( EquipSlot slot )
+    public static EqpEntry Mask(EquipSlot slot)
     {
         return slot switch
         {
@@ -132,7 +135,7 @@ public static class Eqp
         };
     }
 
-    public static EquipSlot ToEquipSlot( this EqpEntry entry )
+    public static EquipSlot ToEquipSlot(this EqpEntry entry)
     {
         return entry switch
         {
@@ -211,7 +214,7 @@ public static class Eqp
         };
     }
 
-    public static string ToLocalName( this EqpEntry entry )
+    public static string ToLocalName(this EqpEntry entry)
     {
         return entry switch
         {
@@ -289,25 +292,25 @@ public static class Eqp
         };
     }
 
-    private static EqpEntry[] GetEntriesForSlot( EquipSlot slot )
+    private static EqpEntry[] GetEntriesForSlot(EquipSlot slot)
     {
-        return ( ( EqpEntry[] )Enum.GetValues( typeof( EqpEntry ) ) )
-           .Where( e => e.ToEquipSlot() == slot )
-           .ToArray();
+        return ((EqpEntry[])Enum.GetValues(typeof(EqpEntry)))
+            .Where(e => e.ToEquipSlot() == slot)
+            .ToArray();
     }
 
-    public static readonly EqpEntry[] EqpAttributesBody  = GetEntriesForSlot( EquipSlot.Body );
-    public static readonly EqpEntry[] EqpAttributesLegs  = GetEntriesForSlot( EquipSlot.Legs );
-    public static readonly EqpEntry[] EqpAttributesHands = GetEntriesForSlot( EquipSlot.Hands );
-    public static readonly EqpEntry[] EqpAttributesFeet  = GetEntriesForSlot( EquipSlot.Feet );
-    public static readonly EqpEntry[] EqpAttributesHead  = GetEntriesForSlot( EquipSlot.Head );
+    public static readonly EqpEntry[] EqpAttributesBody  = GetEntriesForSlot(EquipSlot.Body);
+    public static readonly EqpEntry[] EqpAttributesLegs  = GetEntriesForSlot(EquipSlot.Legs);
+    public static readonly EqpEntry[] EqpAttributesHands = GetEntriesForSlot(EquipSlot.Hands);
+    public static readonly EqpEntry[] EqpAttributesFeet  = GetEntriesForSlot(EquipSlot.Feet);
+    public static readonly EqpEntry[] EqpAttributesHead  = GetEntriesForSlot(EquipSlot.Head);
 
-    public static readonly IReadOnlyDictionary< EquipSlot, EqpEntry[] > EqpAttributes = new Dictionary< EquipSlot, EqpEntry[] >()
+    public static readonly IReadOnlyDictionary<EquipSlot, EqpEntry[]> EqpAttributes = new Dictionary<EquipSlot, EqpEntry[]>()
     {
-        [ EquipSlot.Body ]  = EqpAttributesBody,
-        [ EquipSlot.Legs ]  = EqpAttributesLegs,
-        [ EquipSlot.Hands ] = EqpAttributesHands,
-        [ EquipSlot.Feet ]  = EqpAttributesFeet,
-        [ EquipSlot.Head ]  = EqpAttributesHead,
+        [EquipSlot.Body]  = EqpAttributesBody,
+        [EquipSlot.Legs]  = EqpAttributesLegs,
+        [EquipSlot.Hands] = EqpAttributesHands,
+        [EquipSlot.Feet]  = EqpAttributesFeet,
+        [EquipSlot.Head]  = EqpAttributesHead,
     };
 }

@@ -198,6 +198,25 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
         };
     }
 
+    public MetaManipulation WithEntryOf( MetaManipulation other )
+    {
+        if( ManipulationType != other.ManipulationType )
+        {
+            return this;
+        }
+
+        return ManipulationType switch
+        {
+            Type.Eqp  => Eqp.Copy( other.Eqp.Entry ),
+            Type.Gmp  => Gmp.Copy( other.Gmp.Entry ),
+            Type.Eqdp => Eqdp.Copy( other.Eqdp.Entry ),
+            Type.Est  => Est.Copy( other.Est.Entry ),
+            Type.Rsp  => Rsp.Copy( other.Rsp.Entry ),
+            Type.Imc  => Imc.Copy( other.Imc.Entry ),
+            _         => throw new ArgumentOutOfRangeException(),
+        };
+    }
+
     public override bool Equals( object? obj )
         => obj is MetaManipulation other && Equals( other );
 
@@ -237,8 +256,8 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
         => ManipulationType switch
         {
             Type.Imc  => $"{Imc.Entry.DecalId}-{Imc.Entry.MaterialId}-{Imc.Entry.VfxId}-{Imc.Entry.SoundId}-{Imc.Entry.MaterialAnimationId}-{Imc.Entry.AttributeMask}",
-            Type.Eqdp => $"{(ushort) Eqdp.Entry:X}",
-            Type.Eqp  => $"{(ulong)Eqp.Entry:X}",
+            Type.Eqdp => $"{( ushort )Eqdp.Entry:X}",
+            Type.Eqp  => $"{( ulong )Eqp.Entry:X}",
             Type.Est  => $"{Est.Entry}",
             Type.Gmp  => $"{Gmp.Entry.Value}",
             Type.Rsp  => $"{Rsp.Entry}",

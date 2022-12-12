@@ -25,4 +25,7 @@ public unsafe struct MtrlResource
 
     public byte* TexString( int idx )
         => StringList + *( TexSpace + 4 + idx * 8 );
+
+    public bool TexIsDX11( int idx )
+        => *(TexSpace + 5 + idx * 8) >= 0x8000;
 }

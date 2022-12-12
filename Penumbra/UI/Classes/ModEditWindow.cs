@@ -20,11 +20,13 @@ namespace Penumbra.UI.Classes;
 
 public partial class ModEditWindow : Window, IDisposable
 {
-    private const string  WindowBaseLabel = "###SubModEdit";
-    private       Editor? _editor;
-    private       Mod?    _mod;
-    private       Vector2 _iconSize         = Vector2.Zero;
-    private       bool    _allowReduplicate = false;
+    private const     string         WindowBaseLabel = "###SubModEdit";
+    internal readonly ItemSwapWindow _swapWindow     = new();
+
+    private           Editor?        _editor;
+    private           Mod?           _mod;
+    private           Vector2        _iconSize         = Vector2.Zero;
+    private           bool           _allowReduplicate = false;
 
     public void ChangeMod( Mod mod )
     {
@@ -45,6 +47,7 @@ public partial class ModEditWindow : Window, IDisposable
         _selectedFiles.Clear();
         _modelTab.Reset();
         _materialTab.Reset();
+        _swapWindow.UpdateMod( mod, Penumbra.CollectionManager.Current[ mod.Index ].Settings );
     }
 
     public void ChangeOption( ISubMod? subMod )
@@ -148,6 +151,7 @@ public partial class ModEditWindow : Window, IDisposable
         _modelTab.Draw();
         _materialTab.Draw();
         DrawTextureTab();
+        _swapWindow.DrawItemSwapPanel();
     }
 
     // A row of three buttonSizes and a help marker that can be used for material suffix changing.
@@ -544,5 +548,6 @@ public partial class ModEditWindow : Window, IDisposable
         _left.Dispose();
         _right.Dispose();
         _center.Dispose();
+        _swapWindow.Dispose();
     }
 }

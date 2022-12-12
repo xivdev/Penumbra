@@ -231,6 +231,9 @@ public partial class MtrlFile : IWritable
     {
         public string Path;
         public ushort Flags;
+
+        public bool DX11
+            => (Flags & 0x8000) != 0;
     }
 
     public struct Constant
@@ -251,6 +254,7 @@ public partial class MtrlFile : IWritable
 
 
     public readonly uint Version;
+    public          bool Valid { get; }
 
     public Texture[]         Textures;
     public UvSet[]           UvSets;
@@ -368,6 +372,7 @@ public partial class MtrlFile : IWritable
         ShaderPackage.Constants    = r.ReadStructuresAsArray<Constant>(constantCount);
         ShaderPackage.Samplers     = r.ReadStructuresAsArray<Sampler>(samplerCount);
         ShaderPackage.ShaderValues = r.ReadStructuresAsArray<float>(shaderValueListSize / 4);
+        Valid                      = true;
     }
 
     private static Texture[] ReadTextureOffsets(BinaryReader r, int count, out ushort[] offsets)

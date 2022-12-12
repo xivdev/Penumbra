@@ -51,11 +51,6 @@ public partial class ModEditWindow
         public void Draw()
         {
             _list = _getFiles();
-            if( _list.Count == 0 )
-            {
-                return;
-            }
-
             using var tab = ImRaii.TabItem( _tabName );
             if( !tab )
             {

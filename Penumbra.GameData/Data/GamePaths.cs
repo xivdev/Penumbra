@@ -1,3 +1,5 @@
+using System.Text.RegularExpressions;
+using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 
@@ -5,6 +7,23 @@ namespace Penumbra.GameData.Data;
 
 public static partial class GamePaths
 {
+    private static readonly Regex RaceCodeRegex = new(@"c(?'racecode'\d{4})", RegexOptions.Compiled);
+
+    //[GeneratedRegex(@"c(?'racecode'\d{4})")]
+    public static partial Regex RaceCodeParser();
+
+    public static partial Regex RaceCodeParser()
+        => RaceCodeRegex;
+
+    public static GenderRace ParseRaceCode(string path)
+    {
+        var match = RaceCodeParser().Match(path);
+        return match.Success
+            ? Names.GenderRaceFromCode(match.Groups["racecode"].Value)
+            : GenderRace.Unknown;
+    }
+
+
     public static partial class Monster
     {
         public static partial class Imc
@@ -139,7 +158,7 @@ public static partial class GamePaths
             // public static partial Regex Regex();
 
             public static string Path(SetId equipId, GenderRace raceCode, EquipSlot slot)
-                => $"chara/equipment/e{equipId.Value:D4}/model/c{(ushort)raceCode:D4}e{equipId.Value:D4}_{slot.ToSuffix()}.mdl";
+                => $"chara/equipment/e{equipId.Value:D4}/model/c{raceCode.ToRaceCode()}e{equipId.Value:D4}_{slot.ToSuffix()}.mdl";
         }
 
         public static partial class Mtrl
@@ -148,7 +167,7 @@ public static partial class GamePaths
             // public static partial Regex Regex();
 
             public static string Path(SetId equipId, GenderRace raceCode, EquipSlot slot, byte variant, string suffix)
-                => $"{FolderPath(equipId, variant)}/mt_c{(ushort)raceCode:D4}e{equipId.Value:D4}_{slot.ToSuffix()}_{suffix}.mtrl";
+                => $"{FolderPath(equipId, variant)}/mt_c{raceCode.ToRaceCode()}e{equipId.Value:D4}_{slot.ToSuffix()}_{suffix}.mtrl";
 
             public static string FolderPath(SetId equipId, byte variant)
                 => $"chara/equipment/e{equipId.Value:D4}/material/v{variant:D4}";
@@ -160,7 +179,25 @@ public static partial class GamePaths
             // public static partial Regex Regex();
 
             public static string Path(SetId equipId, GenderRace raceCode, EquipSlot slot, byte variant, char suffix1, char suffix2 = '\0')
-                => $"chara/equipment/e{equipId.Value:D4}/texture/v{variant:D2}_c{(ushort)raceCode:D4}e{equipId.Value:D4}_{slot.ToSuffix()}{(suffix2 != '\0' ? $"_{suffix2}" : string.Empty)}_{suffix1}.tex";
+                => $"chara/equipment/e{equipId.Value:D4}/texture/v{variant:D2}_c{raceCode.ToRaceCode()}e{equipId.Value:D4}_{slot.ToSuffix()}{(suffix2 != '\0' ? $"_{suffix2}" : string.Empty)}_{suffix1}.tex";
+        }
+
+        public static partial class Avfx
+        {
+            //[GeneratedRegex(@"chara/equipment/e(?'id'\d{4})/vfx/eff/ve(?'variant'\d{4})\.avfx")]
+            //public static partial Regex Regex();
+
+            public static string Path(SetId equipId, byte effectId)
+                => $"chara/equipment/e{equipId.Value:D4}/vfx/eff/ve{effectId:D4}.avfx";
+        }
+
+        public static partial class Decal
+        {
+            //[GeneratedRegex(@"chara/common/texture/decal_equip/-decal_(?'decalId'\d{3})\.tex")]
+            //public static partial Regex Regex();
+
+            public static string Path(byte decalId)
+                => $"chara/common/texture/decal_equip/-decal_{decalId:D3}.tex";
         }
     }
 
@@ -181,7 +218,7 @@ public static partial class GamePaths
             // public static partial Regex Regex();
 
             public static string Path(SetId accessoryId, GenderRace raceCode, EquipSlot slot)
-                => $"chara/accessory/a{accessoryId.Value:D4}/model/c{(ushort)raceCode:D4}a{accessoryId.Value:D4}_{slot.ToSuffix()}.mdl";
+                => $"chara/accessory/a{accessoryId.Value:D4}/model/c{raceCode.ToRaceCode()}a{accessoryId.Value:D4}_{slot.ToSuffix()}.mdl";
         }
 
         public static partial class Mtrl
@@ -190,7 +227,7 @@ public static partial class GamePaths
             // public static partial Regex Regex();
 
             public static string Path(SetId accessoryId, GenderRace raceCode, EquipSlot slot, byte variant, string suffix)
-                => $"{FolderPath(accessoryId, variant)}/c{(ushort)raceCode:D4}a{accessoryId.Value:D4}_{slot.ToSuffix()}_{suffix}.mtrl";
+                => $"{FolderPath(accessoryId, variant)}/c{raceCode.ToRaceCode()}a{accessoryId.Value:D4}_{slot.ToSuffix()}_{suffix}.mtrl";
 
             public static string FolderPath(SetId accessoryId, byte variant)
                 => $"chara/accessory/a{accessoryId.Value:D4}/material/v{variant:D4}";
@@ -202,7 +239,7 @@ public static partial class GamePaths
             // public static partial Regex Regex();
 
             public static string Path(SetId accessoryId, GenderRace raceCode, EquipSlot slot, byte variant, char suffix1, char suffix2 = '\0')
-                => $"chara/accessory/a{accessoryId.Value:D4}/texture/v{variant:D2}_c{(ushort)raceCode:D4}a{accessoryId.Value:D4}_{slot.ToSuffix()}{(suffix2 != '\0' ? $"_{suffix2}" : string.Empty)}_{suffix1}.tex";
+                => $"chara/accessory/a{accessoryId.Value:D4}/texture/v{variant:D2}_c{raceCode.ToRaceCode()}a{accessoryId.Value:D4}_{slot.ToSuffix()}{(suffix2 != '\0' ? $"_{suffix2}" : string.Empty)}_{suffix1}.tex";
         }
     }
 
@@ -214,7 +251,19 @@ public static partial class GamePaths
             // public static partial Regex Regex();
 
             public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId, CustomizationType type)
-                => $"chara/human/c{(ushort)raceCode:D4}/obj/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/model/c{(ushort)raceCode:D4}{slot.ToAbbreviation()}{slotId.Value:D4}_{type.ToSuffix()}.mdl";
+                => $"chara/human/c{raceCode.ToRaceCode()}/obj/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/model/c{raceCode.ToRaceCode()}{slot.ToAbbreviation()}{slotId.Value:D4}_{type.ToSuffix()}.mdl";
+        }
+
+        public static partial class Phyb
+        {
+            public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId)
+                => $"chara/human/c{raceCode.ToRaceCode()}/skeleton/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/phy_c{raceCode.ToRaceCode()}{slot.ToAbbreviation()}{slotId.Value:D4}.phyb";
+        }
+
+        public static partial class Sklb
+        {
+            public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId)
+                => $"chara/human/c{raceCode.ToRaceCode()}/skeleton/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/skl_c{raceCode.ToRaceCode()}{slot.ToAbbreviation()}{slotId.Value:D4}.sklb";
         }
 
         public static partial class Mtrl
@@ -222,11 +271,52 @@ public static partial class GamePaths
             // [GeneratedRegex(@"chara/human/c(?'race'\d{4})/obj/(?'type'[a-z]+)/(?'typeabr'[a-z])(?'id'\d{4})/material(/v(?'variant'\d{4}))?/mt_c\k'race'\k'typeabr'\k'id'(_(?'slot'[a-z]{3}))?_[a-z]+\.mtrl")]
             // public static partial Regex Regex();
 
-            public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId, string suffix,
-                CustomizationType type = CustomizationType.Unknown, byte variant = byte.MaxValue)
-                => $"chara/human/c{(ushort)raceCode:D4}/obj/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/material/"
-                  + (variant != byte.MaxValue ? $"v{variant:D4}/" : string.Empty)
-                  + $"mt_c{(ushort)raceCode:D4}{slot.ToAbbreviation()}{slotId.Value:D4}{(type != CustomizationType.Unknown ? $"_{type.ToSuffix()}" : string.Empty)}_{suffix}.mtrl";
+            public static string FolderPath(GenderRace raceCode, BodySlot slot, SetId slotId, byte variant = byte.MaxValue)
+                => $"chara/human/c{raceCode.ToRaceCode()}/obj/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/material{(variant != byte.MaxValue ? $"/v{variant:D4}" : string.Empty)}";
+
+            public static string HairPath(GenderRace raceCode, SetId slotId, string fileName, out GenderRace actualGr)
+            {
+                actualGr = MaterialHandling.GetGameGenderRace(raceCode, slotId);
+                var folder = FolderPath(actualGr, BodySlot.Hair, slotId, 1);
+                return actualGr == raceCode
+                    ? $"{folder}{fileName}"
+                    : $"{folder}/mt_c{actualGr.ToRaceCode()}{fileName[9..]}";
+            }
+
+            public static string TailPath(GenderRace raceCode, SetId slotId, string fileName, byte variant, out SetId actualSlotId)
+            {
+                switch (raceCode)
+                {
+                    case GenderRace.HrothgarMale:
+                    case GenderRace.HrothgarFemale:
+                    case GenderRace.HrothgarMaleNpc:
+                    case GenderRace.HrothgarFemaleNpc:
+                        var folder = FolderPath(raceCode, BodySlot.Tail, 1, variant == byte.MaxValue ? (byte)1 : variant);
+                        actualSlotId = 1;
+                        return $"{folder}{fileName}";
+                    default:
+                        actualSlotId = slotId;
+                        return $"{FolderPath(raceCode, BodySlot.Tail, slotId, variant)}{fileName}";
+                }
+            }
+
+            public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId, string fileName,
+                out GenderRace actualGr, out SetId actualSlotId, byte variant = byte.MaxValue)
+            {
+                switch (slot)
+                {
+                    case BodySlot.Hair:
+                        actualSlotId = slotId;
+                        return HairPath(raceCode, slotId, fileName, out actualGr);
+                    case BodySlot.Tail:
+                        actualGr = raceCode;
+                        return TailPath(raceCode, slotId, fileName, variant, out actualSlotId);
+                    default:
+                        actualSlotId = slotId;
+                        actualGr     = raceCode;
+                        return $"{FolderPath(raceCode, slot, slotId, variant)}{fileName}";
+                }
+            }
         }
 
         public static partial class Tex
@@ -236,10 +326,10 @@ public static partial class GamePaths
 
             public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId, char suffix1, bool minus = false,
                 CustomizationType type = CustomizationType.Unknown, byte variant = byte.MaxValue, char suffix2 = '\0')
-                => $"chara/human/c{(ushort)raceCode:D4}/obj/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/texture/"
+                => $"chara/human/c{raceCode.ToRaceCode()}/obj/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/texture/"
                   + (minus ? "--" : string.Empty)
                   + (variant != byte.MaxValue ? $"v{variant:D2}_" : string.Empty)
-                  + $"c{(ushort)raceCode:D4}{slot.ToAbbreviation()}{slotId.Value:D4}{(type != CustomizationType.Unknown ? $"_{type.ToSuffix()}" : string.Empty)}{(suffix2 != '\0' ? $"_{suffix2}" : string.Empty)}_{suffix1}.tex";
+                  + $"c{raceCode.ToRaceCode()}{slot.ToAbbreviation()}{slotId.Value:D4}{(type != CustomizationType.Unknown ? $"_{type.ToSuffix()}" : string.Empty)}{(suffix2 != '\0' ? $"_{suffix2}" : string.Empty)}_{suffix1}.tex";
 
 
             // [GeneratedRegex(@"chara/common/texture/(?'catchlight'catchlight)(.*)\.tex")]

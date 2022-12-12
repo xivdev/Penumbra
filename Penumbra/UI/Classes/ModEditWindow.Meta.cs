@@ -143,7 +143,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( ModelSetIdTooltip );
 
             ImGui.TableNextColumn();
-            if( EqpEquipSlotCombo( "##eqpSlot", 100, _new.Slot, out var slot ) )
+            if( Combos.EqpEquipSlot( "##eqpSlot", 100, _new.Slot, out var slot ) )
             {
                 _new = new EqpManipulation( ExpandedEqpFile.GetDefault( setId ), slot, _new.SetId );
             }
@@ -241,7 +241,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( ModelSetIdTooltip );
 
             ImGui.TableNextColumn();
-            if( RaceCombo( "##eqdpRace", _new.Race, out var race ) )
+            if( Combos.Race( "##eqdpRace", _new.Race, out var race ) )
             {
                 var newDefaultEntry = ExpandedEqdpFile.GetDefault( Names.CombinedRace( _new.Gender, race ), _new.Slot.IsAccessory(), _new.SetId );
                 _new = new EqdpManipulation( newDefaultEntry, _new.Slot, _new.Gender, race, _new.SetId );
@@ -250,7 +250,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( ModelRaceTooltip );
 
             ImGui.TableNextColumn();
-            if( GenderCombo( "##eqdpGender", _new.Gender, out var gender ) )
+            if( Combos.Gender( "##eqdpGender", _new.Gender, out var gender ) )
             {
                 var newDefaultEntry = ExpandedEqdpFile.GetDefault( Names.CombinedRace( gender, _new.Race ), _new.Slot.IsAccessory(), _new.SetId );
                 _new = new EqdpManipulation( newDefaultEntry, _new.Slot, gender, _new.Race, _new.SetId );
@@ -259,7 +259,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( GenderTooltip );
 
             ImGui.TableNextColumn();
-            if( EqdpEquipSlotCombo( "##eqdpSlot", _new.Slot, out var slot ) )
+            if( Combos.EqdpEquipSlot( "##eqdpSlot", _new.Slot, out var slot ) )
             {
                 var newDefaultEntry = ExpandedEqdpFile.GetDefault( Names.CombinedRace( _new.Gender, _new.Race ), slot.IsAccessory(), _new.SetId );
                 _new = new EqdpManipulation( newDefaultEntry, slot, _new.Gender, _new.Race, _new.SetId );
@@ -356,7 +356,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if( ImcTypeCombo( "##imcType", _new.ObjectType, out var type ) )
+            if( Combos.ImcType( "##imcType", _new.ObjectType, out var type ) )
             {
                 var equipSlot = type switch
                 {
@@ -386,7 +386,7 @@ public partial class ModEditWindow
             // Equipment and accessories are slightly different imcs than other types.
             if( _new.ObjectType is ObjectType.Equipment )
             {
-                if( EqpEquipSlotCombo( "##imcSlot", 100, _new.EquipSlot, out var slot ) )
+                if( Combos.EqpEquipSlot( "##imcSlot", 100, _new.EquipSlot, out var slot ) )
                 {
                     _new = new ImcManipulation( _new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry ).Copy( GetDefault( _new )
                      ?? new ImcEntry() );
@@ -396,7 +396,7 @@ public partial class ModEditWindow
             }
             else if( _new.ObjectType is ObjectType.Accessory )
             {
-                if( AccessorySlotCombo( "##imcSlot", _new.EquipSlot, out var slot ) )
+                if( Combos.AccessorySlot( "##imcSlot", _new.EquipSlot, out var slot ) )
                 {
                     _new = new ImcManipulation( _new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry ).Copy( GetDefault( _new )
                      ?? new ImcEntry() );
@@ -425,7 +425,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if( _new.ObjectType is ObjectType.DemiHuman )
             {
-                if( EqpEquipSlotCombo( "##imcSlot", 70, _new.EquipSlot, out var slot ) )
+                if( Combos.EqpEquipSlot( "##imcSlot", 70, _new.EquipSlot, out var slot ) )
                 {
                     _new = new ImcManipulation( _new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry ).Copy( GetDefault( _new )
                      ?? new ImcEntry() );
@@ -599,7 +599,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( ModelSetIdTooltip );
 
             ImGui.TableNextColumn();
-            if( RaceCombo( "##estRace", _new.Race, out var race ) )
+            if( Combos.Race( "##estRace", _new.Race, out var race ) )
             {
                 var newDefaultEntry = EstFile.GetDefault( _new.Slot, Names.CombinedRace( _new.Gender, race ), _new.SetId );
                 _new = new EstManipulation( _new.Gender, race, _new.Slot, _new.SetId, newDefaultEntry );
@@ -608,7 +608,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( ModelRaceTooltip );
 
             ImGui.TableNextColumn();
-            if( GenderCombo( "##estGender", _new.Gender, out var gender ) )
+            if( Combos.Gender( "##estGender", _new.Gender, out var gender ) )
             {
                 var newDefaultEntry = EstFile.GetDefault( _new.Slot, Names.CombinedRace( gender, _new.Race ), _new.SetId );
                 _new = new EstManipulation( gender, _new.Race, _new.Slot, _new.SetId, newDefaultEntry );
@@ -617,7 +617,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( GenderTooltip );
 
             ImGui.TableNextColumn();
-            if( EstSlotCombo( "##estSlot", _new.Slot, out var slot ) )
+            if( Combos.EstSlot( "##estSlot", _new.Slot, out var slot ) )
             {
                 var newDefaultEntry = EstFile.GetDefault( slot, Names.CombinedRace( _new.Gender, _new.Race ), _new.SetId );
                 _new = new EstManipulation( _new.Gender, _new.Race, slot, _new.SetId, newDefaultEntry );
@@ -805,7 +805,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if( SubRaceCombo( "##rspSubRace", _new.SubRace, out var subRace ) )
+            if( Combos.SubRace( "##rspSubRace", _new.SubRace, out var subRace ) )
             {
                 _new = new RspManipulation( subRace, _new.Attribute, CmpFile.GetDefault( subRace, _new.Attribute ) );
             }
@@ -813,7 +813,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( RacialTribeTooltip );
 
             ImGui.TableNextColumn();
-            if( RspAttributeCombo( "##rspAttribute", _new.Attribute, out var attribute ) )
+            if( Combos.RspAttribute( "##rspAttribute", _new.Attribute, out var attribute ) )
             {
                 _new = new RspManipulation( _new.SubRace, attribute, CmpFile.GetDefault( subRace, attribute ) );
             }
@@ -857,36 +857,6 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( $"Default Value: {def:0.###}" );
         }
     }
-
-    // Different combos to use with enums.
-    private static bool RaceCombo( string label, ModelRace current, out ModelRace race )
-        => ImGuiUtil.GenericEnumCombo( label, 100 * ImGuiHelpers.GlobalScale, current, out race, RaceEnumExtensions.ToName, 1 );
-
-    private static bool GenderCombo( string label, Gender current, out Gender gender )
-        => ImGuiUtil.GenericEnumCombo( label, 120 * ImGuiHelpers.GlobalScale, current, out gender, RaceEnumExtensions.ToName, 1 );
-
-    private static bool EqdpEquipSlotCombo( string label, EquipSlot current, out EquipSlot slot )
-        => ImGuiUtil.GenericEnumCombo( label, 100 * ImGuiHelpers.GlobalScale, current, out slot, EquipSlotExtensions.EqdpSlots, EquipSlotExtensions.ToName );
-
-    private static bool EqpEquipSlotCombo( string label, float width, EquipSlot current, out EquipSlot slot )
-        => ImGuiUtil.GenericEnumCombo( label, width * ImGuiHelpers.GlobalScale, current, out slot, EquipSlotExtensions.EquipmentSlots, EquipSlotExtensions.ToName );
-
-    private static bool AccessorySlotCombo( string label, EquipSlot current, out EquipSlot slot )
-        => ImGuiUtil.GenericEnumCombo( label, 100 * ImGuiHelpers.GlobalScale, current, out slot, EquipSlotExtensions.AccessorySlots, EquipSlotExtensions.ToName );
-
-    private static bool SubRaceCombo( string label, SubRace current, out SubRace subRace )
-        => ImGuiUtil.GenericEnumCombo( label, 150 * ImGuiHelpers.GlobalScale, current, out subRace, RaceEnumExtensions.ToName, 1 );
-
-    private static bool RspAttributeCombo( string label, RspAttribute current, out RspAttribute attribute )
-        => ImGuiUtil.GenericEnumCombo( label, 200 * ImGuiHelpers.GlobalScale, current, out attribute,
-            RspAttributeExtensions.ToFullString, 0, 1 );
-
-    private static bool EstSlotCombo( string label, EstManipulation.EstType current, out EstManipulation.EstType attribute )
-        => ImGuiUtil.GenericEnumCombo( label, 200 * ImGuiHelpers.GlobalScale, current, out attribute );
-
-    private static bool ImcTypeCombo( string label, ObjectType current, out ObjectType type )
-        => ImGuiUtil.GenericEnumCombo( label, 110 * ImGuiHelpers.GlobalScale, current, out type, ObjectTypeExtensions.ValidImcTypes,
-            ObjectTypeExtensions.ToName );
 
     // A number input for ids with a optional max id of given width.
     // Returns true if newId changed against currentId.

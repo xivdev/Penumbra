@@ -5,6 +5,8 @@ using System.Numerics;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
+using Penumbra.Meta.Manipulations;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
@@ -34,6 +36,56 @@ public class ModSettings
             Settings = mod.Groups.Select( g => g.DefaultSettings ).ToList(),
         };
 
+    // Return everything required to resolve things for a single mod with given settings (which can be null, in which case the default is used.
+    public static (Dictionary< Utf8GamePath, FullPath >, HashSet< MetaManipulation >) GetResolveData( Mod mod, ModSettings? settings )
+    {
+        if( settings == null )
+        {
+            settings = DefaultSettings( mod );
+        }
+        else
+        {
+            settings.AddMissingSettings( mod );
+        }
+
+        var dict = new Dictionary< Utf8GamePath, FullPath >();
+        var set  = new HashSet< MetaManipulation >();
+
+        void AddOption( ISubMod option )
+        {
+            foreach( var (path, file) in option.Files.Concat( option.FileSwaps ) )
+            {
+                dict.TryAdd( path, file );
+            }
+
+            foreach( var manip in option.Manipulations )
+            {
+                set.Add( manip );
+            }
+        }
+
+        foreach( var (group, index) in mod.Groups.WithIndex().OrderByDescending( g => g.Value.Priority ) )
+        {
+            if( group.Type is GroupType.Single )
+            {
+                AddOption( group[ ( int )settings.Settings[ index ] ] );
+            }
+            else
+            {
+                foreach( var (option, optionIdx) in group.WithIndex().OrderByDescending( o => group.OptionPriority( o.Index ) ) )
+                {
+                    if( ( ( settings.Settings[ index ] >> optionIdx ) & 1 ) == 1 )
+                    {
+                        AddOption( option );
+                    }
+                }
+            }
+        }
+
+        AddOption( mod.Default );
+        return ( dict, set );
+    }
+
     // Automatically react to changes in a mods available options.
     public bool HandleChanges( ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx )
     {
@@ -42,7 +94,7 @@ public class ModSettings
             case ModOptionChangeType.GroupRenamed: return true;
             case ModOptionChangeType.GroupAdded:
                 // Add new empty setting for new mod.
-                Settings.Insert( groupIdx, mod.Groups[groupIdx].DefaultSettings );
+                Settings.Insert( groupIdx, mod.Groups[ groupIdx ].DefaultSettings );
                 return true;
             case ModOptionChangeType.GroupDeleted:
                 // Remove setting for deleted mod.
@@ -59,7 +111,7 @@ public class ModSettings
                 {
                     GroupType.Single => ( uint )Math.Max( Math.Min( group.Count - 1, BitOperations.TrailingZeroCount( config ) ), 0 ),
                     GroupType.Multi  => 1u << ( int )config,
-                    _                 => config,
+                    _                => config,
                 };
                 return config != Settings[ groupIdx ];
             }
@@ -73,7 +125,7 @@ public class ModSettings
                 {
                     GroupType.Single => config >= optionIdx ? config > 1 ? config - 1 : 0 : config,
                     GroupType.Multi  => Functions.RemoveBit( config, optionIdx ),
-                    _                 => config,
+                    _                => config,
                 };
                 return config != Settings[ groupIdx ];
             }
@@ -90,7 +142,7 @@ public class ModSettings
                 {
                     GroupType.Single => config == optionIdx ? ( uint )movedToIdx : config,
                     GroupType.Multi  => Functions.MoveBit( config, optionIdx, movedToIdx ),
-                    _                 => config,
+                    _                => config,
                 };
                 return config != Settings[ groupIdx ];
             }
@@ -104,27 +156,28 @@ public class ModSettings
         {
             GroupType.Single => ( uint )Math.Min( value, group.Count       - 1 ),
             GroupType.Multi  => ( uint )( value & ( ( 1ul << group.Count ) - 1 ) ),
-            _                 => value,
+            _                => value,
         };
 
     // Set a setting. Ensures that there are enough settings and fixes the setting beforehand.
     public void SetValue( Mod mod, int groupIdx, uint newValue )
     {
-        AddMissingSettings( groupIdx + 1 );
+        AddMissingSettings( mod );
         var group = mod.Groups[ groupIdx ];
         Settings[ groupIdx ] = FixSetting( group, newValue );
     }
 
     // Add defaulted settings up to the required count.
-    private bool AddMissingSettings( int totalCount )
+    private bool AddMissingSettings( Mod mod )
     {
-        if( totalCount <= Settings.Count )
+        var changes = false;
+        for( var i = Settings.Count; i < mod.Groups.Count; ++i )
         {
-            return false;
+            Settings.Add( mod.Groups[ i ].DefaultSettings );
+            changes = true;
         }
 
-        Settings.AddRange( Enumerable.Repeat( 0u, totalCount - Settings.Count ) );
-        return true;
+        return changes;
     }
 
     // A simple struct conversion to easily save settings by name instead of value.
@@ -147,7 +200,7 @@ public class ModSettings
             Priority = settings.Priority;
             Enabled  = settings.Enabled;
             Settings = new Dictionary< string, long >( mod.Groups.Count );
-            settings.AddMissingSettings( mod.Groups.Count );
+            settings.AddMissingSettings( mod );
 
             foreach( var (group, setting) in mod.Groups.Zip( settings.Settings ) )
             {

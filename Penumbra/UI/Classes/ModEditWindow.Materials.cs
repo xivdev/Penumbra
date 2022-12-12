@@ -147,6 +147,17 @@ public partial class ModEditWindow
             return false;
         }
 
+        using( var textures = ImRaii.TreeNode( "Textures", ImGuiTreeNodeFlags.DefaultOpen ) )
+        {
+            if( textures )
+            {
+                foreach( var tex in file.Textures )
+                {
+                    ImRaii.TreeNode( $"{tex.Path} - {tex.Flags:X4}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                }
+            }
+        }
+
         using( var sets = ImRaii.TreeNode( "UV Sets", ImGuiTreeNodeFlags.DefaultOpen ) )
         {
             if( sets )

@@ -328,7 +328,7 @@ public static class RaceEnumExtensions
             VieraFemaleNpc      => "1804",
             UnknownMaleNpc      => "9104",
             UnknownFemaleNpc    => "9204",
-            _                   => throw new InvalidEnumArgumentException(),
+            _                   => string.Empty,
         };
     }
 
@@ -427,7 +427,7 @@ public static partial class Names
             "1804" => VieraFemaleNpc,
             "9104" => UnknownMaleNpc,
             "9204" => UnknownFemaleNpc,
-            _      => throw new KeyNotFoundException(),
+            _      => Unknown,
         };
     }
 
