@@ -79,7 +79,7 @@ public partial class ModEditWindow
 
         DrawEditHeader( _editor.Meta.Eqp, "Equipment Parameter Edits (EQP)###EQP", 5, EqpRow.Draw, EqpRow.DrawNew );
         DrawEditHeader( _editor.Meta.Eqdp, "Racial Model Edits (EQDP)###EQDP", 7, EqdpRow.Draw, EqdpRow.DrawNew );
-        DrawEditHeader( _editor.Meta.Imc, "Variant Edits (IMC)###IMC", 9, ImcRow.Draw, ImcRow.DrawNew );
+        DrawEditHeader( _editor.Meta.Imc, "Variant Edits (IMC)###IMC", 10, ImcRow.Draw, ImcRow.DrawNew );
         DrawEditHeader( _editor.Meta.Est, "Extra Skeleton Parameters (EST)###EST", 7, EstRow.Draw, EstRow.DrawNew );
         DrawEditHeader( _editor.Meta.Gmp, "Visor/Gimmick Edits (GMP)###GMP", 7, GmpRow.Draw, GmpRow.DrawNew );
         DrawEditHeader( _editor.Meta.Rsp, "Racial Scaling Edits (RSP)###RSP", 5, RspRow.Draw, RspRow.DrawNew );
@@ -143,7 +143,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( ModelSetIdTooltip );
 
             ImGui.TableNextColumn();
-            if( EqpEquipSlotCombo( "##eqpSlot", _new.Slot, out var slot ) )
+            if( EqpEquipSlotCombo( "##eqpSlot", 100, _new.Slot, out var slot ) )
             {
                 _new = new EqpManipulation( ExpandedEqpFile.GetDefault( setId ), slot, _new.SetId );
             }
@@ -358,8 +358,14 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if( ImcTypeCombo( "##imcType", _new.ObjectType, out var type ) )
             {
-                _new = new ImcManipulation( type, _new.BodySlot, _new.PrimaryId, _new.SecondaryId == 0 ? ( ushort )1 : _new.SecondaryId,
-                    _new.Variant, _new.EquipSlot                                                  == EquipSlot.Unknown ? EquipSlot.Head : _new.EquipSlot, _new.Entry );
+                var equipSlot = type switch
+                {
+                    ObjectType.Equipment => _new.EquipSlot.IsEquipment() ? _new.EquipSlot : EquipSlot.Head,
+                    ObjectType.DemiHuman => _new.EquipSlot.IsEquipment() ? _new.EquipSlot : EquipSlot.Head,
+                    ObjectType.Accessory => _new.EquipSlot.IsAccessory() ? _new.EquipSlot : EquipSlot.Ears,
+                    _                    => EquipSlot.Unknown,
+                };
+                _new = new ImcManipulation( type, _new.BodySlot, _new.PrimaryId, _new.SecondaryId == 0 ? ( ushort )1 : _new.SecondaryId, _new.Variant, equipSlot, _new.Entry );
             }
 
             ImGuiUtil.HoverTooltip( ObjectTypeTooltip );
@@ -378,9 +384,19 @@ public partial class ModEditWindow
 
             ImGui.TableNextColumn();
             // Equipment and accessories are slightly different imcs than other types.
-            if( _new.ObjectType is ObjectType.Equipment or ObjectType.Accessory )
+            if( _new.ObjectType is ObjectType.Equipment )
             {
-                if( EqdpEquipSlotCombo( "##imcSlot", _new.EquipSlot, out var slot ) )
+                if( EqpEquipSlotCombo( "##imcSlot", 100, _new.EquipSlot, out var slot ) )
+                {
+                    _new = new ImcManipulation( _new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry ).Copy( GetDefault( _new )
+                     ?? new ImcEntry() );
+                }
+
+                ImGuiUtil.HoverTooltip( EquipSlotTooltip );
+            }
+            else if( _new.ObjectType is ObjectType.Accessory )
+            {
+                if( AccessorySlotCombo( "##imcSlot", _new.EquipSlot, out var slot ) )
                 {
                     _new = new ImcManipulation( _new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry ).Copy( GetDefault( _new )
                      ?? new ImcEntry() );
@@ -404,6 +420,22 @@ public partial class ModEditWindow
             {
                 _new = new ImcManipulation( _new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, variant, _new.EquipSlot, _new.Entry ).Copy( GetDefault( _new )
                  ?? new ImcEntry() );
+            }
+
+            ImGui.TableNextColumn();
+            if( _new.ObjectType is ObjectType.DemiHuman )
+            {
+                if( EqpEquipSlotCombo( "##imcSlot", 70, _new.EquipSlot, out var slot ) )
+                {
+                    _new = new ImcManipulation( _new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry ).Copy( GetDefault( _new )
+                     ?? new ImcEntry() );
+                }
+
+                ImGuiUtil.HoverTooltip( EquipSlotTooltip );
+            }
+            else
+            {
+                ImGui.Dummy( new Vector2( 70 * ImGuiHelpers.GlobalScale, 0 ) );
             }
 
             ImGuiUtil.HoverTooltip( VariantIdTooltip );
@@ -469,6 +501,13 @@ public partial class ModEditWindow
             ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
             ImGui.TextUnformatted( meta.Variant.ToString() );
             ImGuiUtil.HoverTooltip( VariantIdTooltip );
+
+            ImGui.TableNextColumn();
+            ImGui.SetCursorPosX( ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X );
+            if( meta.ObjectType is ObjectType.DemiHuman )
+            {
+                ImGui.TextUnformatted( meta.EquipSlot.ToName() );
+            }
 
             // Values
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
@@ -827,12 +866,13 @@ public partial class ModEditWindow
         => ImGuiUtil.GenericEnumCombo( label, 120 * ImGuiHelpers.GlobalScale, current, out gender, RaceEnumExtensions.ToName, 1 );
 
     private static bool EqdpEquipSlotCombo( string label, EquipSlot current, out EquipSlot slot )
-        => ImGuiUtil.GenericEnumCombo( label, 100 * ImGuiHelpers.GlobalScale, current, out slot, EquipSlotExtensions.EqdpSlots,
-            EquipSlotExtensions.ToName );
+        => ImGuiUtil.GenericEnumCombo( label, 100 * ImGuiHelpers.GlobalScale, current, out slot, EquipSlotExtensions.EqdpSlots, EquipSlotExtensions.ToName );
 
-    private static bool EqpEquipSlotCombo( string label, EquipSlot current, out EquipSlot slot )
-        => ImGuiUtil.GenericEnumCombo( label, 100 * ImGuiHelpers.GlobalScale, current, out slot, EquipSlotExtensions.EquipmentSlots,
-            EquipSlotExtensions.ToName );
+    private static bool EqpEquipSlotCombo( string label, float width, EquipSlot current, out EquipSlot slot )
+        => ImGuiUtil.GenericEnumCombo( label, width * ImGuiHelpers.GlobalScale, current, out slot, EquipSlotExtensions.EquipmentSlots, EquipSlotExtensions.ToName );
+
+    private static bool AccessorySlotCombo( string label, EquipSlot current, out EquipSlot slot )
+        => ImGuiUtil.GenericEnumCombo( label, 100 * ImGuiHelpers.GlobalScale, current, out slot, EquipSlotExtensions.AccessorySlots, EquipSlotExtensions.ToName );
 
     private static bool SubRaceCombo( string label, SubRace current, out SubRace subRace )
         => ImGuiUtil.GenericEnumCombo( label, 150 * ImGuiHelpers.GlobalScale, current, out subRace, RaceEnumExtensions.ToName, 1 );

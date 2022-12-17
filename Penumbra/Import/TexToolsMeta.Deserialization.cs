@@ -130,37 +130,18 @@ public partial class TexToolsMeta
         ushort    i      = 0;
         try
         {
-            if( metaFileInfo.PrimaryType is ObjectType.Equipment or ObjectType.Accessory )
+            var manip = new ImcManipulation( metaFileInfo.PrimaryType, metaFileInfo.SecondaryType, metaFileInfo.PrimaryId, metaFileInfo.SecondaryId, i, metaFileInfo.EquipSlot,
+                new ImcEntry() );
+            var def     = new ImcFile( manip );
+            var partIdx = ImcFile.PartIndex( manip.EquipSlot ); // Gets turned to unknown for things without equip, and unknown turns to 0.
+            foreach( var value in values )
             {
-                var def = new ImcFile( new ImcManipulation( metaFileInfo.EquipSlot, i, metaFileInfo.PrimaryId, new ImcEntry() ) );
-                var partIdx = ImcFile.PartIndex( metaFileInfo.EquipSlot );
-                foreach( var value in values )
+                if( !value.Equals( def.GetEntry( partIdx, i ) ) )
                 {
-                    if( !value.Equals( def.GetEntry( partIdx, i ) ) )
-                    {
-                        MetaManipulations.Add( new ImcManipulation( metaFileInfo.EquipSlot, i, metaFileInfo.PrimaryId, value ) );
-                    }
-
-                    ++i;
+                    MetaManipulations.Add( manip.Copy( value ) );
                 }
-            }
-            else
-            {
-                var def = new ImcFile( new ImcManipulation( metaFileInfo.PrimaryType, metaFileInfo.SecondaryType, metaFileInfo.PrimaryId,
-                    metaFileInfo.SecondaryId, i,
-                    new ImcEntry() ) );
-                foreach( var value in values )
-                {
-                    if( !value.Equals( def.GetEntry( 0, i ) ) )
-                    {
-                        MetaManipulations.Add( new ImcManipulation( metaFileInfo.PrimaryType, metaFileInfo.SecondaryType,
-                            metaFileInfo.PrimaryId,
-                            metaFileInfo.SecondaryId, i,
-                            value ) );
-                    }
 
-                    ++i;
-                }
+                ++i;
             }
         }
         catch( Exception e )

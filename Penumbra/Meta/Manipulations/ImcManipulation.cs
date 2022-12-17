@@ -16,8 +16,8 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
 {
     public ImcEntry Entry { get; private init; }
     public ushort PrimaryId { get; private init; }
-    public ushort Variant { get; private init; }
     public ushort SecondaryId { get; private init; }
+    public byte Variant { get; private init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
     public ObjectType ObjectType { get; private init; }
@@ -32,23 +32,11 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
     {
         Entry       = entry;
         PrimaryId   = primaryId;
-        Variant     = variant;
+        Variant     = ( byte )variant;
         SecondaryId = 0;
         ObjectType  = equipSlot.IsAccessory() ? ObjectType.Accessory : ObjectType.Equipment;
         EquipSlot   = equipSlot;
         BodySlot    = BodySlot.Unknown;
-    }
-
-    public ImcManipulation( ObjectType objectType, BodySlot bodySlot, ushort primaryId, ushort secondaryId, ushort variant,
-        ImcEntry entry )
-    {
-        Entry       = entry;
-        ObjectType  = objectType;
-        BodySlot    = bodySlot;
-        SecondaryId = secondaryId;
-        PrimaryId   = primaryId;
-        Variant     = variant;
-        EquipSlot   = EquipSlot.Unknown;
     }
 
     [JsonConstructor]
@@ -58,11 +46,17 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
         Entry      = entry;
         ObjectType = objectType;
         PrimaryId  = primaryId;
-        Variant    = variant;
+        Variant    = ( byte )variant;
         if( objectType is ObjectType.Accessory or ObjectType.Equipment )
         {
             BodySlot    = BodySlot.Unknown;
             SecondaryId = 0;
+            EquipSlot   = equipSlot;
+        }
+        else if( objectType is ObjectType.DemiHuman )
+        {
+            BodySlot    = BodySlot.Unknown;
+            SecondaryId = secondaryId;
             EquipSlot   = equipSlot;
         }
         else
@@ -113,6 +107,15 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
         {
             var e = EquipSlot.CompareTo( other.EquipSlot );
             return e != 0 ? e : Variant.CompareTo( other.Variant );
+        }
+
+        if( ObjectType is ObjectType.DemiHuman )
+        {
+            var e = EquipSlot.CompareTo( other.EquipSlot );
+            if( e != 0 )
+            {
+                return e;
+            }
         }
 
         var s = SecondaryId.CompareTo( other.SecondaryId );
