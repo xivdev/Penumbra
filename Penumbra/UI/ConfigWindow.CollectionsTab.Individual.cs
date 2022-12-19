@@ -179,7 +179,7 @@ public partial class ConfigWindow
             ImGui.SameLine();
             if( ImGuiUtil.DrawDisabledButton( "Assign Player", buttonWidth, _newPlayerTooltip, _newPlayerTooltip.Length > 0 || _newPlayerIdentifiers.Length == 0 ) )
             {
-                Penumbra.CollectionManager.Individuals.Add( _newPlayerIdentifiers, Penumbra.CollectionManager.Default );
+                Penumbra.CollectionManager.CreateIndividualCollection( _newPlayerIdentifiers );
                 change = true;
             }
 
@@ -196,7 +196,7 @@ public partial class ConfigWindow
             ImGui.SameLine();
             if( ImGuiUtil.DrawDisabledButton( "Assign NPC", buttonWidth, _newNpcTooltip, _newNpcIdentifiers.Length == 0 || _newNpcTooltip.Length > 0 ) )
             {
-                Penumbra.CollectionManager.Individuals.Add( _newNpcIdentifiers, Penumbra.CollectionManager.Default );
+                Penumbra.CollectionManager.CreateIndividualCollection( _newNpcIdentifiers );
                 change = true;
             }
 
@@ -207,7 +207,7 @@ public partial class ConfigWindow
         {
             if( ImGuiUtil.DrawDisabledButton( "Assign Owned NPC", buttonWidth, _newOwnedTooltip, _newOwnedIdentifiers.Length == 0 || _newOwnedTooltip.Length > 0 ) )
             {
-                Penumbra.CollectionManager.Individuals.Add( _newOwnedIdentifiers, Penumbra.CollectionManager.Default );
+                Penumbra.CollectionManager.CreateIndividualCollection( _newOwnedIdentifiers );
                 return true;
             }
 
@@ -218,7 +218,7 @@ public partial class ConfigWindow
         {
             if( ImGuiUtil.DrawDisabledButton( "Assign Bell Retainer", buttonWidth, _newRetainerTooltip, _newRetainerIdentifiers.Length == 0 || _newRetainerTooltip.Length > 0 ) )
             {
-                Penumbra.CollectionManager.Individuals.Add( _newRetainerIdentifiers, Penumbra.CollectionManager.Default );
+                Penumbra.CollectionManager.CreateIndividualCollection( _newRetainerIdentifiers );
                 return true;
             }
 
