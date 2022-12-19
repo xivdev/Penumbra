@@ -1084,6 +1084,13 @@ public class IpcTester : IDisposable
                 _lastSettingsError = Ipc.TrySetModPriority.Subscriber( _pi ).Invoke( _settingsCollection, _settingsModDirectory, _settingsModName, _settingsPriority );
             }
 
+            DrawIntro( Ipc.CopyModSettings.Label, "Copy Mod Settings" );
+            if( ImGui.Button( "Copy Settings" ) )
+            {
+                _lastSettingsError = Ipc.CopyModSettings.Subscriber( _pi ).Invoke( _settingsCollection, _settingsModDirectory, _settingsModName );
+            }
+            ImGuiUtil.HoverTooltip( "Copy settings from Mod Directory Name to Mod Name (as directory) in collection." );
+
             DrawIntro( Ipc.TrySetModSetting.Label, "Set Setting(s)" );
             if( _availableSettings == null )
             {

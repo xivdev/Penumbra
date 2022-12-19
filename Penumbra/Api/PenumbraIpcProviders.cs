@@ -91,6 +91,7 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider< string, string, string, string, string, PenumbraApiEc >                  TrySetModSetting;
     internal readonly FuncProvider< string, string, string, string, IReadOnlyList< string >, PenumbraApiEc > TrySetModSettings;
     internal readonly EventProvider< ModSettingChange, string, string, bool >                                ModSettingChanged;
+    internal readonly FuncProvider< string, string, string, PenumbraApiEc >                                  CopyModSettings;
 
     // Temporary
     internal readonly FuncProvider< string, string, bool, (PenumbraApiEc, string) >                            CreateTemporaryCollection;
@@ -188,9 +189,10 @@ public class PenumbraIpcProviders : IDisposable
         TrySetModPriority       = Ipc.TrySetModPriority.Provider( pi, Api.TrySetModPriority );
         TrySetModSetting        = Ipc.TrySetModSetting.Provider( pi, Api.TrySetModSetting );
         TrySetModSettings       = Ipc.TrySetModSettings.Provider( pi, Api.TrySetModSettings );
-        ModSettingChanged = Ipc.ModSettingChanged.Provider( pi,
+        ModSettingChanged       = Ipc.ModSettingChanged.Provider( pi,
             () => Api.ModSettingChanged += ModSettingChangedEvent,
             () => Api.ModSettingChanged -= ModSettingChangedEvent );
+        CopyModSettings = Ipc.CopyModSettings.Provider( pi, Api.CopyModSettings );
 
         // Temporary
         CreateTemporaryCollection       = Ipc.CreateTemporaryCollection.Provider( pi, Api.CreateTemporaryCollection );
@@ -287,6 +289,7 @@ public class PenumbraIpcProviders : IDisposable
         TrySetModSetting.Dispose();
         TrySetModSettings.Dispose();
         ModSettingChanged.Dispose();
+        CopyModSettings.Dispose();
 
         // Temporary
         CreateTemporaryCollection.Dispose();

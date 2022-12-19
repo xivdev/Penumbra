@@ -3,6 +3,7 @@ using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using OtterGui;
 
 namespace Penumbra.Collections;
 
@@ -101,7 +102,7 @@ public partial class ModCollection
     // Check if a name is valid to use for a collection.
     // Does not check for uniqueness.
     public static bool IsValidName( string name )
-        => name.Length > 0 && name.All( c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath()  );
+        => name.Length > 0 && name.All( c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath() );
 
     // Remove all settings for not currently-installed mods.
     public void CleanUnavailableSettings()
@@ -135,7 +136,7 @@ public partial class ModCollection
         var settings = _settings[ idx ];
         if( settings != null )
         {
-            _unusedSettings[mod.ModPath.Name] = new ModSettings.SavedSettings( settings, mod );
+            _unusedSettings[ mod.ModPath.Name ] = new ModSettings.SavedSettings( settings, mod );
         }
 
         _settings.RemoveAt( idx );
@@ -171,6 +172,63 @@ public partial class ModCollection
         {
             Save();
         }
+    }
+
+    public bool CopyModSettings( int modIdx, string modName, int targetIdx, string targetName )
+    {
+        if( targetName.Length == 0 && targetIdx < 0 || modName.Length == 0 && modIdx < 0 )
+        {
+            return false;
+        }
+
+        // If the source mod exists, convert its settings to saved settings or null if its inheriting.
+        // If it does not exist, check unused settings.
+        // If it does not exist and has no unused settings, also use null.
+        ModSettings.SavedSettings? savedSettings = modIdx >= 0
+            ? _settings[ modIdx ] != null
+                ? new ModSettings.SavedSettings( _settings[ modIdx ]!, Penumbra.ModManager[ modIdx ] )
+                : null
+            : _unusedSettings.TryGetValue( modName, out var s )
+                ? s
+                : null;
+
+        if( targetIdx >= 0 )
+        {
+            if( savedSettings != null )
+            {
+                // The target mod exists and the source settings are not inheriting, convert and fix the settings and copy them.
+                // This triggers multiple events.
+                savedSettings.Value.ToSettings( Penumbra.ModManager[ targetIdx ], out var settings );
+                SetModState( targetIdx, settings.Enabled );
+                SetModPriority( targetIdx, settings.Priority );
+                foreach( var (value, index) in settings.Settings.WithIndex() )
+                {
+                    SetModSetting( targetIdx, index, value );
+                }
+            }
+            else
+            {
+                // The target mod exists, but the source is inheriting, set the target to inheriting.
+                // This triggers events.
+                SetModInheritance( targetIdx, true );
+            }
+        }
+        else
+        {
+            // The target mod does not exist.
+            // Either copy the unused source settings directly if they are not inheriting,
+            // or remove any unused settings for the target if they are inheriting.
+            if( savedSettings != null )
+            {
+                _unusedSettings[ targetName ] = savedSettings.Value;
+            }
+            else
+            {
+                _unusedSettings.Remove( targetName );
+            }
+        }
+
+        return true;
     }
 
     public override string ToString()

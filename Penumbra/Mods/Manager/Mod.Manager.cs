@@ -52,7 +52,7 @@ public sealed partial class Mod
             mod = null;
             foreach( var m in _mods )
             {
-                if( m.ModPath.Name == modDirectory )
+                if( string.Equals(m.ModPath.Name, modDirectory, StringComparison.OrdinalIgnoreCase) )
                 {
                     mod = m;
                     return true;

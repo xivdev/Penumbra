@@ -618,6 +618,31 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
 
+    public PenumbraApiEc CopyModSettings( string? collectionName, string modDirectoryFrom, string modDirectoryTo )
+    {
+        CheckInitialized();
+
+        var sourceModIdx = Penumbra.ModManager.FirstOrDefault( m => string.Equals( m.ModPath.Name, modDirectoryFrom, StringComparison.OrdinalIgnoreCase ) )?.Index ?? -1;
+        var targetModIdx = Penumbra.ModManager.FirstOrDefault( m => string.Equals( m.ModPath.Name, modDirectoryTo, StringComparison.OrdinalIgnoreCase ) )?.Index   ?? -1;
+        if( string.IsNullOrEmpty( collectionName ) )
+        {
+            foreach( var collection in Penumbra.CollectionManager )
+            {
+                collection.CopyModSettings( sourceModIdx, modDirectoryFrom, targetModIdx, modDirectoryTo );
+            }
+        }
+        else if( Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            collection.CopyModSettings( sourceModIdx, modDirectoryFrom, targetModIdx, modDirectoryTo );
+        }
+        else
+        {
+            return PenumbraApiEc.CollectionMissing;
+        }
+
+        return PenumbraApiEc.Success;
+    }
+
     public (PenumbraApiEc, string) CreateTemporaryCollection( string tag, string character, bool forceOverwriteCharacter )
     {
         CheckInitialized();
