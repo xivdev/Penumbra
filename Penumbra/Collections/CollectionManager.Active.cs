@@ -64,7 +64,7 @@ public partial class ModCollection
                 CollectionType.Default    => Default,
                 CollectionType.Interface  => Interface,
                 CollectionType.Current    => Current,
-                CollectionType.Individual => identifier.IsValid ? Individuals.TryGetCollection( identifier, out var c ) ? c : null : null,
+                CollectionType.Individual => identifier.IsValid && Individuals.Individuals.TryGetValue( identifier, out var c ) ? c : null,
                 _                         => null,
             };
         }

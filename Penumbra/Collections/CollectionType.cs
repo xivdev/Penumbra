@@ -213,6 +213,50 @@ public static class CollectionTypeExtensions
         };
     }
 
+    public static bool TryParse( string text, out CollectionType type )
+    {
+        if( Enum.TryParse( text, true, out type ) )
+            return type is not CollectionType.Inactive and not CollectionType.Temporary;
+
+        if( string.Equals( text, "character", StringComparison.OrdinalIgnoreCase ) )
+        {
+            type = CollectionType.Individual;
+            return true;
+        }
+
+        if( string.Equals( text, "base", StringComparison.OrdinalIgnoreCase ) )
+        {
+            type = CollectionType.Default;
+            return true;
+        }
+
+        if( string.Equals( text, "ui", StringComparison.OrdinalIgnoreCase ) )
+        {
+            type = CollectionType.Interface;
+            return true;
+        }
+
+        if( string.Equals( text, "selected", StringComparison.OrdinalIgnoreCase ) )
+        {
+            type = CollectionType.Current;
+            return true;
+        }
+
+        foreach( var t in Enum.GetValues< CollectionType >() )
+        {
+            if( t is CollectionType.Inactive or CollectionType.Temporary )
+                continue;
+
+            if( string.Equals( text, t.ToName(), StringComparison.OrdinalIgnoreCase ) )
+            {
+                type = t;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static string ToName( this CollectionType collectionType )
         => collectionType switch
         {
@@ -288,7 +332,7 @@ public static class CollectionTypeExtensions
             CollectionType.Inactive                 => "Collection",
             CollectionType.Default                  => "Default",
             CollectionType.Interface                => "Interface",
-            CollectionType.Individual                => "Character",
+            CollectionType.Individual               => "Individual",
             CollectionType.Current                  => "Current",
             _                                       => string.Empty,
         };

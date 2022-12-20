@@ -177,10 +177,10 @@ public sealed partial class IndividualCollections
     }
 
     internal bool Delete( ActorIdentifier identifier )
-        => Delete( DisplayString( identifier ) );
+        => Delete( Index( identifier ) );
 
     internal bool Delete( string displayName )
-        => Delete( _assignments.FindIndex( t => t.DisplayName.Equals( displayName, StringComparison.OrdinalIgnoreCase ) ) );
+        => Delete( Index( displayName ) );
 
     internal bool Delete( int displayIndex )
     {
@@ -201,6 +201,12 @@ public sealed partial class IndividualCollections
 
     internal bool Move( int from, int to )
         => _assignments.Move( from, to );
+
+    internal int Index( string displayName )
+        => _assignments.FindIndex( t => t.DisplayName.Equals( displayName, StringComparison.OrdinalIgnoreCase ) );
+
+    internal int Index( ActorIdentifier identifier )
+        => identifier.IsValid ? Index( DisplayString( identifier ) ) : -1;
 
     private string DisplayString( ActorIdentifier identifier )
     {

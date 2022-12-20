@@ -1,5 +1,6 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
 using Newtonsoft.Json.Linq;
@@ -106,6 +107,139 @@ public partial class ActorManager
         return main;
     }
 
+    public class IdentifierParseError : Exception
+    {
+        public IdentifierParseError(string reason)
+            : base(reason)
+        { }
+    }
+
+    public ActorIdentifier FromUserString(string userString)
+    {
+        if (userString.Length == 0)
+            throw new IdentifierParseError("The identifier string was empty.");
+
+        var split = userString.Split('|', 3, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (split.Length < 2)
+            throw new IdentifierParseError($"The identifier string {userString} does not contain a type and a value.");
+
+        var    type       = IdentifierType.Invalid;
+        var    playerName = ByteString.Empty;
+        ushort worldId    = 0;
+        var    kind       = ObjectKind.Player;
+        var    objectId   = 0u;
+
+        (ByteString, ushort) ParsePlayer(string player)
+        {
+            var parts = player.Split('@', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (!VerifyPlayerName(parts[0]))
+                throw new IdentifierParseError($"{parts[0]} is not a valid player name.");
+            if (!ByteString.FromString(parts[0], out var p, false))
+                throw new IdentifierParseError($"The player string {parts[0]} contains invalid symbols.");
+
+            var world = parts.Length == 2
+                ? Data.ToWorldId(parts[1])
+                : ushort.MaxValue;
+
+            if (!VerifyWorld(world))
+                throw new IdentifierParseError($"{parts[1]} is not a valid world name.");
+
+            return (p, world);
+        }
+
+        (ObjectKind, uint) ParseNpc(string npc)
+        {
+            var split = npc.Split(':', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+            if (split.Length != 2)
+                throw new IdentifierParseError("NPCs need to be specified by '[Object Type]:[NPC Name]'.");
+
+            static bool FindDataId(string name, IReadOnlyDictionary<uint, string> data, out uint dataId)
+            {
+                var kvp = data.FirstOrDefault(kvp => kvp.Value.Equals(name, StringComparison.OrdinalIgnoreCase),
+                    new KeyValuePair<uint, string>(uint.MaxValue, string.Empty));
+                dataId = kvp.Key;
+                return kvp.Value.Length > 0;
+            }
+
+            switch (split[0].ToLowerInvariant())
+            {
+                case "m":
+                case "mount":
+                    return FindDataId(split[1], Data.Mounts, out var id)
+                        ? (ObjectKind.MountType, id)
+                        : throw new IdentifierParseError($"Could not identify a Mount named {split[1]}.");
+                case "c":
+                case "companion":
+                case "minion":
+                case "mini":
+                    return FindDataId(split[1], Data.Companions, out id)
+                        ? (ObjectKind.Companion, id)
+                        : throw new IdentifierParseError($"Could not identify a Minion named {split[1]}.");
+                case "a":
+                case "o":
+                case "accessory":
+                case "ornament":
+                    // TODO: Objectkind ornament.
+                    return FindDataId(split[1], Data.Ornaments, out id)
+                        ? ((ObjectKind)15, id)
+                        : throw new IdentifierParseError($"Could not identify an Accessory named {split[1]}.");
+                case "e":
+                case "enpc":
+                case "eventnpc":
+                case "event npc":
+                    return FindDataId(split[1], Data.ENpcs, out id)
+                        ? (ObjectKind.EventNpc, id)
+                        : throw new IdentifierParseError($"Could not identify an Event NPC named {split[1]}.");
+                case "b":
+                case "bnpc":
+                case "battlenpc":
+                case "battle npc":
+                    return FindDataId(split[1], Data.BNpcs, out id)
+                        ? (ObjectKind.BattleNpc, id)
+                        : throw new IdentifierParseError($"Could not identify a Battle NPC named {split[1]}.");
+                default:
+                    throw new IdentifierParseError($"The argument {split[0]} is not a valid NPC Type.");
+            }
+        }
+
+        switch (split[0].ToLowerInvariant())
+        {
+            case "p":
+            case "player":
+                type                  = IdentifierType.Player;
+                (playerName, worldId) = ParsePlayer(split[1]);
+                break;
+            case "r":
+            case "retainer":
+                type = IdentifierType.Retainer;
+                if (!VerifyRetainerName(split[1]))
+                    throw new IdentifierParseError($"{split[1]} is not a valid player name.");
+                if (!ByteString.FromString(split[1], out playerName, false))
+                    throw new IdentifierParseError($"The retainer string {split[1]} contains invalid symbols.");
+
+                break;
+            case "n":
+            case "npc":
+                type             = IdentifierType.Npc;
+                (kind, objectId) = ParseNpc(split[1]);
+                break;
+            case "o":
+            case "owned":
+                if (split.Length < 3)
+                    throw new IdentifierParseError(
+                        "Owned NPCs need a NPC and a player, separated by '|', but only one was provided.");
+                type                  = IdentifierType.Owned;
+                (kind, objectId)      = ParseNpc(split[1]);
+                (playerName, worldId) = ParsePlayer(split[2]);
+                break;
+            default:
+                throw new IdentifierParseError(
+                    $"{split[0]} is not a valid identifier type. Valid types are [P]layer, [R]etainer, [N]PC, or [O]wned");
+        }
+
+        return CreateIndividualUnchecked(type, playerName, worldId, kind, objectId);
+    }
+
     /// <summary>
     /// Compute an ActorIdentifier from a GameObject. If check is true, the values are checked for validity.
     /// </summary>
@@ -154,7 +288,7 @@ public partial class ActorManager
                 // Hack to support Anamnesis changing ObjectKind for NPC faces.
                 if (nameId == 0 && allowPlayerNpc)
                 {
-                    var name      = new ByteString(actor->Name);
+                    var name = new ByteString(actor->Name);
                     if (!name.IsEmpty)
                     {
                         var homeWorld = ((Character*)actor)->HomeWorld;
@@ -244,7 +378,8 @@ public partial class ActorManager
 
     public unsafe ActorIdentifier FromObject(GameObject? actor, out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner,
         bool allowPlayerNpc, bool check)
-        => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), out owner, allowPlayerNpc, check);
+        => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), out owner, allowPlayerNpc,
+            check);
 
     public unsafe ActorIdentifier FromObject(GameObject? actor, bool allowPlayerNpc, bool check)
         => FromObject(actor, out _, allowPlayerNpc, check);

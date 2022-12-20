@@ -4,7 +4,6 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Dalamud.Game.Command;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using EmbedIO;
@@ -26,7 +25,6 @@ using Penumbra.GameData.Actors;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
-using Penumbra.String;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
@@ -40,8 +38,6 @@ public class Penumbra : IDalamudPlugin
 
     public string Name
         => "Penumbra";
-
-    private const string CommandName = "/penumbra";
 
     public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
 
@@ -80,6 +76,7 @@ public class Penumbra : IDalamudPlugin
     private readonly LaunchButton         _launchButton;
     private readonly WindowSystem         _windowSystem;
     private readonly Changelog            _changelog;
+    private readonly CommandHandler       _commandHandler;
 
     internal WebServer? WebServer;
 
@@ -116,12 +113,8 @@ public class Penumbra : IDalamudPlugin
             ObjectReloader = new ObjectReloader();
             PathResolver   = new PathResolver( ResourceLoader );
 
-            Dalamud.Commands.AddHandler( CommandName, new CommandInfo( OnCommand )
-            {
-                HelpMessage = "/penumbra - toggle ui\n/penumbra reload - reload mod file lists & discover any new mods",
-            } );
-
             SetupInterface( out _configWindow, out _launchButton, out _windowSystem, out _changelog );
+            _commandHandler = new CommandHandler( Dalamud.Commands, ObjectReloader, Config, this, _configWindow, ModManager, CollectionManager, Actors );
 
             if( Config.EnableMods )
             {
@@ -203,54 +196,42 @@ public class Penumbra : IDalamudPlugin
 
     public event Action< bool >? EnabledChange;
 
-    public bool Enable()
-    {
-        if( Config.EnableMods )
-        {
-            return false;
-        }
-
-        Config.EnableMods = true;
-        ResourceLoader.EnableReplacements();
-        PathResolver.Enable();
-        Config.Save();
-        if( CharacterUtility.Ready )
-        {
-            CollectionManager.Default.SetFiles();
-            ResidentResources.Reload();
-            ObjectReloader.RedrawAll( RedrawType.Redraw );
-        }
-
-        EnabledChange?.Invoke( true );
-
-        return true;
-    }
-
-    public bool Disable()
-    {
-        if( !Config.EnableMods )
-        {
-            return false;
-        }
-
-        Config.EnableMods = false;
-        ResourceLoader.DisableReplacements();
-        PathResolver.Disable();
-        Config.Save();
-        if( CharacterUtility.Ready )
-        {
-            CharacterUtility.ResetAll();
-            ResidentResources.Reload();
-            ObjectReloader.RedrawAll( RedrawType.Redraw );
-        }
-
-        EnabledChange?.Invoke( false );
-
-        return true;
-    }
-
     public bool SetEnabled( bool enabled )
-        => enabled ? Enable() : Disable();
+    {
+        if( enabled == Config.EnableMods )
+        {
+            return false;
+        }
+
+        Config.EnableMods = enabled;
+        if( enabled )
+        {
+            ResourceLoader.EnableReplacements();
+            PathResolver.Enable();
+            if( CharacterUtility.Ready )
+            {
+                CollectionManager.Default.SetFiles();
+                ResidentResources.Reload();
+                ObjectReloader.RedrawAll( RedrawType.Redraw );
+            }
+        }
+        else
+        {
+            ResourceLoader.DisableReplacements();
+            PathResolver.Disable();
+            if( CharacterUtility.Ready )
+            {
+                CharacterUtility.ResetAll();
+                ResidentResources.Reload();
+                ObjectReloader.RedrawAll( RedrawType.Redraw );
+            }
+        }
+
+        Config.Save();
+        EnabledChange?.Invoke( enabled );
+
+        return true;
+    }
 
     public void ForceChangelogOpen()
         => _changelog.ForceOpen = true;
@@ -303,179 +284,22 @@ public class Penumbra : IDalamudPlugin
 
     public void Dispose()
     {
+        ShutdownWebServer();
+        IpcProviders?.Dispose();
+        Api?.Dispose();
+        _commandHandler?.Dispose();
         StainManager?.Dispose();
         Actors?.Dispose();
         Identifier?.Dispose();
         Framework?.Dispose();
-        ShutdownWebServer();
         DisposeInterface();
-        IpcProviders?.Dispose();
-        Api?.Dispose();
         ObjectReloader?.Dispose();
         ModFileSystem?.Dispose();
         CollectionManager?.Dispose();
-
-        Dalamud.Commands.RemoveHandler( CommandName );
-
         PathResolver?.Dispose();
         ResourceLogger?.Dispose();
         ResourceLoader?.Dispose();
         CharacterUtility?.Dispose();
-    }
-
-    public static bool SetCollection( string typeName, string collectionName )
-    {
-        if( !Enum.TryParse< CollectionType >( typeName, true, out var type ) || type == CollectionType.Inactive )
-        {
-            Dalamud.Chat.Print(
-                "Second command argument is not a valid collection type, the correct command format is: /penumbra collection <collectionType> <collectionName> [| characterName]" );
-            return false;
-        }
-
-        string? characterName = null;
-        var     identifier    = ActorIdentifier.Invalid;
-        if( type is CollectionType.Individual )
-        {
-            var split = collectionName.Split( '|', 2, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries );
-            if( split.Length < 2 || split[ 0 ].Length == 0 || split[ 1 ].Length == 0 )
-            {
-                Dalamud.Chat.Print( "You need to provide a collection and a character name in the form of 'collection | name' to set an individual collection." );
-                return false;
-            }
-
-            collectionName = split[ 0 ];
-            characterName  = split[ 1 ];
-
-            identifier = Actors.CreatePlayer( ByteString.FromStringUnsafe( characterName, false ), ushort.MaxValue );
-            if( !identifier.IsValid )
-            {
-                Dalamud.Chat.Print( $"{characterName} is not a valid character name." );
-                return false;
-            }
-        }
-
-        collectionName = collectionName.ToLowerInvariant();
-        var collection = string.Equals( collectionName, ModCollection.Empty.Name, StringComparison.OrdinalIgnoreCase )
-            ? ModCollection.Empty
-            : CollectionManager[ collectionName ];
-        if( collection == null )
-        {
-            Dalamud.Chat.Print( $"The collection {collection} does not exist." );
-            return false;
-        }
-
-        var oldCollection = CollectionManager.ByType( type, identifier );
-        if( collection == oldCollection )
-        {
-            Dalamud.Chat.Print( $"{collection.Name} already is the {type.ToName()} Collection." );
-            return false;
-        }
-
-        if( oldCollection == null )
-        {
-            if( type.IsSpecial() )
-            {
-                CollectionManager.CreateSpecialCollection( type );
-            }
-            else if( type is CollectionType.Individual )
-            {
-                CollectionManager.CreateIndividualCollection( identifier );
-            }
-        }
-
-        CollectionManager.SetCollection( collection, type, CollectionManager.Individuals.Count - 1 );
-        Dalamud.Chat.Print( $"Set {collection.Name} as {type.ToName()} Collection{( characterName != null ? $" for {characterName}." : "." )}" );
-        return true;
-    }
-
-    private void OnCommand( string command, string rawArgs )
-    {
-        const string modsEnabled  = "Your mods have now been enabled.";
-        const string modsDisabled = "Your mods have now been disabled.";
-
-        var args = rawArgs.Split( new[] { ' ' }, 2 );
-        if( args.Length > 0 && args[ 0 ].Length > 0 )
-        {
-            switch( args[ 0 ] )
-            {
-                case "reload":
-                {
-                    ModManager.DiscoverMods();
-                    Dalamud.Chat.Print( $"Reloaded Penumbra mods. You have {ModManager.Count} mods."
-                    );
-                    break;
-                }
-                case "redraw":
-                {
-                    if( args.Length > 1 )
-                    {
-                        ObjectReloader.RedrawObject( args[ 1 ], RedrawType.Redraw );
-                    }
-                    else
-                    {
-                        ObjectReloader.RedrawAll( RedrawType.Redraw );
-                    }
-
-                    break;
-                }
-                case "debug":
-                {
-                    Config.DebugMode = true;
-                    Config.Save();
-                    break;
-                }
-                case "enable":
-                {
-                    Dalamud.Chat.Print( Enable()
-                        ? modsEnabled
-                        : "Your mods are already enabled. To disable your mods, please run the following command instead: /penumbra disable" );
-                    break;
-                }
-                case "disable":
-                {
-                    Dalamud.Chat.Print( Disable()
-                        ? modsDisabled
-                        : "Your mods are already disabled. To enable your mods, please run the following command instead: /penumbra enable" );
-                    break;
-                }
-                case "toggle":
-                {
-                    SetEnabled( !Config.EnableMods );
-                    Dalamud.Chat.Print( Config.EnableMods
-                        ? modsEnabled
-                        : modsDisabled );
-                    break;
-                }
-                case "unfix":
-                {
-                    Config.FixMainWindow =  false;
-                    _configWindow.Flags  &= ~( ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize );
-                    break;
-                }
-                case "collection":
-                {
-                    if( args.Length == 2 )
-                    {
-                        args = args[ 1 ].Split( new[] { ' ' }, 2 );
-                        if( args.Length == 2 )
-                        {
-                            SetCollection( args[ 0 ], args[ 1 ] );
-                        }
-                    }
-                    else
-                    {
-                        Dalamud.Chat.Print( "Missing arguments, the correct command format is:"
-                          + " /penumbra collection {default} <collectionName> [|characterName]" );
-                    }
-
-                    break;
-                }
-            }
-
-            return;
-        }
-
-        _configWindow.Toggle();
     }
 
     // Collect all relevant files for penumbra configuration.
@@ -568,7 +392,7 @@ public class Penumbra : IDalamudPlugin
     {
 #if !DEBUG
         var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
-        var dir  = new DirectoryInfo( path );
+        var dir = new DirectoryInfo( path );
 
         try
         {
@@ -589,7 +413,7 @@ public class Penumbra : IDalamudPlugin
     {
 #if !DEBUG
         var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret              = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
+        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
         if( !ret )
         {
             Log.Error( $"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"." );

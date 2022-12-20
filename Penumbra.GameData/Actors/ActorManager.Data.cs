@@ -61,6 +61,15 @@ public sealed partial class ActorManager : IDisposable
             => worldId == ushort.MaxValue ? "Any World" : Worlds.TryGetValue(worldId, out var name) ? name : "Invalid";
 
         /// <summary>
+        /// Return the world id corresponding to the given name.
+        /// </summary>
+        /// <returns>ushort.MaxValue if the name is empty, 0 if it is not a valid world, or the worlds id.</returns>
+        public ushort ToWorldId(string worldName)
+            => worldName.Length != 0
+                ? Worlds.FirstOrDefault(kvp => string.Equals(kvp.Value, worldName, StringComparison.OrdinalIgnoreCase), default).Key
+                : ushort.MaxValue;
+
+        /// <summary>
         /// Convert a given ID for a certain ObjectKind to a name.
         /// </summary>
         /// <returns>Invalid or a valid name.</returns>
