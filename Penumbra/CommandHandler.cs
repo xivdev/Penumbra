@@ -397,7 +397,7 @@ public class CommandHandler : IDisposable
             return false;
         }
 
-        var settings = collection.Settings[ mod.Index ];
+        var settings = collection!.Settings[ mod.Index ];
         switch( state )
         {
             case 0:
