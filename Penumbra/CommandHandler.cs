@@ -77,7 +77,11 @@ public class CommandHandler : IDisposable
         _modManager        = modManager;
         _collectionManager = collectionManager;
         _actors            = actors;
-        _commandManager.AddHandler( CommandName, new CommandInfo( OnCommand ) );
+        _commandManager.AddHandler( CommandName, new CommandInfo( OnCommand )
+        {
+            HelpMessage = "Without arguments, toggles the main window. Use /penumbra help to get further command help.",
+            ShowInHelp  = true,
+        } );
     }
 
     public void Dispose()
@@ -113,7 +117,15 @@ public class CommandHandler : IDisposable
 
     private static bool PrintHelp( string arguments )
     {
-        Dalamud.Chat.Print( new SeStringBuilder().AddText( "The given argument " ).AddRed( arguments, true ).AddText( " is not valid. Valid arguments are:" ).BuiltString );
+        if( !string.Equals( arguments, "help", StringComparison.OrdinalIgnoreCase ) && arguments == "?" )
+        {
+            Dalamud.Chat.Print( new SeStringBuilder().AddText( "The given argument " ).AddRed( arguments, true ).AddText( " is not valid. Valid arguments are:" ).BuiltString );
+        }
+        else
+        {
+            Dalamud.Chat.Print( "Valid arguments for /penumbra are:" );
+        }
+
         Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "window",
             "Toggle the Penumbra main config window. Can be used with [on|off] to force specific state. Also used when no argument is provided." ).BuiltString );
         Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "enable", "Enable modding and force a redraw of all game objects if it was previously disabled." ).BuiltString );
@@ -343,7 +355,7 @@ public class CommandHandler : IDisposable
         if( arguments.Length == 0 )
         {
             var seString = new SeStringBuilder()
-               .AddText( "Use with /penumbra mod " ).AddBlue( "[enable|disable|inherit|toggle]" ).AddYellow( "[Collection Name]" ).AddText( " | " )
+               .AddText( "Use with /penumbra mod " ).AddBlue( "[enable|disable|inherit|toggle]" ).AddText( "  " ).AddYellow( "[Collection Name]" ).AddText( " | " )
                .AddPurple( "[Mod Name or Mod Directory Name]" );
             Dalamud.Chat.Print( seString.BuiltString );
             return true;
