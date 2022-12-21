@@ -138,7 +138,7 @@ public partial class TexToolsMeta
             {
                 if( !value.Equals( def.GetEntry( partIdx, i ) ) )
                 {
-                    MetaManipulations.Add( manip.Copy( value ) );
+                    MetaManipulations.Add( new ImcManipulation( manip.ObjectType, manip.BodySlot, manip.PrimaryId, manip.SecondaryId, i, manip.EquipSlot, value ) );
                 }
 
                 ++i;
