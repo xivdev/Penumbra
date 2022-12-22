@@ -14,8 +14,9 @@ public unsafe partial class PathResolver
     {
         private readonly DrawObjectState _drawObjectState;
 
-        private ResolveData _animationLoadData = ResolveData.Invalid;
-        private ResolveData _lastAvfxData      = ResolveData.Invalid;
+        private ResolveData _animationLoadData  = ResolveData.Invalid;
+        private ResolveData _lastAvfxData       = ResolveData.Invalid;
+        private ResolveData _characterSoundData = ResolveData.Invalid;
 
         public AnimationState( DrawObjectState drawObjectState )
         {
@@ -27,9 +28,22 @@ public unsafe partial class PathResolver
         {
             switch( type )
             {
+                case ResourceType.Scd:
+                    if( _characterSoundData.Valid )
+                    {
+                        resolveData = _characterSoundData;
+                        return true;
+                    }
+
+                    if( _animationLoadData.Valid )
+                    {
+                        resolveData = _animationLoadData;
+                        return true;
+                    }
+
+                    break;
                 case ResourceType.Tmb:
                 case ResourceType.Pap:
-                case ResourceType.Scd:
                     if( _animationLoadData.Valid )
                     {
                         resolveData = _animationLoadData;
@@ -76,6 +90,7 @@ public unsafe partial class PathResolver
             _loadSomePapHook.Enable();
             _someActionLoadHook.Enable();
             _someOtherAvfxHook.Enable();
+            _loadCharacterSoundHook.Enable();
         }
 
         public void Disable()
@@ -86,6 +101,7 @@ public unsafe partial class PathResolver
             _loadSomePapHook.Disable();
             _someActionLoadHook.Disable();
             _someOtherAvfxHook.Disable();
+            _loadCharacterSoundHook.Disable();
         }
 
         public void Dispose()
@@ -96,6 +112,22 @@ public unsafe partial class PathResolver
             _loadSomePapHook.Dispose();
             _someActionLoadHook.Dispose();
             _someOtherAvfxHook.Dispose();
+            _loadCharacterSoundHook.Dispose();
+        }
+
+        // Characters load some of their voice lines or whatever with this function.
+        private delegate IntPtr LoadCharacterSound( IntPtr character, int unk1, int unk2, IntPtr unk3, ulong unk4, int unk5, int unk6, ulong unk7 );
+
+        [Signature( "4C 89 4C 24 ?? 55 57 41 56", DetourName = nameof( LoadCharacterSoundDetour ) )]
+        private readonly Hook< LoadCharacterSound > _loadCharacterSoundHook = null!;
+
+        private IntPtr LoadCharacterSoundDetour( IntPtr character, int unk1, int unk2, IntPtr unk3, ulong unk4, int unk5, int unk6, ulong unk7 )
+        {
+            var last = _characterSoundData;
+            _characterSoundData = IdentifyCollection( ( GameObject* )character, true );
+            var ret = _loadCharacterSoundHook.Original( character, unk1, unk2, unk3, unk4, unk5, unk6, unk7 );
+            _characterSoundData = last;
+            return ret;
         }
 
         // The timeline object loads the requested .tmb and .pap files. The .tmb files load the respective .avfx files.
