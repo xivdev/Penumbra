@@ -24,6 +24,14 @@ public unsafe partial class PathResolver
             SignatureHelper.Initialise( this );
         }
 
+        public void UpdateAvfx( ResourceType type, ResolveData data )
+        {
+            if( type == ResourceType.Avfx )
+            {
+                _lastAvfxData = data;
+            }
+        }
+
         public bool HandleFiles( ResourceType type, Utf8GamePath _, out ResolveData resolveData )
         {
             switch( type )
@@ -91,6 +99,7 @@ public unsafe partial class PathResolver
             _someActionLoadHook.Enable();
             _someOtherAvfxHook.Enable();
             _loadCharacterSoundHook.Enable();
+            //_apricotResourceLoadHook.Enable();
         }
 
         public void Disable()
@@ -102,6 +111,7 @@ public unsafe partial class PathResolver
             _someActionLoadHook.Disable();
             _someOtherAvfxHook.Disable();
             _loadCharacterSoundHook.Disable();
+            //_apricotResourceLoadHook.Disable();
         }
 
         public void Dispose()
@@ -113,6 +123,7 @@ public unsafe partial class PathResolver
             _someActionLoadHook.Dispose();
             _someOtherAvfxHook.Dispose();
             _loadCharacterSoundHook.Dispose();
+            //_apricotResourceLoadHook.Dispose();
         }
 
         // Characters load some of their voice lines or whatever with this function.
@@ -250,5 +261,17 @@ public unsafe partial class PathResolver
             _someOtherAvfxHook.Original( unk );
             _animationLoadData = last;
         }
+
+        //private delegate byte ApricotResourceLoadDelegate( IntPtr handle, IntPtr unk1, byte unk2 );
+        //
+        //[Signature( "48 89 74 24 ?? 57 48 83 EC ?? 41 0F B6 F0 48 8B F9", DetourName = nameof( ApricotResourceLoadDetour ) )]
+        //private readonly Hook< ApricotResourceLoadDelegate > _apricotResourceLoadHook = null!;
+        //
+        //
+        //private byte ApricotResourceLoadDetour( IntPtr handle, IntPtr unk1, byte unk2 )
+        //{
+        //    Penumbra.Log.Information( $"{handle:X} {new ByteString( ( ( ResourceHandle* )handle )->FileName() )} {unk1:X} {unk2} {_lastAvfxData.ModCollection.Name}" );
+        //    return _apricotResourceLoadHook.Original( handle, unk1, unk2 );
+        //}
     }
 }

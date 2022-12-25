@@ -71,6 +71,7 @@ public partial class PathResolver : IDisposable
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path.ToString() : resolved.Value.FullName;
         MaterialState.HandleCollection( resolveData, path, nonDefault, type, resolved, out data );
+        _animations.UpdateAvfx( type, data.Item2 );
         return true;
     }
 
