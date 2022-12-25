@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -13,16 +12,17 @@ namespace Penumbra.Interop.Resolver;
 
 public unsafe partial class PathResolver
 {
-    // Materials do contain their own paths to textures and shader packages.
+    // Materials and avfx do contain their own paths to textures and shader packages or atex respectively.
     // Those are loaded synchronously.
     // Thus, we need to ensure the correct files are loaded when a material is loaded.
-    public class MaterialState : IDisposable
+    public class SubfileHelper : IDisposable
     {
         private readonly PathState _paths;
 
         private ResolveData _mtrlData = ResolveData.Invalid;
+        private ResolveData _avfxData = ResolveData.Invalid;
 
-        public MaterialState( PathState paths )
+        public SubfileHelper( PathState paths )
         {
             SignatureHelper.Initialise( this );
             _paths = paths;
@@ -31,10 +31,20 @@ public unsafe partial class PathResolver
         // Check specifically for shpk and tex files whether we are currently in a material load.
         public bool HandleSubFiles( ResourceType type, out ResolveData collection )
         {
-            if( _mtrlData.Valid && type is ResourceType.Tex or ResourceType.Shpk )
+            switch( type )
             {
-                collection = _mtrlData;
-                return true;
+                case ResourceType.Tex:
+                case ResourceType.Shpk:
+                    if( _mtrlData.Valid )
+                    {
+                        collection = _mtrlData;
+                        return true;
+                    }
+
+                    break;
+                case ResourceType.Atex when _avfxData.Valid:
+                    collection = _avfxData;
+                    return true;
             }
 
             collection = ResolveData.Invalid;
@@ -45,29 +55,35 @@ public unsafe partial class PathResolver
         public static void HandleCollection( ResolveData resolveData, string path, bool nonDefault, ResourceType type, FullPath? resolved,
             out (FullPath?, ResolveData) data )
         {
-            if( nonDefault && type == ResourceType.Mtrl )
+            if( nonDefault )
             {
-                var fullPath = new FullPath( $"|{resolveData.ModCollection.Name}_{resolveData.ModCollection.ChangeCounter}|{path}" );
-                data = ( fullPath, resolveData );
+                switch( type )
+                {
+                    case ResourceType.Mtrl:
+                    case ResourceType.Avfx:
+                        var fullPath = new FullPath( $"|{resolveData.ModCollection.Name}_{resolveData.ModCollection.ChangeCounter}|{path}" );
+                        data = ( fullPath, resolveData );
+                        return;
+                }
             }
-            else
-            {
-                data = ( resolved, resolveData );
-            }
+
+            data = ( resolved, resolveData );
         }
 
         public void Enable()
         {
             _loadMtrlShpkHook.Enable();
             _loadMtrlTexHook.Enable();
-            Penumbra.ResourceLoader.ResourceLoadCustomization += MtrlLoadHandler;
+            _apricotResourceLoadHook.Enable();
+            Penumbra.ResourceLoader.ResourceLoadCustomization += SubfileLoadHandler;
         }
 
         public void Disable()
         {
             _loadMtrlShpkHook.Disable();
             _loadMtrlTexHook.Disable();
-            Penumbra.ResourceLoader.ResourceLoadCustomization -= MtrlLoadHandler;
+            _apricotResourceLoadHook.Disable();
+            Penumbra.ResourceLoader.ResourceLoadCustomization -= SubfileLoadHandler;
         }
 
         public void Dispose()
@@ -75,17 +91,21 @@ public unsafe partial class PathResolver
             Disable();
             _loadMtrlShpkHook.Dispose();
             _loadMtrlTexHook.Dispose();
+            _apricotResourceLoadHook.Dispose();
         }
 
         // We need to set the correct collection for the actual material path that is loaded
         // before actually loading the file.
-        public bool MtrlLoadHandler( ByteString split, ByteString path, ResourceManager* resourceManager,
+        public bool SubfileLoadHandler( ByteString split, ByteString path, ResourceManager* resourceManager,
             SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
         {
             ret = 0;
-            if( fileDescriptor->ResourceHandle->FileType != ResourceType.Mtrl )
+            switch( fileDescriptor->ResourceHandle->FileType )
             {
-                return false;
+                case ResourceType.Mtrl:
+                case ResourceType.Avfx:
+                    break;
+                default: return false;
             }
 
             var lastUnderscore = split.LastIndexOf( ( byte )'_' );
@@ -94,17 +114,14 @@ public unsafe partial class PathResolver
             || Penumbra.CollectionManager.ByName( name, out collection ) )
             {
 #if DEBUG
-                Penumbra.Log.Verbose( $"Using MtrlLoadHandler with collection {name} for path {path}." );
+                Penumbra.Log.Verbose( $"Using {nameof(SubfileLoadHandler)} with collection {name} for path {path}." );
 #endif
-
-                var objFromObjTable = Dalamud.Objects.FirstOrDefault( f => f.Name.TextValue == name );
-                var gameObjAddr     = objFromObjTable?.Address ?? IntPtr.Zero;
-                _paths.SetCollection( gameObjAddr, path, collection );
+                _paths.SetCollection( IntPtr.Zero, path, collection );
             }
             else
             {
 #if DEBUG
-                Penumbra.Log.Verbose( $"Using MtrlLoadHandler with no collection for path {path}." );
+                Penumbra.Log.Verbose( $"Using {nameof( SubfileLoadHandler )}  with no collection for path {path}." );
 #endif
             }
 
@@ -124,7 +141,7 @@ public unsafe partial class PathResolver
 
         private byte LoadMtrlTexDetour( IntPtr mtrlResourceHandle )
         {
-            LoadMtrlHelper( mtrlResourceHandle );
+            _mtrlData = LoadFileHelper( mtrlResourceHandle );
             var ret = _loadMtrlTexHook.Original( mtrlResourceHandle );
             _mtrlData = ResolveData.Invalid;
             return ret;
@@ -136,22 +153,37 @@ public unsafe partial class PathResolver
 
         private byte LoadMtrlShpkDetour( IntPtr mtrlResourceHandle )
         {
-            LoadMtrlHelper( mtrlResourceHandle );
+            _mtrlData = LoadFileHelper( mtrlResourceHandle );
             var ret = _loadMtrlShpkHook.Original( mtrlResourceHandle );
             _mtrlData = ResolveData.Invalid;
             return ret;
         }
 
-        private void LoadMtrlHelper( IntPtr mtrlResourceHandle )
+        private ResolveData LoadFileHelper( IntPtr resourceHandle )
         {
-            if( mtrlResourceHandle == IntPtr.Zero )
+            if( resourceHandle == IntPtr.Zero )
             {
-                return;
+                return ResolveData.Invalid;
             }
 
-            var mtrl     = ( MtrlResource* )mtrlResourceHandle;
-            var mtrlPath = ByteString.FromSpanUnsafe( mtrl->Handle.FileNameSpan(), true, null, true );
-            _mtrlData = _paths.TryGetValue( mtrlPath, out var c ) ? c : ResolveData.Invalid;
+            var resource     = ( ResourceHandle* )resourceHandle;
+            var filePath = ByteString.FromSpanUnsafe( resource->FileNameSpan(), true, null, true );
+            return _paths.TryGetValue( filePath, out var c ) ? c : ResolveData.Invalid;
+        }
+
+
+        private delegate byte ApricotResourceLoadDelegate( IntPtr handle, IntPtr unk1, byte unk2 );
+
+        [Signature( "48 89 74 24 ?? 57 48 83 EC ?? 41 0F B6 F0 48 8B F9", DetourName = nameof( ApricotResourceLoadDetour ) )]
+        private readonly Hook<ApricotResourceLoadDelegate> _apricotResourceLoadHook = null!;
+
+
+        private byte ApricotResourceLoadDetour( IntPtr handle, IntPtr unk1, byte unk2 )
+        {
+            _avfxData = LoadFileHelper( handle );
+            var ret = _apricotResourceLoadHook.Original( handle, unk1, unk2 );
+            _avfxData = ResolveData.Invalid;
+            return ret;
         }
     }
 }

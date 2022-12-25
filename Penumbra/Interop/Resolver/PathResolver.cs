@@ -30,7 +30,7 @@ public partial class PathResolver : IDisposable
     private readonly         AnimationState            _animations;
     private readonly         PathState                 _paths;
     private readonly         MetaState                 _meta;
-    private readonly         MaterialState             _materials;
+    private readonly         SubfileHelper             _subFiles;
 
     static PathResolver()
         => ValidHumanModels = GetValidHumanModels( Dalamud.GameData );
@@ -42,7 +42,7 @@ public partial class PathResolver : IDisposable
         _animations = new AnimationState( DrawObjects );
         _paths      = new PathState( this );
         _meta       = new MetaState( _paths.HumanVTable );
-        _materials  = new MaterialState( _paths );
+        _subFiles   = new SubfileHelper( _paths );
     }
 
     // The modified resolver that handles game path resolving.
@@ -54,7 +54,7 @@ public partial class PathResolver : IDisposable
         // If not use the default collection.
         // We can remove paths after they have actually been loaded.
         // A potential next request will add the path anew.
-        var nonDefault = _materials.HandleSubFiles( type, out var resolveData )
+        var nonDefault = _subFiles.HandleSubFiles( type, out var resolveData )
          || _paths.Consume( gamePath.Path, out resolveData )
          || _animations.HandleFiles( type, gamePath, out resolveData )
          || DrawObjects.HandleDecalFile( type, gamePath, out resolveData );
@@ -70,8 +70,7 @@ public partial class PathResolver : IDisposable
         // so that the functions loading tex and shpk can find that path and use its collection.
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path.ToString() : resolved.Value.FullName;
-        MaterialState.HandleCollection( resolveData, path, nonDefault, type, resolved, out data );
-        _animations.UpdateAvfx( type, data.Item2 );
+        SubfileHelper.HandleCollection( resolveData, path, nonDefault, type, resolved, out data );
         return true;
     }
 
@@ -89,7 +88,7 @@ public partial class PathResolver : IDisposable
         _animations.Enable();
         _paths.Enable();
         _meta.Enable();
-        _materials.Enable();
+        _subFiles.Enable();
 
         _loader.ResolvePathCustomization += CharacterResolver;
         Penumbra.Log.Debug( "Character Path Resolver enabled." );
@@ -109,7 +108,7 @@ public partial class PathResolver : IDisposable
         IdentifiedCache.Disable();
         _paths.Disable();
         _meta.Disable();
-        _materials.Disable();
+        _subFiles.Disable();
 
         _loader.ResolvePathCustomization -= CharacterResolver;
         Penumbra.Log.Debug( "Character Path Resolver disabled." );
@@ -124,7 +123,7 @@ public partial class PathResolver : IDisposable
         Cutscenes.Dispose();
         IdentifiedCache.Dispose();
         _meta.Dispose();
-        _materials.Dispose();
+        _subFiles.Dispose();
     }
 
     public static unsafe (IntPtr, ResolveData) IdentifyDrawObject( IntPtr drawObject )

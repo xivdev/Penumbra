@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Structs;
+using Penumbra.String;
 using Penumbra.String.Classes;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
@@ -14,9 +17,8 @@ public unsafe partial class PathResolver
     {
         private readonly DrawObjectState _drawObjectState;
 
-        private ResolveData _animationLoadData  = ResolveData.Invalid;
-        private ResolveData _lastAvfxData       = ResolveData.Invalid;
-        private ResolveData _characterSoundData = ResolveData.Invalid;
+        private ResolveData                         _animationLoadData  = ResolveData.Invalid;
+        private ResolveData                         _characterSoundData = ResolveData.Invalid;
 
         public AnimationState( DrawObjectState drawObjectState )
         {
@@ -24,15 +26,7 @@ public unsafe partial class PathResolver
             SignatureHelper.Initialise( this );
         }
 
-        public void UpdateAvfx( ResourceType type, ResolveData data )
-        {
-            if( type == ResourceType.Avfx )
-            {
-                _lastAvfxData = data;
-            }
-        }
-
-        public bool HandleFiles( ResourceType type, Utf8GamePath _, out ResolveData resolveData )
+        public bool HandleFiles( ResourceType type, Utf8GamePath path, out ResolveData resolveData )
         {
             switch( type )
             {
@@ -60,9 +54,6 @@ public unsafe partial class PathResolver
 
                     break;
                 case ResourceType.Avfx:
-                    _lastAvfxData = _animationLoadData.Valid
-                        ? _animationLoadData
-                        : Penumbra.CollectionManager.Default.ToResolveData();
                     if( _animationLoadData.Valid )
                     {
                         resolveData = _animationLoadData;
@@ -71,12 +62,6 @@ public unsafe partial class PathResolver
 
                     break;
                 case ResourceType.Atex:
-                    if( _lastAvfxData.Valid )
-                    {
-                        resolveData = _lastAvfxData;
-                        return true;
-                    }
-
                     if( _animationLoadData.Valid )
                     {
                         resolveData = _animationLoadData;
@@ -99,7 +84,6 @@ public unsafe partial class PathResolver
             _someActionLoadHook.Enable();
             _someOtherAvfxHook.Enable();
             _loadCharacterSoundHook.Enable();
-            //_apricotResourceLoadHook.Enable();
         }
 
         public void Disable()
@@ -111,7 +95,6 @@ public unsafe partial class PathResolver
             _someActionLoadHook.Disable();
             _someOtherAvfxHook.Disable();
             _loadCharacterSoundHook.Disable();
-            //_apricotResourceLoadHook.Disable();
         }
 
         public void Dispose()
@@ -123,7 +106,6 @@ public unsafe partial class PathResolver
             _someActionLoadHook.Dispose();
             _someOtherAvfxHook.Dispose();
             _loadCharacterSoundHook.Dispose();
-            //_apricotResourceLoadHook.Dispose();
         }
 
         // Characters load some of their voice lines or whatever with this function.
@@ -261,17 +243,5 @@ public unsafe partial class PathResolver
             _someOtherAvfxHook.Original( unk );
             _animationLoadData = last;
         }
-
-        //private delegate byte ApricotResourceLoadDelegate( IntPtr handle, IntPtr unk1, byte unk2 );
-        //
-        //[Signature( "48 89 74 24 ?? 57 48 83 EC ?? 41 0F B6 F0 48 8B F9", DetourName = nameof( ApricotResourceLoadDetour ) )]
-        //private readonly Hook< ApricotResourceLoadDelegate > _apricotResourceLoadHook = null!;
-        //
-        //
-        //private byte ApricotResourceLoadDetour( IntPtr handle, IntPtr unk1, byte unk2 )
-        //{
-        //    Penumbra.Log.Information( $"{handle:X} {new ByteString( ( ( ResourceHandle* )handle )->FileName() )} {unk1:X} {unk2} {_lastAvfxData.ModCollection.Name}" );
-        //    return _apricotResourceLoadHook.Original( handle, unk1, unk2 );
-        //}
     }
 }
