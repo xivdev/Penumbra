@@ -57,7 +57,7 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
         {
             BodySlot    = BodySlot.Unknown;
             SecondaryId = secondaryId;
-            EquipSlot   = equipSlot;
+            EquipSlot   = equipSlot == EquipSlot.Unknown ? EquipSlot.Head : equipSlot;
         }
         else
         {

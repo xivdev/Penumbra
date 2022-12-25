@@ -86,7 +86,7 @@ public static class EquipSlotExtensions
             EquipSlot.RFinger => "rir",
             EquipSlot.LFinger => "ril",
             EquipSlot.Wrists  => "wrs",
-            _                 => throw new InvalidEnumArgumentException(),
+            _                 => "unk",
         };
     }
 
@@ -116,7 +116,7 @@ public static class EquipSlotExtensions
             EquipSlot.BodyHands         => EquipSlot.Body,
             EquipSlot.BodyLegsFeet      => EquipSlot.Body,
             EquipSlot.ChestHands        => EquipSlot.Body,
-            _                           => throw new InvalidEnumArgumentException($"{value} ({(int)value}) is not valid."),
+            _                           => EquipSlot.Unknown,
         };
     }
 
