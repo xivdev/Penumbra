@@ -9,7 +9,7 @@ namespace Penumbra.Import;
 public partial class TexToolsMeta
 {
     // Parse a single rgsp file.
-    public static TexToolsMeta FromRgspFile( string filePath, byte[] data )
+    public static TexToolsMeta FromRgspFile( string filePath, byte[] data, bool keepDefault )
     {
         if( data.Length != 45 && data.Length != 42 )
         {
@@ -47,7 +47,7 @@ public partial class TexToolsMeta
         void Add( RspAttribute attribute, float value )
         {
             var def = CmpFile.GetDefault( subRace, attribute );
-            if( value != def )
+            if( keepDefault || value != def )
             {
                 ret.MetaManipulations.Add( new RspManipulation( subRace, attribute, value ) );
             }

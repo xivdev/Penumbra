@@ -19,10 +19,17 @@ public partial class ConfigWindow
             OpenTutorial( BasicTutorialSteps.AdvancedSettings );
 
             if( !header )
+            {
                 return;
+            }
+
             Checkbox( "Auto Deduplicate on Import",
                 "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
                 Penumbra.Config.AutoDeduplicateOnImport, v => Penumbra.Config.AutoDeduplicateOnImport = v );
+            Checkbox( "Keep Default Metadata Changes on Import",
+                "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "
+              + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option.",
+                Penumbra.Config.KeepDefaultMetaChanges, v => Penumbra.Config.KeepDefaultMetaChanges = v );
             DrawRequestedResourceLogging();
             DrawEnableHttpApiBox();
             DrawEnableDebugModeBox();

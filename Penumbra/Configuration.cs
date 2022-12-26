@@ -69,6 +69,7 @@ public partial class Configuration : IPluginConfiguration
 
     public string DefaultModImportPath { get; set; } = string.Empty;
     public bool AlwaysOpenDefaultImport { get; set; } = false;
+    public bool KeepDefaultMetaChanges { get; set; } = false;
     public string DefaultModAuthor { get; set; } = DefaultTexToolsData.Author;
 
     public Dictionary< ColorId, uint > Colors { get; set; }

@@ -201,7 +201,7 @@ public partial class Mod
                             continue;
                         }
 
-                        var meta = new TexToolsMeta( File.ReadAllBytes( file.FullName ) );
+                        var meta = new TexToolsMeta( File.ReadAllBytes( file.FullName ), Penumbra.Config.KeepDefaultMetaChanges );
                         Penumbra.Log.Verbose( $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}" );
                         deleteList.Add( file.FullName );
                         ManipulationData.UnionWith( meta.MetaManipulations );
@@ -214,7 +214,7 @@ public partial class Mod
                             continue;
                         }
 
-                        var rgsp = TexToolsMeta.FromRgspFile( file.FullName, File.ReadAllBytes( file.FullName ) );
+                        var rgsp = TexToolsMeta.FromRgspFile( file.FullName, File.ReadAllBytes( file.FullName ), Penumbra.Config.KeepDefaultMetaChanges );
                         Penumbra.Log.Verbose( $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}" );
                         deleteList.Add( file.FullName );
 
@@ -274,7 +274,9 @@ public partial class Mod
             {
                 try
                 {
-                    var x = file.EndsWith( "rgsp" ) ? TexToolsMeta.FromRgspFile( file, data ) : new TexToolsMeta( data );
+                    var x = file.EndsWith( "rgsp" )
+                        ? TexToolsMeta.FromRgspFile( file, data, Penumbra.Config.KeepDefaultMetaChanges )
+                        : new TexToolsMeta( data, Penumbra.Config.KeepDefaultMetaChanges );
                     meta.UnionWith( x.MetaManipulations );
                 }
                 catch

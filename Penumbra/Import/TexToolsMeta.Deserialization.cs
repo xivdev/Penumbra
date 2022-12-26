@@ -22,7 +22,7 @@ public partial class TexToolsMeta
         var value = Eqp.FromSlotAndBytes( metaFileInfo.EquipSlot, data );
         var def   = new EqpManipulation( ExpandedEqpFile.GetDefault( metaFileInfo.PrimaryId ), metaFileInfo.EquipSlot, metaFileInfo.PrimaryId );
         var manip = new EqpManipulation( value, metaFileInfo.EquipSlot, metaFileInfo.PrimaryId );
-        if( def.Entry != manip.Entry )
+        if( _keepDefault || def.Entry != manip.Entry )
         {
             MetaManipulations.Add( manip );
         }
@@ -53,7 +53,7 @@ public partial class TexToolsMeta
                 metaFileInfo.EquipSlot,
                 gr.Split().Item1, gr.Split().Item2, metaFileInfo.PrimaryId );
             var manip = new EqdpManipulation( value, metaFileInfo.EquipSlot, gr.Split().Item1, gr.Split().Item2, metaFileInfo.PrimaryId );
-            if( def.Entry != manip.Entry )
+            if( _keepDefault || def.Entry != manip.Entry )
             {
                 MetaManipulations.Add( manip );
             }
@@ -72,7 +72,7 @@ public partial class TexToolsMeta
         var       value  = ( GmpEntry )reader.ReadUInt32();
         value.UnknownTotal = reader.ReadByte();
         var def = ExpandedGmpFile.GetDefault( metaFileInfo.PrimaryId );
-        if( value != def )
+        if( _keepDefault || value != def )
         {
             MetaManipulations.Add( new GmpManipulation( value, metaFileInfo.PrimaryId ) );
         }
@@ -107,7 +107,7 @@ public partial class TexToolsMeta
             }
 
             var def = EstFile.GetDefault( type, gr, id );
-            if( def != value )
+            if( _keepDefault || def != value )
             {
                 MetaManipulations.Add( new EstManipulation( gr.Split().Item1, gr.Split().Item2, type, id, value ) );
             }
@@ -136,7 +136,7 @@ public partial class TexToolsMeta
             var partIdx = ImcFile.PartIndex( manip.EquipSlot ); // Gets turned to unknown for things without equip, and unknown turns to 0.
             foreach( var value in values )
             {
-                if( !value.Equals( def.GetEntry( partIdx, i ) ) )
+                if( _keepDefault || !value.Equals( def.GetEntry( partIdx, i ) ) )
                 {
                     MetaManipulations.Add( new ImcManipulation( manip.ObjectType, manip.BodySlot, manip.PrimaryId, manip.SecondaryId, i, manip.EquipSlot, value ) );
                 }
