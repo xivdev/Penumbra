@@ -330,6 +330,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append( $"> **`Free Drive Space:            `** {( drive != null ? Functions.HumanReadableSize( drive.AvailableFreeSpace ) : "Unknown" )}\n" );
         sb.Append( $"> **`Auto-Deduplication:          `** {Config.AutoDeduplicateOnImport}\n" );
         sb.Append( $"> **`Debug Mode:                  `** {Config.DebugMode}\n" );
+        sb.Append( $"> **`Synchronous Load (Dalamud):  `** {(Dalamud.GetDalamudConfig( Dalamud.WaitingForPluginsOption, out bool v ) ? v.ToString() : "Unknown")}\n" );
         sb.Append( $"> **`Logging:                     `** Full: {Config.EnableFullResourceLogging}, Resource: {Config.EnableResourceLogging}\n" );
         sb.Append( $"> **`Use Ownership:               `** {Config.UseOwnerNameForCharacterCollection}\n" );
         sb.AppendLine( "**Mods**" );

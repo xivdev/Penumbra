@@ -30,6 +30,7 @@ public partial class ConfigWindow
                 "Normally, metadata changes that equal their default values, which are sometimes exported by TexTools, are discarded. "
               + "Toggle this to keep them, for example if an option in a mod is supposed to disable a metadata change from a prior option.",
                 Penumbra.Config.KeepDefaultMetaChanges, v => Penumbra.Config.KeepDefaultMetaChanges = v );
+            DrawWaitForPluginsReflection();
             DrawRequestedResourceLogging();
             DrawEnableHttpApiBox();
             DrawEnableDebugModeBox();
@@ -156,6 +157,20 @@ public partial class ConfigWindow
             if( ImGuiUtil.DrawDisabledButton( "Reload Fonts", Vector2.Zero, "Force the game to reload its font files.", !FontReloader.Valid ) )
             {
                 FontReloader.Reload();
+            }
+        }
+
+        private static void DrawWaitForPluginsReflection()
+        {
+            if( !Dalamud.GetDalamudConfig( Dalamud.WaitingForPluginsOption, out bool value ) )
+            {
+                using var disabled = ImRaii.Disabled();
+                Checkbox( "Wait for Plugins on Startup (Disabled, can not access Dalamud Configuration)", string.Empty, false, v => { } );
+            }
+            else
+            {
+                Checkbox( "Wait for Plugins on Startup", "This changes a setting in the Dalamud Configuration found at /xlsettings -> General.", value,
+                    v => Dalamud.SetDalamudConfig( Dalamud.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup" ) );
             }
         }
     }

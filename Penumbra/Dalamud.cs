@@ -1,3 +1,4 @@
+using System;
 using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState;
@@ -9,6 +10,8 @@ using Dalamud.Game.Gui;
 using Dalamud.Interface;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using System.Linq;
+using System.Reflection;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
 
@@ -33,4 +36,119 @@ public class Dalamud
     [PluginService][RequiredVersion("1.0")] public static GameGui                GameGui         { get; private set; } = null!;
     [PluginService][RequiredVersion("1.0")] public static KeyState               KeyState        { get; private set; } = null!;
     // @formatter:on
+
+    private static readonly object?     DalamudConfig;
+    private static readonly object?     SettingsWindow;
+    private static readonly MethodInfo? SaveDalamudConfig;
+    public const            string      WaitingForPluginsOption = "IsResumeGameAfterPluginLoad";
+
+    static Dalamud()
+    {
+        try
+        {
+            var serviceType   = typeof( DalamudPluginInterface ).Assembly.DefinedTypes.FirstOrDefault( t => t.Name == "Service`1" && t.IsGenericType );
+            var configType    = typeof( DalamudPluginInterface ).Assembly.DefinedTypes.FirstOrDefault( t => t.Name == "DalamudConfiguration" );
+            var interfaceType = typeof( DalamudPluginInterface ).Assembly.DefinedTypes.FirstOrDefault( t => t.Name == "DalamudInterface" );
+            if( serviceType == null || configType == null || interfaceType == null )
+            {
+                return;
+            }
+
+            var configService    = serviceType.MakeGenericType( configType );
+            var interfaceService = serviceType.MakeGenericType( interfaceType );
+            var configGetter     = configService.GetMethod( "Get", BindingFlags.Static    | BindingFlags.Public | BindingFlags.NonPublic );
+            var interfaceGetter  = interfaceService.GetMethod( "Get", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic );
+            if( configGetter == null || interfaceGetter == null )
+            {
+                return;
+            }
+
+            DalamudConfig = configGetter.Invoke( null, null );
+            if( DalamudConfig != null )
+            {
+                SaveDalamudConfig = DalamudConfig.GetType().GetMethod( "Save", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic );
+                if( SaveDalamudConfig == null )
+                {
+                    DalamudConfig = null;
+                }
+
+                var inter = interfaceGetter.Invoke( null, null );
+                SettingsWindow = inter?.GetType().GetField( "settingsWindow", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic )?.GetValue( inter );
+                if( SettingsWindow == null )
+                {
+                    DalamudConfig     = null;
+                    SaveDalamudConfig = null;
+                }
+            }
+        }
+        catch
+        {
+            DalamudConfig     = null;
+            SaveDalamudConfig = null;
+            SettingsWindow    = null;
+        }
+    }
+
+    public static bool GetDalamudConfig< T >( string fieldName, out T? value )
+    {
+        value = default;
+        try
+        {
+            if( DalamudConfig == null )
+            {
+                return false;
+            }
+
+            var getter = DalamudConfig.GetType().GetProperty( fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic );
+            if( getter == null )
+            {
+                return false;
+            }
+
+            var result = getter.GetValue( DalamudConfig );
+            if( result is not T v )
+            {
+                return false;
+            }
+
+            value = v;
+            return true;
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Error( $"Error while fetching Dalamud Config {fieldName}:\n{e}" );
+            return false;
+        }
+    }
+
+    public static bool SetDalamudConfig< T >( string fieldName, in T? value, string? windowFieldName = null )
+    {
+        try
+        {
+            if( DalamudConfig == null )
+            {
+                return false;
+            }
+
+            var getter = DalamudConfig.GetType().GetProperty( fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic );
+            if( getter == null )
+            {
+                return false;
+            }
+
+            getter.SetValue( DalamudConfig, value );
+            if( windowFieldName != null )
+            {
+                SettingsWindow!.GetType().GetField( windowFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic )?.SetValue( SettingsWindow, value );
+            }
+
+            SaveDalamudConfig!.Invoke( DalamudConfig, null );
+            return true;
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Error( $"Error while fetching Dalamud Config {fieldName}:\n{e}" );
+            return false;
+        }
+    }
 }
