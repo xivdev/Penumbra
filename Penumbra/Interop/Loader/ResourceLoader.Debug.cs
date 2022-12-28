@@ -246,7 +246,7 @@ public unsafe partial class ResourceLoader
     private static void LogResource( Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData _ )
     {
         var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
-        Penumbra.Log.Information( $"[ResourceLoader] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
+        Penumbra.Log.Information( $"[ResourceLoader] [{handle->FileType}] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
     }
 
     private static void LogLoadedFile( ByteString path, bool success, bool custom )

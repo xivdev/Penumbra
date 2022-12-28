@@ -45,21 +45,7 @@ public unsafe partial class PathResolver
                     break;
                 case ResourceType.Tmb:
                 case ResourceType.Pap:
-                    if( _animationLoadData.Valid )
-                    {
-                        resolveData = _animationLoadData;
-                        return true;
-                    }
-
-                    break;
                 case ResourceType.Avfx:
-                    if( _animationLoadData.Valid )
-                    {
-                        resolveData = _animationLoadData;
-                        return true;
-                    }
-
-                    break;
                 case ResourceType.Atex:
                     if( _animationLoadData.Valid )
                     {

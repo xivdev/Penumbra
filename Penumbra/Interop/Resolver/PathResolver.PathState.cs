@@ -31,7 +31,7 @@ public unsafe partial class PathResolver
         private readonly ResolverHooks _monster;
 
         // This map links files to their corresponding collection, if it is non-default.
-        private readonly ConcurrentDictionary< ByteString, ResolveData > _pathCollections = new();
+        private readonly ConcurrentDictionary< ByteString, ResolveData > _pathCollections   = new();
 
         public PathState( PathResolver parent )
         {

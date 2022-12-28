@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -17,15 +19,18 @@ public unsafe partial class PathResolver
     // Thus, we need to ensure the correct files are loaded when a material is loaded.
     public class SubfileHelper : IDisposable
     {
-        private readonly PathState _paths;
+        private readonly ResourceLoader _loader;
 
         private ResolveData _mtrlData = ResolveData.Invalid;
         private ResolveData _avfxData = ResolveData.Invalid;
 
-        public SubfileHelper( PathState paths )
+        private readonly ConcurrentDictionary< IntPtr, ResolveData > _subFileCollection = new();
+
+        public SubfileHelper( ResourceLoader loader )
         {
             SignatureHelper.Initialise( this );
-            _paths = paths;
+
+            _loader = loader;
         }
 
         // Check specifically for shpk and tex files whether we are currently in a material load.
@@ -52,7 +57,7 @@ public unsafe partial class PathResolver
         }
 
         // Materials need to be set per collection so they can load their textures independently from each other.
-        public static void HandleCollection( ResolveData resolveData, string path, bool nonDefault, ResourceType type, FullPath? resolved,
+        public static void HandleCollection( ResolveData resolveData, ByteString path, bool nonDefault, ResourceType type, FullPath? resolved,
             out (FullPath?, ResolveData) data )
         {
             if( nonDefault )
@@ -75,7 +80,8 @@ public unsafe partial class PathResolver
             _loadMtrlShpkHook.Enable();
             _loadMtrlTexHook.Enable();
             _apricotResourceLoadHook.Enable();
-            Penumbra.ResourceLoader.ResourceLoadCustomization += SubfileLoadHandler;
+            _loader.ResourceLoadCustomization += SubfileLoadHandler;
+            _loader.ResourceLoaded            += SubfileContainerLoaded;
         }
 
         public void Disable()
@@ -83,7 +89,8 @@ public unsafe partial class PathResolver
             _loadMtrlShpkHook.Disable();
             _loadMtrlTexHook.Disable();
             _apricotResourceLoadHook.Disable();
-            Penumbra.ResourceLoader.ResourceLoadCustomization -= SubfileLoadHandler;
+            _loader.ResourceLoadCustomization -= SubfileLoadHandler;
+            _loader.ResourceLoaded            -= SubfileContainerLoaded;
         }
 
         public void Dispose()
@@ -92,6 +99,17 @@ public unsafe partial class PathResolver
             _loadMtrlShpkHook.Dispose();
             _loadMtrlTexHook.Dispose();
             _apricotResourceLoadHook.Dispose();
+        }
+
+        private void SubfileContainerLoaded( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath, ResolveData resolveData )
+        {
+            switch( handle->FileType )
+            {
+                case ResourceType.Mtrl:
+                case ResourceType.Avfx:
+                    _subFileCollection[ ( IntPtr )handle ] = resolveData;
+                    break;
+            }
         }
 
         // We need to set the correct collection for the actual material path that is loaded
@@ -108,29 +126,12 @@ public unsafe partial class PathResolver
                 default: return false;
             }
 
-            var lastUnderscore = split.LastIndexOf( ( byte )'_' );
-            var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
-            if( Penumbra.TempMods.CollectionByName( name, out var collection )
-            || Penumbra.CollectionManager.ByName( name, out collection ) )
-            {
-#if DEBUG
-                Penumbra.Log.Verbose( $"Using {nameof(SubfileLoadHandler)} with collection {name} for path {path}." );
-#endif
-                _paths.SetCollection( IntPtr.Zero, path, collection );
-            }
-            else
-            {
-#if DEBUG
-                Penumbra.Log.Verbose( $"Using {nameof( SubfileLoadHandler )}  with no collection for path {path}." );
-#endif
-            }
-
             // Force isSync = true for this call. I don't really understand why,
             // or where the difference even comes from.
             // Was called with True on my client and with false on other peoples clients,
             // which caused problems.
             ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, true );
-            _paths.Consume( path, out _ );
+            _subFileCollection.TryRemove( ( IntPtr )fileDescriptor->ResourceHandle, out _ );
             return true;
         }
 
@@ -166,16 +167,14 @@ public unsafe partial class PathResolver
                 return ResolveData.Invalid;
             }
 
-            var resource     = ( ResourceHandle* )resourceHandle;
-            var filePath = ByteString.FromSpanUnsafe( resource->FileNameSpan(), true, null, true );
-            return _paths.TryGetValue( filePath, out var c ) ? c : ResolveData.Invalid;
+            return _subFileCollection.TryGetValue( resourceHandle, out var c ) ? c : ResolveData.Invalid;
         }
 
 
         private delegate byte ApricotResourceLoadDelegate( IntPtr handle, IntPtr unk1, byte unk2 );
 
         [Signature( "48 89 74 24 ?? 57 48 83 EC ?? 41 0F B6 F0 48 8B F9", DetourName = nameof( ApricotResourceLoadDetour ) )]
-        private readonly Hook<ApricotResourceLoadDelegate> _apricotResourceLoadHook = null!;
+        private readonly Hook< ApricotResourceLoadDelegate > _apricotResourceLoadHook = null!;
 
 
         private byte ApricotResourceLoadDetour( IntPtr handle, IntPtr unk1, byte unk2 )

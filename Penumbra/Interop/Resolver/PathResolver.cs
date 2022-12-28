@@ -42,7 +42,7 @@ public partial class PathResolver : IDisposable
         _animations = new AnimationState( DrawObjects );
         _paths      = new PathState( this );
         _meta       = new MetaState( _paths.HumanVTable );
-        _subFiles   = new SubfileHelper( _paths );
+        _subFiles   = new SubfileHelper( _loader );
     }
 
     // The modified resolver that handles game path resolving.
@@ -69,7 +69,7 @@ public partial class PathResolver : IDisposable
         // Since mtrl files load their files separately, we need to add the new, resolved path
         // so that the functions loading tex and shpk can find that path and use its collection.
         // We also need to handle defaulted materials against a non-default collection.
-        var path = resolved == null ? gamePath.Path.ToString() : resolved.Value.FullName;
+        var path = resolved == null ? gamePath.Path : resolved.Value.InternalName;
         SubfileHelper.HandleCollection( resolveData, path, nonDefault, type, resolved, out data );
         return true;
     }
