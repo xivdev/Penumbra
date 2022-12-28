@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
@@ -17,8 +16,8 @@ public unsafe partial class PathResolver
     {
         private readonly DrawObjectState _drawObjectState;
 
-        private ResolveData                         _animationLoadData  = ResolveData.Invalid;
-        private ResolveData                         _characterSoundData = ResolveData.Invalid;
+        private ResolveData _animationLoadData  = ResolveData.Invalid;
+        private ResolveData _characterSoundData = ResolveData.Invalid;
 
         public AnimationState( DrawObjectState drawObjectState )
         {
@@ -26,7 +25,7 @@ public unsafe partial class PathResolver
             SignatureHelper.Initialise( this );
         }
 
-        public bool HandleFiles( ResourceType type, Utf8GamePath path, out ResolveData resolveData )
+        public bool HandleFiles( ResourceType type, Utf8GamePath _, out ResolveData resolveData )
         {
             switch( type )
             {
@@ -79,33 +78,42 @@ public unsafe partial class PathResolver
         {
             _loadTimelineResourcesHook.Enable();
             _characterBaseLoadAnimationHook.Enable();
-            _loadSomeAvfxHook.Enable();
             _loadSomePapHook.Enable();
             _someActionLoadHook.Enable();
-            _someOtherAvfxHook.Enable();
             _loadCharacterSoundHook.Enable();
+            _loadCharacterVfxHook.Enable();
+            _loadAreaVfxHook.Enable();
+
+            //_loadSomeAvfxHook.Enable();
+            //_someOtherAvfxHook.Enable();
         }
 
         public void Disable()
         {
             _loadTimelineResourcesHook.Disable();
             _characterBaseLoadAnimationHook.Disable();
-            _loadSomeAvfxHook.Disable();
             _loadSomePapHook.Disable();
             _someActionLoadHook.Disable();
-            _someOtherAvfxHook.Disable();
             _loadCharacterSoundHook.Disable();
+            _loadCharacterVfxHook.Disable();
+            _loadAreaVfxHook.Disable();
+
+            //_loadSomeAvfxHook.Disable();
+            //_someOtherAvfxHook.Disable();
         }
 
         public void Dispose()
         {
             _loadTimelineResourcesHook.Dispose();
             _characterBaseLoadAnimationHook.Dispose();
-            _loadSomeAvfxHook.Dispose();
             _loadSomePapHook.Dispose();
             _someActionLoadHook.Dispose();
-            _someOtherAvfxHook.Dispose();
             _loadCharacterSoundHook.Dispose();
+            _loadCharacterVfxHook.Dispose();
+            _loadAreaVfxHook.Dispose();
+
+            //_loadSomeAvfxHook.Dispose();
+            //_someOtherAvfxHook.Dispose();
         }
 
         // Characters load some of their voice lines or whatever with this function.
@@ -181,21 +189,6 @@ public unsafe partial class PathResolver
             _animationLoadData = last;
         }
 
-
-        public delegate ulong LoadSomeAvfx( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 );
-
-        [Signature( "E8 ?? ?? ?? ?? 45 0F B6 F7", DetourName = nameof( LoadSomeAvfxDetour ) )]
-        private readonly Hook< LoadSomeAvfx > _loadSomeAvfxHook = null!;
-
-        private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 )
-        {
-            var last = _animationLoadData;
-            _animationLoadData = IdentifyCollection( ( GameObject* )gameObject, true );
-            var ret = _loadSomeAvfxHook.Original( a1, gameObject, gameObject2, unk1, unk2, unk3 );
-            _animationLoadData = last;
-            return ret;
-        }
-
         // Unknown what exactly this is but it seems to load a bunch of paps.
         private delegate void LoadSomePap( IntPtr a1, int a2, IntPtr a3, int a4 );
 
@@ -232,16 +225,106 @@ public unsafe partial class PathResolver
             _animationLoadData = last;
         }
 
-        [Signature( "E8 ?? ?? ?? ?? 44 84 A3", DetourName = nameof( SomeOtherAvfxDetour ) )]
-        private readonly Hook< CharacterBaseNoArgumentDelegate > _someOtherAvfxHook = null!;
-
-        private void SomeOtherAvfxDetour( IntPtr unk )
+        [StructLayout( LayoutKind.Explicit )]
+        private struct VfxParams
         {
-            var last       = _animationLoadData;
-            var gameObject = ( GameObject* )( unk - 0x8D0 );
-            _animationLoadData = IdentifyCollection( gameObject, true );
-            _someOtherAvfxHook.Original( unk );
-            _animationLoadData = last;
+            [FieldOffset( 0x118 )]
+            public uint GameObjectId;
+
+            [FieldOffset( 0xD0 )]
+            public ushort TargetCount;
+
+            [FieldOffset( 0x120 )]
+            public fixed uint Target[16];
         }
+
+        private delegate IntPtr LoadCharacterVfxDelegate( byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4 );
+
+        [Signature( "E8 ?? ?? ?? ?? 48 8B F8 48 8D 93", DetourName = nameof( LoadCharacterVfxDetour ) )]
+        private readonly Hook< LoadCharacterVfxDelegate > _loadCharacterVfxHook = null!;
+
+        private IntPtr LoadCharacterVfxDetour( byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4 )
+        {
+            var last = _animationLoadData;
+            if( vfxParams != null && vfxParams->GameObjectId != unchecked( ( uint )-1 ) )
+            {
+                var obj = Dalamud.Objects.SearchById( vfxParams->GameObjectId );
+                if( obj != null )
+                {
+                    _animationLoadData = IdentifyCollection( ( GameObject* )obj.Address, true );
+                }
+                else
+                {
+                    _animationLoadData = ResolveData.Invalid;
+                }
+            }
+            else
+            {
+                _animationLoadData = ResolveData.Invalid;
+            }
+
+            var ret = _loadCharacterVfxHook.Original( vfxPath, vfxParams, unk1, unk2, unk3, unk4 );
+#if DEBUG
+            Penumbra.Log.Verbose(
+                $"Load Character VFX: {new ByteString( vfxPath )}  {vfxParams->GameObjectId:X} {vfxParams->TargetCount} {unk1} {unk2} {unk3} {unk4} -> {ret:X} {_animationLoadData.ModCollection.Name} {_animationLoadData.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}" );
+#endif
+            _animationLoadData = last;
+            return ret;
+        }
+
+        private delegate IntPtr LoadAreaVfxDelegate( uint vfxId, float* pos, GameObject* caster, float unk1, float unk2, byte unk3 );
+
+        [Signature( "48 8B C4 53 55 56 57 41 56 48 81 EC", DetourName = nameof( LoadAreaVfxDetour ) )]
+        private readonly Hook< LoadAreaVfxDelegate > _loadAreaVfxHook = null!;
+
+        private IntPtr LoadAreaVfxDetour( uint vfxId, float* pos, GameObject* caster, float unk1, float unk2, byte unk3 )
+        {
+            var last = _animationLoadData;
+            if( caster != null )
+            {
+                _animationLoadData = IdentifyCollection( caster, true );
+            }
+            else
+            {
+                _animationLoadData = ResolveData.Invalid;
+            }
+
+            var ret = _loadAreaVfxHook.Original( vfxId, pos, caster, unk1, unk2, unk3 );
+#if DEBUG
+            Penumbra.Log.Verbose(
+                $"Load Area VFX: {vfxId}, {pos[ 0 ]} {pos[ 1 ]} {pos[ 2 ]} {( caster != null ? new ByteString( caster->GetName() ).ToString() : "Unknown" )} {unk1} {unk2} {unk3} -> {ret:X} {_animationLoadData.ModCollection.Name} {_animationLoadData.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}" );
+#endif
+            _animationLoadData = last;
+            return ret;
+        }
+
+
+        // ========== Those hooks seem to be superseded by LoadCharacterVfx =========
+
+        // public delegate ulong LoadSomeAvfx( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 );
+        // 
+        // [Signature( "E8 ?? ?? ?? ?? 45 0F B6 F7", DetourName = nameof( LoadSomeAvfxDetour ) )]
+        // private readonly Hook<LoadSomeAvfx> _loadSomeAvfxHook = null!;
+        // 
+        // private ulong LoadSomeAvfxDetour( uint a1, IntPtr gameObject, IntPtr gameObject2, float unk1, IntPtr unk2, IntPtr unk3 )
+        // {
+        //     var last = _animationLoadData;
+        //     _animationLoadData = IdentifyCollection( ( GameObject* )gameObject, true );
+        //     var ret = _loadSomeAvfxHook.Original( a1, gameObject, gameObject2, unk1, unk2, unk3 );
+        //     _animationLoadData = last;
+        //     return ret;
+        // }
+        // 
+        // [Signature( "E8 ?? ?? ?? ?? 44 84 A3", DetourName = nameof( SomeOtherAvfxDetour ) )]
+        // private readonly Hook<CharacterBaseNoArgumentDelegate> _someOtherAvfxHook = null!;
+        // 
+        // private void SomeOtherAvfxDetour( IntPtr unk )
+        // {
+        //     var last       = _animationLoadData;
+        //     var gameObject = ( GameObject* )( unk - 0x8D0 );
+        //     _animationLoadData = IdentifyCollection( gameObject, true );
+        //     _someOtherAvfxHook.Original( unk );
+        //     _animationLoadData = last;
+        // }
     }
 }
