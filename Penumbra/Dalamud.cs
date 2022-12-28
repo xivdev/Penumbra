@@ -38,7 +38,7 @@ public class Dalamud
     // @formatter:on
 
     private static readonly object?     DalamudConfig;
-    private static readonly object?     SettingsWindow;
+    private static readonly MethodInfo? InterfaceGetter;
     private static readonly MethodInfo? SaveDalamudConfig;
     public const            string      WaitingForPluginsOption = "IsResumeGameAfterPluginLoad";
 
@@ -56,9 +56,9 @@ public class Dalamud
 
             var configService    = serviceType.MakeGenericType( configType );
             var interfaceService = serviceType.MakeGenericType( interfaceType );
-            var configGetter     = configService.GetMethod( "Get", BindingFlags.Static    | BindingFlags.Public | BindingFlags.NonPublic );
-            var interfaceGetter  = interfaceService.GetMethod( "Get", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic );
-            if( configGetter == null || interfaceGetter == null )
+            var configGetter     = configService.GetMethod( "Get", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic );
+            InterfaceGetter = interfaceService.GetMethod( "Get", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic );
+            if( configGetter == null || InterfaceGetter == null )
             {
                 return;
             }
@@ -69,15 +69,8 @@ public class Dalamud
                 SaveDalamudConfig = DalamudConfig.GetType().GetMethod( "Save", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic );
                 if( SaveDalamudConfig == null )
                 {
-                    DalamudConfig = null;
-                }
-
-                var inter = interfaceGetter.Invoke( null, null );
-                SettingsWindow = inter?.GetType().GetField( "settingsWindow", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic )?.GetValue( inter );
-                if( SettingsWindow == null )
-                {
-                    DalamudConfig     = null;
-                    SaveDalamudConfig = null;
+                    DalamudConfig   = null;
+                    InterfaceGetter = null;
                 }
             }
         }
@@ -85,7 +78,7 @@ public class Dalamud
         {
             DalamudConfig     = null;
             SaveDalamudConfig = null;
-            SettingsWindow    = null;
+            InterfaceGetter   = null;
         }
     }
 
@@ -139,7 +132,9 @@ public class Dalamud
             getter.SetValue( DalamudConfig, value );
             if( windowFieldName != null )
             {
-                SettingsWindow!.GetType().GetField( windowFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic )?.SetValue( SettingsWindow, value );
+                var inter          = InterfaceGetter!.Invoke( null, null );
+                var settingsWindow = inter?.GetType().GetField( "settingsWindow", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic )?.GetValue( inter );
+                settingsWindow?.GetType().GetField( windowFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic )?.SetValue( settingsWindow, value );
             }
 
             SaveDalamudConfig!.Invoke( DalamudConfig, null );
