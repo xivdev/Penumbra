@@ -122,6 +122,8 @@ public class ItemSwapWindow : IDisposable
                 _loadException = e;
             }
         }
+
+        _dirty = false;
     }
 
     private static string SwapToString( Swap swap )
@@ -215,7 +217,7 @@ public class ItemSwapWindow : IDisposable
         using var tab = ImRaii.TabItem( newTab.ToString() );
         if( tab )
         {
-            _dirty   = _lastTab != newTab;
+            _dirty   |= _lastTab != newTab;
             _lastTab = newTab;
         }
 
