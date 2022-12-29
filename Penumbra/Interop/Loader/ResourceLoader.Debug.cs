@@ -249,8 +249,6 @@ public unsafe partial class ResourceLoader
         Penumbra.Log.Information( $"[ResourceLoader] [{handle->FileType}] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
     }
 
-    private static void LogLoadedFile( ByteString path, bool success, bool custom )
-        => Penumbra.Log.Information( success
-            ? $"[ResourceLoader] Loaded {path} from {( custom ? "local files" : "SqPack" )}"
-            : $"[ResourceLoader] Failed to load {path} from {( custom ? "local files" : "SqPack" )}." );
+    private static void LogLoadedFile( Structs.ResourceHandle* resource, ByteString path, bool success, bool custom )
+        => Penumbra.Log.Information( $"[ResourceLoader] Loading {path} from {( custom ? "local files" : "SqPack" )} into 0x{( ulong )resource:X} returned {success}." );
 }

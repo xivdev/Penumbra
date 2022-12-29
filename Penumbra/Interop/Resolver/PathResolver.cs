@@ -169,4 +169,13 @@ public partial class PathResolver : IDisposable
 
     internal IEnumerable< KeyValuePair< int, global::Dalamud.Game.ClientState.Objects.Types.GameObject > > CutsceneActors
         => Cutscenes.Actors;
+
+    internal IEnumerable< KeyValuePair< IntPtr, ResolveData > > ResourceCollections
+        => _subFiles;
+
+    internal ResolveData CurrentMtrlData
+        => _subFiles.MtrlData;
+
+    internal ResolveData CurrentAvfxData
+        => _subFiles.AvfxData;
 }

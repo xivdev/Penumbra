@@ -138,11 +138,6 @@ public class Penumbra : IDalamudPlugin
                 ResourceLoader.EnableFullLogging();
             }
 
-            if( CharacterUtility.Ready )
-            {
-                ResidentResources.Reload();
-            }
-
             Api          = new PenumbraApi( this );
             IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
             SubscribeItemLinks();
@@ -159,6 +154,11 @@ public class Penumbra : IDalamudPlugin
 
             OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
             Log.Information( $"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}." );
+
+            if( CharacterUtility.Ready )
+            {
+                ResidentResources.Reload();
+            }
         }
         catch
         {

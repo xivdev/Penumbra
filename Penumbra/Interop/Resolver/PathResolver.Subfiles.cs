@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -17,7 +19,7 @@ public unsafe partial class PathResolver
     // Materials and avfx do contain their own paths to textures and shader packages or atex respectively.
     // Those are loaded synchronously.
     // Thus, we need to ensure the correct files are loaded when a material is loaded.
-    public class SubfileHelper : IDisposable
+    public class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<IntPtr, ResolveData>>
     {
         private readonly ResourceLoader _loader;
 
@@ -81,7 +83,8 @@ public unsafe partial class PathResolver
             _loadMtrlTexHook.Enable();
             _apricotResourceLoadHook.Enable();
             _loader.ResourceLoadCustomization += SubfileLoadHandler;
-            _loader.ResourceLoaded            += SubfileContainerLoaded;
+            _loader.ResourceLoaded            += SubfileContainerRequested;
+            _loader.FileLoaded                += SubfileContainerLoaded;
         }
 
         public void Disable()
@@ -90,7 +93,8 @@ public unsafe partial class PathResolver
             _loadMtrlTexHook.Disable();
             _apricotResourceLoadHook.Disable();
             _loader.ResourceLoadCustomization -= SubfileLoadHandler;
-            _loader.ResourceLoaded            -= SubfileContainerLoaded;
+            _loader.ResourceLoaded            -= SubfileContainerRequested;
+            _loader.FileLoaded                -= SubfileContainerLoaded;
         }
 
         public void Dispose()
@@ -101,13 +105,28 @@ public unsafe partial class PathResolver
             _apricotResourceLoadHook.Dispose();
         }
 
-        private void SubfileContainerLoaded( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath, ResolveData resolveData )
+        private void SubfileContainerRequested( ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath, ResolveData resolveData )
         {
             switch( handle->FileType )
             {
                 case ResourceType.Mtrl:
                 case ResourceType.Avfx:
-                    _subFileCollection[ ( IntPtr )handle ] = resolveData;
+                    if( handle->FileSize == 0 )
+                    {
+                        _subFileCollection[ ( IntPtr )handle ] = resolveData;
+                    }
+
+                    break;
+            }
+        }
+
+        private void SubfileContainerLoaded( ResourceHandle* handle, ByteString path, bool success, bool custom )
+        {
+            switch( handle->FileType )
+            {
+                case ResourceType.Mtrl:
+                case ResourceType.Avfx:
+                    _subFileCollection.TryRemove( ( IntPtr )handle, out _ );
                     break;
             }
         }
@@ -131,7 +150,6 @@ public unsafe partial class PathResolver
             // Was called with True on my client and with false on other peoples clients,
             // which caused problems.
             ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, true );
-            _subFileCollection.TryRemove( ( IntPtr )fileDescriptor->ResourceHandle, out _ );
             return true;
         }
 
@@ -184,5 +202,20 @@ public unsafe partial class PathResolver
             _avfxData = ResolveData.Invalid;
             return ret;
         }
+
+        public IEnumerator< KeyValuePair< IntPtr, ResolveData > > GetEnumerator()
+            => _subFileCollection.GetEnumerator();
+
+        IEnumerator IEnumerable.GetEnumerator()
+            => GetEnumerator();
+
+        public int Count
+            => _subFileCollection.Count;
+
+        internal ResolveData MtrlData
+            => _mtrlData;
+
+        internal ResolveData AvfxData
+            => _avfxData;
     }
 }

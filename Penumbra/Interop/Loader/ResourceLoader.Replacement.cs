@@ -214,7 +214,7 @@ public unsafe partial class ResourceLoader
         SeFileDescriptor* fileDescriptor, int priority, bool isSync )
     {
         var ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-        FileLoaded?.Invoke( path, ret != 0, false );
+        FileLoaded?.Invoke( fileDescriptor->ResourceHandle, path, ret != 0, false );
         return ret;
     }
 
@@ -242,7 +242,7 @@ public unsafe partial class ResourceLoader
 
         // Use the SE ReadFile function.
         var ret = ReadFile( resourceManager, fileDescriptor, priority, isSync );
-        FileLoaded?.Invoke( gamePath, ret != 0, true );
+        FileLoaded?.Invoke( fileDescriptor->ResourceHandle, gamePath, ret != 0, true );
         return ret;
     }
 

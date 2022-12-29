@@ -67,6 +67,15 @@ public unsafe struct ResourceHandle
     [FieldOffset( 0x10 )]
     public uint Id;
 
+    [FieldOffset( 0x28 )]
+    public uint FileSize;
+
+    [FieldOffset( 0x2C )]
+    public uint FileSize2;
+
+    [FieldOffset( 0x34 )]
+    public uint FileSize3;
+
     [FieldOffset( 0x48 )]
     public byte* FileNameData;
 

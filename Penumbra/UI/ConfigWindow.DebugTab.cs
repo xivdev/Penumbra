@@ -239,7 +239,7 @@ public partial class ConfigWindow
             {
                 if( pathTree )
                 {
-                    using var table = ImRaii.Table( "###PathCollectionResolverTable", 2, ImGuiTableFlags.SizingFixedFit );
+                    using var table = ImRaii.Table( "###PathCollectionResolverTable", 3, ImGuiTableFlags.SizingFixedFit );
                     if( table )
                     {
                         foreach( var (path, collection) in _window._penumbra.PathResolver.PathCollections )
@@ -248,6 +248,33 @@ public partial class ConfigWindow
                             ImGuiNative.igTextUnformatted( path.Path, path.Path + path.Length );
                             ImGui.TableNextColumn();
                             ImGui.TextUnformatted( collection.ModCollection.Name );
+                            ImGui.TableNextColumn();
+                            ImGui.TextUnformatted( collection.AssociatedGameObject.ToString("X") );
+                        }
+                    }
+                }
+            }
+
+            using( var resourceTree = ImRaii.TreeNode( "Subfile Collections" ) )
+            {
+                if( resourceTree )
+                {
+                    using var table = ImRaii.Table( "###ResourceCollectionResolverTable", 3, ImGuiTableFlags.SizingFixedFit );
+                    if( table )
+                    {
+                        ImGuiUtil.DrawTableColumn( "Current Mtrl Data" );
+                        ImGuiUtil.DrawTableColumn( _window._penumbra.PathResolver.CurrentMtrlData.ModCollection.Name );
+                        ImGuiUtil.DrawTableColumn( $"0x{_window._penumbra.PathResolver.CurrentMtrlData.AssociatedGameObject:X}" );
+
+                        ImGuiUtil.DrawTableColumn( "Current Avfx Data" );
+                        ImGuiUtil.DrawTableColumn( _window._penumbra.PathResolver.CurrentAvfxData.ModCollection.Name );
+                        ImGuiUtil.DrawTableColumn( $"0x{_window._penumbra.PathResolver.CurrentAvfxData.AssociatedGameObject:X}" );
+
+                        foreach( var (resource, resolve) in _window._penumbra.PathResolver.ResourceCollections )
+                        {
+                            ImGuiUtil.DrawTableColumn( $"0x{resource:X}" );
+                            ImGuiUtil.DrawTableColumn( resolve.ModCollection.Name );
+                            ImGuiUtil.DrawTableColumn( $"0x{resolve.AssociatedGameObject:X}" );
                         }
                     }
                 }
