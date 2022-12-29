@@ -144,6 +144,7 @@ public static class CustomizationSwap
 
         var newPath = ReplaceAnyRace( path, race );
         newPath = ReplaceAnyBody( newPath, slot, idFrom );
+        newPath = AddSuffix( newPath, ".tex", $"_{Path.GetFileName(texture.Path).GetStableHashCode():x8}", true );
         if( newPath != path )
         {
             texture.Path   = addedDashes ? newPath.Replace( "--", string.Empty ) : newPath;
