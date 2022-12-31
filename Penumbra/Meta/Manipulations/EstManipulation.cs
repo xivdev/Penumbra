@@ -19,6 +19,16 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
         Head = CharacterUtility.Index.HeadEst,
     }
 
+    public static string ToName( EstType type )
+        => type switch
+        {
+            EstType.Hair => "hair",
+            EstType.Face => "face",
+            EstType.Body => "top",
+            EstType.Head => "met",
+            _            => "unk",
+        };
+
     public ushort Entry { get; private init; } // SkeletonIdx.
 
     [JsonConverter( typeof( StringEnumConverter ) )]

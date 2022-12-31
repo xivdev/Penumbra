@@ -184,7 +184,7 @@ public partial class ModEditWindow
     {
         _dialogManager.Draw();
 
-        using var tab = ImRaii.TabItem( "Texture Import/Export (WIP)" );
+        using var tab = ImRaii.TabItem( "Texture Import/Export" );
         if( !tab )
         {
             return;

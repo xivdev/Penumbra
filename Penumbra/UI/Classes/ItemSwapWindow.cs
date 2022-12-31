@@ -5,6 +5,7 @@ using Dalamud.Interface;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
@@ -18,12 +19,38 @@ namespace Penumbra.UI.Classes;
 
 public class ItemSwapWindow : IDisposable
 {
-    private class ItemSelector : FilterComboCache< Item >
+    private class EquipSelector : FilterComboCache< Item >
     {
-        public ItemSelector()
+        public EquipSelector()
             : base( Dalamud.GameData.GetExcelSheet< Item >()!.Where( i
-                => ( ( EquipSlot )i.EquipSlotCategory.Row ).IsEquipmentPiece() && i.ModelMain != 0 && i.Name.RawData.Length > 0 ) )
+                => ( ( EquipSlot )i.EquipSlotCategory.Row ).IsEquipment() && i.ModelMain != 0 && i.Name.RawData.Length > 0 ) )
         { }
+
+        protected override string ToString( Item obj )
+            => obj.Name.ToString();
+    }
+
+    private class AccessorySelector : FilterComboCache< Item >
+    {
+        public AccessorySelector()
+            : base( Dalamud.GameData.GetExcelSheet< Item >()!.Where( i
+                => ( ( EquipSlot )i.EquipSlotCategory.Row ).IsAccessory() && i.ModelMain != 0 && i.Name.RawData.Length > 0 ) )
+        { }
+
+        protected override string ToString( Item obj )
+            => obj.Name.ToString();
+    }
+
+    private class SlotSelector : FilterComboCache< Item >
+    {
+        public readonly EquipSlot CurrentSlot;
+
+        public SlotSelector( EquipSlot slot )
+            : base( () => Dalamud.GameData.GetExcelSheet< Item >()!.Where( i
+                => ( ( EquipSlot )i.EquipSlotCategory.Row ).ToSlot() == slot && i.ModelMain != 0 && i.Name.RawData.Length > 0 ).ToList() )
+        {
+            CurrentSlot = slot;
+        }
 
         protected override string ToString( Item obj )
             => obj.Name.ToString();
@@ -41,8 +68,10 @@ public class ItemSwapWindow : IDisposable
         Penumbra.CollectionManager.Current.ModSettingChanged -= OnSettingChange;
     }
 
-    private readonly ItemSelector      _itemSelector = new();
-    private readonly ItemSwapContainer _swapData     = new();
+    private readonly EquipSelector     _equipSelector     = new();
+    private readonly AccessorySelector _accessorySelector = new();
+    private          SlotSelector?     _slotSelector;
+    private readonly ItemSwapContainer _swapData = new();
 
     private Mod?         _mod;
     private ModSettings? _modSettings;
@@ -53,13 +82,14 @@ public class ItemSwapWindow : IDisposable
     private ModelRace  _currentRace    = ModelRace.Midlander;
     private int        _targetId       = 0;
     private int        _sourceId       = 0;
-    private int        _currentVariant = 1;
     private Exception? _loadException  = null;
 
     private string _newModName    = string.Empty;
     private string _newGroupName  = "Swaps";
     private string _newOptionName = string.Empty;
-    private bool   _useFileSwaps  = false;
+    private bool   _useFileSwaps  = true;
+
+    private Item[]? _affectedItems;
 
 
     public void UpdateMod( Mod mod, ModSettings? settings )
@@ -90,37 +120,37 @@ public class ItemSwapWindow : IDisposable
 
         _swapData.Clear();
         _loadException = null;
-        if( _targetId > 0 && _sourceId > 0 )
+        try
         {
-            try
+            switch( _lastTab )
             {
-                switch( _lastTab )
-                {
-                    case SwapType.Equipment: break;
-                    case SwapType.Accessory: break;
-                    case SwapType.Hair:
-
-                        _swapData.LoadCustomization( BodySlot.Hair, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
-                        break;
-                    case SwapType.Face:
-                        _swapData.LoadCustomization( BodySlot.Face, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
-                        break;
-                    case SwapType.Ears:
-                        _swapData.LoadCustomization( BodySlot.Zear, Names.CombinedRace( _currentGender, ModelRace.Viera ), ( SetId )_sourceId, ( SetId )_targetId );
-                        break;
-                    case SwapType.Tail:
-                        _swapData.LoadCustomization( BodySlot.Tail, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
-                        break;
-                    case SwapType.Weapon: break;
-                    case SwapType.Minion: break;
-                    case SwapType.Mount:  break;
-                }
+                case SwapType.Equipment when _slotSelector?.CurrentSelection != null && _equipSelector.CurrentSelection != null:
+                    _affectedItems = _swapData.LoadEquipment( _equipSelector.CurrentSelection, _slotSelector.CurrentSelection );
+                    break;
+                case SwapType.Accessory when _slotSelector?.CurrentSelection != null && _accessorySelector.CurrentSelection != null:
+                    _affectedItems = _swapData.LoadEquipment( _accessorySelector.CurrentSelection, _slotSelector.CurrentSelection );
+                    break;
+                case SwapType.Hair when _targetId > 0 && _sourceId > 0:
+                    _swapData.LoadCustomization( BodySlot.Hair, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
+                    break;
+                case SwapType.Face when _targetId > 0 && _sourceId > 0:
+                    _swapData.LoadCustomization( BodySlot.Face, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
+                    break;
+                case SwapType.Ears when _targetId > 0 && _sourceId > 0:
+                    _swapData.LoadCustomization( BodySlot.Zear, Names.CombinedRace( _currentGender, ModelRace.Viera ), ( SetId )_sourceId, ( SetId )_targetId );
+                    break;
+                case SwapType.Tail when _targetId > 0 && _sourceId > 0:
+                    _swapData.LoadCustomization( BodySlot.Tail, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
+                    break;
+                case SwapType.Weapon: break;
+                case SwapType.Minion: break;
+                case SwapType.Mount:  break;
             }
-            catch( Exception e )
-            {
-                Penumbra.Log.Error( $"Could not get Customization Data container for {_lastTab}:\n{e}" );
-                _loadException = e;
-            }
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Error( $"Could not get Customization Data container for {_lastTab}:\n{e}" );
+            _loadException = e;
         }
 
         _dirty = false;
@@ -174,7 +204,7 @@ public class ItemSwapWindow : IDisposable
         ImGui.SameLine();
         tt = "Create a new option inside this mod containing only the swap.";
         if( ImGuiUtil.DrawDisabledButton( "Create New Option (WIP)", new Vector2( width / 2, 0 ), tt,
-               true || (!newModAvailable || _newGroupName.Length == 0 || _newOptionName.Length == 0 || _mod == null || _mod.AllSubMods.Any( m => m.Name == _newOptionName ) )) )
+               true || !newModAvailable || _newGroupName.Length == 0 || _newOptionName.Length == 0 || _mod == null || _mod.AllSubMods.Any( m => m.Name == _newOptionName ) ) )
         { }
 
         ImGui.SameLine();
@@ -201,15 +231,13 @@ public class ItemSwapWindow : IDisposable
     {
         using var bar = ImRaii.TabBar( "##swapBar", ImGuiTabBarFlags.None );
 
+        DrawArmorSwap();
+        DrawAccessorySwap();
         DrawHairSwap();
         DrawFaceSwap();
         DrawEarSwap();
         DrawTailSwap();
-        DrawArmorSwap();
-        DrawAccessorySwap();
         DrawWeaponSwap();
-        DrawMinionSwap();
-        DrawMountSwap();
     }
 
     private ImRaii.IEndObject DrawTab( SwapType newTab )
@@ -218,7 +246,7 @@ public class ItemSwapWindow : IDisposable
         if( tab )
         {
             _dirty   |= _lastTab != newTab;
-            _lastTab = newTab;
+            _lastTab =  newTab;
         }
 
         UpdateState();
@@ -228,22 +256,60 @@ public class ItemSwapWindow : IDisposable
 
     private void DrawArmorSwap()
     {
-        using var disabled = ImRaii.Disabled();
-        using var tab      = DrawTab( SwapType.Equipment );
+        using var tab = DrawTab( SwapType.Equipment );
         if( !tab )
         {
             return;
         }
+
+        using var table = ImRaii.Table( "##settings", 2, ImGuiTableFlags.SizingFixedFit );
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( "Take this piece of equipment" );
+        ImGui.TableNextColumn();
+        if( _equipSelector.Draw( "##itemTarget", _equipSelector.CurrentSelection?.Name.ToString() ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() ) )
+        {
+            var slot = ( ( EquipSlot )( _equipSelector.CurrentSelection?.EquipSlotCategory.Row ?? 0 ) ).ToSlot();
+            if( slot != _slotSelector?.CurrentSlot )
+                _slotSelector = new SlotSelector( slot );
+            _dirty = true;
+        }
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( "And put it on this one" );
+        ImGui.TableNextColumn();
+        _slotSelector ??= new SlotSelector( EquipSlot.Unknown );
+        _dirty |= _slotSelector.Draw( "##itemSource", _slotSelector.CurrentSelection?.Name.ToString() ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
     }
 
     private void DrawAccessorySwap()
     {
-        using var disabled = ImRaii.Disabled();
         using var tab      = DrawTab( SwapType.Accessory );
         if( !tab )
         {
             return;
         }
+
+        using var table = ImRaii.Table( "##settings", 2, ImGuiTableFlags.SizingFixedFit );
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( "Take this accessory" );
+        ImGui.TableNextColumn();
+        if( _accessorySelector.Draw( "##itemTarget", _accessorySelector.CurrentSelection?.Name.ToString() ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() ) )
+        {
+            var slot = ( ( EquipSlot )( _accessorySelector.CurrentSelection?.EquipSlotCategory.Row ?? 0 ) ).ToSlot();
+            if( slot != _slotSelector?.CurrentSlot )
+                _slotSelector = new SlotSelector( slot );
+            _dirty = true;
+        }
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( "And put it on this one" );
+        ImGui.TableNextColumn();
+        _slotSelector ??= new SlotSelector( EquipSlot.Unknown );
+        _dirty |= _slotSelector.Draw( "##itemSource", _slotSelector.CurrentSelection?.Name.ToString() ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
     }
 
     private void DrawHairSwap()
@@ -286,7 +352,7 @@ public class ItemSwapWindow : IDisposable
         using var table = ImRaii.Table( "##settings", 2, ImGuiTableFlags.SizingFixedFit );
         DrawTargetIdInput( "Take this Tail Type" );
         DrawSourceIdInput();
-        DrawGenderInput("for all", 2);
+        DrawGenderInput( "for all", 2 );
     }
 
 
@@ -315,26 +381,6 @@ public class ItemSwapWindow : IDisposable
         }
     }
 
-    private void DrawMinionSwap()
-    {
-        using var disabled = ImRaii.Disabled();
-        using var tab      = DrawTab( SwapType.Minion );
-        if( !tab )
-        {
-            return;
-        }
-    }
-
-    private void DrawMountSwap()
-    {
-        using var disabled = ImRaii.Disabled();
-        using var tab      = DrawTab( SwapType.Mount );
-        if( !tab )
-        {
-            return;
-        }
-    }
-
     private const float InputWidth = 120;
 
     private void DrawTargetIdInput( string text = "Take this ID" )
@@ -346,7 +392,10 @@ public class ItemSwapWindow : IDisposable
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth( InputWidth * ImGuiHelpers.GlobalScale );
         if( ImGui.InputInt( "##targetId", ref _targetId, 0, 0 ) )
+        {
             _targetId = Math.Clamp( _targetId, 0, byte.MaxValue );
+        }
+
         _dirty |= ImGui.IsItemDeactivatedAfterEdit();
     }
 
@@ -358,21 +407,11 @@ public class ItemSwapWindow : IDisposable
 
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth( InputWidth * ImGuiHelpers.GlobalScale );
-        if (ImGui.InputInt( "##sourceId", ref _sourceId, 0, 0 ))
+        if( ImGui.InputInt( "##sourceId", ref _sourceId, 0, 0 ) )
+        {
             _sourceId = Math.Clamp( _sourceId, 0, byte.MaxValue );
-        _dirty |= ImGui.IsItemDeactivatedAfterEdit();
-    }
+        }
 
-    private void DrawVariantInput( string text )
-    {
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted( text );
-
-        ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( InputWidth * ImGuiHelpers.GlobalScale );
-        if( ImGui.InputInt( "##variantId", ref _currentVariant, 0, 0 ) )
-            _currentVariant = Math.Clamp( _currentVariant, 0, byte.MaxValue );
         _dirty |= ImGui.IsItemDeactivatedAfterEdit();
     }
 

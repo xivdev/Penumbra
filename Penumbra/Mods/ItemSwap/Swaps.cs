@@ -1,4 +1,3 @@
-using System;
 using Penumbra.GameData.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
@@ -13,7 +12,7 @@ namespace Penumbra.Mods.ItemSwap;
 public class Swap
 {
     /// <summary> Any further swaps belonging specifically to this tree of changes. </summary>
-    public List< Swap > ChildSwaps = new();
+    public readonly List< Swap > ChildSwaps = new();
 
     public IEnumerable< Swap > WithChildren()
         => ChildSwaps.SelectMany( c => c.WithChildren() ).Prepend( this );
@@ -111,6 +110,9 @@ public sealed class FileSwap : Swap
     public MtrlFile? AsMtrl()
         => FileData as MtrlFile;
 
+    public AvfxFile? AsAvfx()
+        => FileData as AvfxFile;
+
     /// <summary>
     /// Create a full swap container for a specific file type using a modded redirection set, the actually requested path and the game file it should load instead after the swap.
     /// </summary>
@@ -151,6 +153,7 @@ public sealed class FileSwap : Swap
         {
             ResourceType.Mdl  => ItemSwap.LoadMdl( swap.SwapToModded, out var f ) ? f : ItemSwap.GenericFile.Invalid,
             ResourceType.Mtrl => ItemSwap.LoadMtrl( swap.SwapToModded, out var f ) ? f : ItemSwap.GenericFile.Invalid,
+            ResourceType.Avfx => ItemSwap.LoadAvfx( swap.SwapToModded, out var f ) ? f : ItemSwap.GenericFile.Invalid,
             _                 => ItemSwap.LoadFile( swap.SwapToModded, out var f ) ? f : ItemSwap.GenericFile.Invalid,
         };
 

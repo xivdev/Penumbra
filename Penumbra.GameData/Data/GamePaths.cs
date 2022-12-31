@@ -61,6 +61,24 @@ public static partial class GamePaths
             public static string Path(SetId monsterId, SetId bodyId, byte variant, char suffix1, char suffix2 = '\0')
                 => $"chara/monster/m{monsterId.Value:D4}/obj/body/b{bodyId.Value:D4}/texture/v{variant:D2}_m{monsterId.Value:D4}b{bodyId.Value:D4}{(suffix2 != '\0' ? $"_{suffix2}" : string.Empty)}_{suffix1}.tex";
         }
+
+        public static partial class Sklb
+        {
+            public static string Path(SetId monsterId)
+                => $"chara/monster/m{monsterId.Value:D4}/skeleton/base/b0001/skl_m{monsterId.Value:D4}b0001.sklb";
+        }
+
+        public static partial class Skp
+        {
+            public static string Path(SetId monsterId)
+                => $"chara/monster/m{monsterId.Value:D4}/skeleton/base/b0001/skl_m{monsterId.Value:D4}b0001.skp";
+        }
+
+        public static partial class Eid
+        {
+            public static string Path(SetId monsterId)
+                => $"chara/monster/m{monsterId.Value:D4}/skeleton/base/b0001/eid_m{monsterId.Value:D4}b0001.eid";
+        }
     }
 
     public static partial class Weapon
@@ -243,6 +261,21 @@ public static partial class GamePaths
         }
     }
 
+    public static partial class Skeleton
+    {
+        public static partial class Phyb
+        {
+            public static string Path(GenderRace raceCode, string slot, SetId slotId)
+                => $"chara/human/c{raceCode.ToRaceCode()}/skeleton/{slot}/{slot[0]}{slotId.Value:D4}/phy_c{raceCode.ToRaceCode()}{slot[0]}{slotId.Value:D4}.phyb";
+        }
+
+        public static partial class Sklb
+        {
+            public static string Path(GenderRace raceCode, string slot, SetId slotId)
+                => $"chara/human/c{raceCode.ToRaceCode()}/skeleton/{slot}/{slot[0]}{slotId.Value:D4}/skl_c{raceCode.ToRaceCode()}{slot[0]}{slotId.Value:D4}.sklb";
+        }
+    }
+
     public static partial class Character
     {
         public static partial class Mdl
@@ -252,18 +285,6 @@ public static partial class GamePaths
 
             public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId, CustomizationType type)
                 => $"chara/human/c{raceCode.ToRaceCode()}/obj/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/model/c{raceCode.ToRaceCode()}{slot.ToAbbreviation()}{slotId.Value:D4}_{type.ToSuffix()}.mdl";
-        }
-
-        public static partial class Phyb
-        {
-            public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId)
-                => $"chara/human/c{raceCode.ToRaceCode()}/skeleton/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/phy_c{raceCode.ToRaceCode()}{slot.ToAbbreviation()}{slotId.Value:D4}.phyb";
-        }
-
-        public static partial class Sklb
-        {
-            public static string Path(GenderRace raceCode, BodySlot slot, SetId slotId)
-                => $"chara/human/c{raceCode.ToRaceCode()}/skeleton/{slot.ToSuffix()}/{slot.ToAbbreviation()}{slotId.Value:D4}/skl_c{raceCode.ToRaceCode()}{slot.ToAbbreviation()}{slotId.Value:D4}.sklb";
         }
 
         public static partial class Mtrl

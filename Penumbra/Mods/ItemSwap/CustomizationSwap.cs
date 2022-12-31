@@ -7,8 +7,6 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
-using Penumbra.Meta.Files;
-using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.ItemSwap;
@@ -54,33 +52,6 @@ public static class CustomizationSwap
         return true;
     }
 
-    public static string ReplaceAnyId( string path, char idType, SetId id, bool condition = true )
-        => condition
-            ? Regex.Replace( path, $"{idType}\\d{{4}}", $"{idType}{id.Value:D4}" )
-            : path;
-
-    public static string ReplaceAnyRace( string path, GenderRace to, bool condition = true )
-        => ReplaceAnyId( path, 'c', ( ushort )to, condition );
-
-    public static string ReplaceAnyBody( string path, BodySlot slot, SetId to, bool condition = true )
-        => ReplaceAnyId( path, slot.ToAbbreviation(), to, condition );
-
-    public static string ReplaceId( string path, char type, SetId idFrom, SetId idTo, bool condition = true )
-        => condition
-            ? path.Replace( $"{type}{idFrom.Value:D4}", $"{type}{idTo.Value:D4}" )
-            : path;
-
-    public static string ReplaceRace( string path, GenderRace from, GenderRace to, bool condition = true )
-        => ReplaceId( path, 'c', ( ushort )from, ( ushort )to, condition );
-
-    public static string ReplaceBody( string path, BodySlot slot, SetId idFrom, SetId idTo, bool condition = true )
-        => ReplaceId( path, slot.ToAbbreviation(), idFrom, idTo, condition );
-
-    public static string AddSuffix( string path, string ext, string suffix, bool condition = true )
-        => condition
-            ? path.Replace( ext, suffix + ext )
-            : path;
-
     public static bool CreateMtrl( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, SetId idFrom, SetId idTo, byte variant,
         ref string fileName, ref bool dataWasChanged, out FileSwap mtrl )
     {
@@ -89,10 +60,10 @@ public static class CustomizationSwap
         var mtrlToPath   = GamePaths.Character.Mtrl.Path( race, slot, idTo, fileName, out var gameRaceTo, out var gameSetIdTo, variant );
 
         var newFileName = fileName;
-        newFileName = ReplaceRace( newFileName, gameRaceTo, race, gameRaceTo                                             != race );
-        newFileName = ReplaceBody( newFileName, slot, idTo, idFrom, idFrom.Value                                         != idTo.Value );
-        newFileName = AddSuffix( newFileName, ".mtrl", $"_c{race.ToRaceCode()}", gameRaceFrom                            != race );
-        newFileName = AddSuffix( newFileName, ".mtrl", $"_{slot.ToAbbreviation()}{idFrom.Value:D4}", gameSetIdFrom.Value != idFrom.Value );
+        newFileName = ItemSwap.ReplaceRace( newFileName, gameRaceTo, race, gameRaceTo                                             != race );
+        newFileName = ItemSwap.ReplaceBody( newFileName, slot, idTo, idFrom, idFrom.Value                                         != idTo.Value );
+        newFileName = ItemSwap.AddSuffix( newFileName, ".mtrl", $"_c{race.ToRaceCode()}", gameRaceFrom                            != race );
+        newFileName = ItemSwap.AddSuffix( newFileName, ".mtrl", $"_{slot.ToAbbreviation()}{idFrom.Value:D4}", gameSetIdFrom.Value != idFrom.Value );
 
         var actualMtrlFromPath = mtrlFromPath;
         if( newFileName != fileName )
@@ -142,9 +113,9 @@ public static class CustomizationSwap
             }
         }
 
-        var newPath = ReplaceAnyRace( path, race );
-        newPath = ReplaceAnyBody( newPath, slot, idFrom );
-        newPath = AddSuffix( newPath, ".tex", $"_{Path.GetFileName(texture.Path).GetStableHashCode():x8}", true );
+        var newPath = ItemSwap.ReplaceAnyRace( path, race );
+        newPath = ItemSwap.ReplaceAnyBody( newPath, slot, idFrom );
+        newPath = ItemSwap.AddSuffix( newPath, ".tex", $"_{Path.GetFileName( texture.Path ).GetStableHashCode():x8}", true );
         if( newPath != path )
         {
             texture.Path   = addedDashes ? newPath.Replace( "--", string.Empty ) : newPath;
@@ -159,57 +130,5 @@ public static class CustomizationSwap
     {
         var path = $"shader/sm5/shpk/{shaderName}";
         return FileSwap.CreateSwap( ResourceType.Shpk, redirections, path, path, out shpk );
-    }
-
-    /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
-    public static bool CreateEst( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, HashSet< MetaManipulation > metaChanges, BodySlot slot, GenderRace gr, SetId idFrom,
-        SetId idTo, out MetaSwap? est )
-    {
-        var (gender, race) = gr.Split();
-        var estSlot = slot switch
-        {
-            BodySlot.Hair => EstManipulation.EstType.Hair,
-            BodySlot.Body => EstManipulation.EstType.Body,
-            _             => ( EstManipulation.EstType )0,
-        };
-        if( estSlot == 0 )
-        {
-            est = null;
-            return true;
-        }
-
-        var fromDefault = new EstManipulation( gender, race, estSlot, idFrom.Value, EstFile.GetDefault( estSlot, gr, idFrom.Value ) );
-        var toDefault   = new EstManipulation( gender, race, estSlot, idTo.Value, EstFile.GetDefault( estSlot, gr, idTo.Value ) );
-        est = new MetaSwap( metaChanges, fromDefault, toDefault );
-
-        if( est.SwapApplied.Est.Entry >= 2 )
-        {
-            if( !CreatePhyb( redirections, slot, gr, est.SwapApplied.Est.Entry, out var phyb ) )
-            {
-                return false;
-            }
-
-            if( !CreateSklb( redirections, slot, gr, est.SwapApplied.Est.Entry, out var sklb ) )
-            {
-                return false;
-            }
-
-            est.ChildSwaps.Add( phyb );
-            est.ChildSwaps.Add( sklb );
-        }
-
-        return true;
-    }
-
-    public static bool CreatePhyb( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, ushort estEntry, out FileSwap phyb )
-    {
-        var phybPath = GamePaths.Character.Phyb.Path( race, slot, estEntry );
-        return FileSwap.CreateSwap( ResourceType.Phyb, redirections, phybPath, phybPath, out phyb );
-    }
-
-    public static bool CreateSklb( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, ushort estEntry, out FileSwap sklb )
-    {
-        var sklbPath = GamePaths.Character.Sklb.Path( race, slot, estEntry );
-        return FileSwap.CreateSwap( ResourceType.Sklb, redirections, sklbPath, sklbPath, out sklb );
     }
 }

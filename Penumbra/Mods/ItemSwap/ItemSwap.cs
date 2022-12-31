@@ -1,7 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Text.RegularExpressions;
+using Penumbra.GameData.Data;
+using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Structs;
+using Penumbra.Meta.Files;
+using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.ItemSwap;
@@ -110,6 +117,76 @@ public static class ItemSwap
         return false;
     }
 
+    public static bool LoadAvfx( FullPath path, [NotNullWhen( true )] out AvfxFile? file )
+    {
+        try
+        {
+            if( LoadFile( path, out byte[] data ) )
+            {
+                file = new AvfxFile( data );
+                return true;
+            }
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Debug( $"Could not parse file {path} to Avfx:\n{e}" );
+        }
+
+        file = null;
+        return false;
+    }
+
+
+    public static bool CreatePhyb( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry, out FileSwap phyb )
+    {
+        var phybPath = GamePaths.Skeleton.Phyb.Path( race, EstManipulation.ToName( type ), estEntry );
+        return FileSwap.CreateSwap( ResourceType.Phyb, redirections, phybPath, phybPath, out phyb );
+    }
+
+    public static bool CreateSklb( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry, out FileSwap sklb )
+    {
+        var sklbPath = GamePaths.Skeleton.Sklb.Path( race, EstManipulation.ToName( type ), estEntry );
+        return FileSwap.CreateSwap( ResourceType.Sklb, redirections, sklbPath, sklbPath, out sklb );
+    }
+
+    /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
+    public static bool CreateEst( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, HashSet< MetaManipulation > manips, EstManipulation.EstType type,
+        GenderRace genderRace, SetId idFrom, SetId idTo, out MetaSwap? est )
+    {
+        if( type == 0 )
+        {
+            est = null;
+            return true;
+        }
+
+        var (gender, race) = genderRace.Split();
+        var fromDefault = new EstManipulation( gender, race, type, idFrom.Value, EstFile.GetDefault( type, genderRace, idFrom.Value ) );
+        var toDefault   = new EstManipulation( gender, race, type, idTo.Value, EstFile.GetDefault( type, genderRace, idTo.Value ) );
+        est = new MetaSwap( manips, fromDefault, toDefault );
+
+        if( est.SwapApplied.Est.Entry >= 2 )
+        {
+            if( !CreatePhyb( redirections, type, genderRace, est.SwapApplied.Est.Entry, out var phyb ) )
+            {
+                return false;
+            }
+
+            if( !CreateSklb( redirections, type, genderRace, est.SwapApplied.Est.Entry, out var sklb ) )
+            {
+                return false;
+            }
+
+            est.ChildSwaps.Add( phyb );
+            est.ChildSwaps.Add( sklb );
+        }
+        else if( est.SwapAppliedIsDefault )
+        {
+            est = null;
+        }
+
+        return true;
+    }
+
     public static int GetStableHashCode( this string str )
     {
         unchecked
@@ -131,4 +208,31 @@ public static class ItemSwap
             return hash1 + hash2 * 1566083941;
         }
     }
+
+    public static string ReplaceAnyId( string path, char idType, SetId id, bool condition = true )
+        => condition
+            ? Regex.Replace( path, $"{idType}\\d{{4}}", $"{idType}{id.Value:D4}" )
+            : path;
+
+    public static string ReplaceAnyRace( string path, GenderRace to, bool condition = true )
+        => ReplaceAnyId( path, 'c', ( ushort )to, condition );
+
+    public static string ReplaceAnyBody( string path, BodySlot slot, SetId to, bool condition = true )
+        => ReplaceAnyId( path, slot.ToAbbreviation(), to, condition );
+
+    public static string ReplaceId( string path, char type, SetId idFrom, SetId idTo, bool condition = true )
+        => condition
+            ? path.Replace( $"{type}{idFrom.Value:D4}", $"{type}{idTo.Value:D4}" )
+            : path;
+
+    public static string ReplaceRace( string path, GenderRace from, GenderRace to, bool condition = true )
+        => ReplaceId( path, 'c', ( ushort )from, ( ushort )to, condition );
+
+    public static string ReplaceBody( string path, BodySlot slot, SetId idFrom, SetId idTo, bool condition = true )
+        => ReplaceId( path, slot.ToAbbreviation(), idFrom, idTo, condition );
+
+    public static string AddSuffix( string path, string ext, string suffix, bool condition = true )
+        => condition
+            ? path.Replace( ext, suffix + ext )
+            : path;
 }
