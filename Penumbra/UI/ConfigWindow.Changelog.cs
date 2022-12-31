@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using OtterGui.Widgets;
 
 namespace Penumbra.UI;
@@ -27,9 +28,34 @@ public partial class ConfigWindow
         Add6_0_0( ret );
         Add6_0_2( ret );
         Add6_0_5( ret );
+        Add6_1_0( ret );
 
         return ret;
     }
+
+    private static void Add6_1_0( Changelog log )
+        => log.NextVersion( "Version 0.6.1.0 (Happy New Year! Edition)" )
+           .RegisterEntry( "Added a prototype for Item Swapping." )
+           .RegisterEntry( "A new tab in Advanced Editing.", 1 )
+           .RegisterEntry( "Swapping of Hair, Tail, Ears, Equipment and Accessories is supported. Weapons and Faces may be coming.", 1 )
+           .RegisterEntry( "The manipulations currently in use by the selected mod with its currents settings (ignoring enabled state)"
+              + " should be used when creating the swap, but you can also just swap unmodded things.", 1 )
+           .RegisterEntry( "You can write a swap to a new mod, or to a new option in the currently selected mod.", 1 )
+           .RegisterEntry( "The swaps are not heavily tested yet, and may also be not perfectly efficient. Please leave feedback.", 1 )
+           .RegisterEntry( "More detailed help or explanations will be added later.", 1 )
+           .RegisterEntry( "Heavily improved Chat Commands. Use /penumbra help for more information." )
+           .RegisterEntry( "Penumbra now considers meta manipulations for Changed Items." )
+           .RegisterEntry( "Penumbra now tries to associate battle voices to specific actors, so that they work in collections." )
+           .RegisterEntry( "Heavily improved .atex and .avfx handling, Penumbra can now associate VFX to specific actors far better, including ground effects." )
+           .RegisterEntry( "Improved some file handling for Mare-Interaction." )
+           .RegisterEntry( "Added Equipment Slots to Demihuman IMC Edits." )
+           .RegisterEntry( "Added a toggle to keep metadata edits that apply the default value (and thus do not really change anything) on import from TexTools .meta files." )
+           .RegisterEntry( "Added an option to directly change the 'Wait For Plugins To Load'-Dalamud Option from Penumbra." )
+           .RegisterEntry( "Added API to copy mod settings from one mod to another." )
+           .RegisterEntry( "Fixed a problem where creating individual collections did not trigger events." )
+           .RegisterEntry( "Added a Hack to support Anamnesis Redrawing better. (0.6.0.6)" )
+           .RegisterEntry( "Fixed another problem with the aesthetician. (0.6.0.6)" )
+           .RegisterEntry( "Fixed a problem with the export directory not being respected. (0.6.0.6)" );
 
     private static void Add6_0_5( Changelog log )
         => log.NextVersion( "Version 0.6.0.5" )
