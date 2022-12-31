@@ -32,13 +32,17 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
     {
         Entry       = entry;
         PrimaryId   = primaryId;
-        Variant     = ( byte )variant;
+        Variant     = ( byte )Math.Clamp( variant, ( ushort )0, byte.MaxValue );
         SecondaryId = 0;
         ObjectType  = equipSlot.IsAccessory() ? ObjectType.Accessory : ObjectType.Equipment;
         EquipSlot   = equipSlot;
-        BodySlot    = BodySlot.Unknown;
+        BodySlot    = variant > byte.MaxValue ? BodySlot.Body : BodySlot.Unknown;
     }
 
+    // Variants were initially ushorts but got shortened to bytes.
+    // There are still some manipulations around that have values > 255 for variant,
+    // so we change the unused value to something nonsensical in that case, just so they do not compare equal,
+    // and clamp the variant to 255.
     [JsonConstructor]
     internal ImcManipulation( ObjectType objectType, BodySlot bodySlot, ushort primaryId, ushort secondaryId, ushort variant,
         EquipSlot equipSlot, ImcEntry entry )
@@ -46,16 +50,17 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
         Entry      = entry;
         ObjectType = objectType;
         PrimaryId  = primaryId;
-        Variant    = ( byte )variant;
+        Variant    = ( byte )Math.Clamp( variant, ( ushort )0, byte.MaxValue );
+
         if( objectType is ObjectType.Accessory or ObjectType.Equipment )
         {
-            BodySlot    = BodySlot.Unknown;
+            BodySlot    = variant > byte.MaxValue ? BodySlot.Body : BodySlot.Unknown;
             SecondaryId = 0;
             EquipSlot   = equipSlot;
         }
         else if( objectType is ObjectType.DemiHuman )
         {
-            BodySlot    = BodySlot.Unknown;
+            BodySlot    = variant > byte.MaxValue ? BodySlot.Body : BodySlot.Unknown;
             SecondaryId = secondaryId;
             EquipSlot   = equipSlot == EquipSlot.Unknown ? EquipSlot.Head : equipSlot;
         }
@@ -63,9 +68,18 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
         {
             BodySlot    = bodySlot;
             SecondaryId = secondaryId;
-            EquipSlot   = EquipSlot.Unknown;
+            EquipSlot   = variant > byte.MaxValue ? EquipSlot.All : EquipSlot.Unknown;
         }
     }
+
+    public bool Valid
+        => ObjectType switch
+        {
+            ObjectType.Accessory => BodySlot  == BodySlot.Unknown,
+            ObjectType.Equipment => BodySlot  == BodySlot.Unknown,
+            ObjectType.DemiHuman => BodySlot  == BodySlot.Unknown,
+            _                    => EquipSlot == EquipSlot.Unknown,
+        };
 
     public ImcManipulation Copy( ImcEntry entry )
         => new(ObjectType, BodySlot, PrimaryId, SecondaryId, Variant, EquipSlot, entry);

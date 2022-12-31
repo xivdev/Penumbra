@@ -100,7 +100,7 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
                     return;
                 case ImcManipulation m:
                     Imc              = m;
-                    ManipulationType = Type.Imc;
+                    ManipulationType = m.Valid ? Type.Imc : Type.Unknown;
                     return;
             }
         }
@@ -194,7 +194,7 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
             Type.Est  => Est.Equals( other.Est ),
             Type.Rsp  => Rsp.Equals( other.Rsp ),
             Type.Imc  => Imc.Equals( other.Imc ),
-            _         => throw new ArgumentOutOfRangeException(),
+            _         => false,
         };
     }
 
@@ -229,7 +229,7 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
             Type.Est  => Est.GetHashCode(),
             Type.Rsp  => Rsp.GetHashCode(),
             Type.Imc  => Imc.GetHashCode(),
-            _         => throw new ArgumentOutOfRangeException(),
+            _         => 0,
         };
 
     public unsafe int CompareTo( MetaManipulation other )
@@ -249,7 +249,7 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
             Type.Est  => Est.ToString(),
             Type.Rsp  => Rsp.ToString(),
             Type.Imc  => Imc.ToString(),
-            _         => throw new ArgumentOutOfRangeException(),
+            _         => "Invalid",
         };
 
     public string EntryToString()

@@ -173,7 +173,7 @@ public partial class Mod
             var manips = json[ nameof( Manipulations ) ];
             if( manips != null )
             {
-                foreach( var s in manips.Children().Select( c => c.ToObject< MetaManipulation >() ) )
+                foreach( var s in manips.Children().Select( c => c.ToObject< MetaManipulation >() ).Where( m => m.ManipulationType != MetaManipulation.Type.Unknown ) )
                 {
                     ManipulationData.Add( s );
                 }

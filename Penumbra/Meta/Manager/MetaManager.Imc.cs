@@ -53,6 +53,11 @@ public partial class MetaManager
 
     public bool ApplyMod( ImcManipulation manip )
     {
+        if( !manip.Valid )
+        {
+            return false;
+        }
+
         _imcManipulations.AddOrReplace( manip );
         var path = manip.GamePath();
         try
@@ -91,7 +96,7 @@ public partial class MetaManager
 
     public bool RevertMod( ImcManipulation m )
     {
-        if( !_imcManipulations.Remove( m ) )
+        if( !m.Valid || !_imcManipulations.Remove( m ) )
         {
             return false;
         }

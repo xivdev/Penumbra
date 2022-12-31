@@ -963,7 +963,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         manips = new HashSet< MetaManipulation >( manipArray!.Length );
-        foreach( var manip in manipArray )
+        foreach( var manip in manipArray.Where( m => m.ManipulationType != MetaManipulation.Type.Unknown ) )
         {
             if( !manips.Add( manip ) )
             {

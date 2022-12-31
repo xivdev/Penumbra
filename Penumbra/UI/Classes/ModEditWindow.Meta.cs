@@ -930,7 +930,7 @@ public partial class ModEditWindow
             var version = Functions.FromCompressedBase64< MetaManipulation[] >( clipboard, out var manips );
             if( version == MetaManipulation.CurrentVersion && manips != null )
             {
-                foreach( var manip in manips )
+                foreach( var manip in manips.Where( m => m.ManipulationType != MetaManipulation.Type.Unknown ) )
                 {
                     _editor!.Meta.Set( manip );
                 }
@@ -950,7 +950,7 @@ public partial class ModEditWindow
             if( version == MetaManipulation.CurrentVersion && manips != null )
             {
                 _editor!.Meta.Clear();
-                foreach( var manip in manips )
+                foreach( var manip in manips.Where( m => m.ManipulationType != MetaManipulation.Type.Unknown ) )
                 {
                     _editor!.Meta.Set( manip );
                 }
