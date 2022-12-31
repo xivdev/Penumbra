@@ -22,8 +22,13 @@ using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Data;
+using Penumbra.GameData.Enums;
+using Penumbra.GameData.Files;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
+using Penumbra.Meta.Files;
 using Penumbra.Mods;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
@@ -63,6 +68,7 @@ public class Penumbra : IDalamudPlugin
     public static IObjectIdentifier Identifier { get; private set; } = null!;
     public static IGamePathParser GamePathParser { get; private set; } = null!;
     public static StainManager StainManager { get; private set; } = null!;
+    public static ItemData ItemData { get; private set; } = null!;
 
     public static readonly List< Exception > ImcExceptions = new();
 
@@ -92,6 +98,7 @@ public class Penumbra : IDalamudPlugin
             Identifier             = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData );
             GamePathParser         = GameData.GameData.GetGamePathParser();
             StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData );
+            ItemData               = new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language );
             Actors                 = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.GameData, Dalamud.GameGui, ResolveCutscene );
 
             Framework        = new FrameworkManager();
@@ -289,6 +296,7 @@ public class Penumbra : IDalamudPlugin
         Api?.Dispose();
         _commandHandler?.Dispose();
         StainManager?.Dispose();
+        ItemData?.Dispose();
         Actors?.Dispose();
         Identifier?.Dispose();
         Framework?.Dispose();

@@ -252,9 +252,13 @@ public static class EquipmentSwap
             return false;
         }
 
+        // IMC also controls sound, Example: Dodore Doublet, but unknown what it does?
+        // IMC also controls some material animation, Example: The Howling Spirit and The Wailing Spirit, but unknown what it does.
+
         return true;
     }
-
+    
+    // Example: Crimson Standard Bracelet
     public static bool AddDecal( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, byte decalId, MetaSwap imc )
     {
         if( decalId != 0 )
@@ -271,6 +275,8 @@ public static class EquipmentSwap
         return true;
     }
 
+    
+    // Example: Abyssos Helm / Body
     public static bool AddAvfx( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, SetId idFrom, SetId idTo, byte vfxId, MetaSwap imc )
     {
         if( vfxId != 0 )

@@ -37,11 +37,12 @@ public class ItemSwapContainer
         NoSwaps,
     }
 
-    public bool WriteMod( Mod mod, WriteType writeType = WriteType.NoSwaps )
+    public bool WriteMod( Mod mod, WriteType writeType = WriteType.NoSwaps, DirectoryInfo? directory = null, int groupIndex = -1, int optionIndex = 0 )
     {
         var convertedManips = new HashSet< MetaManipulation >( Swaps.Count );
         var convertedFiles  = new Dictionary< Utf8GamePath, FullPath >( Swaps.Count );
         var convertedSwaps  = new Dictionary< Utf8GamePath, FullPath >( Swaps.Count );
+        directory ??= mod.ModPath;
         try
         {
             foreach( var swap in Swaps.SelectMany( s => s.WithChildren() ) )
@@ -62,7 +63,7 @@ public class ItemSwapContainer
                         }
                         else
                         {
-                            var path  = file.GetNewPath( mod.ModPath.FullName );
+                            var path  = file.GetNewPath( directory.FullName );
                             var bytes = file.FileData.Write();
                             Directory.CreateDirectory( Path.GetDirectoryName( path )! );
                             File.WriteAllBytes( path, bytes );
@@ -80,9 +81,9 @@ public class ItemSwapContainer
                 }
             }
 
-            Penumbra.ModManager.OptionSetFiles( mod, -1, 0, convertedFiles );
-            Penumbra.ModManager.OptionSetFileSwaps( mod, -1, 0, convertedSwaps );
-            Penumbra.ModManager.OptionSetManipulations( mod, -1, 0, convertedManips );
+            Penumbra.ModManager.OptionSetFiles( mod, groupIndex, optionIndex, convertedFiles );
+            Penumbra.ModManager.OptionSetFileSwaps( mod, groupIndex, optionIndex, convertedSwaps );
+            Penumbra.ModManager.OptionSetManipulations( mod, groupIndex, optionIndex, convertedManips );
             return true;
         }
         catch( Exception e )
@@ -120,7 +121,7 @@ public class ItemSwapContainer
             Loaded = true;
             return ret;
         }
-        catch( Exception e )
+        catch
         {
             Swaps.Clear();
             Loaded = false;

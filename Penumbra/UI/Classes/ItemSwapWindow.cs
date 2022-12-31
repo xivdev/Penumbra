@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Utility;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
@@ -14,46 +17,48 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.ItemSwap;
+using Penumbra.Util;
 
 namespace Penumbra.UI.Classes;
 
 public class ItemSwapWindow : IDisposable
 {
-    private class EquipSelector : FilterComboCache< Item >
+    private enum SwapType
     {
-        public EquipSelector()
-            : base( Dalamud.GameData.GetExcelSheet< Item >()!.Where( i
-                => ( ( EquipSlot )i.EquipSlotCategory.Row ).IsEquipment() && i.ModelMain != 0 && i.Name.RawData.Length > 0 ) )
-        { }
-
-        protected override string ToString( Item obj )
-            => obj.Name.ToString();
+        Hat,
+        Top,
+        Gloves,
+        Pants,
+        Shoes,
+        Earrings,
+        Necklace,
+        Bracelet,
+        Ring,
+        Hair,
+        Face,
+        Ears,
+        Tail,
+        Weapon,
     }
 
-    private class AccessorySelector : FilterComboCache< Item >
+    private class ItemSelector : FilterComboCache< (string, Item) >
     {
-        public AccessorySelector()
-            : base( Dalamud.GameData.GetExcelSheet< Item >()!.Where( i
-                => ( ( EquipSlot )i.EquipSlotCategory.Row ).IsAccessory() && i.ModelMain != 0 && i.Name.RawData.Length > 0 ) )
+        public ItemSelector( FullEquipType type )
+            : base( () => Penumbra.ItemData[ type ].Select( i => ( i.Name.ToDalamudString().TextValue, i ) ).ToArray() )
         { }
 
-        protected override string ToString( Item obj )
-            => obj.Name.ToString();
+        protected override string ToString( (string, Item) obj )
+            => obj.Item1;
     }
 
-    private class SlotSelector : FilterComboCache< Item >
+    private class WeaponSelector : FilterComboCache< FullEquipType >
     {
-        public readonly EquipSlot CurrentSlot;
+        public WeaponSelector()
+            : base( FullEquipTypeExtensions.WeaponTypes.Concat( FullEquipTypeExtensions.ToolTypes ) )
+        { }
 
-        public SlotSelector( EquipSlot slot )
-            : base( () => Dalamud.GameData.GetExcelSheet< Item >()!.Where( i
-                => ( ( EquipSlot )i.EquipSlotCategory.Row ).ToSlot() == slot && i.ModelMain != 0 && i.Name.RawData.Length > 0 ).ToList() )
-        {
-            CurrentSlot = slot;
-        }
-
-        protected override string ToString( Item obj )
-            => obj.Name.ToString();
+        protected override string ToString( FullEquipType type )
+            => type.ToName();
     }
 
     public ItemSwapWindow()
@@ -68,29 +73,43 @@ public class ItemSwapWindow : IDisposable
         Penumbra.CollectionManager.Current.ModSettingChanged -= OnSettingChange;
     }
 
-    private readonly EquipSelector     _equipSelector     = new();
-    private readonly AccessorySelector _accessorySelector = new();
-    private          SlotSelector?     _slotSelector;
-    private readonly ItemSwapContainer _swapData = new();
+    private readonly Dictionary< SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo) > _selectors = new()
+    {
+        [ SwapType.Hat ]      = ( new ItemSelector( FullEquipType.Head ), new ItemSelector( FullEquipType.Head ), "Take this Hat", "and put it on this one" ),
+        [ SwapType.Top ]      = ( new ItemSelector( FullEquipType.Body ), new ItemSelector( FullEquipType.Body ), "Take this Top", "and put it on this one" ),
+        [ SwapType.Gloves ]   = ( new ItemSelector( FullEquipType.Hands ), new ItemSelector( FullEquipType.Hands ), "Take these Gloves", "and put them on these" ),
+        [ SwapType.Pants ]    = ( new ItemSelector( FullEquipType.Legs ), new ItemSelector( FullEquipType.Legs ), "Take these Pants", "and put them on these" ),
+        [ SwapType.Shoes ]    = ( new ItemSelector( FullEquipType.Feet ), new ItemSelector( FullEquipType.Feet ), "Take these Shoes", "and put them on these" ),
+        [ SwapType.Earrings ] = ( new ItemSelector( FullEquipType.Ears ), new ItemSelector( FullEquipType.Ears ), "Take these Earrings", "and put them on these" ),
+        [ SwapType.Necklace ] = ( new ItemSelector( FullEquipType.Neck ), new ItemSelector( FullEquipType.Neck ), "Take this Necklace", "and put it on this one" ),
+        [ SwapType.Bracelet ] = ( new ItemSelector( FullEquipType.Wrists ), new ItemSelector( FullEquipType.Wrists ), "Take these Bracelets", "and put them on these" ),
+        [ SwapType.Ring ]     = ( new ItemSelector( FullEquipType.Finger ), new ItemSelector( FullEquipType.Finger ), "Take this Ring", "and put it on this one" ),
+    };
+
+    private          ItemSelector?     _weaponSource = null;
+    private          ItemSelector?     _weaponTarget = null;
+    private readonly WeaponSelector    _slotSelector = new();
+    private readonly ItemSwapContainer _swapData     = new();
 
     private Mod?         _mod;
     private ModSettings? _modSettings;
     private bool         _dirty;
 
-    private SwapType   _lastTab        = SwapType.Equipment;
-    private Gender     _currentGender  = Gender.Male;
-    private ModelRace  _currentRace    = ModelRace.Midlander;
-    private int        _targetId       = 0;
-    private int        _sourceId       = 0;
-    private Exception? _loadException  = null;
+    private SwapType   _lastTab       = SwapType.Hair;
+    private Gender     _currentGender = Gender.Male;
+    private ModelRace  _currentRace   = ModelRace.Midlander;
+    private int        _targetId      = 0;
+    private int        _sourceId      = 0;
+    private Exception? _loadException = null;
 
-    private string _newModName    = string.Empty;
-    private string _newGroupName  = "Swaps";
-    private string _newOptionName = string.Empty;
-    private bool   _useFileSwaps  = true;
+    private string     _newModName    = string.Empty;
+    private string     _newGroupName  = "Swaps";
+    private string     _newOptionName = string.Empty;
+    private IModGroup? _selectedGroup = null;
+    private bool       _subModValid   = false;
+    private bool       _useFileSwaps  = true;
 
     private Item[]? _affectedItems;
-
 
     public void UpdateMod( Mod mod, ModSettings? settings )
     {
@@ -108,6 +127,7 @@ public class ItemSwapWindow : IDisposable
         _mod         = mod;
         _modSettings = settings;
         _swapData.LoadMod( _mod, _modSettings );
+        UpdateOption();
         _dirty = true;
     }
 
@@ -120,15 +140,26 @@ public class ItemSwapWindow : IDisposable
 
         _swapData.Clear();
         _loadException = null;
+        _affectedItems = null;
         try
         {
             switch( _lastTab )
             {
-                case SwapType.Equipment when _slotSelector?.CurrentSelection != null && _equipSelector.CurrentSelection != null:
-                    _affectedItems = _swapData.LoadEquipment( _equipSelector.CurrentSelection, _slotSelector.CurrentSelection );
-                    break;
-                case SwapType.Accessory when _slotSelector?.CurrentSelection != null && _accessorySelector.CurrentSelection != null:
-                    _affectedItems = _swapData.LoadEquipment( _accessorySelector.CurrentSelection, _slotSelector.CurrentSelection );
+                case SwapType.Hat:
+                case SwapType.Top:
+                case SwapType.Gloves:
+                case SwapType.Pants:
+                case SwapType.Shoes:
+                case SwapType.Earrings:
+                case SwapType.Necklace:
+                case SwapType.Bracelet:
+                case SwapType.Ring:
+                    var values = _selectors[ _lastTab ];
+                    if( values.Source.CurrentSelection.Item2 != null && values.Target.CurrentSelection.Item2 != null )
+                    {
+                        _affectedItems = _swapData.LoadEquipment( values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2 );
+                    }
+
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization( BodySlot.Hair, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
@@ -143,8 +174,6 @@ public class ItemSwapWindow : IDisposable
                     _swapData.LoadCustomization( BodySlot.Tail, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
                     break;
                 case SwapType.Weapon: break;
-                case SwapType.Minion: break;
-                case SwapType.Mount:  break;
             }
         }
         catch( Exception e )
@@ -169,6 +198,93 @@ public class ItemSwapWindow : IDisposable
     private string CreateDescription()
         => $"Created by swapping {_lastTab} {_sourceId} onto {_lastTab} {_targetId} for {_currentRace.ToName()} {_currentGender.ToName()}s in {_mod!.Name}.";
 
+    private void UpdateOption()
+    {
+        _selectedGroup = _mod?.Groups.FirstOrDefault( g => g.Name == _newGroupName );
+        _subModValid   = _mod != null && _newGroupName.Length > 0 && _newOptionName.Length > 0 && ( _selectedGroup?.All( o => o.Name != _newOptionName ) ?? true );
+    }
+
+    private void CreateMod()
+    {
+        var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
+        Mod.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty );
+        Mod.CreateDefaultFiles( newDir );
+        Penumbra.ModManager.AddMod( newDir );
+        if( !_swapData.WriteMod( Penumbra.ModManager.Last(), _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps ) )
+        {
+            Penumbra.ModManager.DeleteMod( Penumbra.ModManager.Count - 1 );
+        }
+    }
+
+    private void CreateOption()
+    {
+        if( _mod == null || !_subModValid )
+        {
+            return;
+        }
+
+        var            groupCreated     = false;
+        var            dirCreated       = false;
+        var            optionCreated    = false;
+        DirectoryInfo? optionFolderName = null;
+        try
+        {
+            optionFolderName = Mod.NewSubFolderName( new DirectoryInfo( Path.Combine( _mod.ModPath.FullName, _selectedGroup?.Name ?? _newGroupName ) ), _newOptionName );
+            if( optionFolderName?.Exists == true )
+            {
+                throw new Exception( $"The folder {optionFolderName.FullName} for the option already exists." );
+            }
+
+            if( optionFolderName != null )
+            {
+                if( _selectedGroup == null )
+                {
+                    Penumbra.ModManager.AddModGroup( _mod, GroupType.Multi, _newGroupName );
+                    _selectedGroup = _mod.Groups.Last();
+                    groupCreated   = true;
+                }
+
+                Penumbra.ModManager.AddOption( _mod, _mod.Groups.IndexOf( _selectedGroup ), _newOptionName );
+                optionCreated    = true;
+                optionFolderName = Directory.CreateDirectory( optionFolderName.FullName );
+                dirCreated       = true;
+                if( !_swapData.WriteMod( _mod, _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps, optionFolderName,
+                       _mod.Groups.IndexOf( _selectedGroup ), _selectedGroup.Count - 1 ) )
+                {
+                    throw new Exception( "Failure writing files for mod swap." );
+                }
+            }
+        }
+        catch( Exception e )
+        {
+            ChatUtil.NotificationMessage( $"Could not create new Swap Option:\n{e}", "Error", NotificationType.Error );
+            try
+            {
+                if( optionCreated && _selectedGroup != null )
+                {
+                    Penumbra.ModManager.DeleteOption( _mod, _mod.Groups.IndexOf( _selectedGroup ), _selectedGroup.Count - 1 );
+                }
+
+                if( groupCreated )
+                {
+                    Penumbra.ModManager.DeleteModGroup( _mod, _mod.Groups.IndexOf( _selectedGroup! ) );
+                    _selectedGroup = null;
+                }
+
+                if( dirCreated && optionFolderName != null )
+                {
+                    Directory.Delete( optionFolderName.FullName, true );
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        UpdateOption();
+    }
+
     private void DrawHeaderLine( float width )
     {
         var newModAvailable = _loadException == null && _swapData.Loaded;
@@ -178,34 +294,40 @@ public class ItemSwapWindow : IDisposable
         { }
 
         ImGui.SameLine();
-        var tt = "Create a new mod of the given name containing only the swap.";
+        var tt = !newModAvailable
+            ? "No swap is currently loaded."
+            : _newModName.Length == 0
+                ? "Please enter a name for your mod."
+                : "Create a new mod of the given name containing only the swap.";
         if( ImGuiUtil.DrawDisabledButton( "Create New Mod", new Vector2( width / 2, 0 ), tt, !newModAvailable || _newModName.Length == 0 ) )
         {
-            var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
-            Mod.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty );
-            Mod.CreateDefaultFiles( newDir );
-            Penumbra.ModManager.AddMod( newDir );
-            if( !_swapData.WriteMod( Penumbra.ModManager.Last(), _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps ) )
-            {
-                Penumbra.ModManager.DeleteMod( Penumbra.ModManager.Count - 1 );
-            }
+            CreateMod();
         }
 
 
         ImGui.SetNextItemWidth( ( width - ImGui.GetStyle().ItemSpacing.X ) / 2 );
         if( ImGui.InputTextWithHint( "##groupName", "Group Name...", ref _newGroupName, 32 ) )
-        { }
+        {
+            UpdateOption();
+        }
 
         ImGui.SameLine();
         ImGui.SetNextItemWidth( ( width - ImGui.GetStyle().ItemSpacing.X ) / 2 );
         if( ImGui.InputTextWithHint( "##optionName", "New Option Name...", ref _newOptionName, 32 ) )
-        { }
+        {
+            UpdateOption();
+        }
 
         ImGui.SameLine();
-        tt = "Create a new option inside this mod containing only the swap.";
-        if( ImGuiUtil.DrawDisabledButton( "Create New Option (WIP)", new Vector2( width / 2, 0 ), tt,
-               true || !newModAvailable || _newGroupName.Length == 0 || _newOptionName.Length == 0 || _mod == null || _mod.AllSubMods.Any( m => m.Name == _newOptionName ) ) )
-        { }
+        tt = !_subModValid
+            ? "An option with that name already exists in that group, or no name is specified."
+            : !newModAvailable
+                ? "Create a new option inside this mod containing only the swap."
+                : "Create a new option (and possibly Multi-Group) inside the currently selected mod containing the swap.";
+        if( ImGuiUtil.DrawDisabledButton( "Create New Option", new Vector2( width / 2, 0 ), tt, !newModAvailable || !_subModValid ) )
+        {
+            CreateOption();
+        }
 
         ImGui.SameLine();
         var newPos = new Vector2( ImGui.GetCursorPosX() + 10 * ImGuiHelpers.GlobalScale, ImGui.GetCursorPosY() - ( ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.Y ) / 2 );
@@ -214,25 +336,19 @@ public class ItemSwapWindow : IDisposable
         ImGuiUtil.HoverTooltip( "Use File Swaps." );
     }
 
-    private enum SwapType
-    {
-        Equipment,
-        Accessory,
-        Hair,
-        Face,
-        Ears,
-        Tail,
-        Weapon,
-        Minion,
-        Mount,
-    }
-
     private void DrawSwapBar()
     {
         using var bar = ImRaii.TabBar( "##swapBar", ImGuiTabBarFlags.None );
 
-        DrawArmorSwap();
-        DrawAccessorySwap();
+        DrawEquipmentSwap( SwapType.Hat );
+        DrawEquipmentSwap( SwapType.Top );
+        DrawEquipmentSwap( SwapType.Gloves );
+        DrawEquipmentSwap( SwapType.Pants );
+        DrawEquipmentSwap( SwapType.Shoes );
+        DrawEquipmentSwap( SwapType.Earrings );
+        DrawEquipmentSwap( SwapType.Necklace );
+        DrawEquipmentSwap( SwapType.Bracelet );
+        DrawEquipmentSwap( SwapType.Ring );
         DrawHairSwap();
         DrawFaceSwap();
         DrawEarSwap();
@@ -254,64 +370,39 @@ public class ItemSwapWindow : IDisposable
         return tab;
     }
 
-    private void DrawArmorSwap()
+    private void DrawEquipmentSwap( SwapType type )
     {
-        using var tab = DrawTab( SwapType.Equipment );
+        using var tab = DrawTab( type );
         if( !tab )
         {
             return;
         }
 
+        var (sourceSelector, targetSelector, text1, text2) = _selectors[ type ];
         using var table = ImRaii.Table( "##settings", 2, ImGuiTableFlags.SizingFixedFit );
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted( "Take this piece of equipment" );
+        ImGui.TextUnformatted( text1 );
         ImGui.TableNextColumn();
-        if( _equipSelector.Draw( "##itemTarget", _equipSelector.CurrentSelection?.Name.ToString() ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() ) )
-        {
-            var slot = ( ( EquipSlot )( _equipSelector.CurrentSelection?.EquipSlotCategory.Row ?? 0 ) ).ToSlot();
-            if( slot != _slotSelector?.CurrentSlot )
-                _slotSelector = new SlotSelector( slot );
-            _dirty = true;
-        }
+        _dirty |= sourceSelector.Draw( "##itemSource", sourceSelector.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
 
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted( "And put it on this one" );
+        ImGui.TextUnformatted( text2 );
         ImGui.TableNextColumn();
-        _slotSelector ??= new SlotSelector( EquipSlot.Unknown );
-        _dirty |= _slotSelector.Draw( "##itemSource", _slotSelector.CurrentSelection?.Name.ToString() ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+        _dirty |= targetSelector.Draw( "##itemTarget", targetSelector.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+
+        if( _affectedItems is { Length: > 0 } )
+        {
+            ImGui.SameLine();
+            ImGuiUtil.DrawTextButton( $"which will also affect {_affectedItems.Length} other Items.", Vector2.Zero, Colors.PressEnterWarningBg );
+            if( ImGui.IsItemHovered() )
+            {
+                ImGui.SetTooltip( string.Join( '\n', _affectedItems.Select( i => i.Name.ToDalamudString().TextValue ) ) );
+            }
+        }
     }
-
-    private void DrawAccessorySwap()
-    {
-        using var tab      = DrawTab( SwapType.Accessory );
-        if( !tab )
-        {
-            return;
-        }
-
-        using var table = ImRaii.Table( "##settings", 2, ImGuiTableFlags.SizingFixedFit );
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted( "Take this accessory" );
-        ImGui.TableNextColumn();
-        if( _accessorySelector.Draw( "##itemTarget", _accessorySelector.CurrentSelection?.Name.ToString() ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() ) )
-        {
-            var slot = ( ( EquipSlot )( _accessorySelector.CurrentSelection?.EquipSlotCategory.Row ?? 0 ) ).ToSlot();
-            if( slot != _slotSelector?.CurrentSlot )
-                _slotSelector = new SlotSelector( slot );
-            _dirty = true;
-        }
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted( "And put it on this one" );
-        ImGui.TableNextColumn();
-        _slotSelector ??= new SlotSelector( EquipSlot.Unknown );
-        _dirty |= _slotSelector.Draw( "##itemSource", _slotSelector.CurrentSelection?.Name.ToString() ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
-    }
-
+    
     private void DrawHairSwap()
     {
         using var tab = DrawTab( SwapType.Hair );
@@ -379,6 +470,36 @@ public class ItemSwapWindow : IDisposable
         {
             return;
         }
+
+        using var table = ImRaii.Table( "##settings", 2, ImGuiTableFlags.SizingFixedFit );
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( "Select the weapon or tool you want" );
+        ImGui.TableNextColumn();
+        if( _slotSelector.Draw( "##weaponSlot", _slotSelector.CurrentSelection.ToName(), InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() ) )
+        {
+            _dirty        = true;
+            _weaponSource = new ItemSelector( _slotSelector.CurrentSelection );
+            _weaponTarget = new ItemSelector( _slotSelector.CurrentSelection );
+        }
+        else
+        {
+            _dirty        =   _weaponSource == null || _weaponTarget == null;
+            _weaponSource ??= new ItemSelector( _slotSelector.CurrentSelection );
+            _weaponTarget ??= new ItemSelector( _slotSelector.CurrentSelection );
+        }
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( "and put this variant of it" );
+        ImGui.TableNextColumn();
+        _dirty |= _weaponSource.Draw( "##weaponSource", _weaponSource.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( "onto this one" );
+        ImGui.TableNextColumn();
+        _dirty |= _weaponTarget.Draw( "##weaponTarget", _weaponTarget.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
     }
 
     private const float InputWidth = 120;
@@ -444,16 +565,21 @@ public class ItemSwapWindow : IDisposable
     private string NonExistentText()
         => _lastTab switch
         {
-            SwapType.Equipment => "One of the selected pieces of equipment does not seem to exist.",
-            SwapType.Accessory => "One of the selected accessories does not seem to exist.",
-            SwapType.Hair      => "One of the selected hairstyles does not seem to exist for this gender and race combo.",
-            SwapType.Face      => "One of the selected faces does not seem to exist for this gender and race combo.",
-            SwapType.Ears      => "One of the selected ear types does not seem to exist for this gender and race combo.",
-            SwapType.Tail      => "One of the selected tails does not seem to exist for this gender and race combo.",
-            SwapType.Weapon    => "One of the selected weapons does not seem to exist.",
-            SwapType.Minion    => "One of the selected minions does not seem to exist.",
-            SwapType.Mount     => "One of the selected mounts does not seem to exist.",
-            _                  => string.Empty,
+            SwapType.Hat      => "One of the selected hats does not seem to exist.",
+            SwapType.Top      => "One of the selected tops does not seem to exist.",
+            SwapType.Gloves   => "One of the selected pairs of gloves does not seem to exist.",
+            SwapType.Pants    => "One of the selected pants does not seem to exist.",
+            SwapType.Shoes    => "One of the selected pairs of shoes does not seem to exist.",
+            SwapType.Earrings => "One of the selected earrings does not seem to exist.",
+            SwapType.Necklace => "One of the selected necklaces does not seem to exist.",
+            SwapType.Bracelet => "One of the selected bracelets does not seem to exist.",
+            SwapType.Ring     => "One of the selected rings does not seem to exist.",
+            SwapType.Hair     => "One of the selected hairstyles does not seem to exist for this gender and race combo.",
+            SwapType.Face     => "One of the selected faces does not seem to exist for this gender and race combo.",
+            SwapType.Ears     => "One of the selected ear types does not seem to exist for this gender and race combo.",
+            SwapType.Tail     => "One of the selected tails does not seem to exist for this gender and race combo.",
+            SwapType.Weapon   => "One of the selected weapons or tools does not seem to exist.",
+            _                 => string.Empty,
         };
 
 

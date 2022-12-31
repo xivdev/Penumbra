@@ -47,8 +47,10 @@ public partial class Mod
         return new DirectoryInfo( newModFolder );
     }
 
-    // Create the name for a group or option subfolder based on its parent folder and given name.
-    // subFolderName should never be empty, and the result is unique and contains no invalid symbols.
+    /// <summary>
+    /// Create the name for a group or option subfolder based on its parent folder and given name.
+    /// subFolderName should never be empty, and the result is unique and contains no invalid symbols.
+    /// </summary>
     internal static DirectoryInfo? NewSubFolderName( DirectoryInfo parentFolder, string subFolderName )
     {
         var newModFolderBase = NewOptionDirectory( parentFolder, subFolderName );
