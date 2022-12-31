@@ -108,25 +108,37 @@ public static class AvfxMagic
 
     internal static BinaryWriter WriteBlock(this BinaryWriter bw, uint magic, uint value)
     {
-        bw.Write(magic);
-        bw.Write(4u);
-        bw.Write(value);
+        if (value != uint.MaxValue)
+        {
+            bw.Write(magic);
+            bw.Write(4u);
+            bw.Write(value);
+        }
+
         return bw;
     }
 
-    internal static BinaryWriter WriteBlock(this BinaryWriter bw, uint magic, bool value)
+    internal static BinaryWriter WriteBlock(this BinaryWriter bw, uint magic, byte value)
     {
-        bw.Write(magic);
-        bw.Write(4u);
-        bw.Write(value ? 1u : 0u);
+        if (value != byte.MaxValue)
+        {
+            bw.Write(magic);
+            bw.Write(4u);
+            bw.Write(value == 1 ? 1u : 0u);
+        }
+
         return bw;
     }
 
     internal static BinaryWriter WriteBlock(this BinaryWriter bw, uint magic, float value)
     {
-        bw.Write(magic);
-        bw.Write(4u);
-        bw.Write(value);
+        if (!float.IsNaN(value))
+        {
+            bw.Write(magic);
+            bw.Write(4u);
+            bw.Write(value);
+        }
+
         return bw;
     }
 

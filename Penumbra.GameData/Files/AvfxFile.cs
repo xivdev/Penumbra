@@ -20,8 +20,8 @@ public class AvfxFile : IWritable
             Data = r.ReadBytes((int)Size.RoundTo4());
         }
 
-        public bool ToBool()
-            => BitConverter.ToBoolean(Data);
+        public byte ToBool()
+            => BitConverter.ToBoolean(Data) ? (byte)1 : (byte)0;
 
         public uint ToUint()
             => BitConverter.ToUInt32(Data);
@@ -36,51 +36,52 @@ public class AvfxFile : IWritable
         }
     }
 
+    public static readonly Vector3 BadVector = new(float.NaN);
 
-    public Vector3 ClipBox;
-    public Vector3 ClipBoxSize;
-    public Vector3 RevisedValuesPos;
-    public Vector3 RevisedValuesRot;
-    public Vector3 RevisedValuesScale;
-    public Vector3 RevisedValuesColor;
+    public Vector3 ClipBox            = BadVector;
+    public Vector3 ClipBoxSize        = BadVector;
+    public Vector3 RevisedValuesPos   = BadVector;
+    public Vector3 RevisedValuesRot   = BadVector;
+    public Vector3 RevisedValuesScale = BadVector;
+    public Vector3 RevisedValuesColor = BadVector;
 
-    public uint Version;
-    public uint DrawLayerType;
-    public uint DrawOrderType;
-    public uint DirectionalLightSourceType;
-    public uint PointLightsType1;
-    public uint PointLightsType2;
+    public uint Version                    = uint.MaxValue;
+    public uint DrawLayerType              = uint.MaxValue;
+    public uint DrawOrderType              = uint.MaxValue;
+    public uint DirectionalLightSourceType = uint.MaxValue;
+    public uint PointLightsType1           = uint.MaxValue;
+    public uint PointLightsType2           = uint.MaxValue;
 
-    public float BiasZmaxScale;
-    public float BiasZmaxDistance;
-    public float NearClipBegin;
-    public float NearClipEnd;
-    public float FadeInnerX;
-    public float FadeOuterX;
-    public float FadeInnerY;
-    public float FadeOuterY;
-    public float FadeInnerZ;
-    public float FadeOuterZ;
-    public float FarClipBegin;
-    public float FarClipEnd;
-    public float SoftParticleFadeRange;
-    public float SoftKeyOffset;
-    public float GlobalFogInfluence;
+    public float BiasZmaxScale         = float.NaN;
+    public float BiasZmaxDistance      = float.NaN;
+    public float NearClipBegin         = float.NaN;
+    public float NearClipEnd           = float.NaN;
+    public float FadeInnerX            = float.NaN;
+    public float FadeOuterX            = float.NaN;
+    public float FadeInnerY            = float.NaN;
+    public float FadeOuterY            = float.NaN;
+    public float FadeInnerZ            = float.NaN;
+    public float FadeOuterZ            = float.NaN;
+    public float FarClipBegin          = float.NaN;
+    public float FarClipEnd            = float.NaN;
+    public float SoftParticleFadeRange = float.NaN;
+    public float SoftKeyOffset         = float.NaN;
+    public float GlobalFogInfluence    = float.NaN;
 
-    public bool IsDelayFastParticle;
-    public bool IsFitGround;
-    public bool IsTransformSkip;
-    public bool IsAllStopOnHide;
-    public bool CanBeClippedOut;
-    public bool ClipBoxEnabled;
-    public bool IsCameraSpace;
-    public bool IsFullEnvLight;
-    public bool IsClipOwnSetting;
-    public bool FadeEnabledX;
-    public bool FadeEnabledY;
-    public bool FadeEnabledZ;
-    public bool GlobalFogEnabled;
-    public bool LtsEnabled;
+    public byte IsDelayFastParticle = byte.MaxValue;
+    public byte IsFitGround         = byte.MaxValue;
+    public byte IsTransformSkip     = byte.MaxValue;
+    public byte IsAllStopOnHide     = byte.MaxValue;
+    public byte CanBeClippedOut     = byte.MaxValue;
+    public byte ClipBoxEnabled      = byte.MaxValue;
+    public byte IsCameraSpace       = byte.MaxValue;
+    public byte IsFullEnvLight      = byte.MaxValue;
+    public byte IsClipOwnSetting    = byte.MaxValue;
+    public byte FadeEnabledX        = byte.MaxValue;
+    public byte FadeEnabledY        = byte.MaxValue;
+    public byte FadeEnabledZ        = byte.MaxValue;
+    public byte GlobalFogEnabled    = byte.MaxValue;
+    public byte LtsEnabled          = byte.MaxValue;
 
     public Block[]  Schedulers = Array.Empty<Block>();
     public Block[]  Timelines  = Array.Empty<Block>();
@@ -91,7 +92,8 @@ public class AvfxFile : IWritable
     public string[] Textures   = Array.Empty<string>();
     public Block[]  Models     = Array.Empty<Block>();
 
-    public bool Valid { get; } = true;
+    public bool Valid
+        => true;
 
     public AvfxFile(byte[] data)
     {
@@ -199,7 +201,6 @@ public class AvfxFile : IWritable
         w.Write(0u);
         w.WriteBlock(AvfxMagic.Version, Version)
             .WriteBlock(AvfxMagic.IsDelayFastParticle,        IsDelayFastParticle)
-            .WriteBlock(AvfxMagic.IsDelayFastParticle,        IsDelayFastParticle)
             .WriteBlock(AvfxMagic.IsFitGround,                IsFitGround)
             .WriteBlock(AvfxMagic.IsTransformSkip,            IsTransformSkip)
             .WriteBlock(AvfxMagic.IsAllStopOnHide,            IsAllStopOnHide)
@@ -276,7 +277,7 @@ public class AvfxFile : IWritable
         foreach (var block in Models)
             w.WriteBlock(block);
         w.Seek((int)sizePos, SeekOrigin.Begin);
-        w.Write((uint)w.BaseStream.Length);
+        w.Write((uint)w.BaseStream.Length - 8u);
         return m.ToArray();
     }
 }
