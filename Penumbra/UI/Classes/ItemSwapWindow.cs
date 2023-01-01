@@ -312,6 +312,11 @@ public class ItemSwapWindow : IDisposable
             CreateMod();
         }
 
+        ImGui.SameLine();
+        ImGui.SetCursorPosX( ImGui.GetCursorPosX() + 20 * ImGuiHelpers.GlobalScale );
+        ImGui.Checkbox( "Use File Swaps", ref _useFileSwaps );
+        ImGuiUtil.HoverTooltip( "Instead of writing every single non-default file to the newly created mod or option,\n"
+          + "even those available from game files, use File Swaps to default game files where possible." );
 
         ImGui.SetNextItemWidth( ( width - ImGui.GetStyle().ItemSpacing.X ) / 2 );
         if( ImGui.InputTextWithHint( "##groupName", "Group Name...", ref _newGroupName, 32 ) )
@@ -338,10 +343,10 @@ public class ItemSwapWindow : IDisposable
         }
 
         ImGui.SameLine();
-        var newPos = new Vector2( ImGui.GetCursorPosX() + 10 * ImGuiHelpers.GlobalScale, ImGui.GetCursorPosY() - ( ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.Y ) / 2 );
-        ImGui.SetCursorPos( newPos );
-        ImGui.Checkbox( "Use File Swaps", ref _useFileSwaps );
-        ImGuiUtil.HoverTooltip( "Use File Swaps." );
+        ImGui.SetCursorPosX( ImGui.GetCursorPosX() + 20 * ImGuiHelpers.GlobalScale );
+        _dirty |= ImGui.Checkbox( "Use Entire Collection", ref _useCurrentCollection );
+        ImGuiUtil.HoverTooltip( "Use all applied mods from the Selected Collection with their current settings and respecting the enabled state of mods and inheritance,\n"
+          + "instead of using only the selected mod with its current settings in the Selected collection or the default settings, ignoring the enabled state and inheritance." );
     }
 
     private void DrawSwapBar()
