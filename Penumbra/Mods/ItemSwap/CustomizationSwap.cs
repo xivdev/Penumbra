@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
@@ -14,22 +12,17 @@ namespace Penumbra.Mods.ItemSwap;
 public static class CustomizationSwap
 {
     /// The .mdl file for customizations is unique per racecode, slot and id, thus the .mdl redirection itself is independent of the mode.
-    public static bool CreateMdl( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, SetId idFrom, SetId idTo, out FileSwap mdl )
+    public static FileSwap CreateMdl( Func< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, SetId idFrom, SetId idTo )
     {
         if( idFrom.Value > byte.MaxValue )
         {
-            mdl = new FileSwap();
-            return false;
+            throw new Exception( $"The Customization ID {idFrom} is too large for {slot}." );
         }
 
         var mdlPathFrom = GamePaths.Character.Mdl.Path( race, slot, idFrom, slot.ToCustomizationType() );
         var mdlPathTo   = GamePaths.Character.Mdl.Path( race, slot, idTo, slot.ToCustomizationType() );
 
-        if( !FileSwap.CreateSwap( ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo, out mdl ) )
-        {
-            return false;
-        }
-
+        var mdl   = FileSwap.CreateSwap( ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo );
         var range = slot == BodySlot.Tail && race is GenderRace.HrothgarMale or GenderRace.HrothgarFemale or GenderRace.HrothgarMaleNpc or GenderRace.HrothgarMaleNpc ? 5 : 1;
 
         foreach( ref var materialFileName in mdl.AsMdl()!.Materials.AsSpan() )
@@ -38,22 +31,18 @@ public static class CustomizationSwap
             foreach( var variant in Enumerable.Range( 1, range ) )
             {
                 name = materialFileName;
-                if( !CreateMtrl( redirections, slot, race, idFrom, idTo, ( byte )variant, ref name, ref mdl.DataWasChanged, out var mtrl ) )
-                {
-                    return false;
-                }
-
+                var mtrl = CreateMtrl( redirections, slot, race, idFrom, idTo, ( byte )variant, ref name, ref mdl.DataWasChanged );
                 mdl.ChildSwaps.Add( mtrl );
             }
 
             materialFileName = name;
         }
 
-        return true;
+        return mdl;
     }
 
-    public static bool CreateMtrl( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, SetId idFrom, SetId idTo, byte variant,
-        ref string fileName, ref bool dataWasChanged, out FileSwap mtrl )
+    public static FileSwap CreateMtrl( Func< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, SetId idFrom, SetId idTo, byte variant,
+        ref string fileName, ref bool dataWasChanged )
     {
         variant = slot is BodySlot.Face or BodySlot.Zear ? byte.MaxValue : variant;
         var mtrlFromPath = GamePaths.Character.Mtrl.Path( race, slot, idFrom, fileName, out var gameRaceFrom, out var gameSetIdFrom, variant );
@@ -73,33 +62,21 @@ public static class CustomizationSwap
             dataWasChanged     = true;
         }
 
-        if( !FileSwap.CreateSwap( ResourceType.Mtrl, redirections, actualMtrlFromPath, mtrlToPath, out mtrl, actualMtrlFromPath ) )
-        {
-            return false;
-        }
-
-        if( !CreateShader( redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged, out var shpk ) )
-        {
-            return false;
-        }
-
+        var mtrl = FileSwap.CreateSwap( ResourceType.Mtrl, redirections, actualMtrlFromPath, mtrlToPath, actualMtrlFromPath );
+        var shpk = CreateShader( redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged );
         mtrl.ChildSwaps.Add( shpk );
 
         foreach( ref var texture in mtrl.AsMtrl()!.Textures.AsSpan() )
         {
-            if( !CreateTex( redirections, slot, race, idFrom, ref texture, ref mtrl.DataWasChanged, out var tex ) )
-            {
-                return false;
-            }
-
+            var tex = CreateTex( redirections, slot, race, idFrom, ref texture, ref mtrl.DataWasChanged );
             mtrl.ChildSwaps.Add( tex );
         }
 
-        return true;
+        return mtrl;
     }
 
-    public static bool CreateTex( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, SetId idFrom, ref MtrlFile.Texture texture,
-        ref bool dataWasChanged, out FileSwap tex )
+    public static FileSwap CreateTex( Func< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, SetId idFrom, ref MtrlFile.Texture texture,
+        ref bool dataWasChanged )
     {
         var path        = texture.Path;
         var addedDashes = false;
@@ -122,13 +99,13 @@ public static class CustomizationSwap
             dataWasChanged = true;
         }
 
-        return FileSwap.CreateSwap( ResourceType.Tex, redirections, newPath, path, out tex, path );
+        return FileSwap.CreateSwap( ResourceType.Tex, redirections, newPath, path, path );
     }
 
 
-    public static bool CreateShader( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, ref string shaderName, ref bool dataWasChanged, out FileSwap shpk )
+    public static FileSwap CreateShader( Func< Utf8GamePath, FullPath > redirections, ref string shaderName, ref bool dataWasChanged )
     {
         var path = $"shader/sm5/shpk/{shaderName}";
-        return FileSwap.CreateSwap( ResourceType.Shpk, redirections, path, path, out shpk );
+        return FileSwap.CreateSwap( ResourceType.Shpk, redirections, path, path );
     }
 }

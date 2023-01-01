@@ -1,3 +1,4 @@
+using System;
 using Penumbra.GameData.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
@@ -41,25 +42,16 @@ public sealed class MetaSwap : Swap
     /// <summary>
     /// Create a new MetaSwap from the original meta identifier and the target meta identifier.
     /// </summary>
-    /// <param name="manipulations">A set of modded meta manipulations to consider. This is not manipulated, but can not be IReadOnly because TryGetValue is not available for that.</param>
+    /// <param name="manipulations">A function that converts the given manipulation to the modded one.</param>
     /// <param name="manipFrom">The original meta identifier with its default value.</param>
     /// <param name="manipTo">The target meta identifier with its default value.</param>
-    public MetaSwap( HashSet< MetaManipulation > manipulations, MetaManipulation manipFrom, MetaManipulation manipTo )
+    public MetaSwap( Func< MetaManipulation, MetaManipulation > manipulations, MetaManipulation manipFrom, MetaManipulation manipTo )
     {
         SwapFrom      = manipFrom;
         SwapToDefault = manipTo;
 
-        if( manipulations.TryGetValue( manipTo, out var actual ) )
-        {
-            SwapToModded    = actual;
-            SwapToIsDefault = false;
-        }
-        else
-        {
-            SwapToModded    = manipTo;
-            SwapToIsDefault = true;
-        }
-
+        SwapToModded         = manipulations( manipTo );
+        SwapToIsDefault      = manipTo.EntryEquals( SwapToModded );
         SwapApplied          = SwapFrom.WithEntryOf( SwapToModded );
         SwapAppliedIsDefault = SwapApplied.EntryEquals( SwapFrom );
     }
@@ -117,15 +109,14 @@ public sealed class FileSwap : Swap
     /// Create a full swap container for a specific file type using a modded redirection set, the actually requested path and the game file it should load instead after the swap.
     /// </summary>
     /// <param name="type">The file type. Mdl and Mtrl have special file loading treatment.</param>
-    /// <param name="redirections">The set of redirections that need to be considered.</param>
+    /// <param name="redirections">A function either returning the path after mod application.</param>
     /// <param name="swapFromRequest">The path the game is going to request when loading the file.</param>
     /// <param name="swapToRequest">The unmodded path to the file the game is supposed to load instead.</param>
     /// <param name="swap">A full swap container with the actual file in memory.</param>
     /// <returns>True if everything could be read correctly, false otherwise.</returns>
-    public static bool CreateSwap( ResourceType type, IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, string swapFromRequest, string swapToRequest, out FileSwap swap,
-        string? swapFromPreChange = null )
+    public static FileSwap CreateSwap( ResourceType type, Func< Utf8GamePath, FullPath > redirections, string swapFromRequest, string swapToRequest, string? swapFromPreChange = null )
     {
-        swap = new FileSwap
+        var swap = new FileSwap
         {
             Type                  = type,
             FileData              = ItemSwap.GenericFile.Invalid,
@@ -142,22 +133,22 @@ public sealed class FileSwap : Swap
         || !Utf8GamePath.FromString( swapToRequest, out swap.SwapToRequestPath )
         || !Utf8GamePath.FromString( swapFromRequest, out swap.SwapFromRequestPath ) )
         {
-            return false;
+            throw new Exception( $"Could not create UTF8 String for \"{swapFromRequest}\" or \"{swapToRequest}\"." );
         }
 
-        swap.SwapToModded               = redirections.TryGetValue( swap.SwapToRequestPath, out var p ) ? p : new FullPath( swap.SwapToRequestPath );
+        swap.SwapToModded               = redirections( swap.SwapToRequestPath );
         swap.SwapToModdedExistsInGame   = !swap.SwapToModded.IsRooted && Dalamud.GameData.FileExists( swap.SwapToModded.InternalName.ToString() );
         swap.SwapToModdedEqualsOriginal = !swap.SwapToModded.IsRooted && swap.SwapToModded.InternalName.Equals( swap.SwapFromRequestPath.Path );
 
         swap.FileData = type switch
         {
-            ResourceType.Mdl  => ItemSwap.LoadMdl( swap.SwapToModded, out var f ) ? f : ItemSwap.GenericFile.Invalid,
-            ResourceType.Mtrl => ItemSwap.LoadMtrl( swap.SwapToModded, out var f ) ? f : ItemSwap.GenericFile.Invalid,
-            ResourceType.Avfx => ItemSwap.LoadAvfx( swap.SwapToModded, out var f ) ? f : ItemSwap.GenericFile.Invalid,
-            _                 => ItemSwap.LoadFile( swap.SwapToModded, out var f ) ? f : ItemSwap.GenericFile.Invalid,
+            ResourceType.Mdl  => ItemSwap.LoadMdl( swap.SwapToModded, out var f ) ? f : throw new Exception( $"Could not load file data for {swap.SwapToModded}." ),
+            ResourceType.Mtrl => ItemSwap.LoadMtrl( swap.SwapToModded, out var f ) ? f : throw new Exception( $"Could not load file data for {swap.SwapToModded}." ),
+            ResourceType.Avfx => ItemSwap.LoadAvfx( swap.SwapToModded, out var f ) ? f : throw new Exception( $"Could not load file data for {swap.SwapToModded}." ),
+            _                 => ItemSwap.LoadFile( swap.SwapToModded, out var f ) ? f : throw new Exception( $"Could not load file data for {swap.SwapToModded}." ),
         };
 
-        return swap.SwapToModdedExists;
+        return swap;
     }
 
 
@@ -168,17 +159,14 @@ public sealed class FileSwap : Swap
     /// <param name="path">The in- and output path for a file</param>
     /// <param name="dataWasChanged">Will be set to true if <paramref name="path"/> was changed.</param>
     /// <param name="swap">Will be updated.</param>
-    public static bool CreateShaRedirection( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, ref string path, ref bool dataWasChanged, ref FileSwap swap )
+    public static bool CreateShaRedirection( Func< Utf8GamePath, FullPath > redirections, ref string path, ref bool dataWasChanged, ref FileSwap swap )
     {
         var oldFilename = Path.GetFileName( path );
         var hash        = SHA256.HashData( swap.FileData.Write() );
         var name =
             $"{( oldFilename.StartsWith( "--" ) ? "--" : string.Empty )}{string.Join( null, hash.Select( c => c.ToString( "x2" ) ) )}.{swap.Type.ToString().ToLowerInvariant()}";
         var newPath = path.Replace( oldFilename, name );
-        if( !CreateSwap( swap.Type, redirections, newPath, swap.SwapToRequestPath.ToString(), out var newSwap ) )
-        {
-            return false;
-        }
+        var newSwap = CreateSwap( swap.Type, redirections, newPath, swap.SwapToRequestPath.ToString());
 
         path           = newPath;
         dataWasChanged = true;

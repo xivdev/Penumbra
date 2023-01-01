@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Lumina.Excel.GeneratedSheets;
+using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
@@ -112,40 +113,39 @@ public class ItemSwapContainer
         LoadMod( null, null );
     }
 
-    public Item[] LoadEquipment( Item from, Item to )
+    private Func< Utf8GamePath, FullPath > PathResolver( ModCollection? collection )
+        => collection != null
+            ? p => collection.ResolvePath( p ) ?? new FullPath( p )
+            : p => ModRedirections.TryGetValue( p, out var path ) ? path : new FullPath( p );
+
+    private Func< MetaManipulation, MetaManipulation > MetaResolver( ModCollection? collection )
     {
-        try
-        {
-            Swaps.Clear();
-            var ret = EquipmentSwap.CreateItemSwap( Swaps, ModRedirections, _modManipulations, from, to );
-            Loaded = true;
-            return ret;
-        }
-        catch
-        {
-            Swaps.Clear();
-            Loaded = false;
-            return Array.Empty< Item >();
-        }
+        var set = collection?.MetaCache?.Manipulations.ToHashSet() ?? _modManipulations;
+        return m => set.TryGetValue( m, out var a ) ? a : m;
     }
 
-    public bool LoadCustomization( BodySlot slot, GenderRace race, SetId from, SetId to )
+    public Item[] LoadEquipment( Item from, Item to, ModCollection? collection = null )
     {
-        if( !CustomizationSwap.CreateMdl( ModRedirections, slot, race, from, to, out var mdl ) )
-        {
-            return false;
-        }
+        Swaps.Clear();
+        Loaded = false;
+        var ret = EquipmentSwap.CreateItemSwap( Swaps, PathResolver( collection ), MetaResolver( collection ), from, to );
+        Loaded = true;
+        return ret;
+    }
 
+    public bool LoadCustomization( BodySlot slot, GenderRace race, SetId from, SetId to, ModCollection? collection = null )
+    {
+        var pathResolver = PathResolver( collection );
+        var mdl          = CustomizationSwap.CreateMdl( pathResolver, slot, race, from, to );
         var type = slot switch
         {
             BodySlot.Hair => EstManipulation.EstType.Hair,
             BodySlot.Face => EstManipulation.EstType.Face,
             _             => ( EstManipulation.EstType )0,
         };
-        if( !ItemSwap.CreateEst( ModRedirections, _modManipulations, type, race, from, to, out var est ) )
-        {
-            return false;
-        }
+
+        var metaResolver = MetaResolver( collection );
+        var est          = ItemSwap.CreateEst( pathResolver, metaResolver, type, race, from, to );
 
         Swaps.Add( mdl );
         if( est != null )

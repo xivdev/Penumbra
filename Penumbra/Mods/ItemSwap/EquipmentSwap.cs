@@ -17,7 +17,7 @@ namespace Penumbra.Mods.ItemSwap;
 
 public static class EquipmentSwap
 {
-    public static Item[] CreateItemSwap( List< Swap > swaps, IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, HashSet< MetaManipulation > manips, Item itemFrom,
+    public static Item[] CreateItemSwap( List< Swap > swaps, Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, Item itemFrom,
         Item itemTo )
     {
         // Check actual ids, variants and slots. We only support using the same slot.
@@ -28,21 +28,13 @@ public static class EquipmentSwap
             throw new ItemSwap.InvalidItemTypeException();
         }
 
-        if( !CreateEqp( manips, slotFrom, idFrom, idTo, out var eqp ) )
-        {
-            throw new Exception( "Could not get Eqp Entry for Swap." );
-        }
-
+        var eqp = CreateEqp( manips, slotFrom, idFrom, idTo );
         if( eqp != null )
         {
             swaps.Add( eqp );
         }
 
-        if( !CreateGmp( manips, slotFrom, idFrom, idTo, out var gmp ) )
-        {
-            throw new Exception( "Could not get Gmp Entry for Swap." );
-        }
-
+        var gmp = CreateGmp( manips, slotFrom, idFrom, idTo);
         if( gmp != null )
         {
             swaps.Add( gmp );
@@ -68,21 +60,13 @@ public static class EquipmentSwap
                 continue;
             }
 
-            if( !ItemSwap.CreateEst( redirections, manips, estType, gr, idFrom, idTo, out var est ) )
-            {
-                throw new Exception( "Could not get Est Entry for Swap." );
-            }
-
+            var est = ItemSwap.CreateEst( redirections, manips, estType, gr, idFrom, idTo );
             if( est != null )
             {
                 swaps.Add( est );
             }
 
-            if( !CreateEqdp( redirections, manips, slotFrom, gr, idFrom, idTo, mtrlVariantTo, out var eqdp ) )
-            {
-                throw new Exception( "Could not get Eqdp Entry for Swap." );
-            }
-
+            var eqdp = CreateEqdp( redirections, manips, slotFrom, gr, idFrom, idTo, mtrlVariantTo );
             if( eqdp != null )
             {
                 swaps.Add( eqdp );
@@ -91,11 +75,7 @@ public static class EquipmentSwap
 
         foreach( var variant in variants )
         {
-            if( !CreateImc( redirections, manips, slotFrom, idFrom, idTo, variant, variantTo, imcFileFrom, imcFileTo, out var imc ) )
-            {
-                throw new Exception( "Could not get IMC Entry for Swap." );
-            }
-
+            var imc = CreateImc( redirections, manips, slotFrom, idFrom, idTo, variant, variantTo, imcFileFrom, imcFileTo );
             swaps.Add( imc );
         }
 
@@ -103,21 +83,17 @@ public static class EquipmentSwap
         return affectedItems;
     }
 
-    public static bool CreateEqdp( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, HashSet< MetaManipulation > manips, EquipSlot slot, GenderRace gr, SetId idFrom,
-        SetId idTo, byte mtrlTo, out MetaSwap? meta )
+    public static MetaSwap? CreateEqdp( Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, EquipSlot slot, GenderRace gr, SetId idFrom,
+        SetId idTo, byte mtrlTo )
     {
         var (gender, race) = gr.Split();
         var eqdpFrom = new EqdpManipulation( ExpandedEqdpFile.GetDefault( gr, slot.IsAccessory(), idFrom.Value ), slot, gender, race, idFrom.Value );
         var eqdpTo   = new EqdpManipulation( ExpandedEqdpFile.GetDefault( gr, slot.IsAccessory(), idTo.Value ), slot, gender, race, idTo.Value );
-        meta                  = new MetaSwap( manips, eqdpFrom, eqdpTo );
+        var meta     = new MetaSwap( manips, eqdpFrom, eqdpTo );
         var (ownMtrl, ownMdl) = meta.SwapApplied.Eqdp.Entry.ToBits( slot );
         if( ownMdl )
         {
-            if( !CreateMdl( redirections, slot, gr, idFrom, idTo, mtrlTo, out var mdl ) )
-            {
-                return false;
-            }
-
+            var mdl = CreateMdl( redirections, slot, gr, idFrom, idTo, mtrlTo );
             meta.ChildSwaps.Add( mdl );
         }
         else if( !ownMtrl && meta.SwapAppliedIsDefault )
@@ -125,64 +101,25 @@ public static class EquipmentSwap
             meta = null;
         }
 
-        return true;
+        return meta;
     }
 
-    public static bool CreateMdl( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, EquipSlot slot, GenderRace gr, SetId idFrom, SetId idTo, byte mtrlTo,
-        out FileSwap mdl )
+    public static FileSwap CreateMdl( Func< Utf8GamePath, FullPath > redirections, EquipSlot slot, GenderRace gr, SetId idFrom, SetId idTo, byte mtrlTo )
     {
         var mdlPathFrom = GamePaths.Equipment.Mdl.Path( idFrom, gr, slot );
         var mdlPathTo   = GamePaths.Equipment.Mdl.Path( idTo, gr, slot );
-        if( !FileSwap.CreateSwap( ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo, out mdl ) )
-        {
-            return false;
-        }
+        var mdl         = FileSwap.CreateSwap( ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo );
 
         foreach( ref var fileName in mdl.AsMdl()!.Materials.AsSpan() )
         {
-            if( !CreateMtrl( redirections, slot, idFrom, idTo, mtrlTo, ref fileName, ref mdl.DataWasChanged, out var mtrl ) )
-            {
-                return false;
-            }
-
+            var mtrl = CreateMtrl( redirections, slot, idFrom, idTo, mtrlTo, ref fileName, ref mdl.DataWasChanged );
             if( mtrl != null )
             {
                 mdl.ChildSwaps.Add( mtrl );
             }
         }
 
-        return true;
-    }
-
-    private static (GenderRace, GenderRace) TraverseEqdpTree( GenderRace genderRace, SetId modelId, EquipSlot slot )
-    {
-        var model     = GenderRace.Unknown;
-        var material  = GenderRace.Unknown;
-        var accessory = slot.IsAccessory();
-        foreach( var gr in genderRace.Dependencies() )
-        {
-            var entry = ExpandedEqdpFile.GetDefault( gr, accessory, modelId.Value );
-            var (b1, b2) = entry.ToBits( slot );
-            if( b1 && material == GenderRace.Unknown )
-            {
-                material = gr;
-                if( model != GenderRace.Unknown )
-                {
-                    return ( model, material );
-                }
-            }
-
-            if( b2 && model == GenderRace.Unknown )
-            {
-                model = gr;
-                if( material != GenderRace.Unknown )
-                {
-                    return ( model, material );
-                }
-            }
-        }
-
-        return ( GenderRace.MidlanderMale, GenderRace.MidlanderMale );
+        return mdl;
     }
 
     private static void LookupItem( Item i, out EquipSlot slot, out SetId modelId, out byte variant )
@@ -219,115 +156,99 @@ public static class EquipmentSwap
         return ( imc, variants, items );
     }
 
-    public static bool CreateGmp( HashSet< MetaManipulation > manips, EquipSlot slot, SetId idFrom, SetId idTo, out MetaSwap? gmp )
+    public static MetaSwap? CreateGmp( Func< MetaManipulation, MetaManipulation > manips, EquipSlot slot, SetId idFrom, SetId idTo )
     {
         if( slot is not EquipSlot.Head )
         {
-            gmp = null;
-            return true;
+            return null;
         }
 
         var manipFrom = new GmpManipulation( ExpandedGmpFile.GetDefault( idFrom.Value ), idFrom.Value );
         var manipTo   = new GmpManipulation( ExpandedGmpFile.GetDefault( idTo.Value ), idTo.Value );
-        gmp = new MetaSwap( manips, manipFrom, manipTo );
-        return true;
+        return new MetaSwap( manips, manipFrom, manipTo );
     }
 
-    public static bool CreateImc( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, HashSet< MetaManipulation > manips, EquipSlot slot, SetId idFrom, SetId idTo,
-        byte variantFrom, byte variantTo, ImcFile imcFileFrom, ImcFile imcFileTo, out MetaSwap imc )
+    public static MetaSwap CreateImc( Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, EquipSlot slot, SetId idFrom, SetId idTo,
+        byte variantFrom, byte variantTo, ImcFile imcFileFrom, ImcFile imcFileTo )
     {
         var entryFrom        = imcFileFrom.GetEntry( ImcFile.PartIndex( slot ), variantFrom );
         var entryTo          = imcFileTo.GetEntry( ImcFile.PartIndex( slot ), variantTo );
         var manipulationFrom = new ImcManipulation( slot, variantFrom, idFrom.Value, entryFrom );
         var manipulationTo   = new ImcManipulation( slot, variantTo, idTo.Value, entryTo );
-        imc = new MetaSwap( manips, manipulationFrom, manipulationTo );
+        var imc              = new MetaSwap( manips, manipulationFrom, manipulationTo );
 
-        if( !AddDecal( redirections, imc.SwapToModded.Imc.Entry.DecalId, imc ) )
+        var decal = CreateDecal( redirections, imc.SwapToModded.Imc.Entry.DecalId );
+        if( decal != null )
         {
-            return false;
+            imc.ChildSwaps.Add( decal );
         }
 
-        if( !AddAvfx( redirections, idFrom, idTo, imc.SwapToModded.Imc.Entry.VfxId, imc ) )
+        var avfx = CreateAvfx( redirections, idFrom, idTo, imc.SwapToModded.Imc.Entry.VfxId );
+        if( avfx != null )
         {
-            return false;
+            imc.ChildSwaps.Add( avfx );
         }
 
         // IMC also controls sound, Example: Dodore Doublet, but unknown what it does?
         // IMC also controls some material animation, Example: The Howling Spirit and The Wailing Spirit, but unknown what it does.
-
-        return true;
+        return imc;
     }
-    
+
     // Example: Crimson Standard Bracelet
-    public static bool AddDecal( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, byte decalId, MetaSwap imc )
+    public static FileSwap? CreateDecal( Func< Utf8GamePath, FullPath > redirections, byte decalId )
     {
-        if( decalId != 0 )
+        if( decalId == 0 )
         {
-            var decalPath = GamePaths.Equipment.Decal.Path( decalId );
-            if( !FileSwap.CreateSwap( ResourceType.Tex, redirections, decalPath, decalPath, out var swap ) )
-            {
-                return false;
-            }
-
-            imc.ChildSwaps.Add( swap );
+            return null;
         }
 
-        return true;
+        var decalPath = GamePaths.Equipment.Decal.Path( decalId );
+        return FileSwap.CreateSwap( ResourceType.Tex, redirections, decalPath, decalPath );
     }
 
-    
+
     // Example: Abyssos Helm / Body
-    public static bool AddAvfx( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, SetId idFrom, SetId idTo, byte vfxId, MetaSwap imc )
+    public static FileSwap? CreateAvfx( Func< Utf8GamePath, FullPath > redirections, SetId idFrom, SetId idTo, byte vfxId )
     {
-        if( vfxId != 0 )
+        if( vfxId == 0 )
         {
-            var vfxPathFrom = GamePaths.Equipment.Avfx.Path( idFrom.Value, vfxId );
-            var vfxPathTo   = GamePaths.Equipment.Avfx.Path( idTo.Value, vfxId );
-            if( !FileSwap.CreateSwap( ResourceType.Avfx, redirections, vfxPathFrom, vfxPathTo, out var swap ) )
-            {
-                return false;
-            }
-
-            foreach( ref var filePath in swap.AsAvfx()!.Textures.AsSpan() )
-            {
-                if( !CreateAtex( redirections, ref filePath, ref swap.DataWasChanged, out var atex ) )
-                {
-                    return false;
-                }
-
-                swap.ChildSwaps.Add( atex );
-            }
-
-            imc.ChildSwaps.Add( swap );
+            return null;
         }
 
-        return true;
+        var vfxPathFrom = GamePaths.Equipment.Avfx.Path( idFrom.Value, vfxId );
+        var vfxPathTo   = GamePaths.Equipment.Avfx.Path( idTo.Value, vfxId );
+        var avfx        = FileSwap.CreateSwap( ResourceType.Avfx, redirections, vfxPathFrom, vfxPathTo );
+
+        foreach( ref var filePath in avfx.AsAvfx()!.Textures.AsSpan() )
+        {
+            var atex = CreateAtex( redirections, ref filePath, ref avfx.DataWasChanged );
+            avfx.ChildSwaps.Add( atex );
+        }
+
+        return avfx;
     }
 
-    public static bool CreateEqp( HashSet< MetaManipulation > manips, EquipSlot slot, SetId idFrom, SetId idTo, out MetaSwap? eqp )
+    public static MetaSwap? CreateEqp( Func< MetaManipulation, MetaManipulation > manips, EquipSlot slot, SetId idFrom, SetId idTo )
     {
         if( slot.IsAccessory() )
         {
-            eqp = null;
-            return true;
+            return null;
         }
 
         var eqpValueFrom = ExpandedEqpFile.GetDefault( idFrom.Value );
         var eqpValueTo   = ExpandedEqpFile.GetDefault( idTo.Value );
         var eqpFrom      = new EqpManipulation( eqpValueFrom, slot, idFrom.Value );
         var eqpTo        = new EqpManipulation( eqpValueTo, slot, idFrom.Value );
-        eqp = new MetaSwap( manips, eqpFrom, eqpTo );
-        return true;
+        return new MetaSwap( manips, eqpFrom, eqpTo );
     }
 
-    public static bool CreateMtrl( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, EquipSlot slot, SetId idFrom, SetId idTo, byte variantTo, ref string fileName,
-        ref bool dataWasChanged, out FileSwap? mtrl )
+    public static FileSwap? CreateMtrl( Func< Utf8GamePath, FullPath > redirections, EquipSlot slot, SetId idFrom, SetId idTo, byte variantTo, ref string fileName,
+        ref bool dataWasChanged )
     {
         var prefix = slot.IsAccessory() ? 'a' : 'e';
         if( !fileName.Contains( $"{prefix}{idTo.Value:D4}" ) )
         {
-            mtrl = null;
-            return true;
+            return null;
         }
 
         var folderTo = slot.IsAccessory() ? GamePaths.Accessory.Mtrl.FolderPath( idTo, variantTo ) : GamePaths.Equipment.Mtrl.FolderPath( idTo, variantTo );
@@ -343,34 +264,20 @@ public static class EquipmentSwap
             dataWasChanged = true;
         }
 
-        if( !FileSwap.CreateSwap( ResourceType.Mtrl, redirections, pathFrom, pathTo, out mtrl ) )
-        {
-            return false;
-        }
-
-        if( !CreateShader( redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged, out var shader ) )
-        {
-            return false;
-        }
-
-        mtrl.ChildSwaps.Add( shader );
+        var mtrl = FileSwap.CreateSwap( ResourceType.Mtrl, redirections, pathFrom, pathTo );
+        var shpk = CreateShader( redirections, ref mtrl.AsMtrl()!.ShaderPackage.Name, ref mtrl.DataWasChanged );
+        mtrl.ChildSwaps.Add( shpk );
 
         foreach( ref var texture in mtrl.AsMtrl()!.Textures.AsSpan() )
         {
-            if( !CreateTex( redirections, prefix, idFrom, idTo, ref texture, ref mtrl.DataWasChanged, out var swap ) )
-            {
-                return false;
-            }
-
-            mtrl.ChildSwaps.Add( swap );
+            var tex = CreateTex( redirections, prefix, idFrom, idTo, ref texture, ref mtrl.DataWasChanged );
+            mtrl.ChildSwaps.Add( tex );
         }
 
-        return true;
+        return mtrl;
     }
 
-    public static bool CreateTex( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, char prefix, SetId idFrom, SetId idTo, ref MtrlFile.Texture texture,
-        ref bool dataWasChanged,
-        out FileSwap tex )
+    public static FileSwap CreateTex( Func< Utf8GamePath, FullPath > redirections, char prefix, SetId idFrom, SetId idTo, ref MtrlFile.Texture texture, ref bool dataWasChanged )
     {
         var path        = texture.Path;
         var addedDashes = false;
@@ -392,21 +299,21 @@ public static class EquipmentSwap
             dataWasChanged = true;
         }
 
-        return FileSwap.CreateSwap( ResourceType.Tex, redirections, newPath, path, out tex, path );
+        return FileSwap.CreateSwap( ResourceType.Tex, redirections, newPath, path, path );
     }
 
-    public static bool CreateShader( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, ref string shaderName, ref bool dataWasChanged, out FileSwap shpk )
+    public static FileSwap CreateShader( Func< Utf8GamePath, FullPath > redirections, ref string shaderName, ref bool dataWasChanged )
     {
         var path = $"shader/sm5/shpk/{shaderName}";
-        return FileSwap.CreateSwap( ResourceType.Shpk, redirections, path, path, out shpk );
+        return FileSwap.CreateSwap( ResourceType.Shpk, redirections, path, path );
     }
 
-    public static bool CreateAtex( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, ref string filePath, ref bool dataWasChanged, out FileSwap atex )
+    public static FileSwap CreateAtex( Func< Utf8GamePath, FullPath > redirections, ref string filePath, ref bool dataWasChanged )
     {
         var oldPath = filePath;
         filePath       = ItemSwap.AddSuffix( filePath, ".atex", $"_{Path.GetFileName( filePath ).GetStableHashCode():x8}", true );
         dataWasChanged = true;
 
-        return FileSwap.CreateSwap( ResourceType.Atex, redirections, filePath, oldPath, out atex, oldPath );
+        return FileSwap.CreateSwap( ResourceType.Atex, redirections, filePath, oldPath, oldPath );
     }
 }

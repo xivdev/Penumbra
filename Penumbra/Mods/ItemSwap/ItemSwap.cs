@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -137,54 +136,45 @@ public static class ItemSwap
     }
 
 
-    public static bool CreatePhyb( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry, out FileSwap phyb )
+    public static FileSwap CreatePhyb( Func< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry )
     {
         var phybPath = GamePaths.Skeleton.Phyb.Path( race, EstManipulation.ToName( type ), estEntry );
-        return FileSwap.CreateSwap( ResourceType.Phyb, redirections, phybPath, phybPath, out phyb );
+        return FileSwap.CreateSwap( ResourceType.Phyb, redirections, phybPath, phybPath );
     }
 
-    public static bool CreateSklb( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry, out FileSwap sklb )
+    public static FileSwap CreateSklb( Func< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry )
     {
         var sklbPath = GamePaths.Skeleton.Sklb.Path( race, EstManipulation.ToName( type ), estEntry );
-        return FileSwap.CreateSwap( ResourceType.Sklb, redirections, sklbPath, sklbPath, out sklb );
+        return FileSwap.CreateSwap( ResourceType.Sklb, redirections, sklbPath, sklbPath );
     }
 
     /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
-    public static bool CreateEst( IReadOnlyDictionary< Utf8GamePath, FullPath > redirections, HashSet< MetaManipulation > manips, EstManipulation.EstType type,
-        GenderRace genderRace, SetId idFrom, SetId idTo, out MetaSwap? est )
+    public static MetaSwap? CreateEst( Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, EstManipulation.EstType type,
+        GenderRace genderRace, SetId idFrom, SetId idTo )
     {
         if( type == 0 )
         {
-            est = null;
-            return true;
+            return null;
         }
 
         var (gender, race) = genderRace.Split();
         var fromDefault = new EstManipulation( gender, race, type, idFrom.Value, EstFile.GetDefault( type, genderRace, idFrom.Value ) );
         var toDefault   = new EstManipulation( gender, race, type, idTo.Value, EstFile.GetDefault( type, genderRace, idTo.Value ) );
-        est = new MetaSwap( manips, fromDefault, toDefault );
+        var est         = new MetaSwap( manips, fromDefault, toDefault );
 
         if( est.SwapApplied.Est.Entry >= 2 )
         {
-            if( !CreatePhyb( redirections, type, genderRace, est.SwapApplied.Est.Entry, out var phyb ) )
-            {
-                return false;
-            }
-
-            if( !CreateSklb( redirections, type, genderRace, est.SwapApplied.Est.Entry, out var sklb ) )
-            {
-                return false;
-            }
-
+            var phyb = CreatePhyb( redirections, type, genderRace, est.SwapApplied.Est.Entry );
             est.ChildSwaps.Add( phyb );
+            var sklb = CreateSklb( redirections, type, genderRace, est.SwapApplied.Est.Entry );
             est.ChildSwaps.Add( sklb );
         }
         else if( est.SwapAppliedIsDefault )
         {
-            est = null;
+            return null;
         }
 
-        return true;
+        return est;
     }
 
     public static int GetStableHashCode( this string str )

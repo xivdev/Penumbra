@@ -102,12 +102,13 @@ public class ItemSwapWindow : IDisposable
     private int        _sourceId      = 0;
     private Exception? _loadException = null;
 
-    private string     _newModName    = string.Empty;
-    private string     _newGroupName  = "Swaps";
-    private string     _newOptionName = string.Empty;
-    private IModGroup? _selectedGroup = null;
-    private bool       _subModValid   = false;
-    private bool       _useFileSwaps  = true;
+    private string     _newModName           = string.Empty;
+    private string     _newGroupName         = "Swaps";
+    private string     _newOptionName        = string.Empty;
+    private IModGroup? _selectedGroup        = null;
+    private bool       _subModValid          = false;
+    private bool       _useFileSwaps         = true;
+    private bool       _useCurrentCollection = false;
 
     private Item[]? _affectedItems;
 
@@ -157,21 +158,21 @@ public class ItemSwapWindow : IDisposable
                     var values = _selectors[ _lastTab ];
                     if( values.Source.CurrentSelection.Item2 != null && values.Target.CurrentSelection.Item2 != null )
                     {
-                        _affectedItems = _swapData.LoadEquipment( values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2 );
+                        _affectedItems = _swapData.LoadEquipment( values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     }
 
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization( BodySlot.Hair, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
+                    _swapData.LoadCustomization( BodySlot.Hair, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     break;
                 case SwapType.Face when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization( BodySlot.Face, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
+                    _swapData.LoadCustomization( BodySlot.Face, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization( BodySlot.Zear, Names.CombinedRace( _currentGender, ModelRace.Viera ), ( SetId )_sourceId, ( SetId )_targetId );
+                    _swapData.LoadCustomization( BodySlot.Zear, Names.CombinedRace( _currentGender, ModelRace.Viera ), ( SetId )_sourceId, ( SetId )_targetId, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     break;
                 case SwapType.Tail when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization( BodySlot.Tail, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId );
+                    _swapData.LoadCustomization( BodySlot.Tail, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     break;
                 case SwapType.Weapon: break;
             }
@@ -180,6 +181,8 @@ public class ItemSwapWindow : IDisposable
         {
             Penumbra.Log.Error( $"Could not get Customization Data container for {_lastTab}:\n{e}" );
             _loadException = e;
+            _affectedItems = null;
+            _swapData.Clear();
         }
 
         _dirty = false;
