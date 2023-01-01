@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using Penumbra.GameData.Enums;
+using static Penumbra.Mods.ItemSwap.ItemSwap;
 
 namespace Penumbra.Mods.ItemSwap;
 
@@ -63,7 +64,7 @@ public sealed class FileSwap : Swap
     public ResourceType Type;
 
     /// <summary> The binary or parsed data of the file at SwapToModded. </summary>
-    public IWritable FileData = ItemSwap.GenericFile.Invalid;
+    public IWritable FileData = GenericFile.Invalid;
 
     /// <summary> The path that would be requested without manipulated parent files. </summary>
     public string SwapFromPreChangePath = string.Empty;
@@ -114,12 +115,13 @@ public sealed class FileSwap : Swap
     /// <param name="swapToRequest">The unmodded path to the file the game is supposed to load instead.</param>
     /// <param name="swap">A full swap container with the actual file in memory.</param>
     /// <returns>True if everything could be read correctly, false otherwise.</returns>
-    public static FileSwap CreateSwap( ResourceType type, Func< Utf8GamePath, FullPath > redirections, string swapFromRequest, string swapToRequest, string? swapFromPreChange = null )
+    public static FileSwap CreateSwap( ResourceType type, Func< Utf8GamePath, FullPath > redirections, string swapFromRequest, string swapToRequest,
+        string? swapFromPreChange = null )
     {
         var swap = new FileSwap
         {
             Type                  = type,
-            FileData              = ItemSwap.GenericFile.Invalid,
+            FileData              = GenericFile.Invalid,
             DataWasChanged        = false,
             SwapFromPreChangePath = swapFromPreChange ?? swapFromRequest,
             SwapFromChanged       = swapFromPreChange != swapFromRequest,
@@ -142,10 +144,10 @@ public sealed class FileSwap : Swap
 
         swap.FileData = type switch
         {
-            ResourceType.Mdl  => ItemSwap.LoadMdl( swap.SwapToModded, out var f ) ? f : throw new Exception( $"Could not load file data for {swap.SwapToModded}." ),
-            ResourceType.Mtrl => ItemSwap.LoadMtrl( swap.SwapToModded, out var f ) ? f : throw new Exception( $"Could not load file data for {swap.SwapToModded}." ),
-            ResourceType.Avfx => ItemSwap.LoadAvfx( swap.SwapToModded, out var f ) ? f : throw new Exception( $"Could not load file data for {swap.SwapToModded}." ),
-            _                 => ItemSwap.LoadFile( swap.SwapToModded, out var f ) ? f : throw new Exception( $"Could not load file data for {swap.SwapToModded}." ),
+            ResourceType.Mdl  => LoadMdl( swap.SwapToModded, out var f ) ? f : throw new MissingFileException( type, swap.SwapToModded ),
+            ResourceType.Mtrl => LoadMtrl( swap.SwapToModded, out var f ) ? f : throw new MissingFileException( type, swap.SwapToModded ),
+            ResourceType.Avfx => LoadAvfx( swap.SwapToModded, out var f ) ? f : throw new MissingFileException( type, swap.SwapToModded ),
+            _                 => LoadFile( swap.SwapToModded, out var f ) ? f : throw new MissingFileException( type, swap.SwapToModded ),
         };
 
         return swap;
@@ -166,7 +168,7 @@ public sealed class FileSwap : Swap
         var name =
             $"{( oldFilename.StartsWith( "--" ) ? "--" : string.Empty )}{string.Join( null, hash.Select( c => c.ToString( "x2" ) ) )}.{swap.Type.ToString().ToLowerInvariant()}";
         var newPath = path.Replace( oldFilename, name );
-        var newSwap = CreateSwap( swap.Type, redirections, newPath, swap.SwapToRequestPath.ToString());
+        var newSwap = CreateSwap( swap.Type, redirections, newPath, swap.SwapToRequestPath.ToString() );
 
         path           = newPath;
         dataWasChanged = true;

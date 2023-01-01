@@ -23,6 +23,15 @@ public static class ItemSwap
     public class IdUnavailableException : Exception
     { }
 
+    public class MissingFileException : Exception
+    {
+        public readonly ResourceType Type;
+
+        public MissingFileException( ResourceType type, object path )
+            : base($"Could not load {type} File Data for \"{path}\".")
+            => Type = type;
+    }
+
     private static bool LoadFile( FullPath path, out byte[] data )
     {
         if( path.FullName.Length > 0 )

@@ -34,7 +34,7 @@ public static class EquipmentSwap
             swaps.Add( eqp );
         }
 
-        var gmp = CreateGmp( manips, slotFrom, idFrom, idTo);
+        var gmp = CreateGmp( manips, slotFrom, idFrom, idTo );
         if( gmp != null )
         {
             swaps.Add( gmp );
@@ -52,9 +52,19 @@ public static class EquipmentSwap
             _              => ( EstManipulation.EstType )0,
         };
 
+        var skipFemale    = false;
+        var skipMale      = false;
         var mtrlVariantTo = imcFileTo.GetEntry( ImcFile.PartIndex( slotFrom ), variantTo ).MaterialId;
         foreach( var gr in Enum.GetValues< GenderRace >() )
         {
+            switch( gr.Split().Item1 )
+            {
+                case Gender.Male when skipMale:        continue;
+                case Gender.Female when skipFemale:    continue;
+                case Gender.MaleNpc when skipMale:     continue;
+                case Gender.FemaleNpc when skipFemale: continue;
+            }
+
             if( CharacterUtility.EqdpIdx( gr, isAccessory ) < 0 )
             {
                 continue;
@@ -66,10 +76,26 @@ public static class EquipmentSwap
                 swaps.Add( est );
             }
 
-            var eqdp = CreateEqdp( redirections, manips, slotFrom, gr, idFrom, idTo, mtrlVariantTo );
-            if( eqdp != null )
+            try
             {
-                swaps.Add( eqdp );
+                var eqdp = CreateEqdp( redirections, manips, slotFrom, gr, idFrom, idTo, mtrlVariantTo );
+                if( eqdp != null )
+                {
+                    swaps.Add( eqdp );
+                }
+            }
+            catch( ItemSwap.MissingFileException e )
+            {
+                switch( gr )
+                {
+                    case GenderRace.MidlanderMale when e.Type == ResourceType.Mdl:
+                        skipMale = true;
+                        continue;
+                    case GenderRace.MidlanderFemale when e.Type == ResourceType.Mdl:
+                        skipFemale = true;
+                        continue;
+                    default: throw;
+                }
             }
         }
 
@@ -78,7 +104,6 @@ public static class EquipmentSwap
             var imc = CreateImc( redirections, manips, slotFrom, idFrom, idTo, variant, variantTo, imcFileFrom, imcFileTo );
             swaps.Add( imc );
         }
-
 
         return affectedItems;
     }
@@ -106,8 +131,9 @@ public static class EquipmentSwap
 
     public static FileSwap CreateMdl( Func< Utf8GamePath, FullPath > redirections, EquipSlot slot, GenderRace gr, SetId idFrom, SetId idTo, byte mtrlTo )
     {
-        var mdlPathFrom = GamePaths.Equipment.Mdl.Path( idFrom, gr, slot );
-        var mdlPathTo   = GamePaths.Equipment.Mdl.Path( idTo, gr, slot );
+        var accessory   = slot.IsAccessory();
+        var mdlPathFrom = accessory ? GamePaths.Accessory.Mdl.Path( idFrom, gr, slot ) : GamePaths.Equipment.Mdl.Path( idFrom, gr, slot );
+        var mdlPathTo   = accessory ? GamePaths.Accessory.Mdl.Path( idTo, gr, slot ) : GamePaths.Equipment.Mdl.Path( idTo, gr, slot );
         var mdl         = FileSwap.CreateSwap( ResourceType.Mdl, redirections, mdlPathFrom, mdlPathTo );
 
         foreach( ref var fileName in mdl.AsMdl()!.Materials.AsSpan() )
@@ -292,7 +318,7 @@ public static class EquipmentSwap
         }
 
         var newPath = ItemSwap.ReplaceAnyId( path, prefix, idFrom );
-        newPath = ItemSwap.AddSuffix( newPath, ".tex", $"_{Path.GetFileName( texture.Path ).GetStableHashCode():x8}", true );
+        newPath = ItemSwap.AddSuffix( newPath, ".tex", $"_{Path.GetFileName( texture.Path ).GetStableHashCode():x8}" );
         if( newPath != path )
         {
             texture.Path   = addedDashes ? newPath.Replace( "--", string.Empty ) : newPath;
@@ -311,7 +337,7 @@ public static class EquipmentSwap
     public static FileSwap CreateAtex( Func< Utf8GamePath, FullPath > redirections, ref string filePath, ref bool dataWasChanged )
     {
         var oldPath = filePath;
-        filePath       = ItemSwap.AddSuffix( filePath, ".atex", $"_{Path.GetFileName( filePath ).GetStableHashCode():x8}", true );
+        filePath       = ItemSwap.AddSuffix( filePath, ".atex", $"_{Path.GetFileName( filePath ).GetStableHashCode():x8}" );
         dataWasChanged = true;
 
         return FileSwap.CreateSwap( ResourceType.Atex, redirections, filePath, oldPath, oldPath );
