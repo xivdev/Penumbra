@@ -22,10 +22,11 @@ public static class MaterialHandling
 
         // All hairstyles above 116 are shared except for Hrothgar
         if (hairId.Value is >= 116 and <= 200)
-        {
             return actualGr.Split().Item1 == Gender.Female ? GenderRace.MidlanderFemale : GenderRace.MidlanderMale;
-        }
 
         return actualGr;
     }
+
+    public static bool IsSpecialCase(GenderRace gr, SetId hairId)
+        => gr is GenderRace.MidlanderMale or GenderRace.MidlanderFemale && hairId.Value is >= 101 and <= 200;
 }

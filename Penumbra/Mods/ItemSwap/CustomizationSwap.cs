@@ -60,9 +60,9 @@ public static class CustomizationSwap
         var mtrlToPath   = GamePaths.Character.Mtrl.Path( race, slot, idTo, fileName, out var gameRaceTo, out var gameSetIdTo, variant );
 
         var newFileName = fileName;
-        newFileName = ItemSwap.ReplaceRace( newFileName, gameRaceTo, race, gameRaceTo                                             != race );
-        newFileName = ItemSwap.ReplaceBody( newFileName, slot, idTo, idFrom, idFrom.Value                                         != idTo.Value );
-        newFileName = ItemSwap.AddSuffix( newFileName, ".mtrl", $"_c{race.ToRaceCode()}", gameRaceFrom                            != race );
+        newFileName = ItemSwap.ReplaceRace( newFileName, gameRaceTo, race, gameRaceTo     != race );
+        newFileName = ItemSwap.ReplaceBody( newFileName, slot, idTo, idFrom, idFrom.Value != idTo.Value );
+        newFileName = ItemSwap.AddSuffix( newFileName, ".mtrl", $"_c{race.ToRaceCode()}", gameRaceFrom != race || MaterialHandling.IsSpecialCase( race, idFrom ) );
         newFileName = ItemSwap.AddSuffix( newFileName, ".mtrl", $"_{slot.ToAbbreviation()}{idFrom.Value:D4}", gameSetIdFrom.Value != idFrom.Value );
 
         var actualMtrlFromPath = mtrlFromPath;
