@@ -29,9 +29,19 @@ public partial class ConfigWindow
         Add6_0_2( ret );
         Add6_0_5( ret );
         Add6_1_0( ret );
+        Add6_1_1( ret );
 
         return ret;
     }
+
+    private static void Add6_1_1( Changelog log )
+        => log.NextVersion( "Version 0.6.1.1" )
+           .RegisterEntry( "Added a toggle to use all the effective changes from the entire currently selected collection for swaps, instead of the selected mod." )
+           .RegisterEntry( "Fix using equipment paths for accessory swaps and thus accessory swaps not working at all" )
+           .RegisterEntry( "Fix issues with swaps with gender-locked gear where the models for the other gender do not exist." )
+           .RegisterEntry( "Fix swapping universal hairstyles for midlanders breaking them for other races." )
+           .RegisterEntry( "Add some actual error messages on failure to create item swaps." )
+           .RegisterEntry( "Fix warnings about more than one affected item appearing for single items." );
 
     private static void Add6_1_0( Changelog log )
         => log.NextVersion( "Version 0.6.1.0 (Happy New Year! Edition)" )
