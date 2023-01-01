@@ -158,21 +158,26 @@ public class ItemSwapWindow : IDisposable
                     var values = _selectors[ _lastTab ];
                     if( values.Source.CurrentSelection.Item2 != null && values.Target.CurrentSelection.Item2 != null )
                     {
-                        _affectedItems = _swapData.LoadEquipment( values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
+                        _affectedItems = _swapData.LoadEquipment( values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2,
+                            _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     }
 
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization( BodySlot.Hair, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
+                    _swapData.LoadCustomization( BodySlot.Hair, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId,
+                        _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     break;
                 case SwapType.Face when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization( BodySlot.Face, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
+                    _swapData.LoadCustomization( BodySlot.Face, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId,
+                        _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization( BodySlot.Zear, Names.CombinedRace( _currentGender, ModelRace.Viera ), ( SetId )_sourceId, ( SetId )_targetId, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
+                    _swapData.LoadCustomization( BodySlot.Zear, Names.CombinedRace( _currentGender, ModelRace.Viera ), ( SetId )_sourceId, ( SetId )_targetId,
+                        _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     break;
                 case SwapType.Tail when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization( BodySlot.Tail, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId, _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
+                    _swapData.LoadCustomization( BodySlot.Tail, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId,
+                        _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
                     break;
                 case SwapType.Weapon: break;
             }
@@ -395,17 +400,18 @@ public class ItemSwapWindow : IDisposable
         ImGui.TableNextColumn();
         _dirty |= targetSelector.Draw( "##itemTarget", targetSelector.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
 
-        if( _affectedItems is { Length: > 0 } )
+        if( _affectedItems is { Length: > 1 } )
         {
             ImGui.SameLine();
             ImGuiUtil.DrawTextButton( $"which will also affect {_affectedItems.Length} other Items.", Vector2.Zero, Colors.PressEnterWarningBg );
             if( ImGui.IsItemHovered() )
             {
-                ImGui.SetTooltip( string.Join( '\n', _affectedItems.Select( i => i.Name.ToDalamudString().TextValue ) ) );
+                ImGui.SetTooltip( string.Join( '\n', _affectedItems.Where( i => !ReferenceEquals( i, targetSelector.CurrentSelection.Item2 ) )
+                   .Select( i => i.Name.ToDalamudString().TextValue ) ) );
             }
         }
     }
-    
+
     private void DrawHairSwap()
     {
         using var tab = DrawTab( SwapType.Hair );
