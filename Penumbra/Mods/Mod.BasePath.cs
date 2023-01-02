@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
@@ -80,11 +81,19 @@ public partial class Mod
     // Deletes the source files if delete is true.
     private void IncorporateAllMetaChanges( bool delete )
     {
-        var changes = false;
+        var            changes    = false;
+        List< string > deleteList = new();
         foreach( var subMod in AllSubMods.OfType< SubMod >() )
         {
-            changes |= subMod.IncorporateMetaChanges( ModPath, delete );
+            var (localChanges, localDeleteList) =  subMod.IncorporateMetaChanges( ModPath, false );
+            changes                             |= localChanges;
+            if( delete )
+            {
+                deleteList.AddRange( localDeleteList );
+            }
         }
+
+        SubMod.DeleteDeleteList( deleteList, delete );
 
         if( changes )
         {

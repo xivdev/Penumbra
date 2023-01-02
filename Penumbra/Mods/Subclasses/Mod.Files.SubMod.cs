@@ -182,7 +182,7 @@ public partial class Mod
 
         // If .meta or .rgsp files are encountered, parse them and incorporate their meta changes into the mod.
         // If delete is true, the files are deleted afterwards.
-        public bool IncorporateMetaChanges( DirectoryInfo basePath, bool delete )
+        public (bool Changes, List< string > DeleteList) IncorporateMetaChanges( DirectoryInfo basePath, bool delete )
         {
             var deleteList   = new List< string >();
             var oldSize      = ManipulationData.Count;
@@ -227,6 +227,17 @@ public partial class Mod
                 }
             }
 
+            DeleteDeleteList( deleteList, delete );
+            return ( oldSize < ManipulationData.Count, deleteList );
+        }
+
+        internal static void DeleteDeleteList( IEnumerable< string > deleteList, bool delete )
+        {
+            if( !delete )
+            {
+                return;
+            }
+
             foreach( var file in deleteList )
             {
                 try
@@ -238,8 +249,6 @@ public partial class Mod
                     Penumbra.Log.Error( $"Could not delete incorporated meta file {file}:\n{e}" );
                 }
             }
-
-            return oldSize < ManipulationData.Count;
         }
 
         public void WriteTexToolsMeta( DirectoryInfo basePath, bool test = false )
