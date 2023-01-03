@@ -48,6 +48,7 @@ public partial class PathResolver : IDisposable
     // The modified resolver that handles game path resolving.
     private bool CharacterResolver( Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, ResolveData) data )
     {
+        TimingManager.StartTimer( TimingType.CharacterResolver );
         // Check if the path was marked for a specific collection,
         // or if it is a file loaded by a material, and if we are currently in a material load,
         // or if it is a face decal path and the current mod collection is set.
@@ -71,6 +72,7 @@ public partial class PathResolver : IDisposable
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path : resolved.Value.InternalName;
         SubfileHelper.HandleCollection( resolveData, path, nonDefault, type, resolved, out data );
+        TimingManager.StopTimer( TimingType.CharacterResolver );
         return true;
     }
 

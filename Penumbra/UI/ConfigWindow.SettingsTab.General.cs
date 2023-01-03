@@ -29,6 +29,9 @@ public partial class ConfigWindow
 
         private void DrawModSelectorSettings()
         {
+#if DEBUG
+            ImGui.NewLine(); // Due to the timing button.
+#endif
             if( !ImGui.CollapsingHeader( "General" ) )
             {
                 OpenTutorial( BasicTutorialSteps.GeneralSettings );

@@ -24,6 +24,7 @@ public unsafe partial class PathResolver
             return new ResolveData( Penumbra.CollectionManager.Default );
         }
 
+        TimingManager.StartTimer( TimingType.IdentifyCollection );
         try
         {
             if( useCache && IdentifiedCache.TryGetValue( gameObject, out var data ) )
@@ -60,6 +61,7 @@ public unsafe partial class PathResolver
              ?? CollectionByAttributes( gameObject )
              ?? CheckOwnedCollection( identifier, owner )
              ?? Penumbra.CollectionManager.Default;
+
             return IdentifiedCache.Set( collection, identifier, gameObject );
         }
         catch( Exception e )
@@ -67,24 +69,35 @@ public unsafe partial class PathResolver
             Penumbra.Log.Error( $"Error identifying collection:\n{e}" );
             return Penumbra.CollectionManager.Default.ToResolveData( gameObject );
         }
+        finally
+        {
+            TimingManager.StopTimer( TimingType.IdentifyCollection );
+        }
     }
 
     // Get the collection applying to the current player character
     // or the default collection if no player exists.
     public static ModCollection PlayerCollection()
     {
-        var gameObject = ( GameObject* )Dalamud.Objects.GetObjectAddress( 0 );
+        TimingManager.StartTimer( TimingType.IdentifyCollection );
+        var           gameObject = ( GameObject* )Dalamud.Objects.GetObjectAddress( 0 );
+        ModCollection ret;
         if( gameObject == null )
         {
-            return Penumbra.CollectionManager.ByType( CollectionType.Yourself )
+            ret = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
              ?? Penumbra.CollectionManager.Default;
         }
+        else
+        {
 
-        var player = Penumbra.Actors.GetCurrentPlayer();
-        return CollectionByIdentifier( player )
-         ?? CheckYourself( player, gameObject )
-         ?? CollectionByAttributes( gameObject )
-         ?? Penumbra.CollectionManager.Default;
+            var player = Penumbra.Actors.GetCurrentPlayer();
+            ret = CollectionByIdentifier( player )
+             ?? CheckYourself( player, gameObject )
+             ?? CollectionByAttributes( gameObject )
+             ?? Penumbra.CollectionManager.Default;
+        }
+        TimingManager.StopTimer( TimingType.IdentifyCollection );
+        return ret;
     }
 
     // Check both temporary and permanent character collections. Temporary first.

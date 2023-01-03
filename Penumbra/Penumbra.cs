@@ -86,6 +86,9 @@ public class Penumbra : IDalamudPlugin
     {
         try
         {
+            TimingManager.StartTimer( TimingType.TotalTime );
+            TimingManager.StartTimer( TimingType.LaunchTime );
+
             Dalamud.Initialize( pluginInterface );
             Log                    = new Logger();
             DevPenumbraExists      = CheckDevPluginPenumbra();
@@ -162,6 +165,7 @@ public class Penumbra : IDalamudPlugin
             {
                 ResidentResources.Reload();
             }
+            TimingManager.StopTimer( TimingType.LaunchTime );
         }
         catch
         {
@@ -304,6 +308,7 @@ public class Penumbra : IDalamudPlugin
         ResourceLogger?.Dispose();
         ResourceLoader?.Dispose();
         CharacterUtility?.Dispose();
+        TimingManager.StopAllTimers();
     }
 
     // Collect all relevant files for penumbra configuration.

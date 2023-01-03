@@ -113,7 +113,9 @@ public unsafe partial class PathResolver
                 case ResourceType.Avfx:
                     if( handle->FileSize == 0 )
                     {
+                        TimingManager.StartTimer( TimingType.AddSubfile );
                         _subFileCollection[ ( IntPtr )handle ] = resolveData;
+                        TimingManager.StopTimer( TimingType.AddSubfile );
                     }
 
                     break;
@@ -126,7 +128,9 @@ public unsafe partial class PathResolver
             {
                 case ResourceType.Mtrl:
                 case ResourceType.Avfx:
+                    TimingManager.StartTimer( TimingType.AddSubfile );
                     _subFileCollection.TryRemove( ( IntPtr )handle, out _ );
+                    TimingManager.StopTimer( TimingType.AddSubfile );
                     break;
             }
         }

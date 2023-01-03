@@ -95,6 +95,7 @@ public unsafe partial class PathResolver
         // Special handling for paths so that we do not store non-owned temporary strings in the dictionary.
         public void SetCollection( IntPtr gameObject, ByteString path, ModCollection collection )
         {
+            TimingManager.StartTimer( TimingType.SetPathCollection );
             if( _pathCollections.ContainsKey( path ) || path.IsOwned )
             {
                 _pathCollections[ path ] = collection.ToResolveData( gameObject );
@@ -103,6 +104,7 @@ public unsafe partial class PathResolver
             {
                 _pathCollections[ path.Clone() ] = collection.ToResolveData( gameObject );
             }
+            TimingManager.StopTimer( TimingType.SetPathCollection );
         }
     }
 }

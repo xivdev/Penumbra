@@ -76,6 +76,7 @@ public unsafe partial class ResourceLoader
             return;
         }
 
+        TimingManager.StartTimer( TimingType.DebugTimes );
         // Got some incomprehensible null-dereference exceptions here when hot-reloading penumbra.
         try
         {
@@ -96,6 +97,7 @@ public unsafe partial class ResourceLoader
         {
             Penumbra.Log.Error( e.ToString() );
         }
+        TimingManager.StopTimer( TimingType.DebugTimes );
     }
 
     // Find a key in a StdMap.
@@ -202,6 +204,7 @@ public unsafe partial class ResourceLoader
     // Only used when the Replaced Resources Tab in the Debug tab is open.
     public void UpdateDebugInfo()
     {
+        TimingManager.StartTimer( TimingType.DebugTimes );
         for( var i = 0; i < _debugList.Count; ++i )
         {
             var data             = _debugList.Values[ i ];
@@ -220,6 +223,7 @@ public unsafe partial class ResourceLoader
                 };
             }
         }
+        TimingManager.StopTimer( TimingType.DebugTimes );
     }
 
     // Prevent resource management weirdness.

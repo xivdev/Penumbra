@@ -61,6 +61,7 @@ public partial class ModEditWindow : Window, IDisposable
 
     public override void PreDraw()
     {
+        TimingManager.StartTimer( TimingType.UiAdvancedWindow );
         var sb = new StringBuilder( 256 );
 
         var redirections = 0;
@@ -125,6 +126,7 @@ public partial class ModEditWindow : Window, IDisposable
         _allowReduplicate = redirections != _editor.AvailableFiles.Count || _editor.MissingFiles.Count > 0;
         sb.Append( WindowBaseLabel );
         WindowName = sb.ToString();
+        TimingManager.StopTimer( TimingType.UiAdvancedWindow );
     }
 
     public override void OnClose()
@@ -135,6 +137,7 @@ public partial class ModEditWindow : Window, IDisposable
 
     public override void Draw()
     {
+        TimingManager.StartTimer( TimingType.UiAdvancedWindow );
         using var tabBar = ImRaii.TabBar( "##tabs" );
         if( !tabBar )
         {
@@ -152,6 +155,7 @@ public partial class ModEditWindow : Window, IDisposable
         _materialTab.Draw();
         DrawTextureTab();
         _swapWindow.DrawItemSwapPanel();
+        TimingManager.StopTimer( TimingType.UiAdvancedWindow );
     }
 
     // A row of three buttonSizes and a help marker that can be used for material suffix changing.

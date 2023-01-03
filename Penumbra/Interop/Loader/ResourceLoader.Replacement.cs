@@ -81,34 +81,44 @@ public unsafe partial class ResourceLoader
     internal ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
     {
+        TimingManager.StartTimer( TimingType.GetResourceHandler );
+        ResourceHandle* ret = null;
         if( !Utf8GamePath.FromPointer( path, out var gamePath ) )
         {
             Penumbra.Log.Error( "Could not create GamePath from resource path." );
-            return CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+            ret = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
         }
-
-        CompareHash( ComputeHash( gamePath.Path, pGetResParams ), *resourceHash, gamePath );
-
-        ResourceRequested?.Invoke( gamePath, isSync );
-
-        // If no replacements are being made, we still want to be able to trigger the event.
-        var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
-        PathResolved?.Invoke( gamePath, *resourceType, resolvedPath ?? ( gamePath.IsRooted() ? new FullPath( gamePath ) : null ), data );
-        if( resolvedPath == null )
+        else
         {
-            var retUnmodified =
-                CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-            ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
-            return retUnmodified;
+
+            CompareHash( ComputeHash( gamePath.Path, pGetResParams ), *resourceHash, gamePath );
+
+            ResourceRequested?.Invoke( gamePath, isSync );
+
+            // If no replacements are being made, we still want to be able to trigger the event.
+            var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
+            PathResolved?.Invoke( gamePath, *resourceType, resolvedPath ?? ( gamePath.IsRooted() ? new FullPath( gamePath ) : null ), data );
+            if( resolvedPath == null )
+            {
+                var retUnmodified =
+                    CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+                ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
+                ret = retUnmodified;
+            }
+            else
+            {
+
+                // Replace the hash and path with the correct one for the replacement.
+                *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
+
+                path = resolvedPath.Value.InternalName.Path;
+                ret = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+                ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )ret, gamePath, resolvedPath.Value, data );
+                
+            }
         }
-
-        // Replace the hash and path with the correct one for the replacement.
-        *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
-
-        path = resolvedPath.Value.InternalName.Path;
-        var retModified = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-        ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retModified, gamePath, resolvedPath.Value, data );
-        return retModified;
+        TimingManager.StopTimer( TimingType.GetResourceHandler );
+        return ret;
     }
 
 
@@ -164,48 +174,50 @@ public unsafe partial class ResourceLoader
 
     private byte ReadSqPackDetour( ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync )
     {
+        TimingManager.StartTimer( TimingType.ReadSqPack );
+        byte ret = 0;
         if( !DoReplacements )
         {
-            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+            ret = ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
-
-        if( fileDescriptor == null || fileDescriptor->ResourceHandle == null )
+        else if( fileDescriptor == null || fileDescriptor->ResourceHandle == null )
         {
             Penumbra.Log.Error( "Failure to load file from SqPack: invalid File Descriptor." );
-            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+            ret = ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
-
-        if( !Utf8GamePath.FromSpan( fileDescriptor->ResourceHandle->FileNameSpan(), out var gamePath, false ) || gamePath.Length == 0 )
+        else if( !Utf8GamePath.FromSpan( fileDescriptor->ResourceHandle->FileNameSpan(), out var gamePath, false ) || gamePath.Length == 0 )
         {
-            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+            ret = ReadSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync);
         }
-
         // Paths starting with a '|' are handled separately to allow for special treatment.
         // They are expected to also have a closing '|'.
-        if( ResourceLoadCustomization == null || gamePath.Path[ 0 ] != ( byte )'|' )
+        else if( ResourceLoadCustomization == null || gamePath.Path[ 0 ] != ( byte )'|' )
         {
-            return DefaultLoadResource( gamePath.Path, resourceManager, fileDescriptor, priority, isSync );
+            ret = DefaultLoadResource( gamePath.Path, resourceManager, fileDescriptor, priority, isSync );
+        }
+        else
+        {
+            // Split the path into the special-treatment part (between the first and second '|')
+            // and the actual path.
+            var  split = gamePath.Path.Split( ( byte )'|', 3, false );
+            fileDescriptor->ResourceHandle->FileNameData   = split[2].Path;
+            fileDescriptor->ResourceHandle->FileNameLength = split[2].Length;
+            var funcFound = fileDescriptor->ResourceHandle->Category != ResourceCategory.Ui
+             && ResourceLoadCustomization.GetInvocationList()
+                   .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
+                       .Invoke( split[1], split[2], resourceManager, fileDescriptor, priority, isSync, out ret ) );
+
+            if( !funcFound )
+            {
+                ret = DefaultLoadResource( split[2], resourceManager, fileDescriptor, priority, isSync );
+            }
+
+            // Return original resource handle path so that they can be loaded separately.
+            fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
+            fileDescriptor->ResourceHandle->FileNameLength = gamePath.Path.Length;
         }
 
-        // Split the path into the special-treatment part (between the first and second '|')
-        // and the actual path.
-        byte ret   = 0;
-        var  split = gamePath.Path.Split( ( byte )'|', 3, false );
-        fileDescriptor->ResourceHandle->FileNameData   = split[ 2 ].Path;
-        fileDescriptor->ResourceHandle->FileNameLength = split[ 2 ].Length;
-        var funcFound = fileDescriptor->ResourceHandle->Category != ResourceCategory.Ui
-         && ResourceLoadCustomization.GetInvocationList()
-               .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
-                   .Invoke( split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, isSync, out ret ) );
-
-        if( !funcFound )
-        {
-            ret = DefaultLoadResource( split[ 2 ], resourceManager, fileDescriptor, priority, isSync );
-        }
-
-        // Return original resource handle path so that they can be loaded separately.
-        fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
-        fileDescriptor->ResourceHandle->FileNameLength = gamePath.Path.Length;
+        TimingManager.StopTimer( TimingType.ReadSqPack );
         return ret;
     }
 

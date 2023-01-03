@@ -126,6 +126,7 @@ public unsafe partial class PathResolver
 
         private ulong LoadTimelineResourcesDetour( IntPtr timeline )
         {
+            TimingManager.StartTimer( TimingType.TimelineResources );
             ulong ret;
             var   old = _animationLoadData;
             try
@@ -152,6 +153,7 @@ public unsafe partial class PathResolver
 
             _animationLoadData = old;
 
+            TimingManager.StopTimer( TimingType.TimelineResources );
             return ret;
         }
 
@@ -246,6 +248,7 @@ public unsafe partial class PathResolver
 
         private IntPtr LoadCharacterVfxDetour( byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4 )
         {
+            TimingManager.StartTimer( TimingType.LoadCharacterVfx );
             var last = _animationLoadData;
             if( vfxParams != null && vfxParams->GameObjectId != unchecked( ( uint )-1 ) )
             {
@@ -264,7 +267,6 @@ public unsafe partial class PathResolver
             {
                 _animationLoadData = ResolveData.Invalid;
             }
-
             var ret = _loadCharacterVfxHook.Original( vfxPath, vfxParams, unk1, unk2, unk3, unk4 );
 #if DEBUG
             var path = new ByteString( vfxPath );
@@ -272,6 +274,7 @@ public unsafe partial class PathResolver
                 $"Load Character VFX: {path}  {vfxParams->GameObjectId:X} {vfxParams->TargetCount} {unk1} {unk2} {unk3} {unk4} -> {ret:X} {_animationLoadData.ModCollection.Name} {_animationLoadData.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}" );
 #endif
             _animationLoadData = last;
+            TimingManager.StopTimer( TimingType.LoadCharacterVfx );
             return ret;
         }
 
@@ -282,6 +285,7 @@ public unsafe partial class PathResolver
 
         private IntPtr LoadAreaVfxDetour( uint vfxId, float* pos, GameObject* caster, float unk1, float unk2, byte unk3 )
         {
+            TimingManager.StartTimer( TimingType.LoadAreaVfx );
             var last = _animationLoadData;
             if( caster != null )
             {
@@ -298,6 +302,7 @@ public unsafe partial class PathResolver
                 $"Load Area VFX: {vfxId}, {pos[ 0 ]} {pos[ 1 ]} {pos[ 2 ]} {( caster != null ? new ByteString( caster->GetName() ).ToString() : "Unknown" )} {unk1} {unk2} {unk3} -> {ret:X} {_animationLoadData.ModCollection.Name} {_animationLoadData.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}" );
 #endif
             _animationLoadData = last;
+            TimingManager.StopTimer( TimingType.LoadAreaVfx );
             return ret;
         }
 

@@ -77,11 +77,13 @@ public unsafe partial class CharacterUtility
         // Set the currently stored data of this resource to new values.
         private void SetResourceInternal( IntPtr data, int length )
         {
+            TimingManager.StartTimer( TimingType.SetResource );
             if( Ready )
             {
                 var resource = Penumbra.CharacterUtility.Address->Resource( GlobalIndex );
                 resource->SetData( data, length );
             }
+            TimingManager.StopTimer( TimingType.SetResource );
         }
 
         // Reset the currently stored data of this resource to its default values.
@@ -133,6 +135,7 @@ public unsafe partial class CharacterUtility
             {
                 if( !Disposed )
                 {
+                    TimingManager.StartTimer( TimingType.SetResource );
                     var list       = List._entries;
                     var wasCurrent = ReferenceEquals( this, list.First?.Value );
                     list.Remove( this );
@@ -159,6 +162,7 @@ public unsafe partial class CharacterUtility
                     }
 
                     Disposed = true;
+                    TimingManager.StopTimer( TimingType.SetResource );
                 }
             }
         }

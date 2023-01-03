@@ -54,6 +54,8 @@ public sealed partial class ConfigWindow : Window, IDisposable
     {
         try
         {
+            TimingManager.StartTimer( TimingType.UiMainWindow );
+
             if( Penumbra.ImcExceptions.Count > 0 )
             {
                 DrawProblemWindow( $"There were {Penumbra.ImcExceptions.Count} errors while trying to load IMC files from the game data.\n"
@@ -101,6 +103,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
         {
             Penumbra.Log.Error( $"Exception thrown during UI Render:\n{e}" );
         }
+        TimingManager.StopTimer( TimingType.UiMainWindow );
     }
 
     private static void DrawProblemWindow( string text, bool withExceptions )
