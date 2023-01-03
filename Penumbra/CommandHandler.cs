@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using Dalamud.Game.Command;
 using Dalamud.Game.Text.SeStringHandling;
 using ImGuiNET;
