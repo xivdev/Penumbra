@@ -217,11 +217,14 @@ public unsafe partial class PathResolver
             [FieldOffset( 0x118 )]
             public uint GameObjectId;
 
+            [FieldOffset( 0x11C )]
+            public byte GameObjectType;
+
             [FieldOffset( 0xD0 )]
             public ushort TargetCount;
 
             [FieldOffset( 0x120 )]
-            public fixed uint Target[16];
+            public fixed ulong Target[16];
         }
 
         private delegate IntPtr LoadCharacterVfxDelegate( byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4 );
@@ -229,20 +232,33 @@ public unsafe partial class PathResolver
         [Signature( "E8 ?? ?? ?? ?? 48 8B F8 48 8D 93", DetourName = nameof( LoadCharacterVfxDetour ) )]
         private readonly Hook< LoadCharacterVfxDelegate > _loadCharacterVfxHook = null!;
 
+        private global::Dalamud.Game.ClientState.Objects.Types.GameObject? GetOwnedObject( uint id )
+        {
+            var owner = Dalamud.Objects.SearchById( id );
+            if( owner == null )
+            {
+                return null;
+            }
+
+            var idx = ( ( GameObject* )owner.Address )->ObjectIndex;
+            return Dalamud.Objects[ idx + 1 ];
+        }
+
         private IntPtr LoadCharacterVfxDetour( byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4 )
         {
             var last = _animationLoadData;
             if( vfxParams != null && vfxParams->GameObjectId != unchecked( ( uint )-1 ) )
             {
-                var obj = Dalamud.Objects.SearchById( vfxParams->GameObjectId );
-                if( obj != null )
+                var obj = vfxParams->GameObjectType switch
                 {
-                    _animationLoadData = IdentifyCollection( ( GameObject* )obj.Address, true );
-                }
-                else
-                {
-                    _animationLoadData = ResolveData.Invalid;
-                }
+                    0 => Dalamud.Objects.SearchById( vfxParams->GameObjectId ),
+                    2 => Dalamud.Objects[ ( int )vfxParams->GameObjectId ],
+                    4 => GetOwnedObject( vfxParams->GameObjectId ),
+                    _ => null,
+                };
+                _animationLoadData = obj != null
+                    ? IdentifyCollection( ( GameObject* )obj.Address, true )
+                    : ResolveData.Invalid;
             }
             else
             {
@@ -251,8 +267,9 @@ public unsafe partial class PathResolver
 
             var ret = _loadCharacterVfxHook.Original( vfxPath, vfxParams, unk1, unk2, unk3, unk4 );
 #if DEBUG
+            var path = new ByteString( vfxPath );
             Penumbra.Log.Verbose(
-                $"Load Character VFX: {new ByteString( vfxPath )}  {vfxParams->GameObjectId:X} {vfxParams->TargetCount} {unk1} {unk2} {unk3} {unk4} -> {ret:X} {_animationLoadData.ModCollection.Name} {_animationLoadData.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}" );
+                $"Load Character VFX: {path}  {vfxParams->GameObjectId:X} {vfxParams->TargetCount} {unk1} {unk2} {unk3} {unk4} -> {ret:X} {_animationLoadData.ModCollection.Name} {_animationLoadData.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}" );
 #endif
             _animationLoadData = last;
             return ret;
