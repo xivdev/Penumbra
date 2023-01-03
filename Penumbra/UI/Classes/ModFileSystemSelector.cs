@@ -484,7 +484,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
             ImGuiUtil.BulletTextColored( ColorId.DisabledMod.Value(), "disabled in the current collection." );
             ImGuiUtil.BulletTextColored( ColorId.InheritedMod.Value(), "enabled due to inheritance from another collection." );
             ImGuiUtil.BulletTextColored( ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection." );
-            ImGuiUtil.BulletTextColored( ColorId.UndefinedMod.Value(), "disabled in all inherited collections." );
+            ImGuiUtil.BulletTextColored( ColorId.UndefinedMod.Value(), "unconfigured in all inherited collections." );
             ImGuiUtil.BulletTextColored( ColorId.NewMod.Value(),
                 "newly imported during this session. Will go away when first enabling a mod or when Penumbra is reloaded." );
             ImGuiUtil.BulletTextColored( ColorId.HandledConflictMod.Value(),
