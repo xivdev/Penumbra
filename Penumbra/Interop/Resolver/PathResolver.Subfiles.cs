@@ -19,7 +19,7 @@ public unsafe partial class PathResolver
     // Materials and avfx do contain their own paths to textures and shader packages or atex respectively.
     // Those are loaded synchronously.
     // Thus, we need to ensure the correct files are loaded when a material is loaded.
-    public class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePair<IntPtr, ResolveData>>
+    public class SubfileHelper : IDisposable, IReadOnlyCollection< KeyValuePair< IntPtr, ResolveData > >
     {
         private readonly ResourceLoader _loader;
 
@@ -133,24 +133,27 @@ public unsafe partial class PathResolver
 
         // We need to set the correct collection for the actual material path that is loaded
         // before actually loading the file.
-        public bool SubfileLoadHandler( ByteString split, ByteString path, ResourceManager* resourceManager,
+        public static bool SubfileLoadHandler( ByteString split, ByteString path, ResourceManager* resourceManager,
             SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
         {
-            ret = 0;
             switch( fileDescriptor->ResourceHandle->FileType )
             {
                 case ResourceType.Mtrl:
+                    // Force isSync = true for this call. I don't really understand why,
+                    // or where the difference even comes from.
+                    // Was called with True on my client and with false on other peoples clients,
+                    // which caused problems.
+                    ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, true );
+                    return true;
                 case ResourceType.Avfx:
-                    break;
-                default: return false;
-            }
+                    // Do nothing special right now.
+                    ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, isSync );
+                    return true;
 
-            // Force isSync = true for this call. I don't really understand why,
-            // or where the difference even comes from.
-            // Was called with True on my client and with false on other peoples clients,
-            // which caused problems.
-            ret = Penumbra.ResourceLoader.DefaultLoadResource( path, resourceManager, fileDescriptor, priority, true );
-            return true;
+                default:
+                    ret = 0;
+                    return false;
+            }
         }
 
         private delegate byte LoadMtrlFilesDelegate( IntPtr mtrlResourceHandle );
