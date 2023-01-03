@@ -215,10 +215,10 @@ public partial class ModEditWindow
 
         if( file.AdditionalData.Length > 0 )
         {
-            using var t = ImRaii.TreeNode( "Additional Data" );
+            using var t = ImRaii.TreeNode( $"Additional Data (Size: {file.AdditionalData.Length})###AdditionalData" );
             if( t )
             {
-                ImRaii.TreeNode( string.Join( ' ', file.AdditionalData.Select( c => $"{c:X2}" ) ), ImGuiTreeNodeFlags.Leaf ).Dispose();
+                ImGuiUtil.TextWrapped( string.Join( ' ', file.AdditionalData.Select( c => $"{c:X2}" ) ) );
             }
         }
 
