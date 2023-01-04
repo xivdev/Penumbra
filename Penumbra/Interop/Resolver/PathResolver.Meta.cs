@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
+using Penumbra.Util;
 using ObjectType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType;
 using static Penumbra.GameData.Enums.GenderRace;
 
@@ -97,6 +98,7 @@ public unsafe partial class PathResolver
             {
                 return;
             }
+            using var performance = Penumbra.Performance.Measure( PerformanceType.UpdateModels );
 
             var       collection = GetResolveData( drawObject );
             using var eqp        = collection.ModCollection.TemporarilySetEqpFile();
@@ -134,7 +136,7 @@ public unsafe partial class PathResolver
             {
                 return;
             }
-
+            using var performance = Penumbra.Performance.Measure( PerformanceType.GetEqp );
             var       resolveData = GetResolveData( drawObject );
             using var eqp         = resolveData.ModCollection.TemporarilySetEqpFile();
             _getEqpIndirectHook.Original( drawObject );
@@ -150,6 +152,7 @@ public unsafe partial class PathResolver
 
         private byte SetupVisorDetour( IntPtr drawObject, ushort modelId, byte visorState )
         {
+            using var performance = Penumbra.Performance.Measure( PerformanceType.SetupVisor );
             var       resolveData = GetResolveData( drawObject );
             using var gmp         = resolveData.ModCollection.TemporarilySetGmpFile();
             return _setupVisorHook.Original( drawObject, modelId, visorState );
@@ -169,6 +172,7 @@ public unsafe partial class PathResolver
             }
             else
             {
+                using var performance = Penumbra.Performance.Measure( PerformanceType.SetupCharacter );
                 var       resolveData = GetResolveData( drawObject );
                 using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile();
                 _rspSetupCharacterHook.Original( drawObject, unk2, unk3, unk4, unk5 );
@@ -184,6 +188,7 @@ public unsafe partial class PathResolver
 
         private bool ChangeCustomizeDetour( IntPtr human, IntPtr data, byte skipEquipment )
         {
+            using var performance = Penumbra.Performance.Measure( PerformanceType.ChangeCustomize );
             _inChangeCustomize = true;
             var       resolveData = GetResolveData( human );
             using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile();

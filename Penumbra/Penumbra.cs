@@ -65,6 +65,7 @@ public class Penumbra : IDalamudPlugin
     public static IGamePathParser GamePathParser { get; private set; } = null!;
     public static StainManager StainManager { get; private set; } = null!;
     public static ItemData ItemData { get; private set; } = null!;
+    public static PerformanceTracker< PerformanceType > Performance { get; private set; } = null!;
 
     public static readonly List< Exception > ImcExceptions = new();
 
@@ -86,10 +87,8 @@ public class Penumbra : IDalamudPlugin
     {
         try
         {
-            TimingManager.StartTimer( TimingType.TotalTime );
-            TimingManager.StartTimer( TimingType.LaunchTime );
-
             Dalamud.Initialize( pluginInterface );
+            Performance = new PerformanceTracker< PerformanceType >( Dalamud.Framework );
             Log                    = new Logger();
             DevPenumbraExists      = CheckDevPluginPenumbra();
             IsNotInstalledPenumbra = CheckIsNotInstalled();
@@ -165,7 +164,6 @@ public class Penumbra : IDalamudPlugin
             {
                 ResidentResources.Reload();
             }
-            TimingManager.StopTimer( TimingType.LaunchTime );
         }
         catch
         {
@@ -308,7 +306,7 @@ public class Penumbra : IDalamudPlugin
         ResourceLogger?.Dispose();
         ResourceLoader?.Dispose();
         CharacterUtility?.Dispose();
-        TimingManager.StopAllTimers();
+        Performance?.Dispose();
     }
 
     // Collect all relevant files for penumbra configuration.

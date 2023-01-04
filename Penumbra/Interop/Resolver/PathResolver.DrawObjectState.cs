@@ -10,6 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
 using Penumbra.GameData.Enums;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -138,7 +139,8 @@ public unsafe partial class PathResolver
 
         private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
         {
-            TimingManager.StartTimer( TimingType.CharacterBaseCreate );
+            using var performance = Penumbra.Performance.Measure( PerformanceType.CharacterBaseCreate );
+
             var meta = DisposableContainer.Empty;
             if( LastGameObject != null )
             {
@@ -171,7 +173,7 @@ public unsafe partial class PathResolver
             {
                 meta.Dispose();
             }
-            TimingManager.StopTimer( TimingType.CharacterBaseCreate );
+
             return ret;
         }
 

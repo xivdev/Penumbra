@@ -10,6 +10,7 @@ using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Interop.Loader;
 
@@ -71,12 +72,13 @@ public unsafe partial class ResourceLoader
     private void AddModifiedDebugInfo( Structs.ResourceHandle* handle, Utf8GamePath originalPath, FullPath? manipulatedPath,
         ResolveData resolverInfo )
     {
+        using var performance = Penumbra.Performance.Measure( PerformanceType.DebugTimes );
+
         if( manipulatedPath == null || manipulatedPath.Value.Crc64 == 0 )
         {
             return;
         }
 
-        TimingManager.StartTimer( TimingType.DebugTimes );
         // Got some incomprehensible null-dereference exceptions here when hot-reloading penumbra.
         try
         {
@@ -97,7 +99,6 @@ public unsafe partial class ResourceLoader
         {
             Penumbra.Log.Error( e.ToString() );
         }
-        TimingManager.StopTimer( TimingType.DebugTimes );
     }
 
     // Find a key in a StdMap.
@@ -204,10 +205,16 @@ public unsafe partial class ResourceLoader
     // Only used when the Replaced Resources Tab in the Debug tab is open.
     public void UpdateDebugInfo()
     {
-        TimingManager.StartTimer( TimingType.DebugTimes );
+        using var performance = Penumbra.Performance.Measure( PerformanceType.DebugTimes );
         for( var i = 0; i < _debugList.Count; ++i )
         {
-            var data             = _debugList.Values[ i ];
+            var data = _debugList.Values[ i ];
+            if( data.OriginalPath.Path == null )
+            {
+                _debugList.RemoveAt( i-- );
+                continue;
+            }
+
             var regularResource  = FindResource( data.Category, data.Extension, ( uint )data.OriginalPath.Path.Crc32 );
             var modifiedResource = FindResource( data.Category, data.Extension, ( uint )data.ManipulatedPath.InternalName.Crc32 );
             if( modifiedResource == null )
@@ -223,7 +230,6 @@ public unsafe partial class ResourceLoader
                 };
             }
         }
-        TimingManager.StopTimer( TimingType.DebugTimes );
     }
 
     // Prevent resource management weirdness.

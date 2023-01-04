@@ -8,6 +8,7 @@ using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
+using Penumbra.Util;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
@@ -19,12 +20,13 @@ public unsafe partial class PathResolver
     // Identify the correct collection for a GameObject by index and name.
     public static ResolveData IdentifyCollection( GameObject* gameObject, bool useCache )
     {
+        using var performance = Penumbra.Performance.Measure( PerformanceType.IdentifyCollection );
+
         if( gameObject == null )
         {
             return new ResolveData( Penumbra.CollectionManager.Default );
         }
 
-        TimingManager.StartTimer( TimingType.IdentifyCollection );
         try
         {
             if( useCache && IdentifiedCache.TryGetValue( gameObject, out var data ) )
@@ -69,35 +71,25 @@ public unsafe partial class PathResolver
             Penumbra.Log.Error( $"Error identifying collection:\n{e}" );
             return Penumbra.CollectionManager.Default.ToResolveData( gameObject );
         }
-        finally
-        {
-            TimingManager.StopTimer( TimingType.IdentifyCollection );
-        }
     }
 
     // Get the collection applying to the current player character
     // or the default collection if no player exists.
     public static ModCollection PlayerCollection()
     {
-        TimingManager.StartTimer( TimingType.IdentifyCollection );
-        var           gameObject = ( GameObject* )Dalamud.Objects.GetObjectAddress( 0 );
-        ModCollection ret;
+        using var     performance = Penumbra.Performance.Measure( PerformanceType.IdentifyCollection );
+        var           gameObject  = ( GameObject* )Dalamud.Objects.GetObjectAddress( 0 );
         if( gameObject == null )
         {
-            ret = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
+            return Penumbra.CollectionManager.ByType( CollectionType.Yourself )
              ?? Penumbra.CollectionManager.Default;
         }
-        else
-        {
 
-            var player = Penumbra.Actors.GetCurrentPlayer();
-            ret = CollectionByIdentifier( player )
-             ?? CheckYourself( player, gameObject )
-             ?? CollectionByAttributes( gameObject )
-             ?? Penumbra.CollectionManager.Default;
-        }
-        TimingManager.StopTimer( TimingType.IdentifyCollection );
-        return ret;
+        var player = Penumbra.Actors.GetCurrentPlayer();
+        return CollectionByIdentifier( player )
+         ?? CheckYourself( player, gameObject )
+         ?? CollectionByAttributes( gameObject )
+         ?? Penumbra.CollectionManager.Default;
     }
 
     // Check both temporary and permanent character collections. Temporary first.

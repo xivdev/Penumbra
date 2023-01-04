@@ -11,6 +11,7 @@ using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -113,9 +114,7 @@ public unsafe partial class PathResolver
                 case ResourceType.Avfx:
                     if( handle->FileSize == 0 )
                     {
-                        TimingManager.StartTimer( TimingType.AddSubfile );
                         _subFileCollection[ ( IntPtr )handle ] = resolveData;
-                        TimingManager.StopTimer( TimingType.AddSubfile );
                     }
 
                     break;
@@ -128,9 +127,7 @@ public unsafe partial class PathResolver
             {
                 case ResourceType.Mtrl:
                 case ResourceType.Avfx:
-                    TimingManager.StartTimer( TimingType.AddSubfile );
                     _subFileCollection.TryRemove( ( IntPtr )handle, out _ );
-                    TimingManager.StopTimer( TimingType.AddSubfile );
                     break;
             }
         }
@@ -167,6 +164,7 @@ public unsafe partial class PathResolver
 
         private byte LoadMtrlTexDetour( IntPtr mtrlResourceHandle )
         {
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadTextures );
             _mtrlData = LoadFileHelper( mtrlResourceHandle );
             var ret = _loadMtrlTexHook.Original( mtrlResourceHandle );
             _mtrlData = ResolveData.Invalid;
@@ -179,6 +177,7 @@ public unsafe partial class PathResolver
 
         private byte LoadMtrlShpkDetour( IntPtr mtrlResourceHandle )
         {
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadShaders );
             _mtrlData = LoadFileHelper( mtrlResourceHandle );
             var ret = _loadMtrlShpkHook.Original( mtrlResourceHandle );
             _mtrlData = ResolveData.Invalid;
@@ -204,6 +203,7 @@ public unsafe partial class PathResolver
 
         private byte ApricotResourceLoadDetour( IntPtr handle, IntPtr unk1, byte unk2 )
         {
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadApricotResources );
             _avfxData = LoadFileHelper( handle );
             var ret = _apricotResourceLoadHook.Original( handle, unk1, unk2 );
             _avfxData = ResolveData.Invalid;

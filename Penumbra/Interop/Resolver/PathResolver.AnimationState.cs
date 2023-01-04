@@ -6,6 +6,7 @@ using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
 namespace Penumbra.Interop.Resolver;
@@ -110,7 +111,8 @@ public unsafe partial class PathResolver
 
         private IntPtr LoadCharacterSoundDetour( IntPtr character, int unk1, int unk2, IntPtr unk3, ulong unk4, int unk5, int unk6, ulong unk7 )
         {
-            var last = _characterSoundData;
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadSound );
+            var       last        = _characterSoundData;
             _characterSoundData = IdentifyCollection( ( GameObject* )character, true );
             var ret = _loadCharacterSoundHook.Original( character, unk1, unk2, unk3, unk4, unk5, unk6, unk7 );
             _characterSoundData = last;
@@ -126,9 +128,9 @@ public unsafe partial class PathResolver
 
         private ulong LoadTimelineResourcesDetour( IntPtr timeline )
         {
-            TimingManager.StartTimer( TimingType.TimelineResources );
-            ulong ret;
-            var   old = _animationLoadData;
+            using var performance = Penumbra.Performance.Measure( PerformanceType.TimelineResources );
+            ulong     ret;
+            var       old = _animationLoadData;
             try
             {
                 if( timeline != IntPtr.Zero )
@@ -152,8 +154,6 @@ public unsafe partial class PathResolver
             }
 
             _animationLoadData = old;
-
-            TimingManager.StopTimer( TimingType.TimelineResources );
             return ret;
         }
 
@@ -167,7 +167,8 @@ public unsafe partial class PathResolver
 
         private void CharacterBaseLoadAnimationDetour( IntPtr drawObject )
         {
-            var last = _animationLoadData;
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadCharacterBaseAnimation );
+            var       last        = _animationLoadData;
             _animationLoadData = _drawObjectState.LastCreatedCollection.Valid
                 ? _drawObjectState.LastCreatedCollection
                 : FindParent( drawObject, out var collection ) != null
@@ -186,8 +187,9 @@ public unsafe partial class PathResolver
 
         private void LoadSomePapDetour( IntPtr a1, int a2, IntPtr a3, int a4 )
         {
-            var timelinePtr = a1 + 0x50;
-            var last        = _animationLoadData;
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadPap );
+            var       timelinePtr = a1 + 0x50;
+            var       last        = _animationLoadData;
             if( timelinePtr != IntPtr.Zero )
             {
                 var actorIdx = ( int )( *( *( ulong** )timelinePtr + 1 ) >> 3 );
@@ -207,7 +209,8 @@ public unsafe partial class PathResolver
 
         private void SomeActionLoadDetour( IntPtr gameObject )
         {
-            var last = _animationLoadData;
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadAction );
+            var       last        = _animationLoadData;
             _animationLoadData = IdentifyCollection( ( GameObject* )gameObject, true );
             _someActionLoadHook.Original( gameObject );
             _animationLoadData = last;
@@ -248,8 +251,8 @@ public unsafe partial class PathResolver
 
         private IntPtr LoadCharacterVfxDetour( byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4 )
         {
-            TimingManager.StartTimer( TimingType.LoadCharacterVfx );
-            var last = _animationLoadData;
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadCharacterVfx );
+            var       last        = _animationLoadData;
             if( vfxParams != null && vfxParams->GameObjectId != unchecked( ( uint )-1 ) )
             {
                 var obj = vfxParams->GameObjectType switch
@@ -267,6 +270,7 @@ public unsafe partial class PathResolver
             {
                 _animationLoadData = ResolveData.Invalid;
             }
+
             var ret = _loadCharacterVfxHook.Original( vfxPath, vfxParams, unk1, unk2, unk3, unk4 );
 #if DEBUG
             var path = new ByteString( vfxPath );
@@ -274,7 +278,6 @@ public unsafe partial class PathResolver
                 $"Load Character VFX: {path}  {vfxParams->GameObjectId:X} {vfxParams->TargetCount} {unk1} {unk2} {unk3} {unk4} -> {ret:X} {_animationLoadData.ModCollection.Name} {_animationLoadData.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}" );
 #endif
             _animationLoadData = last;
-            TimingManager.StopTimer( TimingType.LoadCharacterVfx );
             return ret;
         }
 
@@ -285,8 +288,8 @@ public unsafe partial class PathResolver
 
         private IntPtr LoadAreaVfxDetour( uint vfxId, float* pos, GameObject* caster, float unk1, float unk2, byte unk3 )
         {
-            TimingManager.StartTimer( TimingType.LoadAreaVfx );
-            var last = _animationLoadData;
+            using var performance = Penumbra.Performance.Measure( PerformanceType.LoadAreaVfx );
+            var       last        = _animationLoadData;
             if( caster != null )
             {
                 _animationLoadData = IdentifyCollection( caster, true );
@@ -302,7 +305,6 @@ public unsafe partial class PathResolver
                 $"Load Area VFX: {vfxId}, {pos[ 0 ]} {pos[ 1 ]} {pos[ 2 ]} {( caster != null ? new ByteString( caster->GetName() ).ToString() : "Unknown" )} {unk1} {unk2} {unk3} -> {ret:X} {_animationLoadData.ModCollection.Name} {_animationLoadData.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}" );
 #endif
             _animationLoadData = last;
-            TimingManager.StopTimer( TimingType.LoadAreaVfx );
             return ret;
         }
 

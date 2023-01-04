@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -15,6 +16,7 @@ using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
+using Penumbra.Util;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
@@ -55,6 +57,7 @@ public partial class ConfigWindow
             }
 
             DrawDebugTabGeneral();
+            DrawPerformanceTab();
             ImGui.NewLine();
             DrawDebugTabReplacedResources();
             ImGui.NewLine();
@@ -107,6 +110,18 @@ public partial class ConfigWindow
             PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
             PrintValue( "Path Resolver Enabled", _window._penumbra.PathResolver.Enabled.ToString() );
             PrintValue( "Web Server Enabled", ( _window._penumbra.WebServer != null ).ToString() );
+        }
+
+        [Conditional("DEBUG")]
+        private static void DrawPerformanceTab()
+        {
+            ImGui.NewLine();
+            if( !ImGui.CollapsingHeader( "Performance" ) )
+            {
+                return;
+            }
+
+            Penumbra.Performance.Draw( "##performance", "Enable Performance Tracking", PerformanceTypeExtensions.ToName );
         }
 
         // Draw all resources currently replaced by Penumbra and (if existing) the resources they replace.
@@ -249,7 +264,7 @@ public partial class ConfigWindow
                             ImGui.TableNextColumn();
                             ImGui.TextUnformatted( collection.ModCollection.Name );
                             ImGui.TableNextColumn();
-                            ImGui.TextUnformatted( collection.AssociatedGameObject.ToString("X") );
+                            ImGui.TextUnformatted( collection.AssociatedGameObject.ToString( "X" ) );
                         }
                     }
                 }

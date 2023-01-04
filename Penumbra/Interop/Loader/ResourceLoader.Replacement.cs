@@ -11,6 +11,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
@@ -81,43 +82,36 @@ public unsafe partial class ResourceLoader
     internal ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
     {
-        TimingManager.StartTimer( TimingType.GetResourceHandler );
-        ResourceHandle* ret = null;
+        using var performance = Penumbra.Performance.Measure( PerformanceType.GetResourceHandler );
+
+        ResourceHandle* ret;
         if( !Utf8GamePath.FromPointer( path, out var gamePath ) )
         {
             Penumbra.Log.Error( "Could not create GamePath from resource path." );
-            ret = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+            return CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
         }
-        else
+
+        CompareHash( ComputeHash( gamePath.Path, pGetResParams ), *resourceHash, gamePath );
+
+        ResourceRequested?.Invoke( gamePath, isSync );
+
+        // If no replacements are being made, we still want to be able to trigger the event.
+        var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
+        PathResolved?.Invoke( gamePath, *resourceType, resolvedPath ?? ( gamePath.IsRooted() ? new FullPath( gamePath ) : null ), data );
+        if( resolvedPath == null )
         {
-
-            CompareHash( ComputeHash( gamePath.Path, pGetResParams ), *resourceHash, gamePath );
-
-            ResourceRequested?.Invoke( gamePath, isSync );
-
-            // If no replacements are being made, we still want to be able to trigger the event.
-            var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
-            PathResolved?.Invoke( gamePath, *resourceType, resolvedPath ?? ( gamePath.IsRooted() ? new FullPath( gamePath ) : null ), data );
-            if( resolvedPath == null )
-            {
-                var retUnmodified =
-                    CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-                ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )retUnmodified, gamePath, null, data );
-                ret = retUnmodified;
-            }
-            else
-            {
-
-                // Replace the hash and path with the correct one for the replacement.
-                *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
-
-                path = resolvedPath.Value.InternalName.Path;
-                ret = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-                ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )ret, gamePath, resolvedPath.Value, data );
-                
-            }
+            ret = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+            ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )ret, gamePath, null, data );
+            return ret;
         }
-        TimingManager.StopTimer( TimingType.GetResourceHandler );
+
+        // Replace the hash and path with the correct one for the replacement.
+        *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
+
+        path = resolvedPath.Value.InternalName.Path;
+        ret  = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+        ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )ret, gamePath, resolvedPath.Value, data );
+
         return ret;
     }
 
@@ -174,50 +168,51 @@ public unsafe partial class ResourceLoader
 
     private byte ReadSqPackDetour( ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync )
     {
-        TimingManager.StartTimer( TimingType.ReadSqPack );
-        byte ret = 0;
+        using var performance = Penumbra.Performance.Measure( PerformanceType.ReadSqPack );
+
         if( !DoReplacements )
         {
-            ret = ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
-        else if( fileDescriptor == null || fileDescriptor->ResourceHandle == null )
+
+        if( fileDescriptor == null || fileDescriptor->ResourceHandle == null )
         {
             Penumbra.Log.Error( "Failure to load file from SqPack: invalid File Descriptor." );
-            ret = ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
-        else if( !Utf8GamePath.FromSpan( fileDescriptor->ResourceHandle->FileNameSpan(), out var gamePath, false ) || gamePath.Length == 0 )
+
+        if( !Utf8GamePath.FromSpan( fileDescriptor->ResourceHandle->FileNameSpan(), out var gamePath, false ) || gamePath.Length == 0 )
         {
-            ret = ReadSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync);
+            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
+
         // Paths starting with a '|' are handled separately to allow for special treatment.
         // They are expected to also have a closing '|'.
-        else if( ResourceLoadCustomization == null || gamePath.Path[ 0 ] != ( byte )'|' )
+        if( ResourceLoadCustomization == null || gamePath.Path[ 0 ] != ( byte )'|' )
         {
-            ret = DefaultLoadResource( gamePath.Path, resourceManager, fileDescriptor, priority, isSync );
-        }
-        else
-        {
-            // Split the path into the special-treatment part (between the first and second '|')
-            // and the actual path.
-            var  split = gamePath.Path.Split( ( byte )'|', 3, false );
-            fileDescriptor->ResourceHandle->FileNameData   = split[2].Path;
-            fileDescriptor->ResourceHandle->FileNameLength = split[2].Length;
-            var funcFound = fileDescriptor->ResourceHandle->Category != ResourceCategory.Ui
-             && ResourceLoadCustomization.GetInvocationList()
-                   .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
-                       .Invoke( split[1], split[2], resourceManager, fileDescriptor, priority, isSync, out ret ) );
-
-            if( !funcFound )
-            {
-                ret = DefaultLoadResource( split[2], resourceManager, fileDescriptor, priority, isSync );
-            }
-
-            // Return original resource handle path so that they can be loaded separately.
-            fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
-            fileDescriptor->ResourceHandle->FileNameLength = gamePath.Path.Length;
+            return DefaultLoadResource( gamePath.Path, resourceManager, fileDescriptor, priority, isSync );
         }
 
-        TimingManager.StopTimer( TimingType.ReadSqPack );
+        // Split the path into the special-treatment part (between the first and second '|')
+        // and the actual path.
+        byte ret   = 0;
+        var  split = gamePath.Path.Split( ( byte )'|', 3, false );
+        fileDescriptor->ResourceHandle->FileNameData   = split[ 2 ].Path;
+        fileDescriptor->ResourceHandle->FileNameLength = split[ 2 ].Length;
+        var funcFound = fileDescriptor->ResourceHandle->Category != ResourceCategory.Ui
+         && ResourceLoadCustomization.GetInvocationList()
+               .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
+                   .Invoke( split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, isSync, out ret ) );
+
+        if( !funcFound )
+        {
+            ret = DefaultLoadResource( split[ 2 ], resourceManager, fileDescriptor, priority, isSync );
+        }
+
+        // Return original resource handle path so that they can be loaded separately.
+        fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
+        fileDescriptor->ResourceHandle->FileNameLength = gamePath.Path.Length;
+
         return ret;
     }
 

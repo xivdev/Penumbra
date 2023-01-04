@@ -370,14 +370,6 @@ public partial class ConfigWindow
             {
                 _window._penumbra.ForceChangelogOpen();
             }
-
-#if DEBUG
-            ImGui.SetCursorPos( new Vector2( xPos, 5 * ImGui.GetFrameHeightWithSpacing() ) );
-            if( ImGui.Button( "Copy Timings", new Vector2( width, 0 ) ) )
-            {
-                TimingManager.CreateTimingReport();
-            }
-#endif
         }
     }
 }
