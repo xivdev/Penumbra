@@ -652,7 +652,7 @@ public class ItemSwapWindow : IDisposable
             return;
         }
 
-        UpdateMod( _mod, newCollection.Settings[ _mod.Index ] );
+        UpdateMod( _mod, _mod.Index < newCollection.Settings.Count ? newCollection.Settings[ _mod.Index ] : null  );
         newCollection.ModSettingChanged += OnSettingChange;
         if( oldCollection != null )
         {
