@@ -110,7 +110,7 @@ public class CommandHandler : IDisposable
             "debug"      => SetDebug( arguments ),
             "collection" => SetCollection( arguments ),
             "mod"        => SetMod( arguments ),
-            "tag"        => SetTag( arguments ),
+            "bulktag"    => SetTag( arguments ),
             _            => PrintHelp( argumentList[ 0 ] ),
         };
     }
@@ -139,7 +139,8 @@ public class CommandHandler : IDisposable
         Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "collection", "Change your active collection setup. Use without further parameters for more detailed help." )
            .BuiltString );
         Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "mod", "Change a specific mods settings. Use without further parameters for more detailed help." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "tag", "Change multiple mods settings based on their tags. Use without further parameters for more detailed help." ).BuiltString );
+        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "tag", "Change multiple mods settings based on their tags. Use without further parameters for more detailed help." )
+           .BuiltString );
         return true;
     }
 
@@ -249,6 +250,8 @@ public class CommandHandler : IDisposable
                .BuiltString );
             Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》 If the type is " ).AddBlue( "Individual" )
                .AddText( " you need to specify an individual with an identifier of the form:" ).BuiltString );
+            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "<me>" ).AddText( " or " ).AddGreen( "<t>" ).AddText( " or " ).AddGreen( "<mo>" )
+               .AddText( " or " ).AddGreen( "<f>"  ).AddText( " as placeholders for your character, your target, your mouseover or your focus, if they exist." ).BuiltString );
             Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "p" ).AddText( " | " ).AddWhite( "[Player Name]@<World Name>" )
                .AddText( ", if no @ is provided, Any World is used." ).BuiltString );
             Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "r" ).AddText( " | " ).AddWhite( "[Retainer Name]" ).BuiltString );
@@ -292,7 +295,20 @@ public class CommandHandler : IDisposable
 
             try
             {
-                identifier = _actors.FromUserString( split[ 2 ] );
+                if( ObjectReloader.GetName( split[ 2 ].ToLowerInvariant(), out var obj ) )
+                {
+                    identifier = _actors.FromObject( obj, false, true );
+                    if( !identifier.IsValid )
+                    {
+                        Dalamud.Chat.Print( new SeStringBuilder().AddText( "The placeholder " ).AddGreen( split[ 2 ] )
+                           .AddText( " did not resolve to a game object with a valid identifier." ).BuiltString );
+                        return false;
+                    }
+                }
+                else
+                {
+                    identifier = _actors.FromUserString( split[ 2 ] );
+                }
             }
             catch( ActorManager.IdentifierParseError e )
             {
@@ -370,17 +386,7 @@ public class CommandHandler : IDisposable
             return false;
         }
 
-        var state = split[ 0 ].ToLowerInvariant() switch
-        {
-            "enable"    => 0,
-            "enabled"   => 0,
-            "disable"   => 1,
-            "disabled"  => 1,
-            "toggle"    => 2,
-            "inherit"   => 3,
-            "inherited" => 3,
-            _           => -1,
-        };
+        var state = ConvertToSettingState( split[ 0 ] );
         if( state == -1 )
         {
             Dalamud.Chat.Print( new SeStringBuilder().AddRed( split[ 0 ], true ).AddText( " is not a valid type of setting." ).BuiltString );
@@ -398,51 +404,13 @@ public class CommandHandler : IDisposable
             return false;
         }
 
-        var settings = collection!.Settings[ mod.Index ];
-        switch( state )
+        if( HandleModState( state, collection!, mod ) )
         {
-            case 0:
-                if( collection.SetModState( mod.Index, true ) )
-                {
-                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Enabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
-                       .AddText( "." ).BuiltString );
-                    return true;
-                }
-
-                break;
-            case 1:
-                if( collection.SetModState( mod.Index, false ) )
-                {
-                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
-                       .AddText( "." ).BuiltString );
-                    return true;
-                }
-
-                break;
-            case 2:
-                var setting = !( settings?.Enabled ?? false );
-                if( collection.SetModState( mod.Index, setting ) )
-                {
-                    Dalamud.Chat.Print( new SeStringBuilder().AddText( setting ? "Enabled mod " : "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
-                       .AddYellow( collection.Name, true )
-                       .AddText( "." ).BuiltString );
-                    return true;
-                }
-
-                break;
-            case 3:
-                if( collection.SetModInheritance( mod.Index, true ) )
-                {
-                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Set mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
-                       .AddText( " to inherit." ).BuiltString );
-                    return true;
-                }
-
-                break;
+            return true;
         }
 
         Dalamud.Chat.Print( new SeStringBuilder().AddText( "Mod " ).AddPurple( mod.Name, true ).AddText( "already had the desired state in collection " )
-           .AddYellow( collection.Name, true ).AddText( "." ).BuiltString );
+           .AddYellow( collection!.Name, true ).AddText( "." ).BuiltString );
         return false;
     }
 
@@ -465,17 +433,7 @@ public class CommandHandler : IDisposable
             return false;
         }
 
-        var state = split[ 0 ].ToLowerInvariant() switch
-        {
-            "enable"    => 0,
-            "enabled"   => 0,
-            "disable"   => 1,
-            "disabled"  => 1,
-            "toggle"    => 2,
-            "inherit"   => 3,
-            "inherited" => 3,
-            _           => -1,
-        };
+        var state = ConvertToSettingState( split[ 0 ] );
 
         if( state == -1 )
         {
@@ -488,54 +446,23 @@ public class CommandHandler : IDisposable
             return false;
         }
 
-        var mods = _modManager.Where( m => m.LocalTags.Contains( nameSplit[ 1 ], StringComparer.InvariantCultureIgnoreCase ) ).ToArray();
+        var mods = _modManager.Where( m => m.LocalTags.Contains( nameSplit[ 1 ], StringComparer.OrdinalIgnoreCase ) ).ToList();
 
-        if( mods.Length == 0 )
+        if( mods.Count == 0 )
         {
             Dalamud.Chat.Print( new SeStringBuilder().AddText( "The tag " ).AddRed( nameSplit[ 1 ], true ).AddText( " does not match any mods." ).BuiltString );
             return false;
         }
 
+        var changes = false;
         foreach( var mod in mods )
         {
-            var settings = collection!.Settings[ mod.Index ];
-            switch( state )
-            {
-                case 0:
-                    if( collection.SetModState( mod.Index, true ) )
-                    {
-                        Dalamud.Chat.Print( new SeStringBuilder().AddText( "Enabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
-                            .AddText( "." ).BuiltString );
-                    }
+            changes |= HandleModState( state, collection!, mod );
+        }
 
-                    break;
-                case 1:
-                    if( collection.SetModState( mod.Index, false ) )
-                    {
-                        Dalamud.Chat.Print( new SeStringBuilder().AddText( "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
-                            .AddText( "." ).BuiltString );
-                    }
-
-                    break;
-                case 2:
-                    var setting = !( settings?.Enabled ?? false );
-                    if( collection.SetModState( mod.Index, setting ) )
-                    {
-                        Dalamud.Chat.Print( new SeStringBuilder().AddText( setting ? "Enabled mod " : "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
-                            .AddYellow( collection.Name, true )
-                            .AddText( "." ).BuiltString );
-                    }
-
-                    break;
-                case 3:
-                    if( collection.SetModInheritance( mod.Index, true ) )
-                    {
-                        Dalamud.Chat.Print( new SeStringBuilder().AddText( "Set mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
-                            .AddText( " to inherit." ).BuiltString );
-                    }
-
-                    break;
-            }
+        if( !changes )
+        {
+            Dalamud.Chat.Print( new SeStringBuilder().AddText( "No mod states were changed in collection " ).AddYellow( collection!.Name, true ).AddText( "." ).BuiltString );
         }
 
         return true;
@@ -579,4 +506,67 @@ public class CommandHandler : IDisposable
 
             _ => null,
         };
+
+    private static int ConvertToSettingState( string text )
+        => text.ToLowerInvariant() switch
+        {
+            "enable"    => 0,
+            "enabled"   => 0,
+            "disable"   => 1,
+            "disabled"  => 1,
+            "toggle"    => 2,
+            "inherit"   => 3,
+            "inherited" => 3,
+            _           => -1,
+        };
+
+    private static bool HandleModState( int settingState, ModCollection collection, Mod mod )
+    {
+        var settings = collection!.Settings[ mod.Index ];
+        switch( settingState )
+        {
+            case 0:
+                if( collection.SetModState( mod.Index, true ) )
+                {
+                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Enabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
+                       .AddYellow( collection.Name, true )
+                       .AddText( "." ).BuiltString );
+                    return true;
+                }
+
+                return false;
+            case 1:
+                if( collection.SetModState( mod.Index, false ) )
+                {
+                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
+                       .AddYellow( collection.Name, true )
+                       .AddText( "." ).BuiltString );
+                    return true;
+                }
+
+                return false;
+            case 2:
+                var setting = !( settings?.Enabled ?? false );
+                if( collection.SetModState( mod.Index, setting ) )
+                {
+                    Dalamud.Chat.Print( new SeStringBuilder().AddText( setting ? "Enabled mod " : "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
+                       .AddYellow( collection.Name, true )
+                       .AddText( "." ).BuiltString );
+                    return true;
+                }
+
+                return false;
+            case 3:
+                if( collection.SetModInheritance( mod.Index, true ) )
+                {
+                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Set mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
+                       .AddText( " to inherit." ).BuiltString );
+                    return true;
+                }
+
+                return false;
+        }
+
+        return false;
+    }
 }

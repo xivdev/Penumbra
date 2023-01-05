@@ -316,7 +316,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
         return gPosePlayer ?? Dalamud.Objects[ 0 ];
     }
 
-    private static bool GetName( string lowerName, out GameObject? actor )
+    public static bool GetName( string lowerName, out GameObject? actor )
     {
         ( actor, var ret ) = lowerName switch
         {
