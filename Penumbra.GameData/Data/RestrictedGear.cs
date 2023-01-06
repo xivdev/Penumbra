@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud;
@@ -8,12 +8,11 @@ using Dalamud.Plugin;
 using Dalamud.Utility;
 using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
-using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Race = Penumbra.GameData.Enums.Race;
 
-namespace Glamourer;
+namespace Penumbra.GameData.Data;
 
 /// <summary>
 /// Handle gender- or race-locked gear in the draw model itself.
@@ -248,8 +247,6 @@ public sealed class RestrictedGear : DataSharer
         AddItem(m2f, f2m, 06097, 06101);              // Striped Summer Trunks                      <-> Striped Summer Tanga
         AddItem(m2f, f2m, 06102, 06104);              // Black Summer Top                           <-> Black Summer Halter
         AddItem(m2f, f2m, 06103, 06105);              // Black Summer Trunks                        <-> Black Summer Tanga
-        AddItem(m2f, f2m, 06972, 06973);              // Valentione Apron                           <-> Valentione Apron Dress
-        AddItem(m2f, f2m, 06975, 06976);              // Valentione Trousers                        <-> Valentione Skirt
         AddItem(m2f, f2m, 08532, 08535);              // Lord's Yukata (Blackflame)                 <-> Lady's Yukata (Redfly)
         AddItem(m2f, f2m, 08533, 08536);              // Lord's Yukata (Whiteflame)                 <-> Lady's Yukata (Bluefly)
         AddItem(m2f, f2m, 08534, 08537);              // Lord's Yukata (Blueflame)                  <-> Lady's Yukata (Pinkfly)
@@ -319,11 +316,6 @@ public sealed class RestrictedGear : DataSharer
         AddItem(m2f, f2m, 17236, 17241);              // Common Makai Priest's Fingerless Gloves    <-> Common Makai Priestess's Fingerless Gloves
         AddItem(m2f, f2m, 17237, 17242);              // Common Makai Priest's Slops                <-> Common Makai Priestess's Skirt
         AddItem(m2f, f2m, 17238, 17243);              // Common Makai Priest's Boots                <-> Common Makai Priestess's Longboots
-        AddItem(m2f, f2m, 17481, 17476);              // Royal Seneschal's Chapeau                  <-> Songbird Hat
-        AddItem(m2f, f2m, 17482, 17477);              // Royal Seneschal's Coat                     <-> Songbird Jacket
-        AddItem(m2f, f2m, 17483, 17478);              // Royal Seneschal's Fingerless Gloves        <-> Songbird Gloves
-        AddItem(m2f, f2m, 17484, 17479);              // Royal Seneschal's Breeches                 <-> Songbird Skirt
-        AddItem(m2f, f2m, 17485, 17480);              // Royal Seneschal's Boots                    <-> Songbird Boots
         AddItem(m2f, f2m, 20479, 20484);              // Star of the Nezha Lord                     <-> Star of the Nezha Lady
         AddItem(m2f, f2m, 20480, 20485);              // Nezha Lord's Togi                          <-> Nezha Lady's Togi
         AddItem(m2f, f2m, 20481, 20486);              // Nezha Lord's Gloves                        <-> Nezha Lady's Gloves
@@ -337,31 +329,11 @@ public sealed class RestrictedGear : DataSharer
         AddItem(m2f, f2m, 24599, 24602);              // Far Eastern Schoolboy's Hat                <-> Far Eastern Schoolgirl's Hair Ribbon
         AddItem(m2f, f2m, 24600, 24603);              // Far Eastern Schoolboy's Hakama             <-> Far Eastern Schoolgirl's Hakama
         AddItem(m2f, f2m, 24601, 24604);              // Far Eastern Schoolboy's Zori               <-> Far Eastern Schoolgirl's Boots
-        AddItem(m2f, f2m, 28558, 28573);              // Valentione Rose Hat                        <-> Valentione Rose Ribboned Hat
-        AddItem(m2f, f2m, 28559, 28574);              // Valentione Rose Waistcoat                  <-> Valentione Rose Dress
-        AddItem(m2f, f2m, 28560, 28575);              // Valentione Rose Gloves                     <-> Valentione Rose Ribboned Gloves
-        AddItem(m2f, f2m, 28561, 28576);              // Valentione Rose Slacks                     <-> Valentione Rose Tights
-        AddItem(m2f, f2m, 28562, 28577);              // Valentione Rose Shoes                      <-> Valentione Rose Heels
-        AddItem(m2f, f2m, 28563, 28578);              // Valentione Forget-me-not Hat               <-> Valentione Forget-me-not Ribboned Hat
-        AddItem(m2f, f2m, 28564, 28579);              // Valentione Forget-me-not Waistcoat         <-> Valentione Forget-me-not Dress
-        AddItem(m2f, f2m, 28565, 28580);              // Valentione Forget-me-not Gloves            <-> Valentione Forget-me-not Ribboned Gloves
-        AddItem(m2f, f2m, 28566, 28581);              // Valentione Forget-me-not Slacks            <-> Valentione Forget-me-not Tights
-        AddItem(m2f, f2m, 28567, 28582);              // Valentione Forget-me-not Shoes             <-> Valentione Forget-me-not Heels
-        AddItem(m2f, f2m, 28568, 28583);              // Valentione Acacia Hat                      <-> Valentione Acacia Ribboned Hat
-        AddItem(m2f, f2m, 28569, 28584);              // Valentione Acacia Waistcoat                <-> Valentione Acacia Dress
-        AddItem(m2f, f2m, 28570, 28585);              // Valentione Acacia Gloves                   <-> Valentione Acacia Ribboned Gloves
-        AddItem(m2f, f2m, 28571, 28586);              // Valentione Acacia Slacks                   <-> Valentione Acacia Tights
-        AddItem(m2f, f2m, 28572, 28587);              // Valentione Acacia Shoes                    <-> Valentione Acacia Heels
         AddItem(m2f, f2m, 28600, 28605);              // Eastern Lord Errant's Hat                  <-> Eastern Lady Errant's Hat
         AddItem(m2f, f2m, 28601, 28606);              // Eastern Lord Errant's Jacket               <-> Eastern Lady Errant's Coat
         AddItem(m2f, f2m, 28602, 28607);              // Eastern Lord Errant's Wristbands           <-> Eastern Lady Errant's Gloves
         AddItem(m2f, f2m, 28603, 28608);              // Eastern Lord Errant's Trousers             <-> Eastern Lady Errant's Skirt
         AddItem(m2f, f2m, 28604, 28609);              // Eastern Lord Errant's Shoes                <-> Eastern Lady Errant's Boots
-        AddItem(m2f, f2m, 31408, 31413);              // Bergsteiger's Hat                          <-> Dirndl's Hat
-        AddItem(m2f, f2m, 31409, 31414);              // Bergsteiger's Jacket                       <-> Dirndl's Bodice
-        AddItem(m2f, f2m, 31410, 31415);              // Bergsteiger's Halfgloves                   <-> Dirndl's Wrist Torque
-        AddItem(m2f, f2m, 31411, 31416);              // Bergsteiger's Halfslops                    <-> Dirndl's Long Skirt
-        AddItem(m2f, f2m, 31412, 31417);              // Bergsteiger's Boots                        <-> Dirndl's Pumps
         AddItem(m2f, f2m, 36336, 36337);              // Omega-M Attire                             <-> Omega-F Attire
         AddItem(m2f, f2m, 36338, 36339);              // Omega-M Ear Cuffs                          <-> Omega-F Earrings
         AddItem(m2f, f2m, 37442, 37447);              // Makai Vanguard's Monocle                   <-> Makai Vanbreaker's Ribbon
