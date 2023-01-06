@@ -70,6 +70,7 @@ public unsafe partial class PathResolver
             _loadCharacterSoundHook.Enable();
             _loadCharacterVfxHook.Enable();
             _loadAreaVfxHook.Enable();
+            _scheduleClipUpdateHook.Enable();
 
             //_loadSomeAvfxHook.Enable();
             //_someOtherAvfxHook.Enable();
@@ -84,6 +85,7 @@ public unsafe partial class PathResolver
             _loadCharacterSoundHook.Disable();
             _loadCharacterVfxHook.Disable();
             _loadAreaVfxHook.Disable();
+            _scheduleClipUpdateHook.Disable();
 
             //_loadSomeAvfxHook.Disable();
             //_someOtherAvfxHook.Disable();
@@ -98,6 +100,7 @@ public unsafe partial class PathResolver
             _loadCharacterSoundHook.Dispose();
             _loadCharacterVfxHook.Dispose();
             _loadAreaVfxHook.Dispose();
+            _scheduleClipUpdateHook.Dispose();
 
             //_loadSomeAvfxHook.Dispose();
             //_someOtherAvfxHook.Dispose();
@@ -119,6 +122,29 @@ public unsafe partial class PathResolver
             return ret;
         }
 
+        private static ResolveData GetDataFromTimeline( IntPtr timeline )
+        {
+            try
+            {
+                if( timeline != IntPtr.Zero )
+                {
+                    var getGameObjectIdx = ( ( delegate* unmanaged< IntPtr, int >** )timeline )[ 0 ][ 28 ];
+                    var idx              = getGameObjectIdx( timeline );
+                    if( idx >= 0 && idx < Dalamud.Objects.Length )
+                    {
+                        var obj = Dalamud.Objects[ idx ];
+                        return obj != null ? IdentifyCollection( ( GameObject* )obj.Address, true ) : ResolveData.Invalid;
+                    }
+                }
+            }
+            catch( Exception e )
+            {
+                Penumbra.Log.Error( $"Error getting timeline data for 0x{timeline:X}:\n{e}" );
+            }
+
+            return ResolveData.Invalid;
+        }
+
         // The timeline object loads the requested .tmb and .pap files. The .tmb files load the respective .avfx files.
         // We can obtain the associated game object from the timelines 28'th vfunc and use that to apply the correct collection.
         private delegate ulong LoadTimelineResourcesDelegate( IntPtr timeline );
@@ -129,30 +155,9 @@ public unsafe partial class PathResolver
         private ulong LoadTimelineResourcesDetour( IntPtr timeline )
         {
             using var performance = Penumbra.Performance.Measure( PerformanceType.TimelineResources );
-            ulong     ret;
-            var       old = _animationLoadData;
-            try
-            {
-                if( timeline != IntPtr.Zero )
-                {
-                    var getGameObjectIdx = ( ( delegate* unmanaged< IntPtr, int >** )timeline )[ 0 ][ 28 ];
-                    var idx              = getGameObjectIdx( timeline );
-                    if( idx >= 0 && idx < Dalamud.Objects.Length )
-                    {
-                        var obj = Dalamud.Objects[ idx ];
-                        _animationLoadData = obj != null ? IdentifyCollection( ( GameObject* )obj.Address, true ) : ResolveData.Invalid;
-                    }
-                    else
-                    {
-                        _animationLoadData = ResolveData.Invalid;
-                    }
-                }
-            }
-            finally
-            {
-                ret = _loadTimelineResourcesHook.Original( timeline );
-            }
-
+            var       old         = _animationLoadData;
+            _animationLoadData = GetDataFromTimeline( timeline );
+            var ret = _loadTimelineResourcesHook.Original( timeline );
             _animationLoadData = old;
             return ret;
         }
@@ -308,6 +313,32 @@ public unsafe partial class PathResolver
             return ret;
         }
 
+
+
+        [StructLayout( LayoutKind.Explicit )]
+        private struct ClipScheduler
+        {
+            [FieldOffset( 0 )]
+            public IntPtr* VTable;
+
+            [FieldOffset( 0x38 )]
+            public IntPtr SchedulerTimeline;
+        }
+
+        private delegate void ScheduleClipUpdate( ClipScheduler* x );
+
+        [Signature( "40 53 55 56 57 41 56 48 81 EC ?? ?? ?? ?? 48 8B F9", DetourName = nameof( ScheduleClipUpdateDetour ) )]
+        private readonly Hook< ScheduleClipUpdate > _scheduleClipUpdateHook = null!;
+
+        private void ScheduleClipUpdateDetour( ClipScheduler* x )
+        {
+            using var performance = Penumbra.Performance.Measure( PerformanceType.ScheduleClipUpdate );
+            var       old         = _animationLoadData;
+            var       timeline    = x->SchedulerTimeline;
+            _animationLoadData = GetDataFromTimeline( timeline );
+            _scheduleClipUpdateHook.Original( x );
+            _animationLoadData = old;
+        }
 
         // ========== Those hooks seem to be superseded by LoadCharacterVfx =========
 
