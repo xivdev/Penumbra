@@ -37,6 +37,7 @@ public partial class Configuration : IPluginConfiguration
     public bool UseCharacterCollectionInInspect { get; set; } = true;
     public bool UseCharacterCollectionInTryOn { get; set; } = true;
     public bool UseOwnerNameForCharacterCollection { get; set; } = true;
+    public bool UseNoModsInInspect { get; set; } = false;
 
     public bool HideRedrawBar { get; set; } = false;
 

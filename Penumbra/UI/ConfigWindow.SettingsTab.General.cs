@@ -74,6 +74,8 @@ public partial class ConfigWindow
             Checkbox( $"Use {AssignedCollections} in Try-On Window",
                 "Use the individual collection for your character's name in your try-on, dye preview or glamour plate window, if it is set.",
                 Penumbra.Config.UseCharacterCollectionInTryOn, v => Penumbra.Config.UseCharacterCollectionInTryOn = v );
+            Checkbox( "Use No Mods in Inspect Windows", "Use the empty collection for characters you are inspecting, regardless of the character.\n"
+              + "Takes precedence before the next option.", Penumbra.Config.UseNoModsInInspect, v => Penumbra.Config.UseNoModsInInspect = v );
             Checkbox( $"Use {AssignedCollections} in Inspect Windows",
                 "Use the appropriate individual collection for the character you are currently inspecting, based on their name.",
                 Penumbra.Config.UseCharacterCollectionInInspect, v => Penumbra.Config.UseCharacterCollectionInInspect = v );

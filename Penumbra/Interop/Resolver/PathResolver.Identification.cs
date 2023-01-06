@@ -57,6 +57,11 @@ public unsafe partial class PathResolver
             }
 
             var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, true, false );
+            if( Penumbra.Config.UseNoModsInInspect && identifier.Type == IdentifierType.Special && identifier.Special == SpecialActor.ExamineScreen )
+            {
+                return IdentifiedCache.Set( ModCollection.Empty, identifier, gameObject );
+            }
+
             identifier = Penumbra.CollectionManager.Individuals.ConvertSpecialIdentifier( identifier );
             var collection = CollectionByIdentifier( identifier )
              ?? CheckYourself( identifier, gameObject )
@@ -77,8 +82,8 @@ public unsafe partial class PathResolver
     // or the default collection if no player exists.
     public static ModCollection PlayerCollection()
     {
-        using var     performance = Penumbra.Performance.Measure( PerformanceType.IdentifyCollection );
-        var           gameObject  = ( GameObject* )Dalamud.Objects.GetObjectAddress( 0 );
+        using var performance = Penumbra.Performance.Measure( PerformanceType.IdentifyCollection );
+        var       gameObject  = ( GameObject* )Dalamud.Objects.GetObjectAddress( 0 );
         if( gameObject == null )
         {
             return Penumbra.CollectionManager.ByType( CollectionType.Yourself )
