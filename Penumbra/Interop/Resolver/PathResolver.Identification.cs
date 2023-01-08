@@ -10,6 +10,7 @@ using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Util;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
+using CustomizeData = Penumbra.GameData.Structs.CustomizeData;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
@@ -17,6 +18,48 @@ namespace Penumbra.Interop.Resolver;
 
 public unsafe partial class PathResolver
 {
+    private static ResolveData IdentifyMahjong( GameObject* gameObject )
+    {
+        static bool SearchPlayer( Character* character, int idx, out ActorIdentifier id )
+        {
+            var other = ( Character* )Dalamud.Objects.GetObjectAddress( idx );
+            if( other == null || !CustomizeData.Equals( ( CustomizeData* )character->CustomizeData, ( CustomizeData* )other->CustomizeData ) )
+            {
+                id = ActorIdentifier.Invalid;
+                return false;
+            }
+
+            id = Penumbra.Actors.FromObject( &other->GameObject, out _, false, true );
+            return true;
+        }
+
+        static ActorIdentifier SearchPlayers( Character* gameObject, int idx1, int idx2, int idx3 )
+            => SearchPlayer( gameObject, idx1, out var id ) || SearchPlayer( gameObject, idx2, out id ) || SearchPlayer( gameObject, idx3, out id )
+                ? id
+                : ActorIdentifier.Invalid;
+
+        var identifier = gameObject->ObjectIndex switch
+        {
+            0   => Penumbra.Actors.GetCurrentPlayer(),
+            2   => Penumbra.Actors.FromObject( gameObject, out _, false, true ),
+            4   => Penumbra.Actors.FromObject( gameObject, out _, false, true ),
+            6   => Penumbra.Actors.FromObject( gameObject, out _, false, true ),
+            240 => Penumbra.Actors.GetCurrentPlayer(),
+            241 => SearchPlayers( ( Character* )gameObject, 2, 4, 6 ),
+            242 => SearchPlayers( ( Character* )gameObject, 4, 2, 6 ),
+            243 => SearchPlayers( ( Character* )gameObject, 6, 2, 4 ),
+            _   => ActorIdentifier.Invalid,
+        };
+
+        var collection = ( identifier.IsValid ? CollectionByIdentifier( identifier ) : null )
+         ?? CheckYourself( identifier, gameObject )
+         ?? CollectionByAttributes( gameObject )
+         ?? Penumbra.CollectionManager.Default;
+
+        return IdentifiedCache.Set( collection, identifier, gameObject );
+    }
+
+
     // Identify the correct collection for a GameObject by index and name.
     public static ResolveData IdentifyCollection( GameObject* gameObject, bool useCache )
     {
@@ -43,6 +86,12 @@ public unsafe partial class PathResolver
                  ?? CollectionByAttributes( gameObject )
                  ?? Penumbra.CollectionManager.Default;
                 return IdentifiedCache.Set( collection2, ActorIdentifier.Invalid, gameObject );
+            }
+
+            // Mahjong special case.
+            if( Dalamud.ClientState.TerritoryType == 831 )
+            {
+                return IdentifyMahjong( gameObject );
             }
 
             // Aesthetician. The relevant actor is yourself, so use player collection when possible.
