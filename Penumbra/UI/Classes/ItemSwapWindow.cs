@@ -109,6 +109,8 @@ public class ItemSwapWindow : IDisposable
     private bool       _subModValid          = false;
     private bool       _useFileSwaps         = true;
     private bool       _useCurrentCollection = false;
+    private bool       _useLeftRing          = true;
+    private bool       _useRightRing         = true;
 
     private Item[]? _affectedItems;
 
@@ -159,7 +161,7 @@ public class ItemSwapWindow : IDisposable
                     if( values.Source.CurrentSelection.Item2 != null && values.Target.CurrentSelection.Item2 != null )
                     {
                         _affectedItems = _swapData.LoadEquipment( values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2,
-                            _useCurrentCollection ? Penumbra.CollectionManager.Current : null );
+                            _useCurrentCollection ? Penumbra.CollectionManager.Current : null, _useRightRing, _useLeftRing );
                     }
 
                     break;
@@ -399,11 +401,22 @@ public class ItemSwapWindow : IDisposable
         ImGui.TableNextColumn();
         _dirty |= sourceSelector.Draw( "##itemSource", sourceSelector.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
 
+        if( type == SwapType.Ring )
+        {
+            ImGui.SameLine();
+            _dirty |= ImGui.Checkbox( "Swap Right Ring", ref _useRightRing );
+        }
+
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted( text2 );
         ImGui.TableNextColumn();
         _dirty |= targetSelector.Draw( "##itemTarget", targetSelector.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+        if( type == SwapType.Ring )
+        {
+            ImGui.SameLine();
+            _dirty |= ImGui.Checkbox( "Swap Left Ring", ref _useLeftRing );
+        }
 
         if( _affectedItems is { Length: > 1 } )
         {
@@ -652,7 +665,7 @@ public class ItemSwapWindow : IDisposable
             return;
         }
 
-        UpdateMod( _mod, _mod.Index < newCollection.Settings.Count ? newCollection.Settings[ _mod.Index ] : null  );
+        UpdateMod( _mod, _mod.Index < newCollection.Settings.Count ? newCollection.Settings[ _mod.Index ] : null );
         newCollection.ModSettingChanged += OnSettingChange;
         if( oldCollection != null )
         {

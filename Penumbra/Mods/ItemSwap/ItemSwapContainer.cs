@@ -124,11 +124,11 @@ public class ItemSwapContainer
         return m => set.TryGetValue( m, out var a ) ? a : m;
     }
 
-    public Item[] LoadEquipment( Item from, Item to, ModCollection? collection = null )
+    public Item[] LoadEquipment( Item from, Item to, ModCollection? collection = null, bool useRightRing = true, bool useLeftRing = true )
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateItemSwap( Swaps, PathResolver( collection ), MetaResolver( collection ), from, to );
+        var ret = EquipmentSwap.CreateItemSwap( Swaps, PathResolver( collection ), MetaResolver( collection ), from, to, useRightRing, useLeftRing );
         Loaded = true;
         return ret;
     }

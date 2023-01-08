@@ -17,8 +17,24 @@ namespace Penumbra.Mods.ItemSwap;
 
 public static class EquipmentSwap
 {
+    private static EquipSlot[] ConvertSlots( EquipSlot slot, bool rFinger, bool lFinger )
+    {
+        if( slot != EquipSlot.RFinger )
+        {
+            return new[] { slot };
+        }
+
+        return rFinger
+            ? lFinger
+                ? new[] { EquipSlot.RFinger, EquipSlot.LFinger }
+                : new[] { EquipSlot.RFinger }
+            : lFinger
+                ? new[] { EquipSlot.LFinger }
+                : Array.Empty< EquipSlot >();
+    }
+
     public static Item[] CreateItemSwap( List< Swap > swaps, Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, Item itemFrom,
-        Item itemTo )
+        Item itemTo, bool rFinger = true, bool lFinger = true )
     {
         // Check actual ids, variants and slots. We only support using the same slot.
         LookupItem( itemFrom, out var slotFrom, out var idFrom, out var variantFrom );
@@ -40,69 +56,72 @@ public static class EquipmentSwap
             swaps.Add( gmp );
         }
 
-
-        var (imcFileFrom, variants, affectedItems) = GetVariants( slotFrom, idFrom, idTo, variantFrom );
-        var imcFileTo = new ImcFile( new ImcManipulation( slotFrom, variantTo, idTo.Value, default ) );
-
-        var isAccessory = slotFrom.IsAccessory();
-        var estType = slotFrom switch
+        var affectedItems = Array.Empty< Item >();
+        foreach( var slot in ConvertSlots( slotFrom, rFinger, lFinger ) )
         {
-            EquipSlot.Head => EstManipulation.EstType.Head,
-            EquipSlot.Body => EstManipulation.EstType.Body,
-            _              => ( EstManipulation.EstType )0,
-        };
+            (var imcFileFrom, var variants, affectedItems) = GetVariants( slot, idFrom, idTo, variantFrom );
+            var imcFileTo = new ImcFile( new ImcManipulation( slot, variantTo, idTo.Value, default ) );
 
-        var skipFemale    = false;
-        var skipMale      = false;
-        var mtrlVariantTo = imcFileTo.GetEntry( ImcFile.PartIndex( slotFrom ), variantTo ).MaterialId;
-        foreach( var gr in Enum.GetValues< GenderRace >() )
-        {
-            switch( gr.Split().Item1 )
+            var isAccessory = slot.IsAccessory();
+            var estType = slot switch
             {
-                case Gender.Male when skipMale:        continue;
-                case Gender.Female when skipFemale:    continue;
-                case Gender.MaleNpc when skipMale:     continue;
-                case Gender.FemaleNpc when skipFemale: continue;
-            }
+                EquipSlot.Head => EstManipulation.EstType.Head,
+                EquipSlot.Body => EstManipulation.EstType.Body,
+                _              => ( EstManipulation.EstType )0,
+            };
 
-            if( CharacterUtility.EqdpIdx( gr, isAccessory ) < 0 )
+            var skipFemale    = false;
+            var skipMale      = false;
+            var mtrlVariantTo = imcFileTo.GetEntry( ImcFile.PartIndex( slot ), variantTo ).MaterialId;
+            foreach( var gr in Enum.GetValues< GenderRace >() )
             {
-                continue;
-            }
-
-            var est = ItemSwap.CreateEst( redirections, manips, estType, gr, idFrom, idTo );
-            if( est != null )
-            {
-                swaps.Add( est );
-            }
-
-            try
-            {
-                var eqdp = CreateEqdp( redirections, manips, slotFrom, gr, idFrom, idTo, mtrlVariantTo );
-                if( eqdp != null )
+                switch( gr.Split().Item1 )
                 {
-                    swaps.Add( eqdp );
+                    case Gender.Male when skipMale:        continue;
+                    case Gender.Female when skipFemale:    continue;
+                    case Gender.MaleNpc when skipMale:     continue;
+                    case Gender.FemaleNpc when skipFemale: continue;
+                }
+
+                if( CharacterUtility.EqdpIdx( gr, isAccessory ) < 0 )
+                {
+                    continue;
+                }
+
+                var est = ItemSwap.CreateEst( redirections, manips, estType, gr, idFrom, idTo );
+                if( est != null )
+                {
+                    swaps.Add( est );
+                }
+
+                try
+                {
+                    var eqdp = CreateEqdp( redirections, manips, slot, gr, idFrom, idTo, mtrlVariantTo );
+                    if( eqdp != null )
+                    {
+                        swaps.Add( eqdp );
+                    }
+                }
+                catch( ItemSwap.MissingFileException e )
+                {
+                    switch( gr )
+                    {
+                        case GenderRace.MidlanderMale when e.Type == ResourceType.Mdl:
+                            skipMale = true;
+                            continue;
+                        case GenderRace.MidlanderFemale when e.Type == ResourceType.Mdl:
+                            skipFemale = true;
+                            continue;
+                        default: throw;
+                    }
                 }
             }
-            catch( ItemSwap.MissingFileException e )
-            {
-                switch( gr )
-                {
-                    case GenderRace.MidlanderMale when e.Type == ResourceType.Mdl:
-                        skipMale = true;
-                        continue;
-                    case GenderRace.MidlanderFemale when e.Type == ResourceType.Mdl:
-                        skipFemale = true;
-                        continue;
-                    default: throw;
-                }
-            }
-        }
 
-        foreach( var variant in variants )
-        {
-            var imc = CreateImc( redirections, manips, slotFrom, idFrom, idTo, variant, variantTo, imcFileFrom, imcFileTo );
-            swaps.Add( imc );
+            foreach( var variant in variants )
+            {
+                var imc = CreateImc( redirections, manips, slot, idFrom, idTo, variant, variantTo, imcFileFrom, imcFileTo );
+                swaps.Add( imc );
+            }
         }
 
         return affectedItems;
