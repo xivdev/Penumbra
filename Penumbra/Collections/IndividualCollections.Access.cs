@@ -98,16 +98,16 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                 identifier = _actorManager.GetInspectPlayer();
                 if( identifier.IsValid )
                 {
-                    return identifier;
+                    return Penumbra.Config.UseCharacterCollectionInInspect ? identifier : ActorIdentifier.Invalid;
                 }
 
                 identifier = _actorManager.GetCardPlayer();
                 if( identifier.IsValid )
                 {
-                    return identifier;
+                    return Penumbra.Config.UseCharacterCollectionInInspect ? identifier : ActorIdentifier.Invalid;
                 }
 
-                return _actorManager.GetGlamourPlayer();
+                return Penumbra.Config.UseCharacterCollectionInTryOn ? _actorManager.GetGlamourPlayer() : ActorIdentifier.Invalid;
             }
             default: return identifier;
         }
