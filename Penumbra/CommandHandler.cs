@@ -139,7 +139,7 @@ public class CommandHandler : IDisposable
         Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "collection", "Change your active collection setup. Use without further parameters for more detailed help." )
            .BuiltString );
         Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "mod", "Change a specific mods settings. Use without further parameters for more detailed help." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "tag", "Change multiple mods settings based on their tags. Use without further parameters for more detailed help." )
+        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "bulktag", "Change multiple mods settings based on their tags. Use without further parameters for more detailed help." )
            .BuiltString );
         return true;
     }
@@ -419,7 +419,7 @@ public class CommandHandler : IDisposable
         if( arguments.Length == 0 )
         {
             var seString = new SeStringBuilder()
-               .AddText( "Use with /penumbra tag " ).AddBlue( "[enable|disable|toggle|inherit]" ).AddText( "  " ).AddYellow( "[Collection Name]" ).AddText( " | " )
+               .AddText( "Use with /penumbra bulktag " ).AddBlue( "[enable|disable|toggle|inherit]" ).AddText( "  " ).AddYellow( "[Collection Name]" ).AddText( " | " )
                .AddPurple( "[Local Tag]" );
             Dalamud.Chat.Print( seString.BuiltString );
             return true;
