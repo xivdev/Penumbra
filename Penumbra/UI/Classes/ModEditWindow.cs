@@ -526,10 +526,10 @@ public partial class ModEditWindow : Window, IDisposable
 
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth( -1 );
-        ImGui.InputTextWithHint( "##swapKey", "New Swap Source...", ref _newSwapKey, Utf8GamePath.MaxGamePathLength );
+        ImGui.InputTextWithHint( "##swapKey", "Load this file...", ref _newSwapValue, Utf8GamePath.MaxGamePathLength );
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth( -1 );
-        ImGui.InputTextWithHint( "##swapValue", "New Swap Target...", ref _newSwapValue, Utf8GamePath.MaxGamePathLength );
+        ImGui.InputTextWithHint( "##swapValue", "... instead of this file.", ref _newSwapKey, Utf8GamePath.MaxGamePathLength );
     }
 
     public ModEditWindow()
