@@ -1,7 +1,7 @@
 {
   "version": 1,
   "dependencies": {
-    "net6.0-windows7.0": {
+    "net7.0-windows7.0": {
       "EmbedIO": {
         "type": "Direct",
         "requested": "[3.4.3, )",
@@ -67,8 +67,8 @@
       "penumbra.gamedata": {
         "type": "Project",
         "dependencies": {
-          "Penumbra.Api": "[1.0.3, )",
-          "Penumbra.String": "[1.0.0, )"
+          "Penumbra.Api": "[1.0.5, )",
+          "Penumbra.String": "[1.0.1, )"
         }
       },
       "penumbra.string": {

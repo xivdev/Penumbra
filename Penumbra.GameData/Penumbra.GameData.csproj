@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net6.0-windows</TargetFramework>
+        <TargetFramework>net7.0-windows</TargetFramework>
         <LangVersion>preview</LangVersion>
         <PlatformTarget>x64</PlatformTarget>
         <AssemblyTitle>Penumbra.GameData</AssemblyTitle>
