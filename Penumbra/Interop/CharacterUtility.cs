@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Utility.Signatures;
+using Penumbra.GameData;
 
 namespace Penumbra.Interop;
 
@@ -10,13 +11,13 @@ public unsafe partial class CharacterUtility : IDisposable
     public record struct InternalIndex( int Value );
 
     // A static pointer to the CharacterUtility address.
-    [Signature( "48 8B 05 ?? ?? ?? ?? 83 B9", ScanType = ScanType.StaticAddress )]
+    [Signature( Sigs.CharacterUtility, ScanType = ScanType.StaticAddress )]
     private readonly Structs.CharacterUtility** _characterUtilityAddress = null;
 
     // Only required for migration anymore.
     public delegate void LoadResources( Structs.CharacterUtility* address );
 
-    [Signature( "E8 ?? ?? ?? ?? 48 8D 8F ?? ?? ?? ?? E8 ?? ?? ?? ?? 33 D2 45 33 C0" )]
+    [Signature( Sigs.LoadCharacterResources )]
     public readonly LoadResources LoadCharacterResourcesFunc = null!;
 
     public void LoadCharacterResources()

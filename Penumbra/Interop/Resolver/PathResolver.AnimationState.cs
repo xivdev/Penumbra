@@ -1,9 +1,10 @@
 using System;
-using System.Runtime.InteropServices;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -109,7 +110,7 @@ public unsafe partial class PathResolver
         // Characters load some of their voice lines or whatever with this function.
         private delegate IntPtr LoadCharacterSound( IntPtr character, int unk1, int unk2, IntPtr unk3, ulong unk4, int unk5, int unk6, ulong unk7 );
 
-        [Signature( "4C 89 4C 24 ?? 55 57 41 56", DetourName = nameof( LoadCharacterSoundDetour ) )]
+        [Signature( Sigs.LoadCharacterSound, DetourName = nameof( LoadCharacterSoundDetour ) )]
         private readonly Hook< LoadCharacterSound > _loadCharacterSoundHook = null!;
 
         private IntPtr LoadCharacterSoundDetour( IntPtr character, int unk1, int unk2, IntPtr unk3, ulong unk4, int unk5, int unk6, ulong unk7 )
@@ -149,7 +150,7 @@ public unsafe partial class PathResolver
         // We can obtain the associated game object from the timelines 28'th vfunc and use that to apply the correct collection.
         private delegate ulong LoadTimelineResourcesDelegate( IntPtr timeline );
 
-        [Signature( "E8 ?? ?? ?? ?? 83 7F ?? ?? 75 ?? 0F B6 87", DetourName = nameof( LoadTimelineResourcesDetour ) )]
+        [Signature( Sigs.LoadTimelineResources, DetourName = nameof( LoadTimelineResourcesDetour ) )]
         private readonly Hook< LoadTimelineResourcesDelegate > _loadTimelineResourcesHook = null!;
 
         private ulong LoadTimelineResourcesDetour( IntPtr timeline )
@@ -166,8 +167,7 @@ public unsafe partial class PathResolver
         // Make it aware of the correct collection to load the correct pap files.
         private delegate void CharacterBaseNoArgumentDelegate( IntPtr drawBase );
 
-        [Signature( "E8 ?? ?? ?? ?? BA ?? ?? ?? ?? 48 8B CF 44 8B C2 E8 ?? ?? ?? ?? 48 8B 05",
-            DetourName = nameof( CharacterBaseLoadAnimationDetour ) )]
+        [Signature( Sigs.CharacterBaseLoadAnimation, DetourName = nameof( CharacterBaseLoadAnimationDetour ) )]
         private readonly Hook< CharacterBaseNoArgumentDelegate > _characterBaseLoadAnimationHook = null!;
 
         private void CharacterBaseLoadAnimationDetour( IntPtr drawObject )
@@ -186,8 +186,7 @@ public unsafe partial class PathResolver
         // Unknown what exactly this is but it seems to load a bunch of paps.
         private delegate void LoadSomePap( IntPtr a1, int a2, IntPtr a3, int a4 );
 
-        [Signature( "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 41 56 41 57 48 83 EC ?? 41 8B D9 89 51",
-            DetourName = nameof( LoadSomePapDetour ) )]
+        [Signature( Sigs.LoadSomePap, DetourName = nameof( LoadSomePapDetour ) )]
         private readonly Hook< LoadSomePap > _loadSomePapHook = null!;
 
         private void LoadSomePapDetour( IntPtr a1, int a2, IntPtr a3, int a4 )
@@ -209,7 +208,7 @@ public unsafe partial class PathResolver
         }
 
         // Seems to load character actions when zoning or changing class, maybe.
-        [Signature( "E8 ?? ?? ?? ?? C6 83 ?? ?? ?? ?? ?? 8B 8E", DetourName = nameof( SomeActionLoadDetour ) )]
+        [Signature( Sigs.LoadSomeAction, DetourName = nameof( SomeActionLoadDetour ) )]
         private readonly Hook< CharacterBaseNoArgumentDelegate > _someActionLoadHook = null!;
 
         private void SomeActionLoadDetour( IntPtr gameObject )
@@ -221,25 +220,9 @@ public unsafe partial class PathResolver
             _animationLoadData = last;
         }
 
-        [StructLayout( LayoutKind.Explicit )]
-        private struct VfxParams
-        {
-            [FieldOffset( 0x118 )]
-            public uint GameObjectId;
-
-            [FieldOffset( 0x11C )]
-            public byte GameObjectType;
-
-            [FieldOffset( 0xD0 )]
-            public ushort TargetCount;
-
-            [FieldOffset( 0x120 )]
-            public fixed ulong Target[16];
-        }
-
         private delegate IntPtr LoadCharacterVfxDelegate( byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4 );
 
-        [Signature( "E8 ?? ?? ?? ?? 48 8B F8 48 8D 93", DetourName = nameof( LoadCharacterVfxDetour ) )]
+        [Signature( Sigs.LoadCharacterVfx, DetourName = nameof( LoadCharacterVfxDetour ) )]
         private readonly Hook< LoadCharacterVfxDelegate > _loadCharacterVfxHook = null!;
 
         private global::Dalamud.Game.ClientState.Objects.Types.GameObject? GetOwnedObject( uint id )
@@ -288,7 +271,7 @@ public unsafe partial class PathResolver
 
         private delegate IntPtr LoadAreaVfxDelegate( uint vfxId, float* pos, GameObject* caster, float unk1, float unk2, byte unk3 );
 
-        [Signature( "48 8B C4 53 55 56 57 41 56 48 81 EC", DetourName = nameof( LoadAreaVfxDetour ) )]
+        [Signature( Sigs.LoadAreaVfx, DetourName = nameof( LoadAreaVfxDetour ) )]
         private readonly Hook< LoadAreaVfxDelegate > _loadAreaVfxHook = null!;
 
         private IntPtr LoadAreaVfxDetour( uint vfxId, float* pos, GameObject* caster, float unk1, float unk2, byte unk3 )
@@ -314,20 +297,9 @@ public unsafe partial class PathResolver
         }
 
 
-
-        [StructLayout( LayoutKind.Explicit )]
-        private struct ClipScheduler
-        {
-            [FieldOffset( 0 )]
-            public IntPtr* VTable;
-
-            [FieldOffset( 0x38 )]
-            public IntPtr SchedulerTimeline;
-        }
-
         private delegate void ScheduleClipUpdate( ClipScheduler* x );
 
-        [Signature( "40 53 55 56 57 41 56 48 81 EC ?? ?? ?? ?? 48 8B F9", DetourName = nameof( ScheduleClipUpdateDetour ) )]
+        [Signature( Sigs.ScheduleClipUpdate, DetourName = nameof( ScheduleClipUpdateDetour ) )]
         private readonly Hook< ScheduleClipUpdate > _scheduleClipUpdateHook = null!;
 
         private void ScheduleClipUpdateDetour( ClipScheduler* x )

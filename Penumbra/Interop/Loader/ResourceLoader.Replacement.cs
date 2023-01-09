@@ -7,6 +7,7 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
@@ -38,14 +39,14 @@ public unsafe partial class ResourceLoader
     public delegate ResourceHandle* GetResourceSyncPrototype( ResourceManager* resourceManager, ResourceCategory* pCategoryId,
         ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams );
 
-    [Signature( "E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00", DetourName = "GetResourceSyncDetour" )]
-    public Hook< GetResourceSyncPrototype > GetResourceSyncHook = null!;
+    [Signature( Sigs.GetResourceSync, DetourName = nameof( GetResourceSyncDetour ) )]
+    public readonly Hook< GetResourceSyncPrototype > GetResourceSyncHook = null!;
 
     public delegate ResourceHandle* GetResourceAsyncPrototype( ResourceManager* resourceManager, ResourceCategory* pCategoryId,
         ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, bool isUnknown );
 
-    [Signature( "E8 ?? ?? ?? 00 48 8B D8 EB ?? F0 FF 83 ?? ?? 00 00", DetourName = "GetResourceAsyncDetour" )]
-    public Hook< GetResourceAsyncPrototype > GetResourceAsyncHook = null!;
+    [Signature( Sigs.GetResourceAsync, DetourName = nameof( GetResourceAsyncDetour ) )]
+    public readonly Hook< GetResourceAsyncPrototype > GetResourceAsyncHook = null!;
 
     private ResourceHandle* GetResourceSyncDetour( ResourceManager* resourceManager, ResourceCategory* categoryId, ResourceType* resourceType,
         int* resourceHash, byte* path, GetResourceParameters* pGetResParams )
@@ -79,7 +80,7 @@ public unsafe partial class ResourceLoader
         return GetResourceHandler( true, *ResourceManager, &category, &type, &hash, path.Path, null, false );
     }
 
-    internal ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
+    private ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
     {
         using var performance = Penumbra.Performance.Measure( PerformanceType.GetResourceHandler );
@@ -157,14 +158,14 @@ public unsafe partial class ResourceLoader
     public delegate byte ReadFileDelegate( ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority,
         bool isSync );
 
-    [Signature( "E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3 BA 05" )]
-    public ReadFileDelegate ReadFile = null!;
+    [Signature( Sigs.ReadFile )]
+    public readonly ReadFileDelegate ReadFile = null!;
 
     // We hook ReadSqPack to redirect rooted files to ReadFile.
     public delegate byte ReadSqPackPrototype( ResourceManager* resourceManager, SeFileDescriptor* pFileDesc, int priority, bool isSync );
 
-    [Signature( "E8 ?? ?? ?? ?? EB 05 E8 ?? ?? ?? ?? 84 C0 0F 84 ?? 00 00 00 4C 8B C3", DetourName = nameof( ReadSqPackDetour ) )]
-    public Hook< ReadSqPackPrototype > ReadSqPackHook = null!;
+    [Signature( Sigs.ReadSqPack, DetourName = nameof( ReadSqPackDetour ) )]
+    public readonly Hook< ReadSqPackPrototype > ReadSqPackHook = null!;
 
     private byte ReadSqPackDetour( ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync )
     {

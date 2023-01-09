@@ -7,6 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.STD;
 using Penumbra.Collections;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -22,8 +23,7 @@ public unsafe partial class ResourceLoader
 
     public delegate IntPtr ResourceHandleDestructor( ResourceHandle* handle );
 
-    [Signature( "48 89 5C 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 B8",
-        DetourName = nameof( ResourceHandleDestructorDetour ) )]
+    [Signature( Sigs.ResourceHandleDestructor, DetourName = nameof( ResourceHandleDestructorDetour ) )]
     public static Hook< ResourceHandleDestructor >? ResourceHandleDestructorHook;
 
     private IntPtr ResourceHandleDestructorDetour( ResourceHandle* handle )
@@ -37,7 +37,7 @@ public unsafe partial class ResourceLoader
     }
 
     // A static pointer to the SE Resource Manager
-    [Signature( "48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 32 C0", ScanType = ScanType.StaticAddress, UseFlags = SignatureUseFlags.Pointer )]
+    [Signature( Sigs.ResourceManager, ScanType = ScanType.StaticAddress, UseFlags = SignatureUseFlags.Pointer )]
     public static ResourceManager** ResourceManager;
 
     // Gather some debugging data about penumbra-loaded objects.

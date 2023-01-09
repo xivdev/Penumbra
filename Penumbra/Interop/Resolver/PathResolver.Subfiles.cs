@@ -6,6 +6,7 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
@@ -159,7 +160,7 @@ public unsafe partial class PathResolver
 
         private delegate byte LoadMtrlFilesDelegate( IntPtr mtrlResourceHandle );
 
-        [Signature( "4C 8B DC 49 89 5B ?? 49 89 73 ?? 55 57 41 55", DetourName = nameof( LoadMtrlTexDetour ) )]
+        [Signature( Sigs.LoadMtrlTex, DetourName = nameof( LoadMtrlTexDetour ) )]
         private readonly Hook< LoadMtrlFilesDelegate > _loadMtrlTexHook = null!;
 
         private byte LoadMtrlTexDetour( IntPtr mtrlResourceHandle )
@@ -171,8 +172,7 @@ public unsafe partial class PathResolver
             return ret;
         }
 
-        [Signature( "48 89 5C 24 ?? 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 44 0F B7 89",
-            DetourName = nameof( LoadMtrlShpkDetour ) )]
+        [Signature( Sigs.LoadMtrlShpk, DetourName = nameof( LoadMtrlShpkDetour ) )]
         private readonly Hook< LoadMtrlFilesDelegate > _loadMtrlShpkHook = null!;
 
         private byte LoadMtrlShpkDetour( IntPtr mtrlResourceHandle )
@@ -197,7 +197,7 @@ public unsafe partial class PathResolver
 
         private delegate byte ApricotResourceLoadDelegate( IntPtr handle, IntPtr unk1, byte unk2 );
 
-        [Signature( "48 89 74 24 ?? 57 48 83 EC ?? 41 0F B6 F0 48 8B F9", DetourName = nameof( ApricotResourceLoadDetour ) )]
+        [Signature( Sigs.ApricotResourceLoad, DetourName = nameof( ApricotResourceLoadDetour ) )]
         private readonly Hook< ApricotResourceLoadDelegate > _apricotResourceLoadHook = null!;
 
 

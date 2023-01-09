@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
+using Penumbra.GameData;
 using Penumbra.String;
 
 namespace Penumbra.Interop.Resolver;
@@ -12,17 +13,16 @@ public unsafe partial class PathResolver
 {
     public class PathState : IDisposable
     {
-        [Signature( "48 8D 05 ?? ?? ?? ?? 48 89 03 48 8D 8B ?? ?? ?? ?? 44 89 83 ?? ?? ?? ?? 48 8B C1", ScanType = ScanType.StaticAddress )]
+        [Signature( Sigs.HumanVTable, ScanType = ScanType.StaticAddress )]
         public readonly IntPtr* HumanVTable = null!;
 
-        [Signature( "48 8D 05 ?? ?? ?? ?? 48 89 03 B8 ?? ?? ?? ?? 66 89 83 ?? ?? ?? ?? 48 8B C3 48 89 8B ?? ?? ?? ?? 48 89 8B",
-            ScanType = ScanType.StaticAddress )]
+        [Signature( Sigs.WeaponVTable, ScanType = ScanType.StaticAddress )]
         private readonly IntPtr* _weaponVTable = null!;
 
-        [Signature( "48 8D 05 ?? ?? ?? ?? 45 33 C0 48 89 03 BA", ScanType = ScanType.StaticAddress )]
+        [Signature( Sigs.DemiHumanVTable, ScanType = ScanType.StaticAddress )]
         private readonly IntPtr* _demiHumanVTable = null!;
 
-        [Signature( "48 8D 05 ?? ?? ?? ?? 48 89 03 33 C0 48 89 83 ?? ?? ?? ?? 48 89 83 ?? ?? ?? ?? C7 83", ScanType = ScanType.StaticAddress )]
+        [Signature( Sigs.MonsterVTable, ScanType = ScanType.StaticAddress )]
         private readonly IntPtr* _monsterVTable = null!;
 
         private readonly ResolverHooks _human;

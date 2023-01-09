@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Dalamud;
 using Dalamud.Data;
+using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Enums;
@@ -229,10 +230,10 @@ public sealed partial class ActorManager : IDisposable
 
     private readonly Func<ushort, short> _toParentIdx;
 
-    [Signature("0F B7 0D ?? ?? ?? ?? C7 85", ScanType = ScanType.StaticAddress)]
+    [Signature(Sigs.InspectTitleId, ScanType = ScanType.StaticAddress)]
     private static unsafe ushort* _inspectTitleId = null!;
 
-    [Signature("0F B7 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B D0", ScanType = ScanType.StaticAddress)]
+    [Signature(Sigs.InspectWorldId, ScanType = ScanType.StaticAddress)]
     private static unsafe ushort* _inspectWorldId = null!;
 
     private static unsafe ushort InspectTitleId

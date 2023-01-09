@@ -6,6 +6,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
+using Penumbra.GameData;
 using Penumbra.GameData.Actors;
 
 namespace Penumbra.Interop.Resolver;
@@ -117,8 +118,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable< (IntPt
 
     private delegate void CharacterDestructorDelegate( Character* character );
 
-    [Signature( "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 48 8D 05 ?? ?? ?? ?? 48 89 81 ?? ?? ?? ?? 48 8D 05",
-        DetourName = nameof( CharacterDestructorDetour ) )]
+    [Signature( Sigs.CharacterDestructor, DetourName = nameof( CharacterDestructorDetour ) )]
     private Hook< CharacterDestructorDelegate > _characterDtorHook = null!;
 
     private void CharacterDestructorDetour( Character* character )

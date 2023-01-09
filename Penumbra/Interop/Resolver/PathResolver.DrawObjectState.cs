@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Api;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using OtterGui.Classes;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -134,7 +135,7 @@ public unsafe partial class PathResolver
         // and use the last game object that called EnableDraw to link them.
         private delegate IntPtr CharacterBaseCreateDelegate( uint a, IntPtr b, IntPtr c, byte d );
 
-        [Signature( "E8 ?? ?? ?? ?? 48 85 C0 74 21 C7 40", DetourName = nameof( CharacterBaseCreateDetour ) )]
+        [Signature( Sigs.CharacterBaseCreate, DetourName = nameof( CharacterBaseCreateDetour ) )]
         private readonly Hook< CharacterBaseCreateDelegate > _characterBaseCreateHook = null!;
 
         private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
@@ -186,8 +187,7 @@ public unsafe partial class PathResolver
         // Remove DrawObjects from the list when they are destroyed.
         private delegate void CharacterBaseDestructorDelegate( IntPtr drawBase );
 
-        [Signature( "E8 ?? ?? ?? ?? 40 F6 C7 01 74 3A 40 F6 C7 04 75 27 48 85 DB 74 2F 48 8B 05 ?? ?? ?? ?? 48 8B D3 48 8B 48 30",
-            DetourName = nameof( CharacterBaseDestructorDetour ) )]
+        [Signature( Sigs.CharacterBaseDestructor, DetourName = nameof( CharacterBaseDestructorDetour ) )]
         private readonly Hook< CharacterBaseDestructorDelegate > _characterBaseDestructorHook = null!;
 
         private void CharacterBaseDestructorDetour( IntPtr drawBase )
@@ -201,7 +201,7 @@ public unsafe partial class PathResolver
         // so we always keep track of the current GameObject to be able to link it to the DrawObject.
         private delegate void EnableDrawDelegate( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d );
 
-        [Signature( "E8 ?? ?? ?? ?? 48 8B 8B ?? ?? ?? ?? 48 85 C9 74 33 45 33 C0", DetourName = nameof( EnableDrawDetour ) )]
+        [Signature( Sigs.EnableDraw, DetourName = nameof( EnableDrawDetour ) )]
         private readonly Hook< EnableDrawDelegate > _enableDrawHook = null!;
 
         private void EnableDrawDetour( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d )
@@ -216,7 +216,7 @@ public unsafe partial class PathResolver
         // so we use that.
         private delegate void WeaponReloadFunc( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 );
 
-        [Signature( "E8 ?? ?? ?? ?? 44 8B 9F", DetourName = nameof( WeaponReloadDetour ) )]
+        [Signature( Sigs.WeaponReload, DetourName = nameof( WeaponReloadDetour ) )]
         private readonly Hook< WeaponReloadFunc > _weaponReloadHook = null!;
 
         public void WeaponReloadDetour( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 )

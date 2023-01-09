@@ -1,6 +1,7 @@
 using System;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
+using Penumbra.GameData;
 
 namespace Penumbra.Interop;
 
@@ -13,7 +14,7 @@ public unsafe class MetaFileManager
 
     // Allocate in the games space for file storage.
     // We only need this if using any meta file.
-    [Signature( "E8 ?? ?? ?? ?? 41 B9 ?? ?? ?? ?? 4C 8B C0" )]
+    [Signature( Sigs.GetFileSpace )]
     private readonly IntPtr _getFileSpaceAddress = IntPtr.Zero;
 
     public IMemorySpace* GetFileSpace()
