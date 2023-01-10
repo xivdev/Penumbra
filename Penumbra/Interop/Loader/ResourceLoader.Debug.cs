@@ -253,10 +253,11 @@ public unsafe partial class ResourceLoader
     private static void LogPath( Utf8GamePath path, bool synchronous )
         => Penumbra.Log.Information( $"[ResourceLoader] Requested {path} {( synchronous ? "synchronously." : "asynchronously." )}" );
 
-    private static void LogResource( Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData _ )
+    private static void LogResource( Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData data )
     {
         var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
-        Penumbra.Log.Information( $"[ResourceLoader] [{handle->FileType}] Loaded {pathString} to 0x{( ulong )handle:X}. (Refcount {handle->RefCount})" );
+        Penumbra.Log.Information(
+            $"[ResourceLoader] [{handle->FileType}] Loaded {pathString} to 0x{( ulong )handle:X} using collection {data.ModCollection.AnonymizedName} for {data.AssociatedName()}. (Refcount {handle->RefCount}) " );
     }
 
     private static void LogLoadedFile( Structs.ResourceHandle* resource, ByteString path, bool success, bool custom )
