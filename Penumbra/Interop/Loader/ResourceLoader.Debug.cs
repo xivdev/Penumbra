@@ -5,6 +5,7 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
+using FFXIVClientStructs.Interop;
 using FFXIVClientStructs.STD;
 using Penumbra.Collections;
 using Penumbra.GameData;
