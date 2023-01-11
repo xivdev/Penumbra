@@ -30,9 +30,30 @@ public partial class ConfigWindow
         Add6_0_5( ret );
         Add6_1_0( ret );
         Add6_1_1( ret );
+        Add6_2_0( ret );
 
         return ret;
     }
+
+    private static void Add6_2_0( Changelog log )
+        => log.NextVersion( "Version 0.6.2.0" )
+           .RegisterEntry( "Updated Penumbra for .net7, Dalamud API 8 and patch 6.3." )
+           .RegisterEntry( "Added a Bulktag chat command to toggle all mods with specific tags. (by SoyaX)" )
+           .RegisterEntry( "Added placeholder options for setting individual collections via chat command." )
+           .RegisterEntry( "Added toggles to swap left and/or right rings separately for ring item swap." )
+           .RegisterEntry( "Added handling for looping sound effects caused by animations in non-base collections." )
+           .RegisterEntry( "Added an option to not use any mods at all in the Inspect/Try-On window." )
+           .RegisterEntry( "Added handling for Mahjong actors." )
+           .RegisterEntry( "Improved hint text for File Swaps in Advanced Editing, also inverted file swap display order." )
+           .RegisterEntry( "Fixed a problem where the collection selectors could get desynchronized after adding or deleting collections." )
+           .RegisterEntry( "Fixed a problem that could cause setting state to get desynchronized." )
+           .RegisterEntry( "Fixed an oversight where some special screen actors did not actually respect the settings made for them." )
+           .RegisterEntry( "Added collection and associated game object to Full Resource Logging." )
+           .RegisterEntry( "Added performance tracking for DEBUG-compiled versions (i.e. testing only)." )
+           .RegisterEntry( "Added some information to .mdl display and fix not respecting padding when reading them. (0.6.1.3)" )
+           .RegisterEntry( "Fixed association of some vfx game objects. (0.6.1.3)" )
+           .RegisterEntry( "Stopped forcing AVFX files to load synchronously. (0.6.1.3)" )
+           .RegisterEntry( "Fixed an issue when incorporating deduplicated meta files. (0.6.1.2)" );
 
     private static void Add6_1_1( Changelog log )
         => log.NextVersion( "Version 0.6.1.1" )
