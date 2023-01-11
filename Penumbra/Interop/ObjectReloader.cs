@@ -117,7 +117,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
         => Dalamud.Framework.Update -= OnUpdateEvent;
 
     public static DrawState* ActorDrawState( GameObject actor )
-        => ( DrawState* )( actor.Address + 0x0104 );
+        => ( DrawState* )( &( ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )actor.Address )->RenderFlags );
 
     private static int ObjectTableIndex( GameObject actor )
         => ( ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )actor.Address )->ObjectIndex;
