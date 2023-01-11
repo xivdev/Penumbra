@@ -24,18 +24,18 @@ public unsafe struct RenderModel
     [FieldOffset( 0x60 )]
     public int BoneListCount;
 
-    [FieldOffset( 0x68 )]
+    [FieldOffset( 0x70 )]
     private void* UnkDXBuffer1;
 
-    [FieldOffset( 0x70 )]
+    [FieldOffset( 0x78 )]
     private void* UnkDXBuffer2;
 
-    [FieldOffset( 0x78 )]
+    [FieldOffset( 0x80 )]
     private void* UnkDXBuffer3;
 
-    [FieldOffset( 0x90 )]
+    [FieldOffset( 0x98 )]
     public void** Materials;
 
-    [FieldOffset( 0x98 )]
+    [FieldOffset( 0xA0 )]
     public int MaterialCount;
 }
