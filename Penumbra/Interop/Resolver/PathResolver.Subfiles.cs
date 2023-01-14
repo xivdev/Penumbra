@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -25,8 +26,8 @@ public unsafe partial class PathResolver
     {
         private readonly ResourceLoader _loader;
 
-        private ResolveData _mtrlData = ResolveData.Invalid;
-        private ResolveData _avfxData = ResolveData.Invalid;
+        private readonly ThreadLocal< ResolveData > _mtrlData = new(() => ResolveData.Invalid);
+        private readonly ThreadLocal< ResolveData > _avfxData = new(() => ResolveData.Invalid);
 
         private readonly ConcurrentDictionary< IntPtr, ResolveData > _subFileCollection = new();
 
@@ -44,15 +45,15 @@ public unsafe partial class PathResolver
             {
                 case ResourceType.Tex:
                 case ResourceType.Shpk:
-                    if( _mtrlData.Valid )
+                    if( _mtrlData.Value.Valid )
                     {
-                        collection = _mtrlData;
+                        collection = _mtrlData.Value;
                         return true;
                     }
 
                     break;
-                case ResourceType.Atex when _avfxData.Valid:
-                    collection = _avfxData;
+                case ResourceType.Atex when _avfxData.Value.Valid:
+                    collection = _avfxData.Value;
                     return true;
             }
 
@@ -166,9 +167,10 @@ public unsafe partial class PathResolver
         private byte LoadMtrlTexDetour( IntPtr mtrlResourceHandle )
         {
             using var performance = Penumbra.Performance.Measure( PerformanceType.LoadTextures );
-            _mtrlData = LoadFileHelper( mtrlResourceHandle );
+            var       old         = _mtrlData.Value;
+            _mtrlData.Value = LoadFileHelper( mtrlResourceHandle );
             var ret = _loadMtrlTexHook.Original( mtrlResourceHandle );
-            _mtrlData = ResolveData.Invalid;
+            _mtrlData.Value = old;
             return ret;
         }
 
@@ -178,9 +180,10 @@ public unsafe partial class PathResolver
         private byte LoadMtrlShpkDetour( IntPtr mtrlResourceHandle )
         {
             using var performance = Penumbra.Performance.Measure( PerformanceType.LoadShaders );
-            _mtrlData = LoadFileHelper( mtrlResourceHandle );
+            var       old         = _mtrlData.Value;
+            _mtrlData.Value = LoadFileHelper( mtrlResourceHandle );
             var ret = _loadMtrlShpkHook.Original( mtrlResourceHandle );
-            _mtrlData = ResolveData.Invalid;
+            _mtrlData.Value = old;
             return ret;
         }
 
@@ -204,9 +207,10 @@ public unsafe partial class PathResolver
         private byte ApricotResourceLoadDetour( IntPtr handle, IntPtr unk1, byte unk2 )
         {
             using var performance = Penumbra.Performance.Measure( PerformanceType.LoadApricotResources );
-            _avfxData = LoadFileHelper( handle );
+            var       old         = _avfxData.Value;
+            _avfxData.Value = LoadFileHelper( handle );
             var ret = _apricotResourceLoadHook.Original( handle, unk1, unk2 );
-            _avfxData = ResolveData.Invalid;
+            _avfxData.Value = old;
             return ret;
         }
 
@@ -220,9 +224,9 @@ public unsafe partial class PathResolver
             => _subFileCollection.Count;
 
         internal ResolveData MtrlData
-            => _mtrlData;
+            => _mtrlData.Value;
 
         internal ResolveData AvfxData
-            => _avfxData;
+            => _avfxData.Value;
     }
 }
