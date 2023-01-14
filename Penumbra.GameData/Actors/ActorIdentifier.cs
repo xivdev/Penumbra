@@ -19,7 +19,7 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
     [FieldOffset( 1 )] public readonly ObjectKind     Kind;       // Npc, Owned
     [FieldOffset( 2 )] public readonly ushort         HomeWorld;  // Player, Owned
     [FieldOffset( 2 )] public readonly ushort         Index;      // NPC
-    [FieldOffset( 2 )] public readonly SpecialActor   Special;    // Special
+    [FieldOffset( 2 )] public readonly ScreenActor    Special;    // Special
     [FieldOffset( 4 )] public readonly uint           DataId;     // Owned, NPC
     [FieldOffset( 8 )] public readonly ByteString     PlayerName; // Player, Owned
     // @formatter:on
@@ -91,7 +91,7 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
     {
         Type       = type;
         Kind       = kind;
-        Special    = (SpecialActor)index;
+        Special    = (ScreenActor)index;
         HomeWorld  = Index = index;
         DataId     = data;
         PlayerName = playerName;
@@ -189,14 +189,14 @@ public static class ActorManagerExtensions
     /// <summary>
     /// Fixed names for special actors.
     /// </summary>
-    public static string ToName(this SpecialActor actor)
+    public static string ToName(this ScreenActor actor)
         => actor switch
         {
-            SpecialActor.CharacterScreen => "Character Screen Actor",
-            SpecialActor.ExamineScreen   => "Examine Screen Actor",
-            SpecialActor.FittingRoom     => "Fitting Room Actor",
-            SpecialActor.DyePreview      => "Dye Preview Actor",
-            SpecialActor.Portrait        => "Portrait Actor",
+            ScreenActor.CharacterScreen => "Character Screen Actor",
+            ScreenActor.ExamineScreen   => "Examine Screen Actor",
+            ScreenActor.FittingRoom     => "Fitting Room Actor",
+            ScreenActor.DyePreview      => "Dye Preview Actor",
+            ScreenActor.Portrait        => "Portrait Actor",
             _                            => "Invalid",
         };
 }

@@ -106,7 +106,7 @@ public unsafe partial class PathResolver
             }
 
             var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, true, false );
-            if( Penumbra.Config.UseNoModsInInspect && identifier.Type == IdentifierType.Special && identifier.Special == SpecialActor.ExamineScreen )
+            if( Penumbra.Config.UseNoModsInInspect && identifier.Type == IdentifierType.Special && identifier.Special == ScreenActor.ExamineScreen )
             {
                 return IdentifiedCache.Set( ModCollection.Empty, identifier, gameObject );
             }

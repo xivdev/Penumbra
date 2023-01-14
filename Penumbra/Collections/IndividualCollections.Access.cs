@@ -88,12 +88,12 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
 
         switch( identifier.Special )
         {
-            case SpecialActor.CharacterScreen when Penumbra.Config.UseCharacterCollectionInMainWindow:
-            case SpecialActor.FittingRoom when Penumbra.Config.UseCharacterCollectionInTryOn:
-            case SpecialActor.DyePreview when Penumbra.Config.UseCharacterCollectionInTryOn:
-            case SpecialActor.Portrait when Penumbra.Config.UseCharacterCollectionsInCards:
+            case ScreenActor.CharacterScreen when Penumbra.Config.UseCharacterCollectionInMainWindow:
+            case ScreenActor.FittingRoom when Penumbra.Config.UseCharacterCollectionInTryOn:
+            case ScreenActor.DyePreview when Penumbra.Config.UseCharacterCollectionInTryOn:
+            case ScreenActor.Portrait when Penumbra.Config.UseCharacterCollectionsInCards:
                 return _actorManager.GetCurrentPlayer();
-            case SpecialActor.ExamineScreen:
+            case ScreenActor.ExamineScreen:
             {
                 identifier = _actorManager.GetInspectPlayer();
                 if( identifier.IsValid )

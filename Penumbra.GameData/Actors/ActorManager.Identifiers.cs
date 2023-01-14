@@ -45,7 +45,7 @@ public partial class ActorManager
             }
             case IdentifierType.Special:
             {
-                var special = data[nameof(ActorIdentifier.Special)]?.ToObject<SpecialActor>() ?? 0;
+                var special = data[nameof(ActorIdentifier.Special)]?.ToObject<ScreenActor>() ?? 0;
                 return CreateSpecial(special);
             }
             case IdentifierType.Npc:
@@ -97,7 +97,7 @@ public partial class ActorManager
         if (main == null)
             return null;
 
-        if (main->ObjectIndex is >= (ushort)SpecialActor.CutsceneStart and < (ushort)SpecialActor.CutsceneEnd)
+        if (main->ObjectIndex is >= (ushort)ScreenActor.CutsceneStart and < (ushort)ScreenActor.CutsceneEnd)
         {
             var parentIdx = _toParentIdx(main->ObjectIndex);
             if (parentIdx >= 0)
@@ -197,8 +197,7 @@ public partial class ActorManager
                     return FindDataId(split[1], Data.BNpcs, out id)
                         ? (ObjectKind.BattleNpc, id)
                         : throw new IdentifierParseError($"Could not identify a Battle NPC named {split[1]}.");
-                default:
-                    throw new IdentifierParseError($"The argument {split[0]} is not a valid NPC Type.");
+                default: throw new IdentifierParseError($"The argument {split[0]} is not a valid NPC Type.");
             }
         }
 
@@ -228,6 +227,7 @@ public partial class ActorManager
                 if (split.Length < 3)
                     throw new IdentifierParseError(
                         "Owned NPCs need a NPC and a player, separated by '|', but only one was provided.");
+
                 type                  = IdentifierType.Owned;
                 (kind, objectId)      = ParseNpc(split[1]);
                 (playerName, worldId) = ParsePlayer(split[2]);
@@ -252,7 +252,7 @@ public partial class ActorManager
 
         actor = HandleCutscene(actor);
         var idx = actor->ObjectIndex;
-        if (idx is >= (ushort)SpecialActor.CharacterScreen and <= (ushort)SpecialActor.Portrait)
+        if (idx is >= (ushort)ScreenActor.CharacterScreen and <= (ushort)ScreenActor.Card8)
             return CreateIndividualUnchecked(IdentifierType.Special, ByteString.Empty, idx, ObjectKind.None, uint.MaxValue);
 
         var kind = (ObjectKind)actor->ObjectKind;
@@ -390,7 +390,7 @@ public partial class ActorManager
             IdentifierType.Player    => CreatePlayer(name, homeWorld),
             IdentifierType.Retainer  => CreateRetainer(name),
             IdentifierType.Owned     => CreateOwned(name, homeWorld, kind, dataId),
-            IdentifierType.Special   => CreateSpecial((SpecialActor)homeWorld),
+            IdentifierType.Special   => CreateSpecial((ScreenActor)homeWorld),
             IdentifierType.Npc       => CreateNpc(kind, dataId, homeWorld),
             IdentifierType.UnkObject => CreateIndividualUnchecked(IdentifierType.UnkObject, name, homeWorld, ObjectKind.None, 0),
             _                        => ActorIdentifier.Invalid,
@@ -418,7 +418,7 @@ public partial class ActorManager
         return new ActorIdentifier(IdentifierType.Retainer, ObjectKind.Retainer, 0, 0, name);
     }
 
-    public ActorIdentifier CreateSpecial(SpecialActor actor)
+    public ActorIdentifier CreateSpecial(ScreenActor actor)
     {
         if (!VerifySpecial(actor))
             return ActorIdentifier.Invalid;
@@ -545,18 +545,18 @@ public partial class ActorManager
         => worldId == ushort.MaxValue || Data.Worlds.ContainsKey(worldId);
 
     /// <summary> Verify that the enum value is a specific actor and return the name if it is. </summary>
-    public static bool VerifySpecial(SpecialActor actor)
-        => actor is >= SpecialActor.CharacterScreen and <= SpecialActor.Portrait;
+    public static bool VerifySpecial(ScreenActor actor)
+        => actor is >= ScreenActor.CharacterScreen and <= ScreenActor.Card8;
 
     /// <summary> Verify that the object index is a valid index for an NPC. </summary>
     public static bool VerifyIndex(ushort index)
     {
         return index switch
         {
-            ushort.MaxValue                 => true,
-            < 200                           => index % 2 == 0,
-            > (ushort)SpecialActor.Portrait => index < 426,
-            _                               => false,
+            ushort.MaxValue              => true,
+            < 200                        => index % 2 == 0,
+            > (ushort)ScreenActor.Card8 => index < 426,
+            _                            => false,
         };
     }
 
