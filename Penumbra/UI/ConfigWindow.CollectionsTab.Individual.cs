@@ -130,7 +130,7 @@ public partial class ConfigWindow
             {
                 var (name, _) = Penumbra.CollectionManager.Individuals[ i ];
                 using var id = ImRaii.PushId( i );
-                CollectionsWithEmpty.Draw( string.Empty, _window._inputTextWidth.X, i );
+                CollectionsWithEmpty.Draw( "##IndividualCombo", _window._inputTextWidth.X, i );
                 ImGui.SameLine();
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
                        false, true ) )

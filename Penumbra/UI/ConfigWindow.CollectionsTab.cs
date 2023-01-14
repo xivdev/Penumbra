@@ -225,7 +225,7 @@ public partial class ConfigWindow
                 if( collection != null )
                 {
                     using var id = ImRaii.PushId( ( int )type );
-                    DrawCollectionSelector( string.Empty, _window._inputTextWidth.X, type, true );
+                    DrawCollectionSelector( "##SpecialCombo", _window._inputTextWidth.X, type, true );
                     ImGui.SameLine();
                     if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), _window._iconButtonSize, string.Empty,
                            false, true ) )
