@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
-using Penumbra.GameData.Actors;
 
 namespace Penumbra.Collections;
 
@@ -148,13 +147,22 @@ public partial class ModCollection
                 SetCollection( Empty.Index, CollectionType.Default );
             }
 
+            for( var i = 0; i < _specialCollections.Length; ++i )
+            {
+                if( idx == _specialCollections[ i ]?.Index )
+                {
+                    SetCollection( Empty, ( CollectionType )i );
+                }
+            }
+
             for( var i = 0; i < Individuals.Count; ++i )
             {
                 if( Individuals[ i ].Collection.Index == idx )
                 {
-                    Individuals.ChangeCollection( i, Empty );
+                    SetCollection( Empty, CollectionType.Individual, i );
                 }
             }
+
             var collection = _collections[ idx ];
 
             // Clear own inheritances.
