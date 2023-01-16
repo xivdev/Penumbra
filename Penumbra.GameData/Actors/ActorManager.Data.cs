@@ -251,7 +251,7 @@ public sealed partial class ActorManager : IDisposable
             var obj = (GameObject*)_objects.GetObjectAddress(i);
             if (obj != null
              && obj->ObjectKind is (byte)ObjectKind.Player
-             && !CustomizeData.Equals((CustomizeData*)gameObject->CustomizeData, (CustomizeData*)((Character*)obj)->CustomizeData))
+             && CustomizeData.Equals((CustomizeData*)gameObject->CustomizeData, (CustomizeData*)((Character*)obj)->CustomizeData))
                 return FromObject(obj, out _, false, true);
         }
         return ActorIdentifier.Invalid;
