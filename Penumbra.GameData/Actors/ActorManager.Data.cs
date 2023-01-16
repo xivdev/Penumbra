@@ -5,20 +5,22 @@ using System.Linq;
 using System.Text;
 using Dalamud;
 using Dalamud.Data;
-using Dalamud.Game;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Objects;
-using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.Gui;
 using Dalamud.Plugin;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.GeneratedSheets;
 using Lumina.Text;
 using Penumbra.GameData.Data;
+using Penumbra.GameData.Structs;
 using Penumbra.String;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
+using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
 namespace Penumbra.GameData.Actors;
 
@@ -196,6 +198,107 @@ public sealed partial class ActorManager : IDisposable
             return ActorIdentifier.Invalid;
 
         return CreatePlayer(InspectName, InspectWorldId);
+    }
+
+    public unsafe bool ResolvePartyBannerPlayer(ScreenActor type, out ActorIdentifier id)
+    {
+        id = ActorIdentifier.Invalid;
+        var addon = _gameGui.GetAddonByName("BannerParty");
+        if (addon == IntPtr.Zero)
+            return false;
+
+        var idx = (ushort)type - (ushort)ScreenActor.CharacterScreen;
+        if (idx is < 0 or > 7)
+            return true;
+
+        if (idx == 0)
+        {
+            id = GetCurrentPlayer();
+            return true;
+        }
+
+        var obj = GroupManager.Instance()->GetPartyMemberByIndex(idx - 1);
+        if (obj != null)
+            id = CreatePlayer(new ByteString(obj->Name), obj->HomeWorld);
+
+        return true;
+    }
+
+    private unsafe bool SearchPlayerCustomize(Character* character, int idx, out ActorIdentifier id)
+    {
+        var other = (Character*)_objects.GetObjectAddress(idx);
+        if (other == null || !CustomizeData.Equals((CustomizeData*)character->CustomizeData, (CustomizeData*)other->CustomizeData))
+        {
+            id = ActorIdentifier.Invalid;
+            return false;
+        }
+
+        id = FromObject(&other->GameObject, out _, false, true);
+        return true;
+    }
+
+    private unsafe ActorIdentifier SearchPlayersCustomize(Character* gameObject, int idx1, int idx2, int idx3)
+        => SearchPlayerCustomize(gameObject,  idx1, out var ret)
+         || SearchPlayerCustomize(gameObject, idx2, out ret)
+         || SearchPlayerCustomize(gameObject, idx3, out ret)
+                ? ret
+                : ActorIdentifier.Invalid;
+
+    private unsafe ActorIdentifier SearchPlayersCustomize(Character* gameObject)
+    {
+        for (var i = 0; i < (int)ScreenActor.CutsceneStart; i += 2)
+        {
+            var obj = (GameObject*)_objects.GetObjectAddress(i);
+            if (obj != null
+             && obj->ObjectKind is (byte)ObjectKind.Player
+             && !CustomizeData.Equals((CustomizeData*)gameObject->CustomizeData, (CustomizeData*)((Character*)obj)->CustomizeData))
+                return FromObject(obj, out _, false, true);
+        }
+        return ActorIdentifier.Invalid;
+    }
+
+    public unsafe bool ResolveMahjongPlayer(ScreenActor type, out ActorIdentifier id)
+    {
+        id = ActorIdentifier.Invalid;
+        if (_clientState.TerritoryType != 831 && _gameGui.GetAddonByName("EmjIntro") == IntPtr.Zero)
+            return false;
+
+        var obj = (Character*)_objects.GetObjectAddress((int)type);
+        if (obj == null)
+            return false;
+
+        id = type switch
+        {
+            ScreenActor.CharacterScreen => GetCurrentPlayer(),
+            ScreenActor.ExamineScreen   => SearchPlayersCustomize(obj, 2, 4, 6),
+            ScreenActor.FittingRoom     => SearchPlayersCustomize(obj, 4, 2, 6),
+            ScreenActor.DyePreview      => SearchPlayersCustomize(obj, 6, 2, 4),
+            _                           => ActorIdentifier.Invalid,
+        };
+        return true;
+    }
+
+    public unsafe bool ResolvePvPBannerPlayer(ScreenActor type, out ActorIdentifier id)
+    {
+        id = ActorIdentifier.Invalid;
+        var addon = _gameGui.GetAddonByName("PvPMKSIntroduction");
+        if (addon == IntPtr.Zero)
+            return false;
+
+        var obj = (Character*)_objects.GetObjectAddress((int)type);
+        if (obj == null)
+            return false;
+
+        var identifier = type switch
+        {
+            ScreenActor.CharacterScreen => SearchPlayersCustomize(obj),
+            ScreenActor.ExamineScreen   => SearchPlayersCustomize(obj),
+            ScreenActor.FittingRoom     => SearchPlayersCustomize(obj),
+            ScreenActor.DyePreview      => SearchPlayersCustomize(obj),
+            ScreenActor.Portrait        => SearchPlayersCustomize(obj),
+            _                           => ActorIdentifier.Invalid,
+        };
+        return true;
     }
 
     public unsafe ActorIdentifier GetCardPlayer()

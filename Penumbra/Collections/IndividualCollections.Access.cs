@@ -86,6 +86,13 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
             return identifier;
         }
 
+        if( _actorManager.ResolvePartyBannerPlayer( identifier.Special, out var id )
+        || _actorManager.ResolvePvPBannerPlayer( identifier.Special, out id )
+        || _actorManager.ResolveMahjongPlayer( identifier.Special, out id ) )
+        {
+            return identifier;
+        }
+
         switch( identifier.Special )
         {
             case ScreenActor.CharacterScreen when Penumbra.Config.UseCharacterCollectionInMainWindow:

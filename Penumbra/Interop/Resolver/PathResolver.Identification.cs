@@ -88,12 +88,6 @@ public unsafe partial class PathResolver
                 return IdentifiedCache.Set( collection2, ActorIdentifier.Invalid, gameObject );
             }
 
-            // Mahjong special case.
-            if( Dalamud.ClientState.TerritoryType == 831 )
-            {
-                return IdentifyMahjong( gameObject );
-            }
-
             // Aesthetician. The relevant actor is yourself, so use player collection when possible.
             if( Dalamud.GameGui.GetAddonByName( "ScreenLog", 1 ) == IntPtr.Zero )
             {
@@ -106,12 +100,16 @@ public unsafe partial class PathResolver
             }
 
             var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, true, false );
-            if( Penumbra.Config.UseNoModsInInspect && identifier.Type == IdentifierType.Special && identifier.Special == ScreenActor.ExamineScreen )
+            if( identifier.Type is IdentifierType.Special )
             {
-                return IdentifiedCache.Set( ModCollection.Empty, identifier, gameObject );
+                if( Penumbra.Config.UseNoModsInInspect && identifier.Special == ScreenActor.ExamineScreen )
+                {
+                    return IdentifiedCache.Set( ModCollection.Empty, identifier, gameObject );
+                }
+
+                identifier = Penumbra.CollectionManager.Individuals.ConvertSpecialIdentifier( identifier );
             }
 
-            identifier = Penumbra.CollectionManager.Individuals.ConvertSpecialIdentifier( identifier );
             var collection = CollectionByIdentifier( identifier )
              ?? CheckYourself( identifier, gameObject )
              ?? CollectionByAttributes( gameObject )
