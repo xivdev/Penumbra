@@ -7,105 +7,105 @@ namespace Penumbra.Collections;
 public enum CollectionType : byte
 {
     // Special Collections
-    Yourself = 0,
+    Yourself = Api.Enums.ApiCollectionType.Yourself,
 
-    MalePlayerCharacter,
-    FemalePlayerCharacter,
-    MaleNonPlayerCharacter,
-    FemaleNonPlayerCharacter,
+    MalePlayerCharacter      = Api.Enums.ApiCollectionType.MalePlayerCharacter,
+    FemalePlayerCharacter    = Api.Enums.ApiCollectionType.FemalePlayerCharacter,
+    MaleNonPlayerCharacter   = Api.Enums.ApiCollectionType.MaleNonPlayerCharacter,
+    FemaleNonPlayerCharacter = Api.Enums.ApiCollectionType.FemaleNonPlayerCharacter,
 
-    MaleMidlander,
-    FemaleMidlander,
-    MaleHighlander,
-    FemaleHighlander,
+    MaleMidlander    = Api.Enums.ApiCollectionType.MaleMidlander,
+    FemaleMidlander  = Api.Enums.ApiCollectionType.FemaleMidlander,
+    MaleHighlander   = Api.Enums.ApiCollectionType.MaleHighlander,
+    FemaleHighlander = Api.Enums.ApiCollectionType.FemaleHighlander,
 
-    MaleWildwood,
-    FemaleWildwood,
-    MaleDuskwight,
-    FemaleDuskwight,
+    MaleWildwood    = Api.Enums.ApiCollectionType.MaleWildwood,
+    FemaleWildwood  = Api.Enums.ApiCollectionType.FemaleWildwood,
+    MaleDuskwight   = Api.Enums.ApiCollectionType.MaleDuskwight,
+    FemaleDuskwight = Api.Enums.ApiCollectionType.FemaleDuskwight,
 
-    MalePlainsfolk,
-    FemalePlainsfolk,
-    MaleDunesfolk,
-    FemaleDunesfolk,
+    MalePlainsfolk   = Api.Enums.ApiCollectionType.MalePlainsfolk,
+    FemalePlainsfolk = Api.Enums.ApiCollectionType.FemalePlainsfolk,
+    MaleDunesfolk    = Api.Enums.ApiCollectionType.MaleDunesfolk,
+    FemaleDunesfolk  = Api.Enums.ApiCollectionType.FemaleDunesfolk,
 
-    MaleSeekerOfTheSun,
-    FemaleSeekerOfTheSun,
-    MaleKeeperOfTheMoon,
-    FemaleKeeperOfTheMoon,
+    MaleSeekerOfTheSun    = Api.Enums.ApiCollectionType.MaleSeekerOfTheSun,
+    FemaleSeekerOfTheSun  = Api.Enums.ApiCollectionType.FemaleSeekerOfTheSun,
+    MaleKeeperOfTheMoon   = Api.Enums.ApiCollectionType.MaleKeeperOfTheMoon,
+    FemaleKeeperOfTheMoon = Api.Enums.ApiCollectionType.FemaleKeeperOfTheMoon,
 
-    MaleSeawolf,
-    FemaleSeawolf,
-    MaleHellsguard,
-    FemaleHellsguard,
+    MaleSeawolf      = Api.Enums.ApiCollectionType.MaleSeawolf,
+    FemaleSeawolf    = Api.Enums.ApiCollectionType.FemaleSeawolf,
+    MaleHellsguard   = Api.Enums.ApiCollectionType.MaleHellsguard,
+    FemaleHellsguard = Api.Enums.ApiCollectionType.FemaleHellsguard,
 
-    MaleRaen,
-    FemaleRaen,
-    MaleXaela,
-    FemaleXaela,
+    MaleRaen    = Api.Enums.ApiCollectionType.MaleRaen,
+    FemaleRaen  = Api.Enums.ApiCollectionType.FemaleRaen,
+    MaleXaela   = Api.Enums.ApiCollectionType.MaleXaela,
+    FemaleXaela = Api.Enums.ApiCollectionType.FemaleXaela,
 
-    MaleHelion,
-    FemaleHelion,
-    MaleLost,
-    FemaleLost,
+    MaleHelion   = Api.Enums.ApiCollectionType.MaleHelion,
+    FemaleHelion = Api.Enums.ApiCollectionType.FemaleHelion,
+    MaleLost     = Api.Enums.ApiCollectionType.MaleLost,
+    FemaleLost   = Api.Enums.ApiCollectionType.FemaleLost,
 
-    MaleRava,
-    FemaleRava,
-    MaleVeena,
-    FemaleVeena,
+    MaleRava    = Api.Enums.ApiCollectionType.MaleRava,
+    FemaleRava  = Api.Enums.ApiCollectionType.FemaleRava,
+    MaleVeena   = Api.Enums.ApiCollectionType.MaleVeena,
+    FemaleVeena = Api.Enums.ApiCollectionType.FemaleVeena,
 
-    MaleMidlanderNpc,
-    FemaleMidlanderNpc,
-    MaleHighlanderNpc,
-    FemaleHighlanderNpc,
+    MaleMidlanderNpc    = Api.Enums.ApiCollectionType.MaleMidlanderNpc,
+    FemaleMidlanderNpc  = Api.Enums.ApiCollectionType.FemaleMidlanderNpc,
+    MaleHighlanderNpc   = Api.Enums.ApiCollectionType.MaleHighlanderNpc,
+    FemaleHighlanderNpc = Api.Enums.ApiCollectionType.FemaleHighlanderNpc,
 
-    MaleWildwoodNpc,
-    FemaleWildwoodNpc,
-    MaleDuskwightNpc,
-    FemaleDuskwightNpc,
+    MaleWildwoodNpc    = Api.Enums.ApiCollectionType.MaleWildwoodNpc,
+    FemaleWildwoodNpc  = Api.Enums.ApiCollectionType.FemaleWildwoodNpc,
+    MaleDuskwightNpc   = Api.Enums.ApiCollectionType.MaleDuskwightNpc,
+    FemaleDuskwightNpc = Api.Enums.ApiCollectionType.FemaleDuskwightNpc,
 
-    MalePlainsfolkNpc,
-    FemalePlainsfolkNpc,
-    MaleDunesfolkNpc,
-    FemaleDunesfolkNpc,
+    MalePlainsfolkNpc   = Api.Enums.ApiCollectionType.MalePlainsfolkNpc,
+    FemalePlainsfolkNpc = Api.Enums.ApiCollectionType.FemalePlainsfolkNpc,
+    MaleDunesfolkNpc    = Api.Enums.ApiCollectionType.MaleDunesfolkNpc,
+    FemaleDunesfolkNpc  = Api.Enums.ApiCollectionType.FemaleDunesfolkNpc,
 
-    MaleSeekerOfTheSunNpc,
-    FemaleSeekerOfTheSunNpc,
-    MaleKeeperOfTheMoonNpc,
-    FemaleKeeperOfTheMoonNpc,
+    MaleSeekerOfTheSunNpc    = Api.Enums.ApiCollectionType.MaleSeekerOfTheSunNpc,
+    FemaleSeekerOfTheSunNpc  = Api.Enums.ApiCollectionType.FemaleSeekerOfTheSunNpc,
+    MaleKeeperOfTheMoonNpc   = Api.Enums.ApiCollectionType.MaleKeeperOfTheMoonNpc,
+    FemaleKeeperOfTheMoonNpc = Api.Enums.ApiCollectionType.FemaleKeeperOfTheMoonNpc,
 
-    MaleSeawolfNpc,
-    FemaleSeawolfNpc,
-    MaleHellsguardNpc,
-    FemaleHellsguardNpc,
+    MaleSeawolfNpc      = Api.Enums.ApiCollectionType.MaleSeawolfNpc,
+    FemaleSeawolfNpc    = Api.Enums.ApiCollectionType.FemaleSeawolfNpc,
+    MaleHellsguardNpc   = Api.Enums.ApiCollectionType.MaleHellsguardNpc,
+    FemaleHellsguardNpc = Api.Enums.ApiCollectionType.FemaleHellsguardNpc,
 
-    MaleRaenNpc,
-    FemaleRaenNpc,
-    MaleXaelaNpc,
-    FemaleXaelaNpc,
+    MaleRaenNpc    = Api.Enums.ApiCollectionType.MaleRaenNpc,
+    FemaleRaenNpc  = Api.Enums.ApiCollectionType.FemaleRaenNpc,
+    MaleXaelaNpc   = Api.Enums.ApiCollectionType.MaleXaelaNpc,
+    FemaleXaelaNpc = Api.Enums.ApiCollectionType.FemaleXaelaNpc,
 
-    MaleHelionNpc,
-    FemaleHelionNpc,
-    MaleLostNpc,
-    FemaleLostNpc,
+    MaleHelionNpc   = Api.Enums.ApiCollectionType.MaleHelionNpc,
+    FemaleHelionNpc = Api.Enums.ApiCollectionType.FemaleHelionNpc,
+    MaleLostNpc     = Api.Enums.ApiCollectionType.MaleLostNpc,
+    FemaleLostNpc   = Api.Enums.ApiCollectionType.FemaleLostNpc,
 
-    MaleRavaNpc,
-    FemaleRavaNpc,
-    MaleVeenaNpc,
-    FemaleVeenaNpc,
+    MaleRavaNpc    = Api.Enums.ApiCollectionType.MaleRavaNpc,
+    FemaleRavaNpc  = Api.Enums.ApiCollectionType.FemaleRavaNpc,
+    MaleVeenaNpc   = Api.Enums.ApiCollectionType.MaleVeenaNpc,
+    FemaleVeenaNpc = Api.Enums.ApiCollectionType.FemaleVeenaNpc,
 
-    Inactive,   // A collection was added or removed
-    Default,    // The default collection was changed
-    Interface,  // The ui collection was changed
-    Individual, // An individual collection was changed
-    Current,    // The current collection was changed
-    Temporary,  // A temporary collections was set or deleted via IPC
+    Default   = Api.Enums.ApiCollectionType.Default,   // The default collection was changed
+    Interface = Api.Enums.ApiCollectionType.Interface, // The ui collection was changed
+    Current   = Api.Enums.ApiCollectionType.Current,   // The current collection was changed
+    Individual,                                     // An individual collection was changed
+    Inactive,                                       // A collection was added or removed
+    Temporary,                                      // A temporary collections was set or deleted via IPC
 }
 
 public static class CollectionTypeExtensions
 {
     public static bool IsSpecial( this CollectionType collectionType )
-        => collectionType is >= CollectionType.Yourself and < CollectionType.Inactive;
+        => collectionType is >= CollectionType.Yourself and < CollectionType.Default;
 
     public static readonly (CollectionType, string, string)[] Special = Enum.GetValues< CollectionType >()
        .Where( IsSpecial )
@@ -216,7 +216,9 @@ public static class CollectionTypeExtensions
     public static bool TryParse( string text, out CollectionType type )
     {
         if( Enum.TryParse( text, true, out type ) )
+        {
             return type is not CollectionType.Inactive and not CollectionType.Temporary;
+        }
 
         if( string.Equals( text, "character", StringComparison.OrdinalIgnoreCase ) )
         {
@@ -245,7 +247,9 @@ public static class CollectionTypeExtensions
         foreach( var t in Enum.GetValues< CollectionType >() )
         {
             if( t is CollectionType.Inactive or CollectionType.Temporary )
+            {
                 continue;
+            }
 
             if( string.Equals( text, t.ToName(), StringComparison.OrdinalIgnoreCase ) )
             {

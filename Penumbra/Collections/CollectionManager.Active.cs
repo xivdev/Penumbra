@@ -45,7 +45,7 @@ public partial class ModCollection
             => Individuals.TryGetCollection( identifier, out var c ) ? c : Default;
 
         // Special Collections
-        private readonly ModCollection?[] _specialCollections = new ModCollection?[Enum.GetValues< CollectionType >().Length - 4];
+        private readonly ModCollection?[] _specialCollections = new ModCollection?[Enum.GetValues< Api.Enums.ApiCollectionType >().Length - 3];
 
         // Return the configured collection for the given type or null.
         // Does not handle Inactive, use ByName instead.

@@ -59,12 +59,16 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider< string, string[] >         ReverseResolvePlayerPath;
 
     // Collections
-    internal readonly FuncProvider< IList< string > >                                GetCollections;
-    internal readonly FuncProvider< string >                                         GetCurrentCollectionName;
-    internal readonly FuncProvider< string >                                         GetDefaultCollectionName;
-    internal readonly FuncProvider< string >                                         GetInterfaceCollectionName;
-    internal readonly FuncProvider< string, (string, bool) >                         GetCharacterCollectionName;
-    internal readonly FuncProvider< string, IReadOnlyDictionary< string, object? > > GetChangedItems;
+    internal readonly FuncProvider< IList< string > >                                             GetCollections;
+    internal readonly FuncProvider< string >                                                      GetCurrentCollectionName;
+    internal readonly FuncProvider< string >                                                      GetDefaultCollectionName;
+    internal readonly FuncProvider< string >                                                      GetInterfaceCollectionName;
+    internal readonly FuncProvider< string, (string, bool) >                                      GetCharacterCollectionName;
+    internal readonly FuncProvider< ApiCollectionType, string >                                      GetCollectionForType;
+    internal readonly FuncProvider< ApiCollectionType, string, bool, bool, (PenumbraApiEc, string) > SetCollectionForType;
+    internal readonly FuncProvider< int, (bool, bool, string) >                                   GetCollectionForObject;
+    internal readonly FuncProvider< int, string, bool, bool, (PenumbraApiEc, string) >            SetCollectionForObject;
+    internal readonly FuncProvider< string, IReadOnlyDictionary< string, object? > >              GetChangedItems;
 
     // Meta
     internal readonly FuncProvider< string >         GetPlayerMetaManipulations;
@@ -163,6 +167,10 @@ public class PenumbraIpcProviders : IDisposable
         GetDefaultCollectionName   = Ipc.GetDefaultCollectionName.Provider( pi, Api.GetDefaultCollection );
         GetInterfaceCollectionName = Ipc.GetInterfaceCollectionName.Provider( pi, Api.GetInterfaceCollection );
         GetCharacterCollectionName = Ipc.GetCharacterCollectionName.Provider( pi, Api.GetCharacterCollection );
+        GetCollectionForType       = Ipc.GetCollectionForType.Provider( pi, Api.GetCollectionForType );
+        SetCollectionForType       = Ipc.SetCollectionForType.Provider( pi, Api.SetCollectionForType );
+        GetCollectionForObject     = Ipc.GetCollectionForObject.Provider( pi, Api.GetCollectionForObject );
+        SetCollectionForObject     = Ipc.SetCollectionForObject.Provider( pi, Api.SetCollectionForObject );
         GetChangedItems            = Ipc.GetChangedItems.Provider( pi, Api.GetChangedItemsForCollection );
 
         // Meta
@@ -189,7 +197,7 @@ public class PenumbraIpcProviders : IDisposable
         TrySetModPriority       = Ipc.TrySetModPriority.Provider( pi, Api.TrySetModPriority );
         TrySetModSetting        = Ipc.TrySetModSetting.Provider( pi, Api.TrySetModSetting );
         TrySetModSettings       = Ipc.TrySetModSettings.Provider( pi, Api.TrySetModSettings );
-        ModSettingChanged       = Ipc.ModSettingChanged.Provider( pi,
+        ModSettingChanged = Ipc.ModSettingChanged.Provider( pi,
             () => Api.ModSettingChanged += ModSettingChangedEvent,
             () => Api.ModSettingChanged -= ModSettingChangedEvent );
         CopyModSettings = Ipc.CopyModSettings.Provider( pi, Api.CopyModSettings );
@@ -262,6 +270,10 @@ public class PenumbraIpcProviders : IDisposable
         GetDefaultCollectionName.Dispose();
         GetInterfaceCollectionName.Dispose();
         GetCharacterCollectionName.Dispose();
+        GetCollectionForType.Dispose();
+        SetCollectionForType.Dispose();
+        GetCollectionForObject.Dispose();
+        SetCollectionForObject.Dispose();
         GetChangedItems.Dispose();
 
         // Meta

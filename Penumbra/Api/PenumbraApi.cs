@@ -23,7 +23,7 @@ namespace Penumbra.Api;
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => ( 4, 17 );
+        => ( 4, 18 );
 
     private Penumbra?        _penumbra;
     private Lumina.GameData? _lumina;
@@ -300,6 +300,132 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             Penumbra.Log.Error( $"Could not obtain Changed Items for {collectionName}:\n{e}" );
             throw;
         }
+    }
+
+    public string GetCollectionForType( Enums.ApiCollectionType type )
+    {
+        CheckInitialized();
+        if( !Enum.IsDefined( type ) )
+            return string.Empty;
+
+        var collection = Penumbra.CollectionManager.ByType( ( CollectionType )type );
+        return collection?.Name ?? string.Empty;
+    }
+
+    public (PenumbraApiEc, string OldCollection) SetCollectionForType( Enums.ApiCollectionType type, string collectionName, bool allowCreateNew, bool allowDelete )
+    {
+        CheckInitialized();
+        if( !Enum.IsDefined( type ) )
+            return ( PenumbraApiEc.InvalidArgument, string.Empty );
+
+        var oldCollection = Penumbra.CollectionManager.ByType( ( CollectionType )type )?.Name ?? string.Empty;
+
+        if( collectionName.Length == 0 )
+        {
+            if( oldCollection.Length == 0 )
+            {
+                return ( PenumbraApiEc.NothingChanged, oldCollection );
+            }
+
+            if( !allowDelete || type is Enums.ApiCollectionType.Current or Enums.ApiCollectionType.Default or Enums.ApiCollectionType.Interface )
+            {
+                return ( PenumbraApiEc.AssignmentDeletionDisallowed, oldCollection );
+            }
+
+            Penumbra.CollectionManager.RemoveSpecialCollection( (CollectionType) type );
+            return ( PenumbraApiEc.Success, oldCollection );
+        }
+
+        if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            return (PenumbraApiEc.CollectionMissing, oldCollection);
+        }
+
+        if( oldCollection.Length == 0 )
+        {
+            if( !allowCreateNew )
+            {
+                return ( PenumbraApiEc.AssignmentCreationDisallowed, oldCollection );
+            }
+
+            Penumbra.CollectionManager.CreateSpecialCollection( ( CollectionType )type );
+        }
+        else if( oldCollection == collection.Name )
+        {
+            return ( PenumbraApiEc.NothingChanged, oldCollection );
+        }
+
+        Penumbra.CollectionManager.SetCollection( collection, (CollectionType) type );
+        return ( PenumbraApiEc.Success, oldCollection );
+    }
+
+    public (bool ObjectValid, bool IndividualSet, string EffectiveCollection) GetCollectionForObject( int gameObjectIdx )
+    {
+        CheckInitialized();
+        var id = AssociatedIdentifier( gameObjectIdx );
+        if( !id.IsValid )
+        {
+            return ( false, false, Penumbra.CollectionManager.Default.Name );
+        }
+
+        if( Penumbra.CollectionManager.Individuals.Individuals.TryGetValue( id, out var collection ) )
+        {
+            return ( true, true, collection.Name );
+        }
+
+        AssociatedCollection( gameObjectIdx, out collection );
+        return ( true, false, collection.Name );
+    }
+
+    public (PenumbraApiEc, string OldCollection) SetCollectionForObject( int gameObjectIdx, string collectionName, bool allowCreateNew, bool allowDelete )
+    {
+        CheckInitialized();
+        var id = AssociatedIdentifier( gameObjectIdx );
+        if( !id.IsValid )
+        {
+            return ( PenumbraApiEc.InvalidIdentifier, Penumbra.CollectionManager.Default.Name );
+        }
+
+        var oldCollection = Penumbra.CollectionManager.Individuals.Individuals.TryGetValue( id, out var c ) ? c.Name : string.Empty;
+
+        if( collectionName.Length == 0 )
+        {
+            if( oldCollection.Length == 0 )
+            {
+                return (PenumbraApiEc.NothingChanged, oldCollection);
+            }
+
+            if( !allowDelete )
+            {
+                return (PenumbraApiEc.AssignmentDeletionDisallowed, oldCollection);
+            }
+            var idx = Penumbra.CollectionManager.Individuals.Index( id );
+            Penumbra.CollectionManager.RemoveIndividualCollection(idx  );
+            return (PenumbraApiEc.Success, oldCollection);
+        }
+
+        if( !Penumbra.CollectionManager.ByName( collectionName, out var collection ) )
+        {
+            return (PenumbraApiEc.CollectionMissing, oldCollection);
+        }
+
+        if( oldCollection.Length == 0 )
+        {
+            if( !allowCreateNew )
+            {
+                return (PenumbraApiEc.AssignmentCreationDisallowed, oldCollection);
+            }
+
+            var ids = Penumbra.CollectionManager.Individuals.GetGroup( id );
+            Penumbra.CollectionManager.CreateIndividualCollection( ids );
+        }
+        else if( oldCollection == collection.Name )
+        {
+            return (PenumbraApiEc.NothingChanged, oldCollection);
+        }
+
+        Penumbra.CollectionManager.SetCollection( collection, CollectionType.Individual, Penumbra.CollectionManager.Individuals.Index( id ) );
+        return (PenumbraApiEc.Success, oldCollection);
     }
 
     public IList< string > GetCollections()
@@ -867,7 +993,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     // Return the collection associated to a current game object. If it does not exist, return the default collection.
     // If the index is invalid, returns false and the default collection.
-    private unsafe bool AssociatedCollection( int gameObjectIdx, out ModCollection collection )
+    private static unsafe bool AssociatedCollection( int gameObjectIdx, out ModCollection collection )
     {
         collection = Penumbra.CollectionManager.Default;
         if( gameObjectIdx < 0 || gameObjectIdx >= Dalamud.Objects.Length )
@@ -883,6 +1009,16 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         return true;
+    }
+
+    private static unsafe ActorIdentifier AssociatedIdentifier( int gameObjectIdx )
+    {
+        if( gameObjectIdx < 0 || gameObjectIdx >= Dalamud.Objects.Length )
+        {
+            return ActorIdentifier.Invalid;
+        }
+        var ptr = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
+        return Penumbra.Actors.FromObject( ptr, out _, false, true );
     }
 
     // Resolve a path given by string for a specific collection.
