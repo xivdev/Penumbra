@@ -204,7 +204,7 @@ public sealed partial class ActorManager : IDisposable
         if (agent == null || agent->Data == null)
             return ActorIdentifier.Invalid;
 
-        var worldId = *(ushort*)((byte*)agent->Data + 0xC0);
+        var worldId = *(ushort*)((byte*)agent->Data + Offsets.AgentCharaCardDataWorldId);
         return CreatePlayer(new ByteString(agent->Data->Name.StringPtr), worldId);
     }
 

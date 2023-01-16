@@ -95,7 +95,7 @@ public unsafe partial class PathResolver
         {
             // Shortcut because this is called all the time.
             // Same thing is checked at the beginning of the original function.
-            if( *( int* )( drawObject + 0x90c ) == 0 )
+            if( *( int* )( drawObject + Offsets.UpdateModelSkip ) == 0 )
             {
                 return;
             }
@@ -133,7 +133,7 @@ public unsafe partial class PathResolver
         {
             // Shortcut because this is also called all the time.
             // Same thing is checked at the beginning of the original function.
-            if( ( *( byte* )( drawObject + 0xa30 ) & 1 ) == 0 || *( ulong* )( drawObject + 0xa28 ) == 0 )
+            if( ( *( byte* )( drawObject + Offsets.GetEqpIndirectSkip1 ) & 1 ) == 0 || *( ulong* )( drawObject + Offsets.GetEqpIndirectSkip2 ) == 0 )
             {
                 return;
             }

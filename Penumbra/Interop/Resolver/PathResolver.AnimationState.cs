@@ -129,7 +129,7 @@ public unsafe partial class PathResolver
             {
                 if( timeline != IntPtr.Zero )
                 {
-                    var getGameObjectIdx = ( ( delegate* unmanaged< IntPtr, int >** )timeline )[ 0 ][ 28 ];
+                    var getGameObjectIdx = ( ( delegate* unmanaged< IntPtr, int >** )timeline )[ 0 ][ Offsets.GetGameObjectIdxVfunc ];
                     var idx              = getGameObjectIdx( timeline );
                     if( idx >= 0 && idx < Dalamud.Objects.Length )
                     {
@@ -192,7 +192,7 @@ public unsafe partial class PathResolver
         private void LoadSomePapDetour( IntPtr a1, int a2, IntPtr a3, int a4 )
         {
             using var performance = Penumbra.Performance.Measure( PerformanceType.LoadPap );
-            var       timelinePtr = a1 + 0x50;
+            var       timelinePtr = a1 + Offsets.TimeLinePtr;
             var       last        = _animationLoadData;
             if( timelinePtr != IntPtr.Zero )
             {

@@ -7,6 +7,7 @@ using Dalamud.Game.ClientState.Objects.SubKinds;
 using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
+using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop;
@@ -23,10 +24,10 @@ public unsafe partial class ObjectReloader
 
     // VFuncs that disable and enable draw, used only for GPose actors.
     private static void DisableDraw( GameObject actor )
-        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 17 ]( actor.Address );
+        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ Offsets.DisableDrawVfunc ]( actor.Address );
 
     private static void EnableDraw( GameObject actor )
-        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ 16 ]( actor.Address );
+        => ( ( delegate* unmanaged< IntPtr, void >** )actor.Address )[ 0 ][ Offsets.EnableDrawVfunc ]( actor.Address );
 
     // Check whether we currently are in GPose.
     // Also clear the name list.

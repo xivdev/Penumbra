@@ -1,5 +1,6 @@
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using Penumbra.GameData;
 
 namespace Penumbra.Interop;
 
@@ -51,6 +52,6 @@ public static unsafe class FontReloader
         }
 
         AtkModule       = &atkModule->AtkModule;
-        ReloadFontsFunc = ( ( delegate* unmanaged< AtkModule*, bool, bool, void >* )AtkModule->vtbl )[ 43 ];
+        ReloadFontsFunc = ( ( delegate* unmanaged< AtkModule*, bool, bool, void >* )AtkModule->vtbl )[ Offsets.ReloadFontsVfunc ];
     }
 }

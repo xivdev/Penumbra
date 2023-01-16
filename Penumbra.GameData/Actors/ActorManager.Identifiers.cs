@@ -306,7 +306,7 @@ public partial class ActorManager
             {
                 var dataId = actor->DataID;
                 // Special case for squadron that is also in the game functions, cf. E8 ?? ?? ?? ?? 89 87 ?? ?? ?? ?? 4C 89 BF
-                if (dataId == 0xf845d)
+                if (dataId == 0xF845D)
                     dataId = actor->GetNpcID();
                 if (MannequinIds.Contains(dataId))
                 {
@@ -338,7 +338,7 @@ public partial class ActorManager
                 if (owner == null)
                     return ActorIdentifier.Invalid;
 
-                var dataId    = GetCompanionId(actor, owner);
+                var dataId    = GetCompanionId(actor, (Character*) owner);
                 var name      = new ByteString(owner->Name);
                 var homeWorld = ((Character*)owner)->HomeWorld;
                 return check
@@ -365,13 +365,13 @@ public partial class ActorManager
     /// Obtain the current companion ID for an object by its actor and owner.
     /// </summary>
     private unsafe uint GetCompanionId(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor,
-        FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner) // TODO: CS Update
+        Character* owner) // TODO: CS Update
     {
         return (ObjectKind)actor->ObjectKind switch
         {
-            ObjectKind.MountType => *(ushort*)((byte*)owner + 0x650 + 0x18),
-            (ObjectKind)15       => *(ushort*)((byte*)owner + 0x860 + 0x18),
-            ObjectKind.Companion => *(ushort*)((byte*)actor + 0x1AAC),
+            ObjectKind.MountType => owner->Mount.MountId,
+            (ObjectKind)15       => owner->Ornament.OrnamentId,
+            ObjectKind.Companion => actor->DataID,
             _                    => actor->DataID,
         };
     }

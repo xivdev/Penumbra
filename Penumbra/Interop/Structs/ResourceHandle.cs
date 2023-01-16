@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 
 namespace Penumbra.Interop.Structs;
@@ -87,10 +88,10 @@ public unsafe struct ResourceHandle
 
     // May return null.
     public static byte* GetData( ResourceHandle* handle )
-        => ( ( delegate* unmanaged< ResourceHandle*, byte* > )handle->VTable[ 23 ] )( handle );
+        => ( ( delegate* unmanaged< ResourceHandle*, byte* > )handle->VTable[ Offsets.ResourceHandleGetDataVfunc ] )( handle );
 
     public static ulong GetLength( ResourceHandle* handle )
-        => ( ( delegate* unmanaged< ResourceHandle*, ulong > )handle->VTable[ 17 ] )( handle );
+        => ( ( delegate* unmanaged< ResourceHandle*, ulong > )handle->VTable[ Offsets.ResourceHandleGetLengthVfunc ] )( handle );
 
 
     // Only use these if you know what you are doing.
