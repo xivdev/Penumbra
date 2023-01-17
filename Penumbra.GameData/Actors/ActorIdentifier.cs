@@ -25,7 +25,7 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
     // @formatter:on
 
     public ActorIdentifier CreatePermanent()
-        => new(Type, Kind, Index, DataId, PlayerName.IsEmpty ? PlayerName : PlayerName.Clone());
+        => new(Type, Kind, Index, DataId, PlayerName.IsEmpty || PlayerName.IsOwned ? PlayerName : PlayerName.Clone());
 
     public bool Equals(ActorIdentifier other)
     {

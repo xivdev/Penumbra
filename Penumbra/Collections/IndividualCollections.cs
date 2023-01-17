@@ -145,11 +145,13 @@ public sealed partial class IndividualCollections
             return false;
         }
 
-        _assignments.Add( ( displayName, identifiers, collection ) );
-        foreach( var identifier in identifiers )
+        for( var i = 0; i < identifiers.Length; ++i )
         {
-            _individuals.Add( identifier, collection );
+            identifiers[ i ] = identifiers[ i ].CreatePermanent();
+            _individuals.Add( identifiers[ i ], collection );
         }
+
+        _assignments.Add( ( displayName, identifiers, collection ) );
 
         return true;
     }
