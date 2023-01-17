@@ -244,6 +244,7 @@ public partial class ConfigWindow
             var buttonWidth2 = new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 );
 
             var change = DrawNewCurrentPlayerCollection();
+            change |= DrawNewTargetCollection();
 
             change |= DrawNewPlayerCollection( buttonWidth1, width );
             ImGui.SameLine();
@@ -273,6 +274,28 @@ public partial class ConfigWindow
             };
 
             if( ImGuiUtil.DrawDisabledButton( "Assign Currently Played Character", _window._inputTextWidth, tt, result != IndividualCollections.AddResult.Valid ) )
+            {
+                Penumbra.CollectionManager.Individuals.Add( new[] { player }, Penumbra.CollectionManager.Default );
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool DrawNewTargetCollection()
+        {
+            var target = Dalamud.Targets.Target;
+            var player = Penumbra.Actors.FromObject( target, false, true );
+            var result = Penumbra.CollectionManager.Individuals.CanAdd( player );
+            var tt = result switch
+            {
+                IndividualCollections.AddResult.Valid      => $"Assign a collection to {player}.",
+                IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
+                IndividualCollections.AddResult.Invalid    => "No valid character in target detected.",
+                _                                          => string.Empty,
+            };
+
+            if( ImGuiUtil.DrawDisabledButton( "Assign Current Target", _window._inputTextWidth, tt, result != IndividualCollections.AddResult.Valid ) )
             {
                 Penumbra.CollectionManager.Individuals.Add( new[] { player }, Penumbra.CollectionManager.Default );
                 return true;
