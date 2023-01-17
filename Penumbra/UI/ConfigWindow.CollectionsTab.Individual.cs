@@ -243,8 +243,10 @@ public partial class ConfigWindow
             var buttonWidth1 = new Vector2( 90  * ImGuiHelpers.GlobalScale, 0 );
             var buttonWidth2 = new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 );
 
-            var change = DrawNewCurrentPlayerCollection();
-            change |= DrawNewTargetCollection();
+            var assignWidth = new Vector2((_window._inputTextWidth.X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
+            var change      = DrawNewCurrentPlayerCollection(assignWidth);
+            ImGui.SameLine();
+            change |= DrawNewTargetCollection(assignWidth);
 
             change |= DrawNewPlayerCollection( buttonWidth1, width );
             ImGui.SameLine();
@@ -261,7 +263,7 @@ public partial class ConfigWindow
             }
         }
 
-        private bool DrawNewCurrentPlayerCollection()
+        private static bool DrawNewCurrentPlayerCollection(Vector2 width)
         {
             var player = Penumbra.Actors.GetCurrentPlayer();
             var result = Penumbra.CollectionManager.Individuals.CanAdd( player );
@@ -273,7 +275,8 @@ public partial class ConfigWindow
                 _                                          => string.Empty,
             };
 
-            if( ImGuiUtil.DrawDisabledButton( "Assign Currently Played Character", _window._inputTextWidth, tt, result != IndividualCollections.AddResult.Valid ) )
+
+            if( ImGuiUtil.DrawDisabledButton( "Assign Current Player", width, tt, result != IndividualCollections.AddResult.Valid ) )
             {
                 Penumbra.CollectionManager.Individuals.Add( new[] { player }, Penumbra.CollectionManager.Default );
                 return true;
@@ -282,7 +285,7 @@ public partial class ConfigWindow
             return false;
         }
 
-        private bool DrawNewTargetCollection()
+        private static bool DrawNewTargetCollection(Vector2 width)
         {
             var target = Dalamud.Targets.Target;
             var player = Penumbra.Actors.FromObject( target, false, true );
@@ -294,8 +297,7 @@ public partial class ConfigWindow
                 IndividualCollections.AddResult.Invalid    => "No valid character in target detected.",
                 _                                          => string.Empty,
             };
-
-            if( ImGuiUtil.DrawDisabledButton( "Assign Current Target", _window._inputTextWidth, tt, result != IndividualCollections.AddResult.Valid ) )
+            if( ImGuiUtil.DrawDisabledButton( "Assign Current Target", width, tt, result != IndividualCollections.AddResult.Valid ) )
             {
                 Penumbra.CollectionManager.Individuals.Add( new[] { player }, Penumbra.CollectionManager.Default );
                 return true;
