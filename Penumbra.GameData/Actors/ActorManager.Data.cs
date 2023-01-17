@@ -14,6 +14,7 @@ using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
 using Lumina.Text;
 using Penumbra.GameData.Data;
@@ -227,7 +228,7 @@ public sealed partial class ActorManager : IDisposable
     private unsafe bool SearchPlayerCustomize(Character* character, int idx, out ActorIdentifier id)
     {
         var other = (Character*)_objects.GetObjectAddress(idx);
-        if (other == null || !CustomizeData.Equals((CustomizeData*)character->CustomizeData, (CustomizeData*)other->CustomizeData))
+        if (other == null || !CustomizeData.ScreenActorEquals((CustomizeData*)character->CustomizeData, (CustomizeData*)other->CustomizeData))
         {
             id = ActorIdentifier.Invalid;
             return false;
@@ -246,14 +247,23 @@ public sealed partial class ActorManager : IDisposable
 
     private unsafe ActorIdentifier SearchPlayersCustomize(Character* gameObject)
     {
+        static bool Compare(Character* a, Character* b)
+        {
+            var data1  = (CustomizeData*)a->CustomizeData;
+            var data2  = (CustomizeData*)b->CustomizeData;
+            var equals = CustomizeData.ScreenActorEquals(data1, data2);
+            return equals;
+        }
+
         for (var i = 0; i < (int)ScreenActor.CutsceneStart; i += 2)
         {
             var obj = (GameObject*)_objects.GetObjectAddress(i);
             if (obj != null
              && obj->ObjectKind is (byte)ObjectKind.Player
-             && CustomizeData.Equals((CustomizeData*)gameObject->CustomizeData, (CustomizeData*)((Character*)obj)->CustomizeData))
+             && Compare(gameObject, (Character*)obj))
                 return FromObject(obj, out _, false, true);
         }
+
         return ActorIdentifier.Invalid;
     }
 
@@ -281,15 +291,18 @@ public sealed partial class ActorManager : IDisposable
     public unsafe bool ResolvePvPBannerPlayer(ScreenActor type, out ActorIdentifier id)
     {
         id = ActorIdentifier.Invalid;
-        var addon = _gameGui.GetAddonByName("PvPMKSIntroduction");
-        if (addon == IntPtr.Zero)
+        if (!_clientState.IsPvPExcludingDen)
+            return false;
+
+        var addon = (AtkUnitBase*)_gameGui.GetAddonByName("PvPMap");
+        if (addon == null || addon->IsVisible)
             return false;
 
         var obj = (Character*)_objects.GetObjectAddress((int)type);
         if (obj == null)
             return false;
 
-        var identifier = type switch
+        id = type switch
         {
             ScreenActor.CharacterScreen => SearchPlayersCustomize(obj),
             ScreenActor.ExamineScreen   => SearchPlayersCustomize(obj),
