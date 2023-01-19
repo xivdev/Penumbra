@@ -44,13 +44,6 @@ public partial class ConfigWindow
                 return;
             }
 
-            unsafe
-            {
-                Dalamud.SigScanner.TryGetStaticAddressFromSig( Sigs.ResourceManager, out var x );
-                ImGui.TextUnformatted( $"Static Address: 0x{( ulong )ResourceLoader.ResourceManager:X} (+0x{(ulong) ResourceLoader.ResourceManager - (ulong) Dalamud.SigScanner.Module.BaseAddress:X})" );
-                ImGui.TextUnformatted( $"Actual Address: 0x{( ulong )*ResourceLoader.ResourceManager:X}" );
-            }
-
             // Filter for resources containing the input string.
             ImGui.SetNextItemWidth( -1 );
             ImGui.InputTextWithHint( "##resourceFilter", "Filter...", ref _resourceManagerFilter, Utf8GamePath.MaxGamePathLength );
@@ -64,6 +57,12 @@ public partial class ConfigWindow
             unsafe
             {
                 ResourceLoader.IterateGraphs( DrawCategoryContainer );
+            }
+            ImGui.NewLine();
+            unsafe
+            {
+                ImGui.TextUnformatted( $"Static Address: 0x{( ulong )ResourceLoader.ResourceManager:X} (+0x{( ulong )ResourceLoader.ResourceManager - ( ulong )Dalamud.SigScanner.Module.BaseAddress:X})" );
+                ImGui.TextUnformatted( $"Actual Address: 0x{( ulong )*ResourceLoader.ResourceManager:X}" );
             }
         }
 

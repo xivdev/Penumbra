@@ -153,9 +153,8 @@ public unsafe partial class ResourceLoader
         ref var manager = ref *ResourceManager;
         var     catIdx  = ( uint )cat >> 0x18;
         cat = ( ResourceCategory )( ushort )cat;
-        var category = ( ResourceGraph.CategoryContainer* )manager->ResourceGraph->ContainerArray + ( int )cat;
-        var extMap = FindInMap( ( StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* )category->CategoryMaps[ catIdx ],
-            ( uint )ext );
+        ref var category = ref manager->ResourceGraph->ContainerArraySpan[(int) cat];
+        var extMap = FindInMap( category.CategoryMapsSpan[ (int) catIdx ].Value, ( uint )ext );
         if( extMap == null )
         {
             return null;
