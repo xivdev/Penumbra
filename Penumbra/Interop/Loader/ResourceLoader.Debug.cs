@@ -38,7 +38,7 @@ public unsafe partial class ResourceLoader
     }
 
     // A static pointer to the SE Resource Manager
-    [Signature( Sigs.ResourceManager, ScanType = ScanType.StaticAddress, UseFlags = SignatureUseFlags.Pointer )]
+    [Signature( Sigs.ResourceManager, ScanType = ScanType.StaticAddress)]
     public static ResourceManager** ResourceManager;
 
     // Gather some debugging data about penumbra-loaded objects.
@@ -177,11 +177,11 @@ public unsafe partial class ResourceLoader
         ref var manager = ref *ResourceManager;
         foreach( var resourceType in Enum.GetValues< ResourceCategory >().SkipLast( 1 ) )
         {
-            var graph = ( ResourceGraph.CategoryContainer* )manager->ResourceGraph->ContainerArray + ( int )resourceType;
+            ref var graph = ref manager->ResourceGraph->ContainerArraySpan[(int) resourceType];
             for( var i = 0; i < 20; ++i )
             {
-                var map = ( StdMap< uint, Pointer< StdMap< uint, Pointer< ResourceHandle > > > >* )graph->CategoryMaps[ i ];
-                if( map != null )
+                var map = graph.CategoryMapsSpan[i];
+                if( map.Value != null )
                 {
                     action( resourceType, map, i );
                 }

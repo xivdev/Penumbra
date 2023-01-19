@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
@@ -9,6 +10,7 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.GameData;
 using Penumbra.Interop.Loader;
 using Penumbra.String.Classes;
 
@@ -40,6 +42,13 @@ public partial class ConfigWindow
             if( !tab )
             {
                 return;
+            }
+
+            unsafe
+            {
+                Dalamud.SigScanner.TryGetStaticAddressFromSig( Sigs.ResourceManager, out var x );
+                ImGui.TextUnformatted( $"Static Address: 0x{( ulong )ResourceLoader.ResourceManager:X} (+0x{(ulong) ResourceLoader.ResourceManager - (ulong) Dalamud.SigScanner.Module.BaseAddress:X})" );
+                ImGui.TextUnformatted( $"Actual Address: 0x{( ulong )*ResourceLoader.ResourceManager:X}" );
             }
 
             // Filter for resources containing the input string.

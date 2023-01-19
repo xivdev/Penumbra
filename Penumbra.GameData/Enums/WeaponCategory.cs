@@ -1,5 +1,3 @@
-using System;
-
 namespace Penumbra.GameData.Enums;
 
 public enum WeaponCategory : byte

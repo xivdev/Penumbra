@@ -4,7 +4,7 @@ public static class Sigs
 {
     // ResourceLoader.Debug
     public const string ResourceHandleDestructor = "48 89 5C 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 B8";
-    public const string ResourceManager          = "48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 32 C0";
+    public const string ResourceManager          = "48 8B 05 ?? ?? ?? ?? 33 ED F0";
 
     // ResourceLoader.Replacement
     public const string GetResourceSync  = "E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00";
