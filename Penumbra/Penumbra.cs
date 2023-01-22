@@ -99,7 +99,7 @@ public class Penumbra : IDalamudPlugin
             ItemData               = new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language );
             Actors                 = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.GameData, Dalamud.GameGui, ResolveCutscene );
 
-            Framework        = new FrameworkManager();
+            Framework        = new FrameworkManager(Dalamud.Framework, Log);
             CharacterUtility = new CharacterUtility();
             Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() );
             Config = Configuration.Load();

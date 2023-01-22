@@ -43,15 +43,13 @@ public unsafe partial class PathResolver
         {
             switch( type )
             {
-                case ResourceType.Tex:
-                case ResourceType.Shpk:
-                    if( _mtrlData.Value.Valid )
-                    {
-                        collection = _mtrlData.Value;
-                        return true;
-                    }
-
-                    break;
+                case ResourceType.Tex when _mtrlData.Value.Valid:
+                case ResourceType.Shpk when _mtrlData.Value.Valid:
+                    collection = _mtrlData.Value;
+                    return true;
+                case ResourceType.Scd when _avfxData.Value.Valid:
+                    collection = _avfxData.Value;
+                    return true;
                 case ResourceType.Atex when _avfxData.Value.Valid:
                     collection = _avfxData.Value;
                     return true;
