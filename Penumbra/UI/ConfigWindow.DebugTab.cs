@@ -112,7 +112,7 @@ public partial class ConfigWindow
             PrintValue( "Web Server Enabled", ( _window._penumbra.WebServer != null ).ToString() );
         }
 
-        [Conditional("DEBUG")]
+        [Conditional( "DEBUG" )]
         private static void DrawPerformanceTab()
         {
             ImGui.NewLine();
@@ -284,6 +284,10 @@ public partial class ConfigWindow
                         ImGuiUtil.DrawTableColumn( "Current Avfx Data" );
                         ImGuiUtil.DrawTableColumn( _window._penumbra.PathResolver.CurrentAvfxData.ModCollection.Name );
                         ImGuiUtil.DrawTableColumn( $"0x{_window._penumbra.PathResolver.CurrentAvfxData.AssociatedGameObject:X}" );
+
+                        ImGuiUtil.DrawTableColumn( "Current Resources" );
+                        ImGuiUtil.DrawTableColumn( _window._penumbra.PathResolver.SubfileCount.ToString() );
+                        ImGui.TableNextColumn();
 
                         foreach( var (resource, resolve) in _window._penumbra.PathResolver.ResourceCollections )
                         {
