@@ -223,6 +223,7 @@ public partial class ConfigWindow
                 return;
             }
 
+            ImGui.TextUnformatted( $"Last Game Object: 0x{_window._penumbra.PathResolver.LastGameObject:X} ({_window._penumbra.PathResolver.LastGameObjectData.ModCollection.Name})" );
             using( var drawTree = ImRaii.TreeNode( "Draw Object to Object" ) )
             {
                 if( drawTree )

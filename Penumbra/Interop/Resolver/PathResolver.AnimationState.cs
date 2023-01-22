@@ -58,6 +58,12 @@ public unsafe partial class PathResolver
                     break;
             }
 
+            if( _drawObjectState.LastGameObject != null )
+            {
+                resolveData = _drawObjectState.LastCreatedCollection;
+                return true;
+            }
+
             resolveData = ResolveData.Invalid;
             return false;
         }

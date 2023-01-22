@@ -183,4 +183,10 @@ public partial class PathResolver : IDisposable
 
     internal ResolveData CurrentAvfxData
         => _subFiles.AvfxData;
+
+    internal ResolveData LastGameObjectData
+        => DrawObjects.LastCreatedCollection;
+
+    internal unsafe nint LastGameObject
+        => (nint) DrawObjects.LastGameObject;
 }
