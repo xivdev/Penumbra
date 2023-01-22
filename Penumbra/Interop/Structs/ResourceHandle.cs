@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
+using Penumbra.String;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Structs;
 
@@ -40,7 +42,7 @@ public unsafe struct ResourceHandle
 
     public const int SsoSize = 15;
 
-    public byte* FileName()
+    public byte* FileNamePtr()
     {
         if( FileNameLength > SsoSize )
         {
@@ -53,8 +55,11 @@ public unsafe struct ResourceHandle
         }
     }
 
-    public ReadOnlySpan< byte > FileNameSpan()
-        => new(FileName(), FileNameLength);
+    public ByteString FileName()
+        => ByteString.FromByteStringUnsafe( FileNamePtr(), FileNameLength, true );
+
+    public bool GamePath( out Utf8GamePath path )
+        => Utf8GamePath.FromSpan( new ReadOnlySpan< byte >( FileNamePtr(), FileNameLength ), out path );
 
     [FieldOffset( 0x00 )]
     public void** VTable;

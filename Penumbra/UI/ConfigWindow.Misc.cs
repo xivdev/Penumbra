@@ -33,7 +33,7 @@ public partial class ConfigWindow
 
     // Draw the name of a resource file.
     private static unsafe void Text( ResourceHandle* resource )
-        => Text( resource->FileName(), resource->FileNameLength );
+        => Text( resource->FileName().Path, resource->FileNameLength );
 
     // Draw a ByteString as a selectable.
     internal static unsafe bool Selectable( ByteString s, bool selected )

@@ -182,7 +182,7 @@ public unsafe partial class ResourceLoader
             return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
 
-        if( !Utf8GamePath.FromSpan( fileDescriptor->ResourceHandle->FileNameSpan(), out var gamePath, false ) || gamePath.Length == 0 )
+        if( !fileDescriptor->ResourceHandle->GamePath(out var gamePath) || gamePath.Length == 0 )
         {
             return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
