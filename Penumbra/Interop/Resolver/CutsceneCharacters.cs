@@ -2,11 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Hooking;
-using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using Penumbra.GameData;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -16,17 +12,18 @@ public class CutsceneCharacters : IDisposable
     public const int CutsceneSlots    = 40;
     public const int CutsceneEndIdx   = CutsceneStartIdx + CutsceneSlots;
 
-    private readonly short[] _copiedCharacters = Enumerable.Repeat( ( short )-1, CutsceneSlots ).ToArray();
+    private readonly GameEventManager _events;
+    private readonly short[]          _copiedCharacters = Enumerable.Repeat( ( short )-1, CutsceneSlots ).ToArray();
 
     public IEnumerable< KeyValuePair< int, global::Dalamud.Game.ClientState.Objects.Types.GameObject > > Actors
         => Enumerable.Range( CutsceneStartIdx, CutsceneSlots )
            .Where( i => Dalamud.Objects[ i ] != null )
            .Select( i => KeyValuePair.Create( i, this[ i ] ?? Dalamud.Objects[ i ]! ) );
 
-    public CutsceneCharacters()
+    public CutsceneCharacters(GameEventManager events)
     {
-        SignatureHelper.Initialise( this );
-        Dalamud.Conditions.ConditionChange += Reset;
+        _events = events;
+        Enable();
     }
 
     // Get the related actor to a cutscene actor.
@@ -53,71 +50,36 @@ public class CutsceneCharacters : IDisposable
         return -1;
     }
 
-    public void Reset( ConditionFlag flag, bool value )
+    public unsafe void Enable()
     {
-        switch( flag )
-        {
-            case ConditionFlag.BetweenAreas:
-            case ConditionFlag.BetweenAreas51:
-                if( !value )
-                {
-                    return;
-                }
-
-                break;
-            case ConditionFlag.OccupiedInCutSceneEvent:
-            case ConditionFlag.WatchingCutscene:
-            case ConditionFlag.WatchingCutscene78:
-                if( value )
-                {
-                    return;
-                }
-
-                break;
-            default: return;
-        }
-
-        for( var i = 0; i < _copiedCharacters.Length; ++i )
-        {
-            _copiedCharacters[ i ] = -1;
-        }
+        _events.CopyCharacter       += OnCharacterCopy;
+        _events.CharacterDestructor += OnCharacterDestructor;
     }
 
-    public void Enable()
-        => _copyCharacterHook.Enable();
-
-    public void Disable()
-        => _copyCharacterHook.Disable();
+    public unsafe void Disable()
+    {
+        _events.CopyCharacter       -= OnCharacterCopy;
+        _events.CharacterDestructor -= OnCharacterDestructor;
+    }
 
     public void Dispose()
+        => Disable();
+
+    private unsafe void OnCharacterDestructor( Character* character )
     {
-        _copyCharacterHook.Dispose();
-        Dalamud.Conditions.ConditionChange -= Reset;
+        if( character->GameObject.ObjectIndex is >= CutsceneStartIdx and < CutsceneEndIdx )
+        {
+            var idx = character->GameObject.ObjectIndex - CutsceneStartIdx;
+            _copiedCharacters[ idx ] = -1;
+        }
     }
 
-    private unsafe delegate ulong CopyCharacterDelegate( GameObject* target, GameObject* source, uint unk );
-
-    [Signature( Sigs.CopyCharacter, DetourName = nameof( CopyCharacterDetour ) )]
-    private readonly Hook< CopyCharacterDelegate > _copyCharacterHook = null!;
-
-    private unsafe ulong CopyCharacterDetour( GameObject* target, GameObject* source, uint unk )
+    private unsafe void OnCharacterCopy( Character* target, Character* source )
     {
-        try
+        if( target != null && target->GameObject.ObjectIndex is >= CutsceneStartIdx and < CutsceneEndIdx )
         {
-            if( target != null && target->ObjectIndex is >= CutsceneStartIdx and < CutsceneEndIdx )
-            {
-                var parent = source == null || source->ObjectIndex is < 0 or >= CutsceneStartIdx
-                    ? -1
-                    : source->ObjectIndex;
-                _copiedCharacters[ target->ObjectIndex - CutsceneStartIdx ] = ( short )parent;
-                Penumbra.Log.Debug( $"Set cutscene character {target->ObjectIndex} to {parent}." );
-            }
+            var idx = target->GameObject.ObjectIndex - CutsceneStartIdx;
+            _copiedCharacters[idx] = (short) (source != null ? source->GameObject.ObjectIndex : -1);
         }
-        catch
-        {
-            // ignored
-        }
-
-        return _copyCharacterHook.Original( target, source, unk );
     }
 }

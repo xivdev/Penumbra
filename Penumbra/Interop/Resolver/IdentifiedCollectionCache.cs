@@ -1,25 +1,23 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Dalamud.Hooking;
-using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
-using Penumbra.GameData;
 using Penumbra.GameData.Actors;
 
 namespace Penumbra.Interop.Resolver;
 
 public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable< (IntPtr Address, ActorIdentifier Identifier, ModCollection Collection) >
 {
+    private readonly GameEventManager                                       _events;
     private readonly Dictionary< IntPtr, (ActorIdentifier, ModCollection) > _cache   = new(317);
     private          bool                                                   _dirty   = false;
     private          bool                                                   _enabled = false;
 
-    public IdentifiedCollectionCache()
+    public IdentifiedCollectionCache(GameEventManager events)
     {
-        SignatureHelper.Initialise( this );
+        _events = events;
     }
 
     public void Enable()
@@ -32,8 +30,8 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable< (IntPt
         Penumbra.CollectionManager.CollectionChanged += CollectionChangeClear;
         Penumbra.TempMods.CollectionChanged          += CollectionChangeClear;
         Dalamud.ClientState.TerritoryChanged         += TerritoryClear;
-        _characterDtorHook.Enable();
-        _enabled = true;
+        _events.CharacterDestructor                  += OnCharacterDestruct;
+        _enabled                                     =  true;
     }
 
     public void Disable()
@@ -46,8 +44,8 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable< (IntPt
         Penumbra.CollectionManager.CollectionChanged -= CollectionChangeClear;
         Penumbra.TempMods.CollectionChanged          -= CollectionChangeClear;
         Dalamud.ClientState.TerritoryChanged         -= TerritoryClear;
-        _characterDtorHook.Disable();
-        _enabled = false;
+        _events.CharacterDestructor                  -= OnCharacterDestruct;
+        _enabled                                     =  false;
     }
 
     public ResolveData Set( ModCollection collection, ActorIdentifier identifier, GameObject* data )
@@ -82,7 +80,6 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable< (IntPt
     public void Dispose()
     {
         Disable();
-        _characterDtorHook.Dispose();
         GC.SuppressFinalize( this );
     }
 
@@ -116,14 +113,6 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable< (IntPt
     private void TerritoryClear( object? _1, ushort _2 )
         => _dirty = _cache.Count > 0;
 
-    private delegate void CharacterDestructorDelegate( Character* character );
-
-    [Signature( Sigs.CharacterDestructor, DetourName = nameof( CharacterDestructorDetour ) )]
-    private Hook< CharacterDestructorDelegate > _characterDtorHook = null!;
-
-    private void CharacterDestructorDetour( Character* character )
-    {
-        _cache.Remove( ( IntPtr )character );
-        _characterDtorHook.Original( character );
-    }
+    private void OnCharacterDestruct( Character* character )
+        => _cache.Remove( ( IntPtr )character );
 }

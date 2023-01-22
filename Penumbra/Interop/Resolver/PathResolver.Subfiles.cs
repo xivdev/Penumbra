@@ -24,18 +24,20 @@ public unsafe partial class PathResolver
     // Thus, we need to ensure the correct files are loaded when a material is loaded.
     public class SubfileHelper : IDisposable, IReadOnlyCollection< KeyValuePair< IntPtr, ResolveData > >
     {
-        private readonly ResourceLoader _loader;
+        private readonly ResourceLoader   _loader;
+        private readonly GameEventManager _events;
 
         private readonly ThreadLocal< ResolveData > _mtrlData = new(() => ResolveData.Invalid);
         private readonly ThreadLocal< ResolveData > _avfxData = new(() => ResolveData.Invalid);
 
         private readonly ConcurrentDictionary< IntPtr, ResolveData > _subFileCollection = new();
 
-        public SubfileHelper( ResourceLoader loader )
+        public SubfileHelper( ResourceLoader loader, GameEventManager events )
         {
             SignatureHelper.Initialise( this );
 
             _loader = loader;
+            _events = events;
         }
 
         // Check specifically for shpk and tex files whether we are currently in a material load.
@@ -85,7 +87,7 @@ public unsafe partial class PathResolver
             _apricotResourceLoadHook.Enable();
             _loader.ResourceLoadCustomization += SubfileLoadHandler;
             _loader.ResourceLoaded            += SubfileContainerRequested;
-            _loader.FileLoaded                += SubfileContainerLoaded;
+            _events.ResourceHandleDestructor  += ResourceDestroyed;
         }
 
         public void Disable()
@@ -95,7 +97,7 @@ public unsafe partial class PathResolver
             _apricotResourceLoadHook.Disable();
             _loader.ResourceLoadCustomization -= SubfileLoadHandler;
             _loader.ResourceLoaded            -= SubfileContainerRequested;
-            _loader.FileLoaded                -= SubfileContainerLoaded;
+            _events.ResourceHandleDestructor  -= ResourceDestroyed;
         }
 
         public void Dispose()
@@ -121,16 +123,8 @@ public unsafe partial class PathResolver
             }
         }
 
-        private void SubfileContainerLoaded( ResourceHandle* handle, ByteString path, bool success, bool custom )
-        {
-            switch( handle->FileType )
-            {
-                case ResourceType.Mtrl:
-                case ResourceType.Avfx:
-                    _subFileCollection.TryRemove( ( IntPtr )handle, out _ );
-                    break;
-            }
-        }
+        private void ResourceDestroyed( ResourceHandle* handle )
+            => _subFileCollection.TryRemove( ( IntPtr )handle, out _ );
 
         // We need to set the correct collection for the actual material path that is loaded
         // before actually loading the file.

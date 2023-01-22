@@ -54,6 +54,7 @@ public class Penumbra : IDalamudPlugin
 
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility CharacterUtility { get; private set; } = null!;
+    public static GameEventManager GameEvents { get; private set; } = null!;
     public static MetaFileManager MetaFileManager { get; private set; } = null!;
     public static Mod.Manager ModManager { get; private set; } = null!;
     public static ModCollection.Manager CollectionManager { get; private set; } = null!;
@@ -88,11 +89,12 @@ public class Penumbra : IDalamudPlugin
         try
         {
             Dalamud.Initialize( pluginInterface );
-            Performance = new PerformanceTracker< PerformanceType >( Dalamud.Framework );
+            Performance            = new PerformanceTracker< PerformanceType >( Dalamud.Framework );
             Log                    = new Logger();
             DevPenumbraExists      = CheckDevPluginPenumbra();
             IsNotInstalledPenumbra = CheckIsNotInstalled();
             IsValidSourceRepo      = CheckSourceRepo();
+            GameEvents             = new GameEventManager();
             Identifier             = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData );
             GamePathParser         = GameData.GameData.GetGamePathParser();
             StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData );
@@ -305,6 +307,7 @@ public class Penumbra : IDalamudPlugin
         PathResolver?.Dispose();
         ResourceLogger?.Dispose();
         ResourceLoader?.Dispose();
+        GameEvents?.Dispose();
         CharacterUtility?.Dispose();
         Performance?.Dispose();
     }

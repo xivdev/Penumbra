@@ -3,8 +3,7 @@ namespace Penumbra.GameData;
 public static class Sigs
 {
     // ResourceLoader.Debug
-    public const string ResourceHandleDestructor = "48 89 5C 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 B8";
-    public const string ResourceManager          = "48 8B 05 ?? ?? ?? ?? 33 ED F0";
+    public const string ResourceManager = "48 8B 05 ?? ?? ?? ?? 33 ED F0";
 
     // ResourceLoader.Replacement
     public const string GetResourceSync  = "E8 ?? ?? 00 00 48 8D 8F ?? ?? 00 00 48 89 87 ?? ?? 00 00";
@@ -19,10 +18,10 @@ public static class Sigs
     public const string LoadTexFileExtern = "E8 ?? ?? ?? ?? 0F B6 E8 48 8B CB E8";
     public const string LoadMdlFileExtern = "E8 ?? ?? ?? ?? EB 02 B0 F1";
 
-    // CutsceneCharacters
-    public const string CopyCharacter = "E8 ?? ?? ?? ?? 0F B6 9F ?? ?? ?? ?? 48 8D 8F";
+    // GameEventManager
+    public const string ResourceHandleDestructor = "48 89 5C 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 B8";
+    public const string CopyCharacter            = "E8 ?? ?? ?? ?? 0F B6 9F ?? ?? ?? ?? 48 8D 8F";
 
-    // IdentifiedCollectionCache
     public const string CharacterDestructor =
         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8D 05 ?? ?? ?? ?? 48 8B D9 48 89 01 48 8D 05 ?? ?? ?? ?? 48 89 81 ?? ?? ?? ?? 48 8D 05";
 

@@ -24,10 +24,10 @@ public partial class PathResolver : IDisposable
     public bool Enabled { get; private set; }
 
     private readonly         ResourceLoader            _loader;
-    private static readonly  CutsceneCharacters        Cutscenes   = new();
+    private static readonly  CutsceneCharacters        Cutscenes   = new(Penumbra.GameEvents);
     private static readonly  DrawObjectState           DrawObjects = new();
     private static readonly  BitArray                  ValidHumanModels;
-    internal static readonly IdentifiedCollectionCache IdentifiedCache = new();
+    internal static readonly IdentifiedCollectionCache IdentifiedCache = new(Penumbra.GameEvents);
     private readonly         AnimationState            _animations;
     private readonly         PathState                 _paths;
     private readonly         MetaState                 _meta;
@@ -43,7 +43,7 @@ public partial class PathResolver : IDisposable
         _animations = new AnimationState( DrawObjects );
         _paths      = new PathState( this );
         _meta       = new MetaState( _paths.HumanVTable );
-        _subFiles   = new SubfileHelper( _loader );
+        _subFiles   = new SubfileHelper( _loader, Penumbra.GameEvents );
     }
 
     // The modified resolver that handles game path resolving.
@@ -174,6 +174,9 @@ public partial class PathResolver : IDisposable
 
     internal IEnumerable< KeyValuePair< IntPtr, ResolveData > > ResourceCollections
         => _subFiles;
+
+    internal int SubfileCount
+        => _subFiles.Count;
 
     internal ResolveData CurrentMtrlData
         => _subFiles.MtrlData;
