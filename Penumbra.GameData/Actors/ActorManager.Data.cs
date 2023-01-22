@@ -13,6 +13,7 @@ using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.GeneratedSheets;
@@ -204,21 +205,15 @@ public sealed partial class ActorManager : IDisposable
     public unsafe bool ResolvePartyBannerPlayer(ScreenActor type, out ActorIdentifier id)
     {
         id = ActorIdentifier.Invalid;
-        var addon = _gameGui.GetAddonByName("BannerParty");
-        if (addon == IntPtr.Zero)
+        var addon = Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.BannerParty);
+        if (addon == null || !addon->IsAgentActive())
             return false;
 
         var idx = (ushort)type - (ushort)ScreenActor.CharacterScreen;
         if (idx is < 0 or > 7)
             return true;
 
-        if (idx == 0)
-        {
-            id = GetCurrentPlayer();
-            return true;
-        }
-
-        var obj = GroupManager.Instance()->GetPartyMemberByIndex(idx - 1);
+        var obj = GroupManager.Instance()->GetPartyMemberByIndex(idx);
         if (obj != null)
             id = CreatePlayer(new ByteString(obj->Name), obj->HomeWorld);
 
