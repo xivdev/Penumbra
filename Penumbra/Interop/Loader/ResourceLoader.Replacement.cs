@@ -133,23 +133,46 @@ public unsafe partial class ResourceLoader
         }
 
         path = path.ToLower();
-        if( category == ResourceCategory.Ui )
+        switch( category )
         {
-            var resolved = Penumbra.CollectionManager.Interface.ResolvePath( path );
-            return ( resolved, Penumbra.CollectionManager.Interface.ToResolveData() );
-        }
-
-        if( ResolvePathCustomization != null )
-        {
-            foreach( var resolver in ResolvePathCustomization.GetInvocationList() )
+            // Only Interface collection.
+            case ResourceCategory.Ui:
             {
-                if( ( ( ResolvePathDelegate )resolver ).Invoke( path, category, resourceType, resourceHash, out var ret ) )
-                {
-                    return ret;
-                }
+                var resolved = Penumbra.CollectionManager.Interface.ResolvePath( path );
+                return ( resolved, Penumbra.CollectionManager.Interface.ToResolveData() );
             }
-        }
+            // Never allow changing scripts.
+            case ResourceCategory.UiScript:
+            case ResourceCategory.GameScript:
+                return ( null, ResolveData.Invalid );
+            // Use actual resolving.
+            case ResourceCategory.Chara:
+            case ResourceCategory.Shader:
+            case ResourceCategory.Vfx:
+                if( ResolvePathCustomization != null )
+                {
+                    foreach( var resolver in ResolvePathCustomization.GetInvocationList() )
+                    {
+                        if( ( ( ResolvePathDelegate )resolver ).Invoke( path, category, resourceType, resourceHash, out var ret ) )
+                        {
+                            return ret;
+                        }
+                    }
+                }
 
+                break;
+            // None of these files are ever associated with specific characters,
+            // always use the default resolver for now.
+            case ResourceCategory.Common:
+            case ResourceCategory.BgCommon:
+            case ResourceCategory.Bg:
+            case ResourceCategory.Cut:
+            case ResourceCategory.Exd:
+            case ResourceCategory.Music:
+            case ResourceCategory.Sound:
+            default:
+                break;
+        }
         return DefaultResolver( path );
     }
 
@@ -182,7 +205,7 @@ public unsafe partial class ResourceLoader
             return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
 
-        if( !fileDescriptor->ResourceHandle->GamePath(out var gamePath) || gamePath.Length == 0 )
+        if( !fileDescriptor->ResourceHandle->GamePath( out var gamePath ) || gamePath.Length == 0 )
         {
             return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
         }
