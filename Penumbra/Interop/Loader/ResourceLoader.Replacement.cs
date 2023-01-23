@@ -149,6 +149,7 @@ public unsafe partial class ResourceLoader
             case ResourceCategory.Chara:
             case ResourceCategory.Shader:
             case ResourceCategory.Vfx:
+            case ResourceCategory.Sound:
                 if( ResolvePathCustomization != null )
                 {
                     foreach( var resolver in ResolvePathCustomization.GetInvocationList() )
@@ -169,7 +170,6 @@ public unsafe partial class ResourceLoader
             case ResourceCategory.Cut:
             case ResourceCategory.Exd:
             case ResourceCategory.Music:
-            case ResourceCategory.Sound:
             default:
                 break;
         }
