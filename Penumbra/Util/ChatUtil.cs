@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;

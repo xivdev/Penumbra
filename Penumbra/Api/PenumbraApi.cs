@@ -302,7 +302,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
     }
 
-    public string GetCollectionForType( Enums.ApiCollectionType type )
+    public string GetCollectionForType( ApiCollectionType type )
     {
         CheckInitialized();
         if( !Enum.IsDefined( type ) )

@@ -14,7 +14,6 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Actors;
 using Action = Lumina.Excel.GeneratedSheets.Action;
 using ObjectType = Penumbra.GameData.Enums.ObjectType;
-
 namespace Penumbra.GameData.Data;
 
 internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
@@ -94,75 +93,6 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 
         dict[key] = new HashSet<Item> { item };
         return true;
-    }
-
-    private static ulong EquipmentKey(Item i)
-    {
-        var model   = (ulong)((Lumina.Data.Parsing.Quad)i.ModelMain).A;
-        var variant = (ulong)((Lumina.Data.Parsing.Quad)i.ModelMain).B;
-        var slot    = (ulong)((EquipSlot)i.EquipSlotCategory.Row).ToSlot();
-        return (model << 32) | (slot << 16) | variant;
-    }
-
-    private static ulong WeaponKey(Item i, bool offhand)
-    {
-        var quad    = offhand ? (Lumina.Data.Parsing.Quad)i.ModelSub : (Lumina.Data.Parsing.Quad)i.ModelMain;
-        var model   = (ulong)quad.A;
-        var type    = (ulong)quad.B;
-        var variant = (ulong)quad.C;
-
-        return (model << 32) | (type << 16) | variant;
-    }
-
-    private IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> CreateWeaponList(DataManager gameData)
-    {
-        var items   = gameData.GetExcelSheet<Item>(Language)!;
-        var storage = new SortedList<ulong, HashSet<Item>>();
-        foreach (var item in items.Where(i
-                     => (EquipSlot)i.EquipSlotCategory.Row is EquipSlot.MainHand or EquipSlot.OffHand or EquipSlot.BothHand))
-        {
-            if (item.ModelMain != 0)
-                Add(storage, WeaponKey(item, false), item);
-
-            if (item.ModelSub != 0)
-                Add(storage, WeaponKey(item, true), item);
-        }
-
-        return storage.Select(kvp => (kvp.Key, (IReadOnlyList<Item>)kvp.Value.ToArray())).ToList();
-    }
-
-    private IReadOnlyList<(ulong Key, IReadOnlyList<Item> Values)> CreateEquipmentList(DataManager gameData)
-    {
-        var items   = gameData.GetExcelSheet<Item>(Language)!;
-        var storage = new SortedList<ulong, HashSet<Item>>();
-        foreach (var item in items)
-        {
-            switch ((EquipSlot)item.EquipSlotCategory.Row)
-            {
-                // Accessories
-                case EquipSlot.RFinger:
-                case EquipSlot.Wrists:
-                case EquipSlot.Ears:
-                case EquipSlot.Neck:
-                // Equipment
-                case EquipSlot.Head:
-                case EquipSlot.Body:
-                case EquipSlot.Hands:
-                case EquipSlot.Legs:
-                case EquipSlot.Feet:
-                case EquipSlot.BodyHands:
-                case EquipSlot.BodyHandsLegsFeet:
-                case EquipSlot.BodyLegsFeet:
-                case EquipSlot.FullBody:
-                case EquipSlot.HeadBody:
-                case EquipSlot.LegsFeet:
-                case EquipSlot.ChestHands:
-                    Add(storage, EquipmentKey(item), item);
-                    break;
-            }
-        }
-
-        return storage.Select(kvp => (kvp.Key, (IReadOnlyList<Item>)kvp.Value.ToArray())).ToList();
     }
 
     private IReadOnlyDictionary<string, IReadOnlyList<Action>> CreateActionList(DataManager gameData)
