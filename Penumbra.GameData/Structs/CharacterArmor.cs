@@ -4,19 +4,19 @@ using System.Runtime.InteropServices;
 namespace Penumbra.GameData.Structs;
 
 [StructLayout( LayoutKind.Explicit, Pack = 1 )]
-public readonly struct CharacterArmor : IEquatable< CharacterArmor >
+public struct CharacterArmor : IEquatable< CharacterArmor >
 {
     [FieldOffset( 0 )]
-    public readonly uint Value;
+    public uint Value;
 
     [FieldOffset( 0 )]
-    public readonly SetId Set;
+    public SetId Set;
 
     [FieldOffset( 2 )]
-    public readonly byte Variant;
+    public byte Variant;
 
     [FieldOffset( 3 )]
-    public readonly StainId Stain;
+    public StainId Stain;
 
     public CharacterArmor( SetId set, byte variant, StainId stain )
     {
