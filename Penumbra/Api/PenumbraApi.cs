@@ -431,7 +431,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public IList< string > GetCollections()
     {
         CheckInitialized();
-        return Penumbra.CollectionManager.Skip( 1 ).Select( c => c.Name ).ToArray();
+        return Penumbra.CollectionManager.Select( c => c.Name ).ToArray();
     }
 
     public string GetCurrentCollection()
