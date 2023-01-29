@@ -50,7 +50,7 @@ public abstract class DataSharer : IDisposable
         }
         catch (Exception ex)
         {
-            PluginLog.Error($"Error creating shared actor data for {tag}:\n{ex}");
+            PluginLog.Error($"Error creating shared data for {tag}:\n{ex}");
             return func();
         }
     }

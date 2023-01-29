@@ -103,6 +103,7 @@ public class Penumbra : IDalamudPlugin
 
             Framework        = new FrameworkManager(Dalamud.Framework, Log);
             CharacterUtility = new CharacterUtility();
+
             Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() );
             Config = Configuration.Load();
 

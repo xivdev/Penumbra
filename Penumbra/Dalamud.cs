@@ -35,7 +35,7 @@ public class Dalamud
     [PluginService][RequiredVersion("1.0")] public static TitleScreenMenu        TitleScreenMenu { get; private set; } = null!;
     [PluginService][RequiredVersion("1.0")] public static GameGui                GameGui         { get; private set; } = null!;
     [PluginService][RequiredVersion("1.0")] public static KeyState               KeyState        { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static SigScanner             SigScanner        { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public static SigScanner             SigScanner      { get; private set; } = null!;
     // @formatter:on
 
     private static readonly object?     DalamudConfig;

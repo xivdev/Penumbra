@@ -29,7 +29,7 @@ public sealed class RestrictedGear : DataSharer
     public readonly IReadOnlyDictionary<uint, uint> MaleToFemale;
     public readonly IReadOnlyDictionary<uint, uint> FemaleToMale;
 
-    internal RestrictedGear(DalamudPluginInterface pi, ClientLanguage language, DataManager gameData)
+    public RestrictedGear(DalamudPluginInterface pi, ClientLanguage language, DataManager gameData)
         : base(pi, language, 1)
     {
         _items                                      = gameData.GetExcelSheet<Item>()!;
@@ -78,14 +78,14 @@ public sealed class RestrictedGear : DataSharer
         var f2m = new Dictionary<uint, uint>();
         var rg  = RaceGenderGroup.Where(c => c is not 0 and not uint.MaxValue).ToHashSet();
         AddKnown(m2f, f2m);
-        UnhandledRestrictedGear(m2f, f2m, false); // Set this to true to create a print of unassigned gear on launch.
+        UnhandledRestrictedGear(rg, m2f, f2m, false); // Set this to true to create a print of unassigned gear on launch.
         return new Tuple<IReadOnlySet<uint>, IReadOnlyDictionary<uint, uint>, IReadOnlyDictionary<uint, uint>>(rg, m2f, f2m);
     }
 
 
     // Add all unknown restricted gear and pair it with emperor's new gear on start up.
     // Can also print unhandled items.
-    private void UnhandledRestrictedGear(Dictionary<uint, uint> m2f, Dictionary<uint, uint> f2m, bool print)
+    private void UnhandledRestrictedGear(IReadOnlySet<uint> rg, Dictionary<uint, uint> m2f, Dictionary<uint, uint> f2m, bool print)
     {
         if (print)
             PluginLog.Information("#### MALE ONLY ######");
@@ -148,7 +148,7 @@ public sealed class RestrictedGear : DataSharer
 
         foreach (var item in _items.Where(i => i.EquipRestriction > 3))
         {
-            if (RaceGenderSet.Contains((uint)item.ModelMain))
+            if (rg.Contains((uint)item.ModelMain))
                 continue;
 
             ++unhandled;
@@ -409,6 +409,7 @@ public sealed class RestrictedGear : DataSharer
         AddItem(m2f, f2m, 38254, 38258);              // Valentione Emissary's Jacket               <-> Valentione Emissary's Ruffled Dress
         AddItem(m2f, f2m, 38255, 38259);              // Valentione Emissary's Bottoms              <-> Valentione Emissary's Culottes
         AddItem(m2f, f2m, 38256, 38260);              // Valentione Emissary's Boots                <-> Valentione Emissary's Boots
+        AddItem(m2f, f2m, 32393, 39302, false);       // Edenmete Gown of Casting                   <-  Gaia's Attire
     }
 
     // The racial starter sets are available for all 4 slots each,
