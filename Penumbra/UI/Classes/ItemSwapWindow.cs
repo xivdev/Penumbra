@@ -421,7 +421,7 @@ public class ItemSwapWindow : IDisposable
         if( _affectedItems is { Length: > 1 } )
         {
             ImGui.SameLine();
-            ImGuiUtil.DrawTextButton( $"which will also affect {_affectedItems.Length} other Items.", Vector2.Zero, Colors.PressEnterWarningBg );
+            ImGuiUtil.DrawTextButton( $"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero, Colors.PressEnterWarningBg );
             if( ImGui.IsItemHovered() )
             {
                 ImGui.SetTooltip( string.Join( '\n', _affectedItems.Where( i => !ReferenceEquals( i, targetSelector.CurrentSelection.Item2 ) )

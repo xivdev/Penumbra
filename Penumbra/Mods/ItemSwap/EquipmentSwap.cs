@@ -60,7 +60,8 @@ public static class EquipmentSwap
         foreach( var slot in ConvertSlots( slotFrom, rFinger, lFinger ) )
         {
             (var imcFileFrom, var variants, affectedItems) = GetVariants( slot, idFrom, idTo, variantFrom );
-            var imcFileTo = new ImcFile( new ImcManipulation( slot, variantTo, idTo.Value, default ) );
+            var imcManip  = new ImcManipulation( slot, variantTo, idTo.Value, default );
+            var imcFileTo = new ImcFile( imcManip);
 
             var isAccessory = slot.IsAccessory();
             var estType = slot switch
@@ -72,7 +73,7 @@ public static class EquipmentSwap
 
             var skipFemale    = false;
             var skipMale      = false;
-            var mtrlVariantTo = imcFileTo.GetEntry( ImcFile.PartIndex( slot ), variantTo ).MaterialId;
+            var mtrlVariantTo = manips( imcManip.Copy( imcFileTo.GetEntry( ImcFile.PartIndex( slot ), variantTo ) ) ).Imc.Entry.MaterialId;
             foreach( var gr in Enum.GetValues< GenderRace >() )
             {
                 switch( gr.Split().Item1 )
