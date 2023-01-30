@@ -32,9 +32,20 @@ public partial class ConfigWindow
         Add6_1_1( ret );
         Add6_2_0( ret );
         Add6_3_0( ret );
+        Add6_4_0( ret );
 
         return ret;
     }
+
+    private static void Add6_4_0( Changelog log )
+        => log.NextVersion( "Version 0.6.4.0" )
+           .RegisterEntry( "Fixed an issue with the identification of actors in the duty group portrait." )
+           .RegisterEntry( "Fixed some issues with wrongly cached actors and resources." )
+           .RegisterEntry( "Fixed animation handling after redraws (notably for PLD idle animations with a shield equipped)." )
+           .RegisterEntry( "Fixed an issue with collection listing API skipping one collection." )
+           .RegisterEntry( "Fixed an issue with BGM files being sometimes loaded from other collections than the base collection, causing crashes." )
+           .RegisterEntry( "Also distinguished file resolving for different file categories (improving performance) and disabled resolving for script files entirely.", 1 )
+           .RegisterEntry( "Some miscellaneous backend changes due to the Glamourer rework." );
 
     private static void Add6_3_0( Changelog log )
         => log.NextVersion( "Version 0.6.3.0" )
