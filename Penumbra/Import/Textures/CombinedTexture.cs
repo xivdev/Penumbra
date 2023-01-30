@@ -130,9 +130,21 @@ public partial class CombinedTexture : IDisposable
     }
 
     private static ScratchImage AddMipMaps( ScratchImage input, bool mipMaps )
-        => mipMaps
-            ? input.GenerateMipMaps( Math.Min( 13, 1 + BitOperations.Log2( ( uint )Math.Max( input.Meta.Width, input.Meta.Height ) ) ), FilterFlags.SeparateAlpha )
-            : input;
+    {
+        if( !mipMaps )
+        {
+            return input;
+        }
+
+        var numMips = Math.Min( 13, 1 + BitOperations.Log2( ( uint )Math.Max( input.Meta.Width, input.Meta.Height ) ) );
+        var ec      = input.GenerateMipMaps( out var ret, numMips, FilterFlags.SeparateAlpha );
+        if (ec != ErrorCode.Ok)
+        {
+            throw new Exception( $"Could not create the requested {numMips} mip maps, maybe retry with the top-right checkbox unchecked:\n{ec}" );
+        }
+
+        return ret;
+    }
 
     private static ScratchImage CreateUncompressed( ScratchImage input, bool mipMaps )
     {
