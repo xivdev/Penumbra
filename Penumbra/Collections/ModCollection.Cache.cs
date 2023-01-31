@@ -5,6 +5,7 @@ using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.String.Classes;
@@ -102,6 +103,33 @@ public partial class ModCollection
             }
 
             return iterator;
+        }
+
+        // Reverse resolve multiple paths at once for efficiency.
+        public HashSet< Utf8GamePath >[] ReverseResolvePaths( IReadOnlyCollection< string > fullPaths )
+        {
+            if( fullPaths.Count == 0 )
+                return Array.Empty< HashSet< Utf8GamePath > >();
+
+            var ret  = new HashSet< Utf8GamePath >[fullPaths.Count];
+            var dict = new Dictionary< FullPath, int >( fullPaths.Count );
+            foreach( var (path, idx) in fullPaths.WithIndex() )
+            {
+                dict[ new FullPath(path) ] = idx;
+                ret[ idx ] = !Path.IsPathRooted( path ) && Utf8GamePath.FromString( path, out var utf8 )
+                    ? new HashSet< Utf8GamePath > { utf8 }
+                    : new HashSet< Utf8GamePath >();
+            }
+
+            foreach( var (game, full) in ResolvedFiles )
+            {
+                if( dict.TryGetValue( full.Path, out var idx ) )
+                {
+                    ret[ idx ].Add( game );
+                }
+            }
+
+            return ret;
         }
 
         private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
@@ -474,7 +502,7 @@ public partial class ModCollection
                 // Skip IMCs because they would result in far too many false-positive items,
                 // since they are per set instead of per item-slot/item/variant.
                 var identifier = Penumbra.Identifier;
-                var items      = new SortedList< string, object? >(512);
+                var items      = new SortedList< string, object? >( 512 );
 
                 void AddItems( IMod mod )
                 {

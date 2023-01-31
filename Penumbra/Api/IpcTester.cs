@@ -678,6 +678,32 @@ public class IpcTester : IDisposable
                     }
                 }
             }
+
+            DrawIntro( Ipc.ResolvePlayerPaths.Label, "Resolved Paths (Player)" );
+            if( _currentResolvePath.Length > 0 || _currentReversePath.Length > 0 )
+            {
+                var forwardArray = _currentResolvePath.Length > 0 ? new[] { _currentResolvePath } : Array.Empty< string >();
+                var reverseArray = _currentReversePath.Length > 0 ? new[] { _currentReversePath } : Array.Empty< string >();
+                var ret          = Ipc.ResolvePlayerPaths.Subscriber( _pi ).Invoke( forwardArray, reverseArray );
+                var text         = string.Empty;
+                if( ret.Item1.Length > 0 )
+                {
+                    if( ret.Item2.Length > 0 )
+                    {
+                        text = $"Forward: {ret.Item1[ 0 ]} | Reverse: {string.Join( "; ", ret.Item2[ 0 ] )}.";
+                    }
+                    else
+                    {
+                        text = $"Forward: {ret.Item1[ 0 ]}.";
+                    }
+                }
+                else if( ret.Item2.Length > 0 )
+                {
+                    text = $"Reverse: {string.Join( "; ", ret.Item2[ 0 ] )}.";
+                }
+
+                ImGui.TextUnformatted( text );
+            }
         }
     }
 
@@ -685,10 +711,10 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
 
-        private int            _objectIdx      = 0;
-        private string         _collectionName = string.Empty;
-        private bool           _allowCreation  = true;
-        private bool           _allowDeletion  = true;
+        private int               _objectIdx      = 0;
+        private string            _collectionName = string.Empty;
+        private bool              _allowCreation  = true;
+        private bool              _allowDeletion  = true;
         private ApiCollectionType _type           = ApiCollectionType.Current;
 
         private string                                 _characterCollectionName = string.Empty;
@@ -709,7 +735,7 @@ public class IpcTester : IDisposable
                 return;
             }
 
-            ImGuiUtil.GenericEnumCombo( "Collection Type", 200, _type, out _type, t => ((CollectionType)t).ToName() );
+            ImGuiUtil.GenericEnumCombo( "Collection Type", 200, _type, out _type, t => ( ( CollectionType )t ).ToName() );
             ImGui.InputInt( "Object Index##Collections", ref _objectIdx, 0, 0 );
             ImGui.InputText( "Collection Name##Collections", ref _collectionName, 64 );
             ImGui.Checkbox( "Allow Assignment Creation", ref _allowCreation );
@@ -766,8 +792,11 @@ public class IpcTester : IDisposable
             {
                 ( _returnCode, _oldCollection ) = Ipc.SetCollectionForObject.Subscriber( _pi ).Invoke( _objectIdx, _collectionName, _allowCreation, _allowDeletion );
             }
+
             if( _returnCode == PenumbraApiEc.NothingChanged && _oldCollection.IsNullOrEmpty() )
+            {
                 _oldCollection = null;
+            }
 
             DrawIntro( Ipc.GetChangedItems.Label, "Changed Item List" );
             ImGui.SetNextItemWidth( 200 * ImGuiHelpers.GlobalScale );

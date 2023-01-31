@@ -49,26 +49,27 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly EventProvider< nint, string, string >           GameObjectResourcePathResolved;
 
     // Resolve
-    internal readonly FuncProvider< string, string >           ResolveDefaultPath;
-    internal readonly FuncProvider< string, string >           ResolveInterfacePath;
-    internal readonly FuncProvider< string, string >           ResolvePlayerPath;
-    internal readonly FuncProvider< string, int, string >      ResolveGameObjectPath;
-    internal readonly FuncProvider< string, string, string >   ResolveCharacterPath;
-    internal readonly FuncProvider< string, string, string[] > ReverseResolvePath;
-    internal readonly FuncProvider< string, int, string[] >    ReverseResolveGameObjectPath;
-    internal readonly FuncProvider< string, string[] >         ReverseResolvePlayerPath;
+    internal readonly FuncProvider< string, string >                             ResolveDefaultPath;
+    internal readonly FuncProvider< string, string >                             ResolveInterfacePath;
+    internal readonly FuncProvider< string, string >                             ResolvePlayerPath;
+    internal readonly FuncProvider< string, int, string >                        ResolveGameObjectPath;
+    internal readonly FuncProvider< string, string, string >                     ResolveCharacterPath;
+    internal readonly FuncProvider< string, string, string[] >                   ReverseResolvePath;
+    internal readonly FuncProvider< string, int, string[] >                      ReverseResolveGameObjectPath;
+    internal readonly FuncProvider< string, string[] >                           ReverseResolvePlayerPath;
+    internal readonly FuncProvider< string[], string[], (string[], string[][]) > ResolvePlayerPaths;
 
     // Collections
-    internal readonly FuncProvider< IList< string > >                                             GetCollections;
-    internal readonly FuncProvider< string >                                                      GetCurrentCollectionName;
-    internal readonly FuncProvider< string >                                                      GetDefaultCollectionName;
-    internal readonly FuncProvider< string >                                                      GetInterfaceCollectionName;
-    internal readonly FuncProvider< string, (string, bool) >                                      GetCharacterCollectionName;
+    internal readonly FuncProvider< IList< string > >                                                GetCollections;
+    internal readonly FuncProvider< string >                                                         GetCurrentCollectionName;
+    internal readonly FuncProvider< string >                                                         GetDefaultCollectionName;
+    internal readonly FuncProvider< string >                                                         GetInterfaceCollectionName;
+    internal readonly FuncProvider< string, (string, bool) >                                         GetCharacterCollectionName;
     internal readonly FuncProvider< ApiCollectionType, string >                                      GetCollectionForType;
     internal readonly FuncProvider< ApiCollectionType, string, bool, bool, (PenumbraApiEc, string) > SetCollectionForType;
-    internal readonly FuncProvider< int, (bool, bool, string) >                                   GetCollectionForObject;
-    internal readonly FuncProvider< int, string, bool, bool, (PenumbraApiEc, string) >            SetCollectionForObject;
-    internal readonly FuncProvider< string, IReadOnlyDictionary< string, object? > >              GetChangedItems;
+    internal readonly FuncProvider< int, (bool, bool, string) >                                      GetCollectionForObject;
+    internal readonly FuncProvider< int, string, bool, bool, (PenumbraApiEc, string) >               SetCollectionForObject;
+    internal readonly FuncProvider< string, IReadOnlyDictionary< string, object? > >                 GetChangedItems;
 
     // Meta
     internal readonly FuncProvider< string >         GetPlayerMetaManipulations;
@@ -160,6 +161,7 @@ public class PenumbraIpcProviders : IDisposable
         ReverseResolvePath           = Ipc.ReverseResolvePath.Provider( pi, Api.ReverseResolvePath );
         ReverseResolveGameObjectPath = Ipc.ReverseResolveGameObjectPath.Provider( pi, Api.ReverseResolveGameObjectPath );
         ReverseResolvePlayerPath     = Ipc.ReverseResolvePlayerPath.Provider( pi, Api.ReverseResolvePlayerPath );
+        ResolvePlayerPaths           = Ipc.ResolvePlayerPaths.Provider( pi, Api.ResolvePlayerPaths );
 
         // Collections
         GetCollections             = Ipc.GetCollections.Provider( pi, Api.GetCollections );
@@ -263,6 +265,7 @@ public class PenumbraIpcProviders : IDisposable
         ReverseResolvePath.Dispose();
         ReverseResolveGameObjectPath.Dispose();
         ReverseResolvePlayerPath.Dispose();
+        ResolvePlayerPaths.Dispose();
 
         // Collections
         GetCollections.Dispose();

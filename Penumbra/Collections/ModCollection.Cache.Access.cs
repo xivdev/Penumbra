@@ -4,6 +4,7 @@ using Penumbra.Meta.Manager;
 using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Penumbra.Interop;
@@ -67,6 +68,9 @@ public partial class ModCollection
 
     public IEnumerable< Utf8GamePath > ReverseResolvePath( FullPath path )
         => _cache?.ReverseResolvePath( path ) ?? Array.Empty< Utf8GamePath >();
+
+    public HashSet< Utf8GamePath >[] ReverseResolvePaths( string[] paths )
+        => _cache?.ReverseResolvePaths( paths ) ?? paths.Select( _ => new HashSet< Utf8GamePath >() ).ToArray();
 
     public FullPath? ResolvePath( Utf8GamePath path )
         => _cache?.ResolvePath( path );
