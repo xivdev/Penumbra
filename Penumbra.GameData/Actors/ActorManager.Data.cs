@@ -205,18 +205,23 @@ public sealed partial class ActorManager : IDisposable
     public unsafe bool ResolvePartyBannerPlayer(ScreenActor type, out ActorIdentifier id)
     {
         id = ActorIdentifier.Invalid;
-        var addon = Framework.Instance()->GetUiModule()->GetAgentModule()->GetAgentByInternalId(AgentId.BannerParty);
-        if (addon == null || !addon->IsAgentActive())
+        var module = Framework.Instance()->GetUiModule()->GetAgentModule();
+        if (module == null)
             return false;
 
-        var idx = (ushort)type - (ushort)ScreenActor.CharacterScreen;
-        if (idx is < 0 or > 7)
+        var agent = (AgentBannerInterface*)module->GetAgentByInternalId(AgentId.BannerParty);
+        if (agent == null || !agent->AgentInterface.IsAgentActive())
+            agent = (AgentBannerInterface*)module->GetAgentByInternalId(AgentId.BannerMIP);
+        if (agent == null || !agent->AgentInterface.IsAgentActive())
+            return false;
+
+        var idx       = (ushort)type - (ushort)ScreenActor.CharacterScreen;
+        var character = agent->Character(idx);
+        if (character == null)
             return true;
 
-        var obj = GroupManager.Instance()->GetPartyMemberByIndex(idx);
-        if (obj != null)
-            id = CreatePlayer(new ByteString(obj->Name), obj->HomeWorld);
-
+        var name = new ByteString(character->Name1.StringPtr);
+        id = CreatePlayer(name, (ushort)character->WorldId);
         return true;
     }
 

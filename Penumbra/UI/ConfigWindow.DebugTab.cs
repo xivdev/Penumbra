@@ -4,9 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -17,6 +19,7 @@ using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.Util;
+using static OtterGui.Raii.ImRaii;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
@@ -223,7 +226,8 @@ public partial class ConfigWindow
                 return;
             }
 
-            ImGui.TextUnformatted( $"Last Game Object: 0x{_window._penumbra.PathResolver.LastGameObject:X} ({_window._penumbra.PathResolver.LastGameObjectData.ModCollection.Name})" );
+            ImGui.TextUnformatted(
+                $"Last Game Object: 0x{_window._penumbra.PathResolver.LastGameObject:X} ({_window._penumbra.PathResolver.LastGameObjectData.ModCollection.Name})" );
             using( var drawTree = ImRaii.TreeNode( "Draw Object to Object" ) )
             {
                 if( drawTree )
@@ -317,18 +321,65 @@ public partial class ConfigWindow
                 }
             }
 
-            using var cutsceneTree = ImRaii.TreeNode( "Cutscene Actors" );
-            if( cutsceneTree )
+            using( var cutsceneTree = ImRaii.TreeNode( "Cutscene Actors" ) )
             {
-                using var table = ImRaii.Table( "###PCutsceneResolverTable", 2, ImGuiTableFlags.SizingFixedFit );
-                if( table )
+                if( cutsceneTree )
                 {
-                    foreach( var (idx, actor) in _window._penumbra.PathResolver.CutsceneActors )
+                    using var table = ImRaii.Table( "###PCutsceneResolverTable", 2, ImGuiTableFlags.SizingFixedFit );
+                    if( table )
                     {
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( $"Cutscene Actor {idx}" );
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted( actor.Name.ToString() );
+                        foreach( var (idx, actor) in _window._penumbra.PathResolver.CutsceneActors )
+                        {
+                            ImGuiUtil.DrawTableColumn( $"Cutscene Actor {idx}" );
+                            ImGuiUtil.DrawTableColumn( actor.Name.ToString() );
+                        }
+                    }
+                }
+            }
+
+            using( var groupTree = ImRaii.TreeNode( "Group" ) )
+            {
+                if( groupTree )
+                {
+                    using var table = ImRaii.Table( "###PGroupTable", 2, ImGuiTableFlags.SizingFixedFit );
+                    if( table )
+                    {
+                        ImGuiUtil.DrawTableColumn( "Group Members" );
+                        ImGuiUtil.DrawTableColumn( GroupManager.Instance()->MemberCount.ToString() );
+                        for( var i = 0; i < 8; ++i )
+                        {
+                            ImGuiUtil.DrawTableColumn( $"Member #{i}" );
+                            var member = GroupManager.Instance()->GetPartyMemberByIndex( i );
+                            ImGuiUtil.DrawTableColumn( member == null ? "NULL" : new ByteString( member->Name ).ToString() );
+                        }
+                    }
+                }
+            }
+
+            using( var bannerTree = ImRaii.TreeNode( "Party Banner" ) )
+            {
+                if( bannerTree )
+                {
+                    var agent = &AgentBannerParty.Instance()->AgentBannerInterface;
+                    if( agent->Data == null )
+                        agent = &AgentBannerMIP.Instance()->AgentBannerInterface;
+                    if( agent->Data != null )
+                    {
+                        using var table = ImRaii.Table( "###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit );
+                        if( table )
+                        {
+                            for( var i = 0; i < 8; ++i )
+                            {
+                                var c = agent->Character( i );
+                                ImGuiUtil.DrawTableColumn( $"Character {i}" );
+                                var name = c->Name1.ToString();
+                                ImGuiUtil.DrawTableColumn( name.Length == 0 ? "NULL" : $"{name} ({c->WorldId})" );
+                            }
+                        }
+                    }
+                    else
+                    {
+                        ImGui.TextUnformatted( "INACTIVE" );
                     }
                 }
             }
