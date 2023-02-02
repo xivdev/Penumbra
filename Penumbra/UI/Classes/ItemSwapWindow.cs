@@ -399,7 +399,7 @@ public class ItemSwapWindow : IDisposable
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted( text1 );
         ImGui.TableNextColumn();
-        _dirty |= sourceSelector.Draw( "##itemSource", sourceSelector.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+        _dirty |= sourceSelector.Draw( "##itemSource", sourceSelector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
 
         if( type == SwapType.Ring )
         {
@@ -411,7 +411,7 @@ public class ItemSwapWindow : IDisposable
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted( text2 );
         ImGui.TableNextColumn();
-        _dirty |= targetSelector.Draw( "##itemTarget", targetSelector.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+        _dirty |= targetSelector.Draw( "##itemTarget", targetSelector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
         if( type == SwapType.Ring )
         {
             ImGui.SameLine();
@@ -503,7 +503,7 @@ public class ItemSwapWindow : IDisposable
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted( "Select the weapon or tool you want" );
         ImGui.TableNextColumn();
-        if( _slotSelector.Draw( "##weaponSlot", _slotSelector.CurrentSelection.ToName(), InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() ) )
+        if( _slotSelector.Draw( "##weaponSlot", _slotSelector.CurrentSelection.ToName(), string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() ) )
         {
             _dirty        = true;
             _weaponSource = new ItemSelector( _slotSelector.CurrentSelection );
@@ -520,13 +520,13 @@ public class ItemSwapWindow : IDisposable
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted( "and put this variant of it" );
         ImGui.TableNextColumn();
-        _dirty |= _weaponSource.Draw( "##weaponSource", _weaponSource.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+        _dirty |= _weaponSource.Draw( "##weaponSource", _weaponSource.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
 
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted( "onto this one" );
         ImGui.TableNextColumn();
-        _dirty |= _weaponTarget.Draw( "##weaponTarget", _weaponTarget.CurrentSelection.Item1 ?? string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+        _dirty |= _weaponTarget.Draw( "##weaponTarget", _weaponTarget.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
     }
 
     private const float InputWidth = 120;

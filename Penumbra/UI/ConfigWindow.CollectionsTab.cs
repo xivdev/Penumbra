@@ -167,7 +167,7 @@ public partial class ConfigWindow
             public void Draw()
             {
                 var preview = CurrentIdx >= 0 ? Items[ CurrentIdx ].Item2 : string.Empty;
-                Draw( _label, preview, ref CurrentIdx, _unscaledWidth * ImGuiHelpers.GlobalScale, ImGui.GetTextLineHeightWithSpacing() );
+                Draw( _label, preview, string.Empty, ref CurrentIdx, _unscaledWidth * ImGuiHelpers.GlobalScale, ImGui.GetTextLineHeightWithSpacing() );
             }
 
             protected override string ToString( (CollectionType, string, string) obj )

@@ -33,7 +33,7 @@ public partial class ConfigWindow
                 => obj.Value;
 
             public bool Draw( float width )
-                => Draw( "##worldCombo", CurrentSelection.Value, width, ImGui.GetTextLineHeightWithSpacing() );
+                => Draw( "##worldCombo", CurrentSelection.Value, string.Empty, width, ImGui.GetTextLineHeightWithSpacing() );
         }
 
         private sealed class NpcCombo : FilterComboCache< (string Name, uint[] Ids) >
@@ -60,7 +60,7 @@ public partial class ConfigWindow
             }
 
             public bool Draw( float width )
-                => Draw( _label, CurrentSelection.Name, width, ImGui.GetTextLineHeightWithSpacing() );
+                => Draw( _label, CurrentSelection.Name, string.Empty, width, ImGui.GetTextLineHeightWithSpacing() );
         }
 
 

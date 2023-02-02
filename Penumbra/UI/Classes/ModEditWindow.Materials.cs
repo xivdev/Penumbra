@@ -268,7 +268,7 @@ public partial class ModEditWindow
 
         ImGui.SameLine();
         var label = dyeId == 0 ? "Preview Dye###previewDye" : $"{name} (Preview)###previewDye";
-        Penumbra.StainManager.StainCombo.Draw( label, dyeColor, true );
+        Penumbra.StainManager.StainCombo.Draw( label, dyeColor, string.Empty, true );
         return false;
     }
 
@@ -508,7 +508,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         if( hasDye )
         {
-            if( Penumbra.StainManager.TemplateCombo.Draw( "##dyeTemplate", dye.Template.ToString(), intSize
+            if( Penumbra.StainManager.TemplateCombo.Draw( "##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
                  + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton ) )
             {
                 file.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ].Template = Penumbra.StainManager.TemplateCombo.CurrentSelection;
