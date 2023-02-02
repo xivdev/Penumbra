@@ -33,9 +33,17 @@ public partial class ConfigWindow
         Add6_2_0( ret );
         Add6_3_0( ret );
         Add6_4_0( ret );
+        Add6_5_0( ret );
 
         return ret;
     }
+
+    private static void Add6_5_0( Changelog log )
+        => log.NextVersion( "Version 0.6.5.0" )
+           .RegisterEntry( "Fixed an issue with Item Swaps not using applied IMC changes in some cases." )
+           .RegisterEntry( "Improved error message on texture import when failing to create mip maps (slightly)." )
+           .RegisterEntry( "Tried to fix duty party banner identification again, also for the recommendation window this time." )
+           .RegisterEntry( "Added batched IPC to improve Mare performance." );
 
     private static void Add6_4_0( Changelog log )
         => log.NextVersion( "Version 0.6.4.0" )
