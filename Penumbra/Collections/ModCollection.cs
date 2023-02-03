@@ -85,12 +85,13 @@ public partial class ModCollection
         => new(name, CurrentVersion, new Dictionary< string, ModSettings.SavedSettings >());
 
     // Create a new temporary collection that does not save and has a negative index.
-    public static ModCollection CreateNewTemporary( string name )
+    public static ModCollection CreateNewTemporary( string name, int changeCounter )
     {
         var collection = new ModCollection( name, Empty );
         collection.ModSettingChanged  -= collection.SaveOnChange;
         collection.InheritanceChanged -= collection.SaveOnChange;
         collection.Index              =  ~Penumbra.TempMods.Collections.Count;
+        collection.ChangeCounter      =  changeCounter;
         collection.CreateCache();
         return collection;
     }

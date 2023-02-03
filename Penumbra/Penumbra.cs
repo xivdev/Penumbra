@@ -99,14 +99,14 @@ public class Penumbra : IDalamudPlugin
             GamePathParser         = GameData.GameData.GetGamePathParser();
             StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData );
             ItemData               = new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language );
-            Actors                 = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.GameData, Dalamud.GameGui, ResolveCutscene );
+            Actors                 = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.Framework, Dalamud.GameData, Dalamud.GameGui, ResolveCutscene );
 
             Framework        = new FrameworkManager(Dalamud.Framework, Log);
             CharacterUtility = new CharacterUtility();
 
             Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() );
             Config = Configuration.Load();
-
+            
             TempMods        = new TempModManager();
             MetaFileManager = new MetaFileManager();
             ResourceLoader  = new ResourceLoader( this );

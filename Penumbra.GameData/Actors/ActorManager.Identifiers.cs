@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Logging;
 using Newtonsoft.Json.Linq;
 using Penumbra.String;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
@@ -313,8 +314,8 @@ public partial class ActorManager
                     static ByteString Get(byte* ptr)
                         => ptr == null ? ByteString.Empty : new ByteString(ptr);
 
-                    var actualName   = Get(actor->GetName());
                     var retainerName = Get(actor->Name);
+                    var actualName   = _framework.IsInFrameworkUpdateThread ? Get(actor->GetName()) : ByteString.Empty;
                     if (!actualName.Equals(retainerName))
                     {
                         var ident = check
@@ -338,7 +339,7 @@ public partial class ActorManager
                 if (owner == null)
                     return ActorIdentifier.Invalid;
 
-                var dataId    = GetCompanionId(actor, (Character*) owner);
+                var dataId    = GetCompanionId(actor, (Character*)owner);
                 var name      = new ByteString(owner->Name);
                 var homeWorld = ((Character*)owner)->HomeWorld;
                 return check
@@ -553,10 +554,10 @@ public partial class ActorManager
     {
         return index switch
         {
-            ushort.MaxValue              => true,
-            < 200                        => index % 2 == 0,
+            ushort.MaxValue             => true,
+            < 200                       => index % 2 == 0,
             > (ushort)ScreenActor.Card8 => index < 426,
-            _                            => false,
+            _                           => false,
         };
     }
 

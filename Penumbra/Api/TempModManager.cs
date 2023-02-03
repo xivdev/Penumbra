@@ -1,3 +1,4 @@
+using System;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -20,6 +21,7 @@ public enum RedirectResult
 
 public class TempModManager
 {
+    public int GlobalChangeCounter { get; private set; } = 0;
     private readonly Dictionary< ModCollection, List< Mod.TemporaryMod > > _mods                  = new();
     private readonly List< Mod.TemporaryMod >                              _modsForAllCollections = new();
     private readonly Dictionary< string, ModCollection >                   _customCollections     = new();
@@ -158,7 +160,9 @@ public class TempModManager
             return string.Empty;
         }
 
-        var collection = ModCollection.CreateNewTemporary( name );
+        if( GlobalChangeCounter == int.MaxValue )
+            GlobalChangeCounter = 0;
+        var collection = ModCollection.CreateNewTemporary( name, GlobalChangeCounter++ );
         if( _customCollections.TryAdd( collection.Name.ToLowerInvariant(), collection ) )
         {
             return collection.Name;
@@ -175,6 +179,7 @@ public class TempModManager
             return false;
         }
 
+        GlobalChangeCounter += Math.Max(collection.ChangeCounter + 1 - GlobalChangeCounter, 0);
         _mods.Remove( collection );
         collection.ClearCache();
         for( var i = 0; i < Collections.Count; ++i )

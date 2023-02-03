@@ -8,6 +8,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.GameData;
+using Penumbra.GameData.Actors;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop;
@@ -99,7 +100,7 @@ public unsafe partial class ObjectReloader
         }
 
         tableIndex = ObjectTableIndex( actor );
-        return tableIndex is >= 240 and < 245;
+        return tableIndex is >= (int) ScreenActor.CharacterScreen and <= ( int) ScreenActor.Card8;
     }
 }
 

@@ -165,14 +165,15 @@ public sealed partial class ActorManager : IDisposable
 
     public readonly ActorManagerData Data;
 
-    public ActorManager(DalamudPluginInterface pluginInterface, ObjectTable objects, ClientState state, DataManager gameData, GameGui gameGui,
+    public ActorManager(DalamudPluginInterface pluginInterface, ObjectTable objects, ClientState state, Dalamud.Game.Framework framework, DataManager gameData, GameGui gameGui,
         Func<ushort, short> toParentIdx)
-        : this(pluginInterface, objects, state, gameData, gameGui, gameData.Language, toParentIdx)
+        : this(pluginInterface, objects, state, framework, gameData, gameGui, gameData.Language, toParentIdx)
     { }
 
-    public ActorManager(DalamudPluginInterface pluginInterface, ObjectTable objects, ClientState state, DataManager gameData, GameGui gameGui,
+    public ActorManager(DalamudPluginInterface pluginInterface, ObjectTable objects, ClientState state, Dalamud.Game.Framework framework, DataManager gameData, GameGui gameGui,
         ClientLanguage language, Func<ushort, short> toParentIdx)
     {
+        _framework   = framework;
         _objects     = objects;
         _gameGui     = gameGui;
         _clientState = state;
@@ -340,9 +341,10 @@ public sealed partial class ActorManager : IDisposable
     ~ActorManager()
         => Dispose();
 
-    private readonly ObjectTable _objects;
-    private readonly ClientState _clientState;
-    private readonly GameGui     _gameGui;
+    private readonly Dalamud.Game.Framework _framework;
+    private readonly ObjectTable            _objects;
+    private readonly ClientState            _clientState;
+    private readonly GameGui                _gameGui;
 
     private readonly Func<ushort, short> _toParentIdx;
 

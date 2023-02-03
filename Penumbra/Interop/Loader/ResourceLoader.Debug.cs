@@ -257,7 +257,7 @@ public unsafe partial class ResourceLoader
     {
         var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
         Penumbra.Log.Information(
-            $"[ResourceLoader] [{handle->FileType}] Loaded {pathString} to 0x{( ulong )handle:X} using collection {data.ModCollection.AnonymizedName} for {data.AssociatedName()}. (Refcount {handle->RefCount}) " );
+            $"[ResourceLoader] [{handle->FileType}] Loaded {pathString} to 0x{( ulong )handle:X} using collection {data.ModCollection.AnonymizedName} for {data.AssociatedName()} (Refcount {handle->RefCount}) " );
     }
 
     private static void LogLoadedFile( Structs.ResourceHandle* resource, ByteString path, bool success, bool custom )

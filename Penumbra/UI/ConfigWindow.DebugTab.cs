@@ -20,6 +20,7 @@ using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.Util;
 using static OtterGui.Raii.ImRaii;
+using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
@@ -548,6 +549,19 @@ public partial class ConfigWindow
             if( model == null )
             {
                 return;
+            }
+
+            using( var t1 = ImRaii.Table( "##table", 2, ImGuiTableFlags.SizingFixedFit ) )
+            {
+                if( t1 )
+                {
+                    ImGuiUtil.DrawTableColumn( "Flags" );
+                    ImGuiUtil.DrawTableColumn( $"{model->UnkFlags_01:X2}" );
+                    ImGuiUtil.DrawTableColumn( "Has Model In Slot Loaded" );
+                    ImGuiUtil.DrawTableColumn( $"{model->HasModelInSlotLoaded:X8}" );
+                    ImGuiUtil.DrawTableColumn( "Has Model Files In Slot Loaded" );
+                    ImGuiUtil.DrawTableColumn( $"{model->HasModelFilesInSlotLoaded:X8}" );
+                }
             }
 
             using var table = ImRaii.Table( $"##{name}DrawTable", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit );
