@@ -126,8 +126,11 @@ public partial class ConfigWindow
 
             using( var start = TreeNode( "Startup Performance", ImGuiTreeNodeFlags.DefaultOpen ) )
             {
-                Penumbra.StartTimer.Draw( "##startTimer", TimingExtensions.ToName );
-                ImGui.NewLine();
+                if( start )
+                {
+                    Penumbra.StartTimer.Draw( "##startTimer", TimingExtensions.ToName );
+                    ImGui.NewLine();
+                }
             }
 
             Penumbra.Performance.Draw( "##performance", "Enable Runtime Performance Tracking", TimingExtensions.ToName );
