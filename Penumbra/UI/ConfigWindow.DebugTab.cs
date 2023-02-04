@@ -1,17 +1,13 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
 using OtterGui;
-using OtterGui.Raii;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.Loader;
