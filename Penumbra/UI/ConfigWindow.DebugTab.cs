@@ -48,13 +48,13 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var tab = ImRaii.TabItem( "Debug" );
+            using var tab = TabItem( "Debug" );
             if( !tab )
             {
                 return;
             }
 
-            using var child = ImRaii.Child( "##DebugTab", -Vector2.One );
+            using var child = Child( "##DebugTab", -Vector2.One );
             if( !child )
             {
                 return;
@@ -93,7 +93,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var table = ImRaii.Table( "##DebugGeneralTable", 2, ImGuiTableFlags.SizingFixedFit,
+            using var table = Table( "##DebugGeneralTable", 2, ImGuiTableFlags.SizingFixedFit,
                 new Vector2( -1, ImGui.GetTextLineHeightWithSpacing() * 1 ) );
             if( !table )
             {
@@ -125,7 +125,9 @@ public partial class ConfigWindow
                 return;
             }
 
-            Penumbra.Performance.Draw( "##performance", "Enable Performance Tracking", PerformanceTypeExtensions.ToName );
+            Penumbra.StartTimer.Draw( "##startTimer", TimingExtensions.ToName );
+            ImGui.NewLine();
+            Penumbra.Performance.Draw( "##performance", "Enable Runtime Performance Tracking", TimingExtensions.ToName );
         }
 
         // Draw all resources currently replaced by Penumbra and (if existing) the resources they replace.
@@ -144,7 +146,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var table = ImRaii.Table( "##ReplacedResources", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+            using var table = Table( "##ReplacedResources", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
                 -Vector2.UnitX );
             if( !table )
             {
@@ -182,7 +184,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var table = ImRaii.Table( "##actors", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+            using var table = Table( "##actors", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
                 -Vector2.UnitX );
             if( !table )
             {
@@ -229,11 +231,11 @@ public partial class ConfigWindow
 
             ImGui.TextUnformatted(
                 $"Last Game Object: 0x{_window._penumbra.PathResolver.LastGameObject:X} ({_window._penumbra.PathResolver.LastGameObjectData.ModCollection.Name})" );
-            using( var drawTree = ImRaii.TreeNode( "Draw Object to Object" ) )
+            using( var drawTree = TreeNode( "Draw Object to Object" ) )
             {
                 if( drawTree )
                 {
-                    using var table = ImRaii.Table( "###DrawObjectResolverTable", 5, ImGuiTableFlags.SizingFixedFit );
+                    using var table = Table( "###DrawObjectResolverTable", 5, ImGuiTableFlags.SizingFixedFit );
                     if( table )
                     {
                         foreach( var (ptr, (c, idx)) in _window._penumbra.PathResolver.DrawObjectMap )
@@ -256,11 +258,11 @@ public partial class ConfigWindow
                 }
             }
 
-            using( var pathTree = ImRaii.TreeNode( "Path Collections" ) )
+            using( var pathTree = TreeNode( "Path Collections" ) )
             {
                 if( pathTree )
                 {
-                    using var table = ImRaii.Table( "###PathCollectionResolverTable", 3, ImGuiTableFlags.SizingFixedFit );
+                    using var table = Table( "###PathCollectionResolverTable", 3, ImGuiTableFlags.SizingFixedFit );
                     if( table )
                     {
                         foreach( var (path, collection) in _window._penumbra.PathResolver.PathCollections )
@@ -276,11 +278,11 @@ public partial class ConfigWindow
                 }
             }
 
-            using( var resourceTree = ImRaii.TreeNode( "Subfile Collections" ) )
+            using( var resourceTree = TreeNode( "Subfile Collections" ) )
             {
                 if( resourceTree )
                 {
-                    using var table = ImRaii.Table( "###ResourceCollectionResolverTable", 3, ImGuiTableFlags.SizingFixedFit );
+                    using var table = Table( "###ResourceCollectionResolverTable", 3, ImGuiTableFlags.SizingFixedFit );
                     if( table )
                     {
                         ImGuiUtil.DrawTableColumn( "Current Mtrl Data" );
@@ -305,11 +307,11 @@ public partial class ConfigWindow
                 }
             }
 
-            using( var identifiedTree = ImRaii.TreeNode( "Identified Collections" ) )
+            using( var identifiedTree = TreeNode( "Identified Collections" ) )
             {
                 if( identifiedTree )
                 {
-                    using var table = ImRaii.Table( "##PathCollectionsIdentifiedTable", 3, ImGuiTableFlags.SizingFixedFit );
+                    using var table = Table( "##PathCollectionsIdentifiedTable", 3, ImGuiTableFlags.SizingFixedFit );
                     if( table )
                     {
                         foreach( var (address, identifier, collection) in PathResolver.IdentifiedCache )
@@ -322,11 +324,11 @@ public partial class ConfigWindow
                 }
             }
 
-            using( var cutsceneTree = ImRaii.TreeNode( "Cutscene Actors" ) )
+            using( var cutsceneTree = TreeNode( "Cutscene Actors" ) )
             {
                 if( cutsceneTree )
                 {
-                    using var table = ImRaii.Table( "###PCutsceneResolverTable", 2, ImGuiTableFlags.SizingFixedFit );
+                    using var table = Table( "###PCutsceneResolverTable", 2, ImGuiTableFlags.SizingFixedFit );
                     if( table )
                     {
                         foreach( var (idx, actor) in _window._penumbra.PathResolver.CutsceneActors )
@@ -338,11 +340,11 @@ public partial class ConfigWindow
                 }
             }
 
-            using( var groupTree = ImRaii.TreeNode( "Group" ) )
+            using( var groupTree = TreeNode( "Group" ) )
             {
                 if( groupTree )
                 {
-                    using var table = ImRaii.Table( "###PGroupTable", 2, ImGuiTableFlags.SizingFixedFit );
+                    using var table = Table( "###PGroupTable", 2, ImGuiTableFlags.SizingFixedFit );
                     if( table )
                     {
                         ImGuiUtil.DrawTableColumn( "Group Members" );
@@ -357,16 +359,19 @@ public partial class ConfigWindow
                 }
             }
 
-            using( var bannerTree = ImRaii.TreeNode( "Party Banner" ) )
+            using( var bannerTree = TreeNode( "Party Banner" ) )
             {
                 if( bannerTree )
                 {
                     var agent = &AgentBannerParty.Instance()->AgentBannerInterface;
                     if( agent->Data == null )
+                    {
                         agent = &AgentBannerMIP.Instance()->AgentBannerInterface;
+                    }
+
                     if( agent->Data != null )
                     {
-                        using var table = ImRaii.Table( "###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit );
+                        using var table = Table( "###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit );
                         if( table )
                         {
                             for( var i = 0; i < 8; ++i )
@@ -395,13 +400,13 @@ public partial class ConfigWindow
 
             foreach( var (key, data) in Penumbra.StainManager.StmFile.Entries )
             {
-                using var tree = ImRaii.TreeNode( $"Template {key}" );
+                using var tree = TreeNode( $"Template {key}" );
                 if( !tree )
                 {
                     continue;
                 }
 
-                using var table = ImRaii.Table( "##table", 5, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg );
+                using var table = Table( "##table", 5, ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg );
                 if( !table )
                 {
                     continue;
@@ -436,7 +441,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var table = ImRaii.Table( "##CharacterUtility", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+            using var table = Table( "##CharacterUtility", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
                 -Vector2.UnitX );
             if( !table )
             {
@@ -491,7 +496,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var table = ImRaii.Table( "##DebugMetaTable", 3, ImGuiTableFlags.SizingFixedFit );
+            using var table = Table( "##DebugMetaTable", 3, ImGuiTableFlags.SizingFixedFit );
             if( !table )
             {
                 return;
@@ -518,7 +523,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var table = ImRaii.Table( "##ResidentResources", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+            using var table = Table( "##ResidentResources", 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
                 -Vector2.UnitX );
             if( !table )
             {
@@ -551,7 +556,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using( var t1 = ImRaii.Table( "##table", 2, ImGuiTableFlags.SizingFixedFit ) )
+            using( var t1 = Table( "##table", 2, ImGuiTableFlags.SizingFixedFit ) )
             {
                 if( t1 )
                 {
@@ -564,7 +569,7 @@ public partial class ConfigWindow
                 }
             }
 
-            using var table = ImRaii.Table( $"##{name}DrawTable", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit );
+            using var table = Table( $"##{name}DrawTable", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit );
             if( !table )
             {
                 return;
@@ -620,7 +625,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            using var table = ImRaii.Table( "##ProblemsTable", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit );
+            using var table = Table( "##ProblemsTable", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit );
             if( !table )
             {
                 return;

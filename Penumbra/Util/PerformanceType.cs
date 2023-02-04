@@ -1,4 +1,23 @@
+using Lumina.Excel.GeneratedSheets;
+using OtterGui.Classes;
+using Penumbra.GameData;
+
 namespace Penumbra.Util;
+
+public enum StartTimeType
+{
+    Total,
+    Identifier,
+    GamePathParser,
+    Stains,
+    Items,
+    Actors,
+    Backup,
+    Mods,
+    Collections,
+    Api,
+    Interface,
+}
 
 public enum PerformanceType
 {
@@ -28,8 +47,25 @@ public enum PerformanceType
     DebugTimes,
 }
 
-public static class PerformanceTypeExtensions
+public static class TimingExtensions
 {
+    public static string ToName( this StartTimeType type )
+        => type switch
+        {
+            StartTimeType.Total          => "Total Construction",
+            StartTimeType.Identifier     => "Identification Data",
+            StartTimeType.GamePathParser => "Game Path Data",
+            StartTimeType.Stains         => "Stain Data",
+            StartTimeType.Items          => "Item Data",
+            StartTimeType.Actors         => "Actor Data",
+            StartTimeType.Backup         => "Checking Backups",
+            StartTimeType.Mods           => "Loading Mods",
+            StartTimeType.Collections    => "Loading Collections",
+            StartTimeType.Api            => "Setting Up API",
+            StartTimeType.Interface      => "Setting Up Interface",
+            _                            => $"Unknown {( int )type}",
+        };
+
     public static string ToName( this PerformanceType type )
         => type switch
         {

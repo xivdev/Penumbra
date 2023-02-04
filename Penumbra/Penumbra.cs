@@ -26,6 +26,7 @@ using Penumbra.GameData.Data;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
+using Action = System.Action;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
@@ -66,7 +67,11 @@ public class Penumbra : IDalamudPlugin
     public static IGamePathParser GamePathParser { get; private set; } = null!;
     public static StainManager StainManager { get; private set; } = null!;
     public static ItemData ItemData { get; private set; } = null!;
+
+
     public static PerformanceTracker< PerformanceType > Performance { get; private set; } = null!;
+
+    public static StartTimeTracker< StartTimeType > StartTimer = new();
 
     public static readonly List< Exception > ImcExceptions = new();
 
@@ -84,39 +89,59 @@ public class Penumbra : IDalamudPlugin
 
     internal WebServer? WebServer;
 
+    private static void Timed( StartTimeType type, Action action )
+    {
+        using var t = StartTimer.Measure( type );
+        action();
+    }
+
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
+        using var time = StartTimer.Measure( StartTimeType.Total );
+
         try
         {
             Dalamud.Initialize( pluginInterface );
+
             Performance            = new PerformanceTracker< PerformanceType >( Dalamud.Framework );
             Log                    = new Logger();
             DevPenumbraExists      = CheckDevPluginPenumbra();
             IsNotInstalledPenumbra = CheckIsNotInstalled();
             IsValidSourceRepo      = CheckSourceRepo();
-            GameEvents             = new GameEventManager();
-            Identifier             = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData );
-            GamePathParser         = GameData.GameData.GetGamePathParser();
-            StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData );
-            ItemData               = new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language );
-            Actors                 = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.Framework, Dalamud.GameData, Dalamud.GameGui, ResolveCutscene );
 
-            Framework        = new FrameworkManager(Dalamud.Framework, Log);
+            GameEvents = new GameEventManager();
+            StartTimer.Measure( StartTimeType.Identifier, () => Identifier         = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData ) );
+            StartTimer.Measure( StartTimeType.GamePathParser, () => GamePathParser = GameData.GameData.GetGamePathParser() );
+            StartTimer.Measure( StartTimeType.Stains, () => StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData ) );
+            StartTimer.Measure( StartTimeType.Items, () => ItemData                = new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language ) );
+            StartTimer.Measure( StartTimeType.Actors,
+                () => Actors = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.Framework, Dalamud.GameData, Dalamud.GameGui,
+                    ResolveCutscene ) );
+
+            Framework        = new FrameworkManager( Dalamud.Framework, Log );
             CharacterUtility = new CharacterUtility();
 
-            Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() );
+            StartTimer.Measure( StartTimeType.Backup, () => Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() ) );
             Config = Configuration.Load();
-            
+
             TempMods        = new TempModManager();
             MetaFileManager = new MetaFileManager();
             ResourceLoader  = new ResourceLoader( this );
             ResourceLoader.EnableHooks();
             ResourceLogger    = new ResourceLogger( ResourceLoader );
             ResidentResources = new ResidentResourceManager();
-            ModManager        = new Mod.Manager( Config.ModDirectory );
-            ModManager.DiscoverMods();
-            CollectionManager = new ModCollection.Manager( ModManager );
-            CollectionManager.CreateNecessaryCaches();
+            StartTimer.Measure( StartTimeType.Mods, () =>
+            {
+                ModManager = new Mod.Manager( Config.ModDirectory );
+                ModManager.DiscoverMods();
+            } );
+
+            StartTimer.Measure( StartTimeType.Collections, () =>
+            {
+                CollectionManager = new ModCollection.Manager( ModManager );
+                CollectionManager.CreateNecessaryCaches();
+            } );
+
             ModFileSystem  = ModFileSystem.Load();
             ObjectReloader = new ObjectReloader();
             PathResolver   = new PathResolver( ResourceLoader );
@@ -146,9 +171,13 @@ public class Penumbra : IDalamudPlugin
                 ResourceLoader.EnableFullLogging();
             }
 
-            Api          = new PenumbraApi( this );
-            IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
-            SubscribeItemLinks();
+            using( var tAPI = StartTimer.Measure( StartTimeType.Api ) )
+            {
+                Api          = new PenumbraApi( this );
+                IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
+                SubscribeItemLinks();
+            }
+
             if( ImcExceptions.Count > 0 )
             {
                 Log.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
@@ -177,6 +206,7 @@ public class Penumbra : IDalamudPlugin
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system, out Changelog changelog )
     {
+        using var tInterface = StartTimer.Measure( StartTimeType.Interface );
         cfg       = new ConfigWindow( this );
         btn       = new LaunchButton( _configWindow );
         system    = new WindowSystem( Name );
@@ -341,7 +371,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append( $"> **`Free Drive Space:            `** {( drive != null ? Functions.HumanReadableSize( drive.AvailableFreeSpace ) : "Unknown" )}\n" );
         sb.Append( $"> **`Auto-Deduplication:          `** {Config.AutoDeduplicateOnImport}\n" );
         sb.Append( $"> **`Debug Mode:                  `** {Config.DebugMode}\n" );
-        sb.Append( $"> **`Synchronous Load (Dalamud):  `** {(Dalamud.GetDalamudConfig( Dalamud.WaitingForPluginsOption, out bool v ) ? v.ToString() : "Unknown")}\n" );
+        sb.Append( $"> **`Synchronous Load (Dalamud):  `** {( Dalamud.GetDalamudConfig( Dalamud.WaitingForPluginsOption, out bool v ) ? v.ToString() : "Unknown" )}\n" );
         sb.Append( $"> **`Logging:                     `** Full: {Config.EnableFullResourceLogging}, Resource: {Config.EnableResourceLogging}\n" );
         sb.Append( $"> **`Use Ownership:               `** {Config.UseOwnerNameForCharacterCollection}\n" );
         sb.AppendLine( "**Mods**" );
