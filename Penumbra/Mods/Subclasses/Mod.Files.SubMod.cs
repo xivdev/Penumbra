@@ -107,6 +107,8 @@ public partial class Mod
         public string FullName
             => GroupIdx < 0 ? "Default Option" : $"{ParentMod.Groups[ GroupIdx ].Name}: {Name}";
 
+        public string Description { get; set; } = string.Empty;
+
         internal IMod ParentMod { get; private init; }
         internal int GroupIdx { get; private set; }
         internal int OptionIdx { get; private set; }
@@ -143,8 +145,9 @@ public partial class Mod
             ManipulationData.Clear();
 
             // Every option has a name, but priorities are only relevant for multi group options.
-            Name     = json[ nameof( ISubMod.Name ) ]?.ToObject< string >()    ?? string.Empty;
-            priority = json[ nameof( IModGroup.Priority ) ]?.ToObject< int >() ?? 0;
+            Name        = json[ nameof( ISubMod.Name ) ]?.ToObject< string >()        ?? string.Empty;
+            Description = json[ nameof( ISubMod.Description ) ]?.ToObject< string >() ?? string.Empty;
+            priority    = json[ nameof( IModGroup.Priority ) ]?.ToObject< int >()     ?? 0;
 
             var files = ( JObject? )json[ nameof( Files ) ];
             if( files != null )

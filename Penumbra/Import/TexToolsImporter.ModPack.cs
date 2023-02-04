@@ -173,7 +173,6 @@ public partial class TexToolsImporter
                 {
                     var name           = numGroups == 1 ? _currentGroupName : $"{_currentGroupName}, Part {groupId + 1}";
                     options.Clear();
-                    var description = new StringBuilder();
                     var groupFolder = Mod.NewSubFolderName( _currentModDirectory, name )
                      ?? new DirectoryInfo( Path.Combine( _currentModDirectory.FullName,
                             numGroups == 1 ? $"Group {groupPriority + 1}" : $"Group {groupPriority + 1}, Part {groupId + 1}" ) );
@@ -188,12 +187,6 @@ public partial class TexToolsImporter
                          ?? new DirectoryInfo( Path.Combine( groupFolder.FullName, $"Option {i + optionIdx + 1}" ) );
                         ExtractSimpleModList( optionFolder, option.ModsJsons );
                         options.Add( Mod.CreateSubMod( _currentModDirectory, optionFolder, option ) );
-                        description.Append( option.Description );
-                        if( !string.IsNullOrEmpty( option.Description ) )
-                        {
-                            description.Append( '\n' );
-                        }
-
                         if( option.IsChecked )
                         {
                             defaultSettings = group.SelectionType == GroupType.Multi
@@ -220,7 +213,7 @@ public partial class TexToolsImporter
                     }
 
                     Mod.CreateOptionGroup( _currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
-                        defaultSettings ?? 0, description.ToString(), options );
+                        defaultSettings ?? 0, string.Empty, options );
                     ++groupPriority;
                 }
             }
