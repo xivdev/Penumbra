@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using Dalamud;
 using Dalamud.Data;
 using Lumina.Excel.GeneratedSheets;
@@ -7,6 +8,7 @@ using Penumbra.GameData.Structs;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Plugin;
 using Dalamud.Utility;
@@ -14,6 +16,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Actors;
 using Action = Lumina.Excel.GeneratedSheets.Action;
 using ObjectType = Penumbra.GameData.Enums.ObjectType;
+
 namespace Penumbra.GameData.Data;
 
 internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
@@ -38,7 +41,6 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
         _equipment = new EquipmentIdentificationList(pluginInterface, language, dataManager);
         _weapons   = new WeaponIdentificationList(pluginInterface, language, dataManager);
         Actions    = TryCatchData("Actions", () => CreateActionList(dataManager));
-        _equipment = new EquipmentIdentificationList(pluginInterface, language, dataManager);
 
         _modelIdentifierToModelChara = new ModelIdentificationList(pluginInterface, language, dataManager);
         BnpcNames                    = TryCatchData("BNpcNames",    NpcNames.CreateNames);
@@ -86,19 +88,10 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
         DisposeTag("ModelObjects");
     }
 
-    private static bool Add(IDictionary<ulong, HashSet<Item>> dict, ulong key, Item item)
-    {
-        if (dict.TryGetValue(key, out var list))
-            return list.Add(item);
-
-        dict[key] = new HashSet<Item> { item };
-        return true;
-    }
-
     private IReadOnlyDictionary<string, IReadOnlyList<Action>> CreateActionList(DataManager gameData)
     {
         var sheet   = gameData.GetExcelSheet<Action>(Language)!;
-        var storage = new Dictionary<string, HashSet<Action>>((int)sheet.RowCount);
+        var storage = new ConcurrentDictionary<string, ConcurrentBag<Action>>();
 
         void AddAction(string? key, Action action)
         {
@@ -109,10 +102,15 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
             if (storage.TryGetValue(key, out var actions))
                 actions.Add(action);
             else
-                storage[key] = new HashSet<Action> { action };
+                storage[key] = new ConcurrentBag<Action> { action };
         }
 
-        foreach (var action in sheet.Where(a => !a.Name.RawData.IsEmpty))
+        var options = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Environment.ProcessorCount,
+        };
+
+        Parallel.ForEach(sheet.Where(a => !a.Name.RawData.IsEmpty), options, action =>
         {
             var startKey = action.AnimationStart?.Value?.Name?.Value?.Key.ToDalamudString().ToString();
             var endKey   = action.AnimationEnd?.Value?.Key.ToDalamudString().ToString();
@@ -120,37 +118,9 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
             AddAction(startKey, action);
             AddAction(endKey,   action);
             AddAction(hitKey,   action);
-        }
+        });
 
         return storage.ToDictionary(kvp => kvp.Key, kvp => (IReadOnlyList<Action>)kvp.Value.ToArray());
-    }
-
-    private class Comparer : IComparer<(ulong, IReadOnlyList<Item>)>
-    {
-        public int Compare((ulong, IReadOnlyList<Item>) x, (ulong, IReadOnlyList<Item>) y)
-            => x.Item1.CompareTo(y.Item1);
-    }
-
-    private static readonly Comparer _arrayComparer = new();
-
-
-    private static (int, int) FindIndexRange(List<(ulong, IReadOnlyList<Item>)> list, ulong key, ulong mask)
-    {
-        var maskedKey = key & mask;
-        var idx       = list.BinarySearch(0, list.Count, (key, null!), _arrayComparer);
-        if (idx < 0)
-        {
-            if (~idx == list.Count || maskedKey != (list[~idx].Item1 & mask))
-                return (-1, -1);
-
-            idx = ~idx;
-        }
-
-        var endIdx = idx + 1;
-        while (endIdx < list.Count && maskedKey == (list[endIdx].Item1 & mask))
-            ++endIdx;
-
-        return (idx, endIdx);
     }
 
     private void FindEquipment(IDictionary<string, object?> set, GameObjectInfo info)
@@ -282,21 +252,15 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
     }
 
     private IReadOnlyList<IReadOnlyList<(string Name, ObjectKind Kind)>> CreateModelObjects(ActorManager.ActorManagerData actors,
-        DataManager gameData,
-        ClientLanguage language)
+        DataManager gameData, ClientLanguage language)
     {
-        var modelSheet     = gameData.GetExcelSheet<ModelChara>(language)!;
-        var bnpcSheet      = gameData.GetExcelSheet<BNpcBase>(language)!;
-        var enpcSheet      = gameData.GetExcelSheet<ENpcBase>(language)!;
-        var ornamentSheet  = gameData.GetExcelSheet<Ornament>(language)!;
-        var mountSheet     = gameData.GetExcelSheet<Mount>(language)!;
-        var companionSheet = gameData.GetExcelSheet<Companion>(language)!;
-        var ret            = new List<HashSet<(string Name, ObjectKind Kind)>>((int)modelSheet.RowCount);
+        var modelSheet = gameData.GetExcelSheet<ModelChara>(language)!;
+        var ret        = new List<ConcurrentBag<(string Name, ObjectKind Kind)>>((int)modelSheet.RowCount);
 
         for (var i = -1; i < modelSheet.Last().RowId; ++i)
-            ret.Add(new HashSet<(string Name, ObjectKind Kind)>());
+            ret.Add(new ConcurrentBag<(string Name, ObjectKind Kind)>());
 
-        void Add(int modelChara, ObjectKind kind, uint dataId)
+        void AddChara(int modelChara, ObjectKind kind, uint dataId)
         {
             if (modelChara == 0 || modelChara >= ret.Count)
                 return;
@@ -305,23 +269,42 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
                 ret[modelChara].Add((name, kind));
         }
 
-        foreach (var ornament in ornamentSheet)
-            Add(ornament.Model, (ObjectKind)15, ornament.RowId);
-
-        foreach (var mount in mountSheet)
-            Add((int)mount.ModelChara.Row, ObjectKind.MountType, mount.RowId);
-
-        foreach (var companion in companionSheet)
-            Add((int)companion.Model.Row, ObjectKind.Companion, companion.RowId);
-
-        foreach (var enpc in enpcSheet)
-            Add((int)enpc.ModelChara.Row, ObjectKind.EventNpc, enpc.RowId);
-
-        foreach (var bnpc in bnpcSheet.Where(b => b.RowId < BnpcNames.Count))
+        var oTask = Task.Run(() =>
         {
-            foreach (var name in BnpcNames[(int)bnpc.RowId])
-                Add((int)bnpc.ModelChara.Row, ObjectKind.BattleNpc, name);
-        }
+            foreach (var ornament in gameData.GetExcelSheet<Ornament>(language)!)
+                AddChara(ornament.Model, (ObjectKind)15, ornament.RowId);
+        });
+
+        var mTask = Task.Run(() =>
+        {
+            foreach (var mount in gameData.GetExcelSheet<Mount>(language)!)
+                AddChara((int)mount.ModelChara.Row, ObjectKind.MountType, mount.RowId);
+        });
+
+        var cTask = Task.Run(() =>
+        {
+            foreach (var companion in gameData.GetExcelSheet<Companion>(language)!)
+                AddChara((int)companion.Model.Row, ObjectKind.Companion, companion.RowId);
+        });
+
+        var eTask = Task.Run(() =>
+        {
+            foreach (var eNpc in gameData.GetExcelSheet<ENpcBase>(language)!)
+                AddChara((int)eNpc.ModelChara.Row, ObjectKind.EventNpc, eNpc.RowId);
+        });
+
+        var options = new ParallelOptions()
+        {
+            MaxDegreeOfParallelism = Environment.ProcessorCount / 2,
+        };
+
+        Parallel.ForEach(gameData.GetExcelSheet<BNpcBase>(language)!.Where(b => b.RowId < BnpcNames.Count), options, bNpc =>
+        {
+            foreach (var name in BnpcNames[(int)bNpc.RowId])
+                AddChara((int)bNpc.ModelChara.Row, ObjectKind.BattleNpc, name);
+        });
+
+        Task.WaitAll(oTask, mTask, cTask, eTask);
 
         return ret.Select(s => s.Count > 0
             ? s.ToArray()

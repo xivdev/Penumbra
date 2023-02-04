@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.Types;
-using Dalamud.Logging;
 using Newtonsoft.Json.Linq;
 using Penumbra.String;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
@@ -124,18 +123,18 @@ public partial class ActorManager
         if (split.Length < 2)
             throw new IdentifierParseError($"The identifier string {userString} does not contain a type and a value.");
 
-        var    type       = IdentifierType.Invalid;
-        var    playerName = ByteString.Empty;
-        ushort worldId    = 0;
-        var    kind       = ObjectKind.Player;
-        var    objectId   = 0u;
+        IdentifierType type;
+        var            playerName = ByteString.Empty;
+        ushort         worldId    = 0;
+        var            kind       = ObjectKind.Player;
+        var            objectId   = 0u;
 
         (ByteString, ushort) ParsePlayer(string player)
         {
             var parts = player.Split('@', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
             if (!VerifyPlayerName(parts[0]))
                 throw new IdentifierParseError($"{parts[0]} is not a valid player name.");
-            if (!ByteString.FromString(parts[0], out var p, false))
+            if (!ByteString.FromString(parts[0], out var p))
                 throw new IdentifierParseError($"The player string {parts[0]} contains invalid symbols.");
 
             var world = parts.Length == 2
@@ -214,7 +213,7 @@ public partial class ActorManager
                 type = IdentifierType.Retainer;
                 if (!VerifyRetainerName(split[1]))
                     throw new IdentifierParseError($"{split[1]} is not a valid player name.");
-                if (!ByteString.FromString(split[1], out playerName, false))
+                if (!ByteString.FromString(split[1], out playerName))
                     throw new IdentifierParseError($"The retainer string {split[1]} contains invalid symbols.");
 
                 break;

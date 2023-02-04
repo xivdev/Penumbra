@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Dalamud;
 using Dalamud.Logging;
 using Dalamud.Plugin;
@@ -53,6 +55,20 @@ public abstract class DataSharer : IDisposable
             PluginLog.Error($"Error creating shared data for {tag}:\n{ex}");
             return func();
         }
+    }
+
+    protected Task<T> TryCatchDataAsync<T>(string tag, Action<T> fill) where T : class, new()
+    {
+        tag = GetVersionedTag(tag, Language, Version);
+        if (PluginInterface.TryGetData<T>(tag, out var data))
+            return Task.FromResult(data);
+
+        T ret = new();
+        return Task.Run(() =>
+        {
+            fill(ret);
+            return ret;
+        });
     }
 
     public static void DisposeTag(DalamudPluginInterface pi, string tag, ClientLanguage language, int version)

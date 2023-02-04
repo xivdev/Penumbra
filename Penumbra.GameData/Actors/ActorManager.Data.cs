@@ -11,7 +11,6 @@ using Dalamud.Game.Gui;
 using Dalamud.Plugin;
 using Dalamud.Utility;
 using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -51,12 +50,19 @@ public sealed partial class ActorManager : IDisposable
         public ActorManagerData(DalamudPluginInterface pluginInterface, DataManager gameData, ClientLanguage language)
             : base(pluginInterface, language, 1)
         {
-            Worlds     = TryCatchData("Worlds",     () => CreateWorldData(gameData));
-            Mounts     = TryCatchData("Mounts",     () => CreateMountData(gameData));
-            Companions = TryCatchData("Companions", () => CreateCompanionData(gameData));
-            Ornaments  = TryCatchData("Ornaments",  () => CreateOrnamentData(gameData));
-            BNpcs      = TryCatchData("BNpcs",      () => CreateBNpcData(gameData));
-            ENpcs      = TryCatchData("ENpcs",      () => CreateENpcData(gameData));
+            var worldTask      = TryCatchDataAsync("Worlds",     CreateWorldData(gameData));
+            var mountsTask     = TryCatchDataAsync("Mounts",     CreateMountData(gameData));
+            var companionsTask = TryCatchDataAsync("Companions", CreateCompanionData(gameData));
+            var ornamentsTask  = TryCatchDataAsync("Ornaments",  CreateOrnamentData(gameData));
+            var bNpcsTask      = TryCatchDataAsync("BNpcs",      CreateBNpcData(gameData));
+            var eNpcsTask      = TryCatchDataAsync("ENpcs",      CreateENpcData(gameData));
+
+            Worlds     = worldTask.Result;
+            Mounts     = mountsTask.Result;
+            Companions = companionsTask.Result;
+            Ornaments  = ornamentsTask.Result;
+            BNpcs      = bNpcsTask.Result;
+            ENpcs      = eNpcsTask.Result;
         }
 
         /// <summary>
@@ -109,40 +115,53 @@ public sealed partial class ActorManager : IDisposable
             DisposeTag("ENpcs");
         }
 
-        private IReadOnlyDictionary<ushort, string> CreateWorldData(DataManager gameData)
-            => gameData.GetExcelSheet<World>(Language)!
-                .Where(w => w.IsPublic && !w.Name.RawData.IsEmpty)
-                .ToDictionary(w => (ushort)w.RowId, w => w.Name.ToString());
+        private Action<Dictionary<ushort, string>> CreateWorldData(DataManager gameData)
+            => d =>
+            {
+                foreach (var w in gameData.GetExcelSheet<World>(Language)!.Where(w => w.IsPublic && !w.Name.RawData.IsEmpty))
+                    d.TryAdd((ushort)w.RowId, string.Intern(w.Name.ToDalamudString().TextValue));
+            };
 
-        private IReadOnlyDictionary<uint, string> CreateMountData(DataManager gameData)
-            => gameData.GetExcelSheet<Mount>(Language)!
-                .Where(m => m.Singular.RawData.Length > 0 && m.Order >= 0)
-                .ToDictionary(m => m.RowId, m => ToTitleCaseExtended(m.Singular, m.Article));
+        private Action<Dictionary<uint, string>> CreateMountData(DataManager gameData)
+            => d =>
+            {
+                foreach (var m in gameData.GetExcelSheet<Mount>(Language)!.Where(m => m.Singular.RawData.Length > 0 && m.Order >= 0))
+                    d.TryAdd(m.RowId, ToTitleCaseExtended(m.Singular, m.Article));
+            };
 
-        private IReadOnlyDictionary<uint, string> CreateCompanionData(DataManager gameData)
-            => gameData.GetExcelSheet<Companion>(Language)!
-                .Where(c => c.Singular.RawData.Length > 0 && c.Order < ushort.MaxValue)
-                .ToDictionary(c => c.RowId, c => ToTitleCaseExtended(c.Singular, c.Article));
+        private Action<Dictionary<uint, string>> CreateCompanionData(DataManager gameData)
+            => d =>
+            {
+                foreach (var c in gameData.GetExcelSheet<Companion>(Language)!.Where(c
+                             => c.Singular.RawData.Length > 0 && c.Order < ushort.MaxValue))
+                    d.TryAdd(c.RowId, ToTitleCaseExtended(c.Singular, c.Article));
+            };
 
-        private IReadOnlyDictionary<uint, string> CreateOrnamentData(DataManager gameData)
-            => gameData.GetExcelSheet<Ornament>(Language)!
-                .Where(o => o.Singular.RawData.Length > 0)
-                .ToDictionary(o => o.RowId, o => ToTitleCaseExtended(o.Singular, o.Article));
+        private Action<Dictionary<uint, string>> CreateOrnamentData(DataManager gameData)
+            => d =>
+            {
+                foreach (var o in gameData.GetExcelSheet<Ornament>(Language)!.Where(o => o.Singular.RawData.Length > 0))
+                    d.TryAdd(o.RowId, ToTitleCaseExtended(o.Singular, o.Article));
+            };
 
-        private IReadOnlyDictionary<uint, string> CreateBNpcData(DataManager gameData)
-            => gameData.GetExcelSheet<BNpcName>(Language)!
-                .Where(n => n.Singular.RawData.Length > 0)
-                .ToDictionary(n => n.RowId, n => ToTitleCaseExtended(n.Singular, n.Article));
+        private Action<Dictionary<uint, string>> CreateBNpcData(DataManager gameData)
+            => d =>
+            {
+                foreach (var n in gameData.GetExcelSheet<BNpcName>(Language)!.Where(n => n.Singular.RawData.Length > 0))
+                    d.TryAdd(n.RowId, ToTitleCaseExtended(n.Singular, n.Article));
+            };
 
-        private IReadOnlyDictionary<uint, string> CreateENpcData(DataManager gameData)
-            => gameData.GetExcelSheet<ENpcResident>(Language)!
-                .Where(e => e.Singular.RawData.Length > 0)
-                .ToDictionary(e => e.RowId, e => ToTitleCaseExtended(e.Singular, e.Article));
+        private Action<Dictionary<uint, string>> CreateENpcData(DataManager gameData)
+            => d =>
+            {
+                foreach (var n in gameData.GetExcelSheet<ENpcResident>(Language)!.Where(e => e.Singular.RawData.Length > 0))
+                    d.TryAdd(n.RowId, ToTitleCaseExtended(n.Singular, n.Article));
+            };
 
         private static string ToTitleCaseExtended(SeString s, sbyte article)
         {
             if (article == 1)
-                return s.ToDalamudString().ToString();
+                return string.Intern(s.ToDalamudString().ToString());
 
             var sb        = new StringBuilder(s.ToDalamudString().ToString());
             var lastSpace = true;
@@ -159,18 +178,20 @@ public sealed partial class ActorManager : IDisposable
                 }
             }
 
-            return sb.ToString();
+            return string.Intern(sb.ToString());
         }
     }
 
     public readonly ActorManagerData Data;
 
-    public ActorManager(DalamudPluginInterface pluginInterface, ObjectTable objects, ClientState state, Dalamud.Game.Framework framework, DataManager gameData, GameGui gameGui,
+    public ActorManager(DalamudPluginInterface pluginInterface, ObjectTable objects, ClientState state, Dalamud.Game.Framework framework,
+        DataManager gameData, GameGui gameGui,
         Func<ushort, short> toParentIdx)
         : this(pluginInterface, objects, state, framework, gameData, gameGui, gameData.Language, toParentIdx)
     { }
 
-    public ActorManager(DalamudPluginInterface pluginInterface, ObjectTable objects, ClientState state, Dalamud.Game.Framework framework, DataManager gameData, GameGui gameGui,
+    public ActorManager(DalamudPluginInterface pluginInterface, ObjectTable objects, ClientState state, Dalamud.Game.Framework framework,
+        DataManager gameData, GameGui gameGui,
         ClientLanguage language, Func<ushort, short> toParentIdx)
     {
         _framework   = framework;

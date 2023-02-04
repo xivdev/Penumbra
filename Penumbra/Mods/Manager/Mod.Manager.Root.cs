@@ -1,5 +1,8 @@
+using Penumbra.UI.Classes;
 using System;
+using System.Collections.Concurrent;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Penumbra.Mods;
 
@@ -87,14 +90,22 @@ public sealed partial class Mod
 
             if( Valid && BasePath.Exists )
             {
-                foreach( var modFolder in BasePath.EnumerateDirectories() )
+                var options = new ParallelOptions()
                 {
-                    var mod = LoadMod( modFolder, false );
-                    if( mod == null )
+                    MaxDegreeOfParallelism = Environment.ProcessorCount / 2,
+                };
+                var queue = new ConcurrentQueue< Mod >();
+                Parallel.ForEach( BasePath.EnumerateDirectories(), options, dir =>
+                {
+                    var mod = LoadMod( dir, false );
+                    if( mod != null )
                     {
-                        continue;
+                        queue.Enqueue( mod );
                     }
+                } );
 
+                foreach( var mod in queue )
+                {
                     mod.Index = _mods.Count;
                     _mods.Add( mod );
                 }
