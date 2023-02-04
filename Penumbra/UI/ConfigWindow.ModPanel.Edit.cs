@@ -301,16 +301,18 @@ public partial class ConfigWindow
         // Open a popup to edit a multi-line mod or option description.
         private static class DescriptionEdit
         {
-            private const  string PopupName          = "Edit Description";
-            private static string _newDescription    = string.Empty;
-            private static int    _newDescriptionIdx = -1;
+            private const  string PopupName               = "Edit Description";
+            private static string _newDescription         = string.Empty;
+            private static int    _newDescriptionIdx      = -1;
+            private static int    _newDesriptionOptionIdx = -1;
             private static Mod?   _mod;
 
-            public static void OpenPopup( Mod mod, int groupIdx )
+            public static void OpenPopup( Mod mod, int groupIdx, int optionIdx = -1 )
             {
-                _newDescriptionIdx = groupIdx;
-                _newDescription    = groupIdx < 0 ? mod.Description : mod.Groups[ groupIdx ].Description;
-                _mod               = mod;
+                _newDescriptionIdx      = groupIdx;
+                _newDesriptionOptionIdx = optionIdx;
+                _newDescription         = groupIdx < 0 ? mod.Description : optionIdx < 0 ? mod.Groups[ groupIdx ].Description : mod.Groups[ groupIdx ][ optionIdx ].Description;
+                _mod                    = mod;
                 ImGui.OpenPopup( PopupName );
             }
 
@@ -355,7 +357,14 @@ public partial class ConfigWindow
                             Penumbra.ModManager.ChangeModDescription( _mod.Index, _newDescription );
                             break;
                         case >= 0:
-                            Penumbra.ModManager.ChangeGroupDescription( _mod, _newDescriptionIdx, _newDescription );
+                            if( _newDesriptionOptionIdx < 0 )
+                            {
+                                Penumbra.ModManager.ChangeGroupDescription( _mod, _newDescriptionIdx, _newDescription );
+                            }
+                            else
+                            {
+                                Penumbra.ModManager.ChangeOptionDescription( _mod, _newDescriptionIdx, _newDesriptionOptionIdx, _newDescription );
+                            }
                             break;
                     }
 
@@ -468,7 +477,7 @@ public partial class ConfigWindow
 
             public static void Draw( ModPanel panel, int groupIdx )
             {
-                using var table = ImRaii.Table( string.Empty, 5, ImGuiTableFlags.SizingFixedFit );
+                using var table = ImRaii.Table( string.Empty, 6, ImGuiTableFlags.SizingFixedFit );
                 if( !table )
                 {
                     return;
@@ -478,6 +487,7 @@ public partial class ConfigWindow
                 ImGui.TableSetupColumn( "default", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight() );
                 ImGui.TableSetupColumn( "name", ImGuiTableColumnFlags.WidthFixed,
                     panel._window._inputTextWidth.X - 68 * ImGuiHelpers.GlobalScale - ImGui.GetFrameHeight() );
+                ImGui.TableSetupColumn( "description", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
                 ImGui.TableSetupColumn( "delete", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
                 ImGui.TableSetupColumn( "priority", ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale );
 
@@ -532,6 +542,11 @@ public partial class ConfigWindow
                     Penumbra.ModManager.RenameOption( panel._mod, groupIdx, optionIdx, newOptionName );
                 }
 
+                ImGui.TableNextColumn();
+                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Edit.ToIconString(), panel._window._iconButtonSize, "Edit option description.", false, true ) )
+                {
+                    panel._delayedActions.Enqueue( () => DescriptionEdit.OpenPopup( panel._mod, groupIdx, optionIdx ) );
+                }
                 ImGui.TableNextColumn();
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), panel._window._iconButtonSize,
                        "Delete this option.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true ) )
