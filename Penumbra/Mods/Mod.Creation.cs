@@ -116,6 +116,7 @@ public partial class Mod
         var mod = new SubMod( null! ) // Mod is irrelevant here, only used for saving.
         {
             Name = option.Name,
+            Description = option.Description,
         };
         foreach( var (_, gamePath, file) in list )
         {

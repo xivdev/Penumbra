@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
@@ -179,6 +180,12 @@ public partial class ConfigWindow
                         Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx2 );
                     }
 
+                    if( !string.IsNullOrEmpty( group[ idx2 ].Description ) )
+                    {
+                        ImGui.SameLine();
+                        ImGuiComponents.HelpMarker(group[idx2].Description);
+                    }
+
                     id.Pop();
                 }
             }
@@ -211,6 +218,12 @@ public partial class ConfigWindow
                 {
                     flags = setting ? flags | flag : flags & ~flag;
                     Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, flags );
+                }
+
+                if( !string.IsNullOrEmpty( group[ idx2 ].Description ) )
+                {
+                    ImGui.SameLine();
+                    ImGuiComponents.HelpMarker(group[idx2].Description);
                 }
 
                 id.Pop();
