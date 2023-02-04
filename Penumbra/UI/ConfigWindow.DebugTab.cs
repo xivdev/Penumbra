@@ -116,17 +116,20 @@ public partial class ConfigWindow
             PrintValue( "Web Server Enabled", ( _window._penumbra.WebServer != null ).ToString() );
         }
 
-        [Conditional( "DEBUG" )]
         private static void DrawPerformanceTab()
         {
             ImGui.NewLine();
-            if( !ImGui.CollapsingHeader( "Performance" ) )
+            if( ImGui.CollapsingHeader( "Performance" ) )
             {
                 return;
             }
 
-            Penumbra.StartTimer.Draw( "##startTimer", TimingExtensions.ToName );
-            ImGui.NewLine();
+            using( var start = TreeNode( "Startup Performance", ImGuiTreeNodeFlags.DefaultOpen ) )
+            {
+                Penumbra.StartTimer.Draw( "##startTimer", TimingExtensions.ToName );
+                ImGui.NewLine();
+            }
+
             Penumbra.Performance.Draw( "##performance", "Enable Runtime Performance Tracking", TimingExtensions.ToName );
         }
 

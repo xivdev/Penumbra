@@ -20,6 +20,7 @@
 
     <PropertyGroup>
         <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);MSB3277</MSBuildWarningsAsMessages>
+        <DefineConstants>PROFILING;</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>

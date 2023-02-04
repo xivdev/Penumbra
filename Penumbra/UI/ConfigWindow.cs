@@ -27,6 +27,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     {
         _penumbra                  =  penumbra;
         _settingsTab               =  new SettingsTab( this );
+        
         _selector                  =  new ModFileSystemSelector( _penumbra.ModFileSystem );
         _modPanel                  =  new ModPanel( this );
         _selector.SelectionChanged += _modPanel.OnSelectionChange;
