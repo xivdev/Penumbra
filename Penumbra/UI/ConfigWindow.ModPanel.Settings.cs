@@ -64,7 +64,7 @@ public partial class ConfigWindow
             if( _mod.Groups.Count > 0 )
             {
                 var useDummy = true;
-                foreach(var (group, idx) in _mod.Groups.WithIndex().Where(g => g.Value.Type == GroupType.Single && g.Value.IsOption  ))
+                foreach( var (group, idx) in _mod.Groups.WithIndex().Where( g => g.Value.Type == GroupType.Single && g.Value.IsOption ) )
                 {
                     ImGuiUtil.Dummy( _window._defaultSpace, useDummy );
                     useDummy = false;
@@ -175,15 +175,27 @@ public partial class ConfigWindow
                 for( var idx2 = 0; idx2 < group.Count; ++idx2 )
                 {
                     id.Push( idx2 );
-                    if( ImGui.Selectable( group[ idx2 ].Name, idx2 == selectedOption ) )
+                    var option = group[ idx2 ];
+                    if( ImGui.Selectable( option.Name, idx2 == selectedOption ) )
                     {
                         Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx2 );
                     }
 
-                    if( !string.IsNullOrEmpty( group[ idx2 ].Description ) )
+                    if( option.Description.Length > 0 )
                     {
+                        var hovered = ImGui.IsItemHovered();
                         ImGui.SameLine();
-                        ImGuiComponents.HelpMarker(group[idx2].Description);
+                        using( var font = ImRaii.PushFont( UiBuilder.IconFont ) )
+                        {
+                            using var color = ImRaii.PushColor( ImGuiCol.Text, ImGui.GetColorU32( ImGuiCol.TextDisabled ) );
+                            ImGuiUtil.RightAlign( FontAwesomeIcon.InfoCircle.ToIconString(), ImGui.GetStyle().ItemSpacing.X );
+                        }
+
+                        if( hovered )
+                        {
+                            using var tt = ImRaii.Tooltip();
+                            ImGui.TextUnformatted( option.Description );
+                        }
                     }
 
                     id.Pop();
@@ -211,19 +223,20 @@ public partial class ConfigWindow
             Widget.BeginFramedGroup( group.Name, group.Description );
             for( var idx2 = 0; idx2 < group.Count; ++idx2 )
             {
+                var option = group[ idx2 ];
                 id.Push( idx2 );
                 var flag    = 1u << idx2;
                 var setting = ( flags & flag ) != 0;
-                if( ImGui.Checkbox( group[ idx2 ].Name, ref setting ) )
+                if( ImGui.Checkbox( option.Name, ref setting ) )
                 {
                     flags = setting ? flags | flag : flags & ~flag;
                     Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, flags );
                 }
 
-                if( !string.IsNullOrEmpty( group[ idx2 ].Description ) )
+                if( option.Description.Length > 0 )
                 {
                     ImGui.SameLine();
-                    ImGuiComponents.HelpMarker(group[idx2].Description);
+                    ImGuiComponents.HelpMarker( option.Description );
                 }
 
                 id.Pop();

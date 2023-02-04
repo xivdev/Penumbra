@@ -128,16 +128,12 @@ public sealed partial class Mod
         {
             var group  = mod._groups[ groupIdx ];
             var option = group[ optionIdx ];
-            if( option.Description == newDescription )
+            if( option.Description == newDescription || option is not SubMod s )
             {
                 return;
             }
 
-            var _ = option switch
-            {
-                SubMod s => s.Description = newDescription,
-            };
-
+            s.Description = newDescription;
             ModOptionChanged.Invoke( ModOptionChangeType.DisplayChange, mod, groupIdx, optionIdx, -1 );
         }
 

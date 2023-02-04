@@ -311,8 +311,13 @@ public partial class ConfigWindow
             {
                 _newDescriptionIdx      = groupIdx;
                 _newDesriptionOptionIdx = optionIdx;
-                _newDescription         = groupIdx < 0 ? mod.Description : optionIdx < 0 ? mod.Groups[ groupIdx ].Description : mod.Groups[ groupIdx ][ optionIdx ].Description;
-                _mod                    = mod;
+                _newDescription = groupIdx < 0
+                    ? mod.Description
+                    : optionIdx < 0
+                        ? mod.Groups[ groupIdx ].Description
+                        : mod.Groups[ groupIdx ][ optionIdx ].Description;
+
+                _mod = mod;
                 ImGui.OpenPopup( PopupName );
             }
 
@@ -365,6 +370,7 @@ public partial class ConfigWindow
                             {
                                 Penumbra.ModManager.ChangeOptionDescription( _mod, _newDescriptionIdx, _newDesriptionOptionIdx, _newDescription );
                             }
+
                             break;
                     }
 
@@ -486,7 +492,7 @@ public partial class ConfigWindow
                 ImGui.TableSetupColumn( "idx", ImGuiTableColumnFlags.WidthFixed, 60 * ImGuiHelpers.GlobalScale );
                 ImGui.TableSetupColumn( "default", ImGuiTableColumnFlags.WidthFixed, ImGui.GetFrameHeight() );
                 ImGui.TableSetupColumn( "name", ImGuiTableColumnFlags.WidthFixed,
-                    panel._window._inputTextWidth.X - 68 * ImGuiHelpers.GlobalScale - ImGui.GetFrameHeight() );
+                    panel._window._inputTextWidth.X - 72 * ImGuiHelpers.GlobalScale - ImGui.GetFrameHeight() - panel._window._iconButtonSize.X );
                 ImGui.TableSetupColumn( "description", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
                 ImGui.TableSetupColumn( "delete", ImGuiTableColumnFlags.WidthFixed, panel._window._iconButtonSize.X );
                 ImGui.TableSetupColumn( "priority", ImGuiTableColumnFlags.WidthFixed, 50 * ImGuiHelpers.GlobalScale );
@@ -547,6 +553,7 @@ public partial class ConfigWindow
                 {
                     panel._delayedActions.Enqueue( () => DescriptionEdit.OpenPopup( panel._mod, groupIdx, optionIdx ) );
                 }
+
                 ImGui.TableNextColumn();
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Trash.ToIconString(), panel._window._iconButtonSize,
                        "Delete this option.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true ) )

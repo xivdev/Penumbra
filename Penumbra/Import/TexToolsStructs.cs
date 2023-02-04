@@ -34,8 +34,9 @@ internal class ModPackPage
 internal class ModGroup
 {
     public string       GroupName     = string.Empty;
-    public GroupType   SelectionType = GroupType.Single;
+    public GroupType    SelectionType = GroupType.Single;
     public OptionList[] OptionList    = Array.Empty< OptionList >();
+    public string       Description   = string.Empty;
 }
 
 [Serializable]
@@ -46,7 +47,7 @@ internal class OptionList
     public string      ImagePath     = string.Empty;
     public SimpleMod[] ModsJsons     = Array.Empty< SimpleMod >();
     public string      GroupName     = string.Empty;
-    public GroupType  SelectionType = GroupType.Single;
+    public GroupType   SelectionType = GroupType.Single;
     public bool        IsChecked     = false;
 }
 

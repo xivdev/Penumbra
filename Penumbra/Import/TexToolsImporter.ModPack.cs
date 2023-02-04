@@ -213,7 +213,7 @@ public partial class TexToolsImporter
                     }
 
                     Mod.CreateOptionGroup( _currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
-                        defaultSettings ?? 0, string.Empty, options );
+                        defaultSettings ?? 0, group.Description, options );
                     ++groupPriority;
                 }
             }

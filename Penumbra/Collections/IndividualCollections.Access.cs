@@ -136,7 +136,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                     return ( Penumbra.Config.UseCharacterCollectionInInspect ? identifier : ActorIdentifier.Invalid, SpecialResult.Card );
                 }
 
-                return ( Penumbra.Config.UseCharacterCollectionInTryOn ? _actorManager.GetGlamourPlayer() : ActorIdentifier.Invalid, SpecialResult.Glamour );
+                return Penumbra.Config.UseCharacterCollectionInTryOn ? ( _actorManager.GetGlamourPlayer(), SpecialResult.Glamour ) : ( identifier, SpecialResult.Invalid );
             }
             default: return ( identifier, SpecialResult.Invalid );
         }
