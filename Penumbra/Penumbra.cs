@@ -28,6 +28,7 @@ using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
 using Action = System.Action;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
+using DalamudUtil = Dalamud.Utility.Util;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
 namespace Penumbra;
@@ -367,6 +368,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append( $"> **`Commit Hash:                 `** {CommitHash}\n" );
         sb.Append( $"> **`Enable Mods:                 `** {Config.EnableMods}\n" );
         sb.Append( $"> **`Enable HTTP API:             `** {Config.EnableHttpApi}\n" );
+        sb.Append( $"> **`Operating System:            `** {( DalamudUtil.IsLinux() ? "Mac/Linux (Wine)" : "Windows" )}\n" );
         sb.Append( $"> **`Root Directory:              `** `{Config.ModDirectory}`, {( exists ? "Exists" : "Not Existing" )}\n" );
         sb.Append( $"> **`Free Drive Space:            `** {( drive != null ? Functions.HumanReadableSize( drive.AvailableFreeSpace ) : "Unknown" )}\n" );
         sb.Append( $"> **`Auto-Deduplication:          `** {Config.AutoDeduplicateOnImport}\n" );
