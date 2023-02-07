@@ -6,6 +6,7 @@ using OtterTex;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
+using DalamudUtil = Dalamud.Utility.Util;
 using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
@@ -137,7 +138,7 @@ public partial class CombinedTexture : IDisposable
         }
 
         var numMips = Math.Min( 13, 1 + BitOperations.Log2( ( uint )Math.Max( input.Meta.Width, input.Meta.Height ) ) );
-        var ec      = input.GenerateMipMaps( out var ret, numMips, FilterFlags.SeparateAlpha );
+        var ec      = input.GenerateMipMaps( out var ret, numMips, ( DalamudUtil.IsLinux() ? FilterFlags.ForceNonWIC : 0 ) | FilterFlags.SeparateAlpha );
         if (ec != ErrorCode.Ok)
         {
             throw new Exception( $"Could not create the requested {numMips} mip maps, maybe retry with the top-right checkbox unchecked:\n{ec}" );
