@@ -34,9 +34,21 @@ public partial class ConfigWindow
         Add6_3_0( ret );
         Add6_4_0( ret );
         Add6_5_0( ret );
+        Add6_5_2( ret );
 
         return ret;
     }
+
+    private static void Add6_5_2( Changelog log )
+        => log.NextVersion( "Version 0.6.5.2" )
+           .RegisterEntry( "Updated for game version 6.31 Hotfix." )
+           .RegisterEntry( "Added option-specific descriptions for mods, instead of having just descriptions for groups of options. (Thanks Caraxi!)" )
+           .RegisterEntry( "Those are now accurately parsed from TTMPs, too.", 1 )
+           .RegisterEntry( "Improved launch times somewhat through parallelization of some tasks." )
+           .RegisterEntry( "Added some performance tracking for start-up durations and for real time data to Release builds. They can be seen and enabled in the Debug tab when Debug Mode is enabled." )
+           .RegisterEntry( "Fixed an issue with IMC changes and Mare Synchronos interoperability." )
+           .RegisterEntry( "Fixed an issue with housing mannequins crashing the game when resource logging was enabled." )
+           .RegisterEntry( "Fixed an issue generating Mip Maps for texture import on Wine." );
 
     private static void Add6_5_0( Changelog log )
         => log.NextVersion( "Version 0.6.5.0" )

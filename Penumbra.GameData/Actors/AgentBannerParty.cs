@@ -46,12 +46,12 @@ public unsafe struct AgentBannerMIP
 
 // Client::UI::Agent::AgentBannerInterface::Storage
 // destructed in Client::UI::Agent::AgentBannerInterface::dtor
-[StructLayout( LayoutKind.Explicit, Size = 0x3BB0 )]
+[StructLayout( LayoutKind.Explicit, Size = 0x3B30 )]
 public unsafe struct BannerInterfaceStorage
 {
     // vtable: 48 8D 05 ?? ?? ?? ?? 48 89 01 48 8B F9 7E 
     // dtor: E8 ?? ?? ?? ?? 48 83 EF ?? 75 ?? BA ?? ?? ?? ?? 48 8B CE E8 ?? ?? ?? ?? 48 89 7D
-    [StructLayout( LayoutKind.Explicit, Size = 0x770 )]
+    [StructLayout( LayoutKind.Explicit, Size = 0x760 )]
     public struct CharacterData
     {
         [FieldOffset( 0x000 )] public void** VTable;
@@ -67,8 +67,8 @@ public unsafe struct BannerInterfaceStorage
         [FieldOffset( 0x2B0 )] public void*      CharaView;
         [FieldOffset( 0x5D0 )] public AtkTexture AtkTexture;
 
-        [FieldOffset( 0x6F8 )] public Utf8String Title;
-        [FieldOffset( 0x768 )] public void* SomePointer;
+        [FieldOffset( 0x6E0 )] public Utf8String Title;
+        [FieldOffset( 0x750 )] public void* SomePointer;
 
     }
 
@@ -78,14 +78,14 @@ public unsafe struct BannerInterfaceStorage
     [FieldOffset( 0x0014 )] public uint Unk2;
 
     [FieldOffset( 0x0020 )] public CharacterData Character1;
-    [FieldOffset( 0x0790 )] public CharacterData Character2;
-    [FieldOffset( 0x0F00 )] public CharacterData Character3;
-    [FieldOffset( 0x1670 )] public CharacterData Character4;
-    [FieldOffset( 0x1DE0 )] public CharacterData Character5;
-    [FieldOffset( 0x2550 )] public CharacterData Character6;
-    [FieldOffset( 0x2CC0 )] public CharacterData Character7;
-    [FieldOffset( 0x3430 )] public CharacterData Character8;
+    [FieldOffset( 0x0780 )] public CharacterData Character2;
+    [FieldOffset( 0x0EE0 )] public CharacterData Character3;
+    [FieldOffset( 0x1640 )] public CharacterData Character4;
+    [FieldOffset( 0x1DA0 )] public CharacterData Character5;
+    [FieldOffset( 0x2500 )] public CharacterData Character6;
+    [FieldOffset( 0x2C60 )] public CharacterData Character7;
+    [FieldOffset( 0x33C0 )] public CharacterData Character8;
 
-    [FieldOffset( 0x3BA0 )] public long Unk3;
-    [FieldOffset( 0x3BA8 )] public long Unk4;
+    [FieldOffset( 0x3B20 )] public long Unk3;
+    [FieldOffset( 0x3B28 )] public long Unk4;
 }
