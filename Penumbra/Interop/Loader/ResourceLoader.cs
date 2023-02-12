@@ -82,6 +82,7 @@ public unsafe partial class ResourceLoader : IDisposable
         }
 
         HooksEnabled = true;
+        _createFileWHook.Enable();
         ReadSqPackHook.Enable();
         GetResourceSyncHook.Enable();
         GetResourceAsyncHook.Enable();
@@ -96,6 +97,7 @@ public unsafe partial class ResourceLoader : IDisposable
         }
 
         HooksEnabled = false;
+        _createFileWHook.Disable();
         ReadSqPackHook.Disable();
         GetResourceSyncHook.Disable();
         GetResourceAsyncHook.Disable();

@@ -104,12 +104,6 @@ public partial class ConfigWindow
                 return ( "Path is not allowed to be a drive root. Please add a directory.", false );
             }
 
-            var symbol = '\0';
-            if( newName.Any( c => ( symbol = c ) > ( char )0x7F ) )
-            {
-                return ( $"Path contains invalid symbol {symbol}. Only ASCII is allowed.", false );
-            }
-
             var desktop = Environment.GetFolderPath( Environment.SpecialFolder.Desktop );
             if( IsSubPathOf( desktop, newName ) )
             {

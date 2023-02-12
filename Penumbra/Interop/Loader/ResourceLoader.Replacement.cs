@@ -1,8 +1,3 @@
-using System;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
@@ -13,6 +8,11 @@ using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
+using System;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
@@ -20,6 +20,8 @@ namespace Penumbra.Interop.Loader;
 
 public unsafe partial class ResourceLoader
 {
+    private readonly CreateFileWHook _createFileWHook = new();
+
     // Resources can be obtained synchronously and asynchronously. We need to change behaviour in both cases.
     // Both work basically the same, so we can reduce the main work to one function used by both hooks.
 
@@ -173,6 +175,7 @@ public unsafe partial class ResourceLoader
             default:
                 break;
         }
+
         return DefaultResolver( path );
     }
 
@@ -249,27 +252,20 @@ public unsafe partial class ResourceLoader
         return ret;
     }
 
-    // Load the resource from a path on the users hard drives.
+    /// <summary> Load the resource from a path on the users hard drives. </summary>
+    /// <remarks> <see cref="CreateFileWHook" /> </remarks>
     private byte DefaultRootedResourceLoad( ByteString gamePath, ResourceManager* resourceManager,
         SeFileDescriptor* fileDescriptor, int priority, bool isSync )
     {
         // Specify that we are loading unpacked files from the drive.
-        // We need to copy the actual file path in UTF16 (Windows-Unicode) on two locations,
-        // but since we only allow ASCII in the game paths, this is just a matter of upcasting.
+        // We need to copy the actual file path in UTF16 (Windows-Unicode) on two locations.
         fileDescriptor->FileMode = FileMode.LoadUnpackedResource;
 
-        var fd = stackalloc byte[0x20 + 2 * gamePath.Length + 0x16];
-        fileDescriptor->FileDescriptor = fd;
-        var fdPtr = ( char* )( fd + 0x21 );
-        for( var i = 0; i < gamePath.Length; ++i )
-        {
-            var c = ( char )gamePath.Path[ i ];
-            ( &fileDescriptor->Utf16FileName )[ i ] = c;
-            fdPtr[ i ]                              = c;
-        }
-
-        ( &fileDescriptor->Utf16FileName )[ gamePath.Length ] = '\0';
-        fdPtr[ gamePath.Length ]                              = '\0';
+        // Ensure that the file descriptor has its wchar_t array on aligned boundary even if it has to be odd.
+        var fd = stackalloc char[0x11 + 0x0B + 14];
+        fileDescriptor->FileDescriptor = (byte*) fd + 1;
+        CreateFileWHook.WritePtr( fd + 0x11, gamePath.Path, gamePath.Length );
+        CreateFileWHook.WritePtr( &fileDescriptor->Utf16FileName, gamePath.Path, gamePath.Length );
 
         // Use the SE ReadFile function.
         var ret = ReadFile( resourceManager, fileDescriptor, priority, isSync );
@@ -287,6 +283,7 @@ public unsafe partial class ResourceLoader
     private void DisposeHooks()
     {
         DisableHooks();
+        _createFileWHook.Dispose();
         ReadSqPackHook.Dispose();
         GetResourceSyncHook.Dispose();
         GetResourceAsyncHook.Dispose();

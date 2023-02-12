@@ -209,6 +209,7 @@ public unsafe partial class ResourceLoader
         for( var i = 0; i < _debugList.Count; ++i )
         {
             var data = _debugList.Values[ i ];
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if( data.OriginalPath.Path == null )
             {
                 _debugList.RemoveAt( i-- );

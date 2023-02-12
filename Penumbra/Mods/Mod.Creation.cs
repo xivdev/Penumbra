@@ -156,9 +156,7 @@ public partial class Mod
     private static DirectoryInfo NewOptionDirectory( DirectoryInfo baseDir, string optionName )
         => new(Path.Combine( baseDir.FullName, ReplaceBadXivSymbols( optionName ) ));
 
-
-    // XIV can not deal with non-ascii symbols in a path,
-    // and the path must obviously be valid itself.
+    // Normalize for nicer names, and remove invalid symbols or invalid paths.
     public static string ReplaceBadXivSymbols( string s, string replacement = "_" )
     {
         if( s == "." )
@@ -174,7 +172,7 @@ public partial class Mod
         StringBuilder sb = new(s.Length);
         foreach( var c in s.Normalize( NormalizationForm.FormKC ) )
         {
-            if( c.IsInvalidAscii() || c.IsInvalidInPath() )
+            if( c.IsInvalidInPath() )
             {
                 sb.Append( replacement );
             }
