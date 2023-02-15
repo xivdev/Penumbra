@@ -11,6 +11,7 @@ using OtterGui.Raii;
 using Penumbra.GameData.Files;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
+using SixLabors.ImageSharp.PixelFormats;
 
 namespace Penumbra.UI.Classes;
 
@@ -23,6 +24,7 @@ public partial class ModEditWindow
         private readonly Func< IReadOnlyList< Mod.Editor.FileRegistry > > _getFiles;
         private readonly Func< T, bool, bool >                            _drawEdit;
         private readonly Func< string >                                   _getInitialPath;
+        private readonly Func< byte[], T? >                               _parseFile;
 
         private Mod.Editor.FileRegistry? _currentPath;
         private T?                       _currentFile;
@@ -39,13 +41,14 @@ public partial class ModEditWindow
         private readonly FileDialogManager _fileDialog = ConfigWindow.SetupFileManager();
 
         public FileEditor( string tabName, string fileType, Func< IReadOnlyList< Mod.Editor.FileRegistry > > getFiles,
-            Func< T, bool, bool > drawEdit, Func< string > getInitialPath )
+            Func< T, bool, bool > drawEdit, Func< string > getInitialPath, Func< byte[], T? >? parseFile )
         {
             _tabName        = tabName;
             _fileType       = fileType;
             _getFiles       = getFiles;
             _drawEdit       = drawEdit;
             _getInitialPath = getInitialPath;
+            _parseFile      = parseFile ?? DefaultParseFile;
         }
 
         public void Draw()
@@ -84,7 +87,7 @@ public partial class ModEditWindow
                     if( file != null )
                     {
                         _defaultException = null;
-                        _defaultFile      = Activator.CreateInstance( typeof( T ), file.Data ) as T;
+                        _defaultFile      = _parseFile( file.Data );
                     }
                     else
                     {
@@ -172,6 +175,11 @@ public partial class ModEditWindow
             }
         }
 
+        private static T? DefaultParseFile( byte[] bytes )
+        {
+            return Activator.CreateInstance( typeof( T ), bytes ) as T;
+        }
+
         private void UpdateCurrentFile( Mod.Editor.FileRegistry path )
         {
             if( ReferenceEquals( _currentPath, path ) )
@@ -185,7 +193,7 @@ public partial class ModEditWindow
             try
             {
                 var bytes = File.ReadAllBytes( _currentPath.File.FullName );
-                _currentFile = Activator.CreateInstance( typeof( T ), bytes ) as T;
+                _currentFile = _parseFile( bytes );
             }
             catch( Exception e )
             {
