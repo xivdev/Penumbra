@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Lumina.Data.Parsing;
 using Lumina.Extensions;
 using Lumina.Misc;
 using Penumbra.GameData.Data;
@@ -33,8 +34,7 @@ public partial class ShpkFile : IWritable
         public DXVersion DirectXVersion;
         public Resource[] Constants;
         public Resource[] Samplers;
-        public Resource[] UnknownX;
-        public Resource[] UnknownY;
+        public Resource[] UAVs;
         public byte[] AdditionalHeader;
         private byte[] _blob;
         private DisassembledShader? _disassembly;
@@ -111,6 +111,16 @@ public partial class ShpkFile : IWritable
             return Samplers.Select(res => new Resource?(res)).FirstOrDefault(res => res!.Value.Name == name);
         }
 
+        public Resource? GetUAVById(uint id)
+        {
+            return UAVs.Select(res => new Resource?(res)).FirstOrDefault(res => res!.Value.Id == id);
+        }
+
+        public Resource? GetUAVByName(string name)
+        {
+            return UAVs.Select(res => new Resource?(res)).FirstOrDefault(res => res!.Value.Name == name);
+        }
+
         public void UpdateResources(ShpkFile file)
         {
             if (_disassembly == null)
@@ -119,39 +129,56 @@ public partial class ShpkFile : IWritable
             }
             var constants = new List<Resource>();
             var samplers = new List<Resource>();
+            var uavs = new List<Resource>();
             foreach (var binding in _disassembly.ResourceBindings)
             {
                 switch (binding.Type)
                 {
                     case DisassembledShader.ResourceType.ConstantBuffer:
                         var name = NormalizeResourceName(binding.Name);
-                        // We want to preserve IDs as much as possible, and to deterministically generate new ones, to maximize compatibility.
-                        var id = GetConstantByName(name)?.Id ?? file.GetConstantByName(name)?.Id ?? Crc32.Get(name);
+                        // We want to preserve IDs as much as possible, and to deterministically generate new ones in a way that's most compliant with the native ones, to maximize compatibility.
+                        var id = GetConstantByName(name)?.Id ?? file.GetConstantByName(name)?.Id ?? Crc32.Get(name, 0xFFFFFFFFu);
                         constants.Add(new Resource
                         {
-                            Id   = id,
-                            Name = name,
-                            Slot = (ushort)binding.Slot,
-                            Size = (ushort)binding.RegisterCount,
-                            Used = binding.Used,
+                            Id              = id,
+                            Name            = name,
+                            Slot            = (ushort)binding.Slot,
+                            Size            = (ushort)binding.RegisterCount,
+                            Used            = binding.Used,
+                            UsedDynamically = binding.UsedDynamically,
                         });
                         break;
                     case DisassembledShader.ResourceType.Texture:
                         name = NormalizeResourceName(binding.Name);
-                        id = GetSamplerByName(name)?.Id ?? file.GetSamplerByName(name)?.Id ?? Crc32.Get(name);
+                        id = GetSamplerByName(name)?.Id ?? file.GetSamplerByName(name)?.Id ?? Crc32.Get(name, 0xFFFFFFFFu);
                         samplers.Add(new Resource
                         {
-                            Id   = id,
-                            Name = name,
-                            Slot = (ushort)binding.Slot,
-                            Size = (ushort)binding.Slot,
-                            Used = binding.Used,
+                            Id              = id,
+                            Name            = name,
+                            Slot            = (ushort)binding.Slot,
+                            Size            = (ushort)binding.Slot,
+                            Used            = binding.Used,
+                            UsedDynamically = binding.UsedDynamically,
+                        });
+                        break;
+                    case DisassembledShader.ResourceType.UAV:
+                        name = NormalizeResourceName(binding.Name);
+                        id = GetUAVByName(name)?.Id ?? file.GetUAVByName(name)?.Id ?? Crc32.Get(name, 0xFFFFFFFFu);
+                        uavs.Add(new Resource
+                        {
+                            Id              = id,
+                            Name            = name,
+                            Slot            = (ushort)binding.Slot,
+                            Size            = (ushort)binding.Slot,
+                            Used            = binding.Used,
+                            UsedDynamically = binding.UsedDynamically,
                         });
                         break;
                 }
             }
             Constants = constants.ToArray();
             Samplers = samplers.ToArray();
+            UAVs = uavs.ToArray();
         }
 
         private void UpdateUsed()
@@ -160,6 +187,7 @@ public partial class ShpkFile : IWritable
             {
                 var cbUsage = new Dictionary<string, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)>();
                 var tUsage = new Dictionary<string, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)>();
+                var uUsage = new Dictionary<string, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)>();
                 foreach (var binding in _disassembly.ResourceBindings)
                 {
                     switch (binding.Type)
@@ -170,39 +198,36 @@ public partial class ShpkFile : IWritable
                         case DisassembledShader.ResourceType.Texture:
                             tUsage[NormalizeResourceName(binding.Name)] = (binding.Used, binding.UsedDynamically);
                             break;
+                        case DisassembledShader.ResourceType.UAV:
+                            uUsage[NormalizeResourceName(binding.Name)] = (binding.Used, binding.UsedDynamically);
+                            break;
                     }
                 }
-                for (var i = 0; i < Constants.Length; ++i)
+                static void CopyUsed(Resource[] resources, Dictionary<string, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)> used)
                 {
-                    if (cbUsage.TryGetValue(Constants[i].Name, out var usage))
+                    for (var i = 0; i < resources.Length; ++i)
                     {
-                        Constants[i].Used = usage.Item1;
-                        Constants[i].UsedDynamically = usage.Item2;
-                    }
-                    else
-                    {
-                        Constants[i].Used = null;
-                        Constants[i].UsedDynamically = null;
-                    }
-                }
-                for (var i = 0; i < Samplers.Length; ++i)
-                {
-                    if (tUsage.TryGetValue(Samplers[i].Name, out var usage))
-                    {
-                        Samplers[i].Used = usage.Item1;
-                        Samplers[i].UsedDynamically = usage.Item2;
-                    }
-                    else
-                    {
-                        Samplers[i].Used = null;
-                        Samplers[i].UsedDynamically = null;
+                        if (used.TryGetValue(resources[i].Name, out var usage))
+                        {
+                            resources[i].Used = usage.Item1;
+                            resources[i].UsedDynamically = usage.Item2;
+                        }
+                        else
+                        {
+                            resources[i].Used = null;
+                            resources[i].UsedDynamically = null;
+                        }
                     }
                 }
+                CopyUsed(Constants, cbUsage);
+                CopyUsed(Samplers, tUsage);
+                CopyUsed(UAVs, uUsage);
             }
             else
             {
                 ClearUsed(Constants);
                 ClearUsed(Samplers);
+                ClearUsed(UAVs);
             }
         }
 
@@ -229,6 +254,37 @@ public partial class ShpkFile : IWritable
         public uint Id;
         public ushort ByteOffset;
         public ushort ByteSize;
+    }
+
+    public struct Pass
+    {
+        public uint Id;
+        public uint VertexShader;
+        public uint PixelShader;
+    }
+
+    public struct Key
+    {
+        public uint Id;
+        public uint DefaultValue;
+        public uint[] Values;
+    }
+
+    public struct Node
+    {
+        public uint Id;
+        public byte[] PassIndices;
+        public uint[] SystemKeys;
+        public uint[] SceneKeys;
+        public uint[] MaterialKeys;
+        public uint[] SubViewKeys;
+        public Pass[] Passes;
+    }
+
+    public struct Item
+    {
+        public uint Id;
+        public uint Node;
     }
 
     public class StringPool
@@ -317,7 +373,7 @@ public partial class ShpkFile : IWritable
 
     public const uint MaterialParamsConstantId = 0x64D12851u;
 
-    public uint Unknown1;
+    public uint Version;
     public DXVersion DirectXVersion;
     public Shader[] VertexShaders;
     public Shader[] PixelShaders;
@@ -325,15 +381,14 @@ public partial class ShpkFile : IWritable
     public MaterialParam[] MaterialParams;
     public Resource[] Constants;
     public Resource[] Samplers;
-    public (uint, uint)[] UnknownA;
-    public (uint, uint)[] UnknownB;
-    public (uint, uint)[] UnknownC;
-    public uint Unknown2;
-    public uint Unknown3;
-    public uint Unknown4;
-    public (uint, uint, uint) Unknowns;
+    public Resource[] UAVs;
+    public Key[] SystemKeys;
+    public Key[] SceneKeys;
+    public Key[] MaterialKeys;
+    public Key[] SubViewKeys;
+    public Node[] Nodes;
+    public Item[] Items;
     public byte[] AdditionalData;
-    public StringPool Strings; // Cannot be safely discarded yet, we don't know if AdditionalData references it
 
     public bool Valid { get; private set; }
     private bool _changed;
@@ -363,6 +418,41 @@ public partial class ShpkFile : IWritable
         return Samplers.Select(res => new Resource?(res)).FirstOrDefault(res => res!.Value.Name == name);
     }
 
+    public Resource? GetUAVById(uint id)
+    {
+        return UAVs.Select(res => new Resource?(res)).FirstOrDefault(res => res!.Value.Id == id);
+    }
+
+    public Resource? GetUAVByName(string name)
+    {
+        return UAVs.Select(res => new Resource?(res)).FirstOrDefault(res => res!.Value.Name == name);
+    }
+
+    public Key? GetSystemKeyById(uint id)
+    {
+        return SystemKeys.Select(key => new Key?(key)).FirstOrDefault(key => key!.Value.Id == id);
+    }
+
+    public Key? GetSceneKeyById(uint id)
+    {
+        return SceneKeys.Select(key => new Key?(key)).FirstOrDefault(key => key!.Value.Id == id);
+    }
+
+    public Key? GetMaterialKeyById(uint id)
+    {
+        return MaterialKeys.Select(key => new Key?(key)).FirstOrDefault(key => key!.Value.Id == id);
+    }
+
+    public Node? GetNodeById(uint id)
+    {
+        return Nodes.Select(node => new Node?(node)).FirstOrDefault(node => node!.Value.Id == id);
+    }
+
+    public Item? GetItemById(uint id)
+    {
+        return Items.Select(item => new Item?(item)).FirstOrDefault(item => item!.Value.Id == id);
+    }
+
     // Activator.CreateInstance can't use a ctor with a default value so this has to be made explicit
     public ShpkFile(byte[] data)
         : this(data, false)
@@ -378,7 +468,7 @@ public partial class ShpkFile : IWritable
         {
             throw new InvalidDataException();
         }
-        Unknown1 = r.ReadUInt32();
+        Version = r.ReadUInt32();
         DirectXVersion = r.ReadUInt32() switch
         {
             DX9Magic  => DXVersion.DirectX9,
@@ -397,39 +487,58 @@ public partial class ShpkFile : IWritable
         var materialParamCount = r.ReadUInt32();
         var constantCount      = r.ReadUInt32();
         var samplerCount       = r.ReadUInt32();
-        var unknownACount      = r.ReadUInt32();
-        var unknownBCount      = r.ReadUInt32();
-        var unknownCCount      = r.ReadUInt32();
-        Unknown2               = r.ReadUInt32();
-        Unknown3               = r.ReadUInt32();
-        Unknown4               = r.ReadUInt32();
+        var uavCount           = r.ReadUInt32();
+        var systemKeyCount     = r.ReadUInt32();
+        var sceneKeyCount      = r.ReadUInt32();
+        var materialKeyCount   = r.ReadUInt32();
+        var nodeCount          = r.ReadUInt32();
+        var itemCount          = r.ReadUInt32();
 
         var blobs   = new ReadOnlySpan<byte>(data, (int)blobsOffset, (int)(stringsOffset - blobsOffset));
-        Strings     = new StringPool(new ReadOnlySpan<byte>(data, (int)stringsOffset, (int)(data.Length - stringsOffset)));
+        var strings = new StringPool(new ReadOnlySpan<byte>(data, (int)stringsOffset, (int)(data.Length - stringsOffset)));
 
-        VertexShaders  = ReadShaderArray(r, (int)vertexShaderCount, DisassembledShader.ShaderStage.Vertex, DirectXVersion, disassemble, blobs, Strings);
-        PixelShaders   = ReadShaderArray(r, (int)pixelShaderCount, DisassembledShader.ShaderStage.Pixel, DirectXVersion, disassemble, blobs, Strings);
+        VertexShaders  = ReadShaderArray(r, (int)vertexShaderCount, DisassembledShader.ShaderStage.Vertex, DirectXVersion, disassemble, blobs, strings);
+        PixelShaders   = ReadShaderArray(r, (int)pixelShaderCount, DisassembledShader.ShaderStage.Pixel, DirectXVersion, disassemble, blobs, strings);
 
         MaterialParams = r.ReadStructuresAsArray<MaterialParam>((int)materialParamCount);
 
-        Constants      = ReadResourceArray(r, (int)constantCount, Strings);
-        Samplers       = ReadResourceArray(r, (int)samplerCount, Strings);
+        Constants      = ReadResourceArray(r, (int)constantCount, strings);
+        Samplers       = ReadResourceArray(r, (int)samplerCount, strings);
+        UAVs           = ReadResourceArray(r, (int)uavCount, strings);
 
-        var unk1       = r.ReadUInt32();
-        var unk2       = r.ReadUInt32();
-        var unk3       = r.ReadUInt32();
-        Unknowns       = (unk1, unk2, unk3);
+        SystemKeys     = ReadKeyArray(r, (int)systemKeyCount);
+        SceneKeys      = ReadKeyArray(r, (int)sceneKeyCount);
+        MaterialKeys   = ReadKeyArray(r, (int)materialKeyCount);
 
-        UnknownA       = ReadUInt32PairArray(r, (int)unknownACount);
-        UnknownB       = ReadUInt32PairArray(r, (int)unknownBCount);
-        UnknownC       = ReadUInt32PairArray(r, (int)unknownCCount);
+        var subViewKey1Default = r.ReadUInt32();
+        var subViewKey2Default = r.ReadUInt32();
 
-        AdditionalData = r.ReadBytes((int)(blobsOffset - r.BaseStream.Position));
+        SubViewKeys    = new Key[] {
+            new Key
+            {
+                Id           = 1,
+                DefaultValue = subViewKey1Default,
+                Values       = Array.Empty<uint>(),
+            },
+            new Key
+            {
+                Id           = 2,
+                DefaultValue = subViewKey2Default,
+                Values       = Array.Empty<uint>(),
+            },
+        };
+
+        Nodes          = ReadNodeArray(r, (int)nodeCount, SystemKeys.Length, SceneKeys.Length, MaterialKeys.Length, SubViewKeys.Length);
+        Items          = r.ReadStructuresAsArray<Item>((int)itemCount);
+
+        AdditionalData = r.ReadBytes((int)(blobsOffset - r.BaseStream.Position)); // This should be empty, but just in case.
 
         if (disassemble)
         {
             UpdateUsed();
         }
+
+        UpdateKeyValues();
 
         Valid = true;
         _changed = false;
@@ -439,11 +548,12 @@ public partial class ShpkFile : IWritable
     {
         var constants = new Dictionary<uint, Resource>();
         var samplers = new Dictionary<uint, Resource>();
-        static void CollectResources(Dictionary<uint, Resource> resources, Resource[] shaderResources, Func<uint, Resource?> getExistingById, bool isSamplers)
+        var uavs = new Dictionary<uint, Resource>();
+        static void CollectResources(Dictionary<uint, Resource> resources, Resource[] shaderResources, Func<uint, Resource?> getExistingById, DisassembledShader.ResourceType type)
         {
             foreach (var resource in shaderResources)
             {
-                if (resources.TryGetValue(resource.Id, out var carry) && isSamplers)
+                if (resources.TryGetValue(resource.Id, out var carry) && type != DisassembledShader.ResourceType.ConstantBuffer)
                 {
                     continue;
                 }
@@ -452,8 +562,8 @@ public partial class ShpkFile : IWritable
                 {
                     Id              = resource.Id,
                     Name            = resource.Name,
-                    Slot            = existing?.Slot ?? (isSamplers ? (ushort)2 : (ushort)65535),
-                    Size            = isSamplers ? (existing?.Size ?? 0) : Math.Max(carry.Size, resource.Size),
+                    Slot            = existing?.Slot ?? (type == DisassembledShader.ResourceType.ConstantBuffer ? (ushort)65535 : (ushort)2),
+                    Size            = type == DisassembledShader.ResourceType.ConstantBuffer ? Math.Max(carry.Size, resource.Size) : (existing?.Size ?? 0),
                     Used            = null,
                     UsedDynamically = null,
                 };
@@ -461,16 +571,19 @@ public partial class ShpkFile : IWritable
         }
         foreach (var shader in VertexShaders)
         {
-            CollectResources(constants, shader.Constants, GetConstantById, false);
-            CollectResources(samplers, shader.Samplers, GetSamplerById, true);
+            CollectResources(constants, shader.Constants, GetConstantById, DisassembledShader.ResourceType.ConstantBuffer);
+            CollectResources(samplers, shader.Samplers, GetSamplerById, DisassembledShader.ResourceType.Sampler);
+            CollectResources(uavs, shader.UAVs, GetUAVById, DisassembledShader.ResourceType.UAV);
         }
         foreach (var shader in PixelShaders)
         {
-            CollectResources(constants, shader.Constants, GetConstantById, false);
-            CollectResources(samplers, shader.Samplers, GetSamplerById, true);
+            CollectResources(constants, shader.Constants, GetConstantById, DisassembledShader.ResourceType.ConstantBuffer);
+            CollectResources(samplers, shader.Samplers, GetSamplerById, DisassembledShader.ResourceType.Sampler);
+            CollectResources(uavs, shader.UAVs, GetUAVById, DisassembledShader.ResourceType.UAV);
         }
         Constants = constants.Values.ToArray();
         Samplers = samplers.Values.ToArray();
+        UAVs = uavs.Values.ToArray();
         UpdateUsed();
         MaterialParamsSize = (GetConstantById(MaterialParamsConstantId)?.Size ?? 0u) << 4;
         foreach (var param in MaterialParams)
@@ -484,7 +597,8 @@ public partial class ShpkFile : IWritable
     {
         var cUsage = new Dictionary<uint, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)>();
         var sUsage = new Dictionary<uint, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)>();
-        static void CollectUsage(Dictionary<uint, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)> usage, Resource[] resources)
+        var uUsage = new Dictionary<uint, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)>();
+        static void CollectUsed(Dictionary<uint, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)> usage, Resource[] resources)
         {
             foreach (var resource in resources)
             {
@@ -502,42 +616,75 @@ public partial class ShpkFile : IWritable
                 usage[resource.Id] = (combined, carry.Item2 | (resource.UsedDynamically ?? 0));
             }
         }
+        static void CopyUsed(Resource[] resources, Dictionary<uint, (DisassembledShader.VectorComponents[], DisassembledShader.VectorComponents)> used)
+        {
+            for (var i = 0; i < resources.Length; ++i)
+            {
+                if (used.TryGetValue(resources[i].Id, out var usage))
+                {
+                    resources[i].Used = usage.Item1;
+                    resources[i].UsedDynamically = usage.Item2;
+                }
+                else
+                {
+                    resources[i].Used = null;
+                    resources[i].UsedDynamically = null;
+                }
+            }
+        }
         foreach (var shader in VertexShaders)
         {
-            CollectUsage(cUsage, shader.Constants);
-            CollectUsage(sUsage, shader.Samplers);
+            CollectUsed(cUsage, shader.Constants);
+            CollectUsed(sUsage, shader.Samplers);
+            CollectUsed(uUsage, shader.UAVs);
         }
         foreach (var shader in PixelShaders)
         {
-            CollectUsage(cUsage, shader.Constants);
-            CollectUsage(sUsage, shader.Samplers);
+            CollectUsed(cUsage, shader.Constants);
+            CollectUsed(sUsage, shader.Samplers);
+            CollectUsed(uUsage, shader.UAVs);
         }
-        for (var i = 0; i < Constants.Length; ++i)
+        CopyUsed(Constants, cUsage);
+        CopyUsed(Samplers, sUsage);
+        CopyUsed(UAVs, uUsage);
+    }
+
+    public void UpdateKeyValues()
+    {
+        static HashSet<uint>[] InitializeValueSet(Key[] keys)
+            => Array.ConvertAll(keys, key => new HashSet<uint>()
+            {
+                key.DefaultValue,
+            });
+        static void CollectValues(HashSet<uint>[] valueSets, uint[] values)
         {
-            if (cUsage.TryGetValue(Constants[i].Id, out var usage))
+            for (var i = 0; i < valueSets.Length; ++i)
             {
-                Constants[i].Used = usage.Item1;
-                Constants[i].UsedDynamically = usage.Item2;
-            }
-            else
-            {
-                Constants[i].Used = null;
-                Constants[i].UsedDynamically = null;
+                valueSets[i].Add(values[i]);
             }
         }
-        for (var i = 0; i < Samplers.Length; ++i)
+        static void CopyValues(Key[] keys, HashSet<uint>[] valueSets)
         {
-            if (sUsage.TryGetValue(Samplers[i].Id, out var usage))
+            for (var i = 0; i < keys.Length; ++i)
             {
-                Samplers[i].Used = usage.Item1;
-                Samplers[i].UsedDynamically = usage.Item2;
-            }
-            else
-            {
-                Samplers[i].Used = null;
-                Samplers[i].UsedDynamically = null;
+                keys[i].Values = valueSets[i].ToArray();
             }
         }
+        var systemKeyValues = InitializeValueSet(SystemKeys);
+        var sceneKeyValues = InitializeValueSet(SceneKeys);
+        var materialKeyValues = InitializeValueSet(MaterialKeys);
+        var subViewKeyValues = InitializeValueSet(SubViewKeys);
+        foreach (var node in Nodes)
+        {
+            CollectValues(systemKeyValues, node.SystemKeys);
+            CollectValues(sceneKeyValues, node.SceneKeys);
+            CollectValues(materialKeyValues, node.MaterialKeys);
+            CollectValues(subViewKeyValues, node.SubViewKeys);
+        }
+        CopyValues(SystemKeys, systemKeyValues);
+        CopyValues(SceneKeys, sceneKeyValues);
+        CopyValues(MaterialKeys, materialKeyValues);
+        CopyValues(SubViewKeys, subViewKeyValues);
     }
 
     public void SetInvalid()
@@ -606,8 +753,11 @@ public partial class ShpkFile : IWritable
             var blobSize      = r.ReadUInt32();
             var constantCount = r.ReadUInt16();
             var samplerCount  = r.ReadUInt16();
-            var unknownXCount = r.ReadUInt16();
-            var unknownYCount = r.ReadUInt16();
+            var uavCount      = r.ReadUInt16();
+            if (r.ReadUInt16() != 0)
+            {
+                throw new NotImplementedException();
+            }
 
             var rawBlob = blobs.Slice((int)blobOffset, (int)blobSize);
 
@@ -617,8 +767,7 @@ public partial class ShpkFile : IWritable
             shader.DirectXVersion   = directX;
             shader.Constants        = ReadResourceArray(r, constantCount, strings);
             shader.Samplers         = ReadResourceArray(r, samplerCount, strings);
-            shader.UnknownX         = ReadResourceArray(r, unknownXCount, strings);
-            shader.UnknownY         = ReadResourceArray(r, unknownYCount, strings);
+            shader.UAVs             = ReadResourceArray(r, uavCount, strings);
             shader.AdditionalHeader = rawBlob[..extraHeaderSize].ToArray();
             shader.Blob             = rawBlob[extraHeaderSize..].ToArray();
 
@@ -628,15 +777,49 @@ public partial class ShpkFile : IWritable
         return ret;
     }
 
-    private static (uint, uint)[] ReadUInt32PairArray(BinaryReader r, int count)
+    private static Key[] ReadKeyArray(BinaryReader r, int count)
     {
-        var ret = new (uint, uint)[count];
+        var ret = new Key[count];
         for (var i = 0; i < count; ++i)
         {
-            var first  = r.ReadUInt32();
-            var second = r.ReadUInt32();
+            var id           = r.ReadUInt32();
+            var defaultValue = r.ReadUInt32();
 
-            ret[i] = (first, second);
+            ret[i] = new Key
+            {
+                Id           = id,
+                DefaultValue = defaultValue,
+                Values       = Array.Empty<uint>(),
+            };
+        }
+
+        return ret;
+    }
+
+    private static Node[] ReadNodeArray(BinaryReader r, int count, int systemKeyCount, int sceneKeyCount, int materialKeyCount, int subViewKeyCount)
+    {
+        var ret = new Node[count];
+        for (var i = 0; i < count; ++i)
+        {
+            var id           = r.ReadUInt32();
+            var passCount    = r.ReadUInt32();
+            var passIndices  = r.ReadBytes(16);
+            var systemKeys   = r.ReadStructuresAsArray<uint>(systemKeyCount);
+            var sceneKeys    = r.ReadStructuresAsArray<uint>(sceneKeyCount);
+            var materialKeys = r.ReadStructuresAsArray<uint>(materialKeyCount);
+            var subViewKeys  = r.ReadStructuresAsArray<uint>(subViewKeyCount);
+            var passes       = r.ReadStructuresAsArray<Pass>((int)passCount);
+
+            ret[i] = new Node
+            {
+                Id           = id,
+                PassIndices  = passIndices,
+                SystemKeys   = systemKeys,
+                SceneKeys    = sceneKeys,
+                MaterialKeys = materialKeys,
+                SubViewKeys  = subViewKeys,
+                Passes       = passes,
+            };
         }
 
         return ret;

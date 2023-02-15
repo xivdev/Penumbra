@@ -7,19 +7,25 @@ public partial class ShpkFile
 {
     public byte[] Write()
     {
+        if (SubViewKeys.Length != 2)
+        {
+            throw new InvalidDataException();
+        }
+
         using var stream = new MemoryStream();
         using var blobs  = new MemoryStream();
+        var strings = new StringPool(ReadOnlySpan<byte>.Empty);
         using (var w = new BinaryWriter(stream))
         {
             w.Write(ShPkMagic);
-            w.Write(Unknown1);
+            w.Write(Version);
             w.Write(DirectXVersion switch
             {
                 DXVersion.DirectX9  => DX9Magic,
                 DXVersion.DirectX11 => DX11Magic,
                 _                   => throw new NotImplementedException(),
             });
-            long offsetsPosition = stream.Position;
+            var offsetsPosition = stream.Position;
             w.Write(0u); // Placeholder for file size
             w.Write(0u); // Placeholder for blobs offset
             w.Write(0u); // Placeholder for strings offset
@@ -29,15 +35,15 @@ public partial class ShpkFile
             w.Write((uint)MaterialParams.Length);
             w.Write((uint)Constants.Length);
             w.Write((uint)Samplers.Length);
-            w.Write((uint)UnknownA.Length);
-            w.Write((uint)UnknownB.Length);
-            w.Write((uint)UnknownC.Length);
-            w.Write(Unknown2);
-            w.Write(Unknown3);
-            w.Write(Unknown4);
+            w.Write((uint)UAVs.Length);
+            w.Write((uint)SystemKeys.Length);
+            w.Write((uint)SceneKeys.Length);
+            w.Write((uint)MaterialKeys.Length);
+            w.Write((uint)Nodes.Length);
+            w.Write((uint)Items.Length);
 
-            WriteShaderArray(w, VertexShaders, blobs, Strings);
-            WriteShaderArray(w, PixelShaders, blobs, Strings);
+            WriteShaderArray(w, VertexShaders, blobs, strings);
+            WriteShaderArray(w, PixelShaders, blobs, strings);
 
             foreach (var materialParam in MaterialParams)
             {
@@ -46,16 +52,68 @@ public partial class ShpkFile
                 w.Write(materialParam.ByteSize);
             }
 
-            WriteResourceArray(w, Constants, Strings);
-            WriteResourceArray(w, Samplers, Strings);
+            WriteResourceArray(w, Constants, strings);
+            WriteResourceArray(w, Samplers, strings);
+            WriteResourceArray(w, UAVs, strings);
 
-            w.Write(Unknowns.Item1);
-            w.Write(Unknowns.Item2);
-            w.Write(Unknowns.Item3);
+            foreach (var key in SystemKeys)
+            {
+                w.Write(key.Id);
+                w.Write(key.DefaultValue);
+            }
+            foreach (var key in SceneKeys)
+            {
+                w.Write(key.Id);
+                w.Write(key.DefaultValue);
+            }
+            foreach (var key in MaterialKeys)
+            {
+                w.Write(key.Id);
+                w.Write(key.DefaultValue);
+            }
+            foreach (var key in SubViewKeys)
+            {
+                w.Write(key.DefaultValue);
+            }
 
-            WriteUInt32PairArray(w, UnknownA);
-            WriteUInt32PairArray(w, UnknownB);
-            WriteUInt32PairArray(w, UnknownC);
+            foreach (var node in Nodes)
+            {
+                if (node.PassIndices.Length != 16 || node.SystemKeys.Length != SystemKeys.Length || node.SceneKeys.Length != SceneKeys.Length || node.MaterialKeys.Length != MaterialKeys.Length || node.SubViewKeys.Length != SubViewKeys.Length)
+                {
+                    throw new InvalidDataException();
+                }
+                w.Write(node.Id);
+                w.Write(node.Passes.Length);
+                w.Write(node.PassIndices);
+                foreach (var key in node.SystemKeys)
+                {
+                    w.Write(key);
+                }
+                foreach (var key in node.SceneKeys)
+                {
+                    w.Write(key);
+                }
+                foreach (var key in node.MaterialKeys)
+                {
+                    w.Write(key);
+                }
+                foreach (var key in node.SubViewKeys)
+                {
+                    w.Write(key);
+                }
+                foreach (var pass in node.Passes)
+                {
+                    w.Write(pass.Id);
+                    w.Write(pass.VertexShader);
+                    w.Write(pass.PixelShader);
+                }
+            }
+
+            foreach (var item in Items)
+            {
+                w.Write(item.Id);
+                w.Write(item.Node);
+            }
 
             w.Write(AdditionalData);
 
@@ -63,7 +121,7 @@ public partial class ShpkFile
             blobs.WriteTo(stream);
 
             var stringsOffset = (int)stream.Position;
-            Strings.Data.WriteTo(stream);
+            strings.Data.WriteTo(stream);
 
             var fileSize = (int)stream.Position;
 
@@ -102,13 +160,12 @@ public partial class ShpkFile
             w.Write(blobSize);
             w.Write((ushort)shader.Constants.Length);
             w.Write((ushort)shader.Samplers.Length);
-            w.Write((ushort)shader.UnknownX.Length);
-            w.Write((ushort)shader.UnknownY.Length);
+            w.Write((ushort)shader.UAVs.Length);
+            w.Write((ushort)0);
 
             WriteResourceArray(w, shader.Constants, strings);
             WriteResourceArray(w, shader.Samplers, strings);
-            WriteResourceArray(w, shader.UnknownX, strings);
-            WriteResourceArray(w, shader.UnknownY, strings);
+            WriteResourceArray(w, shader.UAVs, strings);
         }
     }
 

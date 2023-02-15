@@ -14,6 +14,7 @@ using Penumbra.GameData.Files;
 using Penumbra.Util;
 using Lumina.Data.Parsing;
 using static OtterGui.Raii.ImRaii;
+using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.Classes;
 
@@ -76,7 +77,7 @@ public partial class ModEditWindow
             using var t = ImRaii.TreeNode( $"{objectName} #{idx}" );
             if( t )
             {
-                if( ImGui.Button( $"Export Shader Blob ({shader.Blob.Length} bytes)" ) )
+                if( ImGui.Button( $"Export Shader Program Blob ({shader.Blob.Length} bytes)" ) )
                 {
                     var extension = file.DirectXVersion switch
                     {
@@ -86,7 +87,7 @@ public partial class ModEditWindow
                     };
                     var defaultName = new string( objectName.Where( char.IsUpper ).ToArray() ).ToLower() + idx.ToString();
                     var blob = shader.Blob;
-                    _shaderPackageFileDialog.SaveFileDialog( $"Export {objectName} #{idx} Blob to...", extension, defaultName, extension, ( success, name ) =>
+                    _shaderPackageFileDialog.SaveFileDialog( $"Export {objectName} #{idx} Program Blob to...", extension, defaultName, extension, ( success, name ) =>
                     {
                         if( !success )
                         {
@@ -103,15 +104,15 @@ public partial class ModEditWindow
                             ChatUtil.NotificationMessage( $"Could not export {defaultName}{extension} to {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
                             return;
                         }
-                        ChatUtil.NotificationMessage( $"Shader Blob {defaultName}{extension} exported successfully to {Path.GetFileName( name )}", "Penumbra Advanced Editing", NotificationType.Success );
+                        ChatUtil.NotificationMessage( $"Shader Program Blob {defaultName}{extension} exported successfully to {Path.GetFileName( name )}", "Penumbra Advanced Editing", NotificationType.Success );
                     } );
                 }
                 if( !disabled )
                 {
                     ImGui.SameLine();
-                    if( ImGui.Button( "Replace Shader Blob" ) )
+                    if( ImGui.Button( "Replace Shader Program Blob" ) )
                     {
-                        _shaderPackageFileDialog.OpenFileDialog( $"Replace {objectName} #{idx} Blob...", "Shader Blobs{.o,.cso,.dxbc,.dxil}", ( success, name ) =>
+                        _shaderPackageFileDialog.OpenFileDialog( $"Replace {objectName} #{idx} Program Blob...", "Shader Program Blobs{.o,.cso,.dxbc,.dxil}", ( success, name ) =>
                         {
                             if( !success )
                             {
@@ -146,10 +147,9 @@ public partial class ModEditWindow
                     }
                 }
 
-                ret |= DrawShaderPackageResourceArray( "Constant Buffers", "slot", true, shader.Constants, disabled );
-                ret |= DrawShaderPackageResourceArray( "Samplers", "slot", false, shader.Samplers, disabled );
-                ret |= DrawShaderPackageResourceArray( "Unknown Type X Resources", "slot", true, shader.UnknownX, disabled );
-                ret |= DrawShaderPackageResourceArray( "Unknown Type Y Resources", "slot", true, shader.UnknownY, disabled );
+                ret |= DrawShaderPackageResourceArray( "Constant Buffers", "slot", true, shader.Constants, true );
+                ret |= DrawShaderPackageResourceArray( "Samplers", "slot", false, shader.Samplers, true );
+                ret |= DrawShaderPackageResourceArray( "Unordered Access Views", "slot", true, shader.UAVs, true );
 
                 if( shader.AdditionalHeader.Length > 0 )
                 {
@@ -160,7 +160,7 @@ public partial class ModEditWindow
                     }
                 }
 
-                using( var t2 = ImRaii.TreeNode( "Raw Disassembly" ) )
+                using( var t2 = ImRaii.TreeNode( "Raw Program Disassembly" ) )
                 {
                     if( t2 )
                     {
@@ -326,7 +326,7 @@ public partial class ModEditWindow
                                 foreach( var start in starts )
                                 {
                                     var name = MaterialParamName( false, start )!;
-                                    if( ImGui.Selectable( $"{materialParams?.Name ?? ""}{name}" ) )
+                                    if( ImGui.Selectable( $"{materialParams?.Name ?? ""}{name}", start == _shaderPackageNewMaterialParamStart ) )
                                     {
                                         _shaderPackageNewMaterialParamStart = ( ushort )start;
                                     }
@@ -352,7 +352,7 @@ public partial class ModEditWindow
                                 foreach( var end in ends )
                                 {
                                     var name = MaterialParamName( false, end )!;
-                                    if( ImGui.Selectable( $"{materialParams?.Name ?? ""}{name}" ) )
+                                    if( ImGui.Selectable( $"{materialParams?.Name ?? ""}{name}", end == _shaderPackageNewMaterialParamEnd ) )
                                     {
                                         _shaderPackageNewMaterialParamEnd = ( ushort )end;
                                     }
@@ -390,7 +390,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private static bool DrawShaderPackageResourceArray( string arrayName, string slotLabel, bool withSize, ShpkFile.Resource[] resources, bool _ )
+    private static bool DrawShaderPackageResourceArray( string arrayName, string slotLabel, bool withSize, ShpkFile.Resource[] resources, bool disabled )
     {
         if( resources.Length == 0 )
         {
@@ -407,65 +407,85 @@ public partial class ModEditWindow
 
         foreach( var (buf, idx) in resources.WithIndex() )
         {
-            using var t2 = ImRaii.TreeNode( $"#{idx}: {buf.Name} (ID: 0x{buf.Id:X8}), {slotLabel}: {buf.Slot}" + ( withSize ? $", size: {buf.Size} registers" : string.Empty ), ( buf.Used != null ) ? 0 : ImGuiTreeNodeFlags.Leaf );
+            using var t2 = ImRaii.TreeNode( $"#{idx}: {buf.Name} (ID: 0x{buf.Id:X8}), {slotLabel}: {buf.Slot}" + ( withSize ? $", size: {buf.Size} registers###{idx}: {buf.Name} (ID: 0x{buf.Id:X8})" : string.Empty ), ( !disabled || buf.Used != null ) ? 0 : ImGuiTreeNodeFlags.Leaf );
             if( t2 )
             {
-                var used = new List< string >();
-                if( withSize )
+                if( !disabled )
                 {
-                    foreach( var (components, i) in ( buf.Used ?? Array.Empty<DisassembledShader.VectorComponents>() ).WithIndex() )
+                    // FIXME this probably doesn't belong here
+                    static unsafe bool InputUInt16( string label, ref ushort v, ImGuiInputTextFlags flags )
                     {
-                        switch( components )
+                        fixed( ushort* v2 = &v )
+                        {
+                            return ImGui.InputScalar( label, ImGuiDataType.U16, new nint( v2 ), nint.Zero, nint.Zero, "%hu", flags );
+                        }
+                    }
+
+                    ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
+                    if( InputUInt16( $"{char.ToUpper( slotLabel[0] )}{slotLabel[1..].ToLower()}", ref resources[idx].Slot, ImGuiInputTextFlags.None ) )
+                    {
+                        ret = true;
+                    }
+                }
+                if( buf.Used != null )
+                {
+                    var used = new List<string>();
+                    if( withSize )
+                    {
+                        foreach( var (components, i) in ( buf.Used ?? Array.Empty<DisassembledShader.VectorComponents>() ).WithIndex() )
+                        {
+                            switch( components )
+                            {
+                                case 0:
+                                    break;
+                                case DisassembledShader.VectorComponents.All:
+                                    used.Add( $"[{i}]" );
+                                    break;
+                                default:
+                                    used.Add( $"[{i}].{new string( components.ToString().Where( char.IsUpper ).ToArray() ).ToLower()}" );
+                                    break;
+                            }
+                        }
+                        switch( buf.UsedDynamically ?? 0 )
                         {
                             case 0:
                                 break;
                             case DisassembledShader.VectorComponents.All:
-                                used.Add( $"[{i}]" );
+                                used.Add( "[*]" );
                                 break;
                             default:
-                                used.Add( $"[{i}].{new string( components.ToString().Where( char.IsUpper ).ToArray() ).ToLower()}" );
+                                used.Add( $"[*].{new string( buf.UsedDynamically!.Value.ToString().Where( char.IsUpper ).ToArray() ).ToLower()}" );
                                 break;
                         }
                     }
-                    switch( buf.UsedDynamically ?? 0 )
+                    else
                     {
-                        case 0:
-                            break;
-                        case DisassembledShader.VectorComponents.All:
-                            used.Add( "[*]" );
-                            break;
-                        default:
-                            used.Add( $"[*].{new string( buf.UsedDynamically!.Value.ToString().Where( char.IsUpper ).ToArray() ).ToLower()}" );
-                            break;
+                        var components = ( ( buf.Used != null && buf.Used.Length > 0 ) ? buf.Used[0] : 0 ) | ( buf.UsedDynamically ?? 0 );
+                        if( ( components & DisassembledShader.VectorComponents.X ) != 0 )
+                        {
+                            used.Add( "Red" );
+                        }
+                        if( ( components & DisassembledShader.VectorComponents.Y ) != 0 )
+                        {
+                            used.Add( "Green" );
+                        }
+                        if( ( components & DisassembledShader.VectorComponents.Z ) != 0 )
+                        {
+                            used.Add( "Blue" );
+                        }
+                        if( ( components & DisassembledShader.VectorComponents.W ) != 0 )
+                        {
+                            used.Add( "Alpha" );
+                        }
                     }
-                }
-                else
-                {
-                    var components = ( ( buf.Used != null && buf.Used.Length > 0 ) ? buf.Used[0] : 0 ) | (buf.UsedDynamically ?? 0);
-                    if( ( components & DisassembledShader.VectorComponents.X ) != 0 )
+                    if( used.Count > 0 )
                     {
-                        used.Add( "Red" );
+                        ImRaii.TreeNode( $"Used: {string.Join( ", ", used )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                     }
-                    if( ( components & DisassembledShader.VectorComponents.Y ) != 0 )
+                    else
                     {
-                        used.Add( "Green" );
+                        ImRaii.TreeNode( "Unused", ImGuiTreeNodeFlags.Leaf ).Dispose();
                     }
-                    if( ( components & DisassembledShader.VectorComponents.Z ) != 0 )
-                    {
-                        used.Add( "Blue" );
-                    }
-                    if( ( components & DisassembledShader.VectorComponents.W ) != 0 )
-                    {
-                        used.Add( "Alpha" );
-                    }
-                }
-                if( used.Count > 0 )
-                {
-                    ImRaii.TreeNode( $"Used: {string.Join(", ", used)}", ImGuiTreeNodeFlags.Leaf ).Dispose();
-                }
-                else
-                {
-                    ImRaii.TreeNode( "Unused", ImGuiTreeNodeFlags.Leaf ).Dispose();
                 }
             }
         }
@@ -482,53 +502,88 @@ public partial class ModEditWindow
             return false;
         }
 
+        ImRaii.TreeNode( $"Version: 0x{file.Version:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+
         ret |= DrawShaderPackageResourceArray( "Constant Buffers", "type", true, file.Constants, disabled );
         ret |= DrawShaderPackageResourceArray( "Samplers", "type", false, file.Samplers, disabled );
+        ret |= DrawShaderPackageResourceArray( "Unordered Access Views", "type", false, file.UAVs, disabled );
 
-        if( file.UnknownA.Length > 0 )
+        static bool DrawKeyArray( string arrayName, bool withId, ShpkFile.Key[] keys, bool _ )
         {
-            using var t = ImRaii.TreeNode( $"Unknown Type A Structures ({file.UnknownA.Length})" );
+            if( keys.Length == 0 )
+            {
+                return false;
+            }
+
+            using var t = ImRaii.TreeNode( arrayName );
+            if( !t )
+            {
+                return false;
+            }
+
+            foreach( var (key, idx) in keys.WithIndex() )
+            {
+                using var t2 = ImRaii.TreeNode( withId ? $"#{idx}: ID: 0x{key.Id:X8}" : $"#{idx}" );
+                if( t2 )
+                {
+                    ImRaii.TreeNode( $"Default Value: 0x{key.DefaultValue:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                    ImRaii.TreeNode( $"Known Values: {string.Join( ", ", Array.ConvertAll( key.Values, value => $"0x{value:X8}" ) )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                }
+            }
+
+            return false;
+        }
+
+        ret |= DrawKeyArray( "System Keys", true, file.SystemKeys, disabled );
+        ret |= DrawKeyArray( "Scene Keys", true, file.SceneKeys, disabled );
+        ret |= DrawKeyArray( "Material Keys", true, file.MaterialKeys, disabled );
+        ret |= DrawKeyArray( "Sub-View Keys", false, file.SubViewKeys, disabled );
+
+        if( file.Nodes.Length > 0 )
+        {
+            using var t = ImRaii.TreeNode( $"Nodes ({file.Nodes.Length})" );
             if( t )
             {
-                foreach( var (unk, idx) in file.UnknownA.WithIndex() )
+                foreach( var (node, idx) in file.Nodes.WithIndex() )
                 {
-                    ImRaii.TreeNode( $"#{idx}: 0x{unk.Item1:X8}, 0x{unk.Item2:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                    using var t2 = ImRaii.TreeNode( $"#{idx}: ID: 0x{node.Id:X8}" );
+                    if( t2 )
+                    {
+                        foreach( var (key, keyIdx) in node.SystemKeys.WithIndex() )
+                        {
+                            ImRaii.TreeNode( $"System Key 0x{file.SystemKeys[keyIdx].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        }
+                        foreach( var (key, keyIdx) in node.SceneKeys.WithIndex() )
+                        {
+                            ImRaii.TreeNode( $"Scene Key 0x{file.SceneKeys[keyIdx].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        }
+                        foreach( var (key, keyIdx) in node.MaterialKeys.WithIndex() )
+                        {
+                            ImRaii.TreeNode( $"Material Key 0x{file.MaterialKeys[keyIdx].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        }
+                        foreach( var (key, keyIdx) in node.SubViewKeys.WithIndex() )
+                        {
+                            ImRaii.TreeNode( $"Sub-View Key #{keyIdx} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        }
+                        ImRaii.TreeNode( $"Pass Indices: {string.Join( ' ', node.PassIndices.Select( c => $"{c:X2}" ) )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        foreach( var (pass, passIdx) in node.Passes.WithIndex() )
+                        {
+                            ImRaii.TreeNode( $"Pass #{passIdx}: ID: 0x{pass.Id:X8}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        }
+                    }
                 }
             }
         }
 
-        if( file.UnknownB.Length > 0 )
+        if( file.Items.Length > 0 )
         {
-            using var t = ImRaii.TreeNode( $"Unknown Type B Structures ({file.UnknownB.Length})" );
+            using var t = ImRaii.TreeNode( $"Items ({file.Items.Length})" );
             if( t )
             {
-                foreach( var (unk, idx) in file.UnknownB.WithIndex() )
+                foreach( var (item, idx) in file.Items.WithIndex() )
                 {
-                    ImRaii.TreeNode( $"#{idx}: 0x{unk.Item1:X8}, 0x{unk.Item2:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                    ImRaii.TreeNode( $"#{idx}: ID: 0x{item.Id:X8}, node: {item.Node}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                 }
-            }
-        }
-
-        if( file.UnknownC.Length > 0 )
-        {
-            using var t = ImRaii.TreeNode( $"Unknown Type C Structures ({file.UnknownC.Length})" );
-            if( t )
-            {
-                foreach( var (unk, idx) in file.UnknownC.WithIndex() )
-                {
-                    ImRaii.TreeNode( $"#{idx}: 0x{unk.Item1:X8}, 0x{unk.Item2:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
-                }
-            }
-        }
-
-        using( var t = ImRaii.TreeNode( $"Misc. Unknown Fields" ) )
-        {
-            if( t )
-            {
-                ImRaii.TreeNode( $"#1 (at 0x0004): 0x{file.Unknown1:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
-                ImRaii.TreeNode( $"#2 (at 0x003C): 0x{file.Unknown2:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
-                ImRaii.TreeNode( $"#3 (at 0x0040): 0x{file.Unknown3:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
-                ImRaii.TreeNode( $"#4 (at 0x0044): 0x{file.Unknown4:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
             }
         }
 
@@ -538,17 +593,6 @@ public partial class ModEditWindow
             if( t )
             {
                 ImGuiUtil.TextWrapped( string.Join( ' ', file.AdditionalData.Select( c => $"{c:X2}" ) ) );
-            }
-        }
-
-        using( var t = ImRaii.TreeNode( $"String Pool" ) )
-        {
-            if( t )
-            {
-                foreach( var offset in file.Strings.StartingOffsets )
-                {
-                    ImGui.Text( file.Strings.GetNullTerminatedString( offset ) );
-                }
             }
         }
 
