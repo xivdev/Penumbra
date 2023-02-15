@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -47,6 +48,7 @@ public partial class ModEditWindow : Window, IDisposable
         _selectedFiles.Clear();
         _modelTab.Reset();
         _materialTab.Reset();
+        _shaderPackageTab.Reset();
         _swapWindow.UpdateMod( mod, Penumbra.CollectionManager.Current[ mod.Index ].Settings );
     }
 
@@ -155,6 +157,7 @@ public partial class ModEditWindow : Window, IDisposable
         _modelTab.Draw();
         _materialTab.Draw();
         DrawTextureTab();
+        _shaderPackageTab.Draw();
         _swapWindow.DrawItemSwapPanel();
     }
 
@@ -532,17 +535,65 @@ public partial class ModEditWindow : Window, IDisposable
         ImGui.InputTextWithHint( "##swapValue", "... instead of this file.", ref _newSwapKey, Utf8GamePath.MaxGamePathLength );
     }
 
+    // FIXME this probably doesn't belong here
+    private T? LoadAssociatedFile<T>( string gamePath, Func< byte[], T? > parse )
+    {
+        var defaultFiles = _mod?.Default?.Files;
+        if( defaultFiles != null )
+        {
+            if( Utf8GamePath.FromString( gamePath, out var utf8Path, true ) )
+            {
+                try
+                {
+                    if (defaultFiles.TryGetValue( utf8Path, out var fsPath ))
+                    {
+                        return parse( File.ReadAllBytes( fsPath.FullName ) );
+                    }
+                }
+                finally
+                {
+                    utf8Path.Dispose();
+                }
+            }
+        }
+
+        var file = Dalamud.GameData.GetFile( gamePath )?.Data;
+        return file == null ? default : parse( file );
+    }
+
+    // FIXME neither does this
+    private ShpkFile? LoadAssociatedShpk( string shaderName )
+    {
+        var path = $"shader/sm5/shpk/{shaderName}";
+        try
+        {
+            return LoadAssociatedFile( path, file => new ShpkFile( file ) );
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Debug( $"Could not parse associated file {path} to Shpk:\n{e}" );
+            return null;
+        }
+    }
+
     public ModEditWindow()
         : base( WindowBaseLabel )
     {
         _materialTab = new FileEditor< MtrlFile >( "Materials", ".mtrl",
             () => _editor?.MtrlFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawMaterialPanel,
-            () => _mod?.ModPath.FullName ?? string.Empty );
+            () => _mod?.ModPath.FullName ?? string.Empty,
+            bytes => new MtrlFile( bytes, LoadAssociatedShpk ) );
         _modelTab = new FileEditor< MdlFile >( "Models", ".mdl",
             () => _editor?.MdlFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawModelPanel,
-            () => _mod?.ModPath.FullName ?? string.Empty );
+            () => _mod?.ModPath.FullName ?? string.Empty,
+            null );
+        _shaderPackageTab = new FileEditor< ShpkFile >( "Shader Packages", ".shpk",
+            () => _editor?.ShpkFiles ?? Array.Empty< Editor.FileRegistry >(),
+            DrawShaderPackagePanel,
+            () => _mod?.ModPath.FullName ?? string.Empty,
+            bytes => new ShpkFile( bytes, true ) );
         _center = new CombinedTexture( _left, _right );
     }
 

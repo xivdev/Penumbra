@@ -76,6 +76,7 @@ public partial class Mod
         private          List< FileRegistry >    _mtrlFiles      = null!;
         private          List< FileRegistry >    _mdlFiles       = null!;
         private          List< FileRegistry >    _texFiles       = null!;
+        private          List< FileRegistry >    _shpkFiles      = null!;
         private readonly HashSet< Utf8GamePath > _usedPaths      = new();
 
         // All paths that are used in 
@@ -92,6 +93,9 @@ public partial class Mod
 
         public IReadOnlyList< FileRegistry > TexFiles
             => _texFiles;
+
+        public IReadOnlyList< FileRegistry > ShpkFiles
+            => _shpkFiles;
 
         // Remove all path redirections where the pointed-to file does not exist.
         public void RemoveMissingPaths()
@@ -140,6 +144,7 @@ public partial class Mod
             _mtrlFiles  = _availableFiles.Where( f => f.File.FullName.EndsWith( ".mtrl", StringComparison.OrdinalIgnoreCase ) ).ToList();
             _mdlFiles   = _availableFiles.Where( f => f.File.FullName.EndsWith( ".mdl", StringComparison.OrdinalIgnoreCase ) ).ToList();
             _texFiles   = _availableFiles.Where( f => f.File.FullName.EndsWith( ".tex", StringComparison.OrdinalIgnoreCase ) ).ToList();
+            _shpkFiles  = _availableFiles.Where( f => f.File.FullName.EndsWith( ".shpk", StringComparison.OrdinalIgnoreCase ) ).ToList();
             FileChanges = false;
             foreach( var subMod in _mod.AllSubMods )
             {

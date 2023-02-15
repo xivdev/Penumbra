@@ -77,7 +77,8 @@ public partial class MtrlFile
             foreach( var constant in ShaderPackage.Constants )
             {
                 w.Write( constant.Id );
-                w.Write( constant.Value );
+                w.Write( constant.ByteOffset );
+                w.Write( constant.ByteSize );
             }
 
             foreach( var sampler in ShaderPackage.Samplers )

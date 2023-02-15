@@ -239,7 +239,8 @@ public partial class MtrlFile : IWritable
     public struct Constant
     {
         public uint Id;
-        public uint Value;
+        public ushort ByteOffset;
+        public ushort ByteSize;
     }
 
     public struct ShaderPackageData
@@ -254,7 +255,20 @@ public partial class MtrlFile : IWritable
 
 
     public readonly uint Version;
-    public          bool Valid { get; }
+    public          bool Valid
+    {
+        get
+        {
+            foreach (var texture in Textures)
+            {
+                if (!texture.Path.Contains('/'))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
 
     public Texture[]         Textures;
     public UvSet[]           UvSets;
@@ -262,6 +276,8 @@ public partial class MtrlFile : IWritable
     public ColorDyeSet[]     ColorDyeSets;
     public ShaderPackageData ShaderPackage;
     public byte[]            AdditionalData;
+
+    public ShpkFile?         AssociatedShpk;
 
     public bool ApplyDyeTemplate(StmFile stm, int colorSetIdx, int rowIdx, StainId stainId)
     {
@@ -306,7 +322,41 @@ public partial class MtrlFile : IWritable
         return ret;
     }
 
+    public Span<float> GetConstantValues(Constant constant)
+    {
+        if ((constant.ByteOffset & 0x3) == 0 && (constant.ByteSize & 0x3) == 0
+        && ((constant.ByteOffset + constant.ByteSize) >> 2) <= ShaderPackage.ShaderValues.Length)
+        {
+            return ShaderPackage.ShaderValues.AsSpan().Slice(constant.ByteOffset >> 2, constant.ByteSize >> 2);
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    public List<(Sampler?, ShpkFile.Resource?)> GetSamplersByTexture()
+    {
+        var samplers = new List<(Sampler?, ShpkFile.Resource?)>();
+        for (var i = 0; i < Textures.Length; ++i)
+        {
+            samplers.Add((null, null));
+        }
+        foreach (var sampler in ShaderPackage.Samplers)
+        {
+            samplers[sampler.TextureIndex] = (sampler, AssociatedShpk?.GetSamplerById(sampler.SamplerId));
+        }
+
+        return samplers;
+    }
+
+    // Activator.CreateInstance can't use a ctor with a default value so this has to be made explicit
     public MtrlFile(byte[] data)
+        : this(data, null)
+    {
+    }
+
+    public MtrlFile(byte[] data, Func<string, ShpkFile?>? loadAssociatedShpk = null)
     {
         using var stream = new MemoryStream(data);
         using var r      = new BinaryReader(stream);
@@ -345,6 +395,8 @@ public partial class MtrlFile : IWritable
 
         ShaderPackage.Name = UseOffset(strings, shaderPackageNameOffset);
 
+        AssociatedShpk = loadAssociatedShpk?.Invoke(ShaderPackage.Name);
+
         AdditionalData = r.ReadBytes(additionalDataSize);
         for (var i = 0; i < ColorSets.Length; ++i)
         {
@@ -372,7 +424,6 @@ public partial class MtrlFile : IWritable
         ShaderPackage.Constants    = r.ReadStructuresAsArray<Constant>(constantCount);
         ShaderPackage.Samplers     = r.ReadStructuresAsArray<Sampler>(samplerCount);
         ShaderPackage.ShaderValues = r.ReadStructuresAsArray<float>(shaderValueListSize / 4);
-        Valid                      = true;
     }
 
     private static Texture[] ReadTextureOffsets(BinaryReader r, int count, out ushort[] offsets)
