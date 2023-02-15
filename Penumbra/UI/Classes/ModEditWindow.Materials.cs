@@ -10,14 +10,13 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
 using Lumina.Data.Parsing;
-using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 using Penumbra.Util;
-using static OtterGui.Raii.ImRaii;
+using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.Classes;
 
@@ -27,6 +26,7 @@ public partial class ModEditWindow
 
     private readonly FileDialogManager _materialFileDialog = ConfigWindow.SetupFileManager();
 
+    private uint _materialNewKeyId = 0;
     private uint _materialNewConstantId = 0;
     private uint _materialNewSamplerId = 0;
 
@@ -191,48 +191,165 @@ public partial class ModEditWindow
             ret = true;
         }
         ImRaii.TreeNode( $"Has associated ShPk file (for advanced editing): {( file.AssociatedShpk != null ? "Yes" : "No" )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
-        if( !disabled && ImGui.Button( "Associate modded ShPk file" ) )
+        if( !disabled )
         {
-            _materialFileDialog.OpenFileDialog( $"Associate modded ShPk file...", ".shpk", ( success, name ) =>
+            if( ImGui.Button( "Associate custom ShPk file" ) )
             {
-                if( !success )
+                _materialFileDialog.OpenFileDialog( $"Associate custom ShPk file...", ".shpk", ( success, name ) =>
                 {
-                    return;
-                }
+                    if( !success )
+                    {
+                        return;
+                    }
 
-                try
+                    try
+                    {
+                        file.AssociatedShpk = new ShpkFile( File.ReadAllBytes( name ) );
+                    }
+                    catch( Exception e )
+                    {
+                        Penumbra.Log.Error( $"Could not load ShPk file {name}:\n{e}" );
+                        ChatUtil.NotificationMessage( $"Could not load {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
+                        return;
+                    }
+                    ChatUtil.NotificationMessage( $"Advanced Shader Resources for this material will now be based on the supplied {Path.GetFileName( name )}", "Penumbra Advanced Editing", NotificationType.Success );
+                } );
+            }
+            ImGui.SameLine();
+            if( ImGui.Button( "Associate default ShPk file" ) )
+            {
+                var shpk = LoadAssociatedShpk( file.ShaderPackage.Name );
+                if( null != shpk )
                 {
-                    file.AssociatedShpk = new ShpkFile( File.ReadAllBytes( name ) );
+                    file.AssociatedShpk = shpk;
+                    ChatUtil.NotificationMessage( $"Advanced Shader Resources for this material will now be based on the default {file.ShaderPackage.Name}", "Penumbra Advanced Editing", NotificationType.Success );
                 }
-                catch( Exception e )
+                else
                 {
-                    Penumbra.Log.Error( $"Could not load ShPk file {name}:\n{e}" );
-                    ChatUtil.NotificationMessage( $"Could not load {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
-                    return;
+                    ChatUtil.NotificationMessage( $"Could not load default {file.ShaderPackage.Name}", "Penumbra Advanced Editing", NotificationType.Error );
                 }
-                ChatUtil.NotificationMessage( $"Advanced Shader Resources for this material will now be based on the supplied {Path.GetFileName( name )}", "Penumbra Advanced Editing", NotificationType.Success );
-            } );
+            }
         }
 
-        if( file.ShaderPackage.ShaderKeys.Length > 0 )
+        if( file.ShaderPackage.ShaderKeys.Length > 0 || !disabled && file.AssociatedShpk != null && file.AssociatedShpk.MaterialKeys.Length > 0 )
         {
             using var t = ImRaii.TreeNode( "Shader Keys" );
             if( t )
             {
+                var definedKeys = new HashSet< uint >();
+
                 foreach( var (key, idx) in file.ShaderPackage.ShaderKeys.WithIndex() )
                 {
-                    using var t2 = ImRaii.TreeNode( $"Shader Key #{idx}", file.ShaderPackage.ShaderKeys.Length == 1 ? ImGuiTreeNodeFlags.DefaultOpen : 0 );
+                    definedKeys.Add( key.Category );
+                    using var t2 = ImRaii.TreeNode( $"#{idx}: 0x{key.Category:X8} = 0x{key.Value:X8}###{idx}: 0x{key.Category:X8}", disabled ? ImGuiTreeNodeFlags.Leaf : 0 );
                     if( t2 )
                     {
-                        ImRaii.TreeNode( $"Category: 0x{key.Category:X8} ({key.Category})", ImGuiTreeNodeFlags.Leaf ).Dispose();
-                        ImRaii.TreeNode( $"Value: 0x{key.Value:X8} ({key.Value})", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        if( !disabled )
+                        {
+                            var shpkKey = file.AssociatedShpk?.GetMaterialKeyById( key.Category );
+                            if( shpkKey.HasValue )
+                            {
+                                ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
+                                using var c = ImRaii.Combo( "Value", $"0x{key.Value:X8}" );
+                                if( c )
+                                {
+                                    foreach( var value in shpkKey.Value.Values )
+                                    {
+                                        if( ImGui.Selectable( $"0x{value:X8}", value == key.Value ) )
+                                        {
+                                            file.ShaderPackage.ShaderKeys[idx].Value = value;
+                                            ret = true;
+                                        }
+                                    }
+                                }
+                            }
+                            if( ImGui.Button( "Remove Key" ) )
+                            {
+                                ArrayRemove( ref file.ShaderPackage.ShaderKeys, idx );
+                                ret = true;
+                            }
+                        }
+                    }
+                }
+
+                if( !disabled && file.AssociatedShpk != null )
+                {
+                    var missingKeys = file.AssociatedShpk.MaterialKeys.Where( key => !definedKeys.Contains( key.Id ) ).ToArray();
+                    if( missingKeys.Length > 0 )
+                    {
+                        var selectedKey = Array.Find( missingKeys, key => key.Id == _materialNewKeyId );
+                        if( Array.IndexOf( missingKeys, selectedKey ) < 0 )
+                        {
+                            selectedKey = missingKeys[0];
+                            _materialNewKeyId = selectedKey.Id;
+                        }
+                        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
+                        using( var c = ImRaii.Combo( "##NewConstantId", $"ID: 0x{selectedKey.Id:X8}" ) )
+                        {
+                            if( c )
+                            {
+                                foreach( var key in missingKeys )
+                                {
+                                    if( ImGui.Selectable( $"ID: 0x{key.Id:X8}", key.Id == _materialNewKeyId ) )
+                                    {
+                                        selectedKey = key;
+                                        _materialNewKeyId = key.Id;
+                                    }
+                                }
+                            }
+                        }
+                        ImGui.SameLine();
+                        if( ImGui.Button( "Add Key" ) )
+                        {
+                            ArrayAdd( ref file.ShaderPackage.ShaderKeys, new ShaderKey
+                            {
+                                Category = selectedKey.Id,
+                                Value    = selectedKey.DefaultValue,
+                            } );
+                            ret = true;
+                        }
                     }
                 }
             }
         }
 
+        if( file.AssociatedShpk != null )
+        {
+            var definedKeys = new Dictionary< uint, uint >();
+            foreach( var key in file.ShaderPackage.ShaderKeys )
+            {
+                definedKeys[key.Category] = key.Value;
+            }
+            var materialKeys = Array.ConvertAll(file.AssociatedShpk.MaterialKeys, key =>
+            {
+                if( definedKeys.TryGetValue( key.Id, out var value ) )
+                {
+                    return value;
+                }
+                else
+                {
+                    return key.DefaultValue;
+                }
+            } );
+            var vertexShaders = new IndexSet( file.AssociatedShpk.VertexShaders.Length, false );
+            var pixelShaders = new IndexSet( file.AssociatedShpk.PixelShaders.Length, false );
+            foreach( var node in file.AssociatedShpk.Nodes )
+            {
+                if( node.MaterialKeys.WithIndex().All( key => key.Value == materialKeys[key.Index] ) )
+                {
+                    foreach( var pass in node.Passes )
+                    {
+                        vertexShaders.Add( ( int )pass.VertexShader );
+                        pixelShaders.Add( ( int )pass.PixelShader );
+                    }
+                }
+            }
+            ImRaii.TreeNode( $"Vertex Shaders: {( vertexShaders.Count > 0 ? string.Join( ", ", vertexShaders.Select( i => $"#{i}" ) ) : "???" )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+            ImRaii.TreeNode( $"Pixel Shaders: {( pixelShaders.Count > 0 ? string.Join( ", ", pixelShaders.Select( i => $"#{i}" ) ) : "???" )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+        }
+
         if( file.ShaderPackage.Constants.Length > 0 || file.ShaderPackage.ShaderValues.Length > 0
-                || file.AssociatedShpk != null && file.AssociatedShpk.Constants.Length > 0 )
+                || !disabled && file.AssociatedShpk != null && file.AssociatedShpk.Constants.Length > 0 )
         {
             var materialParams = file.AssociatedShpk?.GetConstantById( ShpkFile.MaterialParamsConstantId );
 
@@ -352,7 +469,7 @@ public partial class ModEditWindow
                                 foreach( var constant in missingConstants )
                                 {
                                     var (constantName, _) = MaterialParamRangeName( materialParams?.Name ?? "", constant.ByteOffset >> 2, constant.ByteSize >> 2 );
-                                    if( ImGui.Selectable( $"{constantName} (ID: 0x{constant.Id:X8})" ) )
+                                    if( ImGui.Selectable( $"{constantName} (ID: 0x{constant.Id:X8})", constant.Id == _materialNewConstantId ) )
                                     {
                                         selectedConstant = constant;
                                         _materialNewConstantId = constant.Id;
@@ -378,7 +495,7 @@ public partial class ModEditWindow
         }
 
         if( file.ShaderPackage.Samplers.Length > 0 || file.Textures.Length > 0
-        || file.AssociatedShpk != null && file.AssociatedShpk.Samplers.Any( sampler => sampler.Slot == 2 ) )
+        || !disabled && file.AssociatedShpk != null && file.AssociatedShpk.Samplers.Any( sampler => sampler.Slot == 2 ) )
         {
             using var t = ImRaii.TreeNode( "Samplers" );
             if( t )
@@ -472,7 +589,7 @@ public partial class ModEditWindow
                             {
                                 foreach( var sampler in missingSamplers )
                                 {
-                                    if( ImGui.Selectable( $"{sampler.Name} (ID: 0x{sampler.Id:X8})" ) )
+                                    if( ImGui.Selectable( $"{sampler.Name} (ID: 0x{sampler.Id:X8})", sampler.Id == _materialNewSamplerId ) )
                                     {
                                         selectedSampler = sampler;
                                         _materialNewSamplerId = sampler.Id;
