@@ -7,14 +7,12 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Interface;
 using ImGuiNET;
+using Lumina.Misc;
 using OtterGui.Raii;
 using OtterGui;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.Util;
-using Lumina.Data.Parsing;
-using static OtterGui.Raii.ImRaii;
-using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.Classes;
 
@@ -24,7 +22,8 @@ public partial class ModEditWindow
 
     private readonly FileDialogManager _shaderPackageFileDialog = ConfigWindow.SetupFileManager();
 
-    private uint _shaderPackageNewMaterialParamId = 0;
+    private string _shaderPackageNewMaterialParamName = string.Empty;
+    private uint _shaderPackageNewMaterialParamId = Crc32.Get( string.Empty, 0xFFFFFFFFu );
     private ushort _shaderPackageNewMaterialParamStart = 0;
     private ushort _shaderPackageNewMaterialParamEnd = 0;
 
@@ -254,7 +253,7 @@ public partial class ModEditWindow
 
                 for( var idx = 0; idx < parameters.Length; idx += 4 )
                 {
-                    var usedComponents = materialParams?.Used?[idx >> 2] ?? DisassembledShader.VectorComponents.All;
+                    var usedComponents = ( materialParams?.Used?[idx >> 2] ?? DisassembledShader.VectorComponents.All ) | ( materialParams?.UsedDynamically ?? 0 );
                     ImGui.TableNextColumn();
                     ImGui.Text( $"[{idx >> 2}]" );
                     for( var col = 0; col < 4; ++col )
@@ -297,7 +296,7 @@ public partial class ModEditWindow
                 for( var i = 0; i < file.MaterialParams.Length; ++i )
                 {
                     var param = file.MaterialParams[i];
-                    using var t2 = ImRaii.TreeNode( $"{MaterialParamRangeName(materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2).Item1} (ID: 0x{param.Id:X8})" );
+                    using var t2 = ImRaii.TreeNode( $"{MaterialParamRangeName( materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2 ).Item1} (ID: 0x{param.Id:X8})" );
                     if( t2 )
                     {
                         if( ImGui.Button( "Remove" ) )
@@ -359,12 +358,13 @@ public partial class ModEditWindow
                                 }
                             }
                         }
-                        var id = ( int )_shaderPackageNewMaterialParamId;
-                        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
-                        if( ImGui.InputInt( "ID", ref id, 0, 0, ImGuiInputTextFlags.CharsHexadecimal ) )
+                        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 225.0f );
+                        if( ImGui.InputText( $"Name", ref _shaderPackageNewMaterialParamName, 63 ) )
                         {
-                            _shaderPackageNewMaterialParamId = ( uint )id;
+                            _shaderPackageNewMaterialParamId = Crc32.Get( _shaderPackageNewMaterialParamName, 0xFFFFFFFFu );
                         }
+                        ImGui.SameLine();
+                        ImGui.Text( $"(ID: 0x{_shaderPackageNewMaterialParamId:X8})" );
                         if( ImGui.Button( "Add" ) )
                         {
                             if( definedParameters.Contains( _shaderPackageNewMaterialParamId ) )
