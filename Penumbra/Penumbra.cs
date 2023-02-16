@@ -87,6 +87,7 @@ public class Penumbra : IDalamudPlugin
     private readonly WindowSystem         _windowSystem;
     private readonly Changelog            _changelog;
     private readonly CommandHandler       _commandHandler;
+    private readonly ResourceWatcher      _resourceWatcher;
 
     internal WebServer? WebServer;
 
@@ -129,6 +130,7 @@ public class Penumbra : IDalamudPlugin
             MetaFileManager = new MetaFileManager();
             ResourceLoader  = new ResourceLoader( this );
             ResourceLoader.EnableHooks();
+            _resourceWatcher  = new ResourceWatcher( ResourceLoader );
             ResourceLogger    = new ResourceLogger( ResourceLoader );
             ResidentResources = new ResidentResourceManager();
             StartTimer.Measure( StartTimeType.Mods, () =>
@@ -167,11 +169,6 @@ public class Penumbra : IDalamudPlugin
                 _configWindow.IsOpen = true;
             }
 
-            if( Config.EnableFullResourceLogging )
-            {
-                ResourceLoader.EnableFullLogging();
-            }
-
             using( var tAPI = StartTimer.Measure( StartTimeType.Api ) )
             {
                 Api          = new PenumbraApi( this );
@@ -208,7 +205,7 @@ public class Penumbra : IDalamudPlugin
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system, out Changelog changelog )
     {
         using var tInterface = StartTimer.Measure( StartTimeType.Interface );
-        cfg       = new ConfigWindow( this );
+        cfg       = new ConfigWindow( this, _resourceWatcher );
         btn       = new LaunchButton( _configWindow );
         system    = new WindowSystem( Name );
         changelog = ConfigWindow.CreateChangelog();
@@ -338,6 +335,7 @@ public class Penumbra : IDalamudPlugin
         CollectionManager?.Dispose();
         PathResolver?.Dispose();
         ResourceLogger?.Dispose();
+        _resourceWatcher?.Dispose();
         ResourceLoader?.Dispose();
         GameEvents?.Dispose();
         CharacterUtility?.Dispose();
@@ -374,7 +372,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append( $"> **`Auto-Deduplication:          `** {Config.AutoDeduplicateOnImport}\n" );
         sb.Append( $"> **`Debug Mode:                  `** {Config.DebugMode}\n" );
         sb.Append( $"> **`Synchronous Load (Dalamud):  `** {( Dalamud.GetDalamudConfig( Dalamud.WaitingForPluginsOption, out bool v ) ? v.ToString() : "Unknown" )}\n" );
-        sb.Append( $"> **`Logging:                     `** Full: {Config.EnableFullResourceLogging}, Resource: {Config.EnableResourceLogging}\n" );
+        sb.Append( $"> **`Logging:                     `** Log: {Config.EnableResourceLogging}, Watcher: {Config.EnableResourceWatcher} ({Config.MaxResourceWatcherRecords})\n" );
         sb.Append( $"> **`Use Ownership:               `** {Config.UseOwnerNameForCharacterCollection}\n" );
         sb.AppendLine( "**Mods**" );
         sb.Append( $"> **`Installed Mods:              `** {ModManager.Count}\n" );

@@ -20,14 +20,16 @@ public sealed partial class ConfigWindow : Window, IDisposable
     private readonly EffectiveTab          _effectiveTab;
     private readonly DebugTab              _debugTab;
     private readonly ResourceTab           _resourceTab;
+    private readonly ResourceWatcher       _resourceWatcher;
     public readonly  ModEditWindow         ModEditPopup = new();
 
-    public ConfigWindow( Penumbra penumbra )
+    public ConfigWindow( Penumbra penumbra, ResourceWatcher watcher )
         : base( GetLabel() )
     {
-        _penumbra                  =  penumbra;
+        _penumbra        = penumbra;
+        _resourceWatcher = watcher;
+
         _settingsTab               =  new SettingsTab( this );
-        
         _selector                  =  new ModFileSystemSelector( _penumbra.ModFileSystem );
         _modPanel                  =  new ModPanel( this );
         _selector.SelectionChanged += _modPanel.OnSelectionChange;
@@ -99,6 +101,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
                 _effectiveTab.Draw();
                 _debugTab.Draw();
                 _resourceTab.Draw();
+                DrawResourceWatcher();
             }
         }
         catch( Exception e )
@@ -159,5 +162,14 @@ public sealed partial class ConfigWindow : Window, IDisposable
         _defaultSpace   = new Vector2( 0, 10 * ImGuiHelpers.GlobalScale );
         _inputTextWidth = new Vector2( 350f  * ImGuiHelpers.GlobalScale, 0 );
         _iconButtonSize = new Vector2( ImGui.GetFrameHeight() );
+    }
+
+    private void DrawResourceWatcher()
+    {
+        using var tab = ImRaii.TabItem( "Resource Logger" );
+        if (tab)
+        {
+            _resourceWatcher.Draw();
+        }
     }
 }

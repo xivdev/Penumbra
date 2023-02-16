@@ -8,6 +8,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Widgets;
+using Penumbra.GameData.Enums;
 using Penumbra.Import;
 using Penumbra.Mods;
 using Penumbra.UI;
@@ -49,9 +50,15 @@ public partial class Configuration : IPluginConfiguration
 
     public int TutorialStep { get; set; } = 0;
 
-    public bool EnableFullResourceLogging { get; set; } = false;
     public bool EnableResourceLogging { get; set; } = false;
     public string ResourceLoggingFilter { get; set; } = string.Empty;
+    public bool EnableResourceWatcher { get; set; } = false;
+    public int MaxResourceWatcherRecords { get; set; } = ResourceWatcher.DefaultMaxEntries;
+
+    public ResourceTypeFlag ResourceWatcherResourceTypes { get; set; } = ResourceExtensions.AllResourceTypes;
+    public ResourceCategoryFlag ResourceWatcherResourceCategories { get; set; } = ResourceExtensions.AllResourceCategories;
+    public ResourceWatcher.RecordType ResourceWatcherRecordTypes { get; set; } = ResourceWatcher.AllRecords;
+
 
     [JsonConverter( typeof( SortModeConverter ) )]
     [JsonProperty( Order = int.MaxValue )]
