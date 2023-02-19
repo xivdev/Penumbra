@@ -74,7 +74,7 @@ public partial class ShpkFile : IWritable
                         }
                         if (samplers.Count != textures.Count || !samplers.All(pair => textures.TryGetValue(pair.Key, out var texName) && pair.Value == texName))
                         {
-                            throw new ArgumentException($"The supplied blob has inconsistent shader and texture allocation.");
+                            throw new ArgumentException($"The supplied blob has inconsistent sampler and texture allocation.");
                         }
                     }
                     _blob = value;
