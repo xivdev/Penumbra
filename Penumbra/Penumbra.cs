@@ -6,8 +6,6 @@ using System.Reflection;
 using System.Text;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
-using EmbedIO;
-using EmbedIO.WebApi;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
@@ -81,6 +79,7 @@ public class Penumbra : IDalamudPlugin
     public readonly  ObjectReloader       ObjectReloader;
     public readonly  ModFileSystem        ModFileSystem;
     public readonly  PenumbraApi          Api;
+    public readonly  HttpApi              HttpApi;
     public readonly  PenumbraIpcProviders IpcProviders;
     private readonly ConfigWindow         _configWindow;
     private readonly LaunchButton         _launchButton;
@@ -88,14 +87,6 @@ public class Penumbra : IDalamudPlugin
     private readonly Changelog            _changelog;
     private readonly CommandHandler       _commandHandler;
     private readonly ResourceWatcher      _resourceWatcher;
-
-    internal WebServer? WebServer;
-
-    private static void Timed( StartTimeType type, Action action )
-    {
-        using var t = StartTimer.Measure( type );
-        action();
-    }
 
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
@@ -158,21 +149,22 @@ public class Penumbra : IDalamudPlugin
                 PathResolver.Enable();
             }
 
-            if( Config.EnableHttpApi )
-            {
-                CreateWebServer();
-            }
-
             if( Config.DebugMode )
             {
                 ResourceLoader.EnableDebug();
                 _configWindow.IsOpen = true;
             }
 
-            using( var tAPI = StartTimer.Measure( StartTimeType.Api ) )
+            using( var tApi = StartTimer.Measure( StartTimeType.Api ) )
             {
                 Api          = new PenumbraApi( this );
                 IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
+                HttpApi      = new HttpApi( Api );
+                if( Config.EnableHttpApi )
+                {
+                    HttpApi.CreateWebServer();
+                }
+
                 SubscribeItemLinks();
             }
 
@@ -290,38 +282,12 @@ public class Penumbra : IDalamudPlugin
         };
     }
 
-    public void CreateWebServer()
-    {
-        const string prefix = "http://localhost:42069/";
-
-        ShutdownWebServer();
-
-        WebServer = new WebServer( o => o
-               .WithUrlPrefix( prefix )
-               .WithMode( HttpListenerMode.EmbedIO ) )
-           .WithCors( prefix )
-           .WithWebApi( "/api", m => m
-               .WithController( () => new ModsController( this ) )
-               .WithController( () => new RedrawController( this ) )
-               .WithController( () => new ReloadController( this ) ) );
-
-        WebServer.StateChanged += ( _, e ) => Log.Information( $"WebServer New State - {e.NewState}" );
-
-        WebServer.RunAsync();
-    }
-
-    public void ShutdownWebServer()
-    {
-        WebServer?.Dispose();
-        WebServer = null;
-    }
-
     private short ResolveCutscene( ushort index )
         => ( short )PathResolver.CutsceneActor( index );
 
     public void Dispose()
     {
-        ShutdownWebServer();
+        HttpApi?.Dispose();
         IpcProviders?.Dispose();
         Api?.Dispose();
         _commandHandler?.Dispose();

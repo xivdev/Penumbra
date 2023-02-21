@@ -109,7 +109,7 @@ public partial class ConfigWindow
             PrintValue( "Mod Manager BasePath Exists", Directory.Exists( manager.BasePath.FullName ).ToString() );
             PrintValue( "Mod Manager Valid", manager.Valid.ToString() );
             PrintValue( "Path Resolver Enabled", _window._penumbra.PathResolver.Enabled.ToString() );
-            PrintValue( "Web Server Enabled", ( _window._penumbra.WebServer != null ).ToString() );
+            PrintValue( "Web Server Enabled", _window._penumbra.HttpApi.Enabled.ToString() );
         }
 
         private static void DrawPerformanceTab()

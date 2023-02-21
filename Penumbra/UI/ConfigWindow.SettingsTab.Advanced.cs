@@ -1,11 +1,8 @@
 using System.Numerics;
-using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Interop;
-using Penumbra.String.Classes;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
@@ -46,11 +43,11 @@ public partial class ConfigWindow
             {
                 if( http )
                 {
-                    _window._penumbra.CreateWebServer();
+                    _window._penumbra.HttpApi.CreateWebServer();
                 }
                 else
                 {
-                    _window._penumbra.ShutdownWebServer();
+                    _window._penumbra.HttpApi.ShutdownWebServer();
                 }
 
                 Penumbra.Config.EnableHttpApi = http;
