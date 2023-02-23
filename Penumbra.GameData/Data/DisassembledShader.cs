@@ -4,23 +4,22 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Penumbra.GameData.Interop;
-using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.GameData.Data;
 
-public class DisassembledShader
+public partial class DisassembledShader
 {
     public struct ResourceBinding
     {
-        public string Name;
-        public ResourceType Type;
-        public Format Format;
-        public ResourceDimension Dimension;
-        public uint Slot;
-        public uint Elements;
-        public uint RegisterCount;
+        public string             Name;
+        public ResourceType       Type;
+        public Format             Format;
+        public ResourceDimension  Dimension;
+        public uint               Slot;
+        public uint               Elements;
+        public uint               RegisterCount;
         public VectorComponents[] Used;
-        public VectorComponents UsedDynamically;
+        public VectorComponents   UsedDynamically;
     }
 
     // Abbreviated using the uppercased first char of their name
@@ -30,7 +29,7 @@ public class DisassembledShader
         ConstantBuffer = 0x43, // 'C'
         Sampler        = 0x53, // 'S'
         Texture        = 0x54, // 'T'
-        UAV            = 0x55, // 'U'
+        Uav            = 0x55, // 'U'
     }
 
     // Abbreviated using the uppercased first and last char of their name
@@ -56,22 +55,22 @@ public class DisassembledShader
 
     public struct InputOutput
     {
-        public string Name;
-        public uint Index;
+        public string           Name;
+        public uint             Index;
         public VectorComponents Mask;
-        public uint Register;
-        public string SystemValue;
-        public Format Format;
+        public uint             Register;
+        public string           SystemValue;
+        public Format           Format;
         public VectorComponents Used;
     }
 
     [Flags]
     public enum VectorComponents : byte
     {
-        X = 1,
-        Y = 2,
-        Z = 4,
-        W = 8,
+        X   = 1,
+        Y   = 2,
+        Z   = 4,
+        W   = 8,
         All = 15,
     }
 
@@ -82,21 +81,31 @@ public class DisassembledShader
         Vertex      = 0x56, // 'V'
     }
 
-    private static readonly Regex ResourceBindingSizeRegex = new(@"\s(\w+)(?:\[\d+\])?;\s*//\s*Offset:\s*0\s*Size:\s*(\d+)$", RegexOptions.Multiline | RegexOptions.NonBacktracking);
-    private static readonly Regex SM3ConstantBufferUsageRegex = new(@"c(\d+)(?:\[([^\]]+)\])?(?:\.([wxyz]+))?", RegexOptions.NonBacktracking);
-    private static readonly Regex SM3TextureUsageRegex = new(@"^\s*texld\S*\s+[^,]+,[^,]+,\s*s(\d+)", RegexOptions.NonBacktracking);
-    private static readonly Regex SM5ConstantBufferUsageRegex = new(@"cb(\d+)\[([^\]]+)\]\.([wxyz]+)", RegexOptions.NonBacktracking);
-    private static readonly Regex SM5TextureUsageRegex = new(@"^\s*sample_\S*\s+[^.]+\.([wxyz]+),[^,]+,\s*t(\d+)\.([wxyz]+)", RegexOptions.NonBacktracking);
-    private static readonly char[] Digits = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+    [GeneratedRegex(@"\s(\w+)(?:\[\d+\])?;\s*//\s*Offset:\s*0\s*Size:\s*(\d+)$", RegexOptions.Multiline | RegexOptions.NonBacktracking)]
+    private static partial Regex ResourceBindingSizeRegex();
 
-    public readonly string RawDisassembly;
-    public readonly uint ShaderModel;
-    public readonly ShaderStage Stage;
-    public readonly string BufferDefinitions;
+    [GeneratedRegex(@"c(\d+)(?:\[([^\]]+)\])?(?:\.([wxyz]+))?", RegexOptions.NonBacktracking)]
+    private static partial Regex Sm3ConstantBufferUsageRegex();
+
+    [GeneratedRegex(@"^\s*texld\S*\s+[^,]+,[^,]+,\s*s(\d+)", RegexOptions.NonBacktracking)]
+    private static partial Regex Sm3TextureUsageRegex();
+
+    [GeneratedRegex(@"cb(\d+)\[([^\]]+)\]\.([wxyz]+)", RegexOptions.NonBacktracking)]
+    private static partial Regex Sm5ConstantBufferUsageRegex();
+
+    [GeneratedRegex(@"^\s*sample_\S*\s+[^.]+\.([wxyz]+),[^,]+,\s*t(\d+)\.([wxyz]+)", RegexOptions.NonBacktracking)]
+    private static partial Regex Sm5TextureUsageRegex();
+
+    private static readonly char[] Digits = Enumerable.Range(0, 10).Select(c => (char) ('0' + c)).ToArray();
+
+    public readonly string            RawDisassembly;
+    public readonly uint              ShaderModel;
+    public readonly ShaderStage       Stage;
+    public readonly string            BufferDefinitions;
     public readonly ResourceBinding[] ResourceBindings;
-    public readonly InputOutput[] InputSignature;
-    public readonly InputOutput[] OutputSignature;
-    public readonly string[] Instructions;
+    public readonly InputOutput[]     InputSignature;
+    public readonly InputOutput[]     OutputSignature;
+    public readonly string[]          Instructions;
 
     public DisassembledShader(string rawDisassembly)
     {
@@ -104,49 +113,38 @@ public class DisassembledShader
         var lines = rawDisassembly.Split('\n');
         Instructions = Array.FindAll(lines, ln => !ln.StartsWith("//") && ln.Length > 0);
         var shaderModel = Instructions[0].Trim().Split('_');
-        Stage = (ShaderStage)(byte)char.ToUpper(shaderModel[0][0]);
+        Stage       = (ShaderStage)(byte)char.ToUpper(shaderModel[0][0]);
         ShaderModel = (uint.Parse(shaderModel[1]) << 8) | uint.Parse(shaderModel[2]);
         var header = PreParseHeader(lines.AsSpan()[..Array.IndexOf(lines, Instructions[0])]);
         switch (ShaderModel >> 8)
         {
             case 3:
-                ParseSM3Header(header, out BufferDefinitions, out ResourceBindings, out InputSignature, out OutputSignature);
-                ParseSM3ResourceUsage(Instructions, ResourceBindings);
+                ParseSm3Header(header, out BufferDefinitions, out ResourceBindings, out InputSignature, out OutputSignature);
+                ParseSm3ResourceUsage(Instructions, ResourceBindings);
                 break;
             case 5:
-                ParseSM5Header(header, out BufferDefinitions, out ResourceBindings, out InputSignature, out OutputSignature);
-                ParseSM5ResourceUsage(Instructions, ResourceBindings);
+                ParseSm5Header(header, out BufferDefinitions, out ResourceBindings, out InputSignature, out OutputSignature);
+                ParseSm5ResourceUsage(Instructions, ResourceBindings);
                 break;
-            default:
-                throw new NotImplementedException();
+            default: throw new NotImplementedException();
         }
     }
 
     public ResourceBinding? GetResourceBindingByName(ResourceType type, string name)
-    {
-        return ResourceBindings.Select(binding => new ResourceBinding?(binding)).FirstOrDefault(binding => binding!.Value.Type == type && binding!.Value.Name == name);
-    }
+        => ResourceBindings.FirstOrNull(b => b.Type == type && b.Name == name);
 
     public ResourceBinding? GetResourceBindingBySlot(ResourceType type, uint slot)
-    {
-        return ResourceBindings.Select(binding => new ResourceBinding?(binding)).FirstOrDefault(binding => binding!.Value.Type == type && binding!.Value.Slot == slot);
-    }
+        => ResourceBindings.FirstOrNull(b => b.Type == type && b.Slot == slot);
 
     public static DisassembledShader Disassemble(ReadOnlySpan<byte> shaderBlob)
-    {
-        return new DisassembledShader(D3DCompiler.Disassemble(shaderBlob));
-    }
+        => new(D3DCompiler.Disassemble(shaderBlob));
 
-    private static void ParseSM3Header(Dictionary<string, string[]> header, out string bufferDefinitions, out ResourceBinding[] resourceBindings, out InputOutput[] inputSignature, out InputOutput[] outputSignature)
+    private static void ParseSm3Header(Dictionary<string, string[]> header, out string bufferDefinitions,
+        out ResourceBinding[] resourceBindings, out InputOutput[] inputSignature, out InputOutput[] outputSignature)
     {
-        if (header.TryGetValue("Parameters", out var rawParameters))
-        {
-            bufferDefinitions = string.Join('\n', rawParameters);
-        }
-        else
-        {
-            bufferDefinitions = string.Empty;
-        }
+        bufferDefinitions = header.TryGetValue("Parameters", out var rawParameters)
+            ? string.Join('\n', rawParameters)
+            : string.Empty;
         if (header.TryGetValue("Registers", out var rawRegisters))
         {
             var (_, registers) = ParseTable(rawRegisters);
@@ -154,10 +152,8 @@ public class DisassembledShader
             {
                 var type = (ResourceType)(byte)char.ToUpper(register[1][0]);
                 if (type == ResourceType.Sampler)
-                {
                     type = ResourceType.Texture;
-                }
-                uint size = uint.Parse(register[2]);
+                var size = uint.Parse(register[2]);
                 return new ResourceBinding
                 {
                     Name          = register[0],
@@ -175,14 +171,15 @@ public class DisassembledShader
         {
             resourceBindings = Array.Empty<ResourceBinding>();
         }
-        inputSignature = Array.Empty<InputOutput>();
+
+        inputSignature  = Array.Empty<InputOutput>();
         outputSignature = Array.Empty<InputOutput>();
     }
 
-    private static void ParseSM3ResourceUsage(string[] instructions, ResourceBinding[] resourceBindings)
+    private static void ParseSm3ResourceUsage(string[] instructions, ResourceBinding[] resourceBindings)
     {
         var cbIndices = new Dictionary<uint, int>();
-        var tIndices = new Dictionary<uint, int>();
+        var tIndices  = new Dictionary<uint, int>();
         {
             var i = 0;
             foreach (var binding in resourceBindings)
@@ -191,14 +188,13 @@ public class DisassembledShader
                 {
                     case ResourceType.ConstantBuffer:
                         for (var j = 0u; j < binding.RegisterCount; j++)
-                        {
                             cbIndices[binding.Slot + j] = i;
-                        }
                         break;
                     case ResourceType.Texture:
                         tIndices[binding.Slot] = i;
                         break;
                 }
+
                 ++i;
             }
         }
@@ -206,43 +202,39 @@ public class DisassembledShader
         {
             var trimmed = instruction.Trim();
             if (trimmed.StartsWith("def") || trimmed.StartsWith("dcl"))
-            {
                 continue;
-            }
-            foreach (Match cbMatch in SM3ConstantBufferUsageRegex.Matches(instruction))
+
+            foreach (Match cbMatch in Sm3ConstantBufferUsageRegex().Matches(instruction))
             {
                 var buffer = uint.Parse(cbMatch.Groups[1].Value);
                 if (cbIndices.TryGetValue(buffer, out var i))
                 {
                     var swizzle = cbMatch.Groups[3].Success ? ParseVectorComponents(cbMatch.Groups[3].Value) : VectorComponents.All;
                     if (cbMatch.Groups[2].Success)
-                    {
                         resourceBindings[i].UsedDynamically |= swizzle;
-                    }
                     else
-                    {
                         resourceBindings[i].Used[buffer - resourceBindings[i].Slot] |= swizzle;
-                    }
                 }
             }
-            var tMatch = SM3TextureUsageRegex.Match(instruction);
+
+            var tMatch = Sm3TextureUsageRegex().Match(instruction);
             if (tMatch.Success)
             {
                 var texture = uint.Parse(tMatch.Groups[1].Value);
                 if (tIndices.TryGetValue(texture, out var i))
-                {
                     resourceBindings[i].Used[0] = VectorComponents.All;
-                }
             }
         }
     }
 
-    private static void ParseSM5Header(Dictionary<string, string[]> header, out string bufferDefinitions, out ResourceBinding[] resourceBindings, out InputOutput[] inputSignature, out InputOutput[] outputSignature)
+    private static void ParseSm5Header(Dictionary<string, string[]> header, out string bufferDefinitions,
+        out ResourceBinding[] resourceBindings, out InputOutput[] inputSignature, out InputOutput[] outputSignature)
     {
         if (header.TryGetValue("Resource Bindings", out var rawResBindings))
         {
             var (head, resBindings) = ParseTable(rawResBindings);
-            resourceBindings = Array.ConvertAll(resBindings, binding => {
+            resourceBindings = Array.ConvertAll(resBindings, binding =>
+            {
                 var type = (ResourceType)(byte)char.ToUpper(binding[1][0]);
                 return new ResourceBinding
                 {
@@ -261,10 +253,11 @@ public class DisassembledShader
         {
             resourceBindings = Array.Empty<ResourceBinding>();
         }
+
         if (header.TryGetValue("Buffer Definitions", out var rawBufferDefs))
         {
             bufferDefinitions = string.Join('\n', rawBufferDefs);
-            foreach (Match match in ResourceBindingSizeRegex.Matches(bufferDefinitions))
+            foreach (Match match in ResourceBindingSizeRegex().Matches(bufferDefinitions))
             {
                 var name = match.Groups[1].Value;
                 var bytesSize = uint.Parse(match.Groups[2].Value);
@@ -272,7 +265,7 @@ public class DisassembledShader
                 if (pos >= 0)
                 {
                     resourceBindings[pos].RegisterCount = (bytesSize + 0xF) >> 4;
-                    resourceBindings[pos].Used = new VectorComponents[resourceBindings[pos].RegisterCount];
+                    resourceBindings[pos].Used          = new VectorComponents[resourceBindings[pos].RegisterCount];
                 }
             }
         }
@@ -281,30 +274,32 @@ public class DisassembledShader
             bufferDefinitions = string.Empty;
         }
 
-        static InputOutput ParseInputOutput(string[] inOut) => new()
-        {
-            Name        = inOut[0],
-            Index       = uint.Parse(inOut[1]),
-            Mask        = ParseVectorComponents(inOut[2]),
-            Register    = uint.Parse(inOut[3]),
-            SystemValue = string.Intern(inOut[4]),
-            Format      = (Format)(((byte)char.ToUpper(inOut[5][0]) << 8) | (byte)char.ToUpper(inOut[5][^1])),
-            Used        = ParseVectorComponents(inOut[6]),
-        };
+        static InputOutput ParseInputOutput(string[] inOut)
+            => new()
+            {
+                Name        = inOut[0],
+                Index       = uint.Parse(inOut[1]),
+                Mask        = ParseVectorComponents(inOut[2]),
+                Register    = uint.Parse(inOut[3]),
+                SystemValue = string.Intern(inOut[4]),
+                Format      = (Format)(((byte)char.ToUpper(inOut[5][0]) << 8) | (byte)char.ToUpper(inOut[5][^1])),
+                Used        = ParseVectorComponents(inOut[6]),
+            };
 
         if (header.TryGetValue("Input signature", out var rawInputSig))
         {
             var (_, inputSig) = ParseTable(rawInputSig);
-            inputSignature = Array.ConvertAll(inputSig, ParseInputOutput);
+            inputSignature    = Array.ConvertAll(inputSig, ParseInputOutput);
         }
         else
         {
             inputSignature = Array.Empty<InputOutput>();
         }
+
         if (header.TryGetValue("Output signature", out var rawOutputSig))
         {
             var (_, outputSig) = ParseTable(rawOutputSig);
-            outputSignature = Array.ConvertAll(outputSig, ParseInputOutput);
+            outputSignature    = Array.ConvertAll(outputSig, ParseInputOutput);
         }
         else
         {
@@ -312,10 +307,10 @@ public class DisassembledShader
         }
     }
 
-    private static void ParseSM5ResourceUsage(string[] instructions, ResourceBinding[] resourceBindings)
+    private static void ParseSm5ResourceUsage(string[] instructions, ResourceBinding[] resourceBindings)
     {
         var cbIndices = new Dictionary<uint, int>();
-        var tIndices = new Dictionary<uint, int>();
+        var tIndices  = new Dictionary<uint, int>();
         {
             var i = 0;
             foreach (var binding in resourceBindings)
@@ -329,6 +324,7 @@ public class DisassembledShader
                         tIndices[binding.Slot] = i;
                         break;
                 }
+
                 ++i;
             }
         }
@@ -336,10 +332,9 @@ public class DisassembledShader
         {
             var trimmed = instruction.Trim();
             if (trimmed.StartsWith("def") || trimmed.StartsWith("dcl"))
-            {
                 continue;
-            }
-            foreach (Match cbMatch in SM5ConstantBufferUsageRegex.Matches(instruction))
+
+            foreach (Match cbMatch in Sm5ConstantBufferUsageRegex().Matches(instruction))
             {
                 var buffer = uint.Parse(cbMatch.Groups[1].Value);
                 if (cbIndices.TryGetValue(buffer, out var i))
@@ -348,9 +343,7 @@ public class DisassembledShader
                     if (int.TryParse(cbMatch.Groups[2].Value, out var vector))
                     {
                         if (vector < resourceBindings[i].Used.Length)
-                        {
                             resourceBindings[i].Used[vector] |= swizzle;
-                        }
                     }
                     else
                     {
@@ -358,31 +351,24 @@ public class DisassembledShader
                     }
                 }
             }
-            var tMatch = SM5TextureUsageRegex.Match(instruction);
+
+            var tMatch = Sm5TextureUsageRegex().Match(instruction);
             if (tMatch.Success)
             {
                 var texture = uint.Parse(tMatch.Groups[2].Value);
                 if (tIndices.TryGetValue(texture, out var i))
                 {
-                    var outSwizzle = ParseVectorComponents(tMatch.Groups[1].Value);
+                    var outSwizzle   = ParseVectorComponents(tMatch.Groups[1].Value);
                     var rawInSwizzle = tMatch.Groups[3].Value;
-                    var inSwizzle = new StringBuilder(4);
+                    var inSwizzle    = new StringBuilder(4);
                     if ((outSwizzle & VectorComponents.X) != 0)
-                    {
                         inSwizzle.Append(rawInSwizzle[0]);
-                    }
                     if ((outSwizzle & VectorComponents.Y) != 0)
-                    {
                         inSwizzle.Append(rawInSwizzle[1]);
-                    }
                     if ((outSwizzle & VectorComponents.Z) != 0)
-                    {
                         inSwizzle.Append(rawInSwizzle[2]);
-                    }
                     if ((outSwizzle & VectorComponents.W) != 0)
-                    {
                         inSwizzle.Append(rawInSwizzle[3]);
-                    }
                     resourceBindings[i].Used[0] |= ParseVectorComponents(inSwizzle.ToString());
                 }
             }
@@ -393,9 +379,9 @@ public class DisassembledShader
     {
         components = components.ToUpperInvariant();
         return (components.Contains('X') ? VectorComponents.X : 0)
-             | (components.Contains('Y') ? VectorComponents.Y : 0)
-             | (components.Contains('Z') ? VectorComponents.Z : 0)
-             | (components.Contains('W') ? VectorComponents.W : 0);
+          | (components.Contains('Y') ? VectorComponents.Y : 0)
+          | (components.Contains('Z') ? VectorComponents.Z : 0)
+          | (components.Contains('W') ? VectorComponents.W : 0);
     }
 
     private static Dictionary<string, string[]> PreParseHeader(ReadOnlySpan<string> header)
@@ -405,17 +391,13 @@ public class DisassembledShader
         void AddSection(string name, ReadOnlySpan<string> section)
         {
             while (section.Length > 0 && section[0].Length <= 3)
-            {
                 section = section[1..];
-            }
             while (section.Length > 0 && section[^1].Length <= 3)
-            {
                 section = section[..^1];
-            }
             sections.Add(name, Array.ConvertAll(section.ToArray(), ln => ln.Length <= 3 ? string.Empty : ln[3..]));
         }
 
-        var lastSectionName = "";
+        var lastSectionName  = "";
         var lastSectionStart = 0;
         for (var i = 1; i < header.Length - 1; ++i)
         {
@@ -423,11 +405,12 @@ public class DisassembledShader
             if (header[i - 1].Length <= 3 && header[i + 1].Length <= 3 && (current = header[i].TrimEnd()).EndsWith(':'))
             {
                 AddSection(lastSectionName, header[lastSectionStart..(i - 1)]);
-                lastSectionName = current[3..^1];
+                lastSectionName  = current[3..^1];
                 lastSectionStart = i + 2;
                 ++i; // The next line cannot match
             }
         }
+
         AddSection(lastSectionName, header[lastSectionStart..]);
 
         return sections;
@@ -442,9 +425,8 @@ public class DisassembledShader
             {
                 var start = dashLine.IndexOf('-', i);
                 if (start < 0)
-                {
                     break;
-                }
+
                 var end = dashLine.IndexOf(' ', start + 1);
                 if (end < 0)
                 {
@@ -462,20 +444,17 @@ public class DisassembledShader
         {
             var headerLine = lines[0];
             for (var i = 0; i < columns.Count; ++i)
-            {
                 headers[i] = headerLine[columns[i]].Trim();
-            }
         }
         var data = new List<string[]>();
         foreach (var line in lines[2..])
         {
             var row = new string[columns.Count];
             for (var i = 0; i < columns.Count; ++i)
-            {
                 row[i] = line[columns[i]].Trim();
-            }
             data.Add(row);
         }
+
         return (headers, data.ToArray());
     }
 }

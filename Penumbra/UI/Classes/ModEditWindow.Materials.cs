@@ -11,6 +11,7 @@ using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
 using Lumina.Data.Parsing;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;

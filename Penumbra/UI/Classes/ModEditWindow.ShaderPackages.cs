@@ -10,6 +10,7 @@ using ImGuiNET;
 using Lumina.Misc;
 using OtterGui.Raii;
 using OtterGui;
+using OtterGui.Classes;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.Util;
@@ -80,8 +81,8 @@ public partial class ModEditWindow
                 {
                     var extension = file.DirectXVersion switch
                     {
-                        ShpkFile.DXVersion.DirectX9  => ".cso",
-                        ShpkFile.DXVersion.DirectX11 => ".dxbc",
+                        ShpkFile.DxVersion.DirectX9  => ".cso",
+                        ShpkFile.DxVersion.DirectX11 => ".dxbc",
                         _                            => throw new NotImplementedException(),
                     };
                     var defaultName = new string( objectName.Where( char.IsUpper ).ToArray() ).ToLower() + idx.ToString();
@@ -148,7 +149,7 @@ public partial class ModEditWindow
 
                 ret |= DrawShaderPackageResourceArray( "Constant Buffers", "slot", true, shader.Constants, true );
                 ret |= DrawShaderPackageResourceArray( "Samplers", "slot", false, shader.Samplers, true );
-                ret |= DrawShaderPackageResourceArray( "Unordered Access Views", "slot", true, shader.UAVs, true );
+                ret |= DrawShaderPackageResourceArray( "Unordered Access Views", "slot", true, shader.Uavs, true );
 
                 if( shader.AdditionalHeader.Length > 0 )
                 {
@@ -506,7 +507,7 @@ public partial class ModEditWindow
 
         ret |= DrawShaderPackageResourceArray( "Constant Buffers", "type", true, file.Constants, disabled );
         ret |= DrawShaderPackageResourceArray( "Samplers", "type", false, file.Samplers, disabled );
-        ret |= DrawShaderPackageResourceArray( "Unordered Access Views", "type", false, file.UAVs, disabled );
+        ret |= DrawShaderPackageResourceArray( "Unordered Access Views", "type", false, file.Uavs, disabled );
 
         static bool DrawKeyArray( string arrayName, bool withId, ShpkFile.Key[] keys, bool _ )
         {

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
@@ -11,7 +11,6 @@ using OtterGui.Raii;
 using Penumbra.GameData.Files;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
-using SixLabors.ImageSharp.PixelFormats;
 
 namespace Penumbra.UI.Classes;
 
@@ -176,9 +175,7 @@ public partial class ModEditWindow
         }
 
         private static T? DefaultParseFile( byte[] bytes )
-        {
-            return Activator.CreateInstance( typeof( T ), bytes ) as T;
-        }
+            => Activator.CreateInstance( typeof( T ), BindingFlags.CreateInstance | BindingFlags.OptionalParamBinding, bytes ) as T;
 
         private void UpdateCurrentFile( Mod.Editor.FileRegistry path )
         {
