@@ -64,19 +64,27 @@ public partial class ConfigWindow
             if( _mod.Groups.Count > 0 )
             {
                 var useDummy = true;
-                foreach( var (group, idx) in _mod.Groups.WithIndex().Where( g => g.Value.Type == GroupType.Single && g.Value.IsOption ) )
+                foreach( var (group, idx) in _mod.Groups.WithIndex().Where( g => g.Value.Type == GroupType.Single && g.Value.Count > Penumbra.Config.SingleGroupRadioMax ) )
                 {
                     ImGuiUtil.Dummy( _window._defaultSpace, useDummy );
                     useDummy = false;
-                    DrawSingleGroup( group, idx );
+                    DrawSingleGroupCombo( group, idx );
                 }
 
                 useDummy = true;
-                foreach( var (group, idx) in _mod.Groups.WithIndex().Where( g => g.Value.Type == GroupType.Multi && g.Value.IsOption ) )
+                foreach( var (group, idx) in _mod.Groups.WithIndex().Where( g => g.Value.IsOption ) )
                 {
                     ImGuiUtil.Dummy( _window._defaultSpace, useDummy );
                     useDummy = false;
-                    DrawMultiGroup( group, idx );
+                    switch( group.Type )
+                    {
+                        case GroupType.Multi:
+                            DrawMultiGroup( group, idx );
+                            break;
+                        case GroupType.Single when group.Count <= Penumbra.Config.SingleGroupRadioMax:
+                            DrawSingleGroupRadio( group, idx );
+                            break;
+                    }
                 }
             }
 
@@ -162,47 +170,49 @@ public partial class ConfigWindow
               + "If no inherited collection has settings for this mod, it will be disabled." );
         }
 
+
         // Draw a single group selector as a combo box.
         // If a description is provided, add a help marker besides it.
-        private void DrawSingleGroup( IModGroup group, int groupIdx )
+        private void DrawSingleGroupCombo( IModGroup group, int groupIdx )
         {
             using var id             = ImRaii.PushId( groupIdx );
             var       selectedOption = _emptySetting ? ( int )group.DefaultSettings : ( int )_settings.Settings[ groupIdx ];
             ImGui.SetNextItemWidth( _window._inputTextWidth.X * 3 / 4 );
-            using var combo = ImRaii.Combo( string.Empty, group[ selectedOption ].Name );
-            if( combo )
+            using( var combo = ImRaii.Combo( string.Empty, group[ selectedOption ].Name ) )
             {
-                for( var idx2 = 0; idx2 < group.Count; ++idx2 )
+                if( combo )
                 {
-                    id.Push( idx2 );
-                    var option = group[ idx2 ];
-                    if( ImGui.Selectable( option.Name, idx2 == selectedOption ) )
+                    for( var idx2 = 0; idx2 < group.Count; ++idx2 )
                     {
-                        Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx2 );
-                    }
-
-                    if( option.Description.Length > 0 )
-                    {
-                        var hovered = ImGui.IsItemHovered();
-                        ImGui.SameLine();
-                        using( var font = ImRaii.PushFont( UiBuilder.IconFont ) )
+                        id.Push( idx2 );
+                        var option = group[ idx2 ];
+                        if( ImGui.Selectable( option.Name, idx2 == selectedOption ) )
                         {
-                            using var color = ImRaii.PushColor( ImGuiCol.Text, ImGui.GetColorU32( ImGuiCol.TextDisabled ) );
-                            ImGuiUtil.RightAlign( FontAwesomeIcon.InfoCircle.ToIconString(), ImGui.GetStyle().ItemSpacing.X );
+                            Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx2 );
                         }
 
-                        if( hovered )
+                        if( option.Description.Length > 0 )
                         {
-                            using var tt = ImRaii.Tooltip();
-                            ImGui.TextUnformatted( option.Description );
-                        }
-                    }
+                            var hovered = ImGui.IsItemHovered();
+                            ImGui.SameLine();
+                            using( var font = ImRaii.PushFont( UiBuilder.IconFont ) )
+                            {
+                                using var color = ImRaii.PushColor( ImGuiCol.Text, ImGui.GetColorU32( ImGuiCol.TextDisabled ) );
+                                ImGuiUtil.RightAlign( FontAwesomeIcon.InfoCircle.ToIconString(), ImGui.GetStyle().ItemSpacing.X );
+                            }
 
-                    id.Pop();
+                            if( hovered )
+                            {
+                                using var tt = ImRaii.Tooltip();
+                                ImGui.TextUnformatted( option.Description );
+                            }
+                        }
+
+                        id.Pop();
+                    }
                 }
             }
 
-            combo.Dispose();
             ImGui.SameLine();
             if( group.Description.Length > 0 )
             {
@@ -214,6 +224,34 @@ public partial class ConfigWindow
             }
         }
 
+        // Draw a single group selector as a set of radio buttons.
+        // If a description is provided, add a help marker besides it.
+        private void DrawSingleGroupRadio( IModGroup group, int groupIdx )
+        {
+            using var id             = ImRaii.PushId( groupIdx );
+            var       selectedOption = _emptySetting ? ( int )group.DefaultSettings : ( int )_settings.Settings[ groupIdx ];
+            Widget.BeginFramedGroup( group.Name, group.Description );
+            for( var idx = 0; idx < group.Count; ++idx )
+            {
+                id.Push( idx );
+                var option = group[ idx ];
+                if( ImGui.RadioButton( option.Name, selectedOption == idx ) )
+                {
+                    Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx );
+                }
+
+                if( option.Description.Length > 0 )
+                {
+                    ImGui.SameLine();
+                    ImGuiComponents.HelpMarker( option.Description );
+                }
+
+                id.Pop( idx );
+            }
+
+            Widget.EndFramedGroup();
+        }
+
         // Draw a multi group selector as a bordered set of checkboxes.
         // If a description is provided, add a help marker in the title.
         private void DrawMultiGroup( IModGroup group, int groupIdx )
@@ -221,11 +259,11 @@ public partial class ConfigWindow
             using var id    = ImRaii.PushId( groupIdx );
             var       flags = _emptySetting ? group.DefaultSettings : _settings.Settings[ groupIdx ];
             Widget.BeginFramedGroup( group.Name, group.Description );
-            for( var idx2 = 0; idx2 < group.Count; ++idx2 )
+            for( var idx = 0; idx < group.Count; ++idx )
             {
-                var option = group[ idx2 ];
-                id.Push( idx2 );
-                var flag    = 1u << idx2;
+                var option = group[ idx ];
+                id.Push( idx );
+                var flag    = 1u << idx;
                 var setting = ( flags & flag ) != 0;
                 if( ImGui.Checkbox( option.Name, ref setting ) )
                 {

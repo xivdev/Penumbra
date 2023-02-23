@@ -68,6 +68,7 @@ public partial class Configuration : IPluginConfiguration
     public float ModSelectorAbsoluteSize { get; set; } = Constants.DefaultAbsoluteSize;
     public int ModSelectorScaledSize { get; set; } = Constants.DefaultScaledSize;
     public bool OpenFoldersByDefault { get; set; } = false;
+    public int SingleGroupRadioMax { get; set; } = 2;
     public string DefaultImportFolder { get; set; } = string.Empty;
     public DoubleModifier DeleteModModifier { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
 
