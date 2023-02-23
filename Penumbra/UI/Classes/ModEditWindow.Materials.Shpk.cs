@@ -144,7 +144,7 @@ public partial class ModEditWindow
 
                 ChatUtil.NotificationMessage( $"Advanced Shader Resources for this material will now be based on the supplied {Path.GetFileName( name )}",
                     "Penumbra Advanced Editing", NotificationType.Success );
-            }, 1 );
+            });
         }
 
         var defaultFile = FindAssociatedShpk( file );
