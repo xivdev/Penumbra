@@ -122,21 +122,21 @@ public partial class ShpkFile : IWritable
         SceneKeys    = ReadKeyArray(r, (int)sceneKeyCount);
         MaterialKeys = ReadKeyArray(r, (int)materialKeyCount);
 
-        var subViewKey1Null = r.ReadUInt32();
-        var subViewKey2Null = r.ReadUInt32();
+        var subViewKey1Default = r.ReadUInt32();
+        var subViewKey2Default = r.ReadUInt32();
 
         SubViewKeys = new Key[]
         {
             new()
             {
                 Id        = 1,
-                DefaultValue = subViewKey1Null,
+                DefaultValue = subViewKey1Default,
                 Values    = Array.Empty<uint>(),
             },
             new()
             {
                 Id        = 2,
-                DefaultValue = subViewKey2Null,
+                DefaultValue = subViewKey2Default,
                 Values    = Array.Empty<uint>(),
             },
         };
