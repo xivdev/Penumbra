@@ -11,6 +11,7 @@ using Lumina.Misc;
 using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Classes;
+using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.Util;
@@ -19,14 +20,14 @@ namespace Penumbra.UI.Classes;
 
 public partial class ModEditWindow
 {
-    private readonly FileEditor<ShpkFile> _shaderPackageTab;
+    private readonly FileEditor< ShpkFile > _shaderPackageTab;
 
     private readonly FileDialogManager _shaderPackageFileDialog = ConfigWindow.SetupFileManager();
 
-    private string _shaderPackageNewMaterialParamName = string.Empty;
-    private uint _shaderPackageNewMaterialParamId = Crc32.Get( string.Empty, 0xFFFFFFFFu );
+    private string _shaderPackageNewMaterialParamName  = string.Empty;
+    private uint   _shaderPackageNewMaterialParamId    = Crc32.Get( string.Empty, 0xFFFFFFFFu );
     private ushort _shaderPackageNewMaterialParamStart = 0;
-    private ushort _shaderPackageNewMaterialParamEnd = 0;
+    private ushort _shaderPackageNewMaterialParamEnd   = 0;
 
     private bool DrawShaderPackagePanel( ShpkFile file, bool disabled )
     {
@@ -86,7 +87,7 @@ public partial class ModEditWindow
                         _                            => throw new NotImplementedException(),
                     };
                     var defaultName = new string( objectName.Where( char.IsUpper ).ToArray() ).ToLower() + idx.ToString();
-                    var blob = shader.Blob;
+                    var blob        = shader.Blob;
                     _shaderPackageFileDialog.SaveFileDialog( $"Export {objectName} #{idx} Program Blob to...", extension, defaultName, extension, ( success, name ) =>
                     {
                         if( !success )
@@ -101,12 +102,16 @@ public partial class ModEditWindow
                         catch( Exception e )
                         {
                             Penumbra.Log.Error( $"Could not export {defaultName}{extension} to {name}:\n{e}" );
-                            ChatUtil.NotificationMessage( $"Could not export {defaultName}{extension} to {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
+                            ChatUtil.NotificationMessage( $"Could not export {defaultName}{extension} to {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing",
+                                NotificationType.Error );
                             return;
                         }
-                        ChatUtil.NotificationMessage( $"Shader Program Blob {defaultName}{extension} exported successfully to {Path.GetFileName( name )}", "Penumbra Advanced Editing", NotificationType.Success );
+
+                        ChatUtil.NotificationMessage( $"Shader Program Blob {defaultName}{extension} exported successfully to {Path.GetFileName( name )}",
+                            "Penumbra Advanced Editing", NotificationType.Success );
                     } );
                 }
+
                 if( !disabled )
                 {
                     ImGui.SameLine();
@@ -121,7 +126,7 @@ public partial class ModEditWindow
 
                             try
                             {
-                                shaders[idx].Blob = File.ReadAllBytes( name );
+                                shaders[ idx ].Blob = File.ReadAllBytes( name );
                             }
                             catch( Exception e )
                             {
@@ -129,18 +134,21 @@ public partial class ModEditWindow
                                 ChatUtil.NotificationMessage( $"Could not import {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
                                 return;
                             }
+
                             try
                             {
-                                shaders[idx].UpdateResources( file );
+                                shaders[ idx ].UpdateResources( file );
                                 file.UpdateResources();
                             }
                             catch( Exception e )
                             {
                                 file.SetInvalid();
                                 Penumbra.Log.Error( $"Failed to update resources after importing Shader Blob {name}:\n{e}" );
-                                ChatUtil.NotificationMessage( $"Failed to update resources after importing {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
+                                ChatUtil.NotificationMessage( $"Failed to update resources after importing {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing",
+                                    NotificationType.Error );
                                 return;
                             }
+
                             file.SetChanged();
                             ChatUtil.NotificationMessage( $"Shader Blob {Path.GetFileName( name )} imported successfully", "Penumbra Advanced Editing", NotificationType.Success );
                         } );
@@ -187,7 +195,7 @@ public partial class ModEditWindow
             return false;
         }
 
-        var isSizeWellDefined = ( file.MaterialParamsSize & 0xF ) == 0 && ( !materialParams.HasValue || file.MaterialParamsSize == ( materialParams.Value.Size << 4 ) );
+        var isSizeWellDefined = ( file.MaterialParamsSize & 0xF ) == 0 && ( !materialParams.HasValue || file.MaterialParamsSize == materialParams.Value.Size << 4 );
 
         if( !isSizeWellDefined )
         {
@@ -201,26 +209,27 @@ public partial class ModEditWindow
             }
         }
 
-        var parameters = new (uint, bool)?[( ( file.MaterialParamsSize + 0xFu ) & ~0xFu) >> 2];
-        var orphanParameters = new IndexSet( parameters.Length, true );
-        var definedParameters = new HashSet< uint >();
+        var parameters             = new (uint, bool)?[( ( file.MaterialParamsSize + 0xFu ) & ~0xFu ) >> 2];
+        var orphanParameters       = new IndexSet( parameters.Length, true );
+        var definedParameters      = new HashSet< uint >();
         var hasMalformedParameters = false;
 
         foreach( var param in file.MaterialParams )
         {
             definedParameters.Add( param.Id );
-            if( ( param.ByteOffset & 0x3 ) == 0 && ( param.ByteSize & 0x3 ) == 0
-            && ( param.ByteOffset + param.ByteSize ) <= file.MaterialParamsSize )
+            if( ( param.ByteOffset & 0x3 )       == 0
+            && ( param.ByteSize    & 0x3 )       == 0
+            && param.ByteOffset + param.ByteSize <= file.MaterialParamsSize )
             {
                 var valueOffset = param.ByteOffset >> 2;
-                var valueCount  = param.ByteSize >> 2;
+                var valueCount  = param.ByteSize   >> 2;
                 orphanParameters.RemoveRange( valueOffset, valueCount );
 
-                parameters[valueOffset] = (param.Id, true);
+                parameters[ valueOffset ] = ( param.Id, true );
 
                 for( var i = 1; i < valueCount; ++i )
                 {
-                    parameters[valueOffset + i] = (param.Id, false);
+                    parameters[ valueOffset + i ] = ( param.Id, false );
                 }
             }
             else
@@ -232,7 +241,7 @@ public partial class ModEditWindow
         ImGui.Text( "Parameter positions (continuations are grayed out, unused values are red):" );
 
         using( var table = ImRaii.Table( "##MaterialParamLayout", 5,
-            ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg ) )
+                  ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg ) )
         {
             if( table )
             {
@@ -247,25 +256,26 @@ public partial class ModEditWindow
                 ImGui.TableNextColumn();
                 ImGui.TableHeader( "w" );
 
-                var textColorStart = ImGui.GetColorU32( ImGuiCol.Text );
-                var textColorCont = ( textColorStart & 0xFFFFFFu ) | ( ( textColorStart & 0xFE000000u ) >> 1 ); // Half opacity
-                var textColorUnusedStart = ( textColorStart & 0xFF000000u ) | ( ( textColorStart & 0xFEFEFE ) >> 1 ) | 0x80u; // Half red
-                var textColorUnusedCont = ( textColorUnusedStart & 0xFFFFFFu ) | ( ( textColorUnusedStart & 0xFE000000u ) >> 1 );
+                var textColorStart       = ImGui.GetColorU32( ImGuiCol.Text );
+                var textColorCont        = ( textColorStart       & 0xFFFFFFu )   | ( ( textColorStart       & 0xFE000000u ) >> 1 );         // Half opacity
+                var textColorUnusedStart = ( textColorStart       & 0xFF000000u ) | ( ( textColorStart       & 0xFEFEFE )    >> 1 ) | 0x80u; // Half red
+                var textColorUnusedCont  = ( textColorUnusedStart & 0xFFFFFFu )   | ( ( textColorUnusedStart & 0xFE000000u ) >> 1 );
 
                 for( var idx = 0; idx < parameters.Length; idx += 4 )
                 {
-                    var usedComponents = ( materialParams?.Used?[idx >> 2] ?? DisassembledShader.VectorComponents.All ) | ( materialParams?.UsedDynamically ?? 0 );
+                    var usedComponents = ( materialParams?.Used?[ idx >> 2 ] ?? DisassembledShader.VectorComponents.All ) | ( materialParams?.UsedDynamically ?? 0 );
                     ImGui.TableNextColumn();
                     ImGui.Text( $"[{idx >> 2}]" );
                     for( var col = 0; col < 4; ++col )
                     {
-                        var cell = parameters[idx + col];
+                        var cell = parameters[ idx + col ];
                         ImGui.TableNextColumn();
-                        var start = cell.HasValue && cell.Value.Item2;
-                        var used = ( ( byte )usedComponents & ( 1 << col ) ) != 0;
-                        using var c = ImRaii.PushColor( ImGuiCol.Text, used ? ( start ? textColorStart : textColorCont ) : ( start ? textColorUnusedStart : textColorUnusedCont ) );
+                        var       start = cell.HasValue && cell.Value.Item2;
+                        var       used  = ( ( byte )usedComponents & ( 1 << col ) ) != 0;
+                        using var c     = ImRaii.PushColor( ImGuiCol.Text, used ? start ? textColorStart : textColorCont : start ? textColorUnusedStart : textColorUnusedCont );
                         ImGui.Text( cell.HasValue ? $"0x{cell.Value.Item1:X8}" : "(none)" );
                     }
+
                     ImGui.TableNextRow();
                 }
             }
@@ -282,9 +292,10 @@ public partial class ModEditWindow
                     {
                         ImRaii.TreeNode( $"ID: 0x{param.Id:X8}, offset: 0x{param.ByteOffset:X4}, size: 0x{param.ByteSize:X4}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                     }
-                    else if( ( param.ByteOffset + param.ByteSize ) > file.MaterialParamsSize )
+                    else if( param.ByteOffset + param.ByteSize > file.MaterialParamsSize )
                     {
-                        ImRaii.TreeNode( $"{MaterialParamRangeName( materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2 )} (ID: 0x{param.Id:X8})", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                        ImRaii.TreeNode( $"{MaterialParamRangeName( materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2 )} (ID: 0x{param.Id:X8})",
+                            ImGuiTreeNodeFlags.Leaf ).Dispose();
                     }
                 }
             }
@@ -296,27 +307,30 @@ public partial class ModEditWindow
             {
                 for( var i = 0; i < file.MaterialParams.Length; ++i )
                 {
-                    var param = file.MaterialParams[i];
-                    using var t2 = ImRaii.TreeNode( $"{MaterialParamRangeName( materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2 ).Item1} (ID: 0x{param.Id:X8})" );
+                    var param = file.MaterialParams[ i ];
+                    using var t2 = ImRaii.TreeNode(
+                        $"{MaterialParamRangeName( materialParams?.Name ?? string.Empty, param.ByteOffset >> 2, param.ByteSize >> 2 ).Item1} (ID: 0x{param.Id:X8})" );
                     if( t2 )
                     {
                         if( ImGui.Button( "Remove" ) )
                         {
-                            ArrayRemove( ref file.MaterialParams, i );
-                            ret = true;
+                            file.MaterialParams = file.MaterialParams.RemoveItems( i );
+                            ret                 = true;
                         }
                     }
                 }
+
                 if( orphanParameters.Count > 0 )
                 {
                     using var t2 = ImRaii.TreeNode( "New Parameter" );
                     if( t2 )
                     {
                         var starts = orphanParameters.ToArray();
-                        if( !orphanParameters[_shaderPackageNewMaterialParamStart] )
+                        if( !orphanParameters[ _shaderPackageNewMaterialParamStart ] )
                         {
-                            _shaderPackageNewMaterialParamStart = ( ushort )starts[0];
+                            _shaderPackageNewMaterialParamStart = ( ushort )starts[ 0 ];
                         }
+
                         ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 225.0f );
                         var startName = MaterialParamName( false, _shaderPackageNewMaterialParamStart )!;
                         using( var c = ImRaii.Combo( "Start", $"{materialParams?.Name ?? ""}{startName}" ) )
@@ -333,16 +347,19 @@ public partial class ModEditWindow
                                 }
                             }
                         }
+
                         var lastEndCandidate = ( int )_shaderPackageNewMaterialParamStart;
-                        var ends = starts.SkipWhile( i => i < _shaderPackageNewMaterialParamStart ).TakeWhile( i => {
+                        var ends = starts.SkipWhile( i => i < _shaderPackageNewMaterialParamStart ).TakeWhile( i =>
+                        {
                             var ret = i <= lastEndCandidate + 1;
                             lastEndCandidate = i;
                             return ret;
                         } ).ToArray();
-                        if( Array.IndexOf(ends, _shaderPackageNewMaterialParamEnd) < 0 )
+                        if( Array.IndexOf( ends, _shaderPackageNewMaterialParamEnd ) < 0 )
                         {
-                            _shaderPackageNewMaterialParamEnd = ( ushort )ends[0];
+                            _shaderPackageNewMaterialParamEnd = ( ushort )ends[ 0 ];
                         }
+
                         ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 225.0f );
                         var endName = MaterialParamName( false, _shaderPackageNewMaterialParamEnd )!;
                         using( var c = ImRaii.Combo( "End", $"{materialParams?.Name ?? ""}{endName}" ) )
@@ -359,26 +376,29 @@ public partial class ModEditWindow
                                 }
                             }
                         }
+
                         ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 225.0f );
                         if( ImGui.InputText( $"Name", ref _shaderPackageNewMaterialParamName, 63 ) )
                         {
                             _shaderPackageNewMaterialParamId = Crc32.Get( _shaderPackageNewMaterialParamName, 0xFFFFFFFFu );
                         }
+
                         ImGui.SameLine();
                         ImGui.Text( $"(ID: 0x{_shaderPackageNewMaterialParamId:X8})" );
                         if( ImGui.Button( "Add" ) )
                         {
                             if( definedParameters.Contains( _shaderPackageNewMaterialParamId ) )
                             {
-                                ChatUtil.NotificationMessage( $"Duplicate parameter ID 0x{_shaderPackageNewMaterialParamId:X8}", "Penumbra Advanced Editing", NotificationType.Error );
+                                ChatUtil.NotificationMessage( $"Duplicate parameter ID 0x{_shaderPackageNewMaterialParamId:X8}", "Penumbra Advanced Editing",
+                                    NotificationType.Error );
                             }
                             else
                             {
-                                ArrayAdd( ref file.MaterialParams, new ShpkFile.MaterialParam
+                                file.MaterialParams = file.MaterialParams.AddItem( new ShpkFile.MaterialParam
                                 {
-                                    Id = _shaderPackageNewMaterialParamId,
-                                    ByteOffset = ( ushort )( _shaderPackageNewMaterialParamStart << 2 ),
-                                    ByteSize = ( ushort )( ( _shaderPackageNewMaterialParamEnd + 1 - _shaderPackageNewMaterialParamStart ) << 2 ),
+                                    Id         = _shaderPackageNewMaterialParamId,
+                                    ByteOffset = ( ushort )( _shaderPackageNewMaterialParamStart                                             << 2 ),
+                                    ByteSize   = ( ushort )( ( _shaderPackageNewMaterialParamEnd + 1 - _shaderPackageNewMaterialParamStart ) << 2 ),
                                 } );
                                 ret = true;
                             }
@@ -408,7 +428,10 @@ public partial class ModEditWindow
 
         foreach( var (buf, idx) in resources.WithIndex() )
         {
-            using var t2 = ImRaii.TreeNode( $"#{idx}: {buf.Name} (ID: 0x{buf.Id:X8}), {slotLabel}: {buf.Slot}" + ( withSize ? $", size: {buf.Size} registers###{idx}: {buf.Name} (ID: 0x{buf.Id:X8})" : string.Empty ), ( !disabled || buf.Used != null ) ? 0 : ImGuiTreeNodeFlags.Leaf );
+            using var t2 = ImRaii.TreeNode(
+                $"#{idx}: {buf.Name} (ID: 0x{buf.Id:X8}), {slotLabel}: {buf.Slot}"
+              + ( withSize ? $", size: {buf.Size} registers###{idx}: {buf.Name} (ID: 0x{buf.Id:X8})" : string.Empty ),
+                !disabled || buf.Used != null ? 0 : ImGuiTreeNodeFlags.Leaf );
             if( t2 )
             {
                 if( !disabled )
@@ -423,22 +446,22 @@ public partial class ModEditWindow
                     }
 
                     ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
-                    if( InputUInt16( $"{char.ToUpper( slotLabel[0] )}{slotLabel[1..].ToLower()}", ref resources[idx].Slot, ImGuiInputTextFlags.None ) )
+                    if( InputUInt16( $"{char.ToUpper( slotLabel[ 0 ] )}{slotLabel[ 1.. ].ToLower()}", ref resources[ idx ].Slot, ImGuiInputTextFlags.None ) )
                     {
                         ret = true;
                     }
                 }
+
                 if( buf.Used != null )
                 {
-                    var used = new List<string>();
+                    var used = new List< string >();
                     if( withSize )
                     {
-                        foreach( var (components, i) in ( buf.Used ?? Array.Empty<DisassembledShader.VectorComponents>() ).WithIndex() )
+                        foreach( var (components, i) in ( buf.Used ?? Array.Empty< DisassembledShader.VectorComponents >() ).WithIndex() )
                         {
                             switch( components )
                             {
-                                case 0:
-                                    break;
+                                case 0: break;
                                 case DisassembledShader.VectorComponents.All:
                                     used.Add( $"[{i}]" );
                                     break;
@@ -447,10 +470,10 @@ public partial class ModEditWindow
                                     break;
                             }
                         }
+
                         switch( buf.UsedDynamically ?? 0 )
                         {
-                            case 0:
-                                break;
+                            case 0: break;
                             case DisassembledShader.VectorComponents.All:
                                 used.Add( "[*]" );
                                 break;
@@ -461,24 +484,28 @@ public partial class ModEditWindow
                     }
                     else
                     {
-                        var components = ( ( buf.Used != null && buf.Used.Length > 0 ) ? buf.Used[0] : 0 ) | ( buf.UsedDynamically ?? 0 );
+                        var components = ( buf.Used != null && buf.Used.Length > 0 ? buf.Used[ 0 ] : 0 ) | ( buf.UsedDynamically ?? 0 );
                         if( ( components & DisassembledShader.VectorComponents.X ) != 0 )
                         {
                             used.Add( "Red" );
                         }
+
                         if( ( components & DisassembledShader.VectorComponents.Y ) != 0 )
                         {
                             used.Add( "Green" );
                         }
+
                         if( ( components & DisassembledShader.VectorComponents.Z ) != 0 )
                         {
                             used.Add( "Blue" );
                         }
+
                         if( ( components & DisassembledShader.VectorComponents.W ) != 0 )
                         {
                             used.Add( "Alpha" );
                         }
                     }
+
                     if( used.Count > 0 )
                     {
                         ImRaii.TreeNode( $"Used: {string.Join( ", ", used )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
@@ -552,24 +579,29 @@ public partial class ModEditWindow
                     {
                         foreach( var (key, keyIdx) in node.SystemKeys.WithIndex() )
                         {
-                            ImRaii.TreeNode( $"System Key 0x{file.SystemKeys[keyIdx].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                            ImRaii.TreeNode( $"System Key 0x{file.SystemKeys[ keyIdx ].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                         }
+
                         foreach( var (key, keyIdx) in node.SceneKeys.WithIndex() )
                         {
-                            ImRaii.TreeNode( $"Scene Key 0x{file.SceneKeys[keyIdx].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                            ImRaii.TreeNode( $"Scene Key 0x{file.SceneKeys[ keyIdx ].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                         }
+
                         foreach( var (key, keyIdx) in node.MaterialKeys.WithIndex() )
                         {
-                            ImRaii.TreeNode( $"Material Key 0x{file.MaterialKeys[keyIdx].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                            ImRaii.TreeNode( $"Material Key 0x{file.MaterialKeys[ keyIdx ].Id:X8} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                         }
+
                         foreach( var (key, keyIdx) in node.SubViewKeys.WithIndex() )
                         {
                             ImRaii.TreeNode( $"Sub-View Key #{keyIdx} = 0x{key:X8}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                         }
+
                         ImRaii.TreeNode( $"Pass Indices: {string.Join( ' ', node.PassIndices.Select( c => $"{c:X2}" ) )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                         foreach( var (pass, passIdx) in node.Passes.WithIndex() )
                         {
-                            ImRaii.TreeNode( $"Pass #{passIdx}: ID: 0x{pass.Id:X8}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                            ImRaii.TreeNode( $"Pass #{passIdx}: ID: 0x{pass.Id:X8}, Vertex Shader #{pass.VertexShader}, Pixel Shader #{pass.PixelShader}", ImGuiTreeNodeFlags.Leaf )
+                               .Dispose();
                         }
                     }
                 }
