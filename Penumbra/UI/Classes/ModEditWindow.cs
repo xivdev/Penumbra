@@ -535,45 +535,36 @@ public partial class ModEditWindow : Window, IDisposable
         ImGui.InputTextWithHint( "##swapValue", "... instead of this file.", ref _newSwapKey, Utf8GamePath.MaxGamePathLength );
     }
 
-    // FIXME this probably doesn't belong here
-    private T? LoadAssociatedFile<T>( string gamePath, Func< byte[], T? > parse )
+    /// <summary>
+    /// Find the best matching associated file for a given path.
+    /// </summary>
+    /// <remarks>
+    /// Tries to resolve from the current collection first and chooses the currently resolved file if any exists.
+    /// If none exists, goes through all options in the currently selected mod (if any) in order of priority and resolves in them. 
+    /// If no redirection is found in either of those options, returns the original path.
+    /// </remarks>
+    private FullPath FindBestMatch( Utf8GamePath path )
     {
-        var defaultFiles = _mod?.Default?.Files;
-        if( defaultFiles != null )
+        var currentFile = Penumbra.CollectionManager.Current.ResolvePath( path );
+        if( currentFile != null )
         {
-            if( Utf8GamePath.FromString( gamePath, out var utf8Path, true ) )
+            return currentFile.Value;
+        }
+
+        if( _mod != null )
+        {
+            foreach( var option in _mod.Groups.OrderByDescending( g => g.Priority )
+                       .SelectMany( g => g.WithIndex().OrderByDescending( o => g.OptionPriority( o.Index ) ).Select( g => g.Value ) )
+                       .Append( _mod.Default ) )
             {
-                try
+                if( option.Files.TryGetValue( path, out var value ) || option.FileSwaps.TryGetValue( path, out value ) )
                 {
-                    if (defaultFiles.TryGetValue( utf8Path, out var fsPath ))
-                    {
-                        return parse( File.ReadAllBytes( fsPath.FullName ) );
-                    }
-                }
-                finally
-                {
-                    utf8Path.Dispose();
+                    return value;
                 }
             }
         }
 
-        var file = Dalamud.GameData.GetFile( gamePath )?.Data;
-        return file == null ? default : parse( file );
-    }
-
-    // FIXME neither does this
-    private ShpkFile? LoadAssociatedShpk( string shaderName )
-    {
-        var path = $"shader/sm5/shpk/{shaderName}";
-        try
-        {
-            return LoadAssociatedFile( path, file => new ShpkFile( file ) );
-        }
-        catch( Exception e )
-        {
-            Penumbra.Log.Debug( $"Could not parse associated file {path} to Shpk:\n{e}" );
-            return null;
-        }
+        return new FullPath( path );
     }
 
     public ModEditWindow()
@@ -583,7 +574,7 @@ public partial class ModEditWindow : Window, IDisposable
             () => _editor?.MtrlFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawMaterialPanel,
             () => _mod?.ModPath.FullName ?? string.Empty,
-            bytes => new MtrlFile( bytes, LoadAssociatedShpk ) );
+            LoadMtrl );
         _modelTab = new FileEditor< MdlFile >( "Models", ".mdl",
             () => _editor?.MdlFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawModelPanel,

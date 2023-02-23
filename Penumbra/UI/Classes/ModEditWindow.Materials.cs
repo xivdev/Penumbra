@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -17,7 +16,6 @@ using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 using Penumbra.Util;
-using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.Classes;
 
@@ -30,6 +28,35 @@ public partial class ModEditWindow
     private uint _materialNewKeyId = 0;
     private uint _materialNewConstantId = 0;
     private uint _materialNewSamplerId = 0;
+
+    /// <summary> Load the material with an associated shader package if it can be found. See <seealso cref="FindBestMatch"/>. </summary>
+    private MtrlFile LoadMtrl( byte[] bytes )
+    {
+        var mtrl = new MtrlFile( bytes );
+        if( !Utf8GamePath.FromString( $"shader/sm5/shpk/{mtrl.ShaderPackage.Name}", out var shpkPath, true ) )
+        {
+            return mtrl;
+        }
+
+        try
+        {
+            var shpkFilePath = FindBestMatch( shpkPath );
+            var data = shpkFilePath.IsRooted
+                ? File.ReadAllBytes( shpkFilePath.FullName )
+                : Dalamud.GameData.GetFile( shpkFilePath.FullName )?.Data;
+            if( data?.Length > 0 )
+            {
+                mtrl.AssociatedShpk = new ShpkFile( data );
+            }
+        }
+        catch( Exception e )
+        {
+            Penumbra.Log.Debug( $"Could not parse associated file {shpkPath} to Shpk:\n{e}" );
+            mtrl.AssociatedShpk = null;
+        }
+
+        return mtrl;
+    }
 
     private bool DrawMaterialPanel( MtrlFile file, bool disabled )
     {

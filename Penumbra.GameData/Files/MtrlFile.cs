@@ -94,7 +94,7 @@ public partial class MtrlFile : IWritable
         return samplers;
     }
 
-    public MtrlFile(byte[] data, Func<string, ShpkFile?>? loadAssociatedShpk = null)
+    public MtrlFile(byte[] data)
     {
         using var stream = new MemoryStream(data);
         using var r      = new BinaryReader(stream);
@@ -132,8 +132,6 @@ public partial class MtrlFile : IWritable
             : Array.Empty<ColorDyeSet>();
 
         ShaderPackage.Name = UseOffset(strings, shaderPackageNameOffset);
-
-        AssociatedShpk = loadAssociatedShpk?.Invoke(ShaderPackage.Name);
 
         AdditionalData = r.ReadBytes(additionalDataSize);
         for (var i = 0; i < ColorSets.Length; ++i)
