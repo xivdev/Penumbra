@@ -305,6 +305,9 @@ public class PenumbraSqPackStream : IDisposable
         // i is for texture blocks, j is 'data blocks'...
         for( byte i = 0; i < blocks.Count; i++ )
         {
+            if( blocks[ i ].CompressedSize == 0 )
+                continue;
+
             // start from comp_offset
             var runningBlockTotal = blocks[ i ].CompressedOffset + resource.FileInfo.Offset + resource.FileInfo.HeaderSize;
             ReadFileBlock( runningBlockTotal, ms, true );
