@@ -23,8 +23,6 @@ public partial class MtrlFile : IWritable
     public ShaderPackageData ShaderPackage;
     public byte[]            AdditionalData;
 
-    public ShpkFile? AssociatedShpk;
-
     public bool ApplyDyeTemplate(StmFile stm, int colorSetIdx, int rowIdx, StainId stainId)
     {
         if (colorSetIdx < 0 || colorSetIdx >= ColorDyeSets.Length || rowIdx is < 0 or >= ColorSet.RowArray.NumRows)
@@ -79,7 +77,7 @@ public partial class MtrlFile : IWritable
 
     }
 
-    public List<(Sampler?, ShpkFile.Resource?)> GetSamplersByTexture()
+    public List<(Sampler?, ShpkFile.Resource?)> GetSamplersByTexture(ShpkFile? shpk)
     {
         var samplers = new List<(Sampler?, ShpkFile.Resource?)>();
         for (var i = 0; i < Textures.Length; ++i)
@@ -88,7 +86,7 @@ public partial class MtrlFile : IWritable
         }
         foreach (var sampler in ShaderPackage.Samplers)
         {
-            samplers[sampler.TextureIndex] = (sampler, AssociatedShpk?.GetSamplerById(sampler.SamplerId));
+            samplers[sampler.TextureIndex] = (sampler, shpk?.GetSamplerById(sampler.SamplerId));
         }
 
         return samplers;
