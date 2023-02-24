@@ -8,11 +8,11 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
 using Lumina.Data.Parsing;
-using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.GameData;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -23,21 +23,22 @@ public partial class ModEditWindow
 {
     private readonly FileDialogManager _materialFileDialog = ConfigWindow.SetupFileManager();
 
-    private FullPath FindAssociatedShpk( MtrlFile mtrl )
+    private FullPath FindAssociatedShpk( MtrlFile mtrl, out string defaultPath, out Utf8GamePath defaultGamePath )
     {
-        if( !Utf8GamePath.FromString( $"shader/sm5/shpk/{mtrl.ShaderPackage.Name}", out var shpkPath, true ) )
+        defaultPath = GamePaths.Shader.ShpkPath( mtrl.ShaderPackage.Name );
+        if( !Utf8GamePath.FromString( defaultPath, out defaultGamePath, true ) )
         {
             return FullPath.Empty;
         }
 
-        return FindBestMatch( shpkPath );
+        return FindBestMatch( defaultGamePath );
     }
 
     private void LoadAssociatedShpk( MtrlFile mtrl )
     {
         try
         {
-            _mtrlTabState.LoadedShpkPath = FindAssociatedShpk( mtrl );
+            _mtrlTabState.LoadedShpkPath = FindAssociatedShpk( mtrl, out _, out _ );
             var data = _mtrlTabState.LoadedShpkPath.IsRooted
                 ? File.ReadAllBytes( _mtrlTabState.LoadedShpkPath.FullName )
                 : Dalamud.GameData.GetFile( _mtrlTabState.LoadedShpkPath.InternalName.ToString() )?.Data;
@@ -109,23 +110,28 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private void DrawCustomAssociations( MtrlFile file, bool disabled )
+    /// <summary>
+    /// Show the currently associated shpk file, if any, and the buttons to associate
+    /// a specific shpk from your drive, the modded shpk by path or the default shpk.
+    /// </summary>
+    private void DrawCustomAssociations( MtrlFile file )
     {
         var text = file.AssociatedShpk == null
             ? "Associated .shpk file: None"
-            : $"Associated .shpk file: {_mtrlTabState.LoadedShpkPath}";
+            : $"Associated .shpk file: {_mtrlTabState.LoadedShpkPath.ToPath()}";
 
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-        ImGui.Selectable( text );
 
-        if( disabled )
+        if( ImGui.Selectable( text ) )
         {
-            return;
+            ImGui.SetClipboardText( _mtrlTabState.LoadedShpkPath.IsRooted ? _mtrlTabState.LoadedShpkPath.FullName.Replace( "\\", "/" ) );
         }
 
-        if( ImGui.Button( "Associate custom ShPk file" ) )
+        ImGuiUtil.HoverTooltip( "Click to copy file path to clipboard."  );
+
+        if( ImGui.Button( "Associate Custom .shpk File" ) )
         {
-            _materialFileDialog.OpenFileDialog( "Associate custom .shpk file...", ".shpk", ( success, name ) =>
+            _materialFileDialog.OpenFileDialog( "Associate Custom .shpk File...", ".shpk", ( success, name ) =>
             {
                 if( !success )
                 {
@@ -139,28 +145,36 @@ public partial class ModEditWindow
                 }
                 catch( Exception e )
                 {
-                    Penumbra.Log.Error( $"Could not load .shpk file {name}:\n{e}" );
-                    ChatUtil.NotificationMessage( $"Could not load {Path.GetFileName( name )}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
+                    ChatUtil.NotificationMessage( $"Could not load {name}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
                 }
-
-                ChatUtil.NotificationMessage( $"Advanced Shader Resources for this material will now be based on the supplied {Path.GetFileName( name )}",
-                    "Penumbra Advanced Editing", NotificationType.Success );
             });
         }
 
-        var defaultFile = FindAssociatedShpk( file );
+        var moddedPath = FindAssociatedShpk( file, out var defaultPath, out var gamePath );
         ImGui.SameLine();
-        if( ImGuiUtil.DrawDisabledButton( "Associate default ShPk file", Vector2.Zero, defaultFile.FullName, defaultFile.Equals( _mtrlTabState.LoadedShpkPath ) ) )
+        if( ImGuiUtil.DrawDisabledButton( "Associate Default .shpk File", Vector2.Zero, moddedPath.ToPath(), moddedPath.Equals( _mtrlTabState.LoadedShpkPath ) ) )
         {
             LoadAssociatedShpk( file );
-            if( file.AssociatedShpk != null )
+            if( file.AssociatedShpk == null )
             {
-                ChatUtil.NotificationMessage( $"Advanced Shader Resources for this material will now be based on the default {file.ShaderPackage.Name}",
-                    "Penumbra Advanced Editing", NotificationType.Success );
+                ChatUtil.NotificationMessage( $"Could not load {moddedPath}.", "Penumbra Advanced Editing", NotificationType.Error );
             }
-            else
+        }
+
+        if( !gamePath.Path.Equals( moddedPath.InternalName ) )
+        {
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( "Associate Unmodded .shpk File", Vector2.Zero, defaultPath, gamePath.Path.Equals( _mtrlTabState.LoadedShpkPath.InternalName ) ) )
             {
-                ChatUtil.NotificationMessage( $"Could not load default {file.ShaderPackage.Name}", "Penumbra Advanced Editing", NotificationType.Error );
+                try
+                {
+                    file.AssociatedShpk          = new ShpkFile( Dalamud.GameData.GetFile( defaultPath )?.Data ?? Array.Empty< byte >() );
+                    _mtrlTabState.LoadedShpkPath = new FullPath( defaultPath );
+                }
+                catch( Exception e )
+                {
+                    ChatUtil.NotificationMessage( $"Could not load {defaultPath}:\n{e}", "Penumbra Advanced Editing", NotificationType.Error );
+                }
             }
         }
 
@@ -611,7 +625,7 @@ public partial class ModEditWindow
 
         ret |= DrawPackageNameInput( file, disabled );
         ret |= DrawShaderFlagsInput( file, disabled );
-        DrawCustomAssociations( file, disabled );
+        DrawCustomAssociations( file );
         ret |= DrawMaterialShaderKeys( file, disabled );
         DrawMaterialShaders( file );
         ret |= DrawMaterialConstants( file, disabled );

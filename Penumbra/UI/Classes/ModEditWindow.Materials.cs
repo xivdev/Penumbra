@@ -68,19 +68,12 @@ public partial class ModEditWindow
     {
         var       ret   = false;
         using var table = ImRaii.Table( "##Textures", 2 );
-        ImGui.TableSetupColumn( "Name", ImGuiTableColumnFlags.WidthFixed, _mtrlTabState.TextureLabelWidth * ImGuiHelpers.GlobalScale );
         ImGui.TableSetupColumn( "Path", ImGuiTableColumnFlags.WidthStretch );
+        ImGui.TableSetupColumn( "Name", ImGuiTableColumnFlags.WidthFixed, _mtrlTabState.TextureLabelWidth * ImGuiHelpers.GlobalScale );
         for( var i = 0; i < file.Textures.Length; ++i )
         {
             using var _   = ImRaii.PushId( i );
             var       tmp = file.Textures[ i ].Path;
-            ImGui.TableNextColumn();
-            using( var font = ImRaii.PushFont( UiBuilder.MonoFont ) )
-            {
-                ImGui.AlignTextToFramePadding();
-                ImGui.TextUnformatted( _mtrlTabState.TextureLabels[ i ] );
-            }
-
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth( ImGui.GetContentRegionAvail().X );
             if( ImGui.InputText( string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength,
@@ -91,6 +84,11 @@ public partial class ModEditWindow
                 ret                     = true;
                 file.Textures[ i ].Path = tmp;
             }
+
+            ImGui.TableNextColumn();
+            using var font = ImRaii.PushFont( UiBuilder.MonoFont );
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextUnformatted( _mtrlTabState.TextureLabels[i] );
         }
 
         return ret;

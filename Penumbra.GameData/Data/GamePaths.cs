@@ -401,4 +401,10 @@ public static partial class GamePaths
         [GeneratedRegex(@"chara[\/]human[\/]c0101[\/]animation[\/]a0001[\/][^\s]+?[\/](?'key'[^\s]+?)\.pap", RegexOptions.IgnoreCase)]
         public static partial Regex Pap();
     }
+
+    public static partial class Shader
+    {
+        public static string ShpkPath(string name)
+            => $"shader/sm5/shpk/{name}";
+    }
 }
