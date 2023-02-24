@@ -8,6 +8,7 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
 using Lumina.Data.Parsing;
+using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
@@ -60,7 +61,7 @@ public partial class ModEditWindow
         var samplers = file.GetSamplersByTexture();
         _mtrlTabState.TextureLabels.Clear();
         _mtrlTabState.TextureLabelWidth = 50f * ImGuiHelpers.GlobalScale;
-        using( var font = ImRaii.PushFont( UiBuilder.MonoFont ) )
+        using( var _ = ImRaii.PushFont( UiBuilder.MonoFont ) )
         {
             for( var i = 0; i < file.Textures.Length; ++i )
             {
@@ -166,24 +167,15 @@ public partial class ModEditWindow
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
     }
 
-    private bool DrawMaterialShaderResources( MtrlFile file, bool disabled )
+    private bool DrawMaterialShaderKeys( MtrlFile file, bool disabled )
     {
         var ret = false;
-        if( !ImGui.CollapsingHeader( "Advanced Shader Resources" ) )
-        {
-            return ret;
-        }
-
-        ret |= DrawPackageNameInput( file, disabled );
-        ret |= DrawShaderFlagsInput( file, disabled );
-        DrawCustomAssociations( file, disabled );
-
         if( file.ShaderPackage.ShaderKeys.Length > 0 || !disabled && file.AssociatedShpk != null && file.AssociatedShpk.MaterialKeys.Length > 0 )
         {
             using var t = ImRaii.TreeNode( "Shader Keys" );
             if( t )
             {
-                var definedKeys = new HashSet< uint >();
+                var definedKeys = new HashSet<uint>();
 
                 foreach( var (key, idx) in file.ShaderPackage.ShaderKeys.WithIndex() )
                 {
@@ -204,8 +196,8 @@ public partial class ModEditWindow
                                     {
                                         if( ImGui.Selectable( $"0x{value:X8}", value == key.Value ) )
                                         {
-                                            file.ShaderPackage.ShaderKeys[ idx ].Value = value;
-                                            ret                                        = true;
+                                            file.ShaderPackage.ShaderKeys[idx].Value = value;
+                                            ret = true;
                                         }
                                     }
                                 }
@@ -214,7 +206,7 @@ public partial class ModEditWindow
                             if( ImGui.Button( "Remove Key" ) )
                             {
                                 file.ShaderPackage.ShaderKeys = file.ShaderPackage.ShaderKeys.RemoveItems( idx );
-                                ret                           = true;
+                                ret = true;
                             }
                         }
                     }
@@ -228,7 +220,7 @@ public partial class ModEditWindow
                         var selectedKey = Array.Find( missingKeys, key => key.Id == _mtrlTabState.MaterialNewKeyId );
                         if( Array.IndexOf( missingKeys, selectedKey ) < 0 )
                         {
-                            selectedKey                    = missingKeys[ 0 ];
+                            selectedKey = missingKeys[0];
                             _mtrlTabState.MaterialNewKeyId = selectedKey.Id;
                         }
 
@@ -241,7 +233,7 @@ public partial class ModEditWindow
                                 {
                                     if( ImGui.Selectable( $"ID: 0x{key.Id:X8}", key.Id == _mtrlTabState.MaterialNewKeyId ) )
                                     {
-                                        selectedKey                    = key;
+                                        selectedKey = key;
                                         _mtrlTabState.MaterialNewKeyId = key.Id;
                                     }
                                 }
@@ -254,7 +246,7 @@ public partial class ModEditWindow
                             file.ShaderPackage.ShaderKeys = file.ShaderPackage.ShaderKeys.AddItem( new ShaderKey
                             {
                                 Category = selectedKey.Id,
-                                Value    = selectedKey.DefaultValue,
+                                Value = selectedKey.DefaultValue,
                             } );
                             ret = true;
                         }
@@ -263,12 +255,17 @@ public partial class ModEditWindow
             }
         }
 
+        return ret;
+    }
+
+    private void DrawMaterialShaders( MtrlFile file )
+    {
         if( file.AssociatedShpk != null )
         {
-            var definedKeys = new Dictionary< uint, uint >();
+            var definedKeys = new Dictionary<uint, uint>();
             foreach( var key in file.ShaderPackage.ShaderKeys )
             {
-                definedKeys[ key.Category ] = key.Value;
+                definedKeys[key.Category] = key.Value;
             }
 
             var materialKeys = Array.ConvertAll( file.AssociatedShpk.MaterialKeys, key =>
@@ -286,7 +283,7 @@ public partial class ModEditWindow
             var pixelShaders  = new IndexSet( file.AssociatedShpk.PixelShaders.Length, false );
             foreach( var node in file.AssociatedShpk.Nodes )
             {
-                if( node.MaterialKeys.WithIndex().All( key => key.Value == materialKeys[ key.Index ] ) )
+                if( node.MaterialKeys.WithIndex().All( key => key.Value == materialKeys[key.Index] ) )
                 {
                     foreach( var pass in node.Passes )
                     {
@@ -300,8 +297,12 @@ public partial class ModEditWindow
                .Dispose();
             ImRaii.TreeNode( $"Pixel Shaders: {( pixelShaders.Count > 0 ? string.Join( ", ", pixelShaders.Select( i => $"#{i}" ) ) : "???" )}", ImGuiTreeNodeFlags.Leaf ).Dispose();
         }
+    }
 
-        if( file.ShaderPackage.Constants.Length   > 0
+    private bool DrawMaterialConstants( MtrlFile file, bool disabled )
+    {
+        var ret = false;
+        if( file.ShaderPackage.Constants.Length > 0
         || file.ShaderPackage.ShaderValues.Length > 0
         || !disabled && file.AssociatedShpk != null && file.AssociatedShpk.Constants.Length > 0 )
         {
@@ -310,9 +311,9 @@ public partial class ModEditWindow
             using var t = ImRaii.TreeNode( materialParams?.Name ?? "Constants" );
             if( t )
             {
-                var orphanValues          = new IndexSet( file.ShaderPackage.ShaderValues.Length, true );
-                var aliasedValueCount     = 0;
-                var definedConstants      = new HashSet< uint >();
+                var orphanValues = new IndexSet( file.ShaderPackage.ShaderValues.Length, true );
+                var aliasedValueCount = 0;
+                var definedConstants = new HashSet<uint>();
                 var hasMalformedConstants = false;
 
                 foreach( var constant in file.ShaderPackage.Constants )
@@ -332,11 +333,11 @@ public partial class ModEditWindow
 
                 foreach( var (constant, idx) in file.ShaderPackage.Constants.WithIndex() )
                 {
-                    var values           = file.GetConstantValues( constant );
+                    var values = file.GetConstantValues( constant );
                     var paramValueOffset = -values.Length;
                     if( values.Length > 0 )
                     {
-                        var shpkParam       = file.AssociatedShpk?.GetMaterialParamById( constant.Id );
+                        var shpkParam = file.AssociatedShpk?.GetMaterialParamById( constant.Id );
                         var paramByteOffset = shpkParam.HasValue ? shpkParam.Value.ByteOffset : -1;
                         if( ( paramByteOffset & 0x3 ) == 0 )
                         {
@@ -358,7 +359,7 @@ public partial class ModEditWindow
                                 ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
                                 if( ImGui.InputFloat(
                                        $"{MaterialParamName( componentOnly, paramValueOffset + valueIdx ) ?? $"#{valueIdx}"} (at 0x{( valueOffset + valueIdx ) << 2:X4})",
-                                       ref values[ valueIdx ], 0.0f, 0.0f, "%.3f",
+                                       ref values[valueIdx], 0.0f, 0.0f, "%.3f",
                                        disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) )
                                 {
                                     ret = true;
@@ -374,16 +375,16 @@ public partial class ModEditWindow
                         if( !disabled
                         && !hasMalformedConstants
                         && orphanValues.Count == 0
-                        && aliasedValueCount  == 0
+                        && aliasedValueCount == 0
                         && ImGui.Button( "Remove Constant" ) )
                         {
                             file.ShaderPackage.ShaderValues = file.ShaderPackage.ShaderValues.RemoveItems( constant.ByteOffset >> 2, constant.ByteSize >> 2 );
-                            file.ShaderPackage.Constants    = file.ShaderPackage.Constants.RemoveItems( idx );
+                            file.ShaderPackage.Constants = file.ShaderPackage.Constants.RemoveItems( idx );
                             for( var i = 0; i < file.ShaderPackage.Constants.Length; ++i )
                             {
-                                if( file.ShaderPackage.Constants[ i ].ByteOffset >= constant.ByteOffset )
+                                if( file.ShaderPackage.Constants[i].ByteOffset >= constant.ByteOffset )
                                 {
-                                    file.ShaderPackage.Constants[ i ].ByteOffset -= constant.ByteSize;
+                                    file.ShaderPackage.Constants[i].ByteOffset -= constant.ByteSize;
                                 }
                             }
 
@@ -401,7 +402,7 @@ public partial class ModEditWindow
                         {
                             ImGui.SetNextItemWidth( ImGui.GetFontSize() * 10.0f );
                             if( ImGui.InputFloat( $"#{idx} (at 0x{idx << 2:X4})",
-                                   ref file.ShaderPackage.ShaderValues[ idx ], 0.0f, 0.0f, "%.3f",
+                                   ref file.ShaderPackage.ShaderValues[idx], 0.0f, 0.0f, "%.3f",
                                    disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) )
                             {
                                 ret = true;
@@ -418,7 +419,7 @@ public partial class ModEditWindow
                         var selectedConstant = Array.Find( missingConstants, constant => constant.Id == _mtrlTabState.MaterialNewConstantId );
                         if( selectedConstant.ByteSize == 0 )
                         {
-                            selectedConstant                    = missingConstants[ 0 ];
+                            selectedConstant = missingConstants[0];
                             _mtrlTabState.MaterialNewConstantId = selectedConstant.Id;
                         }
 
@@ -433,7 +434,7 @@ public partial class ModEditWindow
                                     var (constantName, _) = MaterialParamRangeName( materialParams?.Name ?? "", constant.ByteOffset >> 2, constant.ByteSize >> 2 );
                                     if( ImGui.Selectable( $"{constantName} (ID: 0x{constant.Id:X8})", constant.Id == _mtrlTabState.MaterialNewConstantId ) )
                                     {
-                                        selectedConstant                    = constant;
+                                        selectedConstant = constant;
                                         _mtrlTabState.MaterialNewConstantId = constant.Id;
                                     }
                                 }
@@ -446,9 +447,9 @@ public partial class ModEditWindow
                             file.ShaderPackage.ShaderValues = file.ShaderPackage.ShaderValues.AddItem( 0.0f, selectedConstant.ByteSize >> 2 );
                             file.ShaderPackage.Constants = file.ShaderPackage.Constants.AddItem( new MtrlFile.Constant
                             {
-                                Id         = _mtrlTabState.MaterialNewConstantId,
+                                Id = _mtrlTabState.MaterialNewConstantId,
                                 ByteOffset = ( ushort )( file.ShaderPackage.ShaderValues.Length << 2 ),
-                                ByteSize   = selectedConstant.ByteSize,
+                                ByteSize = selectedConstant.ByteSize,
                             } );
                             ret = true;
                         }
@@ -457,16 +458,22 @@ public partial class ModEditWindow
             }
         }
 
+        return ret;
+    }
+
+    private bool DrawMaterialSamplers( MtrlFile file, bool disabled )
+    {
+        var ret = false;
         if( file.ShaderPackage.Samplers.Length > 0
-        || file.Textures.Length                > 0
+        || file.Textures.Length > 0
         || !disabled && file.AssociatedShpk != null && file.AssociatedShpk.Samplers.Any( sampler => sampler.Slot == 2 ) )
         {
             using var t = ImRaii.TreeNode( "Samplers" );
             if( t )
             {
-                var orphanTextures      = new IndexSet( file.Textures.Length, true );
+                var orphanTextures = new IndexSet( file.Textures.Length, true );
                 var aliasedTextureCount = 0;
-                var definedSamplers     = new HashSet< uint >();
+                var definedSamplers = new HashSet<uint>();
 
                 foreach( var sampler in file.ShaderPackage.Samplers )
                 {
@@ -480,11 +487,11 @@ public partial class ModEditWindow
 
                 foreach( var (sampler, idx) in file.ShaderPackage.Samplers.WithIndex() )
                 {
-                    var       shpkSampler = file.AssociatedShpk?.GetSamplerById( sampler.SamplerId );
-                    using var t2          = ImRaii.TreeNode( $"#{idx}{( shpkSampler.HasValue ? ": " + shpkSampler.Value.Name : "" )} (ID: 0x{sampler.SamplerId:X8})" );
+                    var shpkSampler = file.AssociatedShpk?.GetSamplerById( sampler.SamplerId );
+                    using var t2 = ImRaii.TreeNode( $"#{idx}{( shpkSampler.HasValue ? ": " + shpkSampler.Value.Name : "" )} (ID: 0x{sampler.SamplerId:X8})" );
                     if( t2 )
                     {
-                        ImRaii.TreeNode( $"Texture: #{sampler.TextureIndex} - {Path.GetFileName( file.Textures[ sampler.TextureIndex ].Path )}", ImGuiTreeNodeFlags.Leaf )
+                        ImRaii.TreeNode( $"Texture: #{sampler.TextureIndex} - {Path.GetFileName( file.Textures[sampler.TextureIndex].Path )}", ImGuiTreeNodeFlags.Leaf )
                            .Dispose();
 
                         // FIXME this probably doesn't belong here
@@ -497,7 +504,7 @@ public partial class ModEditWindow
                         }
 
                         ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
-                        if( InputHexUInt16( "Texture Flags", ref file.Textures[ sampler.TextureIndex ].Flags, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) )
+                        if( InputHexUInt16( "Texture Flags", ref file.Textures[sampler.TextureIndex].Flags, disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) )
                         {
                             ret = true;
                         }
@@ -507,22 +514,22 @@ public partial class ModEditWindow
                         if( ImGui.InputInt( "Sampler Flags", ref sampFlags, 0, 0,
                                ImGuiInputTextFlags.CharsHexadecimal | ( disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) ) )
                         {
-                            file.ShaderPackage.Samplers[ idx ].Flags = ( uint )sampFlags;
-                            ret                                      = true;
+                            file.ShaderPackage.Samplers[idx].Flags = ( uint )sampFlags;
+                            ret = true;
                         }
 
                         if( !disabled
                         && orphanTextures.Count == 0
-                        && aliasedTextureCount  == 0
+                        && aliasedTextureCount == 0
                         && ImGui.Button( "Remove Sampler" ) )
                         {
-                            file.Textures               = file.Textures.RemoveItems( sampler.TextureIndex );
+                            file.Textures = file.Textures.RemoveItems( sampler.TextureIndex );
                             file.ShaderPackage.Samplers = file.ShaderPackage.Samplers.RemoveItems( idx );
                             for( var i = 0; i < file.ShaderPackage.Samplers.Length; ++i )
                             {
-                                if( file.ShaderPackage.Samplers[ i ].TextureIndex >= sampler.TextureIndex )
+                                if( file.ShaderPackage.Samplers[i].TextureIndex >= sampler.TextureIndex )
                                 {
-                                    --file.ShaderPackage.Samplers[ i ].TextureIndex;
+                                    --file.ShaderPackage.Samplers[i].TextureIndex;
                                 }
                             }
 
@@ -538,7 +545,7 @@ public partial class ModEditWindow
                     {
                         foreach( var idx in orphanTextures )
                         {
-                            ImRaii.TreeNode( $"#{idx}: {Path.GetFileName( file.Textures[ idx ].Path )} - {file.Textures[ idx ].Flags:X4}", ImGuiTreeNodeFlags.Leaf ).Dispose();
+                            ImRaii.TreeNode( $"#{idx}: {Path.GetFileName( file.Textures[idx].Path )} - {file.Textures[idx].Flags:X4}", ImGuiTreeNodeFlags.Leaf ).Dispose();
                         }
                     }
                 }
@@ -550,7 +557,7 @@ public partial class ModEditWindow
                         var selectedSampler = Array.Find( missingSamplers, sampler => sampler.Id == _mtrlTabState.MaterialNewSamplerId );
                         if( selectedSampler.Name == null )
                         {
-                            selectedSampler                    = missingSamplers[ 0 ];
+                            selectedSampler = missingSamplers[0];
                             _mtrlTabState.MaterialNewSamplerId = selectedSampler.Id;
                         }
 
@@ -563,7 +570,7 @@ public partial class ModEditWindow
                                 {
                                     if( ImGui.Selectable( $"{sampler.Name} (ID: 0x{sampler.Id:X8})", sampler.Id == _mtrlTabState.MaterialNewSamplerId ) )
                                     {
-                                        selectedSampler                    = sampler;
+                                        selectedSampler = sampler;
                                         _mtrlTabState.MaterialNewSamplerId = sampler.Id;
                                     }
                                 }
@@ -575,14 +582,14 @@ public partial class ModEditWindow
                         {
                             file.Textures = file.Textures.AddItem( new MtrlFile.Texture
                             {
-                                Path  = string.Empty,
+                                Path = string.Empty,
                                 Flags = 0,
                             } );
                             file.ShaderPackage.Samplers = file.ShaderPackage.Samplers.AddItem( new Sampler
                             {
-                                SamplerId    = _mtrlTabState.MaterialNewSamplerId,
+                                SamplerId = _mtrlTabState.MaterialNewSamplerId,
                                 TextureIndex = ( byte )file.Textures.Length,
-                                Flags        = 0,
+                                Flags = 0,
                             } );
                             ret = true;
                         }
@@ -592,5 +599,67 @@ public partial class ModEditWindow
         }
 
         return ret;
+    }
+
+    private bool DrawMaterialShaderResources( MtrlFile file, bool disabled )
+    {
+        var ret = false;
+        if( !ImGui.CollapsingHeader( "Advanced Shader Resources" ) )
+        {
+            return ret;
+        }
+
+        ret |= DrawPackageNameInput( file, disabled );
+        ret |= DrawShaderFlagsInput( file, disabled );
+        DrawCustomAssociations( file, disabled );
+        ret |= DrawMaterialShaderKeys( file, disabled );
+        DrawMaterialShaders( file );
+        ret |= DrawMaterialConstants( file, disabled );
+        ret |= DrawMaterialSamplers( file, disabled );
+        return ret;
+    }
+
+
+    private static (string?, bool) MaterialParamRangeName( string prefix, int valueOffset, int valueLength )
+    {
+        if( valueLength == 0 || valueOffset < 0 )
+        {
+            return (null, false);
+        }
+
+        var firstVector    = valueOffset                       >> 2;
+        var lastVector     = ( valueOffset + valueLength - 1 ) >> 2;
+        var firstComponent = valueOffset                       & 0x3;
+        var lastComponent  = ( valueOffset + valueLength - 1 ) & 0x3;
+
+        static string VectorSwizzle( int firstComponent, int numComponents )
+            => numComponents == 4 ? "" : string.Concat( ".", "xyzw".AsSpan( firstComponent, numComponents ) );
+
+        if( firstVector == lastVector )
+        {
+            return ($"{prefix}[{firstVector}]{VectorSwizzle( firstComponent, lastComponent + 1 - firstComponent )}", true);
+        }
+
+        var parts = new string[lastVector + 1 - firstVector];
+        parts[0]  = $"{prefix}[{firstVector}]{VectorSwizzle( firstComponent, 4 - firstComponent )}";
+        parts[^1] = $"[{lastVector}]{VectorSwizzle( 0, lastComponent           + 1 )}";
+        for( var i = firstVector + 1; i < lastVector; ++i )
+        {
+            parts[i - firstVector] = $"[{i}]";
+        }
+
+        return (string.Join( ", ", parts ), false);
+    }
+
+    private static string? MaterialParamName( bool componentOnly, int offset )
+    {
+        if( offset < 0 )
+        {
+            return null;
+        }
+
+        var component = "xyzw"[offset & 0x3];
+
+        return componentOnly ? new string( component, 1 ) : $"[{offset >> 2}].{component}";
     }
 }

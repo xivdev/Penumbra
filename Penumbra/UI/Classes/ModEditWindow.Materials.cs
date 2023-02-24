@@ -647,47 +647,4 @@ public partial class ModEditWindow
             }
         }
     }
-
-    private static (string?, bool) MaterialParamRangeName( string prefix, int valueOffset, int valueLength )
-    {
-        if( valueLength == 0 || valueOffset < 0 )
-        {
-            return ( null, false );
-        }
-
-        var firstVector    = valueOffset                       >> 2;
-        var lastVector     = ( valueOffset + valueLength - 1 ) >> 2;
-        var firstComponent = valueOffset                       & 0x3;
-        var lastComponent  = ( valueOffset + valueLength - 1 ) & 0x3;
-
-        static string VectorSwizzle( int firstComponent, int numComponents )
-            => numComponents == 4 ? "" : string.Concat( ".", "xyzw".AsSpan( firstComponent, numComponents ) );
-
-        if( firstVector == lastVector )
-        {
-            return ( $"{prefix}[{firstVector}]{VectorSwizzle( firstComponent, lastComponent + 1 - firstComponent )}", true );
-        }
-
-        var parts = new string[lastVector + 1 - firstVector];
-        parts[ 0 ]  = $"{prefix}[{firstVector}]{VectorSwizzle( firstComponent, 4 - firstComponent )}";
-        parts[ ^1 ] = $"[{lastVector}]{VectorSwizzle( 0, lastComponent           + 1 )}";
-        for( var i = firstVector + 1; i < lastVector; ++i )
-        {
-            parts[ i - firstVector ] = $"[{i}]";
-        }
-
-        return ( string.Join( ", ", parts ), false );
-    }
-
-    private static string? MaterialParamName( bool componentOnly, int offset )
-    {
-        if( offset < 0 )
-        {
-            return null;
-        }
-
-        var component = "xyzw"[ offset & 0x3 ];
-
-        return componentOnly ? new string( component, 1 ) : $"[{offset >> 2}].{component}";
-    }
 }
