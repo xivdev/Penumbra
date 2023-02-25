@@ -23,18 +23,19 @@ public partial class ModEditWindow
         private readonly ModEditWindow _edit;
         public readonly  MtrlFile      Mtrl;
 
-        public uint MaterialNewKeyId       = 0;
-        public uint MaterialNewKeyDefault  = 0;
-        public uint MaterialNewConstantId  = 0;
-        public int  MaterialNewConstantIdx = 0;
-        public uint MaterialNewSamplerId   = 0;
+        public uint NewKeyId;
+        public uint NewKeyDefault;
+        public uint NewConstantId;
+        public int  NewConstantIdx;
+        public uint NewSamplerId;
+        public int  NewSamplerIdx;
 
 
         public          ShpkFile?      AssociatedShpk;
         public readonly List< string > TextureLabels      = new(4);
         public          FullPath       LoadedShpkPath     = FullPath.Empty;
         public          string         LoadedShpkPathName = string.Empty;
-        public          float          TextureLabelWidth  = 0f;
+        public          float          TextureLabelWidth;
 
         // Shader Key State
         public readonly List< string >           ShaderKeyLabels         = new(16);
@@ -45,14 +46,21 @@ public partial class ModEditWindow
         public          string                   PixelShaders            = "Pixel Shaders: ???";
 
         // Material Constants
-        public List< (string Name, bool ComponentOnly, int ParamValueOffset) > MaterialConstants        = new(16);
-        public List< (string Name, uint Id, ushort ByteSize) >                 MissingMaterialConstants = new(16);
+        public readonly List< (string Name, bool ComponentOnly, int ParamValueOffset) > MaterialConstants        = new(16);
+        public readonly List< (string Name, uint Id, ushort ByteSize) >                 MissingMaterialConstants = new(16);
+        public readonly HashSet< uint >                                                 DefinedMaterialConstants = new(16);
 
-        public string          MaterialConstantLabel         = "Constants###Constants";
-        public bool            HasMalformedMaterialConstants = false;
-        public IndexSet        OrphanedMaterialValues        = new(0, false);
-        public HashSet< uint > DefinedMaterialConstants      = new(16);
-        public int             AliasedMaterialValueCount     = 0;
+        public string   MaterialConstantLabel  = "Constants###Constants";
+        public IndexSet OrphanedMaterialValues = new(0, false);
+        public int      AliasedMaterialValueCount;
+        public bool     HasMalformedMaterialConstants;
+
+        // Samplers
+        public readonly List< (string Label, string FileName) > Samplers         = new(4);
+        public readonly List< (string Name, uint Id) >          MissingSamplers  = new(4);
+        public readonly HashSet< uint >                         DefinedSamplers  = new(4);
+        public          IndexSet                                OrphanedSamplers = new(0, false);
+        public          int                                     AliasedSamplerCount;
 
         public FullPath FindAssociatedShpk( out string defaultPath, out Utf8GamePath defaultGamePath )
         {
@@ -124,11 +132,11 @@ public partial class ModEditWindow
             {
                 MissingShaderKeyIndices.AddRange( AssociatedShpk.MaterialKeys.WithIndex().Where( k => !DefinedShaderKeys.ContainsKey( k.Value.Id ) ).WithoutValue() );
 
-                if( MissingShaderKeyIndices.Count > 0 && MissingShaderKeyIndices.All( i => AssociatedShpk.MaterialKeys[ i ].Id != MaterialNewKeyId ) )
+                if( MissingShaderKeyIndices.Count > 0 && MissingShaderKeyIndices.All( i => AssociatedShpk.MaterialKeys[ i ].Id != NewKeyId ) )
                 {
                     var key = AssociatedShpk.MaterialKeys[ MissingShaderKeyIndices[ 0 ] ];
-                    MaterialNewKeyId      = key.Id;
-                    MaterialNewKeyDefault = key.DefaultValue;
+                    NewKeyId      = key.Id;
+                    NewKeyDefault = key.DefaultValue;
                 }
 
                 AvailableKeyValues.AddRange( AssociatedShpk.MaterialKeys.Select( k => DefinedShaderKeys.TryGetValue( k.Id, out var value ) ? value : k.DefaultValue ) );
@@ -193,24 +201,69 @@ public partial class ModEditWindow
             if( AssociatedShpk != null )
             {
                 var setIdx = false;
-                foreach( var param in AssociatedShpk.MaterialParams.Where( m => !DefinedMaterialConstants.Contains(m.Id)) )
+                foreach( var param in AssociatedShpk.MaterialParams.Where( m => !DefinedMaterialConstants.Contains( m.Id ) ) )
                 {
                     var (name, _) = MaterialParamRangeName( prefix, param.ByteOffset >> 2, param.ByteSize >> 2 );
                     var label = name == null
                         ? $"(ID: 0x{param.Id:X8})"
                         : $"{name} (ID: 0x{param.Id:X8})";
-                    if( MaterialNewConstantId == param.Id )
+                    if( NewConstantId == param.Id )
                     {
-                        setIdx                 = true;
-                        MaterialNewConstantIdx = MissingMaterialConstants.Count;
+                        setIdx         = true;
+                        NewConstantIdx = MissingMaterialConstants.Count;
                     }
+
                     MissingMaterialConstants.Add( ( label, param.Id, param.ByteSize ) );
                 }
 
-                if (!setIdx && MissingMaterialConstants.Count > 0)
+                if( !setIdx && MissingMaterialConstants.Count > 0 )
                 {
-                    MaterialNewConstantIdx = 0;
-                    MaterialNewConstantId  = MissingMaterialConstants[ 0 ].Id;
+                    NewConstantIdx = 0;
+                    NewConstantId  = MissingMaterialConstants[ 0 ].Id;
+                }
+            }
+        }
+
+        public void UpdateSamplers()
+        {
+            Samplers.Clear();
+            DefinedSamplers.Clear();
+            OrphanedSamplers = new IndexSet( Mtrl.Textures.Length, true );
+            foreach( var (sampler, idx) in Mtrl.ShaderPackage.Samplers.WithIndex() )
+            {
+                DefinedSamplers.Add( sampler.SamplerId );
+                if( !OrphanedSamplers.Remove( sampler.TextureIndex ) )
+                {
+                    ++AliasedSamplerCount;
+                }
+
+                var shpk = AssociatedShpk?.GetSamplerById( sampler.SamplerId );
+                var label = shpk.HasValue
+                    ? $"#{idx}: {shpk.Value.Name} (ID: 0x{sampler.SamplerId:X8})##{sampler.SamplerId}"
+                    : $"#{idx} (ID: 0x{sampler.SamplerId:X8})##{sampler.SamplerId}";
+                var fileName = $"Texture #{sampler.TextureIndex} - {Path.GetFileName( Mtrl.Textures[ sampler.TextureIndex ].Path )}";
+                Samplers.Add( ( label, fileName ) );
+            }
+
+            MissingSamplers.Clear();
+            if( AssociatedShpk != null )
+            {
+                var setSampler = false;
+                foreach( var sampler in AssociatedShpk.Samplers.Where( s => s.Slot == 2 && !DefinedSamplers.Contains( s.Id ) ) )
+                {
+                    if( sampler.Id == NewSamplerId )
+                    {
+                        setSampler    = true;
+                        NewSamplerIdx = MissingSamplers.Count;
+                    }
+
+                    MissingSamplers.Add( ( sampler.Name, sampler.Id ) );
+                }
+
+                if( !setSampler && MissingSamplers.Count > 0 )
+                {
+                    NewSamplerIdx = 0;
+                    NewSamplerId  = MissingSamplers[ 0 ].Id;
                 }
             }
         }
@@ -220,6 +273,7 @@ public partial class ModEditWindow
             UpdateTextureLabels();
             UpdateShaderKeyLabels();
             UpdateConstantLabels();
+            UpdateSamplers();
         }
 
         public MtrlTab( ModEditWindow edit, MtrlFile file )

@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -9,7 +8,6 @@ using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
 using Lumina.Data.Parsing;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.GameData;
 using Penumbra.GameData.Files;
@@ -150,7 +148,7 @@ public partial class ModEditWindow
     {
         ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
         var ret = false;
-        using( var c = ImRaii.Combo( "##NewConstantId", $"ID: 0x{tab.MaterialNewKeyId:X8}" ) )
+        using( var c = ImRaii.Combo( "##NewConstantId", $"ID: 0x{tab.NewKeyId:X8}" ) )
         {
             if( c )
             {
@@ -158,10 +156,10 @@ public partial class ModEditWindow
                 {
                     var key = tab.AssociatedShpk!.MaterialKeys[ idx ];
 
-                    if( ImGui.Selectable( $"ID: 0x{key.Id:X8}", key.Id == tab.MaterialNewKeyId ) )
+                    if( ImGui.Selectable( $"ID: 0x{key.Id:X8}", key.Id == tab.NewKeyId ) )
                     {
-                        tab.MaterialNewKeyDefault = key.DefaultValue;
-                        tab.MaterialNewKeyId      = key.Id;
+                        tab.NewKeyDefault = key.DefaultValue;
+                        tab.NewKeyId      = key.Id;
                         ret                       = true;
                         tab.UpdateShaderKeyLabels();
                     }
@@ -174,8 +172,8 @@ public partial class ModEditWindow
         {
             tab.Mtrl.ShaderPackage.ShaderKeys = tab.Mtrl.ShaderPackage.ShaderKeys.AddItem( new ShaderKey
             {
-                Category = tab.MaterialNewKeyId,
-                Value    = tab.MaterialNewKeyDefault,
+                Category = tab.NewKeyId,
+                Value    = tab.NewKeyDefault,
             } );
             ret = true;
             tab.UpdateShaderKeyLabels();
@@ -312,15 +310,15 @@ public partial class ModEditWindow
         ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 450.0f );
         using( var font = ImRaii.PushFont( UiBuilder.MonoFont ) )
         {
-            using var c = ImRaii.Combo( "##NewConstantId", tab.MissingMaterialConstants[ tab.MaterialNewConstantIdx ].Name );
+            using var c = ImRaii.Combo( "##NewConstantId", tab.MissingMaterialConstants[ tab.NewConstantIdx ].Name );
             if( c )
             {
                 foreach( var (constant, idx) in tab.MissingMaterialConstants.WithIndex() )
                 {
-                    if( ImGui.Selectable( constant.Name, constant.Id == tab.MaterialNewConstantId ) )
+                    if( ImGui.Selectable( constant.Name, constant.Id == tab.NewConstantId ) )
                     {
-                        tab.MaterialNewConstantIdx = idx;
-                        tab.MaterialNewConstantId  = constant.Id;
+                        tab.NewConstantIdx = idx;
+                        tab.NewConstantId  = constant.Id;
                     }
                 }
             }
@@ -329,10 +327,10 @@ public partial class ModEditWindow
         ImGui.SameLine();
         if( ImGui.Button( "Add Constant" ) )
         {
-            var (_, _, byteSize)                = tab.MissingMaterialConstants[ tab.MaterialNewConstantIdx ];
+            var (_, _, byteSize) = tab.MissingMaterialConstants[ tab.NewConstantIdx ];
             tab.Mtrl.ShaderPackage.Constants = tab.Mtrl.ShaderPackage.Constants.AddItem( new MtrlFile.Constant
             {
-                Id         = tab.MaterialNewConstantId,
+                Id         = tab.NewConstantId,
                 ByteOffset = ( ushort )( tab.Mtrl.ShaderPackage.ShaderValues.Length << 2 ),
                 ByteSize   = byteSize,
             } );
@@ -379,144 +377,143 @@ public partial class ModEditWindow
         return ret;
     }
 
-
-    private bool DrawMaterialSamplers( MtrlTab tab, bool disabled )
+    private static bool DrawMaterialSampler( MtrlTab tab, bool disabled, ref int idx )
     {
-        var ret = false;
-        if( tab.Mtrl.ShaderPackage.Samplers.Length > 0
-        || tab.Mtrl.Textures.Length                > 0
-        || !disabled && tab.AssociatedShpk != null && tab.AssociatedShpk.Samplers.Any( sampler => sampler.Slot == 2 ) )
+        var (label, filename) = tab.Samplers[ idx ];
+        using var tree = ImRaii.TreeNode( label );
+        if( !tree )
+            return false;
+
+        ImRaii.TreeNode( filename, ImGuiTreeNodeFlags.Leaf ).Dispose();
+        var ret     = false;
+        var sampler = tab.Mtrl.ShaderPackage.Samplers[ idx ];
+
+        // FIXME this probably doesn't belong here
+        static unsafe bool InputHexUInt16( string label, ref ushort v, ImGuiInputTextFlags flags )
         {
-            using var t = ImRaii.TreeNode( "Samplers" );
-            if( t )
+            fixed( ushort* v2 = &v )
             {
-                var orphanTextures      = new IndexSet( tab.Mtrl.Textures.Length, true );
-                var aliasedTextureCount = 0;
-                var definedSamplers     = new HashSet< uint >();
+                return ImGui.InputScalar( label, ImGuiDataType.U16, ( nint )v2, IntPtr.Zero, IntPtr.Zero, "%04X", flags );
+            }
+        }
 
-                foreach( var sampler in tab.Mtrl.ShaderPackage.Samplers )
+        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
+        if( InputHexUInt16( "Texture Flags", ref tab.Mtrl.Textures[sampler.TextureIndex].Flags,
+               disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) )
+        {
+            ret = true;
+        }
+
+        var samplerFlags = ( int )sampler.Flags;
+        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
+        if( ImGui.InputInt( "Sampler Flags", ref samplerFlags, 0, 0,
+               ImGuiInputTextFlags.CharsHexadecimal | ( disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) ) )
+        {
+            tab.Mtrl.ShaderPackage.Samplers[idx].Flags = ( uint )samplerFlags;
+            ret = true;
+        }
+
+        if( !disabled
+        && tab.OrphanedSamplers.Count == 0
+        && tab.AliasedSamplerCount == 0
+        && ImGui.Button( "Remove Sampler" ) )
+        {
+            tab.Mtrl.Textures = tab.Mtrl.Textures.RemoveItems( sampler.TextureIndex );
+            tab.Mtrl.ShaderPackage.Samplers = tab.Mtrl.ShaderPackage.Samplers.RemoveItems( idx-- );
+            for( var i = 0; i < tab.Mtrl.ShaderPackage.Samplers.Length; ++i )
+            {
+                if( tab.Mtrl.ShaderPackage.Samplers[i].TextureIndex >= sampler.TextureIndex )
                 {
-                    if( !orphanTextures.Remove( sampler.TextureIndex ) )
-                    {
-                        ++aliasedTextureCount;
-                    }
-
-                    definedSamplers.Add( sampler.SamplerId );
+                    --tab.Mtrl.ShaderPackage.Samplers[i].TextureIndex;
                 }
+            }
 
-                foreach( var (sampler, idx) in tab.Mtrl.ShaderPackage.Samplers.WithIndex() )
+            ret = true;
+            tab.UpdateSamplers();
+            tab.UpdateTextureLabels();
+        }
+
+        return ret;
+    }
+
+    private static bool DrawMaterialNewSampler( MtrlTab tab )
+    {
+        var (name, id) = tab.MissingSamplers[tab.NewSamplerIdx];
+        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 450.0f );
+        using( var c = ImRaii.Combo( "##NewSamplerId", $"{name} (ID: 0x{id:X8})" ) )
+        {
+            if( c )
+            {
+                foreach( var (sampler, idx) in tab.MissingSamplers.WithIndex() )
                 {
-                    var       shpkSampler = tab.AssociatedShpk?.GetSamplerById( sampler.SamplerId );
-                    using var t2          = ImRaii.TreeNode( $"#{idx}{( shpkSampler.HasValue ? ": " + shpkSampler.Value.Name : "" )} (ID: 0x{sampler.SamplerId:X8})" );
-                    if( t2 )
+                    if( ImGui.Selectable( $"{sampler.Name} (ID: 0x{sampler.Id:X8})", sampler.Id == tab.NewSamplerId ) )
                     {
-                        ImRaii.TreeNode( $"Texture: #{sampler.TextureIndex} - {Path.GetFileName( tab.Mtrl.Textures[ sampler.TextureIndex ].Path )}", ImGuiTreeNodeFlags.Leaf )
-                           .Dispose();
-
-                        // FIXME this probably doesn't belong here
-                        static unsafe bool InputHexUInt16( string label, ref ushort v, ImGuiInputTextFlags flags )
-                        {
-                            fixed( ushort* v2 = &v )
-                            {
-                                return ImGui.InputScalar( label, ImGuiDataType.U16, ( nint )v2, nint.Zero, nint.Zero, "%04X", flags );
-                            }
-                        }
-
-                        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
-                        if( InputHexUInt16( "Texture Flags", ref tab.Mtrl.Textures[ sampler.TextureIndex ].Flags,
-                               disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) )
-                        {
-                            ret = true;
-                        }
-
-                        var sampFlags = ( int )sampler.Flags;
-                        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
-                        if( ImGui.InputInt( "Sampler Flags", ref sampFlags, 0, 0,
-                               ImGuiInputTextFlags.CharsHexadecimal | ( disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) ) )
-                        {
-                            tab.Mtrl.ShaderPackage.Samplers[ idx ].Flags = ( uint )sampFlags;
-                            ret                                          = true;
-                        }
-
-                        if( !disabled
-                        && orphanTextures.Count == 0
-                        && aliasedTextureCount  == 0
-                        && ImGui.Button( "Remove Sampler" ) )
-                        {
-                            tab.Mtrl.Textures               = tab.Mtrl.Textures.RemoveItems( sampler.TextureIndex );
-                            tab.Mtrl.ShaderPackage.Samplers = tab.Mtrl.ShaderPackage.Samplers.RemoveItems( idx );
-                            for( var i = 0; i < tab.Mtrl.ShaderPackage.Samplers.Length; ++i )
-                            {
-                                if( tab.Mtrl.ShaderPackage.Samplers[ i ].TextureIndex >= sampler.TextureIndex )
-                                {
-                                    --tab.Mtrl.ShaderPackage.Samplers[ i ].TextureIndex;
-                                }
-                            }
-
-                            ret = true;
-                        }
-                    }
-                }
-
-                if( orphanTextures.Count > 0 )
-                {
-                    using var t2 = ImRaii.TreeNode( $"Orphan Textures ({orphanTextures.Count})" );
-                    if( t2 )
-                    {
-                        foreach( var idx in orphanTextures )
-                        {
-                            ImRaii.TreeNode( $"#{idx}: {Path.GetFileName( tab.Mtrl.Textures[ idx ].Path )} - {tab.Mtrl.Textures[ idx ].Flags:X4}", ImGuiTreeNodeFlags.Leaf )
-                               .Dispose();
-                        }
-                    }
-                }
-                else if( !disabled && tab.AssociatedShpk != null && aliasedTextureCount == 0 && tab.Mtrl.Textures.Length < 255 )
-                {
-                    var missingSamplers = tab.AssociatedShpk.Samplers.Where( sampler => sampler.Slot == 2 && !definedSamplers.Contains( sampler.Id ) ).ToArray();
-                    if( missingSamplers.Length > 0 )
-                    {
-                        var selectedSampler = Array.Find( missingSamplers, sampler => sampler.Id == tab.MaterialNewSamplerId );
-                        if( selectedSampler.Name == null )
-                        {
-                            selectedSampler          = missingSamplers[ 0 ];
-                            tab.MaterialNewSamplerId = selectedSampler.Id;
-                        }
-
-                        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 450.0f );
-                        using( var c = ImRaii.Combo( "##NewSamplerId", $"{selectedSampler.Name} (ID: 0x{selectedSampler.Id:X8})" ) )
-                        {
-                            if( c )
-                            {
-                                foreach( var sampler in missingSamplers )
-                                {
-                                    if( ImGui.Selectable( $"{sampler.Name} (ID: 0x{sampler.Id:X8})", sampler.Id == tab.MaterialNewSamplerId ) )
-                                    {
-                                        selectedSampler          = sampler;
-                                        tab.MaterialNewSamplerId = sampler.Id;
-                                    }
-                                }
-                            }
-                        }
-
-                        ImGui.SameLine();
-                        if( ImGui.Button( "Add Sampler" ) )
-                        {
-                            tab.Mtrl.Textures = tab.Mtrl.Textures.AddItem( new MtrlFile.Texture
-                            {
-                                Path  = string.Empty,
-                                Flags = 0,
-                            } );
-                            tab.Mtrl.ShaderPackage.Samplers = tab.Mtrl.ShaderPackage.Samplers.AddItem( new Sampler
-                            {
-                                SamplerId    = tab.MaterialNewSamplerId,
-                                TextureIndex = ( byte )tab.Mtrl.Textures.Length,
-                                Flags        = 0,
-                            } );
-                            ret = true;
-                        }
+                        tab.NewSamplerIdx = idx;
+                        tab.NewSamplerId  = sampler.Id;
                     }
                 }
             }
+        }
+
+        ImGui.SameLine();
+        if( !ImGui.Button( "Add Sampler" ) )
+        {
+            return false;
+        }
+
+        tab.Mtrl.ShaderPackage.Samplers = tab.Mtrl.ShaderPackage.Samplers.AddItem( new Sampler
+        {
+            SamplerId    = tab.NewSamplerId,
+            TextureIndex = ( byte )tab.Mtrl.Textures.Length,
+            Flags        = 0,
+        } );
+        tab.Mtrl.Textures = tab.Mtrl.Textures.AddItem( new MtrlFile.Texture
+        {
+            Path  = string.Empty,
+            Flags = 0,
+        } );
+        tab.UpdateSamplers();
+        tab.UpdateTextureLabels();
+        return true;
+
+    }
+
+    private static bool DrawMaterialSamplers( MtrlTab tab, bool disabled )
+    {
+        if( tab.Mtrl.ShaderPackage.Samplers.Length == 0
+        && tab.Mtrl.Textures.Length                == 0
+        && ( disabled || (tab.AssociatedShpk?.Samplers.All( sampler => sampler.Slot != 2 ) ?? false ) ))
+        {
+            return false;
+        }
+
+        using var t = ImRaii.TreeNode( "Samplers" );
+        if( !t )
+        {
+            return false;
+        }
+
+        var ret                 = false;
+        for( var idx = 0; idx < tab.Mtrl.ShaderPackage.Samplers.Length; ++idx )
+        {
+            ret |= DrawMaterialSampler( tab, disabled, ref idx );
+        }
+
+        if( tab.OrphanedSamplers.Count > 0 )
+        {
+            using var t2 = ImRaii.TreeNode( $"Orphan Textures ({tab.OrphanedSamplers.Count})" );
+            if( t2 )
+            {
+                foreach( var idx in tab.OrphanedSamplers )
+                {
+                    ImRaii.TreeNode( $"#{idx}: {Path.GetFileName( tab.Mtrl.Textures[ idx ].Path )} - {tab.Mtrl.Textures[ idx ].Flags:X4}", ImGuiTreeNodeFlags.Leaf )
+                       .Dispose();
+                }
+            }
+        }
+        else if( !disabled && tab.MissingSamplers.Count > 0 && tab.AliasedSamplerCount == 0 && tab.Mtrl.Textures.Length < 255  )
+        {
+            ret |= DrawMaterialNewSampler( tab );
         }
 
         return ret;
