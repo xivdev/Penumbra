@@ -12,6 +12,7 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 using Penumbra.Util;
+using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.Classes;
 
@@ -22,10 +23,11 @@ public partial class ModEditWindow
         private readonly ModEditWindow _edit;
         public readonly  MtrlFile      Mtrl;
 
-        public uint MaterialNewKeyId      = 0;
-        public uint MaterialNewKeyDefault = 0;
-        public uint MaterialNewConstantId = 0;
-        public uint MaterialNewSamplerId  = 0;
+        public uint MaterialNewKeyId       = 0;
+        public uint MaterialNewKeyDefault  = 0;
+        public uint MaterialNewConstantId  = 0;
+        public int  MaterialNewConstantIdx = 0;
+        public uint MaterialNewSamplerId   = 0;
 
 
         public          ShpkFile?      AssociatedShpk;
@@ -41,6 +43,16 @@ public partial class ModEditWindow
         public readonly List< uint >             AvailableKeyValues      = new(16);
         public          string                   VertexShaders           = "Vertex Shaders: ???";
         public          string                   PixelShaders            = "Pixel Shaders: ???";
+
+        // Material Constants
+        public List< (string Name, bool ComponentOnly, int ParamValueOffset) > MaterialConstants        = new(16);
+        public List< (string Name, uint Id, ushort ByteSize) >                 MissingMaterialConstants = new(16);
+
+        public string          MaterialConstantLabel         = "Constants###Constants";
+        public bool            HasMalformedMaterialConstants = false;
+        public IndexSet        OrphanedMaterialValues        = new(0, false);
+        public HashSet< uint > DefinedMaterialConstants      = new(16);
+        public int             AliasedMaterialValueCount     = 0;
 
         public FullPath FindAssociatedShpk( out string defaultPath, out Utf8GamePath defaultGamePath )
         {
@@ -137,10 +149,77 @@ public partial class ModEditWindow
             PixelShaders  = $"Pixel Shaders: {( pixelShaders.Count   > 0 ? string.Join( ", ", pixelShaders.Select( i => $"#{i}" ) ) : "???" )}";
         }
 
+        public void UpdateConstantLabels()
+        {
+            var prefix = AssociatedShpk?.GetConstantById( MaterialParamsConstantId )?.Name ?? string.Empty;
+            MaterialConstantLabel = prefix.Length == 0 ? "Constants###Constants" : prefix + "###Constants";
+
+            DefinedMaterialConstants.Clear();
+            MaterialConstants.Clear();
+            HasMalformedMaterialConstants = false;
+            AliasedMaterialValueCount     = 0;
+            OrphanedMaterialValues        = new IndexSet( Mtrl.ShaderPackage.ShaderValues.Length, true );
+            foreach( var (constant, idx) in Mtrl.ShaderPackage.Constants.WithIndex() )
+            {
+                DefinedMaterialConstants.Add( constant.Id );
+                var values           = Mtrl.GetConstantValues( constant );
+                var paramValueOffset = -values.Length;
+                if( values.Length > 0 )
+                {
+                    var shpkParam       = AssociatedShpk?.GetMaterialParamById( constant.Id );
+                    var paramByteOffset = shpkParam?.ByteOffset ?? -1;
+                    if( ( paramByteOffset & 0x3 ) == 0 )
+                    {
+                        paramValueOffset = paramByteOffset >> 2;
+                    }
+
+                    var unique = OrphanedMaterialValues.RemoveRange( constant.ByteOffset >> 2, values.Length );
+                    AliasedMaterialValueCount += values.Length - unique;
+                }
+                else
+                {
+                    HasMalformedMaterialConstants = true;
+                }
+
+                var (name, componentOnly) = MaterialParamRangeName( prefix, paramValueOffset, values.Length );
+                var label = name == null
+                    ? $"#{idx:D2} (ID: 0x{constant.Id:X8})###{constant.Id}"
+                    : $"#{idx:D2}: {name} (ID: 0x{constant.Id:X8})###{constant.Id}";
+
+                MaterialConstants.Add( ( label, componentOnly, paramValueOffset ) );
+            }
+
+            MissingMaterialConstants.Clear();
+            if( AssociatedShpk != null )
+            {
+                var setIdx = false;
+                foreach( var param in AssociatedShpk.MaterialParams.Where( m => !DefinedMaterialConstants.Contains(m.Id)) )
+                {
+                    var (name, _) = MaterialParamRangeName( prefix, param.ByteOffset >> 2, param.ByteSize >> 2 );
+                    var label = name == null
+                        ? $"(ID: 0x{param.Id:X8})"
+                        : $"{name} (ID: 0x{param.Id:X8})";
+                    if( MaterialNewConstantId == param.Id )
+                    {
+                        setIdx                 = true;
+                        MaterialNewConstantIdx = MissingMaterialConstants.Count;
+                    }
+                    MissingMaterialConstants.Add( ( label, param.Id, param.ByteSize ) );
+                }
+
+                if (!setIdx && MissingMaterialConstants.Count > 0)
+                {
+                    MaterialNewConstantIdx = 0;
+                    MaterialNewConstantId  = MissingMaterialConstants[ 0 ].Id;
+                }
+            }
+        }
+
         public void Update()
         {
             UpdateTextureLabels();
             UpdateShaderKeyLabels();
+            UpdateConstantLabels();
         }
 
         public MtrlTab( ModEditWindow edit, MtrlFile file )

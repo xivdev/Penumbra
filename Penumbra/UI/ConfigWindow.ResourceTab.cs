@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
@@ -10,7 +9,6 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.GameData;
 using Penumbra.Interop.Loader;
 using Penumbra.String.Classes;
 
