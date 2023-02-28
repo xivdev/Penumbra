@@ -13,6 +13,8 @@ public enum CollectionType : byte
     FemalePlayerCharacter    = Api.Enums.ApiCollectionType.FemalePlayerCharacter,
     MaleNonPlayerCharacter   = Api.Enums.ApiCollectionType.MaleNonPlayerCharacter,
     FemaleNonPlayerCharacter = Api.Enums.ApiCollectionType.FemaleNonPlayerCharacter,
+    NonPlayerChild           = Api.Enums.ApiCollectionType.NonPlayerChild,
+    NonPlayerElderly         = Api.Enums.ApiCollectionType.NonPlayerElderly,
 
     MaleMidlander    = Api.Enums.ApiCollectionType.MaleMidlander,
     FemaleMidlander  = Api.Enums.ApiCollectionType.FemaleMidlander,
@@ -97,15 +99,15 @@ public enum CollectionType : byte
     Default   = Api.Enums.ApiCollectionType.Default,   // The default collection was changed
     Interface = Api.Enums.ApiCollectionType.Interface, // The ui collection was changed
     Current   = Api.Enums.ApiCollectionType.Current,   // The current collection was changed
-    Individual,                                     // An individual collection was changed
-    Inactive,                                       // A collection was added or removed
-    Temporary,                                      // A temporary collections was set or deleted via IPC
+    Individual,                                        // An individual collection was changed
+    Inactive,                                          // A collection was added or removed
+    Temporary,                                         // A temporary collections was set or deleted via IPC
 }
 
 public static class CollectionTypeExtensions
 {
     public static bool IsSpecial( this CollectionType collectionType )
-        => collectionType is >= CollectionType.Yourself and < CollectionType.Default;
+        => collectionType < CollectionType.Default;
 
     public static readonly (CollectionType, string, string)[] Special = Enum.GetValues< CollectionType >()
        .Where( IsSpecial )
@@ -265,6 +267,8 @@ public static class CollectionTypeExtensions
         => collectionType switch
         {
             CollectionType.Yourself                 => "Your Character",
+            CollectionType.NonPlayerChild           => "Non-Player Children",
+            CollectionType.NonPlayerElderly         => "Non-Player Elderly",
             CollectionType.MalePlayerCharacter      => "Male Player Characters",
             CollectionType.MaleNonPlayerCharacter   => "Male Non-Player Characters",
             CollectionType.MaleMidlander            => $"Male {SubRace.Midlander.ToName()}",
@@ -345,7 +349,13 @@ public static class CollectionTypeExtensions
         => collectionType switch
         {
             CollectionType.Yourself => "This collection applies to your own character, regardless of its name.\n"
-              + "It takes precedence before all other collections except for explicitly named character collections.",
+              + "It takes precedence before all other collections except for explicitly named individual collections.",
+            CollectionType.NonPlayerChild =>
+                "This collection applies to all non-player characters with a child body-type.\n"
+              + "It takes precedence before all other collections except for explicitly named individual collections.",
+            CollectionType.NonPlayerElderly =>
+                "This collection applies to all non-player characters with an elderly body-type.\n"
+              + "It takes precedence before all other collections except for explicitly named individual collections.",
             CollectionType.MalePlayerCharacter =>
                 "This collection applies to all male player characters that do not have a more specific character or racial collections associated.",
             CollectionType.MaleNonPlayerCharacter =>

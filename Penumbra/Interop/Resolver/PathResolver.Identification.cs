@@ -133,12 +133,22 @@ public unsafe partial class PathResolver
         var character = ( Character* )actor;
         if( character->ModelCharaId >= 0 && character->ModelCharaId < ValidHumanModels.Count && ValidHumanModels[ character->ModelCharaId ] )
         {
-            var race   = ( SubRace )character->CustomizeData[ 4 ];
-            var gender = ( Gender )( character->CustomizeData[ 1 ] + 1 );
-            var isNpc  = actor->ObjectKind != ( byte )ObjectKind.Player;
+            var bodyType = character->CustomizeData[2];
+            var collection = bodyType switch
+            {
+                3 => Penumbra.CollectionManager.ByType( CollectionType.NonPlayerElderly ),
+                4 => Penumbra.CollectionManager.ByType( CollectionType.NonPlayerChild ),
+                _ => null,
+            };
+            if( collection != null )
+                return collection;
+
+            var race     = ( SubRace )character->CustomizeData[ 4 ];
+            var gender   = ( Gender )( character->CustomizeData[ 1 ] + 1 );
+            var isNpc    = actor->ObjectKind != ( byte )ObjectKind.Player;
 
             var type       = CollectionTypeExtensions.FromParts( race, gender, isNpc );
-            var collection = Penumbra.CollectionManager.ByType( type );
+            collection = Penumbra.CollectionManager.ByType( type );
             collection ??= Penumbra.CollectionManager.ByType( CollectionTypeExtensions.FromParts( gender, isNpc ) );
             return collection;
         }
