@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Penumbra.GameData.Interop;
+using Penumbra.String;
 
 namespace Penumbra.GameData.Data;
 
@@ -96,26 +97,26 @@ public partial class DisassembledShader
     [GeneratedRegex(@"^\s*sample_\S*\s+[^.]+\.([wxyz]+),[^,]+,\s*t(\d+)\.([wxyz]+)", RegexOptions.NonBacktracking)]
     private static partial Regex Sm5TextureUsageRegex();
 
-    private static readonly char[] Digits = Enumerable.Range(0, 10).Select(c => (char) ('0' + c)).ToArray();
+    private static readonly char[] Digits = Enumerable.Range(0, 10).Select(c => (char)('0' + c)).ToArray();
 
-    public readonly string            RawDisassembly;
-    public readonly uint              ShaderModel;
-    public readonly ShaderStage       Stage;
-    public readonly string            BufferDefinitions;
-    public readonly ResourceBinding[] ResourceBindings;
-    public readonly InputOutput[]     InputSignature;
-    public readonly InputOutput[]     OutputSignature;
-    public readonly string[]          Instructions;
+    public readonly ByteString                RawDisassembly;
+    public readonly uint                      ShaderModel;
+    public readonly ShaderStage               Stage;
+    public readonly string                    BufferDefinitions;
+    public readonly ResourceBinding[]         ResourceBindings;
+    public readonly InputOutput[]             InputSignature;
+    public readonly InputOutput[]             OutputSignature;
+    public readonly IReadOnlyList<ByteString> Instructions;
 
-    public DisassembledShader(string rawDisassembly)
+    public DisassembledShader(ByteString rawDisassembly)
     {
         RawDisassembly = rawDisassembly;
-        var lines = rawDisassembly.Split('\n');
-        Instructions = Array.FindAll(lines, ln => !ln.StartsWith("//") && ln.Length > 0);
-        var shaderModel = Instructions[0].Trim().Split('_');
-        Stage       = (ShaderStage)(byte)char.ToUpper(shaderModel[0][0]);
-        ShaderModel = (uint.Parse(shaderModel[1]) << 8) | uint.Parse(shaderModel[2]);
-        var header = PreParseHeader(lines.AsSpan()[..Array.IndexOf(lines, Instructions[0])]);
+        var lines = rawDisassembly.Split((byte) '\n');
+        Instructions = lines.FindAll(ln => !ln.StartsWith("//"u8) && ln.Length > 0);
+        var shaderModel = Instructions[0].Trim().Split((byte) '_');
+        Stage       = (ShaderStage)(byte)char.ToUpper((char) shaderModel[0][0]);
+        ShaderModel = (uint.Parse(shaderModel[1].ToString()) << 8) | uint.Parse(shaderModel[2].ToString());
+        var header = PreParseHeader(lines.Take(lines.IndexOf(Instructions[0])).Select(l => l.ToString()).ToArray());
         switch (ShaderModel >> 8)
         {
             case 3:
@@ -176,7 +177,7 @@ public partial class DisassembledShader
         outputSignature = Array.Empty<InputOutput>();
     }
 
-    private static void ParseSm3ResourceUsage(string[] instructions, ResourceBinding[] resourceBindings)
+    private static void ParseSm3ResourceUsage(IReadOnlyList<ByteString> instructions, ResourceBinding[] resourceBindings)
     {
         var cbIndices = new Dictionary<uint, int>();
         var tIndices  = new Dictionary<uint, int>();
@@ -201,10 +202,11 @@ public partial class DisassembledShader
         foreach (var instruction in instructions)
         {
             var trimmed = instruction.Trim();
-            if (trimmed.StartsWith("def") || trimmed.StartsWith("dcl"))
+            if (trimmed.StartsWith("def"u8) || trimmed.StartsWith("dcl"u8))
                 continue;
 
-            foreach (Match cbMatch in Sm3ConstantBufferUsageRegex().Matches(instruction))
+            var instructionString = instruction.ToString();
+            foreach (Match cbMatch in Sm3ConstantBufferUsageRegex().Matches(instructionString))
             {
                 var buffer = uint.Parse(cbMatch.Groups[1].Value);
                 if (cbIndices.TryGetValue(buffer, out var i))
@@ -217,7 +219,7 @@ public partial class DisassembledShader
                 }
             }
 
-            var tMatch = Sm3TextureUsageRegex().Match(instruction);
+            var tMatch = Sm3TextureUsageRegex().Match(instructionString);
             if (tMatch.Success)
             {
                 var texture = uint.Parse(tMatch.Groups[1].Value);
@@ -307,7 +309,7 @@ public partial class DisassembledShader
         }
     }
 
-    private static void ParseSm5ResourceUsage(string[] instructions, ResourceBinding[] resourceBindings)
+    private static void ParseSm5ResourceUsage(IReadOnlyList<ByteString> instructions, ResourceBinding[] resourceBindings)
     {
         var cbIndices = new Dictionary<uint, int>();
         var tIndices  = new Dictionary<uint, int>();
@@ -331,10 +333,11 @@ public partial class DisassembledShader
         foreach (var instruction in instructions)
         {
             var trimmed = instruction.Trim();
-            if (trimmed.StartsWith("def") || trimmed.StartsWith("dcl"))
+            if (trimmed.StartsWith("def"u8) || trimmed.StartsWith("dcl"u8))
                 continue;
 
-            foreach (Match cbMatch in Sm5ConstantBufferUsageRegex().Matches(instruction))
+            var instructionString = instruction.ToString();
+            foreach (Match cbMatch in Sm5ConstantBufferUsageRegex().Matches(instructionString))
             {
                 var buffer = uint.Parse(cbMatch.Groups[1].Value);
                 if (cbIndices.TryGetValue(buffer, out var i))
@@ -352,7 +355,7 @@ public partial class DisassembledShader
                 }
             }
 
-            var tMatch = Sm5TextureUsageRegex().Match(instruction);
+            var tMatch = Sm5TextureUsageRegex().Match(instructionString);
             if (tMatch.Success)
             {
                 var texture = uint.Parse(tMatch.Groups[2].Value);

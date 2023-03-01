@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using Penumbra.String;
 
 namespace Penumbra.GameData.Interop;
 
@@ -20,43 +21,41 @@ internal static class D3DCompiler
     [Flags]
     public enum DisassembleFlags : uint
     {
-        EnableColorCode = 1,
-        EnableDefaultValuePrints = 2,
+        EnableColorCode            = 1,
+        EnableDefaultValuePrints   = 2,
         EnableInstructionNumbering = 4,
-        EnableInstructionCycle = 8,
-        DisableDebugInfo = 16,
-        EnableInstructionOffset = 32,
-        InstructionOnly = 64,
-        PrintHexLiterals = 128,
+        EnableInstructionCycle     = 8,
+        DisableDebugInfo           = 16,
+        EnableInstructionOffset    = 32,
+        InstructionOnly            = 64,
+        PrintHexLiterals           = 128,
     }
 
-    public static unsafe string Disassemble(ReadOnlySpan<byte> blob, DisassembleFlags flags = 0, string comments = "")
+    public static unsafe ByteString Disassemble(ReadOnlySpan<byte> blob, DisassembleFlags flags = 0, string comments = "")
     {
-        ID3DBlob? disassembly;
-        int hr;
-        fixed (byte* pSrcData = blob)
+        ID3DBlob? disassembly = null;
+        try
         {
-            hr = D3DDisassemble(pSrcData, new UIntPtr((uint)blob.Length), (uint)flags, comments, out disassembly);
-        }
-        Marshal.ThrowExceptionForHR(hr);
-        var ret = Encoding.UTF8.GetString(BlobContents(disassembly));
-        GC.KeepAlive(disassembly);
-        return ret;
-    }
+            fixed (byte* pSrcData = blob)
+            {
+                var hr = D3DDisassemble(pSrcData, new UIntPtr((uint)blob.Length), (uint)flags, comments, out disassembly);
+                Marshal.ThrowExceptionForHR(hr);
+            }
 
-    private static unsafe ReadOnlySpan<byte> BlobContents(ID3DBlob? blob)
-    {
-        if (blob == null)
+            return disassembly == null
+                ? ByteString.Empty
+                : new ByteString((byte*)disassembly.GetBufferPointer()).Clone();
+        }
+        finally
         {
-            return ReadOnlySpan<byte>.Empty;
+            if (disassembly != null)
+                Marshal.FinalReleaseComObject(disassembly);
         }
-
-        return new ReadOnlySpan<byte>(blob.GetBufferPointer(), (int)blob.GetBufferSize().ToUInt32());
     }
 
     [PreserveSig]
     [DllImport("D3DCompiler_47.dll")]
-    private extern static unsafe int D3DDisassemble(
+    private static extern unsafe int D3DDisassemble(
         [In] byte* pSrcData,
         [In] UIntPtr srcDataSize,
         uint flags,

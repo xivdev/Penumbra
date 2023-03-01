@@ -160,7 +160,7 @@ public partial class ModEditWindow
                     {
                         tab.NewKeyDefault = key.DefaultValue;
                         tab.NewKeyId      = key.Id;
-                        ret                       = true;
+                        ret               = true;
                         tab.UpdateShaderKeyLabels();
                     }
                 }
@@ -382,7 +382,9 @@ public partial class ModEditWindow
         var (label, filename) = tab.Samplers[ idx ];
         using var tree = ImRaii.TreeNode( label );
         if( !tree )
+        {
             return false;
+        }
 
         ImRaii.TreeNode( filename, ImGuiTreeNodeFlags.Leaf ).Dispose();
         var ret     = false;
@@ -398,7 +400,7 @@ public partial class ModEditWindow
         }
 
         ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
-        if( InputHexUInt16( "Texture Flags", ref tab.Mtrl.Textures[sampler.TextureIndex].Flags,
+        if( InputHexUInt16( "Texture Flags", ref tab.Mtrl.Textures[ sampler.TextureIndex ].Flags,
                disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) )
         {
             ret = true;
@@ -409,22 +411,22 @@ public partial class ModEditWindow
         if( ImGui.InputInt( "Sampler Flags", ref samplerFlags, 0, 0,
                ImGuiInputTextFlags.CharsHexadecimal | ( disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None ) ) )
         {
-            tab.Mtrl.ShaderPackage.Samplers[idx].Flags = ( uint )samplerFlags;
-            ret = true;
+            tab.Mtrl.ShaderPackage.Samplers[ idx ].Flags = ( uint )samplerFlags;
+            ret                                          = true;
         }
 
         if( !disabled
         && tab.OrphanedSamplers.Count == 0
-        && tab.AliasedSamplerCount == 0
+        && tab.AliasedSamplerCount    == 0
         && ImGui.Button( "Remove Sampler" ) )
         {
-            tab.Mtrl.Textures = tab.Mtrl.Textures.RemoveItems( sampler.TextureIndex );
+            tab.Mtrl.Textures               = tab.Mtrl.Textures.RemoveItems( sampler.TextureIndex );
             tab.Mtrl.ShaderPackage.Samplers = tab.Mtrl.ShaderPackage.Samplers.RemoveItems( idx-- );
             for( var i = 0; i < tab.Mtrl.ShaderPackage.Samplers.Length; ++i )
             {
-                if( tab.Mtrl.ShaderPackage.Samplers[i].TextureIndex >= sampler.TextureIndex )
+                if( tab.Mtrl.ShaderPackage.Samplers[ i ].TextureIndex >= sampler.TextureIndex )
                 {
-                    --tab.Mtrl.ShaderPackage.Samplers[i].TextureIndex;
+                    --tab.Mtrl.ShaderPackage.Samplers[ i ].TextureIndex;
                 }
             }
 
@@ -438,7 +440,7 @@ public partial class ModEditWindow
 
     private static bool DrawMaterialNewSampler( MtrlTab tab )
     {
-        var (name, id) = tab.MissingSamplers[tab.NewSamplerIdx];
+        var (name, id) = tab.MissingSamplers[ tab.NewSamplerIdx ];
         ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 450.0f );
         using( var c = ImRaii.Combo( "##NewSamplerId", $"{name} (ID: 0x{id:X8})" ) )
         {
@@ -475,14 +477,13 @@ public partial class ModEditWindow
         tab.UpdateSamplers();
         tab.UpdateTextureLabels();
         return true;
-
     }
 
     private static bool DrawMaterialSamplers( MtrlTab tab, bool disabled )
     {
         if( tab.Mtrl.ShaderPackage.Samplers.Length == 0
         && tab.Mtrl.Textures.Length                == 0
-        && ( disabled || (tab.AssociatedShpk?.Samplers.All( sampler => sampler.Slot != 2 ) ?? false ) ))
+        && ( disabled || ( tab.AssociatedShpk?.Samplers.All( sampler => sampler.Slot != 2 ) ?? false ) ) )
         {
             return false;
         }
@@ -493,7 +494,7 @@ public partial class ModEditWindow
             return false;
         }
 
-        var ret                 = false;
+        var ret = false;
         for( var idx = 0; idx < tab.Mtrl.ShaderPackage.Samplers.Length; ++idx )
         {
             ret |= DrawMaterialSampler( tab, disabled, ref idx );
@@ -511,7 +512,7 @@ public partial class ModEditWindow
                 }
             }
         }
-        else if( !disabled && tab.MissingSamplers.Count > 0 && tab.AliasedSamplerCount == 0 && tab.Mtrl.Textures.Length < 255  )
+        else if( !disabled && tab.MissingSamplers.Count > 0 && tab.AliasedSamplerCount == 0 && tab.Mtrl.Textures.Length < 255 )
         {
             ret |= DrawMaterialNewSampler( tab );
         }
@@ -592,7 +593,7 @@ public partial class ModEditWindow
         }
 
         var sb = new StringBuilder( 128 );
-        sb.Append( $"{prefix}[{firstVector}]{VectorSwizzle( firstComponent, 3 )}" );
+        sb.Append( $"{prefix}[{firstVector}]{VectorSwizzle( firstComponent, 3 ).TrimEnd()}" );
         for( var i = firstVector + 1; i < lastVector; ++i )
         {
             sb.Append( $", [{i}]" );
