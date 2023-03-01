@@ -70,7 +70,7 @@ public sealed partial class IndividualCollections
                     return AddResult.Invalid;
                 }
 
-                identifiers = new[] { _actorManager.CreateRetainer( retainerName ) };
+                identifiers = new[] { _actorManager.CreateRetainer( retainerName, 0 ) };
                 break;
             case IdentifierType.Owned:
                 if( !ByteString.FromString( name, out var ownerName ) )

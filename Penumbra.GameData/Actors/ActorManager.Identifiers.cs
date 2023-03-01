@@ -33,7 +33,7 @@ public partial class ActorManager
             case IdentifierType.Retainer:
             {
                 var name = ByteString.FromStringUnsafe(data[nameof(ActorIdentifier.PlayerName)]?.ToObject<string>(), false);
-                return CreateRetainer(name);
+                return CreateRetainer(name, 0);
             }
             case IdentifierType.Owned:
             {
@@ -318,8 +318,9 @@ public partial class ActorManager
                     if (!actualName.Equals(retainerName))
                     {
                         var ident = check
-                            ? CreateRetainer(retainerName)
-                            : CreateIndividualUnchecked(IdentifierType.Retainer, retainerName, actor->ObjectIndex, ObjectKind.EventNpc, dataId);
+                            ? CreateRetainer(retainerName, ActorIdentifier.RetainerType.Mannequin)
+                            : CreateIndividualUnchecked(IdentifierType.Retainer, retainerName, (ushort)ActorIdentifier.RetainerType.Mannequin,
+                                ObjectKind.EventNpc,                             dataId);
                         if (ident.IsValid)
                             return ident;
                     }
@@ -349,8 +350,9 @@ public partial class ActorManager
             {
                 var name = new ByteString(actor->Name);
                 return check
-                    ? CreateRetainer(name)
-                    : CreateIndividualUnchecked(IdentifierType.Retainer, name, 0, ObjectKind.None, uint.MaxValue);
+                    ? CreateRetainer(name, ActorIdentifier.RetainerType.Bell)
+                    : CreateIndividualUnchecked(IdentifierType.Retainer, name, (ushort)ActorIdentifier.RetainerType.Bell, ObjectKind.None,
+                        uint.MaxValue);
             }
             default:
             {
@@ -388,7 +390,7 @@ public partial class ActorManager
         => type switch
         {
             IdentifierType.Player    => CreatePlayer(name, homeWorld),
-            IdentifierType.Retainer  => CreateRetainer(name),
+            IdentifierType.Retainer  => CreateRetainer(name, (ActorIdentifier.RetainerType)homeWorld),
             IdentifierType.Owned     => CreateOwned(name, homeWorld, kind, dataId),
             IdentifierType.Special   => CreateSpecial((ScreenActor)homeWorld),
             IdentifierType.Npc       => CreateNpc(kind, dataId, homeWorld),
@@ -410,12 +412,12 @@ public partial class ActorManager
         return new ActorIdentifier(IdentifierType.Player, ObjectKind.Player, homeWorld, 0, name);
     }
 
-    public ActorIdentifier CreateRetainer(ByteString name)
+    public ActorIdentifier CreateRetainer(ByteString name, ActorIdentifier.RetainerType type)
     {
         if (!VerifyRetainerName(name.Span))
             return ActorIdentifier.Invalid;
 
-        return new ActorIdentifier(IdentifierType.Retainer, ObjectKind.Retainer, 0, 0, name);
+        return new ActorIdentifier(IdentifierType.Retainer, ObjectKind.Retainer, (ushort)type, 0, name);
     }
 
     public ActorIdentifier CreateSpecial(ScreenActor actor)

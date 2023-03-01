@@ -41,7 +41,7 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
                     return true;
                 }
 
-                if( Penumbra.Config.UseOwnerNameForCharacterCollection )
+                if( identifier.Retainer is not ActorIdentifier.RetainerType.Mannequin && Penumbra.Config.UseOwnerNameForCharacterCollection )
                 {
                     return CheckWorlds( _actorManager.GetCurrentPlayer(), out collection );
                 }

@@ -584,7 +584,7 @@ public partial class ModEditWindow : Window, IDisposable
             () => _editor?.ShpkFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawShaderPackagePanel,
             () => _mod?.ModPath.FullName ?? string.Empty,
-            bytes => new ShpkTab( bytes ) );
+            null );
         _center = new CombinedTexture( _left, _right );
     }
 

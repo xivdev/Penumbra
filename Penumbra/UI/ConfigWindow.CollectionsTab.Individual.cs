@@ -322,7 +322,7 @@ public partial class ConfigWindow
                     IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
                     _                                          => string.Empty,
                 };
-            _newRetainerTooltip = Penumbra.CollectionManager.Individuals.CanAdd( IdentifierType.Retainer, _newCharacterName, _worldCombo.CurrentSelection.Key, ObjectKind.None,
+            _newRetainerTooltip = Penumbra.CollectionManager.Individuals.CanAdd( IdentifierType.Retainer, _newCharacterName, 0, ObjectKind.None,
                     Array.Empty< uint >(), out _newRetainerIdentifiers ) switch
                 {
                     _ when _newCharacterName.Length == 0       => NewRetainerTooltipEmpty,

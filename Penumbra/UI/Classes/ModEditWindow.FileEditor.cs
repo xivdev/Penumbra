@@ -175,7 +175,7 @@ public partial class ModEditWindow
         }
 
         private static T? DefaultParseFile( byte[] bytes )
-            => Activator.CreateInstance( typeof( T ), BindingFlags.CreateInstance | BindingFlags.OptionalParamBinding, bytes ) as T;
+            => Activator.CreateInstance( typeof( T ), bytes ) as T;
 
         private void UpdateCurrentFile( Mod.Editor.FileRegistry path )
         {

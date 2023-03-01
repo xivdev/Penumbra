@@ -14,11 +14,19 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
 
     public static readonly ActorIdentifier Invalid = new(IdentifierType.Invalid, 0, 0, 0, ByteString.Empty);
 
+    public enum RetainerType : ushort
+    {
+        Both = 0,
+        Bell = 1,
+        Mannequin = 2,
+    }
+
     // @formatter:off
     [FieldOffset( 0 )] public readonly IdentifierType Type;       // All
     [FieldOffset( 1 )] public readonly ObjectKind     Kind;       // Npc, Owned
     [FieldOffset( 2 )] public readonly ushort         HomeWorld;  // Player, Owned
     [FieldOffset( 2 )] public readonly ushort         Index;      // NPC
+    [FieldOffset( 2 )] public readonly RetainerType   Retainer;   // Retainer
     [FieldOffset( 2 )] public readonly ScreenActor    Special;    // Special
     [FieldOffset( 4 )] public readonly uint           DataId;     // Owned, NPC
     [FieldOffset( 8 )] public readonly ByteString     PlayerName; // Player, Owned
