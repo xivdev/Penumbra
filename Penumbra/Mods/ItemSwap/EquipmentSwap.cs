@@ -64,6 +64,12 @@ public static class EquipmentSwap
             var imcFileTo = new ImcFile( imcManip);
 
             var isAccessory = slot.IsAccessory();
+            var estType = slot switch
+            {
+                EquipSlot.Head => EstManipulation.EstType.Head,
+                EquipSlot.Body => EstManipulation.EstType.Body,
+                _              => ( EstManipulation.EstType )0,
+            };
 
             var skipFemale    = false;
             var skipMale      = false;
@@ -83,12 +89,20 @@ public static class EquipmentSwap
                     continue;
                 }
 
+                
                 try
                 {
                     var eqdp = CreateEqdp( redirections, manips, slot, gr, idFrom, idTo, mtrlVariantTo );
                     if( eqdp != null )
                     {
                         swaps.Add( eqdp );
+                    }
+
+                    var ownMdl = eqdp?.SwapApplied.Eqdp.Entry.ToBits( slot ).Item2 ?? false;
+                    var est = ItemSwap.CreateEst( redirections, manips, estType, gr, idFrom, idTo, ownMdl );
+                    if( est != null )
+                    {
+                        swaps.Add( est );
                     }
                 }
                 catch( ItemSwap.MissingFileException e )
@@ -128,19 +142,6 @@ public static class EquipmentSwap
         {
             var mdl = CreateMdl( redirections, slot, gr, idFrom, idTo, mtrlTo );
             meta.ChildSwaps.Add( mdl );
-
-            var estType = slot switch
-            {
-                EquipSlot.Head => EstManipulation.EstType.Head,
-                EquipSlot.Body => EstManipulation.EstType.Body,
-                _              => ( EstManipulation.EstType )0,
-            };
-
-            var est = ItemSwap.CreateEst( redirections, manips, estType, gr, idFrom, idTo );
-            if( est != null )
-            {
-                meta.ChildSwaps.Add( est );
-            }
         }
         else if( !ownMtrl && meta.SwapAppliedIsDefault )
         {

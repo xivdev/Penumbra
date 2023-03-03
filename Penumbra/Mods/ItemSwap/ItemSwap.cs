@@ -159,7 +159,7 @@ public static class ItemSwap
 
     /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
     public static MetaSwap? CreateEst( Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, EstManipulation.EstType type,
-        GenderRace genderRace, SetId idFrom, SetId idTo )
+        GenderRace genderRace, SetId idFrom, SetId idTo, bool ownMdl )
     {
         if( type == 0 )
         {
@@ -171,7 +171,7 @@ public static class ItemSwap
         var toDefault   = new EstManipulation( gender, race, type, idTo.Value, EstFile.GetDefault( type, genderRace, idTo.Value ) );
         var est         = new MetaSwap( manips, fromDefault, toDefault );
 
-        if( est.SwapApplied.Est.Entry >= 2 )
+        if( ownMdl && est.SwapApplied.Est.Entry >= 2 )
         {
             var phyb = CreatePhyb( redirections, type, genderRace, est.SwapApplied.Est.Entry );
             est.ChildSwaps.Add( phyb );

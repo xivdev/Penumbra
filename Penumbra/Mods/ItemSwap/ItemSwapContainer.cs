@@ -145,7 +145,7 @@ public class ItemSwapContainer
         };
 
         var metaResolver = MetaResolver( collection );
-        var est          = ItemSwap.CreateEst( pathResolver, metaResolver, type, race, from, to );
+        var est          = ItemSwap.CreateEst( pathResolver, metaResolver, type, race, from, to, true );
 
         Swaps.Add( mdl );
         if( est != null )
