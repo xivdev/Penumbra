@@ -110,6 +110,7 @@ public partial class TexToolsImporter
         }
 
         _currentModDirectory.Refresh();
+        Mod.Creator.SplitMultiGroups( _currentModDirectory );
 
         return _currentModDirectory;
     }

@@ -46,7 +46,6 @@ public partial class Mod
 
         public static MultiModGroup? Load( Mod mod, JObject json, int groupIdx )
         {
-            var options = json[ "Options" ];
             var ret = new MultiModGroup()
             {
                 Name            = json[ nameof( Name ) ]?.ToObject< string >()          ?? string.Empty,
@@ -59,6 +58,7 @@ public partial class Mod
                 return null;
             }
 
+            var options = json["Options"];
             if( options != null )
             {
                 foreach( var child in options.Children() )

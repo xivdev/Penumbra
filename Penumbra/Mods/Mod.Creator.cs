@@ -1,8 +1,12 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Dalamud.Utility;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
@@ -13,7 +17,7 @@ namespace Penumbra.Mods;
 
 public partial class Mod
 {
-    internal static class Creator
+    internal static partial class Creator
     {
         /// <summary>
         /// Create and return a new directory based on the given directory and name, that is <br/>
@@ -184,5 +188,115 @@ public partial class Mod
 
             return sb.ToString();
         }
+
+        public static void SplitMultiGroups( DirectoryInfo baseDir )
+        {
+            var mod = new Mod( baseDir );
+
+            var files   = mod.GroupFiles.ToList();
+            var idx     = 0;
+            var reorder = false;
+            foreach( var groupFile in files )
+            {
+                ++idx;
+                try
+                {
+                    if( reorder )
+                    {
+                        var newName = $"{baseDir.FullName}\\group_{idx:D3}{groupFile.Name[ 9.. ]}";
+                        Penumbra.Log.Debug( $"Moving {groupFile.Name} to {Path.GetFileName( newName )} due to reordering after multi group split." );
+                        groupFile.MoveTo( newName, false );
+                    }
+                }
+                catch( Exception ex )
+                {
+                    throw new Exception( "Could not reorder group file after splitting multi group on .pmp import.", ex );
+                }
+
+                try
+                {
+                    var json = JObject.Parse( File.ReadAllText( groupFile.FullName ) );
+                    if( json[ nameof( IModGroup.Type ) ]?.ToObject< GroupType >() is not GroupType.Multi )
+                    {
+                        continue;
+                    }
+
+                    var name = json[ nameof( IModGroup.Name ) ]?.ToObject< string >() ?? string.Empty;
+                    if( name.Length == 0 )
+                    {
+                        continue;
+                    }
+
+
+                    var options = json[ "Options" ]?.Children().ToList();
+                    if( options == null )
+                    {
+                        continue;
+                    }
+
+                    if( options.Count <= IModGroup.MaxMultiOptions )
+                    {
+                        continue;
+                    }
+
+                    Penumbra.Log.Information( $"Splitting multi group {name} in {mod.Name} due to {options.Count} being too many options." );
+                    var clone = json.DeepClone();
+                    reorder = true;
+                    foreach( var o in options.Skip( IModGroup.MaxMultiOptions ) )
+                    {
+                        o.Remove();
+                    }
+
+                    var newOptions = clone[ "Options" ]!.Children().ToList();
+                    foreach( var o in newOptions.Take( IModGroup.MaxMultiOptions ) )
+                    {
+                        o.Remove();
+                    }
+
+                    var match       = DuplicateNumber().Match( name );
+                    var startNumber = match.Success ? int.Parse( match.Groups[ 0 ].Value ) : 1;
+                    name = match.Success ? name[ ..4 ] : name;
+                    var oldName = $"{name}, Part {startNumber}";
+                    var oldPath = $"{baseDir.FullName}\\group_{idx:D3}_{oldName.RemoveInvalidPathSymbols().ToLowerInvariant()}.json";
+                    var newName = $"{name}, Part {startNumber + 1}";
+                    var newPath = $"{baseDir.FullName}\\group_{++idx:D3}_{newName.RemoveInvalidPathSymbols().ToLowerInvariant()}.json";
+                    json[ nameof( IModGroup.Name ) ]  = oldName;
+                    clone[ nameof( IModGroup.Name ) ] = newName;
+
+                    clone[ nameof( IModGroup.DefaultSettings ) ] = 0u;
+
+                    Penumbra.Log.Debug( $"Writing the first {IModGroup.MaxMultiOptions} options to {Path.GetFileName( oldPath )} after split." );
+                    using( var oldFile = File.CreateText( oldPath ) )
+                    {
+                        using var j = new JsonTextWriter( oldFile )
+                        {
+                            Formatting = Formatting.Indented,
+                        };
+                        json.WriteTo( j );
+                    }
+
+                    Penumbra.Log.Debug( $"Writing the remaining {options.Count - IModGroup.MaxMultiOptions} options to {Path.GetFileName( newPath )} after split." );
+                    using( var newFile = File.CreateText( newPath ) )
+                    {
+                        using var j = new JsonTextWriter( newFile )
+                        {
+                            Formatting = Formatting.Indented,
+                        };
+                        clone.WriteTo( j );
+                    }
+
+                    Penumbra.Log.Debug(
+                        $"Deleting the old group file at {groupFile.Name} after splitting it into {Path.GetFileName( oldPath )} and {Path.GetFileName( newPath )}." );
+                    groupFile.Delete();
+                }
+                catch( Exception ex )
+                {
+                    throw new Exception( "Could not split multi group file on .pmp import.", ex );
+                }
+            }
+        }
+
+        [GeneratedRegex( @", Part (\d+)$", RegexOptions.NonBacktracking )]
+        private static partial Regex DuplicateNumber();
     }
 }

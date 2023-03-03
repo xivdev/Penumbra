@@ -138,6 +138,7 @@ public partial class Mod
                 return;
             }
 
+            Creator.SplitMultiGroups( modFolder );
             var mod = LoadMod( modFolder, true );
             if( mod == null )
             {
