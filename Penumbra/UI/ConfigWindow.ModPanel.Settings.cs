@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
@@ -231,25 +232,69 @@ public partial class ConfigWindow
             using var id             = ImRaii.PushId( groupIdx );
             var       selectedOption = _emptySetting ? ( int )group.DefaultSettings : ( int )_settings.Settings[ groupIdx ];
             Widget.BeginFramedGroup( group.Name, group.Description );
-            for( var idx = 0; idx < group.Count; ++idx )
+
+            void DrawOptions()
             {
-                id.Push( idx );
-                var option = group[ idx ];
-                if( ImGui.RadioButton( option.Name, selectedOption == idx ) )
+                for( var idx = 0; idx < group.Count; ++idx )
                 {
-                    Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx );
-                }
+                    using var i      = ImRaii.PushId( idx );
+                    var       option = group[ idx ];
+                    if( ImGui.RadioButton( option.Name, selectedOption == idx ) )
+                    {
+                        Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, ( uint )idx );
+                    }
 
-                if( option.Description.Length > 0 )
-                {
-                    ImGui.SameLine();
-                    ImGuiComponents.HelpMarker( option.Description );
+                    if( option.Description.Length > 0 )
+                    {
+                        ImGui.SameLine();
+                        ImGuiComponents.HelpMarker( option.Description );
+                    }
                 }
-
-                id.Pop( idx );
             }
 
+            DrawCollapseHandling( group, DrawOptions );
+
             Widget.EndFramedGroup();
+        }
+
+        private static void DrawCollapseHandling( IModGroup group, Action draw )
+        {
+            if( group.Count <= 5 )
+            {
+                draw();
+            }
+            else
+            {
+                var collapseId = ImGui.GetID( "Collapse" );
+                var shown      = ImGui.GetStateStorage().GetBool( collapseId, true );
+                if( shown )
+                {
+                    var pos = ImGui.GetCursorPos();
+                    ImGui.Dummy( new Vector2( ImGui.GetFrameHeight() ) );
+                    using( var _ = ImRaii.Group() )
+                    {
+                        draw();
+                    }
+
+                    var width  = ImGui.GetItemRectSize().X;
+                    var endPos = ImGui.GetCursorPos();
+                    ImGui.SetCursorPos( pos );
+                    if( ImGui.Button( $"Hide {group.Count} Options", new Vector2( width, 0 ) ) )
+                    {
+                        ImGui.GetStateStorage().SetBool( collapseId, !shown );
+                    }
+
+                    ImGui.SetCursorPos( endPos );
+                }
+                else
+                {
+                    var max = group.Max( o => ImGui.CalcTextSize( o.Name ).X ) + ImGui.GetStyle().ItemInnerSpacing.X + ImGui.GetFrameHeight() + ImGui.GetStyle().FramePadding.X;
+                    if( ImGui.Button( $"Show {group.Count} Options", new Vector2( max, 0 ) ) )
+                    {
+                        ImGui.GetStateStorage().SetBool( collapseId, !shown );
+                    }
+                }
+            }
         }
 
         // Draw a multi group selector as a bordered set of checkboxes.
@@ -259,26 +304,31 @@ public partial class ConfigWindow
             using var id    = ImRaii.PushId( groupIdx );
             var       flags = _emptySetting ? group.DefaultSettings : _settings.Settings[ groupIdx ];
             Widget.BeginFramedGroup( group.Name, group.Description );
-            for( var idx = 0; idx < group.Count; ++idx )
+
+            void DrawOptions()
             {
-                var option = group[ idx ];
-                id.Push( idx );
-                var flag    = 1u << idx;
-                var setting = ( flags & flag ) != 0;
-                if( ImGui.Checkbox( option.Name, ref setting ) )
+                for( var idx = 0; idx < group.Count; ++idx )
                 {
-                    flags = setting ? flags | flag : flags & ~flag;
-                    Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, flags );
-                }
+                    using var i       = ImRaii.PushId( idx );
+                    var       option  = group[ idx ];
+                    var       flag    = 1u << idx;
+                    var       setting = ( flags & flag ) != 0;
 
-                if( option.Description.Length > 0 )
-                {
-                    ImGui.SameLine();
-                    ImGuiComponents.HelpMarker( option.Description );
-                }
+                    if( ImGui.Checkbox( option.Name, ref setting ) )
+                    {
+                        flags = setting ? flags | flag : flags & ~flag;
+                        Penumbra.CollectionManager.Current.SetModSetting( _mod.Index, groupIdx, flags );
+                    }
 
-                id.Pop();
+                    if( option.Description.Length > 0 )
+                    {
+                        ImGui.SameLine();
+                        ImGuiComponents.HelpMarker( option.Description );
+                    }
+                }
             }
+
+            DrawCollapseHandling( group, DrawOptions );
 
             Widget.EndFramedGroup();
             var label = $"##multi{groupIdx}";
