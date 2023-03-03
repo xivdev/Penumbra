@@ -67,7 +67,7 @@ public partial class Mod
             _default.WriteTexToolsMeta( ModPath );
             foreach( var group in Groups )
             {
-                var dir = NewOptionDirectory( ModPath, group.Name );
+                var dir = Creator.NewOptionDirectory( ModPath, group.Name );
                 if( !dir.Exists )
                 {
                     dir.Create();
@@ -75,7 +75,7 @@ public partial class Mod
 
                 foreach( var option in group.OfType< SubMod >() )
                 {
-                    var optionDir = NewOptionDirectory( dir, option.Name );
+                    var optionDir = Creator.NewOptionDirectory( dir, option.Name );
                     if( !optionDir.Exists )
                     {
                         optionDir.Create();

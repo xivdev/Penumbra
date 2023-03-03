@@ -216,9 +216,9 @@ public class ItemSwapWindow : IDisposable
 
     private void CreateMod()
     {
-        var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
-        Mod.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty );
-        Mod.CreateDefaultFiles( newDir );
+        var newDir = Mod.Creator.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
+        Mod.Creator.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty );
+        Mod.Creator.CreateDefaultFiles( newDir );
         Penumbra.ModManager.AddMod( newDir );
         if( !_swapData.WriteMod( Penumbra.ModManager.Last(), _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps ) )
         {
@@ -239,7 +239,7 @@ public class ItemSwapWindow : IDisposable
         DirectoryInfo? optionFolderName = null;
         try
         {
-            optionFolderName = Mod.NewSubFolderName( new DirectoryInfo( Path.Combine( _mod.ModPath.FullName, _selectedGroup?.Name ?? _newGroupName ) ), _newOptionName );
+            optionFolderName = Mod.Creator.NewSubFolderName( new DirectoryInfo( Path.Combine( _mod.ModPath.FullName, _selectedGroup?.Name ?? _newGroupName ) ), _newOptionName );
             if( optionFolderName?.Exists == true )
             {
                 throw new Exception( $"The folder {optionFolderName.FullName} for the option already exists." );

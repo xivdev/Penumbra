@@ -150,11 +150,11 @@ public partial class Mod
                 foreach( var (group, groupIdx) in _mod.Groups.WithIndex() )
                 {
                     _redirections[ groupIdx + 1 ] = new Dictionary< Utf8GamePath, FullPath >[group.Count];
-                    var groupDir = CreateModFolder( directory, group.Name );
+                    var groupDir = Creator.CreateModFolder( directory, group.Name );
 
                     foreach( var option in group.OfType< SubMod >() )
                     {
-                        var optionDir = CreateModFolder( groupDir, option.Name );
+                        var optionDir = Creator.CreateModFolder( groupDir, option.Name );
                         newDict                                           = new Dictionary< Utf8GamePath, FullPath >( option.FileData.Count );
                         _redirections[ groupIdx + 1 ][ option.OptionIdx ] = newDict;
                         foreach( var (gamePath, fullPath) in option.FileData )

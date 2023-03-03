@@ -51,9 +51,9 @@ public sealed partial class Mod
             DirectoryInfo? dir = null;
             try
             {
-                dir = CreateModFolder( Penumbra.ModManager.BasePath, collection.Name );
+                dir = Creator.CreateModFolder( Penumbra.ModManager.BasePath, collection.Name );
                 var fileDir = Directory.CreateDirectory( Path.Combine( dir.FullName, "files" ) );
-                CreateMeta( dir, collection.Name, character ?? Penumbra.Config.DefaultModAuthor,
+                Creator.CreateMeta( dir, collection.Name, character ?? Penumbra.Config.DefaultModAuthor,
                     $"Mod generated from temporary collection {collection.Name} for {character ?? "Unknown Character"}.", null, null );
                 var mod        = new Mod( dir );
                 var defaultMod = mod._default;

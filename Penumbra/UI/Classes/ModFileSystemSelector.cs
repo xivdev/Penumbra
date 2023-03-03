@@ -92,9 +92,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
         {
             try
             {
-                var newDir = Mod.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
-                Mod.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty );
-                Mod.CreateDefaultFiles( newDir );
+                var newDir = Mod.Creator.CreateModFolder( Penumbra.ModManager.BasePath, _newModName );
+                Mod.Creator.CreateMeta( newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty );
+                Mod.Creator.CreateDefaultFiles( newDir );
                 Penumbra.ModManager.AddMod( newDir );
                 _newModName = string.Empty;
             }

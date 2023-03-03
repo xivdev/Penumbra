@@ -175,7 +175,7 @@ public partial class Mod
                 return NewDirectoryState.Identical;
             }
 
-            var fixedNewName = ReplaceBadXivSymbols( newName );
+            var fixedNewName = Creator.ReplaceBadXivSymbols( newName );
             if( fixedNewName != newName )
             {
                 return NewDirectoryState.ContainsInvalidSymbols;

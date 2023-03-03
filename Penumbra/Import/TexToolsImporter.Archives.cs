@@ -44,7 +44,7 @@ public partial class TexToolsImporter
             };
         Penumbra.Log.Information( $"    -> Importing {archive.Type} Archive." );
 
-        _currentModDirectory = Mod.CreateModFolder( _baseDirectory, Path.GetRandomFileName() );
+        _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, Path.GetRandomFileName() );
         var options = new ExtractionOptions()
         {
             ExtractFullPath = true,
@@ -99,13 +99,13 @@ public partial class TexToolsImporter
         // Use either the top-level directory as the mods base name, or the (fixed for path) name in the json.
         if( leadDir )
         {
-            _currentModDirectory = Mod.CreateModFolder( _baseDirectory, baseName, false );
+            _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, baseName, false );
             Directory.Move( Path.Combine( oldName, baseName ), _currentModDirectory.FullName );
             Directory.Delete( oldName );
         }
         else
         {
-            _currentModDirectory = Mod.CreateModFolder( _baseDirectory, name, false );
+            _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, name, false );
             Directory.Move( oldName, _currentModDirectory.FullName );
         }
 
@@ -113,6 +113,7 @@ public partial class TexToolsImporter
 
         return _currentModDirectory;
     }
+
 
     // Search the archive for the meta.json file which needs to exist.
     private static string FindArchiveModMeta( IArchive archive, out bool leadDir )
