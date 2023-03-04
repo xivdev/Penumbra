@@ -35,17 +35,38 @@ public partial class ConfigWindow
         Add6_4_0( ret );
         Add6_5_0( ret );
         Add6_5_2( ret );
-
+        Add6_6_0( ret );
         return ret;
     }
 
+    private static void Add6_6_0( Changelog log )
+        => log.NextVersion( "Version 0.6.6.0" )
+           .RegisterEntry( "Added new Collection Assignment Groups for Children NPC and Elderly NPC. Those take precedence before any non-individual assignments for any NPC using a child- or elderly model respectively."  )
+           .RegisterEntry( "Added an option to display Single Selection Groups as a group of radio buttons similar to Multi Selection Groups, when the number of available options is below the specified value. Default value is 2."  )
+           .RegisterEntry( "Added a button in option groups to collapse the option list if it has more than 5 available options."  )
+           .RegisterEntry(
+                "Penumbra now circumvents the games inability to read files at paths longer than 260 UTF16 characters and can also deal with generic unicode symbols in paths." )
+           .RegisterEntry( "This means that Penumbra should no longer cause issues when files become too long or when there is a non-ASCII character in them.", 1 )
+           .RegisterEntry(
+                "Shorter paths are still better, so restrictions on the root directory have not been relaxed. Mod names should no longer replace non-ASCII symbols on import though.", 1 )
+           .RegisterEntry(
+                "Resource logging has been relegated to its own tab with better filtering. Please do not keep resource logging on arbitrarily or set a low record limit if you do, otherwise this eats a lot of performance and memory after a while." )
+           .RegisterEntry( "Added a lot of facilities to edit the shader part of .mtrl files and .shpk files themselves in the Advanced Editing Tab (Thanks Ny and aers)."  )
+           .RegisterEntry( "Added splitting of Multi Selection Groups with too many options when importing .pmp files or adding mods via IPC." )
+           .RegisterEntry( "Discovery, Reloading and Unloading of a specified mod is now possible via HTTP API (Thanks Sebastina)." )
+           .RegisterEntry( "Cleaned up the HTTP API somewhat, removed currently useless options."  )
+           .RegisterEntry( "Fixed an issue when extracting some textures."  )
+           .RegisterEntry( "Fixed an issue with mannequins inheriting individual assignments for the current player when using ownership."  )
+           .RegisterEntry( "Fixed an issue with the resolving of .phyb and .sklb files for Item Swaps of head or body items with an EST entry but no unique racial model."  );
+    
     private static void Add6_5_2( Changelog log )
         => log.NextVersion( "Version 0.6.5.2" )
            .RegisterEntry( "Updated for game version 6.31 Hotfix." )
            .RegisterEntry( "Added option-specific descriptions for mods, instead of having just descriptions for groups of options. (Thanks Caraxi!)" )
            .RegisterEntry( "Those are now accurately parsed from TTMPs, too.", 1 )
            .RegisterEntry( "Improved launch times somewhat through parallelization of some tasks." )
-           .RegisterEntry( "Added some performance tracking for start-up durations and for real time data to Release builds. They can be seen and enabled in the Debug tab when Debug Mode is enabled." )
+           .RegisterEntry(
+                "Added some performance tracking for start-up durations and for real time data to Release builds. They can be seen and enabled in the Debug tab when Debug Mode is enabled." )
            .RegisterEntry( "Fixed an issue with IMC changes and Mare Synchronos interoperability." )
            .RegisterEntry( "Fixed an issue with housing mannequins crashing the game when resource logging was enabled." )
            .RegisterEntry( "Fixed an issue generating Mip Maps for texture import on Wine." );
