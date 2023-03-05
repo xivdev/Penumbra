@@ -28,17 +28,21 @@ public partial class ConfigWindow
         }
 
         private static int _singleGroupRadioMax = int.MaxValue;
+
         private void DrawSingleSelectRadioMax()
         {
-            if ( _singleGroupRadioMax == int.MaxValue)
+            if( _singleGroupRadioMax == int.MaxValue )
+            {
                 _singleGroupRadioMax = Penumbra.Config.SingleGroupRadioMax;
+            }
+
             ImGui.SetNextItemWidth( _window._inputTextWidth.X );
             if( ImGui.DragInt( "##SingleSelectRadioMax", ref _singleGroupRadioMax, 0.01f, 1 ) )
             {
                 _singleGroupRadioMax = Math.Max( 1, _singleGroupRadioMax );
             }
 
-            if (ImGui.IsItemDeactivated())
+            if( ImGui.IsItemDeactivated() )
             {
                 if( _singleGroupRadioMax != Penumbra.Config.SingleGroupRadioMax )
                 {
@@ -48,6 +52,7 @@ public partial class ConfigWindow
 
                 _singleGroupRadioMax = int.MaxValue;
             }
+
             ImGuiUtil.LabeledHelpMarker( "Upper Limit for Single-Selection Group Radio Buttons",
                 "All Single-Selection Groups with more options than specified here will be displayed as Combo-Boxes at the top.\n"
               + "All other Single-Selection Groups will be displayed as a set of Radio-Buttons." );
@@ -89,6 +94,9 @@ public partial class ConfigWindow
                 } );
             ImGui.Dummy( _window._defaultSpace );
 
+            Checkbox( "Print Chat Command Success Messages to Chat",
+                "Chat Commands usually print messages on failure but also on success to confirm your action. You can disable this here.",
+                Penumbra.Config.PrintSuccessfulCommandsToChat, v => Penumbra.Config.PrintSuccessfulCommandsToChat = v );
             Checkbox( "Hide Redraw Bar in Mod Panel", "Hides the lower redraw buttons in the mod panel in your Mods tab.",
                 Penumbra.Config.HideRedrawBar, v => Penumbra.Config.HideRedrawBar = v );
             ImGui.Dummy( _window._defaultSpace );

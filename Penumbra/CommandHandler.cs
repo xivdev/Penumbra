@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Dalamud.Game.Command;
 using Dalamud.Game.Text.SeStringHandling;
 using ImGuiNET;
@@ -139,7 +140,8 @@ public class CommandHandler : IDisposable
         Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "collection", "Change your active collection setup. Use without further parameters for more detailed help." )
            .BuiltString );
         Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "mod", "Change a specific mods settings. Use without further parameters for more detailed help." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "bulktag", "Change multiple mods settings based on their tags. Use without further parameters for more detailed help." )
+        Dalamud.Chat.Print( new SeStringBuilder()
+           .AddCommand( "bulktag", "Change multiple mods settings based on their tags. Use without further parameters for more detailed help." )
            .BuiltString );
         return true;
     }
@@ -159,7 +161,7 @@ public class CommandHandler : IDisposable
     private bool Reload( string _ )
     {
         _modManager.DiscoverMods();
-        Dalamud.Chat.Print( $"Reloaded Penumbra mods. You have {_modManager.Count} mods." );
+        Print( $"Reloaded Penumbra mods. You have {_modManager.Count} mods." );
         return true;
     }
 
@@ -185,9 +187,7 @@ public class CommandHandler : IDisposable
             return false;
         }
 
-        Dalamud.Chat.Print( value
-            ? "Debug mode enabled."
-            : "Debug mode disabled." );
+        Print( value ? "Debug mode enabled." : "Debug mode disabled." );
 
         _config.DebugMode = value;
         _config.Save();
@@ -200,13 +200,13 @@ public class CommandHandler : IDisposable
 
         if( value == _config.EnableMods )
         {
-            Dalamud.Chat.Print( value
+            Print( value
                 ? "Your mods are already enabled. To disable your mods, please run the following command instead: /penumbra disable"
                 : "Your mods are already disabled. To enable your mods, please run the following command instead: /penumbra enable" );
             return false;
         }
 
-        Dalamud.Chat.Print( value
+        Print( value
             ? "Your mods have been enabled."
             : "Your mods have been disabled." );
         return _penumbra.SetEnabled( value );
@@ -222,12 +222,12 @@ public class CommandHandler : IDisposable
 
         if( value )
         {
-            Dalamud.Chat.Print( "Penumbra UI locked in place." );
+            Print( "Penumbra UI locked in place." );
             _configWindow.Flags |= ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize;
         }
         else
         {
-            Dalamud.Chat.Print( "Penumbra UI unlocked." );
+            Print( "Penumbra UI unlocked." );
             _configWindow.Flags &= ~( ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize );
         }
 
@@ -251,7 +251,7 @@ public class CommandHandler : IDisposable
             Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》 If the type is " ).AddBlue( "Individual" )
                .AddText( " you need to specify an individual with an identifier of the form:" ).BuiltString );
             Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "<me>" ).AddText( " or " ).AddGreen( "<t>" ).AddText( " or " ).AddGreen( "<mo>" )
-               .AddText( " or " ).AddGreen( "<f>"  ).AddText( " as placeholders for your character, your target, your mouseover or your focus, if they exist." ).BuiltString );
+               .AddText( " or " ).AddGreen( "<f>" ).AddText( " as placeholders for your character, your target, your mouseover or your focus, if they exist." ).BuiltString );
             Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "p" ).AddText( " | " ).AddWhite( "[Player Name]@<World Name>" )
                .AddText( ", if no @ is provided, Any World is used." ).BuiltString );
             Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "r" ).AddText( " | " ).AddWhite( "[Retainer Name]" ).BuiltString );
@@ -358,12 +358,12 @@ public class CommandHandler : IDisposable
                 return false;
             }
 
-            Dalamud.Chat.Print( $"Removed {oldCollection.Name} as {type.ToName()} Collection assignment {( identifier.IsValid ? $" for {identifier}." : "." )}" );
+            Print( $"Removed {oldCollection.Name} as {type.ToName()} Collection assignment {( identifier.IsValid ? $" for {identifier}." : "." )}" );
             return true;
         }
 
         _collectionManager.SetCollection( collection!, type, individualIndex );
-        Dalamud.Chat.Print( $"Assigned {collection!.Name} as {type.ToName()} Collection{( identifier.IsValid ? $" for {identifier}." : "." )}" );
+        Print( $"Assigned {collection!.Name} as {type.ToName()} Collection{( identifier.IsValid ? $" for {identifier}." : "." )}" );
         return true;
     }
 
@@ -462,7 +462,7 @@ public class CommandHandler : IDisposable
 
         if( !changes )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "No mod states were changed in collection " ).AddYellow( collection!.Name, true ).AddText( "." ).BuiltString );
+            Print( () => new SeStringBuilder().AddText( "No mod states were changed in collection " ).AddYellow( collection!.Name, true ).AddText( "." ).BuiltString );
         }
 
         return true;
@@ -528,7 +528,7 @@ public class CommandHandler : IDisposable
             case 0:
                 if( collection.SetModState( mod.Index, true ) )
                 {
-                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Enabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
+                    Print( () => new SeStringBuilder().AddText( "Enabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
                        .AddYellow( collection.Name, true )
                        .AddText( "." ).BuiltString );
                     return true;
@@ -538,7 +538,7 @@ public class CommandHandler : IDisposable
             case 1:
                 if( collection.SetModState( mod.Index, false ) )
                 {
-                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
+                    Print( () => new SeStringBuilder().AddText( "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
                        .AddYellow( collection.Name, true )
                        .AddText( "." ).BuiltString );
                     return true;
@@ -549,7 +549,7 @@ public class CommandHandler : IDisposable
                 var setting = !( settings?.Enabled ?? false );
                 if( collection.SetModState( mod.Index, setting ) )
                 {
-                    Dalamud.Chat.Print( new SeStringBuilder().AddText( setting ? "Enabled mod " : "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
+                    Print( () => new SeStringBuilder().AddText( setting ? "Enabled mod " : "Disabled mod " ).AddPurple( mod.Name, true ).AddText( " in collection " )
                        .AddYellow( collection.Name, true )
                        .AddText( "." ).BuiltString );
                     return true;
@@ -559,7 +559,7 @@ public class CommandHandler : IDisposable
             case 3:
                 if( collection.SetModInheritance( mod.Index, true ) )
                 {
-                    Dalamud.Chat.Print( new SeStringBuilder().AddText( "Set mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
+                    Print( () => new SeStringBuilder().AddText( "Set mod " ).AddPurple( mod.Name, true ).AddText( " in collection " ).AddYellow( collection.Name, true )
                        .AddText( " to inherit." ).BuiltString );
                     return true;
                 }
@@ -568,5 +568,29 @@ public class CommandHandler : IDisposable
         }
 
         return false;
+    }
+
+    private static void Print( string text )
+    {
+        if( Penumbra.Config.PrintSuccessfulCommandsToChat )
+        {
+            Dalamud.Chat.Print( text );
+        }
+    }
+
+    private static void Print( DefaultInterpolatedStringHandler text )
+    {
+        if( Penumbra.Config.PrintSuccessfulCommandsToChat )
+        {
+            Dalamud.Chat.Print( text.ToStringAndClear() );
+        }
+    }
+
+    private static void Print( Func<SeString> text )
+    {
+        if( Penumbra.Config.PrintSuccessfulCommandsToChat )
+        {
+            Dalamud.Chat.Print( text() );
+        }
     }
 }

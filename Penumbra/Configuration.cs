@@ -72,6 +72,7 @@ public partial class Configuration : IPluginConfiguration
     public string DefaultImportFolder { get; set; } = string.Empty;
     public DoubleModifier DeleteModModifier { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
 
+    public bool PrintSuccessfulCommandsToChat { get; set; } = true;
     public bool FixMainWindow { get; set; } = false;
     public bool AutoDeduplicateOnImport { get; set; } = true;
     public bool EnableHttpApi { get; set; } = true;
