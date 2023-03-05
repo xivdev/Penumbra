@@ -143,10 +143,10 @@ public sealed partial class IndividualCollections : IReadOnlyList< (string Displ
     }
 
     public bool TryGetCollection( GameObject? gameObject, out ModCollection? collection )
-        => TryGetCollection( _actorManager.FromObject( gameObject, true, false ), out collection );
+        => TryGetCollection( _actorManager.FromObject( gameObject, true, false, false ), out collection );
 
     public unsafe bool TryGetCollection( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* gameObject, out ModCollection? collection )
-        => TryGetCollection( _actorManager.FromObject( gameObject, out _, true, false ), out collection );
+        => TryGetCollection( _actorManager.FromObject( gameObject, out _, true, false, false ), out collection );
 
     private bool CheckWorlds( ActorIdentifier identifier, out ModCollection? collection )
     {

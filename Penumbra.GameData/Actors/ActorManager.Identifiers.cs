@@ -244,7 +244,7 @@ public partial class ActorManager
     /// Compute an ActorIdentifier from a GameObject. If check is true, the values are checked for validity.
     /// </summary>
     public unsafe ActorIdentifier FromObject(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor,
-        out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner, bool allowPlayerNpc, bool check)
+        out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner, bool allowPlayerNpc, bool check, bool withoutIndex)
     {
         owner = null;
         if (actor == null)
@@ -298,9 +298,10 @@ public partial class ActorManager
                     }
                 }
 
+                var index = withoutIndex ? ushort.MaxValue : actor->ObjectIndex;
                 return check
-                    ? CreateNpc(ObjectKind.BattleNpc, nameId, actor->ObjectIndex)
-                    : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, actor->ObjectIndex, ObjectKind.BattleNpc, nameId);
+                    ? CreateNpc(ObjectKind.BattleNpc, nameId, index)
+                    : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, index, ObjectKind.BattleNpc, nameId);
             }
             case ObjectKind.EventNpc:
             {
@@ -326,9 +327,10 @@ public partial class ActorManager
                     }
                 }
 
+                var index = withoutIndex ? ushort.MaxValue : actor->ObjectIndex;
                 return check
-                    ? CreateNpc(ObjectKind.EventNpc, dataId, actor->ObjectIndex)
-                    : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, actor->ObjectIndex, ObjectKind.EventNpc, dataId);
+                    ? CreateNpc(ObjectKind.EventNpc, dataId, index)
+                    : CreateIndividualUnchecked(IdentifierType.Npc, ByteString.Empty, index, ObjectKind.EventNpc, dataId);
             }
             case ObjectKind.MountType:
             case ObjectKind.Companion:
@@ -357,7 +359,7 @@ public partial class ActorManager
             default:
             {
                 var name  = new ByteString(actor->Name);
-                var index = actor->ObjectIndex;
+                var index = withoutIndex ? ushort.MaxValue : actor->ObjectIndex;
                 return CreateIndividualUnchecked(IdentifierType.UnkObject, name, index, ObjectKind.None, 0);
             }
         }
@@ -379,12 +381,12 @@ public partial class ActorManager
     }
 
     public unsafe ActorIdentifier FromObject(GameObject? actor, out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner,
-        bool allowPlayerNpc, bool check)
+        bool allowPlayerNpc, bool check, bool withoutIndex)
         => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), out owner, allowPlayerNpc,
-            check);
+            check, withoutIndex);
 
-    public unsafe ActorIdentifier FromObject(GameObject? actor, bool allowPlayerNpc, bool check)
-        => FromObject(actor, out _, allowPlayerNpc, check);
+    public unsafe ActorIdentifier FromObject(GameObject? actor, bool allowPlayerNpc, bool check, bool withoutIndex)
+        => FromObject(actor, out _, allowPlayerNpc, check, withoutIndex);
 
     public ActorIdentifier CreateIndividual(IdentifierType type, ByteString name, ushort homeWorld, ObjectKind kind, uint dataId)
         => type switch
@@ -551,13 +553,13 @@ public partial class ActorManager
         => actor is >= ScreenActor.CharacterScreen and <= ScreenActor.Card8;
 
     /// <summary> Verify that the object index is a valid index for an NPC. </summary>
-    public static bool VerifyIndex(ushort index)
+    public bool VerifyIndex(ushort index)
     {
         return index switch
         {
             ushort.MaxValue             => true,
             < 200                       => index % 2 == 0,
-            > (ushort)ScreenActor.Card8 => index < 426,
+            > (ushort)ScreenActor.Card8 => index < _objects.Length,
             _                           => false,
         };
     }

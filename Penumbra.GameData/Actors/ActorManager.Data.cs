@@ -256,7 +256,7 @@ public sealed partial class ActorManager : IDisposable
             return false;
         }
 
-        id = FromObject(&other->GameObject, out _, false, true);
+        id = FromObject(&other->GameObject, out _, false, true, false);
         return true;
     }
 
@@ -283,7 +283,7 @@ public sealed partial class ActorManager : IDisposable
             if (obj != null
              && obj->ObjectKind is (byte)ObjectKind.Player
              && Compare(gameObject, (Character*)obj))
-                return FromObject(obj, out _, false, true);
+                return FromObject(obj, out _, false, true, false);
         }
 
         return ActorIdentifier.Invalid;

@@ -243,10 +243,10 @@ public partial class ConfigWindow
             var buttonWidth1 = new Vector2( 90  * ImGuiHelpers.GlobalScale, 0 );
             var buttonWidth2 = new Vector2( 120 * ImGuiHelpers.GlobalScale, 0 );
 
-            var assignWidth = new Vector2((_window._inputTextWidth.X - ImGui.GetStyle().ItemSpacing.X) / 2, 0);
-            var change      = DrawNewCurrentPlayerCollection(assignWidth);
+            var assignWidth = new Vector2( ( _window._inputTextWidth.X - ImGui.GetStyle().ItemSpacing.X ) / 2, 0 );
+            var change      = DrawNewCurrentPlayerCollection( assignWidth );
             ImGui.SameLine();
-            change |= DrawNewTargetCollection(assignWidth);
+            change |= DrawNewTargetCollection( assignWidth );
 
             change |= DrawNewPlayerCollection( buttonWidth1, width );
             ImGui.SameLine();
@@ -263,7 +263,7 @@ public partial class ConfigWindow
             }
         }
 
-        private static bool DrawNewCurrentPlayerCollection(Vector2 width)
+        private static bool DrawNewCurrentPlayerCollection( Vector2 width )
         {
             var player = Penumbra.Actors.GetCurrentPlayer();
             var result = Penumbra.CollectionManager.Individuals.CanAdd( player );
@@ -285,10 +285,10 @@ public partial class ConfigWindow
             return false;
         }
 
-        private static bool DrawNewTargetCollection(Vector2 width)
+        private static bool DrawNewTargetCollection( Vector2 width )
         {
             var target = Dalamud.Targets.Target;
-            var player = Penumbra.Actors.FromObject( target, false, true );
+            var player = Penumbra.Actors.FromObject( target, false, true, true );
             var result = Penumbra.CollectionManager.Individuals.CanAdd( player );
             var tt = result switch
             {
@@ -299,7 +299,7 @@ public partial class ConfigWindow
             };
             if( ImGuiUtil.DrawDisabledButton( "Assign Current Target", width, tt, result != IndividualCollections.AddResult.Valid ) )
             {
-                Penumbra.CollectionManager.Individuals.Add( new[] { player }, Penumbra.CollectionManager.Default );
+                Penumbra.CollectionManager.Individuals.Add( Penumbra.CollectionManager.Individuals.GetGroup( player ), Penumbra.CollectionManager.Default );
                 return true;
             }
 

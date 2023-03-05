@@ -47,7 +47,7 @@ public readonly struct ResolveData
 
         try
         {
-            var id = Penumbra.Actors.FromObject( ( GameObject* )AssociatedGameObject, out _, false, true );
+            var id = Penumbra.Actors.FromObject( ( GameObject* )AssociatedGameObject, out _, false, true, true );
             if( id.IsValid )
             {
                 var name  = id.ToString();

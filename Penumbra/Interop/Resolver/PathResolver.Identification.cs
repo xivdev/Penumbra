@@ -56,7 +56,7 @@ public unsafe partial class PathResolver
                 return IdentifiedCache.Set( collection2, ActorIdentifier.Invalid, gameObject );
             }
 
-            var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, true, false );
+            var identifier = Penumbra.Actors.FromObject( gameObject, out var owner, true, false, false );
             if( identifier.Type is IdentifierType.Special )
             {
                 ( identifier, var type ) = Penumbra.CollectionManager.Individuals.ConvertSpecialIdentifier( identifier );

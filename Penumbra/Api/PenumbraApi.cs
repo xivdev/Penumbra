@@ -848,7 +848,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.InvalidArgument;
         }
 
-        var identifier = Penumbra.Actors.FromObject( Dalamud.Objects[ actorIndex ], false, false );
+        var identifier = Penumbra.Actors.FromObject( Dalamud.Objects[ actorIndex ], false, false, true );
         if( !identifier.IsValid )
         {
             return PenumbraApiEc.InvalidArgument;
@@ -1042,7 +1042,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         var ptr = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
-        return Penumbra.Actors.FromObject( ptr, out _, false, true );
+        return Penumbra.Actors.FromObject( ptr, out _, false, true, true );
     }
 
     // Resolve a path given by string for a specific collection.

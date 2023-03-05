@@ -297,7 +297,7 @@ public class CommandHandler : IDisposable
             {
                 if( ObjectReloader.GetName( split[ 2 ].ToLowerInvariant(), out var obj ) )
                 {
-                    identifier = _actors.FromObject( obj, false, true );
+                    identifier = _actors.FromObject( obj, false, true, true );
                     if( !identifier.IsValid )
                     {
                         Dalamud.Chat.Print( new SeStringBuilder().AddText( "The placeholder " ).AddGreen( split[ 2 ] )
