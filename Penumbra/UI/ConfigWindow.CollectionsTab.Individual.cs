@@ -278,7 +278,7 @@ public partial class ConfigWindow
 
             if( ImGuiUtil.DrawDisabledButton( "Assign Current Player", width, tt, result != IndividualCollections.AddResult.Valid ) )
             {
-                Penumbra.CollectionManager.Individuals.Add( new[] { player }, Penumbra.CollectionManager.Default );
+                Penumbra.CollectionManager.CreateIndividualCollection( player );
                 return true;
             }
 
@@ -287,19 +287,18 @@ public partial class ConfigWindow
 
         private static bool DrawNewTargetCollection( Vector2 width )
         {
-            var target = Dalamud.Targets.Target;
-            var player = Penumbra.Actors.FromObject( target, false, true, true );
-            var result = Penumbra.CollectionManager.Individuals.CanAdd( player );
+            var target = Penumbra.Actors.FromObject( Dalamud.Targets.Target, false, true, true );
+            var result = Penumbra.CollectionManager.Individuals.CanAdd( target );
             var tt = result switch
             {
-                IndividualCollections.AddResult.Valid      => $"Assign a collection to {player}.",
+                IndividualCollections.AddResult.Valid      => $"Assign a collection to {target}.",
                 IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
                 IndividualCollections.AddResult.Invalid    => "No valid character in target detected.",
                 _                                          => string.Empty,
             };
             if( ImGuiUtil.DrawDisabledButton( "Assign Current Target", width, tt, result != IndividualCollections.AddResult.Valid ) )
             {
-                Penumbra.CollectionManager.Individuals.Add( Penumbra.CollectionManager.Individuals.GetGroup( player ), Penumbra.CollectionManager.Default );
+                Penumbra.CollectionManager.CreateIndividualCollection( Penumbra.CollectionManager.Individuals.GetGroup( target ) );
                 return true;
             }
 
