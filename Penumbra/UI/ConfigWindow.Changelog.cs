@@ -36,8 +36,15 @@ public partial class ConfigWindow
         Add6_5_0( ret );
         Add6_5_2( ret );
         Add6_6_0( ret );
+        Add6_6_1( ret );
         return ret;
     }
+
+    private static void Add6_6_1( Changelog log )
+        => log.NextVersion( "Version 0.6.6.1" )
+           .RegisterEntry( "Added an option to make successful chat commands not print their success confirmations to chat."  )
+           .RegisterEntry( "Fixed an issue with migration of old mods not working anymore (fixes Material UI problems)."  )
+           .RegisterEntry( "Fixed some issues with using the Assign Current Player and Assign Current Target buttons." );
 
     private static void Add6_6_0( Changelog log )
         => log.NextVersion( "Version 0.6.6.0" )
