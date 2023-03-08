@@ -29,10 +29,12 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly EventProvider< string, bool > ModDirectoryChanged;
 
     // UI
-    internal readonly EventProvider< string >                             PreSettingsDraw;
-    internal readonly EventProvider< string >                             PostSettingsDraw;
-    internal readonly EventProvider< ChangedItemType, uint >              ChangedItemTooltip;
-    internal readonly EventProvider< MouseButton, ChangedItemType, uint > ChangedItemClick;
+    internal readonly EventProvider< string >                                PreSettingsDraw;
+    internal readonly EventProvider< string >                                PostSettingsDraw;
+    internal readonly EventProvider< ChangedItemType, uint >                 ChangedItemTooltip;
+    internal readonly EventProvider< MouseButton, ChangedItemType, uint >    ChangedItemClick;
+    internal readonly FuncProvider< TabType, string, string, PenumbraApiEc > OpenMainWindow;
+    internal readonly ActionProvider                                         CloseMainWindow;
 
     // Redrawing
     internal readonly ActionProvider< RedrawType >             RedrawAll;
@@ -131,6 +133,8 @@ public class PenumbraIpcProviders : IDisposable
         PostSettingsDraw   = Ipc.PostSettingsDraw.Provider( pi, a => Api.PostSettingsPanelDraw += a, a => Api.PostSettingsPanelDraw       -= a );
         ChangedItemTooltip = Ipc.ChangedItemTooltip.Provider( pi, () => Api.ChangedItemTooltip += OnTooltip, () => Api.ChangedItemTooltip -= OnTooltip );
         ChangedItemClick   = Ipc.ChangedItemClick.Provider( pi, () => Api.ChangedItemClicked   += OnClick, () => Api.ChangedItemClicked   -= OnClick );
+        OpenMainWindow     = Ipc.OpenMainWindow.Provider( pi, Api.OpenMainWindow );
+        CloseMainWindow    = Ipc.CloseMainWindow.Provider( pi, Api.CloseMainWindow );
 
         // Redrawing
         RedrawAll           = Ipc.RedrawAll.Provider( pi, Api.RedrawAll );
@@ -241,6 +245,8 @@ public class PenumbraIpcProviders : IDisposable
         PostSettingsDraw.Dispose();
         ChangedItemTooltip.Dispose();
         ChangedItemClick.Dispose();
+        OpenMainWindow.Dispose();
+        CloseMainWindow.Dispose();
 
         // Redrawing
         RedrawAll.Dispose();

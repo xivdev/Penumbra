@@ -9,6 +9,7 @@ using FFXIVClientStructs.STD;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.Interop.Loader;
 using Penumbra.String.Classes;
 
@@ -16,12 +17,13 @@ namespace Penumbra.UI;
 
 public partial class ConfigWindow
 {
-    private class ResourceTab
+    private class ResourceTab : ITab
     {
-        private readonly ConfigWindow _window;
+        public ReadOnlySpan<byte> Label
+            => "Resource Manager"u8;
 
-        public ResourceTab( ConfigWindow window )
-            => _window = window;
+        public bool IsVisible
+            => Penumbra.Config.DebugMode;
 
         private float  _hashColumnWidth;
         private float  _pathColumnWidth;
@@ -29,19 +31,8 @@ public partial class ConfigWindow
         private string _resourceManagerFilter = string.Empty;
 
         // Draw a tab to iterate over the main resource maps and see what resources are currently loaded.
-        public void Draw()
+        public void DrawContent()
         {
-            if( !Penumbra.Config.DebugMode )
-            {
-                return;
-            }
-
-            using var tab = ImRaii.TabItem( "Resource Manager" );
-            if( !tab )
-            {
-                return;
-            }
-
             // Filter for resources containing the input string.
             ImGui.SetNextItemWidth( -1 );
             ImGui.InputTextWithHint( "##resourceFilter", "Filter...", ref _resourceManagerFilter, Utf8GamePath.MaxGamePathLength );

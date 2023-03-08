@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Widgets;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.Loader;
@@ -24,12 +25,18 @@ namespace Penumbra.UI;
 
 public partial class ConfigWindow
 {
-    private class DebugTab
+    private class DebugTab : ITab
     {
         private readonly ConfigWindow _window;
 
         public DebugTab( ConfigWindow window )
             => _window = window;
+
+        public ReadOnlySpan<byte> Label
+            => "Debug"u8;
+
+        public bool IsVisible
+            => Penumbra.Config.DebugMode;
 
 #if DEBUG
         private const string DebugVersionString = "(Debug)";
@@ -37,19 +44,8 @@ public partial class ConfigWindow
         private const string DebugVersionString = "(Release)";
 #endif
 
-        public void Draw()
+        public void DrawContent()
         {
-            if( !Penumbra.Config.DebugMode )
-            {
-                return;
-            }
-
-            using var tab = TabItem( "Debug" );
-            if( !tab )
-            {
-                return;
-            }
-
             using var child = Child( "##DebugTab", -Vector2.One );
             if( !child )
             {

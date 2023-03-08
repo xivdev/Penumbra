@@ -312,6 +312,9 @@ public class IpcTester : IDisposable
         private bool           _subscribedToClick   = false;
         private string         _lastClicked         = string.Empty;
         private string         _lastHovered         = string.Empty;
+        private TabType        _selectTab           = TabType.None;
+        private string         _modName             = string.Empty;
+        private PenumbraApiEc  _ec                  = PenumbraApiEc.Success;
 
         public Ui( DalamudPluginInterface pi )
         {
@@ -330,6 +333,21 @@ public class IpcTester : IDisposable
                 return;
             }
 
+            using( var combo = ImRaii.Combo( "Tab to Open at", _selectTab.ToString() ) )
+            {
+                if( combo )
+                {
+                    foreach( var val in Enum.GetValues< TabType >() )
+                    {
+                        if( ImGui.Selectable( val.ToString(), _selectTab == val ) )
+                        {
+                            _selectTab = val;
+                        }
+                    }
+                }
+            }
+
+            ImGui.InputTextWithHint( "##openMod", "Mod to Open at...", ref _modName, 256 );
             using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
             if( !table )
             {
@@ -370,6 +388,20 @@ public class IpcTester : IDisposable
 
             ImGui.SameLine();
             ImGui.TextUnformatted( _lastClicked );
+            DrawIntro( Ipc.OpenMainWindow.Label, "Open Mod Window" );
+            if( ImGui.Button( "Open##window" ) )
+            {
+                _ec = Ipc.OpenMainWindow.Subscriber( _pi ).Invoke( _selectTab, _modName, _modName );
+            }
+
+            ImGui.SameLine();
+            ImGui.TextUnformatted( _ec.ToString() );
+
+            DrawIntro( Ipc.CloseMainWindow.Label, "Close Mod Window" );
+            if( ImGui.Button( "Close##window" ) )
+            {
+                Ipc.CloseMainWindow.Subscriber( _pi ).Invoke();
+            }
         }
 
         private void UpdateLastDrawnMod( string name )

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -6,6 +7,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -15,17 +17,13 @@ namespace Penumbra.UI;
 
 public partial class ConfigWindow
 {
-    private class EffectiveTab
+    private class EffectiveTab : ITab
     {
-        // Draw the effective tab if ShowAdvanced is on.
-        public void Draw()
-        {
-            using var tab = ImRaii.TabItem( "Effective Changes" );
-            if( !tab )
-            {
-                return;
-            }
+        public ReadOnlySpan<byte> Label
+            => "Effective Changes"u8;
 
+        public void DrawContent()
+        {
             SetupEffectiveSizes();
             DrawFilters();
             using var child = ImRaii.Child( "##EffectiveChangesTab", -Vector2.One, false );

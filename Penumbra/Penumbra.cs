@@ -70,23 +70,23 @@ public class Penumbra : IDalamudPlugin
 
     public static PerformanceTracker< PerformanceType > Performance { get; private set; } = null!;
 
-    public static StartTimeTracker< StartTimeType > StartTimer = new();
+    public static readonly StartTimeTracker< StartTimeType > StartTimer = new();
 
     public static readonly List< Exception > ImcExceptions = new();
 
-    public readonly  ResourceLogger       ResourceLogger;
-    public readonly  PathResolver         PathResolver;
-    public readonly  ObjectReloader       ObjectReloader;
-    public readonly  ModFileSystem        ModFileSystem;
-    public readonly  PenumbraApi          Api;
-    public readonly  HttpApi              HttpApi;
-    public readonly  PenumbraIpcProviders IpcProviders;
-    private readonly ConfigWindow         _configWindow;
-    private readonly LaunchButton         _launchButton;
-    private readonly WindowSystem         _windowSystem;
-    private readonly Changelog            _changelog;
-    private readonly CommandHandler       _commandHandler;
-    private readonly ResourceWatcher      _resourceWatcher;
+    public readonly   ResourceLogger       ResourceLogger;
+    public readonly   PathResolver         PathResolver;
+    public readonly   ObjectReloader       ObjectReloader;
+    public readonly   ModFileSystem        ModFileSystem;
+    public readonly   PenumbraApi          Api;
+    public readonly   HttpApi              HttpApi;
+    public readonly   PenumbraIpcProviders IpcProviders;
+    internal readonly ConfigWindow         ConfigWindow;
+    private readonly  LaunchButton         _launchButton;
+    private readonly  WindowSystem         _windowSystem;
+    private readonly  Changelog            _changelog;
+    private readonly  CommandHandler       _commandHandler;
+    private readonly  ResourceWatcher      _resourceWatcher;
 
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
@@ -140,8 +140,8 @@ public class Penumbra : IDalamudPlugin
             ObjectReloader = new ObjectReloader();
             PathResolver   = new PathResolver( ResourceLoader );
 
-            SetupInterface( out _configWindow, out _launchButton, out _windowSystem, out _changelog );
-            _commandHandler = new CommandHandler( Dalamud.Commands, ObjectReloader, Config, this, _configWindow, ModManager, CollectionManager, Actors );
+            SetupInterface( out ConfigWindow, out _launchButton, out _windowSystem, out _changelog );
+            _commandHandler = new CommandHandler( Dalamud.Commands, ObjectReloader, Config, this, ConfigWindow, ModManager, CollectionManager, Actors );
 
             if( Config.EnableMods )
             {
@@ -152,7 +152,7 @@ public class Penumbra : IDalamudPlugin
             if( Config.DebugMode )
             {
                 ResourceLoader.EnableDebug();
-                _configWindow.IsOpen = true;
+                ConfigWindow.IsOpen = true;
             }
 
             using( var tApi = StartTimer.Measure( StartTimeType.Api ) )
@@ -198,10 +198,10 @@ public class Penumbra : IDalamudPlugin
     {
         using var tInterface = StartTimer.Measure( StartTimeType.Interface );
         cfg       = new ConfigWindow( this, _resourceWatcher );
-        btn       = new LaunchButton( _configWindow );
+        btn       = new LaunchButton( ConfigWindow );
         system    = new WindowSystem( Name );
         changelog = ConfigWindow.CreateChangelog();
-        system.AddWindow( _configWindow );
+        system.AddWindow( ConfigWindow );
         system.AddWindow( cfg.ModEditPopup );
         system.AddWindow( changelog );
         Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
@@ -215,10 +215,10 @@ public class Penumbra : IDalamudPlugin
         }
 
         _launchButton?.Dispose();
-        if( _configWindow != null )
+        if( ConfigWindow != null )
         {
-            Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= _configWindow.Toggle;
-            _configWindow.Dispose();
+            Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= ConfigWindow.Toggle;
+            ConfigWindow.Dispose();
         }
     }
 

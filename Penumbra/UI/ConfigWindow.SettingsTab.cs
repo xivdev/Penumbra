@@ -17,26 +17,26 @@ namespace Penumbra.UI;
 
 public partial class ConfigWindow
 {
-    private partial class SettingsTab
+    private partial class SettingsTab : ITab
     {
         public const     int          RootDirectoryMaxLength = 64;
         private readonly ConfigWindow _window;
 
+        public ReadOnlySpan<byte> Label
+            => "Settings"u8;
         public SettingsTab( ConfigWindow window )
             => _window = window;
 
-        public void Draw()
+        public void DrawHeader()
         {
-            using var tab = ImRaii.TabItem( "Settings" );
             OpenTutorial( BasicTutorialSteps.Fin );
             OpenTutorial( BasicTutorialSteps.Faq1 );
             OpenTutorial( BasicTutorialSteps.Faq2 );
             OpenTutorial( BasicTutorialSteps.Faq3 );
-            if( !tab )
-            {
-                return;
-            }
+        }
 
+        public void DrawContent()
+        {
             using var child = ImRaii.Child( "##SettingsTab", -Vector2.One, false );
             if( !child )
             {

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Structs;
@@ -14,9 +15,9 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
-public partial class ResourceWatcher : IDisposable
+public partial class ResourceWatcher : IDisposable, ITab
 {
-    public const int DefaultMaxEntries = 1024 * 1024;
+    public const int DefaultMaxEntries = 1024;
 
     private readonly ResourceLoader            _loader;
     private readonly List< Record >            _records    = new();
@@ -59,7 +60,10 @@ public partial class ResourceWatcher : IDisposable
         _table.Reset();
     }
 
-    public void Draw()
+    public ReadOnlySpan<byte> Label
+        => "Resource Logger"u8;
+
+    public void DrawContent()
     {
         UpdateRecords();
 

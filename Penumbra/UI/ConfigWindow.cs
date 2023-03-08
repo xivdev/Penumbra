@@ -5,6 +5,9 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Widgets;
+using Penumbra.Api.Enums;
+using Penumbra.Mods;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
 
@@ -13,15 +16,22 @@ namespace Penumbra.UI;
 public sealed partial class ConfigWindow : Window, IDisposable
 {
     private readonly Penumbra              _penumbra;
-    private readonly SettingsTab           _settingsTab;
     private readonly ModFileSystemSelector _selector;
     private readonly ModPanel              _modPanel;
-    private readonly CollectionsTab        _collectionsTab;
-    private readonly EffectiveTab          _effectiveTab;
-    private readonly DebugTab              _debugTab;
-    private readonly ResourceTab           _resourceTab;
-    private readonly ResourceWatcher       _resourceWatcher;
     public readonly  ModEditWindow         ModEditPopup = new();
+
+    private readonly SettingsTab     _settingsTab;
+    private readonly CollectionsTab  _collectionsTab;
+    private readonly ModsTab         _modsTab;
+    private readonly ChangedItemsTab _changedItemsTab;
+    private readonly EffectiveTab    _effectiveTab;
+    private readonly DebugTab        _debugTab;
+    private readonly ResourceTab     _resourceTab;
+    private readonly ResourceWatcher _resourceWatcher;
+
+    public TabType SelectTab = TabType.None;
+    public void SelectMod( Mod mod )
+        => _selector.SelectByValue( mod );
 
     public ConfigWindow( Penumbra penumbra, ResourceWatcher watcher )
         : base( GetLabel() )
@@ -32,11 +42,13 @@ public sealed partial class ConfigWindow : Window, IDisposable
         _settingsTab               =  new SettingsTab( this );
         _selector                  =  new ModFileSystemSelector( _penumbra.ModFileSystem );
         _modPanel                  =  new ModPanel( this );
+        _modsTab                   =  new ModsTab( _selector, _modPanel, _penumbra );
         _selector.SelectionChanged += _modPanel.OnSelectionChange;
         _collectionsTab            =  new CollectionsTab( this );
+        _changedItemsTab           =  new ChangedItemsTab( this );
         _effectiveTab              =  new EffectiveTab();
         _debugTab                  =  new DebugTab( this );
-        _resourceTab               =  new ResourceTab( this );
+        _resourceTab               =  new ResourceTab();
         if( Penumbra.Config.FixMainWindow )
         {
             Flags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
@@ -53,6 +65,20 @@ public sealed partial class ConfigWindow : Window, IDisposable
         };
         UpdateTutorialStep();
     }
+
+    private ReadOnlySpan< byte > ToLabel( TabType type )
+        => type switch
+        {
+            TabType.Settings         => _settingsTab.Label,
+            TabType.Mods             => _modsTab.Label,
+            TabType.Collections      => _collectionsTab.Label,
+            TabType.ChangedItems     => _changedItemsTab.Label,
+            TabType.EffectiveChanges => _effectiveTab.Label,
+            TabType.ResourceWatcher  => _resourceWatcher.Label,
+            TabType.Debug            => _debugTab.Label,
+            TabType.ResourceManager  => _resourceTab.Label,
+            _                        => ReadOnlySpan< byte >.Empty,
+        };
 
     public override void Draw()
     {
@@ -92,16 +118,12 @@ public sealed partial class ConfigWindow : Window, IDisposable
             }
             else
             {
-                using var bar = ImRaii.TabBar( string.Empty, ImGuiTabBarFlags.NoTooltip );
                 SetupSizes();
-                _settingsTab.Draw();
-                DrawModsTab();
-                _collectionsTab.Draw();
-                DrawChangedItemTab();
-                _effectiveTab.Draw();
-                _debugTab.Draw();
-                _resourceTab.Draw();
-                DrawResourceWatcher();
+                if( TabBar.Draw( string.Empty, ImGuiTabBarFlags.NoTooltip, ToLabel( SelectTab ), _settingsTab, _modsTab, _collectionsTab,
+                       _changedItemsTab, _effectiveTab, _resourceWatcher, _debugTab, _resourceTab ) )
+                {
+                    SelectTab = TabType.None;
+                }
             }
         }
         catch( Exception e )
@@ -162,14 +184,5 @@ public sealed partial class ConfigWindow : Window, IDisposable
         _defaultSpace   = new Vector2( 0, 10 * ImGuiHelpers.GlobalScale );
         _inputTextWidth = new Vector2( 350f  * ImGuiHelpers.GlobalScale, 0 );
         _iconButtonSize = new Vector2( ImGui.GetFrameHeight() );
-    }
-
-    private void DrawResourceWatcher()
-    {
-        using var tab = ImRaii.TabItem( "Resource Logger" );
-        if (tab)
-        {
-            _resourceWatcher.Draw();
-        }
     }
 }

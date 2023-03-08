@@ -171,6 +171,38 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public event ChangedItemHover? ChangedItemTooltip;
     public event GameObjectResourceResolvedDelegate? GameObjectResourceResolved;
 
+    public PenumbraApiEc OpenMainWindow( TabType tab, string modDirectory, string modName )
+    {
+        CheckInitialized();
+
+        _penumbra!.ConfigWindow.IsOpen = true;
+
+        if( !Enum.IsDefined( tab ) )
+            return PenumbraApiEc.InvalidArgument;
+
+        if( tab != TabType.None )
+            _penumbra!.ConfigWindow.SelectTab = tab;
+
+        if( tab == TabType.Mods && (modDirectory.Length > 0 || modName.Length > 0) )
+        {
+            if( Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
+            {
+                _penumbra!.ConfigWindow.SelectMod( mod );
+            }
+            else
+            {
+                return PenumbraApiEc.ModMissing;
+            }
+        }
+        return PenumbraApiEc.Success;
+    }
+
+    public void CloseMainWindow()
+    {
+        CheckInitialized();
+        _penumbra!.ConfigWindow.IsOpen = false;
+    }
+
     public void RedrawObject( int tableIndex, RedrawType setting )
     {
         CheckInitialized();

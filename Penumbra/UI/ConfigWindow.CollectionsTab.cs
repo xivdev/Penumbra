@@ -14,7 +14,7 @@ namespace Penumbra.UI;
 public partial class ConfigWindow
 {
     // Encapsulate for less pollution.
-    private partial class CollectionsTab : IDisposable
+    private partial class CollectionsTab : IDisposable, ITab
     {
         private readonly ConfigWindow _window;
 
@@ -25,18 +25,17 @@ public partial class ConfigWindow
             Penumbra.CollectionManager.CollectionChanged += UpdateIdentifiers;
         }
 
+        public ReadOnlySpan<byte> Label
+            => "Collections"u8;
+
         public void Dispose()
             => Penumbra.CollectionManager.CollectionChanged -= UpdateIdentifiers;
 
-        public void Draw()
-        {
-            using var tab = ImRaii.TabItem( "Collections" );
-            OpenTutorial( BasicTutorialSteps.Collections );
-            if( !tab )
-            {
-                return;
-            }
+        public void DrawHeader()
+            => OpenTutorial( BasicTutorialSteps.Collections );
 
+        public void DrawContent()
+        {
             using var child = ImRaii.Child( "##collections", -Vector2.One );
             if( child )
             {
