@@ -22,12 +22,6 @@ public unsafe class CreateFileWHook : IDisposable
     private const char Prefix     = ( char )( ( byte )'P' | ( ( '?' & 0x00FF ) << 8 ) );
     private const int  BufferSize = Utf8GamePath.MaxGamePathLength;
 
-    [DllImport( "kernel32.dll" )]
-    private static extern nint LoadLibrary( string dllName );
-
-    [DllImport( "kernel32.dll" )]
-    private static extern nint GetProcAddress( nint hModule, string procName );
-
     private delegate nint CreateFileWDelegate( char* fileName, uint access, uint shareMode, nint security, uint creation, uint flags, nint template );
 
     private readonly Hook< CreateFileWDelegate > _createFileWHook;
@@ -36,11 +30,7 @@ public unsafe class CreateFileWHook : IDisposable
     private readonly ThreadLocal< nint > _fileNameStorage = new(SetupStorage, true);
 
     public CreateFileWHook()
-    {
-        var userApi           = LoadLibrary( "kernel32.dll" );
-        var createFileAddress = GetProcAddress( userApi, "CreateFileW" );
-        _createFileWHook = Hook< CreateFileWDelegate >.FromAddress( createFileAddress, CreateFileWDetour );
-    }
+        => _createFileWHook = Hook< CreateFileWDelegate >.FromImport( null, "KERNEL32.dll", "CreateFileW", 0, CreateFileWDetour );
 
     /// <remarks> Long paths in windows need to start with "\\?\", so we keep this static in the pointers. </remarks>
     private static nint SetupStorage()
@@ -169,4 +159,19 @@ public unsafe class CreateFileWHook : IDisposable
         fileName = new ReadOnlySpan< byte >( ( void* )address, ( int )length );
         return true;
     }
+
+    // ***** Old method *****
+
+    //[DllImport( "kernel32.dll" )]
+    //private static extern nint LoadLibrary( string dllName );
+    //
+    //[DllImport( "kernel32.dll" )]
+    //private static extern nint GetProcAddress( nint hModule, string procName );
+    //
+    //public CreateFileWHookOld()
+    //{
+    //    var userApi           = LoadLibrary( "kernel32.dll" );
+    //    var createFileAddress = GetProcAddress( userApi, "CreateFileW" );
+    //    _createFileWHook = Hook<CreateFileWDelegate>.FromAddress( createFileAddress, CreateFileWDetour );
+    //}
 }
