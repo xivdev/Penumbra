@@ -1,6 +1,4 @@
-using Lumina.Excel.GeneratedSheets;
-using OtterGui.Classes;
-using Penumbra.GameData;
+using System;
 
 namespace Penumbra.Util;
 
@@ -15,8 +13,9 @@ public enum StartTimeType
     Backup,
     Mods,
     Collections,
-    Api,
+    PathResolver,
     Interface,
+    Api,
 }
 
 public enum PerformanceType
@@ -63,7 +62,8 @@ public static class TimingExtensions
             StartTimeType.Collections    => "Loading Collections",
             StartTimeType.Api            => "Setting Up API",
             StartTimeType.Interface      => "Setting Up Interface",
-            _                            => $"Unknown {( int )type}",
+            StartTimeType.PathResolver          => "Setting Up Path Resolver",
+            _                                   => $"Unknown {(int) type}",
         };
 
     public static string ToName( this PerformanceType type )

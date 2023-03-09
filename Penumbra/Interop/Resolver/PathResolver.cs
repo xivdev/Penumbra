@@ -38,6 +38,7 @@ public partial class PathResolver : IDisposable
 
     public unsafe PathResolver( ResourceLoader loader )
     {
+        using var tApi = Penumbra.StartTimer.Measure( StartTimeType.PathResolver );
         SignatureHelper.Initialise( this );
         _loader     = loader;
         _animations = new AnimationState( DrawObjects );
