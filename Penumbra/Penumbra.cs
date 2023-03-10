@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using ImGuiNET;
@@ -56,7 +57,6 @@ public class Penumbra : IDalamudPlugin
     public static IObjectIdentifier Identifier { get; private set; } = null!;
     public static IGamePathParser GamePathParser { get; private set; } = null!;
     public static StainManager StainManager { get; private set; } = null!;
-    public static ItemData ItemData { get; private set; } = null!;
 
     public static ValidityChecker ValidityChecker { get; private set; } = null!;
 
@@ -71,12 +71,15 @@ public class Penumbra : IDalamudPlugin
     public readonly PenumbraApi          Api;
     public readonly HttpApi              HttpApi;
     public readonly PenumbraIpcProviders IpcProviders;
-    internal readonly ConfigWindow         ConfigWindow;
-    private readonly  LaunchButton         _launchButton;
-    private readonly  WindowSystem         _windowSystem;
-    private readonly  Changelog            _changelog;
-    private readonly  CommandHandler       _commandHandler;
+    internal ConfigWindow? ConfigWindow { get; private set; }
+    private          LaunchButton?   _launchButton;
+    private          WindowSystem?   _windowSystem;
+    private          Changelog?      _changelog;
+    private          CommandHandler? _commandHandler;
     private readonly ResourceWatcher _resourceWatcher;
+    private          bool            _disposed;
+
+    public static ItemData ItemData { get; private set; } = null!;
 
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
@@ -94,7 +97,7 @@ public class Penumbra : IDalamudPlugin
             StartTimer.Measure( StartTimeType.Identifier, () => Identifier         = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData ) );
             StartTimer.Measure( StartTimeType.GamePathParser, () => GamePathParser = GameData.GameData.GetGamePathParser() );
             StartTimer.Measure( StartTimeType.Stains, () => StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData ) );
-            StartTimer.Measure( StartTimeType.Items, () => ItemData                = new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language ) );
+            ItemData = StartTimer.Measure( StartTimeType.Items, () => new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language ) );
             StartTimer.Measure( StartTimeType.Actors,
                 () => Actors = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.Framework, Dalamud.GameData, Dalamud.GameGui,
                     ResolveCutscene ) );
@@ -128,8 +131,7 @@ public class Penumbra : IDalamudPlugin
             ObjectReloader = new ObjectReloader();
             PathResolver   = new PathResolver( ResourceLoader );
 
-            SetupInterface( out ConfigWindow, out _launchButton, out _windowSystem, out _changelog );
-            _commandHandler = new CommandHandler( Dalamud.Commands, ObjectReloader, Config, this, ConfigWindow, ModManager, CollectionManager, Actors );
+            SetupInterface();
 
             if( Config.EnableMods )
             {
@@ -140,7 +142,6 @@ public class Penumbra : IDalamudPlugin
             if( Config.DebugMode )
             {
                 ResourceLoader.EnableDebug();
-                ConfigWindow.IsOpen = true;
             }
 
             using( var tApi = StartTimer.Measure( StartTimeType.Api ) )
@@ -155,8 +156,6 @@ public class Penumbra : IDalamudPlugin
 
                 SubscribeItemLinks();
             }
-
-            Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 
             ValidityChecker.LogExceptions();
             Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded from {pluginInterface.SourceRepository}." );
@@ -175,17 +174,40 @@ public class Penumbra : IDalamudPlugin
         }
     }
 
-    private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system, out Changelog changelog )
+    private void SetupInterface()
+    {
+        Task.Run( () =>
             {
                 using var tInterface = StartTimer.Measure( StartTimeType.Interface );
-        cfg       = new ConfigWindow( this, _resourceWatcher );
-        btn       = new LaunchButton( ConfigWindow );
-        system    = new WindowSystem( Name );
-        changelog = ConfigWindow.CreateChangelog();
-        system.AddWindow( ConfigWindow );
+                var       changelog  = ConfigWindow.CreateChangelog();
+                var cfg = new ConfigWindow( this, _resourceWatcher )
+                {
+                    IsOpen = Config.DebugMode,
+                };
+                var btn    = new LaunchButton( cfg );
+                var system = new WindowSystem( Name );
+                var cmd    = new CommandHandler( Dalamud.Commands, ObjectReloader, Config, this, cfg, ModManager, CollectionManager, Actors );
+                system.AddWindow( cfg );
                 system.AddWindow( cfg.ModEditPopup );
                 system.AddWindow( changelog );
+                if( !_disposed )
+                {
+                    _changelog                                     =  changelog;
+                    ConfigWindow                                   =  cfg;
+                    _windowSystem                                  =  system;
+                    _launchButton                                  =  btn;
+                    _commandHandler                                =  cmd;
                     Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
+                    Dalamud.PluginInterface.UiBuilder.Draw         += _windowSystem.Draw;
+                }
+                else
+                {
+                    cfg.Dispose();
+                    btn.Dispose();
+                    cmd.Dispose();
+                }
+            }
+        );
     }
 
     private void DisposeInterface()
@@ -243,7 +265,12 @@ public class Penumbra : IDalamudPlugin
     }
 
     public void ForceChangelogOpen()
-        => _changelog.ForceOpen = true;
+    {
+        if( _changelog != null )
+        {
+            _changelog.ForceOpen = true;
+        }
+    }
 
     private void SubscribeItemLinks()
     {
@@ -268,6 +295,12 @@ public class Penumbra : IDalamudPlugin
 
     public void Dispose()
     {
+        if( _disposed )
+        {
+            return;
+        }
+
+        _disposed = true;
         HttpApi?.Dispose();
         IpcProviders?.Dispose();
         Api?.Dispose();

@@ -174,16 +174,24 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc OpenMainWindow( TabType tab, string modDirectory, string modName )
     {
         CheckInitialized();
+        if( _penumbra!.ConfigWindow == null )
+        {
+            return PenumbraApiEc.SystemDisposed;
+        }
 
         _penumbra!.ConfigWindow.IsOpen = true;
 
         if( !Enum.IsDefined( tab ) )
+        {
             return PenumbraApiEc.InvalidArgument;
+        }
 
         if( tab != TabType.None )
+        {
             _penumbra!.ConfigWindow.SelectTab = tab;
+        }
 
-        if( tab == TabType.Mods && (modDirectory.Length > 0 || modName.Length > 0) )
+        if( tab == TabType.Mods && ( modDirectory.Length > 0 || modName.Length > 0 ) )
         {
             if( Penumbra.ModManager.TryGetMod( modDirectory, modName, out var mod ) )
             {
@@ -194,12 +202,18 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                 return PenumbraApiEc.ModMissing;
             }
         }
+
         return PenumbraApiEc.Success;
     }
 
     public void CloseMainWindow()
     {
         CheckInitialized();
+        if( _penumbra!.ConfigWindow == null )
+        {
+            return;
+        }
+
         _penumbra!.ConfigWindow.IsOpen = false;
     }
 
