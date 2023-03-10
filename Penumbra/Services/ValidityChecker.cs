@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin;
 using Penumbra.Util;
@@ -20,11 +21,18 @@ public class ValidityChecker
 
     public readonly List<Exception> ImcExceptions = new();
 
+    public readonly string Version;
+    public readonly string CommitHash;
+
     public ValidityChecker(DalamudPluginInterface pi)
     {
         DevPenumbraExists      = CheckDevPluginPenumbra(pi);
         IsNotInstalledPenumbra = CheckIsNotInstalled(pi);
         IsValidSourceRepo      = CheckSourceRepo(pi);
+		
+        var assembly = Assembly.GetExecutingAssembly();
+        Version = assembly.GetName().Version?.ToString() ?? string.Empty;
+        CommitHash = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
     }
 
     public void LogExceptions()

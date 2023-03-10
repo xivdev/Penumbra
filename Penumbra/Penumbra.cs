@@ -9,6 +9,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
+using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Log;
@@ -30,6 +31,42 @@ using DalamudUtil = Dalamud.Utility.Util;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
 
 namespace Penumbra;
+
+public class PenumbraNew
+{
+    public string Name
+        => "Penumbra";
+
+    public static readonly Logger                            Log        = new();
+    public readonly        StartTimeTracker< StartTimeType > StartTimer = new();
+
+    public readonly IServiceCollection Services = new ServiceCollection();
+
+
+    public PenumbraNew( DalamudPluginInterface pi )
+    {
+        using var time = StartTimer.Measure( StartTimeType.Total );
+
+        // Add meta services.
+        Services.AddSingleton( Log );
+        Services.AddSingleton( StartTimer );
+        Services.AddSingleton< ValidityChecker >();
+        Services.AddSingleton< PerformanceTracker< PerformanceType > >();
+
+        // Add Dalamud services
+        var dalamud = new DalamudServices( pi );
+        dalamud.AddServices( Services );
+
+        // Add Game Data
+
+
+        // Add Configuration
+        Services.AddSingleton< Configuration >();
+    }
+
+    public void Dispose()
+    { }
+}
 
 public class Penumbra : IDalamudPlugin
 {
@@ -87,22 +124,24 @@ public class Penumbra : IDalamudPlugin
 
         try
         {
-            Dalamud.Initialize( pluginInterface );
+            DalamudServices.Initialize( pluginInterface );
 
-            Performance     = new PerformanceTracker< PerformanceType >( Dalamud.Framework );
+            Performance     = new PerformanceTracker< PerformanceType >( DalamudServices.Framework );
             Log             = new Logger();
-            ValidityChecker = new ValidityChecker( Dalamud.PluginInterface );
+            ValidityChecker = new ValidityChecker( DalamudServices.PluginInterface );
 
             GameEvents = new GameEventManager();
-            StartTimer.Measure( StartTimeType.Identifier, () => Identifier         = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData ) );
+            StartTimer.Measure( StartTimeType.Identifier, () => Identifier         = GameData.GameData.GetIdentifier( DalamudServices.PluginInterface, DalamudServices.GameData ) );
             StartTimer.Measure( StartTimeType.GamePathParser, () => GamePathParser = GameData.GameData.GetGamePathParser() );
-            StartTimer.Measure( StartTimeType.Stains, () => StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData ) );
-            ItemData = StartTimer.Measure( StartTimeType.Items, () => new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language ) );
+            StartTimer.Measure( StartTimeType.Stains, () => StainManager           = new StainManager( DalamudServices.PluginInterface, DalamudServices.GameData ) );
+            ItemData = StartTimer.Measure( StartTimeType.Items,
+                () => new ItemData( DalamudServices.PluginInterface, DalamudServices.GameData, DalamudServices.GameData.Language ) );
             StartTimer.Measure( StartTimeType.Actors,
-                () => Actors = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.Framework, Dalamud.GameData, Dalamud.GameGui,
+                () => Actors = new ActorManager( DalamudServices.PluginInterface, DalamudServices.Objects, DalamudServices.ClientState, DalamudServices.Framework,
+                    DalamudServices.GameData, DalamudServices.GameGui,
                     ResolveCutscene ) );
 
-            Framework        = new FrameworkManager( Dalamud.Framework, Log );
+            Framework        = new FrameworkManager( DalamudServices.Framework, Log );
             CharacterUtility = new CharacterUtility();
 
             StartTimer.Measure( StartTimeType.Backup, () => Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() ) );
@@ -147,7 +186,7 @@ public class Penumbra : IDalamudPlugin
             using( var tApi = StartTimer.Measure( StartTimeType.Api ) )
             {
                 Api          = new PenumbraApi( this );
-                IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
+                IpcProviders = new PenumbraIpcProviders( DalamudServices.PluginInterface, Api );
                 HttpApi      = new HttpApi( Api );
                 if( Config.EnableHttpApi )
                 {
@@ -159,7 +198,7 @@ public class Penumbra : IDalamudPlugin
 
             ValidityChecker.LogExceptions();
             Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded from {pluginInterface.SourceRepository}." );
-            OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
+            OtterTex.NativeDll.Initialize( DalamudServices.PluginInterface.AssemblyLocation.DirectoryName );
             Log.Information( $"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}." );
 
             if( CharacterUtility.Ready )
@@ -186,19 +225,19 @@ public class Penumbra : IDalamudPlugin
                 };
                 var btn    = new LaunchButton( cfg );
                 var system = new WindowSystem( Name );
-                var cmd    = new CommandHandler( Dalamud.Commands, ObjectReloader, Config, this, cfg, ModManager, CollectionManager, Actors );
+                var cmd    = new CommandHandler( DalamudServices.Commands, ObjectReloader, Config, this, cfg, ModManager, CollectionManager, Actors );
                 system.AddWindow( cfg );
                 system.AddWindow( cfg.ModEditPopup );
                 system.AddWindow( changelog );
                 if( !_disposed )
                 {
-                    _changelog                                     =  changelog;
-                    ConfigWindow                                   =  cfg;
-                    _windowSystem                                  =  system;
-                    _launchButton                                  =  btn;
-                    _commandHandler                                =  cmd;
-                    Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
-                    Dalamud.PluginInterface.UiBuilder.Draw         += _windowSystem.Draw;
+                    _changelog                                             =  changelog;
+                    ConfigWindow                                           =  cfg;
+                    _windowSystem                                          =  system;
+                    _launchButton                                          =  btn;
+                    _commandHandler                                        =  cmd;
+                    DalamudServices.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
+                    DalamudServices.PluginInterface.UiBuilder.Draw         += _windowSystem.Draw;
                 }
                 else
                 {
@@ -214,13 +253,13 @@ public class Penumbra : IDalamudPlugin
     {
         if( _windowSystem != null )
         {
-            Dalamud.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
+            DalamudServices.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
         }
 
         _launchButton?.Dispose();
         if( ConfigWindow != null )
         {
-            Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= ConfigWindow.Toggle;
+            DalamudServices.PluginInterface.UiBuilder.OpenConfigUi -= ConfigWindow.Toggle;
             ConfigWindow.Dispose();
         }
     }
@@ -331,7 +370,7 @@ public class Penumbra : IDalamudPlugin
             ? new DirectoryInfo( collectionDir ).EnumerateFiles( "*.json" ).ToList()
             : new List< FileInfo >();
         list.AddRange( Mod.LocalDataDirectory.Exists ? Mod.LocalDataDirectory.EnumerateFiles( "*.json" ) : Enumerable.Empty< FileInfo >() );
-        list.Add( Dalamud.PluginInterface.ConfigFile );
+        list.Add( DalamudServices.PluginInterface.ConfigFile );
         list.Add( new FileInfo( ModFileSystem.ModFileSystemFile ) );
         list.Add( new FileInfo( ModCollection.Manager.ActiveCollectionFile ) );
         return list;
@@ -352,7 +391,8 @@ public class Penumbra : IDalamudPlugin
         sb.Append( $"> **`Free Drive Space:            `** {( drive != null ? Functions.HumanReadableSize( drive.AvailableFreeSpace ) : "Unknown" )}\n" );
         sb.Append( $"> **`Auto-Deduplication:          `** {Config.AutoDeduplicateOnImport}\n" );
         sb.Append( $"> **`Debug Mode:                  `** {Config.DebugMode}\n" );
-        sb.Append( $"> **`Synchronous Load (Dalamud):  `** {( Dalamud.GetDalamudConfig( Dalamud.WaitingForPluginsOption, out bool v ) ? v.ToString() : "Unknown" )}\n" );
+        sb.Append(
+            $"> **`Synchronous Load (Dalamud):  `** {( DalamudServices.GetDalamudConfig( DalamudServices.WaitingForPluginsOption, out bool v ) ? v.ToString() : "Unknown" )}\n" );
         sb.Append( $"> **`Logging:                     `** Log: {Config.EnableResourceLogging}, Watcher: {Config.EnableResourceWatcher} ({Config.MaxResourceWatcherRecords})\n" );
         sb.Append( $"> **`Use Ownership:               `** {Config.UseOwnerNameForCharacterCollection}\n" );
         sb.AppendLine( "**Mods**" );

@@ -11,6 +11,7 @@ using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface.Components;
 using OtterGui.Widgets;
 using Penumbra.GameData.Actors;
+using Penumbra.Services;
 
 namespace Penumbra.UI;
 
@@ -287,7 +288,7 @@ public partial class ConfigWindow
 
         private static bool DrawNewTargetCollection( Vector2 width )
         {
-            var target = Penumbra.Actors.FromObject( Dalamud.Targets.Target, false, true, true );
+            var target = Penumbra.Actors.FromObject( DalamudServices.Targets.Target, false, true, true );
             var result = Penumbra.CollectionManager.Individuals.CanAdd( target );
             var tt = result switch
             {

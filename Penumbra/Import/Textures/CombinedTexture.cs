@@ -3,6 +3,7 @@ using System.IO;
 using System.Numerics;
 using Lumina.Data.Files;
 using OtterTex;
+using Penumbra.Services;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
@@ -48,7 +49,7 @@ public partial class CombinedTexture : IDisposable
         {
             var (width, height) = CombineImage();
             _centerStorage.TextureWrap =
-                Dalamud.PluginInterface.UiBuilder.LoadImageRaw( _centerStorage.RGBAPixels, width, height, 4 );
+                DalamudServices.PluginInterface.UiBuilder.LoadImageRaw( _centerStorage.RGBAPixels, width, height, 4 );
         }
 
         _current?.Draw( size );

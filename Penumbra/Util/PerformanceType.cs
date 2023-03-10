@@ -6,7 +6,6 @@ public enum StartTimeType
 {
     Total,
     Identifier,
-    GamePathParser,
     Stains,
     Items,
     Actors,
@@ -53,7 +52,6 @@ public static class TimingExtensions
         {
             StartTimeType.Total          => "Total Construction",
             StartTimeType.Identifier     => "Identification Data",
-            StartTimeType.GamePathParser => "Game Path Data",
             StartTimeType.Stains         => "Stain Data",
             StartTimeType.Items          => "Item Data",
             StartTimeType.Actors         => "Actor Data",

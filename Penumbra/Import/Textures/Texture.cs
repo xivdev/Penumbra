@@ -10,6 +10,7 @@ using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
 using OtterTex;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 using SixLabors.ImageSharp.PixelFormats;
@@ -195,12 +196,12 @@ public sealed class Texture : IDisposable
             return File.OpenRead( Path );
         }
 
-        var file = Dalamud.GameData.GetFile( Path );
+        var file = DalamudServices.GameData.GetFile( Path );
         return file != null ? new MemoryStream( file.Data ) : throw new Exception( $"Unable to obtain \"{Path}\" from game files." );
     }
 
     private void CreateTextureWrap( int width, int height )
-        => TextureWrap = Dalamud.PluginInterface.UiBuilder.LoadImageRaw( RGBAPixels, width, height, 4 );
+        => TextureWrap = DalamudServices.PluginInterface.UiBuilder.LoadImageRaw( RGBAPixels, width, height, 4 );
 
     private string? _tmpPath;
 
@@ -215,7 +216,7 @@ public sealed class Texture : IDisposable
             {
                 if( game )
                 {
-                    if( !Dalamud.GameData.FileExists( path ) )
+                    if( !DalamudServices.GameData.FileExists( path ) )
                     {
                         continue;
                     }

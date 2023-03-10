@@ -14,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using Penumbra.Api.Enums;
+using Penumbra.Services;
 
 namespace Penumbra.UI.Classes;
 
@@ -25,7 +26,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector< Mod, Mod
     public ModCollection SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
     public ModFileSystemSelector( ModFileSystem fileSystem )
-        : base( fileSystem, Dalamud.KeyState )
+        : base( fileSystem, DalamudServices.KeyState )
     {
         SubscribeRightClickFolder( EnableDescendants, 10 );
         SubscribeRightClickFolder( DisableDescendants, 10 );

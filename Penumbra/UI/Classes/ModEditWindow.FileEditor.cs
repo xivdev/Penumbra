@@ -10,6 +10,7 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.Files;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.Classes;
@@ -82,7 +83,7 @@ public partial class ModEditWindow
                 _fileDialog.Reset();
                 try
                 {
-                    var file = Dalamud.GameData.GetFile( _defaultPath );
+                    var file = DalamudServices.GameData.GetFile( _defaultPath );
                     if( file != null )
                     {
                         _defaultException = null;

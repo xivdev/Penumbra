@@ -6,6 +6,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.Services;
 
 namespace Penumbra.UI;
 
@@ -76,21 +77,21 @@ public partial class ConfigWindow
                 v =>
                 {
                     Penumbra.Config.HideUiWhenUiHidden                  = v;
-                    Dalamud.PluginInterface.UiBuilder.DisableUserUiHide = !v;
+                    DalamudServices.PluginInterface.UiBuilder.DisableUserUiHide = !v;
                 } );
             Checkbox( "Hide Config Window when in Cutscenes",
                 "Hide the penumbra main window when you are currently watching a cutscene.", Penumbra.Config.HideUiInCutscenes,
                 v =>
                 {
                     Penumbra.Config.HideUiInCutscenes                       = v;
-                    Dalamud.PluginInterface.UiBuilder.DisableCutsceneUiHide = !v;
+                    DalamudServices.PluginInterface.UiBuilder.DisableCutsceneUiHide = !v;
                 } );
             Checkbox( "Hide Config Window when in GPose",
                 "Hide the penumbra main window when you are currently in GPose mode.", Penumbra.Config.HideUiInGPose,
                 v =>
                 {
                     Penumbra.Config.HideUiInGPose                        = v;
-                    Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide = !v;
+                    DalamudServices.PluginInterface.UiBuilder.DisableGposeUiHide = !v;
                 } );
             ImGui.Dummy( _window._defaultSpace );
 

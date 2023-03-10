@@ -9,6 +9,7 @@ using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.UI;
 
 namespace Penumbra;
@@ -120,27 +121,27 @@ public class CommandHandler : IDisposable
     {
         if( !string.Equals( arguments, "help", StringComparison.OrdinalIgnoreCase ) && arguments == "?" )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "The given argument " ).AddRed( arguments, true ).AddText( " is not valid. Valid arguments are:" ).BuiltString );
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "The given argument " ).AddRed( arguments, true ).AddText( " is not valid. Valid arguments are:" ).BuiltString );
         }
         else
         {
-            Dalamud.Chat.Print( "Valid arguments for /penumbra are:" );
+            DalamudServices.Chat.Print( "Valid arguments for /penumbra are:" );
         }
 
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "window",
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "window",
             "Toggle the Penumbra main config window. Can be used with [on|off] to force specific state. Also used when no argument is provided." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "enable", "Enable modding and force a redraw of all game objects if it was previously disabled." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "disable", "Disable modding and force a redraw of all game objects if it was previously enabled." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "toggle", "Toggle modding and force a redraw of all game objects." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "reload", "Rediscover the mod directory and reload all mods." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "redraw", "Redraw all game objects. Specify a placeholder or a name to redraw specific objects." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "lockui", "Toggle the locked state of the main Penumbra window. Can be used with [on|off] to force specific state." )
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "enable", "Enable modding and force a redraw of all game objects if it was previously disabled." ).BuiltString );
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "disable", "Disable modding and force a redraw of all game objects if it was previously enabled." ).BuiltString );
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "toggle", "Toggle modding and force a redraw of all game objects." ).BuiltString );
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "reload", "Rediscover the mod directory and reload all mods." ).BuiltString );
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "redraw", "Redraw all game objects. Specify a placeholder or a name to redraw specific objects." ).BuiltString );
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "lockui", "Toggle the locked state of the main Penumbra window. Can be used with [on|off] to force specific state." )
            .BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "debug", "Toggle debug mode for Penumbra. Can be used with [on|off] to force specific state." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "collection", "Change your active collection setup. Use without further parameters for more detailed help." )
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "debug", "Toggle debug mode for Penumbra. Can be used with [on|off] to force specific state." ).BuiltString );
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "collection", "Change your active collection setup. Use without further parameters for more detailed help." )
            .BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder().AddCommand( "mod", "Change a specific mods settings. Use without further parameters for more detailed help." ).BuiltString );
-        Dalamud.Chat.Print( new SeStringBuilder()
+        DalamudServices.Chat.Print( new SeStringBuilder().AddCommand( "mod", "Change a specific mods settings. Use without further parameters for more detailed help." ).BuiltString );
+        DalamudServices.Chat.Print( new SeStringBuilder()
            .AddCommand( "bulktag", "Change multiple mods settings based on their tags. Use without further parameters for more detailed help." )
            .BuiltString );
         return true;
@@ -240,26 +241,26 @@ public class CommandHandler : IDisposable
     {
         if( arguments.Length == 0 )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "Use with /penumbra collection " ).AddBlue( "[Collection Type]" ).AddText( " | " ).AddYellow( "[Collection Name]" )
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "Use with /penumbra collection " ).AddBlue( "[Collection Type]" ).AddText( " | " ).AddYellow( "[Collection Name]" )
                .AddText( " | " ).AddGreen( "<Identifier>" ).BuiltString );
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》 Valid Collection Types are " ).AddBlue( "Base" ).AddText( ", " ).AddBlue( "Ui" ).AddText( ", " )
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "    》 Valid Collection Types are " ).AddBlue( "Base" ).AddText( ", " ).AddBlue( "Ui" ).AddText( ", " )
                .AddBlue( "Selected" ).AddText( ", " )
                .AddBlue( "Individual" ).AddText( ", and all those selectable in Character Groups." ).BuiltString );
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》 Valid Collection Names are " ).AddYellow( "None" )
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "    》 Valid Collection Names are " ).AddYellow( "None" )
                .AddText( ", all collections you have created by their full names, and " ).AddYellow( "Delete" ).AddText( " to remove assignments (not valid for all types)." )
                .BuiltString );
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》 If the type is " ).AddBlue( "Individual" )
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "    》 If the type is " ).AddBlue( "Individual" )
                .AddText( " you need to specify an individual with an identifier of the form:" ).BuiltString );
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "<me>" ).AddText( " or " ).AddGreen( "<t>" ).AddText( " or " ).AddGreen( "<mo>" )
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "<me>" ).AddText( " or " ).AddGreen( "<t>" ).AddText( " or " ).AddGreen( "<mo>" )
                .AddText( " or " ).AddGreen( "<f>" ).AddText( " as placeholders for your character, your target, your mouseover or your focus, if they exist." ).BuiltString );
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "p" ).AddText( " | " ).AddWhite( "[Player Name]@<World Name>" )
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "p" ).AddText( " | " ).AddWhite( "[Player Name]@<World Name>" )
                .AddText( ", if no @ is provided, Any World is used." ).BuiltString );
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "r" ).AddText( " | " ).AddWhite( "[Retainer Name]" ).BuiltString );
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "n" ).AddText( " | " ).AddPurple( "[NPC Type]" ).AddText( " : " )
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "r" ).AddText( " | " ).AddWhite( "[Retainer Name]" ).BuiltString );
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "n" ).AddText( " | " ).AddPurple( "[NPC Type]" ).AddText( " : " )
                .AddRed( "[NPC Name]" ).AddText( ", where NPC Type can be " ).AddInitialPurple( "Mount" ).AddInitialPurple( "Companion" ).AddInitialPurple( "Accessory" )
                .AddInitialPurple( "Event NPC" ).AddText( "or " )
                .AddInitialPurple( "Battle NPC", false ).AddText( "." ).BuiltString );
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "o" ).AddText( " | " ).AddPurple( "[NPC Type]" ).AddText( " : " )
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "    》》》 " ).AddGreen( "o" ).AddText( " | " ).AddPurple( "[NPC Type]" ).AddText( " : " )
                .AddRed( "[NPC Name]" ).AddText( " | " ).AddWhite( "[Player Name]@<World Name>" ).AddText( "." ).BuiltString );
             return true;
         }
@@ -269,13 +270,13 @@ public class CommandHandler : IDisposable
 
         if( !CollectionTypeExtensions.TryParse( typeName, out var type ) )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "The argument " ).AddRed( typeName, true ).AddText( " is not a valid collection type." ).BuiltString );
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "The argument " ).AddRed( typeName, true ).AddText( " is not a valid collection type." ).BuiltString );
             return false;
         }
 
         if( split.Length == 1 )
         {
-            Dalamud.Chat.Print( "There was no collection name provided." );
+            DalamudServices.Chat.Print( "There was no collection name provided." );
             return false;
         }
 
@@ -289,7 +290,7 @@ public class CommandHandler : IDisposable
         {
             if( split.Length == 2 )
             {
-                Dalamud.Chat.Print( "Setting an individual collection requires a collection name and an identifier, but no identifier was provided." );
+                DalamudServices.Chat.Print( "Setting an individual collection requires a collection name and an identifier, but no identifier was provided." );
                 return false;
             }
 
@@ -300,7 +301,7 @@ public class CommandHandler : IDisposable
                     identifier = _actors.FromObject( obj, false, true, true );
                     if( !identifier.IsValid )
                     {
-                        Dalamud.Chat.Print( new SeStringBuilder().AddText( "The placeholder " ).AddGreen( split[ 2 ] )
+                        DalamudServices.Chat.Print( new SeStringBuilder().AddText( "The placeholder " ).AddGreen( split[ 2 ] )
                            .AddText( " did not resolve to a game object with a valid identifier." ).BuiltString );
                         return false;
                     }
@@ -312,7 +313,7 @@ public class CommandHandler : IDisposable
             }
             catch( ActorManager.IdentifierParseError e )
             {
-                Dalamud.Chat.Print( new SeStringBuilder().AddText( "The argument " ).AddRed( split[ 2 ], true ).AddText( $" could not be converted to an identifier. {e.Message}" )
+                DalamudServices.Chat.Print( new SeStringBuilder().AddText( "The argument " ).AddRed( split[ 2 ], true ).AddText( $" could not be converted to an identifier. {e.Message}" )
                    .BuiltString );
                 return false;
             }
@@ -321,7 +322,7 @@ public class CommandHandler : IDisposable
         var oldCollection = _collectionManager.ByType( type, identifier );
         if( collection == oldCollection )
         {
-            Dalamud.Chat.Print( collection == null
+            DalamudServices.Chat.Print( collection == null
                 ? $"The {type.ToName()} Collection{( identifier.IsValid ? $" for {identifier}" : string.Empty )} is already unassigned"
                 : $"{collection.Name} already is the {type.ToName()} Collection{( identifier.IsValid ? $" for {identifier}." : "." )}" );
             return false;
@@ -354,7 +355,7 @@ public class CommandHandler : IDisposable
             }
             else
             {
-                Dalamud.Chat.Print( $"Can not remove the {type.ToName()} Collection assignment {( identifier.IsValid ? $" for {identifier}." : "." )}" );
+                DalamudServices.Chat.Print( $"Can not remove the {type.ToName()} Collection assignment {( identifier.IsValid ? $" for {identifier}." : "." )}" );
                 return false;
             }
 
@@ -374,7 +375,7 @@ public class CommandHandler : IDisposable
             var seString = new SeStringBuilder()
                .AddText( "Use with /penumbra mod " ).AddBlue( "[enable|disable|inherit|toggle]" ).AddText( "  " ).AddYellow( "[Collection Name]" ).AddText( " | " )
                .AddPurple( "[Mod Name or Mod Directory Name]" );
-            Dalamud.Chat.Print( seString.BuiltString );
+            DalamudServices.Chat.Print( seString.BuiltString );
             return true;
         }
 
@@ -382,14 +383,14 @@ public class CommandHandler : IDisposable
         var nameSplit = split.Length != 2 ? Array.Empty< string >() : split[ 1 ].Split( '|', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
         if( nameSplit.Length != 2 )
         {
-            Dalamud.Chat.Print( "Not enough arguments provided." );
+            DalamudServices.Chat.Print( "Not enough arguments provided." );
             return false;
         }
 
         var state = ConvertToSettingState( split[ 0 ] );
         if( state == -1 )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddRed( split[ 0 ], true ).AddText( " is not a valid type of setting." ).BuiltString );
+            DalamudServices.Chat.Print( new SeStringBuilder().AddRed( split[ 0 ], true ).AddText( " is not a valid type of setting." ).BuiltString );
             return false;
         }
 
@@ -400,7 +401,7 @@ public class CommandHandler : IDisposable
 
         if( !_modManager.TryGetMod( nameSplit[ 1 ], nameSplit[ 1 ], out var mod ) )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "The mod " ).AddRed( nameSplit[ 1 ], true ).AddText( " does not exist." ).BuiltString );
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "The mod " ).AddRed( nameSplit[ 1 ], true ).AddText( " does not exist." ).BuiltString );
             return false;
         }
 
@@ -409,7 +410,7 @@ public class CommandHandler : IDisposable
             return true;
         }
 
-        Dalamud.Chat.Print( new SeStringBuilder().AddText( "Mod " ).AddPurple( mod.Name, true ).AddText( "already had the desired state in collection " )
+        DalamudServices.Chat.Print( new SeStringBuilder().AddText( "Mod " ).AddPurple( mod.Name, true ).AddText( "already had the desired state in collection " )
            .AddYellow( collection!.Name, true ).AddText( "." ).BuiltString );
         return false;
     }
@@ -421,7 +422,7 @@ public class CommandHandler : IDisposable
             var seString = new SeStringBuilder()
                .AddText( "Use with /penumbra bulktag " ).AddBlue( "[enable|disable|toggle|inherit]" ).AddText( "  " ).AddYellow( "[Collection Name]" ).AddText( " | " )
                .AddPurple( "[Local Tag]" );
-            Dalamud.Chat.Print( seString.BuiltString );
+            DalamudServices.Chat.Print( seString.BuiltString );
             return true;
         }
 
@@ -429,7 +430,7 @@ public class CommandHandler : IDisposable
         var nameSplit = split.Length != 2 ? Array.Empty< string >() : split[ 1 ].Split( '|', 2, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries );
         if( nameSplit.Length != 2 )
         {
-            Dalamud.Chat.Print( "Not enough arguments provided." );
+            DalamudServices.Chat.Print( "Not enough arguments provided." );
             return false;
         }
 
@@ -437,7 +438,7 @@ public class CommandHandler : IDisposable
 
         if( state == -1 )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddRed( split[ 0 ], true ).AddText( " is not a valid type of setting." ).BuiltString );
+            DalamudServices.Chat.Print( new SeStringBuilder().AddRed( split[ 0 ], true ).AddText( " is not a valid type of setting." ).BuiltString );
             return false;
         }
 
@@ -450,7 +451,7 @@ public class CommandHandler : IDisposable
 
         if( mods.Count == 0 )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "The tag " ).AddRed( nameSplit[ 1 ], true ).AddText( " does not match any mods." ).BuiltString );
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "The tag " ).AddRed( nameSplit[ 1 ], true ).AddText( " does not match any mods." ).BuiltString );
             return false;
         }
 
@@ -482,7 +483,7 @@ public class CommandHandler : IDisposable
             : _collectionManager[ lowerName ];
         if( collection == null )
         {
-            Dalamud.Chat.Print( new SeStringBuilder().AddText( "The collection " ).AddRed( collectionName, true ).AddText( " does not exist." ).BuiltString );
+            DalamudServices.Chat.Print( new SeStringBuilder().AddText( "The collection " ).AddRed( collectionName, true ).AddText( " does not exist." ).BuiltString );
             return false;
         }
 
@@ -574,7 +575,7 @@ public class CommandHandler : IDisposable
     {
         if( Penumbra.Config.PrintSuccessfulCommandsToChat )
         {
-            Dalamud.Chat.Print( text );
+            DalamudServices.Chat.Print( text );
         }
     }
 
@@ -582,7 +583,7 @@ public class CommandHandler : IDisposable
     {
         if( Penumbra.Config.PrintSuccessfulCommandsToChat )
         {
-            Dalamud.Chat.Print( text.ToStringAndClear() );
+            DalamudServices.Chat.Print( text.ToStringAndClear() );
         }
     }
 
@@ -590,7 +591,7 @@ public class CommandHandler : IDisposable
     {
         if( Penumbra.Config.PrintSuccessfulCommandsToChat )
         {
-            Dalamud.Chat.Print( text() );
+            DalamudServices.Chat.Print( text() );
         }
     }
 }

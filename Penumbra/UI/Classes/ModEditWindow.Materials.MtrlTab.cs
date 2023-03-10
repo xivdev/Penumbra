@@ -10,6 +10,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 using static Penumbra.GameData.Files.ShpkFile;
@@ -80,7 +81,7 @@ public partial class ModEditWindow
                 LoadedShpkPath = path;
                 var data = LoadedShpkPath.IsRooted
                     ? File.ReadAllBytes( LoadedShpkPath.FullName )
-                    : Dalamud.GameData.GetFile( LoadedShpkPath.InternalName.ToString() )?.Data;
+                    : DalamudServices.GameData.GetFile( LoadedShpkPath.InternalName.ToString() )?.Data;
                 AssociatedShpk     = data?.Length > 0 ? new ShpkFile( data ) : throw new Exception( "Failure to load file data." );
                 LoadedShpkPathName = path.ToPath();
             }

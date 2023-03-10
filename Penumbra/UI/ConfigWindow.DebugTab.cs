@@ -14,6 +14,7 @@ using Penumbra.GameData.Files;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Structs;
+using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.Util;
 using static OtterGui.Raii.ImRaii;
@@ -207,7 +208,7 @@ public partial class ConfigWindow
             DrawSpecial( "Current Card", Penumbra.Actors.GetCardPlayer() );
             DrawSpecial( "Current Glamour", Penumbra.Actors.GetGlamourPlayer() );
 
-            foreach( var obj in Dalamud.Objects )
+            foreach( var obj in DalamudServices.Objects )
             {
                 ImGuiUtil.DrawTableColumn( $"{( ( GameObject* )obj.Address )->ObjectIndex}" );
                 ImGuiUtil.DrawTableColumn( $"0x{obj.Address:X}" );
@@ -243,7 +244,7 @@ public partial class ConfigWindow
                             ImGui.TableNextColumn();
                             ImGui.TextUnformatted( idx.ToString() );
                             ImGui.TableNextColumn();
-                            var obj = ( GameObject* )Dalamud.Objects.GetObjectAddress( idx );
+                            var obj = ( GameObject* )DalamudServices.Objects.GetObjectAddress( idx );
                             var (address, name) =
                                 obj != null ? ( $"0x{( ulong )obj:X}", new ByteString( obj->Name ).ToString() ) : ( "NULL", "NULL" );
                             ImGui.TextUnformatted( address );
@@ -541,7 +542,7 @@ public partial class ConfigWindow
         // Draw information about the models, materials and resources currently loaded by the local player.
         private static unsafe void DrawPlayerModelInfo()
         {
-            var player = Dalamud.ClientState.LocalPlayer;
+            var player = DalamudServices.ClientState.LocalPlayer;
             var name   = player?.Name.ToString() ?? "NULL";
             if( !ImGui.CollapsingHeader( $"Player Model Info: {name}##Draw" ) || player == null )
             {

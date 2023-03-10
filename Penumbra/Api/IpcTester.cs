@@ -16,6 +16,7 @@ using Penumbra.Collections;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Services;
 
 namespace Penumbra.Api;
 
@@ -458,17 +459,17 @@ public class IpcTester : IDisposable
             }
 
             DrawIntro( Ipc.RedrawObject.Label, "Redraw Player Character" );
-            if( ImGui.Button( "Redraw##pc" ) && Dalamud.ClientState.LocalPlayer != null )
+            if( ImGui.Button( "Redraw##pc" ) && DalamudServices.ClientState.LocalPlayer != null )
             {
-                Ipc.RedrawObject.Subscriber( _pi ).Invoke( Dalamud.ClientState.LocalPlayer, RedrawType.Redraw );
+                Ipc.RedrawObject.Subscriber( _pi ).Invoke( DalamudServices.ClientState.LocalPlayer, RedrawType.Redraw );
             }
 
             DrawIntro( Ipc.RedrawObjectByIndex.Label, "Redraw by Index" );
             var tmp = _redrawIndex;
             ImGui.SetNextItemWidth( 100 * ImGuiHelpers.GlobalScale );
-            if( ImGui.DragInt( "##redrawIndex", ref tmp, 0.1f, 0, Dalamud.Objects.Length ) )
+            if( ImGui.DragInt( "##redrawIndex", ref tmp, 0.1f, 0, DalamudServices.Objects.Length ) )
             {
-                _redrawIndex = Math.Clamp( tmp, 0, Dalamud.Objects.Length );
+                _redrawIndex = Math.Clamp( tmp, 0, DalamudServices.Objects.Length );
             }
 
             ImGui.SameLine();
@@ -489,12 +490,12 @@ public class IpcTester : IDisposable
 
         private void SetLastRedrawn( IntPtr address, int index )
         {
-            if( index < 0 || index > Dalamud.Objects.Length || address == IntPtr.Zero || Dalamud.Objects[ index ]?.Address != address )
+            if( index < 0 || index > DalamudServices.Objects.Length || address == IntPtr.Zero || DalamudServices.Objects[ index ]?.Address != address )
             {
                 _lastRedrawnString = "Invalid";
             }
 
-            _lastRedrawnString = $"{Dalamud.Objects[ index ]!.Name} (0x{address:X}, {index})";
+            _lastRedrawnString = $"{DalamudServices.Objects[ index ]!.Name} (0x{address:X}, {index})";
         }
     }
 

@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
+using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -34,7 +35,7 @@ public partial class PathResolver : IDisposable
     private readonly         SubfileHelper             _subFiles;
 
     static PathResolver()
-        => ValidHumanModels = GetValidHumanModels( Dalamud.GameData );
+        => ValidHumanModels = GetValidHumanModels( DalamudServices.GameData );
 
     public unsafe PathResolver( ResourceLoader loader )
     {

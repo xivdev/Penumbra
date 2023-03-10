@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
 using Penumbra.Mods;
+using Penumbra.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -14,7 +15,7 @@ namespace Penumbra.Collections;
 public partial class ModCollection
 {
     public static string CollectionDirectory
-        => Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(), "collections" );
+        => Path.Combine( DalamudServices.PluginInterface.GetPluginConfigDirectory(), "collections" );
 
     // We need to remove all invalid path symbols from the collection name to be able to save it to file.
     public FileInfo FileName

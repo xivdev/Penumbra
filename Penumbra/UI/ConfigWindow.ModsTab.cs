@@ -9,6 +9,7 @@ using System.Numerics;
 using Dalamud.Interface;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
+using Penumbra.Services;
 
 namespace Penumbra.UI;
 
@@ -121,7 +122,7 @@ public partial class ConfigWindow
                 ImGuiUtil.HoverTooltip( lower.Length > 0 ? $"Execute '/penumbra redraw {lower}'." : $"Execute '/penumbra redraw'." );
             }
 
-            using var disabled = ImRaii.Disabled( Dalamud.ClientState.LocalPlayer == null );
+            using var disabled = ImRaii.Disabled( DalamudServices.ClientState.LocalPlayer == null );
             ImGui.SameLine();
             var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 4 };
             DrawButton( buttonWidth, "All", string.Empty );

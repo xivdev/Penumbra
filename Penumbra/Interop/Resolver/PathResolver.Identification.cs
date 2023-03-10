@@ -8,6 +8,7 @@ using OtterGui;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
+using Penumbra.Services;
 using Penumbra.Util;
 using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
@@ -37,7 +38,7 @@ public unsafe partial class PathResolver
             // Login screen. Names are populated after actors are drawn,
             // so it is not possible to fetch names from the ui list.
             // Actors are also not named. So use Yourself > Players > Racial > Default.
-            if( !Dalamud.ClientState.IsLoggedIn )
+            if( !DalamudServices.ClientState.IsLoggedIn )
             {
                 var collection2 = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
                  ?? CollectionByAttributes( gameObject )
@@ -46,7 +47,7 @@ public unsafe partial class PathResolver
             }
 
             // Aesthetician. The relevant actor is yourself, so use player collection when possible.
-            if( Dalamud.GameGui.GetAddonByName( "ScreenLog" ) == IntPtr.Zero )
+            if( DalamudServices.GameGui.GetAddonByName( "ScreenLog" ) == IntPtr.Zero )
             {
                 var player = Penumbra.Actors.GetCurrentPlayer();
                 var collection2 = ( player.IsValid ? CollectionByIdentifier( player ) : null )
@@ -86,7 +87,7 @@ public unsafe partial class PathResolver
     public static ModCollection PlayerCollection()
     {
         using var performance = Penumbra.Performance.Measure( PerformanceType.IdentifyCollection );
-        var       gameObject  = ( GameObject* )Dalamud.Objects.GetObjectAddress( 0 );
+        var       gameObject  = ( GameObject* )DalamudServices.Objects.GetObjectAddress( 0 );
         if( gameObject == null )
         {
             return Penumbra.CollectionManager.ByType( CollectionType.Yourself )

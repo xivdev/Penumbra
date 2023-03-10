@@ -11,6 +11,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
@@ -117,7 +118,7 @@ public partial class ConfigWindow
                 return ( "Path is not allowed to be in ProgramFiles.", false );
             }
 
-            var dalamud = Dalamud.PluginInterface.ConfigDirectory.Parent!.Parent!;
+            var dalamud = DalamudServices.PluginInterface.ConfigDirectory.Parent!.Parent!;
             if( IsSubPathOf( dalamud.FullName, newName ) )
             {
                 return ( "Path is not allowed to be inside your Dalamud directories.", false );
@@ -128,7 +129,7 @@ public partial class ConfigWindow
                 return ( "Path is not allowed to be inside your Downloads folder.", false );
             }
 
-            var gameDir = Dalamud.GameData.GameData.DataPath.Parent!.Parent!.FullName;
+            var gameDir = DalamudServices.GameData.GameData.DataPath.Parent!.Parent!.FullName;
             if( IsSubPathOf( gameDir, newName ) )
             {
                 return ( "Path is not allowed to be inside your game folder.", false );

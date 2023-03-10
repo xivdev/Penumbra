@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Dalamud.Interface;
 using ImGuiScene;
+using Penumbra.Services;
 
 namespace Penumbra.UI;
 
@@ -21,17 +22,17 @@ public class LaunchButton : IDisposable
 
         void CreateEntry()
         {
-            _icon = Dalamud.PluginInterface.UiBuilder.LoadImage( Path.Combine( Dalamud.PluginInterface.AssemblyLocation.DirectoryName!,
+            _icon = DalamudServices.PluginInterface.UiBuilder.LoadImage( Path.Combine( DalamudServices.PluginInterface.AssemblyLocation.DirectoryName!,
                 "tsmLogo.png" ) );
             if( _icon != null )
             {
-                _entry = Dalamud.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
+                _entry = DalamudServices.TitleScreenMenu.AddEntry( "Manage Penumbra", _icon, OnTriggered );
             }
 
-            Dalamud.PluginInterface.UiBuilder.Draw -= CreateEntry;
+            DalamudServices.PluginInterface.UiBuilder.Draw -= CreateEntry;
         }
 
-        Dalamud.PluginInterface.UiBuilder.Draw += CreateEntry;
+        DalamudServices.PluginInterface.UiBuilder.Draw += CreateEntry;
     }
 
     private void OnTriggered()
@@ -42,7 +43,7 @@ public class LaunchButton : IDisposable
         _icon?.Dispose();
         if( _entry != null )
         {
-            Dalamud.TitleScreenMenu.RemoveEntry( _entry );
+            DalamudServices.TitleScreenMenu.RemoveEntry( _entry );
         }
     }
 }

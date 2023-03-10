@@ -4,13 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using Penumbra.Services;
 
 namespace Penumbra.Mods;
 
 public sealed partial class Mod
 {
     public static DirectoryInfo LocalDataDirectory
-        => new(Path.Combine( Dalamud.PluginInterface.ConfigDirectory.FullName, "mod_data" ));
+        => new(Path.Combine( DalamudServices.PluginInterface.ConfigDirectory.FullName, "mod_data" ));
 
     public long ImportDate { get; private set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
 
@@ -21,7 +22,7 @@ public sealed partial class Mod
     public bool Favorite { get; private set; } = false;
 
     private FileInfo LocalDataFile
-        => new(Path.Combine( Dalamud.PluginInterface.ConfigDirectory.FullName, "mod_data", $"{ModPath.Name}.json" ));
+        => new(Path.Combine( DalamudServices.PluginInterface.ConfigDirectory.FullName, "mod_data", $"{ModPath.Name}.json" ));
 
     private ModDataChangeType LoadLocalData()
     {
@@ -113,8 +114,8 @@ public sealed partial class Mod
 
     private static void MoveDataFile( DirectoryInfo oldMod, DirectoryInfo newMod )
     {
-        var oldFile = Path.Combine( Dalamud.PluginInterface.ConfigDirectory.FullName, "mod_data", $"{oldMod.Name}.json" );
-        var newFile = Path.Combine( Dalamud.PluginInterface.ConfigDirectory.FullName, "mod_data", $"{newMod.Name}.json" );
+        var oldFile = Path.Combine( DalamudServices.PluginInterface.ConfigDirectory.FullName, "mod_data", $"{oldMod.Name}.json" );
+        var newFile = Path.Combine( DalamudServices.PluginInterface.ConfigDirectory.FullName, "mod_data", $"{newMod.Name}.json" );
         if( File.Exists( oldFile ) )
         {
             try

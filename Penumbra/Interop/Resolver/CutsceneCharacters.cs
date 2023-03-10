@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using Penumbra.Services;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -17,8 +18,8 @@ public class CutsceneCharacters : IDisposable
 
     public IEnumerable< KeyValuePair< int, global::Dalamud.Game.ClientState.Objects.Types.GameObject > > Actors
         => Enumerable.Range( CutsceneStartIdx, CutsceneSlots )
-           .Where( i => Dalamud.Objects[ i ] != null )
-           .Select( i => KeyValuePair.Create( i, this[ i ] ?? Dalamud.Objects[ i ]! ) );
+           .Where( i => DalamudServices.Objects[ i ] != null )
+           .Select( i => KeyValuePair.Create( i, this[ i ] ?? DalamudServices.Objects[ i ]! ) );
 
     public CutsceneCharacters(GameEventManager events)
     {
@@ -35,7 +36,7 @@ public class CutsceneCharacters : IDisposable
         {
             Debug.Assert( idx is >= CutsceneStartIdx and < CutsceneEndIdx );
             idx = _copiedCharacters[ idx - CutsceneStartIdx ];
-            return idx < 0 ? null : Dalamud.Objects[ idx ];
+            return idx < 0 ? null : DalamudServices.Objects[ idx ];
         }
     }
 

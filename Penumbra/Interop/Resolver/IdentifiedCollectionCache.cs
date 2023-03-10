@@ -5,6 +5,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
+using Penumbra.Services;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -29,7 +30,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable< (IntPt
 
         Penumbra.CollectionManager.CollectionChanged += CollectionChangeClear;
         Penumbra.TempMods.CollectionChanged          += CollectionChangeClear;
-        Dalamud.ClientState.TerritoryChanged         += TerritoryClear;
+        DalamudServices.ClientState.TerritoryChanged         += TerritoryClear;
         _events.CharacterDestructor                  += OnCharacterDestruct;
         _enabled                                     =  true;
     }
@@ -43,7 +44,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable< (IntPt
 
         Penumbra.CollectionManager.CollectionChanged -= CollectionChangeClear;
         Penumbra.TempMods.CollectionChanged          -= CollectionChangeClear;
-        Dalamud.ClientState.TerritoryChanged         -= TerritoryClear;
+        DalamudServices.ClientState.TerritoryChanged         -= TerritoryClear;
         _events.CharacterDestructor                  -= OnCharacterDestruct;
         _enabled                                     =  false;
     }

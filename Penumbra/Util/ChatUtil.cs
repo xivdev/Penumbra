@@ -6,6 +6,7 @@ using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui.Log;
+using Penumbra.Services;
 
 namespace Penumbra.Util;
 
@@ -30,7 +31,7 @@ public static class ChatUtil
 
         var payload = new SeString( payloadList );
 
-        Dalamud.Chat.PrintChat( new XivChatEntry
+        DalamudServices.Chat.PrintChat( new XivChatEntry
         {
             Message = payload,
         } );
@@ -47,7 +48,7 @@ public static class ChatUtil
             NotificationType.Info    => Logger.LogLevel.Information,
             _                        => Logger.LogLevel.Debug,
         };
-        Dalamud.PluginInterface.UiBuilder.AddNotification( content, title, type );
+        DalamudServices.PluginInterface.UiBuilder.AddNotification( content, title, type );
         Penumbra.Log.Message( logLevel, title.IsNullOrEmpty() ? content : $"[{title}] {content}" );
     }
 }

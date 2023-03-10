@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
 using Penumbra.Collections;
 using Penumbra.Mods;
+using Penumbra.Services;
 
 namespace Penumbra;
 
@@ -30,7 +31,7 @@ public partial class Configuration
 
         public static void Migrate( Configuration config )
         {
-            if( !File.Exists( Dalamud.PluginInterface.ConfigFile.FullName ) )
+            if( !File.Exists( DalamudServices.PluginInterface.ConfigFile.FullName ) )
             {
                 return;
             }
@@ -38,7 +39,7 @@ public partial class Configuration
             var m = new Migration
             {
                 _config = config,
-                _data   = JObject.Parse( File.ReadAllText( Dalamud.PluginInterface.ConfigFile.FullName ) ),
+                _data   = JObject.Parse( File.ReadAllText( DalamudServices.PluginInterface.ConfigFile.FullName ) ),
             };
 
             CreateBackup();
@@ -342,7 +343,7 @@ public partial class Configuration
         // Create a backup of the configuration file specifically.
         private static void CreateBackup()
         {
-            var name    = Dalamud.PluginInterface.ConfigFile.FullName;
+            var name    = DalamudServices.PluginInterface.ConfigFile.FullName;
             var bakName = name + ".bak";
             try
             {

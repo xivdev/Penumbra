@@ -11,6 +11,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Interop.Loader;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI;
@@ -50,7 +51,7 @@ public partial class ConfigWindow
             ImGui.NewLine();
             unsafe
             {
-                ImGui.TextUnformatted( $"Static Address: 0x{( ulong )ResourceLoader.ResourceManager:X} (+0x{( ulong )ResourceLoader.ResourceManager - ( ulong )Dalamud.SigScanner.Module.BaseAddress:X})" );
+                ImGui.TextUnformatted( $"Static Address: 0x{( ulong )ResourceLoader.ResourceManager:X} (+0x{( ulong )ResourceLoader.ResourceManager - ( ulong )DalamudServices.SigScanner.Module.BaseAddress:X})" );
                 ImGui.TextUnformatted( $"Actual Address: 0x{( ulong )*ResourceLoader.ResourceManager:X}" );
             }
         }

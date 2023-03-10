@@ -8,6 +8,7 @@ using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.ItemSwap;
@@ -38,7 +39,7 @@ public static class ItemSwap
                     return true;
                 }
 
-                var file = Dalamud.GameData.GetFile( path.InternalName.ToString() );
+                var file = DalamudServices.GameData.GetFile( path.InternalName.ToString() );
                 if( file != null )
                 {
                     data = file.Data;

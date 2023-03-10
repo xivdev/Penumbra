@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
+using Penumbra.Services;
 
 namespace Penumbra.Interop;
 
@@ -58,7 +59,7 @@ public unsafe partial class CharacterUtility : IDisposable
         LoadDefaultResources( null! );
         if( !Ready )
         {
-            Dalamud.Framework.Update += LoadDefaultResources;
+            DalamudServices.Framework.Update += LoadDefaultResources;
         }
     }
 
@@ -98,7 +99,7 @@ public unsafe partial class CharacterUtility : IDisposable
         if( !anyMissing )
         {
             Ready                    =  true;
-            Dalamud.Framework.Update -= LoadDefaultResources;
+            DalamudServices.Framework.Update -= LoadDefaultResources;
             LoadingFinished.Invoke();
         }
     }

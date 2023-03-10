@@ -18,6 +18,7 @@ using Penumbra.Api.Enums;
 using Penumbra.GameData.Actors;
 using Penumbra.String;
 using Penumbra.String.Classes;
+using Penumbra.Services;
 
 namespace Penumbra.Api;
 
@@ -84,9 +85,9 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public unsafe PenumbraApi( Penumbra penumbra )
     {
         _penumbra = penumbra;
-        _lumina = ( Lumina.GameData? )Dalamud.GameData.GetType()
+        _lumina = ( Lumina.GameData? )DalamudServices.GameData.GetType()
            .GetField( "gameData", BindingFlags.Instance | BindingFlags.NonPublic )
-          ?.GetValue( Dalamud.GameData );
+          ?.GetValue( DalamudServices.GameData );
         foreach( var collection in Penumbra.CollectionManager )
         {
             SubscribeToCollection( collection );
@@ -889,12 +890,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
 
-        if( actorIndex < 0 || actorIndex >= Dalamud.Objects.Length )
+        if( actorIndex < 0 || actorIndex >= DalamudServices.Objects.Length )
         {
             return PenumbraApiEc.InvalidArgument;
         }
 
-        var identifier = Penumbra.Actors.FromObject( Dalamud.Objects[ actorIndex ], false, false, true );
+        var identifier = Penumbra.Actors.FromObject( DalamudServices.Objects[ actorIndex ], false, false, true );
         if( !identifier.IsValid )
         {
             return PenumbraApiEc.InvalidArgument;
@@ -1064,12 +1065,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private static unsafe bool AssociatedCollection( int gameObjectIdx, out ModCollection collection )
     {
         collection = Penumbra.CollectionManager.Default;
-        if( gameObjectIdx < 0 || gameObjectIdx >= Dalamud.Objects.Length )
+        if( gameObjectIdx < 0 || gameObjectIdx >= DalamudServices.Objects.Length )
         {
             return false;
         }
 
-        var ptr  = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
+        var ptr  = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )DalamudServices.Objects.GetObjectAddress( gameObjectIdx );
         var data = PathResolver.IdentifyCollection( ptr, false );
         if( data.Valid )
         {
@@ -1082,12 +1083,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
     private static unsafe ActorIdentifier AssociatedIdentifier( int gameObjectIdx )
     {
-        if( gameObjectIdx < 0 || gameObjectIdx >= Dalamud.Objects.Length )
+        if( gameObjectIdx < 0 || gameObjectIdx >= DalamudServices.Objects.Length )
         {
             return ActorIdentifier.Invalid;
         }
 
-        var ptr = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
+        var ptr = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )DalamudServices.Objects.GetObjectAddress( gameObjectIdx );
         return Penumbra.Actors.FromObject( ptr, out _, false, true, true );
     }
 
@@ -1116,7 +1117,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                 return _lumina?.GetFileFromDisk< T >( resolvedPath );
             }
 
-            return Dalamud.GameData.GetFile< T >( resolvedPath );
+            return DalamudServices.GameData.GetFile< T >( resolvedPath );
         }
         catch( Exception e )
         {

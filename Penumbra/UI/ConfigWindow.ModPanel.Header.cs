@@ -6,6 +6,7 @@ using Dalamud.Interface.GameFonts;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
@@ -16,7 +17,7 @@ public partial class ConfigWindow
     {
         // We use a big, nice game font for the title.
         private readonly GameFontHandle _nameFont =
-            Dalamud.PluginInterface.UiBuilder.GetGameFontHandle( new GameFontStyle( GameFontFamilyAndSize.Jupiter23 ) );
+            DalamudServices.PluginInterface.UiBuilder.GetGameFontHandle( new GameFontStyle( GameFontFamilyAndSize.Jupiter23 ) );
 
         // Header data.
         private string _modName          = string.Empty;

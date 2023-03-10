@@ -12,6 +12,7 @@ using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.String.Classes;
 using Penumbra.Util;
+using Penumbra.Services;
 
 namespace Penumbra.Interop.Resolver;
 
@@ -113,7 +114,7 @@ public unsafe partial class PathResolver
         // Check that a linked DrawObject still corresponds to the correct actor and that it still exists, otherwise remove it.
         private bool VerifyEntry( IntPtr drawObject, int gameObjectIdx, out GameObject* gameObject )
         {
-            gameObject = ( GameObject* )Dalamud.Objects.GetObjectAddress( gameObjectIdx );
+            gameObject = ( GameObject* )DalamudServices.Objects.GetObjectAddress( gameObjectIdx );
             var draw = ( DrawObject* )drawObject;
             if( gameObject != null
             && ( gameObject->DrawObject == draw || draw != null && gameObject->DrawObject == draw->Object.ParentObject ) )
@@ -251,9 +252,9 @@ public unsafe partial class PathResolver
         // We do not iterate the Dalamud table because it does not work when not logged in.
         private void InitializeDrawObjects()
         {
-            for( var i = 0; i < Dalamud.Objects.Length; ++i )
+            for( var i = 0; i < DalamudServices.Objects.Length; ++i )
             {
-                var ptr = ( GameObject* )Dalamud.Objects.GetObjectAddress( i );
+                var ptr = ( GameObject* )DalamudServices.Objects.GetObjectAddress( i );
                 if( ptr != null && ptr->IsCharacter() && ptr->DrawObject != null )
                 {
                     _drawObjectToObject[ ( IntPtr )ptr->DrawObject ] = ( IdentifyCollection( ptr, false ), ptr->ObjectIndex );

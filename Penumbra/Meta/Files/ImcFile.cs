@@ -5,6 +5,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 
@@ -140,7 +141,7 @@ public unsafe class ImcFile : MetaBaseFile
 
     public override void Reset()
     {
-        var file = Dalamud.GameData.GetFile( Path.ToString() );
+        var file = DalamudServices.GameData.GetFile( Path.ToString() );
         fixed( byte* ptr = file!.Data )
         {
             MemoryUtility.MemCpyUnchecked( Data, ptr, file.Data.Length );
@@ -152,7 +153,7 @@ public unsafe class ImcFile : MetaBaseFile
         : base( 0 )
     {
         Path = manip.GamePath();
-        var file = Dalamud.GameData.GetFile( Path.ToString() );
+        var file = DalamudServices.GameData.GetFile( Path.ToString() );
         if( file == null )
         {
             throw new ImcException( manip, Path );
@@ -171,7 +172,7 @@ public unsafe class ImcFile : MetaBaseFile
 
     public static ImcEntry GetDefault( string path, EquipSlot slot, int variantIdx, out bool exists )
     {
-        var file = Dalamud.GameData.GetFile( path );
+        var file = DalamudServices.GameData.GetFile( path );
         exists = false;
         if( file == null )
         {

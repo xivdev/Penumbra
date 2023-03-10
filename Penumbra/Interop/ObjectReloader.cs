@@ -10,6 +10,7 @@ using Penumbra.Api.Enums;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Structs;
+using Penumbra.Services;
 
 namespace Penumbra.Interop;
 
@@ -34,7 +35,7 @@ public unsafe partial class ObjectReloader
     // Also clear the name list.
     private void SetGPose()
     {
-        _inGPose          = Dalamud.Objects[ GPosePlayerIdx ] != null;
+        _inGPose          = DalamudServices.Objects[ GPosePlayerIdx ] != null;
         _gPoseNameCounter = 0;
     }
 
@@ -49,7 +50,7 @@ public unsafe partial class ObjectReloader
     // this will be in obj and true will be returned.
     private bool FindCorrectActor( int idx, out GameObject? obj )
     {
-        obj = Dalamud.Objects[ idx ];
+        obj = DalamudServices.Objects[ idx ];
         if( !_inGPose || obj == null || IsGPoseActor( idx ) )
         {
             return false;
@@ -66,14 +67,14 @@ public unsafe partial class ObjectReloader
 
             if( name == gPoseName )
             {
-                obj = Dalamud.Objects[ GPosePlayerIdx + i ];
+                obj = DalamudServices.Objects[ GPosePlayerIdx + i ];
                 return true;
             }
         }
 
         for( ; _gPoseNameCounter < GPoseSlots; ++_gPoseNameCounter )
         {
-            var gPoseName = Dalamud.Objects[ GPosePlayerIdx + _gPoseNameCounter ]?.Name.ToString();
+            var gPoseName = DalamudServices.Objects[ GPosePlayerIdx + _gPoseNameCounter ]?.Name.ToString();
             _gPoseNames[ _gPoseNameCounter ] = gPoseName;
             if( gPoseName == null )
             {
@@ -82,7 +83,7 @@ public unsafe partial class ObjectReloader
 
             if( name == gPoseName )
             {
-                obj = Dalamud.Objects[ GPosePlayerIdx + _gPoseNameCounter ];
+                obj = DalamudServices.Objects[ GPosePlayerIdx + _gPoseNameCounter ];
                 return true;
             }
         }
@@ -113,10 +114,10 @@ public sealed unsafe partial class ObjectReloader : IDisposable
     public event GameObjectRedrawnDelegate? GameObjectRedrawn;
 
     public ObjectReloader()
-        => Dalamud.Framework.Update += OnUpdateEvent;
+        => DalamudServices.Framework.Update += OnUpdateEvent;
 
     public void Dispose()
-        => Dalamud.Framework.Update -= OnUpdateEvent;
+        => DalamudServices.Framework.Update -= OnUpdateEvent;
 
     public static DrawState* ActorDrawState( GameObject actor )
         => ( DrawState* )( &( ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )actor.Address )->RenderFlags );
@@ -139,7 +140,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
             DisableDraw( actor! );
         }
 
-        if( actor is PlayerCharacter && Dalamud.Objects[ tableIndex + 1 ] is { ObjectKind: ObjectKind.MountType } mount )
+        if( actor is PlayerCharacter && DalamudServices.Objects[ tableIndex + 1 ] is { ObjectKind: ObjectKind.MountType } mount )
         {
             *ActorDrawState( mount ) |= DrawState.Invisibility;
             if( gPose )
@@ -164,7 +165,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
             EnableDraw( actor! );
         }
 
-        if( actor is PlayerCharacter && Dalamud.Objects[ tableIndex + 1 ] is { ObjectKind: ObjectKind.MountType } mount )
+        if( actor is PlayerCharacter && DalamudServices.Objects[ tableIndex + 1 ] is { ObjectKind: ObjectKind.MountType } mount )
         {
             *ActorDrawState( mount ) &= ~DrawState.Invisibility;
             if( gPose )
@@ -183,7 +184,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
             return;
         }
 
-        if( actor!.Address == Dalamud.Targets.Target?.Address )
+        if( actor!.Address == DalamudServices.Targets.Target?.Address )
         {
             _target = tableIndex;
         }
@@ -193,7 +194,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
 
     private void ReloadActorAfterGPose( GameObject? actor )
     {
-        if( Dalamud.Objects[ GPosePlayerIdx ] != null )
+        if( DalamudServices.Objects[ GPosePlayerIdx ] != null )
         {
             ReloadActor( actor );
             return;
@@ -213,13 +214,13 @@ public sealed unsafe partial class ObjectReloader : IDisposable
             return;
         }
 
-        var actor = Dalamud.Objects[ _target ];
-        if( actor == null || Dalamud.Targets.Target != null )
+        var actor = DalamudServices.Objects[ _target ];
+        if( actor == null || DalamudServices.Targets.Target != null )
         {
             return;
         }
 
-        Dalamud.Targets.SetTarget( actor );
+        DalamudServices.Targets.SetTarget( actor );
         _target = -1;
     }
 
@@ -270,12 +271,12 @@ public sealed unsafe partial class ObjectReloader : IDisposable
             if( idx < 0 )
             {
                 var newIdx = ~idx;
-                WriteInvisible( Dalamud.Objects[ newIdx ] );
+                WriteInvisible( DalamudServices.Objects[ newIdx ] );
                 _afterGPoseQueue[ numKept++ ] = newIdx;
             }
             else
             {
-                WriteVisible( Dalamud.Objects[ idx ] );
+                WriteVisible( DalamudServices.Objects[ idx ] );
             }
         }
 
@@ -284,9 +285,9 @@ public sealed unsafe partial class ObjectReloader : IDisposable
 
     private void OnUpdateEvent( object framework )
     {
-        if( Dalamud.Conditions[ ConditionFlag.BetweenAreas51 ]
-        || Dalamud.Conditions[ ConditionFlag.BetweenAreas ]
-        || Dalamud.Conditions[ ConditionFlag.OccupiedInCutSceneEvent ] )
+        if( DalamudServices.Conditions[ ConditionFlag.BetweenAreas51 ]
+        || DalamudServices.Conditions[ ConditionFlag.BetweenAreas ]
+        || DalamudServices.Conditions[ ConditionFlag.OccupiedInCutSceneEvent ] )
         {
             return;
         }
@@ -313,8 +314,8 @@ public sealed unsafe partial class ObjectReloader : IDisposable
 
     private static GameObject? GetLocalPlayer()
     {
-        var gPosePlayer = Dalamud.Objects[ GPosePlayerIdx ];
-        return gPosePlayer ?? Dalamud.Objects[ 0 ];
+        var gPosePlayer = DalamudServices.Objects[ GPosePlayerIdx ];
+        return gPosePlayer ?? DalamudServices.Objects[ 0 ];
     }
 
     public static bool GetName( string lowerName, out GameObject? actor )
@@ -324,12 +325,12 @@ public sealed unsafe partial class ObjectReloader : IDisposable
             ""          => ( null, true ),
             "<me>"      => ( GetLocalPlayer(), true ),
             "self"      => ( GetLocalPlayer(), true ),
-            "<t>"       => ( Dalamud.Targets.Target, true ),
-            "target"    => ( Dalamud.Targets.Target, true ),
-            "<f>"       => ( Dalamud.Targets.FocusTarget, true ),
-            "focus"     => ( Dalamud.Targets.FocusTarget, true ),
-            "<mo>"      => ( Dalamud.Targets.MouseOverTarget, true ),
-            "mouseover" => ( Dalamud.Targets.MouseOverTarget, true ),
+            "<t>"       => ( DalamudServices.Targets.Target, true ),
+            "target"    => ( DalamudServices.Targets.Target, true ),
+            "<f>"       => ( DalamudServices.Targets.FocusTarget, true ),
+            "focus"     => ( DalamudServices.Targets.FocusTarget, true ),
+            "<mo>"      => ( DalamudServices.Targets.MouseOverTarget, true ),
+            "mouseover" => ( DalamudServices.Targets.MouseOverTarget, true ),
             _           => ( null, false ),
         };
         return ret;
@@ -337,9 +338,9 @@ public sealed unsafe partial class ObjectReloader : IDisposable
 
     public void RedrawObject( int tableIndex, RedrawType settings )
     {
-        if( tableIndex >= 0 && tableIndex < Dalamud.Objects.Length )
+        if( tableIndex >= 0 && tableIndex < DalamudServices.Objects.Length )
         {
-            RedrawObject( Dalamud.Objects[ tableIndex ], settings );
+            RedrawObject( DalamudServices.Objects[ tableIndex ], settings );
         }
     }
 
@@ -352,7 +353,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
         }
         else
         {
-            foreach( var actor in Dalamud.Objects.Where( a => a.Name.ToString().ToLowerInvariant() == lowerName ) )
+            foreach( var actor in DalamudServices.Objects.Where( a => a.Name.ToString().ToLowerInvariant() == lowerName ) )
             {
                 RedrawObject( actor, settings );
             }
@@ -361,7 +362,7 @@ public sealed unsafe partial class ObjectReloader : IDisposable
 
     public void RedrawAll( RedrawType settings )
     {
-        foreach( var actor in Dalamud.Objects )
+        foreach( var actor in DalamudServices.Objects )
         {
             RedrawObject( actor, settings );
         }

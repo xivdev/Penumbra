@@ -3,6 +3,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Interop;
+using Penumbra.Services;
 
 namespace Penumbra.UI;
 
@@ -104,7 +105,7 @@ public partial class ConfigWindow
 
         private static void DrawWaitForPluginsReflection()
         {
-            if( !Dalamud.GetDalamudConfig( Dalamud.WaitingForPluginsOption, out bool value ) )
+            if( !DalamudServices.GetDalamudConfig( DalamudServices.WaitingForPluginsOption, out bool value ) )
             {
                 using var disabled = ImRaii.Disabled();
                 Checkbox( "Wait for Plugins on Startup (Disabled, can not access Dalamud Configuration)", string.Empty, false, v => { } );
@@ -112,7 +113,7 @@ public partial class ConfigWindow
             else
             {
                 Checkbox( "Wait for Plugins on Startup", "This changes a setting in the Dalamud Configuration found at /xlsettings -> General.", value,
-                    v => Dalamud.SetDalamudConfig( Dalamud.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup" ) );
+                    v => DalamudServices.SetDalamudConfig( DalamudServices.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup" ) );
             }
         }
     }

@@ -8,6 +8,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
 
@@ -54,9 +55,9 @@ public sealed partial class ConfigWindow : Window, IDisposable
             Flags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
         }
 
-        Dalamud.PluginInterface.UiBuilder.DisableGposeUiHide    = !Penumbra.Config.HideUiInGPose;
-        Dalamud.PluginInterface.UiBuilder.DisableCutsceneUiHide = !Penumbra.Config.HideUiInCutscenes;
-        Dalamud.PluginInterface.UiBuilder.DisableUserUiHide     = !Penumbra.Config.HideUiWhenUiHidden;
+        DalamudServices.PluginInterface.UiBuilder.DisableGposeUiHide    = !Penumbra.Config.HideUiInGPose;
+        DalamudServices.PluginInterface.UiBuilder.DisableCutsceneUiHide = !Penumbra.Config.HideUiInCutscenes;
+        DalamudServices.PluginInterface.UiBuilder.DisableUserUiHide     = !Penumbra.Config.HideUiWhenUiHidden;
         RespectCloseHotkey                                      = true;
         SizeConstraints = new WindowSizeConstraints()
         {
@@ -96,14 +97,14 @@ public sealed partial class ConfigWindow : Window, IDisposable
             else if( !Penumbra.ValidityChecker.IsValidSourceRepo )
             {
                 DrawProblemWindow(
-                    $"You are loading a release version of Penumbra from the repository \"{Dalamud.PluginInterface.SourceRepository}\" instead of the official repository.\n"
+                    $"You are loading a release version of Penumbra from the repository \"{DalamudServices.PluginInterface.SourceRepository}\" instead of the official repository.\n"
                   + $"Please use the official repository at {ValidityChecker.Repository}.\n\n"
                   + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.", false );
             }
             else if( Penumbra.ValidityChecker.IsNotInstalledPenumbra )
             {
                 DrawProblemWindow(
-                    $"You are loading a release version of Penumbra from \"{Dalamud.PluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\" instead of the installedPlugins directory.\n\n"
+                    $"You are loading a release version of Penumbra from \"{DalamudServices.PluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\" instead of the installedPlugins directory.\n\n"
                   + "You should not install Penumbra manually, but rather add the plugin repository under settings and then install it via the plugin installer.\n\n"
                   + "If you do not know how to do this, please take a look at the readme in Penumbras github repository or join us in discord.\n"
                   + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.", false );
@@ -111,7 +112,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
             else if( Penumbra.ValidityChecker.DevPenumbraExists )
             {
                 DrawProblemWindow(
-                    $"You are loading a installed version of Penumbra from \"{Dalamud.PluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\", "
+                    $"You are loading a installed version of Penumbra from \"{DalamudServices.PluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\", "
                   + "but also still have some remnants of a custom install of Penumbra in your devPlugins folder.\n\n"
                   + "This can cause some issues, so please go to your \"%%appdata%%\\XIVLauncher\\devPlugins\" folder and delete the Penumbra folder from there.\n\n"
                   + "If you are developing for Penumbra, try to avoid mixing versions. This warning will not appear if compiled in Debug mode.", false );

@@ -5,13 +5,14 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using OtterGui.Filesystem;
+using Penumbra.Services;
 
 namespace Penumbra.Mods;
 
 public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
 {
     public static string ModFileSystemFile
-        => Path.Combine( Dalamud.PluginInterface.GetPluginConfigDirectory(), "sort_order.json" );
+        => Path.Combine( DalamudServices.PluginInterface.GetPluginConfigDirectory(), "sort_order.json" );
 
     // Save the current sort order.
     // Does not save or copy the backup in the current mod directory,

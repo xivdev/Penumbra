@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Dalamud.Interface.Internal.Notifications;
 using Penumbra.GameData.Actors;
 using Penumbra.Util;
+using Penumbra.Services;
 
 namespace Penumbra.Collections;
 
@@ -205,7 +206,7 @@ public partial class ModCollection
             => name.Length == 0 ? Empty.Index : _collections.IndexOf( c => c.Name == name );
 
         public static string ActiveCollectionFile
-            => Path.Combine( Dalamud.PluginInterface.ConfigDirectory.FullName, "active_collections.json" );
+            => Path.Combine( DalamudServices.PluginInterface.ConfigDirectory.FullName, "active_collections.json" );
 
         // Load default, current, special, and character collections from config.
         // Then create caches. If a collection does not exist anymore, reset it to an appropriate default.

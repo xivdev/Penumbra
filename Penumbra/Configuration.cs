@@ -11,6 +11,7 @@ using OtterGui.Widgets;
 using Penumbra.GameData.Enums;
 using Penumbra.Import;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
@@ -97,9 +98,9 @@ public partial class Configuration : IPluginConfiguration
         }
 
         Configuration? configuration = null;
-        if( File.Exists( Dalamud.PluginInterface.ConfigFile.FullName ) )
+        if( File.Exists( DalamudServices.PluginInterface.ConfigFile.FullName ) )
         {
-            var text = File.ReadAllText( Dalamud.PluginInterface.ConfigFile.FullName );
+            var text = File.ReadAllText( DalamudServices.PluginInterface.ConfigFile.FullName );
             configuration = JsonConvert.DeserializeObject< Configuration >( text, new JsonSerializerSettings
             {
                 Error = HandleDeserializationError,
@@ -125,7 +126,7 @@ public partial class Configuration : IPluginConfiguration
         try
         {
             var text = JsonConvert.SerializeObject( this, Formatting.Indented );
-            File.WriteAllText( Dalamud.PluginInterface.ConfigFile.FullName, text );
+            File.WriteAllText( DalamudServices.PluginInterface.ConfigFile.FullName, text );
         }
         catch( Exception e )
         {
