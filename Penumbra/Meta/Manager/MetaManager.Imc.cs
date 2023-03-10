@@ -83,7 +83,7 @@ public partial class MetaManager
         }
         catch( ImcException e )
         {
-            Penumbra.ImcExceptions.Add( e );
+            Penumbra.ValidityChecker.ImcExceptions.Add( e );
             Penumbra.Log.Error( e.ToString() );
         }
         catch( Exception e )

@@ -24,7 +24,6 @@ using Penumbra.GameData.Data;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
-using Action = System.Action;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using DalamudUtil = Dalamud.Utility.Util;
 using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
@@ -33,10 +32,6 @@ namespace Penumbra;
 
 public class Penumbra : IDalamudPlugin
 {
-    public const string Repository          = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
-    public const string RepositoryLower     = "https://raw.githubusercontent.com/xivdev/penumbra/master/repo.json";
-    public const string TestRepositoryLower = "https://raw.githubusercontent.com/xivdev/penumbra/test/repo.json";
-
     public string Name
         => "Penumbra";
 
@@ -44,10 +39,6 @@ public class Penumbra : IDalamudPlugin
 
     public static readonly string CommitHash =
         Assembly.GetExecutingAssembly().GetCustomAttribute< AssemblyInformationalVersionAttribute >()?.InformationalVersion ?? "Unknown";
-
-    public static bool DevPenumbraExists;
-    public static bool IsNotInstalledPenumbra;
-    public static bool IsValidSourceRepo;
 
     public static Logger Log { get; private set; } = null!;
     public static Configuration Config { get; private set; } = null!;
@@ -67,26 +58,25 @@ public class Penumbra : IDalamudPlugin
     public static StainManager StainManager { get; private set; } = null!;
     public static ItemData ItemData { get; private set; } = null!;
 
+    public static ValidityChecker ValidityChecker { get; private set; } = null!;
 
     public static PerformanceTracker< PerformanceType > Performance { get; private set; } = null!;
 
     public static readonly StartTimeTracker< StartTimeType > StartTimer = new();
 
-    public static readonly List< Exception > ImcExceptions = new();
-
-    public readonly   ResourceLogger       ResourceLogger;
-    public readonly   PathResolver         PathResolver;
-    public readonly   ObjectReloader       ObjectReloader;
-    public readonly   ModFileSystem        ModFileSystem;
-    public readonly   PenumbraApi          Api;
-    public readonly   HttpApi              HttpApi;
-    public readonly   PenumbraIpcProviders IpcProviders;
+    public readonly ResourceLogger       ResourceLogger;
+    public readonly PathResolver         PathResolver;
+    public readonly ObjectReloader       ObjectReloader;
+    public readonly ModFileSystem        ModFileSystem;
+    public readonly PenumbraApi          Api;
+    public readonly HttpApi              HttpApi;
+    public readonly PenumbraIpcProviders IpcProviders;
     internal readonly ConfigWindow         ConfigWindow;
     private readonly  LaunchButton         _launchButton;
     private readonly  WindowSystem         _windowSystem;
     private readonly  Changelog            _changelog;
     private readonly  CommandHandler       _commandHandler;
-    private readonly  ResourceWatcher      _resourceWatcher;
+    private readonly ResourceWatcher _resourceWatcher;
 
     public Penumbra( DalamudPluginInterface pluginInterface )
     {
@@ -96,11 +86,9 @@ public class Penumbra : IDalamudPlugin
         {
             Dalamud.Initialize( pluginInterface );
 
-            Performance            = new PerformanceTracker< PerformanceType >( Dalamud.Framework );
-            Log                    = new Logger();
-            DevPenumbraExists      = CheckDevPluginPenumbra();
-            IsNotInstalledPenumbra = CheckIsNotInstalled();
-            IsValidSourceRepo      = CheckSourceRepo();
+            Performance     = new PerformanceTracker< PerformanceType >( Dalamud.Framework );
+            Log             = new Logger();
+            ValidityChecker = new ValidityChecker( Dalamud.PluginInterface );
 
             GameEvents = new GameEventManager();
             StartTimer.Measure( StartTimeType.Identifier, () => Identifier         = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData ) );
@@ -168,17 +156,10 @@ public class Penumbra : IDalamudPlugin
                 SubscribeItemLinks();
             }
 
-            if( ImcExceptions.Count > 0 )
-            {
-                Log.Error( $"{ImcExceptions} IMC Exceptions thrown. Please repair your game files." );
-            }
-            else
-            {
-                Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded from {pluginInterface.SourceRepository}." );
-            }
-
             Dalamud.PluginInterface.UiBuilder.Draw += _windowSystem.Draw;
 
+            ValidityChecker.LogExceptions();
+            Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded from {pluginInterface.SourceRepository}." );
             OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
             Log.Information( $"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}." );
 
@@ -195,16 +176,16 @@ public class Penumbra : IDalamudPlugin
     }
 
     private void SetupInterface( out ConfigWindow cfg, out LaunchButton btn, out WindowSystem system, out Changelog changelog )
-    {
-        using var tInterface = StartTimer.Measure( StartTimeType.Interface );
+            {
+                using var tInterface = StartTimer.Measure( StartTimeType.Interface );
         cfg       = new ConfigWindow( this, _resourceWatcher );
         btn       = new LaunchButton( ConfigWindow );
         system    = new WindowSystem( Name );
         changelog = ConfigWindow.CreateChangelog();
         system.AddWindow( ConfigWindow );
-        system.AddWindow( cfg.ModEditPopup );
-        system.AddWindow( changelog );
-        Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
+                system.AddWindow( cfg.ModEditPopup );
+                system.AddWindow( changelog );
+                    Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
     }
 
     private void DisposeInterface()
@@ -347,7 +328,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append( $"> **`Mods with File Redirections: `** {ModManager.Count( m => m.TotalFileCount     > 0 )}, Total: {ModManager.Sum( m => m.TotalFileCount )}\n" );
         sb.Append( $"> **`Mods with FileSwaps:         `** {ModManager.Count( m => m.TotalSwapCount     > 0 )}, Total: {ModManager.Sum( m => m.TotalSwapCount )}\n" );
         sb.Append( $"> **`Mods with Meta Manipulations:`** {ModManager.Count( m => m.TotalManipulations > 0 )}, Total {ModManager.Sum( m => m.TotalManipulations )}\n" );
-        sb.Append( $"> **`IMC Exceptions Thrown:       `** {ImcExceptions.Count}\n" );
+        sb.Append( $"> **`IMC Exceptions Thrown:       `** {ValidityChecker.ImcExceptions.Count}\n" );
         sb.Append( $"> **`#Temp Mods:                  `** {TempMods.Mods.Sum( kvp => kvp.Value.Count ) + TempMods.ModsForAllCollections.Count}\n" );
 
         string CharacterName( ActorIdentifier id, string name )
@@ -394,59 +375,5 @@ public class Penumbra : IDalamudPlugin
         }
 
         return sb.ToString();
-    }
-
-    // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.
-    private static bool CheckDevPluginPenumbra()
-    {
-#if !DEBUG
-        var path = Path.Combine( Dalamud.PluginInterface.DalamudAssetDirectory.Parent?.FullName ?? "INVALIDPATH", "devPlugins", "Penumbra" );
-        var dir = new DirectoryInfo( path );
-
-        try
-        {
-            return dir.Exists && dir.EnumerateFiles( "*.dll", SearchOption.AllDirectories ).Any();
-        }
-        catch( Exception e )
-        {
-            Log.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
-            return true;
-        }
-#else
-        return false;
-#endif
-    }
-
-    // Check if the loaded version of Penumbra itself is in devPlugins.
-    private static bool CheckIsNotInstalled()
-    {
-#if !DEBUG
-        var checkedDirectory = Dalamud.PluginInterface.AssemblyLocation.Directory?.Parent?.Parent?.Name;
-        var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
-        if( !ret )
-        {
-            Log.Error( $"Penumbra is not correctly installed. Application loaded from \"{Dalamud.PluginInterface.AssemblyLocation.Directory!.FullName}\"." );
-        }
-
-        return !ret;
-#else
-        return false;
-#endif
-    }
-
-    // Check if the loaded version of Penumbra is installed from a valid source repo.
-    private static bool CheckSourceRepo()
-    {
-#if !DEBUG
-        return Dalamud.PluginInterface.SourceRepository.Trim().ToLowerInvariant() switch
-        {
-            null                => false,
-            RepositoryLower     => true,
-            TestRepositoryLower => true,
-            _                   => false,
-        };
-#else
-        return true;
-#endif
     }
 }
