@@ -52,6 +52,7 @@ public unsafe class CreateFileWHook : IDisposable
 
     public void Dispose()
     {
+        Disable();
         _createFileWHook.Dispose();
         foreach( var ptr in _fileNameStorage.Values )
         {
@@ -67,10 +68,10 @@ public unsafe class CreateFileWHook : IDisposable
             // Use static storage.
             var ptr = WriteFileName( name );
             Penumbra.Log.Verbose( $"Calling CreateFileWDetour with {ByteString.FromSpanUnsafe( name, false )}." );
-            return _createFileWHook.Original( ptr, access, shareMode, security, creation, flags, template );
+            return _createFileWHook.OriginalDisposeSafe( ptr, access, shareMode, security, creation, flags, template );
         }
-
-        return _createFileWHook.Original( fileName, access, shareMode, security, creation, flags, template );
+        
+        return _createFileWHook.OriginalDisposeSafe( fileName, access, shareMode, security, creation, flags, template );
     }
 
 
