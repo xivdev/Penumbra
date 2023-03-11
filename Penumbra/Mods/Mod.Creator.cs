@@ -291,7 +291,7 @@ public partial class Mod
                 }
                 catch( Exception ex )
                 {
-                    throw new Exception( "Could not split multi group file on .pmp import.", ex );
+                    throw new Exception( $"Could not split multi group file {groupFile.Name} on .pmp import.", ex );
                 }
             }
         }
