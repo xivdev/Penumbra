@@ -11,157 +11,138 @@ using Penumbra.Util;
 using System;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
+using static Penumbra.Interop.Loader.ResourceLoader;
 using FileMode = Penumbra.Interop.Structs.FileMode;
 using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
 
 namespace Penumbra.Interop.Loader;
 
+public unsafe class FileReadHooks : IDisposable
+{
+    private delegate byte ReadSqPackPrototype(ResourceManager* resourceManager, SeFileDescriptor* pFileDesc, int priority, bool isSync);
+
+    [Signature(Sigs.ReadSqPack, DetourName = nameof(ReadSqPackDetour))]
+    private readonly Hook<ReadSqPackPrototype> _readSqPackHook = null!;
+
+    public FileReadHooks()
+    {
+        SignatureHelper.Initialise(this);
+        _readSqPackHook.Enable();
+    }
+
+    public delegate void ReadSqPackDelegate(ref SeFileDescriptor fileDescriptor, ref int priority, ref bool isSync, ref bool callOriginal);
+
+    public event ReadSqPackDelegate? ReadSqPack;
+
+    private byte ReadSqPackDetour(ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync)
+    {
+        var callOriginal = true;
+        ReadSqPack?.Invoke(ref *fileDescriptor, ref priority, ref isSync, ref callOriginal);
+        return callOriginal 
+            ? _readSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync) 
+            : (byte)1;
+    }
+
+    public void Dispose()
+    {
+        _readSqPackHook.Disable();
+        _readSqPackHook.Dispose();
+    }
+}
+
 public unsafe partial class ResourceLoader
 {
-    private readonly CreateFileWHook _createFileWHook = new();
 
-    // Resources can be obtained synchronously and asynchronously. We need to change behaviour in both cases.
-    // Both work basically the same, so we can reduce the main work to one function used by both hooks.
-
-    [StructLayout( LayoutKind.Explicit )]
-    public struct GetResourceParameters
+    [Conditional("DEBUG")]
+    private static void CompareHash(int local, int game, Utf8GamePath path)
     {
-        [FieldOffset( 16 )]
-        public uint SegmentOffset;
-
-        [FieldOffset( 20 )]
-        public uint SegmentLength;
-
-        public bool IsPartialRead
-            => SegmentLength != 0;
+        if (local != game)
+            Penumbra.Log.Warning($"Hash function appears to have changed. Computed {local:X8} vs Game {game:X8} for {path}.");
     }
 
-    public delegate ResourceHandle* GetResourceSyncPrototype( ResourceManager* resourceManager, ResourceCategory* pCategoryId,
-        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams );
+    private event Action<Utf8GamePath, ResourceType, FullPath?, object?>? PathResolved;
 
-    [Signature( Sigs.GetResourceSync, DetourName = nameof( GetResourceSyncDetour ) )]
-    public readonly Hook< GetResourceSyncPrototype > GetResourceSyncHook = null!;
-
-    public delegate ResourceHandle* GetResourceAsyncPrototype( ResourceManager* resourceManager, ResourceCategory* pCategoryId,
-        ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams, bool isUnknown );
-
-    [Signature( Sigs.GetResourceAsync, DetourName = nameof( GetResourceAsyncDetour ) )]
-    public readonly Hook< GetResourceAsyncPrototype > GetResourceAsyncHook = null!;
-
-    private ResourceHandle* GetResourceSyncDetour( ResourceManager* resourceManager, ResourceCategory* categoryId, ResourceType* resourceType,
-        int* resourceHash, byte* path, GetResourceParameters* pGetResParams )
-        => GetResourceHandler( true, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, false );
-
-    private ResourceHandle* GetResourceAsyncDetour( ResourceManager* resourceManager, ResourceCategory* categoryId, ResourceType* resourceType,
-        int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
-        => GetResourceHandler( false, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-
-    private ResourceHandle* CallOriginalHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
-        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
-        => isSync
-            ? GetResourceSyncHook.Original( resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams )
-            : GetResourceAsyncHook.Original( resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-
-
-    [Conditional( "DEBUG" )]
-    private static void CompareHash( int local, int game, Utf8GamePath path )
-    {
-        if( local != game )
-        {
-            Penumbra.Log.Warning( $"Hash function appears to have changed. Computed {local:X8} vs Game {game:X8} for {path}." );
-        }
-    }
-
-    private event Action< Utf8GamePath, ResourceType, FullPath?, object? >? PathResolved;
-
-    public ResourceHandle* ResolvePathSync( ResourceCategory category, ResourceType type, ByteString path )
+    public ResourceHandle* ResolvePathSync(ResourceCategory category, ResourceType type, ByteString path)
     {
         var hash = path.Crc32;
-        return GetResourceHandler( true, *ResourceManager, &category, &type, &hash, path.Path, null, false );
+        return GetResourceHandler(true, *ResourceManager, &category, &type, &hash, path.Path, null, false);
     }
 
-    private ResourceHandle* GetResourceHandler( bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
-        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk )
+    private ResourceHandle* GetResourceHandler(bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
+        ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk)
     {
-        using var performance = Penumbra.Performance.Measure( PerformanceType.GetResourceHandler );
+        using var performance = Penumbra.Performance.Measure(PerformanceType.GetResourceHandler);
 
         ResourceHandle* ret;
-        if( !Utf8GamePath.FromPointer( path, out var gamePath ) )
+        if (!Utf8GamePath.FromPointer(path, out var gamePath))
         {
-            Penumbra.Log.Error( "Could not create GamePath from resource path." );
-            return CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
+            Penumbra.Log.Error("Could not create GamePath from resource path.");
+            return CallOriginalHandler(isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk);
         }
 
-        CompareHash( ComputeHash( gamePath.Path, pGetResParams ), *resourceHash, gamePath );
+        CompareHash(ComputeHash(gamePath.Path, pGetResParams), *resourceHash, gamePath);
 
-        ResourceRequested?.Invoke( gamePath, isSync );
+        ResourceRequested?.Invoke(gamePath, isSync);
 
         // If no replacements are being made, we still want to be able to trigger the event.
-        var (resolvedPath, data) = ResolvePath( gamePath, *categoryId, *resourceType, *resourceHash );
-        PathResolved?.Invoke( gamePath, *resourceType, resolvedPath ?? ( gamePath.IsRooted() ? new FullPath( gamePath ) : null ), data );
-        if( resolvedPath == null )
+        var (resolvedPath, data) = ResolvePath(gamePath, *categoryId, *resourceType, *resourceHash);
+        PathResolved?.Invoke(gamePath, *resourceType, resolvedPath ?? (gamePath.IsRooted() ? new FullPath(gamePath) : null), data);
+        if (resolvedPath == null)
         {
-            ret = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-            ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )ret, gamePath, null, data );
+            ret = CallOriginalHandler(isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk);
+            ResourceLoaded?.Invoke((Structs.ResourceHandle*)ret, gamePath, null, data);
             return ret;
         }
 
         // Replace the hash and path with the correct one for the replacement.
-        *resourceHash = ComputeHash( resolvedPath.Value.InternalName, pGetResParams );
+        *resourceHash = ComputeHash(resolvedPath.Value.InternalName, pGetResParams);
 
         path = resolvedPath.Value.InternalName.Path;
-        ret  = CallOriginalHandler( isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk );
-        ResourceLoaded?.Invoke( ( Structs.ResourceHandle* )ret, gamePath, resolvedPath.Value, data );
+        ret  = CallOriginalHandler(isSync, resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk);
+        ResourceLoaded?.Invoke((Structs.ResourceHandle*)ret, gamePath, resolvedPath.Value, data);
 
         return ret;
     }
 
 
     // Use the default method of path replacement.
-    public static (FullPath?, ResolveData) DefaultResolver( Utf8GamePath path )
+    public static (FullPath?, ResolveData) DefaultResolver(Utf8GamePath path)
     {
-        var resolved = Penumbra.CollectionManager.Default.ResolvePath( path );
-        return ( resolved, Penumbra.CollectionManager.Default.ToResolveData() );
+        var resolved = Penumbra.CollectionManager.Default.ResolvePath(path);
+        return (resolved, Penumbra.CollectionManager.Default.ToResolveData());
     }
 
     // Try all resolve path subscribers or use the default replacer.
-    private (FullPath?, ResolveData) ResolvePath( Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash )
+    private (FullPath?, ResolveData) ResolvePath(Utf8GamePath path, ResourceCategory category, ResourceType resourceType, int resourceHash)
     {
-        if( !DoReplacements || _incMode.Value )
-        {
-            return ( null, ResolveData.Invalid );
-        }
+        if (!DoReplacements || _incMode.Value)
+            return (null, ResolveData.Invalid);
 
         path = path.ToLower();
-        switch( category )
+        switch (category)
         {
             // Only Interface collection.
             case ResourceCategory.Ui:
             {
-                var resolved = Penumbra.CollectionManager.Interface.ResolvePath( path );
-                return ( resolved, Penumbra.CollectionManager.Interface.ToResolveData() );
+                var resolved = Penumbra.CollectionManager.Interface.ResolvePath(path);
+                return (resolved, Penumbra.CollectionManager.Interface.ToResolveData());
             }
             // Never allow changing scripts.
             case ResourceCategory.UiScript:
             case ResourceCategory.GameScript:
-                return ( null, ResolveData.Invalid );
+                return (null, ResolveData.Invalid);
             // Use actual resolving.
             case ResourceCategory.Chara:
             case ResourceCategory.Shader:
             case ResourceCategory.Vfx:
             case ResourceCategory.Sound:
-                if( ResolvePathCustomization != null )
-                {
-                    foreach( var resolver in ResolvePathCustomization.GetInvocationList() )
+                if (ResolvePathCustomization != null)
+                    foreach (var resolver in ResolvePathCustomization.GetInvocationList())
                     {
-                        if( ( ( ResolvePathDelegate )resolver ).Invoke( path, category, resourceType, resourceHash, out var ret ) )
-                        {
+                        if (((ResolvePathDelegate)resolver).Invoke(path, category, resourceType, resourceHash, out var ret))
                             return ret;
-                        }
                     }
-                }
 
                 break;
             // None of these files are ever associated with specific characters,
@@ -176,65 +157,57 @@ public unsafe partial class ResourceLoader
                 break;
         }
 
-        return DefaultResolver( path );
+        return DefaultResolver(path);
     }
 
 
     // We need to use the ReadFile function to load local, uncompressed files instead of loading them from the SqPacks.
-    public delegate byte ReadFileDelegate( ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority,
-        bool isSync );
+    public delegate byte ReadFileDelegate(ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority,
+        bool isSync);
 
-    [Signature( Sigs.ReadFile )]
+    [Signature(Sigs.ReadFile)]
     public readonly ReadFileDelegate ReadFile = null!;
 
     // We hook ReadSqPack to redirect rooted files to ReadFile.
-    public delegate byte ReadSqPackPrototype( ResourceManager* resourceManager, SeFileDescriptor* pFileDesc, int priority, bool isSync );
+    public delegate byte ReadSqPackPrototype(ResourceManager* resourceManager, SeFileDescriptor* pFileDesc, int priority, bool isSync);
 
-    [Signature( Sigs.ReadSqPack, DetourName = nameof( ReadSqPackDetour ) )]
-    public readonly Hook< ReadSqPackPrototype > ReadSqPackHook = null!;
+    [Signature(Sigs.ReadSqPack, DetourName = nameof(ReadSqPackDetour))]
+    public readonly Hook<ReadSqPackPrototype> ReadSqPackHook = null!;
 
-    private byte ReadSqPackDetour( ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync )
+    private byte ReadSqPackDetour(ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority, bool isSync)
     {
-        using var performance = Penumbra.Performance.Measure( PerformanceType.ReadSqPack );
+        using var performance = Penumbra.Performance.Measure(PerformanceType.ReadSqPack);
 
-        if( !DoReplacements )
+        if (!DoReplacements)
+            return ReadSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync);
+
+        if (fileDescriptor == null || fileDescriptor->ResourceHandle == null)
         {
-            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
+            Penumbra.Log.Error("Failure to load file from SqPack: invalid File Descriptor.");
+            return ReadSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync);
         }
 
-        if( fileDescriptor == null || fileDescriptor->ResourceHandle == null )
-        {
-            Penumbra.Log.Error( "Failure to load file from SqPack: invalid File Descriptor." );
-            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-        }
-
-        if( !fileDescriptor->ResourceHandle->GamePath( out var gamePath ) || gamePath.Length == 0 )
-        {
-            return ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-        }
+        if (!fileDescriptor->ResourceHandle->GamePath(out var gamePath) || gamePath.Length == 0)
+            return ReadSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync);
 
         // Paths starting with a '|' are handled separately to allow for special treatment.
         // They are expected to also have a closing '|'.
-        if( ResourceLoadCustomization == null || gamePath.Path[ 0 ] != ( byte )'|' )
-        {
-            return DefaultLoadResource( gamePath.Path, resourceManager, fileDescriptor, priority, isSync );
-        }
+        if (ResourceLoadCustomization == null || gamePath.Path[0] != (byte)'|')
+            return DefaultLoadResource(gamePath.Path, resourceManager, fileDescriptor, priority, isSync);
 
         // Split the path into the special-treatment part (between the first and second '|')
         // and the actual path.
         byte ret   = 0;
-        var  split = gamePath.Path.Split( ( byte )'|', 3, false );
-        fileDescriptor->ResourceHandle->FileNameData   = split[ 2 ].Path;
-        fileDescriptor->ResourceHandle->FileNameLength = split[ 2 ].Length;
+        var  split = gamePath.Path.Split((byte)'|', 3, false);
+        fileDescriptor->ResourceHandle->FileNameData   = split[2].Path;
+        fileDescriptor->ResourceHandle->FileNameLength = split[2].Length;
         var funcFound = fileDescriptor->ResourceHandle->Category != ResourceCategory.Ui
          && ResourceLoadCustomization.GetInvocationList()
-               .Any( f => ( ( ResourceLoadCustomizationDelegate )f )
-                   .Invoke( split[ 1 ], split[ 2 ], resourceManager, fileDescriptor, priority, isSync, out ret ) );
+                .Any(f => ((ResourceLoadCustomizationDelegate)f)
+                    .Invoke(split[1], split[2], resourceManager, fileDescriptor, priority, isSync, out ret));
 
-        if( !funcFound )
-        {
-            ret = DefaultLoadResource( split[ 2 ], resourceManager, fileDescriptor, priority, isSync );
-        }
+        if (!funcFound)
+            ret = DefaultLoadResource(split[2], resourceManager, fileDescriptor, priority, isSync);
 
         // Return original resource handle path so that they can be loaded separately.
         fileDescriptor->ResourceHandle->FileNameData   = gamePath.Path.Path;
@@ -244,18 +217,18 @@ public unsafe partial class ResourceLoader
     }
 
     // Load the resource from an SqPack and trigger the FileLoaded event.
-    private byte DefaultResourceLoad( ByteString path, ResourceManager* resourceManager,
-        SeFileDescriptor* fileDescriptor, int priority, bool isSync )
+    private byte DefaultResourceLoad(ByteString path, ResourceManager* resourceManager,
+        SeFileDescriptor* fileDescriptor, int priority, bool isSync)
     {
-        var ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-        FileLoaded?.Invoke( fileDescriptor->ResourceHandle, path, ret != 0, false );
+        var ret = Penumbra.ResourceLoader.ReadSqPackHook.Original(resourceManager, fileDescriptor, priority, isSync);
+        FileLoaded?.Invoke(fileDescriptor->ResourceHandle, path, ret != 0, false);
         return ret;
     }
 
     /// <summary> Load the resource from a path on the users hard drives. </summary>
     /// <remarks> <see cref="CreateFileWHook" /> </remarks>
-    private byte DefaultRootedResourceLoad( ByteString gamePath, ResourceManager* resourceManager,
-        SeFileDescriptor* fileDescriptor, int priority, bool isSync )
+    private byte DefaultRootedResourceLoad(ByteString gamePath, ResourceManager* resourceManager,
+        SeFileDescriptor* fileDescriptor, int priority, bool isSync)
     {
         // Specify that we are loading unpacked files from the drive.
         // We need to copy the actual file path in UTF16 (Windows-Unicode) on two locations.
@@ -263,22 +236,22 @@ public unsafe partial class ResourceLoader
 
         // Ensure that the file descriptor has its wchar_t array on aligned boundary even if it has to be odd.
         var fd = stackalloc char[0x11 + 0x0B + 14];
-        fileDescriptor->FileDescriptor = (byte*) fd + 1;
-        CreateFileWHook.WritePtr( fd + 0x11, gamePath.Path, gamePath.Length );
-        CreateFileWHook.WritePtr( &fileDescriptor->Utf16FileName, gamePath.Path, gamePath.Length );
+        fileDescriptor->FileDescriptor = (byte*)fd + 1;
+        CreateFileWHook.WritePtr(fd + 0x11,                      gamePath.Path, gamePath.Length);
+        CreateFileWHook.WritePtr(&fileDescriptor->Utf16FileName, gamePath.Path, gamePath.Length);
 
         // Use the SE ReadFile function.
-        var ret = ReadFile( resourceManager, fileDescriptor, priority, isSync );
-        FileLoaded?.Invoke( fileDescriptor->ResourceHandle, gamePath, ret != 0, true );
+        var ret = ReadFile(resourceManager, fileDescriptor, priority, isSync);
+        FileLoaded?.Invoke(fileDescriptor->ResourceHandle, gamePath, ret != 0, true);
         return ret;
     }
 
     // Load a resource by its path. If it is rooted, it will be loaded from the drive, otherwise from the SqPack.
-    internal byte DefaultLoadResource( ByteString gamePath, ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority,
-        bool isSync )
-        => Utf8GamePath.IsRooted( gamePath )
-            ? DefaultRootedResourceLoad( gamePath, resourceManager, fileDescriptor, priority, isSync )
-            : DefaultResourceLoad( gamePath, resourceManager, fileDescriptor, priority, isSync );
+    internal byte DefaultLoadResource(ByteString gamePath, ResourceManager* resourceManager, SeFileDescriptor* fileDescriptor, int priority,
+        bool isSync)
+        => Utf8GamePath.IsRooted(gamePath)
+            ? DefaultRootedResourceLoad(gamePath, resourceManager, fileDescriptor, priority, isSync)
+            : DefaultResourceLoad(gamePath, resourceManager, fileDescriptor, priority, isSync);
 
     private void DisposeHooks()
     {
@@ -291,21 +264,19 @@ public unsafe partial class ResourceLoader
         _incRefHook.Dispose();
     }
 
-    private static int ComputeHash( ByteString path, GetResourceParameters* pGetResParams )
+    private static int ComputeHash(ByteString path, GetResourceParameters* pGetResParams)
     {
-        if( pGetResParams == null || !pGetResParams->IsPartialRead )
-        {
+        if (pGetResParams == null || !pGetResParams->IsPartialRead)
             return path.Crc32;
-        }
 
         // When the game requests file only partially, crc32 includes that information, in format of:
         // path/to/file.ext.hex_offset.hex_size
         // ex) music/ex4/BGM_EX4_System_Title.scd.381adc.30000
         return ByteString.Join(
-            ( byte )'.',
+            (byte)'.',
             path,
-            ByteString.FromStringUnsafe( pGetResParams->SegmentOffset.ToString( "x" ), true ),
-            ByteString.FromStringUnsafe( pGetResParams->SegmentLength.ToString( "x" ), true )
+            ByteString.FromStringUnsafe(pGetResParams->SegmentOffset.ToString("x"), true),
+            ByteString.FromStringUnsafe(pGetResParams->SegmentLength.ToString("x"), true)
         ).Crc32;
     }
 
@@ -314,18 +285,16 @@ public unsafe partial class ResourceLoader
     // This means, that if the path determined from that is different than the resources path,
     // a different resource gets loaded or incremented, while the IncRef'd resource stays at 0.
     // This causes some problems and is hopefully prevented with this.
-    private readonly ThreadLocal< bool >              _incMode = new();
-    private readonly Hook< ResourceHandleDestructor > _incRefHook;
+    private readonly ThreadLocal<bool>              _incMode = new();
+    private readonly Hook<ResourceHandleDestructor> _incRefHook;
 
-    private IntPtr ResourceHandleIncRefDetour( ResourceHandle* handle )
+    private IntPtr ResourceHandleIncRefDetour(ResourceHandle* handle)
     {
-        if( handle->RefCount > 0 )
-        {
-            return _incRefHook.Original( handle );
-        }
+        if (handle->RefCount > 0)
+            return _incRefHook.Original(handle);
 
         _incMode.Value = true;
-        var ret = _incRefHook.Original( handle );
+        var ret = _incRefHook.Original(handle);
         _incMode.Value = false;
         return ret;
     }
