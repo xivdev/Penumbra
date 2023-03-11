@@ -169,7 +169,7 @@ public partial class MetaManager
 
         var lastUnderscore = split.LastIndexOf( ( byte )'_' );
         var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
-        if( ( Penumbra.TempMods.CollectionByName( name, out var collection )
+        if( ( Penumbra.TempCollections.CollectionByName( name, out var collection )
             || Penumbra.CollectionManager.ByName( name, out collection ) )
         && collection.HasCache
         && collection.MetaCache!._imcFiles.TryGetValue( Utf8GamePath.FromSpan( path.Span, out var p ) ? p : Utf8GamePath.Empty, out var file ) )

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Dalamud.Game;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
-using Penumbra.Services;
 
 namespace Penumbra.Interop;
 
@@ -52,14 +52,17 @@ public unsafe partial class CharacterUtility : IDisposable
     public (IntPtr Address, int Size) DefaultResource( InternalIndex idx )
         => _lists[ idx.Value ].DefaultResource;
 
-    public CharacterUtility()
+    private readonly Framework _framework;
+
+    public CharacterUtility(Framework framework)
     {
         SignatureHelper.Initialise( this );
+        _framework      =  framework;
         LoadingFinished += () => Penumbra.Log.Debug( "Loading of CharacterUtility finished." );
         LoadDefaultResources( null! );
         if( !Ready )
         {
-            DalamudServices.Framework.Update += LoadDefaultResources;
+            _framework.Update += LoadDefaultResources;
         }
     }
 
@@ -99,7 +102,7 @@ public unsafe partial class CharacterUtility : IDisposable
         if( !anyMissing )
         {
             Ready                    =  true;
-            DalamudServices.Framework.Update -= LoadDefaultResources;
+            _framework.Update -= LoadDefaultResources;
             LoadingFinished.Invoke();
         }
     }

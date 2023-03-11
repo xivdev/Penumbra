@@ -8,6 +8,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections;
+using Penumbra.Services;
 
 namespace Penumbra.UI;
 
@@ -16,20 +17,22 @@ public partial class ConfigWindow
     // Encapsulate for less pollution.
     private partial class CollectionsTab : IDisposable, ITab
     {
-        private readonly ConfigWindow _window;
+        private readonly CommunicatorService _communicator;
+        private readonly ConfigWindow        _window;
 
-        public CollectionsTab( ConfigWindow window )
+        public CollectionsTab( CommunicatorService communicator, ConfigWindow window )
         {
             _window = window;
+            _communicator = communicator;
 
-            Penumbra.CollectionManager.CollectionChanged += UpdateIdentifiers;
+            _communicator.CollectionChange.Event += UpdateIdentifiers;
         }
 
         public ReadOnlySpan<byte> Label
             => "Collections"u8;
 
         public void Dispose()
-            => Penumbra.CollectionManager.CollectionChanged -= UpdateIdentifiers;
+            => _communicator.CollectionChange.Event -= UpdateIdentifiers;
 
         public void DrawHeader()
             => OpenTutorial( BasicTutorialSteps.Collections );

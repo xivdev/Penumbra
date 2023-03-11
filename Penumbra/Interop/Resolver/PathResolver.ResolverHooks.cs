@@ -265,7 +265,7 @@ public partial class PathResolver
             }
 
             var parentObject     = ( IntPtr )( ( DrawObject* )drawObject )->Object.ParentObject;
-            var parentCollection = DrawObjects.CheckParentDrawObject( drawObject, parentObject );
+            var parentCollection = _drawObjects.CheckParentDrawObject( drawObject, parentObject );
             if( parentCollection.Valid )
             {
                 return _parent._paths.ResolvePath( ( IntPtr )FindParent( parentObject, out _ ), parentCollection.ModCollection, path );

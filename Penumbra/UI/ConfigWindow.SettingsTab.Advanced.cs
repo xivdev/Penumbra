@@ -105,7 +105,7 @@ public partial class ConfigWindow
 
         private static void DrawWaitForPluginsReflection()
         {
-            if( !DalamudServices.GetDalamudConfig( DalamudServices.WaitingForPluginsOption, out bool value ) )
+            if( !Penumbra.Dalamud.GetDalamudConfig( DalamudServices.WaitingForPluginsOption, out bool value ) )
             {
                 using var disabled = ImRaii.Disabled();
                 Checkbox( "Wait for Plugins on Startup (Disabled, can not access Dalamud Configuration)", string.Empty, false, v => { } );
@@ -113,7 +113,7 @@ public partial class ConfigWindow
             else
             {
                 Checkbox( "Wait for Plugins on Startup", "This changes a setting in the Dalamud Configuration found at /xlsettings -> General.", value,
-                    v => DalamudServices.SetDalamudConfig( DalamudServices.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup" ) );
+                    v => Penumbra.Dalamud.SetDalamudConfig( DalamudServices.WaitingForPluginsOption, v, "doWaitForPluginsOnStartup" ) );
             }
         }
     }

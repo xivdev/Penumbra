@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Widgets;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Files;
@@ -28,10 +29,14 @@ public partial class ConfigWindow
 {
     private class DebugTab : ITab
     {
+        private readonly StartTracker _timer;
         private readonly ConfigWindow _window;
 
-        public DebugTab( ConfigWindow window )
-            => _window = window;
+        public DebugTab( ConfigWindow window, StartTracker timer)
+        {
+            _window = window;
+            _timer  = timer;
+        }
 
         public ReadOnlySpan<byte> Label
             => "Debug"u8;
@@ -109,7 +114,7 @@ public partial class ConfigWindow
             PrintValue( "Web Server Enabled", _window._penumbra.HttpApi.Enabled.ToString() );
         }
 
-        private static void DrawPerformanceTab()
+        private void DrawPerformanceTab()
         {
             ImGui.NewLine();
             if( ImGui.CollapsingHeader( "Performance" ) )
@@ -121,7 +126,7 @@ public partial class ConfigWindow
             {
                 if( start )
                 {
-                    Penumbra.StartTimer.Draw( "##startTimer", TimingExtensions.ToName );
+                    _timer.Draw( "##startTimer", TimingExtensions.ToName );
                     ImGui.NewLine();
                 }
             }
@@ -397,7 +402,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            foreach( var (key, data) in Penumbra.StainManager.StmFile.Entries )
+            foreach( var (key, data) in Penumbra.StainService.StmFile.Entries )
             {
                 using var tree = TreeNode( $"Template {key}" );
                 if( !tree )

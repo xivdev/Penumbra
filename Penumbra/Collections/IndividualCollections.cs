@@ -4,6 +4,7 @@ using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Actors;
+using Penumbra.Services;
 using Penumbra.String;
 
 namespace Penumbra.Collections;
@@ -20,7 +21,11 @@ public sealed partial class IndividualCollections
     public IReadOnlyDictionary< ActorIdentifier, ModCollection > Individuals
         => _individuals;
 
-    public IndividualCollections( ActorManager actorManager )
+    // TODO
+    public IndividualCollections( ActorService actorManager )
+        => _actorManager = actorManager.AwaitedService;
+
+    public IndividualCollections(ActorManager actorManager)
         => _actorManager = actorManager;
 
     public enum AddResult

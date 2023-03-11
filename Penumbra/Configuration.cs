@@ -19,8 +19,14 @@ using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 namespace Penumbra;
 
 [Serializable]
-public partial class Configuration : IPluginConfiguration
+public class Configuration : IPluginConfiguration
 {
+    [JsonIgnore]
+    private readonly string _fileName;
+
+    [JsonIgnore]
+    private readonly FrameworkManager _framework;
+
     public int Version { get; set; } = Constants.CurrentVersion;
 
     public int LastSeenVersion { get; set; } = ConfigWindow.LastChangelogVersion;
@@ -86,47 +92,44 @@ public partial class Configuration : IPluginConfiguration
     public Dictionary< ColorId, uint > Colors { get; set; }
         = Enum.GetValues< ColorId >().ToDictionary( c => c, c => c.Data().DefaultColor );
 
-    // Load the current configuration.
-    // Includes adding new colors and migrating from old versions.
-    public static Configuration Load()
+    /// <summary>
+    /// Load the current configuration.
+    /// Includes adding new colors and migrating from old versions.
+    /// </summary>
+    public Configuration(FilenameService fileNames, ConfigMigrationService migrator, FrameworkManager framework)
     {
-        void HandleDeserializationError( object? sender, ErrorEventArgs errorArgs )
+        _fileName  = fileNames.ConfigFile;
+        _framework = framework;
+        Load(migrator);
+    }
+
+    public void Load(ConfigMigrationService migrator)
+    {
+        static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
         {
             Penumbra.Log.Error(
-                $"Error parsing Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}" );
+                $"Error parsing Configuration at {errorArgs.ErrorContext.Path}, using default or migrating:\n{errorArgs.ErrorContext.Error}");
             errorArgs.ErrorContext.Handled = true;
         }
 
-        Configuration? configuration = null;
-        if( File.Exists( DalamudServices.PluginInterface.ConfigFile.FullName ) )
+        if (File.Exists(_fileName))
         {
-            var text = File.ReadAllText( DalamudServices.PluginInterface.ConfigFile.FullName );
-            configuration = JsonConvert.DeserializeObject< Configuration >( text, new JsonSerializerSettings
+            var text = File.ReadAllText(_fileName);
+            JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
             {
                 Error = HandleDeserializationError,
-            } );
+            });
         }
-
-        configuration ??= new Configuration();
-        if( configuration.Version == Constants.CurrentVersion )
-        {
-            configuration.AddColors( false );
-            return configuration;
-        }
-
-        Migration.Migrate( configuration );
-        configuration.AddColors( true );
-
-        return configuration;
+        migrator.Migrate(this);
     }
 
-    // Save the current configuration.
+    /// <summary> Save the current configuration. </summary>
     private void SaveConfiguration()
     {
         try
         {
             var text = JsonConvert.SerializeObject( this, Formatting.Indented );
-            File.WriteAllText( DalamudServices.PluginInterface.ConfigFile.FullName, text );
+            File.WriteAllText( _fileName, text );
         }
         catch( Exception e )
         {
@@ -135,24 +138,9 @@ public partial class Configuration : IPluginConfiguration
     }
 
     public void Save()
-        => Penumbra.Framework.RegisterDelayed( nameof( SaveConfiguration ), SaveConfiguration );
+        => _framework.RegisterDelayed( nameof( SaveConfiguration ), SaveConfiguration );
 
-    // Add missing colors to the dictionary if necessary.
-    private void AddColors( bool forceSave )
-    {
-        var save = false;
-        foreach( var color in Enum.GetValues< ColorId >() )
-        {
-            save |= Colors.TryAdd( color, color.Data().DefaultColor );
-        }
-
-        if( save || forceSave )
-        {
-            Save();
-        }
-    }
-
-    // Contains some default values or boundaries for config values.
+    /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants
     {
         public const int   CurrentVersion      = 7;
@@ -178,6 +166,7 @@ public partial class Configuration : IPluginConfiguration
         };
     }
 
+    /// <summary> Convert SortMode Types to their name. </summary>
     private class SortModeConverter : JsonConverter< ISortMode< Mod > >
     {
         public override void WriteJson( JsonWriter writer, ISortMode< Mod >? value, JsonSerializer serializer )

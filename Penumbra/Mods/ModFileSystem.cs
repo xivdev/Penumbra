@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Dalamud.Plugin;
 using OtterGui.Filesystem;
 using Penumbra.Services;
 
@@ -11,15 +12,16 @@ namespace Penumbra.Mods;
 
 public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
 {
-    public static string ModFileSystemFile
-        => Path.Combine( DalamudServices.PluginInterface.GetPluginConfigDirectory(), "sort_order.json" );
+    public static string ModFileSystemFile(DalamudPluginInterface pi)
+        => Path.Combine( pi.GetPluginConfigDirectory(), "sort_order.json" );
 
     // Save the current sort order.
     // Does not save or copy the backup in the current mod directory,
     // as this is done on mod directory changes only.
+    // TODO
     private void SaveFilesystem()
     {
-        SaveToFile( new FileInfo( ModFileSystemFile ), SaveMod, true );
+        SaveToFile( new FileInfo( ModFileSystemFile(DalamudServices.PluginInterface) ), SaveMod, true );
         Penumbra.Log.Verbose( "Saved mod filesystem." );
     }
 
@@ -75,7 +77,8 @@ public sealed class ModFileSystem : FileSystem< Mod >, IDisposable
     // Used on construction and on mod rediscoveries.
     private void Reload()
     {
-        if( Load( new FileInfo( ModFileSystemFile ), Penumbra.ModManager, ModToIdentifier, ModToName ) )
+        // TODO
+        if( Load( new FileInfo( ModFileSystemFile(DalamudServices.PluginInterface) ), Penumbra.ModManager, ModToIdentifier, ModToName ) )
         {
             Save();
         }

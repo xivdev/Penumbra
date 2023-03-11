@@ -8,18 +8,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Dalamud.Plugin;
 
 namespace Penumbra.Collections;
 
 // File operations like saving, loading and deleting for a collection.
 public partial class ModCollection
 {
-    public static string CollectionDirectory
-        => Path.Combine( DalamudServices.PluginInterface.GetPluginConfigDirectory(), "collections" );
+    public static string CollectionDirectory(DalamudPluginInterface pi)
+        => Path.Combine( pi.GetPluginConfigDirectory(), "collections" );
 
-    // We need to remove all invalid path symbols from the collection name to be able to save it to file.
+    // We need to remove all invalid path symbols from the collection name to be able to save it to file. 
+    // TODO
     public FileInfo FileName
-        => new(Path.Combine( CollectionDirectory, $"{Name.RemoveInvalidPathSymbols()}.json" ));
+        => new(Path.Combine( CollectionDirectory(DalamudServices.PluginInterface), $"{Name.RemoveInvalidPathSymbols()}.json" ));
 
     // Custom serialization due to shared mod information across managers.
     private void SaveCollection()

@@ -1404,10 +1404,10 @@ public class IpcTester : IDisposable
                 return;
             }
 
-            foreach( var collection in Penumbra.TempMods.CustomCollections.Values )
+            foreach( var collection in Penumbra.TempCollections.Values )
             {
                 ImGui.TableNextColumn();
-                var character = Penumbra.TempMods.Collections.Where( p => p.Collection == collection ).Select( p => p.DisplayName ).FirstOrDefault() ?? "Unknown";
+                var character = Penumbra.TempCollections.Collections.Where( p => p.Collection == collection ).Select( p => p.DisplayName ).FirstOrDefault() ?? "Unknown";
                 if( ImGui.Button( $"Save##{collection.Name}" ) )
                 {
                     Mod.TemporaryMod.SaveTempCollection( collection, character );
@@ -1416,7 +1416,7 @@ public class IpcTester : IDisposable
                 ImGuiUtil.DrawTableColumn( collection.Name );
                 ImGuiUtil.DrawTableColumn( collection.ResolvedFiles.Count.ToString() );
                 ImGuiUtil.DrawTableColumn( collection.MetaCache?.Count.ToString() ?? "0" );
-                ImGuiUtil.DrawTableColumn( string.Join( ", ", Penumbra.TempMods.Collections.Where( p => p.Collection == collection ).Select( c => c.DisplayName ) ) );
+                ImGuiUtil.DrawTableColumn( string.Join( ", ", Penumbra.TempCollections.Collections.Where( p => p.Collection == collection ).Select( c => c.DisplayName ) ) );
             }
         }
 

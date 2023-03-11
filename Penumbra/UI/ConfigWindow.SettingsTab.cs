@@ -299,11 +299,11 @@ public partial class ConfigWindow
 
         private const string SupportInfoButtonText = "Copy Support Info to Clipboard";
 
-        public static void DrawSupportButton()
+        public static void DrawSupportButton(Penumbra penumbra)
         {
             if( ImGui.Button( SupportInfoButtonText ) )
             {
-                var text = Penumbra.GatherSupportInformation();
+                var text = penumbra.GatherSupportInformation();
                 ImGui.SetClipboardText( text );
             }
         }
@@ -345,7 +345,7 @@ public partial class ConfigWindow
             }
 
             ImGui.SetCursorPos( new Vector2( xPos, ImGui.GetFrameHeightWithSpacing() ) );
-            DrawSupportButton();
+            DrawSupportButton(_window._penumbra);
 
             ImGui.SetCursorPos( new Vector2( xPos, 0 ) );
             DrawDiscordButton( width );

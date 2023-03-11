@@ -1,4 +1,5 @@
-using System;
+global using StartTracker = OtterGui.Classes.StartTimeTracker<Penumbra.Util.StartTimeType>;
+global using PerformanceTracker = OtterGui.Classes.PerformanceTracker<Penumbra.Util.PerformanceType>;
 
 namespace Penumbra.Util;
 
@@ -47,24 +48,24 @@ public enum PerformanceType
 
 public static class TimingExtensions
 {
-    public static string ToName( this StartTimeType type )
+    public static string ToName(this StartTimeType type)
         => type switch
         {
-            StartTimeType.Total          => "Total Construction",
-            StartTimeType.Identifier     => "Identification Data",
-            StartTimeType.Stains         => "Stain Data",
-            StartTimeType.Items          => "Item Data",
-            StartTimeType.Actors         => "Actor Data",
-            StartTimeType.Backup         => "Checking Backups",
-            StartTimeType.Mods           => "Loading Mods",
-            StartTimeType.Collections    => "Loading Collections",
-            StartTimeType.Api            => "Setting Up API",
-            StartTimeType.Interface      => "Setting Up Interface",
-            StartTimeType.PathResolver          => "Setting Up Path Resolver",
-            _                                   => $"Unknown {(int) type}",
+            StartTimeType.Total        => "Total Construction",
+            StartTimeType.Identifier   => "Identification Data",
+            StartTimeType.Stains       => "Stain Data",
+            StartTimeType.Items        => "Item Data",
+            StartTimeType.Actors       => "Actor Data",
+            StartTimeType.Backup       => "Checking Backups",
+            StartTimeType.Mods         => "Loading Mods",
+            StartTimeType.Collections  => "Loading Collections",
+            StartTimeType.Api          => "Setting Up API",
+            StartTimeType.Interface    => "Setting Up Interface",
+            StartTimeType.PathResolver => "Setting Up Path Resolver",
+            _                          => $"Unknown {(int)type}",
         };
 
-    public static string ToName( this PerformanceType type )
+    public static string ToName(this PerformanceType type)
         => type switch
         {
             PerformanceType.UiMainWindow               => "Main Interface Drawing",
@@ -91,6 +92,6 @@ public static class TimingExtensions
             PerformanceType.LoadPap                    => "LoadPap Hook",
             PerformanceType.LoadAction                 => "LoadAction Hook",
             PerformanceType.DebugTimes                 => "Debug Tracking",
-            _                                          => $"Unknown {( int )type}",
+            _                                          => $"Unknown {(int)type}",
         };
 }

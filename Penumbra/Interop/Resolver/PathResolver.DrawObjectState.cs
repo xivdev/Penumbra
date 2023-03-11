@@ -20,35 +20,34 @@ public unsafe partial class PathResolver
 {
     public class DrawObjectState
     {
+        private readonly CommunicatorService               _communicator;
         public static event CreatingCharacterBaseDelegate? CreatingCharacterBase;
-        public static event CreatedCharacterBaseDelegate? CreatedCharacterBase;
+        public static event CreatedCharacterBaseDelegate?  CreatedCharacterBase;
 
-        public IEnumerable< KeyValuePair< IntPtr, (ResolveData, int) > > DrawObjects
+        public IEnumerable<KeyValuePair<IntPtr, (ResolveData, int)>> DrawObjects
             => _drawObjectToObject;
 
         public int Count
             => _drawObjectToObject.Count;
 
-        public bool TryGetValue( IntPtr drawObject, out (ResolveData, int) value, out GameObject* gameObject )
+        public bool TryGetValue(IntPtr drawObject, out (ResolveData, int) value, out GameObject* gameObject)
         {
             gameObject = null;
-            if( !_drawObjectToObject.TryGetValue( drawObject, out value ) )
-            {
+            if (!_drawObjectToObject.TryGetValue(drawObject, out value))
                 return false;
-            }
 
             var gameObjectIdx = value.Item2;
-            return VerifyEntry( drawObject, gameObjectIdx, out gameObject );
+            return VerifyEntry(drawObject, gameObjectIdx, out gameObject);
         }
 
 
         // Set and update a parent object if it exists and a last game object is set.
-        public ResolveData CheckParentDrawObject( IntPtr drawObject, IntPtr parentObject )
+        public ResolveData CheckParentDrawObject(IntPtr drawObject, IntPtr parentObject)
         {
-            if( parentObject == IntPtr.Zero && LastGameObject != null )
+            if (parentObject == IntPtr.Zero && LastGameObject != null)
             {
-                var collection = IdentifyCollection( LastGameObject, true );
-                _drawObjectToObject[ drawObject ] = ( collection, LastGameObject->ObjectIndex );
+                var collection = IdentifyCollection(LastGameObject, true);
+                _drawObjectToObject[drawObject] = (collection, LastGameObject->ObjectIndex);
                 return collection;
             }
 
@@ -56,11 +55,11 @@ public unsafe partial class PathResolver
         }
 
 
-        public bool HandleDecalFile( ResourceType type, Utf8GamePath gamePath, out ResolveData resolveData )
+        public bool HandleDecalFile(ResourceType type, Utf8GamePath gamePath, out ResolveData resolveData)
         {
-            if( type == ResourceType.Tex
-            && LastCreatedCollection.Valid
-            && gamePath.Path.Substring( "chara/common/texture/".Length ).StartsWith( "decal"u8 ) )
+            if (type == ResourceType.Tex
+             && LastCreatedCollection.Valid
+             && gamePath.Path.Substring("chara/common/texture/".Length).StartsWith("decal"u8))
             {
                 resolveData = LastCreatedCollection;
                 return true;
@@ -76,9 +75,10 @@ public unsafe partial class PathResolver
 
         public GameObject* LastGameObject { get; private set; }
 
-        public DrawObjectState()
+        public DrawObjectState(CommunicatorService communicator)
         {
-            SignatureHelper.Initialise( this );
+            SignatureHelper.Initialise(this);
+            _communicator = communicator;
         }
 
         public void Enable()
@@ -88,8 +88,7 @@ public unsafe partial class PathResolver
             _enableDrawHook.Enable();
             _weaponReloadHook.Enable();
             InitializeDrawObjects();
-            Penumbra.CollectionManager.CollectionChanged += CheckCollections;
-            Penumbra.TempMods.CollectionChanged          += CheckCollections;
+            _communicator.CollectionChange.Event += CheckCollections;
         }
 
         public void Disable()
@@ -98,8 +97,7 @@ public unsafe partial class PathResolver
             _characterBaseDestructorHook.Disable();
             _enableDrawHook.Disable();
             _weaponReloadHook.Disable();
-            Penumbra.CollectionManager.CollectionChanged -= CheckCollections;
-            Penumbra.TempMods.CollectionChanged          -= CheckCollections;
+            _communicator.CollectionChange.Event       -= CheckCollections;
         }
 
         public void Dispose()
@@ -112,63 +110,61 @@ public unsafe partial class PathResolver
         }
 
         // Check that a linked DrawObject still corresponds to the correct actor and that it still exists, otherwise remove it.
-        private bool VerifyEntry( IntPtr drawObject, int gameObjectIdx, out GameObject* gameObject )
+        private bool VerifyEntry(IntPtr drawObject, int gameObjectIdx, out GameObject* gameObject)
         {
-            gameObject = ( GameObject* )DalamudServices.Objects.GetObjectAddress( gameObjectIdx );
-            var draw = ( DrawObject* )drawObject;
-            if( gameObject != null
-            && ( gameObject->DrawObject == draw || draw != null && gameObject->DrawObject == draw->Object.ParentObject ) )
-            {
+            gameObject = (GameObject*)DalamudServices.Objects.GetObjectAddress(gameObjectIdx);
+            var draw = (DrawObject*)drawObject;
+            if (gameObject != null
+             && (gameObject->DrawObject == draw || draw != null && gameObject->DrawObject == draw->Object.ParentObject))
                 return true;
-            }
 
             gameObject = null;
-            _drawObjectToObject.Remove( drawObject );
+            _drawObjectToObject.Remove(drawObject);
             return false;
         }
 
         // This map links DrawObjects directly to Actors (by ObjectTable index) and their collections.
         // It contains any DrawObjects that correspond to a human actor, even those without specific collections.
-        private readonly Dictionary< IntPtr, (ResolveData, int) > _drawObjectToObject    = new();
-        private          ResolveData                              _lastCreatedCollection = ResolveData.Invalid;
+        private readonly Dictionary<IntPtr, (ResolveData, int)> _drawObjectToObject    = new();
+        private          ResolveData                            _lastCreatedCollection = ResolveData.Invalid;
 
         // Keep track of created DrawObjects that are CharacterBase,
         // and use the last game object that called EnableDraw to link them.
-        private delegate IntPtr CharacterBaseCreateDelegate( uint a, IntPtr b, IntPtr c, byte d );
+        private delegate IntPtr CharacterBaseCreateDelegate(uint a, IntPtr b, IntPtr c, byte d);
 
-        [Signature( Sigs.CharacterBaseCreate, DetourName = nameof( CharacterBaseCreateDetour ) )]
-        private readonly Hook< CharacterBaseCreateDelegate > _characterBaseCreateHook = null!;
+        [Signature(Sigs.CharacterBaseCreate, DetourName = nameof(CharacterBaseCreateDetour))]
+        private readonly Hook<CharacterBaseCreateDelegate> _characterBaseCreateHook = null!;
 
-        private IntPtr CharacterBaseCreateDetour( uint a, IntPtr b, IntPtr c, byte d )
+        private IntPtr CharacterBaseCreateDetour(uint a, IntPtr b, IntPtr c, byte d)
         {
-            using var performance = Penumbra.Performance.Measure( PerformanceType.CharacterBaseCreate );
+            using var performance = Penumbra.Performance.Measure(PerformanceType.CharacterBaseCreate);
 
             var meta = DisposableContainer.Empty;
-            if( LastGameObject != null )
+            if (LastGameObject != null)
             {
-                _lastCreatedCollection = IdentifyCollection( LastGameObject, false );
+                _lastCreatedCollection = IdentifyCollection(LastGameObject, false);
                 // Change the transparent or 1.0 Decal if necessary.
-                var decal = new CharacterUtility.DecalReverter( _lastCreatedCollection.ModCollection, UsesDecal( a, c ) );
+                var decal = new CharacterUtility.DecalReverter(_lastCreatedCollection.ModCollection, UsesDecal(a, c));
                 // Change the rsp parameters.
-                meta = new DisposableContainer( _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(), decal );
+                meta = new DisposableContainer(_lastCreatedCollection.ModCollection.TemporarilySetCmpFile(), decal);
                 try
                 {
                     var modelPtr = &a;
-                    CreatingCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection.Name, ( IntPtr )modelPtr, b, c );
+                    CreatingCharacterBase?.Invoke((IntPtr)LastGameObject, _lastCreatedCollection!.ModCollection.Name, (IntPtr)modelPtr, b, c);
                 }
-                catch( Exception e )
+                catch (Exception e)
                 {
-                    Penumbra.Log.Error( $"Unknown Error during CreatingCharacterBase:\n{e}" );
+                    Penumbra.Log.Error($"Unknown Error during CreatingCharacterBase:\n{e}");
                 }
             }
 
-            var ret = _characterBaseCreateHook.Original( a, b, c, d );
+            var ret = _characterBaseCreateHook.Original(a, b, c, d);
             try
             {
-                if( LastGameObject != null && ret != IntPtr.Zero )
+                if (LastGameObject != null && ret != IntPtr.Zero)
                 {
-                    _drawObjectToObject[ ret ] = ( _lastCreatedCollection!, LastGameObject->ObjectIndex );
-                    CreatedCharacterBase?.Invoke( ( IntPtr )LastGameObject, _lastCreatedCollection!.ModCollection.Name, ret );
+                    _drawObjectToObject[ret] = (_lastCreatedCollection!, LastGameObject->ObjectIndex);
+                    CreatedCharacterBase?.Invoke((IntPtr)LastGameObject, _lastCreatedCollection!.ModCollection.Name, ret);
                 }
             }
             finally
@@ -181,70 +177,66 @@ public unsafe partial class PathResolver
 
         // Check the customize array for the FaceCustomization byte and the last bit of that.
         // Also check for humans.
-        public static bool UsesDecal( uint modelId, IntPtr customizeData )
-            => modelId == 0 && ( ( byte* )customizeData )[ 12 ] > 0x7F;
+        public static bool UsesDecal(uint modelId, IntPtr customizeData)
+            => modelId == 0 && ((byte*)customizeData)[12] > 0x7F;
 
 
         // Remove DrawObjects from the list when they are destroyed.
-        private delegate void CharacterBaseDestructorDelegate( IntPtr drawBase );
+        private delegate void CharacterBaseDestructorDelegate(IntPtr drawBase);
 
-        [Signature( Sigs.CharacterBaseDestructor, DetourName = nameof( CharacterBaseDestructorDetour ) )]
-        private readonly Hook< CharacterBaseDestructorDelegate > _characterBaseDestructorHook = null!;
+        [Signature(Sigs.CharacterBaseDestructor, DetourName = nameof(CharacterBaseDestructorDetour))]
+        private readonly Hook<CharacterBaseDestructorDelegate> _characterBaseDestructorHook = null!;
 
-        private void CharacterBaseDestructorDetour( IntPtr drawBase )
+        private void CharacterBaseDestructorDetour(IntPtr drawBase)
         {
-            _drawObjectToObject.Remove( drawBase );
-            _characterBaseDestructorHook!.Original.Invoke( drawBase );
+            _drawObjectToObject.Remove(drawBase);
+            _characterBaseDestructorHook!.Original.Invoke(drawBase);
         }
 
 
         // EnableDraw is what creates DrawObjects for gameObjects,
         // so we always keep track of the current GameObject to be able to link it to the DrawObject.
-        private delegate void EnableDrawDelegate( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d );
+        private delegate void EnableDrawDelegate(IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d);
 
-        [Signature( Sigs.EnableDraw, DetourName = nameof( EnableDrawDetour ) )]
-        private readonly Hook< EnableDrawDelegate > _enableDrawHook = null!;
+        [Signature(Sigs.EnableDraw, DetourName = nameof(EnableDrawDetour))]
+        private readonly Hook<EnableDrawDelegate> _enableDrawHook = null!;
 
-        private void EnableDrawDetour( IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d )
+        private void EnableDrawDetour(IntPtr gameObject, IntPtr b, IntPtr c, IntPtr d)
         {
             var oldObject = LastGameObject;
-            LastGameObject = ( GameObject* )gameObject;
-            _enableDrawHook!.Original.Invoke( gameObject, b, c, d );
+            LastGameObject = (GameObject*)gameObject;
+            _enableDrawHook!.Original.Invoke(gameObject, b, c, d);
             LastGameObject = oldObject;
         }
 
         // Not fully understood. The game object the weapon is loaded for is seemingly found at a1 + 8,
         // so we use that.
-        private delegate void WeaponReloadFunc( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 );
+        private delegate void WeaponReloadFunc(IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7);
 
-        [Signature( Sigs.WeaponReload, DetourName = nameof( WeaponReloadDetour ) )]
-        private readonly Hook< WeaponReloadFunc > _weaponReloadHook = null!;
+        [Signature(Sigs.WeaponReload, DetourName = nameof(WeaponReloadDetour))]
+        private readonly Hook<WeaponReloadFunc> _weaponReloadHook = null!;
 
-        public void WeaponReloadDetour( IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7 )
+        public void WeaponReloadDetour(IntPtr a1, uint a2, IntPtr a3, byte a4, byte a5, byte a6, byte a7)
         {
             var oldGame = LastGameObject;
-            LastGameObject = *( GameObject** )( a1 + 8 );
-            _weaponReloadHook!.Original( a1, a2, a3, a4, a5, a6, a7 );
+            LastGameObject = *(GameObject**)(a1 + 8);
+            _weaponReloadHook!.Original(a1, a2, a3, a4, a5, a6, a7);
             LastGameObject = oldGame;
         }
 
         // Update collections linked to Game/DrawObjects due to a change in collection configuration.
-        private void CheckCollections( CollectionType type, ModCollection? _1, ModCollection? _2, string _3 )
+        private void CheckCollections(CollectionType type, ModCollection? _1, ModCollection? _2, string _3)
         {
-            if( type is CollectionType.Inactive or CollectionType.Current or CollectionType.Interface )
-            {
+            if (type is CollectionType.Inactive or CollectionType.Current or CollectionType.Interface)
                 return;
-            }
 
-            foreach( var (key, (_, idx)) in _drawObjectToObject.ToArray() )
+            foreach (var (key, (_, idx)) in _drawObjectToObject.ToArray())
             {
-                if( !VerifyEntry( key, idx, out var obj ) )
-                {
-                    _drawObjectToObject.Remove( key );
-                }
+                if (!VerifyEntry(key, idx, out var obj))
+                    _drawObjectToObject.Remove(key);
 
-                var newCollection = IdentifyCollection( obj, false );
-                _drawObjectToObject[ key ] = ( newCollection, idx );
+                var newCollection = IdentifyCollection(obj, false);
+                _drawObjectToObject[key] = (newCollection, idx);
             }
         }
 
@@ -252,13 +244,11 @@ public unsafe partial class PathResolver
         // We do not iterate the Dalamud table because it does not work when not logged in.
         private void InitializeDrawObjects()
         {
-            for( var i = 0; i < DalamudServices.Objects.Length; ++i )
+            for (var i = 0; i < DalamudServices.Objects.Length; ++i)
             {
-                var ptr = ( GameObject* )DalamudServices.Objects.GetObjectAddress( i );
-                if( ptr != null && ptr->IsCharacter() && ptr->DrawObject != null )
-                {
-                    _drawObjectToObject[ ( IntPtr )ptr->DrawObject ] = ( IdentifyCollection( ptr, false ), ptr->ObjectIndex );
-                }
+                var ptr = (GameObject*)DalamudServices.Objects.GetObjectAddress(i);
+                if (ptr != null && ptr->IsCharacter() && ptr->DrawObject != null)
+                    _drawObjectToObject[(IntPtr)ptr->DrawObject] = (IdentifyCollection(ptr, false), ptr->ObjectIndex);
             }
         }
     }

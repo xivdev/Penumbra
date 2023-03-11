@@ -13,6 +13,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 using static Penumbra.Mods.Mod;
@@ -22,7 +23,7 @@ namespace Penumbra.UI.Classes;
 public partial class ModEditWindow : Window, IDisposable
 {
     private const     string         WindowBaseLabel = "###SubModEdit";
-    internal readonly ItemSwapWindow _swapWindow     = new();
+    internal readonly ItemSwapWindow _swapWindow;
 
     private Editor? _editor;
     private Mod?    _mod;
@@ -567,9 +568,10 @@ public partial class ModEditWindow : Window, IDisposable
         return new FullPath( path );
     }
 
-    public ModEditWindow()
+    public ModEditWindow(CommunicatorService communicator)
         : base( WindowBaseLabel )
     {
+        _swapWindow = new ItemSwapWindow( communicator );
         _materialTab = new FileEditor< MtrlTab >( "Materials", ".mtrl",
             () => _editor?.MtrlFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawMaterialPanel,

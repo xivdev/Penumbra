@@ -10,7 +10,6 @@ using FFXIVClientStructs.STD;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
-using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
@@ -249,18 +248,4 @@ public unsafe partial class ResourceLoader
         Penumbra.Log.Error( $"Caught decrease of Reference Counter for {handle->FileName} at 0x{( ulong )handle:X} below 0." );
         return 1;
     }
-
-    // Logging functions for EnableFullLogging.
-    private static void LogPath( Utf8GamePath path, bool synchronous )
-        => Penumbra.Log.Information( $"[ResourceLoader] Requested {path} {( synchronous ? "synchronously." : "asynchronously." )}" );
-
-    private static void LogResource( Structs.ResourceHandle* handle, Utf8GamePath path, FullPath? manipulatedPath, ResolveData data )
-    {
-        var pathString = manipulatedPath != null ? $"custom file {manipulatedPath} instead of {path}" : path.ToString();
-        Penumbra.Log.Information(
-            $"[ResourceLoader] [{handle->FileType}] Loaded {pathString} to 0x{( ulong )handle:X} using collection {data.ModCollection.AnonymizedName} for {data.AssociatedName()} (Refcount {handle->RefCount}) " );
-    }
-
-    private static void LogLoadedFile( Structs.ResourceHandle* resource, ByteString path, bool success, bool custom )
-        => Penumbra.Log.Information( $"[ResourceLoader] Loading {path} from {( custom ? "local files" : "SqPack" )} into 0x{( ulong )resource:X} returned {success}." );
 }

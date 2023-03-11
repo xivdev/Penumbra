@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Dalamud.Plugin;
 using Newtonsoft.Json;
 using Penumbra.Services;
 
@@ -10,8 +11,8 @@ namespace Penumbra.Mods;
 
 public sealed partial class Mod
 {
-    public static DirectoryInfo LocalDataDirectory
-        => new(Path.Combine( DalamudServices.PluginInterface.ConfigDirectory.FullName, "mod_data" ));
+    public static DirectoryInfo LocalDataDirectory(DalamudPluginInterface pi)
+        => new(Path.Combine( pi.ConfigDirectory.FullName, "mod_data" ));
 
     public long ImportDate { get; private set; } = DateTimeOffset.UnixEpoch.ToUnixTimeMilliseconds();
 

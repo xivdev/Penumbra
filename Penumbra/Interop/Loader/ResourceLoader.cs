@@ -18,39 +18,6 @@ public unsafe partial class ResourceLoader : IDisposable
     // Hooks are required for everything, even events firing.
     public bool HooksEnabled { get; private set; }
 
-    // This Logging just logs all file requests, returns and loads to the Dalamud log.
-    // Events can be used to make smarter logging.
-    public bool IsLoggingEnabled { get; private set; }
-
-    public void EnableFullLogging()
-    {
-        if( IsLoggingEnabled )
-        {
-            return;
-        }
-
-        IsLoggingEnabled  =  true;
-        ResourceRequested += LogPath;
-        ResourceLoaded    += LogResource;
-        FileLoaded        += LogLoadedFile;
-        ResourceHandleDestructorHook?.Enable();
-        EnableHooks();
-    }
-
-    public void DisableFullLogging()
-    {
-        if( !IsLoggingEnabled )
-        {
-            return;
-        }
-
-        IsLoggingEnabled  =  false;
-        ResourceRequested -= LogPath;
-        ResourceLoaded    -= LogResource;
-        FileLoaded        -= LogLoadedFile;
-        ResourceHandleDestructorHook?.Disable();
-    }
-
     public void EnableReplacements()
     {
         if( DoReplacements )
@@ -150,7 +117,6 @@ public unsafe partial class ResourceLoader : IDisposable
 
     public void Dispose()
     {
-        DisableFullLogging();
         DisposeHooks();
         DisposeTexMdlTreatment();
     }

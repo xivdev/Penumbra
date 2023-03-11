@@ -103,7 +103,7 @@ public unsafe partial class PathResolver
 
     // Check both temporary and permanent character collections. Temporary first.
     private static ModCollection? CollectionByIdentifier( ActorIdentifier identifier )
-        => Penumbra.TempMods.Collections.TryGetCollection( identifier, out var collection )
+        => Penumbra.TempCollections.Collections.TryGetCollection( identifier, out var collection )
          || Penumbra.CollectionManager.Individuals.TryGetCollection( identifier, out collection )
                 ? collection
                 : null;

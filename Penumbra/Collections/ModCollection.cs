@@ -90,7 +90,7 @@ public partial class ModCollection
         var collection = new ModCollection( name, Empty );
         collection.ModSettingChanged  -= collection.SaveOnChange;
         collection.InheritanceChanged -= collection.SaveOnChange;
-        collection.Index              =  ~Penumbra.TempMods.Collections.Count;
+        collection.Index              =  ~Penumbra.TempCollections.Count;
         collection.ChangeCounter      =  changeCounter;
         collection.CreateCache();
         return collection;
