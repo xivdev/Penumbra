@@ -1,13 +1,13 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace Penumbra.Mods.ItemSwap;
 
@@ -129,6 +129,15 @@ public class ItemSwapContainer
         Swaps.Clear();
         Loaded = false;
         var ret = EquipmentSwap.CreateItemSwap( Swaps, PathResolver( collection ), MetaResolver( collection ), from, to, useRightRing, useLeftRing );
+        Loaded = true;
+        return ret;
+    }
+
+    public Item[] LoadTypeSwap( EquipSlot slotFrom, Item from, EquipSlot slotTo, Item to, ModCollection? collection = null )
+    {
+        Swaps.Clear();
+        Loaded = false;
+        var ret = EquipmentSwap.CreateTypeSwap( Swaps, PathResolver( collection ), MetaResolver( collection ), slotFrom, from, slotTo, to );
         Loaded = true;
         return ret;
     }

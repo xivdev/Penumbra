@@ -17,12 +17,6 @@ public static class ItemSwap
     public class InvalidItemTypeException : Exception
     { }
 
-    public class InvalidImcException : Exception
-    { }
-
-    public class IdUnavailableException : Exception
-    { }
-
     public class MissingFileException : Exception
     {
         public readonly ResourceType Type;
@@ -222,6 +216,11 @@ public static class ItemSwap
     public static string ReplaceId( string path, char type, SetId idFrom, SetId idTo, bool condition = true )
         => condition
             ? path.Replace( $"{type}{idFrom.Value:D4}", $"{type}{idTo.Value:D4}" )
+            : path;
+
+    public static string ReplaceSlot( string path, EquipSlot from, EquipSlot to, bool condition = true )
+        => condition
+            ? path.Replace( $"_{from.ToSuffix()}_", $"_{to.ToSuffix()}_" )
             : path;
 
     public static string ReplaceRace( string path, GenderRace from, GenderRace to, bool condition = true )

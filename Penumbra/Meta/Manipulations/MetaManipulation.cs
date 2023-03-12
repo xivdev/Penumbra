@@ -209,7 +209,7 @@ public readonly struct MetaManipulation : IEquatable< MetaManipulation >, ICompa
         {
             Type.Eqp  => Eqp.Copy( other.Eqp.Entry ),
             Type.Gmp  => Gmp.Copy( other.Gmp.Entry ),
-            Type.Eqdp => Eqdp.Copy( other.Eqdp.Entry ),
+            Type.Eqdp => Eqdp.Copy( other.Eqdp ),
             Type.Est  => Est.Copy( other.Est.Entry ),
             Type.Rsp  => Rsp.Copy( other.Rsp.Entry ),
             Type.Imc  => Imc.Copy( other.Imc.Entry ),

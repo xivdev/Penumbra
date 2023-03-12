@@ -34,6 +34,7 @@ public class ItemSwapWindow : IDisposable
         Necklace,
         Bracelet,
         Ring,
+        BetweenSlots,
         Hair,
         Face,
         Ears,
@@ -101,6 +102,8 @@ public class ItemSwapWindow : IDisposable
     private int        _targetId      = 0;
     private int        _sourceId      = 0;
     private Exception? _loadException = null;
+    private EquipSlot  _slotFrom      = EquipSlot.Head;
+    private EquipSlot  _slotTo        = EquipSlot.Ears;
 
     private string     _newModName           = string.Empty;
     private string     _newGroupName         = "Swaps";
@@ -164,6 +167,15 @@ public class ItemSwapWindow : IDisposable
                             _useCurrentCollection ? Penumbra.CollectionManager.Current : null, _useRightRing, _useLeftRing );
                     }
 
+                    break;
+                case SwapType.BetweenSlots:
+                    var (_, _, selectorFrom) = GetAccessorySelector( _slotFrom, true );
+                    var (_, _, selectorTo) = GetAccessorySelector( _slotTo, false );
+                    if( selectorFrom.CurrentSelection.Item2 != null && selectorTo.CurrentSelection.Item2 != null )
+                    {
+                        _affectedItems = _swapData.LoadTypeSwap( _slotTo, selectorTo.CurrentSelection.Item2, _slotFrom, selectorFrom.CurrentSelection.Item2,
+                            _useCurrentCollection ? Penumbra.CollectionManager.Current : null);
+                    }
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization( BodySlot.Hair, Names.CombinedRace( _currentGender, _currentRace ), ( SetId )_sourceId, ( SetId )_targetId,
@@ -364,6 +376,7 @@ public class ItemSwapWindow : IDisposable
         DrawEquipmentSwap( SwapType.Necklace );
         DrawEquipmentSwap( SwapType.Bracelet );
         DrawEquipmentSwap( SwapType.Ring );
+        DrawAccessorySwap();
         DrawHairSwap();
         DrawFaceSwap();
         DrawEarSwap();
@@ -373,7 +386,7 @@ public class ItemSwapWindow : IDisposable
 
     private ImRaii.IEndObject DrawTab( SwapType newTab )
     {
-        using var tab = ImRaii.TabItem( newTab.ToString() );
+        using var tab = ImRaii.TabItem( newTab is SwapType.BetweenSlots ? "Between Slots" : newTab.ToString() );
         if( tab )
         {
             _dirty   |= _lastTab != newTab;
@@ -383,6 +396,99 @@ public class ItemSwapWindow : IDisposable
         UpdateState();
 
         return tab;
+    }
+
+    private void DrawAccessorySwap()
+    {
+        using var tab = DrawTab( SwapType.BetweenSlots );
+        if( !tab )
+        {
+            return;
+        }
+
+        using var table = ImRaii.Table( "##settings", 3, ImGuiTableFlags.SizingFixedFit );
+        ImGui.TableSetupColumn( "##text", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize( "and put them on these" ).X );
+
+        var (article1, article2, selector) = GetAccessorySelector( _slotFrom, true );
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( $"Take {article1}" );
+
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth( 100 * ImGuiHelpers.GlobalScale );
+        using( var combo = ImRaii.Combo( "##fromType", _slotFrom is EquipSlot.Head ? "Hat" : _slotFrom.ToName() ) )
+        {
+            if( combo )
+            {
+                foreach( var slot in EquipSlotExtensions.AccessorySlots.Prepend(EquipSlot.Head) )
+                {
+                    if( ImGui.Selectable( slot is EquipSlot.Head ? "Hat" : slot.ToName(), slot == _slotFrom ) && slot != _slotFrom )
+                    {
+                        _dirty    = true;
+                        _slotFrom = slot;
+                        if( slot == _slotTo )
+                        {
+                            _slotTo = EquipSlotExtensions.AccessorySlots.First( s => slot != s );
+                        }
+                    }
+                }
+            }
+        }
+
+        ImGui.TableNextColumn();
+        _dirty |= selector.Draw( "##itemSource", selector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+
+        (article1, _, selector) = GetAccessorySelector( _slotTo, false );
+        ImGui.TableNextColumn();
+        ImGui.AlignTextToFramePadding();
+        ImGui.TextUnformatted( $"and put {article2} on {article1}" );
+
+        ImGui.TableNextColumn();
+        ImGui.SetNextItemWidth( 100 * ImGuiHelpers.GlobalScale );
+        using( var combo = ImRaii.Combo( "##toType", _slotTo.ToName() ) )
+        {
+            if( combo )
+            {
+                foreach( var slot in EquipSlotExtensions.AccessorySlots.Where( s => s != _slotFrom ) )
+                {
+                    if( ImGui.Selectable( slot.ToName(), slot == _slotTo ) && slot != _slotTo )
+                    {
+                        _dirty  = true;
+                        _slotTo = slot;
+                    }
+                }
+            }
+        }
+
+        ImGui.TableNextColumn();
+        
+        _dirty   |= selector.Draw( "##itemTarget", selector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+        if( _affectedItems is { Length: > 1 } )
+        {
+            ImGui.SameLine();
+            ImGuiUtil.DrawTextButton( $"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero, Colors.PressEnterWarningBg );
+            if( ImGui.IsItemHovered() )
+            {
+                ImGui.SetTooltip( string.Join( '\n', _affectedItems.Where( i => !ReferenceEquals( i, selector.CurrentSelection.Item2 ) )
+                   .Select( i => i.Name.ToDalamudString().TextValue ) ) );
+            }
+        }
+    }
+
+    private (string, string, ItemSelector) GetAccessorySelector( EquipSlot slot, bool source )
+    {
+        var (type, article1, article2) = slot switch
+        {
+            EquipSlot.Head    => (SwapType.Hat, "this", "it"),
+            EquipSlot.Ears    => (SwapType.Earrings, "these", "them"),
+            EquipSlot.Neck    => (SwapType.Necklace, "this", "it"),
+            EquipSlot.Wrists  => (SwapType.Bracelet, "these", "them"),
+            EquipSlot.RFinger => (SwapType.Ring, "this", "it"),
+            EquipSlot.LFinger => (SwapType.Ring, "this", "it"),
+            _                 => (SwapType.Ring, "this", "it"),
+        };
+        var tuple = _selectors[ type ];
+        return (article1, article2, source ? tuple.Source : tuple.Target);
     }
 
     private void DrawEquipmentSwap( SwapType type )

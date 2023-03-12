@@ -35,6 +35,16 @@ public readonly struct EqdpManipulation : IMetaManipulation< EqdpManipulation >
         Entry  = Eqdp.Mask( Slot ) & entry;
     }
 
+    public EqdpManipulation Copy( EqdpManipulation entry )
+    {
+        if( entry.Slot != Slot )
+        {
+            var (bit1, bit2) = entry.Entry.ToBits( entry.Slot );
+            return new EqdpManipulation(Eqdp.FromSlotAndBits( Slot, bit1, bit2 ), Slot, Gender, Race, SetId);
+        }
+        return new EqdpManipulation(entry.Entry, Slot, Gender, Race, SetId);
+    }
+
     public EqdpManipulation Copy( EqdpEntry entry )
         => new(entry, Slot, Gender, Race, SetId);
 
