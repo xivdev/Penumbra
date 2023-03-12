@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin;
 using Penumbra.Util;
@@ -44,7 +46,7 @@ public class ValidityChecker
         }
         catch( Exception e )
         {
-            Log.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
+            Penumbra.Log.Error( $"Could not check for dev plugin Penumbra:\n{e}" );
             return true;
         }
 #else
@@ -60,7 +62,7 @@ public class ValidityChecker
         var ret = checkedDirectory?.Equals( "installedPlugins", StringComparison.OrdinalIgnoreCase ) ?? false;
         if( !ret )
         {
-            Log.Error( $"Penumbra is not correctly installed. Application loaded from \"{pi.AssemblyLocation.Directory!.FullName}\"." );
+            Penumbra.Log.Error( $"Penumbra is not correctly installed. Application loaded from \"{pi.AssemblyLocation.Directory!.FullName}\"." );
         }
 
         return !ret;
