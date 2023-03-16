@@ -194,7 +194,7 @@ public unsafe partial class PathResolver
             _inChangeCustomize = true;
             var       resolveData = GetResolveData( human );
             using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile();
-            using var decals      = new CharacterUtility.DecalReverter( resolveData.ModCollection, DrawObjectState.UsesDecal( 0, data ) );
+            using var decals      = new CharacterUtility.DecalReverter( Penumbra.ResourceService, resolveData.ModCollection, DrawObjectState.UsesDecal( 0, data ) );
             var       ret         = _changeCustomize.Original( human, data, skipEquipment );
             _inChangeCustomize = false;
             return ret;

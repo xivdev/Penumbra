@@ -144,7 +144,7 @@ public unsafe partial class PathResolver
             {
                 _lastCreatedCollection = IdentifyCollection(LastGameObject, false);
                 // Change the transparent or 1.0 Decal if necessary.
-                var decal = new CharacterUtility.DecalReverter(_lastCreatedCollection.ModCollection, UsesDecal(a, c));
+                var decal = new CharacterUtility.DecalReverter(Penumbra.ResourceService, _lastCreatedCollection.ModCollection, UsesDecal(a, c));
                 // Change the rsp parameters.
                 meta = new DisposableContainer(_lastCreatedCollection.ModCollection.TemporarilySetCmpFile(), decal);
                 try

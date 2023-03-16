@@ -7,6 +7,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
+using Penumbra.Interop;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -35,14 +36,14 @@ public sealed partial class ConfigWindow : Window, IDisposable
     public void SelectMod(Mod mod)
         => _selector.SelectByValue(mod);
 
-    public ConfigWindow(CommunicatorService communicator, StartTracker timer, Penumbra penumbra, ResourceWatcher watcher)
+    public ConfigWindow(CommunicatorService communicator, StartTracker timer, FontReloader fontReloader, Penumbra penumbra, ResourceWatcher watcher)
         : base(GetLabel())
     {
         _penumbra        = penumbra;
         _resourceWatcher = watcher;
 
         ModEditPopup               =  new ModEditWindow(communicator);
-        _settingsTab               =  new SettingsTab(this);
+        _settingsTab               =  new SettingsTab(this, fontReloader);
         _selector                  =  new ModFileSystemSelector(communicator, _penumbra.ModFileSystem);
         _modPanel                  =  new ModPanel(this);
         _modsTab                   =  new ModsTab(_selector, _modPanel, _penumbra);

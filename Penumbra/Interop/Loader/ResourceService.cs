@@ -6,24 +6,48 @@ using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
-using ResourceHandle = FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle;
+using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Interop.Loader;
 
-public unsafe class ResourceHook : IDisposable
+public unsafe class ResourceService : IDisposable
 {
-    public ResourceHook()
+    private readonly PerformanceTracker     _performance;
+    private readonly ResourceManagerService _resourceManager;
+
+    public ResourceService(PerformanceTracker performance, ResourceManagerService resourceManager)
     {
+        _performance     = performance;
+        _resourceManager = resourceManager;
         SignatureHelper.Initialise(this);
         _getResourceSyncHook.Enable();
         _getResourceAsyncHook.Enable();
         _resourceHandleDestructorHook.Enable();
+        _incRefHook = Hook<ResourceHandlePrototype>.FromAddress(
+            (nint)FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.MemberFunctionPointers.IncRef,
+            ResourceHandleIncRefDetour);
+        _incRefHook.Enable();
+        _decRefHook = Hook<ResourceHandleDecRefPrototype>.FromAddress(
+            (nint)FFXIVClientStructs.FFXIV.Client.System.Resource.Handle.ResourceHandle.MemberFunctionPointers.DecRef,
+            ResourceHandleDecRefDetour);
+        _decRefHook.Enable();
+    }
+
+    public ResourceHandle* GetResource(ResourceCategory category, ResourceType type, ByteString path)
+    {
+        var hash = path.Crc32;
+        return GetResourceHandler(true, (ResourceManager*)_resourceManager.ResourceManagerAddress,
+            &category,                  &type, &hash, path.Path, null, false);
     }
 
     public void Dispose()
     {
         _getResourceSyncHook.Dispose();
         _getResourceAsyncHook.Dispose();
+        _resourceHandleDestructorHook.Dispose();
+        _incRefHook.Dispose();
+        _decRefHook.Dispose();
     }
 
     #region GetResource
@@ -33,24 +57,15 @@ public unsafe class ResourceHook : IDisposable
     /// <param name="type">The resource type. Should not generally be changed.</param>
     /// <param name="hash">The resource hash. Should generally fit to the path.</param>
     /// <param name="path">The path of the requested resource.</param>
-    /// <param name="parameters">Mainly used for SCD streaming.</param>
+    /// <param name="parameters">Mainly used for SCD streaming, can be null.</param>
     /// <param name="sync">Whether to request the resource synchronously or asynchronously.</param>
-    public delegate void GetResourcePreDelegate(ref ResourceCategory category, ref ResourceType type, ref int hash, ref ByteString path,
-        ref GetResourceParameters parameters, ref bool sync);
+    /// <param name="returnValue">The returned resource handle. If this is not null, calling original will be skipped. </param>
+    public delegate void GetResourcePreDelegate(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
+        GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue);
 
     /// <summary> <inheritdoc cref="GetResourcePreDelegate"/> <para/>
     /// Subscribers should be exception-safe.</summary>
-    public event GetResourcePreDelegate? GetResourcePre;
-
-    /// <summary>
-    /// The returned resource handle obtained from a resource request. Contains all the other information from the request.
-    /// </summary>
-    public delegate void GetResourcePostDelegate(ref ResourceHandle handle);
-
-    /// <summary> <inheritdoc cref="GetResourcePostDelegate"/> <para/>
-    /// Subscribers should be exception-safe.</summary>
-    public event GetResourcePostDelegate? GetResourcePost;
-
+    public event GetResourcePreDelegate? ResourceRequested;
 
     private delegate ResourceHandle* GetResourceSyncPrototype(ResourceManager* resourceManager, ResourceCategory* pCategoryId,
         ResourceType* pResourceType, int* pResourceHash, byte* pPath, GetResourceParameters* pGetResParams);
@@ -79,14 +94,33 @@ public unsafe class ResourceHook : IDisposable
     private ResourceHandle* GetResourceHandler(bool isSync, ResourceManager* resourceManager, ResourceCategory* categoryId,
         ResourceType* resourceType, int* resourceHash, byte* path, GetResourceParameters* pGetResParams, bool isUnk)
     {
-        var byteString = new ByteString(path);
-        GetResourcePre?.Invoke(ref *categoryId, ref *resourceType, ref *resourceHash, ref byteString, ref *pGetResParams, ref isSync);
-        var ret = isSync
-            ? _getResourceSyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, byteString.Path, pGetResParams)
-            : _getResourceAsyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, byteString.Path, pGetResParams, isUnk);
-        GetResourcePost?.Invoke(ref *ret);
-        return ret;
+        using var performance = _performance.Measure(PerformanceType.GetResourceHandler);
+        if (!Utf8GamePath.FromPointer(path, out var gamePath))
+        {
+            Penumbra.Log.Error("[ResourceService] Could not create GamePath from resource path.");
+            return isSync
+                ? _getResourceSyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams)
+                : _getResourceAsyncHook.Original(resourceManager, categoryId, resourceType, resourceHash, path, pGetResParams, isUnk);
+        }
+
+        ResourceHandle* returnValue = null;
+        ResourceRequested?.Invoke(ref *categoryId, ref *resourceType, ref *resourceHash, ref gamePath, pGetResParams, ref isSync,
+            ref returnValue);
+        if (returnValue != null)
+            return returnValue;
+
+        return GetOriginalResource(isSync, *categoryId, *resourceType, *resourceHash, gamePath.Path, pGetResParams, isUnk);
     }
+
+    /// <summary> Call the original GetResource function. </summary>
+    public ResourceHandle* GetOriginalResource(bool sync, ResourceCategory categoryId, ResourceType type, int hash, ByteString path,
+        GetResourceParameters* resourceParameters = null, bool unk = false)
+        => sync
+            ? _getResourceSyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
+                resourceParameters)
+            : _getResourceAsyncHook.OriginalDisposeSafe(_resourceManager.ResourceManager, &categoryId, &type, &hash, path.Path,
+                resourceParameters,
+                unk);
 
     #endregion
 
@@ -96,9 +130,8 @@ public unsafe class ResourceHook : IDisposable
 
     /// <summary> Invoked before a resource handle reference count is incremented. </summary>
     /// <param name="handle">The resource handle.</param>
-    /// <param name="callOriginal">Whether to call original after the event has run.</param>
-    /// <param name="returnValue">The return value to use if not calling original.</param>
-    public delegate void ResourceHandleIncRefDelegate(ref ResourceHandle handle, ref bool callOriginal, ref nint returnValue);
+    /// <param name="returnValue">The return value to use, setting this value will skip calling original.</param>
+    public delegate void ResourceHandleIncRefDelegate(ResourceHandle* handle, ref nint? returnValue);
 
     /// <summary>
     /// <inheritdoc cref="ResourceHandleIncRefDelegate"/> <para/>
@@ -106,21 +139,19 @@ public unsafe class ResourceHook : IDisposable
     /// </summary>
     public event ResourceHandleIncRefDelegate? ResourceHandleIncRef;
 
-    public nint IncRef(ref ResourceHandle handle)
-    {
-        fixed (ResourceHandle* ptr = &handle)
-        {
-            return _incRefHook.Original(ptr);
-        }
-    }
+    /// <summary>
+    /// Call the game function that increases the reference counter of a resource handle.
+    /// </summary>
+    public nint IncRef(ResourceHandle* handle)
+        => _incRefHook.OriginalDisposeSafe(handle);
 
     private readonly Hook<ResourceHandlePrototype> _incRefHook;
+
     private nint ResourceHandleIncRefDetour(ResourceHandle* handle)
     {
-        var callOriginal = true;
-        var ret          = IntPtr.Zero;
-        ResourceHandleIncRef?.Invoke(ref *handle, ref callOriginal, ref ret);
-        return callOriginal ? _incRefHook.Original(handle) : ret;
+        nint? ret = null;
+        ResourceHandleIncRef?.Invoke(handle, ref ret);
+        return ret ?? _incRefHook.OriginalDisposeSafe(handle);
     }
 
     #endregion
@@ -129,9 +160,8 @@ public unsafe class ResourceHook : IDisposable
 
     /// <summary> Invoked before a resource handle reference count is decremented. </summary>
     /// <param name="handle">The resource handle.</param>
-    /// <param name="callOriginal">Whether to call original after the event has run.</param>
-    /// <param name="returnValue">The return value to use if not calling original.</param>
-    public delegate void ResourceHandleDecRefDelegate(ref ResourceHandle handle, ref bool callOriginal, ref byte returnValue);
+    /// <param name="returnValue">The return value to use, setting this value will skip calling original.</param>
+    public delegate void ResourceHandleDecRefDelegate(ResourceHandle* handle, ref byte? returnValue);
 
     /// <summary>
     /// <inheritdoc cref="ResourceHandleDecRefDelegate"/> <para/>
@@ -139,29 +169,29 @@ public unsafe class ResourceHook : IDisposable
     /// </summary>
     public event ResourceHandleDecRefDelegate? ResourceHandleDecRef;
 
-    public byte DecRef(ref ResourceHandle handle)
-    {
-        fixed (ResourceHandle* ptr = &handle)
-        {
-            return _incRefHook.Original(ptr);
-        }
-    }
+    /// <summary>
+    /// Call the original game function that decreases the reference counter of a resource handle.
+    /// </summary>
+    public byte DecRef(ResourceHandle* handle)
+        => _decRefHook.OriginalDisposeSafe(handle);
 
     private delegate byte                                ResourceHandleDecRefPrototype(ResourceHandle* handle);
     private readonly Hook<ResourceHandleDecRefPrototype> _decRefHook;
+
     private byte ResourceHandleDecRefDetour(ResourceHandle* handle)
     {
-        var callOriginal = true;
-        var ret          = byte.MinValue;
-        ResourceHandleDecRef?.Invoke(ref *handle, ref callOriginal, ref ret);
-        return callOriginal ? _decRefHook!.Original(handle) : ret;
+        byte? ret = null;
+        ResourceHandleDecRef?.Invoke(handle, ref ret);
+        return ret ?? _decRefHook.OriginalDisposeSafe(handle);
     }
 
     #endregion
 
+    #region Destructor
+
     /// <summary> Invoked before a resource handle is destructed. </summary>
     /// <param name="handle">The resource handle.</param>
-    public delegate void ResourceHandleDtorDelegate(ref ResourceHandle handle);
+    public delegate void ResourceHandleDtorDelegate(ResourceHandle* handle);
 
     /// <summary>
     /// <inheritdoc cref="ResourceHandleDtorDelegate"/> <para/>
@@ -174,8 +204,8 @@ public unsafe class ResourceHook : IDisposable
 
     private nint ResourceHandleDestructorDetour(ResourceHandle* handle)
     {
-        ResourceHandleDestructor?.Invoke(ref *handle);
-        return _resourceHandleDestructorHook!.Original(handle);
+        ResourceHandleDestructor?.Invoke(handle);
+        return _resourceHandleDestructorHook.OriginalDisposeSafe(handle);
     }
 
     #endregion

@@ -35,7 +35,6 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     public MetaManager( ModCollection collection )
     {
         _collection = collection;
-        SetupImcDelegate();
         if( !Penumbra.CharacterUtility.Ready )
         {
             Penumbra.CharacterUtility.LoadingFinished += ApplyStoredManipulations;

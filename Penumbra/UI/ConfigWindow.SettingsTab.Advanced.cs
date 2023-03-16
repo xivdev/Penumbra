@@ -66,15 +66,6 @@ public partial class ConfigWindow
             var tmp = Penumbra.Config.DebugMode;
             if( ImGui.Checkbox( "##debugMode", ref tmp ) && tmp != Penumbra.Config.DebugMode )
             {
-                if( tmp )
-                {
-                    Penumbra.ResourceLoader.EnableDebug();
-                }
-                else
-                {
-                    Penumbra.ResourceLoader.DisableDebug();
-                }
-
                 Penumbra.Config.DebugMode = tmp;
                 Penumbra.Config.Save();
             }
@@ -95,11 +86,11 @@ public partial class ConfigWindow
               + "You usually should not need to do this." );
         }
 
-        private static void DrawReloadFontsButton()
+        private void DrawReloadFontsButton()
         {
-            if( ImGuiUtil.DrawDisabledButton( "Reload Fonts", Vector2.Zero, "Force the game to reload its font files.", !FontReloader.Valid ) )
+            if( ImGuiUtil.DrawDisabledButton( "Reload Fonts", Vector2.Zero, "Force the game to reload its font files.", !_fontReloader.Valid ) )
             {
-                FontReloader.Reload();
+                _fontReloader.Reload();
             }
         }
 

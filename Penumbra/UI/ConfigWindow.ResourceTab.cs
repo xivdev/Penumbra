@@ -10,7 +10,6 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.Interop.Loader;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 
@@ -46,13 +45,13 @@ public partial class ConfigWindow
 
             unsafe
             {
-                ResourceLoader.IterateGraphs( DrawCategoryContainer );
+                Penumbra.ResourceManagerService.IterateGraphs( DrawCategoryContainer );
             }
             ImGui.NewLine();
             unsafe
             {
-                ImGui.TextUnformatted( $"Static Address: 0x{( ulong )ResourceLoader.ResourceManager:X} (+0x{( ulong )ResourceLoader.ResourceManager - ( ulong )DalamudServices.SigScanner.Module.BaseAddress:X})" );
-                ImGui.TextUnformatted( $"Actual Address: 0x{( ulong )*ResourceLoader.ResourceManager:X}" );
+                ImGui.TextUnformatted( $"Static Address: 0x{( ulong )Penumbra.ResourceManagerService.ResourceManagerAddress:X} (+0x{( ulong )Penumbra.ResourceManagerService.ResourceManagerAddress - ( ulong )DalamudServices.SigScanner.Module.BaseAddress:X})" );
+                ImGui.TextUnformatted( $"Actual Address: 0x{( ulong )Penumbra.ResourceManagerService.ResourceManager:X}" );
             }
         }
 
@@ -82,7 +81,7 @@ public partial class ConfigWindow
             ImGui.TableSetupColumn( "Refs", ImGuiTableColumnFlags.WidthFixed, _refsColumnWidth );
             ImGui.TableHeadersRow();
 
-            ResourceLoader.IterateResourceMap( map, ( hash, r ) =>
+            Penumbra.ResourceManagerService.IterateResourceMap( map, ( hash, r ) =>
             {
                 // Filter unwanted names.
                 if( _resourceManagerFilter.Length != 0
@@ -129,7 +128,7 @@ public partial class ConfigWindow
             if( tree )
             {
                 SetTableWidths();
-                ResourceLoader.IterateExtMap( map, ( ext, m ) => DrawResourceMap( category, ext, m ) );
+                Penumbra.ResourceManagerService.IterateExtMap( map, ( ext, m ) => DrawResourceMap( category, ext, m ) );
             }
         }
 

@@ -84,31 +84,36 @@ public class Penumbra : IDalamudPlugin
     private readonly PenumbraNew _tmp;
     public static    ItemData    ItemData { get; private set; } = null!;
 
+    // TODO
+    public static ResourceManagerService ResourceManagerService { get; private set; } = null!;
+    public static CharacterResolver      CharacterResolver      { get; private set; } = null!;
+    public static ResourceService        ResourceService        { get; private set; } = null!;
+
     public Penumbra(DalamudPluginInterface pluginInterface)
     {
         Log = PenumbraNew.Log;
-        _tmp = new PenumbraNew(pluginInterface);
-        Performance     = _tmp.Services.GetRequiredService<PerformanceTracker>();
-        ValidityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
-        _tmp.Services.GetRequiredService<BackupService>();
-        Config           = _tmp.Services.GetRequiredService<Configuration>();
-        CharacterUtility = _tmp.Services.GetRequiredService<CharacterUtility>();
-        GameEvents       = _tmp.Services.GetRequiredService<GameEventManager>();
-        MetaFileManager  = _tmp.Services.GetRequiredService<MetaFileManager>();
-        Framework        = _tmp.Services.GetRequiredService<FrameworkManager>();
-        Actors           = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
-        Identifier       = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
-        GamePathParser   = _tmp.Services.GetRequiredService<IGamePathParser>();
-        StainService     = _tmp.Services.GetRequiredService<StainService>();
-        ItemData         = _tmp.Services.GetRequiredService<ItemService>().AwaitedService;
-        Dalamud          = _tmp.Services.GetRequiredService<DalamudServices>();
-        TempMods         = _tmp.Services.GetRequiredService<TempModManager>();
         try
         {
-            ResourceLoader = new ResourceLoader(this);
-            ResourceLoader.EnableHooks();
-            _resourceWatcher  = new ResourceWatcher(ResourceLoader);
-            ResidentResources = new ResidentResourceManager();
+            _tmp            = new PenumbraNew(pluginInterface);
+            Performance     = _tmp.Services.GetRequiredService<PerformanceTracker>();
+            ValidityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
+            _tmp.Services.GetRequiredService<BackupService>();
+            Config            = _tmp.Services.GetRequiredService<Configuration>();
+            CharacterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
+            GameEvents        = _tmp.Services.GetRequiredService<GameEventManager>();
+            MetaFileManager   = _tmp.Services.GetRequiredService<MetaFileManager>();
+            Framework         = _tmp.Services.GetRequiredService<FrameworkManager>();
+            Actors            = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
+            Identifier        = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
+            GamePathParser    = _tmp.Services.GetRequiredService<IGamePathParser>();
+            StainService      = _tmp.Services.GetRequiredService<StainService>();
+            ItemData          = _tmp.Services.GetRequiredService<ItemService>().AwaitedService;
+            Dalamud           = _tmp.Services.GetRequiredService<DalamudServices>();
+            TempMods          = _tmp.Services.GetRequiredService<TempModManager>();
+            ResidentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
+
+            ResourceManagerService = _tmp.Services.GetRequiredService<ResourceManagerService>();
+
             _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Mods, () =>
             {
                 ModManager = new Mod.Manager(Config.ModDirectory);
@@ -126,18 +131,19 @@ public class Penumbra : IDalamudPlugin
 
             ModFileSystem  = ModFileSystem.Load();
             ObjectReloader = new ObjectReloader();
+            ResourceService = _tmp.Services.GetRequiredService<ResourceService>();
+            ResourceLoader = new ResourceLoader(ResourceService, _tmp.Services.GetRequiredService<FileReadService>(), _tmp.Services.GetRequiredService<TexMdlService>(), _tmp.Services.GetRequiredService<CreateFileWHook>());
             PathResolver   = new PathResolver(_tmp.Services.GetRequiredService<StartTracker>(), _tmp.Services.GetRequiredService<CommunicatorService>(), _tmp.Services.GetRequiredService<GameEventManager>(), ResourceLoader);
+            CharacterResolver = new CharacterResolver(Config, CollectionManager, TempCollections, ResourceLoader, PathResolver);
+            
+            _resourceWatcher = new ResourceWatcher(Config, ResourceService, ResourceLoader);
 
             SetupInterface();
 
             if (Config.EnableMods)
             {
-                ResourceLoader.EnableReplacements();
                 PathResolver.Enable();
             }
-
-            if (Config.DebugMode)
-                ResourceLoader.EnableDebug();
 
             using (var tApi = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api))
             {
@@ -171,7 +177,7 @@ public class Penumbra : IDalamudPlugin
             {
                 using var tInterface = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Interface);
                 var       changelog  = ConfigWindow.CreateChangelog();
-                var cfg = new ConfigWindow(_tmp.Services.GetRequiredService<CommunicatorService>(), _tmp.Services.GetRequiredService<StartTracker>(), this, _resourceWatcher)
+                var cfg = new ConfigWindow(_tmp.Services.GetRequiredService<CommunicatorService>(), _tmp.Services.GetRequiredService<StartTracker>(), _tmp.Services.GetRequiredService<FontReloader>(), this, _resourceWatcher)
                 {
                     IsOpen = Config.DebugMode,
                 };
@@ -225,7 +231,6 @@ public class Penumbra : IDalamudPlugin
         Config.EnableMods = enabled;
         if (enabled)
         {
-            ResourceLoader.EnableReplacements();
             PathResolver.Enable();
             if (CharacterUtility.Ready)
             {
@@ -236,7 +241,6 @@ public class Penumbra : IDalamudPlugin
         }
         else
         {
-            ResourceLoader.DisableReplacements();
             PathResolver.Disable();
             if (CharacterUtility.Ready)
             {
@@ -293,7 +297,7 @@ public class Penumbra : IDalamudPlugin
         ObjectReloader?.Dispose();
         ModFileSystem?.Dispose();
         CollectionManager?.Dispose();
-        PathResolver?.Dispose();
+        CharacterResolver?.Dispose(); // disposes PathResolver, TODO
         _resourceWatcher?.Dispose();
         ResourceLoader?.Dispose();
         GameEvents?.Dispose();

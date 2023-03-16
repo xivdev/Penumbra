@@ -8,8 +8,10 @@ using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.Interop;
+using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Services;
+using Penumbra.UI.Classes;
 using Penumbra.Util;
 
 namespace Penumbra;
@@ -53,9 +55,15 @@ public class PenumbraNew
             .AddSingleton<FrameworkManager>()
             .AddSingleton<MetaFileManager>()
             .AddSingleton<CutsceneCharacters>()
-            .AddSingleton<CharacterUtility>();
-
-
+            .AddSingleton<CharacterUtility>()
+            .AddSingleton<ResourceManagerService>()
+            .AddSingleton<ResourceService>()
+            .AddSingleton<FileReadService>()
+            .AddSingleton<TexMdlService>()
+            .AddSingleton<CreateFileWHook>()
+            .AddSingleton<ResidentResourceManager>()
+            .AddSingleton<FontReloader>();
+        
         // Add Configuration
         services.AddTransient<ConfigMigrationService>()
             .AddSingleton<Configuration>();

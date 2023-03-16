@@ -6,52 +6,37 @@ namespace Penumbra.Interop;
 
 // Handle font reloading via game functions.
 // May cause a interface flicker while reloading.
-public static unsafe class FontReloader
+public unsafe class FontReloader
 {
-    private static readonly AtkModule*                                        AtkModule       = null;
-    private static readonly delegate* unmanaged<AtkModule*, bool, bool, void> ReloadFontsFunc = null;
+    public bool Valid
+        => _reloadFontsFunc != null;
 
-    public static bool Valid
-        => ReloadFontsFunc != null;
-
-    public static void Reload()
+    public void Reload()
     {
-        if( Valid )
-        {
-            ReloadFontsFunc( AtkModule, false, true ); 
-        }
+        if (Valid)
+            _reloadFontsFunc(_atkModule, false, true);
         else
-        {
-            Penumbra.Log.Error( "Could not reload fonts, function could not be found." );
-        }
+            Penumbra.Log.Error("Could not reload fonts, function could not be found.");
     }
 
-    static FontReloader()
-    {
-        if( ReloadFontsFunc != null )
-        {
-            return;
-        }
+    private readonly AtkModule*                                        _atkModule       = null!;
+    private readonly delegate* unmanaged<AtkModule*, bool, bool, void> _reloadFontsFunc = null!;
 
+    public FontReloader()
+    {
         var framework = Framework.Instance();
-        if( framework == null )
-        {
+        if (framework == null)
             return;
-        }
 
         var uiModule = framework->GetUiModule();
-        if( uiModule == null )
-        {
+        if (uiModule == null)
             return;
-        }
-        
-        var atkModule = uiModule->GetRaptureAtkModule();
-        if( atkModule == null )
-        {
-            return;
-        }
 
-        AtkModule       = &atkModule->AtkModule;
-        ReloadFontsFunc = ( ( delegate* unmanaged< AtkModule*, bool, bool, void >* )AtkModule->vtbl )[ Offsets.ReloadFontsVfunc ];
+        var atkModule = uiModule->GetRaptureAtkModule();
+        if (atkModule == null)
+            return;
+
+        _atkModule       = &atkModule->AtkModule;
+        _reloadFontsFunc = ((delegate* unmanaged< AtkModule*, bool, bool, void >*)_atkModule->vtbl)[Offsets.ReloadFontsVfunc];
     }
 }

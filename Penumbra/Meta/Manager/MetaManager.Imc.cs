@@ -1,12 +1,9 @@
 using System;
 using System.Collections.Generic;
-using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using System.Diagnostics.CodeAnalysis;
 using OtterGui.Filesystem;
-using Penumbra.GameData.Enums;
-using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.String;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Meta.Manager;
@@ -15,7 +12,6 @@ public partial class MetaManager
 {
     private readonly Dictionary< Utf8GamePath, ImcFile > _imcFiles         = new();
     private readonly List< ImcManipulation >             _imcManipulations = new();
-    private static   int                                 _imcManagerCount;
 
     public void SetImcFiles()
     {
@@ -132,52 +128,11 @@ public partial class MetaManager
 
         _imcFiles.Clear();
         _imcManipulations.Clear();
-        RestoreImcDelegate();
-    }
-
-    private static unsafe void SetupImcDelegate()
-    {
-        if( _imcManagerCount++ == 0 )
-        {
-            Penumbra.ResourceLoader.ResourceLoadCustomization += ImcLoadHandler;
-        }
-    }
-
-    private static unsafe void RestoreImcDelegate()
-    {
-        if( --_imcManagerCount == 0 )
-        {
-            Penumbra.ResourceLoader.ResourceLoadCustomization -= ImcLoadHandler;
-        }
     }
 
     private FullPath CreateImcPath( Utf8GamePath path )
         => new($"|{_collection.Name}_{_collection.ChangeCounter}|{path}");
 
-
-    private static unsafe bool ImcLoadHandler( ByteString split, ByteString path, ResourceManager* resourceManager,
-        SeFileDescriptor* fileDescriptor, int priority, bool isSync, out byte ret )
-    {
-        ret = 0;
-        if( fileDescriptor->ResourceHandle->FileType != ResourceType.Imc )
-        {
-            return false;
-        }
-
-        Penumbra.Log.Verbose( $"Using ImcLoadHandler for path {path}." );
-        ret = Penumbra.ResourceLoader.ReadSqPackHook.Original( resourceManager, fileDescriptor, priority, isSync );
-
-        var lastUnderscore = split.LastIndexOf( ( byte )'_' );
-        var name           = lastUnderscore == -1 ? split.ToString() : split.Substring( 0, lastUnderscore ).ToString();
-        if( ( Penumbra.TempCollections.CollectionByName( name, out var collection )
-            || Penumbra.CollectionManager.ByName( name, out collection ) )
-        && collection.HasCache
-        && collection.MetaCache!._imcFiles.TryGetValue( Utf8GamePath.FromSpan( path.Span, out var p ) ? p : Utf8GamePath.Empty, out var file ) )
-        {
-            Penumbra.Log.Debug( $"Loaded {path} from file and replaced with IMC from collection {collection.AnonymizedName}." );
-            file.Replace( fileDescriptor->ResourceHandle );
-        }
-
-        return true;
-    }
+    public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
+        => _imcFiles.TryGetValue(path, out file);
 }

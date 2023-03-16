@@ -61,8 +61,6 @@ public partial class ConfigWindow
             DrawDebugTabGeneral();
             DrawPerformanceTab();
             ImGui.NewLine();
-            DrawDebugTabReplacedResources();
-            ImGui.NewLine();
             DrawPathResolverDebug();
             ImGui.NewLine();
             DrawActorsDebug();
@@ -132,53 +130,6 @@ public partial class ConfigWindow
             }
 
             Penumbra.Performance.Draw( "##performance", "Enable Runtime Performance Tracking", TimingExtensions.ToName );
-        }
-
-        // Draw all resources currently replaced by Penumbra and (if existing) the resources they replace.
-        // Resources are collected by iterating through the
-        private static unsafe void DrawDebugTabReplacedResources()
-        {
-            if( !ImGui.CollapsingHeader( "Replaced Resources" ) )
-            {
-                return;
-            }
-
-            Penumbra.ResourceLoader.UpdateDebugInfo();
-
-            if( Penumbra.ResourceLoader.DebugList.Count == 0 )
-            {
-                return;
-            }
-
-            using var table = Table( "##ReplacedResources", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
-                -Vector2.UnitX );
-            if( !table )
-            {
-                return;
-            }
-
-            foreach( var data in Penumbra.ResourceLoader.DebugList.Values.ToArray() )
-            {
-                if( data.ManipulatedPath.Crc64 == 0 )
-                {
-                    continue;
-                }
-
-                var refCountManip = data.ManipulatedResource == null ? 0 : data.ManipulatedResource->RefCount;
-                var refCountOrig  = data.OriginalResource    == null ? 0 : data.OriginalResource->RefCount;
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( data.ManipulatedPath.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( ( ( ulong )data.ManipulatedResource ).ToString( "X" ) );
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( refCountManip.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( data.OriginalPath.ToString() );
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( ( ( ulong )data.OriginalResource ).ToString( "X" ) );
-                ImGui.TableNextColumn();
-                ImGui.TextUnformatted( refCountOrig.ToString() );
-            }
         }
 
         private static unsafe void DrawActorsDebug()
@@ -635,7 +586,7 @@ public partial class ConfigWindow
                 return;
             }
 
-            ResourceLoader.IterateResources( ( _, r ) =>
+            Penumbra.ResourceManagerService.IterateResources( ( _, r ) =>
             {
                 if( r->RefCount < 10000 )
                 {

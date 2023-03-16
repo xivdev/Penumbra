@@ -18,8 +18,6 @@ public unsafe class ResidentResourceManager
     [Signature( Sigs.UnloadPlayerResources )]
     public readonly ResidentResourceDelegate UnloadPlayerResources = null!;
 
-
-
     public Structs.ResidentResourceManager* Address
         => *_residentResourceManagerAddress;
 

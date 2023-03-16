@@ -11,6 +11,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.Interop;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 
@@ -22,11 +23,14 @@ public partial class ConfigWindow
     {
         public const     int          RootDirectoryMaxLength = 64;
         private readonly ConfigWindow _window;
-
+        private readonly FontReloader _fontReloader;
         public ReadOnlySpan<byte> Label
             => "Settings"u8;
-        public SettingsTab( ConfigWindow window )
-            => _window = window;
+        public SettingsTab( ConfigWindow window, FontReloader fontReloader )
+        {
+            _window       = window;
+            _fontReloader = fontReloader;
+        }
 
         public void DrawHeader()
         {

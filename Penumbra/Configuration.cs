@@ -57,10 +57,11 @@ public class Configuration : IPluginConfiguration
 
     public int TutorialStep { get; set; } = 0;
 
-    public bool EnableResourceLogging { get; set; } = false;
-    public string ResourceLoggingFilter { get; set; } = string.Empty;
-    public bool EnableResourceWatcher { get; set; } = false;
-    public int MaxResourceWatcherRecords { get; set; } = ResourceWatcher.DefaultMaxEntries;
+    public bool   EnableResourceLogging     { get; set; } = false;
+    public string ResourceLoggingFilter     { get; set; } = string.Empty;
+    public bool   EnableResourceWatcher     { get; set; } = false;
+    public bool   OnlyAddMatchingResources  { get; set; } = true;
+    public int    MaxResourceWatcherRecords { get; set; } = ResourceWatcher.DefaultMaxEntries;
 
     public ResourceTypeFlag ResourceWatcherResourceTypes { get; set; } = ResourceExtensions.AllResourceTypes;
     public ResourceCategoryFlag ResourceWatcherResourceCategories { get; set; } = ResourceExtensions.AllResourceCategories;

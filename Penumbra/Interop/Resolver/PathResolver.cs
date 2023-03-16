@@ -9,6 +9,7 @@ using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
+using Penumbra.Interop.Structs;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
@@ -54,7 +55,7 @@ public partial class PathResolver : IDisposable
     }
 
     // The modified resolver that handles game path resolving.
-    private bool CharacterResolver(Utf8GamePath gamePath, ResourceCategory _1, ResourceType type, int _2, out (FullPath?, ResolveData) data)
+    public (FullPath?, ResolveData) CharacterResolver(Utf8GamePath gamePath, ResourceType type)
     {
         using var performance = Penumbra.Performance.Measure(PerformanceType.CharacterResolver);
         // Check if the path was marked for a specific collection,
@@ -77,8 +78,8 @@ public partial class PathResolver : IDisposable
         // so that the functions loading tex and shpk can find that path and use its collection.
         // We also need to handle defaulted materials against a non-default collection.
         var path = resolved == null ? gamePath.Path : resolved.Value.InternalName;
-        SubfileHelper.HandleCollection(resolveData, path, nonDefault, type, resolved, out data);
-        return true;
+        SubfileHelper.HandleCollection(resolveData, path, nonDefault, type, resolved, out var pair);
+        return pair;
     }
 
     public void Enable()
@@ -95,7 +96,6 @@ public partial class PathResolver : IDisposable
         _meta.Enable();
         _subFiles.Enable();
 
-        _loader.ResolvePathCustomization += CharacterResolver;
         Penumbra.Log.Debug("Character Path Resolver enabled.");
     }
 
@@ -113,7 +113,6 @@ public partial class PathResolver : IDisposable
         _meta.Disable();
         _subFiles.Disable();
 
-        _loader.ResolvePathCustomization -= CharacterResolver;
         Penumbra.Log.Debug("Character Path Resolver disabled.");
     }
 
