@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using Dalamud.Plugin;
 using OtterGui.Filesystem;
+using Penumbra.Collections;
+using Penumbra.Mods;
 
 namespace Penumbra.Services;
 
@@ -25,12 +27,24 @@ public class FilenameService
         ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName,   "active_collections.json");
     }
 
+    /// <summary> Obtain the path of a collection file given its name. Returns an empty string if the collection is temporary. </summary>
+    public string CollectionFile(ModCollection collection)
+        => collection.Index >= 0 ? Path.Combine(CollectionDirectory, $"{collection.Name.RemoveInvalidPathSymbols()}.json") : string.Empty;
+
+    /// <summary> Obtain the path of a collection file given its name. </summary>
     public string CollectionFile(string collectionName)
         => Path.Combine(CollectionDirectory, $"{collectionName.RemoveInvalidPathSymbols()}.json");
 
-    public string LocalDataFile(string modPath)
-        => Path.Combine(LocalDataDirectory, $"{modPath}.json");
 
+    /// <summary> Obtain the path of the local data file given a mod directory. Returns an empty string if the mod is temporary. </summary>
+    public string LocalDataFile(IModReadable mod)
+        => mod.IsTemporary ? string.Empty : LocalDataFile(mod.ModPath.FullName);
+
+    /// <summary> Obtain the path of the local data file given a mod directory. </summary>
+    public string LocalDataFile(string modDirectory)
+        => Path.Combine(LocalDataDirectory, $"{Path.GetFileName(modDirectory)}.json");
+
+    /// <summary> Enumerate all collection files. </summary>
     public IEnumerable<FileInfo> CollectionFiles
     {
         get
@@ -40,6 +54,7 @@ public class FilenameService
         }
     }
 
+    /// <summary> Enumerate all local data files. </summary>
     public IEnumerable<FileInfo> LocalDataFiles
     {
         get
@@ -48,4 +63,12 @@ public class FilenameService
             return directory.Exists ? directory.EnumerateFiles("*.json") : Array.Empty<FileInfo>();
         }
     }
+
+    /// <summary> Obtain the path of the meta file for a given mod. Returns an empty string if the mod is temporary. </summary>
+    public string ModMetaPath(IModReadable mod)
+        => mod.IsTemporary ? string.Empty : ModMetaPath(mod.ModPath.FullName);
+
+    /// <summary> Obtain the path of the meta file given a mod directory. </summary>
+    public string ModMetaPath(string modDirectory)
+        => Path.Combine(modDirectory, "meta.json");
 }

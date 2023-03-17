@@ -7,7 +7,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
-using Penumbra.Interop;
+using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;

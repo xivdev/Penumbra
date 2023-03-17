@@ -27,8 +27,9 @@ using Penumbra.Interop.Resolver;
 using Penumbra.Mods;
 using CharacterUtility = Penumbra.Interop.CharacterUtility;
 using DalamudUtil = Dalamud.Utility.Util;
-using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
+using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Penumbra.Services;
+using Penumbra.Interop.Services;
 
 namespace Penumbra;
 

@@ -22,11 +22,13 @@ public enum ModOptionChangeType
 
 public static class ModOptionChangeTypeExtension
 {
-    // Give information for each type of change.
-    // If requiresSaving, collections need to be re-saved after this change.
-    // If requiresReloading, caches need to be manipulated after this change.
-    // If wasPrepared, caches have already removed the mod beforehand, then need add it again when this event is fired.
-    // Otherwise, caches need to reload the mod itself.
+    /// <summary>
+    /// Give information for each type of change.
+    /// If requiresSaving, collections need to be re-saved after this change.
+    /// If requiresReloading, caches need to be manipulated after this change.
+    /// If wasPrepared, caches have already removed the mod beforehand, then need add it again when this event is fired.
+    /// Otherwise, caches need to reload the mod itself.
+    /// </summary>
     public static void HandlingInfo( this ModOptionChangeType type, out bool requiresSaving, out bool requiresReloading, out bool wasPrepared )
     {
         ( requiresSaving, requiresReloading, wasPrepared ) = type switch

@@ -7,7 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using OtterGui.Log;
 using Penumbra.Interop.Structs;
 
-namespace Penumbra.Interop;
+namespace Penumbra.Interop.Services;
 
 public unsafe class GameEventManager : IDisposable
 {
@@ -56,7 +56,7 @@ public unsafe class GameEventManager : IDisposable
         _characterDtorHook.Original(character);
     }
 
-    public delegate void                   CharacterDestructorEvent(Character* character);
+    public delegate void CharacterDestructorEvent(Character* character);
     public event CharacterDestructorEvent? CharacterDestructor;
 
     #endregion
@@ -89,7 +89,7 @@ public unsafe class GameEventManager : IDisposable
         return _copyCharacterHook.Original(target, source, unk);
     }
 
-    public delegate void             CopyCharacterEvent(Character* target, Character* source);
+    public delegate void CopyCharacterEvent(Character* target, Character* source);
     public event CopyCharacterEvent? CopyCharacter;
 
     #endregion
@@ -121,7 +121,7 @@ public unsafe class GameEventManager : IDisposable
         return _resourceHandleDestructorHook!.Original(handle);
     }
 
-    public delegate void                        ResourceHandleDestructorEvent(ResourceHandle* handle);
+    public delegate void ResourceHandleDestructorEvent(ResourceHandle* handle);
     public event ResourceHandleDestructorEvent? ResourceHandleDestructor;
 
     #endregion

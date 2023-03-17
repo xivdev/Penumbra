@@ -10,6 +10,7 @@ using Penumbra.GameData.Data;
 using Penumbra.Interop;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
+using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.Util;

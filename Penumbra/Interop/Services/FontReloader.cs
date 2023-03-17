@@ -2,10 +2,12 @@ using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Penumbra.GameData;
 
-namespace Penumbra.Interop;
+namespace Penumbra.Interop.Services;
 
-// Handle font reloading via game functions.
-// May cause a interface flicker while reloading.
+/// <summary>
+/// Handle font reloading via game functions.
+/// May cause a interface flicker while reloading.
+/// </summary>
 public unsafe class FontReloader
 {
     public bool Valid
@@ -19,7 +21,7 @@ public unsafe class FontReloader
             Penumbra.Log.Error("Could not reload fonts, function could not be found.");
     }
 
-    private readonly AtkModule*                                        _atkModule       = null!;
+    private readonly AtkModule* _atkModule = null!;
     private readonly delegate* unmanaged<AtkModule*, bool, bool, void> _reloadFontsFunc = null!;
 
     public FontReloader()
@@ -36,7 +38,7 @@ public unsafe class FontReloader
         if (atkModule == null)
             return;
 
-        _atkModule       = &atkModule->AtkModule;
-        _reloadFontsFunc = ((delegate* unmanaged< AtkModule*, bool, bool, void >*)_atkModule->vtbl)[Offsets.ReloadFontsVfunc];
+        _atkModule = &atkModule->AtkModule;
+        _reloadFontsFunc = ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->vtbl)[Offsets.ReloadFontsVfunc];
     }
 }

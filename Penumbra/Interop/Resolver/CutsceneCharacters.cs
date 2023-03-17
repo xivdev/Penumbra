@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Dalamud.Game.ClientState.Objects;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using Penumbra.Interop.Services;
 
 namespace Penumbra.Interop.Resolver;
 

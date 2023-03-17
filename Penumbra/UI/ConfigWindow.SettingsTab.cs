@@ -11,7 +11,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.Interop;
+using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 

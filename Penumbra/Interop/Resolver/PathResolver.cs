@@ -9,6 +9,7 @@ using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;
 using Penumbra.String;
