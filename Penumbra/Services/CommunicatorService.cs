@@ -22,9 +22,17 @@ public class CommunicatorService : IDisposable
     /// </list> </summary>
     public readonly EventWrapper<Mod.TemporaryMod, bool, bool> TemporaryGlobalModChange = new(nameof(TemporaryGlobalModChange));
 
+    /// <summary> <list type="number">
+    ///     <item>Parameter is the type of change. </item>
+    ///     <item>Parameter is the affected mod. </item>
+    ///     <item>Parameter is either null or the old name of the mod. </item>
+    /// </list> </summary>
+    public readonly EventWrapper<ModDataChangeType, IModReadable, string?> ModMetaChange = new(nameof(ModMetaChange));
+
     public void Dispose()
     {
         CollectionChange.Dispose();
         TemporaryGlobalModChange.Dispose();
+        ModMetaChange.Dispose();
     }
 }

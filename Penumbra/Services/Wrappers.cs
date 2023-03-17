@@ -4,7 +4,6 @@ using Dalamud.Game.ClientState;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.Gui;
 using Dalamud.Plugin;
-using OtterGui.Classes;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
