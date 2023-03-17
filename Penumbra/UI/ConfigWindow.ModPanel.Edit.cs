@@ -239,7 +239,7 @@ public partial class ConfigWindow
 
                 ImGui.SameLine();
 
-                var nameValid = Mod.Manager.VerifyFileName( mod, null, _newGroupName, false );
+                var nameValid = Penumbra.ModManager.VerifyFileName( mod, null, _newGroupName, false );
                 tt = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
                 if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Plus.ToIconString(), window._iconButtonSize,
                        tt, !nameValid, true ) )
@@ -269,7 +269,7 @@ public partial class ConfigWindow
                 if( ImGui.InputText( "##newModMove", ref tmp, 64 ) )
                 {
                     _currentModDirectory = tmp;
-                    _state               = Mod.Manager.NewDirectoryValid( mod.ModPath.Name, _currentModDirectory, out _ );
+                    _state               = Penumbra.ModManager.NewDirectoryValid( mod.ModPath.Name, _currentModDirectory, out _ );
                 }
 
                 var (disabled, tt) = _state switch

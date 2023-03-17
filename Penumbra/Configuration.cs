@@ -29,7 +29,7 @@ public class Configuration : IPluginConfiguration
 
     public int Version { get; set; } = Constants.CurrentVersion;
 
-    public int LastSeenVersion { get; set; } = ConfigWindow.LastChangelogVersion;
+    public int LastSeenVersion { get; set; } = PenumbraChangelog.LastChangelogVersion;
     public ChangeLogDisplayType ChangeLogDisplayType { get; set; } = ChangeLogDisplayType.New;
 
     public bool EnableMods { get; set; } = true;

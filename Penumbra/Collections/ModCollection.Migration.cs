@@ -1,6 +1,8 @@
 using Penumbra.Mods;
 using System.Collections.Generic;
 using System.Linq;
+using Penumbra.Services;
+using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
@@ -9,12 +11,12 @@ public sealed partial class ModCollection
     // Migration to convert ModCollections from older versions to newer.
     private static class Migration
     {
-        public static void Migrate( ModCollection collection )
+        public static void Migrate(SaveService saver, ModCollection collection )
         {
             var changes = MigrateV0ToV1( collection );
             if( changes )
             {
-                collection.Save();
+                saver.ImmediateSave(collection);
             }
         }
 

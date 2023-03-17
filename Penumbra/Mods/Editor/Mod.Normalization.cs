@@ -62,7 +62,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                ChatUtil.NotificationMessage( $"Could not normalize mod:\n{e}", "Failure", NotificationType.Error );
+                Penumbra.ChatService.NotificationMessage( $"Could not normalize mod:\n{e}", "Failure", NotificationType.Error );
             }
             finally
             {
@@ -75,7 +75,7 @@ public partial class Mod
         {
             if( Directory.Exists( _normalizationDirName ) )
             {
-                ChatUtil.NotificationMessage( "Could not normalize mod:\n"
+                Penumbra.ChatService.NotificationMessage( "Could not normalize mod:\n"
                   + "The directory TmpNormalization may not already exist when normalizing a mod.", "Failure",
                     NotificationType.Error );
                 return false;
@@ -83,7 +83,7 @@ public partial class Mod
 
             if( Directory.Exists( _oldDirName ) )
             {
-                ChatUtil.NotificationMessage( "Could not normalize mod:\n"
+                Penumbra.ChatService.NotificationMessage( "Could not normalize mod:\n"
                   + "The directory TmpNormalizationOld may not already exist when normalizing a mod.", "Failure",
                     NotificationType.Error );
                 return false;
@@ -173,7 +173,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                ChatUtil.NotificationMessage( $"Could not normalize mod:\n{e}", "Failure", NotificationType.Error );
+                Penumbra.ChatService.NotificationMessage( $"Could not normalize mod:\n{e}", "Failure", NotificationType.Error );
                 _redirections = null;
             }
 
@@ -201,7 +201,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                ChatUtil.NotificationMessage( $"Could not move old files out of the way while normalizing mod mod:\n{e}", "Failure", NotificationType.Error );
+                Penumbra.ChatService.NotificationMessage( $"Could not move old files out of the way while normalizing mod mod:\n{e}", "Failure", NotificationType.Error );
             }
 
             return false;
@@ -223,7 +223,7 @@ public partial class Mod
             }
             catch( Exception e )
             {
-                ChatUtil.NotificationMessage( $"Could not move new files into the mod while normalizing mod mod:\n{e}", "Failure", NotificationType.Error );
+                Penumbra.ChatService.NotificationMessage( $"Could not move new files into the mod while normalizing mod mod:\n{e}", "Failure", NotificationType.Error );
                 foreach( var dir in _mod.ModPath.EnumerateDirectories() )
                 {
                     if( dir.FullName.Equals( _oldDirName, StringComparison.OrdinalIgnoreCase )

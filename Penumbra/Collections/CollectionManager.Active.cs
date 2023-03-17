@@ -9,16 +9,15 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Dalamud.Interface.Internal.Notifications;
-using Dalamud.Plugin;
 using Penumbra.GameData.Actors;
-using Penumbra.Util;
 using Penumbra.Services;
+using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
 public partial class ModCollection
 {
-    public sealed partial class Manager
+    public sealed partial class Manager : ISaveable
     {
         public const int Version = 1;
 
@@ -38,8 +37,7 @@ public partial class ModCollection
         private ModCollection DefaultName { get; set; } = Empty;
 
         // The list of character collections.
-        // TODO
-        public readonly IndividualCollections Individuals = new(Penumbra.Actors);
+        public readonly IndividualCollections Individuals;
 
         public ModCollection Individual(ActorIdentifier identifier)
             => Individuals.TryGetCollection(identifier, out var c) ? c : Default;
@@ -87,18 +85,12 @@ public partial class ModCollection
 
             var newCollection = this[newIdx];
             if (newIdx > Empty.Index)
-                newCollection.CreateCache();
+                newCollection.CreateCache(collectionType is CollectionType.Default);
 
             switch (collectionType)
             {
                 case CollectionType.Default:
                     Default = newCollection;
-                    if (Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods)
-                    {
-                        Penumbra.ResidentResources.Reload();
-                        Default.SetFiles();
-                    }
-
                     break;
                 case CollectionType.Interface:
                     Interface = newCollection;
@@ -182,28 +174,25 @@ public partial class ModCollection
         public void MoveIndividualCollection(int from, int to)
         {
             if (Individuals.Move(from, to))
-                SaveActiveCollections();
+                Penumbra.SaveService.QueueSave(this);
         }
 
         // Obtain the index of a collection by name.
         private int GetIndexForCollectionName(string name)
             => name.Length == 0 ? Empty.Index : _collections.IndexOf(c => c.Name == name);
 
-        public static string ActiveCollectionFile(DalamudPluginInterface pi)
-            => Path.Combine(pi.ConfigDirectory.FullName, "active_collections.json");
-
         // Load default, current, special, and character collections from config.
         // Then create caches. If a collection does not exist anymore, reset it to an appropriate default.
-        private void LoadCollections()
+        private void LoadCollections(FilenameService files)
         {
-            var configChanged = !ReadActiveCollections(out var jObject);
+            var configChanged = !ReadActiveCollections(files, out var jObject);
 
             // Load the default collection.
             var defaultName = jObject[nameof(Default)]?.ToObject<string>() ?? (configChanged ? DefaultCollection : Empty.Name);
             var defaultIdx  = GetIndexForCollectionName(defaultName);
             if (defaultIdx < 0)
             {
-                ChatUtil.NotificationMessage(
+                Penumbra.ChatService.NotificationMessage(
                     $"Last choice of {ConfigWindow.DefaultCollection} {defaultName} is not available, reset to {Empty.Name}.", "Load Failure",
                     NotificationType.Warning);
                 Default       = Empty;
@@ -219,7 +208,7 @@ public partial class ModCollection
             var interfaceIdx  = GetIndexForCollectionName(interfaceName);
             if (interfaceIdx < 0)
             {
-                ChatUtil.NotificationMessage(
+                Penumbra.ChatService.NotificationMessage(
                     $"Last choice of {ConfigWindow.InterfaceCollection} {interfaceName} is not available, reset to {Empty.Name}.",
                     "Load Failure", NotificationType.Warning);
                 Interface     = Empty;
@@ -235,7 +224,7 @@ public partial class ModCollection
             var currentIdx  = GetIndexForCollectionName(currentName);
             if (currentIdx < 0)
             {
-                ChatUtil.NotificationMessage(
+                Penumbra.ChatService.NotificationMessage(
                     $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}.",
                     "Load Failure", NotificationType.Warning);
                 Current       = DefaultName;
@@ -255,7 +244,8 @@ public partial class ModCollection
                     var idx = GetIndexForCollectionName(typeName);
                     if (idx < 0)
                     {
-                        ChatUtil.NotificationMessage($"Last choice of {name} Collection {typeName} is not available, removed.", "Load Failure",
+                        Penumbra.ChatService.NotificationMessage($"Last choice of {name} Collection {typeName} is not available, removed.",
+                            "Load Failure",
                             NotificationType.Warning);
                         configChanged = true;
                     }
@@ -271,13 +261,13 @@ public partial class ModCollection
 
             // Save any changes and create all required caches.
             if (configChanged)
-                SaveActiveCollections();
+                Penumbra.SaveService.ImmediateSave(this);
         }
 
         // Migrate ungendered collections to Male and Female for 0.5.9.0.
         public static void MigrateUngenderedCollections(FilenameService fileNames)
         {
-            if (!ReadActiveCollections(out var jObject))
+            if (!ReadActiveCollections(fileNames, out var jObject))
                 return;
 
             foreach (var (type, _, _) in CollectionTypeExtensions.Special.Where(t => t.Item2.StartsWith("Male ")))
@@ -314,7 +304,7 @@ public partial class ModCollection
                 var idx = GetIndexForCollectionName(collectionName);
                 if (idx < 0)
                 {
-                    ChatUtil.NotificationMessage(
+                    Penumbra.ChatService.NotificationMessage(
                         $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {Empty.Name}.", "Load Failure",
                         NotificationType.Warning);
                     dict.Add(player, Empty);
@@ -329,48 +319,11 @@ public partial class ModCollection
             return true;
         }
 
-        public void SaveActiveCollections()
-        {
-            Penumbra.Framework.RegisterDelayed(nameof(SaveActiveCollections),
-                SaveActiveCollectionsInternal);
-        }
-
-        internal void SaveActiveCollectionsInternal()
-        {
-            // TODO
-            var file = ActiveCollectionFile(DalamudServices.PluginInterface);
-            try
-            {
-                var jObj = new JObject
-                {
-                    { nameof(Version), Version },
-                    { nameof(Default), Default.Name },
-                    { nameof(Interface), Interface.Name },
-                    { nameof(Current), Current.Name },
-                };
-                foreach (var (type, collection) in _specialCollections.WithIndex().Where(p => p.Value != null)
-                             .Select(p => ((CollectionType)p.Index, p.Value!)))
-                    jObj.Add(type.ToString(), collection.Name);
-
-                jObj.Add(nameof(Individuals), Individuals.ToJObject());
-                using var stream = File.Open(file, File.Exists(file) ? FileMode.Truncate : FileMode.CreateNew);
-                using var writer = new StreamWriter(stream);
-                using var j      = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-                jObj.WriteTo(j);
-                Penumbra.Log.Verbose("Active Collections saved.");
-            }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Could not save active collections to file {file}:\n{e}");
-            }
-        }
-
         // Read the active collection file into a jObject.
         // Returns true if this is successful, false if the file does not exist or it is unsuccessful.
-        private static bool ReadActiveCollections(out JObject ret)
+        private static bool ReadActiveCollections(FilenameService files, out JObject ret)
         {
-            // TODO
-            var file = ActiveCollectionFile(DalamudServices.PluginInterface);
+            var file = files.ActiveCollectionsFile;
             if (File.Exists(file))
                 try
                 {
@@ -390,7 +343,7 @@ public partial class ModCollection
         private void SaveOnChange(CollectionType collectionType, ModCollection? _1, ModCollection? _2, string _3)
         {
             if (collectionType is not CollectionType.Inactive and not CollectionType.Temporary)
-                SaveActiveCollections();
+                Penumbra.SaveService.QueueSave(this);
         }
 
         // Cache handling. Usually recreate caches on the next framework tick,
@@ -403,7 +356,7 @@ public partial class ModCollection
                 .Prepend(Default)
                 .Prepend(Interface)
                 .Distinct()
-                .Select(c => Task.Run(c.CalculateEffectiveFileListInternal))
+                .Select(c => Task.Run(() => c.CalculateEffectiveFileListInternal(c == Default)))
                 .ToArray();
 
             Task.WaitAll(tasks);
@@ -437,6 +390,33 @@ public partial class ModCollection
         {
             foreach (var collection in this.Where(c => c.HasCache && c[mod.Index].Settings?.Enabled == true))
                 collection._cache!.ReloadMod(mod, true);
+        }
+
+        public string ToFilename(FilenameService fileNames)
+            => fileNames.ActiveCollectionsFile;
+
+        public string TypeName
+            => "Active Collections";
+
+        public string LogName(string _)
+            => "to file";
+
+        public void Save(StreamWriter writer)
+        {
+            var jObj = new JObject
+            {
+                { nameof(Version), Version },
+                { nameof(Default), Default.Name },
+                { nameof(Interface), Interface.Name },
+                { nameof(Current), Current.Name },
+            };
+            foreach (var (type, collection) in _specialCollections.WithIndex().Where(p => p.Value != null)
+                         .Select(p => ((CollectionType)p.Index, p.Value!)))
+                jObj.Add(type.ToString(), collection.Name);
+
+            jObj.Add(nameof(Individuals), Individuals.ToJObject());
+            using var j = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+            jObj.WriteTo(j);
         }
     }
 }

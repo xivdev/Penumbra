@@ -53,6 +53,7 @@ public partial class PathResolver : IDisposable
         _paths      = new PathState(this);
         _meta       = new MetaState(_paths.HumanVTable);
         _subFiles   = new SubfileHelper(_loader, Penumbra.GameEvents);
+        Enable();
     }
 
     // The modified resolver that handles game path resolving.

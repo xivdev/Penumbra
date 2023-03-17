@@ -174,7 +174,7 @@ public partial class ModCollection
                     break;
                 case ModSettingChange.MultiInheritance:
                 case ModSettingChange.MultiEnableState:
-                    FullRecalculation();
+                    FullRecalculation(_collection == Penumbra.CollectionManager.Default);
                     break;
             }
         }
@@ -182,9 +182,9 @@ public partial class ModCollection
         // Inheritance changes are too big to check for relevance,
         // just recompute everything.
         private void OnInheritanceChange( bool _ )
-            => FullRecalculation();
+            => FullRecalculation(_collection == Penumbra.CollectionManager.Default);
 
-        public void FullRecalculation()
+        public void FullRecalculation(bool isDefault)
         {
             ResolvedFiles.Clear();
             MetaManipulations.Reset();
@@ -206,7 +206,7 @@ public partial class ModCollection
 
             ++_collection.ChangeCounter;
 
-            if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
+            if( isDefault && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
             {
                 Penumbra.ResidentResources.Reload();
                 MetaManipulations.SetFiles();

@@ -41,12 +41,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         add
         {
             CheckInitialized();
-            _penumbra!.ObjectReloader.GameObjectRedrawn += value;
+            _penumbra!.RedrawService.GameObjectRedrawn += value;
         }
         remove
         {
             CheckInitialized();
-            _penumbra!.ObjectReloader.GameObjectRedrawn -= value;
+            _penumbra!.RedrawService.GameObjectRedrawn -= value;
         }
     }
 
@@ -206,25 +206,25 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public void RedrawObject(int tableIndex, RedrawType setting)
     {
         CheckInitialized();
-        _penumbra!.ObjectReloader.RedrawObject(tableIndex, setting);
+        _penumbra!.RedrawService.RedrawObject(tableIndex, setting);
     }
 
     public void RedrawObject(string name, RedrawType setting)
     {
         CheckInitialized();
-        _penumbra!.ObjectReloader.RedrawObject(name, setting);
+        _penumbra!.RedrawService.RedrawObject(name, setting);
     }
 
     public void RedrawObject(GameObject? gameObject, RedrawType setting)
     {
         CheckInitialized();
-        _penumbra!.ObjectReloader.RedrawObject(gameObject, setting);
+        _penumbra!.RedrawService.RedrawObject(gameObject, setting);
     }
 
     public void RedrawAll(RedrawType setting)
     {
         CheckInitialized();
-        _penumbra!.ObjectReloader.RedrawAll(setting);
+        _penumbra!.RedrawService.RedrawAll(setting);
     }
 
     public string ResolveDefaultPath(string path)

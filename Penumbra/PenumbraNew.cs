@@ -1,6 +1,7 @@
 using System;
 using Dalamud.Plugin;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Api;
@@ -11,7 +12,9 @@ using Penumbra.Interop;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
 using Penumbra.Interop.Services;
+using Penumbra.Mods;
 using Penumbra.Services;
+using Penumbra.UI;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
 
@@ -25,7 +28,7 @@ public class PenumbraNew
     public static readonly Logger          Log = new();
     public readonly        ServiceProvider Services;
 
-    public PenumbraNew(DalamudPluginInterface pi)
+    public PenumbraNew(Penumbra pnumb, DalamudPluginInterface pi)
     {
         var       startTimer = new StartTracker();
         using var time       = startTimer.Measure(StartTimeType.Total);
@@ -38,11 +41,14 @@ public class PenumbraNew
             .AddSingleton<PerformanceTracker>()
             .AddSingleton<FilenameService>()
             .AddSingleton<BackupService>()
-            .AddSingleton<CommunicatorService>();
+            .AddSingleton<CommunicatorService>()
+            .AddSingleton<ChatService>()
+            .AddSingleton<SaveService>();
 
         // Add Dalamud services
         var dalamud = new DalamudServices(pi);
         dalamud.AddServices(services);
+        services.AddSingleton(pnumb);
 
         // Add Game Data
         services.AddSingleton<IGamePathParser, GamePathParser>()
@@ -63,21 +69,42 @@ public class PenumbraNew
             .AddSingleton<TexMdlService>()
             .AddSingleton<CreateFileWHook>()
             .AddSingleton<ResidentResourceManager>()
-            .AddSingleton<FontReloader>();
-        
+            .AddSingleton<FontReloader>()
+            .AddSingleton<RedrawService>();
+
         // Add Configuration
         services.AddTransient<ConfigMigrationService>()
             .AddSingleton<Configuration>();
 
         // Add Collection Services
         services.AddTransient<IndividualCollections>()
-            .AddSingleton<TempCollectionManager>();
+            .AddSingleton<TempCollectionManager>()
+            .AddSingleton<ModCollection.Manager>();
 
         // Add Mod Services
-        // TODO
-        services.AddSingleton<TempModManager>();
+        services.AddSingleton<TempModManager>()
+            .AddSingleton<Mod.Manager>()
+            .AddSingleton<ModFileSystem>();
+
+        // Add main services
+        services.AddSingleton<ResourceLoader>()
+            .AddSingleton<PathResolver>()
+            .AddSingleton<CharacterResolver>()
+            .AddSingleton<ResourceWatcher>();
 
         // Add Interface
+        services.AddSingleton<PenumbraChangelog>()
+            .AddSingleton<LaunchButton>()
+            .AddSingleton<ConfigWindow>()
+            .AddSingleton<PenumbraWindowSystem>()
+            .AddSingleton<ModEditWindow>()
+            .AddSingleton<CommandHandler>();
+
+        // Add API
+        services.AddSingleton<IPenumbraApi, PenumbraApi>()
+            .AddSingleton<PenumbraIpcProviders>()
+            .AddSingleton<HttpApi>();
+
         Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
     }
 

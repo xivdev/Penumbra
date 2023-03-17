@@ -306,7 +306,7 @@ public class ConfigMigrationService
             return;
 
         var defaultCollection = ModCollection.CreateNewEmpty(ModCollection.DefaultCollection);
-        var defaultCollectionFile = defaultCollection.FileName;
+        var defaultCollectionFile = new FileInfo(_fileNames.CollectionFile(defaultCollection));
         if (defaultCollectionFile.Exists)
             return;
 
@@ -339,7 +339,7 @@ public class ConfigMigrationService
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
             defaultCollection = ModCollection.MigrateFromV0(ModCollection.DefaultCollection, dict);
-            defaultCollection.Save();
+            Penumbra.SaveService.ImmediateSave(defaultCollection);
         }
         catch (Exception e)
         {

@@ -8,7 +8,10 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Penumbra.Api;
+using Penumbra.Interop;
+using Penumbra.Interop.Services;
 using Penumbra.Services;
+using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
@@ -16,8 +19,12 @@ public partial class ModCollection
 {
     public sealed partial class Manager : IDisposable, IEnumerable<ModCollection>
     {
-        private readonly Mod.Manager         _modManager;
-        private readonly CommunicatorService _communicator;
+        private readonly Mod.Manager             _modManager;
+        private readonly CommunicatorService     _communicator;
+        private readonly CharacterUtility        _characterUtility;
+        private readonly ResidentResourceManager _residentResources;
+        private readonly Configuration           _config;
+
 
         // The empty collection is always available and always has index 0.
         // It can not be deleted or moved.
@@ -49,10 +56,16 @@ public partial class ModCollection
         public IEnumerable<ModCollection> GetEnumeratorWithEmpty()
             => _collections;
 
-        public Manager(CommunicatorService communicator, Mod.Manager manager)
+        public Manager(StartTracker timer, CommunicatorService communicator, FilenameService files, CharacterUtility characterUtility,
+            ResidentResourceManager residentResources, Configuration config, Mod.Manager manager, IndividualCollections individuals)
         {
-            _communicator = communicator;
-            _modManager   = manager;
+            using var time = timer.Measure(StartTimeType.Collections);
+            _communicator      = communicator;
+            _characterUtility  = characterUtility;
+            _residentResources = residentResources;
+            _config            = config;
+            _modManager        = manager;
+            Individuals        = individuals;
 
             // The collection manager reacts to changes in mods by itself.
             _modManager.ModDiscoveryStarted              += OnModDiscoveryStarted;
@@ -61,9 +74,10 @@ public partial class ModCollection
             _modManager.ModPathChanged                   += OnModPathChange;
             _communicator.CollectionChange.Event         += SaveOnChange;
             _communicator.TemporaryGlobalModChange.Event += OnGlobalModChange;
-            ReadCollections();
-            LoadCollections();
+            ReadCollections(files);
+            LoadCollections(files);
             UpdateCurrentCollectionInUse();
+            CreateNecessaryCaches();
         }
 
         public void Dispose()
@@ -118,7 +132,8 @@ public partial class ModCollection
             var newCollection = duplicate?.Duplicate(name) ?? CreateNewEmpty(name);
             newCollection.Index = _collections.Count;
             _collections.Add(newCollection);
-            newCollection.Save();
+
+            Penumbra.SaveService.ImmediateSave(newCollection);
             Penumbra.Log.Debug($"Added collection {newCollection.AnonymizedName}.");
             _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
             SetCollection(newCollection.Index, CollectionType.Current);
@@ -166,7 +181,7 @@ public partial class ModCollection
             foreach (var inheritance in collection.Inheritance)
                 collection.ClearSubscriptions(inheritance);
 
-            collection.Delete();
+            Penumbra.SaveService.ImmediateDelete(collection);
             _collections.RemoveAt(idx);
 
             // Clear external inheritances.
@@ -227,7 +242,7 @@ public partial class ModCollection
                 case ModPathChangeType.Moved:
                     OnModMovedActive(mod);
                     foreach (var collection in this.Where(collection => collection.Settings[mod.Index] != null))
-                        collection.Save();
+                        Penumbra.SaveService.QueueSave(collection);
 
                     break;
                 case ModPathChangeType.StartingReload:
@@ -264,7 +279,7 @@ public partial class ModCollection
                 foreach (var collection in this)
                 {
                     if (collection._settings[mod.Index]?.HandleChanges(type, mod, groupIdx, optionIdx, movedToIdx) ?? false)
-                        collection.Save();
+                        Penumbra.SaveService.QueueSave(collection);
                 }
 
             // Handle changes that reload the mod if the changes did not need to be prepared,
@@ -295,7 +310,7 @@ public partial class ModCollection
             }
 
             var defaultCollection = CreateNewEmpty(DefaultCollection);
-            defaultCollection.Save();
+            Penumbra.SaveService.ImmediateSave(defaultCollection);
             defaultCollection.Index = _collections.Count;
             _collections.Add(defaultCollection);
         }
@@ -322,39 +337,36 @@ public partial class ModCollection
                 }
 
                 if (changes)
-                    collection.Save();
+                    Penumbra.SaveService.ImmediateSave(collection);
             }
         }
 
         // Read all collection files in the Collection Directory.
         // Ensure that the default named collection exists, and apply inheritances afterwards.
         // Duplicate collection files are not deleted, just not added here.
-        private void ReadCollections()
+        private void ReadCollections(FilenameService files)
         {
-            // TODO
-            var collectionDir = new DirectoryInfo(CollectionDirectory(DalamudServices.PluginInterface));
             var inheritances  = new List<IReadOnlyList<string>>();
-            if (collectionDir.Exists)
-                foreach (var file in collectionDir.EnumerateFiles("*.json"))
+            foreach (var file in files.CollectionFiles)
+            {
+                var collection = LoadFromFile(file, out var inheritance);
+                if (collection == null || collection.Name.Length == 0)
+                    continue;
+
+                if (file.Name != $"{collection.Name.RemoveInvalidPathSymbols()}.json")
+                    Penumbra.Log.Warning($"Collection {file.Name} does not correspond to {collection.Name}.");
+
+                if (this[collection.Name] != null)
                 {
-                    var collection = LoadFromFile(file, out var inheritance);
-                    if (collection == null || collection.Name.Length == 0)
-                        continue;
-
-                    if (file.Name != $"{collection.Name.RemoveInvalidPathSymbols()}.json")
-                        Penumbra.Log.Warning($"Collection {file.Name} does not correspond to {collection.Name}.");
-
-                    if (this[collection.Name] != null)
-                    {
-                        Penumbra.Log.Warning($"Duplicate collection found: {collection.Name} already exists.");
-                    }
-                    else
-                    {
-                        inheritances.Add(inheritance);
-                        collection.Index = _collections.Count;
-                        _collections.Add(collection);
-                    }
+                    Penumbra.Log.Warning($"Duplicate collection found: {collection.Name} already exists.");
                 }
+                else
+                {
+                    inheritances.Add(inheritance);
+                    collection.Index = _collections.Count;
+                    _collections.Add(collection);
+                }
+            }
 
             AddDefaultCollection();
             ApplyInheritances(inheritances);

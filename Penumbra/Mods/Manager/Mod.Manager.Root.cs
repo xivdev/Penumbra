@@ -130,8 +130,8 @@ public sealed partial class Mod
                 }
 
                 _exportDirectory                = null;
-                Penumbra.Config.ExportDirectory = string.Empty;
-                Penumbra.Config.Save();
+                _config.ExportDirectory = string.Empty;
+                _config.Save();
                 return;
             }
 
@@ -166,8 +166,8 @@ public sealed partial class Mod
 
             if( change )
             {
-                Penumbra.Config.ExportDirectory = dir.FullName;
-                Penumbra.Config.Save();
+                _config.ExportDirectory = dir.FullName;
+                _config.Save();
             }
         }
     }

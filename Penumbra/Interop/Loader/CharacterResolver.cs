@@ -70,12 +70,10 @@ public class CharacterResolver : IDisposable
         };
     }
 
-    // TODO
     public unsafe void Dispose()
     {
         _loader.ResetResolvePath();
         _loader.FileLoaded -= ImcLoadResource;
-        _pathResolver.Dispose();
     }
 
     // Use the default method of path replacement.

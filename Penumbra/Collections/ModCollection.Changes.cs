@@ -142,7 +142,7 @@ public partial class ModCollection
     {
         if( !inherited )
         {
-            Save();
+            Penumbra.SaveService.QueueSave(this);
         }
     }
 }

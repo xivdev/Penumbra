@@ -21,6 +21,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     private readonly ModFileSystemSelector _selector;
     private readonly ModPanel              _modPanel;
     public readonly  ModEditWindow         ModEditPopup;
+    private readonly Configuration         _config;
 
     private readonly SettingsTab     _settingsTab;
     private readonly CollectionsTab  _collectionsTab;
@@ -36,10 +37,12 @@ public sealed partial class ConfigWindow : Window, IDisposable
     public void SelectMod(Mod mod)
         => _selector.SelectByValue(mod);
 
-    public ConfigWindow(CommunicatorService communicator, StartTracker timer, FontReloader fontReloader, Penumbra penumbra, ResourceWatcher watcher)
+    public ConfigWindow(Configuration config, CommunicatorService communicator, StartTracker timer, FontReloader fontReloader,
+        Penumbra penumbra, ResourceWatcher watcher)
         : base(GetLabel())
     {
         _penumbra        = penumbra;
+        _config          = config;
         _resourceWatcher = watcher;
 
         ModEditPopup               =  new ModEditWindow(communicator);
@@ -66,6 +69,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
             MaximumSize = new Vector2(4096, 2160),
         };
         UpdateTutorialStep();
+        IsOpen = _config.DebugMode;
     }
 
     private ReadOnlySpan<byte> ToLabel(TabType type)

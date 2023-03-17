@@ -33,7 +33,7 @@ using Penumbra.Interop.Services;
 
 namespace Penumbra;
 
-public class Penumbra : IDalamudPlugin
+public partial class Penumbra : IDalamudPlugin
 {
     public string Name
         => "Penumbra";
@@ -43,8 +43,10 @@ public class Penumbra : IDalamudPlugin
     public static readonly string CommitHash =
         Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
 
-    public static Logger        Log    { get; private set; } = null!;
-    public static Configuration Config { get; private set; } = null!;
+    public static Logger        Log         { get; private set; } = null!;
+    public static ChatService   ChatService { get; private set; } = null!;
+    public static SaveService   SaveService { get; private set; } = null!;
+    public static Configuration Config      { get; private set; } = null!;
 
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility        CharacterUtility  { get; private set; } = null!;
@@ -68,19 +70,17 @@ public class Penumbra : IDalamudPlugin
 
     public static PerformanceTracker Performance { get; private set; } = null!;
 
-    public readonly  PathResolver         PathResolver;
-    public readonly  ObjectReloader       ObjectReloader;
-    public readonly  ModFileSystem        ModFileSystem;
-    public readonly  PenumbraApi          Api;
-    public readonly  HttpApi              HttpApi;
-    public readonly  PenumbraIpcProviders IpcProviders;
-    internal         ConfigWindow?        ConfigWindow { get; private set; }
-    private          LaunchButton?        _launchButton;
-    private          WindowSystem?        _windowSystem;
-    private          Changelog?           _changelog;
-    private          CommandHandler?      _commandHandler;
-    private readonly ResourceWatcher      _resourceWatcher;
-    private          bool                 _disposed;
+    public readonly  PathResolver          PathResolver;
+    public readonly  RedrawService         RedrawService;
+    public readonly  ModFileSystem         ModFileSystem;
+    public           PenumbraApi           Api          = null!;
+    public           HttpApi               HttpApi      = null!;
+    public           PenumbraIpcProviders  IpcProviders = null!;
+    internal         ConfigWindow?         ConfigWindow { get; private set; }
+    private          PenumbraWindowSystem? _windowSystem;
+    private          CommandHandler?       _commandHandler;
+    private readonly ResourceWatcher       _resourceWatcher;
+    private          bool                  _disposed;
 
     private readonly PenumbraNew _tmp;
     public static    ItemData    ItemData { get; private set; } = null!;
@@ -95,67 +95,38 @@ public class Penumbra : IDalamudPlugin
         Log = PenumbraNew.Log;
         try
         {
-            _tmp            = new PenumbraNew(pluginInterface);
+            _tmp            = new PenumbraNew(this, pluginInterface);
+            ChatService     = _tmp.Services.GetRequiredService<ChatService>();
+            SaveService     = _tmp.Services.GetRequiredService<SaveService>();
             Performance     = _tmp.Services.GetRequiredService<PerformanceTracker>();
             ValidityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
             _tmp.Services.GetRequiredService<BackupService>();
-            Config            = _tmp.Services.GetRequiredService<Configuration>();
-            CharacterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
-            GameEvents        = _tmp.Services.GetRequiredService<GameEventManager>();
-            MetaFileManager   = _tmp.Services.GetRequiredService<MetaFileManager>();
-            Framework         = _tmp.Services.GetRequiredService<FrameworkManager>();
-            Actors            = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
-            Identifier        = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
-            GamePathParser    = _tmp.Services.GetRequiredService<IGamePathParser>();
-            StainService      = _tmp.Services.GetRequiredService<StainService>();
-            ItemData          = _tmp.Services.GetRequiredService<ItemService>().AwaitedService;
-            Dalamud           = _tmp.Services.GetRequiredService<DalamudServices>();
-            TempMods          = _tmp.Services.GetRequiredService<TempModManager>();
-            ResidentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
-
+            Config                 = _tmp.Services.GetRequiredService<Configuration>();
+            CharacterUtility       = _tmp.Services.GetRequiredService<CharacterUtility>();
+            GameEvents             = _tmp.Services.GetRequiredService<GameEventManager>();
+            MetaFileManager        = _tmp.Services.GetRequiredService<MetaFileManager>();
+            Framework              = _tmp.Services.GetRequiredService<FrameworkManager>();
+            Actors                 = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
+            Identifier             = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
+            GamePathParser         = _tmp.Services.GetRequiredService<IGamePathParser>();
+            StainService           = _tmp.Services.GetRequiredService<StainService>();
+            ItemData               = _tmp.Services.GetRequiredService<ItemService>().AwaitedService;
+            Dalamud                = _tmp.Services.GetRequiredService<DalamudServices>();
+            TempMods               = _tmp.Services.GetRequiredService<TempModManager>();
+            ResidentResources      = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             ResourceManagerService = _tmp.Services.GetRequiredService<ResourceManagerService>();
-
-            _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Mods, () =>
-            {
-                ModManager = new Mod.Manager(Config.ModDirectory);
-                ModManager.DiscoverMods();
-            });
-
-            _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Collections, () =>
-            {
-                CollectionManager = new ModCollection.Manager(_tmp.Services.GetRequiredService<CommunicatorService>(), ModManager);
-                CollectionManager.CreateNecessaryCaches();
-            });
-
-
-            TempCollections = _tmp.Services.GetRequiredService<TempCollectionManager>();
-
-            ModFileSystem  = ModFileSystem.Load();
-            ObjectReloader = new ObjectReloader();
-            ResourceService = _tmp.Services.GetRequiredService<ResourceService>();
-            ResourceLoader = new ResourceLoader(ResourceService, _tmp.Services.GetRequiredService<FileReadService>(), _tmp.Services.GetRequiredService<TexMdlService>(), _tmp.Services.GetRequiredService<CreateFileWHook>());
-            PathResolver   = new PathResolver(_tmp.Services.GetRequiredService<StartTracker>(), _tmp.Services.GetRequiredService<CommunicatorService>(), _tmp.Services.GetRequiredService<GameEventManager>(), ResourceLoader);
-            CharacterResolver = new CharacterResolver(Config, CollectionManager, TempCollections, ResourceLoader, PathResolver);
-            
-            _resourceWatcher = new ResourceWatcher(Config, ResourceService, ResourceLoader);
-
+            ModManager             = _tmp.Services.GetRequiredService<Mod.Manager>();
+            CollectionManager      = _tmp.Services.GetRequiredService<ModCollection.Manager>();
+            TempCollections        = _tmp.Services.GetRequiredService<TempCollectionManager>();
+            ModFileSystem          = _tmp.Services.GetRequiredService<ModFileSystem>();
+            RedrawService          = _tmp.Services.GetRequiredService<RedrawService>();
+            ResourceService        = _tmp.Services.GetRequiredService<ResourceService>();
+            ResourceLoader         = _tmp.Services.GetRequiredService<ResourceLoader>();
+            PathResolver           = _tmp.Services.GetRequiredService<PathResolver>();
+            CharacterResolver      = _tmp.Services.GetRequiredService<CharacterResolver>();
+            _resourceWatcher       = _tmp.Services.GetRequiredService<ResourceWatcher>();
             SetupInterface();
-
-            if (Config.EnableMods)
-            {
-                PathResolver.Enable();
-            }
-
-            using (var tApi = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api))
-            {
-                Api          = new PenumbraApi(_tmp.Services.GetRequiredService<CommunicatorService>(), this);
-                IpcProviders = new PenumbraIpcProviders(DalamudServices.PluginInterface, Api);
-                HttpApi      = new HttpApi(Api);
-                if (Config.EnableHttpApi)
-                    HttpApi.CreateWebServer();
-
-                SubscribeItemLinks();
-            }
+            SetupApi();
 
             ValidityChecker.LogExceptions();
             Log.Information($"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
@@ -172,54 +143,45 @@ public class Penumbra : IDalamudPlugin
         }
     }
 
+    private void SetupApi()
+    {
+        using var timer = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api);
+        Api          = (PenumbraApi)_tmp.Services.GetRequiredService<IPenumbraApi>();
+        IpcProviders = _tmp.Services.GetRequiredService<PenumbraIpcProviders>();
+        HttpApi      = _tmp.Services.GetRequiredService<HttpApi>();
+
+        if (Config.EnableHttpApi)
+            HttpApi.CreateWebServer();
+        Api.ChangedItemTooltip += it =>
+        {
+            if (it is Item)
+                ImGui.TextUnformatted("Left Click to create an item link in chat.");
+        };
+        Api.ChangedItemClicked += (button, it) =>
+        {
+            if (button == MouseButton.Left && it is Item item)
+                ChatService.LinkItem(item);
+        };
+    }
+
     private void SetupInterface()
     {
         Task.Run(() =>
             {
                 using var tInterface = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Interface);
-                var       changelog  = ConfigWindow.CreateChangelog();
-                var cfg = new ConfigWindow(_tmp.Services.GetRequiredService<CommunicatorService>(), _tmp.Services.GetRequiredService<StartTracker>(), _tmp.Services.GetRequiredService<FontReloader>(), this, _resourceWatcher)
-                {
-                    IsOpen = Config.DebugMode,
-                };
-                var btn    = new LaunchButton(cfg);
-                var system = new WindowSystem(Name);
-                var cmd = new CommandHandler(DalamudServices.Commands, ObjectReloader, Config, this, cfg, ModManager, CollectionManager,
-                    Actors);
-                system.AddWindow(cfg);
-                system.AddWindow(cfg.ModEditPopup);
-                system.AddWindow(changelog);
+                var       system     = _tmp.Services.GetRequiredService<PenumbraWindowSystem>();
+                _commandHandler = _tmp.Services.GetRequiredService<CommandHandler>();
                 if (!_disposed)
                 {
-                    _changelog                                             =  changelog;
-                    ConfigWindow                                           =  cfg;
-                    _windowSystem                                          =  system;
-                    _launchButton                                          =  btn;
-                    _commandHandler                                        =  cmd;
-                    DalamudServices.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
-                    DalamudServices.PluginInterface.UiBuilder.Draw         += _windowSystem.Draw;
+                    _windowSystem = system;
+                    ConfigWindow  = system.Window;
                 }
                 else
                 {
-                    cfg.Dispose();
-                    btn.Dispose();
-                    cmd.Dispose();
+                    system.Dispose();
                 }
             }
         );
-    }
-
-    private void DisposeInterface()
-    {
-        if (_windowSystem != null)
-            DalamudServices.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
-
-        _launchButton?.Dispose();
-        if (ConfigWindow != null)
-        {
-            DalamudServices.PluginInterface.UiBuilder.OpenConfigUi -= ConfigWindow.Toggle;
-            ConfigWindow.Dispose();
-        }
     }
 
     public event Action<bool>? EnabledChange;
@@ -237,7 +199,7 @@ public class Penumbra : IDalamudPlugin
             {
                 CollectionManager.Default.SetFiles();
                 ResidentResources.Reload();
-                ObjectReloader.RedrawAll(RedrawType.Redraw);
+                RedrawService.RedrawAll(RedrawType.Redraw);
             }
         }
         else
@@ -247,7 +209,7 @@ public class Penumbra : IDalamudPlugin
             {
                 CharacterUtility.ResetAll();
                 ResidentResources.Reload();
-                ObjectReloader.RedrawAll(RedrawType.Redraw);
+                RedrawService.RedrawAll(RedrawType.Redraw);
             }
         }
 
@@ -258,52 +220,15 @@ public class Penumbra : IDalamudPlugin
     }
 
     public void ForceChangelogOpen()
-    {
-        if (_changelog != null)
-            _changelog.ForceOpen = true;
-    }
-
-    private void SubscribeItemLinks()
-    {
-        Api.ChangedItemTooltip += it =>
-        {
-            if (it is Item)
-                ImGui.TextUnformatted("Left Click to create an item link in chat.");
-        };
-        Api.ChangedItemClicked += (button, it) =>
-        {
-            if (button == MouseButton.Left && it is Item item)
-                ChatUtil.LinkItem(item);
-        };
-    }
+        => _windowSystem?.ForceChangelogOpen();
 
     public void Dispose()
     {
         if (_disposed)
             return;
 
-        // TODO
         _tmp?.Dispose();
         _disposed = true;
-        HttpApi?.Dispose();
-        IpcProviders?.Dispose();
-        Api?.Dispose();
-        _commandHandler?.Dispose();
-        StainService?.Dispose();
-        ItemData?.Dispose();
-        Actors?.Dispose();
-        Identifier?.Dispose();
-        Framework?.Dispose();
-        DisposeInterface();
-        ObjectReloader?.Dispose();
-        ModFileSystem?.Dispose();
-        CollectionManager?.Dispose();
-        CharacterResolver?.Dispose(); // disposes PathResolver, TODO
-        _resourceWatcher?.Dispose();
-        ResourceLoader?.Dispose();
-        GameEvents?.Dispose();
-        CharacterUtility?.Dispose();
-        Performance?.Dispose();
     }
 
     public string GatherSupportInformation()

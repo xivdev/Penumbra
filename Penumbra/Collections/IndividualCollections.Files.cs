@@ -43,7 +43,7 @@ public partial class IndividualCollections
                 if( group.Length == 0 || group.Any( i => !i.IsValid ) )
                 {
                     changes = true;
-                    ChatUtil.NotificationMessage( "Could not load an unknown individual collection, removed.", "Load Failure", NotificationType.Warning );
+                    Penumbra.ChatService.NotificationMessage( "Could not load an unknown individual collection, removed.", "Load Failure", NotificationType.Warning );
                     continue;
                 }
 
@@ -51,7 +51,7 @@ public partial class IndividualCollections
                 if( collectionName.Length == 0 || !manager.ByName( collectionName, out var collection ) )
                 {
                     changes = true;
-                    ChatUtil.NotificationMessage( $"Could not load the collection \"{collectionName}\" as individual collection for {identifier}, set to None.", "Load Failure",
+                    Penumbra.ChatService.NotificationMessage( $"Could not load the collection \"{collectionName}\" as individual collection for {identifier}, set to None.", "Load Failure",
                         NotificationType.Warning );
                     continue;
                 }
@@ -59,14 +59,14 @@ public partial class IndividualCollections
                 if( !Add( group, collection ) )
                 {
                     changes = true;
-                    ChatUtil.NotificationMessage( $"Could not add an individual collection for {identifier}, removed.", "Load Failure",
+                    Penumbra.ChatService.NotificationMessage( $"Could not add an individual collection for {identifier}, removed.", "Load Failure",
                         NotificationType.Warning );
                 }
             }
             catch( Exception e )
             {
                 changes = true;
-                ChatUtil.NotificationMessage( $"Could not load an unknown individual collection, removed:\n{e}", "Load Failure", NotificationType.Error );
+                Penumbra.ChatService.NotificationMessage( $"Could not load an unknown individual collection, removed:\n{e}", "Load Failure", NotificationType.Error );
             }
         }
 
@@ -117,7 +117,7 @@ public partial class IndividualCollections
                 }
                 else
                 {
-                    ChatUtil.NotificationMessage(
+                    Penumbra.ChatService.NotificationMessage(
                         $"Could not migrate {name} ({collection.AnonymizedName}) which was assumed to be a {kind.ToName()} with IDs [{ids}], please look through your individual collections.",
                         "Migration Failure", NotificationType.Error );
                 }
@@ -134,13 +134,13 @@ public partial class IndividualCollections
                 }
                 else
                 {
-                    ChatUtil.NotificationMessage( $"Could not migrate {shortName} ({collection.AnonymizedName}), please look through your individual collections.",
+                    Penumbra.ChatService.NotificationMessage( $"Could not migrate {shortName} ({collection.AnonymizedName}), please look through your individual collections.",
                         "Migration Failure", NotificationType.Error );
                 }
             }
             else
             {
-                ChatUtil.NotificationMessage(
+                Penumbra.ChatService.NotificationMessage(
                     $"Could not migrate {name} ({collection.AnonymizedName}), which can not be a player name nor is it a known NPC name, please look through your individual collections.",
                     "Migration Failure", NotificationType.Error );
             }

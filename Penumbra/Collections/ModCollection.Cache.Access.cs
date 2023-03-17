@@ -28,18 +28,18 @@ public partial class ModCollection
     public int ChangeCounter { get; private set; }
 
     // Only create, do not update. 
-    private void CreateCache()
+    private void CreateCache(bool isDefault)
     {
         if (_cache == null)
         {
-            CalculateEffectiveFileList();
+            CalculateEffectiveFileList(isDefault);
             Penumbra.Log.Verbose($"Created new cache for collection {Name}.");
         }
     }
 
     // Force an update with metadata for this cache.
     private void ForceCacheUpdate()
-        => CalculateEffectiveFileList();
+        => CalculateEffectiveFileList(this == Penumbra.CollectionManager.Default);
 
     // Handle temporary mods for this collection.
     public void Apply(Mod.TemporaryMod tempMod, bool created)
@@ -121,11 +121,11 @@ public partial class ModCollection
 
     // Update the effective file list for the given cache.
     // Creates a cache if necessary.
-    public void CalculateEffectiveFileList()
-        => Penumbra.Framework.RegisterImportant(nameof(CalculateEffectiveFileList) + Name,
-            CalculateEffectiveFileListInternal);
+    public void CalculateEffectiveFileList(bool isDefault)
+        => Penumbra.Framework.RegisterImportant(nameof(CalculateEffectiveFileList) + Name, () =>
+            CalculateEffectiveFileListInternal(isDefault));
 
-    private void CalculateEffectiveFileListInternal()
+    private void CalculateEffectiveFileListInternal(bool isDefault)
     {
         // Skip the empty collection.
         if (Index == 0)
@@ -133,7 +133,7 @@ public partial class ModCollection
 
         Penumbra.Log.Debug($"[{Thread.CurrentThread.ManagedThreadId}] Recalculating effective file list for {AnonymizedName}");
         _cache ??= new Cache(this);
-        _cache.FullRecalculation();
+        _cache.FullRecalculation(isDefault);
 
         Penumbra.Log.Debug($"[{Thread.CurrentThread.ManagedThreadId}] Recalculation of effective file list for {AnonymizedName} finished.");
     }

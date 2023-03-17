@@ -163,7 +163,7 @@ public partial class Mod
         }
 
         // Return the state of the new potential name of a directory.
-        public static NewDirectoryState NewDirectoryValid( string oldName, string newName, out DirectoryInfo? directory )
+        public NewDirectoryState NewDirectoryValid( string oldName, string newName, out DirectoryInfo? directory )
         {
             directory = null;
             if( newName.Length == 0 )
@@ -182,7 +182,7 @@ public partial class Mod
                 return NewDirectoryState.ContainsInvalidSymbols;
             }
 
-            directory = new DirectoryInfo( Path.Combine( Penumbra.ModManager.BasePath.FullName, fixedNewName ) );
+            directory = new DirectoryInfo( Path.Combine( BasePath.FullName, fixedNewName ) );
             if( File.Exists( directory.FullName ) )
             {
                 return NewDirectoryState.ExistsAsFile;

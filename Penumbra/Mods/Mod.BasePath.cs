@@ -18,6 +18,9 @@ public partial class Mod
     public DirectoryInfo ModPath { get; private set; }
     public int Index { get; private set; } = -1;
 
+    public bool IsTemporary
+        => Index < 0;
+
     // Unused if Index < 0 but used for special temporary mods.
     public int Priority
         => 0;

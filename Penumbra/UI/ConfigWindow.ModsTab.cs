@@ -111,11 +111,11 @@ public partial class ConfigWindow
                 {
                     if( lower.Length > 0 )
                     {
-                        _penumbra.ObjectReloader.RedrawObject( lower, RedrawType.Redraw );
+                        _penumbra.RedrawService.RedrawObject( lower, RedrawType.Redraw );
                     }
                     else
                     {
-                        _penumbra.ObjectReloader.RedrawAll( RedrawType.Redraw );
+                        _penumbra.RedrawService.RedrawAll( RedrawType.Redraw );
                     }
                 }
 

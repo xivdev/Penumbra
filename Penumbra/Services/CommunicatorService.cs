@@ -27,7 +27,7 @@ public class CommunicatorService : IDisposable
     ///     <item>Parameter is the affected mod. </item>
     ///     <item>Parameter is either null or the old name of the mod. </item>
     /// </list> </summary>
-    public readonly EventWrapper<ModDataChangeType, IModReadable, string?> ModMetaChange = new(nameof(ModMetaChange));
+    public readonly EventWrapper<ModDataChangeType, Mod, string?> ModMetaChange = new(nameof(ModMetaChange));
 
     public void Dispose()
     {
