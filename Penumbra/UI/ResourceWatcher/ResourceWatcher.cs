@@ -115,7 +115,7 @@ public partial class ResourceWatcher : IDisposable, ITab
         var       tmp          = _logFilter;
         var       invalidRegex = _logRegex == null && _logFilter.Length > 0;
         using var color        = ImRaii.PushColor(ImGuiCol.Border, Colors.RegexWarningBorder, invalidRegex);
-        using var style        = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale, invalidRegex);
+        using var style        = ImRaii.PushStyle(ImGuiStyleVar.FrameBorderSize, UiHelpers.Scale, invalidRegex);
         if (ImGui.InputTextWithHint("##logFilter", "If path matches this Regex...", ref tmp, 256))
             UpdateFilter(tmp, true);
     }
@@ -151,7 +151,7 @@ public partial class ResourceWatcher : IDisposable, ITab
 
     private void DrawMaxEntries()
     {
-        ImGui.SetNextItemWidth(80 * ImGuiHelpers.GlobalScale);
+        ImGui.SetNextItemWidth(80 * UiHelpers.Scale);
         ImGui.InputInt("Max. Entries", ref _newMaxEntries, 0, 0);
         var change = ImGui.IsItemDeactivatedAfterEdit();
         if (ImGui.IsItemClicked(ImGuiMouseButton.Right) && ImGui.GetIO().KeyCtrl)

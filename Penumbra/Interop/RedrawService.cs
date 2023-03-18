@@ -295,8 +295,8 @@ public sealed unsafe partial class RedrawService : IDisposable
 
     private static GameObject? GetLocalPlayer()
     {
-        var gPosePlayer = DalamudServices.Objects[GPosePlayerIdx];
-        return gPosePlayer ?? DalamudServices.Objects[0];
+        var gPosePlayer = DalamudServices.SObjects[GPosePlayerIdx];
+        return gPosePlayer ?? DalamudServices.SObjects[0];
     }
 
     public bool GetName(string lowerName, out GameObject? actor)

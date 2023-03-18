@@ -138,9 +138,9 @@ public unsafe partial class PathResolver
                 {
                     var getGameObjectIdx = ( ( delegate* unmanaged< IntPtr, int >** )timeline )[ 0 ][ Offsets.GetGameObjectIdxVfunc ];
                     var idx              = getGameObjectIdx( timeline );
-                    if( idx >= 0 && idx < DalamudServices.Objects.Length )
+                    if( idx >= 0 && idx < DalamudServices.SObjects.Length )
                     {
-                        var obj = DalamudServices.Objects[ idx ];
+                        var obj = DalamudServices.SObjects[ idx ];
                         return obj != null ? IdentifyCollection( ( GameObject* )obj.Address, true ) : ResolveData.Invalid;
                     }
                 }
@@ -204,9 +204,9 @@ public unsafe partial class PathResolver
             if( timelinePtr != IntPtr.Zero )
             {
                 var actorIdx = ( int )( *( *( ulong** )timelinePtr + 1 ) >> 3 );
-                if( actorIdx >= 0 && actorIdx < DalamudServices.Objects.Length )
+                if( actorIdx >= 0 && actorIdx < DalamudServices.SObjects.Length )
                 {
-                    _animationLoadData = IdentifyCollection( ( GameObject* )( DalamudServices.Objects[ actorIdx ]?.Address ?? IntPtr.Zero ), true );
+                    _animationLoadData = IdentifyCollection( ( GameObject* )( DalamudServices.SObjects[ actorIdx ]?.Address ?? IntPtr.Zero ), true );
                 }
             }
 
@@ -234,14 +234,14 @@ public unsafe partial class PathResolver
 
         private global::Dalamud.Game.ClientState.Objects.Types.GameObject? GetOwnedObject( uint id )
         {
-            var owner = DalamudServices.Objects.SearchById( id );
+            var owner = DalamudServices.SObjects.SearchById( id );
             if( owner == null )
             {
                 return null;
             }
 
             var idx = ( ( GameObject* )owner.Address )->ObjectIndex;
-            return DalamudServices.Objects[ idx + 1 ];
+            return DalamudServices.SObjects[ idx + 1 ];
         }
 
         private IntPtr LoadCharacterVfxDetour( byte* vfxPath, VfxParams* vfxParams, byte unk1, byte unk2, float unk3, int unk4 )
@@ -252,8 +252,8 @@ public unsafe partial class PathResolver
             {
                 var obj = vfxParams->GameObjectType switch
                 {
-                    0 => DalamudServices.Objects.SearchById( vfxParams->GameObjectId ),
-                    2 => DalamudServices.Objects[ ( int )vfxParams->GameObjectId ],
+                    0 => DalamudServices.SObjects.SearchById( vfxParams->GameObjectId ),
+                    2 => DalamudServices.SObjects[ ( int )vfxParams->GameObjectId ],
                     4 => GetOwnedObject( vfxParams->GameObjectId ),
                     _ => null,
                 };

@@ -332,7 +332,7 @@ public class ItemSwapWindow : IDisposable
             CreateMod();
 
         ImGui.SameLine();
-        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * ImGuiHelpers.GlobalScale);
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * UiHelpers.Scale);
         ImGui.Checkbox("Use File Swaps", ref _useFileSwaps);
         ImGuiUtil.HoverTooltip("Instead of writing every single non-default file to the newly created mod or option,\n"
           + "even those available from game files, use File Swaps to default game files where possible.");
@@ -356,7 +356,7 @@ public class ItemSwapWindow : IDisposable
             CreateOption();
 
         ImGui.SameLine();
-        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * ImGuiHelpers.GlobalScale);
+        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + 20 * UiHelpers.Scale);
         _dirty |= ImGui.Checkbox("Use Entire Collection", ref _useCurrentCollection);
         ImGuiUtil.HoverTooltip(
             "Use all applied mods from the Selected Collection with their current settings and respecting the enabled state of mods and inheritance,\n"
@@ -415,7 +415,7 @@ public class ItemSwapWindow : IDisposable
         ImGui.TextUnformatted( $"Take {article1}" );
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( 100 * ImGuiHelpers.GlobalScale );
+        ImGui.SetNextItemWidth( 100 * UiHelpers.Scale );
         using( var combo = ImRaii.Combo( "##fromType", _slotFrom is EquipSlot.Head ? "Hat" : _slotFrom.ToName() ) )
         {
             if( combo )
@@ -444,7 +444,7 @@ public class ItemSwapWindow : IDisposable
         ImGui.TextUnformatted( $"and put {article2} on {article1}" );
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( 100 * ImGuiHelpers.GlobalScale );
+        ImGui.SetNextItemWidth( 100 * UiHelpers.Scale );
         using( var combo = ImRaii.Combo( "##toType", _slotTo.ToName() ) )
         {
             if( combo )
@@ -636,7 +636,7 @@ public class ItemSwapWindow : IDisposable
         ImGui.TextUnformatted(text);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
+        ImGui.SetNextItemWidth(InputWidth * UiHelpers.Scale);
         if (ImGui.InputInt("##targetId", ref _targetId, 0, 0))
             _targetId = Math.Clamp(_targetId, 0, byte.MaxValue);
 
@@ -650,7 +650,7 @@ public class ItemSwapWindow : IDisposable
         ImGui.TextUnformatted(text);
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth(InputWidth * ImGuiHelpers.GlobalScale);
+        ImGui.SetNextItemWidth(InputWidth * UiHelpers.Scale);
         if (ImGui.InputInt("##sourceId", ref _sourceId, 0, 0))
             _sourceId = Math.Clamp(_sourceId, 0, byte.MaxValue);
 
@@ -714,7 +714,7 @@ public class ItemSwapWindow : IDisposable
             return;
 
         ImGui.NewLine();
-        DrawHeaderLine(300 * ImGuiHelpers.GlobalScale);
+        DrawHeaderLine(300 * UiHelpers.Scale);
         ImGui.NewLine();
 
         DrawSwapBar();

@@ -12,6 +12,7 @@ using OtterGui.Raii;
 using OtterTex;
 using Penumbra.Services;
 using Penumbra.String.Classes;
+using Penumbra.UI;
 using Penumbra.UI.Classes;
 using SixLabors.ImageSharp.PixelFormats;
 using Image = SixLabors.ImageSharp.Image;
@@ -196,7 +197,7 @@ public sealed class Texture : IDisposable
             return File.OpenRead( Path );
         }
 
-        var file = DalamudServices.GameData.GetFile( Path );
+        var file = DalamudServices.SGameData.GetFile( Path );
         return file != null ? new MemoryStream( file.Data ) : throw new Exception( $"Unable to obtain \"{Path}\" from game files." );
     }
 
@@ -216,7 +217,7 @@ public sealed class Texture : IDisposable
             {
                 if( game )
                 {
-                    if( !DalamudServices.GameData.FileExists( path ) )
+                    if( !DalamudServices.SGameData.FileExists( path ) )
                     {
                         continue;
                     }
@@ -227,7 +228,7 @@ public sealed class Texture : IDisposable
                 }
 
                 using var id = ImRaii.PushId( idx );
-                using( var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.FolderExpanded.Value(), game ) )
+                using( var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.FolderExpanded.Value(Penumbra.Config), game ) )
                 {
                     var p = game ? $"--> {path}" : path[ skipPrefix.. ];
                     if( ImGui.Selectable( p, path == startPath ) && path != startPath )
@@ -245,12 +246,12 @@ public sealed class Texture : IDisposable
         ImGuiUtil.HoverTooltip( tooltip );
     }
 
-    public void PathInputBox( string label, string hint, string tooltip, string startPath, FileDialogManager manager )
+    public void PathInputBox( string label, string hint, string tooltip, string startPath, FileDialogService fileDialog )
     {
         _tmpPath ??= Path;
         using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
-            new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
-        ImGui.SetNextItemWidth( -2 * ImGui.GetFrameHeight() - 7 * ImGuiHelpers.GlobalScale );
+            new Vector2( UiHelpers.ScaleX3, ImGui.GetStyle().ItemSpacing.Y ) );
+        ImGui.SetNextItemWidth( -2 * ImGui.GetFrameHeight() - 7 * UiHelpers.Scale );
         ImGui.InputTextWithHint( label, hint, ref _tmpPath, Utf8GamePath.MaxGamePathLength );
         if( ImGui.IsItemDeactivatedAfterEdit() )
         {
@@ -277,7 +278,7 @@ public sealed class Texture : IDisposable
                 }
             }
 
-            manager.OpenFileDialog( "Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath );
+            fileDialog.OpenFilePicker( "Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath, false );
         }
 
         ImGui.SameLine();

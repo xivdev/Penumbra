@@ -140,7 +140,7 @@ public sealed class FileSwap : Swap
         }
 
         swap.SwapToModded               = redirections( swap.SwapToRequestPath );
-        swap.SwapToModdedExistsInGame   = !swap.SwapToModded.IsRooted && DalamudServices.GameData.FileExists( swap.SwapToModded.InternalName.ToString() );
+        swap.SwapToModdedExistsInGame   = !swap.SwapToModded.IsRooted && DalamudServices.SGameData.FileExists( swap.SwapToModded.InternalName.ToString() );
         swap.SwapToModdedEqualsOriginal = !swap.SwapToModded.IsRooted && swap.SwapToModded.InternalName.Equals( swap.SwapFromRequestPath.Path );
 
         swap.FileData = type switch

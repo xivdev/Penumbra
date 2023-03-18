@@ -477,21 +477,22 @@ public partial class ModEditWindow : Window, IDisposable
         return new FullPath(path);
     }
 
-    public ModEditWindow(CommunicatorService communicator)
+    public ModEditWindow(CommunicatorService communicator, FileDialogService fileDialog)
         : base(WindowBaseLabel)
     {
+        _fileDialog = fileDialog;
         _swapWindow = new ItemSwapWindow(communicator);
-        _materialTab = new FileEditor<MtrlTab>("Materials", ".mtrl",
+        _materialTab = new FileEditor<MtrlTab>("Materials", ".mtrl", _fileDialog,
             () => _editor?.MtrlFiles ?? Array.Empty<Editor.FileRegistry>(),
             DrawMaterialPanel,
             () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
-        _modelTab = new FileEditor<MdlFile>("Models", ".mdl",
+        _modelTab = new FileEditor<MdlFile>("Models", ".mdl", _fileDialog,
             () => _editor?.MdlFiles ?? Array.Empty<Editor.FileRegistry>(),
             DrawModelPanel,
             () => _mod?.ModPath.FullName ?? string.Empty,
             null);
-        _shaderPackageTab = new FileEditor<ShpkTab>("Shader Packages", ".shpk",
+        _shaderPackageTab = new FileEditor<ShpkTab>("Shader Packages", ".shpk", _fileDialog,
             () => _editor?.ShpkFiles ?? Array.Empty<Editor.FileRegistry>(),
             DrawShaderPackagePanel,
             () => _mod?.ModPath.FullName ?? string.Empty,

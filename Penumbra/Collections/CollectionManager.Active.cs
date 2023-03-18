@@ -193,7 +193,7 @@ public partial class ModCollection
             if (defaultIdx < 0)
             {
                 Penumbra.ChatService.NotificationMessage(
-                    $"Last choice of {ConfigWindow.DefaultCollection} {defaultName} is not available, reset to {Empty.Name}.", "Load Failure",
+                    $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {Empty.Name}.", "Load Failure",
                     NotificationType.Warning);
                 Default       = Empty;
                 configChanged = true;
@@ -209,7 +209,7 @@ public partial class ModCollection
             if (interfaceIdx < 0)
             {
                 Penumbra.ChatService.NotificationMessage(
-                    $"Last choice of {ConfigWindow.InterfaceCollection} {interfaceName} is not available, reset to {Empty.Name}.",
+                    $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {Empty.Name}.",
                     "Load Failure", NotificationType.Warning);
                 Interface     = Empty;
                 configChanged = true;
@@ -225,7 +225,7 @@ public partial class ModCollection
             if (currentIdx < 0)
             {
                 Penumbra.ChatService.NotificationMessage(
-                    $"Last choice of {ConfigWindow.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}.",
+                    $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {DefaultCollection}.",
                     "Load Failure", NotificationType.Warning);
                 Current       = DefaultName;
                 configChanged = true;

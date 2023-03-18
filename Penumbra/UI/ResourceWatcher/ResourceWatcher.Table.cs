@@ -42,7 +42,7 @@ public partial class ResourceWatcher
         private sealed class PathColumn : ColumnString< Record >
         {
             public override float Width
-                => 300 * ImGuiHelpers.GlobalScale;
+                => 300 * UiHelpers.Scale;
 
             public override string ToName( Record item )
                 => item.Path.ToString();
@@ -51,7 +51,7 @@ public partial class ResourceWatcher
                 => lhs.Path.CompareTo( rhs.Path );
 
             public override void DrawColumn( Record item, int _ )
-                => DrawByteString( item.Path, 290 * ImGuiHelpers.GlobalScale );
+                => DrawByteString( item.Path, 290 * UiHelpers.Scale );
         }
 
         private static unsafe void DrawByteString( ByteString path, float length )
@@ -68,7 +68,7 @@ public partial class ResourceWatcher
                 ByteString shortPath;
                 if( fileName != -1 )
                 {
-                    using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( 2 * ImGuiHelpers.GlobalScale ) );
+                    using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, new Vector2( 2 * UiHelpers.Scale ) );
                     using var font  = ImRaii.PushFont( UiBuilder.IconFont );
                     ImGui.TextUnformatted( FontAwesomeIcon.EllipsisH.ToIconString() );
                     ImGui.SameLine();
@@ -98,7 +98,7 @@ public partial class ResourceWatcher
                 => AllFlags = AllRecords;
 
             public override float Width
-                => 80 * ImGuiHelpers.GlobalScale;
+                => 80 * UiHelpers.Scale;
 
             public override bool FilterFunc( Record item )
                 => FilterValue.HasFlag( item.RecordType );
@@ -136,7 +136,7 @@ public partial class ResourceWatcher
         private sealed class DateColumn : Column< Record >
         {
             public override float Width
-                => 80 * ImGuiHelpers.GlobalScale;
+                => 80 * UiHelpers.Scale;
 
             public override int Compare( Record lhs, Record rhs )
                 => lhs.Time.CompareTo( rhs.Time );
@@ -149,7 +149,7 @@ public partial class ResourceWatcher
         private sealed class CollectionColumn : ColumnString< Record >
         {
             public override float Width
-                => 80 * ImGuiHelpers.GlobalScale;
+                => 80 * UiHelpers.Scale;
 
             public override string ToName( Record item )
                 => item.Collection?.Name ?? string.Empty;
@@ -158,7 +158,7 @@ public partial class ResourceWatcher
         private sealed class OriginalPathColumn : ColumnString< Record >
         {
             public override float Width
-                => 200 * ImGuiHelpers.GlobalScale;
+                => 200 * UiHelpers.Scale;
 
             public override string ToName( Record item )
                 => item.OriginalPath.ToString();
@@ -167,7 +167,7 @@ public partial class ResourceWatcher
                 => lhs.OriginalPath.CompareTo( rhs.OriginalPath );
 
             public override void DrawColumn( Record item, int _ )
-                => DrawByteString( item.OriginalPath, 190 * ImGuiHelpers.GlobalScale );
+                => DrawByteString( item.OriginalPath, 190 * UiHelpers.Scale );
         }
 
         private sealed class ResourceCategoryColumn : ColumnFlags< ResourceCategoryFlag, Record >
@@ -176,7 +176,7 @@ public partial class ResourceWatcher
                 => AllFlags = ResourceExtensions.AllResourceCategories;
 
             public override float Width
-                => 80 * ImGuiHelpers.GlobalScale;
+                => 80 * UiHelpers.Scale;
 
             public override bool FilterFunc( Record item )
                 => FilterValue.HasFlag( item.Category );
@@ -216,7 +216,7 @@ public partial class ResourceWatcher
             }
 
             public override float Width
-                => 50 * ImGuiHelpers.GlobalScale;
+                => 50 * UiHelpers.Scale;
 
             public override bool FilterFunc( Record item )
                 => FilterValue.HasFlag( item.ResourceType );
@@ -247,7 +247,7 @@ public partial class ResourceWatcher
         private sealed class HandleColumn : ColumnString< Record >
         {
             public override float Width
-                => 120 * ImGuiHelpers.GlobalScale;
+                => 120 * UiHelpers.Scale;
 
             public override unsafe string ToName( Record item )
                 => item.Handle == null ? string.Empty : $"0x{( ulong )item.Handle:X}";
@@ -316,7 +316,7 @@ public partial class ResourceWatcher
         private sealed class CustomLoadColumn : OptBoolColumn
         {
             public override float Width
-                => 60 * ImGuiHelpers.GlobalScale;
+                => 60 * UiHelpers.Scale;
 
             public override bool FilterFunc( Record item )
                 => FilterFunc( item.CustomLoad );
@@ -328,7 +328,7 @@ public partial class ResourceWatcher
         private sealed class SynchronousLoadColumn : OptBoolColumn
         {
             public override float Width
-                => 45 * ImGuiHelpers.GlobalScale;
+                => 45 * UiHelpers.Scale;
 
             public override bool FilterFunc( Record item )
                 => FilterFunc( item.Synchronously );
@@ -340,7 +340,7 @@ public partial class ResourceWatcher
         private sealed class RefCountColumn : Column< Record >
         {
             public override float Width
-                => 30 * ImGuiHelpers.GlobalScale;
+                => 30 * UiHelpers.Scale;
 
             public override void DrawColumn( Record item, int _ )
                 => ImGuiUtil.RightAlign( item.RefCount.ToString() );

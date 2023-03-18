@@ -29,7 +29,7 @@ public partial class PathResolver : IDisposable
 
     private readonly        CommunicatorService       _communicator;
     private readonly        ResourceLoader            _loader;
-    private static readonly CutsceneCharacters        Cutscenes   = new(DalamudServices.Objects, Penumbra.GameEvents); // TODO
+    private static readonly CutsceneCharacters        Cutscenes   = new(DalamudServices.SObjects, Penumbra.GameEvents); // TODO
     private static          DrawObjectState           _drawObjects = null!;                                             // TODO
     private static readonly BitArray                  ValidHumanModels;
     internal static         IdentifiedCollectionCache IdentifiedCache = null!; // TODO
@@ -39,7 +39,7 @@ public partial class PathResolver : IDisposable
     private readonly        SubfileHelper             _subFiles;
 
     static PathResolver()
-        => ValidHumanModels = GetValidHumanModels(DalamudServices.GameData);
+        => ValidHumanModels = GetValidHumanModels(DalamudServices.SGameData);
 
     public unsafe PathResolver(StartTracker timer, CommunicatorService communicator, GameEventManager events, ResourceLoader loader)
     {

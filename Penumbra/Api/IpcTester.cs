@@ -17,6 +17,7 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Services;
+using Penumbra.UI;
 
 namespace Penumbra.Api;
 
@@ -450,7 +451,7 @@ public class IpcTester : IDisposable
             }
 
             DrawIntro( Ipc.RedrawObjectByName.Label, "Redraw by Name" );
-            ImGui.SetNextItemWidth( 100 * ImGuiHelpers.GlobalScale );
+            ImGui.SetNextItemWidth( 100 * UiHelpers.Scale );
             ImGui.InputTextWithHint( "##redrawName", "Name...", ref _redrawName, 32 );
             ImGui.SameLine();
             if( ImGui.Button( "Redraw##Name" ) )
@@ -459,17 +460,17 @@ public class IpcTester : IDisposable
             }
 
             DrawIntro( Ipc.RedrawObject.Label, "Redraw Player Character" );
-            if( ImGui.Button( "Redraw##pc" ) && DalamudServices.ClientState.LocalPlayer != null )
+            if( ImGui.Button( "Redraw##pc" ) && DalamudServices.SClientState.LocalPlayer != null )
             {
-                Ipc.RedrawObject.Subscriber( _pi ).Invoke( DalamudServices.ClientState.LocalPlayer, RedrawType.Redraw );
+                Ipc.RedrawObject.Subscriber( _pi ).Invoke( DalamudServices.SClientState.LocalPlayer, RedrawType.Redraw );
             }
 
             DrawIntro( Ipc.RedrawObjectByIndex.Label, "Redraw by Index" );
             var tmp = _redrawIndex;
-            ImGui.SetNextItemWidth( 100 * ImGuiHelpers.GlobalScale );
-            if( ImGui.DragInt( "##redrawIndex", ref tmp, 0.1f, 0, DalamudServices.Objects.Length ) )
+            ImGui.SetNextItemWidth( 100 * UiHelpers.Scale );
+            if( ImGui.DragInt( "##redrawIndex", ref tmp, 0.1f, 0, DalamudServices.SObjects.Length ) )
             {
-                _redrawIndex = Math.Clamp( tmp, 0, DalamudServices.Objects.Length );
+                _redrawIndex = Math.Clamp( tmp, 0, DalamudServices.SObjects.Length );
             }
 
             ImGui.SameLine();
@@ -490,12 +491,12 @@ public class IpcTester : IDisposable
 
         private void SetLastRedrawn( IntPtr address, int index )
         {
-            if( index < 0 || index > DalamudServices.Objects.Length || address == IntPtr.Zero || DalamudServices.Objects[ index ]?.Address != address )
+            if( index < 0 || index > DalamudServices.SObjects.Length || address == IntPtr.Zero || DalamudServices.SObjects[ index ]?.Address != address )
             {
                 _lastRedrawnString = "Invalid";
             }
 
-            _lastRedrawnString = $"{DalamudServices.Objects[ index ]!.Name} (0x{address:X}, {index})";
+            _lastRedrawnString = $"{DalamudServices.SObjects[ index ]!.Name} (0x{address:X}, {index})";
         }
     }
 
@@ -794,7 +795,7 @@ public class IpcTester : IDisposable
             DrawIntro( Ipc.GetInterfaceCollectionName.Label, "Interface Collection" );
             ImGui.TextUnformatted( Ipc.GetInterfaceCollectionName.Subscriber( _pi ).Invoke() );
             DrawIntro( Ipc.GetCharacterCollectionName.Label, "Character" );
-            ImGui.SetNextItemWidth( 200 * ImGuiHelpers.GlobalScale );
+            ImGui.SetNextItemWidth( 200 * UiHelpers.Scale );
             ImGui.InputTextWithHint( "##characterCollectionName", "Character Name...", ref _characterCollectionName, 64 );
             var (c, s) = Ipc.GetCharacterCollectionName.Subscriber( _pi ).Invoke( _characterCollectionName );
             ImGui.SameLine();
@@ -832,7 +833,7 @@ public class IpcTester : IDisposable
             }
 
             DrawIntro( Ipc.GetChangedItems.Label, "Changed Item List" );
-            ImGui.SetNextItemWidth( 200 * ImGuiHelpers.GlobalScale );
+            ImGui.SetNextItemWidth( 200 * UiHelpers.Scale );
             ImGui.InputTextWithHint( "##changedCollection", "Collection Name...", ref _changedItemCollection, 64 );
             ImGui.SameLine();
             if( ImGui.Button( "Get" ) )
@@ -1182,7 +1183,7 @@ public class IpcTester : IDisposable
             }
 
             DrawIntro( Ipc.TrySetModPriority.Label, "Set Priority" );
-            ImGui.SetNextItemWidth( 200 * ImGuiHelpers.GlobalScale );
+            ImGui.SetNextItemWidth( 200 * UiHelpers.Scale );
             ImGui.DragInt( "##Priority", ref _settingsPriority );
             ImGui.SameLine();
             if( ImGui.Button( "Set##Priority" ) )
@@ -1222,7 +1223,7 @@ public class IpcTester : IDisposable
                     }
                 }
 
-                ImGui.SetNextItemWidth( 200 * ImGuiHelpers.GlobalScale );
+                ImGui.SetNextItemWidth( 200 * UiHelpers.Scale );
                 using( var c = ImRaii.Combo( "##group", preview ) )
                 {
                     if( c )

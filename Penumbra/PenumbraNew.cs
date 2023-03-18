@@ -16,7 +16,10 @@ using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
+using Penumbra.UI.ModTab;
+using Penumbra.UI.Tabs;
 using Penumbra.Util;
+using ModFileSystemSelector = Penumbra.UI.ModTab.ModFileSystemSelector;
 
 namespace Penumbra;
 
@@ -28,7 +31,7 @@ public class PenumbraNew
     public static readonly Logger          Log = new();
     public readonly        ServiceProvider Services;
 
-    public PenumbraNew(Penumbra pnumb, DalamudPluginInterface pi)
+    public PenumbraNew(Penumbra penumbra, DalamudPluginInterface pi)
     {
         var       startTimer = new StartTracker();
         using var time       = startTimer.Measure(StartTimeType.Total);
@@ -48,7 +51,7 @@ public class PenumbraNew
         // Add Dalamud services
         var dalamud = new DalamudServices(pi);
         dalamud.AddServices(services);
-        services.AddSingleton(pnumb);
+        services.AddSingleton(penumbra);
 
         // Add Game Data
         services.AddSingleton<IGamePathParser, GamePathParser>()
@@ -93,15 +96,36 @@ public class PenumbraNew
             .AddSingleton<ResourceWatcher>();
 
         // Add Interface
-        services.AddSingleton<PenumbraChangelog>()
+        services.AddSingleton<FileDialogService>()
+            .AddSingleton<TutorialService>()
+            .AddSingleton<PenumbraChangelog>()
             .AddSingleton<LaunchButton>()
             .AddSingleton<ConfigWindow>()
             .AddSingleton<PenumbraWindowSystem>()
             .AddSingleton<ModEditWindow>()
-            .AddSingleton<CommandHandler>();
+            .AddSingleton<CommandHandler>()
+            .AddSingleton<SettingsTab>()
+            .AddSingleton<ModsTab>()
+            .AddSingleton<ModPanel>()
+            .AddSingleton<ModFileSystemSelector>()
+            .AddSingleton<ModPanelDescriptionTab>()
+            .AddSingleton<ModPanelSettingsTab>()
+            .AddSingleton<ModPanelEditTab>()
+            .AddSingleton<ModPanelChangedItemsTab>()
+            .AddSingleton<ModPanelConflictsTab>()
+            .AddSingleton<ModPanelTabBar>()
+            .AddSingleton<ModFileSystemSelector>()
+            .AddSingleton<CollectionsTab>()
+            .AddSingleton<ChangedItemsTab>()
+            .AddSingleton<EffectiveTab>()
+            .AddSingleton<DebugTab>()
+            .AddSingleton<ResourceTab>()
+            .AddSingleton<ConfigTabBar>()
+            .AddSingleton<ResourceWatcher>();
 
         // Add API
-        services.AddSingleton<IPenumbraApi, PenumbraApi>()
+        services.AddSingleton<PenumbraApi>()
+            .AddSingleton<IPenumbraApi>(x => x.GetRequiredService<PenumbraApi>())
             .AddSingleton<PenumbraIpcProviders>()
             .AddSingleton<HttpApi>();
 

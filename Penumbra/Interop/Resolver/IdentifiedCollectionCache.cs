@@ -30,7 +30,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr
             return;
 
         _communicator.CollectionChange.Event         += CollectionChangeClear;
-        DalamudServices.ClientState.TerritoryChanged += TerritoryClear;
+        DalamudServices.SClientState.TerritoryChanged += TerritoryClear;
         _events.CharacterDestructor                  += OnCharacterDestruct;
         _enabled                                     =  true;
     }
@@ -41,7 +41,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr
             return;
 
         _communicator.CollectionChange.Event         -= CollectionChangeClear;
-        DalamudServices.ClientState.TerritoryChanged -= TerritoryClear;
+        DalamudServices.SClientState.TerritoryChanged -= TerritoryClear;
         _events.CharacterDestructor                  -= OnCharacterDestruct;
         _enabled                                     =  false;
     }

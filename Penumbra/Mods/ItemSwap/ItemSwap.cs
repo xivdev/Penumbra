@@ -39,7 +39,7 @@ public static class ItemSwap
                     return true;
                 }
 
-                var file = DalamudServices.GameData.GetFile( path.InternalName.ToString() );
+                var file = DalamudServices.SGameData.GetFile( path.InternalName.ToString() );
                 if( file != null )
                 {
                     data = file.Data;

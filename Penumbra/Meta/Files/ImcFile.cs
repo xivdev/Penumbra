@@ -141,7 +141,7 @@ public unsafe class ImcFile : MetaBaseFile
 
     public override void Reset()
     {
-        var file = DalamudServices.GameData.GetFile( Path.ToString() );
+        var file = DalamudServices.SGameData.GetFile( Path.ToString() );
         fixed( byte* ptr = file!.Data )
         {
             MemoryUtility.MemCpyUnchecked( Data, ptr, file.Data.Length );
@@ -153,7 +153,7 @@ public unsafe class ImcFile : MetaBaseFile
         : base( 0 )
     {
         Path = manip.GamePath();
-        var file = DalamudServices.GameData.GetFile( Path.ToString() );
+        var file = DalamudServices.SGameData.GetFile( Path.ToString() );
         if( file == null )
         {
             throw new ImcException( manip, Path );
@@ -172,7 +172,7 @@ public unsafe class ImcFile : MetaBaseFile
 
     public static ImcEntry GetDefault( string path, EquipSlot slot, int variantIdx, out bool exists )
     {
-        var file = DalamudServices.GameData.GetFile( path );
+        var file = DalamudServices.SGameData.GetFile( path );
         exists = false;
         if( file == null )
         {

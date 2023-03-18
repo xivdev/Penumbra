@@ -67,7 +67,7 @@ public partial class ModEditWindow
         };
 
         var blob = shader.Blob;
-        tab.FileDialog.SaveFileDialog( $"Export {objectName} #{idx} Program Blob to...", tab.Extension, defaultName, tab.Extension, ( success, name ) =>
+        tab.FileDialog.OpenSavePicker( $"Export {objectName} #{idx} Program Blob to...", tab.Extension, defaultName, tab.Extension, ( success, name ) =>
         {
             if( !success )
             {
@@ -87,7 +87,7 @@ public partial class ModEditWindow
 
             Penumbra.ChatService.NotificationMessage( $"Shader Program Blob {defaultName}{tab.Extension} exported successfully to {Path.GetFileName( name )}",
                 "Penumbra Advanced Editing", NotificationType.Success );
-        } );
+        }, null, false );
     }
 
     private static void DrawShaderImportButton( ShpkTab tab, string objectName, Shader[] shaders, int idx )
@@ -97,7 +97,7 @@ public partial class ModEditWindow
             return;
         }
 
-        tab.FileDialog.OpenFileDialog( $"Replace {objectName} #{idx} Program Blob...", "Shader Program Blobs{.o,.cso,.dxbc,.dxil}", ( success, name ) =>
+        tab.FileDialog.OpenFilePicker( $"Replace {objectName} #{idx} Program Blob...", "Shader Program Blobs{.o,.cso,.dxbc,.dxil}", ( success, name ) =>
         {
             if( !success )
             {
@@ -106,7 +106,7 @@ public partial class ModEditWindow
 
             try
             {
-                shaders[ idx ].Blob = File.ReadAllBytes( name );
+                shaders[ idx ].Blob = File.ReadAllBytes(name[0] );
             }
             catch( Exception e )
             {
@@ -128,7 +128,7 @@ public partial class ModEditWindow
             }
 
             tab.Shpk.SetChanged();
-        } );
+        }, 1, null, false );
     }
 
     private static unsafe void DrawRawDisassembly( Shader shader )
@@ -193,7 +193,7 @@ public partial class ModEditWindow
         var ret = false;
         if( !disabled )
         {
-            ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 150.0f );
+            ImGui.SetNextItemWidth( UiHelpers.Scale * 150.0f );
             if( ImGuiUtil.InputUInt16( $"{char.ToUpper( slotLabel[ 0 ] )}{slotLabel[ 1.. ].ToLower()}", ref resource.Slot, ImGuiInputTextFlags.None ) )
             {
                 ret = true;
@@ -285,11 +285,11 @@ public partial class ModEditWindow
             return false;
         }
 
-        ImGui.TableSetupColumn( string.Empty, ImGuiTableColumnFlags.WidthFixed, 25 * ImGuiHelpers.GlobalScale );
-        ImGui.TableSetupColumn( "x", ImGuiTableColumnFlags.WidthFixed, 100         * ImGuiHelpers.GlobalScale );
-        ImGui.TableSetupColumn( "y", ImGuiTableColumnFlags.WidthFixed, 100         * ImGuiHelpers.GlobalScale );
-        ImGui.TableSetupColumn( "z", ImGuiTableColumnFlags.WidthFixed, 100         * ImGuiHelpers.GlobalScale );
-        ImGui.TableSetupColumn( "w", ImGuiTableColumnFlags.WidthFixed, 100         * ImGuiHelpers.GlobalScale );
+        ImGui.TableSetupColumn( string.Empty, ImGuiTableColumnFlags.WidthFixed, 25 * UiHelpers.Scale );
+        ImGui.TableSetupColumn( "x", ImGuiTableColumnFlags.WidthFixed, 100         * UiHelpers.Scale );
+        ImGui.TableSetupColumn( "y", ImGuiTableColumnFlags.WidthFixed, 100         * UiHelpers.Scale );
+        ImGui.TableSetupColumn( "z", ImGuiTableColumnFlags.WidthFixed, 100         * UiHelpers.Scale );
+        ImGui.TableSetupColumn( "w", ImGuiTableColumnFlags.WidthFixed, 100         * UiHelpers.Scale );
         ImGui.TableHeadersRow();
 
         var textColorStart       = ImGui.GetColorU32( ImGuiCol.Text );
@@ -362,7 +362,7 @@ public partial class ModEditWindow
         using var s = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing );
         using( var _ = ImRaii.PushFont( UiBuilder.MonoFont ) )
         {
-            ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 400 );
+            ImGui.SetNextItemWidth( UiHelpers.Scale * 400 );
             using var c = ImRaii.Combo( "##Start", tab.Orphans[ tab.NewMaterialParamStart ].Name );
             if( c )
             {
@@ -385,7 +385,7 @@ public partial class ModEditWindow
         using var s = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing );
         using( var _ = ImRaii.PushFont( UiBuilder.MonoFont ) )
         {
-            ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 400 );
+            ImGui.SetNextItemWidth( UiHelpers.Scale * 400 );
             using var c = ImRaii.Combo( "##End", tab.Orphans[ tab.NewMaterialParamEnd ].Name );
             if( c )
             {
@@ -420,7 +420,7 @@ public partial class ModEditWindow
         DrawShaderPackageStartCombo( tab );
         DrawShaderPackageEndCombo( tab );
 
-        ImGui.SetNextItemWidth( ImGuiHelpers.GlobalScale * 400 );
+        ImGui.SetNextItemWidth( UiHelpers.Scale * 400 );
         if( ImGui.InputText( "Name", ref tab.NewMaterialParamName, 63 ) )
         {
             tab.NewMaterialParamId = Crc32.Get( tab.NewMaterialParamName, 0xFFFFFFFFu );
@@ -429,7 +429,7 @@ public partial class ModEditWindow
         var tooltip = tab.UsedIds.Contains( tab.NewMaterialParamId )
             ? "The ID is already in use. Please choose a different name."
             : string.Empty;
-        if( !ImGuiUtil.DrawDisabledButton( $"Add ID 0x{tab.NewMaterialParamId:X8}", new Vector2( 400 * ImGuiHelpers.GlobalScale, ImGui.GetFrameHeight() ), tooltip,
+        if( !ImGuiUtil.DrawDisabledButton( $"Add ID 0x{tab.NewMaterialParamId:X8}", new Vector2( 400 * UiHelpers.Scale, ImGui.GetFrameHeight() ), tooltip,
                tooltip.Length > 0 ) )
         {
             return false;

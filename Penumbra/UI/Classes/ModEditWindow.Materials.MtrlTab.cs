@@ -81,7 +81,7 @@ public partial class ModEditWindow
                 LoadedShpkPath = path;
                 var data = LoadedShpkPath.IsRooted
                     ? File.ReadAllBytes( LoadedShpkPath.FullName )
-                    : DalamudServices.GameData.GetFile( LoadedShpkPath.InternalName.ToString() )?.Data;
+                    : DalamudServices.SGameData.GetFile( LoadedShpkPath.InternalName.ToString() )?.Data;
                 AssociatedShpk     = data?.Length > 0 ? new ShpkFile( data ) : throw new Exception( "Failure to load file data." );
                 LoadedShpkPathName = path.ToPath();
             }
@@ -100,7 +100,7 @@ public partial class ModEditWindow
         {
             var samplers = Mtrl.GetSamplersByTexture( AssociatedShpk );
             TextureLabels.Clear();
-            TextureLabelWidth = 50f * ImGuiHelpers.GlobalScale;
+            TextureLabelWidth = 50f * UiHelpers.Scale;
             using( var _ = ImRaii.PushFont( UiBuilder.MonoFont ) )
             {
                 for( var i = 0; i < Mtrl.Textures.Length; ++i )
@@ -112,7 +112,7 @@ public partial class ModEditWindow
                 }
             }
 
-            TextureLabelWidth = TextureLabelWidth / ImGuiHelpers.GlobalScale + 4;
+            TextureLabelWidth = TextureLabelWidth / UiHelpers.Scale + 4;
         }
 
         public void UpdateShaderKeyLabels()

@@ -38,7 +38,7 @@ public unsafe partial class PathResolver
             // Login screen. Names are populated after actors are drawn,
             // so it is not possible to fetch names from the ui list.
             // Actors are also not named. So use Yourself > Players > Racial > Default.
-            if( !DalamudServices.ClientState.IsLoggedIn )
+            if( !DalamudServices.SClientState.IsLoggedIn )
             {
                 var collection2 = Penumbra.CollectionManager.ByType( CollectionType.Yourself )
                  ?? CollectionByAttributes( gameObject )
@@ -87,7 +87,7 @@ public unsafe partial class PathResolver
     public static ModCollection PlayerCollection()
     {
         using var performance = Penumbra.Performance.Measure( PerformanceType.IdentifyCollection );
-        var       gameObject  = ( GameObject* )DalamudServices.Objects.GetObjectAddress( 0 );
+        var       gameObject  = ( GameObject* )DalamudServices.SObjects.GetObjectAddress( 0 );
         if( gameObject == null )
         {
             return Penumbra.CollectionManager.ByType( CollectionType.Yourself )

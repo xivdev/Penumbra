@@ -29,8 +29,6 @@ public partial class ModEditWindow
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
         DrawOtherMaterialDetails( tab.Mtrl, disabled );
 
-        _materialFileDialog.Draw();
-
         return !disabled && ret;
     }
 
@@ -39,7 +37,7 @@ public partial class ModEditWindow
         var       ret   = false;
         using var table = ImRaii.Table( "##Textures", 2 );
         ImGui.TableSetupColumn( "Path", ImGuiTableColumnFlags.WidthStretch );
-        ImGui.TableSetupColumn( "Name", ImGuiTableColumnFlags.WidthFixed, tab.TextureLabelWidth * ImGuiHelpers.GlobalScale );
+        ImGui.TableSetupColumn( "Name", ImGuiTableColumnFlags.WidthFixed, tab.TextureLabelWidth * UiHelpers.Scale );
         for( var i = 0; i < tab.Mtrl.Textures.Length; ++i )
         {
             using var _   = ImRaii.PushId( i );
@@ -80,7 +78,7 @@ public partial class ModEditWindow
             ret                      = true;
         }
 
-        ImGui.SameLine( 200 * ImGuiHelpers.GlobalScale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X );
+        ImGui.SameLine( 200 * UiHelpers.Scale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X );
         tmp = ( file.ShaderPackage.Flags & backfaceBit ) != 0;
         if( ImGui.Checkbox( "Hide Backfaces", ref tmp ) )
         {
@@ -171,7 +169,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ImGui.TextUnformatted( info.Path.FullName[ ( _mod!.ModPath.FullName.Length + 1 ).. ] );
             ImGui.TableNextColumn();
-            ImGui.SetNextItemWidth( 400 * ImGuiHelpers.GlobalScale );
+            ImGui.SetNextItemWidth( 400 * UiHelpers.Scale );
             var tmp = info.CurrentMaterials[ 0 ];
             if( ImGui.InputText( "##0", ref tmp, 64 ) )
             {
@@ -184,7 +182,7 @@ public partial class ModEditWindow
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
                 ImGui.TableNextColumn();
-                ImGui.SetNextItemWidth( 400 * ImGuiHelpers.GlobalScale );
+                ImGui.SetNextItemWidth( 400 * UiHelpers.Scale );
                 tmp = info.CurrentMaterials[ i ];
                 if( ImGui.InputText( $"##{i}", ref tmp, 64 ) )
                 {

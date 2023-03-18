@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using Penumbra.Api;
+using Penumbra.GameData.Actors;
 using Penumbra.Interop;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
@@ -346,7 +347,7 @@ public partial class ModCollection
         // Duplicate collection files are not deleted, just not added here.
         private void ReadCollections(FilenameService files)
         {
-            var inheritances  = new List<IReadOnlyList<string>>();
+            var inheritances = new List<IReadOnlyList<string>>();
             foreach (var file in files.CollectionFiles)
             {
                 var collection = LoadFromFile(file, out var inheritance);
@@ -370,6 +371,107 @@ public partial class ModCollection
 
             AddDefaultCollection();
             ApplyInheritances(inheritances);
+        }
+
+        public string RedundancyCheck(CollectionType type, ActorIdentifier id)
+        {
+            var checkAssignment = ByType(type, id);
+            if (checkAssignment == null)
+                return string.Empty;
+
+            switch (type)
+            {
+                // Check individual assignments. We can only be sure of redundancy for world-overlap or ownership overlap.
+                case CollectionType.Individual:
+                    switch (id.Type)
+                    {
+                        case IdentifierType.Player when id.HomeWorld != ushort.MaxValue:
+                        {
+                            var global = ByType(CollectionType.Individual, Penumbra.Actors.CreatePlayer(id.PlayerName, ushort.MaxValue));
+                            return global?.Index == checkAssignment.Index
+                                ? "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it."
+                                : string.Empty;
+                        }
+                        case IdentifierType.Owned:
+                            if (id.HomeWorld != ushort.MaxValue)
+                            {
+                                var global = ByType(CollectionType.Individual,
+                                    Penumbra.Actors.CreateOwned(id.PlayerName, ushort.MaxValue, id.Kind, id.DataId));
+                                if (global?.Index == checkAssignment.Index)
+                                    return "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it.";
+                            }
+
+                            var unowned = ByType(CollectionType.Individual, Penumbra.Actors.CreateNpc(id.Kind, id.DataId));
+                            return unowned?.Index == checkAssignment.Index
+                                ? "Assignment is redundant due to an identical unowned NPC assignment existing.\nYou can remove it."
+                                : string.Empty;
+                    }
+                    break;
+                // The group of all Characters is redundant if they are all equal to Default or unassigned.
+                case CollectionType.MalePlayerCharacter:
+                case CollectionType.MaleNonPlayerCharacter:
+                case CollectionType.FemalePlayerCharacter:
+                case CollectionType.FemaleNonPlayerCharacter:
+                    var first  = ByType(CollectionType.MalePlayerCharacter) ?? Default;
+                    var second = ByType(CollectionType.MaleNonPlayerCharacter) ?? Default;
+                    var third  = ByType(CollectionType.FemalePlayerCharacter) ?? Default;
+                    var fourth = ByType(CollectionType.FemaleNonPlayerCharacter) ?? Default;
+                    if (first.Index == second.Index
+                     && first.Index == third.Index
+                     && first.Index == fourth.Index
+                     && first.Index == Default.Index)
+                        return
+                            "Assignment is currently redundant due to the group [Male, Female, Player, NPC] Characters being unassigned or identical to each other and Default.\n"
+                          + "You can keep just the Default Assignment.";
+
+                    break;
+                // Children and Elderly are redundant if they are identical to both Male NPCs and Female NPCs, or if they are unassigned to Default.
+                case CollectionType.NonPlayerChild:
+                case CollectionType.NonPlayerElderly:
+                    var maleNpc     = ByType(CollectionType.MaleNonPlayerCharacter);
+                    var femaleNpc   = ByType(CollectionType.FemaleNonPlayerCharacter);
+                    var collection1 = CollectionType.MaleNonPlayerCharacter;
+                    var collection2 = CollectionType.FemaleNonPlayerCharacter;
+                    if (maleNpc == null)
+                    {
+                        maleNpc = Default;
+                        if (maleNpc.Index != checkAssignment.Index)
+                            return string.Empty;
+
+                        collection1 = CollectionType.Default;
+                    }
+
+                    if (femaleNpc == null)
+                    {
+                        femaleNpc = Default;
+                        if (femaleNpc.Index != checkAssignment.Index)
+                            return string.Empty;
+
+                        collection2 = CollectionType.Default;
+                    }
+
+                    return collection1 == collection2
+                        ? $"Assignment is currently redundant due to overwriting {collection1.ToName()} with an identical collection.\nYou can remove them."
+                        : $"Assignment is currently redundant due to overwriting {collection1.ToName()} and {collection2.ToName()} with an identical collection.\nYou can remove them.";
+
+                // For other assignments, check the inheritance order, unassigned means fall-through,
+                // assigned needs identical assignments to be redundant.
+                default:
+                    var group = type.InheritanceOrder();
+                    foreach (var parentType in group)
+                    {
+                        var assignment = ByType(parentType);
+                        if (assignment == null)
+                            continue;
+
+                        if (assignment.Index == checkAssignment.Index)
+                            return $"Assignment is currently redundant due to overwriting {parentType.ToName()} with an identical collection.\nYou can remove it.";
+                    }
+
+                    break;
+            }
+
+            return string.Empty;
         }
     }
 }

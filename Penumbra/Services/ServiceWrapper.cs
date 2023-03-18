@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using OtterGui.Classes;
 using Penumbra.Util;
 
 namespace Penumbra.Services;
@@ -50,7 +49,7 @@ public abstract class AsyncServiceWrapper<T> : IServiceWrapper<T>
     {
         get
         {
-            _task.Wait();
+            _task?.Wait();
             return Service!;
         }
     }
@@ -58,8 +57,8 @@ public abstract class AsyncServiceWrapper<T> : IServiceWrapper<T>
     public bool Valid
         => Service != null && !_isDisposed;
 
-    public event Action?  FinishedCreation;
-    private readonly Task _task;
+    public event Action? FinishedCreation;
+    private Task?        _task;
 
     private bool _isDisposed;
 
@@ -99,6 +98,7 @@ public abstract class AsyncServiceWrapper<T> : IServiceWrapper<T>
             {
                 Service = service;
                 Penumbra.Log.Verbose($"[{Name}] Created.");
+                _task = null;
                 FinishedCreation?.Invoke();
             }
         });
@@ -110,6 +110,7 @@ public abstract class AsyncServiceWrapper<T> : IServiceWrapper<T>
             return;
 
         _isDisposed = true;
+        _task       = null;
         if (Service is IDisposable d)
             d.Dispose();
         Penumbra.Log.Verbose($"[{Name}] Disposed.");

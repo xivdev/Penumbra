@@ -117,7 +117,7 @@ public partial class ModEditWindow
         private static EqpManipulation _new = new(Eqp.DefaultEntry, EquipSlot.Head, 1);
 
         private static float IdWidth
-            => 100 * ImGuiHelpers.GlobalScale;
+            => 100 * UiHelpers.Scale;
 
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
@@ -154,7 +154,7 @@ public partial class ModEditWindow
             using var disabled = ImRaii.Disabled();
             ImGui.TableNextColumn();
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
-                new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
+                new Vector2( 3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y ) );
             foreach( var flag in Eqp.EqpAttributes[ _new.Slot ] )
             {
                 var value = defaultEntry.HasFlag( flag );
@@ -184,7 +184,7 @@ public partial class ModEditWindow
             // Values
             ImGui.TableNextColumn();
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
-                new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
+                new Vector2( 3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y ) );
             var idx = 0;
             foreach( var flag in Eqp.EqpAttributes[ meta.Slot ] )
             {
@@ -209,7 +209,7 @@ public partial class ModEditWindow
         private static EqdpManipulation _new = new(EqdpEntry.Invalid, EquipSlot.Head, Gender.Male, ModelRace.Midlander, 1);
 
         private static float IdWidth
-            => 100 * ImGuiHelpers.GlobalScale;
+            => 100 * UiHelpers.Scale;
 
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
@@ -321,10 +321,10 @@ public partial class ModEditWindow
         private static ImcManipulation _new = new(EquipSlot.Head, 1, 1, new ImcEntry());
 
         private static float IdWidth
-            => 80 * ImGuiHelpers.GlobalScale;
+            => 80 * UiHelpers.Scale;
 
         private static float SmallIdWidth
-            => 45 * ImGuiHelpers.GlobalScale;
+            => 45 * UiHelpers.Scale;
 
         // Convert throwing to null-return if the file does not exist.
         private static ImcEntry? GetDefault( ImcManipulation imc )
@@ -380,7 +380,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip( PrimaryIdTooltip );
 
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
-                new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
+                new Vector2( 3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y ) );
 
             ImGui.TableNextColumn();
             // Equipment and accessories are slightly different imcs than other types.
@@ -406,7 +406,7 @@ public partial class ModEditWindow
             }
             else
             {
-                if( IdInput( "##imcId2", 100 * ImGuiHelpers.GlobalScale, _new.SecondaryId, out var setId2, 0, ushort.MaxValue, false ) )
+                if( IdInput( "##imcId2", 100 * UiHelpers.Scale, _new.SecondaryId, out var setId2, 0, ushort.MaxValue, false ) )
                 {
                     _new = new ImcManipulation( _new.ObjectType, _new.BodySlot, _new.PrimaryId, setId2, _new.Variant, _new.EquipSlot, _new.Entry ).Copy( GetDefault( _new )
                      ?? new ImcEntry() );
@@ -435,7 +435,7 @@ public partial class ModEditWindow
             }
             else
             {
-                ImGui.Dummy( new Vector2( 70 * ImGuiHelpers.GlobalScale, 0 ) );
+                ImGui.Dummy( new Vector2( 70 * UiHelpers.Scale, 0 ) );
             }
 
             ImGuiUtil.HoverTooltip( VariantIdTooltip );
@@ -511,7 +511,7 @@ public partial class ModEditWindow
 
             // Values
             using var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing,
-                new Vector2( 3 * ImGuiHelpers.GlobalScale, ImGui.GetStyle().ItemSpacing.Y ) );
+                new Vector2( 3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y ) );
             ImGui.TableNextColumn();
             var defaultEntry = GetDefault( meta ) ?? new ImcEntry();
             if( IntDragInput( "##imcMaterialId", $"Material ID\nDefault Value: {defaultEntry.MaterialId}", SmallIdWidth, meta.Entry.MaterialId,
@@ -572,7 +572,7 @@ public partial class ModEditWindow
         private static EstManipulation _new = new(Gender.Male, ModelRace.Midlander, EstManipulation.EstType.Body, 1, 0);
 
         private static float IdWidth
-            => 100 * ImGuiHelpers.GlobalScale;
+            => 100 * UiHelpers.Scale;
 
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
@@ -669,13 +669,13 @@ public partial class ModEditWindow
         private static GmpManipulation _new = new(GmpEntry.Default, 1);
 
         private static float RotationWidth
-            => 75 * ImGuiHelpers.GlobalScale;
+            => 75 * UiHelpers.Scale;
 
         private static float UnkWidth
-            => 50 * ImGuiHelpers.GlobalScale;
+            => 50 * UiHelpers.Scale;
 
         private static float IdWidth
-            => 100 * ImGuiHelpers.GlobalScale;
+            => 100 * UiHelpers.Scale;
 
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
@@ -787,7 +787,7 @@ public partial class ModEditWindow
         private static RspManipulation _new = new(SubRace.Midlander, RspAttribute.MaleMinSize, 1f);
 
         private static float FloatWidth
-            => 150 * ImGuiHelpers.GlobalScale;
+            => 150 * UiHelpers.Scale;
 
         public static void DrawNew( Mod.Editor editor, Vector2 iconSize )
         {
@@ -847,7 +847,7 @@ public partial class ModEditWindow
             var value = meta.Entry;
             ImGui.SetNextItemWidth( FloatWidth );
             using var color = ImRaii.PushColor( ImGuiCol.FrameBg,
-                def < value ? ColorId.IncreasedMetaValue.Value() : ColorId.DecreasedMetaValue.Value(),
+                def < value ? ColorId.IncreasedMetaValue.Value(Penumbra.Config) : ColorId.DecreasedMetaValue.Value(Penumbra.Config),
                 def != value );
             if( ImGui.DragFloat( "##rspValue", ref value, 0.001f, 0.01f, 8f ) && value is >= 0.01f and <= 8f )
             {
@@ -864,7 +864,7 @@ public partial class ModEditWindow
     {
         int tmp = currentId;
         ImGui.SetNextItemWidth( width );
-        using var style = ImRaii.PushStyle( ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale, border );
+        using var style = ImRaii.PushStyle( ImGuiStyleVar.FrameBorderSize, UiHelpers.Scale, border );
         using var color = ImRaii.PushColor( ImGuiCol.Border, Colors.RegexWarningBorder, border );
         if( ImGui.InputInt( label, ref tmp, 0 ) )
         {
@@ -880,7 +880,7 @@ public partial class ModEditWindow
     private static bool Checkmark( string label, string tooltip, bool currentValue, bool defaultValue, out bool newValue )
     {
         using var color = ImRaii.PushColor( ImGuiCol.FrameBg,
-            defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(), defaultValue != currentValue );
+            defaultValue ? ColorId.DecreasedMetaValue.Value(Penumbra.Config) : ColorId.IncreasedMetaValue.Value(Penumbra.Config), defaultValue != currentValue );
         newValue = currentValue;
         ImGui.Checkbox( label, ref newValue );
         ImGuiUtil.HoverTooltip( tooltip, ImGuiHoveredFlags.AllowWhenDisabled );
@@ -894,7 +894,7 @@ public partial class ModEditWindow
     {
         newValue = currentValue;
         using var color = ImRaii.PushColor( ImGuiCol.FrameBg,
-            defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(),
+            defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value(Penumbra.Config) : ColorId.IncreasedMetaValue.Value(Penumbra.Config),
             defaultValue != currentValue );
         ImGui.SetNextItemWidth( width );
         if( ImGui.DragInt( label, ref newValue, speed, minValue, maxValue ) )

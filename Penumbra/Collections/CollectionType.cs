@@ -1,6 +1,8 @@
 using Penumbra.GameData.Enums;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Penumbra.Collections;
 
@@ -132,6 +134,91 @@ public static class CollectionTypeExtensions
             _                      => CollectionType.Inactive,
         };
     }
+
+    // @formatter:off
+    private static readonly IReadOnlyList<CollectionType> DefaultList      = new[] { CollectionType.Default };
+    private static readonly IReadOnlyList<CollectionType> MalePlayerList   = new[] { CollectionType.MalePlayerCharacter, CollectionType.Default };
+    private static readonly IReadOnlyList<CollectionType> FemalePlayerList = new[] { CollectionType.FemalePlayerCharacter, CollectionType.Default };
+    private static readonly IReadOnlyList<CollectionType> MaleNpcList      = new[] { CollectionType.MaleNonPlayerCharacter, CollectionType.Default };
+    private static readonly IReadOnlyList<CollectionType> FemaleNpcList    = new[] { CollectionType.FemaleNonPlayerCharacter, CollectionType.Default };
+    // @formatter:on
+
+    /// <summary> A list of definite redundancy possibilities. </summary>
+    public static IReadOnlyList<CollectionType> InheritanceOrder(this CollectionType collectionType)
+        => collectionType switch
+        {
+            CollectionType.Yourself                 => DefaultList,
+            CollectionType.MalePlayerCharacter      => DefaultList,
+            CollectionType.FemalePlayerCharacter    => DefaultList,
+            CollectionType.MaleNonPlayerCharacter   => DefaultList,
+            CollectionType.FemaleNonPlayerCharacter => DefaultList,
+            CollectionType.MaleMidlander            => MalePlayerList,
+            CollectionType.FemaleMidlander          => FemalePlayerList,
+            CollectionType.MaleHighlander           => MalePlayerList,
+            CollectionType.FemaleHighlander         => FemalePlayerList,
+            CollectionType.MaleWildwood             => MalePlayerList,
+            CollectionType.FemaleWildwood           => FemalePlayerList,
+            CollectionType.MaleDuskwight            => MalePlayerList,
+            CollectionType.FemaleDuskwight          => FemalePlayerList,
+            CollectionType.MalePlainsfolk           => MalePlayerList,
+            CollectionType.FemalePlainsfolk         => FemalePlayerList,
+            CollectionType.MaleDunesfolk            => MalePlayerList,
+            CollectionType.FemaleDunesfolk          => FemalePlayerList,
+            CollectionType.MaleSeekerOfTheSun       => MalePlayerList,
+            CollectionType.FemaleSeekerOfTheSun     => FemalePlayerList,
+            CollectionType.MaleKeeperOfTheMoon      => MalePlayerList,
+            CollectionType.FemaleKeeperOfTheMoon    => FemalePlayerList,
+            CollectionType.MaleSeawolf              => MalePlayerList,
+            CollectionType.FemaleSeawolf            => FemalePlayerList,
+            CollectionType.MaleHellsguard           => MalePlayerList,
+            CollectionType.FemaleHellsguard         => FemalePlayerList,
+            CollectionType.MaleRaen                 => MalePlayerList,
+            CollectionType.FemaleRaen               => FemalePlayerList,
+            CollectionType.MaleXaela                => MalePlayerList,
+            CollectionType.FemaleXaela              => FemalePlayerList,
+            CollectionType.MaleHelion               => MalePlayerList,
+            CollectionType.FemaleHelion             => FemalePlayerList,
+            CollectionType.MaleLost                 => MalePlayerList,
+            CollectionType.FemaleLost               => FemalePlayerList,
+            CollectionType.MaleRava                 => MalePlayerList,
+            CollectionType.FemaleRava               => FemalePlayerList,
+            CollectionType.MaleVeena                => MalePlayerList,
+            CollectionType.FemaleVeena              => FemalePlayerList,
+            CollectionType.MaleMidlanderNpc         => MaleNpcList,
+            CollectionType.FemaleMidlanderNpc       => FemaleNpcList,
+            CollectionType.MaleHighlanderNpc        => MaleNpcList,
+            CollectionType.FemaleHighlanderNpc      => FemaleNpcList,
+            CollectionType.MaleWildwoodNpc          => MaleNpcList,
+            CollectionType.FemaleWildwoodNpc        => FemaleNpcList,
+            CollectionType.MaleDuskwightNpc         => MaleNpcList,
+            CollectionType.FemaleDuskwightNpc       => FemaleNpcList,
+            CollectionType.MalePlainsfolkNpc        => MaleNpcList,
+            CollectionType.FemalePlainsfolkNpc      => FemaleNpcList,
+            CollectionType.MaleDunesfolkNpc         => MaleNpcList,
+            CollectionType.FemaleDunesfolkNpc       => FemaleNpcList,
+            CollectionType.MaleSeekerOfTheSunNpc    => MaleNpcList,
+            CollectionType.FemaleSeekerOfTheSunNpc  => FemaleNpcList,
+            CollectionType.MaleKeeperOfTheMoonNpc   => MaleNpcList,
+            CollectionType.FemaleKeeperOfTheMoonNpc => FemaleNpcList,
+            CollectionType.MaleSeawolfNpc           => MaleNpcList,
+            CollectionType.FemaleSeawolfNpc         => FemaleNpcList,
+            CollectionType.MaleHellsguardNpc        => MaleNpcList,
+            CollectionType.FemaleHellsguardNpc      => FemaleNpcList,
+            CollectionType.MaleRaenNpc              => MaleNpcList,
+            CollectionType.FemaleRaenNpc            => FemaleNpcList,
+            CollectionType.MaleXaelaNpc             => MaleNpcList,
+            CollectionType.FemaleXaelaNpc           => FemaleNpcList,
+            CollectionType.MaleHelionNpc            => MaleNpcList,
+            CollectionType.FemaleHelionNpc          => FemaleNpcList,
+            CollectionType.MaleLostNpc              => MaleNpcList,
+            CollectionType.FemaleLostNpc            => FemaleNpcList,
+            CollectionType.MaleRavaNpc              => MaleNpcList,
+            CollectionType.FemaleRavaNpc            => FemaleNpcList,
+            CollectionType.MaleVeenaNpc             => MaleNpcList,
+            CollectionType.FemaleVeenaNpc           => FemaleNpcList,
+            CollectionType.Individual               => DefaultList,
+            _                                       => Array.Empty<CollectionType>(),
+        };
 
     public static CollectionType FromParts( SubRace race, Gender gender, bool npc )
     {

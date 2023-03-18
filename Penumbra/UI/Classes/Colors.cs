@@ -30,8 +30,11 @@ public static class Colors
     public const uint FilterActive        = 0x807070FF;
     public const uint TutorialMarker      = 0xFF20FFFF;
     public const uint TutorialBorder      = 0xD00000FF;
+    public const uint ReniColorButton     = 0xFFCC648D;
+    public const uint ReniColorHovered    = 0xFFB070B0;
+    public const uint ReniColorActive     = 0xFF9070E0;
 
-    public static (uint DefaultColor, string Name, string Description) Data( this ColorId color )
+    public static (uint DefaultColor, string Name, string Description) Data(this ColorId color)
         => color switch
         {
             // @formatter:off
@@ -53,6 +56,6 @@ public static class Colors
             // @formatter:on
         };
 
-    public static uint Value( this ColorId color )
-        => Penumbra.Config.Colors.TryGetValue( color, out var value ) ? value : color.Data().DefaultColor;
+    public static uint Value(this ColorId color, Configuration config)
+        => config.Colors.TryGetValue(color, out var value) ? value : color.Data().DefaultColor;
 }

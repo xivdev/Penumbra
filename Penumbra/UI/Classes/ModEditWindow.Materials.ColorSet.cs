@@ -229,8 +229,8 @@ public partial class ModEditWindow
         var       row       = file.ColorSets[ colorSetIdx ].Rows[ rowIdx ];
         var       hasDye    = file.ColorDyeSets.Length > colorSetIdx;
         var       dye       = hasDye ? file.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ] : new MtrlFile.ColorDyeSet.Row();
-        var       floatSize = 70 * ImGuiHelpers.GlobalScale;
-        var       intSize   = 45 * ImGuiHelpers.GlobalScale;
+        var       floatSize = 70 * UiHelpers.Scale;
+        var       intSize   = 45 * UiHelpers.Scale;
         ImGui.TableNextColumn();
         ColorSetCopyClipboardButton( row, dye );
         ImGui.SameLine();
