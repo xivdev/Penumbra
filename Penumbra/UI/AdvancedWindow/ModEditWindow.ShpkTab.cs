@@ -6,7 +6,7 @@ using OtterGui;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {

@@ -12,10 +12,10 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
-using Penumbra.UI.Classes;
+using Penumbra.UI.AdvancedWindow;
 using Penumbra.Util;
 
-namespace Penumbra.UI.ModTab;
+namespace Penumbra.UI.ModsTab;
 
 public class ModPanelEditTab : ITab
 {
@@ -24,6 +24,7 @@ public class ModPanelEditTab : ITab
     private readonly ModFileSystem         _fileSystem;
     private readonly ModFileSystemSelector _selector;
     private readonly ModEditWindow         _editWindow;
+    private readonly ModEditor             _editor;
 
     private readonly TagButtons _modTags = new();
 
@@ -33,13 +34,14 @@ public class ModPanelEditTab : ITab
     private Mod                _mod         = null!;
 
     public ModPanelEditTab(Mod.Manager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, ChatService chat,
-        ModEditWindow editWindow)
+        ModEditWindow editWindow, ModEditor editor)
     {
-        _modManager = modManager;
-        _selector   = selector;
-        _fileSystem = fileSystem;
-        _chat       = chat;
-        _editWindow = editWindow;
+        _modManager  = modManager;
+        _selector    = selector;
+        _fileSystem  = fileSystem;
+        _chat        = chat;
+        _editWindow  = editWindow;
+        _editor = editor;
     }
 
     public ReadOnlySpan<byte> Label
@@ -126,10 +128,10 @@ public class ModPanelEditTab : ITab
     {
         if (ImGui.Button("Update Bibo Material", buttonSize))
         {
-            var editor = new Mod.Editor(_mod, null);
-            editor.ReplaceAllMaterials("bibo",     "b");
-            editor.ReplaceAllMaterials("bibopube", "c");
-            editor.SaveAllModels();
+            _editor.LoadMod(_mod);
+            _editor.MdlMaterialEditor.ReplaceAllMaterials("bibo", "b");
+            _editor.MdlMaterialEditor.ReplaceAllMaterials("bibopube", "c");
+            _editor.MdlMaterialEditor.SaveAllModels();
             _editWindow.UpdateModels();
         }
 
@@ -142,7 +144,7 @@ public class ModPanelEditTab : ITab
 
     private void BackupButtons(Vector2 buttonSize)
     {
-        var backup = new ModBackup(_mod);
+        var backup = new ModBackup(_modManager, _mod);
         var tt = ModBackup.CreatingBackup
             ? "Already exporting a mod."
             : backup.Exists

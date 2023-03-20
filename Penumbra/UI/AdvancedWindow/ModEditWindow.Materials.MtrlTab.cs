@@ -15,7 +15,7 @@ using Penumbra.String.Classes;
 using Penumbra.Util;
 using static Penumbra.GameData.Files.ShpkFile;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Utility;
 using ImGuiNET;
@@ -18,12 +17,90 @@ using Penumbra.GameData.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.ItemSwap;
 using Penumbra.Services;
-using Penumbra.Util;
+using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
-public class ItemSwapWindow : IDisposable
+public class ItemSwapTab : IDisposable, ITab
 {
+    private readonly CommunicatorService   _communicator;
+    private readonly ItemService           _itemService;
+    private readonly ModCollection.Manager _collectionManager;
+    private readonly Mod.Manager           _modManager;
+    private readonly Configuration         _config;
+
+    public ItemSwapTab(CommunicatorService communicator, ItemService itemService, ModCollection.Manager collectionManager,
+        Mod.Manager modManager, Configuration config)
+    {
+        _communicator      = communicator;
+        _itemService       = itemService;
+        _collectionManager = collectionManager;
+        _modManager        = modManager;
+        _config            = config;
+
+        _selectors = new Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)>
+        {
+            // @formatter:off
+            [SwapType.Hat]      = (new ItemSelector(_itemService, FullEquipType.Head),   new ItemSelector(_itemService, FullEquipType.Head),   "Take this Hat",        "and put it on this one" ),
+            [SwapType.Top]      = (new ItemSelector(_itemService, FullEquipType.Body),   new ItemSelector(_itemService, FullEquipType.Body),   "Take this Top",        "and put it on this one" ),
+            [SwapType.Gloves]   = (new ItemSelector(_itemService, FullEquipType.Hands),  new ItemSelector(_itemService, FullEquipType.Hands),  "Take these Gloves",    "and put them on these"  ),
+            [SwapType.Pants]    = (new ItemSelector(_itemService, FullEquipType.Legs),   new ItemSelector(_itemService, FullEquipType.Legs),   "Take these Pants",     "and put them on these"  ),
+            [SwapType.Shoes]    = (new ItemSelector(_itemService, FullEquipType.Feet),   new ItemSelector(_itemService, FullEquipType.Feet),   "Take these Shoes",     "and put them on these"  ),
+            [SwapType.Earrings] = (new ItemSelector(_itemService, FullEquipType.Ears),   new ItemSelector(_itemService, FullEquipType.Ears),   "Take these Earrings",  "and put them on these"  ),
+            [SwapType.Necklace] = (new ItemSelector(_itemService, FullEquipType.Neck),   new ItemSelector(_itemService, FullEquipType.Neck),   "Take this Necklace",   "and put it on this one" ),
+            [SwapType.Bracelet] = (new ItemSelector(_itemService, FullEquipType.Wrists), new ItemSelector(_itemService, FullEquipType.Wrists), "Take these Bracelets", "and put them on these"  ),
+            [SwapType.Ring]     = (new ItemSelector(_itemService, FullEquipType.Finger), new ItemSelector(_itemService, FullEquipType.Finger), "Take this Ring",       "and put it on this one" ),
+            // @formatter:on
+        };
+
+        _communicator.CollectionChange.Event         += OnCollectionChange;
+        _collectionManager.Current.ModSettingChanged += OnSettingChange;
+    }
+
+    /// <summary> Update the currently selected mod or its settings. </summary>
+    public void UpdateMod(Mod mod, ModSettings? settings)
+    {
+        if (mod == _mod && settings == _modSettings)
+            return;
+
+        var oldDefaultName = $"{_mod?.Name.Text ?? "Unknown"} (Swapped)";
+        if (_newModName.Length == 0 || oldDefaultName == _newModName)
+            _newModName = $"{mod.Name.Text} (Swapped)";
+
+        _mod         = mod;
+        _modSettings = settings;
+        _swapData.LoadMod(_mod, _modSettings);
+        UpdateOption();
+        _dirty = true;
+    }
+
+    public ReadOnlySpan<byte> Label
+        => "Item Swap (WIP)"u8;
+
+    public void DrawContent()
+    {
+        ImGui.NewLine();
+        DrawHeaderLine(300 * UiHelpers.Scale);
+        ImGui.NewLine();
+
+        DrawSwapBar();
+
+        using var table = ImRaii.ListBox("##swaps", -Vector2.One);
+        if (_loadException != null)
+            ImGuiUtil.TextWrapped($"Could not load Customization Swap:\n{_loadException}");
+        else if (_swapData.Loaded)
+            foreach (var swap in _swapData.Swaps)
+                DrawSwap(swap);
+        else
+            ImGui.TextUnformatted(NonExistentText());
+    }
+
+    public void Dispose()
+    {
+        _communicator.CollectionChange.Event         -= OnCollectionChange;
+        _collectionManager.Current.ModSettingChanged -= OnSettingChange;
+    }
+
     private enum SwapType
     {
         Hat,
@@ -45,8 +122,8 @@ public class ItemSwapWindow : IDisposable
 
     private class ItemSelector : FilterComboCache<(string, Item)>
     {
-        public ItemSelector(FullEquipType type)
-            : base(() => Penumbra.ItemData[type].Select(i => (i.Name.ToDalamudString().TextValue, i)).ToArray())
+        public ItemSelector(ItemService data, FullEquipType type)
+            : base(() => data.AwaitedService[type].Select(i => (i.Name.ToDalamudString().TextValue, i)).ToArray())
         { }
 
         protected override string ToString((string, Item) obj)
@@ -63,45 +140,10 @@ public class ItemSwapWindow : IDisposable
             => type.ToName();
     }
 
-    private readonly CommunicatorService _communicator;
+    private readonly Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)> _selectors;
 
-    public ItemSwapWindow(CommunicatorService communicator)
-    {
-        _communicator                                        =  communicator;
-        _communicator.CollectionChange.Event                 += OnCollectionChange;
-        Penumbra.CollectionManager.Current.ModSettingChanged += OnSettingChange;
-    }
-
-    public void Dispose()
-    {
-        _communicator.CollectionChange.Event                 -= OnCollectionChange;
-        Penumbra.CollectionManager.Current.ModSettingChanged -= OnSettingChange;
-    }
-
-    private readonly Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)> _selectors = new()
-    {
-        [SwapType.Hat] =
-            (new ItemSelector(FullEquipType.Head), new ItemSelector(FullEquipType.Head), "Take this Hat", "and put it on this one"),
-        [SwapType.Top] =
-            (new ItemSelector(FullEquipType.Body), new ItemSelector(FullEquipType.Body), "Take this Top", "and put it on this one"),
-        [SwapType.Gloves] =
-            (new ItemSelector(FullEquipType.Hands), new ItemSelector(FullEquipType.Hands), "Take these Gloves", "and put them on these"),
-        [SwapType.Pants] =
-            (new ItemSelector(FullEquipType.Legs), new ItemSelector(FullEquipType.Legs), "Take these Pants", "and put them on these"),
-        [SwapType.Shoes] =
-            (new ItemSelector(FullEquipType.Feet), new ItemSelector(FullEquipType.Feet), "Take these Shoes", "and put them on these"),
-        [SwapType.Earrings] =
-            (new ItemSelector(FullEquipType.Ears), new ItemSelector(FullEquipType.Ears), "Take these Earrings", "and put them on these"),
-        [SwapType.Necklace] =
-            (new ItemSelector(FullEquipType.Neck), new ItemSelector(FullEquipType.Neck), "Take this Necklace", "and put it on this one"),
-        [SwapType.Bracelet] =
-            (new ItemSelector(FullEquipType.Wrists), new ItemSelector(FullEquipType.Wrists), "Take these Bracelets", "and put them on these"),
-        [SwapType.Ring] = (new ItemSelector(FullEquipType.Finger), new ItemSelector(FullEquipType.Finger), "Take this Ring",
-            "and put it on this one"),
-    };
-
-    private          ItemSelector?     _weaponSource = null;
-    private          ItemSelector?     _weaponTarget = null;
+    private          ItemSelector?     _weaponSource;
+    private          ItemSelector?     _weaponTarget;
     private readonly WeaponSelector    _slotSelector = new();
     private readonly ItemSwapContainer _swapData     = new();
 
@@ -112,39 +154,23 @@ public class ItemSwapWindow : IDisposable
     private SwapType   _lastTab       = SwapType.Hair;
     private Gender     _currentGender = Gender.Male;
     private ModelRace  _currentRace   = ModelRace.Midlander;
-    private int        _targetId      = 0;
-    private int        _sourceId      = 0;
-    private Exception? _loadException = null;
-    private EquipSlot  _slotFrom      = EquipSlot.Head;
-    private EquipSlot  _slotTo        = EquipSlot.Ears;
+    private int        _targetId;
+    private int        _sourceId;
+    private Exception? _loadException;
+    private EquipSlot  _slotFrom = EquipSlot.Head;
+    private EquipSlot  _slotTo   = EquipSlot.Ears;
 
-    private string     _newModName           = string.Empty;
-    private string     _newGroupName         = "Swaps";
-    private string     _newOptionName        = string.Empty;
-    private IModGroup? _selectedGroup        = null;
-    private bool       _subModValid          = false;
-    private bool       _useFileSwaps         = true;
-    private bool       _useCurrentCollection = false;
-    private bool       _useLeftRing          = true;
-    private bool       _useRightRing         = true;
+    private string     _newModName    = string.Empty;
+    private string     _newGroupName  = "Swaps";
+    private string     _newOptionName = string.Empty;
+    private IModGroup? _selectedGroup;
+    private bool       _subModValid;
+    private bool       _useFileSwaps = true;
+    private bool       _useCurrentCollection;
+    private bool       _useLeftRing  = true;
+    private bool       _useRightRing = true;
 
     private Item[]? _affectedItems;
-
-    public void UpdateMod(Mod mod, ModSettings? settings)
-    {
-        if (mod == _mod && settings == _modSettings)
-            return;
-
-        var oldDefaultName = $"{_mod?.Name.Text ?? "Unknown"} (Swapped)";
-        if (_newModName.Length == 0 || oldDefaultName == _newModName)
-            _newModName = $"{mod.Name.Text} (Swapped)";
-
-        _mod         = mod;
-        _modSettings = settings;
-        _swapData.LoadMod(_mod, _modSettings);
-        UpdateOption();
-        _dirty = true;
-    }
 
     private void UpdateState()
     {
@@ -167,42 +193,39 @@ public class ItemSwapWindow : IDisposable
                 case SwapType.Necklace:
                 case SwapType.Bracelet:
                 case SwapType.Ring:
-                    var values = _selectors[ _lastTab ];
-                    if( values.Source.CurrentSelection.Item2 != null && values.Target.CurrentSelection.Item2 != null )
-                    {
-                        _affectedItems = _swapData.LoadEquipment( values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2,
-                            _useCurrentCollection ? Penumbra.CollectionManager.Current : null, _useRightRing, _useLeftRing );
-                    }
+                    var values = _selectors[_lastTab];
+                    if (values.Source.CurrentSelection.Item2 != null && values.Target.CurrentSelection.Item2 != null)
+                        _affectedItems = _swapData.LoadEquipment(values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2,
+                            _useCurrentCollection ? _collectionManager.Current : null, _useRightRing, _useLeftRing);
 
                     break;
                 case SwapType.BetweenSlots:
-                    var (_, _, selectorFrom) = GetAccessorySelector( _slotFrom, true );
-                    var (_, _, selectorTo) = GetAccessorySelector( _slotTo, false );
-                    if( selectorFrom.CurrentSelection.Item2 != null && selectorTo.CurrentSelection.Item2 != null )
-                    {
-                        _affectedItems = _swapData.LoadTypeSwap( _slotTo, selectorTo.CurrentSelection.Item2, _slotFrom, selectorFrom.CurrentSelection.Item2,
-                            _useCurrentCollection ? Penumbra.CollectionManager.Current : null);
-                    }
+                    var (_, _, selectorFrom) = GetAccessorySelector(_slotFrom, true);
+                    var (_, _, selectorTo)   = GetAccessorySelector(_slotTo,   false);
+                    if (selectorFrom.CurrentSelection.Item2 != null && selectorTo.CurrentSelection.Item2 != null)
+                        _affectedItems = _swapData.LoadTypeSwap(_slotTo, selectorTo.CurrentSelection.Item2, _slotFrom,
+                            selectorFrom.CurrentSelection.Item2,
+                            _useCurrentCollection ? _collectionManager.Current : null);
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(BodySlot.Hair, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
-                        _useCurrentCollection ? Penumbra.CollectionManager.Current : null);
+                        _useCurrentCollection ? _collectionManager.Current : null);
                     break;
                 case SwapType.Face when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(BodySlot.Face, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
-                        _useCurrentCollection ? Penumbra.CollectionManager.Current : null);
+                        _useCurrentCollection ? _collectionManager.Current : null);
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(BodySlot.Zear, Names.CombinedRace(_currentGender, ModelRace.Viera), (SetId)_sourceId,
                         (SetId)_targetId,
-                        _useCurrentCollection ? Penumbra.CollectionManager.Current : null);
+                        _useCurrentCollection ? _collectionManager.Current : null);
                     break;
                 case SwapType.Tail when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(BodySlot.Tail, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
-                        _useCurrentCollection ? Penumbra.CollectionManager.Current : null);
+                        _useCurrentCollection ? _collectionManager.Current : null);
                     break;
                 case SwapType.Weapon: break;
             }
@@ -243,13 +266,13 @@ public class ItemSwapWindow : IDisposable
 
     private void CreateMod()
     {
-        var newDir = Mod.Creator.CreateModFolder(Penumbra.ModManager.BasePath, _newModName);
-        Mod.Creator.CreateMeta(newDir, _newModName, Penumbra.Config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty);
+        var newDir = Mod.Creator.CreateModFolder(_modManager.BasePath, _newModName);
+        Mod.Creator.CreateMeta(newDir, _newModName, _config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty);
         Mod.Creator.CreateDefaultFiles(newDir);
-        Penumbra.ModManager.AddMod(newDir);
-        if (!_swapData.WriteMod(Penumbra.ModManager.Last(),
+        _modManager.AddMod(newDir);
+        if (!_swapData.WriteMod(_modManager.Last(),
                 _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))
-            Penumbra.ModManager.DeleteMod(Penumbra.ModManager.Count - 1);
+            _modManager.DeleteMod(_modManager.Count - 1);
     }
 
     private void CreateOption()
@@ -273,12 +296,12 @@ public class ItemSwapWindow : IDisposable
             {
                 if (_selectedGroup == null)
                 {
-                    Penumbra.ModManager.AddModGroup(_mod, GroupType.Multi, _newGroupName);
+                    _modManager.AddModGroup(_mod, GroupType.Multi, _newGroupName);
                     _selectedGroup = _mod.Groups.Last();
                     groupCreated   = true;
                 }
 
-                Penumbra.ModManager.AddOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _newOptionName);
+                _modManager.AddOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _newOptionName);
                 optionCreated    = true;
                 optionFolderName = Directory.CreateDirectory(optionFolderName.FullName);
                 dirCreated       = true;
@@ -294,11 +317,11 @@ public class ItemSwapWindow : IDisposable
             try
             {
                 if (optionCreated && _selectedGroup != null)
-                    Penumbra.ModManager.DeleteOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _selectedGroup.Count - 1);
+                    _modManager.DeleteOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _selectedGroup.Count - 1);
 
                 if (groupCreated)
                 {
-                    Penumbra.ModManager.DeleteModGroup(_mod, _mod.Groups.IndexOf(_selectedGroup!));
+                    _modManager.DeleteModGroup(_mod, _mod.Groups.IndexOf(_selectedGroup!));
                     _selectedGroup = null;
                 }
 
@@ -365,17 +388,17 @@ public class ItemSwapWindow : IDisposable
 
     private void DrawSwapBar()
     {
-        using var bar = ImRaii.TabBar( "##swapBar", ImGuiTabBarFlags.None );
+        using var bar = ImRaii.TabBar("##swapBar", ImGuiTabBarFlags.None);
 
-        DrawEquipmentSwap( SwapType.Hat );
-        DrawEquipmentSwap( SwapType.Top );
-        DrawEquipmentSwap( SwapType.Gloves );
-        DrawEquipmentSwap( SwapType.Pants );
-        DrawEquipmentSwap( SwapType.Shoes );
-        DrawEquipmentSwap( SwapType.Earrings );
-        DrawEquipmentSwap( SwapType.Necklace );
-        DrawEquipmentSwap( SwapType.Bracelet );
-        DrawEquipmentSwap( SwapType.Ring );
+        DrawEquipmentSwap(SwapType.Hat);
+        DrawEquipmentSwap(SwapType.Top);
+        DrawEquipmentSwap(SwapType.Gloves);
+        DrawEquipmentSwap(SwapType.Pants);
+        DrawEquipmentSwap(SwapType.Shoes);
+        DrawEquipmentSwap(SwapType.Earrings);
+        DrawEquipmentSwap(SwapType.Necklace);
+        DrawEquipmentSwap(SwapType.Bracelet);
+        DrawEquipmentSwap(SwapType.Ring);
         DrawAccessorySwap();
         DrawHairSwap();
         DrawFaceSwap();
@@ -384,10 +407,10 @@ public class ItemSwapWindow : IDisposable
         DrawWeaponSwap();
     }
 
-    private ImRaii.IEndObject DrawTab( SwapType newTab )
+    private ImRaii.IEndObject DrawTab(SwapType newTab)
     {
-        using var tab = ImRaii.TabItem( newTab is SwapType.BetweenSlots ? "Between Slots" : newTab.ToString() );
-        if( tab )
+        using var tab = ImRaii.TabItem(newTab is SwapType.BetweenSlots ? "Between Slots" : newTab.ToString());
+        if (tab)
         {
             _dirty   |= _lastTab != newTab;
             _lastTab =  newTab;
@@ -400,82 +423,75 @@ public class ItemSwapWindow : IDisposable
 
     private void DrawAccessorySwap()
     {
-        using var tab = DrawTab( SwapType.BetweenSlots );
-        if( !tab )
-        {
+        using var tab = DrawTab(SwapType.BetweenSlots);
+        if (!tab)
             return;
-        }
 
-        using var table = ImRaii.Table( "##settings", 3, ImGuiTableFlags.SizingFixedFit );
-        ImGui.TableSetupColumn( "##text", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize( "and put them on these" ).X );
+        using var table = ImRaii.Table("##settings", 3, ImGuiTableFlags.SizingFixedFit);
+        ImGui.TableSetupColumn("##text", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("and put them on these").X);
 
-        var (article1, article2, selector) = GetAccessorySelector( _slotFrom, true );
+        var (article1, article2, selector) = GetAccessorySelector(_slotFrom, true);
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted( $"Take {article1}" );
+        ImGui.TextUnformatted($"Take {article1}");
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( 100 * UiHelpers.Scale );
-        using( var combo = ImRaii.Combo( "##fromType", _slotFrom is EquipSlot.Head ? "Hat" : _slotFrom.ToName() ) )
+        ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
+        using (var combo = ImRaii.Combo("##fromType", _slotFrom is EquipSlot.Head ? "Hat" : _slotFrom.ToName()))
         {
-            if( combo )
-            {
-                foreach( var slot in EquipSlotExtensions.AccessorySlots.Prepend(EquipSlot.Head) )
+            if (combo)
+                foreach (var slot in EquipSlotExtensions.AccessorySlots.Prepend(EquipSlot.Head))
                 {
-                    if( ImGui.Selectable( slot is EquipSlot.Head ? "Hat" : slot.ToName(), slot == _slotFrom ) && slot != _slotFrom )
-                    {
-                        _dirty    = true;
-                        _slotFrom = slot;
-                        if( slot == _slotTo )
-                        {
-                            _slotTo = EquipSlotExtensions.AccessorySlots.First( s => slot != s );
-                        }
-                    }
+                    if (!ImGui.Selectable(slot is EquipSlot.Head ? "Hat" : slot.ToName(), slot == _slotFrom) || slot == _slotFrom)
+                        continue;
+
+                    _dirty    = true;
+                    _slotFrom = slot;
+                    if (slot == _slotTo)
+                        _slotTo = EquipSlotExtensions.AccessorySlots.First(s => slot != s);
                 }
-            }
         }
 
         ImGui.TableNextColumn();
-        _dirty |= selector.Draw( "##itemSource", selector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
+        _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2,
+            ImGui.GetTextLineHeightWithSpacing());
 
-        (article1, _, selector) = GetAccessorySelector( _slotTo, false );
+        (article1, _, selector) = GetAccessorySelector(_slotTo, false);
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted( $"and put {article2} on {article1}" );
+        ImGui.TextUnformatted($"and put {article2} on {article1}");
 
         ImGui.TableNextColumn();
-        ImGui.SetNextItemWidth( 100 * UiHelpers.Scale );
-        using( var combo = ImRaii.Combo( "##toType", _slotTo.ToName() ) )
+        ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
+        using (var combo = ImRaii.Combo("##toType", _slotTo.ToName()))
         {
-            if( combo )
-            {
-                foreach( var slot in EquipSlotExtensions.AccessorySlots.Where( s => s != _slotFrom ) )
+            if (combo)
+                foreach (var slot in EquipSlotExtensions.AccessorySlots.Where(s => s != _slotFrom))
                 {
-                    if( ImGui.Selectable( slot.ToName(), slot == _slotTo ) && slot != _slotTo )
-                    {
-                        _dirty  = true;
-                        _slotTo = slot;
-                    }
+                    if (!ImGui.Selectable(slot.ToName(), slot == _slotTo) || slot == _slotTo)
+                        continue;
+
+                    _dirty  = true;
+                    _slotTo = slot;
                 }
-            }
         }
 
         ImGui.TableNextColumn();
-        
-        _dirty   |= selector.Draw( "##itemTarget", selector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2, ImGui.GetTextLineHeightWithSpacing() );
-        if( _affectedItems is { Length: > 1 } )
-        {
-            ImGui.SameLine();
-            ImGuiUtil.DrawTextButton( $"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero, Colors.PressEnterWarningBg );
-            if( ImGui.IsItemHovered() )
-            {
-                ImGui.SetTooltip( string.Join( '\n', _affectedItems.Where( i => !ReferenceEquals( i, selector.CurrentSelection.Item2 ) )
-                   .Select( i => i.Name.ToDalamudString().TextValue ) ) );
-            }
-        }
+
+        _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2,
+            ImGui.GetTextLineHeightWithSpacing());
+        if (_affectedItems is not { Length: > 1 })
+            return;
+
+        ImGui.SameLine();
+        ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero,
+            Colors.PressEnterWarningBg);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i, selector.CurrentSelection.Item2))
+                .Select(i => i.Name.ToDalamudString().TextValue)));
     }
 
-    private (string, string, ItemSelector) GetAccessorySelector( EquipSlot slot, bool source )
+    private (string, string, ItemSelector) GetAccessorySelector(EquipSlot slot, bool source)
     {
         var (type, article1, article2) = slot switch
         {
@@ -487,8 +503,8 @@ public class ItemSwapWindow : IDisposable
             EquipSlot.LFinger => (SwapType.Ring, "this", "it"),
             _                 => (SwapType.Ring, "this", "it"),
         };
-        var tuple = _selectors[ type ];
-        return (article1, article2, source ? tuple.Source : tuple.Target);
+        var (itemSelector, target, _, _) = _selectors[type];
+        return (article1, article2, source ? itemSelector : target);
     }
 
     private void DrawEquipmentSwap(SwapType type)
@@ -524,15 +540,15 @@ public class ItemSwapWindow : IDisposable
             _dirty |= ImGui.Checkbox("Swap Left Ring", ref _useLeftRing);
         }
 
-        if (_affectedItems is { Length: > 1 })
-        {
-            ImGui.SameLine();
-            ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero,
-                Colors.PressEnterWarningBg);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i, targetSelector.CurrentSelection.Item2))
-                    .Select(i => i.Name.ToDalamudString().TextValue)));
-        }
+        if (_affectedItems is not { Length: > 1 })
+            return;
+
+        ImGui.SameLine();
+        ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero,
+            Colors.PressEnterWarningBg);
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i, targetSelector.CurrentSelection.Item2))
+                .Select(i => i.Name.ToDalamudString().TextValue)));
     }
 
     private void DrawHairSwap()
@@ -602,14 +618,14 @@ public class ItemSwapWindow : IDisposable
                 ImGui.GetTextLineHeightWithSpacing()))
         {
             _dirty        = true;
-            _weaponSource = new ItemSelector(_slotSelector.CurrentSelection);
-            _weaponTarget = new ItemSelector(_slotSelector.CurrentSelection);
+            _weaponSource = new ItemSelector(_itemService, _slotSelector.CurrentSelection);
+            _weaponTarget = new ItemSelector(_itemService, _slotSelector.CurrentSelection);
         }
         else
         {
             _dirty        =   _weaponSource == null || _weaponTarget == null;
-            _weaponSource ??= new ItemSelector(_slotSelector.CurrentSelection);
-            _weaponTarget ??= new ItemSelector(_slotSelector.CurrentSelection);
+            _weaponSource ??= new ItemSelector(_itemService, _slotSelector.CurrentSelection);
+            _weaponTarget ??= new ItemSelector(_itemService, _slotSelector.CurrentSelection);
         }
 
         ImGui.TableNextColumn();
@@ -706,29 +722,6 @@ public class ItemSwapWindow : IDisposable
             _                 => string.Empty,
         };
 
-
-    public void DrawItemSwapPanel()
-    {
-        using var tab = ImRaii.TabItem("Item Swap (WIP)");
-        if (!tab)
-            return;
-
-        ImGui.NewLine();
-        DrawHeaderLine(300 * UiHelpers.Scale);
-        ImGui.NewLine();
-
-        DrawSwapBar();
-
-        using var table = ImRaii.ListBox("##swaps", -Vector2.One);
-        if (_loadException != null)
-            ImGuiUtil.TextWrapped($"Could not load Customization Swap:\n{_loadException}");
-        else if (_swapData.Loaded)
-            foreach (var swap in _swapData.Swaps)
-                DrawSwap(swap);
-        else
-            ImGui.TextUnformatted(NonExistentText());
-    }
-
     private static void DrawSwap(Swap swap)
     {
         var       flags = swap.ChildSwaps.Count == 0 ? ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf : ImGuiTreeNodeFlags.DefaultOpen;
@@ -754,10 +747,10 @@ public class ItemSwapWindow : IDisposable
 
     private void OnSettingChange(ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool inherited)
     {
-        if (modIdx == _mod?.Index)
-        {
-            _swapData.LoadMod(_mod, _modSettings);
-            _dirty = true;
-        }
+        if (modIdx != _mod?.Index)
+            return;
+
+        _swapData.LoadMod(_mod, _modSettings);
+        _dirty = true;
     }
 }

@@ -4,6 +4,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
+using Penumbra.UI.AdvancedWindow;
 
 namespace Penumbra;
 

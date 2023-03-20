@@ -13,7 +13,7 @@ using Penumbra.UI.Classes;
 using Dalamud.Interface.Components;
 using Dalamud.Interface;
 
-namespace Penumbra.UI.ModTab;
+namespace Penumbra.UI.ModsTab;
 
 public class ModPanelSettingsTab : ITab
 {

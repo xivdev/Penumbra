@@ -13,7 +13,7 @@ using Penumbra.GameData;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {

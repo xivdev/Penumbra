@@ -14,10 +14,10 @@ public class ModBackup
     public readonly  string Name;
     public readonly  bool   Exists;
 
-    public ModBackup( Mod mod )
+    public ModBackup( Mod.Manager modManager, Mod mod )
     {
         _mod   = mod;
-        Name   = Path.Combine( Penumbra.ModManager.ExportDirectory.FullName, _mod.ModPath.Name ) + ".pmp";
+        Name   = Path.Combine( modManager.ExportDirectory.FullName, _mod.ModPath.Name ) + ".pmp";
         Exists = File.Exists( Name );
     }
 

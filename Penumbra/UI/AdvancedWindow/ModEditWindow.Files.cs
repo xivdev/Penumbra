@@ -9,27 +9,29 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private readonly HashSet<Mod.Editor.FileRegistry> _selectedFiles       = new(256);
-    private          LowerString                      _fileFilter          = LowerString.Empty;
-    private          bool                             _showGamePaths       = true;
-    private          string                           _gamePathEdit        = string.Empty;
-    private          int                              _fileIdx             = -1;
-    private          int                              _pathIdx             = -1;
-    private          int                              _folderSkip          = 0;
-    private          bool                             _overviewMode        = false;
-    private          LowerString                      _fileOverviewFilter1 = LowerString.Empty;
-    private          LowerString                      _fileOverviewFilter2 = LowerString.Empty;
-    private          LowerString                      _fileOverviewFilter3 = LowerString.Empty;
+    private readonly HashSet<FileRegistry> _selectedFiles = new(256);
+    private          LowerString           _fileFilter    = LowerString.Empty;
+    private          bool                  _showGamePaths = true;
+    private          string                _gamePathEdit  = string.Empty;
+    private          int                   _fileIdx       = -1;
+    private          int                   _pathIdx       = -1;
+    private          int                   _folderSkip;
+    private          bool                  _overviewMode;
 
-    private bool CheckFilter(Mod.Editor.FileRegistry registry)
+    private LowerString _fileOverviewFilter1 = LowerString.Empty;
+    private LowerString _fileOverviewFilter2 = LowerString.Empty;
+    private LowerString _fileOverviewFilter3 = LowerString.Empty;
+
+    private bool CheckFilter(FileRegistry registry)
         => _fileFilter.IsEmpty || registry.File.FullName.Contains(_fileFilter.Lower, StringComparison.OrdinalIgnoreCase);
 
-    private bool CheckFilter((Mod.Editor.FileRegistry, int) p)
+    private bool CheckFilter((FileRegistry, int) p)
         => CheckFilter(p.Item1);
 
     private void DrawFileTab()
@@ -74,13 +76,13 @@ public partial class ModEditWindow
 
         var idx = 0;
 
-        var files = _editor!.AvailableFiles.SelectMany(f =>
+        var files = _editor.Files.Available.SelectMany(f =>
         {
             var file = f.RelPath.ToString();
             return f.SubModUsage.Count == 0
                 ? Enumerable.Repeat((file, "Unused", string.Empty, 0x40000080u), 1)
                 : f.SubModUsage.Select(s => (file, s.Item2.ToString(), s.Item1.FullName,
-                    _editor.CurrentOption == s.Item1 && _mod!.HasOptions ? 0x40008000u : 0u));
+                    _editor.Option! == s.Item1 && _mod!.HasOptions ? 0x40008000u : 0u));
         });
 
         void DrawLine((string, string, string, uint) data)
@@ -119,7 +121,7 @@ public partial class ModEditWindow
         if (!list)
             return;
 
-        foreach (var (registry, i) in _editor!.AvailableFiles.WithIndex().Where(CheckFilter))
+        foreach (var (registry, i) in _editor.Files.Available.WithIndex().Where(CheckFilter))
         {
             using var id = ImRaii.PushId(i);
             ImGui.TableNextColumn();
@@ -133,17 +135,17 @@ public partial class ModEditWindow
             for (var j = 0; j < registry.SubModUsage.Count; ++j)
             {
                 var (subMod, gamePath) = registry.SubModUsage[j];
-                if (subMod != _editor.CurrentOption)
+                if (subMod != _editor.Option)
                     continue;
 
                 PrintGamePath(i, j, registry, subMod, gamePath);
             }
 
-            PrintNewGamePath(i, registry, _editor.CurrentOption);
+            PrintNewGamePath(i, registry, _editor.Option!);
         }
     }
 
-    private static string DrawFileTooltip(Mod.Editor.FileRegistry registry, ColorId color)
+    private static string DrawFileTooltip(FileRegistry registry, ColorId color)
     {
         (string, int) GetMulti()
         {
@@ -172,7 +174,7 @@ public partial class ModEditWindow
         };
     }
 
-    private void DrawSelectable(Mod.Editor.FileRegistry registry)
+    private void DrawSelectable(FileRegistry registry)
     {
         var selected = _selectedFiles.Contains(registry);
         var color = registry.SubModUsage.Count == 0             ? ColorId.ConflictingMod :
@@ -192,7 +194,7 @@ public partial class ModEditWindow
         ImGuiUtil.RightAlign(rightText);
     }
 
-    private void PrintGamePath(int i, int j, Mod.Editor.FileRegistry registry, ISubMod subMod, Utf8GamePath gamePath)
+    private void PrintGamePath(int i, int j, FileRegistry registry, ISubMod subMod, Utf8GamePath gamePath)
     {
         using var id = ImRaii.PushId(j);
         ImGui.TableNextColumn();
@@ -211,7 +213,7 @@ public partial class ModEditWindow
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
             if (Utf8GamePath.FromString(_gamePathEdit, out var path, false))
-                _editor!.SetGamePath(_fileIdx, _pathIdx, path);
+                _editor.FileEditor.SetGamePath(_editor.Option!, _fileIdx, _pathIdx, path);
 
             _fileIdx = -1;
             _pathIdx = -1;
@@ -219,7 +221,7 @@ public partial class ModEditWindow
         else if (_fileIdx == i
               && _pathIdx == j
               && (!Utf8GamePath.FromString(_gamePathEdit, out var path, false)
-                  || !path.IsEmpty && !path.Equals(gamePath) && !_editor!.CanAddGamePath(path)))
+                  || !path.IsEmpty && !path.Equals(gamePath) && !_editor.FileEditor.CanAddGamePath(path)))
         {
             ImGui.SameLine();
             ImGui.SetCursorPosX(pos);
@@ -228,7 +230,7 @@ public partial class ModEditWindow
         }
     }
 
-    private void PrintNewGamePath(int i, Mod.Editor.FileRegistry registry, ISubMod subMod)
+    private void PrintNewGamePath(int i, FileRegistry registry, ISubMod subMod)
     {
         var tmp = _fileIdx == i && _pathIdx == -1 ? _gamePathEdit : string.Empty;
         var pos = ImGui.GetCursorPosX() - ImGui.GetFrameHeight();
@@ -243,7 +245,7 @@ public partial class ModEditWindow
         if (ImGui.IsItemDeactivatedAfterEdit())
         {
             if (Utf8GamePath.FromString(_gamePathEdit, out var path, false) && !path.IsEmpty)
-                _editor!.SetGamePath(_fileIdx, _pathIdx, path);
+                _editor.FileEditor.SetGamePath(_editor.Option!, _fileIdx, _pathIdx, path);
 
             _fileIdx = -1;
             _pathIdx = -1;
@@ -251,7 +253,7 @@ public partial class ModEditWindow
         else if (_fileIdx == i
               && _pathIdx == -1
               && (!Utf8GamePath.FromString(_gamePathEdit, out var path, false)
-                  || !path.IsEmpty && !_editor!.CanAddGamePath(path)))
+                  || !path.IsEmpty && !_editor.FileEditor.CanAddGamePath(path)))
         {
             ImGui.SameLine();
             ImGui.SetCursorPosX(pos);
@@ -271,7 +273,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         spacing.Pop();
         if (ImGui.Button("Add Paths"))
-            _editor!.AddPathsToSelected(_editor!.AvailableFiles.Where(_selectedFiles.Contains), _folderSkip);
+            _editor.FileEditor.AddPathsToSelected(_editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains), _folderSkip);
 
         ImGuiUtil.HoverTooltip(
             "Add the file path converted to a game path to all selected files for the current option, optionally skipping the first N folders.");
@@ -279,25 +281,25 @@ public partial class ModEditWindow
 
         ImGui.SameLine();
         if (ImGui.Button("Remove Paths"))
-            _editor!.RemovePathsFromSelected(_editor!.AvailableFiles.Where(_selectedFiles.Contains));
+            _editor.FileEditor.RemovePathsFromSelected(_editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains));
 
         ImGuiUtil.HoverTooltip("Remove all game paths associated with the selected files in the current option.");
 
 
         ImGui.SameLine();
         if (ImGui.Button("Delete Selected Files"))
-            _editor!.DeleteFiles(_editor!.AvailableFiles.Where(_selectedFiles.Contains));
+            _editor.FileEditor.DeleteFiles(_editor.Mod!, _editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains));
 
         ImGuiUtil.HoverTooltip(
             "Delete all selected files entirely from your filesystem, but not their file associations in the mod, if there are any.\n!!!This can not be reverted!!!");
         ImGui.SameLine();
-        var changes = _editor!.FileChanges;
+        var changes = _editor.FileEditor.Changes;
         var tt      = changes ? "Apply the current file setup to the currently selected option." : "No changes made.";
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, !changes))
         {
-            var failedFiles = _editor!.ApplyFiles();
+            var failedFiles = _editor.FileEditor.Apply(_editor.Mod!, (Mod.SubMod)_editor.Option!);
             if (failedFiles > 0)
-                Penumbra.Log.Information($"Failed to apply {failedFiles} file redirections to {_editor.CurrentOption.FullName}.");
+                Penumbra.Log.Information($"Failed to apply {failedFiles} file redirections to {_editor.Option!.FullName}.");
         }
 
 
@@ -305,7 +307,7 @@ public partial class ModEditWindow
         var label  = changes ? "Revert Changes" : "Reload Files";
         var length = new Vector2(ImGui.CalcTextSize("Revert Changes").X, 0);
         if (ImGui.Button(label, length))
-            _editor!.RevertFiles();
+            _editor.FileEditor.RevertFiles(_editor.Mod!, _editor.Option!);
 
         ImGuiUtil.HoverTooltip("Revert all revertible changes since the last file or option reload or data refresh.");
 
@@ -325,19 +327,19 @@ public partial class ModEditWindow
 
         ImGui.SameLine();
         if (ImGui.Button("Select Visible"))
-            _selectedFiles.UnionWith(_editor!.AvailableFiles.Where(CheckFilter));
+            _selectedFiles.UnionWith(_editor.Files.Available.Where(CheckFilter));
 
         ImGui.SameLine();
         if (ImGui.Button("Select Unused"))
-            _selectedFiles.UnionWith(_editor!.AvailableFiles.Where(f => f.SubModUsage.Count == 0));
+            _selectedFiles.UnionWith(_editor.Files.Available.Where(f => f.SubModUsage.Count == 0));
 
         ImGui.SameLine();
         if (ImGui.Button("Select Used Here"))
-            _selectedFiles.UnionWith(_editor!.AvailableFiles.Where(f => f.CurrentUsage > 0));
+            _selectedFiles.UnionWith(_editor.Files.Available.Where(f => f.CurrentUsage > 0));
 
         ImGui.SameLine();
 
-        ImGuiUtil.RightAlign($"{_selectedFiles.Count} / {_editor!.AvailableFiles.Count} Files Selected");
+        ImGuiUtil.RightAlign($"{_selectedFiles.Count} / {_editor.Files.Available.Count} Files Selected");
     }
 
     private void DrawFileManagementOverview()

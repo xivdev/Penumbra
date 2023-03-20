@@ -12,8 +12,8 @@ using Penumbra.Api.Enums;
 using Penumbra.Interop;
 using Penumbra.Mods;
 using Penumbra.Services;
-using Penumbra.UI.ModTab;
-using ModFileSystemSelector = Penumbra.UI.ModTab.ModFileSystemSelector;
+using Penumbra.UI.ModsTab;
+using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
 
 namespace Penumbra.UI.Tabs;
 

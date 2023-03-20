@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using Dalamud.Data;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Windowing;
@@ -12,31 +13,32 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
 using Penumbra.Mods;
-using Penumbra.Services;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 using Penumbra.Util;
 using static Penumbra.Mods.Mod;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow : Window, IDisposable
 {
-    private const     string         WindowBaseLabel = "###SubModEdit";
-    internal readonly ItemSwapWindow _swapWindow;
+    private const string WindowBaseLabel = "###SubModEdit";
 
-    private Editor? _editor;
+    private readonly ModEditor     _editor;
+    private readonly Configuration _config;
+    private readonly ItemSwapTab   _itemSwapTab;
+
     private Mod?    _mod;
     private Vector2 _iconSize         = Vector2.Zero;
-    private bool    _allowReduplicate = false;
+    private bool    _allowReduplicate;
 
     public void ChangeMod(Mod mod)
     {
         if (mod == _mod)
             return;
 
-        _editor?.Dispose();
-        _editor = new Editor(mod, mod.Default);
-        _mod    = mod;
+        _editor.LoadMod(mod, -1, 0);
+        _mod = mod;
 
         SizeConstraints = new WindowSizeConstraints
         {
@@ -47,17 +49,20 @@ public partial class ModEditWindow : Window, IDisposable
         _modelTab.Reset();
         _materialTab.Reset();
         _shaderPackageTab.Reset();
-        _swapWindow.UpdateMod(mod, Penumbra.CollectionManager.Current[mod.Index].Settings);
+        _itemSwapTab.UpdateMod(mod, Penumbra.CollectionManager.Current[mod.Index].Settings);
     }
 
-    public void ChangeOption(ISubMod? subMod)
-        => _editor?.SetSubMod(subMod);
+    public void ChangeOption(SubMod? subMod)
+        => _editor.LoadOption(subMod?.GroupIdx ?? -1, subMod?.GroupIdx ?? 0);
 
     public void UpdateModels()
-        => _editor?.ScanModels();
+    {
+        if (_mod != null)
+            _editor.MdlMaterialEditor.ScanModels(_mod);
+    }
 
     public override bool DrawConditions()
-        => _editor != null;
+        => _mod != null;
 
     public override void PreDraw()
     {
@@ -67,7 +72,7 @@ public partial class ModEditWindow : Window, IDisposable
 
         var redirections = 0;
         var unused       = 0;
-        var size = _editor!.AvailableFiles.Sum(f =>
+        var size = _editor.Files.Available.Sum(f =>
         {
             if (f.SubModUsage.Count > 0)
                 redirections += f.SubModUsage.Count;
@@ -89,13 +94,13 @@ public partial class ModEditWindow : Window, IDisposable
             sb.Append($"   |   {subMods} Options");
 
         if (size > 0)
-            sb.Append($"   |   {_editor.AvailableFiles.Count} Files ({Functions.HumanReadableSize(size)})");
+            sb.Append($"   |   {_editor.Files.Available.Count} Files ({Functions.HumanReadableSize(size)})");
 
         if (unused > 0)
             sb.Append($"   |   {unused} Unused Files");
 
-        if (_editor.MissingFiles.Count > 0)
-            sb.Append($"   |   {_editor.MissingFiles.Count} Missing Files");
+        if (_editor.Files.Missing.Count > 0)
+            sb.Append($"   |   {_editor.Files.Available.Count} Missing Files");
 
         if (redirections > 0)
             sb.Append($"   |   {redirections} Redirections");
@@ -106,7 +111,7 @@ public partial class ModEditWindow : Window, IDisposable
         if (swaps > 0)
             sb.Append($"   |   {swaps} Swaps");
 
-        _allowReduplicate = redirections != _editor.AvailableFiles.Count || _editor.MissingFiles.Count > 0;
+        _allowReduplicate = redirections != _editor.Files.Available.Count || _editor.Files.Available.Count > 0;
         sb.Append(WindowBaseLabel);
         WindowName = sb.ToString();
     }
@@ -136,7 +141,7 @@ public partial class ModEditWindow : Window, IDisposable
         _materialTab.Draw();
         DrawTextureTab();
         _shaderPackageTab.Draw();
-        _swapWindow.DrawItemSwapPanel();
+        _itemSwapTab.DrawContent();
     }
 
     // A row of three buttonSizes and a help marker that can be used for material suffix changing.
@@ -169,7 +174,7 @@ public partial class ModEditWindow : Window, IDisposable
             }
         }
 
-        public static void Draw(Editor editor, Vector2 buttonSize)
+        public static void Draw(ModEditor editor, Vector2 buttonSize)
         {
             DrawRaceCodeCombo(buttonSize);
             ImGui.SameLine();
@@ -179,7 +184,7 @@ public partial class ModEditWindow : Window, IDisposable
             ImGui.SetNextItemWidth(buttonSize.X);
             ImGui.InputTextWithHint("##suffixTo", "To...", ref _materialSuffixTo, 32);
             ImGui.SameLine();
-            var disabled = !Editor.ValidString(_materialSuffixTo);
+            var disabled = !MdlMaterialEditor.ValidString(_materialSuffixTo);
             var tt = _materialSuffixTo.Length == 0
                 ? "Please enter a target suffix."
                 : _materialSuffixFrom == _materialSuffixTo
@@ -194,17 +199,17 @@ public partial class ModEditWindow : Window, IDisposable
                                 ? $"Convert all skin material suffices that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'."
                                 : $"Convert all skin material suffices for the given race code that are currently '{_materialSuffixFrom}' to '{_materialSuffixTo}'.";
             if (ImGuiUtil.DrawDisabledButton("Change Material Suffix", buttonSize, tt, disabled))
-                editor.ReplaceAllMaterials(_materialSuffixTo, _materialSuffixFrom, _raceCode);
+                editor.MdlMaterialEditor.ReplaceAllMaterials(_materialSuffixTo, _materialSuffixFrom, _raceCode);
 
-            var anyChanges = editor.ModelFiles.Any(m => m.Changed);
+            var anyChanges = editor.MdlMaterialEditor.ModelFiles.Any(m => m.Changed);
             if (ImGuiUtil.DrawDisabledButton("Save All Changes", buttonSize,
                     anyChanges ? "Irreversibly rewrites all currently applied changes to model files." : "No changes made yet.", !anyChanges))
-                editor.SaveAllModels();
+                editor.MdlMaterialEditor.SaveAllModels();
 
             ImGui.SameLine();
             if (ImGuiUtil.DrawDisabledButton("Revert All Changes", buttonSize,
                     anyChanges ? "Revert all currently made and unsaved changes." : "No changes made yet.", !anyChanges))
-                editor.RestoreAllModels();
+                editor.MdlMaterialEditor.RestoreAllModels();
 
             ImGui.SameLine();
             ImGuiComponents.HelpMarker(
@@ -216,7 +221,7 @@ public partial class ModEditWindow : Window, IDisposable
 
     private void DrawMissingFilesTab()
     {
-        if (_editor!.MissingFiles.Count == 0)
+        if (_editor.Files.Missing.Count == 0)
             return;
 
         using var tab = ImRaii.TabItem("Missing Files");
@@ -225,7 +230,7 @@ public partial class ModEditWindow : Window, IDisposable
 
         ImGui.NewLine();
         if (ImGui.Button("Remove Missing Files from Mod"))
-            _editor.RemoveMissingPaths();
+            _editor.FileEditor.RemoveMissingPaths(_mod!, _editor.Option!);
 
         using var child = ImRaii.Child("##unusedFiles", -Vector2.One, true);
         if (!child)
@@ -235,7 +240,7 @@ public partial class ModEditWindow : Window, IDisposable
         if (!table)
             return;
 
-        foreach (var path in _editor.MissingFiles)
+        foreach (var path in _editor.Files.Missing)
         {
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(path.FullName);
@@ -248,37 +253,44 @@ public partial class ModEditWindow : Window, IDisposable
         if (!tab)
             return;
 
-        var buttonText = _editor!.DuplicatesFinished ? "Scan for Duplicates###ScanButton" : "Scanning for Duplicates...###ScanButton";
+        var buttonText = _editor.Duplicates.Finished ? "Scan for Duplicates###ScanButton" : "Scanning for Duplicates...###ScanButton";
         if (ImGuiUtil.DrawDisabledButton(buttonText, Vector2.Zero, "Search for identical files in this mod. This may take a while.",
-                !_editor.DuplicatesFinished))
-            _editor.StartDuplicateCheck();
+                !_editor.Duplicates.Finished))
+            _editor.Duplicates.StartDuplicateCheck(_editor.Files.Available);
 
         const string desc =
             "Tries to create a unique copy of a file for every game path manipulated and put them in [Groupname]/[Optionname]/[GamePath] order.\n"
           + "This will also delete all unused files and directories if it succeeds.\n"
           + "Care was taken that a failure should not destroy the mod but revert to its original state, but you use this at your own risk anyway.";
 
-        var modifier = Penumbra.Config.DeleteModModifier.IsActive();
+        var modifier = _config.DeleteModModifier.IsActive();
 
         var tt = _allowReduplicate ? desc :
             modifier ? desc : desc + $"\n\nNo duplicates detected! Hold {Penumbra.Config.DeleteModModifier} to force normalization anyway.";
 
         if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
         {
-            _mod!.Normalize(Penumbra.ModManager);
-            _editor.RevertFiles();
+            _editor.ModNormalizer.Normalize(_mod!);
+            _editor.LoadMod(_mod!, _editor.GroupIdx, _editor.OptionIdx);
         }
 
-        if (!_editor.DuplicatesFinished)
+        if (_editor.ModNormalizer.Running)
+        {
+            using var popup = ImRaii.Popup("Normalization", ImGuiWindowFlags.Modal);
+            ImGui.ProgressBar((float)_editor.ModNormalizer.Step / _editor.ModNormalizer.TotalSteps,
+                new Vector2(300 * UiHelpers.Scale, ImGui.GetFrameHeight()),
+                $"{_editor.ModNormalizer.Step} / {_editor.ModNormalizer.TotalSteps}");
+        }
+
+        if (!_editor.Duplicates.Finished)
         {
             ImGui.SameLine();
             if (ImGui.Button("Cancel"))
-                _editor.Cancel();
-
+                _editor.Duplicates.Clear();
             return;
         }
 
-        if (_editor.Duplicates.Count == 0)
+        if (_editor.Duplicates.Duplicates.Count == 0)
         {
             ImGui.NewLine();
             ImGui.TextUnformatted("No duplicates found.");
@@ -286,12 +298,12 @@ public partial class ModEditWindow : Window, IDisposable
         }
 
         if (ImGui.Button("Delete and Redirect Duplicates"))
-            _editor.DeleteDuplicates();
+            _editor.Duplicates.DeleteDuplicates(_editor.Mod!, _editor.Option!, true);
 
-        if (_editor.SavedSpace > 0)
+        if (_editor.Duplicates.SavedSpace > 0)
         {
             ImGui.SameLine();
-            ImGui.TextUnformatted($"Frees up {Functions.HumanReadableSize(_editor.SavedSpace)} from your hard drive.");
+            ImGui.TextUnformatted($"Frees up {Functions.HumanReadableSize(_editor.Duplicates.SavedSpace)} from your hard drive.");
         }
 
         using var child = ImRaii.Child("##duptable", -Vector2.One, true);
@@ -307,7 +319,7 @@ public partial class ModEditWindow : Window, IDisposable
         ImGui.TableSetupColumn("size", ImGuiTableColumnFlags.WidthFixed, ImGui.CalcTextSize("NNN.NNN  ").X);
         ImGui.TableSetupColumn("hash", ImGuiTableColumnFlags.WidthFixed,
             ImGui.GetWindowWidth() > 2 * width ? width : ImGui.CalcTextSize("NNNNNNNN... ").X);
-        foreach (var (set, size, hash) in _editor.Duplicates.Where(s => s.Paths.Length > 1))
+        foreach (var (set, size, hash) in _editor.Duplicates.Duplicates.Where(s => s.Paths.Length > 1))
         {
             ImGui.TableNextColumn();
             using var tree = ImRaii.TreeNode(set[0].FullName[(_mod!.ModPath.FullName.Length + 1)..],
@@ -346,23 +358,23 @@ public partial class ModEditWindow : Window, IDisposable
         using var    style         = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero).Push(ImGuiStyleVar.FrameRounding, 0);
         var          width         = new Vector2(ImGui.GetWindowWidth() / 3, 0);
         if (ImGuiUtil.DrawDisabledButton(defaultOption, width, "Switch to the default option for the mod.\nThis resets unsaved changes.",
-                _editor!.CurrentOption.IsDefault))
-            _editor.SetSubMod(_mod!.Default);
+                _editor!.Option!.IsDefault))
+            _editor.LoadOption(-1, 0);
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Refresh Data", width, "Refresh data for the current option.\nThis resets unsaved changes.", false))
-            _editor.SetSubMod(_editor.CurrentOption);
+            _editor.LoadOption(_editor.GroupIdx, _editor.OptionIdx);
 
         ImGui.SameLine();
 
-        using var combo = ImRaii.Combo("##optionSelector", _editor.CurrentOption.FullName, ImGuiComboFlags.NoArrowButton);
+        using var combo = ImRaii.Combo("##optionSelector", _editor.Option.FullName, ImGuiComboFlags.NoArrowButton);
         if (!combo)
             return;
 
-        foreach (var option in _mod!.AllSubMods)
+        foreach (var option in _mod!.AllSubMods.Cast<SubMod>())
         {
-            if (ImGui.Selectable(option.FullName, option == _editor.CurrentOption))
-                _editor.SetSubMod(option);
+            if (ImGui.Selectable(option.FullName, option == _editor.Option))
+                _editor.LoadOption(option.GroupIdx, option.OptionIdx);
         }
     }
 
@@ -377,16 +389,16 @@ public partial class ModEditWindow : Window, IDisposable
 
         DrawOptionSelectHeader();
 
-        var setsEqual = _editor!.CurrentSwaps.SetEquals(_editor.CurrentOption.FileSwaps);
+        var setsEqual = !_editor!.SwapEditor.Changes;
         var tt        = setsEqual ? "No changes staged." : "Apply the currently staged changes to the option.";
         ImGui.NewLine();
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, setsEqual))
-            _editor.ApplySwaps();
+            _editor.SwapEditor.Apply(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
 
         ImGui.SameLine();
         tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
         if (ImGuiUtil.DrawDisabledButton("Revert Changes", Vector2.Zero, tt, setsEqual))
-            _editor.RevertSwaps();
+            _editor.SwapEditor.Revert(_editor.Option!);
 
         using var child = ImRaii.Child("##swaps", -Vector2.One, true);
         if (!child)
@@ -403,30 +415,26 @@ public partial class ModEditWindow : Window, IDisposable
         ImGui.TableSetupColumn("source", ImGuiTableColumnFlags.WidthFixed, pathSize);
         ImGui.TableSetupColumn("value",  ImGuiTableColumnFlags.WidthFixed, pathSize);
 
-        foreach (var (gamePath, file) in _editor!.CurrentSwaps.ToList())
+        foreach (var (gamePath, file) in _editor.SwapEditor.Swaps.ToList())
         {
             using var id = ImRaii.PushId(idx++);
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), iconSize, "Delete this swap.", false, true))
-                _editor.CurrentSwaps.Remove(gamePath);
+                _editor.SwapEditor.Remove(gamePath);
 
             ImGui.TableNextColumn();
             var tmp = gamePath.Path.ToString();
             ImGui.SetNextItemWidth(-1);
             if (ImGui.InputText("##key", ref tmp, Utf8GamePath.MaxGamePathLength)
              && Utf8GamePath.FromString(tmp, out var path)
-             && !_editor.CurrentSwaps.ContainsKey(path))
-            {
-                _editor.CurrentSwaps.Remove(gamePath);
-                if (path.Length > 0)
-                    _editor.CurrentSwaps[path] = file;
-            }
+             && !_editor.SwapEditor.Swaps.ContainsKey(path))
+                _editor.SwapEditor.Change(gamePath, path);
 
             ImGui.TableNextColumn();
             tmp = file.FullName;
             ImGui.SetNextItemWidth(-1);
             if (ImGui.InputText("##value", ref tmp, Utf8GamePath.MaxGamePathLength) && tmp.Length > 0)
-                _editor.CurrentSwaps[gamePath] = new FullPath(tmp);
+                _editor.SwapEditor.Change(gamePath, new FullPath(tmp));
         }
 
         ImGui.TableNextColumn();
@@ -434,13 +442,13 @@ public partial class ModEditWindow : Window, IDisposable
          && newPath.Length > 0
          && _newSwapValue.Length > 0
          && _newSwapValue != _newSwapKey
-         && !_editor.CurrentSwaps.ContainsKey(newPath);
+         && !_editor.SwapEditor.Swaps.ContainsKey(newPath);
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, "Add a new file swap to this option.", !addable,
                 true))
         {
-            _editor.CurrentSwaps[newPath] = new FullPath(_newSwapValue);
-            _newSwapKey                   = string.Empty;
-            _newSwapValue                 = string.Empty;
+            _editor.SwapEditor.Add(newPath, new FullPath(_newSwapValue));
+            _newSwapKey   = string.Empty;
+            _newSwapValue = string.Empty;
         }
 
         ImGui.TableNextColumn();
@@ -477,26 +485,21 @@ public partial class ModEditWindow : Window, IDisposable
         return new FullPath(path);
     }
 
-    public ModEditWindow(CommunicatorService communicator, FileDialogService fileDialog)
+    public ModEditWindow(FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
+        Configuration config, ModEditor editor)
         : base(WindowBaseLabel)
     {
-        _fileDialog = fileDialog;
-        _swapWindow = new ItemSwapWindow(communicator);
-        _materialTab = new FileEditor<MtrlTab>("Materials", ".mtrl", _fileDialog,
-            () => _editor?.MtrlFiles ?? Array.Empty<Editor.FileRegistry>(),
-            DrawMaterialPanel,
-            () => _mod?.ModPath.FullName ?? string.Empty,
+        _itemSwapTab = itemSwapTab;
+        _config      = config;
+        _editor      = editor;
+        _fileDialog  = fileDialog;
+        _materialTab = new FileEditor<MtrlTab>(gameData, config, _fileDialog, "Materials", ".mtrl",
+            () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
-        _modelTab = new FileEditor<MdlFile>("Models", ".mdl", _fileDialog,
-            () => _editor?.MdlFiles ?? Array.Empty<Editor.FileRegistry>(),
-            DrawModelPanel,
-            () => _mod?.ModPath.FullName ?? string.Empty,
-            null);
-        _shaderPackageTab = new FileEditor<ShpkTab>("Shader Packages", ".shpk", _fileDialog,
-            () => _editor?.ShpkFiles ?? Array.Empty<Editor.FileRegistry>(),
-            DrawShaderPackagePanel,
-            () => _mod?.ModPath.FullName ?? string.Empty,
-            null);
+        _modelTab = new FileEditor<MdlFile>(gameData, config, _fileDialog, "Models", ".mdl",
+            () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, null);
+        _shaderPackageTab = new FileEditor<ShpkTab>(gameData, config, _fileDialog, "Shader Packages", ".shpk",
+            () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty, null);
         _center = new CombinedTexture(_left, _right);
     }
 
@@ -506,6 +509,5 @@ public partial class ModEditWindow : Window, IDisposable
         _left.Dispose();
         _right.Dispose();
         _center.Dispose();
-        _swapWindow.Dispose();
     }
 }

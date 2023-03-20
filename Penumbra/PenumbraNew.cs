@@ -16,10 +16,11 @@ using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
-using Penumbra.UI.ModTab;
+using Penumbra.UI.AdvancedWindow;
+using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
 using Penumbra.Util;
-using ModFileSystemSelector = Penumbra.UI.ModTab.ModFileSystemSelector;
+using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
 
 namespace Penumbra;
 
@@ -121,7 +122,18 @@ public class PenumbraNew
             .AddSingleton<DebugTab>()
             .AddSingleton<ResourceTab>()
             .AddSingleton<ConfigTabBar>()
-            .AddSingleton<ResourceWatcher>();
+            .AddSingleton<ResourceWatcher>()
+            .AddSingleton<ItemSwapTab>();
+
+        // Add Mod Editor
+        services.AddSingleton<ModFileCollection>()
+            .AddSingleton<DuplicateManager>()
+            .AddSingleton<MdlMaterialEditor>()
+            .AddSingleton<ModFileEditor>()
+            .AddSingleton<ModMetaEditor>()
+            .AddSingleton<ModSwapEditor>()
+            .AddSingleton<ModNormalizer>()
+            .AddSingleton<ModEditor>();
 
         // Add API
         services.AddSingleton<PenumbraApi>()

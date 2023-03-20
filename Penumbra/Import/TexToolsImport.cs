@@ -32,16 +32,21 @@ public partial class TexToolsImporter : IDisposable
     public readonly List< (FileInfo File, DirectoryInfo? Mod, Exception? Error) > ExtractedMods;
 
     public TexToolsImporter( DirectoryInfo baseDirectory, ICollection< FileInfo > files,
-        Action< FileInfo, DirectoryInfo?, Exception? > handler )
-        : this( baseDirectory, files.Count, files, handler )
+        Action< FileInfo, DirectoryInfo?, Exception? > handler, Configuration config, ModEditor editor)
+        : this( baseDirectory, files.Count, files, handler, config, editor)
     { }
 
+    private readonly Configuration _config;
+    private readonly ModEditor     _editor;
+
     public TexToolsImporter( DirectoryInfo baseDirectory, int count, IEnumerable< FileInfo > modPackFiles,
-        Action< FileInfo, DirectoryInfo?, Exception? > handler )
+        Action< FileInfo, DirectoryInfo?, Exception? > handler, Configuration config, ModEditor editor)
     {
         _baseDirectory = baseDirectory;
         _tmpFile       = Path.Combine( _baseDirectory.FullName, TempFileName );
         _modPackFiles  = modPackFiles;
+        _config        = config;
+        _editor   = editor;
         _modPackCount  = count;
         ExtractedMods  = new List< (FileInfo, DirectoryInfo?, Exception?) >( count );
         _token         = _cancellation.Token;
@@ -95,10 +100,10 @@ public partial class TexToolsImporter : IDisposable
             {
                 var directory = VerifyVersionAndImport( file );
                 ExtractedMods.Add( ( file, directory, null ) );
-                if( Penumbra.Config.AutoDeduplicateOnImport )
+                if( _config.AutoDeduplicateOnImport )
                 {
                     State = ImporterState.DeduplicatingFiles;
-                    Mod.Editor.DeduplicateMod( directory );
+                    _editor.Duplicates.DeduplicateMod( directory );
                 }
             }
             catch( Exception e )

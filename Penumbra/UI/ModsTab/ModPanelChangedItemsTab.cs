@@ -8,7 +8,7 @@ using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.ModTab;
+namespace Penumbra.UI.ModsTab;
 
 public class ModPanelChangedItemsTab : ITab
 {

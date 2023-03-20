@@ -14,10 +14,10 @@ using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.String;
-using Penumbra.Util;
+using Penumbra.UI.AdvancedWindow;
 using static Penumbra.GameData.Files.ShpkFile;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {

@@ -9,7 +9,7 @@ using Penumbra.Mods;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.ModTab;
+namespace Penumbra.UI.ModsTab;
 
 public class ModPanelConflictsTab : ITab
 {

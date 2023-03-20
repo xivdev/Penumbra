@@ -9,7 +9,7 @@ using OtterGui.Raii;
 using Penumbra.GameData.Files;
 using Penumbra.String.Functions;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {

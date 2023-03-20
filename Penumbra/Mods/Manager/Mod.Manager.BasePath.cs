@@ -59,7 +59,7 @@ public partial class Mod
             }
 
             MoveDataFile( oldDirectory, dir );
-            new ModBackup( mod ).Move( null, dir.Name );
+            new ModBackup( this, mod ).Move( null, dir.Name );
 
             dir.Refresh();
             mod.ModPath = dir;

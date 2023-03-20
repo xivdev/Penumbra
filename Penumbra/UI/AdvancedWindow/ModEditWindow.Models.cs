@@ -5,8 +5,9 @@ using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 using System.Globalization;
 using System.Linq;
+using Penumbra.UI.AdvancedWindow;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {

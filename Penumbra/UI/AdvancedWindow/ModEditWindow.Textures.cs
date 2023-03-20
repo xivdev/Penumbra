@@ -7,7 +7,7 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Import.Textures;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
@@ -43,7 +43,7 @@ public partial class ModEditWindow
 
         tex.PathInputBox("##input", "Import Image...", "Can import game paths as well as your own files.", _mod!.ModPath.FullName,
             _fileDialog);
-        var files = _editor!.TexFiles.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
+        var files = _editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
             .Prepend((f.File.FullName, false)));
         tex.PathSelectBox("##combo", "Select the textures included in this mod on your drive or the ones they replace from the game files.",
             files, _mod.ModPath.FullName.Length + 1);

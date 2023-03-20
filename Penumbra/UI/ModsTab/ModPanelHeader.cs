@@ -9,7 +9,7 @@ using OtterGui.Raii;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
 
-namespace Penumbra.UI.ModTab;
+namespace Penumbra.UI.ModsTab;
 
 public class ModPanelHeader : IDisposable
 {

@@ -26,7 +26,7 @@ public enum ModDataChangeType : ushort
     Note        = 0x0800,
 }
 
-public sealed partial class Mod
+public sealed partial class Mod : IMod
 {
     public static readonly TemporaryMod ForcedFiles = new()
     {

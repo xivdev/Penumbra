@@ -25,7 +25,7 @@ public partial class Mod
     public int Priority
         => 0;
 
-    private Mod( DirectoryInfo modPath )
+    internal Mod( DirectoryInfo modPath )
     {
         ModPath  = modPath;
         _default = new SubMod( this );
@@ -51,7 +51,7 @@ public partial class Mod
         return mod;
     }
 
-    private bool Reload( bool incorporateMetaChanges, out ModDataChangeType modDataChange )
+    internal bool Reload( bool incorporateMetaChanges, out ModDataChangeType modDataChange )
     {
         modDataChange = ModDataChangeType.Deletion;
         ModPath.Refresh();

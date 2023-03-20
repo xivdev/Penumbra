@@ -6,8 +6,9 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
+using Penumbra.UI.AdvancedWindow;
 
-namespace Penumbra.UI.Classes;
+namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
@@ -121,7 +122,7 @@ public partial class ModEditWindow
 
     private void DrawMaterialReassignmentTab()
     {
-        if( _editor!.ModelFiles.Count == 0 )
+        if( _editor.Files.Mdl.Count == 0 )
         {
             return;
         }
@@ -149,7 +150,7 @@ public partial class ModEditWindow
         }
 
         var iconSize = ImGui.GetFrameHeight() * Vector2.One;
-        foreach( var (info, idx) in _editor.ModelFiles.WithIndex() )
+        foreach( var (info, idx) in _editor.MdlMaterialEditor.ModelFiles.WithIndex() )
         {
             using var id = ImRaii.PushId( idx );
             ImGui.TableNextColumn();

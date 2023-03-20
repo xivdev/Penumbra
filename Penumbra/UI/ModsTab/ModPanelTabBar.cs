@@ -6,9 +6,9 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Mods;
-using Penumbra.UI.Classes;
+using Penumbra.UI.AdvancedWindow;
 
-namespace Penumbra.UI.ModTab;
+namespace Penumbra.UI.ModsTab;
 
 public class ModPanelTabBar
 {
@@ -107,7 +107,7 @@ public class ModPanelTabBar
         if (ImGui.TabItemButton("Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip))
         {
             _modEditWindow.ChangeMod(mod);
-            _modEditWindow.ChangeOption(mod.Default);
+            _modEditWindow.ChangeOption((Mod.SubMod) mod.Default);
             _modEditWindow.IsOpen = true;
         }
 

@@ -14,7 +14,7 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
-using ModFileSystemSelector = Penumbra.UI.ModTab.ModFileSystemSelector;
+using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
 
 namespace Penumbra.UI.Tabs;
 

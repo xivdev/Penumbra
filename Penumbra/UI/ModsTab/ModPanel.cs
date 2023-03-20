@@ -1,16 +1,16 @@
 using System;
 using Dalamud.Plugin;
 using Penumbra.Mods;
-using Penumbra.UI.Classes;
+using Penumbra.UI.AdvancedWindow;
 
-namespace Penumbra.UI.ModTab;
+namespace Penumbra.UI.ModsTab;
 
 public class ModPanel : IDisposable
 {
-    private readonly ModFileSystemSelector _selector;
-    private readonly ModEditWindow         _editWindow;
-    private readonly ModPanelHeader        _header;
-    private readonly ModPanelTabBar        _tabs;
+    private readonly ModFileSystemSelector       _selector;
+    private readonly ModEditWindow _editWindow;
+    private readonly ModPanelHeader              _header;
+    private readonly ModPanelTabBar              _tabs;
 
     public ModPanel(DalamudPluginInterface pi, ModFileSystemSelector selector, ModEditWindow editWindow, ModPanelTabBar tabs)
     {

@@ -18,7 +18,7 @@ public partial class Mod
 
     // The default mod contains setting-independent sets of file replacements, file swaps and meta changes.
     // Every mod has an default mod, though it may be empty.
-    private void SaveDefaultMod()
+    public void SaveDefaultMod()
     {
         var defaultFile = DefaultFile;
 
@@ -100,7 +100,7 @@ public partial class Mod
     // It can be loaded and reloaded from Json.
     // Nothing is checked for existence or validity when loading.
     // Objects are also not checked for uniqueness, the first appearance of a game path or meta path decides.
-    private sealed class SubMod : ISubMod
+    public sealed class SubMod : ISubMod
     {
         public string Name { get; set; } = "Default";
 

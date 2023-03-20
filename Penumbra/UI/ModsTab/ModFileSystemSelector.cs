@@ -20,7 +20,7 @@ using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
 
-namespace Penumbra.UI.ModTab;
+namespace Penumbra.UI.ModsTab;
 
 public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>
 {
@@ -31,13 +31,14 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     private readonly Mod.Manager           _modManager;
     private readonly ModCollection.Manager _collectionManager;
     private readonly TutorialService       _tutorial;
+    private readonly ModEditor             _modEditor;
 
     private TexToolsImporter? _import;
     public  ModSettings       SelectedSettings          { get; private set; } = ModSettings.Empty;
     public  ModCollection     SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
     public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, Mod.Manager modManager,
-        ModCollection.Manager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat)
+        ModCollection.Manager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat, ModEditor modEditor)
         : base(fileSystem, DalamudServices.KeyState)
     {
         _communicator      = communicator;
@@ -47,6 +48,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         _tutorial          = tutorial;
         _fileDialog        = fileDialog;
         _chat              = chat;
+        _modEditor    = modEditor;
 
         SubscribeRightClickFolder(EnableDescendants,      10);
         SubscribeRightClickFolder(DisableDescendants,     10);
@@ -228,7 +230,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
                     return;
 
                 _import = new TexToolsImporter(_modManager.BasePath, f.Count, f.Select(file => new FileInfo(file)),
-                    AddNewMod);
+                    AddNewMod, _config, _modEditor);
                 ImGui.OpenPopup("Import Status");
             }, 0, modPath, _config.AlwaysOpenDefaultImport);
     }

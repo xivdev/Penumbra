@@ -158,7 +158,7 @@ public sealed partial class Mod
             {
                 foreach( var mod in _mods )
                 {
-                    new ModBackup( mod ).Move( dir.FullName );
+                    new ModBackup( this, mod ).Move( dir.FullName );
                 }
             }
 
