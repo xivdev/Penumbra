@@ -79,6 +79,9 @@ public class Configuration : IPluginConfiguration
     public bool           OpenFoldersByDefault    { get; set; } = false;
     public int            SingleGroupRadioMax     { get; set; } = 2;
     public string         DefaultImportFolder     { get; set; } = string.Empty;
+    public string         QuickMoveFolder1        { get; set; } = string.Empty;
+    public string         QuickMoveFolder2        { get; set; } = string.Empty;
+    public string         QuickMoveFolder3        { get; set; } = string.Empty;
     public DoubleModifier DeleteModModifier       { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
 
     public bool PrintSuccessfulCommandsToChat { get; set; } = true;

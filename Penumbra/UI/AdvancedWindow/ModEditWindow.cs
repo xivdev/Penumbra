@@ -141,7 +141,9 @@ public partial class ModEditWindow : Window, IDisposable
         _materialTab.Draw();
         DrawTextureTab();
         _shaderPackageTab.Draw();
-        _itemSwapTab.DrawContent();
+        using var tab = ImRaii.TabItem("Item Swap (WIP)");
+        if (tab)
+            _itemSwapTab.DrawContent();
     }
 
     // A row of three buttonSizes and a help marker that can be used for material suffix changing.

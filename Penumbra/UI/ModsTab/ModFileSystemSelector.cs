@@ -38,7 +38,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     public  ModCollection     SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
     public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, Mod.Manager modManager,
-        ModCollection.Manager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat, ModEditor modEditor)
+        ModCollection.Manager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
+        ModEditor modEditor)
         : base(fileSystem, DalamudServices.KeyState)
     {
         _communicator      = communicator;
@@ -48,19 +49,28 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         _tutorial          = tutorial;
         _fileDialog        = fileDialog;
         _chat              = chat;
-        _modEditor    = modEditor;
+        _modEditor         = modEditor;
 
-        SubscribeRightClickFolder(EnableDescendants,      10);
-        SubscribeRightClickFolder(DisableDescendants,     10);
-        SubscribeRightClickFolder(InheritDescendants,     15);
-        SubscribeRightClickFolder(OwnDescendants,         15);
+        // @formatter:off
+        SubscribeRightClickFolder(EnableDescendants, 10);
+        SubscribeRightClickFolder(DisableDescendants, 10);
+        SubscribeRightClickFolder(InheritDescendants, 15);
+        SubscribeRightClickFolder(OwnDescendants, 15);
         SubscribeRightClickFolder(SetDefaultImportFolder, 100);
+        SubscribeRightClickFolder(f => SetQuickMove(f, 0, _config.QuickMoveFolder1, s => { _config.QuickMoveFolder1 = s; _config.Save(); }), 110);
+        SubscribeRightClickFolder(f => SetQuickMove(f, 1, _config.QuickMoveFolder2, s => { _config.QuickMoveFolder2 = s; _config.Save(); }), 120);
+        SubscribeRightClickFolder(f => SetQuickMove(f, 2, _config.QuickMoveFolder3, s => { _config.QuickMoveFolder3 = s; _config.Save(); }), 130);
         SubscribeRightClickLeaf(ToggleLeafFavorite);
+        SubscribeRightClickLeaf(l => QuickMove(l, _config.QuickMoveFolder1, _config.QuickMoveFolder2, _config.QuickMoveFolder3));
         SubscribeRightClickMain(ClearDefaultImportFolder, 100);
+        SubscribeRightClickMain(() => ClearQuickMove(0, _config.QuickMoveFolder1, () => {_config.QuickMoveFolder1 = string.Empty; _config.Save();}), 110);
+        SubscribeRightClickMain(() => ClearQuickMove(1, _config.QuickMoveFolder2, () => {_config.QuickMoveFolder2 = string.Empty; _config.Save();}), 120);
+        SubscribeRightClickMain(() => ClearQuickMove(2, _config.QuickMoveFolder3, () => {_config.QuickMoveFolder3 = string.Empty; _config.Save();}), 130);
         AddButton(AddNewModButton,    0);
         AddButton(AddImportModButton, 1);
         AddButton(AddHelpButton,      2);
         AddButton(DeleteModButton,    1000);
+        // @formatter:on
         SetFilterTooltip();
 
         SelectionChanged                              += OnSelectionChange;
