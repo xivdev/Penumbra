@@ -33,15 +33,10 @@ using Penumbra.Interop.Services;
 
 namespace Penumbra;
 
-public partial class Penumbra : IDalamudPlugin
+public class Penumbra : IDalamudPlugin
 {
     public string Name
         => "Penumbra";
-
-    public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
-
-    public static readonly string CommitHash =
-        Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "Unknown";
 
     public static Logger        Log         { get; private set; } = null!;
     public static ChatService   ChatService { get; private set; } = null!;
@@ -64,8 +59,6 @@ public partial class Penumbra : IDalamudPlugin
     public static StainService            StainService      { get; private set; } = null!;
 
     // TODO
-    public static DalamudServices Dalamud { get; private set; } = null!;
-
     public static ValidityChecker ValidityChecker { get; private set; } = null!;
 
     public static PerformanceTracker Performance { get; private set; } = null!;
@@ -73,21 +66,14 @@ public partial class Penumbra : IDalamudPlugin
     public readonly  PathResolver          PathResolver;
     public readonly  RedrawService         RedrawService;
     public readonly  ModFileSystem         ModFileSystem;
-    public           PenumbraApi           Api          = null!;
     public           HttpApi               HttpApi      = null!;
-    public           PenumbraIpcProviders  IpcProviders = null!;
     internal         ConfigWindow?         ConfigWindow { get; private set; }
     private          PenumbraWindowSystem? _windowSystem;
-    private          CommandHandler?       _commandHandler;
-    private readonly ResourceWatcher       _resourceWatcher;
     private          bool                  _disposed;
 
     private readonly PenumbraNew _tmp;
-    public static    ItemData    ItemData { get; private set; } = null!;
-
     // TODO
     public static ResourceManagerService ResourceManagerService { get; private set; } = null!;
-    public static CharacterResolver      CharacterResolver      { get; private set; } = null!;
     public static ResourceService        ResourceService        { get; private set; } = null!;
 
     public Penumbra(DalamudPluginInterface pluginInterface)
@@ -110,8 +96,6 @@ public partial class Penumbra : IDalamudPlugin
             Identifier             = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
             GamePathParser         = _tmp.Services.GetRequiredService<IGamePathParser>();
             StainService           = _tmp.Services.GetRequiredService<StainService>();
-            ItemData               = _tmp.Services.GetRequiredService<ItemService>().AwaitedService;
-            Dalamud                = _tmp.Services.GetRequiredService<DalamudServices>();
             TempMods               = _tmp.Services.GetRequiredService<TempModManager>();
             ResidentResources      = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             ResourceManagerService = _tmp.Services.GetRequiredService<ResourceManagerService>();
@@ -123,14 +107,12 @@ public partial class Penumbra : IDalamudPlugin
             ResourceService        = _tmp.Services.GetRequiredService<ResourceService>();
             ResourceLoader         = _tmp.Services.GetRequiredService<ResourceLoader>();
             PathResolver           = _tmp.Services.GetRequiredService<PathResolver>();
-            CharacterResolver      = _tmp.Services.GetRequiredService<CharacterResolver>();
-            _resourceWatcher       = _tmp.Services.GetRequiredService<ResourceWatcher>();
             SetupInterface();
             SetupApi();
 
             ValidityChecker.LogExceptions();
-            Log.Information($"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
-            OtterTex.NativeDll.Initialize(DalamudServices.PluginInterface.AssemblyLocation.DirectoryName);
+            Log.Information($"Penumbra Version {ValidityChecker.Version}, Commit #{ValidityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
+            OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
             Log.Information($"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}.");
 
             if (CharacterUtility.Ready)
@@ -146,18 +128,17 @@ public partial class Penumbra : IDalamudPlugin
     private void SetupApi()
     {
         using var timer = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api);
-        Api          = (PenumbraApi)_tmp.Services.GetRequiredService<IPenumbraApi>();
-        IpcProviders = _tmp.Services.GetRequiredService<PenumbraIpcProviders>();
+        var api         = _tmp.Services.GetRequiredService<IPenumbraApi>();
         HttpApi      = _tmp.Services.GetRequiredService<HttpApi>();
-
+        _tmp.Services.GetRequiredService<PenumbraIpcProviders>();
         if (Config.EnableHttpApi)
             HttpApi.CreateWebServer();
-        Api.ChangedItemTooltip += it =>
+        api.ChangedItemTooltip += it =>
         {
             if (it is Item)
                 ImGui.TextUnformatted("Left Click to create an item link in chat.");
         };
-        Api.ChangedItemClicked += (button, it) =>
+        api.ChangedItemClicked += (button, it) =>
         {
             if (button == MouseButton.Left && it is Item item)
                 ChatService.LinkItem(item);
@@ -170,7 +151,7 @@ public partial class Penumbra : IDalamudPlugin
             {
                 using var tInterface = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Interface);
                 var       system     = _tmp.Services.GetRequiredService<PenumbraWindowSystem>();
-                _commandHandler = _tmp.Services.GetRequiredService<CommandHandler>();
+                _tmp.Services.GetRequiredService<CommandHandler>();
                 if (!_disposed)
                 {
                     _windowSystem = system;
@@ -237,8 +218,8 @@ public partial class Penumbra : IDalamudPlugin
         var exists = Config.ModDirectory.Length > 0 && Directory.Exists(Config.ModDirectory);
         var drive  = exists ? new DriveInfo(new DirectoryInfo(Config.ModDirectory).Root.FullName) : null;
         sb.AppendLine("**Settings**");
-        sb.Append($"> **`Plugin Version:              `** {Version}\n");
-        sb.Append($"> **`Commit Hash:                 `** {CommitHash}\n");
+        sb.Append($"> **`Plugin Version:              `** {ValidityChecker.Version}\n");
+        sb.Append($"> **`Commit Hash:                 `** {ValidityChecker.CommitHash}\n");
         sb.Append($"> **`Enable Mods:                 `** {Config.EnableMods}\n");
         sb.Append($"> **`Enable HTTP API:             `** {Config.EnableHttpApi}\n");
         sb.Append($"> **`Operating System:            `** {(DalamudUtil.IsLinux() ? "Mac/Linux (Wine)" : "Windows")}\n");

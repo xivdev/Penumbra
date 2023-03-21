@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Penumbra.GameData;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Import;
@@ -28,7 +29,7 @@ public partial class TexToolsMeta
     public readonly  List< MetaManipulation > MetaManipulations = new();
     private readonly bool                     _keepDefault      = false;
 
-    public TexToolsMeta( byte[] data, bool keepDefault )
+    public TexToolsMeta( IGamePathParser parser, byte[] data, bool keepDefault )
     {
         _keepDefault = keepDefault;
         try
@@ -36,7 +37,7 @@ public partial class TexToolsMeta
             using var reader = new BinaryReader( new MemoryStream( data ) );
             Version  = reader.ReadUInt32();
             FilePath = ReadNullTerminated( reader );
-            var metaInfo    = new MetaFileInfo( FilePath );
+            var metaInfo    = new MetaFileInfo( parser, FilePath );
             var numHeaders  = reader.ReadUInt32();
             var headerSize  = reader.ReadUInt32();
             var headerStart = reader.ReadUInt32();

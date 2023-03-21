@@ -123,7 +123,7 @@ public sealed class ConfigWindow : Window
     private static string GetLabel(ValidityChecker checker)
         => checker.Version.Length == 0
             ? "Penumbra###PenumbraConfigWindow"
-            : $"Penumbra v{Penumbra.Version}###PenumbraConfigWindow";
+            : $"Penumbra v{checker.Version}###PenumbraConfigWindow";
 
     private void DrawProblemWindow(string text)
     {

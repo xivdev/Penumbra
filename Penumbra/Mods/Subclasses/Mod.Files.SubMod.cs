@@ -204,7 +204,7 @@ public partial class Mod
                             continue;
                         }
 
-                        var meta = new TexToolsMeta( File.ReadAllBytes( file.FullName ), Penumbra.Config.KeepDefaultMetaChanges );
+                        var meta = new TexToolsMeta( Penumbra.GamePathParser, File.ReadAllBytes( file.FullName ), Penumbra.Config.KeepDefaultMetaChanges );
                         Penumbra.Log.Verbose( $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}" );
                         deleteList.Add( file.FullName );
                         ManipulationData.UnionWith( meta.MetaManipulations );
@@ -288,7 +288,7 @@ public partial class Mod
                 {
                     var x = file.EndsWith( "rgsp" )
                         ? TexToolsMeta.FromRgspFile( file, data, Penumbra.Config.KeepDefaultMetaChanges )
-                        : new TexToolsMeta( data, Penumbra.Config.KeepDefaultMetaChanges );
+                        : new TexToolsMeta( Penumbra.GamePathParser, data, Penumbra.Config.KeepDefaultMetaChanges );
                     meta.UnionWith( x.MetaManipulations );
                 }
                 catch
