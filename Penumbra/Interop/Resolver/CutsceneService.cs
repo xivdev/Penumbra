@@ -8,7 +8,7 @@ using Penumbra.Interop.Services;
 
 namespace Penumbra.Interop.Resolver;
 
-public class CutsceneCharacters : IDisposable
+public class CutsceneService : IDisposable
 {
     public const int CutsceneStartIdx = 200;
     public const int CutsceneSlots    = 40;
@@ -23,7 +23,7 @@ public class CutsceneCharacters : IDisposable
             .Where(i => _objects[i] != null)
             .Select(i => KeyValuePair.Create(i, this[i] ?? _objects[i]!));
 
-    public CutsceneCharacters(ObjectTable objects, GameEventManager events)
+    public CutsceneService(ObjectTable objects, GameEventManager events)
     {
         _objects = objects;
         _events  = events;
@@ -69,19 +69,19 @@ public class CutsceneCharacters : IDisposable
 
     private unsafe void OnCharacterDestructor(Character* character)
     {
-        if (character->GameObject.ObjectIndex is >= CutsceneStartIdx and < CutsceneEndIdx)
-        {
-            var idx = character->GameObject.ObjectIndex - CutsceneStartIdx;
-            _copiedCharacters[idx] = -1;
-        }
+        if (character->GameObject.ObjectIndex is < CutsceneStartIdx or >= CutsceneEndIdx)
+            return;
+
+        var idx = character->GameObject.ObjectIndex - CutsceneStartIdx;
+        _copiedCharacters[idx] = -1;
     }
 
     private unsafe void OnCharacterCopy(Character* target, Character* source)
     {
-        if (target != null && target->GameObject.ObjectIndex is >= CutsceneStartIdx and < CutsceneEndIdx)
-        {
-            var idx = target->GameObject.ObjectIndex - CutsceneStartIdx;
-            _copiedCharacters[idx] = (short)(source != null ? source->GameObject.ObjectIndex : -1);
-        }
+        if (target == null || target->GameObject.ObjectIndex is < CutsceneStartIdx or >= CutsceneEndIdx)
+            return;
+
+        var idx = target->GameObject.ObjectIndex - CutsceneStartIdx;
+        _copiedCharacters[idx] = (short)(source != null ? source->GameObject.ObjectIndex : -1);
     }
 }

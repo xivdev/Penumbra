@@ -1,22 +1,34 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Dalamud.Game.ClientState;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Services;
-using Penumbra.Interop.Structs;
 using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
 namespace Penumbra.Interop.Resolver;
+
+//public class PathResolver2 : IDisposable
+//{
+//    public readonly CutsceneService           Cutscenes;
+//    public readonly IdentifiedCollectionCache Identified;
+//
+//    public PathResolver(StartTracker timer, CutsceneService cutscenes, IdentifiedCollectionCache identified)
+//    {
+//        using var t = timer.Measure(StartTimeType.PathResolver);
+//        Cutscenes  = cutscenes;
+//        Identified = identified;
+//    }
+//}
+
 
 // The Path Resolver handles character collections.
 // It will hook any path resolving functions for humans,
@@ -29,7 +41,7 @@ public partial class PathResolver : IDisposable
 
     private readonly        CommunicatorService       _communicator;
     private readonly        ResourceLoader            _loader;
-    private static readonly CutsceneCharacters        Cutscenes   = new(DalamudServices.SObjects, Penumbra.GameEvents); // TODO
+    private static readonly CutsceneService        Cutscenes   = new(DalamudServices.SObjects, Penumbra.GameEvents); // TODO
     private static          DrawObjectState           _drawObjects = null!;                                             // TODO
     private static readonly BitArray                  ValidHumanModels;
     internal static         IdentifiedCollectionCache IdentifiedCache = null!; // TODO
@@ -41,11 +53,11 @@ public partial class PathResolver : IDisposable
     static PathResolver()
         => ValidHumanModels = GetValidHumanModels(DalamudServices.SGameData);
 
-    public unsafe PathResolver(StartTracker timer, CommunicatorService communicator, GameEventManager events, ResourceLoader loader)
+    public unsafe PathResolver(IdentifiedCollectionCache cache, StartTracker timer, ClientState clientState, CommunicatorService communicator, GameEventManager events, ResourceLoader loader)
     {
         using var tApi = timer.Measure(StartTimeType.PathResolver);
         _communicator   = communicator;
-        IdentifiedCache = new IdentifiedCollectionCache(communicator, events);
+        IdentifiedCache = cache;
         SignatureHelper.Initialise(this);
         _drawObjects = new DrawObjectState(_communicator);
         _loader     = loader;

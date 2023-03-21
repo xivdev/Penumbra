@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Dalamud.Game.ClientState;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
@@ -10,18 +11,21 @@ using Penumbra.Services;
 
 namespace Penumbra.Interop.Resolver;
 
-public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr Address, ActorIdentifier Identifier, ModCollection Collection)>
+public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint Address, ActorIdentifier Identifier, ModCollection Collection)>
 {
     private readonly CommunicatorService                                  _communicator;
     private readonly GameEventManager                                     _events;
-    private readonly Dictionary<IntPtr, (ActorIdentifier, ModCollection)> _cache   = new(317);
-    private          bool                                                 _dirty   = false;
-    private          bool                                                 _enabled = false;
+    private readonly ClientState                                          _clientState;
+    private readonly Dictionary<IntPtr, (ActorIdentifier, ModCollection)> _cache = new(317);
+    private          bool                                                 _dirty;
+    private          bool                                                 _enabled;
 
-    public IdentifiedCollectionCache(CommunicatorService communicator, GameEventManager events)
+    public IdentifiedCollectionCache(ClientState clientState, CommunicatorService communicator, GameEventManager events)
     {
+        _clientState  = clientState;
         _communicator = communicator;
         _events       = events;
+        Enable();
     }
 
     public void Enable()
@@ -29,10 +33,10 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr
         if (_enabled)
             return;
 
-        _communicator.CollectionChange.Event         += CollectionChangeClear;
-        DalamudServices.SClientState.TerritoryChanged += TerritoryClear;
-        _events.CharacterDestructor                  += OnCharacterDestruct;
-        _enabled                                     =  true;
+        _communicator.CollectionChange.Event += CollectionChangeClear;
+        _clientState.TerritoryChanged        += TerritoryClear;
+        _events.CharacterDestructor          += OnCharacterDestruct;
+        _enabled                             =  true;
     }
 
     public void Disable()
@@ -40,10 +44,10 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr
         if (!_enabled)
             return;
 
-        _communicator.CollectionChange.Event         -= CollectionChangeClear;
-        DalamudServices.SClientState.TerritoryChanged -= TerritoryClear;
-        _events.CharacterDestructor                  -= OnCharacterDestruct;
-        _enabled                                     =  false;
+        _communicator.CollectionChange.Event -= CollectionChangeClear;
+        _clientState.TerritoryChanged        -= TerritoryClear;
+        _events.CharacterDestructor          -= OnCharacterDestruct;
+        _enabled                             =  false;
     }
 
     public ResolveData Set(ModCollection collection, ActorIdentifier identifier, GameObject* data)
@@ -54,7 +58,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr
             _cache.Clear();
         }
 
-        _cache[(IntPtr)data] = (identifier, collection);
+        _cache[(nint)data] = (identifier, collection);
         return collection.ToResolveData(data);
     }
 
@@ -65,7 +69,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr
             _dirty = false;
             _cache.Clear();
         }
-        else if (_cache.TryGetValue((IntPtr)gameObject, out var p))
+        else if (_cache.TryGetValue((nint)gameObject, out var p))
         {
             resolve = p.Item2.ToResolveData(gameObject);
             return true;
@@ -81,7 +85,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr
         GC.SuppressFinalize(this);
     }
 
-    public IEnumerator<(IntPtr Address, ActorIdentifier Identifier, ModCollection Collection)> GetEnumerator()
+    public IEnumerator<(nint Address, ActorIdentifier Identifier, ModCollection Collection)> GetEnumerator()
     {
         foreach (var (address, (identifier, collection)) in _cache)
         {
@@ -108,5 +112,5 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(IntPtr
         => _dirty = _cache.Count > 0;
 
     private void OnCharacterDestruct(Character* character)
-        => _cache.Remove((IntPtr)character);
+        => _cache.Remove((nint)character);
 }

@@ -15,7 +15,6 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI;
-using Penumbra.UI.Classes;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
@@ -65,7 +64,7 @@ public class PenumbraNew
         services.AddSingleton<GameEventManager>()
             .AddSingleton<FrameworkManager>()
             .AddSingleton<MetaFileManager>()
-            .AddSingleton<CutsceneCharacters>()
+            .AddSingleton<CutsceneService>()
             .AddSingleton<CharacterUtility>()
             .AddSingleton<ResourceManagerService>()
             .AddSingleton<ResourceService>()
@@ -75,6 +74,10 @@ public class PenumbraNew
             .AddSingleton<ResidentResourceManager>()
             .AddSingleton<FontReloader>()
             .AddSingleton<RedrawService>();
+
+        // Add PathResolver
+        services.AddSingleton<CutsceneService>()
+            .AddSingleton<IdentifiedCollectionCache>();
 
         // Add Configuration
         services.AddTransient<ConfigMigrationService>()

@@ -29,7 +29,7 @@ public sealed class ItemService : AsyncServiceWrapper<ItemData>
 public sealed class ActorService : AsyncServiceWrapper<ActorManager>
 {
     public ActorService(StartTracker tracker, DalamudPluginInterface pi, ObjectTable objects, ClientState clientState,
-        Framework framework, DataManager gameData, GameGui gui, CutsceneCharacters cutscene)
+        Framework framework, DataManager gameData, GameGui gui, CutsceneService cutscene)
         : base(nameof(ActorService), tracker, StartTimeType.Actors,
             () => new ActorManager(pi, objects, clientState, framework, gameData, gui, idx => (short)cutscene.GetParentIndex(idx)))
     { }

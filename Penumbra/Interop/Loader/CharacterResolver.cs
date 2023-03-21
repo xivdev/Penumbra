@@ -76,7 +76,7 @@ public class CharacterResolver : IDisposable
         _loader.FileLoaded -= ImcLoadResource;
     }
 
-    // Use the default method of path replacement.
+    /// <summary> Use the default method of path replacement. </summary>
     private (FullPath?, ResolveData) DefaultResolver(Utf8GamePath path)
     {
         var resolved = _collectionManager.Default.ResolvePath(path);

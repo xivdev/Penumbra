@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.GameData;
@@ -33,6 +34,8 @@ public unsafe partial class PathResolver
         // This map links files to their corresponding collection, if it is non-default.
         private readonly ConcurrentDictionary< ByteString, ResolveData > _pathCollections   = new();
 
+        private readonly ThreadLocal<ResolveData> _resolveData = new ThreadLocal<ResolveData>(() => ResolveData.Invalid, true);
+
         public PathState( PathResolver parent )
         {
             SignatureHelper.Initialise( this );
@@ -60,6 +63,7 @@ public unsafe partial class PathResolver
 
         public void Dispose()
         {
+            _resolveData.Dispose();
             _human.Dispose();
             _weapon.Dispose();
             _demiHuman.Dispose();
@@ -76,7 +80,10 @@ public unsafe partial class PathResolver
             => _pathCollections.TryGetValue( path, out collection );
 
         public bool Consume( ByteString path, out ResolveData collection )
-            => _pathCollections.TryRemove( path, out collection );
+        {
+            collection = _resolveData.IsValueCreated && _resolveData.Value.Valid ? _resolveData.Value : ResolveData.Invalid;
+            return _pathCollections.TryRemove(path, out collection);
+        }
 
         // Just add or remove the resolved path.
         [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
@@ -89,6 +96,7 @@ public unsafe partial class PathResolver
 
             var gamePath = new ByteString( ( byte* )path );
             SetCollection( gameObject, gamePath, collection );
+            _resolveData.Value = collection.ToResolveData(gameObject);
             return path;
         }
 
