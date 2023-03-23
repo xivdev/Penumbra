@@ -13,13 +13,13 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
-internal record class GlobalResolveContext(Configuration Config, IObjectIdentifier Identifier, FileCache FileCache, ModCollection Collection, int Skeleton, bool WithNames)
+internal record class GlobalResolveContext(Configuration Config, IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache, ModCollection Collection, int Skeleton, bool WithNames)
 {
     public ResolveContext CreateContext(EquipSlot slot, CharacterArmor equipment)
-        => new(Config, Identifier, FileCache, Collection, Skeleton, WithNames, slot, equipment);
+        => new(Config, Identifier, TreeBuildCache, Collection, Skeleton, WithNames, slot, equipment);
 }
 
-internal record class ResolveContext(Configuration Config, IObjectIdentifier Identifier, FileCache FileCache, ModCollection Collection, int Skeleton, bool WithNames, EquipSlot Slot,
+internal record class ResolveContext(Configuration Config, IObjectIdentifier Identifier, TreeBuildCache TreeBuildCache, ModCollection Collection, int Skeleton, bool WithNames, EquipSlot Slot,
     CharacterArmor Equipment)
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
@@ -166,12 +166,12 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         if (node == null)
             return null;
 
-        var mtrlFile = WithNames ? FileCache.ReadMaterial(node.FullPath) : null;
+        var mtrlFile = WithNames ? TreeBuildCache.ReadMaterial(node.FullPath) : null;
 
         var shpkNode = CreateNodeFromShpk(nint.Zero, new ByteString(resource->ShpkString), false);
         if (shpkNode != null)
             node.Children.Add(WithNames ? shpkNode.WithName("Shader Package") : shpkNode);
-        var shpkFile = WithNames && shpkNode != null ? FileCache.ReadShaderPackage(shpkNode.FullPath) : null;
+        var shpkFile = WithNames && shpkNode != null ? TreeBuildCache.ReadShaderPackage(shpkNode.FullPath) : null;
         var samplers = WithNames ? mtrlFile?.GetSamplersByTexture(shpkFile) : null;
 
         for (var i = 0; i < resource->NumTex; i++)

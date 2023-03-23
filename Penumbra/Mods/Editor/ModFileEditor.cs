@@ -40,7 +40,7 @@ public class ModFileEditor
         return num;
     }
 
-    public void RevertFiles(Mod mod, ISubMod option)
+    public void Revert(Mod mod, ISubMod option)
     {
         _files.UpdatePaths(mod, option);
         Changes = false;

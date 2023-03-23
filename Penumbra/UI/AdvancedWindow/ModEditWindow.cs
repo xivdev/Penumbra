@@ -12,6 +12,7 @@ using OtterGui.Raii;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
+using Penumbra.Interop.ResourceTree;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
@@ -24,12 +25,14 @@ public partial class ModEditWindow : Window, IDisposable
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
-    private readonly ModEditor     _editor;
-    private readonly Configuration _config;
-    private readonly ItemSwapTab   _itemSwapTab;
+    private readonly ModEditor           _editor;
+    private readonly Configuration       _config;
+    private readonly ItemSwapTab         _itemSwapTab;
+    private readonly ResourceTreeFactory _resourceTreeFactory;
+    private readonly DataManager         _gameData;
 
     private Mod?    _mod;
-    private Vector2 _iconSize         = Vector2.Zero;
+    private Vector2 _iconSize = Vector2.Zero;
     private bool    _allowReduplicate;
 
     public void ChangeMod(Mod mod)
@@ -136,6 +139,7 @@ public partial class ModEditWindow : Window, IDisposable
         DrawSwapTab();
         DrawMissingFilesTab();
         DrawDuplicatesTab();
+        DrawQuickImportTab();
         DrawMaterialReassignmentTab();
         _modelTab.Draw();
         _materialTab.Draw();
@@ -488,19 +492,21 @@ public partial class ModEditWindow : Window, IDisposable
     }
 
     public ModEditWindow(FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
-        Configuration config, ModEditor editor)
+        Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory)
         : base(WindowBaseLabel)
     {
-        _itemSwapTab = itemSwapTab;
-        _config      = config;
-        _editor      = editor;
-        _fileDialog  = fileDialog;
-        _materialTab = new FileEditor<MtrlTab>(gameData, config, _fileDialog, "Materials", ".mtrl",
+        _itemSwapTab         = itemSwapTab;
+        _config              = config;
+        _editor              = editor;
+        _gameData            = gameData;
+        _resourceTreeFactory = resourceTreeFactory;
+        _fileDialog          = fileDialog;
+        _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
-        _modelTab = new FileEditor<MdlFile>(gameData, config, _fileDialog, "Models", ".mdl",
+        _modelTab = new FileEditor<MdlFile>(this, gameData, config, _fileDialog, "Models", ".mdl",
             () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, null);
-        _shaderPackageTab = new FileEditor<ShpkTab>(gameData, config, _fileDialog, "Shader Packages", ".shpk",
+        _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shader Packages", ".shpk",
             () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty, null);
         _center = new CombinedTexture(_left, _right);
     }

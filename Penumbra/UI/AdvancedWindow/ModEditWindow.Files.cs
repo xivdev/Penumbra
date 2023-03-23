@@ -307,7 +307,7 @@ public partial class ModEditWindow
         var label  = changes ? "Revert Changes" : "Reload Files";
         var length = new Vector2(ImGui.CalcTextSize("Revert Changes").X, 0);
         if (ImGui.Button(label, length))
-            _editor.FileEditor.RevertFiles(_editor.Mod!, _editor.Option!);
+            _editor.FileEditor.Revert(_editor.Mod!, _editor.Option!);
 
         ImGuiUtil.HoverTooltip("Revert all revertible changes since the last file or option reload or data refresh.");
 

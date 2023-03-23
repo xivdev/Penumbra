@@ -1,20 +1,32 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Dalamud.Data;
+using Dalamud.Game.ClientState.Objects;
+using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.ResourceTree;
 
-internal class FileCache
+internal class TreeBuildCache
 {
     private readonly DataManager                     _dataManager;
     private readonly Dictionary<FullPath, MtrlFile?> _materials      = new();
     private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = new();
+    public readonly  List<Character>                 Characters;
+    public readonly  Dictionary<uint, Character>     CharactersById;
 
-    public FileCache(DataManager dataManager)
-        => _dataManager = dataManager;
+    public TreeBuildCache(ObjectTable objects, DataManager dataManager)
+    {
+        _dataManager = dataManager;
+        Characters   = objects.Where(c => c is Character ch && ch.IsValid()).Cast<Character>().ToList();
+        CharactersById = Characters
+            .Where(c => c.ObjectId != GameObject.InvalidGameObjectId)
+            .GroupBy(c => c.ObjectId)
+            .ToDictionary(c => c.Key, c => c.First());
+    }
 
     /// <summary> Try to read a material file from the given path and cache it on success. </summary>
     public MtrlFile? ReadMaterial(FullPath path)

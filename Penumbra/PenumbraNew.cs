@@ -133,6 +133,7 @@ public class PenumbraNew
             .AddSingleton<CollectionsTab>()
             .AddSingleton<ChangedItemsTab>()
             .AddSingleton<EffectiveTab>()
+            .AddSingleton<OnScreenTab>()
             .AddSingleton<DebugTab>()
             .AddSingleton<ResourceTab>()
             .AddSingleton<ConfigTabBar>()

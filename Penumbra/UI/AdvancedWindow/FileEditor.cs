@@ -20,11 +20,13 @@ public class FileEditor<T> where T : class, IWritable
     private readonly Configuration     _config;
     private readonly FileDialogService _fileDialog;
     private readonly DataManager       _gameData;
+    private readonly ModEditWindow     _owner; 
 
-    public FileEditor(DataManager gameData, Configuration config, FileDialogService fileDialog, string tabName, string fileType,
+    public FileEditor(ModEditWindow owner, DataManager gameData, Configuration config, FileDialogService fileDialog, string tabName, string fileType,
         Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
         Func<byte[], T?>? parseFile)
     {
+        _owner          = owner; 
         _gameData       = gameData;
         _config         = config;
         _fileDialog     = fileDialog;
@@ -41,7 +43,10 @@ public class FileEditor<T> where T : class, IWritable
         _list = _getFiles();
         using var tab = ImRaii.TabItem(_tabName);
         if (!tab)
+        {
+            _quickImport = null;
             return;
+        }
 
         ImGui.NewLine();
         DrawFileSelectCombo();
@@ -67,21 +72,27 @@ public class FileEditor<T> where T : class, IWritable
     private Exception?    _currentException;
     private bool          _changed;
 
-    private string     _defaultPath = string.Empty;
-    private bool       _inInput;
-    private T?         _defaultFile;
-    private Exception? _defaultException;
+    private string       _defaultPath = string.Empty;
+    private bool         _inInput;
+    private Utf8GamePath _defaultPathUtf8;
+    private bool         _isDefaultPathUtf8Valid;
+    private T?           _defaultFile;
+    private Exception?   _defaultException;
 
     private IReadOnlyList<FileRegistry> _list = null!;
 
+    private ModEditWindow.QuickImportAction? _quickImport;
+
     private void DefaultInput()
     {
-        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = 3 * UiHelpers.Scale });
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 3 * UiHelpers.Scale - ImGui.GetFrameHeight());
+        using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = UiHelpers.ScaleX3 });
+        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X - 2 * (UiHelpers.ScaleX3 + ImGui.GetFrameHeight()));
         ImGui.InputTextWithHint("##defaultInput", "Input game path to compare...", ref _defaultPath, Utf8GamePath.MaxGamePathLength);
         _inInput = ImGui.IsItemActive();
         if (ImGui.IsItemDeactivatedAfterEdit() && _defaultPath.Length > 0)
         {
+            _isDefaultPathUtf8Valid = Utf8GamePath.FromString(_defaultPath, out _defaultPathUtf8, true);
+            _quickImport            = null;
             _fileDialog.Reset();
             try
             {
@@ -122,6 +133,21 @@ public class FileEditor<T> where T : class, IWritable
                         Penumbra.ChatService.NotificationMessage($"Could not export {_defaultPath}:\n{e}", "Error", NotificationType.Error);
                     }
                 }, _getInitialPath(), false);
+
+        _quickImport ??= ModEditWindow.QuickImportAction.Prepare(_owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile);
+        ImGui.SameLine();
+        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), new Vector2(ImGui.GetFrameHeight()), $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute, true))
+        {
+            try
+            {
+                UpdateCurrentFile(_quickImport.Execute());
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not add a copy of {_quickImport.GamePath} to {_quickImport.OptionName}:\n{e}");
+            }
+            _quickImport = null;
+        }
 
         _fileDialog.Draw();
     }
