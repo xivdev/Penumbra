@@ -9,7 +9,7 @@ using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint Address, ActorIdentifier Identifier, ModCollection Collection)>
 {
