@@ -6,7 +6,7 @@ using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 
-namespace Penumbra.Interop;
+namespace Penumbra.Interop.Services;
 
 public unsafe partial class CharacterUtility : IDisposable
 {
@@ -30,8 +30,8 @@ public unsafe partial class CharacterUtility : IDisposable
 
     public bool         Ready { get; private set; }
     public event Action LoadingFinished;
-    public IntPtr       DefaultTransparentResource { get; private set; }
-    public IntPtr       DefaultDecalResource       { get; private set; }
+    public nint         DefaultTransparentResource { get; private set; }
+    public nint         DefaultDecalResource       { get; private set; }
 
     /// <summary>
     /// The relevant indices depend on which meta manipulations we allow for.
@@ -45,14 +45,14 @@ public unsafe partial class CharacterUtility : IDisposable
             .Select(i => new InternalIndex(Array.IndexOf(RelevantIndices, (MetaIndex)i)))
             .ToArray();
 
-    private readonly List[] _lists = Enumerable.Range(0, RelevantIndices.Length)
-        .Select(idx => new List(new InternalIndex(idx)))
+    private readonly MetaList[] _lists = Enumerable.Range(0, RelevantIndices.Length)
+        .Select(idx => new MetaList(new InternalIndex(idx)))
         .ToArray();
 
-    public IReadOnlyList<List> Lists
+    public IReadOnlyList<MetaList> Lists
         => _lists;
 
-    public (IntPtr Address, int Size) DefaultResource(InternalIndex idx)
+    public (nint Address, int Size) DefaultResource(InternalIndex idx)
         => _lists[idx.Value].DefaultResource;
 
     private readonly Framework _framework;
@@ -86,16 +86,16 @@ public unsafe partial class CharacterUtility : IDisposable
             anyMissing |= !_lists[i].Ready;
         }
 
-        if (DefaultTransparentResource == IntPtr.Zero)
+        if (DefaultTransparentResource == nint.Zero)
         {
-            DefaultTransparentResource =  (IntPtr)Address->TransparentTexResource;
-            anyMissing                 |= DefaultTransparentResource == IntPtr.Zero;
+            DefaultTransparentResource =  (nint)Address->TransparentTexResource;
+            anyMissing                 |= DefaultTransparentResource == nint.Zero;
         }
 
-        if (DefaultDecalResource == IntPtr.Zero)
+        if (DefaultDecalResource == nint.Zero)
         {
-            DefaultDecalResource =  (IntPtr)Address->DecalTexResource;
-            anyMissing           |= DefaultDecalResource == IntPtr.Zero;
+            DefaultDecalResource =  (nint)Address->DecalTexResource;
+            anyMissing           |= DefaultDecalResource == nint.Zero;
         }
 
         if (anyMissing)
@@ -106,7 +106,7 @@ public unsafe partial class CharacterUtility : IDisposable
         LoadingFinished.Invoke();
     }
 
-    public void SetResource(MetaIndex resourceIdx, IntPtr data, int length)
+    public void SetResource(MetaIndex resourceIdx, nint data, int length)
     {
         var idx  = ReverseIndices[(int)resourceIdx];
         var list = _lists[idx.Value];
@@ -120,14 +120,14 @@ public unsafe partial class CharacterUtility : IDisposable
         list.ResetResource();
     }
 
-    public List.MetaReverter TemporarilySetResource(MetaIndex resourceIdx, IntPtr data, int length)
+    public MetaList.MetaReverter TemporarilySetResource(MetaIndex resourceIdx, nint data, int length)
     {
         var idx  = ReverseIndices[(int)resourceIdx];
         var list = _lists[idx.Value];
         return list.TemporarilySetResource(data, length);
     }
 
-    public List.MetaReverter TemporarilyResetResource(MetaIndex resourceIdx)
+    public MetaList.MetaReverter TemporarilyResetResource(MetaIndex resourceIdx)
     {
         var idx  = ReverseIndices[(int)resourceIdx];
         var list = _lists[idx.Value];

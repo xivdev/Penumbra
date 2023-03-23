@@ -13,6 +13,7 @@ using Penumbra.Interop;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.Util;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Collections;
 

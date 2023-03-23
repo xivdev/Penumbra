@@ -14,7 +14,7 @@ using Penumbra.GameData.Actors;
 using Penumbra.Interop.Structs;
 using Penumbra.Services;
 
-namespace Penumbra.Interop;
+namespace Penumbra.Interop.Services;
 
 public unsafe partial class RedrawService
 {

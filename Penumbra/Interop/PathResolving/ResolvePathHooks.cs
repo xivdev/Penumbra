@@ -6,7 +6,7 @@ using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 public unsafe class ResolvePathHooks : IDisposable
 {

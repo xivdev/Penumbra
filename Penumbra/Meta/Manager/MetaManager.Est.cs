@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -19,28 +20,28 @@ public partial class MetaManager
 
     public void SetEstFiles()
     {
-        SetFile( _estFaceFile, CharacterUtility.Index.FaceEst );
-        SetFile( _estHairFile, CharacterUtility.Index.HairEst );
-        SetFile( _estBodyFile, CharacterUtility.Index.BodyEst );
-        SetFile( _estHeadFile, CharacterUtility.Index.HeadEst );
+        SetFile( _estFaceFile, MetaIndex.FaceEst );
+        SetFile( _estHairFile, MetaIndex.HairEst );
+        SetFile( _estBodyFile, MetaIndex.BodyEst );
+        SetFile( _estHeadFile, MetaIndex.HeadEst );
     }
 
     public static void ResetEstFiles()
     {
-        SetFile( null, CharacterUtility.Index.FaceEst );
-        SetFile( null, CharacterUtility.Index.HairEst );
-        SetFile( null, CharacterUtility.Index.BodyEst );
-        SetFile( null, CharacterUtility.Index.HeadEst );
+        SetFile( null, MetaIndex.FaceEst );
+        SetFile( null, MetaIndex.HairEst );
+        SetFile( null, MetaIndex.BodyEst );
+        SetFile( null, MetaIndex.HeadEst );
     }
 
-    public Interop.CharacterUtility.List.MetaReverter? TemporarilySetEstFile(EstManipulation.EstType type)
+    public CharacterUtility.MetaList.MetaReverter? TemporarilySetEstFile(EstManipulation.EstType type)
     {
         var (file, idx) = type switch
         {
-            EstManipulation.EstType.Face => ( _estFaceFile, CharacterUtility.Index.FaceEst ),
-            EstManipulation.EstType.Hair => ( _estHairFile, CharacterUtility.Index.HairEst ),
-            EstManipulation.EstType.Body => ( _estBodyFile, CharacterUtility.Index.BodyEst ),
-            EstManipulation.EstType.Head => ( _estHeadFile, CharacterUtility.Index.HeadEst ),
+            EstManipulation.EstType.Face => ( _estFaceFile, MetaIndex.FaceEst ),
+            EstManipulation.EstType.Hair => ( _estHairFile, MetaIndex.HairEst ),
+            EstManipulation.EstType.Body => ( _estBodyFile, MetaIndex.BodyEst ),
+            EstManipulation.EstType.Head => ( _estHeadFile, MetaIndex.HeadEst ),
             _                            => ( null, 0 ),
         };
         

@@ -8,7 +8,7 @@ using FFXIVClientStructs.STD;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 
-namespace Penumbra.Interop.Loader;
+namespace Penumbra.Interop.ResourceLoading;
 
 public unsafe class ResourceManagerService
 {

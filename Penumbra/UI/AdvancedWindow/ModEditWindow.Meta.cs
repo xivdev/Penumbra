@@ -199,7 +199,7 @@ public partial class ModEditWindow
                 editor.MetaEditor.Eqdp.Select(m => (MetaManipulation)m));
             ImGui.TableNextColumn();
             var raceCode      = Names.CombinedRace(_new.Gender, _new.Race);
-            var validRaceCode = CharacterUtility.EqdpIdx(raceCode, false) >= 0;
+            var validRaceCode = CharacterUtilityData.EqdpIdx(raceCode, false) >= 0;
             var canAdd        = validRaceCode && editor.MetaEditor.CanAdd(_new);
             var tt = canAdd   ? "Stage this edit." :
                 validRaceCode ? "This entry is already edited." : "This combination of race and gender can not be used.";

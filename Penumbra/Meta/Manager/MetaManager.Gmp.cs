@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using OtterGui.Filesystem;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -13,13 +14,13 @@ public partial class MetaManager
     private readonly List< GmpManipulation > _gmpManipulations = new();
 
     public void SetGmpFiles()
-        => SetFile( _gmpFile, CharacterUtility.Index.Gmp );
+        => SetFile( _gmpFile, MetaIndex.Gmp );
 
     public static void ResetGmpFiles()
-        => SetFile( null, CharacterUtility.Index.Gmp );
+        => SetFile( null, MetaIndex.Gmp );
 
-    public Interop.CharacterUtility.List.MetaReverter TemporarilySetGmpFile()
-        => TemporarilySetFile( _gmpFile, CharacterUtility.Index.Gmp );
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetGmpFile()
+        => TemporarilySetFile( _gmpFile, MetaIndex.Gmp );
 
     public void ResetGmp()
     {

@@ -59,7 +59,7 @@ public static class EquipmentSwap
                 case Gender.FemaleNpc when skipFemale: continue;
             }
 
-            if( CharacterUtility.EqdpIdx( gr, true ) < 0 )
+            if( CharacterUtilityData.EqdpIdx( gr, true ) < 0 )
             {
                 continue;
             }
@@ -147,7 +147,7 @@ public static class EquipmentSwap
                     case Gender.FemaleNpc when skipFemale: continue;
                 }
 
-                if( CharacterUtility.EqdpIdx( gr, isAccessory ) < 0 )
+                if( CharacterUtilityData.EqdpIdx( gr, isAccessory ) < 0 )
                 {
                     continue;
                 }

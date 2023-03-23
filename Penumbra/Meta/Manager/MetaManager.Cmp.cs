@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using OtterGui.Filesystem;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -13,13 +14,13 @@ public partial class MetaManager
     private readonly List< RspManipulation > _cmpManipulations = new();
 
     public void SetCmpFiles()
-        => SetFile( _cmpFile, CharacterUtility.Index.HumanCmp );
+        => SetFile( _cmpFile, MetaIndex.HumanCmp );
 
     public static void ResetCmpFiles()
-        => SetFile( null, CharacterUtility.Index.HumanCmp );
+        => SetFile( null, MetaIndex.HumanCmp );
 
-    public Interop.CharacterUtility.List.MetaReverter TemporarilySetCmpFile()
-        => TemporarilySetFile( _cmpFile, CharacterUtility.Index.HumanCmp );
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetCmpFile()
+        => TemporarilySetFile( _cmpFile, MetaIndex.HumanCmp );
 
     public void ResetCmp()
     {

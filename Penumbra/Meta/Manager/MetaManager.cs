@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using OtterGui;
 using Penumbra.Collections;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -162,36 +163,36 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
         Penumbra.Log.Debug( $"{_collection.AnonymizedName}: Loaded {loaded} delayed meta manipulations." );
     }
 
-    public void SetFile( CharacterUtility.Index index )
+    public void SetFile( MetaIndex metaIndex )
     {
-        switch( index )
+        switch( metaIndex )
         {
-            case CharacterUtility.Index.Eqp:
-                SetFile( _eqpFile, index );
+            case MetaIndex.Eqp:
+                SetFile( _eqpFile, metaIndex );
                 break;
-            case CharacterUtility.Index.Gmp:
-                SetFile( _gmpFile, index );
+            case MetaIndex.Gmp:
+                SetFile( _gmpFile, metaIndex );
                 break;
-            case CharacterUtility.Index.HumanCmp:
-                SetFile( _cmpFile, index );
+            case MetaIndex.HumanCmp:
+                SetFile( _cmpFile, metaIndex );
                 break;
-            case CharacterUtility.Index.FaceEst:
-                SetFile( _estFaceFile, index );
+            case MetaIndex.FaceEst:
+                SetFile( _estFaceFile, metaIndex );
                 break;
-            case CharacterUtility.Index.HairEst:
-                SetFile( _estHairFile, index );
+            case MetaIndex.HairEst:
+                SetFile( _estHairFile, metaIndex );
                 break;
-            case CharacterUtility.Index.HeadEst:
-                SetFile( _estHeadFile, index );
+            case MetaIndex.HeadEst:
+                SetFile( _estHeadFile, metaIndex );
                 break;
-            case CharacterUtility.Index.BodyEst:
-                SetFile( _estBodyFile, index );
+            case MetaIndex.BodyEst:
+                SetFile( _estBodyFile, metaIndex );
                 break;
             default:
-                var i = CharacterUtility.EqdpIndices.IndexOf( index );
+                var i = CharacterUtilityData.EqdpIndices.IndexOf( metaIndex );
                 if( i != -1 )
                 {
-                    SetFile( _eqdpFiles[ i ], index );
+                    SetFile( _eqdpFiles[ i ], metaIndex );
                 }
 
                 break;
@@ -199,21 +200,21 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     }
 
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
-    private static unsafe void SetFile( MetaBaseFile? file, CharacterUtility.Index index )
+    private static unsafe void SetFile( MetaBaseFile? file, MetaIndex metaIndex )
     {
         if( file == null )
         {
-            Penumbra.CharacterUtility.ResetResource( index );
+            Penumbra.CharacterUtility.ResetResource( metaIndex );
         }
         else
         {
-            Penumbra.CharacterUtility.SetResource( index, ( IntPtr )file.Data, file.Length );
+            Penumbra.CharacterUtility.SetResource( metaIndex, ( IntPtr )file.Data, file.Length );
         }
     }
 
     [MethodImpl( MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization )]
-    private static unsafe Interop.CharacterUtility.List.MetaReverter TemporarilySetFile( MetaBaseFile? file, CharacterUtility.Index index )
+    private static unsafe CharacterUtility.MetaList.MetaReverter TemporarilySetFile( MetaBaseFile? file, MetaIndex metaIndex )
         => file == null
-            ? Penumbra.CharacterUtility.TemporarilyResetResource( index )
-            : Penumbra.CharacterUtility.TemporarilySetResource( index, ( IntPtr )file.Data, file.Length );
+            ? Penumbra.CharacterUtility.TemporarilyResetResource( metaIndex )
+            : Penumbra.CharacterUtility.TemporarilySetResource( metaIndex, ( IntPtr )file.Data, file.Length );
 }

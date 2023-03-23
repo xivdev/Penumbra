@@ -8,14 +8,14 @@ using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Loader;
+using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 /// <summary>
 /// Materials and avfx do contain their own paths to textures and shader packages or atex respectively.

@@ -7,7 +7,7 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 
-namespace Penumbra.Interop.Loader;
+namespace Penumbra.Interop.ResourceLoading;
 
 /// <summary>
 /// To allow XIV to load files of arbitrary path length,

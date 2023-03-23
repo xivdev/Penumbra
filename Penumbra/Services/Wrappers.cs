@@ -7,7 +7,7 @@ using Dalamud.Plugin;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
-using Penumbra.Interop.Resolver;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Util;
 
 namespace Penumbra.Services;

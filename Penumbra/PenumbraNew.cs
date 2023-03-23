@@ -9,8 +9,8 @@ using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.Interop;
-using Penumbra.Interop.Loader;
-using Penumbra.Interop.Resolver;
+using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
@@ -20,6 +20,7 @@ using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
 using Penumbra.Util;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
 
 namespace Penumbra;

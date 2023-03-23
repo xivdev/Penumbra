@@ -14,7 +14,7 @@ using Penumbra.Interop.Services;
 using Penumbra.String.Classes;
 using Object = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.Object;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, bool)>
 {

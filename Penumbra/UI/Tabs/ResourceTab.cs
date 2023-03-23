@@ -11,7 +11,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.Interop.Loader;
+using Penumbra.Interop.ResourceLoading;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.Tabs;

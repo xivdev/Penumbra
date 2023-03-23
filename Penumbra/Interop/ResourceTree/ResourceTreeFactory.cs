@@ -6,7 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
-using Penumbra.Interop.Resolver;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Services;
 
 namespace Penumbra.Interop.ResourceTree;

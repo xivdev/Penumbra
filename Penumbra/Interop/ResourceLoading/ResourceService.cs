@@ -9,7 +9,7 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
-namespace Penumbra.Interop.Loader;
+namespace Penumbra.Interop.ResourceLoading;
 
 public unsafe class ResourceService : IDisposable
 {

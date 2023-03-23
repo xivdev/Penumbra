@@ -81,8 +81,8 @@ public readonly struct EqdpManipulation : IMetaManipulation< EqdpManipulation >
         return set != 0 ? set : Slot.CompareTo( other.Slot );
     }
 
-    public CharacterUtility.Index FileIndex()
-        => CharacterUtility.EqdpIdx( Names.CombinedRace( Gender, Race ), Slot.IsAccessory() );
+    public MetaIndex FileIndex()
+        => CharacterUtilityData.EqdpIdx( Names.CombinedRace( Gender, Race ), Slot.IsAccessory() );
 
     public bool Apply( ExpandedEqdpFile file )
     {

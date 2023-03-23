@@ -1,4 +1,5 @@
 using System;
+using Penumbra.Interop.Structs;
 
 namespace Penumbra.Meta.Files;
 
@@ -64,6 +65,6 @@ public unsafe class EvpFile : MetaBaseFile
     }
 
     public EvpFile()
-        : base( ( Interop.Structs.CharacterUtility.Index )1 ) // TODO: Name
+        : base( ( MetaIndex )1 ) // TODO: Name
     { }
 }

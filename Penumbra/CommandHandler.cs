@@ -9,6 +9,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop;
+using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI;

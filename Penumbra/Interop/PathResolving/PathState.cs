@@ -7,7 +7,7 @@ using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.String;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 public unsafe class PathState : IDisposable
 {

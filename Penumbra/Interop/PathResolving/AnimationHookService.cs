@@ -12,7 +12,7 @@ using Penumbra.String.Classes;
 using Penumbra.Util;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 public unsafe class AnimationHookService : IDisposable
 {

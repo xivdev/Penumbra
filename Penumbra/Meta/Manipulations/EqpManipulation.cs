@@ -52,8 +52,8 @@ public readonly struct EqpManipulation : IMetaManipulation< EqpManipulation >
         return set != 0 ? set : Slot.CompareTo( other.Slot );
     }
 
-    public CharacterUtility.Index FileIndex()
-        => CharacterUtility.Index.Eqp;
+    public MetaIndex FileIndex()
+        => MetaIndex.Eqp;
 
     public bool Apply( ExpandedEqpFile file )
     {

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.String.Functions;
 
@@ -96,7 +97,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     }
 
     public ExpandedEqdpFile( GenderRace raceCode, bool accessory )
-        : base( CharacterUtility.EqdpIdx( raceCode, accessory ) )
+        : base( CharacterUtilityData.EqdpIdx( raceCode, accessory ) )
     {
         var def             = ( byte* )DefaultData.Data;
         var blockSize       = *( ushort* )( def + IdentifierSize );
@@ -114,7 +115,7 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     public EqdpEntry GetDefault( int setIdx )
         => GetDefault( Index, setIdx );
 
-    public static EqdpEntry GetDefault( Interop.CharacterUtility.InternalIndex idx, int setIdx )
+    public static EqdpEntry GetDefault( CharacterUtility.InternalIndex idx, int setIdx )
         => GetDefault( ( byte* )Penumbra.CharacterUtility.DefaultResource( idx ).Address, setIdx );
 
     public static EqdpEntry GetDefault( byte* data, int setIdx )
@@ -139,5 +140,5 @@ public sealed unsafe class ExpandedEqdpFile : MetaBaseFile
     }
 
     public static EqdpEntry GetDefault( GenderRace raceCode, bool accessory, int setIdx )
-        => GetDefault( Interop.CharacterUtility.ReverseIndices[ ( int )CharacterUtility.EqdpIdx( raceCode, accessory ) ], setIdx );
+        => GetDefault( CharacterUtility.ReverseIndices[ ( int )CharacterUtilityData.EqdpIdx( raceCode, accessory ) ], setIdx );
 }

@@ -3,6 +3,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using System.Collections.Generic;
+using Penumbra.Interop.Services;
 using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
@@ -11,8 +12,8 @@ namespace Penumbra.Meta.Files;
 // We only support manipulating the racial scaling parameters at the moment.
 public sealed unsafe class CmpFile : MetaBaseFile
 {
-    public static readonly Interop.CharacterUtility.InternalIndex InternalIndex =
-        Interop.CharacterUtility.ReverseIndices[ ( int )CharacterUtility.Index.HumanCmp ];
+    public static readonly CharacterUtility.InternalIndex InternalIndex =
+        CharacterUtility.ReverseIndices[ ( int )MetaIndex.HumanCmp ];
 
     private const int RacialScalingStart = 0x2A800;
 
@@ -34,7 +35,7 @@ public sealed unsafe class CmpFile : MetaBaseFile
     }
 
     public CmpFile()
-        : base( CharacterUtility.Index.HumanCmp )
+        : base( MetaIndex.HumanCmp )
     {
         AllocateData( DefaultData.Length );
         Reset();

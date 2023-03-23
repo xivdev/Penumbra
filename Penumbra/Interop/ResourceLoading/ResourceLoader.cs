@@ -8,7 +8,7 @@ using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Interop.Loader;
+namespace Penumbra.Interop.ResourceLoading;
 
 public unsafe class ResourceLoader : IDisposable
 {

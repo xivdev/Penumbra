@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.String.Functions;
 
@@ -75,13 +76,13 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     }
 
     public ExpandedEqpGmpBase( bool gmp )
-        : base( gmp ? CharacterUtility.Index.Gmp : CharacterUtility.Index.Eqp )
+        : base( gmp ? MetaIndex.Gmp : MetaIndex.Eqp )
     {
         AllocateData( MaxSize );
         Reset();
     }
 
-    protected static ulong GetDefaultInternal( Interop.CharacterUtility.InternalIndex fileIndex, int setIdx, ulong def )
+    protected static ulong GetDefaultInternal( CharacterUtility.InternalIndex fileIndex, int setIdx, ulong def )
     {
         var data = ( byte* )Penumbra.CharacterUtility.DefaultResource(fileIndex).Address;
         if( setIdx == 0 )
@@ -111,8 +112,8 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
 
 public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 {
-    public static readonly Interop.CharacterUtility.InternalIndex InternalIndex =
-        Interop.CharacterUtility.ReverseIndices[ (int) CharacterUtility.Index.Eqp ];
+    public static readonly CharacterUtility.InternalIndex InternalIndex =
+        CharacterUtility.ReverseIndices[ (int) MetaIndex.Eqp ];
 
     public ExpandedEqpFile()
         : base( false )
@@ -158,8 +159,8 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 
 public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
 {
-    public static readonly Interop.CharacterUtility.InternalIndex InternalIndex =
-        Interop.CharacterUtility.ReverseIndices[( int )CharacterUtility.Index.Gmp];
+    public static readonly CharacterUtility.InternalIndex InternalIndex =
+        CharacterUtility.ReverseIndices[( int )MetaIndex.Gmp];
 
     public ExpandedGmpFile()
         : base( true )

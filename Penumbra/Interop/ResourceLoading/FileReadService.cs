@@ -8,7 +8,7 @@ using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 using Penumbra.Util;
 
-namespace Penumbra.Interop.Loader;
+namespace Penumbra.Interop.ResourceLoading;
 
 public unsafe class FileReadService : IDisposable
 {

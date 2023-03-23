@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Functions;
@@ -175,7 +176,7 @@ public sealed unsafe class EstFile : MetaBaseFile
     }
 
     public EstFile( EstManipulation.EstType estType )
-        : base( ( CharacterUtility.Index )estType )
+        : base( ( MetaIndex )estType )
     {
         var length = DefaultData.Length;
         AllocateData( length + IncreaseSize );
@@ -185,7 +186,7 @@ public sealed unsafe class EstFile : MetaBaseFile
     public ushort GetDefault( GenderRace genderRace, ushort setId )
         => GetDefault( Index, genderRace, setId );
 
-    public static ushort GetDefault( Interop.CharacterUtility.InternalIndex index, GenderRace genderRace, ushort setId )
+    public static ushort GetDefault( CharacterUtility.InternalIndex index, GenderRace genderRace, ushort setId )
     {
         var data  = ( byte* )Penumbra.CharacterUtility.DefaultResource( index ).Address;
         var count = *( int* )data;
@@ -199,9 +200,9 @@ public sealed unsafe class EstFile : MetaBaseFile
         return *( ushort* )( data + 4 + count * EntryDescSize + idx * EntrySize );
     }
 
-    public static ushort GetDefault( CharacterUtility.Index index, GenderRace genderRace, ushort setId )
-        => GetDefault( Interop.CharacterUtility.ReverseIndices[ ( int )index ], genderRace, setId );
+    public static ushort GetDefault( MetaIndex metaIndex, GenderRace genderRace, ushort setId )
+        => GetDefault( CharacterUtility.ReverseIndices[ ( int )metaIndex ], genderRace, setId );
 
     public static ushort GetDefault( EstManipulation.EstType estType, GenderRace genderRace, ushort setId )
-        => GetDefault( ( CharacterUtility.Index )estType, genderRace, setId );
+        => GetDefault( ( MetaIndex )estType, genderRace, setId );
 }

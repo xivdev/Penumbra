@@ -11,7 +11,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Loader;
+using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;

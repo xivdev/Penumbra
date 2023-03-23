@@ -9,7 +9,7 @@ namespace Penumbra.Meta.Manipulations;
 
 public interface IMetaManipulation
 {
-    public CharacterUtility.Index FileIndex();
+    public MetaIndex FileIndex();
 }
 
 public interface IMetaManipulation< T >

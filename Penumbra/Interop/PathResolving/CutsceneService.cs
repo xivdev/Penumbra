@@ -7,7 +7,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 public class CutsceneService : IDisposable
 {

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using OtterGui.Filesystem;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -13,13 +14,13 @@ public partial class MetaManager
     private readonly List< EqpManipulation > _eqpManipulations = new();
 
     public void SetEqpFiles()
-        => SetFile( _eqpFile, CharacterUtility.Index.Eqp );
+        => SetFile( _eqpFile, MetaIndex.Eqp );
 
     public static void ResetEqpFiles()
-        => SetFile( null, CharacterUtility.Index.Eqp );
+        => SetFile( null, MetaIndex.Eqp );
 
-    public Interop.CharacterUtility.List.MetaReverter TemporarilySetEqpFile()
-        => TemporarilySetFile( _eqpFile, CharacterUtility.Index.Eqp );
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqpFile()
+        => TemporarilySetFile( _eqpFile, MetaIndex.Eqp );
 
     public void ResetEqp()
     {

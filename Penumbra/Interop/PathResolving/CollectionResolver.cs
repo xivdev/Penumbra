@@ -17,7 +17,7 @@ using Character = FFXIVClientStructs.FFXIV.Client.Game.Character.Character;
 using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 public unsafe class CollectionResolver
 {

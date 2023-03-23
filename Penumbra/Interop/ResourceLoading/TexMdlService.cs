@@ -7,7 +7,7 @@ using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Interop.Loader;
+namespace Penumbra.Interop.ResourceLoading;
 
 public unsafe class TexMdlService
 {

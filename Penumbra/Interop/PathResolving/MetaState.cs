@@ -8,7 +8,7 @@ using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Loader;
+using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.String.Classes;
@@ -16,7 +16,7 @@ using Penumbra.Util;
 using ObjectType = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.ObjectType;
 using static Penumbra.GameData.Enums.GenderRace;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 // State: 6.35
 // GetSlotEqpData seems to be the only function using the EQP table.
@@ -45,23 +45,25 @@ public unsafe class MetaState : IDisposable
     [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
     private readonly nint* _humanVTable = null!;
 
-    private readonly CommunicatorService _communicator;
-    private readonly PerformanceTracker  _performance;
-    private readonly CollectionResolver  _collectionResolver;
-    private readonly ResourceService     _resources;
-    private readonly GameEventManager    _gameEventManager;
+    private readonly CommunicatorService       _communicator;
+    private readonly PerformanceTracker        _performance;
+    private readonly CollectionResolver        _collectionResolver;
+    private readonly ResourceService           _resources;
+    private readonly GameEventManager          _gameEventManager;
+    private readonly Services.CharacterUtility _characterUtility;
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
 
     public MetaState(PerformanceTracker performance, CommunicatorService communicator, CollectionResolver collectionResolver,
-        ResourceService resources, GameEventManager gameEventManager)
+        ResourceService resources, GameEventManager gameEventManager, Services.CharacterUtility characterUtility)
     {
         _performance        = performance;
         _communicator       = communicator;
         _collectionResolver = collectionResolver;
         _resources          = resources;
         _gameEventManager   = gameEventManager;
+        _characterUtility   = characterUtility;
         SignatureHelper.Initialise(this);
         _onModelLoadCompleteHook = Hook<OnModelLoadCompleteDelegate>.FromAddress(_humanVTable[58], OnModelLoadCompleteDetour);
         _getEqpIndirectHook.Enable();
@@ -125,7 +127,7 @@ public unsafe class MetaState : IDisposable
             _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection.Name, (nint)(&modelCharaId), customize, equipData);
 
-        var decal = new CharacterUtility.DecalReverter(_resources, _lastCreatedCollection.ModCollection, UsesDecal(modelCharaId, equipData));
+        var decal = new DecalReverter(_characterUtility, _resources, _lastCreatedCollection.ModCollection, UsesDecal(modelCharaId, equipData));
         var cmp   = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile();
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);
@@ -252,7 +254,7 @@ public unsafe class MetaState : IDisposable
         var       resolveData = _collectionResolver.IdentifyCollection((DrawObject*)human, true);
         using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile();
         using var decals =
-            new CharacterUtility.DecalReverter(_resources, resolveData.ModCollection, UsesDecal(0, data));
+            new DecalReverter(_characterUtility, _resources, resolveData.ModCollection, UsesDecal(0, data));
         var ret = _changeCustomize.Original(human, data, skipEquipment);
         _inChangeCustomize = false;
         return ret;

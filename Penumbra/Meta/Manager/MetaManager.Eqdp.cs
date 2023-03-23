@@ -4,6 +4,7 @@ using System.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -12,24 +13,24 @@ namespace Penumbra.Meta.Manager;
 
 public partial class MetaManager
 {
-    private readonly ExpandedEqdpFile?[] _eqdpFiles = new ExpandedEqdpFile[CharacterUtility.EqdpIndices.Length]; // TODO: female Hrothgar
+    private readonly ExpandedEqdpFile?[] _eqdpFiles = new ExpandedEqdpFile[CharacterUtilityData.EqdpIndices.Length]; // TODO: female Hrothgar
 
     private readonly List< EqdpManipulation > _eqdpManipulations = new();
 
     public void SetEqdpFiles()
     {
-        for( var i = 0; i < CharacterUtility.EqdpIndices.Length; ++i )
+        for( var i = 0; i < CharacterUtilityData.EqdpIndices.Length; ++i )
         {
-            SetFile( _eqdpFiles[ i ], CharacterUtility.EqdpIndices[ i ] );
+            SetFile( _eqdpFiles[ i ], CharacterUtilityData.EqdpIndices[ i ] );
         }
     }
 
-    public Interop.CharacterUtility.List.MetaReverter? TemporarilySetEqdpFile( GenderRace genderRace, bool accessory )
+    public CharacterUtility.MetaList.MetaReverter? TemporarilySetEqdpFile( GenderRace genderRace, bool accessory )
     {
-        var idx = CharacterUtility.EqdpIdx( genderRace, accessory );
+        var idx = CharacterUtilityData.EqdpIdx( genderRace, accessory );
         if( ( int )idx != -1 )
         {
-            var i = CharacterUtility.EqdpIndices.IndexOf( idx );
+            var i = CharacterUtilityData.EqdpIndices.IndexOf( idx );
             if( i != -1 )
             {
                 return TemporarilySetFile( _eqdpFiles[ i ], idx );
@@ -41,7 +42,7 @@ public partial class MetaManager
 
     public static void ResetEqdpFiles()
     {
-        foreach( var idx in CharacterUtility.EqdpIndices )
+        foreach( var idx in CharacterUtilityData.EqdpIndices )
         {
             SetFile( null, idx );
         }
@@ -51,7 +52,7 @@ public partial class MetaManager
     {
         foreach( var file in _eqdpFiles.OfType< ExpandedEqdpFile >() )
         {
-            var relevant = Interop.CharacterUtility.RelevantIndices[ file.Index.Value ];
+            var relevant = CharacterUtility.RelevantIndices[ file.Index.Value ];
             file.Reset( _eqdpManipulations.Where( m => m.FileIndex() == relevant ).Select( m => ( int )m.SetId ) );
         }
 
@@ -61,7 +62,7 @@ public partial class MetaManager
     public bool ApplyMod( EqdpManipulation manip )
     {
         _eqdpManipulations.AddOrReplace( manip );
-        var file = _eqdpFiles[ Array.IndexOf( CharacterUtility.EqdpIndices, manip.FileIndex() ) ] ??=
+        var file = _eqdpFiles[ Array.IndexOf( CharacterUtilityData.EqdpIndices, manip.FileIndex() ) ] ??=
             new ExpandedEqdpFile( Names.CombinedRace( manip.Gender, manip.Race ), manip.Slot.IsAccessory() ); // TODO: female Hrothgar
         return manip.Apply( file );
     }
@@ -71,7 +72,7 @@ public partial class MetaManager
         if( _eqdpManipulations.Remove( manip ) )
         {
             var def  = ExpandedEqdpFile.GetDefault( Names.CombinedRace( manip.Gender, manip.Race ), manip.Slot.IsAccessory(), manip.SetId );
-            var file = _eqdpFiles[ Array.IndexOf( CharacterUtility.EqdpIndices, manip.FileIndex() ) ]!;
+            var file = _eqdpFiles[ Array.IndexOf( CharacterUtilityData.EqdpIndices, manip.FileIndex() ) ]!;
             manip = new EqdpManipulation( def, manip.Slot, manip.Gender, manip.Race, manip.SetId );
             return manip.Apply( file );
         }
@@ -81,7 +82,7 @@ public partial class MetaManager
 
     public ExpandedEqdpFile? EqdpFile( GenderRace race, bool accessory )
         => _eqdpFiles
-            [ Array.IndexOf( CharacterUtility.EqdpIndices, CharacterUtility.EqdpIdx( race, accessory ) ) ]; // TODO: female Hrothgar
+            [ Array.IndexOf( CharacterUtilityData.EqdpIndices, CharacterUtilityData.EqdpIdx( race, accessory ) ) ]; // TODO: female Hrothgar
 
     public void DisposeEqdp()
     {

@@ -9,9 +9,11 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Penumbra.Interop;
+using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Collections;
 
@@ -151,7 +153,7 @@ public partial class ModCollection
         }
     }
 
-    public void SetMetaFile(Interop.Structs.CharacterUtility.Index idx)
+    public void SetMetaFile(MetaIndex idx)
     {
         if (_cache == null)
             Penumbra.CharacterUtility.ResetResource(idx);
@@ -160,23 +162,23 @@ public partial class ModCollection
     }
 
     // Used for short periods of changed files.
-    public CharacterUtility.List.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
         => _cache?.MetaManipulations.TemporarilySetEqdpFile(genderRace, accessory)
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource(Interop.Structs.CharacterUtility.EqdpIdx(genderRace, accessory));
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource(Interop.Structs.CharacterUtilityData.EqdpIdx(genderRace, accessory));
 
-    public CharacterUtility.List.MetaReverter TemporarilySetEqpFile()
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqpFile()
         => _cache?.MetaManipulations.TemporarilySetEqpFile()
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource(Interop.Structs.CharacterUtility.Index.Eqp);
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.Eqp);
 
-    public CharacterUtility.List.MetaReverter TemporarilySetGmpFile()
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetGmpFile()
         => _cache?.MetaManipulations.TemporarilySetGmpFile()
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource(Interop.Structs.CharacterUtility.Index.Gmp);
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.Gmp);
 
-    public CharacterUtility.List.MetaReverter TemporarilySetCmpFile()
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetCmpFile()
         => _cache?.MetaManipulations.TemporarilySetCmpFile()
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource(Interop.Structs.CharacterUtility.Index.HumanCmp);
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.HumanCmp);
 
-    public CharacterUtility.List.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
         => _cache?.MetaManipulations.TemporarilySetEstFile(type)
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource((Interop.Structs.CharacterUtility.Index)type);
+         ?? Penumbra.CharacterUtility.TemporarilyResetResource((MetaIndex)type);
 }

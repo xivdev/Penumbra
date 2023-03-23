@@ -14,8 +14,8 @@ using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Files;
-using Penumbra.Interop.Loader;
-using Penumbra.Interop.Resolver;
+using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Structs;
 using Penumbra.Mods;
 using Penumbra.Services;
@@ -23,7 +23,7 @@ using Penumbra.String;
 using Penumbra.Util;
 using static OtterGui.Raii.ImRaii;
 using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
-using CharacterUtility = Penumbra.Interop.CharacterUtility;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
@@ -467,7 +467,7 @@ public class DebugTab : ITab
 
         foreach (var list in _characterUtility.Lists)
         {
-            ImGuiUtil.DrawTableColumn(list.GlobalIndex.ToString());
+            ImGuiUtil.DrawTableColumn(list.GlobalMetaIndex.ToString());
             ImGuiUtil.DrawTableColumn(list.Entries.Count.ToString());
             ImGuiUtil.DrawTableColumn(string.Join(", ", list.Entries.Select(e => $"0x{e.Data:X}")));
         }

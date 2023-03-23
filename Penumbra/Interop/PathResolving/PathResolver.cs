@@ -4,13 +4,13 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
-using Penumbra.Interop.Loader;
+using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
-namespace Penumbra.Interop.Resolver;
+namespace Penumbra.Interop.PathResolving;
 
 public class PathResolver : IDisposable
 {
