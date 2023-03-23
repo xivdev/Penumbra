@@ -4,7 +4,6 @@ using Penumbra.GameData;
 using System;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Log;
 using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop.Services;
@@ -13,12 +12,24 @@ public unsafe class GameEventManager : IDisposable
 {
     private const string Prefix = $"[{nameof(GameEventManager)}]";
 
+    public event CharacterDestructorEvent?      CharacterDestructor;
+    public event CopyCharacterEvent?            CopyCharacter;
+    public event ResourceHandleDestructorEvent? ResourceHandleDestructor;
+    public event CreatingCharacterBaseEvent?    CreatingCharacterBase;
+    public event CharacterBaseCreatedEvent?     CharacterBaseCreated;
+    public event CharacterBaseDestructorEvent?  CharacterBaseDestructor;
+    public event WeaponReloadingEvent?          WeaponReloading;
+    public event WeaponReloadedEvent?           WeaponReloaded;
+
     public GameEventManager()
     {
         SignatureHelper.Initialise(this);
         _characterDtorHook.Enable();
         _copyCharacterHook.Enable();
         _resourceHandleDestructorHook.Enable();
+        _characterBaseCreateHook.Enable();
+        _characterBaseDestructorHook.Enable();
+        _weaponReloadHook.Enable();
         Penumbra.Log.Verbose($"{Prefix} Created.");
     }
 
@@ -27,6 +38,9 @@ public unsafe class GameEventManager : IDisposable
         _characterDtorHook.Dispose();
         _copyCharacterHook.Dispose();
         _resourceHandleDestructorHook.Dispose();
+        _characterBaseCreateHook.Dispose();
+        _characterBaseDestructorHook.Dispose();
+        _weaponReloadHook.Dispose();
         Penumbra.Log.Verbose($"{Prefix} Disposed.");
     }
 
@@ -57,13 +71,12 @@ public unsafe class GameEventManager : IDisposable
     }
 
     public delegate void CharacterDestructorEvent(Character* character);
-    public event CharacterDestructorEvent? CharacterDestructor;
 
     #endregion
 
     #region Copy Character
 
-    private unsafe delegate ulong CopyCharacterDelegate(GameObject* target, GameObject* source, uint unk);
+    private delegate ulong CopyCharacterDelegate(GameObject* target, GameObject* source, uint unk);
 
     [Signature(Sigs.CopyCharacter, DetourName = nameof(CopyCharacterDetour))]
     private readonly Hook<CopyCharacterDelegate> _copyCharacterHook = null!;
@@ -90,7 +103,6 @@ public unsafe class GameEventManager : IDisposable
     }
 
     public delegate void CopyCharacterEvent(Character* target, Character* source);
-    public event CopyCharacterEvent? CopyCharacter;
 
     #endregion
 
@@ -122,7 +134,126 @@ public unsafe class GameEventManager : IDisposable
     }
 
     public delegate void ResourceHandleDestructorEvent(ResourceHandle* handle);
-    public event ResourceHandleDestructorEvent? ResourceHandleDestructor;
+
+    #endregion
+
+    #region CharacterBaseCreate
+
+    private delegate nint CharacterBaseCreateDelegate(uint a, nint b, nint c, byte d);
+
+    [Signature(Sigs.CharacterBaseCreate, DetourName = nameof(CharacterBaseCreateDetour))]
+    private readonly Hook<CharacterBaseCreateDelegate> _characterBaseCreateHook = null!;
+
+    private nint CharacterBaseCreateDetour(uint a, nint b, nint c, byte d)
+    {
+        if (CreatingCharacterBase != null)
+            foreach (var subscriber in CreatingCharacterBase.GetInvocationList())
+            {
+                try
+                {
+                    ((CreatingCharacterBaseEvent)subscriber).Invoke(a, b, c);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error(
+                        $"{Prefix} Error in {nameof(CharacterBaseCreateDetour)} event when executing {subscriber.Method.Name}:\n{ex}");
+                }
+            }
+
+        var ret = _characterBaseCreateHook.Original(a, b, c, d);
+        if (CharacterBaseCreated != null)
+            foreach (var subscriber in CharacterBaseCreated.GetInvocationList())
+            {
+                try
+                {
+                    ((CharacterBaseCreatedEvent)subscriber).Invoke(a, b, c, ret);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error(
+                        $"{Prefix} Error in {nameof(CharacterBaseCreateDetour)} event when executing {subscriber.Method.Name}:\n{ex}");
+                }
+            }
+
+        return ret;
+    }
+
+    public delegate void CreatingCharacterBaseEvent(uint modelCharaId, nint customize, nint equipment);
+    public delegate void CharacterBaseCreatedEvent(uint modelCharaId, nint customize, nint equipment, nint drawObject);
+
+    #endregion
+
+    #region CharacterBase Destructor
+
+    public delegate void CharacterBaseDestructorEvent(nint drawBase);
+
+    [Signature(Sigs.CharacterBaseDestructor, DetourName = nameof(CharacterBaseDestructorDetour))]
+    private readonly Hook<CharacterBaseDestructorEvent> _characterBaseDestructorHook = null!;
+
+    private void CharacterBaseDestructorDetour(IntPtr drawBase)
+    {
+        if (CharacterBaseDestructor != null)
+            foreach (var subscriber in CharacterBaseDestructor.GetInvocationList())
+            {
+                try
+                {
+                    ((CharacterBaseDestructorEvent)subscriber).Invoke(drawBase);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error(
+                        $"{Prefix} Error in {nameof(CharacterBaseDestructorDetour)} event when executing {subscriber.Method.Name}:\n{ex}");
+                }
+            }
+
+        _characterBaseDestructorHook.Original.Invoke(drawBase);
+    }
+
+    #endregion
+
+    #region Weapon Reload
+
+    private delegate void WeaponReloadFunc(nint a1, uint a2, nint a3, byte a4, byte a5, byte a6, byte a7);
+
+    [Signature(Sigs.WeaponReload, DetourName = nameof(WeaponReloadDetour))]
+    private readonly Hook<WeaponReloadFunc> _weaponReloadHook = null!;
+
+    private void WeaponReloadDetour(nint a1, uint a2, nint a3, byte a4, byte a5, byte a6, byte a7)
+    {
+        var gameObject = *(nint*)(a1 + 8);
+        if (WeaponReloading != null)
+            foreach (var subscriber in WeaponReloading.GetInvocationList())
+            {
+                try
+                {
+                    ((WeaponReloadingEvent)subscriber).Invoke(a1, gameObject);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error(
+                        $"{Prefix} Error in {nameof(WeaponReloadDetour)} event when executing {subscriber.Method.Name}:\n{ex}");
+                }
+            }
+
+        _weaponReloadHook.Original(a1, a2, a3, a4, a5, a6, a7);
+
+        if (WeaponReloaded != null)
+            foreach (var subscriber in WeaponReloaded.GetInvocationList())
+            {
+                try
+                {
+                    ((WeaponReloadedEvent)subscriber).Invoke(a1, gameObject);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error(
+                        $"{Prefix} Error in {nameof(WeaponReloadDetour)} event when executing {subscriber.Method.Name}:\n{ex}");
+                }
+            }
+    }
+
+    public delegate void WeaponReloadingEvent(nint drawDataContainer, nint gameObject);
+    public delegate void WeaponReloadedEvent(nint drawDataContainer, nint gameObject);
 
     #endregion
 }

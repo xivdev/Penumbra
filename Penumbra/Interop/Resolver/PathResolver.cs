@@ -1,89 +1,99 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using Dalamud.Game.ClientState;
-using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using System.Diagnostics.CodeAnalysis;
+using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Loader;
-using Penumbra.Interop.Services;
-using Penumbra.Services;
+using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 
 namespace Penumbra.Interop.Resolver;
 
-//public class PathResolver2 : IDisposable
-//{
-//    public readonly CutsceneService           Cutscenes;
-//    public readonly IdentifiedCollectionCache Identified;
-//
-//    public PathResolver(StartTracker timer, CutsceneService cutscenes, IdentifiedCollectionCache identified)
-//    {
-//        using var t = timer.Measure(StartTimeType.PathResolver);
-//        Cutscenes  = cutscenes;
-//        Identified = identified;
-//    }
-//}
-
-
-// The Path Resolver handles character collections.
-// It will hook any path resolving functions for humans,
-// as well as DrawObject creation.
-// It links draw objects to actors, and actors to character collections,
-// to resolve paths for character collections.
-public partial class PathResolver : IDisposable
+public class PathResolver : IDisposable
 {
-    public bool Enabled { get; private set; }
+    private readonly PerformanceTracker    _performance;
+    private readonly Configuration         _config;
+    private readonly ModCollection.Manager _collectionManager;
+    private readonly TempCollectionManager _tempCollections;
+    private readonly ResourceLoader        _loader;
 
-    private readonly        CommunicatorService       _communicator;
-    private readonly        ResourceLoader            _loader;
-    private static readonly CutsceneService        Cutscenes   = new(DalamudServices.SObjects, Penumbra.GameEvents); // TODO
-    private static          DrawObjectState           _drawObjects = null!;                                             // TODO
-    private static readonly BitArray                  ValidHumanModels;
-    internal static         IdentifiedCollectionCache IdentifiedCache = null!; // TODO
-    private readonly        AnimationState            _animations;
-    private readonly        PathState                 _paths;
-    private readonly        MetaState                 _meta;
-    private readonly        SubfileHelper             _subFiles;
+    private readonly AnimationHookService _animationHookService;
+    private readonly SubfileHelper        _subfileHelper;
+    private readonly PathState            _pathState;
+    private readonly MetaState            _metaState;
 
-    static PathResolver()
-        => ValidHumanModels = GetValidHumanModels(DalamudServices.SGameData);
-
-    public unsafe PathResolver(IdentifiedCollectionCache cache, StartTracker timer, ClientState clientState, CommunicatorService communicator, GameEventManager events, ResourceLoader loader)
+    public unsafe PathResolver(PerformanceTracker performance, Configuration config, ModCollection.Manager collectionManager,
+        TempCollectionManager tempCollections, ResourceLoader loader, AnimationHookService animationHookService, SubfileHelper subfileHelper,
+        PathState pathState, MetaState metaState)
     {
-        using var tApi = timer.Measure(StartTimeType.PathResolver);
-        _communicator   = communicator;
-        IdentifiedCache = cache;
-        SignatureHelper.Initialise(this);
-        _drawObjects = new DrawObjectState(_communicator);
-        _loader     = loader;
-        _animations = new AnimationState(_drawObjects);
-        _paths      = new PathState(this);
-        _meta       = new MetaState(_paths.HumanVTable);
-        _subFiles   = new SubfileHelper(_loader, Penumbra.GameEvents);
-        Enable();
+        _performance          =  performance;
+        _config               =  config;
+        _collectionManager    =  collectionManager;
+        _tempCollections      =  tempCollections;
+        _animationHookService =  animationHookService;
+        _subfileHelper        =  subfileHelper;
+        _pathState            =  pathState;
+        _metaState            =  metaState;
+        _loader               =  loader;
+        _loader.ResolvePath   =  ResolvePath;
+        _loader.FileLoaded    += ImcLoadResource;
     }
 
-    // The modified resolver that handles game path resolving.
-    public (FullPath?, ResolveData) CharacterResolver(Utf8GamePath gamePath, ResourceType type)
+    /// <summary> Obtain a temporary or permanent collection by name. </summary>
+    public bool CollectionByName(string name, [NotNullWhen(true)] out ModCollection? collection)
+        => _tempCollections.CollectionByName(name, out collection) || _collectionManager.ByName(name, out collection);
+
+    /// <summary> Try to resolve the given game path to the replaced path. </summary>
+    public (FullPath?, ResolveData) ResolvePath(Utf8GamePath path, ResourceCategory category, ResourceType resourceType)
     {
-        using var performance = Penumbra.Performance.Measure(PerformanceType.CharacterResolver);
+        // Check if mods are enabled or if we are in a inc-ref at 0 reference count situation.
+        if (!_config.EnableMods)
+            return (null, ResolveData.Invalid);
+
+        path = path.ToLower();
+        return category switch
+        {
+            // Only Interface collection.
+            ResourceCategory.Ui => (_collectionManager.Interface.ResolvePath(path),
+                _collectionManager.Interface.ToResolveData()),
+            // Never allow changing scripts.
+            ResourceCategory.UiScript   => (null, ResolveData.Invalid),
+            ResourceCategory.GameScript => (null, ResolveData.Invalid),
+            // Use actual resolving.
+            ResourceCategory.Chara  => Resolve(path, resourceType),
+            ResourceCategory.Shader => Resolve(path, resourceType),
+            ResourceCategory.Vfx    => Resolve(path, resourceType),
+            ResourceCategory.Sound  => Resolve(path, resourceType),
+            // None of these files are ever associated with specific characters,
+            // always use the default resolver for now.
+            ResourceCategory.Common   => DefaultResolver(path),
+            ResourceCategory.BgCommon => DefaultResolver(path),
+            ResourceCategory.Bg       => DefaultResolver(path),
+            ResourceCategory.Cut      => DefaultResolver(path),
+            ResourceCategory.Exd      => DefaultResolver(path),
+            ResourceCategory.Music    => DefaultResolver(path),
+            _                         => DefaultResolver(path),
+        };
+    }
+
+    public (FullPath?, ResolveData) Resolve(Utf8GamePath gamePath, ResourceType type)
+    {
+        using var performance = _performance.Measure(PerformanceType.CharacterResolver);
         // Check if the path was marked for a specific collection,
         // or if it is a file loaded by a material, and if we are currently in a material load,
         // or if it is a face decal path and the current mod collection is set.
         // If not use the default collection.
         // We can remove paths after they have actually been loaded.
         // A potential next request will add the path anew.
-        var nonDefault = _subFiles.HandleSubFiles(type, out var resolveData)
-         || _paths.Consume(gamePath.Path, out resolveData)
-         || _animations.HandleFiles(type, gamePath, out resolveData)
-         || _drawObjects.HandleDecalFile(type, gamePath, out resolveData);
+        var nonDefault = _subfileHelper.HandleSubFiles(type, out var resolveData)
+         || _pathState.Consume(gamePath.Path, out resolveData)
+         || _animationHookService.HandleFiles(type, gamePath, out resolveData)
+         || _metaState.HandleDecalFile(type, gamePath, out resolveData);
         if (!nonDefault || !resolveData.Valid)
-            resolveData = Penumbra.CollectionManager.Default.ToResolveData();
+            resolveData = _collectionManager.Default.ToResolveData();
 
         // Resolve using character/default collection first, otherwise forced, as usual.
         var resolved = resolveData.ModCollection.ResolvePath(gamePath);
@@ -96,111 +106,35 @@ public partial class PathResolver : IDisposable
         return pair;
     }
 
-    public void Enable()
+    public unsafe void Dispose()
     {
-        if (Enabled)
+        _loader.ResetResolvePath();
+        _loader.FileLoaded -= ImcLoadResource;
+    }
+
+    /// <summary> Use the default method of path replacement. </summary>
+    private (FullPath?, ResolveData) DefaultResolver(Utf8GamePath path)
+    {
+        var resolved = _collectionManager.Default.ResolvePath(path);
+        return (resolved, _collectionManager.Default.ToResolveData());
+    }
+
+    /// <summary> After loading an IMC file, replace its contents with the modded IMC file. </summary>
+    private unsafe void ImcLoadResource(ResourceHandle* resource, ByteString path, bool returnValue, bool custom, ByteString additionalData)
+    {
+        if (resource->FileType != ResourceType.Imc)
             return;
 
-        Enabled = true;
-        Cutscenes.Enable();
-        _drawObjects.Enable();
-        IdentifiedCache.Enable();
-        _animations.Enable();
-        _paths.Enable();
-        _meta.Enable();
-        _subFiles.Enable();
-
-        Penumbra.Log.Debug("Character Path Resolver enabled.");
-    }
-
-    public void Disable()
-    {
-        if (!Enabled)
-            return;
-
-        Enabled = false;
-        _animations.Disable();
-        _drawObjects.Disable();
-        Cutscenes.Disable();
-        IdentifiedCache.Disable();
-        _paths.Disable();
-        _meta.Disable();
-        _subFiles.Disable();
-
-        Penumbra.Log.Debug("Character Path Resolver disabled.");
-    }
-
-    public void Dispose()
-    {
-        Disable();
-        _paths.Dispose();
-        _animations.Dispose();
-        _drawObjects.Dispose();
-        Cutscenes.Dispose();
-        IdentifiedCache.Dispose();
-        _meta.Dispose();
-        _subFiles.Dispose();
-    }
-
-    public static unsafe (IntPtr, ResolveData) IdentifyDrawObject(IntPtr drawObject)
-    {
-        var parent = FindParent(drawObject, out var resolveData);
-        return ((IntPtr)parent, resolveData);
-    }
-
-    public int CutsceneActor(int idx)
-        => Cutscenes.GetParentIndex(idx);
-
-    // Use the stored information to find the GameObject and Collection linked to a DrawObject.
-    public static unsafe GameObject* FindParent(IntPtr drawObject, out ResolveData resolveData)
-    {
-        if (_drawObjects.TryGetValue(drawObject, out var data, out var gameObject))
+        var lastUnderscore = additionalData.LastIndexOf((byte)'_');
+        var name           = lastUnderscore == -1 ? additionalData.ToString() : additionalData.Substring(0, lastUnderscore).ToString();
+        if (Utf8GamePath.FromByteString(path, out var gamePath)
+         && CollectionByName(name, out var collection)
+         && collection.HasCache
+         && collection.GetImcFile(gamePath, out var file))
         {
-            resolveData = data.Item1;
-            return gameObject;
+            file.Replace(resource);
+            Penumbra.Log.Verbose(
+                $"[ResourceLoader] Loaded {gamePath} from file and replaced with IMC from collection {collection.AnonymizedName}.");
         }
-
-        if (_drawObjects.LastGameObject != null
-         && (_drawObjects.LastGameObject->DrawObject == null || _drawObjects.LastGameObject->DrawObject == (DrawObject*)drawObject))
-        {
-            resolveData = IdentifyCollection(_drawObjects.LastGameObject, true);
-            return _drawObjects.LastGameObject;
-        }
-
-        resolveData = IdentifyCollection(null, true);
-        return null;
     }
-
-    private static unsafe ResolveData GetResolveData(IntPtr drawObject)
-    {
-        var _ = FindParent(drawObject, out var resolveData);
-        return resolveData;
-    }
-
-    internal IEnumerable<KeyValuePair<ByteString, ResolveData>> PathCollections
-        => _paths.Paths;
-
-    internal IEnumerable<KeyValuePair<IntPtr, (ResolveData, int)>> DrawObjectMap
-        => _drawObjects.DrawObjects;
-
-    internal IEnumerable<KeyValuePair<int, global::Dalamud.Game.ClientState.Objects.Types.GameObject>> CutsceneActors
-        => Cutscenes.Actors;
-
-    internal IEnumerable<KeyValuePair<IntPtr, ResolveData>> ResourceCollections
-        => _subFiles;
-
-    internal int SubfileCount
-        => _subFiles.Count;
-
-    internal ResolveData CurrentMtrlData
-        => _subFiles.MtrlData;
-
-    internal ResolveData CurrentAvfxData
-        => _subFiles.AvfxData;
-
-    internal ResolveData LastGameObjectData
-        => _drawObjects.LastCreatedCollection;
-
-    internal unsafe nint LastGameObject
-        => (nint)_drawObjects.LastGameObject;
 }

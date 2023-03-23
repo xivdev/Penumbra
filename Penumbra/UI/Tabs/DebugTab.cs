@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using FFXIVClientStructs.Interop;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Widgets;
@@ -30,42 +31,54 @@ namespace Penumbra.UI.Tabs;
 
 public class DebugTab : ITab
 {
-    private readonly StartTracker            _timer;
-    private readonly PerformanceTracker      _performance;
-    private readonly Configuration           _config;
-    private readonly ModCollection.Manager   _collectionManager;
-    private readonly Mod.Manager             _modManager;
-    private readonly ValidityChecker         _validityChecker;
-    private readonly HttpApi                 _httpApi;
-    private readonly PathResolver            _pathResolver;
-    private readonly ActorService            _actorService;
-    private readonly DalamudServices         _dalamud;
-    private readonly StainService            _stains;
-    private readonly CharacterUtility        _characterUtility;
-    private readonly ResidentResourceManager _residentResources;
-    private readonly ResourceManagerService  _resourceManager;
-    private readonly PenumbraIpcProviders    _ipc;
+    private readonly StartTracker              _timer;
+    private readonly PerformanceTracker        _performance;
+    private readonly Configuration             _config;
+    private readonly ModCollection.Manager     _collectionManager;
+    private readonly Mod.Manager               _modManager;
+    private readonly ValidityChecker           _validityChecker;
+    private readonly HttpApi                   _httpApi;
+    private readonly ActorService              _actorService;
+    private readonly DalamudServices           _dalamud;
+    private readonly StainService              _stains;
+    private readonly CharacterUtility          _characterUtility;
+    private readonly ResidentResourceManager   _residentResources;
+    private readonly ResourceManagerService    _resourceManager;
+    private readonly PenumbraIpcProviders      _ipc;
+    private readonly CollectionResolver        _collectionResolver;
+    private readonly DrawObjectState           _drawObjectState;
+    private readonly PathState                 _pathState;
+    private readonly SubfileHelper             _subfileHelper;
+    private readonly IdentifiedCollectionCache _identifiedCollectionCache;
+    private readonly CutsceneService           _cutsceneService;
 
     public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, ModCollection.Manager collectionManager,
-        ValidityChecker validityChecker, Mod.Manager modManager, HttpApi httpApi, PathResolver pathResolver, ActorService actorService,
+        ValidityChecker validityChecker, Mod.Manager modManager, HttpApi httpApi, ActorService actorService,
         DalamudServices dalamud, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
-        ResourceManagerService resourceManager, PenumbraIpcProviders ipc)
+        ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
+        DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
+        CutsceneService cutsceneService)
     {
-        _timer             = timer;
-        _performance       = performance;
-        _config            = config;
-        _collectionManager = collectionManager;
-        _validityChecker   = validityChecker;
-        _modManager        = modManager;
-        _httpApi           = httpApi;
-        _pathResolver      = pathResolver;
-        _actorService      = actorService;
-        _dalamud           = dalamud;
-        _stains            = stains;
-        _characterUtility  = characterUtility;
-        _residentResources = residentResources;
-        _resourceManager   = resourceManager;
-        _ipc               = ipc;
+        _timer                     = timer;
+        _performance               = performance;
+        _config                    = config;
+        _collectionManager         = collectionManager;
+        _validityChecker           = validityChecker;
+        _modManager                = modManager;
+        _httpApi                   = httpApi;
+        _actorService              = actorService;
+        _dalamud                   = dalamud;
+        _stains                    = stains;
+        _characterUtility          = characterUtility;
+        _residentResources         = residentResources;
+        _resourceManager           = resourceManager;
+        _ipc                       = ipc;
+        _collectionResolver        = collectionResolver;
+        _drawObjectState           = drawObjectState;
+        _pathState                 = pathState;
+        _subfileHelper             = subfileHelper;
+        _identifiedCollectionCache = identifiedCollectionCache;
+        _cutsceneService           = cutsceneService;
     }
 
     public ReadOnlySpan<byte> Label
@@ -131,7 +144,6 @@ public class DebugTab : ITab
         PrintValue("Mod Manager BasePath IsRooted",    Path.IsPathRooted(_config.ModDirectory).ToString());
         PrintValue("Mod Manager BasePath Exists",      Directory.Exists(_modManager.BasePath.FullName).ToString());
         PrintValue("Mod Manager Valid",                _modManager.Valid.ToString());
-        PrintValue("Path Resolver Enabled",            _pathResolver.Enabled.ToString());
         PrintValue("Web Server Enabled",               _httpApi.Enabled.ToString());
     }
 
@@ -200,28 +212,33 @@ public class DebugTab : ITab
             return;
 
         ImGui.TextUnformatted(
-            $"Last Game Object: 0x{_pathResolver.LastGameObject:X} ({_pathResolver.LastGameObjectData.ModCollection.Name})");
+            $"Last Game Object: 0x{_collectionResolver.IdentifyLastGameObjectCollection(true).AssociatedGameObject:X} ({_collectionResolver.IdentifyLastGameObjectCollection(true).ModCollection.Name})");
         using (var drawTree = TreeNode("Draw Object to Object"))
         {
             if (drawTree)
             {
-                using var table = Table("###DrawObjectResolverTable", 5, ImGuiTableFlags.SizingFixedFit);
+                using var table = Table("###DrawObjectResolverTable", 6, ImGuiTableFlags.SizingFixedFit);
                 if (table)
-                    foreach (var (ptr, (c, idx)) in _pathResolver.DrawObjectMap)
+                    foreach (var (drawObject, (gameObjectPtr, child)) in _drawObjectState
+                                 .OrderBy(kvp => ((GameObject*)kvp.Value.Item1)->ObjectIndex)
+                                 .ThenBy(kvp => kvp.Value.Item2)
+                                 .ThenBy(kvp => kvp.Key))
                     {
+                        var gameObject = (GameObject*)gameObjectPtr;
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(ptr.ToString("X"));
+                        ImGui.TextUnformatted($"0x{drawObject:X}");
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(idx.ToString());
+                        ImGui.TextUnformatted(gameObject->ObjectIndex.ToString());
                         ImGui.TableNextColumn();
-                        var obj = (GameObject*)_dalamud.Objects.GetObjectAddress(idx);
-                        var (address, name) =
-                            obj != null ? ($"0x{(ulong)obj:X}", new ByteString(obj->Name).ToString()) : ("NULL", "NULL");
+                        ImGui.TextUnformatted(child ? "Child" : "Main");
+                        ImGui.TableNextColumn();
+                        var (address, name) = ($"0x{gameObjectPtr:X}", new ByteString(gameObject->Name).ToString());
                         ImGui.TextUnformatted(address);
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(name);
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(c.ModCollection.Name);
+                        var collection = _collectionResolver.IdentifyCollection(gameObject, true);
+                        ImGui.TextUnformatted(collection.ModCollection.Name);
                     }
             }
         }
@@ -230,16 +247,14 @@ public class DebugTab : ITab
         {
             if (pathTree)
             {
-                using var table = Table("###PathCollectionResolverTable", 3, ImGuiTableFlags.SizingFixedFit);
+                using var table = Table("###PathCollectionResolverTable", 2, ImGuiTableFlags.SizingFixedFit);
                 if (table)
-                    foreach (var (path, collection) in _pathResolver.PathCollections)
+                    foreach (var data in _pathState.CurrentData)
                     {
                         ImGui.TableNextColumn();
-                        ImGuiNative.igTextUnformatted(path.Path, path.Path + path.Length);
+                        ImGui.TextUnformatted($"{data.AssociatedGameObject:X}");
                         ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(collection.ModCollection.Name);
-                        ImGui.TableNextColumn();
-                        ImGui.TextUnformatted(collection.AssociatedGameObject.ToString("X"));
+                        ImGui.TextUnformatted(data.ModCollection.Name);
                     }
             }
         }
@@ -248,26 +263,30 @@ public class DebugTab : ITab
         {
             if (resourceTree)
             {
-                using var table = Table("###ResourceCollectionResolverTable", 3, ImGuiTableFlags.SizingFixedFit);
+                using var table = Table("###ResourceCollectionResolverTable", 4, ImGuiTableFlags.SizingFixedFit);
                 if (table)
                 {
                     ImGuiUtil.DrawTableColumn("Current Mtrl Data");
-                    ImGuiUtil.DrawTableColumn(_pathResolver.CurrentMtrlData.ModCollection.Name);
-                    ImGuiUtil.DrawTableColumn($"0x{_pathResolver.CurrentMtrlData.AssociatedGameObject:X}");
-
-                    ImGuiUtil.DrawTableColumn("Current Avfx Data");
-                    ImGuiUtil.DrawTableColumn(_pathResolver.CurrentAvfxData.ModCollection.Name);
-                    ImGuiUtil.DrawTableColumn($"0x{_pathResolver.CurrentAvfxData.AssociatedGameObject:X}");
-
-                    ImGuiUtil.DrawTableColumn("Current Resources");
-                    ImGuiUtil.DrawTableColumn(_pathResolver.SubfileCount.ToString());
+                    ImGuiUtil.DrawTableColumn(_subfileHelper.MtrlData.ModCollection.Name);
+                    ImGuiUtil.DrawTableColumn($"0x{_subfileHelper.MtrlData.AssociatedGameObject:X}");
                     ImGui.TableNextColumn();
 
-                    foreach (var (resource, resolve) in _pathResolver.ResourceCollections)
+                    ImGuiUtil.DrawTableColumn("Current Avfx Data");
+                    ImGuiUtil.DrawTableColumn(_subfileHelper.AvfxData.ModCollection.Name);
+                    ImGuiUtil.DrawTableColumn($"0x{_subfileHelper.AvfxData.AssociatedGameObject:X}");
+                    ImGui.TableNextColumn();
+
+                    ImGuiUtil.DrawTableColumn("Current Resources");
+                    ImGuiUtil.DrawTableColumn(_subfileHelper.Count.ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TableNextColumn();
+
+                    foreach (var (resource, resolve) in _subfileHelper)
                     {
                         ImGuiUtil.DrawTableColumn($"0x{resource:X}");
                         ImGuiUtil.DrawTableColumn(resolve.ModCollection.Name);
                         ImGuiUtil.DrawTableColumn($"0x{resolve.AssociatedGameObject:X}");
+                        ImGuiUtil.DrawTableColumn($"{((ResourceHandle*)resource)->FileName()}");
                     }
                 }
             }
@@ -277,10 +296,12 @@ public class DebugTab : ITab
         {
             if (identifiedTree)
             {
-                using var table = Table("##PathCollectionsIdentifiedTable", 3, ImGuiTableFlags.SizingFixedFit);
+                using var table = Table("##PathCollectionsIdentifiedTable", 4, ImGuiTableFlags.SizingFixedFit);
                 if (table)
-                    foreach (var (address, identifier, collection) in PathResolver.IdentifiedCache)
+                    foreach (var (address, identifier, collection) in _identifiedCollectionCache
+                                 .OrderBy(kvp => ((GameObject*)kvp.Address)->ObjectIndex))
                     {
+                        ImGuiUtil.DrawTableColumn($"{((GameObject*)address)->ObjectIndex}");
                         ImGuiUtil.DrawTableColumn($"0x{address:X}");
                         ImGuiUtil.DrawTableColumn(identifier.ToString());
                         ImGuiUtil.DrawTableColumn(collection.Name);
@@ -294,7 +315,7 @@ public class DebugTab : ITab
             {
                 using var table = Table("###PCutsceneResolverTable", 2, ImGuiTableFlags.SizingFixedFit);
                 if (table)
-                    foreach (var (idx, actor) in _pathResolver.CutsceneActors)
+                    foreach (var (idx, actor) in _cutsceneService.Actors)
                     {
                         ImGuiUtil.DrawTableColumn($"Cutscene Actor {idx}");
                         ImGuiUtil.DrawTableColumn(actor.Name.ToString());

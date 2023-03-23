@@ -106,7 +106,11 @@ public class Penumbra : IDalamudPlugin
             RedrawService          = _tmp.Services.GetRequiredService<RedrawService>();
             ResourceService        = _tmp.Services.GetRequiredService<ResourceService>();
             ResourceLoader         = _tmp.Services.GetRequiredService<ResourceLoader>();
-            PathResolver           = _tmp.Services.GetRequiredService<PathResolver>();
+            using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
+            {
+                PathResolver = _tmp.Services.GetRequiredService<PathResolver>();
+            }
+
             SetupInterface();
             SetupApi();
 
@@ -175,7 +179,6 @@ public class Penumbra : IDalamudPlugin
         Config.EnableMods = enabled;
         if (enabled)
         {
-            PathResolver.Enable();
             if (CharacterUtility.Ready)
             {
                 CollectionManager.Default.SetFiles();
@@ -185,7 +188,6 @@ public class Penumbra : IDalamudPlugin
         }
         else
         {
-            PathResolver.Disable();
             if (CharacterUtility.Ready)
             {
                 CharacterUtility.ResetAll();

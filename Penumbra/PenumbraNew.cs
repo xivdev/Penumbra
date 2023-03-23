@@ -93,11 +93,20 @@ public class PenumbraNew
             .AddSingleton<Mod.Manager>()
             .AddSingleton<ModFileSystem>();
 
-        // Add main services
+        // Add Resource services
         services.AddSingleton<ResourceLoader>()
-            .AddSingleton<PathResolver>()
-            .AddSingleton<CharacterResolver>()
             .AddSingleton<ResourceWatcher>();
+
+        // Add Path Resolver
+        services.AddSingleton<AnimationHookService>()
+            .AddSingleton<CollectionResolver>()
+            .AddSingleton<CutsceneService>()
+            .AddSingleton<DrawObjectState>()
+            .AddSingleton<MetaState>()
+            .AddSingleton<PathState>()
+            .AddSingleton<SubfileHelper>()
+            .AddSingleton<IdentifiedCollectionCache>()
+            .AddSingleton<PathResolver>();
 
         // Add Interface
         services.AddSingleton<FileDialogService>()

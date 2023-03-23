@@ -13,41 +13,21 @@ namespace Penumbra.Interop.Resolver;
 
 public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint Address, ActorIdentifier Identifier, ModCollection Collection)>
 {
-    private readonly CommunicatorService                                  _communicator;
-    private readonly GameEventManager                                     _events;
-    private readonly ClientState                                          _clientState;
-    private readonly Dictionary<IntPtr, (ActorIdentifier, ModCollection)> _cache = new(317);
-    private          bool                                                 _dirty;
-    private          bool                                                 _enabled;
+    private readonly CommunicatorService                                _communicator;
+    private readonly GameEventManager                                   _events;
+    private readonly ClientState                                        _clientState;
+    private readonly Dictionary<nint, (ActorIdentifier, ModCollection)> _cache = new(317);
+    private          bool                                               _dirty;
 
     public IdentifiedCollectionCache(ClientState clientState, CommunicatorService communicator, GameEventManager events)
     {
         _clientState  = clientState;
         _communicator = communicator;
         _events       = events;
-        Enable();
-    }
-
-    public void Enable()
-    {
-        if (_enabled)
-            return;
 
         _communicator.CollectionChange.Event += CollectionChangeClear;
         _clientState.TerritoryChanged        += TerritoryClear;
         _events.CharacterDestructor          += OnCharacterDestruct;
-        _enabled                             =  true;
-    }
-
-    public void Disable()
-    {
-        if (!_enabled)
-            return;
-
-        _communicator.CollectionChange.Event -= CollectionChangeClear;
-        _clientState.TerritoryChanged        -= TerritoryClear;
-        _events.CharacterDestructor          -= OnCharacterDestruct;
-        _enabled                             =  false;
     }
 
     public ResolveData Set(ModCollection collection, ActorIdentifier identifier, GameObject* data)
@@ -81,8 +61,9 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
 
     public void Dispose()
     {
-        Disable();
-        GC.SuppressFinalize(this);
+        _communicator.CollectionChange.Event -= CollectionChangeClear;
+        _clientState.TerritoryChanged        -= TerritoryClear;
+        _events.CharacterDestructor          -= OnCharacterDestruct;
     }
 
     public IEnumerator<(nint Address, ActorIdentifier Identifier, ModCollection Collection)> GetEnumerator()
@@ -95,9 +76,6 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
             yield return (address, identifier, collection);
         }
     }
-
-    ~IdentifiedCollectionCache()
-        => Dispose();
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();

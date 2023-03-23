@@ -29,10 +29,28 @@ public class CommunicatorService : IDisposable
     /// </list> </summary>
     public readonly EventWrapper<ModDataChangeType, Mod, string?> ModMetaChange = new(nameof(ModMetaChange));
 
+    /// <summary> <list type="number">
+    ///     <item>Parameter is the game object for which a draw object is created. </item>
+    ///     <item>Parameter is the name of the applied collection. </item>
+    ///     <item>Parameter is a pointer to the model id (an uint). </item>
+    ///     <item>Parameter is a pointer to the customize array. </item>
+    ///     <item>Parameter is a pointer to the equip data array. </item>
+    /// </list> </summary>
+    public readonly EventWrapper<nint, string, nint, nint, nint> CreatingCharacterBase = new(nameof(CreatingCharacterBase));
+
+    /// <summary> <list type="number">
+    ///     <item>Parameter is the game object for which a draw object is created. </item>
+    ///     <item>Parameter is the name of the applied collection. </item>
+    ///     <item>Parameter is the created draw object. </item>
+    /// </list> </summary>
+    public readonly EventWrapper<nint, string, nint> CreatedCharacterBase = new(nameof(CreatedCharacterBase));
+
     public void Dispose()
     {
         CollectionChange.Dispose();
         TemporaryGlobalModChange.Dispose();
         ModMetaChange.Dispose();
+        CreatingCharacterBase.Dispose();
+        CreatedCharacterBase.Dispose();
     }
 }
