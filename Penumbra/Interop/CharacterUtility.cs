@@ -4,151 +4,146 @@ using System.Linq;
 using Dalamud.Game;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
+using Penumbra.Interop.Structs;
 
 namespace Penumbra.Interop;
 
 public unsafe partial class CharacterUtility : IDisposable
 {
-    public record struct InternalIndex( int Value );
+    public record struct InternalIndex(int Value);
 
-    // A static pointer to the CharacterUtility address.
-    [Signature( Sigs.CharacterUtility, ScanType = ScanType.StaticAddress )]
-    private readonly Structs.CharacterUtility** _characterUtilityAddress = null;
+    /// <summary> A static pointer to the CharacterUtility address. </summary>
+    [Signature(Sigs.CharacterUtility, ScanType = ScanType.StaticAddress)]
+    private readonly CharacterUtilityData** _characterUtilityAddress = null;
 
-    // Only required for migration anymore.
-    public delegate void LoadResources( Structs.CharacterUtility* address );
+    /// <summary> Only required for migration anymore. </summary>
+    public delegate void LoadResources(CharacterUtilityData* address);
 
-    [Signature( Sigs.LoadCharacterResources )]
+    [Signature(Sigs.LoadCharacterResources)]
     public readonly LoadResources LoadCharacterResourcesFunc = null!;
 
     public void LoadCharacterResources()
-        => LoadCharacterResourcesFunc.Invoke( Address );
+        => LoadCharacterResourcesFunc.Invoke(Address);
 
-    public Structs.CharacterUtility* Address
+    public CharacterUtilityData* Address
         => *_characterUtilityAddress;
 
-    public bool Ready { get; private set; }
+    public bool         Ready { get; private set; }
     public event Action LoadingFinished;
-    private IntPtr _defaultTransparentResource;
-    private IntPtr _defaultDecalResource;
+    public IntPtr       DefaultTransparentResource { get; private set; }
+    public IntPtr       DefaultDecalResource       { get; private set; }
 
-    // The relevant indices depend on which meta manipulations we allow for.
-    // The defines are set in the project configuration.
-    public static readonly Structs.CharacterUtility.Index[]
-        RelevantIndices = Enum.GetValues< Structs.CharacterUtility.Index >();
+    /// <summary>
+    /// The relevant indices depend on which meta manipulations we allow for.
+    /// The defines are set in the project configuration.
+    /// </summary>
+    public static readonly MetaIndex[]
+        RelevantIndices = Enum.GetValues<MetaIndex>();
 
     public static readonly InternalIndex[] ReverseIndices
-        = Enumerable.Range( 0, Structs.CharacterUtility.TotalNumResources )
-           .Select( i => new InternalIndex( Array.IndexOf( RelevantIndices, ( Structs.CharacterUtility.Index )i ) ) )
-           .ToArray();
+        = Enumerable.Range(0, CharacterUtilityData.TotalNumResources)
+            .Select(i => new InternalIndex(Array.IndexOf(RelevantIndices, (MetaIndex)i)))
+            .ToArray();
 
-    private readonly List[] _lists = Enumerable.Range( 0, RelevantIndices.Length )
-       .Select( idx => new List( new InternalIndex( idx ) ) )
-       .ToArray();
+    private readonly List[] _lists = Enumerable.Range(0, RelevantIndices.Length)
+        .Select(idx => new List(new InternalIndex(idx)))
+        .ToArray();
 
-    public IReadOnlyList< List > Lists
+    public IReadOnlyList<List> Lists
         => _lists;
 
-    public (IntPtr Address, int Size) DefaultResource( InternalIndex idx )
-        => _lists[ idx.Value ].DefaultResource;
+    public (IntPtr Address, int Size) DefaultResource(InternalIndex idx)
+        => _lists[idx.Value].DefaultResource;
 
     private readonly Framework _framework;
 
     public CharacterUtility(Framework framework)
     {
-        SignatureHelper.Initialise( this );
+        SignatureHelper.Initialise(this);
         _framework      =  framework;
-        LoadingFinished += () => Penumbra.Log.Debug( "Loading of CharacterUtility finished." );
-        LoadDefaultResources( null! );
-        if( !Ready )
-        {
+        LoadingFinished += () => Penumbra.Log.Debug("Loading of CharacterUtility finished.");
+        LoadDefaultResources(null!);
+        if (!Ready)
             _framework.Update += LoadDefaultResources;
-        }
     }
 
-    // We store the default data of the resources so we can always restore them.
-    private void LoadDefaultResources( object _ )
+    /// <summary> We store the default data of the resources so we can always restore them. </summary>
+    private void LoadDefaultResources(object _)
     {
-        if( Address == null )
-        {
+        if (Address == null)
             return;
-        }
 
         var anyMissing = false;
-        for( var i = 0; i < RelevantIndices.Length; ++i )
+        for (var i = 0; i < RelevantIndices.Length; ++i)
         {
-            var list = _lists[ i ];
-            if( !list.Ready )
-            {
-                var resource = Address->Resource( RelevantIndices[ i ] );
-                var (data, length) = resource->GetData();
-                list.SetDefaultResource( data, length );
-                anyMissing |= !_lists[ i ].Ready;
-            }
+            var list = _lists[i];
+            if (list.Ready)
+                continue;
+
+            var resource = Address->Resource(RelevantIndices[i]);
+            var (data, length) = resource->GetData();
+            list.SetDefaultResource(data, length);
+            anyMissing |= !_lists[i].Ready;
         }
 
-        if( _defaultTransparentResource == IntPtr.Zero )
+        if (DefaultTransparentResource == IntPtr.Zero)
         {
-            _defaultTransparentResource =  ( IntPtr )Address->TransparentTexResource;
-            anyMissing                  |= _defaultTransparentResource == IntPtr.Zero;
+            DefaultTransparentResource =  (IntPtr)Address->TransparentTexResource;
+            anyMissing                 |= DefaultTransparentResource == IntPtr.Zero;
         }
 
-        if( _defaultDecalResource == IntPtr.Zero )
+        if (DefaultDecalResource == IntPtr.Zero)
         {
-            _defaultDecalResource =  ( IntPtr )Address->DecalTexResource;
-            anyMissing            |= _defaultDecalResource == IntPtr.Zero;
+            DefaultDecalResource =  (IntPtr)Address->DecalTexResource;
+            anyMissing           |= DefaultDecalResource == IntPtr.Zero;
         }
 
-        if( !anyMissing )
-        {
-            Ready                    =  true;
-            _framework.Update -= LoadDefaultResources;
-            LoadingFinished.Invoke();
-        }
+        if (anyMissing)
+            return;
+
+        Ready             =  true;
+        _framework.Update -= LoadDefaultResources;
+        LoadingFinished.Invoke();
     }
 
-    public void SetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
+    public void SetResource(MetaIndex resourceIdx, IntPtr data, int length)
     {
-        var idx  = ReverseIndices[ ( int )resourceIdx ];
-        var list = _lists[ idx.Value ];
-        list.SetResource( data, length );
+        var idx  = ReverseIndices[(int)resourceIdx];
+        var list = _lists[idx.Value];
+        list.SetResource(data, length);
     }
 
-    public void ResetResource( Structs.CharacterUtility.Index resourceIdx )
+    public void ResetResource(MetaIndex resourceIdx)
     {
-        var idx  = ReverseIndices[ ( int )resourceIdx ];
-        var list = _lists[ idx.Value ];
+        var idx  = ReverseIndices[(int)resourceIdx];
+        var list = _lists[idx.Value];
         list.ResetResource();
     }
 
-    public List.MetaReverter TemporarilySetResource( Structs.CharacterUtility.Index resourceIdx, IntPtr data, int length )
+    public List.MetaReverter TemporarilySetResource(MetaIndex resourceIdx, IntPtr data, int length)
     {
-        var idx  = ReverseIndices[ ( int )resourceIdx ];
-        var list = _lists[ idx.Value ];
-        return list.TemporarilySetResource( data, length );
+        var idx  = ReverseIndices[(int)resourceIdx];
+        var list = _lists[idx.Value];
+        return list.TemporarilySetResource(data, length);
     }
 
-    public List.MetaReverter TemporarilyResetResource( Structs.CharacterUtility.Index resourceIdx )
+    public List.MetaReverter TemporarilyResetResource(MetaIndex resourceIdx)
     {
-        var idx  = ReverseIndices[ ( int )resourceIdx ];
-        var list = _lists[ idx.Value ];
+        var idx  = ReverseIndices[(int)resourceIdx];
+        var list = _lists[idx.Value];
         return list.TemporarilyResetResource();
     }
 
-    // Return all relevant resources to the default resource.
+    /// <summary> Return all relevant resources to the default resource. </summary>
     public void ResetAll()
     {
-        foreach( var list in _lists )
-        {
+        foreach (var list in _lists)
             list.Dispose();
-        }
 
-        Address->TransparentTexResource = ( Structs.TextureResourceHandle* )_defaultTransparentResource;
-        Address->DecalTexResource       = ( Structs.TextureResourceHandle* )_defaultDecalResource;
+        Address->TransparentTexResource = (TextureResourceHandle*)DefaultTransparentResource;
+        Address->DecalTexResource       = (TextureResourceHandle*)DefaultDecalResource;
     }
 
     public void Dispose()
-    {
-        ResetAll();
-    }
+        => ResetAll();
 }
