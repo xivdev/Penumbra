@@ -4,12 +4,14 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Game.ClientState.Objects.SubKinds;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using OtterGui;
 using Penumbra.Collections;
+using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.Resolver;
@@ -17,6 +19,7 @@ using Penumbra.Interop.Structs;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Objects = Dalamud.Game.ClientState.Objects.Types;
+using GameObject = FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject;
 
 namespace Penumbra.Interop;
 
@@ -24,23 +27,24 @@ public class ResourceTree
 {
     public readonly string     Name;
     public readonly nint       SourceAddress;
+    public readonly bool       PlayerRelated;
     public readonly string     CollectionName;
     public readonly List<Node> Nodes;
 
-    public ResourceTree( string name, nint sourceAddress, string collectionName )
+    public ResourceTree( string name, nint sourceAddress, bool playerRelated, string collectionName )
     {
         Name           = name;
         SourceAddress  = sourceAddress;
+        PlayerRelated  = playerRelated;
         CollectionName = collectionName;
         Nodes          = new();
     }
 
     public static ResourceTree[] FromObjectTable( bool withNames = true )
     {
-        var cache = new FileCache();
+        var cache = new TreeBuildCache();
 
-        return Dalamud.Objects
-            .OfType<Objects.Character>()
+        return cache.Characters
             .Select( chara => FromCharacter( chara, cache, withNames ) )
             .OfType<ResourceTree>()
             .ToArray();
@@ -48,7 +52,7 @@ public class ResourceTree
 
     public static IEnumerable<(Objects.Character Character, ResourceTree ResourceTree)> FromCharacters( IEnumerable<Objects.Character> characters, bool withNames = true )
     {
-        var cache = new FileCache();
+        var cache = new TreeBuildCache();
         foreach( var chara in characters )
         {
             var tree = FromCharacter( chara, cache, withNames );
@@ -61,11 +65,16 @@ public class ResourceTree
 
     public static unsafe ResourceTree? FromCharacter( Objects.Character chara, bool withNames = true )
     {
-        return FromCharacter( chara, new FileCache(), withNames );
+        return FromCharacter( chara, new TreeBuildCache(), withNames );
     }
 
-    private static unsafe ResourceTree? FromCharacter( Objects.Character chara, FileCache cache, bool withNames = true )
+    private static unsafe ResourceTree? FromCharacter( Objects.Character chara, TreeBuildCache cache, bool withNames = true )
     {
+        if( !chara.IsValid() )
+        {
+            return null;
+        }
+
         var charaStruct = ( Character* )chara.Address;
         var gameObjStruct = &charaStruct->GameObject;
         var model = ( CharacterBase* )gameObjStruct->GetDrawObject();
@@ -84,7 +93,8 @@ public class ResourceTree
         }
         var collection = collectionResolveData.ModCollection;
 
-        var tree = new ResourceTree( chara.Name.ToString(), new nint( charaStruct ), collection.Name );
+        var name = GetCharacterName( chara, cache );
+        var tree = new ResourceTree( name.Name, new nint( charaStruct ), name.PlayerRelated, collection.Name );
 
         var globalContext = new GlobalResolveContext(
             FileCache: cache,
@@ -123,31 +133,66 @@ public class ResourceTree
         return tree;
     }
 
+    private static unsafe (string Name, bool PlayerRelated) GetCharacterName( Objects.Character chara, TreeBuildCache cache )
+    {
+        var identifier = Penumbra.Actors.FromObject( ( GameObject* )chara.Address, out var owner, true, false, false );
+        var name = chara.Name.ToString().Trim();
+        var playerRelated = true;
+
+        if( chara.ObjectKind != ObjectKind.Player )
+        {
+            name = $"{name} ({chara.ObjectKind.ToName()})".Trim();
+            playerRelated = false;
+        }
+
+        if( identifier.Type == IdentifierType.Owned && cache.CharactersById.TryGetValue( owner->ObjectID, out var ownerChara ) )
+        {
+            var ownerName = GetCharacterName( ownerChara, cache );
+            name = $"[{ownerName.Name}] {name}".Trim();
+            playerRelated |= ownerName.PlayerRelated;
+        }
+
+        return (name, playerRelated);
+    }
+
     private static unsafe void AddHumanResources( ResourceTree tree, GlobalResolveContext globalContext, HumanExt* human )
     {
-        var prependIndex = 0;
-
-        var firstWeapon = ( WeaponExt* )human->Human.CharacterBase.DrawObject.Object.ChildObject;
-        if( firstWeapon != null )
+        var firstSubObject = ( CharacterBase* )human->Human.CharacterBase.DrawObject.Object.ChildObject;
+        if( firstSubObject != null )
         {
-            var weapon = firstWeapon;
-            var weaponIndex = 0;
+            var subObjectNodes = new List<Node>();
+            var subObject = firstSubObject;
+            var subObjectIndex = 0;
             do
             {
-                var weaponContext = globalContext.CreateContext(
-                    Slot: EquipSlot.MainHand,
-                    Equipment: new EquipmentRecord( weapon->Weapon.ModelSetId, ( byte )weapon->Weapon.Variant, ( byte )weapon->Weapon.ModelUnknown )
+                var weapon = ( subObject->GetModelType() == CharacterBase.ModelType.Weapon ) ? ( Weapon* )subObject : null;
+                var subObjectNamePrefix = ( weapon != null ) ? "Weapon" : "Fashion Acc.";
+                var subObjectContext = globalContext.CreateContext(
+                    Slot: ( weapon != null ) ? EquipSlot.MainHand : EquipSlot.Unknown,
+                    Equipment: ( weapon != null ) ? new EquipmentRecord( weapon->ModelSetId, ( byte )weapon->Variant, ( byte )weapon->ModelUnknown ) : default
                 );
 
-                var weaponMdlNode = weaponContext.CreateNodeFromRenderModel( *weapon->WeaponRenderModel );
-                if( weaponMdlNode != null )
+                for( var i = 0; i < subObject->SlotCount; ++i )
                 {
-                    tree.Nodes.Insert( prependIndex++, globalContext.WithNames ? weaponMdlNode.WithName( weaponMdlNode.Name ?? $"Weapon Model #{weaponIndex}" ) : weaponMdlNode );
+                    var imc = ( ResourceHandle* )subObject->IMCArray[i];
+                    var imcNode = subObjectContext.CreateNodeFromImc( imc );
+                    if( imcNode != null )
+                    {
+                        subObjectNodes.Add( globalContext.WithNames ? imcNode.WithName( imcNode.Name ?? $"{subObjectNamePrefix} #{subObjectIndex}, IMC #{i}" ) : imcNode );
+                    }
+
+                    var mdl = ( RenderModel* )subObject->ModelArray[i];
+                    var mdlNode = subObjectContext.CreateNodeFromRenderModel( mdl );
+                    if( mdlNode != null )
+                    {
+                        subObjectNodes.Add( globalContext.WithNames ? mdlNode.WithName( mdlNode.Name ?? $"{subObjectNamePrefix} #{subObjectIndex}, Model #{i}" ) : mdlNode );
+                    }
                 }
 
-                weapon = ( WeaponExt* )weapon->Weapon.CharacterBase.DrawObject.Object.NextSiblingObject;
-                ++weaponIndex;
-            } while( weapon != null && weapon != firstWeapon );
+                subObject = ( CharacterBase* )subObject->DrawObject.Object.NextSiblingObject;
+                ++subObjectIndex;
+            } while( subObject != null && subObject != firstSubObject );
+            tree.Nodes.InsertRange( 0, subObjectNodes );
         }
 
         var context = globalContext.CreateContext(
@@ -222,10 +267,30 @@ public class ResourceTree
     [StructLayout( LayoutKind.Sequential, Pack = 1, Size = 4 )]
     private readonly record struct EquipmentRecord( ushort SetId, byte Variant, byte Dye );
 
-    private class FileCache
+    private class TreeBuildCache
     {
-        private readonly Dictionary<FullPath, MtrlFile?> Materials      = new();
-        private readonly Dictionary<FullPath, ShpkFile?> ShaderPackages = new();
+        private readonly Dictionary<FullPath, MtrlFile?>     Materials      = new();
+        private readonly Dictionary<FullPath, ShpkFile?>     ShaderPackages = new();
+        public  readonly List<Objects.Character>             Characters;
+        public  readonly Dictionary<uint, Objects.Character> CharactersById;
+
+        public TreeBuildCache()
+        {
+            Characters = new();
+            CharactersById = new();
+            foreach( var chara in Dalamud.Objects.OfType<Objects.Character>() )
+            {
+                if( chara.IsValid() )
+                {
+                    Characters.Add( chara );
+                    if( chara.ObjectId != Objects.GameObject.InvalidGameObjectId && !CharactersById.TryAdd( chara.ObjectId, chara ) )
+                    {
+                        var existingChara = CharactersById[chara.ObjectId];
+                        Penumbra.Log.Warning( $"Duplicate character ID {chara.ObjectId:X8} (old: {existingChara.Name} {existingChara.ObjectKind}, new: {chara.Name} {chara.ObjectKind})" );
+                    }
+                }
+            }
+        }
 
         public MtrlFile? ReadMaterial( FullPath path )
         {
@@ -274,13 +339,13 @@ public class ResourceTree
         }
     }
 
-    private record class GlobalResolveContext( FileCache FileCache, ModCollection Collection, int Skeleton, bool WithNames )
+    private record class GlobalResolveContext( TreeBuildCache FileCache, ModCollection Collection, int Skeleton, bool WithNames )
     {
         public ResolveContext CreateContext( EquipSlot Slot, EquipmentRecord Equipment )
             => new( FileCache, Collection, Skeleton, WithNames, Slot, Equipment );
     }
 
-    private record class ResolveContext( FileCache FileCache, ModCollection Collection, int Skeleton, bool WithNames, EquipSlot Slot, EquipmentRecord Equipment )
+    private record class ResolveContext( TreeBuildCache FileCache, ModCollection Collection, int Skeleton, bool WithNames, EquipSlot Slot, EquipmentRecord Equipment )
     {
         private unsafe Node? CreateNodeFromGamePath( ResourceType type, nint sourceAddress, byte* rawGamePath, bool @internal, bool addDx11Prefix = false, bool isShader = false )
         {

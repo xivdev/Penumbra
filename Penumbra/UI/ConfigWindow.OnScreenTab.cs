@@ -45,11 +45,17 @@ public partial class ConfigWindow
                 _trees ??= Array.Empty<ResourceTree>();
             }
 
+            var textColorNonPlayer = ImGui.GetColorU32( ImGuiCol.Text );
+            var textColorPlayer    = ( textColorNonPlayer & 0xFF000000u ) | ( ( textColorNonPlayer & 0x00FEFEFE ) >> 1 ) | 0x8000u; // Half green
+
             foreach( var (tree, index) in _trees.WithIndex() )
             {
-                if( !ImGui.CollapsingHeader( $"{tree.Name}##{index}", ( index == 0 ) ? ImGuiTreeNodeFlags.DefaultOpen : 0 ) )
+                using( var c = ImRaii.PushColor( ImGuiCol.Text, tree.PlayerRelated ? textColorPlayer : textColorNonPlayer ) )
                 {
-                    continue;
+                    if( !ImGui.CollapsingHeader( $"{tree.Name}##{index}", ( index == 0 ) ? ImGuiTreeNodeFlags.DefaultOpen : 0 ) )
+                    {
+                        continue;
+                    }
                 }
                 using var id = ImRaii.PushId( index );
 
