@@ -11,6 +11,7 @@ using Penumbra.GameData.Data;
 using Penumbra.Interop;
 using Penumbra.Interop.Loader;
 using Penumbra.Interop.Resolver;
+using Penumbra.Interop.ResourceTree;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
@@ -95,7 +96,8 @@ public class PenumbraNew
 
         // Add Resource services
         services.AddSingleton<ResourceLoader>()
-            .AddSingleton<ResourceWatcher>();
+            .AddSingleton<ResourceWatcher>()
+            .AddSingleton<ResourceTreeFactory>();
 
         // Add Path Resolver
         services.AddSingleton<AnimationHookService>()
