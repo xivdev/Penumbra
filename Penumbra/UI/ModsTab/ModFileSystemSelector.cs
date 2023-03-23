@@ -78,7 +78,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         _communicator.CollectionChange.Event          += OnCollectionChange;
         _collectionManager.Current.ModSettingChanged  += OnSettingChange;
         _collectionManager.Current.InheritanceChanged += OnInheritanceChange;
-        _modManager.ModDataChanged                    += OnModDataChange;
+        _communicator.ModDataChanged.Event            += OnModDataChange;
         _modManager.ModDiscoveryStarted               += StoreCurrentSelection;
         _modManager.ModDiscoveryFinished              += RestoreLastSelection;
         OnCollectionChange(CollectionType.Current, null, _collectionManager.Current, "");
@@ -89,7 +89,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         base.Dispose();
         _modManager.ModDiscoveryStarted               -= StoreCurrentSelection;
         _modManager.ModDiscoveryFinished              -= RestoreLastSelection;
-        _modManager.ModDataChanged                    -= OnModDataChange;
+        _communicator.ModDataChanged.Event            -= OnModDataChange;
         _collectionManager.Current.ModSettingChanged  -= OnSettingChange;
         _collectionManager.Current.InheritanceChanged -= OnInheritanceChange;
         _communicator.CollectionChange.Event          -= OnCollectionChange;
@@ -127,7 +127,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
             try
             {
                 var newDir = Mod.Creator.CreateModFolder(Penumbra.ModManager.BasePath, _newModName);
-                Mod.Creator.CreateMeta(newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty);
+                _modManager.DataEditor.CreateMeta(newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty);
                 Mod.Creator.CreateDefaultFiles(newDir);
                 Penumbra.ModManager.AddMod(newDir);
                 _newModName = string.Empty;
@@ -187,29 +187,29 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     private void ToggleLeafFavorite(FileSystem<Mod>.Leaf mod)
     {
         if (ImGui.MenuItem(mod.Value.Favorite ? "Remove Favorite" : "Mark as Favorite"))
-            _modManager.ChangeModFavorite(mod.Value.Index, !mod.Value.Favorite);
+            _modManager.DataEditor.ChangeModFavorite(mod.Value, !mod.Value.Favorite);
     }
 
     private void SetDefaultImportFolder(ModFileSystem.Folder folder)
     {
-        if (ImGui.MenuItem("Set As Default Import Folder"))
-        {
-            var newName = folder.FullName();
-            if (newName != _config.DefaultImportFolder)
-            {
-                _config.DefaultImportFolder = newName;
-                _config.Save();
-            }
-        }
+        if (!ImGui.MenuItem("Set As Default Import Folder"))
+            return;
+
+        var newName = folder.FullName();
+        if (newName == _config.DefaultImportFolder)
+            return;
+
+        _config.DefaultImportFolder = newName;
+        _config.Save();
     }
 
     private void ClearDefaultImportFolder()
     {
-        if (ImGui.MenuItem("Clear Default Import Folder") && _config.DefaultImportFolder.Length > 0)
-        {
-            _config.DefaultImportFolder = string.Empty;
-            _config.Save();
-        }
+        if (!ImGui.MenuItem("Clear Default Import Folder") || _config.DefaultImportFolder.Length <= 0)
+            return;
+
+        _config.DefaultImportFolder = string.Empty;
+        _config.Save();
     }
 
     private string _newModName = string.Empty;
@@ -241,7 +241,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
                     return;
 
                 _import = new TexToolsImporter(_modManager.BasePath, f.Count, f.Select(file => new FileInfo(file)),
-                    AddNewMod, _config, _modEditor);
+                    AddNewMod, _config, _modEditor, _modManager);
                 ImGui.OpenPopup("Import Status");
             }, 0, modPath, _config.AlwaysOpenDefaultImport);
     }

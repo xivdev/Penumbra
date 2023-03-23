@@ -17,7 +17,7 @@ namespace Penumbra.Collections;
 
 public partial class ModCollection
 {
-    public sealed partial class Manager : ISaveable
+    public sealed partial class Manager : ISavable
     {
         public const int Version = 1;
 

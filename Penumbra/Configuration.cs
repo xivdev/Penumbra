@@ -14,18 +14,16 @@ using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
+using Penumbra.Util;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;
 
 [Serializable]
-public class Configuration : IPluginConfiguration
+public class Configuration : IPluginConfiguration, ISavable
 {
     [JsonIgnore]
-    private readonly string _fileName;
-
-    [JsonIgnore]
-    private readonly FrameworkManager _framework;
+    private readonly SaveService _saveService;
 
     public int Version { get; set; } = Constants.CurrentVersion;
 
@@ -101,14 +99,13 @@ public class Configuration : IPluginConfiguration
     /// Load the current configuration.
     /// Includes adding new colors and migrating from old versions.
     /// </summary>
-    public Configuration(FilenameService fileNames, ConfigMigrationService migrator, FrameworkManager framework)
+    public Configuration(FilenameService fileNames, ConfigMigrationService migrator, SaveService saveService)
     {
-        _fileName  = fileNames.ConfigFile;
-        _framework = framework;
-        Load(migrator);
+        _saveService = saveService;
+        Load(fileNames, migrator);
     }
 
-    public void Load(ConfigMigrationService migrator)
+    public void Load(FilenameService fileNames, ConfigMigrationService migrator)
     {
         static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
         {
@@ -117,9 +114,9 @@ public class Configuration : IPluginConfiguration
             errorArgs.ErrorContext.Handled = true;
         }
 
-        if (File.Exists(_fileName))
+        if (File.Exists(fileNames.ConfigFile))
         {
-            var text = File.ReadAllText(_fileName);
+            var text = File.ReadAllText(fileNames.ConfigFile);
             JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
             {
                 Error = HandleDeserializationError,
@@ -130,21 +127,8 @@ public class Configuration : IPluginConfiguration
     }
 
     /// <summary> Save the current configuration. </summary>
-    private void SaveConfiguration()
-    {
-        try
-        {
-            var text = JsonConvert.SerializeObject(this, Formatting.Indented);
-            File.WriteAllText(_fileName, text);
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Could not save plugin configuration:\n{e}");
-        }
-    }
-
     public void Save()
-        => _framework.RegisterDelayed(nameof(SaveConfiguration), SaveConfiguration);
+        => _saveService.QueueSave(this);
 
     /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants
@@ -191,5 +175,15 @@ public class Configuration : IPluginConfiguration
 
             return mode;
         }
+    }
+
+    public string ToFilename(FilenameService fileNames)
+        => fileNames.ConfigFile;
+
+    public void Save(StreamWriter writer)
+    {
+        using var jWriter    = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+        var       serializer = new JsonSerializer { Formatting         = Formatting.Indented };
+        serializer.Serialize(jWriter, this);
     }
 }

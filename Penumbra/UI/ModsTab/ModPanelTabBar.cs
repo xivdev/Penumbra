@@ -140,7 +140,7 @@ public class ModPanelTabBar
 
             ImGui.SetCursorPos(newPos);
             if (ImGui.Button(FontAwesomeIcon.Star.ToIconString()))
-                _modManager.ChangeModFavorite(mod.Index, !mod.Favorite);
+                _modManager.DataEditor.ChangeModFavorite(mod, !mod.Favorite);
         }
 
         var hovered = ImGui.IsItemHovered();

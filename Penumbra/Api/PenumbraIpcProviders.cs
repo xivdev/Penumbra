@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
+using Penumbra.Mods;
 
 namespace Penumbra.Api;
 
@@ -111,7 +112,7 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider< string, int, PenumbraApiEc >                                               RemoveTemporaryModAll;
     internal readonly FuncProvider< string, string, int, PenumbraApiEc >                                       RemoveTemporaryMod;
 
-    public PenumbraIpcProviders( DalamudPluginInterface pi, IPenumbraApi api )
+    public PenumbraIpcProviders( DalamudPluginInterface pi, IPenumbraApi api, Mod.Manager modManager )
     {
         Api = api;
 
@@ -219,7 +220,7 @@ public class PenumbraIpcProviders : IDisposable
         RemoveTemporaryModAll           = Ipc.RemoveTemporaryModAll.Provider( pi, Api.RemoveTemporaryModAll );
         RemoveTemporaryMod              = Ipc.RemoveTemporaryMod.Provider( pi, Api.RemoveTemporaryMod );
 
-        Tester = new IpcTester( pi, this );
+        Tester = new IpcTester( pi, this, modManager );
 
         Initialized.Invoke();
     }

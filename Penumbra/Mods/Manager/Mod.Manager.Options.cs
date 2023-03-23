@@ -305,18 +305,18 @@ public sealed partial class Mod
         public bool VerifyFileName(Mod mod, IModGroup? group, string newName, bool message)
         {
             var path = newName.RemoveInvalidPathSymbols();
-            if (path.Length == 0
-             || mod.Groups.Any(o => !ReferenceEquals(o, group)
+            if (path.Length != 0
+             && !mod.Groups.Any(o => !ReferenceEquals(o, group)
                  && string.Equals(o.Name.RemoveInvalidPathSymbols(), path, StringComparison.OrdinalIgnoreCase)))
-            {
-                if (message)
-                    _chat.NotificationMessage($"Could not name option {newName} because option with same filename {path} already exists.",
-                        "Warning", NotificationType.Warning);
+                return true;
 
-                return false;
-            }
+            if (message)
+                Penumbra.ChatService.NotificationMessage(
+                    $"Could not name option {newName} because option with same filename {path} already exists.",
+                    "Warning", NotificationType.Warning);
 
-            return true;
+            return false;
+
         }
 
         private static SubMod GetSubMod(Mod mod, int groupIdx, int optionIdx)

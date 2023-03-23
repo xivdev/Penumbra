@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Penumbra.Api;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
 using FileMode = System.IO.FileMode;
@@ -33,22 +34,19 @@ public partial class TexToolsImporter : IDisposable
     public ImporterState State { get; private set; }
     public readonly List< (FileInfo File, DirectoryInfo? Mod, Exception? Error) > ExtractedMods;
 
-    public TexToolsImporter( DirectoryInfo baseDirectory, ICollection< FileInfo > files,
-        Action< FileInfo, DirectoryInfo?, Exception? > handler, Configuration config, ModEditor editor)
-        : this( baseDirectory, files.Count, files, handler, config, editor)
-    { }
-
     private readonly Configuration _config;
     private readonly ModEditor     _editor;
+    private readonly Mod.Manager   _modManager;
 
     public TexToolsImporter( DirectoryInfo baseDirectory, int count, IEnumerable< FileInfo > modPackFiles,
-        Action< FileInfo, DirectoryInfo?, Exception? > handler, Configuration config, ModEditor editor)
+        Action< FileInfo, DirectoryInfo?, Exception? > handler, Configuration config, ModEditor editor, Mod.Manager modManager)
     {
         _baseDirectory = baseDirectory;
         _tmpFile       = Path.Combine( _baseDirectory.FullName, TempFileName );
         _modPackFiles  = modPackFiles;
         _config        = config;
-        _editor   = editor;
+        _editor        = editor;
+        _modManager    = modManager; 
         _modPackCount  = count;
         ExtractedMods  = new List< (FileInfo, DirectoryInfo?, Exception?) >( count );
         _token         = _cancellation.Token;

@@ -11,7 +11,7 @@ using Penumbra.Util;
 namespace Penumbra.Collections;
 
 // File operations like saving, loading and deleting for a collection.
-public partial class ModCollection : ISaveable
+public partial class ModCollection : ISavable
 {
     // Since inheritances depend on other collections existing,
     // we return them as a list to be applied after reading all collections.

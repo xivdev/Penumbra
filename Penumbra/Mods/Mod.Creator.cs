@@ -64,19 +64,6 @@ public partial class Mod
             return newModFolder.Length == 0 ? null : new DirectoryInfo( newModFolder );
         }
 
-        /// <summary> Create the file containing the meta information about a mod from scratch. </summary>
-        public static void CreateMeta( DirectoryInfo directory, string? name, string? author, string? description, string? version,
-            string? website )
-        {
-            var mod = new Mod( directory );
-            mod.Name        = name.IsNullOrEmpty() ? mod.Name : new LowerString( name! );
-            mod.Author      = author != null ? new LowerString( author ) : mod.Author;
-            mod.Description = description ?? mod.Description;
-            mod.Version     = version     ?? mod.Version;
-            mod.Website     = website     ?? mod.Website;
-            mod.SaveMetaFile(); // Not delayed.
-        }
-
         /// <summary> Create a file for an option group from given data. </summary>
         public static void CreateOptionGroup( DirectoryInfo baseFolder, GroupType type, string name,
             int priority, int index, uint defaultSettings, string desc, IEnumerable< ISubMod > subMods )
@@ -147,13 +134,11 @@ public partial class Mod
         internal static void CreateDefaultFiles( DirectoryInfo directory )
         {
             var mod = new Mod( directory );
-            mod.Reload( false, out _ );
+            mod.Reload( Penumbra.ModManager, false, out _ );
             foreach( var file in mod.FindUnusedFiles() )
             {
                 if( Utf8GamePath.FromFile( new FileInfo( file.FullName ), directory, out var gamePath, true ) )
-                {
                     mod._default.FileData.TryAdd( gamePath, file );
-                }
             }
 
             mod._default.IncorporateMetaChanges( directory, true );

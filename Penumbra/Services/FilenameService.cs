@@ -38,7 +38,7 @@ public class FilenameService
 
     /// <summary> Obtain the path of the local data file given a mod directory. Returns an empty string if the mod is temporary. </summary>
     public string LocalDataFile(Mod mod)
-        => mod.IsTemporary ? string.Empty : LocalDataFile(mod.ModPath.FullName);
+        => LocalDataFile(mod.ModPath.FullName);
 
     /// <summary> Obtain the path of the local data file given a mod directory. </summary>
     public string LocalDataFile(string modDirectory)
@@ -66,7 +66,7 @@ public class FilenameService
 
     /// <summary> Obtain the path of the meta file for a given mod. Returns an empty string if the mod is temporary. </summary>
     public string ModMetaPath(Mod mod)
-        => mod.IsTemporary ? string.Empty : ModMetaPath(mod.ModPath.FullName);
+        => ModMetaPath(mod.ModPath.FullName);
 
     /// <summary> Obtain the path of the meta file given a mod directory. </summary>
     public string ModMetaPath(string modDirectory)

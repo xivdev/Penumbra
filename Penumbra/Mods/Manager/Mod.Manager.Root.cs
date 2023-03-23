@@ -97,7 +97,7 @@ public sealed partial class Mod
                 var queue = new ConcurrentQueue< Mod >();
                 Parallel.ForEach( BasePath.EnumerateDirectories(), options, dir =>
                 {
-                    var mod = LoadMod( dir, false );
+                    var mod = LoadMod( this, dir, false );
                     if( mod != null )
                     {
                         queue.Enqueue( mod );

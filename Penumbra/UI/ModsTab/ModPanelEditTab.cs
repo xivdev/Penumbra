@@ -77,7 +77,7 @@ public class ModPanelEditTab : ITab
         var tagIdx = _modTags.Draw("Mod Tags: ", "Edit tags by clicking them, or add new tags. Empty tags are removed.", _mod.ModTags,
             out var editedTag);
         if (tagIdx >= 0)
-            _modManager.ChangeModTag(_mod.Index, tagIdx, editedTag);
+            _modManager.DataEditor.ChangeModTag(_mod, tagIdx, editedTag);
 
         UiHelpers.DefaultLineSpace();
         AddOptionGroup.Draw(_modManager, _mod);
@@ -172,18 +172,18 @@ public class ModPanelEditTab : ITab
     private void EditRegularMeta()
     {
         if (Input.Text("Name", Input.Name, Input.None, _mod.Name, out var newName, 256, UiHelpers.InputTextWidth.X))
-            _modManager.ChangeModName(_mod.Index, newName);
+            _modManager.DataEditor.ChangeModName(_mod, newName);
 
         if (Input.Text("Author", Input.Author, Input.None, _mod.Author, out var newAuthor, 256, UiHelpers.InputTextWidth.X))
-            Penumbra.ModManager.ChangeModAuthor(_mod.Index, newAuthor);
+            _modManager.DataEditor.ChangeModAuthor(_mod, newAuthor);
 
         if (Input.Text("Version", Input.Version, Input.None, _mod.Version, out var newVersion, 32,
                 UiHelpers.InputTextWidth.X))
-            _modManager.ChangeModVersion(_mod.Index, newVersion);
+            _modManager.DataEditor.ChangeModVersion(_mod, newVersion);
 
         if (Input.Text("Website", Input.Website, Input.None, _mod.Website, out var newWebsite, 256,
                 UiHelpers.InputTextWidth.X))
-            _modManager.ChangeModWebsite(_mod.Index, newWebsite);
+            _modManager.DataEditor.ChangeModWebsite(_mod, newWebsite);
 
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3));
 
@@ -192,13 +192,13 @@ public class ModPanelEditTab : ITab
             _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_mod, Input.Description));
 
         ImGui.SameLine();
-        var fileExists = File.Exists(_mod.MetaFile.FullName);
+        var fileExists = File.Exists(_modManager.DataEditor.MetaFile(_mod));
         var tt = fileExists
             ? "Open the metadata json file in the text editor of your choice."
             : "The metadata json file does not exist.";
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.FileExport.ToIconString()}##metaFile", UiHelpers.IconButtonSize, tt,
                 !fileExists, true))
-            Process.Start(new ProcessStartInfo(_mod.MetaFile.FullName) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(_modManager.DataEditor.MetaFile(_mod)) { UseShellExecute = true });
     }
 
     /// <summary> Do some edits outside of iterations. </summary>
@@ -349,7 +349,7 @@ public class ModPanelEditTab : ITab
                 switch (_newDescriptionIdx)
                 {
                     case Input.Description:
-                        modManager.ChangeModDescription(_mod.Index, _newDescription);
+                        modManager.DataEditor.ChangeModDescription(_mod, _newDescription);
                         break;
                     case >= 0:
                         if (_newDescriptionOptionIdx < 0)

@@ -45,6 +45,13 @@ public class CommunicatorService : IDisposable
     /// </list> </summary>
     public readonly EventWrapper<nint, string, nint> CreatedCharacterBase = new(nameof(CreatedCharacterBase));
 
+    /// <summary><list type="number">
+    ///     <item>Parameter is the type of data change for the mod, which can be multiple flags. </item>
+    ///     <item>Parameter is the changed mod. </item>
+    ///     <item>Parameter is the old name of the mod in case of a name change, and null otherwise. </item>
+    /// </list> </summary>
+    public readonly EventWrapper<ModDataChangeType, Mod, string?> ModDataChanged = new(nameof(ModDataChanged));
+
     public void Dispose()
     {
         CollectionChange.Dispose();
@@ -52,5 +59,6 @@ public class CommunicatorService : IDisposable
         ModMetaChange.Dispose();
         CreatingCharacterBase.Dispose();
         CreatedCharacterBase.Dispose();
+        ModDataChanged.Dispose();
     }
 }

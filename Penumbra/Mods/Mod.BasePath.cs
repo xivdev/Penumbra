@@ -16,6 +16,8 @@ public enum ModPathChangeType
 public partial class Mod
 {
     public DirectoryInfo ModPath { get; private set; }
+    public string Identifier
+        => Index >= 0 ? ModPath.Name : Name;
     public int Index { get; private set; } = -1;
 
     public bool IsTemporary
@@ -31,7 +33,7 @@ public partial class Mod
         _default = new SubMod( this );
     }
 
-    private static Mod? LoadMod( DirectoryInfo modPath, bool incorporateMetaChanges )
+    private static Mod? LoadMod( Manager modManager, DirectoryInfo modPath, bool incorporateMetaChanges )
     {
         modPath.Refresh();
         if( !modPath.Exists )
@@ -40,18 +42,17 @@ public partial class Mod
             return null;
         }
 
-        var mod = new Mod( modPath );
-        if( !mod.Reload( incorporateMetaChanges, out _ ) )
-        {
-            // Can not be base path not existing because that is checked before.
-            Penumbra.Log.Warning( $"Mod at {modPath} without name is not supported." );
-            return null;
-        }
+        var mod = new Mod(modPath);
+        if (mod.Reload(modManager, incorporateMetaChanges, out _))
+            return mod;
 
-        return mod;
+        // Can not be base path not existing because that is checked before.
+        Penumbra.Log.Warning( $"Mod at {modPath} without name is not supported." );
+        return null;
+
     }
 
-    internal bool Reload( bool incorporateMetaChanges, out ModDataChangeType modDataChange )
+    internal bool Reload(Manager modManager, bool incorporateMetaChanges, out ModDataChangeType modDataChange )
     {
         modDataChange = ModDataChangeType.Deletion;
         ModPath.Refresh();
@@ -60,19 +61,19 @@ public partial class Mod
             return false;
         }
 
-        modDataChange = LoadMeta();
+        modDataChange = modManager.DataEditor.LoadMeta(this);
         if( modDataChange.HasFlag( ModDataChangeType.Deletion ) || Name.Length == 0 )
         {
             return false;
         }
 
-        LoadLocalData();
+        modManager.DataEditor.LoadLocalData(this);
 
         LoadDefaultOption();
         LoadAllGroups();
         if( incorporateMetaChanges )
         {
-            IncorporateAllMetaChanges( true );
+            IncorporateAllMetaChanges(true);
         }
 
         ComputeChangedItems();

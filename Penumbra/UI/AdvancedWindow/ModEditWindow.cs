@@ -150,7 +150,7 @@ public partial class ModEditWindow : Window, IDisposable
             _itemSwapTab.DrawContent();
     }
 
-    // A row of three buttonSizes and a help marker that can be used for material suffix changing.
+    /// <summary> A row of three buttonSizes and a help marker that can be used for material suffix changing. </summary>
     private static class MaterialSuffix
     {
         private static string     _materialSuffixFrom = string.Empty;

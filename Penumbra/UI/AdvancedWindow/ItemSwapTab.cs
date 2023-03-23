@@ -267,7 +267,7 @@ public class ItemSwapTab : IDisposable, ITab
     private void CreateMod()
     {
         var newDir = Mod.Creator.CreateModFolder(_modManager.BasePath, _newModName);
-        Mod.Creator.CreateMeta(newDir, _newModName, _config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty);
+        _modManager.DataEditor.CreateMeta(newDir, _newModName, _config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty);
         Mod.Creator.CreateDefaultFiles(newDir);
         _modManager.AddMod(newDir);
         if (!_swapData.WriteMod(_modManager.Last(),

@@ -1,10 +1,8 @@
 using System;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text;
 using OtterGui.Classes;
 using OtterGui.Log;
-using Penumbra.Api;
 using Penumbra.Services;
 
 namespace Penumbra.Util;
@@ -12,7 +10,7 @@ namespace Penumbra.Util;
 /// <summary>
 /// Any file type that we want to save via SaveService.
 /// </summary>
-public interface ISaveable
+public interface ISavable
 {
     /// <summary> The full file name of a given object. </summary>
     public string ToFilename(FilenameService fileNames);
@@ -42,7 +40,7 @@ public class SaveService
     }
 
     /// <summary> Queue a save for the next framework tick. </summary>
-    public void QueueSave(ISaveable value)
+    public void QueueSave(ISavable value)
     {
         var file = value.ToFilename(_fileNames);
         _framework.RegisterDelayed(value.GetType().Name + file, () =>
@@ -52,7 +50,7 @@ public class SaveService
     }
 
     /// <summary> Immediately trigger a save. </summary>
-    public void ImmediateSave(ISaveable value)
+    public void ImmediateSave(ISavable value)
     {
         var name = value.ToFilename(_fileNames);
         try
@@ -75,7 +73,7 @@ public class SaveService
         }
     }
 
-    public void ImmediateDelete(ISaveable value)
+    public void ImmediateDelete(ISavable value)
     {
         var name = value.ToFilename(_fileNames);
         try

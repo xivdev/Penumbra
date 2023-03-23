@@ -10,28 +10,30 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
-public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISaveable
+public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
 {
-    private readonly Mod.Manager     _modManager;
-    private readonly FilenameService _files;
+    private readonly Mod.Manager         _modManager;
+    private readonly CommunicatorService _communicator;
+    private readonly FilenameService     _files;
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
-    public ModFileSystem(Mod.Manager modManager, FilenameService files)
+    public ModFileSystem(Mod.Manager modManager, CommunicatorService communicator, FilenameService files)
     {
-        _modManager = modManager;
-        _files      = files;
+        _modManager   = modManager;
+        _communicator = communicator;
+        _files        = files;
         Reload();
-        Changed                          += OnChange;
-        _modManager.ModDiscoveryFinished += Reload;
-        _modManager.ModDataChanged       += OnDataChange;
-        _modManager.ModPathChanged       += OnModPathChange;
+        Changed                            += OnChange;
+        _modManager.ModDiscoveryFinished   += Reload;
+        _communicator.ModDataChanged.Event += OnDataChange;
+        _modManager.ModPathChanged         += OnModPathChange;
     }
 
     public void Dispose()
     {
-        _modManager.ModPathChanged       -= OnModPathChange;
-        _modManager.ModDiscoveryFinished -= Reload;
-        _modManager.ModDataChanged       -= OnDataChange;
+        _modManager.ModPathChanged         -= OnModPathChange;
+        _modManager.ModDiscoveryFinished   -= Reload;
+        _communicator.ModDataChanged.Event -= OnDataChange;
     }
 
     public struct ImportDate : ISortMode<Mod>

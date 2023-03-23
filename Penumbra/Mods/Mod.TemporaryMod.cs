@@ -46,14 +46,14 @@ public sealed partial class Mod
             _default.ManipulationData = manips;
         }
 
-        public static void SaveTempCollection( ModCollection collection, string? character = null )
+        public static void SaveTempCollection( Mod.Manager modManager, ModCollection collection, string? character = null )
         {
             DirectoryInfo? dir = null;
             try
             {
                 dir = Creator.CreateModFolder( Penumbra.ModManager.BasePath, collection.Name );
                 var fileDir = Directory.CreateDirectory( Path.Combine( dir.FullName, "files" ) );
-                Creator.CreateMeta( dir, collection.Name, character ?? Penumbra.Config.DefaultModAuthor,
+                modManager.DataEditor.CreateMeta( dir, collection.Name, character ?? Penumbra.Config.DefaultModAuthor,
                     $"Mod generated from temporary collection {collection.Name} for {character ?? "Unknown Character"}.", null, null );
                 var mod        = new Mod( dir );
                 var defaultMod = mod._default;
@@ -88,7 +88,7 @@ public sealed partial class Mod
                 }
 
                 mod.SaveDefaultMod();
-                Penumbra.ModManager.AddMod( dir );
+                modManager.AddMod( dir );
                 Penumbra.Log.Information( $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Name}." );
             }
             catch( Exception e )

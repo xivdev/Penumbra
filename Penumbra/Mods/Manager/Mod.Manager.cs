@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Penumbra.Services;
 using Penumbra.Util;
 
 namespace Penumbra.Mods;
@@ -36,14 +37,16 @@ public sealed partial class Mod
         IEnumerator IEnumerable.GetEnumerator()
             => GetEnumerator();
 
-        private readonly Configuration _config;
-        private readonly ChatService   _chat;
+        private readonly Configuration       _config;
+        private readonly CommunicatorService _communicator;
+        public readonly  ModDataEditor       DataEditor;
 
-        public Manager(StartTracker time, Configuration config, ChatService chat)
+        public Manager(StartTracker time, Configuration config, CommunicatorService communicator, ModDataEditor dataEditor)
         {
             using var timer = time.Measure(StartTimeType.Mods);
             _config             =  config;
-            _chat               =  chat;
+            _communicator       =  communicator;
+            DataEditor          =  dataEditor;
             ModDirectoryChanged += OnModDirectoryChange;
             SetBaseDirectory(config.ModDirectory, true);
             UpdateExportDirectory(_config.ExportDirectory, false);

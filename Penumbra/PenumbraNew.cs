@@ -92,6 +92,7 @@ public class PenumbraNew
 
         // Add Mod Services
         services.AddSingleton<TempModManager>()
+            .AddSingleton<ModDataEditor>()
             .AddSingleton<Mod.Manager>()
             .AddSingleton<ModFileSystem>();
 

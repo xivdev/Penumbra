@@ -35,7 +35,7 @@ public partial class TexToolsImporter
 
         _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, Path.GetFileNameWithoutExtension( modPackFile.Name ) );
         // Create a new ModMeta from the TTMP mod list info
-        Mod.Creator.CreateMeta( _currentModDirectory, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description, null, null );
+        _modManager.DataEditor.CreateMeta( _currentModDirectory, _currentModName, DefaultTexToolsData.Author, DefaultTexToolsData.Description, null, null );
 
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream( extractedModPack, "TTMPD.mpd" );
@@ -90,7 +90,7 @@ public partial class TexToolsImporter
         Penumbra.Log.Information( "    -> Importing Simple V2 ModPack" );
 
         _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, _currentModName );
-        Mod.Creator.CreateMeta( _currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty( modList.Description )
+        _modManager.DataEditor.CreateMeta( _currentModDirectory, _currentModName, modList.Author, string.IsNullOrEmpty( modList.Description )
             ? "Mod imported from TexTools mod pack"
             : modList.Description, modList.Version, modList.Url );
 
@@ -135,7 +135,7 @@ public partial class TexToolsImporter
         _currentModName    = modList.Name;
 
         _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, _currentModName );
-        Mod.Creator.CreateMeta( _currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version, modList.Url );
+        _modManager.DataEditor.CreateMeta( _currentModDirectory, _currentModName, modList.Author, modList.Description, modList.Version, modList.Url );
 
         if( _currentNumOptions == 0 )
         {

@@ -38,20 +38,20 @@ public class IpcTester : IDisposable
     private readonly ModSettings   _modSettings;
     private readonly Temporary     _temporary;
 
-    public IpcTester( DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders )
+    public IpcTester(DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders, Mod.Manager modManager)
     {
         _ipcProviders  = ipcProviders;
-        _pluginState   = new PluginState( pi );
-        _configuration = new Configuration( pi );
-        _ui            = new Ui( pi );
-        _redrawing     = new Redrawing( pi );
-        _gameState     = new GameState( pi );
-        _resolve       = new Resolve( pi );
-        _collections   = new Collections( pi );
-        _meta          = new Meta( pi );
-        _mods          = new Mods( pi );
-        _modSettings   = new ModSettings( pi );
-        _temporary     = new Temporary( pi );
+        _pluginState   = new PluginState(pi);
+        _configuration = new Configuration(pi);
+        _ui            = new Ui(pi);
+        _redrawing     = new Redrawing(pi);
+        _gameState     = new GameState(pi);
+        _resolve       = new Resolve(pi);
+        _collections   = new Collections(pi);
+        _meta          = new Meta(pi);
+        _mods          = new Mods(pi);
+        _modSettings   = new ModSettings(pi);
+        _temporary     = new Temporary(pi, modManager);
         UnsubscribeEvents();
     }
 
@@ -60,7 +60,7 @@ public class IpcTester : IDisposable
         try
         {
             SubscribeEvents();
-            ImGui.TextUnformatted( $"API Version: {_ipcProviders.Api.ApiVersion.Breaking}.{_ipcProviders.Api.ApiVersion.Feature:D4}" );
+            ImGui.TextUnformatted($"API Version: {_ipcProviders.Api.ApiVersion.Breaking}.{_ipcProviders.Api.ApiVersion.Feature:D4}");
             _pluginState.Draw();
             _configuration.Draw();
             _ui.Draw();
@@ -75,15 +75,15 @@ public class IpcTester : IDisposable
             _temporary.DrawCollections();
             _temporary.DrawMods();
         }
-        catch( Exception e )
+        catch (Exception e)
         {
-            Penumbra.Log.Error( $"Error during IPC Tests:\n{e}" );
+            Penumbra.Log.Error($"Error during IPC Tests:\n{e}");
         }
     }
 
     private void SubscribeEvents()
     {
-        if( !_subscribed )
+        if (!_subscribed)
         {
             _pluginState.Initialized.Enable();
             _pluginState.Disposed.Enable();
@@ -105,7 +105,7 @@ public class IpcTester : IDisposable
 
     public void UnsubscribeEvents()
     {
-        if( _subscribed )
+        if (_subscribed)
         {
             _pluginState.Initialized.Disable();
             _pluginState.Disposed.Disable();
@@ -148,131 +148,121 @@ public class IpcTester : IDisposable
         _subscribed = false;
     }
 
-    private static void DrawIntro( string label, string info )
+    private static void DrawIntro(string label, string info)
     {
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted( label );
+        ImGui.TextUnformatted(label);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted( info );
+        ImGui.TextUnformatted(info);
         ImGui.TableNextColumn();
     }
 
 
     private class PluginState
     {
-        private readonly DalamudPluginInterface  _pi;
-        public readonly  EventSubscriber         Initialized;
-        public readonly  EventSubscriber         Disposed;
-        public readonly  EventSubscriber< bool > EnabledChange;
+        private readonly DalamudPluginInterface _pi;
+        public readonly  EventSubscriber        Initialized;
+        public readonly  EventSubscriber        Disposed;
+        public readonly  EventSubscriber<bool>  EnabledChange;
 
-        private readonly List< DateTimeOffset > _initializedList = new();
-        private readonly List< DateTimeOffset > _disposedList    = new();
+        private readonly List<DateTimeOffset> _initializedList = new();
+        private readonly List<DateTimeOffset> _disposedList    = new();
 
         private DateTimeOffset _lastEnabledChange = DateTimeOffset.UnixEpoch;
         private bool?          _lastEnabledValue;
 
-        public PluginState( DalamudPluginInterface pi )
+        public PluginState(DalamudPluginInterface pi)
         {
             _pi           = pi;
-            Initialized   = Ipc.Initialized.Subscriber( pi, AddInitialized );
-            Disposed      = Ipc.Disposed.Subscriber( pi, AddDisposed );
-            EnabledChange = Ipc.EnabledChange.Subscriber( pi, SetLastEnabled );
+            Initialized   = Ipc.Initialized.Subscriber(pi, AddInitialized);
+            Disposed      = Ipc.Disposed.Subscriber(pi, AddDisposed);
+            EnabledChange = Ipc.EnabledChange.Subscriber(pi, SetLastEnabled);
         }
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Plugin State" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Plugin State");
+            if (!_)
                 return;
-            }
 
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            void DrawList( string label, string text, List< DateTimeOffset > list )
+            void DrawList(string label, string text, List<DateTimeOffset> list)
             {
-                DrawIntro( label, text );
-                if( list.Count == 0 )
+                DrawIntro(label, text);
+                if (list.Count == 0)
                 {
-                    ImGui.TextUnformatted( "Never" );
+                    ImGui.TextUnformatted("Never");
                 }
                 else
                 {
-                    ImGui.TextUnformatted( list[ ^1 ].LocalDateTime.ToString( CultureInfo.CurrentCulture ) );
-                    if( list.Count > 1 && ImGui.IsItemHovered() )
-                    {
-                        ImGui.SetTooltip( string.Join( "\n",
-                            list.SkipLast( 1 ).Select( t => t.LocalDateTime.ToString( CultureInfo.CurrentCulture ) ) ) );
-                    }
+                    ImGui.TextUnformatted(list[^1].LocalDateTime.ToString(CultureInfo.CurrentCulture));
+                    if (list.Count > 1 && ImGui.IsItemHovered())
+                        ImGui.SetTooltip(string.Join("\n",
+                            list.SkipLast(1).Select(t => t.LocalDateTime.ToString(CultureInfo.CurrentCulture))));
                 }
             }
 
-            DrawList( Ipc.Initialized.Label, "Last Initialized", _initializedList );
-            DrawList( Ipc.Disposed.Label, "Last Disposed", _disposedList );
-            DrawIntro( Ipc.ApiVersions.Label, "Current Version" );
-            var (breaking, features) = Ipc.ApiVersions.Subscriber( _pi ).Invoke();
-            ImGui.TextUnformatted( $"{breaking}.{features:D4}" );
-            DrawIntro( Ipc.GetEnabledState.Label, "Current State" );
-            ImGui.TextUnformatted( $"{Ipc.GetEnabledState.Subscriber( _pi ).Invoke()}" );
-            DrawIntro( Ipc.EnabledChange.Label, "Last Change" );
-            ImGui.TextUnformatted( _lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never" );
+            DrawList(Ipc.Initialized.Label, "Last Initialized", _initializedList);
+            DrawList(Ipc.Disposed.Label,    "Last Disposed",    _disposedList);
+            DrawIntro(Ipc.ApiVersions.Label, "Current Version");
+            var (breaking, features) = Ipc.ApiVersions.Subscriber(_pi).Invoke();
+            ImGui.TextUnformatted($"{breaking}.{features:D4}");
+            DrawIntro(Ipc.GetEnabledState.Label, "Current State");
+            ImGui.TextUnformatted($"{Ipc.GetEnabledState.Subscriber(_pi).Invoke()}");
+            DrawIntro(Ipc.EnabledChange.Label, "Last Change");
+            ImGui.TextUnformatted(_lastEnabledValue is { } v ? $"{_lastEnabledChange} (to {v})" : "Never");
         }
 
         private void AddInitialized()
-            => _initializedList.Add( DateTimeOffset.UtcNow );
+            => _initializedList.Add(DateTimeOffset.UtcNow);
 
         private void AddDisposed()
-            => _disposedList.Add( DateTimeOffset.UtcNow );
+            => _disposedList.Add(DateTimeOffset.UtcNow);
 
-        private void SetLastEnabled( bool val )
-            => ( _lastEnabledChange, _lastEnabledValue ) = ( DateTimeOffset.Now, val );
+        private void SetLastEnabled(bool val)
+            => (_lastEnabledChange, _lastEnabledValue) = (DateTimeOffset.Now, val);
     }
 
     private class Configuration
     {
-        private readonly DalamudPluginInterface          _pi;
-        public readonly  EventSubscriber< string, bool > ModDirectoryChanged;
+        private readonly DalamudPluginInterface        _pi;
+        public readonly  EventSubscriber<string, bool> ModDirectoryChanged;
 
         private string         _currentConfiguration = string.Empty;
         private string         _lastModDirectory     = string.Empty;
         private bool           _lastModDirectoryValid;
         private DateTimeOffset _lastModDirectoryTime = DateTimeOffset.MinValue;
 
-        public Configuration( DalamudPluginInterface pi )
+        public Configuration(DalamudPluginInterface pi)
         {
             _pi                 = pi;
-            ModDirectoryChanged = Ipc.ModDirectoryChanged.Subscriber( pi, UpdateModDirectoryChanged );
+            ModDirectoryChanged = Ipc.ModDirectoryChanged.Subscriber(pi, UpdateModDirectoryChanged);
         }
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Configuration" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Configuration");
+            if (!_)
                 return;
-            }
 
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            DrawIntro( Ipc.GetModDirectory.Label, "Current Mod Directory" );
-            ImGui.TextUnformatted( Ipc.GetModDirectory.Subscriber( _pi ).Invoke() );
-            DrawIntro( Ipc.ModDirectoryChanged.Label, "Last Mod Directory Change" );
-            ImGui.TextUnformatted( _lastModDirectoryTime > DateTimeOffset.MinValue
-                ? $"{_lastModDirectory} ({( _lastModDirectoryValid ? "Valid" : "Invalid" )}) at {_lastModDirectoryTime}"
-                : "None" );
-            DrawIntro( Ipc.GetConfiguration.Label, "Configuration" );
-            if( ImGui.Button( "Get" ) )
+            DrawIntro(Ipc.GetModDirectory.Label, "Current Mod Directory");
+            ImGui.TextUnformatted(Ipc.GetModDirectory.Subscriber(_pi).Invoke());
+            DrawIntro(Ipc.ModDirectoryChanged.Label, "Last Mod Directory Change");
+            ImGui.TextUnformatted(_lastModDirectoryTime > DateTimeOffset.MinValue
+                ? $"{_lastModDirectory} ({(_lastModDirectoryValid ? "Valid" : "Invalid")}) at {_lastModDirectoryTime}"
+                : "None");
+            DrawIntro(Ipc.GetConfiguration.Label, "Configuration");
+            if (ImGui.Button("Get"))
             {
-                _currentConfiguration = Ipc.GetConfiguration.Subscriber( _pi ).Invoke();
-                ImGui.OpenPopup( "Config Popup" );
+                _currentConfiguration = Ipc.GetConfiguration.Subscriber(_pi).Invoke();
+                ImGui.OpenPopup("Config Popup");
             }
 
             DrawConfigPopup();
@@ -280,33 +270,31 @@ public class IpcTester : IDisposable
 
         private void DrawConfigPopup()
         {
-            ImGui.SetNextWindowSize( ImGuiHelpers.ScaledVector2( 500, 500 ) );
-            using var popup = ImRaii.Popup( "Config Popup" );
-            if( popup )
+            ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
+            using var popup = ImRaii.Popup("Config Popup");
+            if (popup)
             {
-                using( var font = ImRaii.PushFont( UiBuilder.MonoFont ) )
+                using (var font = ImRaii.PushFont(UiBuilder.MonoFont))
                 {
-                    ImGuiUtil.TextWrapped( _currentConfiguration );
+                    ImGuiUtil.TextWrapped(_currentConfiguration);
                 }
 
-                if( ImGui.Button( "Close", -Vector2.UnitX ) || !ImGui.IsWindowFocused() )
-                {
+                if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
                     ImGui.CloseCurrentPopup();
-                }
             }
         }
 
-        private void UpdateModDirectoryChanged( string path, bool valid )
-            => ( _lastModDirectory, _lastModDirectoryValid, _lastModDirectoryTime ) = ( path, valid, DateTimeOffset.Now );
+        private void UpdateModDirectoryChanged(string path, bool valid)
+            => (_lastModDirectory, _lastModDirectoryValid, _lastModDirectoryTime) = (path, valid, DateTimeOffset.Now);
     }
 
     private class Ui
     {
-        private readonly DalamudPluginInterface                                _pi;
-        public readonly  EventSubscriber< string >                             PreSettingsDraw;
-        public readonly  EventSubscriber< string >                             PostSettingsDraw;
-        public readonly  EventSubscriber< ChangedItemType, uint >              Tooltip;
-        public readonly  EventSubscriber< MouseButton, ChangedItemType, uint > Click;
+        private readonly DalamudPluginInterface                              _pi;
+        public readonly  EventSubscriber<string>                             PreSettingsDraw;
+        public readonly  EventSubscriber<string>                             PostSettingsDraw;
+        public readonly  EventSubscriber<ChangedItemType, uint>              Tooltip;
+        public readonly  EventSubscriber<MouseButton, ChangedItemType, uint> Click;
 
         private string         _lastDrawnMod        = string.Empty;
         private DateTimeOffset _lastDrawnModTime    = DateTimeOffset.MinValue;
@@ -318,194 +306,161 @@ public class IpcTester : IDisposable
         private string         _modName             = string.Empty;
         private PenumbraApiEc  _ec                  = PenumbraApiEc.Success;
 
-        public Ui( DalamudPluginInterface pi )
+        public Ui(DalamudPluginInterface pi)
         {
             _pi              = pi;
-            PreSettingsDraw  = Ipc.PreSettingsDraw.Subscriber( pi, UpdateLastDrawnMod );
-            PostSettingsDraw = Ipc.PostSettingsDraw.Subscriber( pi, UpdateLastDrawnMod );
-            Tooltip          = Ipc.ChangedItemTooltip.Subscriber( pi, AddedTooltip );
-            Click            = Ipc.ChangedItemClick.Subscriber( pi, AddedClick );
+            PreSettingsDraw  = Ipc.PreSettingsDraw.Subscriber(pi, UpdateLastDrawnMod);
+            PostSettingsDraw = Ipc.PostSettingsDraw.Subscriber(pi, UpdateLastDrawnMod);
+            Tooltip          = Ipc.ChangedItemTooltip.Subscriber(pi, AddedTooltip);
+            Click            = Ipc.ChangedItemClick.Subscriber(pi, AddedClick);
         }
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "UI" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("UI");
+            if (!_)
                 return;
-            }
 
-            using( var combo = ImRaii.Combo( "Tab to Open at", _selectTab.ToString() ) )
+            using (var combo = ImRaii.Combo("Tab to Open at", _selectTab.ToString()))
             {
-                if( combo )
-                {
-                    foreach( var val in Enum.GetValues< TabType >() )
+                if (combo)
+                    foreach (var val in Enum.GetValues<TabType>())
                     {
-                        if( ImGui.Selectable( val.ToString(), _selectTab == val ) )
-                        {
+                        if (ImGui.Selectable(val.ToString(), _selectTab == val))
                             _selectTab = val;
-                        }
                     }
-                }
             }
 
-            ImGui.InputTextWithHint( "##openMod", "Mod to Open at...", ref _modName, 256 );
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            ImGui.InputTextWithHint("##openMod", "Mod to Open at...", ref _modName, 256);
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            DrawIntro( Ipc.PostSettingsDraw.Label, "Last Drawn Mod" );
-            ImGui.TextUnformatted( _lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None" );
+            DrawIntro(Ipc.PostSettingsDraw.Label, "Last Drawn Mod");
+            ImGui.TextUnformatted(_lastDrawnMod.Length > 0 ? $"{_lastDrawnMod} at {_lastDrawnModTime}" : "None");
 
-            DrawIntro( Ipc.ChangedItemTooltip.Label, "Add Tooltip" );
-            if( ImGui.Checkbox( "##tooltip", ref _subscribedToTooltip ) )
+            DrawIntro(Ipc.ChangedItemTooltip.Label, "Add Tooltip");
+            if (ImGui.Checkbox("##tooltip", ref _subscribedToTooltip))
             {
-                if( _subscribedToTooltip )
-                {
+                if (_subscribedToTooltip)
                     Tooltip.Enable();
-                }
                 else
-                {
                     Tooltip.Disable();
-                }
             }
 
             ImGui.SameLine();
-            ImGui.TextUnformatted( _lastHovered );
+            ImGui.TextUnformatted(_lastHovered);
 
-            DrawIntro( Ipc.ChangedItemClick.Label, "Subscribe Click" );
-            if( ImGui.Checkbox( "##click", ref _subscribedToClick ) )
+            DrawIntro(Ipc.ChangedItemClick.Label, "Subscribe Click");
+            if (ImGui.Checkbox("##click", ref _subscribedToClick))
             {
-                if( _subscribedToClick )
-                {
+                if (_subscribedToClick)
                     Click.Enable();
-                }
                 else
-                {
                     Click.Disable();
-                }
             }
 
             ImGui.SameLine();
-            ImGui.TextUnformatted( _lastClicked );
-            DrawIntro( Ipc.OpenMainWindow.Label, "Open Mod Window" );
-            if( ImGui.Button( "Open##window" ) )
-            {
-                _ec = Ipc.OpenMainWindow.Subscriber( _pi ).Invoke( _selectTab, _modName, _modName );
-            }
+            ImGui.TextUnformatted(_lastClicked);
+            DrawIntro(Ipc.OpenMainWindow.Label, "Open Mod Window");
+            if (ImGui.Button("Open##window"))
+                _ec = Ipc.OpenMainWindow.Subscriber(_pi).Invoke(_selectTab, _modName, _modName);
 
             ImGui.SameLine();
-            ImGui.TextUnformatted( _ec.ToString() );
+            ImGui.TextUnformatted(_ec.ToString());
 
-            DrawIntro( Ipc.CloseMainWindow.Label, "Close Mod Window" );
-            if( ImGui.Button( "Close##window" ) )
-            {
-                Ipc.CloseMainWindow.Subscriber( _pi ).Invoke();
-            }
+            DrawIntro(Ipc.CloseMainWindow.Label, "Close Mod Window");
+            if (ImGui.Button("Close##window"))
+                Ipc.CloseMainWindow.Subscriber(_pi).Invoke();
         }
 
-        private void UpdateLastDrawnMod( string name )
-            => ( _lastDrawnMod, _lastDrawnModTime ) = ( name, DateTimeOffset.Now );
+        private void UpdateLastDrawnMod(string name)
+            => (_lastDrawnMod, _lastDrawnModTime) = (name, DateTimeOffset.Now);
 
-        private void AddedTooltip( ChangedItemType type, uint id )
+        private void AddedTooltip(ChangedItemType type, uint id)
         {
-            _lastHovered = $"{type} {id} at {DateTime.UtcNow.ToLocalTime().ToString( CultureInfo.CurrentCulture )}";
-            ImGui.TextUnformatted( "IPC Test Successful" );
+            _lastHovered = $"{type} {id} at {DateTime.UtcNow.ToLocalTime().ToString(CultureInfo.CurrentCulture)}";
+            ImGui.TextUnformatted("IPC Test Successful");
         }
 
-        private void AddedClick( MouseButton button, ChangedItemType type, uint id )
+        private void AddedClick(MouseButton button, ChangedItemType type, uint id)
         {
-            _lastClicked = $"{button}-click on {type} {id} at {DateTime.UtcNow.ToLocalTime().ToString( CultureInfo.CurrentCulture )}";
+            _lastClicked = $"{button}-click on {type} {id} at {DateTime.UtcNow.ToLocalTime().ToString(CultureInfo.CurrentCulture)}";
         }
     }
 
     private class Redrawing
     {
-        private readonly DalamudPluginInterface         _pi;
-        public readonly  EventSubscriber< IntPtr, int > Redrawn;
+        private readonly DalamudPluginInterface       _pi;
+        public readonly  EventSubscriber<IntPtr, int> Redrawn;
 
         private string _redrawName        = string.Empty;
         private int    _redrawIndex       = 0;
         private string _lastRedrawnString = "None";
 
-        public Redrawing( DalamudPluginInterface pi )
+        public Redrawing(DalamudPluginInterface pi)
         {
             _pi     = pi;
-            Redrawn = Ipc.GameObjectRedrawn.Subscriber( pi, SetLastRedrawn );
+            Redrawn = Ipc.GameObjectRedrawn.Subscriber(pi, SetLastRedrawn);
         }
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Redrawing" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Redrawing");
+            if (!_)
                 return;
-            }
 
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            DrawIntro( Ipc.RedrawObjectByName.Label, "Redraw by Name" );
-            ImGui.SetNextItemWidth( 100 * UiHelpers.Scale );
-            ImGui.InputTextWithHint( "##redrawName", "Name...", ref _redrawName, 32 );
+            DrawIntro(Ipc.RedrawObjectByName.Label, "Redraw by Name");
+            ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
+            ImGui.InputTextWithHint("##redrawName", "Name...", ref _redrawName, 32);
             ImGui.SameLine();
-            if( ImGui.Button( "Redraw##Name" ) )
-            {
-                Ipc.RedrawObjectByName.Subscriber( _pi ).Invoke( _redrawName, RedrawType.Redraw );
-            }
+            if (ImGui.Button("Redraw##Name"))
+                Ipc.RedrawObjectByName.Subscriber(_pi).Invoke(_redrawName, RedrawType.Redraw);
 
-            DrawIntro( Ipc.RedrawObject.Label, "Redraw Player Character" );
-            if( ImGui.Button( "Redraw##pc" ) && DalamudServices.SClientState.LocalPlayer != null )
-            {
-                Ipc.RedrawObject.Subscriber( _pi ).Invoke( DalamudServices.SClientState.LocalPlayer, RedrawType.Redraw );
-            }
+            DrawIntro(Ipc.RedrawObject.Label, "Redraw Player Character");
+            if (ImGui.Button("Redraw##pc") && DalamudServices.SClientState.LocalPlayer != null)
+                Ipc.RedrawObject.Subscriber(_pi).Invoke(DalamudServices.SClientState.LocalPlayer, RedrawType.Redraw);
 
-            DrawIntro( Ipc.RedrawObjectByIndex.Label, "Redraw by Index" );
+            DrawIntro(Ipc.RedrawObjectByIndex.Label, "Redraw by Index");
             var tmp = _redrawIndex;
-            ImGui.SetNextItemWidth( 100 * UiHelpers.Scale );
-            if( ImGui.DragInt( "##redrawIndex", ref tmp, 0.1f, 0, DalamudServices.SObjects.Length ) )
-            {
-                _redrawIndex = Math.Clamp( tmp, 0, DalamudServices.SObjects.Length );
-            }
+            ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
+            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, DalamudServices.SObjects.Length))
+                _redrawIndex = Math.Clamp(tmp, 0, DalamudServices.SObjects.Length);
 
             ImGui.SameLine();
-            if( ImGui.Button( "Redraw##Index" ) )
-            {
-                Ipc.RedrawObjectByIndex.Subscriber( _pi ).Invoke( _redrawIndex, RedrawType.Redraw );
-            }
+            if (ImGui.Button("Redraw##Index"))
+                Ipc.RedrawObjectByIndex.Subscriber(_pi).Invoke(_redrawIndex, RedrawType.Redraw);
 
-            DrawIntro( Ipc.RedrawAll.Label, "Redraw All" );
-            if( ImGui.Button( "Redraw##All" ) )
-            {
-                Ipc.RedrawAll.Subscriber( _pi ).Invoke( RedrawType.Redraw );
-            }
+            DrawIntro(Ipc.RedrawAll.Label, "Redraw All");
+            if (ImGui.Button("Redraw##All"))
+                Ipc.RedrawAll.Subscriber(_pi).Invoke(RedrawType.Redraw);
 
-            DrawIntro( Ipc.GameObjectRedrawn.Label, "Last Redrawn Object:" );
-            ImGui.TextUnformatted( _lastRedrawnString );
+            DrawIntro(Ipc.GameObjectRedrawn.Label, "Last Redrawn Object:");
+            ImGui.TextUnformatted(_lastRedrawnString);
         }
 
-        private void SetLastRedrawn( IntPtr address, int index )
+        private void SetLastRedrawn(IntPtr address, int index)
         {
-            if( index < 0 || index > DalamudServices.SObjects.Length || address == IntPtr.Zero || DalamudServices.SObjects[ index ]?.Address != address )
-            {
+            if (index < 0
+             || index > DalamudServices.SObjects.Length
+             || address == IntPtr.Zero
+             || DalamudServices.SObjects[index]?.Address != address)
                 _lastRedrawnString = "Invalid";
-            }
 
-            _lastRedrawnString = $"{DalamudServices.SObjects[ index ]!.Name} (0x{address:X}, {index})";
+            _lastRedrawnString = $"{DalamudServices.SObjects[index]!.Name} (0x{address:X}, {index})";
         }
     }
 
     private class GameState
     {
-        private readonly DalamudPluginInterface                                    _pi;
-        public readonly  EventSubscriber< IntPtr, string, IntPtr, IntPtr, IntPtr > CharacterBaseCreating;
-        public readonly  EventSubscriber< IntPtr, string, IntPtr >                 CharacterBaseCreated;
-        public readonly  EventSubscriber< IntPtr, string, string >                 GameObjectResourcePathResolved;
+        private readonly DalamudPluginInterface                                  _pi;
+        public readonly  EventSubscriber<IntPtr, string, IntPtr, IntPtr, IntPtr> CharacterBaseCreating;
+        public readonly  EventSubscriber<IntPtr, string, IntPtr>                 CharacterBaseCreated;
+        public readonly  EventSubscriber<IntPtr, string, string>                 GameObjectResourcePathResolved;
 
 
         private string         _lastCreatedGameObjectName = string.Empty;
@@ -519,94 +474,85 @@ public class IpcTester : IDisposable
         private IntPtr         _currentDrawObject         = IntPtr.Zero;
         private int            _currentCutsceneActor      = 0;
 
-        public GameState( DalamudPluginInterface pi )
+        public GameState(DalamudPluginInterface pi)
         {
             _pi                            = pi;
-            CharacterBaseCreating          = Ipc.CreatingCharacterBase.Subscriber( pi, UpdateLastCreated );
-            CharacterBaseCreated           = Ipc.CreatedCharacterBase.Subscriber( pi, UpdateLastCreated2 );
-            GameObjectResourcePathResolved = Ipc.GameObjectResourcePathResolved.Subscriber( pi, UpdateGameObjectResourcePath );
+            CharacterBaseCreating          = Ipc.CreatingCharacterBase.Subscriber(pi, UpdateLastCreated);
+            CharacterBaseCreated           = Ipc.CreatedCharacterBase.Subscriber(pi, UpdateLastCreated2);
+            GameObjectResourcePathResolved = Ipc.GameObjectResourcePathResolved.Subscriber(pi, UpdateGameObjectResourcePath);
         }
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Game State" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Game State");
+            if (!_)
                 return;
-            }
 
-            if( ImGui.InputTextWithHint( "##drawObject", "Draw Object Address..", ref _currentDrawObjectString, 16,
-                   ImGuiInputTextFlags.CharsHexadecimal ) )
-            {
-                _currentDrawObject = IntPtr.TryParse( _currentDrawObjectString, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var tmp )
+            if (ImGui.InputTextWithHint("##drawObject", "Draw Object Address..", ref _currentDrawObjectString, 16,
+                    ImGuiInputTextFlags.CharsHexadecimal))
+                _currentDrawObject = IntPtr.TryParse(_currentDrawObjectString, NumberStyles.HexNumber, CultureInfo.InvariantCulture,
+                    out var tmp)
                     ? tmp
                     : IntPtr.Zero;
-            }
 
-            ImGui.InputInt( "Cutscene Actor", ref _currentCutsceneActor, 0 );
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            ImGui.InputInt("Cutscene Actor", ref _currentCutsceneActor, 0);
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            DrawIntro( Ipc.GetDrawObjectInfo.Label, "Draw Object Info" );
-            if( _currentDrawObject == IntPtr.Zero )
+            DrawIntro(Ipc.GetDrawObjectInfo.Label, "Draw Object Info");
+            if (_currentDrawObject == IntPtr.Zero)
             {
-                ImGui.TextUnformatted( "Invalid" );
+                ImGui.TextUnformatted("Invalid");
             }
             else
             {
-                var (ptr, collection) = Ipc.GetDrawObjectInfo.Subscriber( _pi ).Invoke( _currentDrawObject );
-                ImGui.TextUnformatted( ptr == IntPtr.Zero ? $"No Actor Associated, {collection}" : $"{ptr:X}, {collection}" );
+                var (ptr, collection) = Ipc.GetDrawObjectInfo.Subscriber(_pi).Invoke(_currentDrawObject);
+                ImGui.TextUnformatted(ptr == IntPtr.Zero ? $"No Actor Associated, {collection}" : $"{ptr:X}, {collection}");
             }
 
-            DrawIntro( Ipc.GetCutsceneParentIndex.Label, "Cutscene Parent" );
-            ImGui.TextUnformatted( Ipc.GetCutsceneParentIndex.Subscriber( _pi ).Invoke( _currentCutsceneActor ).ToString() );
+            DrawIntro(Ipc.GetCutsceneParentIndex.Label, "Cutscene Parent");
+            ImGui.TextUnformatted(Ipc.GetCutsceneParentIndex.Subscriber(_pi).Invoke(_currentCutsceneActor).ToString());
 
-            DrawIntro( Ipc.CreatingCharacterBase.Label, "Last Drawobject created" );
-            if( _lastCreatedGameObjectTime < DateTimeOffset.Now )
-            {
-                ImGui.TextUnformatted( _lastCreatedDrawObject != IntPtr.Zero
+            DrawIntro(Ipc.CreatingCharacterBase.Label, "Last Drawobject created");
+            if (_lastCreatedGameObjectTime < DateTimeOffset.Now)
+                ImGui.TextUnformatted(_lastCreatedDrawObject != IntPtr.Zero
                     ? $"0x{_lastCreatedDrawObject:X} for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}"
-                    : $"NULL for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}" );
-            }
+                    : $"NULL for <{_lastCreatedGameObjectName}> at {_lastCreatedGameObjectTime}");
 
-            DrawIntro( Ipc.GameObjectResourcePathResolved.Label, "Last GamePath resolved" );
-            if( _lastResolvedGamePathTime < DateTimeOffset.Now )
-            {
+            DrawIntro(Ipc.GameObjectResourcePathResolved.Label, "Last GamePath resolved");
+            if (_lastResolvedGamePathTime < DateTimeOffset.Now)
                 ImGui.TextUnformatted(
-                    $"{_lastResolvedGamePath} -> {_lastResolvedFullPath} for <{_lastResolvedObject}> at {_lastResolvedGamePathTime}" );
-            }
+                    $"{_lastResolvedGamePath} -> {_lastResolvedFullPath} for <{_lastResolvedObject}> at {_lastResolvedGamePathTime}");
         }
 
-        private void UpdateLastCreated( IntPtr gameObject, string _, IntPtr _2, IntPtr _3, IntPtr _4 )
+        private void UpdateLastCreated(IntPtr gameObject, string _, IntPtr _2, IntPtr _3, IntPtr _4)
         {
-            _lastCreatedGameObjectName = GetObjectName( gameObject );
+            _lastCreatedGameObjectName = GetObjectName(gameObject);
             _lastCreatedGameObjectTime = DateTimeOffset.Now;
             _lastCreatedDrawObject     = IntPtr.Zero;
         }
 
-        private void UpdateLastCreated2( IntPtr gameObject, string _, IntPtr drawObject )
+        private void UpdateLastCreated2(IntPtr gameObject, string _, IntPtr drawObject)
         {
-            _lastCreatedGameObjectName = GetObjectName( gameObject );
+            _lastCreatedGameObjectName = GetObjectName(gameObject);
             _lastCreatedGameObjectTime = DateTimeOffset.Now;
             _lastCreatedDrawObject     = drawObject;
         }
 
-        private void UpdateGameObjectResourcePath( IntPtr gameObject, string gamePath, string fullPath )
+        private void UpdateGameObjectResourcePath(IntPtr gameObject, string gamePath, string fullPath)
         {
-            _lastResolvedObject       = GetObjectName( gameObject );
+            _lastResolvedObject       = GetObjectName(gameObject);
             _lastResolvedGamePath     = gamePath;
             _lastResolvedFullPath     = fullPath;
             _lastResolvedGamePathTime = DateTimeOffset.Now;
         }
 
-        private static unsafe string GetObjectName( IntPtr gameObject )
+        private static unsafe string GetObjectName(IntPtr gameObject)
         {
-            var obj  = ( FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* )gameObject;
+            var obj  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)gameObject;
             var name = obj != null ? obj->GetName() : null;
-            return name != null ? new ByteString( name ).ToString() : "Unknown";
+            return name != null ? new ByteString(name).ToString() : "Unknown";
         }
     }
 
@@ -619,124 +565,110 @@ public class IpcTester : IDisposable
         private string _currentReversePath      = string.Empty;
         private int    _currentReverseIdx       = 0;
 
-        public Resolve( DalamudPluginInterface pi )
+        public Resolve(DalamudPluginInterface pi)
             => _pi = pi;
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Resolving" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Resolving");
+            if (!_)
                 return;
-            }
 
-            ImGui.InputTextWithHint( "##resolvePath", "Resolve this game path...", ref _currentResolvePath, Utf8GamePath.MaxGamePathLength );
-            ImGui.InputTextWithHint( "##resolveCharacter", "Character Name (leave blank for default)...", ref _currentResolveCharacter, 32 );
-            ImGui.InputTextWithHint( "##resolveInversePath", "Reverse-resolve this path...", ref _currentReversePath,
-                Utf8GamePath.MaxGamePathLength );
-            ImGui.InputInt( "##resolveIdx", ref _currentReverseIdx, 0, 0 );
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            ImGui.InputTextWithHint("##resolvePath",      "Resolve this game path...", ref _currentResolvePath, Utf8GamePath.MaxGamePathLength);
+            ImGui.InputTextWithHint("##resolveCharacter", "Character Name (leave blank for default)...", ref _currentResolveCharacter, 32);
+            ImGui.InputTextWithHint("##resolveInversePath", "Reverse-resolve this path...", ref _currentReversePath,
+                Utf8GamePath.MaxGamePathLength);
+            ImGui.InputInt("##resolveIdx", ref _currentReverseIdx, 0, 0);
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            DrawIntro( Ipc.ResolveDefaultPath.Label, "Default Collection Resolve" );
-            if( _currentResolvePath.Length != 0 )
-            {
-                ImGui.TextUnformatted( Ipc.ResolveDefaultPath.Subscriber( _pi ).Invoke( _currentResolvePath ) );
-            }
+            DrawIntro(Ipc.ResolveDefaultPath.Label, "Default Collection Resolve");
+            if (_currentResolvePath.Length != 0)
+                ImGui.TextUnformatted(Ipc.ResolveDefaultPath.Subscriber(_pi).Invoke(_currentResolvePath));
 
-            DrawIntro( Ipc.ResolveInterfacePath.Label, "Interface Collection Resolve" );
-            if( _currentResolvePath.Length != 0 )
-            {
-                ImGui.TextUnformatted( Ipc.ResolveInterfacePath.Subscriber( _pi ).Invoke( _currentResolvePath ) );
-            }
+            DrawIntro(Ipc.ResolveInterfacePath.Label, "Interface Collection Resolve");
+            if (_currentResolvePath.Length != 0)
+                ImGui.TextUnformatted(Ipc.ResolveInterfacePath.Subscriber(_pi).Invoke(_currentResolvePath));
 
-            DrawIntro( Ipc.ResolvePlayerPath.Label, "Player Collection Resolve" );
-            if( _currentResolvePath.Length != 0 )
-            {
-                ImGui.TextUnformatted( Ipc.ResolvePlayerPath.Subscriber( _pi ).Invoke( _currentResolvePath ) );
-            }
+            DrawIntro(Ipc.ResolvePlayerPath.Label, "Player Collection Resolve");
+            if (_currentResolvePath.Length != 0)
+                ImGui.TextUnformatted(Ipc.ResolvePlayerPath.Subscriber(_pi).Invoke(_currentResolvePath));
 
-            DrawIntro( Ipc.ResolveCharacterPath.Label, "Character Collection Resolve" );
-            if( _currentResolvePath.Length != 0 && _currentResolveCharacter.Length != 0 )
-            {
-                ImGui.TextUnformatted( Ipc.ResolveCharacterPath.Subscriber( _pi ).Invoke( _currentResolvePath, _currentResolveCharacter ) );
-            }
+            DrawIntro(Ipc.ResolveCharacterPath.Label, "Character Collection Resolve");
+            if (_currentResolvePath.Length != 0 && _currentResolveCharacter.Length != 0)
+                ImGui.TextUnformatted(Ipc.ResolveCharacterPath.Subscriber(_pi).Invoke(_currentResolvePath, _currentResolveCharacter));
 
-            DrawIntro( Ipc.ResolveGameObjectPath.Label, "Game Object Collection Resolve" );
-            if( _currentResolvePath.Length != 0 )
-            {
-                ImGui.TextUnformatted( Ipc.ResolveGameObjectPath.Subscriber( _pi ).Invoke( _currentResolvePath, _currentReverseIdx ) );
-            }
+            DrawIntro(Ipc.ResolveGameObjectPath.Label, "Game Object Collection Resolve");
+            if (_currentResolvePath.Length != 0)
+                ImGui.TextUnformatted(Ipc.ResolveGameObjectPath.Subscriber(_pi).Invoke(_currentResolvePath, _currentReverseIdx));
 
-            DrawIntro( Ipc.ReverseResolvePath.Label, "Reversed Game Paths" );
-            if( _currentReversePath.Length > 0 )
+            DrawIntro(Ipc.ReverseResolvePath.Label, "Reversed Game Paths");
+            if (_currentReversePath.Length > 0)
             {
-                var list = Ipc.ReverseResolvePath.Subscriber( _pi ).Invoke( _currentReversePath, _currentResolveCharacter );
-                if( list.Length > 0 )
+                var list = Ipc.ReverseResolvePath.Subscriber(_pi).Invoke(_currentReversePath, _currentResolveCharacter);
+                if (list.Length > 0)
                 {
-                    ImGui.TextUnformatted( list[ 0 ] );
-                    if( list.Length > 1 && ImGui.IsItemHovered() )
-                    {
-                        ImGui.SetTooltip( string.Join( "\n", list.Skip( 1 ) ) );
-                    }
+                    ImGui.TextUnformatted(list[0]);
+                    if (list.Length > 1 && ImGui.IsItemHovered())
+                        ImGui.SetTooltip(string.Join("\n", list.Skip(1)));
                 }
             }
 
-            DrawIntro( Ipc.ReverseResolvePlayerPath.Label, "Reversed Game Paths (Player)" );
-            if( _currentReversePath.Length > 0 )
+            DrawIntro(Ipc.ReverseResolvePlayerPath.Label, "Reversed Game Paths (Player)");
+            if (_currentReversePath.Length > 0)
             {
-                var list = Ipc.ReverseResolvePlayerPath.Subscriber( _pi ).Invoke( _currentReversePath );
-                if( list.Length > 0 )
+                var list = Ipc.ReverseResolvePlayerPath.Subscriber(_pi).Invoke(_currentReversePath);
+                if (list.Length > 0)
                 {
-                    ImGui.TextUnformatted( list[ 0 ] );
-                    if( list.Length > 1 && ImGui.IsItemHovered() )
-                    {
-                        ImGui.SetTooltip( string.Join( "\n", list.Skip( 1 ) ) );
-                    }
+                    ImGui.TextUnformatted(list[0]);
+                    if (list.Length > 1 && ImGui.IsItemHovered())
+                        ImGui.SetTooltip(string.Join("\n", list.Skip(1)));
                 }
             }
 
-            DrawIntro( Ipc.ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)" );
-            if( _currentReversePath.Length > 0 )
+            DrawIntro(Ipc.ReverseResolveGameObjectPath.Label, "Reversed Game Paths (Game Object)");
+            if (_currentReversePath.Length > 0)
             {
-                var list = Ipc.ReverseResolveGameObjectPath.Subscriber( _pi ).Invoke( _currentReversePath, _currentReverseIdx );
-                if( list.Length > 0 )
+                var list = Ipc.ReverseResolveGameObjectPath.Subscriber(_pi).Invoke(_currentReversePath, _currentReverseIdx);
+                if (list.Length > 0)
                 {
-                    ImGui.TextUnformatted( list[ 0 ] );
-                    if( list.Length > 1 && ImGui.IsItemHovered() )
-                    {
-                        ImGui.SetTooltip( string.Join( "\n", list.Skip( 1 ) ) );
-                    }
+                    ImGui.TextUnformatted(list[0]);
+                    if (list.Length > 1 && ImGui.IsItemHovered())
+                        ImGui.SetTooltip(string.Join("\n", list.Skip(1)));
                 }
             }
 
-            DrawIntro( Ipc.ResolvePlayerPaths.Label, "Resolved Paths (Player)" );
-            if( _currentResolvePath.Length > 0 || _currentReversePath.Length > 0 )
+            DrawIntro(Ipc.ResolvePlayerPaths.Label, "Resolved Paths (Player)");
+            if (_currentResolvePath.Length > 0 || _currentReversePath.Length > 0)
             {
-                var forwardArray = _currentResolvePath.Length > 0 ? new[] { _currentResolvePath } : Array.Empty< string >();
-                var reverseArray = _currentReversePath.Length > 0 ? new[] { _currentReversePath } : Array.Empty< string >();
-                var ret          = Ipc.ResolvePlayerPaths.Subscriber( _pi ).Invoke( forwardArray, reverseArray );
-                var text         = string.Empty;
-                if( ret.Item1.Length > 0 )
-                {
-                    if( ret.Item2.Length > 0 )
+                var forwardArray = _currentResolvePath.Length > 0
+                    ? new[]
                     {
-                        text = $"Forward: {ret.Item1[ 0 ]} | Reverse: {string.Join( "; ", ret.Item2[ 0 ] )}.";
+                        _currentResolvePath,
                     }
+                    : Array.Empty<string>();
+                var reverseArray = _currentReversePath.Length > 0
+                    ? new[]
+                    {
+                        _currentReversePath,
+                    }
+                    : Array.Empty<string>();
+                var ret  = Ipc.ResolvePlayerPaths.Subscriber(_pi).Invoke(forwardArray, reverseArray);
+                var text = string.Empty;
+                if (ret.Item1.Length > 0)
+                {
+                    if (ret.Item2.Length > 0)
+                        text = $"Forward: {ret.Item1[0]} | Reverse: {string.Join("; ", ret.Item2[0])}.";
                     else
-                    {
-                        text = $"Forward: {ret.Item1[ 0 ]}.";
-                    }
+                        text = $"Forward: {ret.Item1[0]}.";
                 }
-                else if( ret.Item2.Length > 0 )
+                else if (ret.Item2.Length > 0)
                 {
-                    text = $"Reverse: {string.Join( "; ", ret.Item2[ 0 ] )}.";
+                    text = $"Reverse: {string.Join("; ", ret.Item2[0])}.";
                 }
 
-                ImGui.TextUnformatted( text );
+                ImGui.TextUnformatted(text);
             }
         }
     }
@@ -751,95 +683,85 @@ public class IpcTester : IDisposable
         private bool              _allowDeletion  = true;
         private ApiCollectionType _type           = ApiCollectionType.Current;
 
-        private string                                 _characterCollectionName = string.Empty;
-        private IList< string >                        _collections             = new List< string >();
-        private string                                 _changedItemCollection   = string.Empty;
-        private IReadOnlyDictionary< string, object? > _changedItems            = new Dictionary< string, object? >();
-        private PenumbraApiEc                          _returnCode              = PenumbraApiEc.Success;
-        private string?                                _oldCollection           = null;
+        private string                               _characterCollectionName = string.Empty;
+        private IList<string>                        _collections             = new List<string>();
+        private string                               _changedItemCollection   = string.Empty;
+        private IReadOnlyDictionary<string, object?> _changedItems            = new Dictionary<string, object?>();
+        private PenumbraApiEc                        _returnCode              = PenumbraApiEc.Success;
+        private string?                              _oldCollection           = null;
 
-        public Collections( DalamudPluginInterface pi )
+        public Collections(DalamudPluginInterface pi)
             => _pi = pi;
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Collections" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Collections");
+            if (!_)
                 return;
-            }
 
-            ImGuiUtil.GenericEnumCombo( "Collection Type", 200, _type, out _type, t => ( ( CollectionType )t ).ToName() );
-            ImGui.InputInt( "Object Index##Collections", ref _objectIdx, 0, 0 );
-            ImGui.InputText( "Collection Name##Collections", ref _collectionName, 64 );
-            ImGui.Checkbox( "Allow Assignment Creation", ref _allowCreation );
+            ImGuiUtil.GenericEnumCombo("Collection Type", 200, _type, out _type, t => ((CollectionType)t).ToName());
+            ImGui.InputInt("Object Index##Collections", ref _objectIdx, 0, 0);
+            ImGui.InputText("Collection Name##Collections", ref _collectionName, 64);
+            ImGui.Checkbox("Allow Assignment Creation", ref _allowCreation);
             ImGui.SameLine();
-            ImGui.Checkbox( "Allow Assignment Deletion", ref _allowDeletion );
+            ImGui.Checkbox("Allow Assignment Deletion", ref _allowDeletion);
 
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            DrawIntro( "Last Return Code", _returnCode.ToString() );
-            if( _oldCollection != null )
-            {
-                ImGui.TextUnformatted( _oldCollection.Length == 0 ? "Created" : _oldCollection );
-            }
+            DrawIntro("Last Return Code", _returnCode.ToString());
+            if (_oldCollection != null)
+                ImGui.TextUnformatted(_oldCollection.Length == 0 ? "Created" : _oldCollection);
 
-            DrawIntro( Ipc.GetCurrentCollectionName.Label, "Current Collection" );
-            ImGui.TextUnformatted( Ipc.GetCurrentCollectionName.Subscriber( _pi ).Invoke() );
-            DrawIntro( Ipc.GetDefaultCollectionName.Label, "Default Collection" );
-            ImGui.TextUnformatted( Ipc.GetDefaultCollectionName.Subscriber( _pi ).Invoke() );
-            DrawIntro( Ipc.GetInterfaceCollectionName.Label, "Interface Collection" );
-            ImGui.TextUnformatted( Ipc.GetInterfaceCollectionName.Subscriber( _pi ).Invoke() );
-            DrawIntro( Ipc.GetCharacterCollectionName.Label, "Character" );
-            ImGui.SetNextItemWidth( 200 * UiHelpers.Scale );
-            ImGui.InputTextWithHint( "##characterCollectionName", "Character Name...", ref _characterCollectionName, 64 );
-            var (c, s) = Ipc.GetCharacterCollectionName.Subscriber( _pi ).Invoke( _characterCollectionName );
+            DrawIntro(Ipc.GetCurrentCollectionName.Label, "Current Collection");
+            ImGui.TextUnformatted(Ipc.GetCurrentCollectionName.Subscriber(_pi).Invoke());
+            DrawIntro(Ipc.GetDefaultCollectionName.Label, "Default Collection");
+            ImGui.TextUnformatted(Ipc.GetDefaultCollectionName.Subscriber(_pi).Invoke());
+            DrawIntro(Ipc.GetInterfaceCollectionName.Label, "Interface Collection");
+            ImGui.TextUnformatted(Ipc.GetInterfaceCollectionName.Subscriber(_pi).Invoke());
+            DrawIntro(Ipc.GetCharacterCollectionName.Label, "Character");
+            ImGui.SetNextItemWidth(200 * UiHelpers.Scale);
+            ImGui.InputTextWithHint("##characterCollectionName", "Character Name...", ref _characterCollectionName, 64);
+            var (c, s) = Ipc.GetCharacterCollectionName.Subscriber(_pi).Invoke(_characterCollectionName);
             ImGui.SameLine();
-            ImGui.TextUnformatted( $"{c}, {( s ? "Custom" : "Default" )}" );
+            ImGui.TextUnformatted($"{c}, {(s ? "Custom" : "Default")}");
 
-            DrawIntro( Ipc.GetCollections.Label, "Collections" );
-            if( ImGui.Button( "Get##Collections" ) )
+            DrawIntro(Ipc.GetCollections.Label, "Collections");
+            if (ImGui.Button("Get##Collections"))
             {
-                _collections = Ipc.GetCollections.Subscriber( _pi ).Invoke();
-                ImGui.OpenPopup( "Collections" );
+                _collections = Ipc.GetCollections.Subscriber(_pi).Invoke();
+                ImGui.OpenPopup("Collections");
             }
 
-            DrawIntro( Ipc.GetCollectionForType.Label, "Get Special Collection" );
-            var name = Ipc.GetCollectionForType.Subscriber( _pi ).Invoke( _type );
-            ImGui.TextUnformatted( name.Length == 0 ? "Unassigned" : name );
-            DrawIntro( Ipc.SetCollectionForType.Label, "Set Special Collection" );
-            if( ImGui.Button( "Set##TypeCollection" ) )
-            {
-                ( _returnCode, _oldCollection ) = Ipc.SetCollectionForType.Subscriber( _pi ).Invoke( _type, _collectionName, _allowCreation, _allowDeletion );
-            }
+            DrawIntro(Ipc.GetCollectionForType.Label, "Get Special Collection");
+            var name = Ipc.GetCollectionForType.Subscriber(_pi).Invoke(_type);
+            ImGui.TextUnformatted(name.Length == 0 ? "Unassigned" : name);
+            DrawIntro(Ipc.SetCollectionForType.Label, "Set Special Collection");
+            if (ImGui.Button("Set##TypeCollection"))
+                (_returnCode, _oldCollection) =
+                    Ipc.SetCollectionForType.Subscriber(_pi).Invoke(_type, _collectionName, _allowCreation, _allowDeletion);
 
-            DrawIntro( Ipc.GetCollectionForObject.Label, "Get Object Collection" );
-            ( var valid, var individual, name ) = Ipc.GetCollectionForObject.Subscriber( _pi ).Invoke( _objectIdx );
+            DrawIntro(Ipc.GetCollectionForObject.Label, "Get Object Collection");
+            (var valid, var individual, name) = Ipc.GetCollectionForObject.Subscriber(_pi).Invoke(_objectIdx);
             ImGui.TextUnformatted(
-                $"{( valid ? "Valid" : "Invalid" )} Object, {( name.Length == 0 ? "Unassigned" : name )}{( individual ? " (Individual Assignment)" : string.Empty )}" );
-            DrawIntro( Ipc.SetCollectionForObject.Label, "Set Object Collection" );
-            if( ImGui.Button( "Set##ObjectCollection" ) )
-            {
-                ( _returnCode, _oldCollection ) = Ipc.SetCollectionForObject.Subscriber( _pi ).Invoke( _objectIdx, _collectionName, _allowCreation, _allowDeletion );
-            }
+                $"{(valid ? "Valid" : "Invalid")} Object, {(name.Length == 0 ? "Unassigned" : name)}{(individual ? " (Individual Assignment)" : string.Empty)}");
+            DrawIntro(Ipc.SetCollectionForObject.Label, "Set Object Collection");
+            if (ImGui.Button("Set##ObjectCollection"))
+                (_returnCode, _oldCollection) = Ipc.SetCollectionForObject.Subscriber(_pi)
+                    .Invoke(_objectIdx, _collectionName, _allowCreation, _allowDeletion);
 
-            if( _returnCode == PenumbraApiEc.NothingChanged && _oldCollection.IsNullOrEmpty() )
-            {
+            if (_returnCode == PenumbraApiEc.NothingChanged && _oldCollection.IsNullOrEmpty())
                 _oldCollection = null;
-            }
 
-            DrawIntro( Ipc.GetChangedItems.Label, "Changed Item List" );
-            ImGui.SetNextItemWidth( 200 * UiHelpers.Scale );
-            ImGui.InputTextWithHint( "##changedCollection", "Collection Name...", ref _changedItemCollection, 64 );
+            DrawIntro(Ipc.GetChangedItems.Label, "Changed Item List");
+            ImGui.SetNextItemWidth(200 * UiHelpers.Scale);
+            ImGui.InputTextWithHint("##changedCollection", "Collection Name...", ref _changedItemCollection, 64);
             ImGui.SameLine();
-            if( ImGui.Button( "Get" ) )
+            if (ImGui.Button("Get"))
             {
-                _changedItems = Ipc.GetChangedItems.Subscriber( _pi ).Invoke( _changedItemCollection );
-                ImGui.OpenPopup( "Changed Item List" );
+                _changedItems = Ipc.GetChangedItems.Subscriber(_pi).Invoke(_changedItemCollection);
+                ImGui.OpenPopup("Changed Item List");
             }
 
             DrawChangedItemPopup();
@@ -848,42 +770,30 @@ public class IpcTester : IDisposable
 
         private void DrawChangedItemPopup()
         {
-            ImGui.SetNextWindowSize( ImGuiHelpers.ScaledVector2( 500, 500 ) );
-            using var p = ImRaii.Popup( "Changed Item List" );
-            if( !p )
-            {
+            ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
+            using var p = ImRaii.Popup("Changed Item List");
+            if (!p)
                 return;
-            }
 
-            foreach( var item in _changedItems )
-            {
-                ImGui.TextUnformatted( item.Key );
-            }
+            foreach (var item in _changedItems)
+                ImGui.TextUnformatted(item.Key);
 
-            if( ImGui.Button( "Close", -Vector2.UnitX ) || !ImGui.IsWindowFocused() )
-            {
+            if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
                 ImGui.CloseCurrentPopup();
-            }
         }
 
         private void DrawCollectionPopup()
         {
-            ImGui.SetNextWindowSize( ImGuiHelpers.ScaledVector2( 500, 500 ) );
-            using var p = ImRaii.Popup( "Collections" );
-            if( !p )
-            {
+            ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
+            using var p = ImRaii.Popup("Collections");
+            if (!p)
                 return;
-            }
 
-            foreach( var collection in _collections )
-            {
-                ImGui.TextUnformatted( collection );
-            }
+            foreach (var collection in _collections)
+                ImGui.TextUnformatted(collection);
 
-            if( ImGui.Button( "Close", -Vector2.UnitX ) || !ImGui.IsWindowFocused() )
-            {
+            if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
                 ImGui.CloseCurrentPopup();
-            }
         }
     }
 
@@ -894,44 +804,40 @@ public class IpcTester : IDisposable
         private string _characterName   = string.Empty;
         private int    _gameObjectIndex = 0;
 
-        public Meta( DalamudPluginInterface pi )
+        public Meta(DalamudPluginInterface pi)
             => _pi = pi;
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Meta" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Meta");
+            if (!_)
                 return;
-            }
 
-            ImGui.InputTextWithHint( "##characterName", "Character Name...", ref _characterName, 64 );
-            ImGui.InputInt( "##metaIdx", ref _gameObjectIndex, 0, 0 );
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            ImGui.InputTextWithHint("##characterName", "Character Name...", ref _characterName, 64);
+            ImGui.InputInt("##metaIdx", ref _gameObjectIndex, 0, 0);
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
+
+            DrawIntro(Ipc.GetMetaManipulations.Label, "Meta Manipulations");
+            if (ImGui.Button("Copy to Clipboard"))
+            {
+                var base64 = Ipc.GetMetaManipulations.Subscriber(_pi).Invoke(_characterName);
+                ImGui.SetClipboardText(base64);
             }
 
-            DrawIntro( Ipc.GetMetaManipulations.Label, "Meta Manipulations" );
-            if( ImGui.Button( "Copy to Clipboard" ) )
+            DrawIntro(Ipc.GetPlayerMetaManipulations.Label, "Player Meta Manipulations");
+            if (ImGui.Button("Copy to Clipboard##Player"))
             {
-                var base64 = Ipc.GetMetaManipulations.Subscriber( _pi ).Invoke( _characterName );
-                ImGui.SetClipboardText( base64 );
+                var base64 = Ipc.GetPlayerMetaManipulations.Subscriber(_pi).Invoke();
+                ImGui.SetClipboardText(base64);
             }
 
-            DrawIntro( Ipc.GetPlayerMetaManipulations.Label, "Player Meta Manipulations" );
-            if( ImGui.Button( "Copy to Clipboard##Player" ) )
+            DrawIntro(Ipc.GetGameObjectMetaManipulations.Label, "Game Object Manipulations");
+            if (ImGui.Button("Copy to Clipboard##GameObject"))
             {
-                var base64 = Ipc.GetPlayerMetaManipulations.Subscriber( _pi ).Invoke();
-                ImGui.SetClipboardText( base64 );
-            }
-
-            DrawIntro( Ipc.GetGameObjectMetaManipulations.Label, "Game Object Manipulations" );
-            if( ImGui.Button( "Copy to Clipboard##GameObject" ) )
-            {
-                var base64 = Ipc.GetGameObjectMetaManipulations.Subscriber( _pi ).Invoke( _gameObjectIndex );
-                ImGui.SetClipboardText( base64 );
+                var base64 = Ipc.GetGameObjectMetaManipulations.Subscriber(_pi).Invoke(_gameObjectIndex);
+                ImGui.SetClipboardText(base64);
             }
         }
     }
@@ -940,18 +846,18 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
 
-        private string                    _modDirectory = string.Empty;
-        private string                    _modName      = string.Empty;
-        private string                    _pathInput    = string.Empty;
-        private PenumbraApiEc             _lastReloadEc;
-        private PenumbraApiEc             _lastAddEc;
-        private PenumbraApiEc             _lastDeleteEc;
-        private PenumbraApiEc             _lastSetPathEc;
-        private IList< (string, string) > _mods = new List< (string, string) >();
+        private string                  _modDirectory = string.Empty;
+        private string                  _modName      = string.Empty;
+        private string                  _pathInput    = string.Empty;
+        private PenumbraApiEc           _lastReloadEc;
+        private PenumbraApiEc           _lastAddEc;
+        private PenumbraApiEc           _lastDeleteEc;
+        private PenumbraApiEc           _lastSetPathEc;
+        private IList<(string, string)> _mods = new List<(string, string)>();
 
-        public readonly EventSubscriber< string >         DeleteSubscriber;
-        public readonly EventSubscriber< string >         AddSubscriber;
-        public readonly EventSubscriber< string, string > MoveSubscriber;
+        public readonly EventSubscriber<string>         DeleteSubscriber;
+        public readonly EventSubscriber<string>         AddSubscriber;
+        public readonly EventSubscriber<string, string> MoveSubscriber;
 
         private DateTimeOffset _lastDeletedModTime = DateTimeOffset.UnixEpoch;
         private string         _lastDeletedMod     = string.Empty;
@@ -961,137 +867,113 @@ public class IpcTester : IDisposable
         private string         _lastMovedModFrom   = string.Empty;
         private string         _lastMovedModTo     = string.Empty;
 
-        public Mods( DalamudPluginInterface pi )
+        public Mods(DalamudPluginInterface pi)
         {
             _pi = pi;
-            DeleteSubscriber = Ipc.ModDeleted.Subscriber( pi, s =>
+            DeleteSubscriber = Ipc.ModDeleted.Subscriber(pi, s =>
             {
                 _lastDeletedModTime = DateTimeOffset.UtcNow;
                 _lastDeletedMod     = s;
-            } );
-            AddSubscriber = Ipc.ModAdded.Subscriber( pi, s =>
+            });
+            AddSubscriber = Ipc.ModAdded.Subscriber(pi, s =>
             {
                 _lastAddedModTime = DateTimeOffset.UtcNow;
                 _lastAddedMod     = s;
-            } );
-            MoveSubscriber = Ipc.ModMoved.Subscriber( pi, ( s1, s2 ) =>
+            });
+            MoveSubscriber = Ipc.ModMoved.Subscriber(pi, (s1, s2) =>
             {
                 _lastMovedModTime = DateTimeOffset.UtcNow;
                 _lastMovedModFrom = s1;
                 _lastMovedModTo   = s2;
-            } );
+            });
         }
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Mods" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Mods");
+            if (!_)
                 return;
-            }
 
-            ImGui.InputTextWithHint( "##modDir", "Mod Directory Name...", ref _modDirectory, 100 );
-            ImGui.InputTextWithHint( "##modName", "Mod Name...", ref _modName, 100 );
-            ImGui.InputTextWithHint( "##path", "New Path...", ref _pathInput, 100 );
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            ImGui.InputTextWithHint("##modDir",  "Mod Directory Name...", ref _modDirectory, 100);
+            ImGui.InputTextWithHint("##modName", "Mod Name...",           ref _modName,      100);
+            ImGui.InputTextWithHint("##path",    "New Path...",           ref _pathInput,    100);
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
+
+            DrawIntro(Ipc.GetMods.Label, "Mods");
+            if (ImGui.Button("Get##Mods"))
+            {
+                _mods = Ipc.GetMods.Subscriber(_pi).Invoke();
+                ImGui.OpenPopup("Mods");
             }
 
-            DrawIntro( Ipc.GetMods.Label, "Mods" );
-            if( ImGui.Button( "Get##Mods" ) )
-            {
-                _mods = Ipc.GetMods.Subscriber( _pi ).Invoke();
-                ImGui.OpenPopup( "Mods" );
-            }
-
-            DrawIntro( Ipc.ReloadMod.Label, "Reload Mod" );
-            if( ImGui.Button( "Reload" ) )
-            {
-                _lastReloadEc = Ipc.ReloadMod.Subscriber( _pi ).Invoke( _modDirectory, _modName );
-            }
+            DrawIntro(Ipc.ReloadMod.Label, "Reload Mod");
+            if (ImGui.Button("Reload"))
+                _lastReloadEc = Ipc.ReloadMod.Subscriber(_pi).Invoke(_modDirectory, _modName);
 
             ImGui.SameLine();
-            ImGui.TextUnformatted( _lastReloadEc.ToString() );
+            ImGui.TextUnformatted(_lastReloadEc.ToString());
 
-            DrawIntro( Ipc.AddMod.Label, "Add Mod" );
-            if( ImGui.Button( "Add" ) )
-            {
-                _lastAddEc = Ipc.AddMod.Subscriber( _pi ).Invoke( _modDirectory );
-            }
+            DrawIntro(Ipc.AddMod.Label, "Add Mod");
+            if (ImGui.Button("Add"))
+                _lastAddEc = Ipc.AddMod.Subscriber(_pi).Invoke(_modDirectory);
 
             ImGui.SameLine();
-            ImGui.TextUnformatted( _lastAddEc.ToString() );
+            ImGui.TextUnformatted(_lastAddEc.ToString());
 
-            DrawIntro( Ipc.DeleteMod.Label, "Delete Mod" );
-            if( ImGui.Button( "Delete" ) )
-            {
-                _lastDeleteEc = Ipc.DeleteMod.Subscriber( _pi ).Invoke( _modDirectory, _modName );
-            }
+            DrawIntro(Ipc.DeleteMod.Label, "Delete Mod");
+            if (ImGui.Button("Delete"))
+                _lastDeleteEc = Ipc.DeleteMod.Subscriber(_pi).Invoke(_modDirectory, _modName);
 
             ImGui.SameLine();
-            ImGui.TextUnformatted( _lastDeleteEc.ToString() );
+            ImGui.TextUnformatted(_lastDeleteEc.ToString());
 
-            DrawIntro( Ipc.GetModPath.Label, "Current Path" );
-            var (ec, path, def) = Ipc.GetModPath.Subscriber( _pi ).Invoke( _modDirectory, _modName );
-            ImGui.TextUnformatted( $"{path} ({( def ? "Custom" : "Default" )}) [{ec}]" );
+            DrawIntro(Ipc.GetModPath.Label, "Current Path");
+            var (ec, path, def) = Ipc.GetModPath.Subscriber(_pi).Invoke(_modDirectory, _modName);
+            ImGui.TextUnformatted($"{path} ({(def ? "Custom" : "Default")}) [{ec}]");
 
-            DrawIntro( Ipc.SetModPath.Label, "Set Path" );
-            if( ImGui.Button( "Set" ) )
-            {
-                _lastSetPathEc = Ipc.SetModPath.Subscriber( _pi ).Invoke( _modDirectory, _modName, _pathInput );
-            }
+            DrawIntro(Ipc.SetModPath.Label, "Set Path");
+            if (ImGui.Button("Set"))
+                _lastSetPathEc = Ipc.SetModPath.Subscriber(_pi).Invoke(_modDirectory, _modName, _pathInput);
 
             ImGui.SameLine();
-            ImGui.TextUnformatted( _lastSetPathEc.ToString() );
+            ImGui.TextUnformatted(_lastSetPathEc.ToString());
 
-            DrawIntro( Ipc.ModDeleted.Label, "Last Mod Deleted" );
-            if( _lastDeletedModTime > DateTimeOffset.UnixEpoch )
-            {
-                ImGui.TextUnformatted( $"{_lastDeletedMod} at {_lastDeletedModTime}" );
-            }
+            DrawIntro(Ipc.ModDeleted.Label, "Last Mod Deleted");
+            if (_lastDeletedModTime > DateTimeOffset.UnixEpoch)
+                ImGui.TextUnformatted($"{_lastDeletedMod} at {_lastDeletedModTime}");
 
-            DrawIntro( Ipc.ModAdded.Label, "Last Mod Added" );
-            if( _lastAddedModTime > DateTimeOffset.UnixEpoch )
-            {
-                ImGui.TextUnformatted( $"{_lastAddedMod} at {_lastAddedModTime}" );
-            }
+            DrawIntro(Ipc.ModAdded.Label, "Last Mod Added");
+            if (_lastAddedModTime > DateTimeOffset.UnixEpoch)
+                ImGui.TextUnformatted($"{_lastAddedMod} at {_lastAddedModTime}");
 
-            DrawIntro( Ipc.ModMoved.Label, "Last Mod Moved" );
-            if( _lastMovedModTime > DateTimeOffset.UnixEpoch )
-            {
-                ImGui.TextUnformatted( $"{_lastMovedModFrom} -> {_lastMovedModTo} at {_lastMovedModTime}" );
-            }
+            DrawIntro(Ipc.ModMoved.Label, "Last Mod Moved");
+            if (_lastMovedModTime > DateTimeOffset.UnixEpoch)
+                ImGui.TextUnformatted($"{_lastMovedModFrom} -> {_lastMovedModTo} at {_lastMovedModTime}");
 
             DrawModsPopup();
         }
 
         private void DrawModsPopup()
         {
-            ImGui.SetNextWindowSize( ImGuiHelpers.ScaledVector2( 500, 500 ) );
-            using var p = ImRaii.Popup( "Mods" );
-            if( !p )
-            {
+            ImGui.SetNextWindowSize(ImGuiHelpers.ScaledVector2(500, 500));
+            using var p = ImRaii.Popup("Mods");
+            if (!p)
                 return;
-            }
 
-            foreach( var (modDir, modName) in _mods )
-            {
-                ImGui.TextUnformatted( $"{modDir}: {modName}" );
-            }
+            foreach (var (modDir, modName) in _mods)
+                ImGui.TextUnformatted($"{modDir}: {modName}");
 
-            if( ImGui.Button( "Close", -Vector2.UnitX ) || !ImGui.IsWindowFocused() )
-            {
+            if (ImGui.Button("Close", -Vector2.UnitX) || !ImGui.IsWindowFocused())
                 ImGui.CloseCurrentPopup();
-            }
         }
     }
 
     private class ModSettings
     {
-        private readonly DalamudPluginInterface                                    _pi;
-        public readonly  EventSubscriber< ModSettingChange, string, string, bool > SettingChanged;
+        private readonly DalamudPluginInterface                                  _pi;
+        public readonly  EventSubscriber<ModSettingChange, string, string, bool> SettingChanged;
 
         private PenumbraApiEc    _lastSettingsError = PenumbraApiEc.Success;
         private ModSettingChange _lastSettingChangeType;
@@ -1100,60 +982,57 @@ public class IpcTester : IDisposable
         private bool             _lastSettingChangeInherited;
         private DateTimeOffset   _lastSettingChange;
 
-        private string                                               _settingsModDirectory     = string.Empty;
-        private string                                               _settingsModName          = string.Empty;
-        private string                                               _settingsCollection       = string.Empty;
-        private bool                                                 _settingsAllowInheritance = true;
-        private bool                                                 _settingsInherit          = false;
-        private bool                                                 _settingsEnabled          = false;
-        private int                                                  _settingsPriority         = 0;
-        private IDictionary< string, (IList< string >, GroupType) >? _availableSettings;
-        private IDictionary< string, IList< string > >?              _currentSettings = null;
+        private string                                           _settingsModDirectory     = string.Empty;
+        private string                                           _settingsModName          = string.Empty;
+        private string                                           _settingsCollection       = string.Empty;
+        private bool                                             _settingsAllowInheritance = true;
+        private bool                                             _settingsInherit          = false;
+        private bool                                             _settingsEnabled          = false;
+        private int                                              _settingsPriority         = 0;
+        private IDictionary<string, (IList<string>, GroupType)>? _availableSettings;
+        private IDictionary<string, IList<string>>?              _currentSettings = null;
 
-        public ModSettings( DalamudPluginInterface pi )
+        public ModSettings(DalamudPluginInterface pi)
         {
             _pi            = pi;
-            SettingChanged = Ipc.ModSettingChanged.Subscriber( pi, UpdateLastModSetting );
+            SettingChanged = Ipc.ModSettingChanged.Subscriber(pi, UpdateLastModSetting);
         }
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Mod Settings" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Mod Settings");
+            if (!_)
                 return;
-            }
 
-            ImGui.InputTextWithHint( "##settingsDir", "Mod Directory Name...", ref _settingsModDirectory, 100 );
-            ImGui.InputTextWithHint( "##settingsName", "Mod Name...", ref _settingsModName, 100 );
-            ImGui.InputTextWithHint( "##settingsCollection", "Collection...", ref _settingsCollection, 100 );
-            ImGui.Checkbox( "Allow Inheritance", ref _settingsAllowInheritance );
+            ImGui.InputTextWithHint("##settingsDir",        "Mod Directory Name...", ref _settingsModDirectory, 100);
+            ImGui.InputTextWithHint("##settingsName",       "Mod Name...",           ref _settingsModName,      100);
+            ImGui.InputTextWithHint("##settingsCollection", "Collection...",         ref _settingsCollection,   100);
+            ImGui.Checkbox("Allow Inheritance", ref _settingsAllowInheritance);
 
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            DrawIntro( "Last Error", _lastSettingsError.ToString() );
-            DrawIntro( Ipc.ModSettingChanged.Label, "Last Mod Setting Changed" );
-            ImGui.TextUnformatted( _lastSettingChangeMod.Length > 0
-                ? $"{_lastSettingChangeType} of {_lastSettingChangeMod} in {_lastSettingChangeCollection}{( _lastSettingChangeInherited ? " (Inherited)" : string.Empty )} at {_lastSettingChange}"
-                : "None" );
-            DrawIntro( Ipc.GetAvailableModSettings.Label, "Get Available Settings" );
-            if( ImGui.Button( "Get##Available" ) )
+            DrawIntro("Last Error",                _lastSettingsError.ToString());
+            DrawIntro(Ipc.ModSettingChanged.Label, "Last Mod Setting Changed");
+            ImGui.TextUnformatted(_lastSettingChangeMod.Length > 0
+                ? $"{_lastSettingChangeType} of {_lastSettingChangeMod} in {_lastSettingChangeCollection}{(_lastSettingChangeInherited ? " (Inherited)" : string.Empty)} at {_lastSettingChange}"
+                : "None");
+            DrawIntro(Ipc.GetAvailableModSettings.Label, "Get Available Settings");
+            if (ImGui.Button("Get##Available"))
             {
-                _availableSettings = Ipc.GetAvailableModSettings.Subscriber( _pi ).Invoke( _settingsModDirectory, _settingsModName );
+                _availableSettings = Ipc.GetAvailableModSettings.Subscriber(_pi).Invoke(_settingsModDirectory, _settingsModName);
                 _lastSettingsError = _availableSettings == null ? PenumbraApiEc.ModMissing : PenumbraApiEc.Success;
             }
 
 
-            DrawIntro( Ipc.GetCurrentModSettings.Label, "Get Current Settings" );
-            if( ImGui.Button( "Get##Current" ) )
+            DrawIntro(Ipc.GetCurrentModSettings.Label, "Get Current Settings");
+            if (ImGui.Button("Get##Current"))
             {
-                var ret = Ipc.GetCurrentModSettings.Subscriber( _pi ).Invoke( _settingsCollection, _settingsModDirectory, _settingsModName, _settingsAllowInheritance );
+                var ret = Ipc.GetCurrentModSettings.Subscriber(_pi)
+                    .Invoke(_settingsCollection, _settingsModDirectory, _settingsModName, _settingsAllowInheritance);
                 _lastSettingsError = ret.Item1;
-                if( ret.Item1 == PenumbraApiEc.Success )
+                if (ret.Item1 == PenumbraApiEc.Success)
                 {
                     _settingsEnabled  = ret.Item2?.Item1 ?? false;
                     _settingsInherit  = ret.Item2?.Item4 ?? false;
@@ -1166,107 +1045,88 @@ public class IpcTester : IDisposable
                 }
             }
 
-            DrawIntro( Ipc.TryInheritMod.Label, "Inherit Mod" );
-            ImGui.Checkbox( "##inherit", ref _settingsInherit );
+            DrawIntro(Ipc.TryInheritMod.Label, "Inherit Mod");
+            ImGui.Checkbox("##inherit", ref _settingsInherit);
             ImGui.SameLine();
-            if( ImGui.Button( "Set##Inherit" ) )
-            {
-                _lastSettingsError = Ipc.TryInheritMod.Subscriber( _pi ).Invoke( _settingsCollection, _settingsModDirectory, _settingsModName, _settingsInherit );
-            }
+            if (ImGui.Button("Set##Inherit"))
+                _lastSettingsError = Ipc.TryInheritMod.Subscriber(_pi)
+                    .Invoke(_settingsCollection, _settingsModDirectory, _settingsModName, _settingsInherit);
 
-            DrawIntro( Ipc.TrySetMod.Label, "Set Enabled" );
-            ImGui.Checkbox( "##enabled", ref _settingsEnabled );
+            DrawIntro(Ipc.TrySetMod.Label, "Set Enabled");
+            ImGui.Checkbox("##enabled", ref _settingsEnabled);
             ImGui.SameLine();
-            if( ImGui.Button( "Set##Enabled" ) )
-            {
-                _lastSettingsError = Ipc.TrySetMod.Subscriber( _pi ).Invoke( _settingsCollection, _settingsModDirectory, _settingsModName, _settingsEnabled );
-            }
+            if (ImGui.Button("Set##Enabled"))
+                _lastSettingsError = Ipc.TrySetMod.Subscriber(_pi)
+                    .Invoke(_settingsCollection, _settingsModDirectory, _settingsModName, _settingsEnabled);
 
-            DrawIntro( Ipc.TrySetModPriority.Label, "Set Priority" );
-            ImGui.SetNextItemWidth( 200 * UiHelpers.Scale );
-            ImGui.DragInt( "##Priority", ref _settingsPriority );
+            DrawIntro(Ipc.TrySetModPriority.Label, "Set Priority");
+            ImGui.SetNextItemWidth(200 * UiHelpers.Scale);
+            ImGui.DragInt("##Priority", ref _settingsPriority);
             ImGui.SameLine();
-            if( ImGui.Button( "Set##Priority" ) )
-            {
-                _lastSettingsError = Ipc.TrySetModPriority.Subscriber( _pi ).Invoke( _settingsCollection, _settingsModDirectory, _settingsModName, _settingsPriority );
-            }
+            if (ImGui.Button("Set##Priority"))
+                _lastSettingsError = Ipc.TrySetModPriority.Subscriber(_pi)
+                    .Invoke(_settingsCollection, _settingsModDirectory, _settingsModName, _settingsPriority);
 
-            DrawIntro( Ipc.CopyModSettings.Label, "Copy Mod Settings" );
-            if( ImGui.Button( "Copy Settings" ) )
-            {
-                _lastSettingsError = Ipc.CopyModSettings.Subscriber( _pi ).Invoke( _settingsCollection, _settingsModDirectory, _settingsModName );
-            }
+            DrawIntro(Ipc.CopyModSettings.Label, "Copy Mod Settings");
+            if (ImGui.Button("Copy Settings"))
+                _lastSettingsError = Ipc.CopyModSettings.Subscriber(_pi).Invoke(_settingsCollection, _settingsModDirectory, _settingsModName);
 
-            ImGuiUtil.HoverTooltip( "Copy settings from Mod Directory Name to Mod Name (as directory) in collection." );
+            ImGuiUtil.HoverTooltip("Copy settings from Mod Directory Name to Mod Name (as directory) in collection.");
 
-            DrawIntro( Ipc.TrySetModSetting.Label, "Set Setting(s)" );
-            if( _availableSettings == null )
-            {
+            DrawIntro(Ipc.TrySetModSetting.Label, "Set Setting(s)");
+            if (_availableSettings == null)
                 return;
-            }
 
-            foreach( var (group, (list, type)) in _availableSettings )
+            foreach (var (group, (list, type)) in _availableSettings)
             {
-                using var       id      = ImRaii.PushId( group );
-                var             preview = list.Count > 0 ? list[ 0 ] : string.Empty;
-                IList< string > current;
-                if( _currentSettings != null && _currentSettings.TryGetValue( group, out current! ) && current.Count > 0 )
+                using var     id      = ImRaii.PushId(group);
+                var           preview = list.Count > 0 ? list[0] : string.Empty;
+                IList<string> current;
+                if (_currentSettings != null && _currentSettings.TryGetValue(group, out current!) && current.Count > 0)
                 {
-                    preview = current[ 0 ];
+                    preview = current[0];
                 }
                 else
                 {
-                    current = new List< string >();
-                    if( _currentSettings != null )
-                    {
-                        _currentSettings[ group ] = current;
-                    }
+                    current = new List<string>();
+                    if (_currentSettings != null)
+                        _currentSettings[group] = current;
                 }
 
-                ImGui.SetNextItemWidth( 200 * UiHelpers.Scale );
-                using( var c = ImRaii.Combo( "##group", preview ) )
+                ImGui.SetNextItemWidth(200 * UiHelpers.Scale);
+                using (var c = ImRaii.Combo("##group", preview))
                 {
-                    if( c )
-                    {
-                        foreach( var s in list )
+                    if (c)
+                        foreach (var s in list)
                         {
-                            var contained = current.Contains( s );
-                            if( ImGui.Checkbox( s, ref contained ) )
+                            var contained = current.Contains(s);
+                            if (ImGui.Checkbox(s, ref contained))
                             {
-                                if( contained )
-                                {
-                                    current.Add( s );
-                                }
+                                if (contained)
+                                    current.Add(s);
                                 else
-                                {
-                                    current.Remove( s );
-                                }
+                                    current.Remove(s);
                             }
                         }
-                    }
                 }
 
                 ImGui.SameLine();
-                if( ImGui.Button( "Set##setting" ) )
+                if (ImGui.Button("Set##setting"))
                 {
-                    if( type == GroupType.Single )
-                    {
-                        _lastSettingsError = Ipc.TrySetModSetting.Subscriber( _pi ).Invoke( _settingsCollection,
-                            _settingsModDirectory, _settingsModName, group, current.Count > 0 ? current[ 0 ] : string.Empty );
-                    }
+                    if (type == GroupType.Single)
+                        _lastSettingsError = Ipc.TrySetModSetting.Subscriber(_pi).Invoke(_settingsCollection,
+                            _settingsModDirectory, _settingsModName, group, current.Count > 0 ? current[0] : string.Empty);
                     else
-                    {
-                        _lastSettingsError = Ipc.TrySetModSettings.Subscriber( _pi ).Invoke( _settingsCollection,
-                            _settingsModDirectory, _settingsModName, group, current.ToArray() );
-                    }
+                        _lastSettingsError = Ipc.TrySetModSettings.Subscriber(_pi).Invoke(_settingsCollection,
+                            _settingsModDirectory, _settingsModName, group, current.ToArray());
                 }
 
                 ImGui.SameLine();
-                ImGui.TextUnformatted( group );
+                ImGui.TextUnformatted(group);
             }
         }
 
-        private void UpdateLastModSetting( ModSettingChange type, string collection, string mod, bool inherited )
+        private void UpdateLastModSetting(ModSettingChange type, string collection, string mod, bool inherited)
         {
             _lastSettingChangeType       = type;
             _lastSettingChangeCollection = collection;
@@ -1278,10 +1138,14 @@ public class IpcTester : IDisposable
 
     private class Temporary
     {
-        public readonly DalamudPluginInterface _pi;
+        private readonly DalamudPluginInterface _pi;
+        private readonly Mod.Manager            _modManager;
 
-        public Temporary( DalamudPluginInterface pi )
-            => _pi = pi;
+        public Temporary(DalamudPluginInterface pi, Mod.Manager modManager)
+        {
+            _pi         = pi;
+            _modManager = modManager;
+        }
 
         public string LastCreatedCollectionName = string.Empty;
 
@@ -1297,181 +1161,151 @@ public class IpcTester : IDisposable
 
         public void Draw()
         {
-            using var _ = ImRaii.TreeNode( "Temporary" );
-            if( !_ )
-            {
+            using var _ = ImRaii.TreeNode("Temporary");
+            if (!_)
                 return;
-            }
 
-            ImGui.InputTextWithHint( "##tempCollection", "Collection Name...", ref _tempCollectionName, 128 );
-            ImGui.InputTextWithHint( "##tempCollectionChar", "Collection Character...", ref _tempCharacterName, 32 );
-            ImGui.InputInt( "##tempActorIndex", ref _tempActorIndex, 0, 0 );
-            ImGui.InputTextWithHint( "##tempMod", "Temporary Mod Name...", ref _tempModName, 32 );
-            ImGui.InputTextWithHint( "##tempGame", "Game Path...", ref _tempGamePath, 256 );
-            ImGui.InputTextWithHint( "##tempFile", "File Path...", ref _tempFilePath, 256 );
-            ImGui.InputTextWithHint( "##tempManip", "Manipulation Base64 String...", ref _tempManipulation, 256 );
-            ImGui.Checkbox( "Force Character Collection Overwrite", ref _forceOverwrite );
+            ImGui.InputTextWithHint("##tempCollection",     "Collection Name...",      ref _tempCollectionName, 128);
+            ImGui.InputTextWithHint("##tempCollectionChar", "Collection Character...", ref _tempCharacterName,  32);
+            ImGui.InputInt("##tempActorIndex", ref _tempActorIndex, 0, 0);
+            ImGui.InputTextWithHint("##tempMod",   "Temporary Mod Name...",         ref _tempModName,      32);
+            ImGui.InputTextWithHint("##tempGame",  "Game Path...",                  ref _tempGamePath,     256);
+            ImGui.InputTextWithHint("##tempFile",  "File Path...",                  ref _tempFilePath,     256);
+            ImGui.InputTextWithHint("##tempManip", "Manipulation Base64 String...", ref _tempManipulation, 256);
+            ImGui.Checkbox("Force Character Collection Overwrite", ref _forceOverwrite);
 
 
-            using var table = ImRaii.Table( string.Empty, 3, ImGuiTableFlags.SizingFixedFit );
-            if( !table )
-            {
+            using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
                 return;
-            }
 
-            DrawIntro( "Last Error", _lastTempError.ToString() );
-            DrawIntro( "Last Created Collection", LastCreatedCollectionName );
-            DrawIntro( Ipc.CreateTemporaryCollection.Label, "Create Temporary Collection" );
+            DrawIntro("Last Error",                        _lastTempError.ToString());
+            DrawIntro("Last Created Collection",           LastCreatedCollectionName);
+            DrawIntro(Ipc.CreateTemporaryCollection.Label, "Create Temporary Collection");
 #pragma warning disable 0612
-            if( ImGui.Button( "Create##Collection" ) )
-            {
-                ( _lastTempError, LastCreatedCollectionName ) = Ipc.CreateTemporaryCollection.Subscriber( _pi ).Invoke( _tempCollectionName, _tempCharacterName, _forceOverwrite );
-            }
+            if (ImGui.Button("Create##Collection"))
+                (_lastTempError, LastCreatedCollectionName) = Ipc.CreateTemporaryCollection.Subscriber(_pi)
+                    .Invoke(_tempCollectionName, _tempCharacterName, _forceOverwrite);
 
-            DrawIntro( Ipc.CreateNamedTemporaryCollection.Label, "Create Named Temporary Collection" );
-            if( ImGui.Button( "Create##NamedCollection" ) )
-            {
-                _lastTempError = Ipc.CreateNamedTemporaryCollection.Subscriber( _pi ).Invoke( _tempCollectionName );
-            }
+            DrawIntro(Ipc.CreateNamedTemporaryCollection.Label, "Create Named Temporary Collection");
+            if (ImGui.Button("Create##NamedCollection"))
+                _lastTempError = Ipc.CreateNamedTemporaryCollection.Subscriber(_pi).Invoke(_tempCollectionName);
 
-            DrawIntro( Ipc.RemoveTemporaryCollection.Label, "Remove Temporary Collection from Character" );
-            if( ImGui.Button( "Delete##Collection" ) )
-            {
-                _lastTempError = Ipc.RemoveTemporaryCollection.Subscriber( _pi ).Invoke( _tempCharacterName );
-            }
+            DrawIntro(Ipc.RemoveTemporaryCollection.Label, "Remove Temporary Collection from Character");
+            if (ImGui.Button("Delete##Collection"))
+                _lastTempError = Ipc.RemoveTemporaryCollection.Subscriber(_pi).Invoke(_tempCharacterName);
 #pragma warning restore 0612
-            DrawIntro( Ipc.RemoveTemporaryCollectionByName.Label, "Remove Temporary Collection" );
-            if( ImGui.Button( "Delete##NamedCollection" ) )
+            DrawIntro(Ipc.RemoveTemporaryCollectionByName.Label, "Remove Temporary Collection");
+            if (ImGui.Button("Delete##NamedCollection"))
+                _lastTempError = Ipc.RemoveTemporaryCollectionByName.Subscriber(_pi).Invoke(_tempCollectionName);
+
+            DrawIntro(Ipc.AssignTemporaryCollection.Label, "Assign Temporary Collection");
+            if (ImGui.Button("Assign##NamedCollection"))
+                _lastTempError = Ipc.AssignTemporaryCollection.Subscriber(_pi).Invoke(_tempCollectionName, _tempActorIndex, _forceOverwrite);
+
+            DrawIntro(Ipc.AddTemporaryMod.Label, "Add Temporary Mod to specific Collection");
+            if (ImGui.Button("Add##Mod"))
+                _lastTempError = Ipc.AddTemporaryMod.Subscriber(_pi).Invoke(_tempModName, _tempCollectionName,
+                    new Dictionary<string, string> { { _tempGamePath, _tempFilePath } },
+                    _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue);
+
+            DrawIntro(Ipc.CreateTemporaryCollection.Label, "Copy Existing Collection");
+            if (ImGuiUtil.DrawDisabledButton("Copy##Collection", Vector2.Zero,
+                    "Copies the effective list from the collection named in Temporary Mod Name...",
+                    !Penumbra.CollectionManager.ByName(_tempModName, out var copyCollection))
+             && copyCollection is { HasCache: true })
             {
-                _lastTempError = Ipc.RemoveTemporaryCollectionByName.Subscriber( _pi ).Invoke( _tempCollectionName );
+                var files = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());
+                var manips = Functions.ToCompressedBase64(copyCollection.MetaCache?.Manipulations.ToArray() ?? Array.Empty<MetaManipulation>(),
+                    MetaManipulation.CurrentVersion);
+                _lastTempError = Ipc.AddTemporaryMod.Subscriber(_pi).Invoke(_tempModName, _tempCollectionName, files, manips, 999);
             }
 
-            DrawIntro( Ipc.AssignTemporaryCollection.Label, "Assign Temporary Collection" );
-            if( ImGui.Button( "Assign##NamedCollection" ) )
-            {
-                _lastTempError = Ipc.AssignTemporaryCollection.Subscriber( _pi ).Invoke( _tempCollectionName, _tempActorIndex, _forceOverwrite );
-            }
+            DrawIntro(Ipc.AddTemporaryModAll.Label, "Add Temporary Mod to all Collections");
+            if (ImGui.Button("Add##All"))
+                _lastTempError = Ipc.AddTemporaryModAll.Subscriber(_pi).Invoke(_tempModName,
+                    new Dictionary<string, string> { { _tempGamePath, _tempFilePath } },
+                    _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue);
 
-            DrawIntro( Ipc.AddTemporaryMod.Label, "Add Temporary Mod to specific Collection" );
-            if( ImGui.Button( "Add##Mod" ) )
-            {
-                _lastTempError = Ipc.AddTemporaryMod.Subscriber( _pi ).Invoke( _tempModName, _tempCollectionName,
-                    new Dictionary< string, string > { { _tempGamePath, _tempFilePath } },
-                    _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue );
-            }
+            DrawIntro(Ipc.RemoveTemporaryMod.Label, "Remove Temporary Mod from specific Collection");
+            if (ImGui.Button("Remove##Mod"))
+                _lastTempError = Ipc.RemoveTemporaryMod.Subscriber(_pi).Invoke(_tempModName, _tempCollectionName, int.MaxValue);
 
-            DrawIntro( Ipc.CreateTemporaryCollection.Label, "Copy Existing Collection" );
-            if( ImGuiUtil.DrawDisabledButton( "Copy##Collection", Vector2.Zero, "Copies the effective list from the collection named in Temporary Mod Name...",
-                   !Penumbra.CollectionManager.ByName( _tempModName, out var copyCollection ) )
-            && copyCollection is { HasCache: true } )
-            {
-                var files = copyCollection.ResolvedFiles.ToDictionary( kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString() );
-                var manips = Functions.ToCompressedBase64( copyCollection.MetaCache?.Manipulations.ToArray() ?? Array.Empty< MetaManipulation >(),
-                    MetaManipulation.CurrentVersion );
-                _lastTempError = Ipc.AddTemporaryMod.Subscriber( _pi ).Invoke( _tempModName, _tempCollectionName, files, manips, 999 );
-            }
-
-            DrawIntro( Ipc.AddTemporaryModAll.Label, "Add Temporary Mod to all Collections" );
-            if( ImGui.Button( "Add##All" ) )
-            {
-                _lastTempError = Ipc.AddTemporaryModAll.Subscriber( _pi ).Invoke( _tempModName, new Dictionary< string, string > { { _tempGamePath, _tempFilePath } },
-                    _tempManipulation.Length > 0 ? _tempManipulation : string.Empty, int.MaxValue );
-            }
-
-            DrawIntro( Ipc.RemoveTemporaryMod.Label, "Remove Temporary Mod from specific Collection" );
-            if( ImGui.Button( "Remove##Mod" ) )
-            {
-                _lastTempError = Ipc.RemoveTemporaryMod.Subscriber( _pi ).Invoke( _tempModName, _tempCollectionName, int.MaxValue );
-            }
-
-            DrawIntro( Ipc.RemoveTemporaryModAll.Label, "Remove Temporary Mod from all Collections" );
-            if( ImGui.Button( "Remove##ModAll" ) )
-            {
-                _lastTempError = Ipc.RemoveTemporaryModAll.Subscriber( _pi ).Invoke( _tempModName, int.MaxValue );
-            }
+            DrawIntro(Ipc.RemoveTemporaryModAll.Label, "Remove Temporary Mod from all Collections");
+            if (ImGui.Button("Remove##ModAll"))
+                _lastTempError = Ipc.RemoveTemporaryModAll.Subscriber(_pi).Invoke(_tempModName, int.MaxValue);
         }
 
         public void DrawCollections()
         {
-            using var collTree = ImRaii.TreeNode( "Collections##TempCollections" );
-            if( !collTree )
-            {
+            using var collTree = ImRaii.TreeNode("Collections##TempCollections");
+            if (!collTree)
                 return;
-            }
 
-            using var table = ImRaii.Table( "##collTree", 5 );
-            if( !table )
-            {
+            using var table = ImRaii.Table("##collTree", 5);
+            if (!table)
                 return;
-            }
 
-            foreach( var collection in Penumbra.TempCollections.Values )
+            foreach (var collection in Penumbra.TempCollections.Values)
             {
                 ImGui.TableNextColumn();
-                var character = Penumbra.TempCollections.Collections.Where( p => p.Collection == collection ).Select( p => p.DisplayName ).FirstOrDefault() ?? "Unknown";
-                if( ImGui.Button( $"Save##{collection.Name}" ) )
-                {
-                    Mod.TemporaryMod.SaveTempCollection( collection, character );
-                }
+                var character = Penumbra.TempCollections.Collections.Where(p => p.Collection == collection).Select(p => p.DisplayName)
+                        .FirstOrDefault()
+                 ?? "Unknown";
+                if (ImGui.Button($"Save##{collection.Name}"))
+                    Mod.TemporaryMod.SaveTempCollection(_modManager, collection, character);
 
-                ImGuiUtil.DrawTableColumn( collection.Name );
-                ImGuiUtil.DrawTableColumn( collection.ResolvedFiles.Count.ToString() );
-                ImGuiUtil.DrawTableColumn( collection.MetaCache?.Count.ToString() ?? "0" );
-                ImGuiUtil.DrawTableColumn( string.Join( ", ", Penumbra.TempCollections.Collections.Where( p => p.Collection == collection ).Select( c => c.DisplayName ) ) );
+                ImGuiUtil.DrawTableColumn(collection.Name);
+                ImGuiUtil.DrawTableColumn(collection.ResolvedFiles.Count.ToString());
+                ImGuiUtil.DrawTableColumn(collection.MetaCache?.Count.ToString() ?? "0");
+                ImGuiUtil.DrawTableColumn(string.Join(", ",
+                    Penumbra.TempCollections.Collections.Where(p => p.Collection == collection).Select(c => c.DisplayName)));
             }
         }
 
         public void DrawMods()
         {
-            using var modTree = ImRaii.TreeNode( "Mods##TempMods" );
-            if( !modTree )
-            {
+            using var modTree = ImRaii.TreeNode("Mods##TempMods");
+            if (!modTree)
                 return;
-            }
 
-            using var table = ImRaii.Table( "##modTree", 5 );
+            using var table = ImRaii.Table("##modTree", 5);
 
-            void PrintList( string collectionName, IReadOnlyList< Mod.TemporaryMod > list )
+            void PrintList(string collectionName, IReadOnlyList<Mod.TemporaryMod> list)
             {
-                foreach( var mod in list )
+                foreach (var mod in list)
                 {
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted( mod.Name );
+                    ImGui.TextUnformatted(mod.Name);
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted( mod.Priority.ToString() );
+                    ImGui.TextUnformatted(mod.Priority.ToString());
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted( collectionName );
+                    ImGui.TextUnformatted(collectionName);
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted( mod.Default.Files.Count.ToString() );
-                    if( ImGui.IsItemHovered() )
+                    ImGui.TextUnformatted(mod.Default.Files.Count.ToString());
+                    if (ImGui.IsItemHovered())
                     {
                         using var tt = ImRaii.Tooltip();
-                        foreach( var (path, file) in mod.Default.Files )
-                        {
-                            ImGui.TextUnformatted( $"{path} -> {file}" );
-                        }
+                        foreach (var (path, file) in mod.Default.Files)
+                            ImGui.TextUnformatted($"{path} -> {file}");
                     }
 
                     ImGui.TableNextColumn();
-                    ImGui.TextUnformatted( mod.TotalManipulations.ToString() );
-                    if( ImGui.IsItemHovered() )
+                    ImGui.TextUnformatted(mod.TotalManipulations.ToString());
+                    if (ImGui.IsItemHovered())
                     {
                         using var tt = ImRaii.Tooltip();
-                        foreach( var manip in mod.Default.Manipulations )
-                        {
-                            ImGui.TextUnformatted( manip.ToString() );
-                        }
+                        foreach (var manip in mod.Default.Manipulations)
+                            ImGui.TextUnformatted(manip.ToString());
                     }
                 }
             }
 
-            if( table )
+            if (table)
             {
-                PrintList( "All", Penumbra.TempMods.ModsForAllCollections );
-                foreach( var (collection, list) in Penumbra.TempMods.Mods )
-                {
-                    PrintList( collection.Name, list );
-                }
+                PrintList("All", Penumbra.TempMods.ModsForAllCollections);
+                foreach (var (collection, list) in Penumbra.TempMods.Mods)
+                    PrintList(collection.Name, list);
             }
         }
     }

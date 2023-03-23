@@ -42,7 +42,7 @@ public class ModPanelDescriptionTab : ITab
             out var editedTag);
         _tutorial.OpenTutorial(BasicTutorialSteps.Tags);
         if (tagIdx >= 0)
-            _modManager.ChangeLocalTag(_selector.Selected!.Index, tagIdx, editedTag);
+            _modManager.DataEditor.ChangeLocalTag(_selector.Selected!, tagIdx, editedTag);
 
         if (_selector.Selected!.ModTags.Count > 0)
             _modTags.Draw("Mod Tags: ", "Tags assigned by the mod creator and saved with the mod data. To edit these, look at Edit Mod.",
