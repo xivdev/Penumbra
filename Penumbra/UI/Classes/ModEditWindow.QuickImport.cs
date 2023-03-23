@@ -18,8 +18,7 @@ namespace Penumbra.UI.Classes;
 
 public partial class ModEditWindow
 {
-    private ResourceTree[]? _quickImportTrees;
-    private HashSet<ResourceTree.Node>? _quickImportUnfolded;
+    private ResourceTreeViewer? _quickImportViewer;
     private Dictionary<FullPath, IWritable?>? _quickImportWritables;
     private Dictionary<(Utf8GamePath, IWritable?), QuickImportAction>? _quickImportActions;
 
@@ -34,191 +33,68 @@ public partial class ModEditWindow
             return;
         }
 
-        _quickImportUnfolded ??= new();
+        _quickImportViewer ??= new( "Import from Screen tab", 2, OnQuickImportRefresh, DrawQuickImportActions );
         _quickImportWritables ??= new();
         _quickImportActions ??= new();
 
-        if( ImGui.Button( "Refresh Character List" ) )
-        {
-            try
-            {
-                _quickImportTrees = ResourceTree.FromObjectTable();
-            }
-            catch( Exception e )
-            {
-                Penumbra.Log.Error( $"Could not get character list for Import from Screen tab:\n{e}" );
-                _quickImportTrees = Array.Empty<ResourceTree>();
-            }
-            _quickImportUnfolded.Clear();
-            _quickImportWritables.Clear();
-            _quickImportActions.Clear();
-        }
-
-        try
-        {
-            _quickImportTrees ??= ResourceTree.FromObjectTable();
-        }
-        catch( Exception e )
-        {
-            Penumbra.Log.Error( $"Could not get character list for Import from Screen tab:\n{e}" );
-            _quickImportTrees ??= Array.Empty<ResourceTree>();
-        }
-
-        var textColorNonPlayer = ImGui.GetColorU32( ImGuiCol.Text );
-        var textColorPlayer    = ( textColorNonPlayer & 0xFF000000u ) | ( ( textColorNonPlayer & 0x00FEFEFE ) >> 1 ) | 0x8000u; // Half green
-
-        foreach( var (tree, index) in _quickImportTrees.WithIndex() )
-        {
-            using( var c = ImRaii.PushColor( ImGuiCol.Text, tree.PlayerRelated ? textColorPlayer : textColorNonPlayer ) )
-            {
-                if( !ImGui.CollapsingHeader( $"{tree.Name}##{index}", ( index == 0 ) ? ImGuiTreeNodeFlags.DefaultOpen : 0 ) )
-                {
-                    continue;
-                }
-            }
-            using var id = ImRaii.PushId( index );
-
-            ImGui.Text( $"Collection: {tree.CollectionName}" );
-
-            using var table = ImRaii.Table( "##ResourceTree", 4,
-                ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg );
-            if( !table )
-            {
-                continue;
-            }
-
-            ImGui.TableSetupColumn( string.Empty , ImGuiTableColumnFlags.WidthStretch, 0.2f );
-            ImGui.TableSetupColumn( "Game Path"  , ImGuiTableColumnFlags.WidthStretch, 0.3f );
-            ImGui.TableSetupColumn( "Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.5f );
-            ImGui.TableSetupColumn( string.Empty , ImGuiTableColumnFlags.WidthFixed, 3 * ImGuiHelpers.GlobalScale + 2 * ImGui.GetFrameHeight() );
-            ImGui.TableHeadersRow();
-
-            DrawQuickImportNodes( tree.Nodes, 0 );
-        }
+        _quickImportViewer.Draw();
 
         _quickImportFileDialog.Draw();
     }
 
-    private void DrawQuickImportNodes( IEnumerable<ResourceTree.Node> resourceNodes, int level )
+    private void OnQuickImportRefresh()
     {
-        var debugMode = Penumbra.Config.DebugMode;
-        var frameHeight = ImGui.GetFrameHeight();
-        foreach( var (resourceNode, index) in resourceNodes.WithIndex() )
+        _quickImportWritables?.Clear();
+        _quickImportActions?.Clear();
+    }
+
+    private void DrawQuickImportActions( ResourceTree.Node resourceNode, Vector2 buttonSize )
+    {
+        if( !_quickImportWritables!.TryGetValue( resourceNode.FullPath, out var writable ) )
         {
-            if( resourceNode.Internal && !debugMode )
+            var path = resourceNode.FullPath.ToPath();
+            if( resourceNode.FullPath.IsRooted )
             {
-                continue;
-            }
-            using var id = ImRaii.PushId( index );
-            ImGui.TableNextColumn();
-            var unfolded = _quickImportUnfolded!.Contains( resourceNode );
-            using( var indent = ImRaii.PushIndent( level ) )
-            {
-                ImGui.TableHeader( ( ( resourceNode.Children.Count > 0 ) ? ( unfolded ? "[-] " : "[+] " ) : string.Empty ) + resourceNode.Name );
-                if( ImGui.IsItemClicked() && resourceNode.Children.Count > 0 )
-                {
-                    if( unfolded )
-                    {
-                        _quickImportUnfolded.Remove( resourceNode );
-                    }
-                    else
-                    {
-                        _quickImportUnfolded.Add( resourceNode );
-                    }
-                    unfolded = !unfolded;
-                }
-                if( debugMode )
-                {
-                    ImGuiUtil.HoverTooltip( $"Resource Type: {resourceNode.Type}\nSource Address: 0x{resourceNode.SourceAddress.ToString("X" + nint.Size * 2)}" );
-                }
-            }
-            ImGui.TableNextColumn();
-            var hasGamePaths = resourceNode.PossibleGamePaths.Length > 0;
-            ImGui.Selectable( resourceNode.PossibleGamePaths.Length switch
-            {
-                0 => "(none)",
-                1 => resourceNode.GamePath.ToString(),
-                _ => "(multiple)",
-            }, false, hasGamePaths ? 0 : ImGuiSelectableFlags.Disabled, new Vector2( ImGui.GetContentRegionAvail().X, frameHeight ) );
-            if( hasGamePaths )
-            {
-                var allPaths = string.Join( '\n', resourceNode.PossibleGamePaths );
-                if( ImGui.IsItemClicked() )
-                {
-                    ImGui.SetClipboardText( allPaths );
-                }
-                ImGuiUtil.HoverTooltip( $"{allPaths}\n\nClick to copy to clipboard." );
-            }
-            ImGui.TableNextColumn();
-            var hasFullPath = resourceNode.FullPath.FullName.Length > 0;
-            if( hasFullPath )
-            {
-                ImGui.Selectable( resourceNode.FullPath.ToString(), false, 0, new Vector2( ImGui.GetContentRegionAvail().X, frameHeight ) );
-                if( ImGui.IsItemClicked() )
-                {
-                    ImGui.SetClipboardText( resourceNode.FullPath.ToString() );
-                }
-                ImGuiUtil.HoverTooltip( $"{resourceNode.FullPath}\n\nClick to copy to clipboard." );
+                writable = new RawFileWritable( path );
             }
             else
             {
-                ImGui.Selectable( "(unavailable)", false, ImGuiSelectableFlags.Disabled, new Vector2( ImGui.GetContentRegionAvail().X, frameHeight ) );
-                ImGuiUtil.HoverTooltip( "The actual path to this file is unavailable.\nIt may be managed by another plug-in." );
+                var file = Dalamud.GameData.GetFile( path );
+                writable = ( file == null ) ? null : new RawGameFileWritable( file );
             }
-            ImGui.TableNextColumn();
-            using( var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = 3 * ImGuiHelpers.GlobalScale } ) )
+            _quickImportWritables.Add( resourceNode.FullPath, writable );
+        }
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Save.ToIconString(), buttonSize, "Export this file.", resourceNode.FullPath.FullName.Length == 0 || writable == null, true ) )
+        {
+            var fullPathStr = resourceNode.FullPath.FullName;
+            var ext = ( resourceNode.PossibleGamePaths.Length == 1 ) ? Path.GetExtension( resourceNode.GamePath.ToString() ) : Path.GetExtension( fullPathStr );
+            _quickImportFileDialog.SaveFileDialog( $"Export {Path.GetFileName( fullPathStr )} to...", ext, Path.GetFileNameWithoutExtension( fullPathStr ), ext, ( success, name ) =>
             {
-                if( !_quickImportWritables!.TryGetValue( resourceNode.FullPath, out var writable ) )
+                if( !success )
                 {
-                    var path = resourceNode.FullPath.ToPath();
-                    if( resourceNode.FullPath.IsRooted )
-                    {
-                        writable = new RawFileWritable( path );
-                    }
-                    else
-                    {
-                        var file = Dalamud.GameData.GetFile( path );
-                        writable = ( file == null ) ? null : new RawGameFileWritable( file );
-                    }
-                    _quickImportWritables.Add( resourceNode.FullPath, writable );
+                    return;
                 }
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Save.ToIconString(), new Vector2( frameHeight ), "Export this file.", !hasFullPath || writable == null, true ) )
-                {
-                    var fullPathStr = resourceNode.FullPath.FullName;
-                    var ext = ( resourceNode.PossibleGamePaths.Length == 1 ) ? Path.GetExtension( resourceNode.GamePath.ToString() ) : Path.GetExtension( fullPathStr );
-                    _quickImportFileDialog.SaveFileDialog( $"Export {Path.GetFileName( fullPathStr )} to...", ext, Path.GetFileNameWithoutExtension( fullPathStr ), ext, ( success, name ) =>
-                    {
-                        if( !success )
-                        {
-                            return;
-                        }
 
-                        try
-                        {
-                            File.WriteAllBytes( name, writable!.Write() );
-                        }
-                        catch( Exception e )
-                        {
-                            Penumbra.Log.Error( $"Could not export {fullPathStr}:\n{e}" );
-                        }
-                    } );
-                }
-                ImGui.SameLine();
-                if( !_quickImportActions!.TryGetValue( (resourceNode.GamePath, writable), out var quickImport ) )
+                try
                 {
-                    quickImport = QuickImportAction.Prepare( this, resourceNode.GamePath, writable );
-                    _quickImportActions.Add( (resourceNode.GamePath, writable), quickImport );
+                    File.WriteAllBytes( name, writable!.Write() );
                 }
-                if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), new Vector2( frameHeight ), $"Add a copy of this file to {quickImport.OptionName}.", !quickImport.CanExecute, true ) )
+                catch( Exception e )
                 {
-                    quickImport.Execute();
-                    _quickImportActions.Remove( (resourceNode.GamePath, writable) );
+                    Penumbra.Log.Error( $"Could not export {fullPathStr}:\n{e}" );
                 }
-            }
-            if( unfolded )
-            {
-                DrawQuickImportNodes( resourceNode.Children, level + 1 );
-            }
+            } );
+        }
+        ImGui.SameLine();
+        if( !_quickImportActions!.TryGetValue( (resourceNode.GamePath, writable), out var quickImport ) )
+        {
+            quickImport = QuickImportAction.Prepare( this, resourceNode.GamePath, writable );
+            _quickImportActions.Add( (resourceNode.GamePath, writable), quickImport );
+        }
+        if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), buttonSize, $"Add a copy of this file to {quickImport.OptionName}.", !quickImport.CanExecute, true ) )
+        {
+            quickImport.Execute();
+            _quickImportActions.Remove( (resourceNode.GamePath, writable) );
         }
     }
 
