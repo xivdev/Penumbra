@@ -153,6 +153,7 @@ public partial class ModEditWindow : Window, IDisposable
         DrawSwapTab();
         DrawMissingFilesTab();
         DrawDuplicatesTab();
+        DrawQuickImportTab();
         DrawMaterialReassignmentTab();
         _modelTab.Draw();
         _materialTab.Draw();
@@ -570,17 +571,17 @@ public partial class ModEditWindow : Window, IDisposable
     public ModEditWindow()
         : base( WindowBaseLabel )
     {
-        _materialTab = new FileEditor< MtrlTab >( "Materials", ".mtrl",
+        _materialTab = new FileEditor< MtrlTab >( this, "Materials", ".mtrl",
             () => _editor?.MtrlFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawMaterialPanel,
             () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab( this, new MtrlFile( bytes ) ) );
-        _modelTab = new FileEditor< MdlFile >( "Models", ".mdl",
+        _modelTab = new FileEditor< MdlFile >( this, "Models", ".mdl",
             () => _editor?.MdlFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawModelPanel,
             () => _mod?.ModPath.FullName ?? string.Empty,
             null );
-        _shaderPackageTab = new FileEditor< ShpkTab >( "Shader Packages", ".shpk",
+        _shaderPackageTab = new FileEditor< ShpkTab >( this, "Shader Packages", ".shpk",
             () => _editor?.ShpkFiles ?? Array.Empty< Editor.FileRegistry >(),
             DrawShaderPackagePanel,
             () => _mod?.ModPath.FullName ?? string.Empty,

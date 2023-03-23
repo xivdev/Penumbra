@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Reflection;
 using Dalamud.Interface;
@@ -18,6 +19,7 @@ public partial class ModEditWindow
 {
     private class FileEditor< T > where T : class, IWritable
     {
+        private readonly ModEditWindow                                    _owner;
         private readonly string                                           _tabName;
         private readonly string                                           _fileType;
         private readonly Func< IReadOnlyList< Mod.Editor.FileRegistry > > _getFiles;
@@ -30,18 +32,23 @@ public partial class ModEditWindow
         private Exception?               _currentException;
         private bool                     _changed;
 
-        private string     _defaultPath = string.Empty;
-        private bool       _inInput;
-        private T?         _defaultFile;
-        private Exception? _defaultException;
+        private string       _defaultPath = string.Empty;
+        private bool         _inInput;
+        private Utf8GamePath _defaultPathUtf8;
+        private bool         _isDefaultPathUtf8Valid;
+        private T?           _defaultFile;
+        private Exception?   _defaultException;
+
+        private QuickImportAction? _quickImport;
 
         private IReadOnlyList< Mod.Editor.FileRegistry > _list = null!;
 
         private readonly FileDialogManager _fileDialog = ConfigWindow.SetupFileManager();
 
-        public FileEditor( string tabName, string fileType, Func< IReadOnlyList< Mod.Editor.FileRegistry > > getFiles,
+        public FileEditor( ModEditWindow owner, string tabName, string fileType, Func< IReadOnlyList< Mod.Editor.FileRegistry > > getFiles,
             Func< T, bool, bool > drawEdit, Func< string > getInitialPath, Func< byte[], T? >? parseFile )
         {
+            _owner          = owner;
             _tabName        = tabName;
             _fileType       = fileType;
             _getFiles       = getFiles;
@@ -56,6 +63,7 @@ public partial class ModEditWindow
             using var tab = ImRaii.TabItem( _tabName );
             if( !tab )
             {
+                _quickImport = null;
                 return;
             }
 
@@ -74,11 +82,13 @@ public partial class ModEditWindow
         private void DefaultInput()
         {
             using var spacing = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemSpacing with { X = 3 * ImGuiHelpers.GlobalScale } );
-            ImGui.SetNextItemWidth( ImGui.GetContentRegionAvail().X - 3 * ImGuiHelpers.GlobalScale - ImGui.GetFrameHeight() );
+            ImGui.SetNextItemWidth( ImGui.GetContentRegionAvail().X - 2 * (3 * ImGuiHelpers.GlobalScale + ImGui.GetFrameHeight() ) );
             ImGui.InputTextWithHint( "##defaultInput", "Input game path to compare...", ref _defaultPath, Utf8GamePath.MaxGamePathLength );
             _inInput = ImGui.IsItemActive();
             if( ImGui.IsItemDeactivatedAfterEdit() && _defaultPath.Length > 0 )
             {
+                _isDefaultPathUtf8Valid = Utf8GamePath.FromString( _defaultPath, out _defaultPathUtf8, true );
+                _quickImport = null;
                 _fileDialog.Reset();
                 try
                 {
@@ -120,6 +130,22 @@ public partial class ModEditWindow
                         Penumbra.Log.Error( $"Could not export {_defaultPath}:\n{e}" );
                     }
                 }, _getInitialPath() );
+            }
+
+            _quickImport ??= QuickImportAction.Prepare( _owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile );
+
+            ImGui.SameLine();
+            if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.FileImport.ToIconString(), new Vector2( ImGui.GetFrameHeight() ), $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute, true ) )
+            {
+                try
+                {
+                    UpdateCurrentFile( _quickImport.Execute() );
+                }
+                catch( Exception e )
+                {
+                    Penumbra.Log.Error( $"Could not add a copy of {_quickImport.GamePath} to {_quickImport.OptionName}:\n{e}" );
+                }
+                _quickImport = null;
             }
 
             _fileDialog.Draw();

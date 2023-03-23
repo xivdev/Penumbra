@@ -25,6 +25,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
     private readonly ModsTab         _modsTab;
     private readonly ChangedItemsTab _changedItemsTab;
     private readonly EffectiveTab    _effectiveTab;
+    private readonly OnScreenTab     _onScreenTab;
     private readonly DebugTab        _debugTab;
     private readonly ResourceTab     _resourceTab;
     private readonly ResourceWatcher _resourceWatcher;
@@ -47,6 +48,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
         _collectionsTab            =  new CollectionsTab( this );
         _changedItemsTab           =  new ChangedItemsTab( this );
         _effectiveTab              =  new EffectiveTab();
+        _onScreenTab               =  new OnScreenTab();
         _debugTab                  =  new DebugTab( this );
         _resourceTab               =  new ResourceTab();
         if( Penumbra.Config.FixMainWindow )
@@ -74,6 +76,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
             TabType.Collections      => _collectionsTab.Label,
             TabType.ChangedItems     => _changedItemsTab.Label,
             TabType.EffectiveChanges => _effectiveTab.Label,
+            TabType.OnScreen         => _onScreenTab.Label,
             TabType.ResourceWatcher  => _resourceWatcher.Label,
             TabType.Debug            => _debugTab.Label,
             TabType.ResourceManager  => _resourceTab.Label,
@@ -120,7 +123,7 @@ public sealed partial class ConfigWindow : Window, IDisposable
             {
                 SetupSizes();
                 if( TabBar.Draw( string.Empty, ImGuiTabBarFlags.NoTooltip, ToLabel( SelectTab ), _settingsTab, _modsTab, _collectionsTab,
-                       _changedItemsTab, _effectiveTab, _resourceWatcher, _debugTab, _resourceTab ) )
+                       _changedItemsTab, _effectiveTab, _onScreenTab, _resourceWatcher, _debugTab, _resourceTab ) )
                 {
                     SelectTab = TabType.None;
                 }

@@ -12,12 +12,8 @@ public unsafe struct Material
     [FieldOffset( 0x28 )]
     public void* MaterialData;
 
-    [FieldOffset( 0x48 )]
-    public Texture* Tex1;
+    [FieldOffset( 0x30 )]
+    public void** Textures;
 
-    [FieldOffset( 0x60 )]
-    public Texture* Tex2;
-
-    [FieldOffset( 0x78 )]
-    public Texture* Tex3;
+    public Texture* Texture( int index ) => ( Texture* )Textures[3 * index + 1];
 }
