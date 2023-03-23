@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
 using Dalamud.Interface;
-using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
 using ImGuiScene;
 using Lumina.Data.Files;

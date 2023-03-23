@@ -9,7 +9,7 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Widgets;
 using Penumbra.GameData.Enums;
-using Penumbra.Import;
+using Penumbra.Import.Structs;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI;

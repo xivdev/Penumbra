@@ -10,7 +10,7 @@ using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
-using Penumbra.Import;
+using Penumbra.Import.Structs;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;

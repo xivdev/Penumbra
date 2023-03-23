@@ -82,7 +82,7 @@ public unsafe partial class CharacterUtility
             ResetResourceInternal();
         }
 
-        // Set the currently stored data of this resource to new values.
+        /// <summary> Set the currently stored data of this resource to new values. </summary>
         private void SetResourceInternal(nint data, int length)
         {
             if (!Ready)
@@ -92,7 +92,7 @@ public unsafe partial class CharacterUtility
             resource->SetData(data, length);
         }
 
-        // Reset the currently stored data of this resource to its default values.
+        /// <summary> Reset the currently stored data of this resource to its default values. </summary>
         private void ResetResourceInternal()
             => SetResourceInternal(_defaultResourceData, _defaultResourceSize);
 

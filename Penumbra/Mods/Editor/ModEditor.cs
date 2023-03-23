@@ -24,12 +24,12 @@ public class ModEditor : IDisposable
     public ModEditor(ModNormalizer modNormalizer, ModMetaEditor metaEditor, ModFileCollection files,
         ModFileEditor fileEditor, DuplicateManager duplicates, ModSwapEditor swapEditor, MdlMaterialEditor mdlMaterialEditor)
     {
-        ModNormalizer          = modNormalizer;
-        MetaEditor             = metaEditor;
-        Files               = files;
-        FileEditor             = fileEditor;
-        Duplicates             = duplicates;
-        SwapEditor             = swapEditor;
+        ModNormalizer     = modNormalizer;
+        MetaEditor        = metaEditor;
+        Files             = files;
+        FileEditor        = fileEditor;
+        Duplicates        = duplicates;
+        SwapEditor        = swapEditor;
         MdlMaterialEditor = mdlMaterialEditor;
     }
 
@@ -88,7 +88,7 @@ public class ModEditor : IDisposable
         GroupIdx  = -1;
         OptionIdx = 0;
         if (message)
-            global::Penumbra.Penumbra.Log.Error($"Loading invalid option {groupIdx} {optionIdx} for Mod {Mod?.Name ?? "Unknown"}.");
+            Penumbra.Log.Error($"Loading invalid option {groupIdx} {optionIdx} for Mod {Mod?.Name ?? "Unknown"}.");
     }
 
     public void Clear()

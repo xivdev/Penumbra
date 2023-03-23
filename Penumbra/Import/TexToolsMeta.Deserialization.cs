@@ -3,6 +3,7 @@ using System.IO;
 using Lumina.Extensions;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Import.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 

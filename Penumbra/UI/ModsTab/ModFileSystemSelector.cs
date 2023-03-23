@@ -15,6 +15,7 @@ using OtterGui.Raii;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Import;
+using Penumbra.Import.Structs;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;

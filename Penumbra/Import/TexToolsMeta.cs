@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Penumbra.GameData;
+using Penumbra.Import.Structs;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Import;

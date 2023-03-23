@@ -2,6 +2,7 @@ using Dalamud.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
+using Penumbra.Import.Structs;
 using Penumbra.Mods;
 using SharpCompress.Archives;
 using SharpCompress.Archives.Rar;

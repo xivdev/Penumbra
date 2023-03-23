@@ -1,7 +1,7 @@
 using System;
 using Penumbra.Api.Enums;
 
-namespace Penumbra.Import;
+namespace Penumbra.Import.Structs;
 
 internal static class DefaultTexToolsData
 {
@@ -27,7 +27,7 @@ internal class SimpleMod
 internal class ModPackPage
 {
     public int        PageIndex = 0;
-    public ModGroup[] ModGroups = Array.Empty< ModGroup >();
+    public ModGroup[] ModGroups = Array.Empty<ModGroup>();
 }
 
 [Serializable]
@@ -35,7 +35,7 @@ internal class ModGroup
 {
     public string       GroupName     = string.Empty;
     public GroupType    SelectionType = GroupType.Single;
-    public OptionList[] OptionList    = Array.Empty< OptionList >();
+    public OptionList[] OptionList    = Array.Empty<OptionList>();
     public string       Description   = string.Empty;
 }
 
@@ -45,7 +45,7 @@ internal class OptionList
     public string      Name          = string.Empty;
     public string      Description   = string.Empty;
     public string      ImagePath     = string.Empty;
-    public SimpleMod[] ModsJsons     = Array.Empty< SimpleMod >();
+    public SimpleMod[] ModsJsons     = Array.Empty<SimpleMod>();
     public string      GroupName     = string.Empty;
     public GroupType   SelectionType = GroupType.Single;
     public bool        IsChecked     = false;
@@ -60,18 +60,18 @@ internal class ExtendedModPack
     public string        Version        = string.Empty;
     public string        Description    = DefaultTexToolsData.Description;
     public string        Url            = string.Empty;
-    public ModPackPage[] ModPackPages   = Array.Empty< ModPackPage >();
-    public SimpleMod[]   SimpleModsList = Array.Empty< SimpleMod >();
+    public ModPackPage[] ModPackPages   = Array.Empty<ModPackPage>();
+    public SimpleMod[]   SimpleModsList = Array.Empty<SimpleMod>();
 }
 
 [Serializable]
 internal class SimpleModPack
 {
-    public string TtmpVersion = string.Empty;
-    public string Name        = DefaultTexToolsData.Name;
-    public string Author      = DefaultTexToolsData.Author;
-    public string Version     = string.Empty;
-    public string Description = DefaultTexToolsData.Description;
-    public string Url         = string.Empty;
-    public SimpleMod[] SimpleModsList = Array.Empty< SimpleMod >();
+    public string      TtmpVersion    = string.Empty;
+    public string      Name           = DefaultTexToolsData.Name;
+    public string      Author         = DefaultTexToolsData.Author;
+    public string      Version        = string.Empty;
+    public string      Description    = DefaultTexToolsData.Description;
+    public string      Url            = string.Empty;
+    public SimpleMod[] SimpleModsList = Array.Empty<SimpleMod>();
 }

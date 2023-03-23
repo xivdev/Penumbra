@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -6,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Penumbra.Import.Structs;
 using Penumbra.Mods;
 using FileMode = System.IO.FileMode;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;

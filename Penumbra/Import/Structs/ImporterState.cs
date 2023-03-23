@@ -1,4 +1,4 @@
-namespace Penumbra.Import;
+namespace Penumbra.Import.Structs;
 
 public enum ImporterState
 {

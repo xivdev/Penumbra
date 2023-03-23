@@ -1,10 +1,10 @@
+using System;
+using System.IO;
 using Lumina.Data.Files;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
-using System;
-using System.IO;
 
-namespace Penumbra.Import.Dds;
+namespace Penumbra.Import.Textures;
 
 public static class TextureImporter
 {
