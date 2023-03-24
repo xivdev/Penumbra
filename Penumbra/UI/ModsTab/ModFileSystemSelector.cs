@@ -41,7 +41,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, Mod.Manager modManager,
         ModCollection.Manager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
         ModEditor modEditor)
-        : base(fileSystem, DalamudServices.KeyState)
+        : base(fileSystem, DalamudServices.KeyState, HandleException)
     {
         _communicator      = communicator;
         _modManager        = modManager;
@@ -265,13 +265,13 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
                 _import.DrawProgressInfo(new Vector2(-1, ImGui.GetFrameHeight()));
         }
 
-        if (_import.State == ImporterState.Done && ImGui.Button("Close", -Vector2.UnitX)
-         || _import.State != ImporterState.Done && _import.DrawCancelButton(-Vector2.UnitX))
-        {
-            _import?.Dispose();
-            _import = null;
-            ImGui.CloseCurrentPopup();
-        }
+        if ((_import.State != ImporterState.Done || !ImGui.Button("Close", -Vector2.UnitX))
+         && (_import.State == ImporterState.Done || !_import.DrawCancelButton(-Vector2.UnitX)))
+            return;
+
+        _import?.Dispose();
+        _import = null;
+        ImGui.CloseCurrentPopup();
     }
 
     /// <summary> Mods need to be added thread-safely outside of iteration. </summary>
@@ -422,6 +422,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
             ImGui.BulletText("Use the expandable menu beside the input to filter for mods fulfilling specific criteria.");
         });
     }
+
+    private static void HandleException(Exception e)
+        => Penumbra.ChatService.NotificationMessage(e.Message, "Failure", NotificationType.Warning);
 
     #endregion
 
