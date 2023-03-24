@@ -225,7 +225,7 @@ public class ModPanelSettingsTab : ITab
     {
         using var id             = ImRaii.PushId(groupIdx);
         var       selectedOption = _empty ? (int)group.DefaultSettings : (int)_settings.Settings[groupIdx];
-        Widget.BeginFramedGroup(group.Name, group.Description);
+        var minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
 
         void DrawOptions()
         {
@@ -236,21 +236,21 @@ public class ModPanelSettingsTab : ITab
                 if (ImGui.RadioButton(option.Name, selectedOption == idx))
                     _collectionManager.Current.SetModSetting(_selector.Selected!.Index, groupIdx, (uint)idx);
 
-                if (option.Description.Length > 0)
-                {
-                    ImGui.SameLine();
-                    ImGuiComponents.HelpMarker(option.Description);
-                }
+                if (option.Description.Length <= 0)
+                    continue;
+
+                ImGui.SameLine();
+                ImGuiComponents.HelpMarker(option.Description);
             }
         }
 
-        DrawCollapseHandling(group, DrawOptions);
+        DrawCollapseHandling(group, minWidth, DrawOptions);
 
         Widget.EndFramedGroup();
     }
 
 
-    private void DrawCollapseHandling(IModGroup group, Action draw)
+    private void DrawCollapseHandling(IModGroup group, float minWidth, Action draw)
     {
         if (group.Count <= _config.OptionGroupCollapsibleMin)
         {
@@ -258,8 +258,13 @@ public class ModPanelSettingsTab : ITab
         }
         else
         {
-            var collapseId = ImGui.GetID("Collapse");
-            var shown      = ImGui.GetStateStorage().GetBool(collapseId, true);
+            var collapseId     = ImGui.GetID("Collapse");
+            var shown          = ImGui.GetStateStorage().GetBool(collapseId, true);
+            var buttonTextShow = $"Show {group.Count} Options";
+            var buttonTextHide = $"Hide {group.Count} Options";
+            var buttonWidth    = Math.Max(ImGui.CalcTextSize(buttonTextShow).X, ImGui.CalcTextSize(buttonTextHide).X) 
+              + 2 * ImGui.GetStyle().FramePadding.X;
+            minWidth = Math.Max(buttonWidth, minWidth);
             if (shown)
             {
                 var pos = ImGui.GetCursorPos();
@@ -269,21 +274,24 @@ public class ModPanelSettingsTab : ITab
                     draw();
                 }
 
-                var width  = ImGui.GetItemRectSize().X;
-                var endPos = ImGui.GetCursorPos();
+                
+                
+                var width       = Math.Max(ImGui.GetItemRectSize().X, minWidth);
+                var endPos      = ImGui.GetCursorPos();
                 ImGui.SetCursorPos(pos);
-                if (ImGui.Button($"Hide {group.Count} Options", new Vector2(width, 0)))
+                if (ImGui.Button(buttonTextHide, new Vector2(width, 0)))
                     ImGui.GetStateStorage().SetBool(collapseId, !shown);
 
                 ImGui.SetCursorPos(endPos);
             }
             else
             {
-                var max = group.Max(o => ImGui.CalcTextSize(o.Name).X)
+                var optionWidth = group.Max(o => ImGui.CalcTextSize(o.Name).X)
                   + ImGui.GetStyle().ItemInnerSpacing.X
                   + ImGui.GetFrameHeight()
                   + ImGui.GetStyle().FramePadding.X;
-                if (ImGui.Button($"Show {group.Count} Options", new Vector2(max, 0)))
+                var width        = Math.Max(optionWidth, minWidth);
+                if (ImGui.Button(buttonTextShow, new Vector2(width, 0)))
                     ImGui.GetStateStorage().SetBool(collapseId, !shown);
             }
         }
@@ -297,7 +305,7 @@ public class ModPanelSettingsTab : ITab
     {
         using var id    = ImRaii.PushId(groupIdx);
         var       flags = _empty ? group.DefaultSettings : _settings.Settings[groupIdx];
-        Widget.BeginFramedGroup(group.Name, group.Description);
+        var minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
 
         void DrawOptions()
         {
@@ -322,7 +330,7 @@ public class ModPanelSettingsTab : ITab
             }
         }
 
-        DrawCollapseHandling(group, DrawOptions);
+        DrawCollapseHandling(group, minWidth, DrawOptions);
 
         Widget.EndFramedGroup();
         var label = $"##multi{groupIdx}";

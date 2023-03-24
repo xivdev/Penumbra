@@ -221,7 +221,7 @@ public class ModPanelEditTab : ITab
 
         public static void Draw(Mod.Manager modManager, Mod mod)
         {
-            using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, UiHelpers.ScaleX3);
+            using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3));
             ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
             ImGui.InputTextWithHint("##newGroup", "Add new option group...", ref _newGroupName, 256);
             ImGui.SameLine();

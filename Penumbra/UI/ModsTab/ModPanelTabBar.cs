@@ -31,7 +31,7 @@ public class ModPanelTabBar
     private readonly TutorialService         _tutorial;
 
     public readonly ITab[]          Tabs;
-    private         ModPanelTabType _preferredTab = 0;
+    private         ModPanelTabType _preferredTab = ModPanelTabType.Settings;
     private         Mod?            _lastMod      = null;
 
     public ModPanelTabBar(ModEditWindow modEditWindow, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
