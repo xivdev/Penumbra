@@ -16,13 +16,12 @@ public partial class ModCollection
     // Enable or disable the mod inheritance of mod idx.
     public bool SetModInheritance( int idx, bool inherit )
     {
-        if( FixInheritance( idx, inherit ) )
-        {
-            ModSettingChanged.Invoke( ModSettingChange.Inheritance, idx, inherit ? 0 : 1, 0, false );
-            return true;
-        }
+        if (!FixInheritance(idx, inherit))
+            return false;
 
-        return false;
+        ModSettingChanged.Invoke( ModSettingChange.Inheritance, idx, inherit ? 0 : 1, 0, false );
+        return true;
+
     }
 
     // Set the enabled state mod idx to newValue if it differs from the current enabled state.
@@ -30,24 +29,21 @@ public partial class ModCollection
     public bool SetModState( int idx, bool newValue )
     {
         var oldValue = _settings[ idx ]?.Enabled ?? this[ idx ].Settings?.Enabled ?? false;
-        if( newValue != oldValue )
-        {
-            var inheritance = FixInheritance( idx, false );
-            _settings[ idx ]!.Enabled = newValue;
-            ModSettingChanged.Invoke( ModSettingChange.EnableState, idx, inheritance ? -1 : newValue ? 0 : 1, 0, false );
-            return true;
-        }
+        if (newValue == oldValue)
+            return false;
 
-        return false;
+        var inheritance = FixInheritance( idx, false );
+        _settings[ idx ]!.Enabled = newValue;
+        ModSettingChanged.Invoke( ModSettingChange.EnableState, idx, inheritance ? -1 : newValue ? 0 : 1, 0, false );
+        return true;
+
     }
 
     // Enable or disable the mod inheritance of every mod in mods.
     public void SetMultipleModInheritances( IEnumerable< Mod > mods, bool inherit )
     {
         if( mods.Aggregate( false, ( current, mod ) => current | FixInheritance( mod.Index, inherit ) ) )
-        {
             ModSettingChanged.Invoke( ModSettingChange.MultiInheritance, -1, -1, 0, false );
-        }
     }
 
     // Set the enabled state of every mod in mods to the new value.
@@ -58,12 +54,12 @@ public partial class ModCollection
         foreach( var mod in mods )
         {
             var oldValue = _settings[ mod.Index ]?.Enabled;
-            if( newValue != oldValue )
-            {
-                FixInheritance( mod.Index, false );
-                _settings[ mod.Index ]!.Enabled = newValue;
-                changes                         = true;
-            }
+            if (newValue == oldValue)
+                continue;
+
+            FixInheritance( mod.Index, false );
+            _settings[ mod.Index ]!.Enabled = newValue;
+            changes                         = true;
         }
 
         if( changes )
@@ -77,15 +73,14 @@ public partial class ModCollection
     public bool SetModPriority( int idx, int newValue )
     {
         var oldValue = _settings[ idx ]?.Priority ?? this[ idx ].Settings?.Priority ?? 0;
-        if( newValue != oldValue )
-        {
-            var inheritance = FixInheritance( idx, false );
-            _settings[ idx ]!.Priority = newValue;
-            ModSettingChanged.Invoke( ModSettingChange.Priority, idx, inheritance ? -1 : oldValue, 0, false );
-            return true;
-        }
+        if (newValue == oldValue)
+            return false;
 
-        return false;
+        var inheritance = FixInheritance( idx, false );
+        _settings[ idx ]!.Priority = newValue;
+        ModSettingChanged.Invoke( ModSettingChange.Priority, idx, inheritance ? -1 : oldValue, 0, false );
+        return true;
+
     }
 
     // Set a given setting group settingName of mod idx to newValue if it differs from the current value and fix it if necessary.
@@ -126,9 +121,7 @@ public partial class ModCollection
     {
         var settings = _settings[ idx ];
         if( inherit == ( settings == null ) )
-        {
             return false;
-        }
 
         _settings[ idx ] = inherit ? null : this[ idx ].Settings?.DeepCopy() ?? ModSettings.DefaultSettings( Penumbra.ModManager[ idx ] );
         return true;
@@ -140,8 +133,6 @@ public partial class ModCollection
     private void SaveOnChange( bool inherited )
     {
         if( !inherited )
-        {
             Penumbra.SaveService.QueueSave(this);
-        }
     }
 }
