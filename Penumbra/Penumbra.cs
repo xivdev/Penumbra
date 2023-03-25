@@ -186,7 +186,7 @@ public class Penumbra : IDalamudPlugin
                 };
                 var btn    = new LaunchButton( cfg );
                 var system = new WindowSystem( Name );
-                var cmd    = new CommandHandler( Dalamud.Commands, ObjectReloader, Config, this, cfg, ModManager, CollectionManager, Actors );
+                var cmd    = new CommandHandler( Dalamud.Framework, Dalamud.Commands, ObjectReloader, Config, this, cfg, ModManager, CollectionManager, Actors );
                 system.AddWindow( cfg );
                 system.AddWindow( cfg.ModEditPopup );
                 system.AddWindow( changelog );

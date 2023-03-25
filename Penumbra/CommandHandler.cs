@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Dalamud.Game;
 using Dalamud.Game.Command;
 using Dalamud.Game.Text.SeStringHandling;
 using ImGuiNET;
@@ -66,7 +67,8 @@ public class CommandHandler : IDisposable
     private readonly Mod.Manager           _modManager;
     private readonly ModCollection.Manager _collectionManager;
 
-    public CommandHandler( CommandManager commandManager, ObjectReloader objectReloader, Configuration config, Penumbra penumbra, ConfigWindow configWindow, Mod.Manager modManager,
+    public CommandHandler( Framework framework, CommandManager commandManager, ObjectReloader objectReloader, Configuration config, Penumbra penumbra, ConfigWindow configWindow,
+        Mod.Manager modManager,
         ModCollection.Manager collectionManager, ActorManager actors )
     {
         _commandManager    = commandManager;
@@ -77,17 +79,18 @@ public class CommandHandler : IDisposable
         _modManager        = modManager;
         _collectionManager = collectionManager;
         _actors            = actors;
-        _commandManager.AddHandler( CommandName, new CommandInfo( OnCommand )
+        framework.RunOnFrameworkThread( () =>
         {
-            HelpMessage = "Without arguments, toggles the main window. Use /penumbra help to get further command help.",
-            ShowInHelp  = true,
+            _commandManager.AddHandler( CommandName, new CommandInfo( OnCommand )
+            {
+                HelpMessage = "Without arguments, toggles the main window. Use /penumbra help to get further command help.",
+                ShowInHelp  = true,
+            } );
         } );
     }
 
     public void Dispose()
-    {
-        _commandManager.RemoveHandler( CommandName );
-    }
+        => _commandManager.RemoveHandler( CommandName );
 
     private void OnCommand( string command, string arguments )
     {
@@ -586,7 +589,7 @@ public class CommandHandler : IDisposable
         }
     }
 
-    private static void Print( Func<SeString> text )
+    private static void Print( Func< SeString > text )
     {
         if( Penumbra.Config.PrintSuccessfulCommandsToChat )
         {
