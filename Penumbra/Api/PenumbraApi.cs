@@ -848,10 +848,16 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!_tempCollections.CollectionByName(collectionName, out var collection))
             return PenumbraApiEc.CollectionMissing;
 
-        if (!forceAssignment
-         && (_tempCollections.Collections.Individuals.ContainsKey(identifier)
-             || _collectionManager.Individuals.Individuals.ContainsKey(identifier)))
+        if (forceAssignment)
+        {
+            if (_tempCollections.Collections.Individuals.ContainsKey(identifier) && !_tempCollections.Collections.Delete(identifier))
+                return PenumbraApiEc.AssignmentDeletionFailed;
+        }
+        else if (_tempCollections.Collections.Individuals.ContainsKey(identifier)
+              || _collectionManager.Individuals.Individuals.ContainsKey(identifier))
+        {
             return PenumbraApiEc.CharacterCollectionExists;
+        }
 
         var group = _tempCollections.Collections.GetGroup(identifier);
         return _tempCollections.AddIdentifier(collection, group)

@@ -67,11 +67,11 @@ public class TempCollectionManager : IDisposable
         collection.ClearCache();
         for (var i = 0; i < Collections.Count; ++i)
         {
-            if (Collections[i].Collection == collection)
-            {
-                _communicator.CollectionChange.Invoke(CollectionType.Temporary, collection, null, Collections[i].DisplayName);
-                Collections.Delete(i);
-            }
+            if (Collections[i].Collection != collection)
+                continue;
+
+            _communicator.CollectionChange.Invoke(CollectionType.Temporary, collection, null, Collections[i].DisplayName);
+            Collections.Delete(i--);
         }
 
         return true;
