@@ -905,8 +905,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.CollectionMissing;
         }
 
-        if( !forceAssignment
-        && ( Penumbra.TempMods.Collections.Individuals.ContainsKey( identifier ) || Penumbra.CollectionManager.Individuals.Individuals.ContainsKey( identifier ) ) )
+        if( forceAssignment )
+        {
+            if( Penumbra.TempMods.Collections.Individuals.ContainsKey( identifier ) && !Penumbra.TempMods.Collections.Delete( identifier ) )
+            {
+                return PenumbraApiEc.AssignmentDeletionFailed;
+            }
+        }
+        else if( Penumbra.TempMods.Collections.Individuals.ContainsKey( identifier ) || Penumbra.CollectionManager.Individuals.Individuals.ContainsKey( identifier ) )
         {
             return PenumbraApiEc.CharacterCollectionExists;
         }

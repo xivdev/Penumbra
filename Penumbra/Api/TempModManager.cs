@@ -187,7 +187,7 @@ public class TempModManager
             if( Collections[ i ].Collection == collection )
             {
                 CollectionChanged?.Invoke( CollectionType.Temporary, collection, null, Collections[ i ].DisplayName );
-                Collections.Delete( i );
+                Collections.Delete( i-- );
             }
         }
 
