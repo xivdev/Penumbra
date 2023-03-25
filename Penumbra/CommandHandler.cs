@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Dalamud.Game;
 using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
@@ -8,7 +9,6 @@ using ImGuiNET;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.GameData.Actors;
-using Penumbra.Interop;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
@@ -31,7 +31,7 @@ public class CommandHandler : IDisposable
     private readonly ModCollection.Manager _collectionManager;
     private readonly Penumbra              _penumbra;
 
-    public CommandHandler(CommandManager commandManager, ChatGui chat, RedrawService redrawService, Configuration config,
+    public CommandHandler(Framework framework, CommandManager commandManager, ChatGui chat, RedrawService redrawService, Configuration config,
         ConfigWindow configWindow, Mod.Manager modManager, ModCollection.Manager collectionManager, ActorService actors, Penumbra penumbra)
     {
         _commandManager    = commandManager;
@@ -43,17 +43,18 @@ public class CommandHandler : IDisposable
         _actors            = actors.AwaitedService;
         _chat              = chat;
         _penumbra          = penumbra;
-        _commandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+        framework.RunOnFrameworkThread(() =>
         {
-            HelpMessage = "Without arguments, toggles the main window. Use /penumbra help to get further command help.",
-            ShowInHelp  = true,
+            _commandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
+            {
+                HelpMessage = "Without arguments, toggles the main window. Use /penumbra help to get further command help.",
+                ShowInHelp  = true,
+            });
         });
     }
 
     public void Dispose()
-    {
-        _commandManager.RemoveHandler(CommandName);
-    }
+        => _commandManager.RemoveHandler(CommandName);
 
     private void OnCommand(string command, string arguments)
     {
