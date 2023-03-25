@@ -93,16 +93,15 @@ public partial class ModCollection
     public bool SetModSetting( int idx, int groupIdx, uint newValue )
     {
         var settings = _settings[ idx ] != null ? _settings[ idx ]!.Settings : this[ idx ].Settings?.Settings;
-        var oldValue = settings?[ groupIdx ] ?? 0;
-        if( oldValue != newValue )
-        {
-            var inheritance = FixInheritance( idx, false );
-            _settings[ idx ]!.SetValue( Penumbra.ModManager[ idx ], groupIdx, newValue );
-            ModSettingChanged.Invoke( ModSettingChange.Setting, idx, inheritance ? -1 : ( int )oldValue, groupIdx, false );
-            return true;
-        }
+        var oldValue = settings?[ groupIdx ] ?? Penumbra.ModManager[idx].Groups[groupIdx].DefaultSettings;
+        if (oldValue == newValue)
+            return false;
 
-        return false;
+        var inheritance = FixInheritance( idx, false );
+        _settings[ idx ]!.SetValue( Penumbra.ModManager[ idx ], groupIdx, newValue );
+        ModSettingChanged.Invoke( ModSettingChange.Setting, idx, inheritance ? -1 : ( int )oldValue, groupIdx, false );
+        return true;
+
     }
 
     // Change one of the available mod settings for mod idx discerned by type.

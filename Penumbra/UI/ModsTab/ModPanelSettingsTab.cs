@@ -122,11 +122,11 @@ public class ModPanelSettingsTab : ITab
     private void DrawEnabledInput()
     {
         var enabled = _settings.Enabled;
-        if (ImGui.Checkbox("Enabled", ref enabled))
-        {
-            _modManager.NewMods.Remove(_selector.Selected!);
-            _collectionManager.Current.SetModState(_selector.Selected!.Index, enabled);
-        }
+        if (!ImGui.Checkbox("Enabled", ref enabled))
+            return;
+
+        _modManager.NewMods.Remove(_selector.Selected!);
+        _collectionManager.Current.SetModState(_selector.Selected!.Index, enabled);
     }
 
     /// <summary>
