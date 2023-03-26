@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using OtterGui;
-using OtterGui.Classes;
-using Penumbra.Services;
 
 namespace Penumbra.Collections;
 

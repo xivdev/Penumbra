@@ -48,7 +48,7 @@ public class ResourceTab : ITab
 
         unsafe
         {
-            Penumbra.ResourceManagerService.IterateGraphs(DrawCategoryContainer);
+            _resourceManager.IterateGraphs(DrawCategoryContainer);
         }
 
         ImGui.NewLine();

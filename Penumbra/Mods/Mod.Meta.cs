@@ -18,8 +18,6 @@ public sealed partial class Mod : IMod
         Priority = int.MaxValue,
     };
 
-    public const uint                  CurrentFileVersion = 3;
-    public       uint                  FileVersion { get; internal set; } = CurrentFileVersion;
     public       LowerString           Name        { get; internal set; } = "New Mod";
     public       LowerString           Author      { get; internal set; } = LowerString.Empty;
     public       string                Description { get; internal set; } = string.Empty;
@@ -32,6 +30,8 @@ public sealed partial class Mod : IMod
 
     internal readonly struct ModMeta : ISavable
     {
+        public const uint FileVersion = 3;
+
         private readonly Mod _mod;
 
         public ModMeta(Mod mod)
@@ -44,7 +44,7 @@ public sealed partial class Mod : IMod
         {
             var jObject = new JObject
             {
-                { nameof(FileVersion), JToken.FromObject(_mod.FileVersion) },
+                { nameof(FileVersion), JToken.FromObject(FileVersion) },
                 { nameof(Name), JToken.FromObject(_mod.Name) },
                 { nameof(Author), JToken.FromObject(_mod.Author) },
                 { nameof(Description), JToken.FromObject(_mod.Description) },

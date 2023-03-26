@@ -72,9 +72,6 @@ public class Penumbra : IDalamudPlugin
     private          bool                  _disposed;
 
     private readonly PenumbraNew _tmp;
-    // TODO
-    public static ResourceManagerService ResourceManagerService { get; private set; } = null!;
-    public static ResourceService        ResourceService        { get; private set; } = null!;
 
     public Penumbra(DalamudPluginInterface pluginInterface)
     {
@@ -98,13 +95,13 @@ public class Penumbra : IDalamudPlugin
             StainService           = _tmp.Services.GetRequiredService<StainService>();
             TempMods               = _tmp.Services.GetRequiredService<TempModManager>();
             ResidentResources      = _tmp.Services.GetRequiredService<ResidentResourceManager>();
-            ResourceManagerService = _tmp.Services.GetRequiredService<ResourceManagerService>();
+            _tmp.Services.GetRequiredService<ResourceManagerService>();
             ModManager             = _tmp.Services.GetRequiredService<Mod.Manager>();
             CollectionManager      = _tmp.Services.GetRequiredService<ModCollection.Manager>();
             TempCollections        = _tmp.Services.GetRequiredService<TempCollectionManager>();
             ModFileSystem          = _tmp.Services.GetRequiredService<ModFileSystem>();
             RedrawService          = _tmp.Services.GetRequiredService<RedrawService>();
-            ResourceService        = _tmp.Services.GetRequiredService<ResourceService>();
+            _tmp.Services.GetRequiredService<ResourceService>();
             ResourceLoader         = _tmp.Services.GetRequiredService<ResourceLoader>();
             using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {

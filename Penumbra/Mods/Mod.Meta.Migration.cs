@@ -15,31 +15,34 @@ public sealed partial class Mod
 {
     public static partial class Migration
     {
-        public static bool Migrate(Mod mod, JObject json)
-            => MigrateV0ToV1(mod, json) || MigrateV1ToV2(mod) || MigrateV2ToV3(mod);
-
-        private static bool MigrateV2ToV3(Mod mod)
-        {
-            if (mod.FileVersion > 2)
-                return false;
-
-            // Remove import time.
-            mod.FileVersion = 3;
-            return true;
-        }
-
         [GeneratedRegex(@"group_\d{3}_", RegexOptions.Compiled | RegexOptions.NonBacktracking | RegexOptions.ExplicitCapture)]
         private static partial Regex GroupRegex();
 
-        private static bool MigrateV1ToV2(Mod mod)
+        [GeneratedRegex("^group_", RegexOptions.Compiled)]
+        private static partial Regex GroupStartRegex();
+
+        public static bool Migrate(Mod mod, JObject json, ref uint fileVersion)
+            => MigrateV0ToV1(mod, json, ref fileVersion) || MigrateV1ToV2(mod, ref fileVersion) || MigrateV2ToV3(mod, ref fileVersion);
+
+        private static bool MigrateV2ToV3(Mod _, ref uint fileVersion)
         {
-            if (mod.FileVersion > 1)
+            if (fileVersion > 2)
+                return false;
+
+            // Remove import time.
+            fileVersion = 3;
+            return true;
+        }
+
+        private static bool MigrateV1ToV2(Mod mod, ref uint fileVersion)
+        {
+            if (fileVersion > 1)
                 return false;
 
             if (!mod.GroupFiles.All(g => GroupRegex().IsMatch(g.Name)))
                 foreach (var (group, index) in mod.GroupFiles.WithIndex().ToArray())
                 {
-                    var newName = Regex.Replace(group.Name, "^group_", $"group_{index + 1:D3}_", RegexOptions.Compiled);
+                    var newName = GroupStartRegex().Replace(group.Name, $"group_{index + 1:D3}_");
                     try
                     {
                         if (newName != group.Name)
@@ -51,14 +54,14 @@ public sealed partial class Mod
                     }
                 }
 
-            mod.FileVersion = 2;
+            fileVersion = 2;
 
             return true;
         }
 
-        private static bool MigrateV0ToV1(Mod mod, JObject json)
+        private static bool MigrateV0ToV1(Mod mod, JObject json, ref uint fileVersion)
         {
-            if (mod.FileVersion > 0)
+            if (fileVersion > 0)
                 return false;
 
             var swaps = json["FileSwaps"]?.ToObject<Dictionary<Utf8GamePath, FullPath>>()
@@ -110,7 +113,7 @@ public sealed partial class Mod
                     Penumbra.Log.Warning($"Could not delete old meta file {oldMetaFile} during migration:\n{e}");
                 }
 
-            mod.FileVersion = 1;
+            fileVersion = 1;
             mod.SaveDefaultMod();
 
             return true;

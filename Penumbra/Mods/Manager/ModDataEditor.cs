@@ -120,7 +120,7 @@ public class ModDataEditor
             var newDescription = json[nameof(Mod.Description)]?.Value<string>() ?? string.Empty;
             var newVersion     = json[nameof(Mod.Version)]?.Value<string>() ?? string.Empty;
             var newWebsite     = json[nameof(Mod.Website)]?.Value<string>() ?? string.Empty;
-            var newFileVersion = json[nameof(Mod.FileVersion)]?.Value<uint>() ?? 0;
+            var newFileVersion = json[nameof(Mod.ModMeta.FileVersion)]?.Value<uint>() ?? 0;
             var importDate     = json[nameof(Mod.ImportDate)]?.Value<long>();
             var modTags        = json[nameof(Mod.ModTags)]?.Values<string>().OfType<string>();
 
@@ -155,10 +155,9 @@ public class ModDataEditor
                 mod.Website =  newWebsite;
             }
 
-            if (mod.FileVersion != newFileVersion)
+            if (newFileVersion != Mod.ModMeta.FileVersion)
             {
-                mod.FileVersion = newFileVersion;
-                if (Mod.Migration.Migrate(mod, json))
+                if (Mod.Migration.Migrate(mod, json, ref newFileVersion))
                 {
                     changes |= ModDataChangeType.Migration;
                     _saveService.ImmediateSave(new Mod.ModMeta(mod));

@@ -54,6 +54,8 @@ public sealed partial class Mod
 
     internal readonly struct ModData : ISavable
     {
+        public const int FileVersion = 3;
+
         private readonly Mod _mod;
 
         public ModData(Mod mod)
@@ -66,7 +68,7 @@ public sealed partial class Mod
         {
             var jObject = new JObject
             {
-                { nameof(FileVersion), JToken.FromObject(_mod.FileVersion) },
+                { nameof(FileVersion), JToken.FromObject(FileVersion) },
                 { nameof(ImportDate), JToken.FromObject(_mod.ImportDate) },
                 { nameof(LocalTags), JToken.FromObject(_mod.LocalTags) },
                 { nameof(Note), JToken.FromObject(_mod.Note) },
