@@ -20,7 +20,7 @@ public class CommunicatorService : IDisposable
     ///     <item>Parameter is whether the mod was newly created.</item>
     ///     <item>Parameter is whether the mod was deleted.</item>
     /// </list> </summary>
-    public readonly EventWrapper<Mod.TemporaryMod, bool, bool> TemporaryGlobalModChange = new(nameof(TemporaryGlobalModChange));
+    public readonly EventWrapper<TemporaryMod, bool, bool> TemporaryGlobalModChange = new(nameof(TemporaryGlobalModChange));
 
     /// <summary> <list type="number">
     ///     <item>Parameter is the type of change. </item>

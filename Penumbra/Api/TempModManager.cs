@@ -20,8 +20,8 @@ public class TempModManager : IDisposable
 {
     private readonly CommunicatorService _communicator;
 
-    private readonly Dictionary<ModCollection, List<Mod.TemporaryMod>> _mods                  = new();
-    private readonly List<Mod.TemporaryMod>                            _modsForAllCollections = new();
+    private readonly Dictionary<ModCollection, List<TemporaryMod>> _mods                  = new();
+    private readonly List<TemporaryMod>                            _modsForAllCollections = new();
 
     public TempModManager(CommunicatorService communicator)
     {
@@ -34,10 +34,10 @@ public class TempModManager : IDisposable
         _communicator.CollectionChange.Event -= OnCollectionChange;
     }
 
-    public IReadOnlyDictionary<ModCollection, List<Mod.TemporaryMod>> Mods
+    public IReadOnlyDictionary<ModCollection, List<TemporaryMod>> Mods
         => _mods;
 
-    public IReadOnlyList<Mod.TemporaryMod> ModsForAllCollections
+    public IReadOnlyList<TemporaryMod> ModsForAllCollections
         => _modsForAllCollections;
 
     public RedirectResult Register(string tag, ModCollection? collection, Dictionary<Utf8GamePath, FullPath> dict,
@@ -74,7 +74,7 @@ public class TempModManager : IDisposable
     }
 
     // Apply any new changes to the temporary mod.
-    private void ApplyModChange(Mod.TemporaryMod mod, ModCollection? collection, bool created, bool removed)
+    private void ApplyModChange(TemporaryMod mod, ModCollection? collection, bool created, bool removed)
     {
         if (collection != null)
         {
@@ -92,7 +92,7 @@ public class TempModManager : IDisposable
     /// <summary>
     /// Apply a mod change to a set of collections.
     /// </summary>
-    public static void OnGlobalModChange(IEnumerable<ModCollection> collections, Mod.TemporaryMod mod, bool created, bool removed)
+    public static void OnGlobalModChange(IEnumerable<ModCollection> collections, TemporaryMod mod, bool created, bool removed)
     {
         if (removed)
             foreach (var c in collections)
@@ -104,9 +104,9 @@ public class TempModManager : IDisposable
 
     // Find or create a mod with the given tag as name and the given priority, for the given collection (or all collections).
     // Returns the found or created mod and whether it was newly created.
-    private Mod.TemporaryMod GetOrCreateMod(string tag, ModCollection? collection, int priority, out bool created)
+    private TemporaryMod GetOrCreateMod(string tag, ModCollection? collection, int priority, out bool created)
     {
-        List<Mod.TemporaryMod> list;
+        List<TemporaryMod> list;
         if (collection == null)
         {
             list = _modsForAllCollections;
@@ -117,14 +117,14 @@ public class TempModManager : IDisposable
         }
         else
         {
-            list = new List<Mod.TemporaryMod>();
+            list = new List<TemporaryMod>();
             _mods.Add(collection, list);
         }
 
         var mod = list.Find(m => m.Priority == priority && m.Name == tag);
         if (mod == null)
         {
-            mod = new Mod.TemporaryMod()
+            mod = new TemporaryMod()
             {
                 Name     = tag,
                 Priority = priority,

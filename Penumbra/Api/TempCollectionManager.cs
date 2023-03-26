@@ -31,7 +31,7 @@ public class TempCollectionManager : IDisposable
         _communicator.TemporaryGlobalModChange.Event -= OnGlobalModChange;
     }
 
-    private void OnGlobalModChange(Mod.TemporaryMod mod, bool created, bool removed)
+    private void OnGlobalModChange(TemporaryMod mod, bool created, bool removed)
         => TempModManager.OnGlobalModChange(_customCollections.Values, mod, created, removed);
 
     public int Count

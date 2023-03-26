@@ -39,7 +39,7 @@ public class ModDataEditor
         mod.Description = description ?? mod.Description;
         mod.Version     = version ?? mod.Version;
         mod.Website     = website ?? mod.Website;
-        _saveService.ImmediateSave(new ModMeta(mod));
+        _saveService.ImmediateSave(new Mod.ModMeta(mod));
     }
 
     public ModDataChangeType LoadLocalData(Mod mod)
@@ -96,7 +96,7 @@ public class ModDataEditor
         }
 
         if (save)
-            _saveService.QueueSave(new ModData(mod));
+            _saveService.QueueSave(new Mod.ModData(mod));
 
         return changes;
     }
@@ -161,7 +161,7 @@ public class ModDataEditor
                 if (Mod.Migration.Migrate(mod, json))
                 {
                     changes |= ModDataChangeType.Migration;
-                    _saveService.ImmediateSave(new ModMeta(mod));
+                    _saveService.ImmediateSave(new Mod.ModMeta(mod));
                 }
             }
 
@@ -189,7 +189,7 @@ public class ModDataEditor
 
         var oldName = mod.Name;
         mod.Name = newName;
-        _saveService.QueueSave(new ModMeta(mod));
+        _saveService.QueueSave(new Mod.ModMeta(mod));
         _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Name, mod, oldName.Text);
     }
 
@@ -199,7 +199,7 @@ public class ModDataEditor
             return;
 
         mod.Author = newAuthor;
-        _saveService.QueueSave(new ModMeta(mod));
+        _saveService.QueueSave(new Mod.ModMeta(mod));
         _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Author, mod, null);
     }
 
@@ -209,7 +209,7 @@ public class ModDataEditor
             return;
 
         mod.Description = newDescription;
-        _saveService.QueueSave(new ModMeta(mod));
+        _saveService.QueueSave(new Mod.ModMeta(mod));
         _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Description, mod, null);
     }
 
@@ -219,7 +219,7 @@ public class ModDataEditor
             return;
 
         mod.Version = newVersion;
-        _saveService.QueueSave(new ModMeta(mod));
+        _saveService.QueueSave(new Mod.ModMeta(mod));
         _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Version, mod, null);
     }
 
@@ -229,7 +229,7 @@ public class ModDataEditor
             return;
 
         mod.Website = newWebsite;
-        _saveService.QueueSave(new ModMeta(mod));
+        _saveService.QueueSave(new Mod.ModMeta(mod));
         _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Website, mod, null);
     }
 
@@ -245,7 +245,7 @@ public class ModDataEditor
             return;
 
         mod.Favorite = state;
-        _saveService.QueueSave(new ModData(mod));
+        _saveService.QueueSave(new Mod.ModData(mod));
         ;
         _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
     }
@@ -256,7 +256,7 @@ public class ModDataEditor
             return;
 
         mod.Note = newNote;
-        _saveService.QueueSave(new ModData(mod));
+        _saveService.QueueSave(new Mod.ModData(mod));
         ;
         _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
     }
@@ -281,10 +281,10 @@ public class ModDataEditor
         }
 
         if (flags.HasFlag(ModDataChangeType.ModTags))
-            _saveService.QueueSave(new ModMeta(mod));
+            _saveService.QueueSave(new Mod.ModMeta(mod));
 
         if (flags.HasFlag(ModDataChangeType.LocalTags))
-            _saveService.QueueSave(new ModData(mod));
+            _saveService.QueueSave(new Mod.ModData(mod));
 
         if (flags != 0)
             _communicatorService.ModDataChanged.Invoke(flags, mod, null);
@@ -304,59 +304,6 @@ public class ModDataEditor
         catch (Exception e)
         {
             Penumbra.Log.Error($"Could not move local data file {oldFile} to {newFile}:\n{e}");
-        }
-    }
-
-
-    private readonly struct ModMeta : ISavable
-    {
-        private readonly Mod _mod;
-
-        public ModMeta(Mod mod)
-            => _mod = mod;
-
-        public string ToFilename(FilenameService fileNames)
-            => fileNames.ModMetaPath(_mod);
-
-        public void Save(StreamWriter writer)
-        {
-            var jObject = new JObject
-            {
-                { nameof(Mod.FileVersion), JToken.FromObject(_mod.FileVersion) },
-                { nameof(Mod.Name), JToken.FromObject(_mod.Name) },
-                { nameof(Mod.Author), JToken.FromObject(_mod.Author) },
-                { nameof(Mod.Description), JToken.FromObject(_mod.Description) },
-                { nameof(Mod.Version), JToken.FromObject(_mod.Version) },
-                { nameof(Mod.Website), JToken.FromObject(_mod.Website) },
-                { nameof(Mod.ModTags), JToken.FromObject(_mod.ModTags) },
-            };
-            using var jWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-            jObject.WriteTo(jWriter);
-        }
-    }
-
-    private readonly struct ModData : ISavable
-    {
-        private readonly Mod _mod;
-
-        public ModData(Mod mod)
-            => _mod = mod;
-
-        public string ToFilename(FilenameService fileNames)
-            => fileNames.LocalDataFile(_mod);
-
-        public void Save(StreamWriter writer)
-        {
-            var jObject = new JObject
-            {
-                { nameof(Mod.FileVersion), JToken.FromObject(_mod.FileVersion) },
-                { nameof(Mod.ImportDate), JToken.FromObject(_mod.ImportDate) },
-                { nameof(Mod.LocalTags), JToken.FromObject(_mod.LocalTags) },
-                { nameof(Mod.Note), JToken.FromObject(_mod.Note) },
-                { nameof(Mod.Favorite), JToken.FromObject(_mod.Favorite) },
-            };
-            using var jWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
-            jObject.WriteTo(jWriter);
         }
     }
 }

@@ -1253,7 +1253,7 @@ public class IpcTester : IDisposable
                         .FirstOrDefault()
                  ?? "Unknown";
                 if (ImGui.Button($"Save##{collection.Name}"))
-                    Mod.TemporaryMod.SaveTempCollection(_modManager, collection, character);
+                    TemporaryMod.SaveTempCollection(_modManager, collection, character);
 
                 ImGuiUtil.DrawTableColumn(collection.Name);
                 ImGuiUtil.DrawTableColumn(collection.ResolvedFiles.Count.ToString());
@@ -1271,7 +1271,7 @@ public class IpcTester : IDisposable
 
             using var table = ImRaii.Table("##modTree", 5);
 
-            void PrintList(string collectionName, IReadOnlyList<Mod.TemporaryMod> list)
+            void PrintList(string collectionName, IReadOnlyList<TemporaryMod> list)
             {
                 foreach (var mod in list)
                 {

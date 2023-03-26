@@ -192,7 +192,7 @@ public partial class ModCollection
 
             // Add all forced redirects.
             foreach( var tempMod in Penumbra.TempMods.ModsForAllCollections.Concat(
-                        Penumbra.TempMods.Mods.TryGetValue( _collection, out var list ) ? list : Array.Empty< Mod.TemporaryMod >() ) )
+                        Penumbra.TempMods.Mods.TryGetValue( _collection, out var list ) ? list : Array.Empty< TemporaryMod >() ) )
             {
                 AddMod( tempMod, false );
             }

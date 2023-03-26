@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Newtonsoft.Json;
 using Penumbra.Services;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -48,5 +50,30 @@ public sealed partial class Mod
             AllTagsLower = string.Join('\0', ModTags.Concat(LocalTags).Select(s => s.ToLowerInvariant()));
 
         return type;
+    }
+
+    internal readonly struct ModData : ISavable
+    {
+        private readonly Mod _mod;
+
+        public ModData(Mod mod)
+            => _mod = mod;
+
+        public string ToFilename(FilenameService fileNames)
+            => fileNames.LocalDataFile(_mod);
+
+        public void Save(StreamWriter writer)
+        {
+            var jObject = new JObject
+            {
+                { nameof(FileVersion), JToken.FromObject(_mod.FileVersion) },
+                { nameof(ImportDate), JToken.FromObject(_mod.ImportDate) },
+                { nameof(LocalTags), JToken.FromObject(_mod.LocalTags) },
+                { nameof(Note), JToken.FromObject(_mod.Note) },
+                { nameof(Favorite), JToken.FromObject(_mod.Favorite) },
+            };
+            using var jWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+            jObject.WriteTo(jWriter);
+        }
     }
 }

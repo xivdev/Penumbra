@@ -44,7 +44,7 @@ public partial class ModCollection
         => CalculateEffectiveFileList(this == Penumbra.CollectionManager.Default);
 
     // Handle temporary mods for this collection.
-    public void Apply(Mod.TemporaryMod tempMod, bool created)
+    public void Apply(TemporaryMod tempMod, bool created)
     {
         if (created)
             _cache?.AddMod(tempMod, tempMod.TotalManipulations > 0);
@@ -52,7 +52,7 @@ public partial class ModCollection
             _cache?.ReloadMod(tempMod, tempMod.TotalManipulations > 0);
     }
 
-    public void Remove(Mod.TemporaryMod tempMod)
+    public void Remove(TemporaryMod tempMod)
     {
         _cache?.RemoveMod(tempMod, tempMod.TotalManipulations > 0);
     }

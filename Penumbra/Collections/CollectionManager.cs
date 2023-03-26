@@ -92,7 +92,7 @@ public partial class ModCollection
             _modManager.ModPathChanged                   -= OnModPathChange;
         }
 
-        private void OnGlobalModChange(Mod.TemporaryMod mod, bool created, bool removed)
+        private void OnGlobalModChange(TemporaryMod mod, bool created, bool removed)
             => TempModManager.OnGlobalModChange(_collections, mod, created, removed);
 
         // Returns true if the name is not empty, it is not the name of the empty collection
