@@ -3,97 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Penumbra.Import;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
-
-public partial class Mod
-{
-    internal string DefaultFile
-        => Path.Combine( ModPath.FullName, "default_mod.json" );
-
-    // The default mod contains setting-independent sets of file replacements, file swaps and meta changes.
-    // Every mod has an default mod, though it may be empty.
-    public void SaveDefaultMod()
-    {
-        var defaultFile = DefaultFile;
-
-        using var stream = File.Exists( defaultFile )
-            ? File.Open( defaultFile, FileMode.Truncate )
-            : File.Open( defaultFile, FileMode.CreateNew );
-
-        using var w = new StreamWriter( stream );
-        using var j = new JsonTextWriter( w );
-        j.Formatting = Formatting.Indented;
-        var serializer = new JsonSerializer
-        {
-            Formatting = Formatting.Indented,
-        };
-        ISubMod.WriteSubMod( j, serializer, _default, ModPath, 0 );
-    }
-
-    internal void SaveDefaultModDelayed()
-        => Penumbra.Framework.RegisterDelayed( nameof( SaveDefaultMod ) + ModPath.Name, SaveDefaultMod );
-
-    private void LoadDefaultOption()
-    {
-        var defaultFile = DefaultFile;
-        _default.SetPosition( -1, 0 );
-        try
-        {
-            if( !File.Exists( defaultFile ) )
-            {
-                _default.Load( ModPath, new JObject(), out _ );
-            }
-            else
-            {
-                _default.Load( ModPath, JObject.Parse( File.ReadAllText( defaultFile ) ), out _ );
-            }
-        }
-        catch( Exception e )
-        {
-            Penumbra.Log.Error( $"Could not parse default file for {Name}:\n{e}" );
-        }
-    }
-
-    public void WriteAllTexToolsMeta()
-    {
-        try
-        {
-            _default.WriteTexToolsMeta( ModPath );
-            foreach( var group in Groups )
-            {
-                var dir = Creator.NewOptionDirectory( ModPath, group.Name );
-                if( !dir.Exists )
-                {
-                    dir.Create();
-                }
-
-                foreach( var option in group.OfType< SubMod >() )
-                {
-                    var optionDir = Creator.NewOptionDirectory( dir, option.Name );
-                    if( !optionDir.Exists )
-                    {
-                        optionDir.Create();
-                    }
-
-                    option.WriteTexToolsMeta( optionDir );
-                }
-            }
-        }
-        catch( Exception e )
-        {
-            Penumbra.Log.Error( $"Error writing TexToolsMeta:\n{e}" );
-        }
-    }
-
-
-
-}
 
 /// <summary>
 /// A sub mod is a collection of

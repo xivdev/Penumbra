@@ -1,14 +1,12 @@
 using System;
 using Dalamud.Plugin;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Api;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
-using Penumbra.Interop;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.ResourceTree;

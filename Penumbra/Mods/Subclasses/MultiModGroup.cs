@@ -9,14 +9,8 @@ using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
-using Penumbra.Util;
 
 namespace Penumbra.Mods;
-
-public partial class Mod
-{
-    
-}
 
 /// <summary> Groups that allow all available options to be selected at once. </summary>
 public sealed class MultiModGroup : IModGroup

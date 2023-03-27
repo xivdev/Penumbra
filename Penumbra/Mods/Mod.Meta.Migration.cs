@@ -114,7 +114,7 @@ public sealed partial class Mod
                 }
 
             fileVersion = 1;
-            mod.SaveDefaultMod();
+            Penumbra.SaveService.ImmediateSave(new ModSaveGroup(mod, -1));
 
             return true;
         }

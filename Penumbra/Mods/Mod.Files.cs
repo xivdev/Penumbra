@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json.Linq;
-using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
@@ -113,8 +112,59 @@ public partial class Mod
         }
 
         if( changes )
-        {
             Penumbra.SaveService.SaveAllOptionGroups(this);
+    }
+
+    private void LoadDefaultOption()
+    {
+        var defaultFile = Penumbra.Filenames.OptionGroupFile(this, -1);
+        _default.SetPosition(-1, 0);
+        try
+        {
+            if (!File.Exists(defaultFile))
+            {
+                _default.Load(ModPath, new JObject(), out _);
+            }
+            else
+            {
+                _default.Load(ModPath, JObject.Parse(File.ReadAllText(defaultFile)), out _);
+            }
+        }
+        catch (Exception e)
+        {
+            Penumbra.Log.Error($"Could not parse default file for {Name}:\n{e}");
         }
     }
+
+    public void WriteAllTexToolsMeta()
+    {
+        try
+        {
+            _default.WriteTexToolsMeta(ModPath);
+            foreach (var group in Groups)
+            {
+                var dir = Creator.NewOptionDirectory(ModPath, group.Name);
+                if (!dir.Exists)
+                {
+                    dir.Create();
+                }
+
+                foreach (var option in group.OfType<SubMod>())
+                {
+                    var optionDir = Creator.NewOptionDirectory(dir, option.Name);
+                    if (!optionDir.Exists)
+                    {
+                        optionDir.Create();
+                    }
+
+                    option.WriteTexToolsMeta(optionDir);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Penumbra.Log.Error($"Error writing TexToolsMeta:\n{e}");
+        }
+    }
+
 }

@@ -83,7 +83,7 @@ public class TemporaryMod : IMod
             foreach( var manip in collection.MetaCache?.Manipulations ?? Array.Empty< MetaManipulation >() )
                 defaultMod.ManipulationData.Add( manip );
 
-            mod.SaveDefaultMod();
+            Penumbra.SaveService.ImmediateSave(new ModSaveGroup(dir, defaultMod));
             modManager.AddMod( dir );
             Penumbra.Log.Information( $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Name}." );
         }

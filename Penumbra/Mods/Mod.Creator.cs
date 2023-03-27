@@ -140,7 +140,7 @@ public partial class Mod
             }
 
             mod._default.IncorporateMetaChanges( directory, true );
-            mod.SaveDefaultMod();
+            Penumbra.SaveService.ImmediateSave(new ModSaveGroup(mod, -1));
         }
 
         /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
