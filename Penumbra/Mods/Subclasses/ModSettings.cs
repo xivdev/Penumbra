@@ -10,7 +10,7 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
-// Contains the settings for a given mod.
+/// <summary> Contains the settings for a given mod. </summary>
 public class ModSettings
 {
     public static readonly ModSettings Empty = new();

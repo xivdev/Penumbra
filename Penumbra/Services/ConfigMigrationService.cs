@@ -87,7 +87,7 @@ public class ConfigMigrationService
         if (_config.Version != 6)
             return;
 
-        ModCollection.Manager.MigrateUngenderedCollections(_fileNames);
+        CollectionManager.MigrateUngenderedCollections(_fileNames);
         _config.Version = 7;
     }
 
@@ -113,7 +113,7 @@ public class ConfigMigrationService
         if (_config.Version != 4)
             return;
 
-        Mod.Manager.MigrateModBackups = true;
+        ModManager.MigrateModBackups = true;
         _config.Version = 5;
     }
 
@@ -257,11 +257,11 @@ public class ConfigMigrationService
             using var j = new JsonTextWriter(writer);
             j.Formatting = Formatting.Indented;
             j.WriteStartObject();
-            j.WritePropertyName(nameof(ModCollection.Manager.Default));
+            j.WritePropertyName(nameof(CollectionManager.Default));
             j.WriteValue(def);
-            j.WritePropertyName(nameof(ModCollection.Manager.Interface));
+            j.WritePropertyName(nameof(CollectionManager.Interface));
             j.WriteValue(ui);
-            j.WritePropertyName(nameof(ModCollection.Manager.Current));
+            j.WritePropertyName(nameof(CollectionManager.Current));
             j.WriteValue(current);
             foreach (var (type, collection) in special)
             {

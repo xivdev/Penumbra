@@ -15,10 +15,10 @@ public enum ModPathChangeType
 
 public partial class Mod
 {
-    public DirectoryInfo ModPath { get; private set; }
+    public DirectoryInfo ModPath { get; internal set; }
     public string Identifier
         => Index >= 0 ? ModPath.Name : Name;
-    public int Index { get; private set; } = -1;
+    public int Index { get; internal set; } = -1;
 
     public bool IsTemporary
         => Index < 0;
@@ -33,7 +33,7 @@ public partial class Mod
         _default = new SubMod( this );
     }
 
-    private static Mod? LoadMod( Manager modManager, DirectoryInfo modPath, bool incorporateMetaChanges )
+    public static Mod? LoadMod( ModManager modManager, DirectoryInfo modPath, bool incorporateMetaChanges )
     {
         modPath.Refresh();
         if( !modPath.Exists )
@@ -52,7 +52,7 @@ public partial class Mod
 
     }
 
-    internal bool Reload(Manager modManager, bool incorporateMetaChanges, out ModDataChangeType modDataChange )
+    internal bool Reload(ModManager modManager, bool incorporateMetaChanges, out ModDataChangeType modDataChange )
     {
         modDataChange = ModDataChangeType.Deletion;
         ModPath.Refresh();

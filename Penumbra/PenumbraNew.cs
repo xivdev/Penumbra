@@ -88,12 +88,12 @@ public class PenumbraNew
         // Add Collection Services
         services.AddTransient<IndividualCollections>()
             .AddSingleton<TempCollectionManager>()
-            .AddSingleton<ModCollection.Manager>();
+            .AddSingleton<CollectionManager>();
 
         // Add Mod Services
         services.AddSingleton<TempModManager>()
             .AddSingleton<ModDataEditor>()
-            .AddSingleton<Mod.Manager>()
+            .AddSingleton<ModManager>()
             .AddSingleton<ModFileSystem>();
 
         // Add Resource services

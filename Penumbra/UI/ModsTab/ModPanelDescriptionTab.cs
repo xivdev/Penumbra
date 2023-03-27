@@ -13,11 +13,11 @@ public class ModPanelDescriptionTab : ITab
 {
     private readonly ModFileSystemSelector _selector;
     private readonly TutorialService       _tutorial;
-    private readonly Mod.Manager           _modManager;
+    private readonly ModManager           _modManager;
     private readonly TagButtons            _localTags = new();
     private readonly TagButtons            _modTags   = new();
 
-    public ModPanelDescriptionTab(ModFileSystemSelector selector, TutorialService tutorial, Mod.Manager modManager)
+    public ModPanelDescriptionTab(ModFileSystemSelector selector, TutorialService tutorial, ModManager modManager)
     {
         _selector   = selector;
         _tutorial   = tutorial;

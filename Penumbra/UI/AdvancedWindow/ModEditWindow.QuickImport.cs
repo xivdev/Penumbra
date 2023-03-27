@@ -194,7 +194,7 @@ public partial class ModEditWindow
             _editor.FileEditor.Revert(_editor.Mod!, _editor.Option!);
             var fileRegistry = _editor.Files.Available.First(file => file.File.FullName == _targetPath);
             _editor.FileEditor.AddPathsToSelected(_editor.Option!, new []{ fileRegistry }, _subDirs);
-            _editor.FileEditor.Apply(_editor.Mod!, (Mod.SubMod) _editor.Option!);
+            _editor.FileEditor.Apply(_editor.Mod!, (SubMod) _editor.Option!);
 
             return fileRegistry;
         }

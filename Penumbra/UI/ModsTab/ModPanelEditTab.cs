@@ -20,7 +20,7 @@ namespace Penumbra.UI.ModsTab;
 public class ModPanelEditTab : ITab
 {
     private readonly ChatService           _chat;
-    private readonly Mod.Manager           _modManager;
+    private readonly ModManager           _modManager;
     private readonly ModFileSystem         _fileSystem;
     private readonly ModFileSystemSelector _selector;
     private readonly ModEditWindow         _editWindow;
@@ -33,7 +33,7 @@ public class ModPanelEditTab : ITab
     private ModFileSystem.Leaf _leaf        = null!;
     private Mod                _mod         = null!;
 
-    public ModPanelEditTab(Mod.Manager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, ChatService chat,
+    public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, ChatService chat,
         ModEditWindow editWindow, ModEditor editor)
     {
         _modManager  = modManager;
@@ -219,7 +219,7 @@ public class ModPanelEditTab : ITab
         public static void Reset()
             => _newGroupName = string.Empty;
 
-        public static void Draw(Mod.Manager modManager, Mod mod)
+        public static void Draw(ModManager modManager, Mod mod)
         {
             using var spacing = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, new Vector2(UiHelpers.ScaleX3));
             ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton3);
@@ -250,15 +250,15 @@ public class ModPanelEditTab : ITab
     private static class MoveDirectory
     {
         private static string?                       _currentModDirectory;
-        private static Mod.Manager.NewDirectoryState _state = Mod.Manager.NewDirectoryState.Identical;
+        private static ModManager.NewDirectoryState _state = ModManager.NewDirectoryState.Identical;
 
         public static void Reset()
         {
             _currentModDirectory = null;
-            _state               = Mod.Manager.NewDirectoryState.Identical;
+            _state               = ModManager.NewDirectoryState.Identical;
         }
 
-        public static void Draw(Mod.Manager modManager, Mod mod, Vector2 buttonSize)
+        public static void Draw(ModManager modManager, Mod mod, Vector2 buttonSize)
         {
             ImGui.SetNextItemWidth(buttonSize.X * 2 + ImGui.GetStyle().ItemSpacing.X);
             var tmp = _currentModDirectory ?? mod.ModPath.Name;
@@ -270,13 +270,13 @@ public class ModPanelEditTab : ITab
 
             var (disabled, tt) = _state switch
             {
-                Mod.Manager.NewDirectoryState.Identical      => (true, "Current directory name is identical to new one."),
-                Mod.Manager.NewDirectoryState.Empty          => (true, "Please enter a new directory name first."),
-                Mod.Manager.NewDirectoryState.NonExisting    => (false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}."),
-                Mod.Manager.NewDirectoryState.ExistsEmpty    => (false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}."),
-                Mod.Manager.NewDirectoryState.ExistsNonEmpty => (true, $"{_currentModDirectory} already exists and is not empty."),
-                Mod.Manager.NewDirectoryState.ExistsAsFile   => (true, $"{_currentModDirectory} exists as a file."),
-                Mod.Manager.NewDirectoryState.ContainsInvalidSymbols => (true,
+                ModManager.NewDirectoryState.Identical      => (true, "Current directory name is identical to new one."),
+                ModManager.NewDirectoryState.Empty          => (true, "Please enter a new directory name first."),
+                ModManager.NewDirectoryState.NonExisting    => (false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}."),
+                ModManager.NewDirectoryState.ExistsEmpty    => (false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}."),
+                ModManager.NewDirectoryState.ExistsNonEmpty => (true, $"{_currentModDirectory} already exists and is not empty."),
+                ModManager.NewDirectoryState.ExistsAsFile   => (true, $"{_currentModDirectory} exists as a file."),
+                ModManager.NewDirectoryState.ContainsInvalidSymbols => (true,
                     $"{_currentModDirectory} contains invalid symbols for FFXIV."),
                 _ => (true, "Unknown error."),
             };
@@ -317,7 +317,7 @@ public class ModPanelEditTab : ITab
             ImGui.OpenPopup(PopupName);
         }
 
-        public static void DrawPopup(Mod.Manager modManager)
+        public static void DrawPopup(ModManager modManager)
         {
             if (_mod == null)
                 return;

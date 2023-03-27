@@ -27,7 +27,7 @@ public class ModPanelTabBar
     public readonly  ModPanelChangedItemsTab ChangedItems;
     public readonly  ModPanelEditTab         Edit;
     private readonly ModEditWindow           _modEditWindow;
-    private readonly Mod.Manager             _modManager;
+    private readonly ModManager             _modManager;
     private readonly TutorialService         _tutorial;
 
     public readonly ITab[]          Tabs;
@@ -35,7 +35,7 @@ public class ModPanelTabBar
     private         Mod?            _lastMod      = null;
 
     public ModPanelTabBar(ModEditWindow modEditWindow, ModPanelSettingsTab settings, ModPanelDescriptionTab description,
-        ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelEditTab edit, Mod.Manager modManager,
+        ModPanelConflictsTab conflicts, ModPanelChangedItemsTab changedItems, ModPanelEditTab edit, ModManager modManager,
         TutorialService tutorial)
     {
         _modEditWindow = modEditWindow;
@@ -107,7 +107,7 @@ public class ModPanelTabBar
         if (ImGui.TabItemButton("Advanced Editing", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip))
         {
             _modEditWindow.ChangeMod(mod);
-            _modEditWindow.ChangeOption((Mod.SubMod) mod.Default);
+            _modEditWindow.ChangeOption((SubMod) mod.Default);
             _modEditWindow.IsOpen = true;
         }
 

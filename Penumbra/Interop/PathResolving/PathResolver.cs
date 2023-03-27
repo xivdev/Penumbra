@@ -16,7 +16,7 @@ public class PathResolver : IDisposable
 {
     private readonly PerformanceTracker    _performance;
     private readonly Configuration         _config;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
     private readonly TempCollectionManager _tempCollections;
     private readonly ResourceLoader        _loader;
 
@@ -25,7 +25,7 @@ public class PathResolver : IDisposable
     private readonly PathState            _pathState;
     private readonly MetaState            _metaState;
 
-    public unsafe PathResolver(PerformanceTracker performance, Configuration config, ModCollection.Manager collectionManager,
+    public unsafe PathResolver(PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
         TempCollectionManager tempCollections, ResourceLoader loader, AnimationHookService animationHookService, SubfileHelper subfileHelper,
         PathState pathState, MetaState metaState)
     {

@@ -31,14 +31,14 @@ public class SettingsTab : ITab
     private readonly TutorialService         _tutorial;
     private readonly Penumbra                _penumbra;
     private readonly FileDialogService       _fileDialog;
-    private readonly Mod.Manager             _modManager;
+    private readonly ModManager             _modManager;
     private readonly ModFileSystemSelector   _selector;
     private readonly CharacterUtility        _characterUtility;
     private readonly ResidentResourceManager _residentResources;
     private readonly DalamudServices         _dalamud;
 
     public SettingsTab(Configuration config, FontReloader fontReloader, TutorialService tutorial, Penumbra penumbra,
-        FileDialogService fileDialog, Mod.Manager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
+        FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
         ResidentResourceManager residentResources, DalamudServices dalamud)
     {
         _config            = config;

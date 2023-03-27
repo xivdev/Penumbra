@@ -27,12 +27,12 @@ public class CommandHandler : IDisposable
     private readonly Configuration         _config;
     private readonly ConfigWindow          _configWindow;
     private readonly ActorManager          _actors;
-    private readonly Mod.Manager           _modManager;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly ModManager           _modManager;
+    private readonly CollectionManager _collectionManager;
     private readonly Penumbra              _penumbra;
 
     public CommandHandler(Framework framework, CommandManager commandManager, ChatGui chat, RedrawService redrawService, Configuration config,
-        ConfigWindow configWindow, Mod.Manager modManager, ModCollection.Manager collectionManager, ActorService actors, Penumbra penumbra)
+        ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorService actors, Penumbra penumbra)
     {
         _commandManager    = commandManager;
         _redrawService     = redrawService;

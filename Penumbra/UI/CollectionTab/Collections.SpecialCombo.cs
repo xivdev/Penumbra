@@ -7,7 +7,7 @@ namespace Penumbra.UI.CollectionTab;
 
 public sealed class SpecialCombo : FilterComboBase<(CollectionType, string, string)>
 {
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
 
     public (CollectionType, string, string)? CurrentType
         => CollectionTypeExtensions.Special[CurrentIdx];
@@ -16,7 +16,7 @@ public sealed class SpecialCombo : FilterComboBase<(CollectionType, string, stri
     private readonly float _unscaledWidth;
     private readonly string _label;
 
-    public SpecialCombo(ModCollection.Manager collectionManager, string label, float unscaledWidth)
+    public SpecialCombo(CollectionManager collectionManager, string label, float unscaledWidth)
         : base(CollectionTypeExtensions.Special, false)
     {
         _collectionManager = collectionManager;

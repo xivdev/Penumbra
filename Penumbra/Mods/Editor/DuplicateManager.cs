@@ -11,12 +11,12 @@ namespace Penumbra.Mods;
 
 public class DuplicateManager
 {
-    private readonly Mod.Manager                                      _modManager;
+    private readonly ModManager                                      _modManager;
     private readonly SHA256                                           _hasher = SHA256.Create();
     private readonly ModFileCollection                                _files;
     private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = new();
 
-    public DuplicateManager(ModFileCollection files, Mod.Manager modManager)
+    public DuplicateManager(ModFileCollection files, ModManager modManager)
     {
         _files      = files;
         _modManager = modManager;
@@ -80,7 +80,7 @@ public class DuplicateManager
             }
             else
             {
-                var sub = (Mod.SubMod)subMod;
+                var sub = (SubMod)subMod;
                 sub.FileData = dict;
                 if (groupIdx == -1)
                     mod.SaveDefaultMod();

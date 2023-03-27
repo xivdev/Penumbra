@@ -5,13 +5,13 @@ using Penumbra.Util;
 
 public class ModSwapEditor
 {
-    private readonly Mod.Manager                        _modManager;
+    private readonly ModManager                        _modManager;
     private readonly Dictionary<Utf8GamePath, FullPath> _swaps = new();
 
     public IReadOnlyDictionary<Utf8GamePath, FullPath> Swaps
         => _swaps;
 
-    public ModSwapEditor(Mod.Manager modManager)
+    public ModSwapEditor(ModManager modManager)
         => _modManager = modManager;
 
     public void Revert(ISubMod option)

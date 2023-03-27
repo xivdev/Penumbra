@@ -16,10 +16,10 @@ namespace Penumbra.UI.CollectionTab;
 public class IndividualCollectionUi
 {
     private readonly ActorService _actorService;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
     private readonly CollectionSelector _withEmpty;
 
-    public IndividualCollectionUi(ActorService actors, ModCollection.Manager collectionManager, CollectionSelector withEmpty)
+    public IndividualCollectionUi(ActorService actors, CollectionManager collectionManager, CollectionSelector withEmpty)
     {
         _actorService = actors;
         _collectionManager = collectionManager;

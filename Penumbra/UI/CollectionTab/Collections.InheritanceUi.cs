@@ -16,9 +16,9 @@ public class InheritanceUi
     private const int InheritedCollectionHeight = 9;
     private const string InheritanceDragDropLabel = "##InheritanceMove";
 
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
 
-    public InheritanceUi(ModCollection.Manager collectionManager)
+    public InheritanceUi(CollectionManager collectionManager)
         => _collectionManager = collectionManager;
 
     /// <summary> Draw the whole inheritance block. </summary>

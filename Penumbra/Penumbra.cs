@@ -47,8 +47,8 @@ public class Penumbra : IDalamudPlugin
     public static CharacterUtility        CharacterUtility  { get; private set; } = null!;
     public static GameEventManager        GameEvents        { get; private set; } = null!;
     public static MetaFileManager         MetaFileManager   { get; private set; } = null!;
-    public static Mod.Manager             ModManager        { get; private set; } = null!;
-    public static ModCollection.Manager   CollectionManager { get; private set; } = null!;
+    public static ModManager             ModManager        { get; private set; } = null!;
+    public static CollectionManager   CollectionManager { get; private set; } = null!;
     public static TempCollectionManager   TempCollections   { get; private set; } = null!;
     public static TempModManager          TempMods          { get; private set; } = null!;
     public static ResourceLoader          ResourceLoader    { get; private set; } = null!;
@@ -96,8 +96,8 @@ public class Penumbra : IDalamudPlugin
             TempMods               = _tmp.Services.GetRequiredService<TempModManager>();
             ResidentResources      = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             _tmp.Services.GetRequiredService<ResourceManagerService>();
-            ModManager             = _tmp.Services.GetRequiredService<Mod.Manager>();
-            CollectionManager      = _tmp.Services.GetRequiredService<ModCollection.Manager>();
+            ModManager             = _tmp.Services.GetRequiredService<ModManager>();
+            CollectionManager      = _tmp.Services.GetRequiredService<CollectionManager>();
             TempCollections        = _tmp.Services.GetRequiredService<TempCollectionManager>();
             ModFileSystem          = _tmp.Services.GetRequiredService<ModFileSystem>();
             RedrawService          = _tmp.Services.GetRequiredService<RedrawService>();

@@ -16,10 +16,10 @@ namespace Penumbra.UI.Tabs;
 
 public class ChangedItemsTab : ITab
 {
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
     private readonly PenumbraApi           _api;
 
-    public ChangedItemsTab(ModCollection.Manager collectionManager, PenumbraApi api)
+    public ChangedItemsTab(CollectionManager collectionManager, PenumbraApi api)
     {
         _collectionManager = collectionManager;
         _api               = api;

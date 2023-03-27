@@ -93,10 +93,10 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private Penumbra            _penumbra;
     private Lumina.GameData?    _lumina;
 
-    private Mod.Manager           _modManager;
+    private ModManager           _modManager;
     private ResourceLoader        _resourceLoader;
     private Configuration         _config;
-    private ModCollection.Manager _collectionManager;
+    private CollectionManager _collectionManager;
     private DalamudServices       _dalamud;
     private TempCollectionManager _tempCollections;
     private TempModManager        _tempMods;
@@ -104,8 +104,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private CollectionResolver    _collectionResolver;
     private CutsceneService       _cutsceneService;
 
-    public unsafe PenumbraApi(CommunicatorService communicator, Penumbra penumbra, Mod.Manager modManager, ResourceLoader resourceLoader,
-        Configuration config, ModCollection.Manager collectionManager, DalamudServices dalamud, TempCollectionManager tempCollections,
+    public unsafe PenumbraApi(CommunicatorService communicator, Penumbra penumbra, ModManager modManager, ResourceLoader resourceLoader,
+        Configuration config, CollectionManager collectionManager, DalamudServices dalamud, TempCollectionManager tempCollections,
         TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService)
     {
         _communicator         = communicator;
@@ -1021,7 +1021,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     // Resolve a path given by string for a specific collection.
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    private string ResolvePath(string path, Mod.Manager _, ModCollection collection)
+    private string ResolvePath(string path, ModManager _, ModCollection collection)
     {
         if (!_config.EnableMods)
             return path;

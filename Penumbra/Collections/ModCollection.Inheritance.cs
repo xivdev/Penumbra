@@ -16,7 +16,7 @@ public partial class ModCollection
     // The bool signifies whether the change was in an already inherited collection.
     public event Action< bool > InheritanceChanged;
 
-    private readonly List< ModCollection > _inheritance = new();
+    internal readonly List< ModCollection > _inheritance = new();
 
     public IReadOnlyList< ModCollection > Inheritance
         => _inheritance;
@@ -98,7 +98,7 @@ public partial class ModCollection
         Penumbra.Log.Debug( $"Removed {inheritance.AnonymizedName} from {AnonymizedName} inheritances." );
     }
 
-    private void ClearSubscriptions( ModCollection other )
+    internal void ClearSubscriptions( ModCollection other )
     {
         other.ModSettingChanged  -= OnInheritedModSettingChange;
         other.InheritanceChanged -= OnInheritedInheritanceChange;

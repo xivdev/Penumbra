@@ -14,12 +14,12 @@ namespace Penumbra.UI;
 
 public class FileDialogService : IDisposable
 {
-    private readonly Mod.Manager                          _mods;
+    private readonly ModManager                          _mods;
     private readonly FileDialogManager                    _manager;
     private readonly ConcurrentDictionary<string, string> _startPaths = new();
     private          bool                                 _isOpen;
 
-    public FileDialogService(Mod.Manager mods, Configuration config)
+    public FileDialogService(ModManager mods, Configuration config)
     {
         _mods    = mods;
         _manager = SetupFileManager(config.ModDirectory);

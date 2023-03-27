@@ -112,7 +112,7 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider< string, int, PenumbraApiEc >                                               RemoveTemporaryModAll;
     internal readonly FuncProvider< string, string, int, PenumbraApiEc >                                       RemoveTemporaryMod;
 
-    public PenumbraIpcProviders( DalamudPluginInterface pi, IPenumbraApi api, Mod.Manager modManager )
+    public PenumbraIpcProviders( DalamudPluginInterface pi, IPenumbraApi api, ModManager modManager )
     {
         Api = api;
 

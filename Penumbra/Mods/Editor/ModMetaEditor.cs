@@ -6,7 +6,7 @@ namespace Penumbra.Mods;
 
 public class ModMetaEditor
 {
-    private readonly Mod.Manager _modManager;
+    private readonly ModManager _modManager;
 
     private readonly HashSet<ImcManipulation>  _imc  = new();
     private readonly HashSet<EqpManipulation>  _eqp  = new();
@@ -15,7 +15,7 @@ public class ModMetaEditor
     private readonly HashSet<EstManipulation>  _est  = new();
     private readonly HashSet<RspManipulation>  _rsp  = new();
 
-    public ModMetaEditor(Mod.Manager modManager)
+    public ModMetaEditor(ModManager modManager)
         => _modManager = modManager;
 
     public bool Changes { get; private set; } = false;

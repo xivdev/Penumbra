@@ -9,11 +9,11 @@ namespace Penumbra.Mods;
 public class ModFileEditor
 {
     private readonly ModFileCollection _files;
-    private readonly Mod.Manager       _modManager;
+    private readonly ModManager       _modManager;
 
     public bool Changes { get; private set; }
 
-    public ModFileEditor(ModFileCollection files, Mod.Manager modManager)
+    public ModFileEditor(ModFileCollection files, ModManager modManager)
     {
         _files      = files;
         _modManager = modManager;
@@ -24,7 +24,7 @@ public class ModFileEditor
         Changes = false;
     }
 
-    public int Apply(Mod mod, Mod.SubMod option)
+    public int Apply(Mod mod, SubMod option)
     {
         var dict = new Dictionary<Utf8GamePath, FullPath>();
         var num  = 0;

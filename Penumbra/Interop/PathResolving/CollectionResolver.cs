@@ -31,12 +31,12 @@ public unsafe class CollectionResolver
     private readonly CutsceneService _cutscenes;
 
     private readonly Configuration         _config;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
     private readonly TempCollectionManager _tempCollections;
     private readonly DrawObjectState       _drawObjectState;
 
     public CollectionResolver(PerformanceTracker performance, IdentifiedCollectionCache cache, ClientState clientState, GameGui gameGui,
-        DataManager gameData, ActorService actors, CutsceneService cutscenes, Configuration config, ModCollection.Manager collectionManager,
+        DataManager gameData, ActorService actors, CutsceneService cutscenes, Configuration config, CollectionManager collectionManager,
         TempCollectionManager tempCollections, DrawObjectState drawObjectState)
     {
         _performance       = performance;

@@ -23,13 +23,13 @@ public class ModsTab : ITab
     private readonly ModFileSystemSelector _selector;
     private readonly ModPanel              _panel;
     private readonly TutorialService       _tutorial;
-    private readonly Mod.Manager           _modManager;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly ModManager           _modManager;
+    private readonly CollectionManager _collectionManager;
     private readonly RedrawService         _redrawService;
     private readonly Configuration         _config;
     private readonly CollectionsTab        _collectionsTab;
 
-    public ModsTab(Mod.Manager modManager, ModCollection.Manager collectionManager, ModFileSystemSelector selector, ModPanel panel,
+    public ModsTab(ModManager modManager, CollectionManager collectionManager, ModFileSystemSelector selector, ModPanel panel,
         TutorialService tutorial, RedrawService redrawService, Configuration config, CollectionsTab collectionsTab)
     {
         _modManager        = modManager;

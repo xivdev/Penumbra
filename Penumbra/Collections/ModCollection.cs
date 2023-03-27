@@ -23,18 +23,18 @@ public partial class ModCollection
 
     // The collection name can contain invalid path characters,
     // but after removing those and going to lower case it has to be unique.
-    public string Name { get; private init; }
+    public string Name { get; internal init; }
 
     // Get the first two letters of a collection name and its Index (or None if it is the empty collection).
     public string AnonymizedName
         => this == Empty ? Empty.Name : Name.Length > 2 ? $"{Name[..2]}... ({Index})" : $"{Name} ({Index})";
 
-    public int Version { get; private set; }
-    public int Index   { get; private set; } = -1;
+    public int Version { get; internal set; }
+    public int Index   { get; internal set; } = -1;
 
     // If a ModSetting is null, it can be inherited from other collections.
     // If no collection provides a setting for the mod, it is just disabled.
-    private readonly List<ModSettings?> _settings;
+    internal readonly List<ModSettings?> _settings;
 
     public IReadOnlyList<ModSettings?> Settings
         => _settings;
@@ -115,7 +115,7 @@ public partial class ModCollection
     }
 
     // Add settings for a new appended mod, by checking if the mod had settings from a previous deletion.
-    private bool AddMod(Mod mod)
+    internal bool AddMod(Mod mod)
     {
         if (_unusedSettings.TryGetValue(mod.ModPath.Name, out var save))
         {
@@ -130,7 +130,7 @@ public partial class ModCollection
     }
 
     // Move settings from the current mod list to the unused mod settings.
-    private void RemoveMod(Mod mod, int idx)
+    internal void RemoveMod(Mod mod, int idx)
     {
         var settings = _settings[idx];
         if (settings != null)
@@ -150,7 +150,7 @@ public partial class ModCollection
     }
 
     // Move all settings to unused settings for rediscovery.
-    private void PrepareModDiscovery()
+    internal void PrepareModDiscovery()
     {
         foreach (var (mod, setting) in Penumbra.ModManager.Zip(_settings).Where(s => s.Second != null))
             _unusedSettings[mod.ModPath.Name] = new ModSettings.SavedSettings(setting!, mod);
@@ -160,7 +160,7 @@ public partial class ModCollection
 
     // Apply all mod settings from unused settings to the current set of mods.
     // Also fixes invalid settings.
-    private void ApplyModSettings()
+    internal void ApplyModSettings()
     {
         _settings.Capacity = Math.Max(_settings.Capacity, Penumbra.ModManager.Count);
         if (Penumbra.ModManager.Aggregate(false, (current, mod) => current | AddMod(mod)))

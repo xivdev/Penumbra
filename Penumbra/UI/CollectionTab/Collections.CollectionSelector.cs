@@ -9,9 +9,9 @@ namespace Penumbra.UI.CollectionTab;
 
 public sealed class CollectionSelector : FilterComboCache<ModCollection>
 {
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
 
-    public CollectionSelector(ModCollection.Manager manager, Func<IReadOnlyList<ModCollection>> items)
+    public CollectionSelector(CollectionManager manager, Func<IReadOnlyList<ModCollection>> items)
         : base(items)
         => _collectionManager = manager;
 

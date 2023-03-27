@@ -17,7 +17,7 @@ public class CollectionsTab : IDisposable, ITab
 {
     private readonly CommunicatorService   _communicator;
     private readonly Configuration         _config;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
     private readonly TutorialService       _tutorial;
     private readonly SpecialCombo          _specialCollectionCombo;
 
@@ -26,7 +26,7 @@ public class CollectionsTab : IDisposable, ITab
     private readonly InheritanceUi          _inheritance;
     private readonly IndividualCollectionUi _individualCollections;
 
-    public CollectionsTab(ActorService actorService, CommunicatorService communicator, ModCollection.Manager collectionManager,
+    public CollectionsTab(ActorService actorService, CommunicatorService communicator, CollectionManager collectionManager,
         TutorialService tutorial, Configuration config)
     {
         _communicator           = communicator;

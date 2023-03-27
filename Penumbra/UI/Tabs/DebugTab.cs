@@ -34,8 +34,8 @@ public class DebugTab : ITab
     private readonly StartTracker              _timer;
     private readonly PerformanceTracker        _performance;
     private readonly Configuration             _config;
-    private readonly ModCollection.Manager     _collectionManager;
-    private readonly Mod.Manager               _modManager;
+    private readonly CollectionManager     _collectionManager;
+    private readonly ModManager               _modManager;
     private readonly ValidityChecker           _validityChecker;
     private readonly HttpApi                   _httpApi;
     private readonly ActorService              _actorService;
@@ -52,8 +52,8 @@ public class DebugTab : ITab
     private readonly IdentifiedCollectionCache _identifiedCollectionCache;
     private readonly CutsceneService           _cutsceneService;
 
-    public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, ModCollection.Manager collectionManager,
-        ValidityChecker validityChecker, Mod.Manager modManager, HttpApi httpApi, ActorService actorService,
+    public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
+        ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorService actorService,
         DalamudServices dalamud, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,

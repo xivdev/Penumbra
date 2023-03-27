@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using Dalamud.Utility;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Classes;
 using Penumbra.Services;

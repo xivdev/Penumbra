@@ -18,15 +18,15 @@ public partial class Mod
     public IReadOnlyList< IModGroup > Groups
         => _groups;
 
-    private readonly SubMod            _default;
-    private readonly List< IModGroup > _groups  = new();
+    internal readonly SubMod            _default;
+    internal readonly List< IModGroup > _groups  = new();
 
-    public int TotalFileCount { get; private set; }
-    public int TotalSwapCount { get; private set; }
-    public int TotalManipulations { get; private set; }
-    public bool HasOptions { get; private set; }
+    public int TotalFileCount { get; internal set; }
+    public int TotalSwapCount { get; internal set; }
+    public int TotalManipulations { get; internal set; }
+    public bool HasOptions { get; internal set; }
 
-    private bool SetCounts()
+    internal bool SetCounts()
     {
         TotalFileCount     = 0;
         TotalSwapCount     = 0;
@@ -120,7 +120,7 @@ public partial class Mod
 
     // Delete all existing group files and save them anew.
     // Used when indices change in complex ways.
-    private void SaveAllGroups()
+    internal void SaveAllGroups()
     {
         foreach( var file in GroupFiles )
         {

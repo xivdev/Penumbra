@@ -15,7 +15,7 @@ public partial class ModCollection : ISavable
 {
     // Since inheritances depend on other collections existing,
     // we return them as a list to be applied after reading all collections.
-    private static ModCollection? LoadFromFile(FileInfo file, out IReadOnlyList<string> inheritance)
+    internal static ModCollection? LoadFromFile(FileInfo file, out IReadOnlyList<string> inheritance)
     {
         inheritance = Array.Empty<string>();
         if (!file.Exists)

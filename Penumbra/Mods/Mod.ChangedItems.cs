@@ -12,7 +12,7 @@ public sealed partial class Mod
     public SortedList< string, object? > ChangedItems { get; } = new();
     public string LowerChangedItemsString { get; private set; } = string.Empty;
 
-    private void ComputeChangedItems()
+    internal void ComputeChangedItems()
     {
         ChangedItems.Clear();
         foreach( var gamePath in AllRedirects )

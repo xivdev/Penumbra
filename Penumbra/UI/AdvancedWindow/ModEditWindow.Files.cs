@@ -297,7 +297,7 @@ public partial class ModEditWindow
         var tt      = changes ? "Apply the current file setup to the currently selected option." : "No changes made.";
         if (ImGuiUtil.DrawDisabledButton("Apply Changes", Vector2.Zero, tt, !changes))
         {
-            var failedFiles = _editor.FileEditor.Apply(_editor.Mod!, (Mod.SubMod)_editor.Option!);
+            var failedFiles = _editor.FileEditor.Apply(_editor.Mod!, (SubMod)_editor.Option!);
             if (failedFiles > 0)
                 Penumbra.Log.Information($"Failed to apply {failedFiles} file redirections to {_editor.Option!.FullName}.");
         }

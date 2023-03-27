@@ -14,9 +14,9 @@ namespace Penumbra.UI.ModsTab;
 public class ModPanelConflictsTab : ITab
 {
     private readonly ModFileSystemSelector _selector;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
 
-    public ModPanelConflictsTab(ModCollection.Manager collectionManager, ModFileSystemSelector selector)
+    public ModPanelConflictsTab(CollectionManager collectionManager, ModFileSystemSelector selector)
     {
         _collectionManager = collectionManager;
         _selector          = selector;

@@ -29,8 +29,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     private readonly ChatService           _chat;
     private readonly Configuration         _config;
     private readonly FileDialogService     _fileDialog;
-    private readonly Mod.Manager           _modManager;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly ModManager           _modManager;
+    private readonly CollectionManager _collectionManager;
     private readonly TutorialService       _tutorial;
     private readonly ModEditor             _modEditor;
 
@@ -38,8 +38,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     public  ModSettings       SelectedSettings          { get; private set; } = ModSettings.Empty;
     public  ModCollection     SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
-    public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, Mod.Manager modManager,
-        ModCollection.Manager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
+    public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
+        CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
         ModEditor modEditor)
         : base(fileSystem, DalamudServices.KeyState, HandleException)
     {

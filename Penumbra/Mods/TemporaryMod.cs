@@ -27,10 +27,10 @@ public class TemporaryMod : IMod
     public IEnumerable< ISubMod > AllSubMods
         => new[] { Default };
 
-    private readonly Mod.SubMod _default;
+    private readonly SubMod _default;
 
     public TemporaryMod()
-        => _default = new Mod.SubMod( this );
+        => _default = new SubMod( this );
 
     public void SetFile( Utf8GamePath gamePath, FullPath fullPath )
         => _default.FileData[ gamePath ] = fullPath;
@@ -44,7 +44,7 @@ public class TemporaryMod : IMod
         _default.ManipulationData = manips;
     }
 
-    public static void SaveTempCollection( Mod.Manager modManager, ModCollection collection, string? character = null )
+    public static void SaveTempCollection( ModManager modManager, ModCollection collection, string? character = null )
     {
         DirectoryInfo? dir = null;
         try
@@ -54,7 +54,7 @@ public class TemporaryMod : IMod
             modManager.DataEditor.CreateMeta( dir, collection.Name, character ?? Penumbra.Config.DefaultModAuthor,
                 $"Mod generated from temporary collection {collection.Name} for {character ?? "Unknown Character"}.", null, null );
             var mod        = new Mod( dir );
-            var defaultMod = (Mod.SubMod) mod.Default;
+            var defaultMod = (SubMod) mod.Default;
             foreach( var (gamePath, fullPath) in collection.ResolvedFiles )
             {
                 if( gamePath.Path.EndsWith( ".imc"u8 ) )

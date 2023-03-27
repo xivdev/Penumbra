@@ -25,12 +25,12 @@ public class ItemSwapTab : IDisposable, ITab
 {
     private readonly CommunicatorService   _communicator;
     private readonly ItemService           _itemService;
-    private readonly ModCollection.Manager _collectionManager;
-    private readonly Mod.Manager           _modManager;
+    private readonly CollectionManager _collectionManager;
+    private readonly ModManager           _modManager;
     private readonly Configuration         _config;
 
-    public ItemSwapTab(CommunicatorService communicator, ItemService itemService, ModCollection.Manager collectionManager,
-        Mod.Manager modManager, Configuration config)
+    public ItemSwapTab(CommunicatorService communicator, ItemService itemService, CollectionManager collectionManager,
+        ModManager modManager, Configuration config)
     {
         _communicator      = communicator;
         _itemService       = itemService;

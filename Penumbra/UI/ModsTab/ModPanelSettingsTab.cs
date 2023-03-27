@@ -18,11 +18,11 @@ namespace Penumbra.UI.ModsTab;
 public class ModPanelSettingsTab : ITab
 {
     private readonly Configuration         _config;
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
     private readonly ModFileSystemSelector _selector;
     private readonly TutorialService       _tutorial;
     private readonly PenumbraApi           _api;
-    private readonly Mod.Manager           _modManager;
+    private readonly ModManager           _modManager;
 
     private bool          _inherited;
     private ModSettings   _settings   = null!;
@@ -30,7 +30,7 @@ public class ModPanelSettingsTab : ITab
     private bool          _empty;
     private int?          _currentPriority = null;
 
-    public ModPanelSettingsTab(ModCollection.Manager collectionManager, Mod.Manager modManager, ModFileSystemSelector selector,
+    public ModPanelSettingsTab(CollectionManager collectionManager, ModManager modManager, ModFileSystemSelector selector,
         TutorialService tutorial, PenumbraApi api, Configuration config)
     {
         _collectionManager = collectionManager;

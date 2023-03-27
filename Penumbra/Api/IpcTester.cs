@@ -38,7 +38,7 @@ public class IpcTester : IDisposable
     private readonly ModSettings   _modSettings;
     private readonly Temporary     _temporary;
 
-    public IpcTester(DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders, Mod.Manager modManager)
+    public IpcTester(DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders, ModManager modManager)
     {
         _ipcProviders  = ipcProviders;
         _pluginState   = new PluginState(pi);
@@ -1139,9 +1139,9 @@ public class IpcTester : IDisposable
     private class Temporary
     {
         private readonly DalamudPluginInterface _pi;
-        private readonly Mod.Manager            _modManager;
+        private readonly ModManager            _modManager;
 
-        public Temporary(DalamudPluginInterface pi, Mod.Manager modManager)
+        public Temporary(DalamudPluginInterface pi, ModManager modManager)
         {
             _pi         = pi;
             _modManager = modManager;

@@ -10,12 +10,12 @@ public class ModBackup
 {
     public static bool CreatingBackup { get; private set; }
 
-    private readonly Mod.Manager _modManager;
+    private readonly ModManager _modManager;
     private readonly Mod         _mod;
     public readonly  string      Name;
     public readonly  bool        Exists;
 
-    public ModBackup(Mod.Manager modManager, Mod mod)
+    public ModBackup(ModManager modManager, Mod mod)
     {
         _modManager = modManager;
         _mod        = mod;
@@ -24,9 +24,9 @@ public class ModBackup
     }
 
     /// <summary> Migrate file extensions. </summary>
-    public static void MigrateZipToPmp(Mod.Manager manager)
+    public static void MigrateZipToPmp(ModManager modManager)
     {
-        foreach (var mod in manager)
+        foreach (var mod in modManager)
         {
             var pmpName = mod.ModPath + ".pmp";
             var zipName = mod.ModPath + ".zip";

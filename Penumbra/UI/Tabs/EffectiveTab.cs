@@ -17,9 +17,9 @@ namespace Penumbra.UI.Tabs;
 
 public class EffectiveTab : ITab
 {
-    private readonly ModCollection.Manager _collectionManager;
+    private readonly CollectionManager _collectionManager;
 
-    public EffectiveTab(ModCollection.Manager collectionManager)
+    public EffectiveTab(CollectionManager collectionManager)
         => _collectionManager = collectionManager;
 
     public ReadOnlySpan<byte> Label

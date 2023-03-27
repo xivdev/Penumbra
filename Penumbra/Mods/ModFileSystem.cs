@@ -12,12 +12,12 @@ namespace Penumbra.Mods;
 
 public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
 {
-    private readonly Mod.Manager         _modManager;
+    private readonly ModManager         _modManager;
     private readonly CommunicatorService _communicator;
     private readonly FilenameService     _files;
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
-    public ModFileSystem(Mod.Manager modManager, CommunicatorService communicator, FilenameService files)
+    public ModFileSystem(ModManager modManager, CommunicatorService communicator, FilenameService files)
     {
         _modManager   = modManager;
         _communicator = communicator;

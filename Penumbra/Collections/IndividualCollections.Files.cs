@@ -26,7 +26,7 @@ public partial class IndividualCollections
         return ret;
     }
 
-    public bool ReadJObject( JArray? obj, ModCollection.Manager manager )
+    public bool ReadJObject( JArray? obj, CollectionManager manager )
     {
         if( obj == null )
         {
