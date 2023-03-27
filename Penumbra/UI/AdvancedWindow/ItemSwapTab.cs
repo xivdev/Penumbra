@@ -270,7 +270,7 @@ public class ItemSwapTab : IDisposable, ITab
         _modManager.DataEditor.CreateMeta(newDir, _newModName, _config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty);
         Mod.Creator.CreateDefaultFiles(newDir);
         _modManager.AddMod(newDir);
-        if (!_swapData.WriteMod(_modManager.Last(),
+        if (!_swapData.WriteMod(_modManager, _modManager.Last(),
                 _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))
             _modManager.DeleteMod(_modManager.Count - 1);
     }
@@ -296,16 +296,16 @@ public class ItemSwapTab : IDisposable, ITab
             {
                 if (_selectedGroup == null)
                 {
-                    _modManager.AddModGroup(_mod, GroupType.Multi, _newGroupName);
+                    _modManager.OptionEditor.AddModGroup(_mod, GroupType.Multi, _newGroupName);
                     _selectedGroup = _mod.Groups.Last();
                     groupCreated   = true;
                 }
 
-                _modManager.AddOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _newOptionName);
+                _modManager.OptionEditor.AddOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _newOptionName);
                 optionCreated    = true;
                 optionFolderName = Directory.CreateDirectory(optionFolderName.FullName);
                 dirCreated       = true;
-                if (!_swapData.WriteMod(_mod, _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps,
+                if (!_swapData.WriteMod(_modManager, _mod, _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps,
                         optionFolderName,
                         _mod.Groups.IndexOf(_selectedGroup), _selectedGroup.Count - 1))
                     throw new Exception("Failure writing files for mod swap.");
@@ -317,11 +317,11 @@ public class ItemSwapTab : IDisposable, ITab
             try
             {
                 if (optionCreated && _selectedGroup != null)
-                    _modManager.DeleteOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _selectedGroup.Count - 1);
+                    _modManager.OptionEditor.DeleteOption(_mod, _mod.Groups.IndexOf(_selectedGroup), _selectedGroup.Count - 1);
 
                 if (groupCreated)
                 {
-                    _modManager.DeleteModGroup(_mod, _mod.Groups.IndexOf(_selectedGroup!));
+                    _modManager.OptionEditor.DeleteModGroup(_mod, _mod.Groups.IndexOf(_selectedGroup!));
                     _selectedGroup = null;
                 }
 

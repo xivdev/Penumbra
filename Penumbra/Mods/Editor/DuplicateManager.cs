@@ -6,20 +6,23 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
 public class DuplicateManager
 {
-    private readonly ModManager                                      _modManager;
+    private readonly SaveService                                      _saveService;
+    private readonly ModManager                                       _modManager;
     private readonly SHA256                                           _hasher = SHA256.Create();
     private readonly ModFileCollection                                _files;
     private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = new();
 
-    public DuplicateManager(ModFileCollection files, ModManager modManager)
+    public DuplicateManager(ModFileCollection files, ModManager modManager, SaveService saveService)
     {
-        _files      = files;
-        _modManager = modManager;
+        _files            = files;
+        _modManager       = modManager;
+        _saveService = saveService;
     }
 
     public IReadOnlyList<(FullPath[] Paths, long Size, byte[] Hash)> Duplicates
@@ -76,16 +79,13 @@ public class DuplicateManager
 
             if (useModManager)
             {
-                _modManager.OptionSetFiles(mod, groupIdx, optionIdx, dict);
+                _modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, dict);
             }
             else
             {
                 var sub = (SubMod)subMod;
                 sub.FileData = dict;
-                if (groupIdx == -1)
-                    mod.SaveDefaultMod();
-                else
-                    IModGroup.Save(mod.Groups[groupIdx], mod.ModPath, groupIdx);
+                _saveService.ImmediateSave(new ModSaveGroup(mod, groupIdx));
             }
         }
 

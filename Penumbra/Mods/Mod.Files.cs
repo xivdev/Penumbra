@@ -103,7 +103,7 @@ public partial class Mod
             var group = LoadModGroup( this, file, _groups.Count );
             if( group != null && _groups.All( g => g.Name != group.Name ) )
             {
-                changes = changes || group.FileName( ModPath, _groups.Count ) != file.FullName;
+                changes = changes || Penumbra.Filenames.OptionGroupFile(ModPath.FullName, Groups.Count, group.Name) != file.FullName;
                 _groups.Add( group );
             }
             else
@@ -114,32 +114,7 @@ public partial class Mod
 
         if( changes )
         {
-            SaveAllGroups();
-        }
-    }
-
-    // Delete all existing group files and save them anew.
-    // Used when indices change in complex ways.
-    internal void SaveAllGroups()
-    {
-        foreach( var file in GroupFiles )
-        {
-            try
-            {
-                if( file.Exists )
-                {
-                    file.Delete();
-                }
-            }
-            catch( Exception e )
-            {
-                Penumbra.Log.Error( $"Could not delete outdated group file {file}:\n{e}" );
-            }
-        }
-
-        foreach( var (group, index) in _groups.WithIndex() )
-        {
-            IModGroup.Save( group, ModPath, index );
+            Penumbra.SaveService.SaveAllOptionGroups(this);
         }
     }
 }

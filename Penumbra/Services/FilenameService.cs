@@ -71,4 +71,21 @@ public class FilenameService
     /// <summary> Obtain the path of the meta file given a mod directory. </summary>
     public string ModMetaPath(string modDirectory)
         => Path.Combine(modDirectory, "meta.json");
+
+    /// <summary> Obtain the path of the file describing a given option group by its index and the mod. If the index is < 0, return the path for the default mod file. </summary>
+    public string OptionGroupFile(Mod mod, int index)
+        => OptionGroupFile(mod.ModPath.FullName, index, index >= 0 ? mod.Groups[index].Name : string.Empty);
+
+    /// <summary> Obtain the path of the file describing a given option group by its index, name and basepath. If the index is < 0, return the path for the default mod file. </summary>
+    public string OptionGroupFile(string basePath, int index, string name)
+    {
+        var fileName = index >= 0
+            ? $"group_{index + 1:D3}_{name.RemoveInvalidPathSymbols().ToLowerInvariant()}.json"
+            : "default_mod.json";
+        return Path.Combine(basePath, fileName);
+    }
+
+    /// <summary> Enumerate all group files for a given mod. </summary>
+    public IEnumerable<FileInfo> GetOptionGroupFiles(Mod mod)
+        => mod.ModPath.EnumerateFiles("group_*.json");
 }

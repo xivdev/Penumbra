@@ -19,8 +19,9 @@ namespace Penumbra.Collections;
 
 public sealed partial class CollectionManager : IDisposable, IEnumerable<ModCollection>
 {
-    private readonly Mods.ModManager         _modManager;
+    private readonly ModManager              _modManager;
     private readonly CommunicatorService     _communicator;
+    private readonly SaveService             _saveService;
     private readonly CharacterUtility        _characterUtility;
     private readonly ResidentResourceManager _residentResources;
     private readonly Configuration           _config;
@@ -57,7 +58,8 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
         => _collections;
 
     public CollectionManager(StartTracker timer, CommunicatorService communicator, FilenameService files, CharacterUtility characterUtility,
-        ResidentResourceManager residentResources, Configuration config, Mods.ModManager modManager, IndividualCollections individuals)
+        ResidentResourceManager residentResources, Configuration config, ModManager modManager, IndividualCollections individuals,
+        SaveService saveService)
     {
         using var time = timer.Measure(StartTimeType.Collections);
         _communicator      = communicator;
@@ -65,12 +67,13 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
         _residentResources = residentResources;
         _config            = config;
         _modManager        = modManager;
+        _saveService       = saveService;
         Individuals        = individuals;
 
         // The collection manager reacts to changes in mods by itself.
         _modManager.ModDiscoveryStarted              += OnModDiscoveryStarted;
         _modManager.ModDiscoveryFinished             += OnModDiscoveryFinished;
-        _modManager.ModOptionChanged                 += OnModOptionsChanged;
+        _communicator.ModOptionChanged.Event         += OnModOptionsChanged;
         _modManager.ModPathChanged                   += OnModPathChange;
         _communicator.CollectionChange.Event         += SaveOnChange;
         _communicator.TemporaryGlobalModChange.Event += OnGlobalModChange;
@@ -86,7 +89,7 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
         _communicator.TemporaryGlobalModChange.Event -= OnGlobalModChange;
         _modManager.ModDiscoveryStarted              -= OnModDiscoveryStarted;
         _modManager.ModDiscoveryFinished             -= OnModDiscoveryFinished;
-        _modManager.ModOptionChanged                 -= OnModOptionsChanged;
+        _communicator.ModOptionChanged.Event         -= OnModOptionsChanged;
         _modManager.ModPathChanged                   -= OnModPathChange;
     }
 
@@ -279,7 +282,7 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
             foreach (var collection in this)
             {
                 if (collection._settings[mod.Index]?.HandleChanges(type, mod, groupIdx, optionIdx, movedToIdx) ?? false)
-                    Penumbra.SaveService.QueueSave(collection);
+                    _saveService.QueueSave(collection);
             }
 
         // Handle changes that reload the mod if the changes did not need to be prepared,
@@ -310,7 +313,7 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
         }
 
         var defaultCollection = ModCollection.CreateNewEmpty((string)ModCollection.DefaultCollection);
-        Penumbra.SaveService.ImmediateSave(defaultCollection);
+        _saveService.ImmediateSave(defaultCollection);
         defaultCollection.Index = _collections.Count;
         _collections.Add(defaultCollection);
     }
@@ -337,7 +340,7 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
             }
 
             if (changes)
-                Penumbra.SaveService.ImmediateSave(collection);
+                _saveService.ImmediateSave(collection);
         }
     }
 
@@ -405,6 +408,7 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
                             ? "Assignment is redundant due to an identical unowned NPC assignment existing.\nYou can remove it."
                             : string.Empty;
                 }
+
                 break;
             // The group of all Characters is redundant if they are all equal to Default or unassigned.
             case CollectionType.MalePlayerCharacter:
@@ -464,7 +468,8 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
                         continue;
 
                     if (assignment.Index == checkAssignment.Index)
-                        return $"Assignment is currently redundant due to overwriting {parentType.ToName()} with an identical collection.\nYou can remove it.";
+                        return
+                            $"Assignment is currently redundant due to overwriting {parentType.ToName()} with an identical collection.\nYou can remove it.";
                 }
 
                 break;

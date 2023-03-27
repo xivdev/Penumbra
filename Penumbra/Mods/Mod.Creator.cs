@@ -4,10 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using Dalamud.Utility;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OtterGui.Classes;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
@@ -80,7 +78,7 @@ public partial class Mod
                         DefaultSettings = defaultSettings,
                     };
                     group.PrioritizedOptions.AddRange( subMods.OfType< SubMod >().Select( ( s, idx ) => ( s, idx ) ) );
-                    IModGroup.Save( group, baseFolder, index );
+                    Penumbra.SaveService.ImmediateSave(new ModSaveGroup(baseFolder, group, index));
                     break;
                 }
                 case GroupType.Single:
@@ -93,7 +91,7 @@ public partial class Mod
                         DefaultSettings = defaultSettings,
                     };
                     group.OptionData.AddRange( subMods.OfType< SubMod >() );
-                    IModGroup.Save( group, baseFolder, index );
+                    Penumbra.SaveService.ImmediateSave(new ModSaveGroup(baseFolder, group, index));
                     break;
                 }
             }

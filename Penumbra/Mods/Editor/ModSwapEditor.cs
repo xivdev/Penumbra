@@ -22,11 +22,11 @@ public class ModSwapEditor
 
     public void Apply(Mod mod, int groupIdx, int optionIdx)
     {
-        if (Changes)
-        {
-            _modManager.OptionSetFileSwaps(mod, groupIdx, optionIdx, _swaps);
-            Changes = false;
-        }
+        if (!Changes)
+            return;
+
+        _modManager.OptionEditor.OptionSetFileSwaps(mod, groupIdx, optionIdx, _swaps);
+        Changes = false;
     }
 
     public bool Changes { get; private set; }

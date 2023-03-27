@@ -109,7 +109,7 @@ public class ModMetaEditor
         if (!Changes)
             return;
 
-        _modManager.OptionSetManipulations(mod, groupIdx, optionIdx, Recombine().ToHashSet());
+        _modManager.OptionEditor.OptionSetManipulations(mod, groupIdx, optionIdx, Recombine().ToHashSet());
         Changes = false;
     }
 

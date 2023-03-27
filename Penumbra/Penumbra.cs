@@ -38,17 +38,18 @@ public class Penumbra : IDalamudPlugin
     public string Name
         => "Penumbra";
 
-    public static Logger        Log         { get; private set; } = null!;
-    public static ChatService   ChatService { get; private set; } = null!;
-    public static SaveService   SaveService { get; private set; } = null!;
-    public static Configuration Config      { get; private set; } = null!;
+    public static Logger          Log         { get; private set; } = null!;
+    public static ChatService     ChatService { get; private set; } = null!;
+    public static FilenameService Filenames   { get; private set; } = null!;
+    public static SaveService     SaveService { get; private set; } = null!;
+    public static Configuration   Config      { get; private set; } = null!;
 
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility        CharacterUtility  { get; private set; } = null!;
     public static GameEventManager        GameEvents        { get; private set; } = null!;
     public static MetaFileManager         MetaFileManager   { get; private set; } = null!;
-    public static ModManager             ModManager        { get; private set; } = null!;
-    public static CollectionManager   CollectionManager { get; private set; } = null!;
+    public static ModManager              ModManager        { get; private set; } = null!;
+    public static CollectionManager       CollectionManager { get; private set; } = null!;
     public static TempCollectionManager   TempCollections   { get; private set; } = null!;
     public static TempModManager          TempMods          { get; private set; } = null!;
     public static ResourceLoader          ResourceLoader    { get; private set; } = null!;
@@ -63,13 +64,13 @@ public class Penumbra : IDalamudPlugin
 
     public static PerformanceTracker Performance { get; private set; } = null!;
 
-    public readonly  PathResolver          PathResolver;
-    public readonly  RedrawService         RedrawService;
-    public readonly  ModFileSystem         ModFileSystem;
-    public           HttpApi               HttpApi      = null!;
-    internal         ConfigWindow?         ConfigWindow { get; private set; }
-    private          PenumbraWindowSystem? _windowSystem;
-    private          bool                  _disposed;
+    public readonly PathResolver          PathResolver;
+    public readonly RedrawService         RedrawService;
+    public readonly ModFileSystem         ModFileSystem;
+    public          HttpApi               HttpApi = null!;
+    internal        ConfigWindow?         ConfigWindow { get; private set; }
+    private         PenumbraWindowSystem? _windowSystem;
+    private         bool                  _disposed;
 
     private readonly PenumbraNew _tmp;
 
@@ -80,29 +81,30 @@ public class Penumbra : IDalamudPlugin
         {
             _tmp            = new PenumbraNew(this, pluginInterface);
             ChatService     = _tmp.Services.GetRequiredService<ChatService>();
+            Filenames       = _tmp.Services.GetRequiredService<FilenameService>();
             SaveService     = _tmp.Services.GetRequiredService<SaveService>();
             Performance     = _tmp.Services.GetRequiredService<PerformanceTracker>();
             ValidityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
             _tmp.Services.GetRequiredService<BackupService>();
-            Config                 = _tmp.Services.GetRequiredService<Configuration>();
-            CharacterUtility       = _tmp.Services.GetRequiredService<CharacterUtility>();
-            GameEvents             = _tmp.Services.GetRequiredService<GameEventManager>();
-            MetaFileManager        = _tmp.Services.GetRequiredService<MetaFileManager>();
-            Framework              = _tmp.Services.GetRequiredService<FrameworkManager>();
-            Actors                 = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
-            Identifier             = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
-            GamePathParser         = _tmp.Services.GetRequiredService<IGamePathParser>();
-            StainService           = _tmp.Services.GetRequiredService<StainService>();
-            TempMods               = _tmp.Services.GetRequiredService<TempModManager>();
-            ResidentResources      = _tmp.Services.GetRequiredService<ResidentResourceManager>();
+            Config            = _tmp.Services.GetRequiredService<Configuration>();
+            CharacterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
+            GameEvents        = _tmp.Services.GetRequiredService<GameEventManager>();
+            MetaFileManager   = _tmp.Services.GetRequiredService<MetaFileManager>();
+            Framework         = _tmp.Services.GetRequiredService<FrameworkManager>();
+            Actors            = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
+            Identifier        = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
+            GamePathParser    = _tmp.Services.GetRequiredService<IGamePathParser>();
+            StainService      = _tmp.Services.GetRequiredService<StainService>();
+            TempMods          = _tmp.Services.GetRequiredService<TempModManager>();
+            ResidentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             _tmp.Services.GetRequiredService<ResourceManagerService>();
-            ModManager             = _tmp.Services.GetRequiredService<ModManager>();
-            CollectionManager      = _tmp.Services.GetRequiredService<CollectionManager>();
-            TempCollections        = _tmp.Services.GetRequiredService<TempCollectionManager>();
-            ModFileSystem          = _tmp.Services.GetRequiredService<ModFileSystem>();
-            RedrawService          = _tmp.Services.GetRequiredService<RedrawService>();
+            ModManager        = _tmp.Services.GetRequiredService<ModManager>();
+            CollectionManager = _tmp.Services.GetRequiredService<CollectionManager>();
+            TempCollections   = _tmp.Services.GetRequiredService<TempCollectionManager>();
+            ModFileSystem     = _tmp.Services.GetRequiredService<ModFileSystem>();
+            RedrawService     = _tmp.Services.GetRequiredService<RedrawService>();
             _tmp.Services.GetRequiredService<ResourceService>();
-            ResourceLoader         = _tmp.Services.GetRequiredService<ResourceLoader>();
+            ResourceLoader = _tmp.Services.GetRequiredService<ResourceLoader>();
             using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {
                 PathResolver = _tmp.Services.GetRequiredService<PathResolver>();
@@ -112,7 +114,8 @@ public class Penumbra : IDalamudPlugin
             SetupApi();
 
             ValidityChecker.LogExceptions();
-            Log.Information($"Penumbra Version {ValidityChecker.Version}, Commit #{ValidityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
+            Log.Information(
+                $"Penumbra Version {ValidityChecker.Version}, Commit #{ValidityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
             OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
             Log.Information($"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}.");
 
@@ -129,8 +132,8 @@ public class Penumbra : IDalamudPlugin
     private void SetupApi()
     {
         using var timer = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api);
-        var api         = _tmp.Services.GetRequiredService<IPenumbraApi>();
-        HttpApi      = _tmp.Services.GetRequiredService<HttpApi>();
+        var       api   = _tmp.Services.GetRequiredService<IPenumbraApi>();
+        HttpApi = _tmp.Services.GetRequiredService<HttpApi>();
         _tmp.Services.GetRequiredService<PenumbraIpcProviders>();
         if (Config.EnableHttpApi)
             HttpApi.CreateWebServer();

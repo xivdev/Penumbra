@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using OtterGui.Classes;
 using OtterGui.Log;
+using Penumbra.Mods;
 using Penumbra.Services;
 
 namespace Penumbra.Util;
@@ -93,5 +94,25 @@ public class SaveService
         {
             _log.Error($"Could not delete {value.GetType().Name} {value.LogName(name)}:\n{ex}");
         }
+    }
+
+    /// <summary> Immediately delete all existing option group files for a mod and save them anew. </summary>
+    public void SaveAllOptionGroups(Mod mod)
+    {
+        foreach (var file in _fileNames.GetOptionGroupFiles(mod))
+        {
+            try
+            {
+                if (file.Exists)
+                    file.Delete();
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not delete outdated group file {file}:\n{e}");
+            }
+        }
+
+        for (var i = 0; i < mod.Groups.Count; ++i)
+            ImmediateSave(new ModSaveGroup(mod, i));
     }
 }

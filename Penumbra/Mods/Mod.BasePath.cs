@@ -101,7 +101,7 @@ public partial class Mod
 
         if( changes )
         {
-            SaveAllGroups();
+            Penumbra.SaveService.SaveAllOptionGroups(this);
         }
     }
 }

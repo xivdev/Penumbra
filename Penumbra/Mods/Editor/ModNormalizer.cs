@@ -11,7 +11,7 @@ namespace Penumbra.Mods;
 
 public class ModNormalizer
 {
-    private readonly ModManager                                    _modManager;
+    private readonly ModManager                                     _modManager;
     private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = new();
 
     public  Mod    Mod { get; private set; } = null!;
@@ -280,9 +280,8 @@ public class ModNormalizer
     private void ApplyRedirections()
     {
         foreach (var option in Mod.AllSubMods.OfType<SubMod>())
-        {
-            _modManager.OptionSetFiles(Mod, option.GroupIdx, option.OptionIdx, _redirections[option.GroupIdx + 1][option.OptionIdx]);
-        }
+            _modManager.OptionEditor.OptionSetFiles(Mod, option.GroupIdx, option.OptionIdx,
+                _redirections[option.GroupIdx + 1][option.OptionIdx]);
 
         ++Step;
     }

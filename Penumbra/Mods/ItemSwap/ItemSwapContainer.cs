@@ -38,7 +38,7 @@ public class ItemSwapContainer
         NoSwaps,
     }
 
-    public bool WriteMod( Mod mod, WriteType writeType = WriteType.NoSwaps, DirectoryInfo? directory = null, int groupIndex = -1, int optionIndex = 0 )
+    public bool WriteMod( ModManager manager, Mod mod, WriteType writeType = WriteType.NoSwaps, DirectoryInfo? directory = null, int groupIndex = -1, int optionIndex = 0 )
     {
         var convertedManips = new HashSet< MetaManipulation >( Swaps.Count );
         var convertedFiles  = new Dictionary< Utf8GamePath, FullPath >( Swaps.Count );
@@ -82,9 +82,9 @@ public class ItemSwapContainer
                 }
             }
 
-            Penumbra.ModManager.OptionSetFiles( mod, groupIndex, optionIndex, convertedFiles );
-            Penumbra.ModManager.OptionSetFileSwaps( mod, groupIndex, optionIndex, convertedSwaps );
-            Penumbra.ModManager.OptionSetManipulations( mod, groupIndex, optionIndex, convertedManips );
+            manager.OptionEditor.OptionSetFiles( mod, groupIndex, optionIndex, convertedFiles );
+            manager.OptionEditor.OptionSetFileSwaps( mod, groupIndex, optionIndex, convertedSwaps );
+            manager.OptionEditor.OptionSetManipulations( mod, groupIndex, optionIndex, convertedManips );
             return true;
         }
         catch( Exception e )

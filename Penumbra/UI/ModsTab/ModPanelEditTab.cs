@@ -12,6 +12,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.Util;
 
@@ -20,7 +21,8 @@ namespace Penumbra.UI.ModsTab;
 public class ModPanelEditTab : ITab
 {
     private readonly ChatService           _chat;
-    private readonly ModManager           _modManager;
+    private readonly FilenameService       _filenames;
+    private readonly ModManager            _modManager;
     private readonly ModFileSystem         _fileSystem;
     private readonly ModFileSystemSelector _selector;
     private readonly ModEditWindow         _editWindow;
@@ -34,14 +36,15 @@ public class ModPanelEditTab : ITab
     private Mod                _mod         = null!;
 
     public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, ChatService chat,
-        ModEditWindow editWindow, ModEditor editor)
+        ModEditWindow editWindow, ModEditor editor, FilenameService filenames)
     {
-        _modManager  = modManager;
-        _selector    = selector;
-        _fileSystem  = fileSystem;
-        _chat        = chat;
-        _editWindow  = editWindow;
-        _editor = editor;
+        _modManager = modManager;
+        _selector   = selector;
+        _fileSystem = fileSystem;
+        _chat       = chat;
+        _editWindow = editWindow;
+        _editor     = editor;
+        _filenames  = filenames;
     }
 
     public ReadOnlySpan<byte> Label
@@ -129,7 +132,7 @@ public class ModPanelEditTab : ITab
         if (ImGui.Button("Update Bibo Material", buttonSize))
         {
             _editor.LoadMod(_mod);
-            _editor.MdlMaterialEditor.ReplaceAllMaterials("bibo", "b");
+            _editor.MdlMaterialEditor.ReplaceAllMaterials("bibo",     "b");
             _editor.MdlMaterialEditor.ReplaceAllMaterials("bibopube", "c");
             _editor.MdlMaterialEditor.SaveAllModels();
             _editWindow.UpdateModels();
@@ -189,7 +192,7 @@ public class ModPanelEditTab : ITab
 
         var reducedSize = new Vector2(UiHelpers.InputTextMinusButton3, 0);
         if (ImGui.Button("Edit Description", reducedSize))
-            _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_mod, Input.Description));
+            _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_filenames, _mod, Input.Description));
 
         ImGui.SameLine();
         var fileExists = File.Exists(_modManager.DataEditor.MetaFile(_mod));
@@ -235,13 +238,13 @@ public class ModPanelEditTab : ITab
 
             ImGui.SameLine();
 
-            var nameValid = modManager.VerifyFileName(mod, null, _newGroupName, false);
+            var nameValid = ModOptionEditor.VerifyFileName(mod, null, _newGroupName, false);
             tt = nameValid ? "Add new option group to the mod." : "Can not add a group of this name.";
             if (!ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize,
                     tt, !nameValid, true))
                 return;
 
-            modManager.AddModGroup(mod, GroupType.Single, _newGroupName);
+            modManager.OptionEditor.AddModGroup(mod, GroupType.Single, _newGroupName);
             Reset();
         }
     }
@@ -249,7 +252,7 @@ public class ModPanelEditTab : ITab
     /// <summary> A text input for the new directory name and a button to apply the move. </summary>
     private static class MoveDirectory
     {
-        private static string?                       _currentModDirectory;
+        private static string?                      _currentModDirectory;
         private static ModManager.NewDirectoryState _state = ModManager.NewDirectoryState.Identical;
 
         public static void Reset()
@@ -297,14 +300,16 @@ public class ModPanelEditTab : ITab
     /// <summary> Open a popup to edit a multi-line mod or option description. </summary>
     private static class DescriptionEdit
     {
-        private const  string PopupName                = "Edit Description";
-        private static string _newDescription          = string.Empty;
-        private static int    _newDescriptionIdx       = -1;
-        private static int    _newDescriptionOptionIdx = -1;
-        private static Mod?   _mod;
+        private const  string           PopupName                = "Edit Description";
+        private static string           _newDescription          = string.Empty;
+        private static int              _newDescriptionIdx       = -1;
+        private static int              _newDescriptionOptionIdx = -1;
+        private static Mod?             _mod;
+        private static FilenameService? _fileNames; 
 
-        public static void OpenPopup(Mod mod, int groupIdx, int optionIdx = -1)
+        public static void OpenPopup(FilenameService filenames, Mod mod, int groupIdx, int optionIdx = -1)
         {
+            _fileNames               = filenames; 
             _newDescriptionIdx       = groupIdx;
             _newDescriptionOptionIdx = optionIdx;
             _newDescription = groupIdx < 0
@@ -353,9 +358,10 @@ public class ModPanelEditTab : ITab
                         break;
                     case >= 0:
                         if (_newDescriptionOptionIdx < 0)
-                            modManager.ChangeGroupDescription(_mod, _newDescriptionIdx, _newDescription);
+                            modManager.OptionEditor.ChangeGroupDescription(_mod, _newDescriptionIdx, _newDescription);
                         else
-                            modManager.ChangeOptionDescription(_mod, _newDescriptionIdx, _newDescriptionOptionIdx, _newDescription);
+                            modManager.OptionEditor.ChangeOptionDescription(_mod, _newDescriptionIdx, _newDescriptionOptionIdx,
+                                _newDescription);
 
                         break;
                 }
@@ -384,18 +390,18 @@ public class ModPanelEditTab : ITab
             .Push(ImGuiStyleVar.ItemSpacing, _itemSpacing);
 
         if (Input.Text("##Name", groupIdx, Input.None, group.Name, out var newGroupName, 256, UiHelpers.InputTextWidth.X))
-            _modManager.RenameModGroup(_mod, groupIdx, newGroupName);
+            _modManager.OptionEditor.RenameModGroup(_mod, groupIdx, newGroupName);
 
         ImGuiUtil.HoverTooltip("Group Name");
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize,
                 "Delete this option group.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true))
-            _delayedActions.Enqueue(() => _modManager.DeleteModGroup(_mod, groupIdx));
+            _delayedActions.Enqueue(() => _modManager.OptionEditor.DeleteModGroup(_mod, groupIdx));
 
         ImGui.SameLine();
 
         if (Input.Priority("##Priority", groupIdx, Input.None, group.Priority, out var priority, 50 * UiHelpers.Scale))
-            _modManager.ChangeGroupPriority(_mod, groupIdx, priority);
+            _modManager.OptionEditor.ChangeGroupPriority(_mod, groupIdx, priority);
 
         ImGuiUtil.HoverTooltip("Group Priority");
 
@@ -405,7 +411,7 @@ public class ModPanelEditTab : ITab
         var tt = groupIdx == 0 ? "Can not move this group further upwards." : $"Move this group up to group {groupIdx}.";
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.ArrowUp.ToIconString(), UiHelpers.IconButtonSize,
                 tt, groupIdx == 0, true))
-            _delayedActions.Enqueue(() => _modManager.MoveModGroup(_mod, groupIdx, groupIdx - 1));
+            _delayedActions.Enqueue(() => _modManager.OptionEditor.MoveModGroup(_mod, groupIdx, groupIdx - 1));
 
         ImGui.SameLine();
         tt = groupIdx == _mod.Groups.Count - 1
@@ -413,16 +419,16 @@ public class ModPanelEditTab : ITab
             : $"Move this group down to group {groupIdx + 2}.";
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.ArrowDown.ToIconString(), UiHelpers.IconButtonSize,
                 tt, groupIdx == _mod.Groups.Count - 1, true))
-            _delayedActions.Enqueue(() => _modManager.MoveModGroup(_mod, groupIdx, groupIdx + 1));
+            _delayedActions.Enqueue(() => _modManager.OptionEditor.MoveModGroup(_mod, groupIdx, groupIdx + 1));
 
         ImGui.SameLine();
 
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Edit.ToIconString(), UiHelpers.IconButtonSize,
                 "Edit group description.", false, true))
-            _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_mod, groupIdx));
+            _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_filenames, _mod, groupIdx));
 
         ImGui.SameLine();
-        var fileName   = group.FileName(_mod.ModPath, groupIdx);
+        var fileName   = _filenames.OptionGroupFile(_mod, groupIdx);
         var fileExists = File.Exists(fileName);
         tt = fileExists
             ? $"Open the {group.Name} json file in the text editor of your choice."
@@ -491,7 +497,7 @@ public class ModPanelEditTab : ITab
             if (group.Type == GroupType.Single)
             {
                 if (ImGui.RadioButton("##default", group.DefaultSettings == optionIdx))
-                    panel._modManager.ChangeModGroupDefaultOption(panel._mod, groupIdx, (uint)optionIdx);
+                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx, (uint)optionIdx);
 
                 ImGuiUtil.HoverTooltip($"Set {option.Name} as the default choice for this group.");
             }
@@ -499,7 +505,7 @@ public class ModPanelEditTab : ITab
             {
                 var isDefaultOption = ((group.DefaultSettings >> optionIdx) & 1) != 0;
                 if (ImGui.Checkbox("##default", ref isDefaultOption))
-                    panel._modManager.ChangeModGroupDefaultOption(panel._mod, groupIdx, isDefaultOption
+                    panel._modManager.OptionEditor.ChangeModGroupDefaultOption(panel._mod, groupIdx, isDefaultOption
                         ? group.DefaultSettings | (1u << optionIdx)
                         : group.DefaultSettings & ~(1u << optionIdx));
 
@@ -508,17 +514,17 @@ public class ModPanelEditTab : ITab
 
             ImGui.TableNextColumn();
             if (Input.Text("##Name", groupIdx, optionIdx, option.Name, out var newOptionName, 256, -1))
-                panel._modManager.RenameOption(panel._mod, groupIdx, optionIdx, newOptionName);
+                panel._modManager.OptionEditor.RenameOption(panel._mod, groupIdx, optionIdx, newOptionName);
 
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Edit.ToIconString(), UiHelpers.IconButtonSize, "Edit option description.",
                     false, true))
-                panel._delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(panel._mod, groupIdx, optionIdx));
+                panel._delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(panel._filenames, panel._mod, groupIdx, optionIdx));
 
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize,
                     "Delete this option.\nHold Control while clicking to delete.", !ImGui.GetIO().KeyCtrl, true))
-                panel._delayedActions.Enqueue(() => panel._modManager.DeleteOption(panel._mod, groupIdx, optionIdx));
+                panel._delayedActions.Enqueue(() => panel._modManager.OptionEditor.DeleteOption(panel._mod, groupIdx, optionIdx));
 
             ImGui.TableNextColumn();
             if (group.Type != GroupType.Multi)
@@ -526,7 +532,7 @@ public class ModPanelEditTab : ITab
 
             if (Input.Priority("##Priority", groupIdx, optionIdx, group.OptionPriority(optionIdx), out var priority,
                     50 * UiHelpers.Scale))
-                panel._modManager.ChangeOptionPriority(panel._mod, groupIdx, optionIdx, priority);
+                panel._modManager.OptionEditor.ChangeOptionPriority(panel._mod, groupIdx, optionIdx, priority);
 
             ImGuiUtil.HoverTooltip("Option priority.");
         }
@@ -560,7 +566,7 @@ public class ModPanelEditTab : ITab
                     tt, !(canAddGroup && validName), true))
                 return;
 
-            panel._modManager.AddOption(mod, groupIdx, _newOptionName);
+            panel._modManager.OptionEditor.AddOption(mod, groupIdx, _newOptionName);
             _newOptionName = string.Empty;
         }
 
@@ -591,7 +597,7 @@ public class ModPanelEditTab : ITab
                 if (_dragDropGroupIdx == groupIdx)
                 {
                     var sourceOption = _dragDropOptionIdx;
-                    panel._delayedActions.Enqueue(() => panel._modManager.MoveOption(panel._mod, groupIdx, sourceOption, optionIdx));
+                    panel._delayedActions.Enqueue(() => panel._modManager.OptionEditor.MoveOption(panel._mod, groupIdx, sourceOption, optionIdx));
                 }
                 else
                 {
@@ -604,9 +610,9 @@ public class ModPanelEditTab : ITab
                     var priority       = sourceGroup.OptionPriority(_dragDropOptionIdx);
                     panel._delayedActions.Enqueue(() =>
                     {
-                        panel._modManager.DeleteOption(panel._mod, sourceGroupIdx, sourceOption);
-                        panel._modManager.AddOption(panel._mod, groupIdx, option, priority);
-                        panel._modManager.MoveOption(panel._mod, groupIdx, currentCount, optionIdx);
+                        panel._modManager.OptionEditor.DeleteOption(panel._mod, sourceGroupIdx, sourceOption);
+                        panel._modManager.OptionEditor.AddOption(panel._mod, groupIdx, option, priority);
+                        panel._modManager.OptionEditor.MoveOption(panel._mod, groupIdx, currentCount, optionIdx);
                     });
                 }
             }
@@ -633,12 +639,12 @@ public class ModPanelEditTab : ITab
             return;
 
         if (ImGui.Selectable(GroupTypeName(GroupType.Single), group.Type == GroupType.Single))
-            _modManager.ChangeModGroupType(_mod, groupIdx, GroupType.Single);
+            _modManager.OptionEditor.ChangeModGroupType(_mod, groupIdx, GroupType.Single);
 
         var       canSwitchToMulti = group.Count <= IModGroup.MaxMultiOptions;
         using var style            = ImRaii.PushStyle(ImGuiStyleVar.Alpha, 0.5f, !canSwitchToMulti);
         if (ImGui.Selectable(GroupTypeName(GroupType.Multi), group.Type == GroupType.Multi) && canSwitchToMulti)
-            _modManager.ChangeModGroupType(_mod, groupIdx, GroupType.Multi);
+            _modManager.OptionEditor.ChangeModGroupType(_mod, groupIdx, GroupType.Multi);
 
         style.Pop();
         if (!canSwitchToMulti)

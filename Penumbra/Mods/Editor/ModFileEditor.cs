@@ -34,7 +34,7 @@ public class ModFileEditor
                 num += dict.TryAdd(path.Item2, file.File) ? 0 : 1;
         }
 
-        Penumbra.ModManager.OptionSetFiles(mod, option.GroupIdx, option.OptionIdx, dict);
+        _modManager.OptionEditor.OptionSetFiles(mod, option.GroupIdx, option.OptionIdx, dict);
         _files.UpdatePaths(mod, option);
 
         return num;
@@ -54,7 +54,7 @@ public class ModFileEditor
             var newDict = subMod.Files.Where(kvp => CheckAgainstMissing(mod, subMod, kvp.Value, kvp.Key, subMod == option))
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
             if (newDict.Count != subMod.Files.Count)
-                _modManager.OptionSetFiles(mod, groupIdx, optionIdx, newDict);
+                _modManager.OptionEditor.OptionSetFiles(mod, groupIdx, optionIdx, newDict);
         }
 
         ModEditor.ApplyToAllOptions(mod, HandleSubMod);

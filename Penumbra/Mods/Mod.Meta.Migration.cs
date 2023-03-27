@@ -85,8 +85,8 @@ public sealed partial class Mod
                 mod._default.FileSwapData.Add(gamePath, swapPath);
 
             mod._default.IncorporateMetaChanges(mod.ModPath, true);
-            foreach (var (group, index) in mod.Groups.WithIndex())
-                IModGroup.Save(group, mod.ModPath, index);
+            foreach (var (_, index) in mod.Groups.WithIndex())
+                Penumbra.SaveService.ImmediateSave(new ModSaveGroup(mod, index));
 
             // Delete meta files.
             foreach (var file in seenMetaFiles.Where(f => f.Exists))
