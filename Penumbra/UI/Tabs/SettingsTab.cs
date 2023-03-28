@@ -9,7 +9,6 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.Interop;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
@@ -31,7 +30,8 @@ public class SettingsTab : ITab
     private readonly TutorialService         _tutorial;
     private readonly Penumbra                _penumbra;
     private readonly FileDialogService       _fileDialog;
-    private readonly ModManager             _modManager;
+    private readonly ModManager              _modManager;
+    private readonly ExportManager           _exportManager;
     private readonly ModFileSystemSelector   _selector;
     private readonly CharacterUtility        _characterUtility;
     private readonly ResidentResourceManager _residentResources;
@@ -39,7 +39,7 @@ public class SettingsTab : ITab
 
     public SettingsTab(Configuration config, FontReloader fontReloader, TutorialService tutorial, Penumbra penumbra,
         FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
-        ResidentResourceManager residentResources, DalamudServices dalamud)
+        ResidentResourceManager residentResources, DalamudServices dalamud, ExportManager exportManager)
     {
         _config            = config;
         _fontReloader      = fontReloader;
@@ -51,6 +51,7 @@ public class SettingsTab : ITab
         _characterUtility  = characterUtility;
         _residentResources = residentResources;
         _dalamud           = dalamud;
+        _exportManager     = exportManager;
     }
 
     public void DrawHeader()
@@ -127,7 +128,7 @@ public class SettingsTab : ITab
         if (newName.Length > RootDirectoryMaxLength)
             return ($"Path is too long. The maximum length is {RootDirectoryMaxLength}.", false);
 
-        if (Path.GetDirectoryName(newName) == null)
+        if (Path.GetDirectoryName(newName).IsNullOrEmpty())
             return ("Path is not allowed to be a drive root. Please add a directory.", false);
 
         var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
@@ -553,7 +554,7 @@ public class SettingsTab : ITab
             _tempExportDirectory = tmp;
 
         if (ImGui.IsItemDeactivatedAfterEdit())
-            _modManager.UpdateExportDirectory(_tempExportDirectory, true);
+            _exportManager.UpdateExportDirectory(_tempExportDirectory);
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##export", UiHelpers.IconButtonSize,
@@ -567,7 +568,7 @@ public class SettingsTab : ITab
             _fileDialog.OpenFolderPicker("Choose Default Export Directory", (b, s) =>
             {
                 if (b)
-                    Penumbra.ModManager.UpdateExportDirectory(s, true);
+                    _exportManager.UpdateExportDirectory(s);
             }, startDir, false);
         }
 

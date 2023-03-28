@@ -9,11 +9,6 @@ namespace Penumbra.Mods;
 public sealed partial class ModManager
 {
     public  DirectoryInfo  BasePath { get; private set; } = null!;
-    private DirectoryInfo? _exportDirectory;
-
-    public DirectoryInfo ExportDirectory
-        => _exportDirectory ?? BasePath;
-
     public bool Valid { get; private set; }
 
     public event Action?              ModDiscoveryStarted;
@@ -104,46 +99,5 @@ public sealed partial class ModManager
 
         if (MigrateModBackups)
             ModBackup.MigrateZipToPmp(this);
-    }
-
-    public void UpdateExportDirectory(string newDirectory, bool change)
-    {
-        if (newDirectory.Length == 0)
-        {
-            if (_exportDirectory == null)
-                return;
-
-            _exportDirectory        = null;
-            _config.ExportDirectory = string.Empty;
-            _config.Save();
-            return;
-        }
-
-        var dir = new DirectoryInfo(newDirectory);
-        if (dir.FullName.Equals(_exportDirectory?.FullName, StringComparison.OrdinalIgnoreCase))
-            return;
-
-        if (!dir.Exists)
-            try
-            {
-                Directory.CreateDirectory(dir.FullName);
-            }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Could not create Export Directory:\n{e}");
-                return;
-            }
-
-        if (change)
-            foreach (var mod in _mods)
-                new ModBackup(this, mod).Move(dir.FullName);
-
-        _exportDirectory = dir;
-
-        if (change)
-        {
-            _config.ExportDirectory = dir.FullName;
-            _config.Save();
-        }
     }
 }

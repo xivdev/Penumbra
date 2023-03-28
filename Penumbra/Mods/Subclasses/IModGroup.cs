@@ -47,11 +47,11 @@ public readonly struct ModSaveGroup : ISavable
     public ModSaveGroup(Mod mod, int groupIdx)
     {
         _basePath = mod.ModPath;
+        _groupIdx = groupIdx;
         if (_groupIdx < 0)
             _defaultMod = mod.Default;
         else
-            _group = mod.Groups[groupIdx];
-        _groupIdx = groupIdx;
+            _group = mod.Groups[_groupIdx];
     }
 
     public ModSaveGroup(DirectoryInfo basePath, IModGroup group, int groupIdx)

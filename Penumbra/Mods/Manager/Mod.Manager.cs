@@ -114,7 +114,6 @@ public sealed partial class ModManager : IReadOnlyList<Mod>, IDisposable
         OptionEditor        =  optionEditor;
         ModDirectoryChanged += OnModDirectoryChange;
         SetBaseDirectory(config.ModDirectory, true);
-        UpdateExportDirectory(_config.ExportDirectory, false);
         _communicator.ModOptionChanged.Event += OnModOptionChange;
         ModPathChanged                       += OnModPathChange;
         DiscoverMods();

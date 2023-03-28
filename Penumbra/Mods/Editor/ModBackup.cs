@@ -10,17 +10,15 @@ public class ModBackup
 {
     public static bool CreatingBackup { get; private set; }
 
-    private readonly ModManager _modManager;
-    private readonly Mod         _mod;
-    public readonly  string      Name;
-    public readonly  bool        Exists;
+    private readonly Mod           _mod;
+    public readonly  string        Name;
+    public readonly  bool          Exists;
 
-    public ModBackup(ModManager modManager, Mod mod)
+    public ModBackup(ExportManager exportManager, Mod mod)
     {
-        _modManager = modManager;
-        _mod        = mod;
-        Name        = Path.Combine(_modManager.ExportDirectory.FullName, _mod.ModPath.Name) + ".pmp";
-        Exists      = File.Exists(Name);
+        _mod           = mod;
+        Name           = Path.Combine(exportManager.ExportDirectory.FullName, _mod.ModPath.Name) + ".pmp";
+        Exists         = File.Exists(Name);
     }
 
     /// <summary> Migrate file extensions. </summary>
@@ -118,7 +116,7 @@ public class ModBackup
     /// Restore a mod from a pre-existing backup. Does not check if the mod contained in the backup is even similar.
     /// Does an automatic reload after extraction.
     /// </summary>
-    public void Restore()
+    public void Restore(ModManager modManager)
     {
         try
         {
@@ -130,7 +128,7 @@ public class ModBackup
 
             ZipFile.ExtractToDirectory(Name, _mod.ModPath.FullName);
             Penumbra.Log.Debug($"Extracted exported file {Name} to {_mod.ModPath.FullName}.");
-            _modManager.ReloadMod(_mod.Index);
+            modManager.ReloadMod(_mod.Index);
         }
         catch (Exception e)
         {

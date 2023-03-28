@@ -93,6 +93,7 @@ public class PenumbraNew
             .AddSingleton<ModDataEditor>()
             .AddSingleton<ModOptionEditor>()
             .AddSingleton<ModManager>()
+            .AddSingleton<ExportManager>()
             .AddSingleton<ModFileSystem>();
 
         // Add Resource services

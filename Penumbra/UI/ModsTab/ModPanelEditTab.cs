@@ -23,6 +23,7 @@ public class ModPanelEditTab : ITab
     private readonly ChatService           _chat;
     private readonly FilenameService       _filenames;
     private readonly ModManager            _modManager;
+    private readonly ExportManager         _exportManager;
     private readonly ModFileSystem         _fileSystem;
     private readonly ModFileSystemSelector _selector;
     private readonly ModEditWindow         _editWindow;
@@ -36,15 +37,16 @@ public class ModPanelEditTab : ITab
     private Mod                _mod         = null!;
 
     public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, ChatService chat,
-        ModEditWindow editWindow, ModEditor editor, FilenameService filenames)
+        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ExportManager exportManager)
     {
-        _modManager = modManager;
-        _selector   = selector;
-        _fileSystem = fileSystem;
-        _chat       = chat;
-        _editWindow = editWindow;
-        _editor     = editor;
-        _filenames  = filenames;
+        _modManager    = modManager;
+        _selector      = selector;
+        _fileSystem    = fileSystem;
+        _chat          = chat;
+        _editWindow    = editWindow;
+        _editor        = editor;
+        _filenames     = filenames;
+        _exportManager = exportManager;
     }
 
     public ReadOnlySpan<byte> Label
@@ -147,7 +149,7 @@ public class ModPanelEditTab : ITab
 
     private void BackupButtons(Vector2 buttonSize)
     {
-        var backup = new ModBackup(_modManager, _mod);
+        var backup = new ModBackup(_exportManager, _mod);
         var tt = ModBackup.CreatingBackup
             ? "Already exporting a mod."
             : backup.Exists
@@ -168,7 +170,7 @@ public class ModPanelEditTab : ITab
             : $"Exported mod \"{backup.Name}\" does not exist.";
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Restore From Export", buttonSize, tt, !backup.Exists))
-            backup.Restore();
+            backup.Restore(_modManager);
     }
 
     /// <summary> Anything about editing the regular meta information about the mod. </summary>
@@ -306,11 +308,11 @@ public class ModPanelEditTab : ITab
         private static int              _newDescriptionIdx       = -1;
         private static int              _newDescriptionOptionIdx = -1;
         private static Mod?             _mod;
-        private static FilenameService? _fileNames; 
+        private static FilenameService? _fileNames;
 
         public static void OpenPopup(FilenameService filenames, Mod mod, int groupIdx, int optionIdx = -1)
         {
-            _fileNames               = filenames; 
+            _fileNames               = filenames;
             _newDescriptionIdx       = groupIdx;
             _newDescriptionOptionIdx = optionIdx;
             _newDescription = groupIdx < 0
@@ -598,7 +600,8 @@ public class ModPanelEditTab : ITab
                 if (_dragDropGroupIdx == groupIdx)
                 {
                     var sourceOption = _dragDropOptionIdx;
-                    panel._delayedActions.Enqueue(() => panel._modManager.OptionEditor.MoveOption(panel._mod, groupIdx, sourceOption, optionIdx));
+                    panel._delayedActions.Enqueue(
+                        () => panel._modManager.OptionEditor.MoveOption(panel._mod, groupIdx, sourceOption, optionIdx));
                 }
                 else
                 {

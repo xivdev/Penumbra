@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
@@ -87,8 +88,9 @@ public class FileDialogService : IDisposable
         return (valid, list) =>
         {
             _isOpen            = false;
-            _startPaths[title] = GetCurrentLocation();
-            callback(valid, list);
+            var loc = HandleRoot(GetCurrentLocation());
+            _startPaths[title] = loc;
+            callback(valid, list.Select(HandleRoot).ToList());
         };
     }
 
@@ -97,12 +99,18 @@ public class FileDialogService : IDisposable
         return (valid, list) =>
         {
             _isOpen = false;
-            var loc = GetCurrentLocation();
-            if (loc.Length == 2)
-                loc += '\\';
+            var loc = HandleRoot(GetCurrentLocation());
             _startPaths[title] = loc;
-            callback(valid, list);
+            callback(valid, HandleRoot(list));
         };
+    }
+
+    private static string HandleRoot(string path)
+    {
+        if (path.Length == 2 && path[1] == ':')
+            return path + '\\';
+
+        return path;
     }
 
     // TODO: maybe change this from reflection when its public.

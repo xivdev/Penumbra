@@ -57,7 +57,6 @@ public partial class ModManager
         }
 
         DataEditor.MoveDataFile(oldDirectory, dir);
-        new ModBackup(this, mod).Move(null, dir.Name);
 
         dir.Refresh();
         mod.ModPath = dir;
