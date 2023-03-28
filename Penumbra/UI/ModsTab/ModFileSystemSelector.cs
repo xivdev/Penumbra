@@ -38,6 +38,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     public  ModSettings       SelectedSettings          { get; private set; } = ModSettings.Empty;
     public  ModCollection     SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
+    private uint _infoPopupId = 0;
+
     public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
         ModEditor modEditor)
@@ -104,7 +106,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
 
     // Customization points.
     public override ISortMode<Mod> SortMode
-        => Penumbra.Config.SortMode;
+        => _config.SortMode;
 
     protected override uint ExpandedFolderColor
         => ColorId.FolderExpanded.Value(_config);
@@ -116,7 +118,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         => ColorId.FolderLine.Value(_config);
 
     protected override bool FoldersDefaultOpen
-        => Penumbra.Config.OpenFoldersByDefault;
+        => _config.OpenFoldersByDefault;
 
     protected override void DrawPopups()
     {
@@ -129,7 +131,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
                 var newDir = Mod.Creator.CreateModFolder(Penumbra.ModManager.BasePath, _newModName);
                 _modManager.DataEditor.CreateMeta(newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty);
                 Mod.Creator.CreateDefaultFiles(newDir);
-                Penumbra.ModManager.AddMod(newDir);
+                _modManager.AddMod(newDir);
                 _newModName = string.Empty;
             }
             catch (Exception e)
@@ -139,13 +141,13 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
 
         while (_modsToAdd.TryDequeue(out var dir))
         {
-            Penumbra.ModManager.AddMod(dir);
-            var mod = Penumbra.ModManager.LastOrDefault();
-            if (mod != null)
-            {
-                MoveModToDefaultDirectory(mod);
-                SelectByValue(mod);
-            }
+            _modManager.AddMod(dir);
+            var mod = _modManager.LastOrDefault();
+            if (mod == null)
+                continue;
+
+            MoveModToDefaultDirectory(mod);
+            SelectByValue(mod);
         }
     }
 
@@ -224,6 +226,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     /// <summary> Add an import mods button that opens a file selector. </summary>
     private void AddImportModButton(Vector2 size)
     {
+        _infoPopupId = ImGui.GetID("Import Status");
         var button = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), size,
             "Import one or multiple mods from Tex Tools Mod Pack Files or Penumbra Mod Pack Files.", !Penumbra.ModManager.Valid, true);
         _tutorial.OpenTutorial(BasicTutorialSteps.ModImport);
@@ -242,7 +245,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
 
                 _import = new TexToolsImporter(_modManager.BasePath, f.Count, f.Select(file => new FileInfo(file)),
                     AddNewMod, _config, _modEditor, _modManager);
-                ImGui.OpenPopup("Import Status");
+                ImGui.OpenPopup(_infoPopupId);
             }, 0, modPath, _config.AlwaysOpenDefaultImport);
     }
 
@@ -255,6 +258,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         var size    = new Vector2(width * 2, height);
         ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Always, Vector2.One / 2);
         ImGui.SetNextWindowSize(size);
+        var infoPopupId = ImGui.GetID("Import Status");
         using var popup = ImRaii.Popup("Import Status", ImGuiWindowFlags.Modal);
         if (_import == null || !popup.Success)
             return;
