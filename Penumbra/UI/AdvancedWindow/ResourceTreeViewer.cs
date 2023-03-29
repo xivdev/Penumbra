@@ -1,97 +1,105 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Threading.Tasks;
 using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
 using Penumbra.Interop.ResourceTree;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
 public class ResourceTreeViewer
 {
-    private readonly Configuration                 _config; 
+    private readonly Configuration                 _config;
     private readonly ResourceTreeFactory           _treeFactory;
-    private readonly string                        _name;
     private readonly int                           _actionCapacity;
     private readonly Action                        _onRefresh;
     private readonly Action<ResourceNode, Vector2> _drawActions;
     private readonly HashSet<ResourceNode>         _unfolded;
-    private          ResourceTree[]?               _trees;
 
-    public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, string name, int actionCapacity, Action onRefresh,
+    private Task<ResourceTree[]>?      _task;
+
+    public ResourceTreeViewer(Configuration config, ResourceTreeFactory treeFactory, int actionCapacity, Action onRefresh,
         Action<ResourceNode, Vector2> drawActions)
     {
         _config         = config;
         _treeFactory    = treeFactory;
-        _name           = name;
         _actionCapacity = actionCapacity;
         _onRefresh      = onRefresh;
         _drawActions    = drawActions;
         _unfolded       = new HashSet<ResourceNode>();
-        _trees          = null;
     }
 
     public void Draw()
     {
-        if (ImGui.Button("Refresh Character List"))
-        {
-            try
-            {
-                _trees = _treeFactory.FromObjectTable();
-            }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Could not get character list for {_name}:\n{e}");
-                _trees = Array.Empty<ResourceTree>();
-            }
+        if (ImGui.Button("Refresh Character List") || _task == null)
+            _task = RefreshCharacterList();
 
-            _unfolded.Clear();
-            _onRefresh();
-        }
-
-        try
-        {
-            _trees ??= _treeFactory.FromObjectTable();
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Could not get character list for {_name}:\n{e}");
-            _trees ??= Array.Empty<ResourceTree>();
-        }
+        using var child = ImRaii.Child("##Data");
+        if (!child)
+            return;
 
         var textColorNonPlayer = ImGui.GetColorU32(ImGuiCol.Text);
         var textColorPlayer    = (textColorNonPlayer & 0xFF000000u) | ((textColorNonPlayer & 0x00FEFEFE) >> 1) | 0x8000u; // Half green
-
-        foreach (var (tree, index) in _trees.WithIndex())
+        if (!_task.IsCompleted)
         {
-            using (var c = ImRaii.PushColor(ImGuiCol.Text, tree.PlayerRelated ? textColorPlayer : textColorNonPlayer))
+            ImGui.NewLine();
+            ImGui.TextUnformatted("Calculating character list...");
+        }
+        else if (_task.Exception != null)
+        {
+            ImGui.NewLine();
+            using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.RegexWarningBorder);
+            ImGui.TextUnformatted($"Error during calculation of character list:\n\n{_task.Exception}");
+        }
+        else if (_task.IsCompletedSuccessfully)
+        {
+            foreach (var (tree, index) in _task.Result.WithIndex())
             {
-                if (!ImGui.CollapsingHeader($"{tree.Name}##{index}", index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+                using (var c = ImRaii.PushColor(ImGuiCol.Text, tree.PlayerRelated ? textColorPlayer : textColorNonPlayer))
+                {
+                    if (!ImGui.CollapsingHeader($"{tree.Name}##{index}", index == 0 ? ImGuiTreeNodeFlags.DefaultOpen : 0))
+                        continue;
+                }
+
+                using var id = ImRaii.PushId(index);
+
+                ImGui.Text($"Collection: {tree.CollectionName}");
+
+                using var table = ImRaii.Table("##ResourceTree", _actionCapacity > 0 ? 4 : 3,
+                    ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
+                if (!table)
                     continue;
+
+                ImGui.TableSetupColumn(string.Empty,  ImGuiTableColumnFlags.WidthStretch, 0.2f);
+                ImGui.TableSetupColumn("Game Path",   ImGuiTableColumnFlags.WidthStretch, 0.3f);
+                ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
+                if (_actionCapacity > 0)
+                    ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed,
+                        (_actionCapacity - 1) * 3 * ImGuiHelpers.GlobalScale + _actionCapacity * ImGui.GetFrameHeight());
+                ImGui.TableHeadersRow();
+
+                DrawNodes(tree.Nodes, 0);
             }
-
-            using var id = ImRaii.PushId(index);
-
-            ImGui.Text($"Collection: {tree.CollectionName}");
-
-            using var table = ImRaii.Table("##ResourceTree", _actionCapacity > 0 ? 4 : 3,
-                ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
-            if (!table)
-                continue;
-
-            ImGui.TableSetupColumn(string.Empty,  ImGuiTableColumnFlags.WidthStretch, 0.2f);
-            ImGui.TableSetupColumn("Game Path",   ImGuiTableColumnFlags.WidthStretch, 0.3f);
-            ImGui.TableSetupColumn("Actual Path", ImGuiTableColumnFlags.WidthStretch, 0.5f);
-            if (_actionCapacity > 0)
-                ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed,
-                    (_actionCapacity - 1) * 3 * ImGuiHelpers.GlobalScale + _actionCapacity * ImGui.GetFrameHeight());
-            ImGui.TableHeadersRow();
-
-            DrawNodes(tree.Nodes, 0);
         }
     }
+
+    private Task<ResourceTree[]> RefreshCharacterList()
+        => Task.Run(() =>
+        {
+            try
+            {
+                return _treeFactory.FromObjectTable();
+            }
+            finally
+            {
+                _unfolded.Clear();
+                _onRefresh();
+            }
+        });
 
     private void DrawNodes(IEnumerable<ResourceNode> resourceNodes, int level)
     {
@@ -105,7 +113,7 @@ public class ResourceTreeViewer
 
             using var id = ImRaii.PushId(index);
             ImGui.TableNextColumn();
-            var unfolded = _unfolded!.Contains(resourceNode);
+            var unfolded = _unfolded.Contains(resourceNode);
             using (var indent = ImRaii.PushIndent(level))
             {
                 ImGui.TableHeader((resourceNode.Children.Count > 0 ? unfolded ? "[-] " : "[+] " : string.Empty) + resourceNode.Name);

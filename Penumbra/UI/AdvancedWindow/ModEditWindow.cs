@@ -17,7 +17,6 @@ using Penumbra.Mods;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
-using static Penumbra.Mods.Mod;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -25,11 +24,10 @@ public partial class ModEditWindow : Window, IDisposable
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
-    private readonly ModEditor           _editor;
-    private readonly Configuration       _config;
-    private readonly ItemSwapTab         _itemSwapTab;
-    private readonly ResourceTreeFactory _resourceTreeFactory;
-    private readonly DataManager         _gameData;
+    private readonly ModEditor     _editor;
+    private readonly Configuration _config;
+    private readonly ItemSwapTab   _itemSwapTab;
+    private readonly DataManager   _gameData;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -56,7 +54,7 @@ public partial class ModEditWindow : Window, IDisposable
     }
 
     public void ChangeOption(SubMod? subMod)
-        => _editor.LoadOption(subMod?.GroupIdx ?? -1, subMod?.GroupIdx ?? 0);
+        => _editor.LoadOption(subMod?.GroupIdx ?? -1, subMod?.OptionIdx ?? 0);
 
     public void UpdateModels()
     {
@@ -495,12 +493,11 @@ public partial class ModEditWindow : Window, IDisposable
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory)
         : base(WindowBaseLabel)
     {
-        _itemSwapTab         = itemSwapTab;
-        _config              = config;
-        _editor              = editor;
-        _gameData            = gameData;
-        _resourceTreeFactory = resourceTreeFactory;
-        _fileDialog          = fileDialog;
+        _itemSwapTab = itemSwapTab;
+        _config      = config;
+        _editor      = editor;
+        _gameData    = gameData;
+        _fileDialog  = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
@@ -508,7 +505,8 @@ public partial class ModEditWindow : Window, IDisposable
             () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, null);
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shader Packages", ".shpk",
             () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty, null);
-        _center = new CombinedTexture(_left, _right);
+        _center            = new CombinedTexture(_left, _right);
+        _quickImportViewer = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
     }
 
     public void Dispose()

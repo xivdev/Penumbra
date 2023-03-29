@@ -11,8 +11,10 @@ public partial class ModManager
 
     public event ModPathChangeDelegate ModPathChanged;
 
-    // Rename/Move a mod directory.
-    // Updates all collection settings and sort order settings.
+    /// <summary>
+    /// Rename/Move a mod directory.
+    /// Updates all collection settings and sort order settings.
+    /// </summary>
     public void MoveModDirectory(int idx, string newName)
     {
         var mod          = this[idx];

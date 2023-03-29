@@ -12,19 +12,15 @@ using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
-
-
 public class ModOptionEditor
 {
     private readonly CommunicatorService _communicator;
-    private readonly FilenameService     _filenames; 
     private readonly SaveService         _saveService;
 
-    public ModOptionEditor(CommunicatorService communicator, SaveService saveService, FilenameService filenames)
+    public ModOptionEditor(CommunicatorService communicator, SaveService saveService)
     {
         _communicator = communicator;
         _saveService  = saveService;
-        _filenames    = filenames;
     }
 
     /// <summary> Change the type of a group given by mod and index to type, if possible. </summary>
@@ -209,7 +205,7 @@ public class ModOptionEditor
     /// <summary> Add a new empty option of the given name for the given group. </summary>
     public void AddOption(Mod mod, int groupIdx, string newName)
     {
-        var group = mod._groups[groupIdx];
+        var group  = mod._groups[groupIdx];
         var subMod = new SubMod(mod) { Name = newName };
         subMod.SetPosition(groupIdx, group.Count);
         switch (group)
@@ -319,7 +315,7 @@ public class ModOptionEditor
     /// <summary> Add additional file redirections to a given option, keeping already existing ones. Only fires an event if anything is actually added.</summary>
     public void OptionAddFiles(Mod mod, int groupIdx, int optionIdx, Dictionary<Utf8GamePath, FullPath> additions)
     {
-        var subMod = GetSubMod(mod, groupIdx, optionIdx);
+        var subMod   = GetSubMod(mod, groupIdx, optionIdx);
         var oldCount = subMod.FileData.Count;
         subMod.FileData.AddFrom(additions);
         if (oldCount != subMod.FileData.Count)
