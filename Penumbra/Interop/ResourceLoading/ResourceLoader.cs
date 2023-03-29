@@ -66,7 +66,7 @@ public unsafe class ResourceLoader : IDisposable
         _fileReadService.ReadSqPack     -= ReadSqPackDetour;
     }
 
-    private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
+    private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path, Utf8GamePath original,
         GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
         if (returnValue != null)
@@ -86,9 +86,10 @@ public unsafe class ResourceLoader : IDisposable
         _texMdlService.AddCrc(type, resolvedPath);
         // Replace the hash and path with the correct one for the replacement.
         hash        = ComputeHash(resolvedPath.Value.InternalName, parameters);
+        var oldPath = path;
         path        = p;
         returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters);
-        ResourceLoaded?.Invoke(returnValue, p, resolvedPath.Value, data);
+        ResourceLoaded?.Invoke(returnValue, oldPath, resolvedPath.Value, data);
     }
 
     private void ReadSqPackDetour(SeFileDescriptor* fileDescriptor, ref int priority, ref bool isSync, ref byte? returnValue)

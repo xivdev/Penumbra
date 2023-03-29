@@ -60,7 +60,7 @@ public unsafe class ResourceService : IDisposable
     /// <param name="parameters">Mainly used for SCD streaming, can be null.</param>
     /// <param name="sync">Whether to request the resource synchronously or asynchronously.</param>
     /// <param name="returnValue">The returned resource handle. If this is not null, calling original will be skipped. </param>
-    public delegate void GetResourcePreDelegate(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
+    public delegate void GetResourcePreDelegate(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path, Utf8GamePath original,
         GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue);
 
     /// <summary> <inheritdoc cref="GetResourcePreDelegate"/> <para/>
@@ -104,7 +104,7 @@ public unsafe class ResourceService : IDisposable
         }
 
         ResourceHandle* returnValue = null;
-        ResourceRequested?.Invoke(ref *categoryId, ref *resourceType, ref *resourceHash, ref gamePath, pGetResParams, ref isSync,
+        ResourceRequested?.Invoke(ref *categoryId, ref *resourceType, ref *resourceHash, ref gamePath, gamePath, pGetResParams, ref isSync,
             ref returnValue);
         if (returnValue != null)
             return returnValue;

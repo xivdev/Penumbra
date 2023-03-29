@@ -62,9 +62,9 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool   OnlyAddMatchingResources  { get; set; } = true;
     public int    MaxResourceWatcherRecords { get; set; } = ResourceWatcher.DefaultMaxEntries;
 
-    public ResourceTypeFlag           ResourceWatcherResourceTypes      { get; set; } = ResourceExtensions.AllResourceTypes;
-    public ResourceCategoryFlag       ResourceWatcherResourceCategories { get; set; } = ResourceExtensions.AllResourceCategories;
-    public ResourceWatcher.RecordType ResourceWatcherRecordTypes        { get; set; } = ResourceWatcher.AllRecords;
+    public ResourceTypeFlag     ResourceWatcherResourceTypes      { get; set; } = ResourceExtensions.AllResourceTypes;
+    public ResourceCategoryFlag ResourceWatcherResourceCategories { get; set; } = ResourceExtensions.AllResourceCategories;
+    public RecordType           ResourceWatcherRecordTypes        { get; set; } = ResourceWatcher.AllRecords;
 
 
     [JsonConverter(typeof(SortModeConverter))]
