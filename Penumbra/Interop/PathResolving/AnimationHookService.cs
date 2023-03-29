@@ -3,6 +3,7 @@ using System.Threading;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
@@ -44,6 +45,7 @@ public unsafe class AnimationHookService : IDisposable
         _loadCharacterVfxHook.Enable();
         _loadAreaVfxHook.Enable();
         _scheduleClipUpdateHook.Enable();
+        _unkMountAnimationHook.Enable();
     }
 
     public bool HandleFiles(ResourceType type, Utf8GamePath _, out ResolveData resolveData)
@@ -98,6 +100,7 @@ public unsafe class AnimationHookService : IDisposable
         _loadCharacterVfxHook.Dispose();
         _loadAreaVfxHook.Dispose();
         _scheduleClipUpdateHook.Dispose();
+        _unkMountAnimationHook.Dispose();
     }
 
     /// <summary> Characters load some of their voice lines or whatever with this function. </summary>
@@ -304,5 +307,19 @@ public unsafe class AnimationHookService : IDisposable
         }
 
         return ResolveData.Invalid;
+    }
+
+
+    private delegate void UnkMountAnimationDelegate(DrawObject* drawObject, uint unk1, byte unk2, uint unk3);
+
+    [Signature("48 89 5C 24 ?? 48 89 6C 24 ?? 89 54 24", DetourName = nameof(UnkMountAnimationDetour))]
+    private readonly Hook<UnkMountAnimationDelegate> _unkMountAnimationHook = null!;
+
+    private void UnkMountAnimationDetour(DrawObject* drawObject, uint unk1, byte unk2, uint unk3)
+    {
+        var last     = _animationLoadData.Value;
+        _animationLoadData.Value = _collectionResolver.IdentifyCollection(drawObject, true);
+        _unkMountAnimationHook.Original(drawObject, unk1, unk2, unk3);
+        _animationLoadData.Value = last;
     }
 }
