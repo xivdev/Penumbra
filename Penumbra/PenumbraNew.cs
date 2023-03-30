@@ -150,7 +150,8 @@ public class PenumbraNew
             .AddSingleton<ModMetaEditor>()
             .AddSingleton<ModSwapEditor>()
             .AddSingleton<ModNormalizer>()
-            .AddSingleton<ModEditor>();
+            .AddSingleton<ModEditor>()
+            .AddSingleton<ModCacheManager>();
 
         // Add API
         services.AddSingleton<PenumbraApi>()

@@ -58,6 +58,60 @@ public readonly struct EventWrapper : IDisposable
     }
 }
 
+public readonly struct EventWrapper<T1> : IDisposable
+{
+    private readonly string           _name;
+    private readonly List<Action<T1>> _event = new();
+
+    public EventWrapper(string name)
+        => _name = name;
+
+    public void Invoke(T1 arg1)
+    {
+        lock (_event)
+        {
+            foreach (var action in _event)
+            {
+                try
+                {
+                    action.Invoke(arg1);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error($"[{_name}] Exception thrown during invocation:\n{ex}");
+                }
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (_event)
+        {
+            _event.Clear();
+        }
+    }
+
+    public event Action<T1> Event
+    {
+        add
+        {
+            lock (_event)
+            {
+                if (_event.All(a => a != value))
+                    _event.Add(value);
+            }
+        }
+        remove
+        {
+            lock (_event)
+            {
+                _event.Remove(value);
+            }
+        }
+    }
+}
+
 public readonly struct EventWrapper<T1, T2> : IDisposable
 {
     private readonly string               _name;

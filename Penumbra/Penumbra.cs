@@ -105,6 +105,7 @@ public class Penumbra : IDalamudPlugin
             RedrawService     = _tmp.Services.GetRequiredService<RedrawService>();
             _tmp.Services.GetRequiredService<ResourceService>();
             ResourceLoader = _tmp.Services.GetRequiredService<ResourceLoader>();
+            _tmp.Services.GetRequiredService<ModCacheManager>();
             using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {
                 PathResolver = _tmp.Services.GetRequiredService<PathResolver>();
