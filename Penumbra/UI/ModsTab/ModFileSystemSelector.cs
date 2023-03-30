@@ -30,6 +30,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     private readonly Configuration       _config;
     private readonly FileDialogService   _fileDialog;
     private readonly ModManager          _modManager;
+    private readonly ModCacheManager     _modCaches;
     private readonly CollectionManager   _collectionManager;
     private readonly TutorialService     _tutorial;
     private readonly ModEditor           _modEditor;
@@ -42,7 +43,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
 
     public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
-        ModEditor modEditor)
+        ModEditor modEditor, ModCacheManager modCaches)
         : base(fileSystem, DalamudServices.KeyState, HandleException)
     {
         _communicator      = communicator;
@@ -53,6 +54,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         _fileDialog        = fileDialog;
         _chat              = chat;
         _modEditor         = modEditor;
+        _modCaches         = modCaches;
 
         // @formatter:off
         SubscribeRightClickFolder(EnableDescendants, 10);
@@ -609,8 +611,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
             0  => !(leaf.FullName().Contains(_modFilter.Lower, IgnoreCase) || mod.Name.Contains(_modFilter)),
             1  => !mod.Name.Contains(_modFilter),
             2  => !mod.Author.Contains(_modFilter),
-            3  => !mod.LowerChangedItemsString.Contains(_modFilter.Lower),
-            4  => !mod.AllTagsLower.Contains(_modFilter.Lower),
+            3  => !_modCaches[mod].LowerChangedItemsString.Contains(_modFilter.Lower),
+            4  => !_modCaches[mod].AllTagsLower.Contains(_modFilter.Lower),
             _  => false, // Should never happen
         };
     }
@@ -639,12 +641,13 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     private bool CheckStateFilters(Mod mod, ModSettings? settings, ModCollection collection, ref ModState state)
     {
         var isNew = _modManager.IsNew(mod);
+        var cache = _modCaches[mod.Index];
         // Handle mod details.
-        if (CheckFlags(mod.TotalFileCount,     ModFilter.HasNoFiles,             ModFilter.HasFiles)
-         || CheckFlags(mod.TotalSwapCount,     ModFilter.HasNoFileSwaps,         ModFilter.HasFileSwaps)
-         || CheckFlags(mod.TotalManipulations, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations)
-         || CheckFlags(mod.HasOptions ? 1 : 0, ModFilter.HasNoConfig,            ModFilter.HasConfig)
-         || CheckFlags(isNew ? 1 : 0,          ModFilter.NotNew,                 ModFilter.IsNew))
+        if (CheckFlags(cache.TotalFileCount,     ModFilter.HasNoFiles,             ModFilter.HasFiles)
+         || CheckFlags(cache.TotalSwapCount,     ModFilter.HasNoFileSwaps,         ModFilter.HasFileSwaps)
+         || CheckFlags(cache.TotalManipulations, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations)
+         || CheckFlags(cache.HasOptions ? 1 : 0, ModFilter.HasNoConfig,            ModFilter.HasConfig)
+         || CheckFlags(isNew ? 1 : 0,            ModFilter.NotNew,                 ModFilter.IsNew))
             return true;
 
         // Handle Favoritism

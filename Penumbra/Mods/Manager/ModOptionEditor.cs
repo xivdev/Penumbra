@@ -32,7 +32,6 @@ public class ModOptionEditor
 
         mod._groups[groupIdx] = group.Convert(type);
         _saveService.QueueSave(new ModSaveGroup(mod, groupIdx));
-        mod.HasOptions = mod.Groups.Any(o => o.IsOption);
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupTypeChanged, mod, groupIdx, -1, -1);
     }
 

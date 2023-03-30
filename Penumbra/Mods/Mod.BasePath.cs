@@ -76,8 +76,6 @@ public partial class Mod
             IncorporateAllMetaChanges(true);
         }
 
-        ComputeChangedItems();
-        SetCounts();
         return true;
     }
 

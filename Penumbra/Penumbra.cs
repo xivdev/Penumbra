@@ -49,6 +49,7 @@ public class Penumbra : IDalamudPlugin
     public static GameEventManager        GameEvents        { get; private set; } = null!;
     public static MetaFileManager         MetaFileManager   { get; private set; } = null!;
     public static ModManager              ModManager        { get; private set; } = null!;
+    public static ModCacheManager         ModCaches         { get; private set; } = null!;
     public static CollectionManager       CollectionManager { get; private set; } = null!;
     public static TempCollectionManager   TempCollections   { get; private set; } = null!;
     public static TempModManager          TempMods          { get; private set; } = null!;
@@ -105,7 +106,7 @@ public class Penumbra : IDalamudPlugin
             RedrawService     = _tmp.Services.GetRequiredService<RedrawService>();
             _tmp.Services.GetRequiredService<ResourceService>();
             ResourceLoader = _tmp.Services.GetRequiredService<ResourceLoader>();
-            _tmp.Services.GetRequiredService<ModCacheManager>();
+            ModCaches      = _tmp.Services.GetRequiredService<ModCacheManager>();
             using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {
                 PathResolver = _tmp.Services.GetRequiredService<PathResolver>();
@@ -238,13 +239,13 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Use Ownership:               `** {Config.UseOwnerNameForCharacterCollection}\n");
         sb.AppendLine("**Mods**");
         sb.Append($"> **`Installed Mods:              `** {ModManager.Count}\n");
-        sb.Append($"> **`Mods with Config:            `** {ModManager.Count(m => m.HasOptions)}\n");
+        sb.Append($"> **`Mods with Config:            `** {ModCaches.Count(m => m.HasOptions)}\n");
         sb.Append(
-            $"> **`Mods with File Redirections: `** {ModManager.Count(m => m.TotalFileCount > 0)}, Total: {ModManager.Sum(m => m.TotalFileCount)}\n");
+            $"> **`Mods with File Redirections: `** {ModCaches.Count(m => m.TotalFileCount > 0)}, Total: {ModCaches.Sum(m => m.TotalFileCount)}\n");
         sb.Append(
-            $"> **`Mods with FileSwaps:         `** {ModManager.Count(m => m.TotalSwapCount > 0)}, Total: {ModManager.Sum(m => m.TotalSwapCount)}\n");
+            $"> **`Mods with FileSwaps:         `** {ModCaches.Count(m => m.TotalSwapCount > 0)}, Total: {ModCaches.Sum(m => m.TotalSwapCount)}\n");
         sb.Append(
-            $"> **`Mods with Meta Manipulations:`** {ModManager.Count(m => m.TotalManipulations > 0)}, Total {ModManager.Sum(m => m.TotalManipulations)}\n");
+            $"> **`Mods with Meta Manipulations:`** {ModCaches.Count(m => m.TotalManipulations > 0)}, Total {ModCaches.Sum(m => m.TotalManipulations)}\n");
         sb.Append($"> **`IMC Exceptions Thrown:       `** {ValidityChecker.ImcExceptions.Count}\n");
         sb.Append(
             $"> **`#Temp Mods:                  `** {TempMods.Mods.Sum(kvp => kvp.Value.Count) + TempMods.ModsForAllCollections.Count}\n");
@@ -265,7 +266,7 @@ public class Penumbra : IDalamudPlugin
             => sb.Append($"**Collection {c.AnonymizedName}**\n"
               + $"> **`Inheritances:                 `** {c.Inheritance.Count}\n"
               + $"> **`Enabled Mods:                 `** {c.ActualSettings.Count(s => s is { Enabled: true })}\n"
-              + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? 0 : x.Conflicts.Count)}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority || !x.Solved ? 0 : x.Conflicts.Count)}\n");
+              + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority && x.Solved ? x.Conflicts.Count : 0)}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0)}\n");
 
         sb.AppendLine("**Collections**");
         sb.Append($"> **`#Collections:                 `** {CollectionManager.Count - 1}\n");

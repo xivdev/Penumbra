@@ -15,7 +15,6 @@ public sealed partial class Mod
 
     public IReadOnlyList<string> LocalTags { get; private set; } = Array.Empty<string>();
 
-    public string AllTagsLower { get; private set; }  = string.Empty;
     public string Note         { get; internal set; } = string.Empty;
     public bool   Favorite     { get; internal set; } = false;
 
@@ -45,9 +44,6 @@ public sealed partial class Mod
                 type      |= ModDataChangeType.LocalTags;
             }
         }
-
-        if (type != 0)
-            AllTagsLower = string.Join('\0', ModTags.Concat(LocalTags).Select(s => s.ToLowerInvariant()));
 
         return type;
     }

@@ -36,7 +36,7 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
     }
 
     public IEnumerator<ModCache> GetEnumerator()
-        => _cache.GetEnumerator();
+        => _cache.Take(Count).GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();

@@ -10,8 +10,6 @@ public interface IMod
     public int Index { get; }
     public int Priority { get; }
 
-    public int TotalManipulations { get; }
-
     public ISubMod Default { get; }
     public IReadOnlyList< IModGroup > Groups { get; }
 

@@ -12,6 +12,7 @@ namespace Penumbra.Mods;
 public class ModNormalizer
 {
     private readonly ModManager                                     _modManager;
+    private readonly ModCacheManager                                _modCacheManager;
     private readonly List<List<Dictionary<Utf8GamePath, FullPath>>> _redirections = new();
 
     public  Mod    Mod { get; private set; } = null!;
@@ -24,8 +25,11 @@ public class ModNormalizer
     public bool Running
         => Step < TotalSteps;
 
-    public ModNormalizer(ModManager modManager)
-        => _modManager = modManager;
+    public ModNormalizer(ModManager modManager, ModCacheManager modCacheManager)
+    {
+        _modManager           = modManager;
+        _modCacheManager = modCacheManager;
+    }
 
     public void Normalize(Mod mod)
     {
@@ -36,7 +40,7 @@ public class ModNormalizer
         _normalizationDirName = Path.Combine(Mod.ModPath.FullName, "TmpNormalization");
         _oldDirName           = Path.Combine(Mod.ModPath.FullName, "TmpNormalizationOld");
         Step                  = 0;
-        TotalSteps            = mod.TotalFileCount + 5;
+        TotalSteps            = _modCacheManager[mod].TotalFileCount + 5;
 
         Task.Run(NormalizeSync);
     }

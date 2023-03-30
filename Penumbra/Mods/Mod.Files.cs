@@ -20,29 +20,6 @@ public partial class Mod
     internal readonly SubMod          _default;
     internal readonly List<IModGroup> _groups = new();
 
-    public int  TotalFileCount     { get; internal set; }
-    public int  TotalSwapCount     { get; internal set; }
-    public int  TotalManipulations { get; internal set; }
-    public bool HasOptions         { get; internal set; }
-
-    internal bool SetCounts()
-    {
-        TotalFileCount     = 0;
-        TotalSwapCount     = 0;
-        TotalManipulations = 0;
-        foreach (var s in AllSubMods)
-        {
-            TotalFileCount     += s.Files.Count;
-            TotalSwapCount     += s.FileSwaps.Count;
-            TotalManipulations += s.Manipulations.Count;
-        }
-
-        HasOptions = _groups.Any(o
-            => o is MultiModGroup m && m.PrioritizedOptions.Count > 0
-         || o is SingleModGroup s && s.OptionData.Count > 1);
-        return true;
-    }
-
     public IEnumerable<ISubMod> AllSubMods
         => _groups.SelectMany(o => o).Prepend(_default);
 
