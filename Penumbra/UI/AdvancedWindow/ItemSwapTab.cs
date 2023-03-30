@@ -55,6 +55,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         _communicator.CollectionChange.Event         += OnCollectionChange;
         _collectionManager.Current.ModSettingChanged += OnSettingChange;
+        _communicator.ModOptionChanged.Event         += OnModOptionChange;
     }
 
     /// <summary> Update the currently selected mod or its settings. </summary>
@@ -99,6 +100,7 @@ public class ItemSwapTab : IDisposable, ITab
     {
         _communicator.CollectionChange.Event         -= OnCollectionChange;
         _collectionManager.Current.ModSettingChanged -= OnSettingChange;
+        _communicator.ModOptionChanged.Event         -= OnModOptionChange;
     }
 
     private enum SwapType
@@ -750,6 +752,14 @@ public class ItemSwapTab : IDisposable, ITab
         if (modIdx != _mod?.Index)
             return;
 
+        _swapData.LoadMod(_mod, _modSettings);
+        _dirty = true;
+    }
+
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, int a, int b, int c)
+    {
+        if (type is ModOptionChangeType.PrepareChange || mod != _mod)
+            return;
         _swapData.LoadMod(_mod, _modSettings);
         _dirty = true;
     }
