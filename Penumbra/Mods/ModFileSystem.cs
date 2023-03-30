@@ -12,7 +12,7 @@ namespace Penumbra.Mods;
 
 public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
 {
-    private readonly ModManager         _modManager;
+    private readonly ModManager          _modManager;
     private readonly CommunicatorService _communicator;
     private readonly FilenameService     _files;
 
@@ -23,17 +23,17 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
         _communicator = communicator;
         _files        = files;
         Reload();
-        Changed                            += OnChange;
-        _modManager.ModDiscoveryFinished   += Reload;
-        _communicator.ModDataChanged.Event += OnDataChange;
-        _modManager.ModPathChanged         += OnModPathChange;
+        Changed                                  += OnChange;
+        _communicator.ModDiscoveryFinished.Event += Reload;
+        _communicator.ModDataChanged.Event       += OnDataChange;
+        _communicator.ModPathChanged.Event       += OnModPathChange;
     }
 
     public void Dispose()
     {
-        _modManager.ModPathChanged         -= OnModPathChange;
-        _modManager.ModDiscoveryFinished   -= Reload;
-        _communicator.ModDataChanged.Event -= OnDataChange;
+        _communicator.ModPathChanged.Event       -= OnModPathChange;
+        _communicator.ModDiscoveryFinished.Event -= Reload;
+        _communicator.ModDataChanged.Event       -= OnDataChange;
     }
 
     public struct ImportDate : ISortMode<Mod>

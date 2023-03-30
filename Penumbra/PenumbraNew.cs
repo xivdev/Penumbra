@@ -94,7 +94,8 @@ public class PenumbraNew
             .AddSingleton<ModOptionEditor>()
             .AddSingleton<ModManager>()
             .AddSingleton<ExportManager>()
-            .AddSingleton<ModFileSystem>();
+            .AddSingleton<ModFileSystem>()
+            .AddSingleton<ModCacheManager>();
 
         // Add Resource services
         services.AddSingleton<ResourceLoader>()
@@ -150,8 +151,7 @@ public class PenumbraNew
             .AddSingleton<ModMetaEditor>()
             .AddSingleton<ModSwapEditor>()
             .AddSingleton<ModNormalizer>()
-            .AddSingleton<ModEditor>()
-            .AddSingleton<ModCacheManager>();
+            .AddSingleton<ModEditor>();
 
         // Add API
         services.AddSingleton<PenumbraApi>()

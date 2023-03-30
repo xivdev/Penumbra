@@ -9,23 +9,22 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
-using Penumbra.Mods;
+using Penumbra.Services;
 
 namespace Penumbra.UI;
 
 public class FileDialogService : IDisposable
 {
-    private readonly ModManager                          _mods;
+    private readonly CommunicatorService                  _communicator;
     private readonly FileDialogManager                    _manager;
     private readonly ConcurrentDictionary<string, string> _startPaths = new();
     private          bool                                 _isOpen;
 
-    public FileDialogService(ModManager mods, Configuration config)
+    public FileDialogService(CommunicatorService communicator, Configuration config)
     {
-        _mods    = mods;
-        _manager = SetupFileManager(config.ModDirectory);
-
-        _mods.ModDirectoryChanged += OnModDirectoryChange;
+        _communicator                           =  communicator;
+        _manager                                =  SetupFileManager(config.ModDirectory);
+        _communicator.ModDirectoryChanged.Event += OnModDirectoryChange;
     }
 
     public void OpenFilePicker(string title, string filters, Action<bool, List<string>> callback, int selectionCountMax, string? startPath,
@@ -72,7 +71,7 @@ public class FileDialogService : IDisposable
     {
         _startPaths.Clear();
         _manager.Reset();
-        _mods.ModDirectoryChanged -= OnModDirectoryChange;
+        _communicator.ModDirectoryChanged.Event -= OnModDirectoryChange;
     }
 
     private string? GetStartPath(string title, string? startPath, bool forceStartPath)
@@ -87,7 +86,7 @@ public class FileDialogService : IDisposable
     {
         return (valid, list) =>
         {
-            _isOpen            = false;
+            _isOpen = false;
             var loc = HandleRoot(GetCurrentLocation());
             _startPaths[title] = loc;
             callback(valid, list.Select(HandleRoot).ToList());

@@ -25,14 +25,14 @@ namespace Penumbra.UI.ModsTab;
 
 public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>
 {
-    private readonly CommunicatorService   _communicator;
-    private readonly ChatService           _chat;
-    private readonly Configuration         _config;
-    private readonly FileDialogService     _fileDialog;
-    private readonly ModManager           _modManager;
-    private readonly CollectionManager _collectionManager;
-    private readonly TutorialService       _tutorial;
-    private readonly ModEditor             _modEditor;
+    private readonly CommunicatorService _communicator;
+    private readonly ChatService         _chat;
+    private readonly Configuration       _config;
+    private readonly FileDialogService   _fileDialog;
+    private readonly ModManager          _modManager;
+    private readonly CollectionManager   _collectionManager;
+    private readonly TutorialService     _tutorial;
+    private readonly ModEditor           _modEditor;
 
     private TexToolsImporter? _import;
     public  ModSettings       SelectedSettings          { get; private set; } = ModSettings.Empty;
@@ -81,16 +81,16 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         _collectionManager.Current.ModSettingChanged  += OnSettingChange;
         _collectionManager.Current.InheritanceChanged += OnInheritanceChange;
         _communicator.ModDataChanged.Event            += OnModDataChange;
-        _modManager.ModDiscoveryStarted               += StoreCurrentSelection;
-        _modManager.ModDiscoveryFinished              += RestoreLastSelection;
+        _communicator.ModDiscoveryStarted.Event       += StoreCurrentSelection;
+        _communicator.ModDiscoveryFinished.Event      += RestoreLastSelection;
         OnCollectionChange(CollectionType.Current, null, _collectionManager.Current, "");
     }
 
     public override void Dispose()
     {
         base.Dispose();
-        _modManager.ModDiscoveryStarted               -= StoreCurrentSelection;
-        _modManager.ModDiscoveryFinished              -= RestoreLastSelection;
+        _communicator.ModDiscoveryStarted.Event       -= StoreCurrentSelection;
+        _communicator.ModDiscoveryFinished.Event      -= RestoreLastSelection;
         _communicator.ModDataChanged.Event            -= OnModDataChange;
         _collectionManager.Current.ModSettingChanged  -= OnSettingChange;
         _collectionManager.Current.InheritanceChanged -= OnInheritanceChange;
@@ -258,8 +258,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         var size    = new Vector2(width * 2, height);
         ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Always, Vector2.One / 2);
         ImGui.SetNextWindowSize(size);
-        var infoPopupId = ImGui.GetID("Import Status");
-        using var popup = ImRaii.Popup("Import Status", ImGuiWindowFlags.Modal);
+        var       infoPopupId = ImGui.GetID("Import Status");
+        using var popup       = ImRaii.Popup("Import Status", ImGuiWindowFlags.Modal);
         if (_import == null || !popup.Success)
             return;
 
@@ -320,7 +320,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
 
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), size, tt, SelectedLeaf == null || !keys, true)
          && Selected != null)
-            _modManager.DeleteMod(Selected.Index);
+            _modManager.DeleteMod(Selected);
     }
 
     private void AddHelpButton(Vector2 size)
@@ -336,7 +336,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         var mods = folder.GetAllDescendants(ISortMode<Mod>.Lexicographical).OfType<ModFileSystem.Leaf>().Select(l =>
         {
             // Any mod handled here should not stay new.
-            _modManager.NewMods.Remove(l.Value);
+            _modManager.SetKnown(l.Value);
             return l.Value;
         });
 
@@ -618,7 +618,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     /// <summary> Only get the text color for a mod if no filters are set. </summary>
     private ColorId GetTextColor(Mod mod, ModSettings? settings, ModCollection collection)
     {
-        if (Penumbra.ModManager.NewMods.Contains(mod))
+        if (_modManager.IsNew(mod))
             return ColorId.NewMod;
 
         if (settings == null)
@@ -638,7 +638,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
 
     private bool CheckStateFilters(Mod mod, ModSettings? settings, ModCollection collection, ref ModState state)
     {
-        var isNew = _modManager.NewMods.Contains(mod);
+        var isNew = _modManager.IsNew(mod);
         // Handle mod details.
         if (CheckFlags(mod.TotalFileCount,     ModFilter.HasNoFiles,             ModFilter.HasFiles)
          || CheckFlags(mod.TotalSwapCount,     ModFilter.HasNoFileSwaps,         ModFilter.HasFileSwaps)

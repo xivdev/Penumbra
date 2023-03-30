@@ -20,7 +20,6 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 
     private readonly List<ModCache> _cache = new();
 
-    // TODO ModManager2
     public ModCacheManager(CommunicatorService communicator, IdentifierService identifier, ModManager modManager)
     {
         _communicator = communicator;

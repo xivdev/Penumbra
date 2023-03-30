@@ -113,7 +113,7 @@ public class ConfigMigrationService
         if (_config.Version != 4)
             return;
 
-        ModManager.MigrateModBackups = true;
+        ModBackup.MigrateModBackups = true;
         _config.Version = 5;
     }
 

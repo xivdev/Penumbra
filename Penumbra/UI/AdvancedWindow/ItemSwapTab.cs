@@ -270,9 +270,9 @@ public class ItemSwapTab : IDisposable, ITab
         _modManager.DataEditor.CreateMeta(newDir, _newModName, _config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty);
         Mod.Creator.CreateDefaultFiles(newDir);
         _modManager.AddMod(newDir);
-        if (!_swapData.WriteMod(_modManager, _modManager.Last(),
+        if (!_swapData.WriteMod(_modManager, _modManager[^1],
                 _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))
-            _modManager.DeleteMod(_modManager.Count - 1);
+            _modManager.DeleteMod(_modManager[^1]);
     }
 
     private void CreateOption()

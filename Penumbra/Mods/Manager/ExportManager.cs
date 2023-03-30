@@ -1,24 +1,27 @@
 using System;
 using System.IO;
+using Penumbra.Services;
 
 namespace Penumbra.Mods;
 
 public class ExportManager : IDisposable
 {
-    private readonly Configuration _config;
-    private readonly ModManager    _modManager;
+    private readonly Configuration       _config;
+    private readonly CommunicatorService _communicator;
+    private readonly ModManager          _modManager;
 
     private DirectoryInfo? _exportDirectory;
 
     public DirectoryInfo ExportDirectory
         => _exportDirectory ?? _modManager.BasePath;
 
-    public ExportManager(Configuration config, ModManager modManager)
+    public ExportManager(Configuration config, CommunicatorService communicator, ModManager modManager)
     {
-        _config     = config;
-        _modManager = modManager;
+        _config       = config;
+        _communicator = communicator;
+        _modManager   = modManager;
         UpdateExportDirectory(_config.ExportDirectory, false);
-        _modManager.ModPathChanged += OnModPathChange;
+        _communicator.ModPathChanged.Event += OnModPathChange;
     }
 
     /// <inheritdoc cref="UpdateExportDirectory(string, bool)"/>
@@ -73,7 +76,7 @@ public class ExportManager : IDisposable
     }
 
     public void Dispose()
-        => _modManager.ModPathChanged -= OnModPathChange;
+        => _communicator.ModPathChanged.Event -= OnModPathChange;
 
     /// <summary> Automatically migrate the backup file to the new name if any exists. </summary>
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,

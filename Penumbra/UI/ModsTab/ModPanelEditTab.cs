@@ -118,7 +118,7 @@ public class ModPanelEditTab : ITab
         if (ImGuiUtil.DrawDisabledButton("Reload Mod", buttonSize, "Reload the current mod from its files.\n"
               + "If the mod directory or meta file do not exist anymore or if the new mod name is empty, the mod is deleted instead.",
                 false))
-            _modManager.ReloadMod(_mod.Index);
+            _modManager.ReloadMod(_mod);
 
         BackupButtons(buttonSize);
         MoveDirectory.Draw(_modManager, _mod, buttonSize);
@@ -255,13 +255,13 @@ public class ModPanelEditTab : ITab
     /// <summary> A text input for the new directory name and a button to apply the move. </summary>
     private static class MoveDirectory
     {
-        private static string?                      _currentModDirectory;
-        private static ModManager.NewDirectoryState _state = ModManager.NewDirectoryState.Identical;
+        private static string?           _currentModDirectory;
+        private static NewDirectoryState _state = NewDirectoryState.Identical;
 
         public static void Reset()
         {
             _currentModDirectory = null;
-            _state               = ModManager.NewDirectoryState.Identical;
+            _state               = NewDirectoryState.Identical;
         }
 
         public static void Draw(ModManager modManager, Mod mod, Vector2 buttonSize)
@@ -276,20 +276,20 @@ public class ModPanelEditTab : ITab
 
             var (disabled, tt) = _state switch
             {
-                ModManager.NewDirectoryState.Identical      => (true, "Current directory name is identical to new one."),
-                ModManager.NewDirectoryState.Empty          => (true, "Please enter a new directory name first."),
-                ModManager.NewDirectoryState.NonExisting    => (false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}."),
-                ModManager.NewDirectoryState.ExistsEmpty    => (false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}."),
-                ModManager.NewDirectoryState.ExistsNonEmpty => (true, $"{_currentModDirectory} already exists and is not empty."),
-                ModManager.NewDirectoryState.ExistsAsFile   => (true, $"{_currentModDirectory} exists as a file."),
-                ModManager.NewDirectoryState.ContainsInvalidSymbols => (true,
+                NewDirectoryState.Identical      => (true, "Current directory name is identical to new one."),
+                NewDirectoryState.Empty          => (true, "Please enter a new directory name first."),
+                NewDirectoryState.NonExisting    => (false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}."),
+                NewDirectoryState.ExistsEmpty    => (false, $"Move mod from {mod.ModPath.Name} to {_currentModDirectory}."),
+                NewDirectoryState.ExistsNonEmpty => (true, $"{_currentModDirectory} already exists and is not empty."),
+                NewDirectoryState.ExistsAsFile   => (true, $"{_currentModDirectory} exists as a file."),
+                NewDirectoryState.ContainsInvalidSymbols => (true,
                     $"{_currentModDirectory} contains invalid symbols for FFXIV."),
                 _ => (true, "Unknown error."),
             };
             ImGui.SameLine();
             if (ImGuiUtil.DrawDisabledButton("Rename Mod Directory", buttonSize, tt, disabled) && _currentModDirectory != null)
             {
-                modManager.MoveModDirectory(mod.Index, _currentModDirectory);
+                modManager.MoveModDirectory(mod, _currentModDirectory);
                 Reset();
             }
 

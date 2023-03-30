@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using Penumbra.Api;
 using Penumbra.GameData.Actors;
-using Penumbra.Interop;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
 using Penumbra.Util;
@@ -71,10 +70,10 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
         Individuals        = individuals;
 
         // The collection manager reacts to changes in mods by itself.
-        _modManager.ModDiscoveryStarted              += OnModDiscoveryStarted;
-        _modManager.ModDiscoveryFinished             += OnModDiscoveryFinished;
+        _communicator.ModDiscoveryStarted.Event      += OnModDiscoveryStarted;
+        _communicator.ModDiscoveryFinished.Event     += OnModDiscoveryFinished;
         _communicator.ModOptionChanged.Event         += OnModOptionsChanged;
-        _modManager.ModPathChanged                   += OnModPathChange;
+        _communicator.ModPathChanged.Event           += OnModPathChange;
         _communicator.CollectionChange.Event         += SaveOnChange;
         _communicator.TemporaryGlobalModChange.Event += OnGlobalModChange;
         ReadCollections(files);
@@ -87,10 +86,10 @@ public sealed partial class CollectionManager : IDisposable, IEnumerable<ModColl
     {
         _communicator.CollectionChange.Event         -= SaveOnChange;
         _communicator.TemporaryGlobalModChange.Event -= OnGlobalModChange;
-        _modManager.ModDiscoveryStarted              -= OnModDiscoveryStarted;
-        _modManager.ModDiscoveryFinished             -= OnModDiscoveryFinished;
+        _communicator.ModDiscoveryStarted.Event      -= OnModDiscoveryStarted;
+        _communicator.ModDiscoveryFinished.Event     -= OnModDiscoveryFinished;
         _communicator.ModOptionChanged.Event         -= OnModOptionsChanged;
-        _modManager.ModPathChanged                   -= OnModPathChange;
+        _communicator.ModPathChanged.Event           -= OnModPathChange;
     }
 
     private void OnGlobalModChange(TemporaryMod mod, bool created, bool removed)

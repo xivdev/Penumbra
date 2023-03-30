@@ -125,7 +125,7 @@ public class ModPanelSettingsTab : ITab
         if (!ImGui.Checkbox("Enabled", ref enabled))
             return;
 
-        _modManager.NewMods.Remove(_selector.Selected!);
+        _modManager.SetKnown(_selector.Selected!);
         _collectionManager.Current.SetModState(_selector.Selected!.Index, enabled);
     }
 

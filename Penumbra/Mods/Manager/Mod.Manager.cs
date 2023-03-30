@@ -1,13 +1,10 @@
 using System;
-using System.Collections;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Penumbra.Services;
-using Penumbra.Util;
+
 namespace Penumbra.Mods;
 
 /// <summary> Describes the state of a potential move-target for a mod. </summary>
@@ -22,7 +19,7 @@ public enum NewDirectoryState
     Empty,
 }
 
-public sealed class ModManager2 : ModStorage
+public sealed class ModManager : ModStorage
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
@@ -31,14 +28,16 @@ public sealed class ModManager2 : ModStorage
     public readonly ModOptionEditor OptionEditor;
 
     public DirectoryInfo BasePath { get; private set; } = null!;
-    public bool Valid { get; private set; }
+    public bool          Valid    { get; private set; }
 
-    public ModManager2(Configuration config, CommunicatorService communicator, ModDataEditor dataEditor, ModOptionEditor optionEditor)
+    public ModManager(Configuration config, CommunicatorService communicator, ModDataEditor dataEditor, ModOptionEditor optionEditor)
     {
         _config       = config;
         _communicator = communicator;
         DataEditor    = dataEditor;
         OptionEditor  = optionEditor;
+        SetBaseDirectory(config.ModDirectory, true);
+        DiscoverMods();
     }
 
     /// <summary> Change the mod base directory and discover available mods. </summary>
@@ -75,7 +74,7 @@ public sealed class ModManager2 : ModStorage
             return;
 
         Mod.Creator.SplitMultiGroups(modFolder);
-        var mod = Mod.LoadMod(Penumbra.ModManager, modFolder, true);
+        var mod = Mod.LoadMod(this, modFolder, true);
         if (mod == null)
             return;
 
@@ -142,7 +141,7 @@ public sealed class ModManager2 : ModStorage
     /// </summary>
     public void MoveModDirectory(Mod mod, string newName)
     {
-        var oldName = mod.Name;
+        var oldName      = mod.Name;
         var oldDirectory = mod.ModPath;
 
         switch (NewDirectoryValid(oldDirectory.Name, newName, out var dir))
@@ -260,7 +259,7 @@ public sealed class ModManager2 : ModStorage
 
         if (newPath.Length == 0)
         {
-            Valid = false;
+            Valid    = false;
             BasePath = new DirectoryInfo(".");
             if (_config.ModDirectory != BasePath.FullName)
                 TriggerModDirectoryChange(string.Empty, false);
@@ -280,8 +279,8 @@ public sealed class ModManager2 : ModStorage
                 }
 
             BasePath = newDir;
-            Valid = Directory.Exists(newDir.FullName);
-            if (_config.ModDirectory != BasePath.FullName)
+            Valid    = Directory.Exists(newDir.FullName);
+            if (!firstTime && _config.ModDirectory != BasePath.FullName)
                 TriggerModDirectoryChange(BasePath.FullName, Valid);
         }
     }
@@ -293,7 +292,6 @@ public sealed class ModManager2 : ModStorage
         Penumbra.Log.Information($"Set new mod base directory from {_config.ModDirectory} to {newPath}.");
         _communicator.ModDirectoryChanged.Invoke(newPath, valid);
     }
-
 
 
     /// <summary>
@@ -309,7 +307,7 @@ public sealed class ModManager2 : ModStorage
         var queue = new ConcurrentQueue<Mod>();
         Parallel.ForEach(BasePath.EnumerateDirectories(), options, dir =>
         {
-            var mod = Mod.LoadMod(Penumbra.ModManager, dir, false);
+            var mod = Mod.LoadMod(this, dir, false);
             if (mod != null)
                 queue.Enqueue(mod);
         });
@@ -319,113 +317,5 @@ public sealed class ModManager2 : ModStorage
             mod.Index = Count;
             Mods.Add(mod);
         }
-    }
-}
-
-public sealed partial class ModManager : IReadOnlyList<Mod>, IDisposable
-{
-    // Set when reading Config and migrating from v4 to v5.
-    public static bool MigrateModBackups = false;
-
-    // An easily accessible set of new mods.
-    // Mods are added when they are created or imported.
-    // Mods are removed when they are deleted or when they are toggled in any collection.
-    // Also gets cleared on mod rediscovery.
-    public readonly HashSet<Mod> NewMods = new();
-
-    private readonly List<Mod> _mods = new();
-
-    public Mod this[int idx]
-        => _mods[idx];
-
-    public Mod this[Index idx]
-        => _mods[idx];
-
-    public int Count
-        => _mods.Count;
-
-    public IEnumerator<Mod> GetEnumerator()
-        => _mods.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator()
-        => GetEnumerator();
-
-    private readonly Configuration       _config;
-    private readonly CommunicatorService _communicator;
-    public readonly  ModDataEditor       DataEditor;
-    public readonly  ModOptionEditor     OptionEditor;
-
-    public ModManager(StartTracker time, Configuration config, CommunicatorService communicator, ModDataEditor dataEditor,
-        ModOptionEditor optionEditor)
-    {
-        using var timer = time.Measure(StartTimeType.Mods);
-        _config             =  config;
-        _communicator       =  communicator;
-        DataEditor          =  dataEditor;
-        OptionEditor        =  optionEditor;
-        ModDirectoryChanged += OnModDirectoryChange;
-        SetBaseDirectory(config.ModDirectory, true);
-        _communicator.ModOptionChanged.Event += OnModOptionChange;
-        ModPathChanged                       += OnModPathChange;
-        DiscoverMods();
-    }
-
-    public void Dispose()
-    {
-        _communicator.ModOptionChanged.Event -= OnModOptionChange;
-    }
-
-
-    // Try to obtain a mod by its directory name (unique identifier, preferred),
-    // or the first mod of the given name if no directory fits.
-    public bool TryGetMod(string modDirectory, string modName, [NotNullWhen(true)] out Mod? mod)
-    {
-        mod = null;
-        foreach (var m in _mods)
-        {
-            if (string.Equals(m.ModPath.Name, modDirectory, StringComparison.OrdinalIgnoreCase))
-            {
-                mod = m;
-                return true;
-            }
-
-            if (m.Name == modName)
-                mod ??= m;
-        }
-
-        return mod != null;
-    }
-
-    private static void OnModOptionChange(ModOptionChangeType type, Mod mod, int groupIdx, int _, int _2)
-    {
-        if (type == ModOptionChangeType.PrepareChange)
-            return;
-
-        bool ComputeChangedItems()
-        {
-            mod.ComputeChangedItems();
-            return true;
-        }
-
-        // State can not change on adding groups, as they have no immediate options.
-        var unused = type switch
-        {
-            ModOptionChangeType.GroupAdded       => ComputeChangedItems() & mod.SetCounts(),
-            ModOptionChangeType.GroupDeleted     => ComputeChangedItems() & mod.SetCounts(),
-            ModOptionChangeType.GroupMoved       => false,
-            ModOptionChangeType.GroupTypeChanged => mod.HasOptions = mod.Groups.Any(o => o.IsOption),
-            ModOptionChangeType.PriorityChanged  => false,
-            ModOptionChangeType.OptionAdded      => ComputeChangedItems() & mod.SetCounts(),
-            ModOptionChangeType.OptionDeleted    => ComputeChangedItems() & mod.SetCounts(),
-            ModOptionChangeType.OptionMoved      => false,
-            ModOptionChangeType.OptionFilesChanged => ComputeChangedItems()
-              & (0 < (mod.TotalFileCount = mod.AllSubMods.Sum(s => s.Files.Count))),
-            ModOptionChangeType.OptionSwapsChanged => ComputeChangedItems()
-              & (0 < (mod.TotalSwapCount = mod.AllSubMods.Sum(s => s.FileSwaps.Count))),
-            ModOptionChangeType.OptionMetaChanged => ComputeChangedItems()
-              & (0 < (mod.TotalManipulations = mod.AllSubMods.Sum(s => s.Manipulations.Count))),
-            ModOptionChangeType.DisplayChange => false,
-            _                                 => false,
-        };
     }
 }

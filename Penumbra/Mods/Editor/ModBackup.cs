@@ -131,7 +131,7 @@ public class ModBackup
 
             ZipFile.ExtractToDirectory(Name, _mod.ModPath.FullName);
             Penumbra.Log.Debug($"Extracted exported file {Name} to {_mod.ModPath.FullName}.");
-            modManager.ReloadMod(_mod.Index);
+            modManager.ReloadMod(_mod);
         }
         catch (Exception e)
         {
