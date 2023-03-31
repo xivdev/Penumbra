@@ -12,12 +12,12 @@ public partial struct MetaFileInfo
 {
     // These are the valid regexes for .meta files that we are able to support at the moment.
     [GeneratedRegex(@"bgcommon/hou/(?'Type1'[a-z]*)/general/(?'Id1'\d{4})/\k'Id1'\.meta",
-        RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking)]
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture)]
     private static partial Regex HousingMeta();
 
     [GeneratedRegex(
         @"chara/(?'Type1'[a-z]*)/(?'Pre1'[a-z])(?'Id1'\d{4})(/obj/(?'Type2'[a-z]*)/(?'Pre2'[a-z])(?'Id2'\d{4}))?/\k'Pre1'\k'Id1'(\k'Pre2'\k'Id2')?(_(?'Slot'[a-z]{3}))?\\.meta",
-        RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.NonBacktracking)]
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture)]
     private static partial Regex CharaMeta();
 
     public readonly ObjectType        PrimaryType;
