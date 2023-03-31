@@ -11,6 +11,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;

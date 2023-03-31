@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
+using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;

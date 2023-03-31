@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using Penumbra.Api.Enums;
 using Penumbra.String.Classes;
+using Penumbra.Mods.Manager;
 
 namespace Penumbra.Collections;
 

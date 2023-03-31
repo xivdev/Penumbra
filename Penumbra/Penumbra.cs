@@ -30,6 +30,7 @@ using DalamudUtil = Dalamud.Utility.Util;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Penumbra.Services;
 using Penumbra.Interop.Services;
+using Penumbra.Mods.Manager;
 
 namespace Penumbra;
 

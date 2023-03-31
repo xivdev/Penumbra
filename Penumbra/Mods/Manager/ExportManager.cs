@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using Penumbra.Services;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Manager;
 
 public class ExportManager : IDisposable
 {

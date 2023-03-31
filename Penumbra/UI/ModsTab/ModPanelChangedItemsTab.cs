@@ -6,7 +6,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api;
-using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ModsTab;
 

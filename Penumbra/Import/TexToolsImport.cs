@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Penumbra.Api;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using FileMode = System.IO.FileMode;
 using ZipArchive = SharpCompress.Archives.Zip.ZipArchive;
 using ZipArchiveEntry = SharpCompress.Archives.Zip.ZipArchiveEntry;

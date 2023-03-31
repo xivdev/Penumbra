@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Penumbra.Collections;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Util;
 
 namespace Penumbra.Services;

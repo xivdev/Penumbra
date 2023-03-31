@@ -18,6 +18,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.ResourceLoading;
+using Penumbra.Mods.Manager;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Services;

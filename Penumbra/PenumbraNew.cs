@@ -20,6 +20,7 @@ using Penumbra.UI.Tabs;
 using Penumbra.Util;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
+using Penumbra.Mods.Manager;
 
 namespace Penumbra;
 

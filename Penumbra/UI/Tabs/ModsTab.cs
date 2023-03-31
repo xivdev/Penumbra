@@ -12,6 +12,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Interop;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.ModsTab;
 using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;

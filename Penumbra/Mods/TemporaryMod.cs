@@ -5,6 +5,7 @@ using System.Linq;
 using OtterGui.Classes;
 using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;

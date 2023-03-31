@@ -16,6 +16,7 @@ using Penumbra.Collections;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 

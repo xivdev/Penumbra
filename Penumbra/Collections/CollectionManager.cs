@@ -10,6 +10,7 @@ using System.Linq;
 using Penumbra.Api;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Util;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;

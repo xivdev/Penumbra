@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 using Penumbra.Util;
 

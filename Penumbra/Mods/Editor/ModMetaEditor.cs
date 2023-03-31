@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Manager;
 
 namespace Penumbra.Mods;
 

@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using OtterGui.Filesystem;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Util;
 

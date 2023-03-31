@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 
 namespace Penumbra.Api;
 
