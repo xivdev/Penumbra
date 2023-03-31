@@ -191,6 +191,7 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
             _cache.AddRange(Enumerable.Range(0, _modManager.Count - _cache.Count).Select(_ => new ModCache()));
 
         Parallel.ForEach(Enumerable.Range(0, _modManager.Count), idx => { Refresh(_cache[idx], _modManager[idx]); });
+        Count = _modManager.Count;
     }
 
     private void OnIdentifierCreation()
@@ -261,11 +262,10 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 
 
         if (mod.Index >= _cache.Count)
-            _cache.AddRange(Enumerable.Range(0, mod.Index - _cache.Count).Select(_ => new ModCache()));
-        else if (mod.Index >= Count)
-            for (var i = Count; i <= mod.Index; ++i)
-                _cache[i].Reset();
-
+            _cache.AddRange(Enumerable.Range(0, mod.Index + 1 - _cache.Count).Select(_ => new ModCache()));
+        for (var i = Count; i < mod.Index; ++i)
+            Refresh(_cache[i], _modManager[i]);
+        Count = mod.Index + 1;
         return _cache[mod.Index];
     }
 }

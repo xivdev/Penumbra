@@ -98,6 +98,7 @@ public class ModFileCollection : IDisposable
         _usedPaths.Remove(oldPath.Item2);
         if (!gamePath.IsEmpty)
         {
+            file.SubModUsage[pathIdx] = (oldPath.Item1, gamePath);
             _usedPaths.Add(gamePath);
         }
         else

@@ -16,7 +16,7 @@ public partial struct MetaFileInfo
     private static partial Regex HousingMeta();
 
     [GeneratedRegex(
-        @"chara/(?'Type1'[a-z]*)/(?'Pre1'[a-z])(?'Id1'\d{4})(/obj/(?'Type2'[a-z]*)/(?'Pre2'[a-z])(?'Id2'\d{4}))?/\k'Pre1'\k'Id1'(\k'Pre2'\k'Id2')?(_(?'Slot'[a-z]{3}))?\\.meta",
+        @"chara/(?'Type1'[a-z]*)/(?'Pre1'[a-z])(?'Id1'\d{4})(/obj/(?'Type2'[a-z]*)/(?'Pre2'[a-z])(?'Id2'\d{4}))?/\k'Pre1'\k'Id1'(\k'Pre2'\k'Id2')?(_(?'Slot'[a-z]{3}))?\.meta",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture)]
     private static partial Regex CharaMeta();
 
