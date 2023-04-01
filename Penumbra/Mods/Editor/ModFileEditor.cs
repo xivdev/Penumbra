@@ -43,7 +43,7 @@ public class ModFileEditor
 
     public void Revert(Mod mod, ISubMod option)
     {
-        _files.UpdatePaths(mod, option);
+        _files.UpdateAll(mod, option);
         Changes = false;
     }
 

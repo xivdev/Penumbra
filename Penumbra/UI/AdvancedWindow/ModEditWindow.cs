@@ -369,7 +369,7 @@ public partial class ModEditWindow : Window, IDisposable
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton("Refresh Data", width, "Refresh data for the current option.\nThis resets unsaved changes.", false))
-            _editor.LoadOption(_editor.GroupIdx, _editor.OptionIdx);
+            _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
 
         ImGui.SameLine();
 
