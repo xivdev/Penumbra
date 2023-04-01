@@ -30,20 +30,21 @@ public interface ISavable
 public class SaveService
 {
     private readonly Logger           _log;
-    private readonly FilenameService  _fileNames;
     private readonly FrameworkManager _framework;
 
-    public SaveService(Logger log, FilenameService fileNames, FrameworkManager framework)
+    public readonly FilenameService FileNames;
+
+    public SaveService(Logger log, FrameworkManager framework, FilenameService fileNames)
     {
         _log       = log;
-        _fileNames = fileNames;
         _framework = framework;
+        FileNames  = fileNames;
     }
 
     /// <summary> Queue a save for the next framework tick. </summary>
     public void QueueSave(ISavable value)
     {
-        var file = value.ToFilename(_fileNames);
+        var file = value.ToFilename(FileNames);
         _framework.RegisterDelayed(value.GetType().Name + file, () =>
         {
             ImmediateSave(value);
@@ -53,7 +54,7 @@ public class SaveService
     /// <summary> Immediately trigger a save. </summary>
     public void ImmediateSave(ISavable value)
     {
-        var name = value.ToFilename(_fileNames);
+        var name = value.ToFilename(FileNames);
         try
         {
             if (name.Length == 0)
@@ -76,7 +77,7 @@ public class SaveService
 
     public void ImmediateDelete(ISavable value)
     {
-        var name = value.ToFilename(_fileNames);
+        var name = value.ToFilename(FileNames);
         try
         {
             if (name.Length == 0)
@@ -99,7 +100,7 @@ public class SaveService
     /// <summary> Immediately delete all existing option group files for a mod and save them anew. </summary>
     public void SaveAllOptionGroups(Mod mod)
     {
-        foreach (var file in _fileNames.GetOptionGroupFiles(mod))
+        foreach (var file in FileNames.GetOptionGroupFiles(mod))
         {
             try
             {

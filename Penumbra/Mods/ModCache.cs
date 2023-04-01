@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Penumbra.Mods.Manager;
+namespace Penumbra.Mods;
 
 public class ModCache
 {

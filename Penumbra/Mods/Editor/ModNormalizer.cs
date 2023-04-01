@@ -181,10 +181,10 @@ public class ModNormalizer
                 for (var i = _redirections[groupIdx + 1].Count; i < group.Count; ++i)
                     _redirections[groupIdx + 1].Add(new Dictionary<Utf8GamePath, FullPath>());
 
-                var groupDir = Mod.Creator.CreateModFolder(directory, group.Name);
+                var groupDir = ModCreator.CreateModFolder(directory, group.Name);
                 foreach (var option in group.OfType<SubMod>())
                 {
-                    var optionDir = Mod.Creator.CreateModFolder(groupDir, option.Name);
+                    var optionDir = ModCreator.CreateModFolder(groupDir, option.Name);
 
                     newDict = _redirections[groupIdx + 1][option.OptionIdx];
                     newDict.Clear();

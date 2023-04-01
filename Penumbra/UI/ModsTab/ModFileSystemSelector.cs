@@ -131,9 +131,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         if (ImGuiUtil.OpenNameField("Create New Mod", ref _newModName))
             try
             {
-                var newDir = Mod.Creator.CreateModFolder(Penumbra.ModManager.BasePath, _newModName);
+                var newDir = ModCreator.CreateModFolder(Penumbra.ModManager.BasePath, _newModName);
                 _modManager.DataEditor.CreateMeta(newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty);
-                Mod.Creator.CreateDefaultFiles(newDir);
+                ModCreator.CreateDefaultFiles(newDir);
                 _modManager.AddMod(newDir);
                 _newModName = string.Empty;
             }

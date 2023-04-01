@@ -45,7 +45,7 @@ public partial class TexToolsImporter
             };
         Penumbra.Log.Information( $"    -> Importing {archive.Type} Archive." );
 
-        _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, Path.GetRandomFileName() );
+        _currentModDirectory = ModCreator.CreateModFolder( _baseDirectory, Path.GetRandomFileName() );
         var options = new ExtractionOptions()
         {
             ExtractFullPath = true,
@@ -100,18 +100,18 @@ public partial class TexToolsImporter
         // Use either the top-level directory as the mods base name, or the (fixed for path) name in the json.
         if( leadDir )
         {
-            _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, baseName, false );
+            _currentModDirectory = ModCreator.CreateModFolder( _baseDirectory, baseName, false );
             Directory.Move( Path.Combine( oldName, baseName ), _currentModDirectory.FullName );
             Directory.Delete( oldName );
         }
         else
         {
-            _currentModDirectory = Mod.Creator.CreateModFolder( _baseDirectory, name, false );
+            _currentModDirectory = ModCreator.CreateModFolder( _baseDirectory, name, false );
             Directory.Move( oldName, _currentModDirectory.FullName );
         }
 
         _currentModDirectory.Refresh();
-        Mod.Creator.SplitMultiGroups( _currentModDirectory );
+        ModCreator.SplitMultiGroups( _currentModDirectory );
 
         return _currentModDirectory;
     }

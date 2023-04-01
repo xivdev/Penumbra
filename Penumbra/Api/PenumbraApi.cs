@@ -828,7 +828,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public PenumbraApiEc CreateNamedTemporaryCollection(string name)
     {
         CheckInitialized();
-        if (name.Length == 0 || Mod.Creator.ReplaceBadXivSymbols(name) != name)
+        if (name.Length == 0 || ModCreator.ReplaceBadXivSymbols(name) != name)
             return PenumbraApiEc.InvalidArgument;
 
         return _tempCollections.CreateTemporaryCollection(name).Length > 0

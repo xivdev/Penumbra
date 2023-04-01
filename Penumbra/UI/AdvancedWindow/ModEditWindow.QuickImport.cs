@@ -217,13 +217,13 @@ public partial class ModEditWindow
             var fullName = subMod.FullName;
             if (fullName.EndsWith(": " + name))
             {
-                path    = Mod.Creator.NewOptionDirectory(path, fullName[..^(name.Length + 2)]);
-                path    = Mod.Creator.NewOptionDirectory(path, name);
+                path    = ModCreator.NewOptionDirectory(path, fullName[..^(name.Length + 2)]);
+                path    = ModCreator.NewOptionDirectory(path, name);
                 subDirs = 2;
             }
             else
             {
-                path    = Mod.Creator.NewOptionDirectory(path, fullName);
+                path    = ModCreator.NewOptionDirectory(path, fullName);
                 subDirs = 1;
             }
 

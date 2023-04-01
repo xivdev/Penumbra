@@ -10,25 +10,25 @@ using Penumbra.GameData.Enums;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Services;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Manager;
 
 public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 {
     private readonly CommunicatorService _communicator;
-    private readonly IdentifierService   _identifier;
-    private readonly IReadOnlyList<Mod>  _modManager;
+    private readonly IdentifierService _identifier;
+    private readonly IReadOnlyList<Mod> _modManager;
 
     private readonly List<ModCache> _cache = new();
 
     public ModCacheManager(CommunicatorService communicator, IdentifierService identifier, ModManager modManager)
     {
         _communicator = communicator;
-        _identifier   = identifier;
-        _modManager   = modManager;
+        _identifier = identifier;
+        _modManager = modManager;
 
-        _communicator.ModOptionChanged.Event     += OnModOptionChange;
-        _communicator.ModPathChanged.Event       += OnModPathChange;
-        _communicator.ModDataChanged.Event       += OnModDataChange;
+        _communicator.ModOptionChanged.Event += OnModOptionChange;
+        _communicator.ModPathChanged.Event += OnModPathChange;
+        _communicator.ModDataChanged.Event += OnModDataChange;
         _communicator.ModDiscoveryFinished.Event += OnModDiscoveryFinished;
         if (!identifier.Valid)
             identifier.FinishedCreation += OnIdentifierCreation;
@@ -51,9 +51,9 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 
     public void Dispose()
     {
-        _communicator.ModOptionChanged.Event     -= OnModOptionChange;
-        _communicator.ModPathChanged.Event       -= OnModPathChange;
-        _communicator.ModDataChanged.Event       -= OnModDataChange;
+        _communicator.ModOptionChanged.Event -= OnModOptionChange;
+        _communicator.ModPathChanged.Event -= OnModPathChange;
+        _communicator.ModDataChanged.Event -= OnModDataChange;
         _communicator.ModDiscoveryFinished.Event -= OnModDiscoveryFinished;
     }
 
@@ -232,17 +232,17 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 
     private static void UpdateCounts(ModCache cache, Mod mod)
     {
-        cache.TotalFileCount     = mod.Default.Files.Count;
-        cache.TotalSwapCount     = mod.Default.FileSwaps.Count;
+        cache.TotalFileCount = mod.Default.Files.Count;
+        cache.TotalSwapCount = mod.Default.FileSwaps.Count;
         cache.TotalManipulations = mod.Default.Manipulations.Count;
-        cache.HasOptions         = false;
+        cache.HasOptions = false;
         foreach (var group in mod.Groups)
         {
             cache.HasOptions |= group.IsOption;
             foreach (var s in group)
             {
-                cache.TotalFileCount     += s.Files.Count;
-                cache.TotalSwapCount     += s.FileSwaps.Count;
+                cache.TotalFileCount += s.Files.Count;
+                cache.TotalSwapCount += s.FileSwaps.Count;
                 cache.TotalManipulations += s.Manipulations.Count;
             }
         }

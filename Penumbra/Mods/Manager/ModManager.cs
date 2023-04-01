@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Penumbra.Services;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Manager;
 
 /// <summary> Describes the state of a potential move-target for a mod. </summary>
 public enum NewDirectoryState
@@ -73,7 +73,7 @@ public sealed class ModManager : ModStorage
         if (this.Any(m => m.ModPath.Name == modFolder.Name))
             return;
 
-        Mod.Creator.SplitMultiGroups(modFolder);
+        ModCreator.SplitMultiGroups(modFolder);
         var mod = Mod.LoadMod(this, modFolder, true);
         if (mod == null)
             return;
@@ -206,7 +206,7 @@ public sealed class ModManager : ModStorage
         if (oldName == newName)
             return NewDirectoryState.Identical;
 
-        var fixedNewName = Mod.Creator.ReplaceBadXivSymbols(newName);
+        var fixedNewName = ModCreator.ReplaceBadXivSymbols(newName);
         if (fixedNewName != newName)
             return NewDirectoryState.ContainsInvalidSymbols;
 

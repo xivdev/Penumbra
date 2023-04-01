@@ -24,7 +24,6 @@ using Penumbra.GameData.Actors;
 using Penumbra.GameData.Data;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
-using Penumbra.Mods;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using DalamudUtil = Dalamud.Utility.Util;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;

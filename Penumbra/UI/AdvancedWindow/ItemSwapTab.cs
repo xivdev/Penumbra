@@ -269,9 +269,9 @@ public class ItemSwapTab : IDisposable, ITab
 
     private void CreateMod()
     {
-        var newDir = Mod.Creator.CreateModFolder(_modManager.BasePath, _newModName);
+        var newDir = ModCreator.CreateModFolder(_modManager.BasePath, _newModName);
         _modManager.DataEditor.CreateMeta(newDir, _newModName, _config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty);
-        Mod.Creator.CreateDefaultFiles(newDir);
+        ModCreator.CreateDefaultFiles(newDir);
         _modManager.AddMod(newDir);
         if (!_swapData.WriteMod(_modManager, _modManager[^1],
                 _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))
@@ -290,7 +290,7 @@ public class ItemSwapTab : IDisposable, ITab
         try
         {
             optionFolderName =
-                Mod.Creator.NewSubFolderName(new DirectoryInfo(Path.Combine(_mod.ModPath.FullName, _selectedGroup?.Name ?? _newGroupName)),
+                ModCreator.NewSubFolderName(new DirectoryInfo(Path.Combine(_mod.ModPath.FullName, _selectedGroup?.Name ?? _newGroupName)),
                     _newOptionName);
             if (optionFolderName?.Exists == true)
                 throw new Exception($"The folder {optionFolderName.FullName} for the option already exists.");

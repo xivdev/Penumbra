@@ -11,6 +11,7 @@ using OtterGui.Widgets;
 using Penumbra.GameData.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
