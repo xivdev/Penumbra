@@ -95,35 +95,37 @@ internal unsafe struct Record
         var path = handle->FileName().Clone();
         return new Record
         {
-            Time          = DateTime.UtcNow,
-            Path          = path,
-            OriginalPath  = ByteString.Empty,
-            Collection    = null,
-            Handle        = handle,
-            ResourceType  = handle->FileType.ToFlag(),
-            Category      = handle->Category.ToFlag(),
-            RefCount      = handle->RefCount,
-            RecordType    = RecordType.Destruction,
-            Synchronously = OptionalBool.Null,
-            ReturnValue   = OptionalBool.Null,
-            CustomLoad    = OptionalBool.Null,
+            Time                 = DateTime.UtcNow,
+            Path                 = path,
+            OriginalPath         = ByteString.Empty,
+            Collection           = null,
+            Handle               = handle,
+            ResourceType         = handle->FileType.ToFlag(),
+            Category             = handle->Category.ToFlag(),
+            RefCount             = handle->RefCount,
+            RecordType           = RecordType.Destruction,
+            Synchronously        = OptionalBool.Null,
+            ReturnValue          = OptionalBool.Null,
+            CustomLoad           = OptionalBool.Null,
+            AssociatedGameObject = string.Empty,
         };
     }
 
     public static Record CreateFileLoad(ByteString path, ResourceHandle* handle, bool ret, bool custom)
         => new()
         {
-            Time          = DateTime.UtcNow,
-            Path          = path.IsOwned ? path : path.Clone(),
-            OriginalPath  = ByteString.Empty,
-            Collection    = null,
-            Handle        = handle,
-            ResourceType  = handle->FileType.ToFlag(),
-            Category      = handle->Category.ToFlag(),
-            RefCount      = handle->RefCount,
-            RecordType    = RecordType.FileLoad,
-            Synchronously = OptionalBool.Null,
-            ReturnValue   = ret,
-            CustomLoad    = custom,
+            Time                 = DateTime.UtcNow,
+            Path                 = path.IsOwned ? path : path.Clone(),
+            OriginalPath         = ByteString.Empty,
+            Collection           = null,
+            Handle               = handle,
+            ResourceType         = handle->FileType.ToFlag(),
+            Category             = handle->Category.ToFlag(),
+            RefCount             = handle->RefCount,
+            RecordType           = RecordType.FileLoad,
+            Synchronously        = OptionalBool.Null,
+            ReturnValue          = ret,
+            CustomLoad           = custom,
+            AssociatedGameObject = string.Empty,
         };
 }

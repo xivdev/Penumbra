@@ -20,7 +20,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
-public partial class ResourceWatcher : IDisposable, ITab
+public class ResourceWatcher : IDisposable, ITab
 {
     public const int        DefaultMaxEntries = 1024;
     public const RecordType AllRecords        = RecordType.Request | RecordType.ResourceLoad | RecordType.FileLoad | RecordType.Destruction;
