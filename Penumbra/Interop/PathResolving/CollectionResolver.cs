@@ -31,7 +31,7 @@ public unsafe class CollectionResolver
     private readonly CutsceneService _cutscenes;
 
     private readonly Configuration         _config;
-    private readonly CollectionManager _collectionManager;
+    private readonly CollectionManager     _collectionManager;
     private readonly TempCollectionManager _tempCollections;
     private readonly DrawObjectState       _drawObjectState;
 
@@ -65,9 +65,10 @@ public unsafe class CollectionResolver
              ?? _collectionManager.Default;
 
         var player = _actors.AwaitedService.GetCurrentPlayer();
+        var _      = false;
         return CollectionByIdentifier(player)
          ?? CheckYourself(player, gameObject)
-         ?? CollectionByAttributes(gameObject)
+         ?? CollectionByAttributes(gameObject, ref _)
          ?? _collectionManager.Default;
     }
 
@@ -135,10 +136,11 @@ public unsafe class CollectionResolver
             return false;
         }
 
-        var collection2 = _collectionManager.ByType(CollectionType.Yourself)
-         ?? CollectionByAttributes(gameObject)
+        var notYetReady = false;
+        var collection = _collectionManager.ByType(CollectionType.Yourself)
+         ?? CollectionByAttributes(gameObject, ref notYetReady)
          ?? _collectionManager.Default;
-        ret = _cache.Set(collection2, ActorIdentifier.Invalid, gameObject);
+        ret = notYetReady ? collection.ToResolveData(gameObject) : _cache.Set(collection, ActorIdentifier.Invalid, gameObject);
         return true;
     }
 
@@ -151,12 +153,13 @@ public unsafe class CollectionResolver
             return false;
         }
 
-        var player = _actors.AwaitedService.GetCurrentPlayer();
-        var collection2 = (player.IsValid ? CollectionByIdentifier(player) : null)
+        var player      = _actors.AwaitedService.GetCurrentPlayer();
+        var notYetReady = false;
+        var collection = (player.IsValid ? CollectionByIdentifier(player) : null)
          ?? _collectionManager.ByType(CollectionType.Yourself)
-         ?? CollectionByAttributes(gameObject)
+         ?? CollectionByAttributes(gameObject, ref notYetReady)
          ?? _collectionManager.Default;
-        ret = _cache.Set(collection2, ActorIdentifier.Invalid, gameObject);
+        ret = notYetReady ? collection.ToResolveData(gameObject) : _cache.Set(collection, ActorIdentifier.Invalid, gameObject);
         return true;
     }
 
@@ -174,13 +177,14 @@ public unsafe class CollectionResolver
                 return _cache.Set(ModCollection.Empty, identifier, gameObject);
         }
 
+        var notYetReady = false;
         var collection = CollectionByIdentifier(identifier)
          ?? CheckYourself(identifier, gameObject)
-         ?? CollectionByAttributes(gameObject)
-         ?? CheckOwnedCollection(identifier, owner)
+         ?? CollectionByAttributes(gameObject, ref notYetReady)
+         ?? CheckOwnedCollection(identifier, owner, ref notYetReady)
          ?? _collectionManager.Default;
 
-        return _cache.Set(collection, identifier, gameObject);
+        return notYetReady ? collection.ToResolveData(gameObject) : _cache.Set(collection, identifier, gameObject);
     }
 
     /// <summary> Check both temporary and permanent character collections. Temporary first. </summary>
@@ -201,8 +205,8 @@ public unsafe class CollectionResolver
         return null;
     }
 
-    /// <summary> Check special collections given the actor. </summary>
-    private ModCollection? CollectionByAttributes(GameObject* actor)
+    /// <summary> Check special collections given the actor. Returns notYetReady if the customize array is not filled. </summary>
+    private ModCollection? CollectionByAttributes(GameObject* actor, ref bool notYetReady)
     {
         if (!actor->IsCharacter())
             return null;
@@ -211,6 +215,12 @@ public unsafe class CollectionResolver
         var character = (Character*)actor;
         if (!IsModelHuman((uint)character->ModelCharaId))
             return null;
+
+        if (character->CustomizeData[0] == 0)
+        {
+            notYetReady = true;
+            return null;
+        }
 
         var bodyType = character->CustomizeData[2];
         var collection = bodyType switch
@@ -233,7 +243,7 @@ public unsafe class CollectionResolver
     }
 
     /// <summary> Get the collection applying to the owner if it is available. </summary>
-    private ModCollection? CheckOwnedCollection(ActorIdentifier identifier, GameObject* owner)
+    private ModCollection? CheckOwnedCollection(ActorIdentifier identifier, GameObject* owner, ref bool notYetReady)
     {
         if (identifier.Type != IdentifierType.Owned || !_config.UseOwnerNameForCharacterCollection || owner == null)
             return null;
@@ -242,7 +252,7 @@ public unsafe class CollectionResolver
             ObjectKind.None,
             uint.MaxValue);
         return CheckYourself(id, owner)
-         ?? CollectionByAttributes(owner);
+         ?? CollectionByAttributes(owner, ref notYetReady);
     }
 
     /// <summary>
