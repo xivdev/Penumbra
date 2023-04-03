@@ -58,7 +58,7 @@ public sealed partial class CollectionManager : ISavable
             CollectionType.Default => Default,
             CollectionType.Interface => Interface,
             CollectionType.Current => Current,
-            CollectionType.Individual => identifier.IsValid && Individuals.Individuals.TryGetValue(identifier, out var c) ? c : null,
+            CollectionType.Individual => identifier.IsValid && Individuals.TryGetValue(identifier, out var c) ? c : null,
             _ => null,
         };
     }

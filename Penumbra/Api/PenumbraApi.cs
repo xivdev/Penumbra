@@ -459,7 +459,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!id.IsValid)
             return (false, false, _collectionManager.Default.Name);
 
-        if (_collectionManager.Individuals.Individuals.TryGetValue(id, out var collection))
+        if (_collectionManager.Individuals.TryGetValue(id, out var collection))
             return (true, true, collection.Name);
 
         AssociatedCollection(gameObjectIdx, out collection);
@@ -474,7 +474,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!id.IsValid)
             return (PenumbraApiEc.InvalidIdentifier, _collectionManager.Default.Name);
 
-        var oldCollection = _collectionManager.Individuals.Individuals.TryGetValue(id, out var c) ? c.Name : string.Empty;
+        var oldCollection = _collectionManager.Individuals.TryGetValue(id, out var c) ? c.Name : string.Empty;
 
         if (collectionName.Length == 0)
         {
@@ -809,8 +809,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!identifier.IsValid)
             return (PenumbraApiEc.InvalidArgument, string.Empty);
 
-        if (!forceOverwriteCharacter && _collectionManager.Individuals.Individuals.ContainsKey(identifier)
-         || _tempCollections.Collections.Individuals.ContainsKey(identifier))
+        if (!forceOverwriteCharacter && _collectionManager.Individuals.ContainsKey(identifier)
+         || _tempCollections.Collections.ContainsKey(identifier))
             return (PenumbraApiEc.CharacterCollectionExists, string.Empty);
 
         var name = $"{tag}_{character}";
@@ -855,11 +855,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         if (forceAssignment)
         {
-            if (_tempCollections.Collections.Individuals.ContainsKey(identifier) && !_tempCollections.Collections.Delete(identifier))
+            if (_tempCollections.Collections.ContainsKey(identifier) && !_tempCollections.Collections.Delete(identifier))
                 return PenumbraApiEc.AssignmentDeletionFailed;
         }
-        else if (_tempCollections.Collections.Individuals.ContainsKey(identifier)
-              || _collectionManager.Individuals.Individuals.ContainsKey(identifier))
+        else if (_tempCollections.Collections.ContainsKey(identifier)
+              || _collectionManager.Individuals.ContainsKey(identifier))
         {
             return PenumbraApiEc.CharacterCollectionExists;
         }

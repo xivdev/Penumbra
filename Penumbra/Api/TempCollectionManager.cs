@@ -114,6 +114,6 @@ public class TempCollectionManager : IDisposable
             return false;
 
         var identifier = Penumbra.Actors.CreatePlayer(byteString, worldId);
-        return Collections.Individuals.TryGetValue(identifier, out var collection) && RemoveTemporaryCollection(collection.Name);
+        return Collections.TryGetValue(identifier, out var collection) && RemoveTemporaryCollection(collection.Name);
     }
 }
