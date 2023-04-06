@@ -14,6 +14,7 @@ using OtterGui.FileSystem.Selector;
 using OtterGui.Raii;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Import;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
@@ -79,25 +80,25 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         // @formatter:on
         SetFilterTooltip();
 
-        SelectionChanged                              += OnSelectionChange;
-        _communicator.CollectionChange.Event          += OnCollectionChange;
-        _collectionManager.Current.ModSettingChanged  += OnSettingChange;
-        _collectionManager.Current.InheritanceChanged += OnInheritanceChange;
-        _communicator.ModDataChanged.Event            += OnModDataChange;
-        _communicator.ModDiscoveryStarted.Event       += StoreCurrentSelection;
-        _communicator.ModDiscoveryFinished.Event      += RestoreLastSelection;
-        OnCollectionChange(CollectionType.Current, null, _collectionManager.Current, "");
+        SelectionChanged += OnSelectionChange;
+        _communicator.CollectionChange.Subscribe(OnCollectionChange);
+        _collectionManager.Active.Current.ModSettingChanged  += OnSettingChange;
+        _collectionManager.Active.Current.InheritanceChanged += OnInheritanceChange;
+        _communicator.ModDataChanged.Subscribe(OnModDataChange);
+        _communicator.ModDiscoveryStarted.Subscribe(StoreCurrentSelection);
+        _communicator.ModDiscoveryFinished.Subscribe(RestoreLastSelection);
+        OnCollectionChange(CollectionType.Current, null, _collectionManager.Active.Current, "");
     }
 
     public override void Dispose()
     {
         base.Dispose();
-        _communicator.ModDiscoveryStarted.Event       -= StoreCurrentSelection;
-        _communicator.ModDiscoveryFinished.Event      -= RestoreLastSelection;
-        _communicator.ModDataChanged.Event            -= OnModDataChange;
-        _collectionManager.Current.ModSettingChanged  -= OnSettingChange;
-        _collectionManager.Current.InheritanceChanged -= OnInheritanceChange;
-        _communicator.CollectionChange.Event          -= OnCollectionChange;
+        _communicator.ModDiscoveryStarted.Unsubscribe(StoreCurrentSelection);
+        _communicator.ModDiscoveryFinished.Unsubscribe(RestoreLastSelection);
+        _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
+        _collectionManager.Active.Current.ModSettingChanged  -= OnSettingChange;
+        _collectionManager.Active.Current.InheritanceChanged -= OnInheritanceChange;
+        _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
         _import?.Dispose();
         _import = null;
     }
@@ -344,9 +345,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         });
 
         if (inherit)
-            _collectionManager.Current.SetMultipleModInheritances(mods, enabled);
+            _collectionManager.Active.Current.SetMultipleModInheritances(mods, enabled);
         else
-            _collectionManager.Current.SetMultipleModStates(mods, enabled);
+            _collectionManager.Active.Current.SetMultipleModStates(mods, enabled);
     }
 
     /// <summary>
@@ -495,7 +496,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         }
         else
         {
-            (var settings, SelectedSettingCollection) = _collectionManager.Current[newSelection.Index];
+            (var settings, SelectedSettingCollection) = _collectionManager.Active.Current[newSelection.Index];
             SelectedSettings                          = settings ?? ModSettings.Empty;
         }
     }
@@ -628,11 +629,11 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
             return ColorId.UndefinedMod;
 
         if (!settings.Enabled)
-            return collection != _collectionManager.Current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod;
+            return collection != _collectionManager.Active.Current ? ColorId.InheritedDisabledMod : ColorId.DisabledMod;
 
-        var conflicts = _collectionManager.Current.Conflicts(mod);
+        var conflicts = _collectionManager.Active.Current.Conflicts(mod);
         if (conflicts.Count == 0)
-            return collection != _collectionManager.Current ? ColorId.InheritedMod : ColorId.EnabledMod;
+            return collection != _collectionManager.Active.Current ? ColorId.InheritedMod : ColorId.EnabledMod;
 
         return conflicts.Any(c => !c.Solved)
             ? ColorId.ConflictingMod
@@ -657,7 +658,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
             return true;
 
         // Handle Inheritance
-        if (collection == _collectionManager.Current)
+        if (collection == _collectionManager.Active.Current)
         {
             if (!_stateFilter.HasFlag(ModFilter.Uninherited))
                 return true;
@@ -680,7 +681,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         }
         else if (!settings.Enabled)
         {
-            state.Color = collection == _collectionManager.Current ? ColorId.DisabledMod : ColorId.InheritedDisabledMod;
+            state.Color = collection == _collectionManager.Active.Current ? ColorId.DisabledMod : ColorId.InheritedDisabledMod;
             if (!_stateFilter.HasFlag(ModFilter.Disabled)
              || !_stateFilter.HasFlag(ModFilter.NoConflict))
                 return true;
@@ -691,7 +692,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
                 return true;
 
             // Conflicts can only be relevant if the mod is enabled.
-            var conflicts = _collectionManager.Current.Conflicts(mod);
+            var conflicts = _collectionManager.Active.Current.Conflicts(mod);
             if (conflicts.Count > 0)
             {
                 if (conflicts.Any(c => !c.Solved))
@@ -727,7 +728,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     {
         state = new ModState { Color = ColorId.EnabledMod };
         var mod = leaf.Value;
-        var (settings, collection) = _collectionManager.Current[mod.Index];
+        var (settings, collection) = _collectionManager.Active.Current[mod.Index];
 
         if (ApplyStringFilters(leaf, mod))
             return true;

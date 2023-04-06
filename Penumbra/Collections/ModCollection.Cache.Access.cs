@@ -40,7 +40,7 @@ public partial class ModCollection
 
     // Force an update with metadata for this cache.
     internal void ForceCacheUpdate()
-        => CalculateEffectiveFileList(this == Penumbra.CollectionManager.Default);
+        => CalculateEffectiveFileList(this == Penumbra.CollectionManager.Active.Default);
 
     // Handle temporary mods for this collection.
     public void Apply(TemporaryMod tempMod, bool created)

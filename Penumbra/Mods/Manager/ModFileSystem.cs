@@ -5,10 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using OtterGui.Filesystem;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Util;
 
-namespace Penumbra.Mods.Manager;
+namespace Penumbra.Mods;
 
 public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
 {
@@ -23,17 +24,17 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
         _communicator = communicator;
         _files        = files;
         Reload();
-        Changed                                  += OnChange;
-        _communicator.ModDiscoveryFinished.Event += Reload;
-        _communicator.ModDataChanged.Event       += OnDataChange;
-        _communicator.ModPathChanged.Event       += OnModPathChange;
+        Changed += OnChange;
+        _communicator.ModDiscoveryFinished.Subscribe(Reload);
+        _communicator.ModDataChanged.Subscribe(OnDataChange);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange);
     }
 
     public void Dispose()
     {
-        _communicator.ModPathChanged.Event       -= OnModPathChange;
-        _communicator.ModDiscoveryFinished.Event -= Reload;
-        _communicator.ModDataChanged.Event       -= OnDataChange;
+        _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
+        _communicator.ModDiscoveryFinished.Unsubscribe(Reload);
+        _communicator.ModDataChanged.Unsubscribe(OnDataChange);
     }
 
     public struct ImportDate : ISortMode<Mod>

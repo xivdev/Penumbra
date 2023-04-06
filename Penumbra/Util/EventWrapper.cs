@@ -4,31 +4,13 @@ using System.Linq;
 
 namespace Penumbra.Util;
 
-public readonly struct EventWrapper : IDisposable
+public abstract class EventWrapper<T> : IDisposable where T : Delegate
 {
-    private readonly string       _name;
-    private readonly List<Action> _event = new();
+    private readonly string                                  _name;
+    private readonly List<(object Subscriber, int Priority)> _event = new();
 
-    public EventWrapper(string name)
+    protected EventWrapper(string name)
         => _name = name;
-
-    public void Invoke()
-    {
-        lock (_event)
-        {
-            foreach (var action in _event)
-            {
-                try
-                {
-                    action.Invoke();
-                }
-                catch (Exception ex)
-                {
-                    Penumbra.Log.Error($"[{_name}] Exception thrown during invocation:\n{ex}");
-                }
-            }
-        }
-    }
 
     public void Dispose()
     {
@@ -38,345 +20,165 @@ public readonly struct EventWrapper : IDisposable
         }
     }
 
-    public event Action Event
-    {
-        add
-        {
-            lock (_event)
-            {
-                if (_event.All(a => a != value))
-                    _event.Add(value);
-            }
-        }
-        remove
-        {
-            lock (_event)
-            {
-                _event.Remove(value);
-            }
-        }
-    }
-}
-
-public readonly struct EventWrapper<T1> : IDisposable
-{
-    private readonly string           _name;
-    private readonly List<Action<T1>> _event = new();
-
-    public EventWrapper(string name)
-        => _name = name;
-
-    public void Invoke(T1 arg1)
+    public void Subscribe(T subscriber, int priority = 0)
     {
         lock (_event)
         {
-            foreach (var action in _event)
+            var existingIdx = _event.FindIndex(p => (T) p.Subscriber == subscriber);
+            var idx         = _event.FindIndex(p => p.Priority > priority);
+            if (idx == existingIdx)
+            {
+                if (idx < 0)
+                    _event.Add((subscriber, priority));
+                else
+                    _event[idx] = (subscriber, priority);
+            }
+            else
+            {
+                if (idx < 0)
+                    _event.Add((subscriber, priority));
+                else
+                    _event.Insert(idx, (subscriber, priority));
+
+                if (existingIdx >= 0)
+                    _event.RemoveAt(existingIdx < idx ? existingIdx : existingIdx + 1);
+            }
+        }
+    }
+
+    public void Unsubscribe(T subscriber)
+    {
+        lock (_event)
+        {
+            var idx = _event.FindIndex(p => (T) p.Subscriber == subscriber);
+            if (idx >= 0)
+                _event.RemoveAt(idx);
+        }
+    }
+
+
+    protected static void Invoke(EventWrapper<T> wrapper)
+    {
+        lock (wrapper._event)
+        {
+            foreach (var (action, _) in wrapper._event.AsEnumerable().Reverse())
             {
                 try
                 {
-                    action.Invoke(arg1);
+                    ((Action)action).Invoke();
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Log.Error($"[{_name}] Exception thrown during invocation:\n{ex}");
+                    Penumbra.Log.Error($"[{wrapper._name}] Exception thrown during invocation:\n{ex}");
                 }
             }
         }
     }
 
-    public void Dispose()
+    protected static void Invoke<T1>(EventWrapper<T> wrapper, T1 a)
     {
-        lock (_event)
+        lock (wrapper._event)
         {
-            _event.Clear();
-        }
-    }
-
-    public event Action<T1> Event
-    {
-        add
-        {
-            lock (_event)
-            {
-                if (_event.All(a => a != value))
-                    _event.Add(value);
-            }
-        }
-        remove
-        {
-            lock (_event)
-            {
-                _event.Remove(value);
-            }
-        }
-    }
-}
-
-public readonly struct EventWrapper<T1, T2> : IDisposable
-{
-    private readonly string               _name;
-    private readonly List<Action<T1, T2>> _event = new();
-
-    public EventWrapper(string name)
-        => _name = name;
-
-    public void Invoke(T1 arg1, T2 arg2)
-    {
-        lock (_event)
-        {
-            foreach (var action in _event)
+            foreach (var (action, _) in wrapper._event.AsEnumerable().Reverse())
             {
                 try
                 {
-                    action.Invoke(arg1, arg2);
+                    ((Action<T1>)action).Invoke(a);
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Log.Error($"[{_name}] Exception thrown during invocation:\n{ex}");
+                    Penumbra.Log.Error($"[{wrapper._name}] Exception thrown during invocation:\n{ex}");
                 }
             }
         }
     }
 
-    public void Dispose()
+    protected static void Invoke<T1, T2>(EventWrapper<T> wrapper, T1 a, T2 b)
     {
-        lock (_event)
+        lock (wrapper._event)
         {
-            _event.Clear();
-        }
-    }
-
-    public event Action<T1, T2> Event
-    {
-        add
-        {
-            lock (_event)
-            {
-                if (_event.All(a => a != value))
-                    _event.Add(value);
-            }
-        }
-        remove
-        {
-            lock (_event)
-            {
-                _event.Remove(value);
-            }
-        }
-    }
-}
-
-public readonly struct EventWrapper<T1, T2, T3> : IDisposable
-{
-    private readonly string                   _name;
-    private readonly List<Action<T1, T2, T3>> _event = new();
-
-    public EventWrapper(string name)
-        => _name = name;
-
-    public void Invoke(T1 arg1, T2 arg2, T3 arg3)
-    {
-        lock (_event)
-        {
-            foreach (var action in _event)
+            foreach (var (action, _) in wrapper._event.AsEnumerable().Reverse())
             {
                 try
                 {
-                    action.Invoke(arg1, arg2, arg3);
+                    ((Action<T1, T2>)action).Invoke(a, b);
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Log.Error($"[{_name}] Exception thrown during invocation:\n{ex}");
+                    Penumbra.Log.Error($"[{wrapper._name}] Exception thrown during invocation:\n{ex}");
                 }
             }
         }
     }
 
-    public void Dispose()
+    protected static void Invoke<T1, T2, T3>(EventWrapper<T> wrapper, T1 a, T2 b, T3 c)
     {
-        lock (_event)
+        lock (wrapper._event)
         {
-            _event.Clear();
-        }
-    }
-
-    public event Action<T1, T2, T3> Event
-    {
-        add
-        {
-            lock (_event)
-            {
-                if (_event.All(a => a != value))
-                    _event.Add(value);
-            }
-        }
-        remove
-        {
-            lock (_event)
-            {
-                _event.Remove(value);
-            }
-        }
-    }
-}
-
-public readonly struct EventWrapper<T1, T2, T3, T4> : IDisposable
-{
-    private readonly string                       _name;
-    private readonly List<Action<T1, T2, T3, T4>> _event = new();
-
-    public EventWrapper(string name)
-        => _name = name;
-
-    public void Invoke(T1 arg1, T2 arg2, T3 arg3, T4 arg4)
-    {
-        lock (_event)
-        {
-            foreach (var action in _event)
+            foreach (var (action, _) in wrapper._event.AsEnumerable().Reverse())
             {
                 try
                 {
-                    action.Invoke(arg1, arg2, arg3, arg4);
+                    ((Action<T1, T2, T3>)action).Invoke(a, b, c);
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Log.Error($"[{_name}] Exception thrown during invocation:\n{ex}");
+                    Penumbra.Log.Error($"[{wrapper._name}] Exception thrown during invocation:\n{ex}");
                 }
             }
         }
     }
 
-    public void Dispose()
+    protected static void Invoke<T1, T2, T3, T4>(EventWrapper<T> wrapper, T1 a, T2 b, T3 c, T4 d)
     {
-        lock (_event)
+        lock (wrapper._event)
         {
-            _event.Clear();
-        }
-    }
-
-    public event Action<T1, T2, T3, T4> Event
-    {
-        add
-        {
-            lock (_event)
-            {
-                if (_event.All(a => a != value))
-                    _event.Add(value);
-            }
-        }
-        remove
-        {
-            lock (_event)
-            {
-                _event.Remove(value);
-            }
-        }
-    }
-}
-
-public readonly struct EventWrapper<T1, T2, T3, T4, T5> : IDisposable
-{
-    private readonly string                           _name;
-    private readonly List<Action<T1, T2, T3, T4, T5>> _event = new();
-
-    public EventWrapper(string name)
-        => _name = name;
-
-    public void Invoke(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5)
-    {
-        lock (_event)
-        {
-            foreach (var action in _event)
+            foreach (var (action, _) in wrapper._event.AsEnumerable().Reverse())
             {
                 try
                 {
-                    action.Invoke(arg1, arg2, arg3, arg4, arg5);
+                    ((Action<T1, T2, T3, T4>)action).Invoke(a, b, c, d);
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Log.Error($"[{_name}] Exception thrown during invocation:\n{ex}");
+                    Penumbra.Log.Error($"[{wrapper._name}] Exception thrown during invocation:\n{ex}");
                 }
             }
         }
     }
 
-    public void Dispose()
+    protected static void Invoke<T1, T2, T3, T4, T5>(EventWrapper<T> wrapper, T1 a, T2 b, T3 c, T4 d, T5 e)
     {
-        lock (_event)
+        lock (wrapper._event)
         {
-            _event.Clear();
-        }
-    }
-
-    public event Action<T1, T2, T3, T4, T5> Event
-    {
-        add
-        {
-            lock (_event)
-            {
-                if (_event.All(a => a != value))
-                    _event.Add(value);
-            }
-        }
-        remove
-        {
-            lock (_event)
-            {
-                _event.Remove(value);
-            }
-        }
-    }
-}
-
-public readonly struct EventWrapper<T1, T2, T3, T4, T5, T6> : IDisposable
-{
-    private readonly string                               _name;
-    private readonly List<Action<T1, T2, T3, T4, T5, T6>> _event = new();
-
-    public EventWrapper(string name)
-        => _name = name;
-
-    public void Invoke(T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6)
-    {
-        lock (_event)
-        {
-            foreach (var action in _event)
+            foreach (var (action, _) in wrapper._event.AsEnumerable().Reverse())
             {
                 try
                 {
-                    action.Invoke(arg1, arg2, arg3, arg4, arg5, arg6);
+                    ((Action<T1, T2, T3, T4, T5>)action).Invoke(a, b, c, d, e);
                 }
                 catch (Exception ex)
                 {
-                    Penumbra.Log.Error($"[{_name}] Exception thrown during invocation:\n{ex}");
+                    Penumbra.Log.Error($"[{wrapper._name}] Exception thrown during invocation:\n{ex}");
                 }
             }
         }
     }
 
-    public void Dispose()
+    protected static void Invoke<T1, T2, T3, T4, T5, T6>(EventWrapper<T> wrapper, T1 a, T2 b, T3 c, T4 d, T5 e, T6 f)
     {
-        lock (_event)
+        lock (wrapper._event)
         {
-            _event.Clear();
-        }
-    }
-
-    public event Action<T1, T2, T3, T4, T5, T6> Event
-    {
-        add
-        {
-            lock (_event)
+            foreach (var (action, _) in wrapper._event.AsEnumerable().Reverse())
             {
-                if (_event.All(a => a != value))
-                    _event.Add(value);
-            }
-        }
-        remove
-        {
-            lock (_event)
-            {
-                _event.Remove(value);
+                try
+                {
+                    ((Action<T1, T2, T3, T4, T5, T6>)action).Invoke(a, b, c, d, e, f);
+                }
+                catch (Exception ex)
+                {
+                    Penumbra.Log.Error($"[{wrapper._name}] Exception thrown during invocation:\n{ex}");
+                }
             }
         }
     }

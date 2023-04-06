@@ -153,7 +153,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
                 : 0;
         }
 
-        if( Penumbra.CollectionManager.Default == _collection )
+        if( Penumbra.CollectionManager.Active.Default == _collection )
         {
             SetFiles();
             Penumbra.ResidentResources.Reload();

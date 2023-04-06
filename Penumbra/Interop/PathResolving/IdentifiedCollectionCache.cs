@@ -5,6 +5,7 @@ using Dalamud.Game.ClientState;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
@@ -25,7 +26,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
         _communicator = communicator;
         _events       = events;
 
-        _communicator.CollectionChange.Event += CollectionChangeClear;
+        _communicator.CollectionChange.Subscribe(CollectionChangeClear);
         _clientState.TerritoryChanged        += TerritoryClear;
         _events.CharacterDestructor          += OnCharacterDestruct;
     }
@@ -61,7 +62,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
 
     public void Dispose()
     {
-        _communicator.CollectionChange.Event -= CollectionChangeClear;
+        _communicator.CollectionChange.Unsubscribe(CollectionChangeClear);
         _clientState.TerritoryChanged        -= TerritoryClear;
         _events.CharacterDestructor          -= OnCharacterDestruct;
     }

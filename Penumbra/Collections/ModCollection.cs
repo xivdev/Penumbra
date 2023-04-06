@@ -16,7 +16,7 @@ namespace Penumbra.Collections;
 public partial class ModCollection
 {
     public const int    CurrentVersion    = 1;
-    public const string DefaultCollection = "Default";
+    public const string DefaultCollectionName = "Default";
     public const string EmptyCollection   = "None";
 
     public static readonly ModCollection Empty = CreateEmpty();
@@ -99,11 +99,6 @@ public partial class ModCollection
     // Duplicate the calling collection to a new, unique collection of a given name.
     public ModCollection Duplicate(string name)
         => new(name, this);
-
-    // Check if a name is valid to use for a collection.
-    // Does not check for uniqueness.
-    public static bool IsValidName(string name)
-        => name.Length > 0 && name.All(c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath());
 
     // Remove all settings for not currently-installed mods.
     public void CleanUnavailableSettings()

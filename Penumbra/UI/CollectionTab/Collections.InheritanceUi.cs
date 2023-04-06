@@ -7,6 +7,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.CollectionTab;
@@ -116,8 +117,8 @@ public class InheritanceUi
             return;
 
         _seenInheritedCollections.Clear();
-        _seenInheritedCollections.Add(_collectionManager.Current);
-        foreach (var collection in _collectionManager.Current.Inheritance.ToList())
+        _seenInheritedCollections.Add(_collectionManager.Active.Current);
+        foreach (var collection in _collectionManager.Active.Current.Inheritance.ToList())
             DrawInheritance(collection);
     }
 
@@ -135,7 +136,7 @@ public class InheritanceUi
 
         using var target = ImRaii.DragDropTarget();
         if (target.Success && ImGuiUtil.IsDropping(InheritanceDragDropLabel))
-            _inheritanceAction = (_collectionManager.Current.Inheritance.IndexOf(_movedInheritance!), -1);
+            _inheritanceAction = (_collectionManager.Active.Current.Inheritance.IndexOf(_movedInheritance!), -1);
     }
 
     /// <summary>
@@ -146,7 +147,7 @@ public class InheritanceUi
     {
         if (_newCurrentCollection != null)
         {
-            _collectionManager.SetCollection(_newCurrentCollection, CollectionType.Current);
+            _collectionManager.Active.SetCollection(_newCurrentCollection, CollectionType.Current);
             _newCurrentCollection = null;
         }
 
@@ -156,9 +157,9 @@ public class InheritanceUi
         if (_inheritanceAction.Value.Item1 >= 0)
         {
             if (_inheritanceAction.Value.Item2 == -1)
-                _collectionManager.Current.RemoveInheritance(_inheritanceAction.Value.Item1);
+                _collectionManager.Active.Current.RemoveInheritance(_inheritanceAction.Value.Item1);
             else
-                _collectionManager.Current.MoveInheritance(_inheritanceAction.Value.Item1, _inheritanceAction.Value.Item2);
+                _collectionManager.Active.Current.MoveInheritance(_inheritanceAction.Value.Item1, _inheritanceAction.Value.Item2);
         }
 
         _inheritanceAction = null;
@@ -172,7 +173,7 @@ public class InheritanceUi
     {
         DrawNewInheritanceCombo();
         ImGui.SameLine();
-        var inheritance = _collectionManager.Current.CheckValidInheritance(_newInheritance);
+        var inheritance = _collectionManager.Active.Current.CheckValidInheritance(_newInheritance);
         var tt = inheritance switch
         {
             ModCollection.ValidInheritance.Empty => "No valid collection to inherit from selected.",
@@ -184,7 +185,7 @@ public class InheritanceUi
         };
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, tt,
                 inheritance != ModCollection.ValidInheritance.Valid, true)
-         && _collectionManager.Current.AddInheritance(_newInheritance!, true))
+         && _collectionManager.Active.Current.AddInheritance(_newInheritance!, true))
             _newInheritance = null;
 
         if (inheritance != ModCollection.ValidInheritance.Valid)
@@ -232,15 +233,15 @@ public class InheritanceUi
     private void DrawNewInheritanceCombo()
     {
         ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton);
-        _newInheritance ??= _collectionManager.FirstOrDefault(c
-                => c != _collectionManager.Current && !_collectionManager.Current.Inheritance.Contains(c))
+        _newInheritance ??= _collectionManager.Storage.FirstOrDefault(c
+                => c != _collectionManager.Active.Current && !_collectionManager.Active.Current.Inheritance.Contains(c))
          ?? ModCollection.Empty;
         using var combo = ImRaii.Combo("##newInheritance", _newInheritance.Name);
         if (!combo)
             return;
 
-        foreach (var collection in _collectionManager
-                     .Where(c => _collectionManager.Current.CheckValidInheritance(c) == ModCollection.ValidInheritance.Valid)
+        foreach (var collection in _collectionManager.Storage
+                     .Where(c => _collectionManager.Active.Current.CheckValidInheritance(c) == ModCollection.ValidInheritance.Valid)
                      .OrderBy(c => c.Name))
         {
             if (ImGui.Selectable(collection.Name, _newInheritance == collection))
@@ -260,8 +261,8 @@ public class InheritanceUi
 
         if (_movedInheritance != null)
         {
-            var idx1 = _collectionManager.Current.Inheritance.IndexOf(_movedInheritance);
-            var idx2 = _collectionManager.Current.Inheritance.IndexOf(collection);
+            var idx1 = _collectionManager.Active.Current.Inheritance.IndexOf(_movedInheritance);
+            var idx2 = _collectionManager.Active.Current.Inheritance.IndexOf(collection);
             if (idx1 >= 0 && idx2 >= 0)
                 _inheritanceAction = (idx1, idx2);
         }
@@ -291,7 +292,7 @@ public class InheritanceUi
         if (ImGui.GetIO().KeyCtrl && ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
             if (withDelete && ImGui.GetIO().KeyShift)
-                _inheritanceAction = (_collectionManager.Current.Inheritance.IndexOf(collection), -1);
+                _inheritanceAction = (_collectionManager.Active.Current.Inheritance.IndexOf(collection), -1);
             else
                 _newCurrentCollection = collection;
         }

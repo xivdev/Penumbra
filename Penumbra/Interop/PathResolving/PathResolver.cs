@@ -1,8 +1,8 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using Penumbra.Api;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.Structs;
@@ -44,7 +44,7 @@ public class PathResolver : IDisposable
 
     /// <summary> Obtain a temporary or permanent collection by name. </summary>
     public bool CollectionByName(string name, [NotNullWhen(true)] out ModCollection? collection)
-        => _tempCollections.CollectionByName(name, out collection) || _collectionManager.ByName(name, out collection);
+        => _tempCollections.CollectionByName(name, out collection) || _collectionManager.Storage.ByName(name, out collection);
 
     /// <summary> Try to resolve the given game path to the replaced path. </summary>
     public (FullPath?, ResolveData) ResolvePath(Utf8GamePath path, ResourceCategory category, ResourceType resourceType)
@@ -57,8 +57,8 @@ public class PathResolver : IDisposable
         return category switch
         {
             // Only Interface collection.
-            ResourceCategory.Ui => (_collectionManager.Interface.ResolvePath(path),
-                _collectionManager.Interface.ToResolveData()),
+            ResourceCategory.Ui => (_collectionManager.Active.Interface.ResolvePath(path),
+                _collectionManager.Active.Interface.ToResolveData()),
             // Never allow changing scripts.
             ResourceCategory.UiScript   => (null, ResolveData.Invalid),
             ResourceCategory.GameScript => (null, ResolveData.Invalid),
@@ -93,7 +93,7 @@ public class PathResolver : IDisposable
          || _animationHookService.HandleFiles(type, gamePath, out resolveData)
          || _metaState.HandleDecalFile(type, gamePath, out resolveData);
         if (!nonDefault || !resolveData.Valid)
-            resolveData = _collectionManager.Default.ToResolveData();
+            resolveData = _collectionManager.Active.Default.ToResolveData();
 
         // Resolve using character/default collection first, otherwise forced, as usual.
         var resolved = resolveData.ModCollection.ResolvePath(gamePath);
@@ -115,8 +115,8 @@ public class PathResolver : IDisposable
     /// <summary> Use the default method of path replacement. </summary>
     private (FullPath?, ResolveData) DefaultResolver(Utf8GamePath path)
     {
-        var resolved = _collectionManager.Default.ResolvePath(path);
-        return (resolved, _collectionManager.Default.ToResolveData());
+        var resolved = _collectionManager.Active.Default.ResolvePath(path);
+        return (resolved, _collectionManager.Active.Default.ToResolveData());
     }
 
     /// <summary> After loading an IMC file, replace its contents with the modded IMC file. </summary>

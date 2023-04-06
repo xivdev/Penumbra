@@ -24,7 +24,7 @@ public class FileDialogService : IDisposable
     {
         _communicator                           =  communicator;
         _manager                                =  SetupFileManager(config.ModDirectory);
-        _communicator.ModDirectoryChanged.Event += OnModDirectoryChange;
+        _communicator.ModDirectoryChanged.Subscribe(OnModDirectoryChange);
     }
 
     public void OpenFilePicker(string title, string filters, Action<bool, List<string>> callback, int selectionCountMax, string? startPath,
@@ -71,7 +71,7 @@ public class FileDialogService : IDisposable
     {
         _startPaths.Clear();
         _manager.Reset();
-        _communicator.ModDirectoryChanged.Event -= OnModDirectoryChange;
+        _communicator.ModDirectoryChanged.Unsubscribe(OnModDirectoryChange);
     }
 
     private string? GetStartPath(string title, string? startPath, bool forceStartPath)

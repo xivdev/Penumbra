@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
 using SixLabors.ImageSharp;
@@ -25,8 +26,8 @@ public class ConfigMigrationService
     private Configuration _config = null!;
     private JObject _data = null!;
 
-    public string CurrentCollection = ModCollection.DefaultCollection;
-    public string DefaultCollection = ModCollection.DefaultCollection;
+    public string CurrentCollection = ModCollection.DefaultCollectionName;
+    public string DefaultCollection = ModCollection.DefaultCollectionName;
     public string ForcedCollection = string.Empty;
     public Dictionary<string, string> CharacterCollections = new();
     public Dictionary<string, string> ModSortOrder = new();
@@ -87,7 +88,7 @@ public class ConfigMigrationService
         if (_config.Version != 6)
             return;
 
-        CollectionManager.MigrateUngenderedCollections(_fileNames);
+        ActiveCollectionMigration.MigrateUngenderedCollections(_fileNames);
         _config.Version = 7;
     }
 
@@ -257,11 +258,11 @@ public class ConfigMigrationService
             using var j = new JsonTextWriter(writer);
             j.Formatting = Formatting.Indented;
             j.WriteStartObject();
-            j.WritePropertyName(nameof(CollectionManager.Default));
+            j.WritePropertyName(nameof(ActiveCollections.Default));
             j.WriteValue(def);
-            j.WritePropertyName(nameof(CollectionManager.Interface));
+            j.WritePropertyName(nameof(ActiveCollections.Interface));
             j.WriteValue(ui);
-            j.WritePropertyName(nameof(CollectionManager.Current));
+            j.WritePropertyName(nameof(ActiveCollections.Current));
             j.WriteValue(current);
             foreach (var (type, collection) in special)
             {
@@ -305,7 +306,7 @@ public class ConfigMigrationService
         if (!collectionJson.Exists)
             return;
 
-        var defaultCollection = ModCollection.CreateNewEmpty(ModCollection.DefaultCollection);
+        var defaultCollection = ModCollection.CreateNewEmpty(ModCollection.DefaultCollectionName);
         var defaultCollectionFile = new FileInfo(_fileNames.CollectionFile(defaultCollection));
         if (defaultCollectionFile.Exists)
             return;
@@ -338,7 +339,7 @@ public class ConfigMigrationService
             if (!InvertModListOrder)
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
-            defaultCollection = ModCollection.MigrateFromV0(ModCollection.DefaultCollection, dict);
+            defaultCollection = ModCollection.MigrateFromV0(ModCollection.DefaultCollectionName, dict);
             Penumbra.SaveService.ImmediateSave(defaultCollection);
         }
         catch (Exception e)

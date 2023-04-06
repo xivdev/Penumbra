@@ -26,10 +26,10 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
         _identifier = identifier;
         _modManager = modManager;
 
-        _communicator.ModOptionChanged.Event += OnModOptionChange;
-        _communicator.ModPathChanged.Event += OnModPathChange;
-        _communicator.ModDataChanged.Event += OnModDataChange;
-        _communicator.ModDiscoveryFinished.Event += OnModDiscoveryFinished;
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange);
+        _communicator.ModDataChanged.Subscribe(OnModDataChange);
+        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished);
         if (!identifier.Valid)
             identifier.FinishedCreation += OnIdentifierCreation;
         OnModDiscoveryFinished();
@@ -51,10 +51,10 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 
     public void Dispose()
     {
-        _communicator.ModOptionChanged.Event -= OnModOptionChange;
-        _communicator.ModPathChanged.Event -= OnModPathChange;
-        _communicator.ModDataChanged.Event -= OnModDataChange;
-        _communicator.ModDiscoveryFinished.Event -= OnModDiscoveryFinished;
+        _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
+        _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
+        _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
+        _communicator.ModDiscoveryFinished.Unsubscribe(OnModDiscoveryFinished);
     }
 
     /// <summary> Compute the items changed by a given meta manipulation and put them into the changedItems dictionary. </summary>

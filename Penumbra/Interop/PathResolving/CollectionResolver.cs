@@ -7,8 +7,8 @@ using Dalamud.Game.Gui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
-using Penumbra.Api;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Services;
@@ -61,15 +61,15 @@ public unsafe class CollectionResolver
         using var performance = _performance.Measure(PerformanceType.IdentifyCollection);
         var       gameObject  = (GameObject*)(_clientState.LocalPlayer?.Address ?? nint.Zero);
         if (gameObject == null)
-            return _collectionManager.ByType(CollectionType.Yourself)
-             ?? _collectionManager.Default;
+            return _collectionManager.Active.ByType(CollectionType.Yourself)
+             ?? _collectionManager.Active.Default;
 
         var player = _actors.AwaitedService.GetCurrentPlayer();
         var _      = false;
         return CollectionByIdentifier(player)
          ?? CheckYourself(player, gameObject)
          ?? CollectionByAttributes(gameObject, ref _)
-         ?? _collectionManager.Default;
+         ?? _collectionManager.Active.Default;
     }
 
     /// <summary> Identify the correct collection for a game object. </summary>
@@ -78,7 +78,7 @@ public unsafe class CollectionResolver
         using var t = _performance.Measure(PerformanceType.IdentifyCollection);
 
         if (gameObject == null)
-            return _collectionManager.Default.ToResolveData();
+            return _collectionManager.Active.Default.ToResolveData();
 
         try
         {
@@ -96,7 +96,7 @@ public unsafe class CollectionResolver
         catch (Exception ex)
         {
             Penumbra.Log.Error($"Error identifying collection:\n{ex}");
-            return _collectionManager.Default.ToResolveData(gameObject);
+            return _collectionManager.Active.Default.ToResolveData(gameObject);
         }
     }
 
@@ -137,9 +137,9 @@ public unsafe class CollectionResolver
         }
 
         var notYetReady = false;
-        var collection = _collectionManager.ByType(CollectionType.Yourself)
+        var collection = _collectionManager.Active.ByType(CollectionType.Yourself)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
-         ?? _collectionManager.Default;
+         ?? _collectionManager.Active.Default;
         ret = notYetReady ? collection.ToResolveData(gameObject) : _cache.Set(collection, ActorIdentifier.Invalid, gameObject);
         return true;
     }
@@ -156,9 +156,9 @@ public unsafe class CollectionResolver
         var player      = _actors.AwaitedService.GetCurrentPlayer();
         var notYetReady = false;
         var collection = (player.IsValid ? CollectionByIdentifier(player) : null)
-         ?? _collectionManager.ByType(CollectionType.Yourself)
+         ?? _collectionManager.Active.ByType(CollectionType.Yourself)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
-         ?? _collectionManager.Default;
+         ?? _collectionManager.Active.Default;
         ret = notYetReady ? collection.ToResolveData(gameObject) : _cache.Set(collection, ActorIdentifier.Invalid, gameObject);
         return true;
     }
@@ -172,7 +172,7 @@ public unsafe class CollectionResolver
         var identifier = _actors.AwaitedService.FromObject(gameObject, out var owner, true, false, false);
         if (identifier.Type is IdentifierType.Special)
         {
-            (identifier, var type) = _collectionManager.Individuals.ConvertSpecialIdentifier(identifier);
+            (identifier, var type) = _collectionManager.Active.Individuals.ConvertSpecialIdentifier(identifier);
             if (_config.UseNoModsInInspect && type == IndividualCollections.SpecialResult.Inspect)
                 return _cache.Set(ModCollection.Empty, identifier, gameObject);
         }
@@ -182,7 +182,7 @@ public unsafe class CollectionResolver
          ?? CheckYourself(identifier, gameObject)
          ?? CollectionByAttributes(gameObject, ref notYetReady)
          ?? CheckOwnedCollection(identifier, owner, ref notYetReady)
-         ?? _collectionManager.Default;
+         ?? _collectionManager.Active.Default;
 
         return notYetReady ? collection.ToResolveData(gameObject) : _cache.Set(collection, identifier, gameObject);
     }
@@ -190,7 +190,7 @@ public unsafe class CollectionResolver
     /// <summary> Check both temporary and permanent character collections. Temporary first. </summary>
     private ModCollection? CollectionByIdentifier(ActorIdentifier identifier)
         => _tempCollections.Collections.TryGetCollection(identifier, out var collection)
-         || _collectionManager.Individuals.TryGetCollection(identifier, out collection)
+         || _collectionManager.Active.Individuals.TryGetCollection(identifier, out collection)
                 ? collection
                 : null;
 
@@ -200,7 +200,7 @@ public unsafe class CollectionResolver
         if (actor->ObjectIndex == 0
          || _cutscenes.GetParentIndex(actor->ObjectIndex) == 0
          || identifier.Equals(_actors.AwaitedService.GetCurrentPlayer()))
-            return _collectionManager.ByType(CollectionType.Yourself);
+            return _collectionManager.Active.ByType(CollectionType.Yourself);
 
         return null;
     }
@@ -225,8 +225,8 @@ public unsafe class CollectionResolver
         var bodyType = character->CustomizeData[2];
         var collection = bodyType switch
         {
-            3 => _collectionManager.ByType(CollectionType.NonPlayerElderly),
-            4 => _collectionManager.ByType(CollectionType.NonPlayerChild),
+            3 => _collectionManager.Active.ByType(CollectionType.NonPlayerElderly),
+            4 => _collectionManager.Active.ByType(CollectionType.NonPlayerChild),
             _ => null,
         };
         if (collection != null)
@@ -237,8 +237,8 @@ public unsafe class CollectionResolver
         var isNpc  = actor->ObjectKind != (byte)ObjectKind.Player;
 
         var type = CollectionTypeExtensions.FromParts(race, gender, isNpc);
-        collection =   _collectionManager.ByType(type);
-        collection ??= _collectionManager.ByType(CollectionTypeExtensions.FromParts(gender, isNpc));
+        collection =   _collectionManager.Active.ByType(type);
+        collection ??= _collectionManager.Active.ByType(CollectionTypeExtensions.FromParts(gender, isNpc));
         return collection;
     }
 

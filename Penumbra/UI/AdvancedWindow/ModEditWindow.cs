@@ -52,7 +52,7 @@ public partial class ModEditWindow : Window, IDisposable
         _modelTab.Reset();
         _materialTab.Reset();
         _shaderPackageTab.Reset();
-        _itemSwapTab.UpdateMod(mod, Penumbra.CollectionManager.Current[mod.Index].Settings);
+        _itemSwapTab.UpdateMod(mod, Penumbra.CollectionManager.Active.Current[mod.Index].Settings);
     }
 
     public void ChangeOption(SubMod? subMod)
@@ -475,7 +475,7 @@ public partial class ModEditWindow : Window, IDisposable
     /// </remarks>
     private FullPath FindBestMatch(Utf8GamePath path)
     {
-        var currentFile = Penumbra.CollectionManager.Current.ResolvePath(path);
+        var currentFile = Penumbra.CollectionManager.Active.Current.ResolvePath(path);
         if (currentFile != null)
             return currentFile.Value;
 

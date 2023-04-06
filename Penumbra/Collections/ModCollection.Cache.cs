@@ -20,7 +20,7 @@ public record ModConflicts( IMod Mod2, List< object > Conflicts, bool HasPriorit
 /// The Cache contains all required temporary data to use a collection.
 /// It will only be setup if a collection gets activated in any way.
 /// </summary>
-internal class ModCollectionCache : IDisposable
+public class ModCollectionCache : IDisposable
 {
     private readonly ModCollection                                        _collection;
     private readonly SortedList< string, (SingleArray< IMod >, object?) > _changedItems = new();
@@ -175,7 +175,7 @@ internal class ModCollectionCache : IDisposable
                 break;
             case ModSettingChange.MultiInheritance:
             case ModSettingChange.MultiEnableState:
-                FullRecalculation(_collection == Penumbra.CollectionManager.Default);
+                FullRecalculation(_collection == Penumbra.CollectionManager.Active.Default);
                 break;
         }
     }
@@ -183,7 +183,7 @@ internal class ModCollectionCache : IDisposable
     // Inheritance changes are too big to check for relevance,
     // just recompute everything.
     private void OnInheritanceChange( bool _ )
-        => FullRecalculation(_collection == Penumbra.CollectionManager.Default);
+        => FullRecalculation(_collection == Penumbra.CollectionManager.Active.Default);
 
     public void FullRecalculation(bool isDefault)
     {
@@ -269,7 +269,7 @@ internal class ModCollectionCache : IDisposable
         if( addMetaChanges )
         {
             ++_collection.ChangeCounter;
-            if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
+            if( _collection == Penumbra.CollectionManager.Active.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
             {
                 Penumbra.ResidentResources.Reload();
                 MetaManipulations.SetFiles();
@@ -327,7 +327,7 @@ internal class ModCollectionCache : IDisposable
                 AddMetaFiles();
             }
 
-            if( _collection == Penumbra.CollectionManager.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
+            if( _collection == Penumbra.CollectionManager.Active.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods )
             {
                 Penumbra.ResidentResources.Reload();
                 MetaManipulations.SetFiles();

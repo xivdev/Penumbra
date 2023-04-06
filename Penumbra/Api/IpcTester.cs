@@ -12,13 +12,13 @@ using System.Numerics;
 using Dalamud.Utility;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
-using Penumbra.Collections;
 using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
+using Penumbra.Collections.Manager;
 
 namespace Penumbra.Api;
 
@@ -1213,7 +1213,7 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.CreateTemporaryCollection.Label, "Copy Existing Collection");
             if (ImGuiUtil.DrawDisabledButton("Copy##Collection", Vector2.Zero,
                     "Copies the effective list from the collection named in Temporary Mod Name...",
-                    !Penumbra.CollectionManager.ByName(_tempModName, out var copyCollection))
+                    !Penumbra.CollectionManager.Storage.ByName(_tempModName, out var copyCollection))
              && copyCollection is { HasCache: true })
             {
                 var files = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());

@@ -8,6 +8,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using ImGuiNET;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
@@ -291,7 +292,7 @@ public class CommandHandler : IDisposable
             }
         }
 
-        var oldCollection = _collectionManager.ByType(type, identifier);
+        var oldCollection = _collectionManager.Active.ByType(type, identifier);
         if (collection == oldCollection)
         {
             _chat.Print(collection == null
@@ -300,30 +301,30 @@ public class CommandHandler : IDisposable
             return false;
         }
 
-        var individualIndex = _collectionManager.Individuals.Index(identifier);
+        var individualIndex = _collectionManager.Active.Individuals.Index(identifier);
 
         if (oldCollection == null)
         {
             if (type.IsSpecial())
             {
-                _collectionManager.CreateSpecialCollection(type);
+                _collectionManager.Active.CreateSpecialCollection(type);
             }
             else if (identifier.IsValid)
             {
-                var identifiers = _collectionManager.Individuals.GetGroup(identifier);
-                individualIndex = _collectionManager.Individuals.Count;
-                _collectionManager.CreateIndividualCollection(identifiers);
+                var identifiers = _collectionManager.Active.Individuals.GetGroup(identifier);
+                individualIndex = _collectionManager.Active.Individuals.Count;
+                _collectionManager.Active.CreateIndividualCollection(identifiers);
             }
         }
         else if (collection == null)
         {
             if (type.IsSpecial())
             {
-                _collectionManager.RemoveSpecialCollection(type);
+                _collectionManager.Active.RemoveSpecialCollection(type);
             }
             else if (individualIndex >= 0)
             {
-                _collectionManager.RemoveIndividualCollection(individualIndex);
+                _collectionManager.Active.RemoveIndividualCollection(individualIndex);
             }
             else
             {
@@ -337,7 +338,7 @@ public class CommandHandler : IDisposable
             return true;
         }
 
-        _collectionManager.SetCollection(collection!, type, individualIndex);
+        _collectionManager.Active.SetCollection(collection!, type, individualIndex);
         Print($"Assigned {collection!.Name} as {type.ToName()} Collection{(identifier.IsValid ? $" for {identifier}." : ".")}");
         return true;
     }
@@ -454,15 +455,14 @@ public class CommandHandler : IDisposable
 
         collection = string.Equals(lowerName, ModCollection.Empty.Name, StringComparison.OrdinalIgnoreCase)
             ? ModCollection.Empty
-            : _collectionManager[lowerName];
-        if (collection == null)
-        {
-            _chat.Print(new SeStringBuilder().AddText("The collection ").AddRed(collectionName, true).AddText(" does not exist.")
-                .BuiltString);
-            return false;
-        }
+            : _collectionManager.Storage.ByName(lowerName, out var c) ? c : null;
+        if (collection != null)
+            return true;
 
-        return true;
+        _chat.Print(new SeStringBuilder().AddText("The collection ").AddRed(collectionName, true).AddText(" does not exist.")
+            .BuiltString);
+        return false;
+
     }
 
     private static bool? ParseTrueFalseToggle(string value)

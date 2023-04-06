@@ -8,6 +8,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.Services;
 
@@ -45,7 +46,7 @@ public class IndividualCollectionUi
           + $"More general {TutorialService.GroupAssignment} or the {TutorialService.DefaultCollection} do not apply if an Individual Collection takes effect.\n"
           + "Certain related actors - like the ones in cutscenes or preview windows - will try to use appropriate individual collections.");
         ImGui.Separator();
-        for (var i = 0; i < _collectionManager.Individuals.Count; ++i)
+        for (var i = 0; i < _collectionManager.Active.Individuals.Count; ++i)
         {
             DrawIndividualAssignment(i);
         }
@@ -138,13 +139,13 @@ public class IndividualCollectionUi
     /// <summary> Draw a single individual assignment. </summary>
     private void DrawIndividualAssignment(int idx)
     {
-        var (name, _) = _collectionManager.Individuals[idx];
+        var (name, _) = _collectionManager.Active.Individuals[idx];
         using var id = ImRaii.PushId(idx);
         _withEmpty.Draw("##IndividualCombo", UiHelpers.InputTextWidth.X, idx);
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize, string.Empty,
                 false, true))
-            _collectionManager.RemoveIndividualCollection(idx);
+            _collectionManager.Active.RemoveIndividualCollection(idx);
 
         ImGui.SameLine();
         ImGui.AlignTextToFramePadding();
@@ -163,7 +164,7 @@ public class IndividualCollectionUi
             return;
 
         if (_individualDragDropIdx >= 0)
-            _collectionManager.MoveIndividualCollection(_individualDragDropIdx, idx);
+            _collectionManager.Active.MoveIndividualCollection(_individualDragDropIdx, idx);
 
         _individualDragDropIdx = -1;
     }
@@ -178,7 +179,7 @@ public class IndividualCollectionUi
         if (ImGuiUtil.DrawDisabledButton("Assign Player", buttonWidth, _newPlayerTooltip,
                 _newPlayerTooltip.Length > 0 || _newPlayerIdentifiers.Length == 0))
         {
-            _collectionManager.CreateIndividualCollection(_newPlayerIdentifiers);
+            _collectionManager.Active.CreateIndividualCollection(_newPlayerIdentifiers);
             change = true;
         }
 
@@ -196,7 +197,7 @@ public class IndividualCollectionUi
         if (ImGuiUtil.DrawDisabledButton("Assign NPC", buttonWidth, _newNpcTooltip,
                 _newNpcIdentifiers.Length == 0 || _newNpcTooltip.Length > 0))
         {
-            _collectionManager.CreateIndividualCollection(_newNpcIdentifiers);
+            _collectionManager.Active.CreateIndividualCollection(_newNpcIdentifiers);
             change = true;
         }
 
@@ -209,7 +210,7 @@ public class IndividualCollectionUi
                 _newOwnedIdentifiers.Length == 0 || _newOwnedTooltip.Length > 0))
             return false;
 
-        _collectionManager.CreateIndividualCollection(_newOwnedIdentifiers);
+        _collectionManager.Active.CreateIndividualCollection(_newOwnedIdentifiers);
         return true;
 
     }
@@ -220,7 +221,7 @@ public class IndividualCollectionUi
                 _newRetainerIdentifiers.Length == 0 || _newRetainerTooltip.Length > 0))
             return false;
 
-        _collectionManager.CreateIndividualCollection(_newRetainerIdentifiers);
+        _collectionManager.Active.CreateIndividualCollection(_newRetainerIdentifiers);
         return true;
 
     }
@@ -264,7 +265,7 @@ public class IndividualCollectionUi
     private bool DrawNewCurrentPlayerCollection(Vector2 width)
     {
         var player = _actorService.AwaitedService.GetCurrentPlayer();
-        var result = _collectionManager.Individuals.CanAdd(player);
+        var result = _collectionManager.Active.Individuals.CanAdd(player);
         var tt = result switch
         {
             IndividualCollections.AddResult.Valid => $"Assign a collection to {player}.",
@@ -277,7 +278,7 @@ public class IndividualCollectionUi
         if (!ImGuiUtil.DrawDisabledButton("Assign Current Player", width, tt, result != IndividualCollections.AddResult.Valid))
             return false;
 
-        _collectionManager.CreateIndividualCollection(player);
+        _collectionManager.Active.CreateIndividualCollection(player);
         return true;
 
     }
@@ -285,7 +286,7 @@ public class IndividualCollectionUi
     private bool DrawNewTargetCollection(Vector2 width)
     {
         var target = _actorService.AwaitedService.FromObject(DalamudServices.Targets.Target, false, true, true);
-        var result = _collectionManager.Individuals.CanAdd(target);
+        var result = _collectionManager.Active.Individuals.CanAdd(target);
         var tt = result switch
         {
             IndividualCollections.AddResult.Valid => $"Assign a collection to {target}.",
@@ -295,7 +296,7 @@ public class IndividualCollectionUi
         };
         if (ImGuiUtil.DrawDisabledButton("Assign Current Target", width, tt, result != IndividualCollections.AddResult.Valid))
         {
-            _collectionManager.CreateIndividualCollection(_collectionManager.Individuals.GetGroup(target));
+            _collectionManager.Active.CreateIndividualCollection(_collectionManager.Active.Individuals.GetGroup(target));
             return true;
         }
 
@@ -311,7 +312,7 @@ public class IndividualCollectionUi
     private void UpdateIdentifiers()
     {
         var combo = GetNpcCombo(_newKind);
-        _newPlayerTooltip = _collectionManager.Individuals.CanAdd(IdentifierType.Player, _newCharacterName,
+        _newPlayerTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Player, _newCharacterName,
                 _worldCombo.CurrentSelection.Key, ObjectKind.None,
                 Array.Empty<uint>(), out _newPlayerIdentifiers) switch
         {
@@ -320,7 +321,7 @@ public class IndividualCollectionUi
             IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
             _ => string.Empty,
         };
-        _newRetainerTooltip = _collectionManager.Individuals.CanAdd(IdentifierType.Retainer, _newCharacterName, 0, ObjectKind.None,
+        _newRetainerTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Retainer, _newCharacterName, 0, ObjectKind.None,
                 Array.Empty<uint>(), out _newRetainerIdentifiers) switch
         {
             _ when _newCharacterName.Length == 0 => NewRetainerTooltipEmpty,
@@ -330,13 +331,13 @@ public class IndividualCollectionUi
         };
         if (combo.CurrentSelection.Ids != null)
         {
-            _newNpcTooltip = _collectionManager.Individuals.CanAdd(IdentifierType.Npc, string.Empty, ushort.MaxValue, _newKind,
+            _newNpcTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Npc, string.Empty, ushort.MaxValue, _newKind,
                     combo.CurrentSelection.Ids, out _newNpcIdentifiers) switch
             {
                 IndividualCollections.AddResult.AlreadySet => AlreadyAssigned,
                 _ => string.Empty,
             };
-            _newOwnedTooltip = _collectionManager.Individuals.CanAdd(IdentifierType.Owned, _newCharacterName,
+            _newOwnedTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Owned, _newCharacterName,
                     _worldCombo.CurrentSelection.Key, _newKind,
                     combo.CurrentSelection.Ids, out _newOwnedIdentifiers) switch
             {

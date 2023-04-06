@@ -97,7 +97,7 @@ public unsafe partial class CharacterUtility
             => SetResourceInternal(_defaultResourceData, _defaultResourceSize);
 
         private void SetResourceToDefaultCollection()
-            => Penumbra.CollectionManager.Default.SetMetaFile(GlobalMetaIndex);
+            => Penumbra.CollectionManager.Active.Default.SetMetaFile(GlobalMetaIndex);
 
         public void Dispose()
         {

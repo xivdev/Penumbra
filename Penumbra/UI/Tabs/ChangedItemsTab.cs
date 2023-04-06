@@ -8,7 +8,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api;
-using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
 
@@ -17,7 +17,7 @@ namespace Penumbra.UI.Tabs;
 public class ChangedItemsTab : ITab
 {
     private readonly CollectionManager _collectionManager;
-    private readonly PenumbraApi           _api;
+    private readonly PenumbraApi       _api;
 
     public ChangedItemsTab(CollectionManager collectionManager, PenumbraApi api)
     {
@@ -49,7 +49,7 @@ public class ChangedItemsTab : ITab
         ImGui.TableSetupColumn("mods",  flags, varWidth - 120 * UiHelpers.Scale);
         ImGui.TableSetupColumn("id",    flags, 120 * UiHelpers.Scale);
 
-        var items = _collectionManager.Current.ChangedItems;
+        var items = _collectionManager.Active.Current.ChangedItems;
         var rest = _changedItemFilter.IsEmpty && _changedItemModFilter.IsEmpty
             ? ImGuiClip.ClippedDraw(items, skips, DrawChangedItemColumn, items.Count)
             : ImGuiClip.FilteredClippedDraw(items, skips, FilterChangedItem, DrawChangedItemColumn);

@@ -16,6 +16,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.ModsTab;
 using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
+using Penumbra.Collections.Manager;
 
 namespace Penumbra.UI.Tabs;
 
@@ -85,12 +86,12 @@ public class ModsTab : ITab
         {
             Penumbra.Log.Error($"Exception thrown during ModPanel Render:\n{e}");
             Penumbra.Log.Error($"{_modManager.Count} Mods\n"
-              + $"{_collectionManager.Current.AnonymizedName} Current Collection\n"
-              + $"{_collectionManager.Current.Settings.Count} Settings\n"
+              + $"{_collectionManager.Active.Current.AnonymizedName} Current Collection\n"
+              + $"{_collectionManager.Active.Current.Settings.Count} Settings\n"
               + $"{_selector.SortMode.Name} Sort Mode\n"
               + $"{_selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
               + $"{_selector.Selected?.Name ?? "NULL"} Selected Mod\n"
-              + $"{string.Join(", ", _collectionManager.Current.Inheritance.Select(c => c.AnonymizedName))} Inheritances\n"
+              + $"{string.Join(", ", _collectionManager.Active.Current.Inheritance.Select(c => c.AnonymizedName))} Inheritances\n"
               + $"{_selector.SelectedSettingCollection.AnonymizedName} Collection\n");
         }
     }
@@ -163,27 +164,27 @@ public class ModsTab : ITab
 
         _tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
 
-        if (!_collectionManager.CurrentCollectionInUse)
+        if (!_collectionManager.Active.CurrentCollectionInUse)
             ImGuiUtil.DrawTextButton("The currently selected collection is not used in any way.", -Vector2.UnitX, Colors.PressEnterWarningBg);
     }
 
     private void DrawDefaultCollectionButton(Vector2 width)
     {
-        var name      = $"{TutorialService.DefaultCollection} ({_collectionManager.Default.Name})";
-        var isCurrent = _collectionManager.Default == _collectionManager.Current;
-        var isEmpty   = _collectionManager.Default == ModCollection.Empty;
+        var name      = $"{TutorialService.DefaultCollection} ({_collectionManager.Active.Default.Name})";
+        var isCurrent = _collectionManager.Active.Default == _collectionManager.Active.Current;
+        var isEmpty   = _collectionManager.Active.Default == ModCollection.Empty;
         var tt = isCurrent ? $"The current collection is already the configured {TutorialService.DefaultCollection}."
             : isEmpty      ? $"The {TutorialService.DefaultCollection} is configured to be empty."
                              : $"Set the {TutorialService.SelectedCollection} to the configured {TutorialService.DefaultCollection}.";
         if (ImGuiUtil.DrawDisabledButton(name, width, tt, isCurrent || isEmpty))
-            _collectionManager.SetCollection(_collectionManager.Default, CollectionType.Current);
+            _collectionManager.Active.SetCollection(_collectionManager.Active.Default, CollectionType.Current);
     }
 
     private void DrawInheritedCollectionButton(Vector2 width)
     {
         var noModSelected = _selector.Selected == null;
         var collection    = _selector.SelectedSettingCollection;
-        var modInherited  = collection != _collectionManager.Current;
+        var modInherited  = collection != _collectionManager.Active.Current;
         var (name, tt) = (noModSelected, modInherited) switch
         {
             (true, _) => ("Inherited Collection", "No mod selected."),
@@ -192,7 +193,7 @@ public class ModsTab : ITab
             (false, false) => ("Not Inherited", "The selected mod does not inherit its settings."),
         };
         if (ImGuiUtil.DrawDisabledButton(name, width, tt, noModSelected || !modInherited))
-            _collectionManager.SetCollection(collection, CollectionType.Current);
+            _collectionManager.Active.SetCollection(collection, CollectionType.Current);
     }
 
     /// <summary> Get the correct size for the mod selector based on current config. </summary>

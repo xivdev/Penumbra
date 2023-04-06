@@ -8,6 +8,7 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Services;
 using Penumbra.UI.CollectionTab;
 
@@ -35,12 +36,12 @@ public class CollectionsTab : IDisposable, ITab
         _config                 = config;
         _specialCollectionCombo = new SpecialCombo(_collectionManager, "##NewSpecial", 350);
         _collectionsWithEmpty = new CollectionSelector(_collectionManager,
-            () => _collectionManager.OrderBy(c => c.Name).Prepend(ModCollection.Empty).ToList());
-        _collectionSelector    = new CollectionSelector(_collectionManager, () => _collectionManager.OrderBy(c => c.Name).ToList());
+            () => _collectionManager.Storage.OrderBy(c => c.Name).Prepend(ModCollection.Empty).ToList());
+        _collectionSelector    = new CollectionSelector(_collectionManager, () => _collectionManager.Storage.OrderBy(c => c.Name).ToList());
         _inheritance           = new InheritanceUi(_collectionManager);
         _individualCollections = new IndividualCollectionUi(actorService, _collectionManager, _collectionsWithEmpty);
 
-        _communicator.CollectionChange.Event += _individualCollections.UpdateIdentifiers;
+        _communicator.CollectionChange.Subscribe(_individualCollections.UpdateIdentifiers);
     }
 
     public ReadOnlySpan<byte> Label
@@ -51,7 +52,7 @@ public class CollectionsTab : IDisposable, ITab
         => (withEmpty ? _collectionsWithEmpty : _collectionSelector).Draw(label, width, collectionType);
 
     public void Dispose()
-        => _communicator.CollectionChange.Event -= _individualCollections.UpdateIdentifiers;
+        => _communicator.CollectionChange.Unsubscribe(_individualCollections.UpdateIdentifiers);
 
     /// <summary> Draw a tutorial step regardless of tab selection. </summary>
     public void DrawHeader()
@@ -79,22 +80,22 @@ public class CollectionsTab : IDisposable, ITab
     /// </summary>
     private void CreateNewCollection(bool duplicate)
     {
-        if (_collectionManager.AddCollection(_newCollectionName, duplicate ? _collectionManager.Current : null))
+        if (_collectionManager.Storage.AddCollection(_newCollectionName, duplicate ? _collectionManager.Active.Current : null))
             _newCollectionName = string.Empty;
     }
 
     /// <summary> Draw the Clean Unused Settings button if there are any. </summary>
     private void DrawCleanCollectionButton(Vector2 width)
     {
-        if (!_collectionManager.Current.HasUnusedSettings)
+        if (!_collectionManager.Active.Current.HasUnusedSettings)
             return;
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton(
-                $"Clean {_collectionManager.Current.NumUnusedSettings} Unused Settings###CleanSettings", width
+                $"Clean {_collectionManager.Active.Current.NumUnusedSettings} Unused Settings###CleanSettings", width
                 , "Remove all stored settings for mods not currently available and fix invalid settings.\n\nUse at own risk."
                 , false))
-            _collectionManager.Current.CleanUnavailableSettings();
+            _collectionManager.Active.Current.CleanUnavailableSettings();
     }
 
     /// <summary> Draw the new collection input as well as its buttons. </summary>
@@ -103,7 +104,7 @@ public class CollectionsTab : IDisposable, ITab
         // Input for new collection name. Also checks for validity when changed.
         ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
         if (ImGui.InputTextWithHint("##New Collection", "New Collection Name...", ref _newCollectionName, 64))
-            _canAddCollection = _collectionManager.CanAddCollection(_newCollectionName, out _);
+            _canAddCollection = _collectionManager.Storage.CanAddCollection(_newCollectionName, out _);
 
         ImGui.SameLine();
         ImGuiComponents.HelpMarker(
@@ -161,14 +162,14 @@ public class CollectionsTab : IDisposable, ITab
             "This collection will be modified when using the Installed Mods tab and making changes.\nIt is not automatically assigned to anything.");
 
         // Deletion conditions.
-        var deleteCondition = _collectionManager.Current.Name != ModCollection.DefaultCollection;
+        var deleteCondition = _collectionManager.Active.Current.Name != ModCollection.DefaultCollectionName;
         var modifierHeld    = Penumbra.Config.DeleteModModifier.IsActive();
         var tt = deleteCondition
             ? modifierHeld ? string.Empty : $"Hold {_config.DeleteModModifier} while clicking to delete the collection."
-            : $"You can not delete the collection {ModCollection.DefaultCollection}.";
+            : $"You can not delete the collection {ModCollection.DefaultCollectionName}.";
 
         if (ImGuiUtil.DrawDisabledButton($"Delete {TutorialService.SelectedCollection}", width, tt, !deleteCondition || !modifierHeld))
-            _collectionManager.RemoveCollection(_collectionManager.Current);
+            _collectionManager.Storage.RemoveCollection(_collectionManager.Active.Current);
 
         DrawCleanCollectionButton(width);
     }
@@ -218,11 +219,11 @@ public class CollectionsTab : IDisposable, ITab
     {
         ImGui.SetNextItemWidth(UiHelpers.InputTextWidth.X);
         if (_specialCollectionCombo.CurrentIdx == -1
-         || _collectionManager.ByType(_specialCollectionCombo.CurrentType!.Value.Item1) != null)
+         || _collectionManager.Active.ByType(_specialCollectionCombo.CurrentType!.Value.Item1) != null)
         {
             _specialCollectionCombo.ResetFilter();
             _specialCollectionCombo.CurrentIdx = CollectionTypeExtensions.Special
-                .IndexOf(t => _collectionManager.ByType(t.Item1) == null);
+                .IndexOf(t => _collectionManager.Active.ByType(t.Item1) == null);
         }
 
         if (_specialCollectionCombo.CurrentType == null)
@@ -238,7 +239,7 @@ public class CollectionsTab : IDisposable, ITab
         if (!ImGuiUtil.DrawDisabledButton($"Assign {TutorialService.ConditionalGroup}", new Vector2(120 * UiHelpers.Scale, 0), tt, disabled))
             return;
 
-        _collectionManager.CreateSpecialCollection(_specialCollectionCombo.CurrentType!.Value.Item1);
+        _collectionManager.Active.CreateSpecialCollection(_specialCollectionCombo.CurrentType!.Value.Item1);
         _specialCollectionCombo.CurrentIdx = -1;
     }
 
@@ -274,7 +275,7 @@ public class CollectionsTab : IDisposable, ITab
     {
         foreach (var (type, name, desc) in CollectionTypeExtensions.Special)
         {
-            var collection = _collectionManager.ByType(type);
+            var collection = _collectionManager.Active.ByType(type);
             if (collection == null)
                 continue;
 
@@ -284,7 +285,7 @@ public class CollectionsTab : IDisposable, ITab
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize, string.Empty,
                     false, true))
             {
-                _collectionManager.RemoveSpecialCollection(type);
+                _collectionManager.Active.RemoveSpecialCollection(type);
                 _specialCollectionCombo.ResetFilter();
             }
 

@@ -90,7 +90,7 @@ public class TutorialService
               + "In here, we can create new collections, delete collections, or make them inherit from each other.")
             .Register($"Initial Setup, Step 5: {SelectedCollection}",
                 $"The {SelectedCollection} is the one we are currently editing. Any changes we make in our mod settings later in the next tab will edit this collection."
-              + $"We should already have a collection named {ModCollection.DefaultCollection} selected, and for our simple setup, we do not need to do anything here.\n\n")
+              + $"We should already have a collection named {ModCollection.DefaultCollectionName} selected, and for our simple setup, we do not need to do anything here.\n\n")
             .Register("Inheritance",
                 "This is a more advanced feature. Click the help button for more information, but we will ignore this for now.")
             .Register($"Initial Setup, Step 6: {ActiveCollections}",
@@ -99,7 +99,7 @@ public class TutorialService
               + $"The {SelectedCollection} is also active for technical reasons, while not necessarily being assigned to anything.\n\n"
               + "Open this now to continue.")
             .Register($"Initial Setup, Step 7: {DefaultCollection}",
-                $"The {DefaultCollection} - which should currently be set to a collection named {ModCollection.DefaultCollection} - is the main one.\n\n"
+                $"The {DefaultCollection} - which should currently be set to a collection named {ModCollection.DefaultCollectionName} - is the main one.\n\n"
               + $"As long as no more specific conditions apply to an object in the game, the mods from the {DefaultCollection} will be used.\n\n"
               + "This is also the collection you need to use for all mods that are not directly associated with any character in the game or the user interface, like music mods.")
             .Register("Interface Collection",

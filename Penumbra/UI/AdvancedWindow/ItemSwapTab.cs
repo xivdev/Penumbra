@@ -12,6 +12,7 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Mods;
@@ -54,9 +55,9 @@ public class ItemSwapTab : IDisposable, ITab
             // @formatter:on
         };
 
-        _communicator.CollectionChange.Event         += OnCollectionChange;
-        _collectionManager.Current.ModSettingChanged += OnSettingChange;
-        _communicator.ModOptionChanged.Event         += OnModOptionChange;
+        _communicator.CollectionChange.Subscribe(OnCollectionChange);
+        _collectionManager.Active.Current.ModSettingChanged += OnSettingChange;
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange);
     }
 
     /// <summary> Update the currently selected mod or its settings. </summary>
@@ -99,9 +100,9 @@ public class ItemSwapTab : IDisposable, ITab
 
     public void Dispose()
     {
-        _communicator.CollectionChange.Event         -= OnCollectionChange;
-        _collectionManager.Current.ModSettingChanged -= OnSettingChange;
-        _communicator.ModOptionChanged.Event         -= OnModOptionChange;
+        _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
+        _collectionManager.Active.Current.ModSettingChanged -= OnSettingChange;
+        _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
     }
 
     private enum SwapType
@@ -199,7 +200,7 @@ public class ItemSwapTab : IDisposable, ITab
                     var values = _selectors[_lastTab];
                     if (values.Source.CurrentSelection.Item2 != null && values.Target.CurrentSelection.Item2 != null)
                         _affectedItems = _swapData.LoadEquipment(values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2,
-                            _useCurrentCollection ? _collectionManager.Current : null, _useRightRing, _useLeftRing);
+                            _useCurrentCollection ? _collectionManager.Active.Current : null, _useRightRing, _useLeftRing);
 
                     break;
                 case SwapType.BetweenSlots:
@@ -208,27 +209,27 @@ public class ItemSwapTab : IDisposable, ITab
                     if (selectorFrom.CurrentSelection.Item2 != null && selectorTo.CurrentSelection.Item2 != null)
                         _affectedItems = _swapData.LoadTypeSwap(_slotTo, selectorTo.CurrentSelection.Item2, _slotFrom,
                             selectorFrom.CurrentSelection.Item2,
-                            _useCurrentCollection ? _collectionManager.Current : null);
+                            _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(BodySlot.Hair, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
-                        _useCurrentCollection ? _collectionManager.Current : null);
+                        _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Face when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(BodySlot.Face, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
-                        _useCurrentCollection ? _collectionManager.Current : null);
+                        _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(BodySlot.Zear, Names.CombinedRace(_currentGender, ModelRace.Viera), (SetId)_sourceId,
                         (SetId)_targetId,
-                        _useCurrentCollection ? _collectionManager.Current : null);
+                        _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Tail when _targetId > 0 && _sourceId > 0:
                     _swapData.LoadCustomization(BodySlot.Tail, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
-                        _useCurrentCollection ? _collectionManager.Current : null);
+                        _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Weapon: break;
             }

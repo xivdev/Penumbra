@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using Penumbra.Collections;
+using Penumbra.Api;
 using Penumbra.GameData.Actors;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.String;
 
-namespace Penumbra.Api;
+namespace Penumbra.Collections.Manager;
 
 public class TempCollectionManager : IDisposable
 {
@@ -16,19 +16,21 @@ public class TempCollectionManager : IDisposable
     public readonly IndividualCollections Collections;
 
     private readonly CommunicatorService               _communicator;
+    private readonly CollectionStorage                 _storage;
     private readonly Dictionary<string, ModCollection> _customCollections = new();
 
-    public TempCollectionManager(CommunicatorService communicator, IndividualCollections collections)
+    public TempCollectionManager(CommunicatorService communicator, ActorService actors, CollectionStorage storage)
     {
         _communicator = communicator;
-        Collections   = collections;
+        _storage      = storage;
+        Collections   = new IndividualCollections(actors);
 
-        _communicator.TemporaryGlobalModChange.Event += OnGlobalModChange;
+        _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange);
     }
 
     public void Dispose()
     {
-        _communicator.TemporaryGlobalModChange.Event -= OnGlobalModChange;
+        _communicator.TemporaryGlobalModChange.Unsubscribe(OnGlobalModChange);
     }
 
     private void OnGlobalModChange(TemporaryMod mod, bool created, bool removed)
@@ -45,7 +47,7 @@ public class TempCollectionManager : IDisposable
 
     public string CreateTemporaryCollection(string name)
     {
-        if (Penumbra.CollectionManager.ByName(name, out _))
+        if (_storage.ByName(name, out _))
             return string.Empty;
 
         if (GlobalChangeCounter == int.MaxValue)

@@ -5,6 +5,7 @@ using Penumbra.Mods;
 using System.Collections.Generic;
 using Penumbra.Services;
 using Penumbra.String.Classes;
+using Penumbra.Collections.Manager;
 
 namespace Penumbra.Api;
 
@@ -26,12 +27,12 @@ public class TempModManager : IDisposable
     public TempModManager(CommunicatorService communicator)
     {
         _communicator                        =  communicator;
-        _communicator.CollectionChange.Event += OnCollectionChange;
+        _communicator.CollectionChange.Subscribe(OnCollectionChange);
     }
 
     public void Dispose()
     {
-        _communicator.CollectionChange.Event -= OnCollectionChange;
+        _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
     }
 
     public IReadOnlyDictionary<ModCollection, List<TemporaryMod>> Mods

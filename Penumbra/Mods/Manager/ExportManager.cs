@@ -21,7 +21,7 @@ public class ExportManager : IDisposable
         _communicator = communicator;
         _modManager   = modManager;
         UpdateExportDirectory(_config.ExportDirectory, false);
-        _communicator.ModPathChanged.Event += OnModPathChange;
+        _communicator.ModPathChanged.Subscribe(OnModPathChange);
     }
 
     /// <inheritdoc cref="UpdateExportDirectory(string, bool)"/>
@@ -76,7 +76,7 @@ public class ExportManager : IDisposable
     }
 
     public void Dispose()
-        => _communicator.ModPathChanged.Event -= OnModPathChange;
+        => _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
 
     /// <summary> Automatically migrate the backup file to the new name if any exists. </summary>
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,

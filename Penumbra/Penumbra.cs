@@ -30,6 +30,8 @@ using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManage
 using Penumbra.Services;
 using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
+using Penumbra.Collections.Manager;
+using Penumbra.Mods;
 
 namespace Penumbra;
 
@@ -183,7 +185,7 @@ public class Penumbra : IDalamudPlugin
         {
             if (CharacterUtility.Ready)
             {
-                CollectionManager.Default.SetFiles();
+                CollectionManager.Active.Default.SetFiles();
                 ResidentResources.Reload();
                 RedrawService.RedrawAll(RedrawType.Redraw);
             }
@@ -269,23 +271,23 @@ public class Penumbra : IDalamudPlugin
               + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority && x.Solved ? x.Conflicts.Count : 0)}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0)}\n");
 
         sb.AppendLine("**Collections**");
-        sb.Append($"> **`#Collections:                 `** {CollectionManager.Count - 1}\n");
+        sb.Append($"> **`#Collections:                 `** {CollectionManager.Storage.Count - 1}\n");
         sb.Append($"> **`#Temp Collections:            `** {TempCollections.Count}\n");
-        sb.Append($"> **`Active Collections:           `** {CollectionManager.Count(c => c.HasCache)}\n");
-        sb.Append($"> **`Base Collection:              `** {CollectionManager.Default.AnonymizedName}\n");
-        sb.Append($"> **`Interface Collection:         `** {CollectionManager.Interface.AnonymizedName}\n");
-        sb.Append($"> **`Selected Collection:          `** {CollectionManager.Current.AnonymizedName}\n");
+        sb.Append($"> **`Active Collections:           `** {CollectionManager.Caches.Count}\n");
+        sb.Append($"> **`Base Collection:              `** {CollectionManager.Active.Default.AnonymizedName}\n");
+        sb.Append($"> **`Interface Collection:         `** {CollectionManager.Active.Interface.AnonymizedName}\n");
+        sb.Append($"> **`Selected Collection:          `** {CollectionManager.Active.Current.AnonymizedName}\n");
         foreach (var (type, name, _) in CollectionTypeExtensions.Special)
         {
-            var collection = CollectionManager.ByType(type);
+            var collection = CollectionManager.Active.ByType(type);
             if (collection != null)
                 sb.Append($"> **`{name,-30}`** {collection.AnonymizedName}\n");
         }
 
-        foreach (var (name, id, collection) in CollectionManager.Individuals.Assignments)
+        foreach (var (name, id, collection) in CollectionManager.Active.Individuals.Assignments)
             sb.Append($"> **`{CharacterName(id[0], name),-30}`** {collection.AnonymizedName}\n");
 
-        foreach (var collection in CollectionManager.Where(c => c.HasCache))
+        foreach (var collection in CollectionManager.Caches.Active)
             PrintCollection(collection);
 
         return sb.ToString();

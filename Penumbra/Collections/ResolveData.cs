@@ -1,7 +1,4 @@
 using System;
-using System.Linq;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using Penumbra.GameData.Actors;
 
 namespace Penumbra.Collections;
 
@@ -14,7 +11,7 @@ public readonly struct ResolveData
     public ModCollection ModCollection
         => _modCollection ?? ModCollection.Empty;
 
-    public readonly IntPtr AssociatedGameObject;
+    public readonly nint AssociatedGameObject;
 
     public bool Valid
         => _modCollection != null;
@@ -22,17 +19,17 @@ public readonly struct ResolveData
     public ResolveData()
     {
         _modCollection       = null!;
-        AssociatedGameObject = IntPtr.Zero;
+        AssociatedGameObject = nint.Zero;
     }
 
-    public ResolveData(ModCollection collection, IntPtr gameObject)
+    public ResolveData(ModCollection collection, nint gameObject)
     {
         _modCollection       = collection;
         AssociatedGameObject = gameObject;
     }
 
     public ResolveData(ModCollection collection)
-        : this(collection, IntPtr.Zero)
+        : this(collection, nint.Zero)
     { }
 
     public override string ToString()
@@ -44,9 +41,9 @@ public static class ResolveDataExtensions
     public static ResolveData ToResolveData(this ModCollection collection)
         => new(collection);
 
-    public static ResolveData ToResolveData(this ModCollection collection, IntPtr ptr)
+    public static ResolveData ToResolveData(this ModCollection collection, nint ptr)
         => new(collection, ptr);
 
     public static unsafe ResolveData ToResolveData(this ModCollection collection, void* ptr)
-        => new(collection, (IntPtr)ptr);
+        => new(collection, (nint)ptr);
 }

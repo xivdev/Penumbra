@@ -7,7 +7,7 @@ using Dalamud.Game.ClientState.Objects.Types;
 using Penumbra.GameData.Actors;
 using Penumbra.String;
 
-namespace Penumbra.Collections;
+namespace Penumbra.Collections.Manager;
 
 public sealed partial class IndividualCollections : IReadOnlyList< (string DisplayName, ModCollection Collection) >
 {

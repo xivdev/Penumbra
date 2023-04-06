@@ -8,7 +8,7 @@ using Penumbra.GameData.Actors;
 using Penumbra.Services;
 using Penumbra.String;
 
-namespace Penumbra.Collections;
+namespace Penumbra.Collections.Manager;
 
 public sealed partial class IndividualCollections
 {

@@ -5,6 +5,7 @@ using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Api;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.Interop.ResourceLoading;
@@ -85,7 +86,10 @@ public class PenumbraNew
             .AddSingleton<Configuration>();
 
         // Add Collection Services
-        services.AddTransient<IndividualCollections>()
+        services.AddSingleton<CollectionStorage>()
+            .AddSingleton<ActiveCollections>()
+            .AddSingleton<InheritanceManager>()
+            .AddSingleton<CollectionCacheManager>()
             .AddSingleton<TempCollectionManager>()
             .AddSingleton<CollectionManager>();
 

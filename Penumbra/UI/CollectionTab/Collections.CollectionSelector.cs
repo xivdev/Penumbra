@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using ImGuiNET;
 using OtterGui.Widgets;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 
 namespace Penumbra.UI.CollectionTab;
@@ -17,16 +18,16 @@ public sealed class CollectionSelector : FilterComboCache<ModCollection>
 
     public void Draw(string label, float width, int individualIdx)
     {
-        var (_, collection) = _collectionManager.Individuals[individualIdx];
+        var (_, collection) = _collectionManager.Active.Individuals[individualIdx];
         if (Draw(label, collection.Name, string.Empty, width, ImGui.GetTextLineHeightWithSpacing()) && CurrentSelection != null)
-            _collectionManager.SetCollection(CurrentSelection, CollectionType.Individual, individualIdx);
+            _collectionManager.Active.SetCollection(CurrentSelection, CollectionType.Individual, individualIdx);
     }
 
     public void Draw(string label, float width, CollectionType type)
     {
-        var current = _collectionManager.ByType(type, ActorIdentifier.Invalid);
+        var current = _collectionManager.Active.ByType(type, ActorIdentifier.Invalid);
         if (Draw(label, current?.Name ?? string.Empty, string.Empty, width, ImGui.GetTextLineHeightWithSpacing()) && CurrentSelection != null)
-            _collectionManager.SetCollection(CurrentSelection, type);
+            _collectionManager.Active.SetCollection(CurrentSelection, type);
     }
 
     protected override string ToString(ModCollection obj)

@@ -2,6 +2,7 @@ using ImGuiNET;
 using OtterGui.Classes;
 using OtterGui.Widgets;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 
 namespace Penumbra.UI.CollectionTab;
 
@@ -37,6 +38,6 @@ public sealed class SpecialCombo : FilterComboBase<(CollectionType, string, stri
     protected override bool IsVisible(int globalIdx, LowerString filter)
     {
         var obj = Items[globalIdx];
-        return filter.IsContained(obj.Item2) && _collectionManager.ByType(obj.Item1) == null;
+        return filter.IsContained(obj.Item2) && _collectionManager.Active.ByType(obj.Item1) == null;
     }
 }

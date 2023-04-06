@@ -27,13 +27,13 @@ public class FilenameService
         ActiveCollectionsFile = Path.Combine(pi.ConfigDirectory.FullName,   "active_collections.json");
     }
 
-    /// <summary> Obtain the path of a collection file given its name. Returns an empty string if the collection is temporary. </summary>
+    /// <summary> Obtain the path of a collection file given its name.</summary>
     public string CollectionFile(ModCollection collection)
-        => collection.Index >= 0 ? Path.Combine(CollectionDirectory, $"{collection.Name.RemoveInvalidPathSymbols()}.json") : string.Empty;
+        => CollectionFile(collection.Name);
 
     /// <summary> Obtain the path of a collection file given its name. </summary>
     public string CollectionFile(string collectionName)
-        => Path.Combine(CollectionDirectory, $"{collectionName.RemoveInvalidPathSymbols()}.json");
+        => Path.Combine(CollectionDirectory, $"{collectionName}.json");
 
 
     /// <summary> Obtain the path of the local data file given a mod directory. Returns an empty string if the mod is temporary. </summary>

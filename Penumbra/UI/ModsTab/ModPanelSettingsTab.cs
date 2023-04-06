@@ -12,6 +12,7 @@ using Penumbra.Mods;
 using Penumbra.UI.Classes;
 using Dalamud.Interface.Components;
 using Dalamud.Interface;
+using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.UI.ModsTab;
@@ -59,7 +60,7 @@ public class ModPanelSettingsTab : ITab
 
         _settings   = _selector.SelectedSettings;
         _collection = _selector.SelectedSettingCollection;
-        _inherited  = _collection != _collectionManager.Current;
+        _inherited  = _collection != _collectionManager.Active.Current;
         _empty      = _settings == ModSettings.Empty;
 
         DrawInheritedWarning();
@@ -113,7 +114,7 @@ public class ModPanelSettingsTab : ITab
         using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.PressEnterWarningBg);
         var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
         if (ImGui.Button($"These settings are inherited from {_collection.Name}.", width))
-            _collectionManager.Current.SetModInheritance(_selector.Selected!.Index, false);
+            _collectionManager.Active.Current.SetModInheritance(_selector.Selected!.Index, false);
 
         ImGuiUtil.HoverTooltip("You can click this button to copy the current settings to the current selection.\n"
           + "You can also just change any setting, which will copy the settings with the single setting changed to the current selection.");
@@ -127,7 +128,7 @@ public class ModPanelSettingsTab : ITab
             return;
 
         _modManager.SetKnown(_selector.Selected!);
-        _collectionManager.Current.SetModState(_selector.Selected!.Index, enabled);
+        _collectionManager.Active.Current.SetModState(_selector.Selected!.Index, enabled);
     }
 
     /// <summary>
@@ -145,7 +146,7 @@ public class ModPanelSettingsTab : ITab
         if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
         {
             if (_currentPriority != _settings.Priority)
-                _collectionManager.Current.SetModPriority(_selector.Selected!.Index, _currentPriority.Value);
+                _collectionManager.Active.Current.SetModPriority(_selector.Selected!.Index, _currentPriority.Value);
 
             _currentPriority = null;
         }
@@ -167,7 +168,7 @@ public class ModPanelSettingsTab : ITab
         var scroll = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0;
         ImGui.SameLine(ImGui.GetWindowWidth() - ImGui.CalcTextSize(text).X - ImGui.GetStyle().FramePadding.X * 2 - scroll);
         if (ImGui.Button(text))
-            _collectionManager.Current.SetModInheritance(_selector.Selected!.Index, true);
+            _collectionManager.Active.Current.SetModInheritance(_selector.Selected!.Index, true);
 
         ImGuiUtil.HoverTooltip("Remove current settings from this collection so that it can inherit them.\n"
           + "If no inherited collection has settings for this mod, it will be disabled.");
@@ -190,7 +191,7 @@ public class ModPanelSettingsTab : ITab
                     id.Push(idx2);
                     var option = group[idx2];
                     if (ImGui.Selectable(option.Name, idx2 == selectedOption))
-                        _collectionManager.Current.SetModSetting(_selector.Selected!.Index, groupIdx, (uint)idx2);
+                        _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, (uint)idx2);
 
                     if (option.Description.Length > 0)
                     {
@@ -235,7 +236,7 @@ public class ModPanelSettingsTab : ITab
                 using var i      = ImRaii.PushId(idx);
                 var       option = group[idx];
                 if (ImGui.RadioButton(option.Name, selectedOption == idx))
-                    _collectionManager.Current.SetModSetting(_selector.Selected!.Index, groupIdx, (uint)idx);
+                    _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, (uint)idx);
 
                 if (option.Description.Length <= 0)
                     continue;
@@ -320,7 +321,7 @@ public class ModPanelSettingsTab : ITab
                 if (ImGui.Checkbox(option.Name, ref setting))
                 {
                     flags = setting ? flags | flag : flags & ~flag;
-                    _collectionManager.Current.SetModSetting(_selector.Selected!.Index, groupIdx, flags);
+                    _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, flags);
                 }
 
                 if (option.Description.Length > 0)
@@ -348,10 +349,10 @@ public class ModPanelSettingsTab : ITab
         if (ImGui.Selectable("Enable All"))
         {
             flags = group.Count == 32 ? uint.MaxValue : (1u << group.Count) - 1u;
-            _collectionManager.Current.SetModSetting(_selector.Selected!.Index, groupIdx, flags);
+            _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, flags);
         }
 
         if (ImGui.Selectable("Disable All"))
-            _collectionManager.Current.SetModSetting(_selector.Selected!.Index, groupIdx, 0);
+            _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, 0);
     }
 }

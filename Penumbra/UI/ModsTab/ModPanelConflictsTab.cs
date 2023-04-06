@@ -3,7 +3,7 @@ using System.Numerics;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
@@ -26,7 +26,7 @@ public class ModPanelConflictsTab : ITab
         => "Conflicts"u8;
 
     public bool IsVisible
-        => _collectionManager.Current.Conflicts(_selector.Selected!).Count > 0;
+        => _collectionManager.Active.Current.Conflicts(_selector.Selected!).Count > 0;
 
     public void DrawContent()
     {
@@ -36,7 +36,7 @@ public class ModPanelConflictsTab : ITab
 
         // Can not be null because otherwise the tab bar is never drawn.
         var mod = _selector.Selected!;
-        foreach (var conflict in Penumbra.CollectionManager.Current.Conflicts(mod))
+        foreach (var conflict in _collectionManager.Active.Current.Conflicts(mod))
         {
             if (ImGui.Selectable(conflict.Mod2.Name) && conflict.Mod2 is Mod otherMod)
                 _selector.SelectByValue(otherMod);
@@ -47,7 +47,7 @@ public class ModPanelConflictsTab : ITab
             {
                 var priority = conflict.Mod2.Index < 0
                     ? conflict.Mod2.Priority
-                    : _collectionManager.Current[conflict.Mod2.Index].Settings!.Priority;
+                    : _collectionManager.Active.Current[conflict.Mod2.Index].Settings!.Priority;
                 ImGui.TextUnformatted($"(Priority {priority})");
             }
 

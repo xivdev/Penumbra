@@ -9,6 +9,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections;
+using Penumbra.Collections.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
@@ -43,7 +44,7 @@ public class EffectiveTab : ITab
         ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, _effectiveArrowLength);
         ImGui.TableSetupColumn("##file", ImGuiTableColumnFlags.WidthFixed, _effectiveRightTextLength);
 
-        DrawEffectiveRows(_collectionManager.Current, skips, height,
+        DrawEffectiveRows(_collectionManager.Active.Current, skips, height,
             _effectiveFilePathFilter.Length > 0 || _effectiveGamePathFilter.Length > 0);
     }
 
