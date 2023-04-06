@@ -1,10 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
@@ -12,16 +10,13 @@ using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Log;
-using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.Interop;
 using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
-using Penumbra.GameData.Data;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
@@ -32,6 +27,9 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
+using Penumbra.String.Classes;
+using Xande;
+using Xande.Havok;
 
 namespace Penumbra;
 
@@ -61,6 +59,8 @@ public class Penumbra : IDalamudPlugin
     public static IObjectIdentifier       Identifier        { get; private set; } = null!;
     public static IGamePathParser         GamePathParser    { get; private set; } = null!;
     public static StainService            StainService      { get; private set; } = null!;
+    public static ModelConverter          ModelConverter    { get; private set; } = null!;
+    public static SklbResolver            SklbResolver      { get; private set; } = null!;
 
     // TODO
     public static ValidityChecker ValidityChecker { get; private set; } = null!;
@@ -114,6 +114,13 @@ public class Penumbra : IDalamudPlugin
                 PathResolver = _tmp.Services.GetRequiredService<PathResolver>();
             }
 
+            var lumina = new LuminaManager(DalamudServices.SGameData.GameData)
+            {
+                FileResolver = p
+                    => Utf8GamePath.FromString(p, out var path, true) ? CollectionManager.Active.Current.ResolvePath(path)?.ToString() : null,
+            };
+            ModelConverter = new ModelConverter(lumina, new HavokConverter());
+            SklbResolver   = new SklbResolver();
             SetupInterface();
             SetupApi();
 

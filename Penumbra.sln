@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.Api", "Penumbra.Ap
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.String", "Penumbra.String\Penumbra.String.csproj", "{5549BAFD-6357-4B1A-800C-75AC36E5B76D}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Xande", "Xande\Xande\Xande.csproj", "{87A71FEB-B5C5-4A95-A94A-1D7DF8CD5ECC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{5549BAFD-6357-4B1A-800C-75AC36E5B76D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5549BAFD-6357-4B1A-800C-75AC36E5B76D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5549BAFD-6357-4B1A-800C-75AC36E5B76D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87A71FEB-B5C5-4A95-A94A-1D7DF8CD5ECC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{87A71FEB-B5C5-4A95-A94A-1D7DF8CD5ECC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87A71FEB-B5C5-4A95-A94A-1D7DF8CD5ECC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{87A71FEB-B5C5-4A95-A94A-1D7DF8CD5ECC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

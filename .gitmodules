@@ -10,3 +10,7 @@
 	path = Penumbra.String
 	url = git@github.com:Ottermandias/Penumbra.String.git
 	branch = main
+[submodule "Xande"]
+	path = Xande
+	url = git@github.com:XIVDev/Xande
+	branch = model-export

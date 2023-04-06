@@ -1,11 +1,16 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using Dalamud.Interface;
+using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
+using Penumbra.GameData.Data;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.UI.Classes;
 
@@ -67,7 +72,28 @@ public class ResourceTreeViewer
 
                 using var id = ImRaii.PushId(index);
 
-                ImGui.Text($"Collection: {tree.CollectionName}");
+                if (ImGui.Button("Export Character") && !_config.ExportDirectory.IsNullOrEmpty())
+                {
+                    try
+                    {
+                        var     outputPath = Path.Combine(_config.ExportDirectory, $"{tree.Name}_{DateTime.UtcNow.Ticks}");
+                        var     models     = tree.Nodes.Where(n => n.Type is ResourceType.Mdl && !n.GamePath.Path.StartsWith("chara/weapon/"u8)).Select(n => n.GamePath.ToString()).ToArray();
+                        ushort? deform     = tree.RaceCode is GenderRace.Unknown ? null : (ushort)tree.RaceCode;
+                        var skeletons = Penumbra.SklbResolver.ResolveAll(models);
+                        if (tree.RaceCode is not GenderRace.Unknown)
+                            skeletons = skeletons.Prepend(
+                                    $"chara/human/c{tree.RaceCode.ToRaceCode()}/skeleton/base/b0001/skl_c{tree.RaceCode.ToRaceCode()}b0001.sklb")
+                                .ToArray();
+                        Directory.CreateDirectory(outputPath);
+                        Penumbra.ModelConverter.ExportModel(outputPath, models, skeletons, deform);
+                    }
+                    catch (Exception ex)
+                    {
+                        Penumbra.Log.Error($"Error exporting character:\n{ex}");
+                    }
+                    
+                }
+                ImGui.TextUnformatted($"Collection: {tree.CollectionName}");
 
                 using var table = ImRaii.Table("##ResourceTree", _actionCapacity > 0 ? 4 : 3,
                     ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg);
