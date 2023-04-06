@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
+using CustomizeData = FFXIVClientStructs.FFXIV.Client.Game.Character.CustomizeData;
 
 namespace Penumbra.Interop.ResourceTree;
 
@@ -16,6 +17,10 @@ public class ResourceTree
     public readonly bool               PlayerRelated;
     public readonly string             CollectionName;
     public readonly List<ResourceNode> Nodes;
+
+    public int           ModelId;
+    public CustomizeData CustomizeData;
+    public GenderRace    RaceCode;
 
     public ResourceTree(string name, nint sourceAddress, bool playerRelated, string collectionName)
     {
@@ -32,6 +37,9 @@ public class ResourceTree
         var model     = (CharacterBase*)character->GameObject.GetDrawObject();
         var equipment = new ReadOnlySpan<CharacterArmor>(character->EquipSlotData, 10);
         // var customize = new ReadOnlySpan<byte>( character->CustomizeData, 26 );
+        ModelId       = character->ModelCharaId;
+        CustomizeData = character->DrawData.CustomizeData;
+        RaceCode      = model->GetModelType() == CharacterBase.ModelType.Human ? (GenderRace) ((Human*)model)->RaceSexId : GenderRace.Unknown;
 
         for (var i = 0; i < model->SlotCount; ++i)
         {

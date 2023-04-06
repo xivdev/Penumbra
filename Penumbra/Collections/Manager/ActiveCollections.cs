@@ -33,6 +33,7 @@ public class ActiveCollections : ISavable, IDisposable
         Individuals   = new IndividualCollections(actors.AwaitedService);
         _communicator.CollectionChange.Subscribe(OnCollectionChange);
         LoadCollections();
+        UpdateCurrentCollectionInUse();
     }
 
     public void Dispose()
