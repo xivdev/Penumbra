@@ -91,6 +91,7 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         _communicator.ModDiscoveryStarted.Subscribe(StoreCurrentSelection);
         _communicator.ModDiscoveryFinished.Subscribe(RestoreLastSelection);
         OnCollectionChange(CollectionType.Current, null, _collectionManager.Active.Current, "");
+        ExternalModImporter.ModFileSystemSelectorInstance = this;
     }
 
     public override void Dispose()
