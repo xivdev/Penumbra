@@ -602,6 +602,19 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return PenumbraApiEc.Success;
     }
 
+    public PenumbraApiEc UnpackMod(string modFilePackagePath)
+    {
+        if (File.Exists(modFilePackagePath))
+        {
+            ExternalModImporter.UnpackMod(modFilePackagePath);
+            return PenumbraApiEc.Success;
+        }
+        else
+        {
+            return PenumbraApiEc.FileMissing;
+        }
+    }
+
     public PenumbraApiEc AddMod(string modDirectory)
     {
         CheckInitialized();
