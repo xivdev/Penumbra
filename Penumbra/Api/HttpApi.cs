@@ -16,6 +16,8 @@ public class HttpApi : IDisposable
         [Route( HttpVerbs.Post, "/redraw"    )] public partial Task    Redraw();
         [Route( HttpVerbs.Post, "/redrawAll" )] public partial void    RedrawAll();
         [Route( HttpVerbs.Post, "/reloadmod" )] public partial Task    ReloadMod();
+        [Route( HttpVerbs.Post, "/unpackmod" )] public partial Task    UnpackMod();
+        [Route( HttpVerbs.Post, "/openwindow")] public partial Task    OpenWindow();
         // @formatter:on
     }
 
@@ -110,12 +112,34 @@ public class HttpApi : IDisposable
             // Reload the mod by path or name, which will also remove no-longer existing mods.
             _api.ReloadMod( data.Path, data.Name );
         }
+        public async partial Task UnpackMod()
+        {
+            var data = await HttpContext.GetRequestDataAsync< ModUnpackData >();
+            Penumbra.Log.Debug( $"[HTTP] {nameof( UnpackMod )} triggered with {data}." );
+            // Unpack the mod package if its valid.
+            if( data.Path.Length != 0 )
+            {
+                _api.UnpackMod( data.Path );
+            }
+        }
+
+        public async partial Task OpenWindow()
+        {
+            Penumbra.Log.Debug($"[HTTP] {nameof(OpenWindow)} triggered.");
+            // Open the penumbra window
+            _api.OpenMainWindow(TabType.Mods, "", "");
+        }
 
         private record ModReloadData( string Path, string Name )
         {
             public ModReloadData()
                 : this( string.Empty, string.Empty )
             { }
+        }
+        private record ModUnpackData( string Path)
+        {
+            public ModUnpackData()
+                : this( string.Empty) { }
         }
 
         private record RedrawData( string Name, RedrawType Type, int ObjectTableIndex )
