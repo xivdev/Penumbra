@@ -847,13 +847,15 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
 
-        private string                  _modDirectory = string.Empty;
-        private string                  _modName      = string.Empty;
-        private string                  _pathInput    = string.Empty;
+        private string                  _modDirectory   = string.Empty;
+        private string                  _modName        = string.Empty;
+        private string                  _pathInput      = string.Empty;
+        private string                  _newInstallPath = string.Empty;
         private PenumbraApiEc           _lastReloadEc;
         private PenumbraApiEc           _lastAddEc;
         private PenumbraApiEc           _lastDeleteEc;
         private PenumbraApiEc           _lastSetPathEc;
+        private PenumbraApiEc           _lastInstallEc;
         private IList<(string, string)> _mods = new List<(string, string)>();
 
         public readonly EventSubscriber<string>         DeleteSubscriber;
@@ -895,9 +897,10 @@ public class IpcTester : IDisposable
             if (!_)
                 return;
 
-            ImGui.InputTextWithHint("##modDir",  "Mod Directory Name...", ref _modDirectory, 100);
-            ImGui.InputTextWithHint("##modName", "Mod Name...",           ref _modName,      100);
-            ImGui.InputTextWithHint("##path",    "New Path...",           ref _pathInput,    100);
+            ImGui.InputTextWithHint("##install", "Install File Path...",  ref _newInstallPath, 100);
+            ImGui.InputTextWithHint("##modDir",  "Mod Directory Name...", ref _modDirectory,   100);
+            ImGui.InputTextWithHint("##modName", "Mod Name...",           ref _modName,        100);
+            ImGui.InputTextWithHint("##path",    "New Path...",           ref _pathInput,      100);
             using var table = ImRaii.Table(string.Empty, 3, ImGuiTableFlags.SizingFixedFit);
             if (!table)
                 return;
@@ -915,6 +918,13 @@ public class IpcTester : IDisposable
 
             ImGui.SameLine();
             ImGui.TextUnformatted(_lastReloadEc.ToString());
+
+            DrawIntro(Ipc.InstallMod.Label, "Install Mod");
+            if (ImGui.Button("Install"))
+                _lastInstallEc = Ipc.InstallMod.Subscriber(_pi).Invoke(_newInstallPath);
+
+            ImGui.SameLine();
+            ImGui.TextUnformatted(_lastInstallEc.ToString());
 
             DrawIntro(Ipc.AddMod.Label, "Add Mod");
             if (ImGui.Button("Add"))
@@ -1140,7 +1150,7 @@ public class IpcTester : IDisposable
     private class Temporary
     {
         private readonly DalamudPluginInterface _pi;
-        private readonly ModManager            _modManager;
+        private readonly ModManager             _modManager;
 
         public Temporary(DalamudPluginInterface pi, ModManager modManager)
         {

@@ -4,7 +4,7 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ExportManager : IDisposable
+public class ModExportManager : IDisposable
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
@@ -15,7 +15,7 @@ public class ExportManager : IDisposable
     public DirectoryInfo ExportDirectory
         => _exportDirectory ?? _modManager.BasePath;
 
-    public ExportManager(Configuration config, CommunicatorService communicator, ModManager modManager)
+    public ModExportManager(Configuration config, CommunicatorService communicator, ModManager modManager)
     {
         _config       = config;
         _communicator = communicator;

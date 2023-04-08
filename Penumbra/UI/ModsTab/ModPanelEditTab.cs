@@ -24,7 +24,7 @@ public class ModPanelEditTab : ITab
     private readonly ChatService           _chat;
     private readonly FilenameService       _filenames;
     private readonly ModManager            _modManager;
-    private readonly ExportManager         _exportManager;
+    private readonly ModExportManager      _modExportManager;
     private readonly ModFileSystem         _fileSystem;
     private readonly ModFileSystemSelector _selector;
     private readonly ModEditWindow         _editWindow;
@@ -38,16 +38,16 @@ public class ModPanelEditTab : ITab
     private Mod                _mod         = null!;
 
     public ModPanelEditTab(ModManager modManager, ModFileSystemSelector selector, ModFileSystem fileSystem, ChatService chat,
-        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ExportManager exportManager)
+        ModEditWindow editWindow, ModEditor editor, FilenameService filenames, ModExportManager modExportManager)
     {
-        _modManager    = modManager;
-        _selector      = selector;
-        _fileSystem    = fileSystem;
-        _chat          = chat;
-        _editWindow    = editWindow;
-        _editor        = editor;
-        _filenames     = filenames;
-        _exportManager = exportManager;
+        _modManager       = modManager;
+        _selector         = selector;
+        _fileSystem       = fileSystem;
+        _chat             = chat;
+        _editWindow       = editWindow;
+        _editor           = editor;
+        _filenames        = filenames;
+        _modExportManager = modExportManager;
     }
 
     public ReadOnlySpan<byte> Label
@@ -150,7 +150,7 @@ public class ModPanelEditTab : ITab
 
     private void BackupButtons(Vector2 buttonSize)
     {
-        var backup = new ModBackup(_exportManager, _mod);
+        var backup = new ModBackup(_modExportManager, _mod);
         var tt = ModBackup.CreatingBackup
             ? "Already exporting a mod."
             : backup.Exists

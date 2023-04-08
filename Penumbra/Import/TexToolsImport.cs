@@ -39,10 +39,10 @@ public partial class TexToolsImporter : IDisposable
     private readonly ModEditor     _editor;
     private readonly ModManager   _modManager;
 
-    public TexToolsImporter( DirectoryInfo baseDirectory, int count, IEnumerable< FileInfo > modPackFiles,
+    public TexToolsImporter( int count, IEnumerable< FileInfo > modPackFiles,
         Action< FileInfo, DirectoryInfo?, Exception? > handler, Configuration config, ModEditor editor, ModManager modManager)
     {
-        _baseDirectory = baseDirectory;
+        _baseDirectory = modManager.BasePath;
         _tmpFile       = Path.Combine( _baseDirectory.FullName, TempFileName );
         _modPackFiles  = modPackFiles;
         _config        = config;

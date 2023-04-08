@@ -98,7 +98,8 @@ public class PenumbraNew
             .AddSingleton<ModDataEditor>()
             .AddSingleton<ModOptionEditor>()
             .AddSingleton<ModManager>()
-            .AddSingleton<ExportManager>()
+            .AddSingleton<ModExportManager>()
+            .AddSingleton<ModImportManager>()
             .AddSingleton<ModFileSystem>()
             .AddSingleton<ModCacheManager>();
 
@@ -131,6 +132,7 @@ public class PenumbraNew
             .AddSingleton<ModsTab>()
             .AddSingleton<ModPanel>()
             .AddSingleton<ModFileSystemSelector>()
+            .AddSingleton<ImportPopup>()
             .AddSingleton<ModPanelDescriptionTab>()
             .AddSingleton<ModPanelSettingsTab>()
             .AddSingleton<ModPanelEditTab>()

@@ -1,7 +1,4 @@
 using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
@@ -13,12 +10,9 @@ using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.FileSystem.Selector;
 using OtterGui.Raii;
-using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
-using Penumbra.Import;
-using Penumbra.Import.Structs;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -27,7 +21,7 @@ using Penumbra.Util;
 
 namespace Penumbra.UI.ModsTab;
 
-public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>
+public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSystemSelector.ModState>
 {
     private readonly CommunicatorService _communicator;
     private readonly ChatService         _chat;
@@ -37,18 +31,13 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     private readonly ModCacheManager     _modCaches;
     private readonly CollectionManager   _collectionManager;
     private readonly TutorialService     _tutorial;
-    private readonly ModEditor           _modEditor;
-    private Queue<string>                _modUnpackQueue = new Queue<string>();
-
-    private TexToolsImporter? _import;
-    public  ModSettings       SelectedSettings          { get; private set; } = ModSettings.Empty;
-    public  ModCollection     SelectedSettingCollection { get; private set; } = ModCollection.Empty;
-
-    private uint _infoPopupId = 0;
+    private readonly ModImportManager    _modImportManager;
+    public           ModSettings         SelectedSettings          { get; private set; } = ModSettings.Empty;
+    public           ModCollection       SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
     public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
-        ModEditor modEditor, ModCacheManager modCaches)
+        ModCacheManager modCaches, ModImportManager modImportManager)
         : base(fileSystem, DalamudServices.KeyState, HandleException)
     {
         _communicator      = communicator;
@@ -58,8 +47,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         _tutorial          = tutorial;
         _fileDialog        = fileDialog;
         _chat              = chat;
-        _modEditor         = modEditor;
         _modCaches         = modCaches;
+        _modImportManager  = modImportManager;
 
         // @formatter:off
         SubscribeRightClickFolder(EnableDescendants, 10);
@@ -85,13 +74,12 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
 
         SelectionChanged += OnSelectionChange;
         _communicator.CollectionChange.Subscribe(OnCollectionChange);
-        _collectionManager.Active.Current.ModSettingChanged += OnSettingChange;
+        _collectionManager.Active.Current.ModSettingChanged  += OnSettingChange;
         _collectionManager.Active.Current.InheritanceChanged += OnInheritanceChange;
         _communicator.ModDataChanged.Subscribe(OnModDataChange);
         _communicator.ModDiscoveryStarted.Subscribe(StoreCurrentSelection);
         _communicator.ModDiscoveryFinished.Subscribe(RestoreLastSelection);
         OnCollectionChange(CollectionType.Current, null, _collectionManager.Active.Current, "");
-        ExternalModImporter.ModFileSystemSelectorInstance = this;
     }
 
     public override void Dispose()
@@ -100,11 +88,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
         _communicator.ModDiscoveryStarted.Unsubscribe(StoreCurrentSelection);
         _communicator.ModDiscoveryFinished.Unsubscribe(RestoreLastSelection);
         _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
-        _collectionManager.Active.Current.ModSettingChanged -= OnSettingChange;
+        _collectionManager.Active.Current.ModSettingChanged  -= OnSettingChange;
         _collectionManager.Active.Current.InheritanceChanged -= OnInheritanceChange;
         _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
-        _import?.Dispose();
-        _import = null;
     }
 
     public new ModFileSystem.Leaf? SelectedLeaf
@@ -131,7 +117,6 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     protected override void DrawPopups()
     {
         DrawHelpPopup();
-        DrawInfoPopup();
 
         if (ImGuiUtil.OpenNameField("Create New Mod", ref _newModName))
             try
@@ -147,13 +132,8 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
                 Penumbra.Log.Error($"Could not create directory for new Mod {_newModName}:\n{e}");
             }
 
-        while (_modsToAdd.TryDequeue(out var dir))
+        while (_modImportManager.AddUnpackedMod(out var mod))
         {
-            _modManager.AddMod(dir);
-            var mod = _modManager.LastOrDefault();
-            if (mod == null)
-                continue;
-
             MoveModToDefaultDirectory(mod);
             SelectByValue(mod);
         }
@@ -234,8 +214,6 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     /// <summary> Add an import mods button that opens a file selector. </summary>
     private void AddImportModButton(Vector2 size)
     {
-        _infoPopupId = ImGui.GetID("Import Status");
-        ExternalImportListener();
         var button = ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), size,
             "Import one or multiple mods from Tex Tools Mod Pack Files or Penumbra Mod Pack Files.", !Penumbra.ModManager.Valid, true);
         _tutorial.OpenTutorial(BasicTutorialSteps.ModImport);
@@ -251,103 +229,9 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
             {
                 if (!s)
                     return;
-                _modsCurrentlyUnpacking = true;
-                _import = new TexToolsImporter(_modManager.BasePath, f.Count, f.Select(file => new FileInfo(file)),
-                    AddNewMod, _config, _modEditor, _modManager);
-                ImGui.OpenPopup(_infoPopupId);
+
+                _modImportManager.AddUnpack(f);
             }, 0, modPath, _config.AlwaysOpenDefaultImport);
-    }
-
-    private void ExternalImportListener()
-    {
-        if (_modUnpackQueue.Count > 0)
-        {
-            // Attempt to avoid triggering if other mods are already unpacking
-            if (!_modsCurrentlyUnpacking)
-            {
-                string modPackagePath = _modUnpackQueue.Dequeue();
-                if (File.Exists(modPackagePath))
-                {
-                    _modsCurrentlyUnpacking = true;
-                    var modPath = !_config.AlwaysOpenDefaultImport ? null
-                        : _config.DefaultModImportPath.Length > 0 ? _config.DefaultModImportPath
-                        : _config.ModDirectory.Length > 0 ? _config.ModDirectory : null;
-
-                    _import = new TexToolsImporter(Penumbra.ModManager.BasePath, 1, new List<FileInfo>() { new FileInfo(modPackagePath) }, AddNewMod,
-                        _config, _modEditor, _modManager);
-                    ImGui.OpenPopup(_infoPopupId);
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Unpacks the specified standalone package
-    /// </summary>
-    /// <param name="modPackagePath">The package to unpack</param>
-    public void ImportStandaloneModPackage(string modPackagePath)
-    {
-        _modUnpackQueue.Enqueue(modPackagePath);
-    }
-
-    /// <summary> Draw the progress information for import. </summary>
-    private void DrawInfoPopup()
-    {
-        var display = ImGui.GetIO().DisplaySize;
-        var height  = Math.Max(display.Y / 4, 15 * ImGui.GetFrameHeightWithSpacing());
-        var width   = display.X / 8;
-        var size    = new Vector2(width * 2, height);
-        ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Always, Vector2.One / 2);
-        ImGui.SetNextWindowSize(size);
-        var       infoPopupId = ImGui.GetID("Import Status");
-        using var popup       = ImRaii.Popup("Import Status", ImGuiWindowFlags.Modal);
-        if (_import == null || !popup.Success)
-            return;
-
-        using (var child = ImRaii.Child("##import", new Vector2(-1, size.Y - ImGui.GetFrameHeight() * 2)))
-        {
-            if (child)
-                _import.DrawProgressInfo(new Vector2(-1, ImGui.GetFrameHeight()));
-        }
-
-        if ((_import.State != ImporterState.Done || !ImGui.Button("Close", -Vector2.UnitX))
-         && (_import.State == ImporterState.Done || !_import.DrawCancelButton(-Vector2.UnitX)))
-            return;
-
-        _import?.Dispose();
-        _import = null;
-        ImGui.CloseCurrentPopup();
-    }
-
-    /// <summary> Mods need to be added thread-safely outside of iteration. </summary>
-    private readonly ConcurrentQueue<DirectoryInfo> _modsToAdd = new();
-
-    /// <summary>
-    /// Clean up invalid directory if necessary.
-    /// Add successfully extracted mods.
-    /// </summary>
-    private void AddNewMod(FileInfo file, DirectoryInfo? dir, Exception? error)
-    {
-        if (error != null)
-        {
-            if (dir != null && Directory.Exists(dir.FullName))
-                try
-                {
-                    Directory.Delete(dir.FullName, true);
-                }
-                catch (Exception e)
-                {
-                    Penumbra.Log.Error($"Error cleaning up failed mod extraction of {file.FullName} to {dir.FullName}:\n{e}");
-                }
-
-            if (error is not OperationCanceledException)
-                Penumbra.Log.Error($"Error extracting {file.FullName}, mod skipped:\n{error}");
-        }
-        else if (dir != null)
-        {
-            _modsToAdd.Enqueue(dir);
-        }
-        _modsCurrentlyUnpacking = false;
     }
 
     private void DeleteModButton(Vector2 size)
@@ -573,7 +457,6 @@ public sealed partial class ModFileSystemSelector : FileSystemSelector<Mod, ModF
     private       LowerString      _modFilter   = LowerString.Empty;
     private       int              _filterType  = -1;
     private       ModFilter        _stateFilter = ModFilterExtensions.UnfilteredStateMods;
-    private bool _modsCurrentlyUnpacking;
 
     private void SetFilterTooltip()
     {

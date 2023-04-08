@@ -32,7 +32,7 @@ public class SettingsTab : ITab
     private readonly Penumbra                _penumbra;
     private readonly FileDialogService       _fileDialog;
     private readonly ModManager              _modManager;
-    private readonly ExportManager           _exportManager;
+    private readonly ModExportManager        _modExportManager;
     private readonly ModFileSystemSelector   _selector;
     private readonly CharacterUtility        _characterUtility;
     private readonly ResidentResourceManager _residentResources;
@@ -40,7 +40,7 @@ public class SettingsTab : ITab
 
     public SettingsTab(Configuration config, FontReloader fontReloader, TutorialService tutorial, Penumbra penumbra,
         FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
-        ResidentResourceManager residentResources, DalamudServices dalamud, ExportManager exportManager)
+        ResidentResourceManager residentResources, DalamudServices dalamud, ModExportManager modExportManager)
     {
         _config            = config;
         _fontReloader      = fontReloader;
@@ -52,7 +52,7 @@ public class SettingsTab : ITab
         _characterUtility  = characterUtility;
         _residentResources = residentResources;
         _dalamud           = dalamud;
-        _exportManager     = exportManager;
+        _modExportManager  = modExportManager;
     }
 
     public void DrawHeader()
@@ -555,7 +555,7 @@ public class SettingsTab : ITab
             _tempExportDirectory = tmp;
 
         if (ImGui.IsItemDeactivatedAfterEdit())
-            _exportManager.UpdateExportDirectory(_tempExportDirectory);
+            _modExportManager.UpdateExportDirectory(_tempExportDirectory);
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.Folder.ToIconString()}##export", UiHelpers.IconButtonSize,
@@ -569,7 +569,7 @@ public class SettingsTab : ITab
             _fileDialog.OpenFolderPicker("Choose Default Export Directory", (b, s) =>
             {
                 if (b)
-                    _exportManager.UpdateExportDirectory(s);
+                    _modExportManager.UpdateExportDirectory(s);
             }, startDir, false);
         }
 

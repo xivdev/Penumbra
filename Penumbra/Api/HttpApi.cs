@@ -12,12 +12,12 @@ public class HttpApi : IDisposable
     private partial class Controller : WebApiController
     {
         // @formatter:off
-        [Route( HttpVerbs.Get,  "/mods"      )] public partial object? GetMods();
-        [Route( HttpVerbs.Post, "/redraw"    )] public partial Task    Redraw();
-        [Route( HttpVerbs.Post, "/redrawAll" )] public partial void    RedrawAll();
-        [Route( HttpVerbs.Post, "/reloadmod" )] public partial Task    ReloadMod();
-        [Route( HttpVerbs.Post, "/unpackmod" )] public partial Task    UnpackMod();
-        [Route( HttpVerbs.Post, "/openwindow")] public partial Task    OpenWindow();
+        [Route( HttpVerbs.Get,  "/mods"       )] public partial object? GetMods();
+        [Route( HttpVerbs.Post, "/redraw"     )] public partial Task    Redraw();
+        [Route( HttpVerbs.Post, "/redrawAll"  )] public partial void    RedrawAll();
+        [Route( HttpVerbs.Post, "/reloadmod"  )] public partial Task    ReloadMod();
+        [Route( HttpVerbs.Post, "/installmod" )] public partial Task    InstallMod();
+        [Route( HttpVerbs.Post, "/openwindow" )] public partial void    OpenWindow();
         // @formatter:on
     }
 
@@ -103,16 +103,15 @@ public class HttpApi : IDisposable
             _api.ReloadMod(data.Path, data.Name);
         }
 
-        public async partial Task UnpackMod()
+        public async partial Task InstallMod()
         {
-            var data = await HttpContext.GetRequestDataAsync<ModUnpackData>();
-            Penumbra.Log.Debug($"[HTTP] {nameof(UnpackMod)} triggered with {data}.");
-            // Unpack the mod package if its valid.
+            var data = await HttpContext.GetRequestDataAsync<ModInstallData>();
+            Penumbra.Log.Debug($"[HTTP] {nameof(InstallMod)} triggered with {data}.");
             if (data.Path.Length != 0)
-                _api.UnpackMod(data.Path);
+                _api.InstallMod(data.Path);
         }
 
-        public async partial Task OpenWindow()
+        public partial void OpenWindow()
         {
             Penumbra.Log.Debug($"[HTTP] {nameof(OpenWindow)} triggered.");
             _api.OpenMainWindow(TabType.Mods, string.Empty, string.Empty);
@@ -125,9 +124,9 @@ public class HttpApi : IDisposable
             { }
         }
 
-        private record ModUnpackData(string Path)
+        private record ModInstallData(string Path)
         {
-            public ModUnpackData()
+            public ModInstallData()
                 : this(string.Empty)
             { }
         }

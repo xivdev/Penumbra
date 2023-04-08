@@ -18,10 +18,10 @@ public class ModBackup
     public readonly  string        Name;
     public readonly  bool          Exists;
 
-    public ModBackup(ExportManager exportManager, Mod mod)
+    public ModBackup(ModExportManager modExportManager, Mod mod)
     {
         _mod           = mod;
-        Name           = Path.Combine(exportManager.ExportDirectory.FullName, _mod.ModPath.Name) + ".pmp";
+        Name           = Path.Combine(modExportManager.ExportDirectory.FullName, _mod.ModPath.Name) + ".pmp";
         Exists         = File.Exists(Name);
     }
 

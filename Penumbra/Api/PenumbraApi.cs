@@ -109,23 +109,25 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private ActorService          _actors;
     private CollectionResolver    _collectionResolver;
     private CutsceneService       _cutsceneService;
+    private ModImportManager      _modImportManager;
 
     public unsafe PenumbraApi(CommunicatorService communicator, Penumbra penumbra, ModManager modManager, ResourceLoader resourceLoader,
         Configuration config, CollectionManager collectionManager, DalamudServices dalamud, TempCollectionManager tempCollections,
-        TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService)
+        TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService, ModImportManager modImportManager)
     {
-        _communicator       = communicator;
-        _penumbra           = penumbra;
-        _modManager         = modManager;
-        _resourceLoader     = resourceLoader;
-        _config             = config;
-        _collectionManager  = collectionManager;
-        _dalamud            = dalamud;
-        _tempCollections    = tempCollections;
-        _tempMods           = tempMods;
-        _actors             = actors;
-        _collectionResolver = collectionResolver;
-        _cutsceneService    = cutsceneService;
+        _communicator          = communicator;
+        _penumbra              = penumbra;
+        _modManager            = modManager;
+        _resourceLoader        = resourceLoader;
+        _config                = config;
+        _collectionManager     = collectionManager;
+        _dalamud               = dalamud;
+        _tempCollections       = tempCollections;
+        _tempMods              = tempMods;
+        _actors                = actors;
+        _collectionResolver    = collectionResolver;
+        _cutsceneService       = cutsceneService;
+        _modImportManager = modImportManager;
 
         _lumina = (Lumina.GameData?)_dalamud.GameData.GetType()
             .GetField("gameData", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -602,11 +604,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return PenumbraApiEc.Success;
     }
 
-    public PenumbraApiEc UnpackMod(string modFilePackagePath)
+    public PenumbraApiEc InstallMod(string modFilePackagePath)
     {
         if (File.Exists(modFilePackagePath))
         {
-            ExternalModImporter.UnpackMod(modFilePackagePath);
+            _modImportManager.AddUnpack(modFilePackagePath);
             return PenumbraApiEc.Success;
         }
         else
