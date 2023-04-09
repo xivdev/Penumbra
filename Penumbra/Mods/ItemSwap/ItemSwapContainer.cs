@@ -8,12 +8,15 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Penumbra.GameData;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Mods.ItemSwap;
 
 public class ItemSwapContainer
 {
+    private readonly IObjectIdentifier _identifier;
+
     private Dictionary< Utf8GamePath, FullPath > _modRedirections  = new();
     private HashSet< MetaManipulation >          _modManipulations = new();
 
@@ -109,8 +112,9 @@ public class ItemSwapContainer
         }
     }
 
-    public ItemSwapContainer()
+    public ItemSwapContainer(IObjectIdentifier identifier)
     {
+        _identifier = identifier;
         LoadMod( null, null );
     }
 
@@ -129,7 +133,7 @@ public class ItemSwapContainer
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateItemSwap( Swaps, PathResolver( collection ), MetaResolver( collection ), from, to, useRightRing, useLeftRing );
+        var ret = EquipmentSwap.CreateItemSwap( _identifier, Swaps, PathResolver( collection ), MetaResolver( collection ), from, to, useRightRing, useLeftRing );
         Loaded = true;
         return ret;
     }
@@ -138,7 +142,7 @@ public class ItemSwapContainer
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateTypeSwap( Swaps, PathResolver( collection ), MetaResolver( collection ), slotFrom, from, slotTo, to );
+        var ret = EquipmentSwap.CreateTypeSwap( _identifier, Swaps, PathResolver( collection ), MetaResolver( collection ), slotFrom, from, slotTo, to );
         Loaded = true;
         return ret;
     }

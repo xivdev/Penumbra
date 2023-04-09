@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using Lumina.Data.Parsing;
 using Lumina.Excel.GeneratedSheets;
+using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
@@ -33,7 +34,7 @@ public static class EquipmentSwap
                 : Array.Empty< EquipSlot >();
     }
 
-    public static Item[] CreateTypeSwap( List< Swap > swaps, Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips,
+    public static Item[] CreateTypeSwap( IObjectIdentifier identifier, List< Swap > swaps, Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips,
         EquipSlot slotFrom, Item itemFrom, EquipSlot slotTo, Item itemTo )
     {
         LookupItem( itemFrom, out var actualSlotFrom, out var idFrom, out var variantFrom );
@@ -43,7 +44,7 @@ public static class EquipmentSwap
             throw new ItemSwap.InvalidItemTypeException();
         }
 
-        var ( imcFileFrom, variants, affectedItems ) = GetVariants( slotFrom, idFrom, idTo, variantFrom );
+        var ( imcFileFrom, variants, affectedItems ) = GetVariants( identifier, slotFrom, idFrom, idTo, variantFrom );
         var imcManip  = new ImcManipulation( slotTo, variantTo, idTo.Value, default );
         var imcFileTo = new ImcFile( imcManip );
         var skipFemale    = false;
@@ -96,7 +97,7 @@ public static class EquipmentSwap
         return affectedItems;
     }
 
-    public static Item[] CreateItemSwap( List< Swap > swaps, Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, Item itemFrom,
+    public static Item[] CreateItemSwap( IObjectIdentifier identifier, List< Swap > swaps, Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, Item itemFrom,
         Item itemTo, bool rFinger = true, bool lFinger = true )
     {
         // Check actual ids, variants and slots. We only support using the same slot.
@@ -122,7 +123,7 @@ public static class EquipmentSwap
         var affectedItems = Array.Empty< Item >();
         foreach( var slot in ConvertSlots( slotFrom, rFinger, lFinger ) )
         {
-            ( var imcFileFrom, var variants, affectedItems ) = GetVariants( slot, idFrom, idTo, variantFrom );
+            ( var imcFileFrom, var variants, affectedItems ) = GetVariants( identifier, slot, idFrom, idTo, variantFrom );
             var imcManip  = new ImcManipulation( slot, variantTo, idTo.Value, default );
             var imcFileTo = new ImcFile( imcManip );
 
@@ -250,7 +251,7 @@ public static class EquipmentSwap
         variant = ( byte )( ( Quad )i.ModelMain ).B;
     }
 
-    private static (ImcFile, byte[], Item[]) GetVariants( EquipSlot slotFrom, SetId idFrom, SetId idTo, byte variantFrom )
+    private static (ImcFile, byte[], Item[]) GetVariants( IObjectIdentifier identifier, EquipSlot slotFrom, SetId idFrom, SetId idTo, byte variantFrom )
     {
         var    entry = new ImcManipulation( slotFrom, variantFrom, idFrom.Value, default );
         var    imc   = new ImcFile( entry );
@@ -258,12 +259,12 @@ public static class EquipmentSwap
         byte[] variants;
         if( idFrom.Value == idTo.Value )
         {
-            items    = Penumbra.Identifier.Identify( idFrom, variantFrom, slotFrom ).ToArray();
+            items    = identifier.Identify( idFrom, variantFrom, slotFrom ).ToArray();
             variants = new[] { variantFrom };
         }
         else
         {
-            items = Penumbra.Identifier.Identify( slotFrom.IsEquipment()
+            items = identifier.Identify( slotFrom.IsEquipment()
                 ? GamePaths.Equipment.Mdl.Path( idFrom, GenderRace.MidlanderMale, slotFrom )
                 : GamePaths.Accessory.Mdl.Path( idFrom, GenderRace.MidlanderMale, slotFrom ) ).Select( kvp => kvp.Value ).OfType< Item >().ToArray();
             variants = Enumerable.Range( 0, imc.Count + 1 ).Select( i => ( byte )i ).ToArray();

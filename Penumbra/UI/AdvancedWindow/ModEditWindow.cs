@@ -25,11 +25,12 @@ public partial class ModEditWindow : Window, IDisposable
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
-    private readonly ModEditor       _editor;
-    private readonly ModCacheManager _modCaches;
-    private readonly Configuration   _config;
-    private readonly ItemSwapTab     _itemSwapTab;
-    private readonly DataManager     _gameData;
+    private readonly PerformanceTracker _performance;
+    private readonly ModEditor          _editor;
+    private readonly ModCacheManager    _modCaches;
+    private readonly Configuration      _config;
+    private readonly ItemSwapTab        _itemSwapTab;
+    private readonly DataManager        _gameData;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -69,7 +70,7 @@ public partial class ModEditWindow : Window, IDisposable
 
     public override void PreDraw()
     {
-        using var performance = Penumbra.Performance.Measure(PerformanceType.UiAdvancedWindow);
+        using var performance = _performance.Measure(PerformanceType.UiAdvancedWindow);
 
         var sb = new StringBuilder(256);
 
@@ -127,7 +128,7 @@ public partial class ModEditWindow : Window, IDisposable
 
     public override void Draw()
     {
-        using var performance = Penumbra.Performance.Measure(PerformanceType.UiAdvancedWindow);
+        using var performance = _performance.Measure(PerformanceType.UiAdvancedWindow);
 
         using var tabBar = ImRaii.TabBar("##tabs");
         if (!tabBar)
@@ -491,10 +492,11 @@ public partial class ModEditWindow : Window, IDisposable
         return new FullPath(path);
     }
 
-    public ModEditWindow(FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
+    public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, ModCacheManager modCaches)
         : base(WindowBaseLabel)
     {
+        _performance = performance;
         _itemSwapTab = itemSwapTab;
         _config      = config;
         _editor      = editor;

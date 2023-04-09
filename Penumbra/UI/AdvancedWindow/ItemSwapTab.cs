@@ -32,13 +32,14 @@ public class ItemSwapTab : IDisposable, ITab
     private readonly Configuration         _config;
 
     public ItemSwapTab(CommunicatorService communicator, ItemService itemService, CollectionManager collectionManager,
-        ModManager modManager, Configuration config)
+        ModManager modManager, Configuration config, IdentifierService identifier)
     {
         _communicator      = communicator;
         _itemService       = itemService;
         _collectionManager = collectionManager;
         _modManager        = modManager;
         _config            = config;
+        _swapData          = new ItemSwapContainer(identifier.AwaitedService);
 
         _selectors = new Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)>
         {
@@ -149,7 +150,7 @@ public class ItemSwapTab : IDisposable, ITab
     private          ItemSelector?     _weaponSource;
     private          ItemSelector?     _weaponTarget;
     private readonly WeaponSelector    _slotSelector = new();
-    private readonly ItemSwapContainer _swapData     = new();
+    private readonly ItemSwapContainer _swapData;
 
     private Mod?         _mod;
     private ModSettings? _modSettings;

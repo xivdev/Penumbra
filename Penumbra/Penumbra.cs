@@ -1,10 +1,8 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
@@ -12,16 +10,13 @@ using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Log;
-using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.Interop;
 using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
-using Penumbra.GameData.Data;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
@@ -48,14 +43,12 @@ public class Penumbra : IDalamudPlugin
 
     public static ResidentResourceManager ResidentResources { get; private set; } = null!;
     public static CharacterUtility        CharacterUtility  { get; private set; } = null!;
-    public static GameEventManager        GameEvents        { get; private set; } = null!;
     public static MetaFileManager         MetaFileManager   { get; private set; } = null!;
     public static ModManager              ModManager        { get; private set; } = null!;
     public static ModCacheManager         ModCaches         { get; private set; } = null!;
     public static CollectionManager       CollectionManager { get; private set; } = null!;
     public static TempCollectionManager   TempCollections   { get; private set; } = null!;
     public static TempModManager          TempMods          { get; private set; } = null!;
-    public static ResourceLoader          ResourceLoader    { get; private set; } = null!;
     public static FrameworkManager        Framework         { get; private set; } = null!;
     public static ActorManager            Actors            { get; private set; } = null!;
     public static IObjectIdentifier       Identifier        { get; private set; } = null!;
@@ -65,9 +58,6 @@ public class Penumbra : IDalamudPlugin
     // TODO
     public static ValidityChecker ValidityChecker { get; private set; } = null!;
 
-    public static PerformanceTracker Performance { get; private set; } = null!;
-
-    public readonly PathResolver          PathResolver;
     public readonly RedrawService         RedrawService;
     public readonly ModFileSystem         ModFileSystem;
     public          HttpApi               HttpApi = null!;
@@ -86,12 +76,10 @@ public class Penumbra : IDalamudPlugin
             ChatService     = _tmp.Services.GetRequiredService<ChatService>();
             Filenames       = _tmp.Services.GetRequiredService<FilenameService>();
             SaveService     = _tmp.Services.GetRequiredService<SaveService>();
-            Performance     = _tmp.Services.GetRequiredService<PerformanceTracker>();
             ValidityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
             _tmp.Services.GetRequiredService<BackupService>();
             Config            = _tmp.Services.GetRequiredService<Configuration>();
             CharacterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
-            GameEvents        = _tmp.Services.GetRequiredService<GameEventManager>();
             MetaFileManager   = _tmp.Services.GetRequiredService<MetaFileManager>();
             Framework         = _tmp.Services.GetRequiredService<FrameworkManager>();
             Actors            = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
@@ -107,11 +95,10 @@ public class Penumbra : IDalamudPlugin
             ModFileSystem     = _tmp.Services.GetRequiredService<ModFileSystem>();
             RedrawService     = _tmp.Services.GetRequiredService<RedrawService>();
             _tmp.Services.GetRequiredService<ResourceService>();
-            ResourceLoader = _tmp.Services.GetRequiredService<ResourceLoader>();
             ModCaches      = _tmp.Services.GetRequiredService<ModCacheManager>();
             using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {
-                PathResolver = _tmp.Services.GetRequiredService<PathResolver>();
+                _tmp.Services.GetRequiredService<PathResolver>();
             }
 
             SetupInterface();
