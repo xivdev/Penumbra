@@ -14,16 +14,12 @@ public sealed class ImportPopup : Window
     private readonly ModImportManager _modImportManager;
 
     public ImportPopup(ModImportManager modImportManager)
-        : base("Penumbra Import Status",
-            ImGuiWindowFlags.Modal
-          | ImGuiWindowFlags.Popup
-          | ImGuiWindowFlags.NoCollapse
+        : base("Penumbra Import Status", 
+            ImGuiWindowFlags.NoCollapse
           | ImGuiWindowFlags.NoDecoration
           | ImGuiWindowFlags.NoBackground
           | ImGuiWindowFlags.NoMove
-          | ImGuiWindowFlags.NoInputs
-          | ImGuiWindowFlags.NoFocusOnAppearing
-          | ImGuiWindowFlags.NoBringToFrontOnFocus, true)
+          | ImGuiWindowFlags.NoInputs, true)
     {
         _modImportManager = modImportManager;
         IsOpen = true;
@@ -40,7 +36,9 @@ public sealed class ImportPopup : Window
         if (!_modImportManager.IsImporting(out var import))
             return;
 
-        ImGui.OpenPopup("##importPopup");
+        const string importPopup = "##importPopup";
+        if (!ImGui.IsPopupOpen(importPopup))
+            ImGui.OpenPopup(importPopup);
 
         var display = ImGui.GetIO().DisplaySize;
         var height = Math.Max(display.Y / 4, 15 * ImGui.GetFrameHeightWithSpacing());
@@ -48,17 +46,17 @@ public sealed class ImportPopup : Window
         var size = new Vector2(width * 2, height);
         ImGui.SetNextWindowPos(ImGui.GetMainViewport().GetCenter(), ImGuiCond.Always, Vector2.One / 2);
         ImGui.SetNextWindowSize(size);
-        using var popup = ImRaii.Popup("##importPopup", ImGuiWindowFlags.Modal);
+        using var popup = ImRaii.Popup(importPopup, ImGuiWindowFlags.Modal);
         using (var child = ImRaii.Child("##import", new Vector2(-1, size.Y - ImGui.GetFrameHeight() * 2)))
         {
             if (child)
                 import.DrawProgressInfo(new Vector2(-1, ImGui.GetFrameHeight()));
         }
 
-        if ((import.State != ImporterState.Done || !ImGui.Button("Close", -Vector2.UnitX))
-         && (import.State == ImporterState.Done || !import.DrawCancelButton(-Vector2.UnitX)))
-            return;
-
-        _modImportManager.ClearImport();
+        var terminate = import.State == ImporterState.Done
+            ? ImGui.Button("Close", -Vector2.UnitX)
+            : import.DrawCancelButton(-Vector2.UnitX);
+        if (terminate)
+            _modImportManager.ClearImport();
     }
 }
