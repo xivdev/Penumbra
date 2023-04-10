@@ -552,8 +552,8 @@ public class IpcTester : IDisposable
         private static unsafe string GetObjectName(IntPtr gameObject)
         {
             var obj  = (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)gameObject;
-            var name = obj != null ? obj->GetName() : null;
-            return name != null ? new ByteString(name).ToString() : "Unknown";
+            var name = obj != null ? obj->Name : null;
+            return name != null && *name != 0 ? new ByteString(name).ToString() : "Unknown";
         }
     }
 
