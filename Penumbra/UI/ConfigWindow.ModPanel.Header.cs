@@ -176,7 +176,7 @@ public partial class ConfigWindow
             }
 
             // Author
-            var author = _mod.Author.IsEmpty ? string.Empty : $"by  {_mod.Author}";
+            var author = _mod.Author.IsEmpty ? string.Empty : $"{_mod.Author}";
             if( author != _modAuthor )
             {
                 _modAuthor      = author;
