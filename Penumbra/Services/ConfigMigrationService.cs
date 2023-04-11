@@ -200,7 +200,7 @@ public class ConfigMigrationService
                 if (jObject[nameof(ModCollection.Name)]?.ToObject<string>() == ForcedCollection)
                     continue;
 
-                jObject[nameof(ModCollection.Inheritance)] = JToken.FromObject(new List<string> { ForcedCollection });
+                jObject[nameof(ModCollection.DirectlyInheritsFrom)] = JToken.FromObject(new List<string> { ForcedCollection });
                 File.WriteAllText(collection.FullName, jObject.ToString());
             }
             catch (Exception e)

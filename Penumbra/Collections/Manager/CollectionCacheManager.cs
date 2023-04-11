@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Penumbra.Api;
+using Penumbra.Api.Enums;
+using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -16,6 +18,7 @@ public class CollectionCacheManager : IDisposable, IReadOnlyDictionary<ModCollec
 {
     private readonly ActiveCollections   _active;
     private readonly CommunicatorService _communicator;
+    private readonly CharacterUtility    _characterUtility;
 
     private readonly Dictionary<ModCollection, ModCollectionCache> _cache = new();
 
@@ -46,17 +49,23 @@ public class CollectionCacheManager : IDisposable, IReadOnlyDictionary<ModCollec
     public IEnumerable<ModCollection> Active
         => _cache.Keys.Where(c => c.Index > ModCollection.Empty.Index);
 
-    public CollectionCacheManager(ActiveCollections active, CommunicatorService communicator)
+    public CollectionCacheManager(ActiveCollections active, CommunicatorService communicator, CharacterUtility characterUtility)
     {
-        _active       = active;
-        _communicator = communicator;
+        _active           = active;
+        _communicator     = communicator;
+        _characterUtility = characterUtility;
 
         _communicator.CollectionChange.Subscribe(OnCollectionChange);
         _communicator.ModPathChanged.Subscribe(OnModChangeAddition, -100);
         _communicator.ModPathChanged.Subscribe(OnModChangeRemoval,  100);
         _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange);
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, -100);
+        _communicator.ModSettingChanged.Subscribe(OnModSettingChange);
+        _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange);
         CreateNecessaryCaches();
+
+        if (!_characterUtility.Ready)
+            _characterUtility.LoadingFinished += IncrementCounters;
     }
 
     public void Dispose()
@@ -66,6 +75,9 @@ public class CollectionCacheManager : IDisposable, IReadOnlyDictionary<ModCollec
         _communicator.ModPathChanged.Unsubscribe(OnModChangeRemoval);
         _communicator.TemporaryGlobalModChange.Unsubscribe(OnGlobalModChange);
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
+        _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
+        _communicator.CollectionInheritanceChanged.Unsubscribe(OnCollectionInheritanceChange);
+        _characterUtility.LoadingFinished -= IncrementCounters;
     }
 
     /// <summary>
@@ -170,4 +182,57 @@ public class CollectionCacheManager : IDisposable, IReadOnlyDictionary<ModCollec
                 collection._cache!.AddMod(mod, true);
         }
     }
+
+    /// <summary> Increment the counter to ensure new files are loaded after applying meta changes. </summary>
+    private void IncrementCounters()
+    {
+        foreach (var (collection, _) in _cache)
+            ++collection.ChangeCounter;
+        _characterUtility.LoadingFinished -= IncrementCounters;
+    }
+
+    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool _)
+    {
+        if (collection._cache == null)
+            return;
+
+        switch (type)
+        {
+            case ModSettingChange.Inheritance:
+                collection._cache.ReloadMod(mod!, true);
+                break;
+            case ModSettingChange.EnableState:
+                if (oldValue == 0)
+                    collection._cache.AddMod(mod!, true);
+                else if (oldValue == 1)
+                    collection._cache.RemoveMod(mod!, true);
+                else if (collection[mod!.Index].Settings?.Enabled == true)
+                    collection._cache.ReloadMod(mod!, true);
+                else
+                    collection._cache.RemoveMod(mod!, true);
+
+                break;
+            case ModSettingChange.Priority:
+                if (collection._cache.Conflicts(mod!).Count > 0)
+                    collection._cache.ReloadMod(mod!, true);
+
+                break;
+            case ModSettingChange.Setting:
+                if (collection[mod!.Index].Settings?.Enabled == true)
+                    collection._cache.ReloadMod(mod!, true);
+
+                break;
+            case ModSettingChange.MultiInheritance:
+            case ModSettingChange.MultiEnableState:
+                collection._cache.FullRecalculation(collection == _active.Default);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Inheritance changes are too big to check for relevance,
+    /// just recompute everything.
+    /// </summary>
+    private void OnCollectionInheritanceChange(ModCollection collection, bool _)
+        => collection._cache?.FullRecalculation(collection == _active.Default);
 }

@@ -253,7 +253,7 @@ public class Penumbra : IDalamudPlugin
 
         void PrintCollection(ModCollection c)
             => sb.Append($"**Collection {c.AnonymizedName}**\n"
-              + $"> **`Inheritances:                 `** {c.Inheritance.Count}\n"
+              + $"> **`Inheritances:                 `** {c.DirectlyInheritsFrom.Count}\n"
               + $"> **`Enabled Mods:                 `** {c.ActualSettings.Count(s => s is { Enabled: true })}\n"
               + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority && x.Solved ? x.Conflicts.Count : 0)}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0)}\n");
 

@@ -20,11 +20,11 @@ namespace Penumbra.UI.ModsTab;
 public class ModPanelSettingsTab : ITab
 {
     private readonly Configuration         _config;
-    private readonly CollectionManager _collectionManager;
+    private readonly CollectionManager     _collectionManager;
     private readonly ModFileSystemSelector _selector;
     private readonly TutorialService       _tutorial;
     private readonly PenumbraApi           _api;
-    private readonly ModManager           _modManager;
+    private readonly ModManager            _modManager;
 
     private bool          _inherited;
     private ModSettings   _settings   = null!;
@@ -114,7 +114,7 @@ public class ModPanelSettingsTab : ITab
         using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.PressEnterWarningBg);
         var       width = new Vector2(ImGui.GetContentRegionAvail().X, 0);
         if (ImGui.Button($"These settings are inherited from {_collection.Name}.", width))
-            _collectionManager.Active.Current.SetModInheritance(_selector.Selected!.Index, false);
+            _collectionManager.Editor.SetModInheritance(_collectionManager.Active.Current, _selector.Selected!, false);
 
         ImGuiUtil.HoverTooltip("You can click this button to copy the current settings to the current selection.\n"
           + "You can also just change any setting, which will copy the settings with the single setting changed to the current selection.");
@@ -128,7 +128,7 @@ public class ModPanelSettingsTab : ITab
             return;
 
         _modManager.SetKnown(_selector.Selected!);
-        _collectionManager.Active.Current.SetModState(_selector.Selected!.Index, enabled);
+        _collectionManager.Editor.SetModState(_collectionManager.Active.Current, _selector.Selected!, enabled);
     }
 
     /// <summary>
@@ -146,7 +146,7 @@ public class ModPanelSettingsTab : ITab
         if (ImGui.IsItemDeactivatedAfterEdit() && _currentPriority.HasValue)
         {
             if (_currentPriority != _settings.Priority)
-                _collectionManager.Active.Current.SetModPriority(_selector.Selected!.Index, _currentPriority.Value);
+                _collectionManager.Editor.SetModPriority(_collectionManager.Active.Current, _selector.Selected!, _currentPriority.Value);
 
             _currentPriority = null;
         }
@@ -168,7 +168,7 @@ public class ModPanelSettingsTab : ITab
         var scroll = ImGui.GetScrollMaxY() > 0 ? ImGui.GetStyle().ScrollbarSize : 0;
         ImGui.SameLine(ImGui.GetWindowWidth() - ImGui.CalcTextSize(text).X - ImGui.GetStyle().FramePadding.X * 2 - scroll);
         if (ImGui.Button(text))
-            _collectionManager.Active.Current.SetModInheritance(_selector.Selected!.Index, true);
+            _collectionManager.Editor.SetModInheritance(_collectionManager.Active.Current, _selector.Selected!, true);
 
         ImGuiUtil.HoverTooltip("Remove current settings from this collection so that it can inherit them.\n"
           + "If no inherited collection has settings for this mod, it will be disabled.");
@@ -191,7 +191,7 @@ public class ModPanelSettingsTab : ITab
                     id.Push(idx2);
                     var option = group[idx2];
                     if (ImGui.Selectable(option.Name, idx2 == selectedOption))
-                        _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, (uint)idx2);
+                        _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, (uint)idx2);
 
                     if (option.Description.Length > 0)
                     {
@@ -227,7 +227,7 @@ public class ModPanelSettingsTab : ITab
     {
         using var id             = ImRaii.PushId(groupIdx);
         var       selectedOption = _empty ? (int)group.DefaultSettings : (int)_settings.Settings[groupIdx];
-        var minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
+        var       minWidth       = Widget.BeginFramedGroup(group.Name, group.Description);
 
         void DrawOptions()
         {
@@ -236,7 +236,7 @@ public class ModPanelSettingsTab : ITab
                 using var i      = ImRaii.PushId(idx);
                 var       option = group[idx];
                 if (ImGui.RadioButton(option.Name, selectedOption == idx))
-                    _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, (uint)idx);
+                    _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, (uint)idx);
 
                 if (option.Description.Length <= 0)
                     continue;
@@ -264,7 +264,7 @@ public class ModPanelSettingsTab : ITab
             var shown          = ImGui.GetStateStorage().GetBool(collapseId, true);
             var buttonTextShow = $"Show {group.Count} Options";
             var buttonTextHide = $"Hide {group.Count} Options";
-            var buttonWidth    = Math.Max(ImGui.CalcTextSize(buttonTextShow).X, ImGui.CalcTextSize(buttonTextHide).X) 
+            var buttonWidth = Math.Max(ImGui.CalcTextSize(buttonTextShow).X, ImGui.CalcTextSize(buttonTextHide).X)
               + 2 * ImGui.GetStyle().FramePadding.X;
             minWidth = Math.Max(buttonWidth, minWidth);
             if (shown)
@@ -276,10 +276,9 @@ public class ModPanelSettingsTab : ITab
                     draw();
                 }
 
-                
-                
-                var width       = Math.Max(ImGui.GetItemRectSize().X, minWidth);
-                var endPos      = ImGui.GetCursorPos();
+
+                var width  = Math.Max(ImGui.GetItemRectSize().X, minWidth);
+                var endPos = ImGui.GetCursorPos();
                 ImGui.SetCursorPos(pos);
                 if (ImGui.Button(buttonTextHide, new Vector2(width, 0)))
                     ImGui.GetStateStorage().SetBool(collapseId, !shown);
@@ -292,7 +291,7 @@ public class ModPanelSettingsTab : ITab
                   + ImGui.GetStyle().ItemInnerSpacing.X
                   + ImGui.GetFrameHeight()
                   + ImGui.GetStyle().FramePadding.X;
-                var width        = Math.Max(optionWidth, minWidth);
+                var width = Math.Max(optionWidth, minWidth);
                 if (ImGui.Button(buttonTextShow, new Vector2(width, 0)))
                     ImGui.GetStateStorage().SetBool(collapseId, !shown);
             }
@@ -305,9 +304,9 @@ public class ModPanelSettingsTab : ITab
     /// </summary>
     private void DrawMultiGroup(IModGroup group, int groupIdx)
     {
-        using var id    = ImRaii.PushId(groupIdx);
-        var       flags = _empty ? group.DefaultSettings : _settings.Settings[groupIdx];
-        var minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
+        using var id       = ImRaii.PushId(groupIdx);
+        var       flags    = _empty ? group.DefaultSettings : _settings.Settings[groupIdx];
+        var       minWidth = Widget.BeginFramedGroup(group.Name, group.Description);
 
         void DrawOptions()
         {
@@ -321,7 +320,7 @@ public class ModPanelSettingsTab : ITab
                 if (ImGui.Checkbox(option.Name, ref setting))
                 {
                     flags = setting ? flags | flag : flags & ~flag;
-                    _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, flags);
+                    _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, flags);
                 }
 
                 if (option.Description.Length > 0)
@@ -349,10 +348,10 @@ public class ModPanelSettingsTab : ITab
         if (ImGui.Selectable("Enable All"))
         {
             flags = group.Count == 32 ? uint.MaxValue : (1u << group.Count) - 1u;
-            _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, flags);
+            _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, flags);
         }
 
         if (ImGui.Selectable("Disable All"))
-            _collectionManager.Active.Current.SetModSetting(_selector.Selected!.Index, groupIdx, 0);
+            _collectionManager.Editor.SetModSetting(_collectionManager.Active.Current, _selector.Selected!, groupIdx, 0);
     }
 }

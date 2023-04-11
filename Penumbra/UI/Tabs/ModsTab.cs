@@ -91,7 +91,7 @@ public class ModsTab : ITab
               + $"{_selector.SortMode.Name} Sort Mode\n"
               + $"{_selector.SelectedLeaf?.Name ?? "NULL"} Selected Leaf\n"
               + $"{_selector.Selected?.Name ?? "NULL"} Selected Mod\n"
-              + $"{string.Join(", ", _collectionManager.Active.Current.Inheritance.Select(c => c.AnonymizedName))} Inheritances\n"
+              + $"{string.Join(", ", _collectionManager.Active.Current.DirectlyInheritsFrom.Select(c => c.AnonymizedName))} Inheritances\n"
               + $"{_selector.SelectedSettingCollection.AnonymizedName} Collection\n");
         }
     }

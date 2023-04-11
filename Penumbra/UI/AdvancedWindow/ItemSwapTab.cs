@@ -57,7 +57,8 @@ public class ItemSwapTab : IDisposable, ITab
         };
 
         _communicator.CollectionChange.Subscribe(OnCollectionChange);
-        _collectionManager.Active.Current.ModSettingChanged += OnSettingChange;
+        _communicator.ModSettingChanged.Subscribe(OnSettingChange);
+        _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange);
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange);
     }
 
@@ -102,7 +103,8 @@ public class ItemSwapTab : IDisposable, ITab
     public void Dispose()
     {
         _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
-        _collectionManager.Active.Current.ModSettingChanged -= OnSettingChange;
+        _communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
+        _communicator.CollectionInheritanceChanged.Unsubscribe(OnInheritanceChange);
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
     }
 
@@ -744,17 +746,25 @@ public class ItemSwapTab : IDisposable, ITab
         if (collectionType != CollectionType.Current || _mod == null || newCollection == null)
             return;
 
-        UpdateMod(_mod, _mod.Index < newCollection.Settings.Count ? newCollection.Settings[_mod.Index] : null);
-        newCollection.ModSettingChanged += OnSettingChange;
-        if (oldCollection != null)
-            oldCollection.ModSettingChanged -= OnSettingChange;
+        UpdateMod(_mod, _mod.Index < newCollection.Settings.Count ? newCollection[_mod.Index].Settings : null);
     }
 
-    private void OnSettingChange(ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool inherited)
+    private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool inherited)
     {
-        if (modIdx != _mod?.Index)
+
+        if (collection != _collectionManager.Active.Current || mod != _mod)
             return;
 
+        _swapData.LoadMod(_mod, _modSettings);
+        _dirty = true;
+    }
+
+    private void OnInheritanceChange(ModCollection collection, bool _)
+    {
+        if (collection != _collectionManager.Active.Current || _mod == null)
+            return;
+
+        UpdateMod(_mod, collection[_mod.Index].Settings);
         _swapData.LoadMod(_mod, _modSettings);
         _dirty = true;
     }

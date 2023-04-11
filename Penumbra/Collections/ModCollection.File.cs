@@ -32,7 +32,7 @@ public partial class ModCollection : ISavable
             // Custom deserialization that is converted with the constructor. 
             var settings = obj[nameof(Settings)]?.ToObject<Dictionary<string, ModSettings.SavedSettings>>()
              ?? new Dictionary<string, ModSettings.SavedSettings>();
-            inheritance = obj[nameof(Inheritance)]?.ToObject<List<string>>() ?? (IReadOnlyList<string>)Array.Empty<string>();
+            inheritance = obj["Inheritance"]?.ToObject<List<string>>() ?? (IReadOnlyList<string>)Array.Empty<string>();
 
             return new ModCollection(name, version, settings);
         }
@@ -86,8 +86,8 @@ public partial class ModCollection : ISavable
         j.WriteEndObject();
 
         // Inherit by collection name.
-        j.WritePropertyName(nameof(Inheritance));
-        x.Serialize(j, Inheritance.Select(c => c.Name));
+        j.WritePropertyName("Inheritance");
+        x.Serialize(j, DirectlyInheritsFrom.Select(c => c.Name));
         j.WriteEndObject();
     }
 }

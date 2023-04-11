@@ -1,12 +1,34 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Dalamud.Interface.Internal.Notifications;
+using OtterGui;
+using OtterGui.Filesystem;
 using Penumbra.Services;
 using Penumbra.Util;
 
 namespace Penumbra.Collections.Manager;
 
+/// <summary>
+/// ModCollections can inherit from an arbitrary number of other collections.
+/// This is transitive, so a collection A inheriting from B also inherits from everything B inherits.
+/// Circular dependencies are resolved by distinctness.
+/// </summary>
 public class InheritanceManager : IDisposable
 {
+    public enum ValidInheritance
+    {
+        Valid,
+        /// <summary> Can not inherit from self </summary>
+        Self,
+        /// <summary> Can not inherit from the empty collection </summary>
+        Empty,
+        /// <summary> Already inherited from </summary>
+        Contained,
+        /// <summary> Inheritance would lead to a circle. </summary>
+        Circle,
+    }
+
     private readonly CollectionStorage   _storage;
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;
@@ -26,22 +48,88 @@ public class InheritanceManager : IDisposable
         _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
     }
 
+    /// <summary> Check whether a collection can be inherited from. </summary>
+    public static ValidInheritance CheckValidInheritance(ModCollection potentialInheritor, ModCollection? potentialParent)
+    {
+        if (potentialParent == null || ReferenceEquals(potentialParent, ModCollection.Empty))
+            return ValidInheritance.Empty;
+
+        if (ReferenceEquals(potentialParent, potentialInheritor))
+            return ValidInheritance.Self;
+
+        if (potentialInheritor.DirectlyInheritsFrom.Contains(potentialParent))
+            return ValidInheritance.Contained;
+
+        if (ModCollection.InheritedCollections(potentialParent).Any(c => ReferenceEquals(c, potentialInheritor)))
+            return ValidInheritance.Circle;
+
+        return ValidInheritance.Valid;
+    }
+
+    /// <summary>
+    /// Add a new collection to the inheritance list.
+    /// We do not check if this collection would be visited before,
+    /// only that it is unique in the list itself.
+    /// </summary>
+    public bool AddInheritance(ModCollection inheritor, ModCollection parent)
+        => AddInheritance(inheritor, parent, true);
+
+    /// <summary> Remove an existing inheritance from a collection. </summary>
+    public void RemoveInheritance(ModCollection inheritor, int idx)
+    {
+        var parent = inheritor.DirectlyInheritsFrom[idx];
+        ((List<ModCollection>)inheritor.DirectlyInheritsFrom).RemoveAt(idx);
+        ((List<ModCollection>)parent.DirectParentOf).Remove(inheritor);
+        _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+        RecurseInheritanceChanges(inheritor);
+        Penumbra.Log.Debug($"Removed {parent.AnonymizedName} from {inheritor.AnonymizedName} inheritances.");
+    }
+
+    /// <summary> Order in the inheritance list is relevant. </summary>
+    public void MoveInheritance(ModCollection inheritor, int from, int to)
+    {
+        if (!((List<ModCollection>)inheritor.DirectlyInheritsFrom).Move(from, to))
+            return;
+
+        _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+        RecurseInheritanceChanges(inheritor);
+        Penumbra.Log.Debug($"Moved {inheritor.AnonymizedName}s inheritance {from} to {to}.");
+    }
+
+    /// <inheritdoc cref="AddInheritance(ModCollection, ModCollection)"/>
+    private bool AddInheritance(ModCollection inheritor, ModCollection parent, bool invokeEvent)
+    {
+        if (CheckValidInheritance(inheritor, parent) != ValidInheritance.Valid)
+            return false;
+
+        ((List<ModCollection>)inheritor.DirectlyInheritsFrom).Add(parent);
+        ((List<ModCollection>)parent.DirectParentOf).Add(inheritor);
+        if (invokeEvent)
+        {
+            _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
+            RecurseInheritanceChanges(inheritor);
+        }
+
+        Penumbra.Log.Debug($"Added {parent.AnonymizedName} to {inheritor.AnonymizedName} inheritances.");
+        return true;
+    }
+
     /// <summary>
     /// Inheritances can not be setup before all collections are read,
     /// so this happens after reading the collections in the constructor, consuming the stored strings.
     /// </summary>
     private void ApplyInheritances()
     {
-        foreach (var (collection, inheritances, changes) in _storage.ConsumeInheritanceNames())
+        foreach (var (collection, directParents, changes) in _storage.ConsumeInheritanceNames())
         {
             var localChanges = changes;
-            foreach (var subCollection in inheritances)
+            foreach (var parent in directParents)
             {
-                if (collection.AddInheritance(subCollection, false))
+                if (AddInheritance(collection, parent, false))
                     continue;
 
                 localChanges = true;
-                Penumbra.ChatService.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", "Warning",
+                Penumbra.ChatService.NotificationMessage($"{collection.Name} can not inherit from {parent.Name}, removed.", "Warning",
                     NotificationType.Warning);
             }
 
@@ -55,14 +143,22 @@ public class InheritanceManager : IDisposable
         if (collectionType is not CollectionType.Inactive || old == null)
             return;
 
-        foreach (var inheritance in old.Inheritance)
-            old.ClearSubscriptions(inheritance);
-
         foreach (var c in _storage)
         {
-            var inheritedIdx = c._inheritance.IndexOf(old);
+            var inheritedIdx = c.DirectlyInheritsFrom.IndexOf(old);
             if (inheritedIdx >= 0)
-                c.RemoveInheritance(inheritedIdx);
+                RemoveInheritance(c, inheritedIdx);
+
+            ((List<ModCollection>)c.DirectParentOf).Remove(old);
+        }
+    }
+
+    private void RecurseInheritanceChanges(ModCollection newInheritor)
+    {
+        foreach (var inheritor in newInheritor.DirectParentOf)
+        {
+            _communicator.CollectionInheritanceChanged.Invoke(inheritor, true);
+            RecurseInheritanceChanges(inheritor);
         }
     }
 }

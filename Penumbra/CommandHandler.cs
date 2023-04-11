@@ -23,18 +23,20 @@ public class CommandHandler : IDisposable
 {
     private const string CommandName = "/penumbra";
 
-    private readonly CommandManager        _commandManager;
-    private readonly RedrawService         _redrawService;
-    private readonly ChatGui               _chat;
-    private readonly Configuration         _config;
-    private readonly ConfigWindow          _configWindow;
-    private readonly ActorManager          _actors;
-    private readonly ModManager           _modManager;
+    private readonly CommandManager    _commandManager;
+    private readonly RedrawService     _redrawService;
+    private readonly ChatGui           _chat;
+    private readonly Configuration     _config;
+    private readonly ConfigWindow      _configWindow;
+    private readonly ActorManager      _actors;
+    private readonly ModManager        _modManager;
     private readonly CollectionManager _collectionManager;
-    private readonly Penumbra              _penumbra;
+    private readonly Penumbra          _penumbra;
+    private readonly CollectionEditor  _collectionEditor;
 
     public CommandHandler(Framework framework, CommandManager commandManager, ChatGui chat, RedrawService redrawService, Configuration config,
-        ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorService actors, Penumbra penumbra)
+        ConfigWindow configWindow, ModManager modManager, CollectionManager collectionManager, ActorService actors, Penumbra penumbra,
+        CollectionEditor collectionEditor)
     {
         _commandManager    = commandManager;
         _redrawService     = redrawService;
@@ -45,6 +47,7 @@ public class CommandHandler : IDisposable
         _actors            = actors.AwaitedService;
         _chat              = chat;
         _penumbra          = penumbra;
+        _collectionEditor  = collectionEditor;
         framework.RunOnFrameworkThread(() =>
         {
             _commandManager.AddHandler(CommandName, new CommandInfo(OnCommand)
@@ -455,14 +458,15 @@ public class CommandHandler : IDisposable
 
         collection = string.Equals(lowerName, ModCollection.Empty.Name, StringComparison.OrdinalIgnoreCase)
             ? ModCollection.Empty
-            : _collectionManager.Storage.ByName(lowerName, out var c) ? c : null;
+            : _collectionManager.Storage.ByName(lowerName, out var c)
+                ? c
+                : null;
         if (collection != null)
             return true;
 
         _chat.Print(new SeStringBuilder().AddText("The collection ").AddRed(collectionName, true).AddText(" does not exist.")
             .BuiltString);
         return false;
-
     }
 
     private static bool? ParseTrueFalseToggle(string value)
@@ -498,51 +502,47 @@ public class CommandHandler : IDisposable
 
     private bool HandleModState(int settingState, ModCollection collection, Mod mod)
     {
-        var settings = collection!.Settings[mod.Index];
+        var settings = collection.Settings[mod.Index];
         switch (settingState)
         {
             case 0:
-                if (collection.SetModState(mod.Index, true))
-                {
-                    Print(() => new SeStringBuilder().AddText("Enabled mod ").AddPurple(mod.Name, true).AddText(" in collection ")
-                        .AddYellow(collection.Name, true)
-                        .AddText(".").BuiltString);
-                    return true;
-                }
+                if (!_collectionEditor.SetModState(collection, mod, true))
+                    return false;
 
-                return false;
+                Print(() => new SeStringBuilder().AddText("Enabled mod ").AddPurple(mod.Name, true).AddText(" in collection ")
+                    .AddYellow(collection.Name, true)
+                    .AddText(".").BuiltString);
+                return true;
+
             case 1:
-                if (collection.SetModState(mod.Index, false))
-                {
-                    Print(() => new SeStringBuilder().AddText("Disabled mod ").AddPurple(mod.Name, true).AddText(" in collection ")
-                        .AddYellow(collection.Name, true)
-                        .AddText(".").BuiltString);
-                    return true;
-                }
+                if (!_collectionEditor.SetModState(collection, mod, false))
+                    return false;
 
-                return false;
+                Print(() => new SeStringBuilder().AddText("Disabled mod ").AddPurple(mod.Name, true).AddText(" in collection ")
+                    .AddYellow(collection.Name, true)
+                    .AddText(".").BuiltString);
+                return true;
+
             case 2:
                 var setting = !(settings?.Enabled ?? false);
-                if (collection.SetModState(mod.Index, setting))
-                {
-                    Print(() => new SeStringBuilder().AddText(setting ? "Enabled mod " : "Disabled mod ").AddPurple(mod.Name, true)
-                        .AddText(" in collection ")
-                        .AddYellow(collection.Name, true)
-                        .AddText(".").BuiltString);
-                    return true;
-                }
+                if (!_collectionEditor.SetModState(collection, mod, setting))
+                    return false;
 
-                return false;
+                Print(() => new SeStringBuilder().AddText(setting ? "Enabled mod " : "Disabled mod ").AddPurple(mod.Name, true)
+                    .AddText(" in collection ")
+                    .AddYellow(collection.Name, true)
+                    .AddText(".").BuiltString);
+                return true;
+
             case 3:
-                if (collection.SetModInheritance(mod.Index, true))
-                {
-                    Print(() => new SeStringBuilder().AddText("Set mod ").AddPurple(mod.Name, true).AddText(" in collection ")
-                        .AddYellow(collection.Name, true)
-                        .AddText(" to inherit.").BuiltString);
-                    return true;
-                }
+                if (!_collectionEditor.SetModInheritance(collection, mod, true))
+                    return false;
 
-                return false;
+                Print(() => new SeStringBuilder().AddText("Set mod ").AddPurple(mod.Name, true).AddText(" in collection ")
+                    .AddYellow(collection.Name, true)
+                    .AddText(" to inherit.").BuiltString);
+                return true;
+
         }
 
         return false;

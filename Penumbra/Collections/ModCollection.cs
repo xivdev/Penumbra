@@ -15,9 +15,9 @@ namespace Penumbra.Collections;
 //    - any change in settings or inheritance of the collection causes a Save.
 public partial class ModCollection
 {
-    public const int    CurrentVersion    = 1;
+    public const int    CurrentVersion        = 1;
     public const string DefaultCollectionName = "Default";
-    public const string EmptyCollection   = "None";
+    public const string EmptyCollection       = "None";
 
     public static readonly ModCollection Empty = CreateEmpty();
 
@@ -51,18 +51,18 @@ public partial class ModCollection
         => Enumerable.Range(0, _settings.Count).Select(i => this[i].Settings);
 
     // Settings for deleted mods will be kept via directory name.
-    private readonly Dictionary<string, ModSettings.SavedSettings> _unusedSettings;
+    internal readonly Dictionary<string, ModSettings.SavedSettings> _unusedSettings;
 
     // Constructor for duplication.
     private ModCollection(string name, ModCollection duplicate)
     {
-        Name               =  name;
-        Version            =  duplicate.Version;
-        _settings          =  duplicate._settings.ConvertAll(s => s?.DeepCopy());
-        _unusedSettings    =  duplicate._unusedSettings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DeepCopy());
-        _inheritance       =  duplicate._inheritance.ToList();
-        ModSettingChanged  += SaveOnChange;
-        InheritanceChanged += SaveOnChange;
+        Name                 = name;
+        Version              = duplicate.Version;
+        _settings            = duplicate._settings.ConvertAll(s => s?.DeepCopy());
+        _unusedSettings      = duplicate._unusedSettings.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.DeepCopy());
+        DirectlyInheritsFrom = duplicate.DirectlyInheritsFrom.ToList();
+        foreach (var c in DirectlyInheritsFrom)
+            ((List<ModCollection>)c.DirectParentOf).Add(this);
     }
 
     // Constructor for reading from files.
@@ -76,8 +76,6 @@ public partial class ModCollection
         ApplyModSettings();
 
         Migration.Migrate(Penumbra.SaveService, this);
-        ModSettingChanged  += SaveOnChange;
-        InheritanceChanged += SaveOnChange;
     }
 
     // Create a new, unique empty collection of a given name.
@@ -87,11 +85,11 @@ public partial class ModCollection
     // Create a new temporary collection that does not save and has a negative index.
     public static ModCollection CreateNewTemporary(string name, int changeCounter)
     {
-        var collection = new ModCollection(name, Empty);
-        collection.ModSettingChanged  -= collection.SaveOnChange;
-        collection.InheritanceChanged -= collection.SaveOnChange;
-        collection.Index              =  ~Penumbra.TempCollections.Count;
-        collection.ChangeCounter      =  changeCounter;
+        var collection = new ModCollection(name, Empty)
+        {
+            Index         = ~Penumbra.TempCollections.Count,
+            ChangeCounter = changeCounter,
+        };
         collection.CreateCache(false);
         return collection;
     }
@@ -162,55 +160,43 @@ public partial class ModCollection
             Penumbra.SaveService.ImmediateSave(this);
     }
 
-    public bool CopyModSettings(int modIdx, string modName, int targetIdx, string targetName)
-    {
-        if (targetName.Length == 0 && targetIdx < 0 || modName.Length == 0 && modIdx < 0)
-            return false;
-
-        // If the source mod exists, convert its settings to saved settings or null if its inheriting.
-        // If it does not exist, check unused settings.
-        // If it does not exist and has no unused settings, also use null.
-        ModSettings.SavedSettings? savedSettings = modIdx >= 0
-            ? _settings[modIdx] != null
-                ? new ModSettings.SavedSettings(_settings[modIdx]!, Penumbra.ModManager[modIdx])
-                : null
-            : _unusedSettings.TryGetValue(modName, out var s)
-                ? s
-                : null;
-
-        if (targetIdx >= 0)
-        {
-            if (savedSettings != null)
-            {
-                // The target mod exists and the source settings are not inheriting, convert and fix the settings and copy them.
-                // This triggers multiple events.
-                savedSettings.Value.ToSettings(Penumbra.ModManager[targetIdx], out var settings);
-                SetModState(targetIdx, settings.Enabled);
-                SetModPriority(targetIdx, settings.Priority);
-                foreach (var (value, index) in settings.Settings.WithIndex())
-                    SetModSetting(targetIdx, index, value);
-            }
-            else
-            {
-                // The target mod exists, but the source is inheriting, set the target to inheriting.
-                // This triggers events.
-                SetModInheritance(targetIdx, true);
-            }
-        }
-        else
-        {
-            // The target mod does not exist.
-            // Either copy the unused source settings directly if they are not inheriting,
-            // or remove any unused settings for the target if they are inheriting.
-            if (savedSettings != null)
-                _unusedSettings[targetName] = savedSettings.Value;
-            else
-                _unusedSettings.Remove(targetName);
-        }
-
-        return true;
-    }
-
     public override string ToString()
         => Name;
+
+    /// <summary>
+    /// Obtain the actual settings for a given mod via index.
+    /// Also returns the collection the settings are taken from.
+    /// If no collection provides settings for this mod, this collection is returned together with null.
+    /// </summary>
+    public (ModSettings? Settings, ModCollection Collection) this[Index idx]
+    {
+        get
+        {
+            if (Index <= 0)
+                return (ModSettings.Empty, this);
+
+            foreach (var collection in GetFlattenedInheritance())
+            {
+                var settings = collection._settings[idx];
+                if (settings != null)
+                    return (settings, collection);
+            }
+
+            return (null, this);
+        }
+    }
+
+    public readonly IReadOnlyList<ModCollection> DirectlyInheritsFrom = new List<ModCollection>();
+    public readonly IReadOnlyList<ModCollection> DirectParentOf       = new List<ModCollection>();
+
+    /// <summary> All inherited collections in application order without filtering for duplicates. </summary>
+    public static IEnumerable<ModCollection> InheritedCollections(ModCollection collection)
+        => collection.DirectlyInheritsFrom.SelectMany(InheritedCollections).Prepend(collection);
+
+    /// <summary>
+    /// Iterate over all collections inherited from in depth-first order.
+    /// Skip already visited collections to avoid circular dependencies.
+    /// </summary>
+    public IEnumerable<ModCollection> GetFlattenedInheritance()
+        => InheritedCollections(this).Distinct();
 }

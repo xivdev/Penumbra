@@ -31,8 +31,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public (int, int) ApiVersion
         => (4, 19);
 
-    private readonly Dictionary<ModCollection, ModCollection.ModSettingChangeDelegate> _delegates = new();
-
     public event Action<string>? PreSettingsPanelDraw;
     public event Action<string>? PostSettingsPanelDraw;
 
@@ -110,10 +108,11 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private CollectionResolver    _collectionResolver;
     private CutsceneService       _cutsceneService;
     private ModImportManager      _modImportManager;
+    private CollectionEditor      _collectionEditor;
 
     public unsafe PenumbraApi(CommunicatorService communicator, Penumbra penumbra, ModManager modManager, ResourceLoader resourceLoader,
         Configuration config, CollectionManager collectionManager, DalamudServices dalamud, TempCollectionManager tempCollections,
-        TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService, ModImportManager modImportManager)
+        TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService, ModImportManager modImportManager, CollectionEditor collectionEditor)
     {
         _communicator          = communicator;
         _penumbra              = penumbra;
@@ -128,16 +127,15 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _collectionResolver    = collectionResolver;
         _cutsceneService       = cutsceneService;
         _modImportManager = modImportManager;
+        _collectionEditor = collectionEditor;
 
         _lumina = (Lumina.GameData?)_dalamud.GameData.GetType()
             .GetField("gameData", BindingFlags.Instance | BindingFlags.NonPublic)
             ?.GetValue(_dalamud.GameData);
-        foreach (var collection in _collectionManager.Storage)
-            SubscribeToCollection(collection);
 
-        _communicator.CollectionChange.Subscribe(SubscribeToNewCollections);
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
         _communicator.ModPathChanged.Subscribe(ModPathChangeSubscriber);
+        _communicator.ModSettingChanged.Subscribe(OnModSettingChange, -1000);
     }
 
     public unsafe void Dispose()
@@ -145,15 +143,9 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!Valid)
             return;
 
-        foreach (var collection in _collectionManager.Storage)
-        {
-            if (_delegates.TryGetValue(collection, out var del))
-                collection.ModSettingChanged -= del;
-        }
-
         _resourceLoader.ResourceLoaded -= OnResourceLoaded;
-        _communicator.CollectionChange.Unsubscribe(SubscribeToNewCollections);
         _communicator.ModPathChanged.Unsubscribe(ModPathChangeSubscriber);
+        _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
         _lumina             = null;
         _communicator       = null!;
         _penumbra           = null!;
@@ -167,6 +159,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _actors             = null!;
         _collectionResolver = null!;
         _cutsceneService    = null!;
+        _modImportManager   = null!;
+        _collectionEditor   = null!;
     }
 
     public event ChangedItemClick? ChangedItemClicked;
@@ -702,7 +696,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.ModMissing;
 
 
-        return collection.SetModInheritance(mod.Index, inherit) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
+        return _collectionEditor.SetModInheritance(collection, mod, inherit) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
     }
 
     public PenumbraApiEc TrySetMod(string collectionName, string modDirectory, string modName, bool enabled)
@@ -714,7 +708,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod))
             return PenumbraApiEc.ModMissing;
 
-        return collection.SetModState(mod.Index, enabled) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
+        return _collectionEditor.SetModState(collection, mod, enabled) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
     }
 
     public PenumbraApiEc TrySetModPriority(string collectionName, string modDirectory, string modName, int priority)
@@ -726,7 +720,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod))
             return PenumbraApiEc.ModMissing;
 
-        return collection.SetModPriority(mod.Index, priority) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
+        return _collectionEditor.SetModPriority(collection, mod, priority) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
     }
 
     public PenumbraApiEc TrySetModSetting(string collectionName, string modDirectory, string modName, string optionGroupName,
@@ -749,7 +743,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         var setting = mod.Groups[groupIdx].Type == GroupType.Multi ? 1u << optionIdx : (uint)optionIdx;
 
-        return collection.SetModSetting(mod.Index, groupIdx, setting) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
+        return _collectionEditor.SetModSetting(collection, mod, groupIdx, setting) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
     }
 
     public PenumbraApiEc TrySetModSettings(string collectionName, string modDirectory, string modName, string optionGroupName,
@@ -789,7 +783,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             }
         }
 
-        return collection.SetModSetting(mod.Index, groupIdx, setting) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
+        return _collectionEditor.SetModSetting(collection, mod, groupIdx, setting) ? PenumbraApiEc.Success : PenumbraApiEc.NothingChanged;
     }
 
 
@@ -797,17 +791,13 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
 
-        var sourceModIdx = _modManager
-                .FirstOrDefault(m => string.Equals(m.ModPath.Name, modDirectoryFrom, StringComparison.OrdinalIgnoreCase))?.Index
-         ?? -1;
-        var targetModIdx = _modManager
-                .FirstOrDefault(m => string.Equals(m.ModPath.Name, modDirectoryTo, StringComparison.OrdinalIgnoreCase))?.Index
-         ?? -1;
+        var sourceMod = _modManager.FirstOrDefault(m => string.Equals(m.ModPath.Name, modDirectoryFrom, StringComparison.OrdinalIgnoreCase));
+        var targetMod = _modManager.FirstOrDefault(m => string.Equals(m.ModPath.Name, modDirectoryTo,   StringComparison.OrdinalIgnoreCase));
         if (string.IsNullOrEmpty(collectionName))
             foreach (var collection in _collectionManager.Storage)
-                collection.CopyModSettings(sourceModIdx, modDirectoryFrom, targetModIdx, modDirectoryTo);
+                _collectionEditor.CopyModSettings(collection, sourceMod, modDirectoryFrom, targetMod, modDirectoryTo);
         else if (_collectionManager.Storage.ByName(collectionName, out var collection))
-            collection.CopyModSettings(sourceModIdx, modDirectoryFrom, targetModIdx, modDirectoryTo);
+            _collectionEditor.CopyModSettings(collection, sourceMod, modDirectoryFrom, targetMod, modDirectoryTo);
         else
             return PenumbraApiEc.CollectionMissing;
 
@@ -1127,29 +1117,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return true;
     }
 
-    private void SubscribeToCollection(ModCollection c)
-    {
-        var name = c.Name;
-
-        void Del(ModSettingChange type, int idx, int _, int _2, bool inherited)
-            => ModSettingChanged?.Invoke(type, name, idx >= 0 ? _modManager[idx].ModPath.Name : string.Empty, inherited);
-
-        _delegates[c]       =  Del;
-        c.ModSettingChanged += Del;
-    }
-
-    private void SubscribeToNewCollections(CollectionType type, ModCollection? oldCollection, ModCollection? newCollection, string _)
-    {
-        if (type != CollectionType.Inactive)
-            return;
-
-        if (oldCollection != null && _delegates.TryGetValue(oldCollection, out var del))
-            oldCollection.ModSettingChanged -= del;
-
-        if (newCollection != null)
-            SubscribeToCollection(newCollection);
-    }
-
     public void InvokePreSettingsPanel(string modDirectory)
         => PreSettingsPanelDraw?.Invoke(modDirectory);
 
@@ -1166,4 +1133,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var b = ByteString.FromStringUnsafe(name, false);
         return _actors.AwaitedService.CreatePlayer(b, worldId);
     }
+
+    private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int _1, int _2, bool inherited)
+        => ModSettingChanged?.Invoke(type, collection.Name, mod?.ModPath.Name ?? string.Empty, inherited);
 }

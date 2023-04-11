@@ -91,6 +91,7 @@ public class PenumbraNew
             .AddSingleton<InheritanceManager>()
             .AddSingleton<CollectionCacheManager>()
             .AddSingleton<TempCollectionManager>()
+            .AddSingleton<CollectionEditor>()
             .AddSingleton<CollectionManager>();
 
         // Add Mod Services

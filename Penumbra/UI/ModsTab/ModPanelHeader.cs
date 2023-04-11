@@ -46,10 +46,10 @@ public class ModPanelHeader : IDisposable
         }
 
         // Author
-        var author = mod.Author.IsEmpty ? string.Empty : $"by  {mod.Author}";
-        if (author != _modAuthor)
+        if (mod.Author != _modAuthor)
         {
-            _modAuthor      = author;
+            var author = mod.Author.IsEmpty ? string.Empty : $"by  {mod.Author}";
+            _modAuthor      = mod.Author.Text;
             _modAuthorWidth = ImGui.CalcTextSize(author).X;
             _secondRowWidth = _modAuthorWidth + _modWebsiteButtonWidth + ImGui.GetStyle().ItemSpacing.X;
         }

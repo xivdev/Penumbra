@@ -51,20 +51,11 @@ public class ModCollectionCache : IDisposable
     {
         _collection                    =  collection;
         MetaManipulations              =  new MetaManager( _collection );
-        _collection.ModSettingChanged  += OnModSettingChange;
-        _collection.InheritanceChanged += OnInheritanceChange;
-        if( !Penumbra.CharacterUtility.Ready )
-        {
-            Penumbra.CharacterUtility.LoadingFinished += IncrementCounter;
-        }
     }
 
     public void Dispose()
     {
         MetaManipulations.Dispose();
-        _collection.ModSettingChanged             -= OnModSettingChange;
-        _collection.InheritanceChanged            -= OnInheritanceChange;
-        Penumbra.CharacterUtility.LoadingFinished -= IncrementCounter;
     }
 
     // Resolve a given game path according to this collection.
@@ -132,58 +123,6 @@ public class ModCollectionCache : IDisposable
 
         return ret;
     }
-
-    private void OnModSettingChange( ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool _ )
-    {
-        switch( type )
-        {
-            case ModSettingChange.Inheritance:
-                ReloadMod( Penumbra.ModManager[ modIdx ], true );
-                break;
-            case ModSettingChange.EnableState:
-                if( oldValue == 0 )
-                {
-                    AddMod( Penumbra.ModManager[ modIdx ], true );
-                }
-                else if( oldValue == 1 )
-                {
-                    RemoveMod( Penumbra.ModManager[ modIdx ], true );
-                }
-                else if( _collection[ modIdx ].Settings?.Enabled == true )
-                {
-                    ReloadMod( Penumbra.ModManager[ modIdx ], true );
-                }
-                else
-                {
-                    RemoveMod( Penumbra.ModManager[ modIdx ], true );
-                }
-
-                break;
-            case ModSettingChange.Priority:
-                if( Conflicts( Penumbra.ModManager[ modIdx ] ).Count > 0 )
-                {
-                    ReloadMod( Penumbra.ModManager[ modIdx ], true );
-                }
-
-                break;
-            case ModSettingChange.Setting:
-                if( _collection[ modIdx ].Settings?.Enabled == true )
-                {
-                    ReloadMod( Penumbra.ModManager[ modIdx ], true );
-                }
-
-                break;
-            case ModSettingChange.MultiInheritance:
-            case ModSettingChange.MultiEnableState:
-                FullRecalculation(_collection == Penumbra.CollectionManager.Active.Default);
-                break;
-        }
-    }
-
-    // Inheritance changes are too big to check for relevance,
-    // just recompute everything.
-    private void OnInheritanceChange( bool _ )
-        => FullRecalculation(_collection == Penumbra.CollectionManager.Active.Default);
 
     public void FullRecalculation(bool isDefault)
     {

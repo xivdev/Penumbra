@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
@@ -171,6 +173,44 @@ public sealed class ModPathChanged : EventWrapper<Action<ModPathChangeType, Mod,
         => Invoke(this, changeType, mod, oldModDirectory, newModDirectory);
 }
 
+/// <summary>
+/// Triggered whenever a mod setting is changed.
+/// <list type="number">
+///     <item>Parameter is the collection in which the setting was changed. </item>
+///     <item>Parameter is the type of change. </item>
+///     <item>Parameter is the mod the setting was changed for, unless it was a multi-change. </item>
+///     <item>Parameter is the old value of the setting before the change as int. </item>
+///     <item>Parameter is the index of the changed group if the change type is Setting. </item>
+///     <item>Parameter is whether the change was inherited from another collection. </item>
+/// </list>
+/// </summary>
+public sealed class ModSettingChanged : EventWrapper<Action<ModCollection, ModSettingChange, Mod?, int, int, bool>>
+{
+    public ModSettingChanged()
+        : base(nameof(ModSettingChanged))
+    { }
+
+    public void Invoke(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool inherited)
+        => Invoke(this, collection, type, mod, oldValue, groupIdx, inherited);
+}
+
+/// <summary>
+/// Triggered whenever a collections inheritances change.
+/// <list type="number">
+///     <item>Parameter is the collection whose ancestors were changed. </item>
+///     <item>Parameter is whether the change was itself inherited, i.e. if it happened in a direct parent (false) or a more removed ancestor (true). </item>
+/// </list>
+/// </summary>
+public sealed class CollectionInheritanceChanged : EventWrapper<Action<ModCollection, bool>>
+{
+    public CollectionInheritanceChanged()
+        : base(nameof(CollectionInheritanceChanged))
+    { }
+
+    public void Invoke(ModCollection collection, bool inherited)
+        => Invoke(this, collection, inherited);
+}
+
 public class CommunicatorService : IDisposable
 {
     /// <inheritdoc cref="Services.CollectionChange"/>
@@ -179,29 +219,35 @@ public class CommunicatorService : IDisposable
     /// <inheritdoc cref="Services.TemporaryGlobalModChange"/>
     public readonly TemporaryGlobalModChange TemporaryGlobalModChange = new();
 
-    /// <inheritdoc cref="Services.CreatingCharacterBase   "/>
+    /// <inheritdoc cref="Services.CreatingCharacterBase"/>
     public readonly CreatingCharacterBase CreatingCharacterBase = new();
 
-    /// <inheritdoc cref="Services.CreatedCharacterBase    "/>
+    /// <inheritdoc cref="Services.CreatedCharacterBase"/>
     public readonly CreatedCharacterBase CreatedCharacterBase = new();
 
-    /// <inheritdoc cref="Services.ModDataChanged          "/>
+    /// <inheritdoc cref="Services.ModDataChanged"/>
     public readonly ModDataChanged ModDataChanged = new();
 
-    /// <inheritdoc cref="Services.ModOptionChanged        "/>
+    /// <inheritdoc cref="Services.ModOptionChanged"/>
     public readonly ModOptionChanged ModOptionChanged = new();
 
-    /// <inheritdoc cref="Services.ModDiscoveryStarted     "/>
+    /// <inheritdoc cref="Services.ModDiscoveryStarted"/>
     public readonly ModDiscoveryStarted ModDiscoveryStarted = new();
 
-    /// <inheritdoc cref="Services.ModDiscoveryFinished    "/>
+    /// <inheritdoc cref="Services.ModDiscoveryFinished"/>
     public readonly ModDiscoveryFinished ModDiscoveryFinished = new();
 
-    /// <inheritdoc cref="Services.ModDirectoryChanged     "/>
+    /// <inheritdoc cref="Services.ModDirectoryChanged"/>
     public readonly ModDirectoryChanged ModDirectoryChanged = new();
 
-    /// <inheritdoc cref="Services.ModPathChanged          "/>
+    /// <inheritdoc cref="Services.ModPathChanged"/>
     public readonly ModPathChanged ModPathChanged = new();
+
+    /// <inheritdoc cref="Services.ModSettingChanged"/>
+    public readonly ModSettingChanged ModSettingChanged = new();
+
+    /// <inheritdoc cref="Services.CollectionInheritanceChanged"/>
+    public readonly CollectionInheritanceChanged CollectionInheritanceChanged = new();
 
     public void Dispose()
     {
@@ -215,5 +261,7 @@ public class CommunicatorService : IDisposable
         ModDiscoveryFinished.Dispose();
         ModDirectoryChanged.Dispose();
         ModPathChanged.Dispose();
+        ModSettingChanged.Dispose();
+        CollectionInheritanceChanged.Dispose();
     }
 }

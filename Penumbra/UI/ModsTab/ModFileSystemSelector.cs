@@ -74,8 +74,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         SelectionChanged += OnSelectionChange;
         _communicator.CollectionChange.Subscribe(OnCollectionChange);
-        _collectionManager.Active.Current.ModSettingChanged  += OnSettingChange;
-        _collectionManager.Active.Current.InheritanceChanged += OnInheritanceChange;
+        _communicator.ModSettingChanged.Subscribe(OnSettingChange);
+        _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange);
         _communicator.ModDataChanged.Subscribe(OnModDataChange);
         _communicator.ModDiscoveryStarted.Subscribe(StoreCurrentSelection);
         _communicator.ModDiscoveryFinished.Subscribe(RestoreLastSelection);
@@ -88,8 +88,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         _communicator.ModDiscoveryStarted.Unsubscribe(StoreCurrentSelection);
         _communicator.ModDiscoveryFinished.Unsubscribe(RestoreLastSelection);
         _communicator.ModDataChanged.Unsubscribe(OnModDataChange);
-        _collectionManager.Active.Current.ModSettingChanged  -= OnSettingChange;
-        _collectionManager.Active.Current.InheritanceChanged -= OnInheritanceChange;
+        _communicator.ModSettingChanged.Unsubscribe(OnSettingChange);
+        _communicator.CollectionInheritanceChanged.Unsubscribe(OnInheritanceChange);
         _communicator.CollectionChange.Unsubscribe(OnCollectionChange);
     }
 
@@ -267,9 +267,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         });
 
         if (inherit)
-            _collectionManager.Active.Current.SetMultipleModInheritances(mods, enabled);
+            _collectionManager.Editor.SetMultipleModInheritances(_collectionManager.Active.Current, mods, enabled);
         else
-            _collectionManager.Active.Current.SetMultipleModStates(mods, enabled);
+            _collectionManager.Editor.SetMultipleModStates(_collectionManager.Active.Current, mods, enabled);
     }
 
     /// <summary>
@@ -360,11 +360,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     #region Automatic cache update functions.
 
-    private void OnSettingChange(ModSettingChange type, int modIdx, int oldValue, int groupIdx, bool inherited)
+    private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool inherited)
     {
-        // TODO: maybe make more efficient
+        if (collection != _collectionManager.Active.Current)
+            return; 
+
         SetFilterDirty();
-        if (modIdx == Selected?.Index)
+        if (mod == Selected)
             OnSelectionChange(Selected, Selected, default);
     }
 
@@ -382,8 +384,11 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         }
     }
 
-    private void OnInheritanceChange(bool _)
+    private void OnInheritanceChange(ModCollection collection, bool _)
     {
+        if (collection != _collectionManager.Active.Current)
+            return;
+
         SetFilterDirty();
         OnSelectionChange(Selected, Selected, default);
     }
@@ -392,18 +397,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     {
         if (collectionType != CollectionType.Current || oldCollection == newCollection)
             return;
-
-        if (oldCollection != null)
-        {
-            oldCollection.ModSettingChanged  -= OnSettingChange;
-            oldCollection.InheritanceChanged -= OnInheritanceChange;
-        }
-
-        if (newCollection != null)
-        {
-            newCollection.ModSettingChanged  += OnSettingChange;
-            newCollection.InheritanceChanged += OnInheritanceChange;
-        }
 
         SetFilterDirty();
         OnSelectionChange(Selected, Selected, default);
