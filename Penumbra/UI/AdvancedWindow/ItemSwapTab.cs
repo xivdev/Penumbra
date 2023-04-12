@@ -771,9 +771,10 @@ public class ItemSwapTab : IDisposable, ITab
 
     private void OnModOptionChange(ModOptionChangeType type, Mod mod, int a, int b, int c)
     {
-        if (type is ModOptionChangeType.PrepareChange || mod != _mod)
+        if (type is ModOptionChangeType.PrepareChange or ModOptionChangeType.GroupAdded or ModOptionChangeType.OptionAdded || mod != _mod)
             return;
         _swapData.LoadMod(_mod, _modSettings);
+        UpdateOption();
         _dirty = true;
     }
 }
