@@ -65,6 +65,7 @@ public partial class Mod
         var modFiles = AllFiles.ToHashSet();
         return ModPath.EnumerateDirectories()
            .SelectMany( f => f.EnumerateFiles( "*", SearchOption.AllDirectories ) )
+           .Where( f => !f.Attributes.HasFlag( FileAttributes.Hidden ) )
            .Select( f => new FullPath( f ) )
            .Where( f => !modFiles.Contains( f ) )
            .ToList();
