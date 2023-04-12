@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using Microsoft.Win32;
+using OtterGui;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
@@ -113,7 +114,7 @@ public class ModFileCollection : IDisposable
         tok.ThrowIfCancellationRequested();
         ClearFiles();
 
-        foreach (var file in mod.ModPath.EnumerateDirectories().SelectMany(d => d.EnumerateFiles("*.*", SearchOption.AllDirectories)))
+        foreach (var file in mod.ModPath.EnumerateDirectories().Where(d => !d.IsHidden()).SelectMany(FileExtensions.EnumerateNonHiddenFiles))
         {
             tok.ThrowIfCancellationRequested();
             if (!FileRegistry.FromFile(mod.ModPath, file, out var registry))

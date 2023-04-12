@@ -6,6 +6,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
@@ -98,7 +99,7 @@ internal static partial class ModCreator
     /// <summary> Create the data for a given sub mod from its data and the folder it is based on. </summary>
     public static ISubMod CreateSubMod( DirectoryInfo baseFolder, DirectoryInfo optionFolder, OptionList option )
     {
-        var list = optionFolder.EnumerateFiles( "*.*", SearchOption.AllDirectories )
+        var list = optionFolder.EnumerateNonHiddenFiles()
             .Select( f => ( Utf8GamePath.FromFile( f, optionFolder, out var gamePath, true ), gamePath, new FullPath( f ) ) )
             .Where( t => t.Item1 );
 
