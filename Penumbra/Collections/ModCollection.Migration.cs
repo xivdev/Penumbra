@@ -1,58 +1,48 @@
 using Penumbra.Mods;
 using System.Collections.Generic;
 using System.Linq;
+using Penumbra.Mods.Manager;
 using Penumbra.Util;
 
 namespace Penumbra.Collections;
 
-public sealed partial class ModCollection
+/// <summary> Migration to convert ModCollections from older versions to newer. </summary>
+internal static class ModCollectionMigration
 {
-    // Migration to convert ModCollections from older versions to newer.
-    private static class Migration
+    /// <summary> Migrate a mod collection to the current version. </summary>
+    public static void Migrate(SaveService saver, ModStorage mods, int version, ModCollection collection)
     {
-        public static void Migrate(SaveService saver, ModCollection collection )
-        {
-            var changes = MigrateV0ToV1( collection );
-            if( changes )
-            {
-                saver.ImmediateSave(collection);
-            }
-        }
-
-        private static bool MigrateV0ToV1( ModCollection collection )
-        {
-            if( collection.Version > 0 )
-            {
-                return false;
-            }
-
-            collection.Version = 1;
-
-            // Remove all completely defaulted settings from active and inactive mods.
-            for( var i = 0; i < collection._settings.Count; ++i )
-            {
-                if( SettingIsDefaultV0( collection._settings[ i ] ) )
-                {
-                    collection._settings[ i ] = null;
-                }
-            }
-
-            foreach( var (key, _) in collection._unusedSettings.Where( kvp => SettingIsDefaultV0( kvp.Value ) ).ToList() )
-            {
-                collection._unusedSettings.Remove( key );
-            }
-
-            return true;
-        }
-
-        // We treat every completely defaulted setting as inheritance-ready.
-        private static bool SettingIsDefaultV0( ModSettings.SavedSettings setting )
-            => setting is { Enabled: false, Priority: 0 } && setting.Settings.Values.All( s => s == 0 );
-
-        private static bool SettingIsDefaultV0( ModSettings? setting )
-            => setting is { Enabled: false, Priority: 0 } && setting.Settings.All( s => s == 0 );
+        var changes = MigrateV0ToV1(collection, ref version);
+        if (changes)
+            saver.ImmediateSave(new ModCollectionSave(mods, collection));
     }
 
-    internal static ModCollection MigrateFromV0( string name, Dictionary< string, ModSettings.SavedSettings > allSettings )
-        => new(name, 0, allSettings);
+    /// <summary> Migrate a mod collection from Version 0 to Version 1, which introduced support for inheritance. </summary>
+    private static bool MigrateV0ToV1(ModCollection collection, ref int version)
+    {
+        if (version > 0)
+            return false;
+
+        version = 1;
+
+        // Remove all completely defaulted settings from active and inactive mods.
+        for (var i = 0; i < collection.Settings.Count; ++i)
+        {
+            if (SettingIsDefaultV0(collection.Settings[i]))
+                ((List<ModSettings?>)collection.Settings)[i] = null;
+        }
+
+        foreach (var (key, _) in collection.UnusedSettings.Where(kvp => SettingIsDefaultV0(kvp.Value)).ToList())
+            ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(key);
+
+        return true;
+    }
+
+    /// <summary> We treat every completely defaulted setting as inheritance-ready. </summary>
+    private static bool SettingIsDefaultV0(ModSettings.SavedSettings setting)
+        => setting is { Enabled: false, Priority: 0 } && setting.Settings.Values.All(s => s == 0);
+    
+    /// <inheritdoc cref="SettingIsDefaultV0(ModSettings.SavedSettings)"/>
+    private static bool SettingIsDefaultV0(ModSettings? setting)
+        => setting is { Enabled: false, Priority: 0 } && setting.Settings.All(s => s == 0);
 }

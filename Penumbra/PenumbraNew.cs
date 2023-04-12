@@ -102,7 +102,8 @@ public class PenumbraNew
             .AddSingleton<ModExportManager>()
             .AddSingleton<ModImportManager>()
             .AddSingleton<ModFileSystem>()
-            .AddSingleton<ModCacheManager>();
+            .AddSingleton<ModCacheManager>()
+            .AddSingleton(s => (ModStorage) s.GetRequiredService<ModManager>());
 
         // Add Resource services
         services.AddSingleton<ResourceLoader>()

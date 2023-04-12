@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using OtterGui;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Util;
 
@@ -14,11 +15,13 @@ public class CollectionEditor
 {
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;
+    private readonly ModStorage          _modStorage;
 
-    public CollectionEditor(SaveService saveService, CommunicatorService communicator)
+    public CollectionEditor(SaveService saveService, CommunicatorService communicator, ModStorage modStorage)
     {
         _saveService  = saveService;
         _communicator = communicator;
+        _modStorage   = modStorage;
     }
 
     /// <summary> Enable or disable the mod inheritance of mod idx. </summary>
@@ -37,12 +40,12 @@ public class CollectionEditor
     /// </summary>
     public bool SetModState(ModCollection collection, Mod mod, bool newValue)
     {
-        var oldValue = collection._settings[mod.Index]?.Enabled ?? collection[mod.Index].Settings?.Enabled ?? false;
+        var oldValue = collection.Settings[mod.Index]?.Enabled ?? collection[mod.Index].Settings?.Enabled ?? false;
         if (newValue == oldValue)
             return false;
 
         var inheritance = FixInheritance(collection, mod, false);
-        collection._settings[mod.Index]!.Enabled = newValue;
+        ((List<ModSettings?>)collection.Settings)[mod.Index]!.Enabled = newValue;
         InvokeChange(collection, ModSettingChange.EnableState, mod, inheritance ? -1 : newValue ? 0 : 1, 0);
         return true;
     }
@@ -65,13 +68,13 @@ public class CollectionEditor
         var changes = false;
         foreach (var mod in mods)
         {
-            var oldValue = collection._settings[mod.Index]?.Enabled;
+            var oldValue = collection.Settings[mod.Index]?.Enabled;
             if (newValue == oldValue)
                 continue;
 
             FixInheritance(collection, mod, false);
-            collection._settings[mod.Index]!.Enabled = newValue;
-            changes                                  = true;
+            ((List<ModSettings?>)collection.Settings)[mod.Index]!.Enabled = newValue;
+            changes                                                       = true;
         }
 
         if (!changes)
@@ -86,12 +89,12 @@ public class CollectionEditor
     /// </summary>
     public bool SetModPriority(ModCollection collection, Mod mod, int newValue)
     {
-        var oldValue = collection._settings[mod.Index]?.Priority ?? collection[mod.Index].Settings?.Priority ?? 0;
+        var oldValue = collection.Settings[mod.Index]?.Priority ?? collection[mod.Index].Settings?.Priority ?? 0;
         if (newValue == oldValue)
             return false;
 
         var inheritance = FixInheritance(collection, mod, false);
-        collection._settings[mod.Index]!.Priority = newValue;
+        ((List<ModSettings?>)collection.Settings)[mod.Index]!.Priority = newValue;
         InvokeChange(collection, ModSettingChange.Priority, mod, inheritance ? -1 : oldValue, 0);
         return true;
     }
@@ -102,15 +105,15 @@ public class CollectionEditor
     /// </summary>
     public bool SetModSetting(ModCollection collection, Mod mod, int groupIdx, uint newValue)
     {
-        var settings = collection._settings[mod.Index] != null
-            ? collection._settings[mod.Index]!.Settings
+        var settings = collection.Settings[mod.Index] != null
+            ? collection.Settings[mod.Index]!.Settings
             : collection[mod.Index].Settings?.Settings;
         var oldValue = settings?[groupIdx] ?? mod.Groups[groupIdx].DefaultSettings;
         if (oldValue == newValue)
             return false;
 
         var inheritance = FixInheritance(collection, mod, false);
-        collection._settings[mod.Index]!.SetValue(mod, groupIdx, newValue);
+        ((List<ModSettings?>)collection.Settings)[mod.Index]!.SetValue(mod, groupIdx, newValue);
         InvokeChange(collection, ModSettingChange.Setting, mod, inheritance ? -1 : (int)oldValue, groupIdx);
         return true;
     }
@@ -125,10 +128,10 @@ public class CollectionEditor
         // If it does not exist, check unused settings.
         // If it does not exist and has no unused settings, also use null.
         ModSettings.SavedSettings? savedSettings = sourceMod != null
-            ? collection._settings[sourceMod.Index] != null
-                ? new ModSettings.SavedSettings(collection._settings[sourceMod.Index]!, sourceMod)
+            ? collection.Settings[sourceMod.Index] != null
+                ? new ModSettings.SavedSettings(collection.Settings[sourceMod.Index]!, sourceMod)
                 : null
-            : collection._unusedSettings.TryGetValue(sourceName, out var s)
+            : collection.UnusedSettings.TryGetValue(sourceName, out var s)
                 ? s
                 : null;
 
@@ -157,9 +160,9 @@ public class CollectionEditor
             // Either copy the unused source settings directly if they are not inheriting,
             // or remove any unused settings for the target if they are inheriting.
             if (savedSettings != null)
-                collection._unusedSettings[targetName] = savedSettings.Value;
+                ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings)[targetName] = savedSettings.Value;
             else
-                collection._unusedSettings.Remove(targetName);
+                ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(targetName);
         }
 
         return true;
@@ -189,11 +192,12 @@ public class CollectionEditor
     /// </summary>
     private static bool FixInheritance(ModCollection collection, Mod mod, bool inherit)
     {
-        var settings = collection._settings[mod.Index];
+        var settings = collection.Settings[mod.Index];
         if (inherit == (settings == null))
             return false;
 
-        collection._settings[mod.Index] = inherit ? null : collection[mod.Index].Settings?.DeepCopy() ?? ModSettings.DefaultSettings(mod);
+        ((List<ModSettings?>)collection.Settings)[mod.Index] =
+            inherit ? null : collection[mod.Index].Settings?.DeepCopy() ?? ModSettings.DefaultSettings(mod);
         return true;
     }
 
@@ -201,7 +205,7 @@ public class CollectionEditor
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void InvokeChange(ModCollection changedCollection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx)
     {
-        _saveService.QueueSave(changedCollection);
+        _saveService.QueueSave(new ModCollectionSave(_modStorage, changedCollection));
         _communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
         RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
     }
@@ -219,7 +223,7 @@ public class CollectionEditor
                     _communicator.ModSettingChanged.Invoke(directInheritor, type, null, oldValue, groupIdx, true);
                     break;
                 default:
-                    if (directInheritor._settings[mod!.Index] == null)
+                    if (directInheritor.Settings[mod!.Index] == null)
                         _communicator.ModSettingChanged.Invoke(directInheritor, type, mod, oldValue, groupIdx, true);
                     break;
             }

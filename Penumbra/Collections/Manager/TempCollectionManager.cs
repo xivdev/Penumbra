@@ -52,7 +52,7 @@ public class TempCollectionManager : IDisposable
 
         if (GlobalChangeCounter == int.MaxValue)
             GlobalChangeCounter = 0;
-        var collection = ModCollection.CreateNewTemporary(name, GlobalChangeCounter++);
+        var collection = ModCollection.CreateTemporary(name, ~Count, GlobalChangeCounter++);
         if (_customCollections.TryAdd(collection.Name.ToLowerInvariant(), collection))
             return collection.Name;
 

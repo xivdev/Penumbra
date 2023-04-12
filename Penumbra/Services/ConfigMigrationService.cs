@@ -9,7 +9,9 @@ using OtterGui.Filesystem;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
+using Penumbra.Util;
 using SixLabors.ImageSharp;
 
 namespace Penumbra.Services;
@@ -20,40 +22,32 @@ namespace Penumbra.Services;
 /// </summary>
 public class ConfigMigrationService
 {
-    private readonly FilenameService _fileNames;
-    private readonly DalamudPluginInterface _pluginInterface;
+    private readonly SaveService _saveService;
 
     private Configuration _config = null!;
-    private JObject _data = null!;
+    private JObject       _data   = null!;
 
-    public string CurrentCollection = ModCollection.DefaultCollectionName;
-    public string DefaultCollection = ModCollection.DefaultCollectionName;
-    public string ForcedCollection = string.Empty;
+    public string                     CurrentCollection    = ModCollection.DefaultCollectionName;
+    public string                     DefaultCollection    = ModCollection.DefaultCollectionName;
+    public string                     ForcedCollection     = string.Empty;
     public Dictionary<string, string> CharacterCollections = new();
-    public Dictionary<string, string> ModSortOrder = new();
-    public bool InvertModListOrder;
-    public bool SortFoldersFirst;
-    public SortModeV3 SortMode = SortModeV3.FoldersFirst;
+    public Dictionary<string, string> ModSortOrder         = new();
+    public bool                       InvertModListOrder;
+    public bool                       SortFoldersFirst;
+    public SortModeV3                 SortMode = SortModeV3.FoldersFirst;
 
-    public ConfigMigrationService(FilenameService fileNames, DalamudPluginInterface pi)
-    {
-        _fileNames = fileNames;
-        _pluginInterface = pi;
-    }
+    public ConfigMigrationService(SaveService saveService)
+        => _saveService = saveService;
 
     /// <summary> Add missing colors to the dictionary if necessary. </summary>
     private static void AddColors(Configuration config, bool forceSave)
     {
         var save = false;
         foreach (var color in Enum.GetValues<ColorId>())
-        {
             save |= config.Colors.TryAdd(color, color.Data().DefaultColor);
-        }
 
         if (save || forceSave)
-        {
             config.Save();
-        }
     }
 
     public void Migrate(Configuration config)
@@ -63,13 +57,13 @@ public class ConfigMigrationService
         // because it stayed alive for a bunch of people for some reason.
         DeleteMetaTmp();
 
-        if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(_fileNames.ConfigFile))
+        if (config.Version >= Configuration.Constants.CurrentVersion || !File.Exists(_saveService.FileNames.ConfigFile))
         {
             AddColors(config, false);
             return;
         }
 
-        _data = JObject.Parse(File.ReadAllText(_fileNames.ConfigFile));
+        _data = JObject.Parse(File.ReadAllText(_saveService.FileNames.ConfigFile));
         CreateBackup();
 
         Version0To1();
@@ -88,7 +82,7 @@ public class ConfigMigrationService
         if (_config.Version != 6)
             return;
 
-        ActiveCollectionMigration.MigrateUngenderedCollections(_fileNames);
+        ActiveCollectionMigration.MigrateUngenderedCollections(_saveService.FileNames);
         _config.Version = 7;
     }
 
@@ -115,7 +109,7 @@ public class ConfigMigrationService
             return;
 
         ModBackup.MigrateModBackups = true;
-        _config.Version = 5;
+        _config.Version             = 5;
     }
 
     // SortMode was changed from an enum to a type.
@@ -127,15 +121,15 @@ public class ConfigMigrationService
         SortMode = _data[nameof(SortMode)]?.ToObject<SortModeV3>() ?? SortMode;
         _config.SortMode = SortMode switch
         {
-            SortModeV3.FoldersFirst => ISortMode<Mod>.FoldersFirst,
-            SortModeV3.Lexicographical => ISortMode<Mod>.Lexicographical,
-            SortModeV3.InverseFoldersFirst => ISortMode<Mod>.InverseFoldersFirst,
+            SortModeV3.FoldersFirst           => ISortMode<Mod>.FoldersFirst,
+            SortModeV3.Lexicographical        => ISortMode<Mod>.Lexicographical,
+            SortModeV3.InverseFoldersFirst    => ISortMode<Mod>.InverseFoldersFirst,
             SortModeV3.InverseLexicographical => ISortMode<Mod>.InverseLexicographical,
-            SortModeV3.FoldersLast => ISortMode<Mod>.FoldersLast,
-            SortModeV3.InverseFoldersLast => ISortMode<Mod>.InverseFoldersLast,
-            SortModeV3.InternalOrder => ISortMode<Mod>.InternalOrder,
-            SortModeV3.InternalOrderInverse => ISortMode<Mod>.InverseInternalOrder,
-            _ => ISortMode<Mod>.FoldersFirst,
+            SortModeV3.FoldersLast            => ISortMode<Mod>.FoldersLast,
+            SortModeV3.InverseFoldersLast     => ISortMode<Mod>.InverseFoldersLast,
+            SortModeV3.InternalOrder          => ISortMode<Mod>.InternalOrder,
+            SortModeV3.InternalOrderInverse   => ISortMode<Mod>.InverseInternalOrder,
+            _                                 => ISortMode<Mod>.FoldersFirst,
         };
         _config.Version = 4;
     }
@@ -147,8 +141,8 @@ public class ConfigMigrationService
             return;
 
         SortFoldersFirst = _data[nameof(SortFoldersFirst)]?.ToObject<bool>() ?? false;
-        SortMode = SortFoldersFirst ? SortModeV3.FoldersFirst : SortModeV3.Lexicographical;
-        _config.Version = 3;
+        SortMode         = SortFoldersFirst ? SortModeV3.FoldersFirst : SortModeV3.Lexicographical;
+        _config.Version  = 3;
     }
 
     // The forced collection was removed due to general inheritance.
@@ -192,7 +186,7 @@ public class ConfigMigrationService
             return;
 
         // Add the previous forced collection to all current collections except itself as an inheritance.
-        foreach (var collection in _fileNames.CollectionFiles)
+        foreach (var collection in _saveService.FileNames.CollectionFiles)
         {
             try
             {
@@ -215,10 +209,10 @@ public class ConfigMigrationService
     private void ResettleSortOrder()
     {
         ModSortOrder = _data[nameof(ModSortOrder)]?.ToObject<Dictionary<string, string>>() ?? ModSortOrder;
-        var file = _fileNames.FilesystemFile;
+        var       file   = _saveService.FileNames.FilesystemFile;
         using var stream = File.Open(file, File.Exists(file) ? FileMode.Truncate : FileMode.CreateNew);
         using var writer = new StreamWriter(stream);
-        using var j = new JsonTextWriter(writer);
+        using var j      = new JsonTextWriter(writer);
         j.Formatting = Formatting.Indented;
         j.WriteStartObject();
         j.WritePropertyName("Data");
@@ -239,10 +233,10 @@ public class ConfigMigrationService
     // Move the active collections to their own file.
     private void ResettleCollectionSettings()
     {
-        CurrentCollection = _data[nameof(CurrentCollection)]?.ToObject<string>() ?? CurrentCollection;
-        DefaultCollection = _data[nameof(DefaultCollection)]?.ToObject<string>() ?? DefaultCollection;
+        CurrentCollection    = _data[nameof(CurrentCollection)]?.ToObject<string>() ?? CurrentCollection;
+        DefaultCollection    = _data[nameof(DefaultCollection)]?.ToObject<string>() ?? DefaultCollection;
         CharacterCollections = _data[nameof(CharacterCollections)]?.ToObject<Dictionary<string, string>>() ?? CharacterCollections;
-        SaveActiveCollectionsV0(DefaultCollection, CurrentCollection, DefaultCollection,
+        SaveActiveCollectionsV0(DefaultCollection,                    CurrentCollection, DefaultCollection,
             CharacterCollections.Select(kvp => (kvp.Key, kvp.Value)), Array.Empty<(CollectionType, string)>());
     }
 
@@ -250,12 +244,12 @@ public class ConfigMigrationService
     private void SaveActiveCollectionsV0(string def, string ui, string current, IEnumerable<(string, string)> characters,
         IEnumerable<(CollectionType, string)> special)
     {
-        var file = _fileNames.ActiveCollectionsFile;
+        var file = _saveService.FileNames.ActiveCollectionsFile;
         try
         {
             using var stream = File.Open(file, File.Exists(file) ? FileMode.Truncate : FileMode.CreateNew);
             using var writer = new StreamWriter(stream);
-            using var j = new JsonTextWriter(writer);
+            using var j      = new JsonTextWriter(writer);
             j.Formatting = Formatting.Indented;
             j.WriteStartObject();
             j.WritePropertyName(nameof(ActiveCollections.Default));
@@ -295,19 +289,18 @@ public class ConfigMigrationService
             return;
 
         _config.ModDirectory = _data[nameof(CurrentCollection)]?.ToObject<string>() ?? string.Empty;
-        _config.Version = 1;
+        _config.Version      = 1;
         ResettleCollectionJson();
     }
 
-    // Move the previous mod configurations to a new default collection file.
+    /// <summary> Move the previous mod configurations to a new default collection file. </summary>
     private void ResettleCollectionJson()
     {
         var collectionJson = new FileInfo(Path.Combine(_config.ModDirectory, "collection.json"));
         if (!collectionJson.Exists)
             return;
 
-        var defaultCollection = ModCollection.CreateNewEmpty(ModCollection.DefaultCollectionName);
-        var defaultCollectionFile = new FileInfo(_fileNames.CollectionFile(defaultCollection));
+        var defaultCollectionFile = new FileInfo(_saveService.FileNames.CollectionFile(ModCollection.DefaultCollectionName));
         if (defaultCollectionFile.Exists)
             return;
 
@@ -317,18 +310,18 @@ public class ConfigMigrationService
             var data = JArray.Parse(text);
 
             var maxPriority = 0;
-            var dict = new Dictionary<string, ModSettings.SavedSettings>();
+            var dict        = new Dictionary<string, ModSettings.SavedSettings>();
             foreach (var setting in data.Cast<JObject>())
             {
-                var modName = (string)setting["FolderName"]!;
-                var enabled = (bool)setting["Enabled"]!;
+                var modName  = (string)setting["FolderName"]!;
+                var enabled  = (bool)setting["Enabled"]!;
                 var priority = (int)setting["Priority"]!;
                 var settings = setting["Settings"]!.ToObject<Dictionary<string, long>>()
                  ?? setting["Conf"]!.ToObject<Dictionary<string, long>>();
 
                 dict[modName] = new ModSettings.SavedSettings()
                 {
-                    Enabled = enabled,
+                    Enabled  = enabled,
                     Priority = priority,
                     Settings = settings!,
                 };
@@ -339,8 +332,9 @@ public class ConfigMigrationService
             if (!InvertModListOrder)
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
-            defaultCollection = ModCollection.MigrateFromV0(ModCollection.DefaultCollectionName, dict);
-            Penumbra.SaveService.ImmediateSave(defaultCollection);
+            var emptyStorage = new ModStorage();
+            var collection   = ModCollection.CreateFromData(_saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict);
+            _saveService.ImmediateSave(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)
         {
@@ -352,7 +346,7 @@ public class ConfigMigrationService
     // Create a backup of the configuration file specifically.
     private void CreateBackup()
     {
-        var name = _fileNames.ConfigFile;
+        var name    = _saveService.FileNames.ConfigFile;
         var bakName = name + ".bak";
         try
         {
@@ -366,13 +360,13 @@ public class ConfigMigrationService
 
     public enum SortModeV3 : byte
     {
-        FoldersFirst = 0x00,
-        Lexicographical = 0x01,
-        InverseFoldersFirst = 0x02,
+        FoldersFirst           = 0x00,
+        Lexicographical        = 0x01,
+        InverseFoldersFirst    = 0x02,
         InverseLexicographical = 0x03,
-        FoldersLast = 0x04,
-        InverseFoldersLast = 0x05,
-        InternalOrder = 0x06,
-        InternalOrderInverse = 0x07,
+        FoldersLast            = 0x04,
+        InverseFoldersLast     = 0x05,
+        InternalOrder          = 0x06,
+        InternalOrderInverse   = 0x07,
     }
 }

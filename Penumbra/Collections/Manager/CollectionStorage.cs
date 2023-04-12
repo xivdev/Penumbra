@@ -18,6 +18,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;
+    private readonly ModStorage          _modStorage;
 
     /// <remarks> The empty collection is always available at Index 0. </remarks>
     private readonly List<ModCollection> _collections = new()
@@ -33,9 +34,6 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
-
-    public IEnumerator<ModCollection> GetEnumeratorWithEmpty()
-        => _collections.GetEnumerator();
 
     public int Count
         => _collections.Count;
@@ -53,10 +51,11 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         return true;
     }
 
-    public CollectionStorage(CommunicatorService communicator, SaveService saveService)
+    public CollectionStorage(CommunicatorService communicator, SaveService saveService, ModStorage modStorage)
     {
         _communicator = communicator;
         _saveService  = saveService;
+        _modStorage   = modStorage;
         _communicator.ModDiscoveryStarted.Subscribe(OnModDiscoveryStarted);
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished);
         _communicator.ModPathChanged.Subscribe(OnModPathChange, 10);
@@ -114,20 +113,15 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             return false;
         }
 
-        var newCollection = duplicate?.Duplicate(name) ?? ModCollection.CreateNewEmpty(name);
-        newCollection.Index = _collections.Count;
+        var newCollection = duplicate?.Duplicate(name, _collections.Count) ?? ModCollection.CreateEmpty(name, _collections.Count);
         _collections.Add(newCollection);
 
-        _saveService.ImmediateSave(newCollection);
+        _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
         Penumbra.ChatService.NotificationMessage($"Created new collection {newCollection.AnonymizedName}.", "Success",
             NotificationType.Success);
         _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
         return true;
     }
-
-    /// <summary> Whether the given collection can be deleted. </summary>
-    public bool CanRemoveCollection(ModCollection collection)
-        => collection.Index > ModCollection.Empty.Index && collection.Index < Count && collection.Index != DefaultNamed.Index;
 
     /// <summary>
     /// Remove the given collection if it exists and is neither the empty nor the default-named collection.
@@ -146,7 +140,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             return false;
         }
 
-        _saveService.ImmediateDelete(collection);
+        _saveService.ImmediateDelete(new ModCollectionSave(_modStorage, collection));
         _collections.RemoveAt(collection.Index);
         // Update indices.
         for (var i = collection.Index; i < Count; ++i)
@@ -192,6 +186,15 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         }
     }
 
+    /// <summary> Remove all settings for not currently-installed mods from the given collection. </summary>
+    public void CleanUnavailableSettings(ModCollection collection)
+    {
+        var any = collection.UnusedSettings.Count > 0;
+        ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Clear();
+        if (any)
+            _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+    }
+
     /// <summary>
     /// Check if a name is valid to use for a collection.
     /// Does not check for uniqueness.
@@ -211,24 +214,23 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
 
         foreach (var file in _saveService.FileNames.CollectionFiles)
         {
-            var collection = ModCollection.LoadFromFile(file, out var inheritance);
-            if (collection == null || collection.Name.Length == 0)
+            if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance) || !IsValidName(name))
                 continue;
 
-            if (ByName(collection.Name, out _))
+            if (ByName(name, out _))
             {
-                Penumbra.ChatService.NotificationMessage($"Duplicate collection found: {collection.Name} already exists. Import skipped.",
+                Penumbra.ChatService.NotificationMessage($"Duplicate collection found: {name} already exists. Import skipped.",
                     "Warning", NotificationType.Warning);
                 continue;
             }
 
+            var collection = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings);
             var correctName = _saveService.FileNames.CollectionFile(collection);
             if (file.FullName != correctName)
                 Penumbra.ChatService.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.", "Warning",
                     NotificationType.Warning);
 
             _inheritancesByName?.Add(inheritance);
-            collection.Index = _collections.Count;
             _collections.Add(collection);
         }
 
@@ -258,7 +260,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     private void OnModDiscoveryStarted()
     {
         foreach (var collection in this)
-            collection.PrepareModDiscovery();
+            collection.PrepareModDiscovery(_modStorage);
     }
 
     /// <summary> Restore all settings in all collections to mods. </summary>
@@ -266,7 +268,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     {
         // Re-apply all mod settings.
         foreach (var collection in this)
-            collection.ApplyModSettings();
+            collection.ApplyModSettings(_saveService, _modStorage);
     }
 
     /// <summary> Add or remove a mod from all collections, or re-save all collections where the mod has settings. </summary>
@@ -281,11 +283,11 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
                 break;
             case ModPathChangeType.Deleted:
                 foreach (var collection in this)
-                    collection.RemoveMod(mod, mod.Index);
+                    collection.RemoveMod(mod);
                 break;
             case ModPathChangeType.Moved:
                 foreach (var collection in this.Where(collection => collection.Settings[mod.Index] != null))
-                    _saveService.QueueSave(collection);
+                    _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
                 break;
         }
     }
@@ -299,8 +301,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
 
         foreach (var collection in this)
         {
-            if (collection._settings[mod.Index]?.HandleChanges(type, mod, groupIdx, optionIdx, movedToIdx) ?? false)
-                _saveService.QueueSave(collection);
+            if (collection.Settings[mod.Index]?.HandleChanges(type, mod, groupIdx, optionIdx, movedToIdx) ?? false)
+                _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
         }
     }
 }

@@ -87,15 +87,15 @@ public class CollectionsTab : IDisposable, ITab
     /// <summary> Draw the Clean Unused Settings button if there are any. </summary>
     private void DrawCleanCollectionButton(Vector2 width)
     {
-        if (!_collectionManager.Active.Current.HasUnusedSettings)
+        if (_collectionManager.Active.Current.UnusedSettings.Count == 0)
             return;
 
         ImGui.SameLine();
         if (ImGuiUtil.DrawDisabledButton(
-                $"Clean {_collectionManager.Active.Current.NumUnusedSettings} Unused Settings###CleanSettings", width
+                $"Clean {_collectionManager.Active.Current.UnusedSettings.Count} Unused Settings###CleanSettings", width
                 , "Remove all stored settings for mods not currently available and fix invalid settings.\n\nUse at own risk."
                 , false))
-            _collectionManager.Active.Current.CleanUnavailableSettings();
+            _collectionManager.Storage.CleanUnavailableSettings(_collectionManager.Active.Current);
     }
 
     /// <summary> Draw the new collection input as well as its buttons. </summary>

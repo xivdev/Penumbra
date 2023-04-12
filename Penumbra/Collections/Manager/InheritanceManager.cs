@@ -4,6 +4,7 @@ using System.Linq;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Filesystem;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Util;
 
@@ -19,12 +20,16 @@ public class InheritanceManager : IDisposable
     public enum ValidInheritance
     {
         Valid,
+
         /// <summary> Can not inherit from self </summary>
         Self,
+
         /// <summary> Can not inherit from the empty collection </summary>
         Empty,
+
         /// <summary> Already inherited from </summary>
         Contained,
+
         /// <summary> Inheritance would lead to a circle. </summary>
         Circle,
     }
@@ -32,12 +37,14 @@ public class InheritanceManager : IDisposable
     private readonly CollectionStorage   _storage;
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;
+    private readonly ModStorage          _modStorage;
 
-    public InheritanceManager(CollectionStorage storage, SaveService saveService, CommunicatorService communicator)
+    public InheritanceManager(CollectionStorage storage, SaveService saveService, CommunicatorService communicator, ModStorage modStorage)
     {
         _storage      = storage;
         _saveService  = saveService;
         _communicator = communicator;
+        _modStorage   = modStorage;
 
         ApplyInheritances();
         _communicator.CollectionChange.Subscribe(OnCollectionChange);
@@ -80,6 +87,7 @@ public class InheritanceManager : IDisposable
         var parent = inheritor.DirectlyInheritsFrom[idx];
         ((List<ModCollection>)inheritor.DirectlyInheritsFrom).RemoveAt(idx);
         ((List<ModCollection>)parent.DirectParentOf).Remove(inheritor);
+        _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
         _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
         RecurseInheritanceChanges(inheritor);
         Penumbra.Log.Debug($"Removed {parent.AnonymizedName} from {inheritor.AnonymizedName} inheritances.");
@@ -91,6 +99,7 @@ public class InheritanceManager : IDisposable
         if (!((List<ModCollection>)inheritor.DirectlyInheritsFrom).Move(from, to))
             return;
 
+        _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
         _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
         RecurseInheritanceChanges(inheritor);
         Penumbra.Log.Debug($"Moved {inheritor.AnonymizedName}s inheritance {from} to {to}.");
@@ -106,6 +115,7 @@ public class InheritanceManager : IDisposable
         ((List<ModCollection>)parent.DirectParentOf).Add(inheritor);
         if (invokeEvent)
         {
+            _saveService.QueueSave(new ModCollectionSave(_modStorage, inheritor));
             _communicator.CollectionInheritanceChanged.Invoke(inheritor, false);
             RecurseInheritanceChanges(inheritor);
         }
@@ -134,7 +144,7 @@ public class InheritanceManager : IDisposable
             }
 
             if (localChanges)
-                _saveService.ImmediateSave(collection);
+                _saveService.ImmediateSave(new ModCollectionSave(_modStorage, collection));
         }
     }
 
