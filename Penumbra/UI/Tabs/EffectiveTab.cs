@@ -9,6 +9,7 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections;
+using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;

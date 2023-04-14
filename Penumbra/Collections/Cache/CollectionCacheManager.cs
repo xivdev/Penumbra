@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
+using Penumbra.Collections.Cache;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -20,6 +21,7 @@ public class CollectionCacheManager : IDisposable, IReadOnlyDictionary<ModCollec
     private readonly CommunicatorService _communicator;
     private readonly CharacterUtility    _characterUtility;
 
+    private readonly List<(ModCollectionCache, int ChangeCounter)>
     private readonly Dictionary<ModCollection, ModCollectionCache> _cache = new();
 
     public int Count

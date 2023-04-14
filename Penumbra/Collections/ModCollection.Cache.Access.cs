@@ -13,6 +13,7 @@ using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
+using Penumbra.Collections.Cache;
 
 namespace Penumbra.Collections;
 
@@ -24,8 +25,10 @@ public partial class ModCollection
     public bool HasCache
         => _cache != null;
 
-    // Count the number of changes of the effective file list.
-    // This is used for material and imc changes.
+    /// <summary>
+    /// Count the number of changes of the effective file list.
+    /// This is used for material and imc changes.
+    /// </summary>
     public int ChangeCounter { get; internal set; }
 
     // Only create, do not update. 

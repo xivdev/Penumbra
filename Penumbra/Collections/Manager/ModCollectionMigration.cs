@@ -4,7 +4,7 @@ using System.Linq;
 using Penumbra.Mods.Manager;
 using Penumbra.Util;
 
-namespace Penumbra.Collections;
+namespace Penumbra.Collections.Manager;
 
 /// <summary> Migration to convert ModCollections from older versions to newer. </summary>
 internal static class ModCollectionMigration
@@ -41,7 +41,7 @@ internal static class ModCollectionMigration
     /// <summary> We treat every completely defaulted setting as inheritance-ready. </summary>
     private static bool SettingIsDefaultV0(ModSettings.SavedSettings setting)
         => setting is { Enabled: false, Priority: 0 } && setting.Settings.Values.All(s => s == 0);
-    
+
     /// <inheritdoc cref="SettingIsDefaultV0(ModSettings.SavedSettings)"/>
     private static bool SettingIsDefaultV0(ModSettings? setting)
         => setting is { Enabled: false, Priority: 0 } && setting.Settings.All(s => s == 0);

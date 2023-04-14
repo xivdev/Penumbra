@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using Penumbra.Mods.Manager;
 using Penumbra.Util;
+using Penumbra.Collections.Manager;
 
 namespace Penumbra.Collections;
 

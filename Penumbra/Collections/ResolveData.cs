@@ -17,10 +17,8 @@ public readonly struct ResolveData
         => _modCollection != null;
 
     public ResolveData()
-    {
-        _modCollection       = null!;
-        AssociatedGameObject = nint.Zero;
-    }
+     : this(null!, nint.Zero)
+    { }
 
     public ResolveData(ModCollection collection, nint gameObject)
     {

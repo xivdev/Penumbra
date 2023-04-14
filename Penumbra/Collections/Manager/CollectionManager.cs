@@ -19,6 +19,4 @@ public class CollectionManager
         Temp         = temp;
         Editor       = editor;
     }
-
-
 }
