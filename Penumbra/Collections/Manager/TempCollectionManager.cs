@@ -54,9 +54,12 @@ public class TempCollectionManager : IDisposable
             GlobalChangeCounter = 0;
         var collection = ModCollection.CreateTemporary(name, ~Count, GlobalChangeCounter++);
         if (_customCollections.TryAdd(collection.Name.ToLowerInvariant(), collection))
+        {
+            // Temporary collection created.
+            _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, string.Empty);
             return collection.Name;
+        }
 
-        collection.ClearCache();
         return string.Empty;
     }
 
@@ -66,12 +69,12 @@ public class TempCollectionManager : IDisposable
             return false;
 
         GlobalChangeCounter += Math.Max(collection.ChangeCounter + 1 - GlobalChangeCounter, 0);
-        collection.ClearCache();
         for (var i = 0; i < Collections.Count; ++i)
         {
             if (Collections[i].Collection != collection)
                 continue;
 
+            // Temporary collection assignment removed.
             _communicator.CollectionChange.Invoke(CollectionType.Temporary, collection, null, Collections[i].DisplayName);
             Collections.Delete(i--);
         }
@@ -81,13 +84,13 @@ public class TempCollectionManager : IDisposable
 
     public bool AddIdentifier(ModCollection collection, params ActorIdentifier[] identifiers)
     {
-        if (Collections.Add(identifiers, collection))
-        {
-            _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, Collections.Last().DisplayName);
-            return true;
-        }
+        if (!Collections.Add(identifiers, collection))
+            return false;
 
-        return false;
+        // Temporary collection assignment added.
+        _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, Collections.Last().DisplayName);
+        return true;
+
     }
 
     public bool AddIdentifier(string collectionName, params ActorIdentifier[] identifiers)

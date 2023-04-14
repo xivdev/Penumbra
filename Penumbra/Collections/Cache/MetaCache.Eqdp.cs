@@ -9,9 +9,9 @@ using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
-namespace Penumbra.Meta.Manager;
+namespace Penumbra.Collections.Cache;
 
-public partial class MetaManager
+public partial class MetaCache
 {
     private readonly ExpandedEqdpFile?[] _eqdpFiles = new ExpandedEqdpFile[CharacterUtilityData.EqdpIndices.Length]; // TODO: female Hrothgar
 

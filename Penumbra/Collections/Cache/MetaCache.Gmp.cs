@@ -6,9 +6,9 @@ using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
-namespace Penumbra.Meta.Manager;
+namespace Penumbra.Collections.Cache;
 
-public partial class MetaManager
+public partial class MetaCache
 {
     private          ExpandedGmpFile?        _gmpFile          = null;
     private readonly List< GmpManipulation > _gmpManipulations = new();

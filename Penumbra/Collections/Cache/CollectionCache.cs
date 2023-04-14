@@ -1,6 +1,5 @@
 using OtterGui;
 using OtterGui.Classes;
-using Penumbra.Meta.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using System;
@@ -22,11 +21,11 @@ public record ModConflicts(IMod Mod2, List<object> Conflicts, bool HasPriority, 
 /// </summary>
 public class ModCollectionCache : IDisposable
 {
-    private readonly ModCollection _collection;
-    private readonly SortedList<string, (SingleArray<IMod>, object?)> _changedItems = new();
-    public readonly Dictionary<Utf8GamePath, ModPath> ResolvedFiles = new();
-    public readonly MetaManager MetaManipulations;
-    private readonly Dictionary<IMod, SingleArray<ModConflicts>> _conflicts = new();
+    private readonly ModCollection                                    _collection;
+    public readonly  SortedList<string, (SingleArray<IMod>, object?)> _changedItems = new();
+    public readonly  Dictionary<Utf8GamePath, ModPath>                ResolvedFiles = new();
+    public readonly  MetaCache                                      MetaManipulations;
+    public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      _conflicts = new();
 
     public IEnumerable<SingleArray<ModConflicts>> AllConflicts
         => _conflicts.Values;
@@ -49,8 +48,8 @@ public class ModCollectionCache : IDisposable
     // The cache reacts through events on its collection changing.
     public ModCollectionCache(ModCollection collection)
     {
-        _collection = collection;
-        MetaManipulations = new MetaManager(_collection);
+        _collection       = collection;
+        MetaManipulations = new MetaCache(_collection);
     }
 
     public void Dispose()
@@ -62,15 +61,11 @@ public class ModCollectionCache : IDisposable
     public FullPath? ResolvePath(Utf8GamePath gameResourcePath)
     {
         if (!ResolvedFiles.TryGetValue(gameResourcePath, out var candidate))
-        {
             return null;
-        }
 
         if (candidate.Path.InternalName.Length > Utf8GamePath.MaxGamePathLength
-        || candidate.Path.IsRooted && !candidate.Path.Exists)
-        {
+         || candidate.Path.IsRooted && !candidate.Path.Exists)
             return null;
-        }
 
         return candidate.Path;
     }
@@ -80,9 +75,7 @@ public class ModCollectionCache : IDisposable
     {
         var needle = localFilePath.FullName.ToLower();
         if (localFilePath.IsRooted)
-        {
             needle = needle.Replace('/', '\\');
-        }
 
         var iterator = ResolvedFiles
             .Where(f => string.Equals(f.Value.Path.FullName, needle, StringComparison.OrdinalIgnoreCase))
@@ -90,9 +83,7 @@ public class ModCollectionCache : IDisposable
 
         // For files that are not rooted, try to add themselves.
         if (!localFilePath.IsRooted && Utf8GamePath.FromString(localFilePath.FullName, out var utf8))
-        {
             iterator = iterator.Prepend(utf8);
-        }
 
         return iterator;
     }
@@ -103,7 +94,7 @@ public class ModCollectionCache : IDisposable
         if (fullPaths.Count == 0)
             return Array.Empty<HashSet<Utf8GamePath>>();
 
-        var ret = new HashSet<Utf8GamePath>[fullPaths.Count];
+        var ret  = new HashSet<Utf8GamePath>[fullPaths.Count];
         var dict = new Dictionary<FullPath, int>(fullPaths.Count);
         foreach (var (path, idx) in fullPaths.WithIndex())
         {
@@ -116,41 +107,10 @@ public class ModCollectionCache : IDisposable
         foreach (var (game, full) in ResolvedFiles)
         {
             if (dict.TryGetValue(full.Path, out var idx))
-            {
                 ret[idx].Add(game);
-            }
         }
 
         return ret;
-    }
-
-    public void FullRecalculation(bool isDefault)
-    {
-        ResolvedFiles.Clear();
-        MetaManipulations.Reset();
-        _conflicts.Clear();
-
-        // Add all forced redirects.
-        foreach (var tempMod in Penumbra.TempMods.ModsForAllCollections.Concat(
-                    Penumbra.TempMods.Mods.TryGetValue(_collection, out var list) ? list : Array.Empty<TemporaryMod>()))
-        {
-            AddMod(tempMod, false);
-        }
-
-        foreach (var mod in Penumbra.ModManager)
-        {
-            AddMod(mod, false);
-        }
-
-        AddMetaFiles();
-
-        ++_collection.ChangeCounter;
-
-        if (isDefault && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods)
-        {
-            Penumbra.ResidentResources.Reload();
-            MetaManipulations.SetFiles();
-        }
     }
 
     public void ReloadMod(IMod mod, bool addMetaChanges)
@@ -166,22 +126,16 @@ public class ModCollectionCache : IDisposable
         foreach (var (path, _) in mod.AllSubMods.SelectMany(s => s.Files.Concat(s.FileSwaps)))
         {
             if (!ResolvedFiles.TryGetValue(path, out var modPath))
-            {
                 continue;
-            }
 
             if (modPath.Mod == mod)
-            {
                 ResolvedFiles.Remove(path);
-            }
         }
 
         foreach (var manipulation in mod.AllSubMods.SelectMany(s => s.Manipulations))
         {
             if (MetaManipulations.TryGetValue(manipulation, out var registeredMod) && registeredMod == mod)
-            {
                 MetaManipulations.RevertMod(manipulation);
-            }
         }
 
         _conflicts.Remove(mod);
@@ -195,13 +149,9 @@ public class ModCollectionCache : IDisposable
             {
                 var newConflicts = Conflicts(conflict.Mod2).Remove(c => c.Mod2 == mod);
                 if (newConflicts.Count > 0)
-                {
                     _conflicts[conflict.Mod2] = newConflicts;
-                }
                 else
-                {
                     _conflicts.Remove(conflict.Mod2);
-                }
             }
         }
 
@@ -224,16 +174,12 @@ public class ModCollectionCache : IDisposable
         {
             var settings = _collection[mod.Index].Settings;
             if (settings is not { Enabled: true })
-            {
                 return;
-            }
 
             foreach (var (group, groupIndex) in mod.Groups.WithIndex().OrderByDescending(g => g.Item1.Priority))
             {
                 if (group.Count == 0)
-                {
                     continue;
-                }
 
                 var config = settings.Settings[groupIndex];
                 switch (group.Type)
@@ -242,16 +188,14 @@ public class ModCollectionCache : IDisposable
                         AddSubMod(group[(int)config], mod);
                         break;
                     case GroupType.Multi:
-                        {
-                            foreach (var (option, _) in group.WithIndex()
-                                        .Where(p => (1 << p.Item2 & config) != 0)
-                                        .OrderByDescending(p => group.OptionPriority(p.Item2)))
-                            {
-                                AddSubMod(option, mod);
-                            }
+                    {
+                        foreach (var (option, _) in group.WithIndex()
+                                     .Where(p => ((1 << p.Item2) & config) != 0)
+                                     .OrderByDescending(p => group.OptionPriority(p.Item2)))
+                            AddSubMod(option, mod);
 
-                            break;
-                        }
+                        break;
+                    }
                 }
             }
         }
@@ -262,9 +206,7 @@ public class ModCollectionCache : IDisposable
         {
             ++_collection.ChangeCounter;
             if (Penumbra.ModCaches[mod.Index].TotalManipulations > 0)
-            {
                 AddMetaFiles();
-            }
 
             if (_collection == Penumbra.CollectionManager.Active.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods)
             {
@@ -278,14 +220,10 @@ public class ModCollectionCache : IDisposable
     private void AddSubMod(ISubMod subMod, IMod parentMod)
     {
         foreach (var (path, file) in subMod.Files.Concat(subMod.FileSwaps))
-        {
             AddFile(path, file, parentMod);
-        }
 
         foreach (var manip in subMod.Manipulations)
-        {
             AddManipulation(manip, parentMod);
-        }
     }
 
     // Add a specific file redirection, handling potential conflicts.
@@ -295,26 +233,18 @@ public class ModCollectionCache : IDisposable
     private void AddFile(Utf8GamePath path, FullPath file, IMod mod)
     {
         if (!ModCollection.CheckFullPath(path, file))
-        {
             return;
-        }
 
         if (ResolvedFiles.TryAdd(path, new ModPath(mod, file)))
-        {
             return;
-        }
 
         var modPath = ResolvedFiles[path];
         // Lower prioritized option in the same mod.
         if (mod == modPath.Mod)
-        {
             return;
-        }
 
         if (AddConflict(path, mod, modPath.Mod))
-        {
             ResolvedFiles[path] = new ModPath(mod, file);
-        }
     }
 
 
@@ -327,9 +257,7 @@ public class ModCollectionCache : IDisposable
             if (c.Conflicts.Count == 0)
             {
                 if (transitive)
-                {
                     RemoveEmptyConflicts(c.Mod2, Conflicts(c.Mod2), false);
-                }
 
                 return true;
             }
@@ -337,13 +265,9 @@ public class ModCollectionCache : IDisposable
             return false;
         });
         if (changedConflicts.Count == 0)
-        {
             _conflicts.Remove(mod);
-        }
         else
-        {
             _conflicts[mod] = changedConflicts;
-        }
     }
 
     // Add a new conflict between the added mod and the existing mod.
@@ -351,7 +275,7 @@ public class ModCollectionCache : IDisposable
     // Returns if the added mod takes priority before the existing mod.
     private bool AddConflict(object data, IMod addedMod, IMod existingMod)
     {
-        var addedPriority = addedMod.Index >= 0 ? _collection[addedMod.Index].Settings!.Priority : addedMod.Priority;
+        var addedPriority    = addedMod.Index >= 0 ? _collection[addedMod.Index].Settings!.Priority : addedMod.Priority;
         var existingPriority = existingMod.Index >= 0 ? _collection[existingMod.Index].Settings!.Priority : existingMod.Priority;
 
         if (existingPriority < addedPriority)
@@ -360,16 +284,14 @@ public class ModCollectionCache : IDisposable
             foreach (var conflict in tmpConflicts)
             {
                 if (data is Utf8GamePath path && conflict.Conflicts.RemoveAll(p => p is Utf8GamePath x && x.Equals(path)) > 0
-                || data is MetaManipulation meta && conflict.Conflicts.RemoveAll(m => m is MetaManipulation x && x.Equals(meta)) > 0)
-                {
+                 || data is MetaManipulation meta && conflict.Conflicts.RemoveAll(m => m is MetaManipulation x && x.Equals(meta)) > 0)
                     AddConflict(data, addedMod, conflict.Mod2);
-                }
             }
 
             RemoveEmptyConflicts(existingMod, tmpConflicts, true);
         }
 
-        var addedConflicts = Conflicts(addedMod);
+        var addedConflicts    = Conflicts(addedMod);
         var existingConflicts = Conflicts(existingMod);
         if (addedConflicts.FindFirst(c => c.Mod2 == existingMod, out var oldConflicts))
         {
@@ -404,36 +326,23 @@ public class ModCollectionCache : IDisposable
 
         // Lower prioritized option in the same mod.
         if (mod == existingMod)
-        {
             return;
-        }
 
         if (AddConflict(manip, mod, existingMod))
-        {
             MetaManipulations.ApplyMod(manip, mod);
-        }
     }
 
 
     // Add all necessary meta file redirects.
-    private void AddMetaFiles()
+    public void AddMetaFiles()
         => MetaManipulations.SetImcFiles();
-
-    // Increment the counter to ensure new files are loaded after applying meta changes.
-    private void IncrementCounter()
-    {
-        ++_collection.ChangeCounter;
-        Penumbra.CharacterUtility.LoadingFinished -= IncrementCounter;
-    }
 
 
     // Identify and record all manipulated objects for this entire collection.
     private void SetChangedItems()
     {
         if (_changedItemsSaveCounter == _collection.ChangeCounter)
-        {
             return;
-        }
 
         try
         {
@@ -442,24 +351,18 @@ public class ModCollectionCache : IDisposable
             // Skip IMCs because they would result in far too many false-positive items,
             // since they are per set instead of per item-slot/item/variant.
             var identifier = Penumbra.Identifier;
-            var items = new SortedList<string, object?>(512);
+            var items      = new SortedList<string, object?>(512);
 
             void AddItems(IMod mod)
             {
                 foreach (var (name, obj) in items)
                 {
                     if (!_changedItems.TryGetValue(name, out var data))
-                    {
                         _changedItems.Add(name, (new SingleArray<IMod>(mod), obj));
-                    }
                     else if (!data.Item1.Contains(mod))
-                    {
                         _changedItems[name] = (data.Item1.Append(mod), obj is int x && data.Item2 is int y ? x + y : obj);
-                    }
                     else if (obj is int x && data.Item2 is int y)
-                    {
                         _changedItems[name] = (data.Item1, x + y);
-                    }
                 }
 
                 items.Clear();

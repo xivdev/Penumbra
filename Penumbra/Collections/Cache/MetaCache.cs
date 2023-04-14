@@ -4,16 +4,15 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using OtterGui;
-using Penumbra.Collections;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 
-namespace Penumbra.Meta.Manager;
+namespace Penumbra.Collections.Cache;
 
-public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaManipulation, IMod > >
+public partial class MetaCache : IDisposable, IEnumerable< KeyValuePair< MetaManipulation, IMod > >
 {
     private readonly Dictionary< MetaManipulation, IMod > _manipulations = new();
     private readonly ModCollection                        _collection;
@@ -33,7 +32,7 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
-    public MetaManager( ModCollection collection )
+    public MetaCache( ModCollection collection )
     {
         _collection = collection;
         if( !Penumbra.CharacterUtility.Ready )
@@ -116,12 +115,12 @@ public partial class MetaManager : IDisposable, IEnumerable< KeyValuePair< MetaM
         // but they do require the file space to be ready.
         return manip.ManipulationType switch
         {
-            MetaManipulation.Type.Eqp     => RevertMod( manip.Eqp ),
-            MetaManipulation.Type.Gmp     => RevertMod( manip.Gmp ),
-            MetaManipulation.Type.Eqdp    => RevertMod( manip.Eqdp ),
-            MetaManipulation.Type.Est     => RevertMod( manip.Est ),
-            MetaManipulation.Type.Rsp     => RevertMod( manip.Rsp ),
-            MetaManipulation.Type.Imc     => RevertMod( manip.Imc ),
+            MetaManipulation.Type.Eqp     => RevertMod( (MetaManipulation)manip.Eqp ),
+            MetaManipulation.Type.Gmp     => RevertMod( (MetaManipulation)manip.Gmp ),
+            MetaManipulation.Type.Eqdp    => RevertMod( (MetaManipulation)manip.Eqdp ),
+            MetaManipulation.Type.Est     => RevertMod( (MetaManipulation)manip.Est ),
+            MetaManipulation.Type.Rsp     => RevertMod( (MetaManipulation)manip.Rsp ),
+            MetaManipulation.Type.Imc     => RevertMod( (MetaManipulation)manip.Imc ),
             MetaManipulation.Type.Unknown => false,
             _                             => false,
         };

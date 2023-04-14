@@ -15,6 +15,7 @@ using Penumbra.Api.Enums;
 using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
+using Penumbra.Collections.Cache;
 using Penumbra.GameData;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.ResourceLoading;
@@ -49,7 +50,6 @@ public class Penumbra : IDalamudPlugin
     public static CollectionManager       CollectionManager { get; private set; } = null!;
     public static TempCollectionManager   TempCollections   { get; private set; } = null!;
     public static TempModManager          TempMods          { get; private set; } = null!;
-    public static FrameworkManager        Framework         { get; private set; } = null!;
     public static ActorManager            Actors            { get; private set; } = null!;
     public static IObjectIdentifier       Identifier        { get; private set; } = null!;
     public static IGamePathParser         GamePathParser    { get; private set; } = null!;
@@ -81,7 +81,6 @@ public class Penumbra : IDalamudPlugin
             Config            = _tmp.Services.GetRequiredService<Configuration>();
             CharacterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
             MetaFileManager   = _tmp.Services.GetRequiredService<MetaFileManager>();
-            Framework         = _tmp.Services.GetRequiredService<FrameworkManager>();
             Actors            = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
             Identifier        = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
             GamePathParser    = _tmp.Services.GetRequiredService<IGamePathParser>();
@@ -251,7 +250,7 @@ public class Penumbra : IDalamudPlugin
             return name + ':';
         }
 
-        void PrintCollection(ModCollection c)
+        void PrintCollection(ModCollection c, CollectionCache _)
             => sb.Append($"**Collection {c.AnonymizedName}**\n"
               + $"> **`Inheritances:                 `** {c.DirectlyInheritsFrom.Count}\n"
               + $"> **`Enabled Mods:                 `** {c.ActualSettings.Count(s => s is { Enabled: true })}\n"
@@ -260,7 +259,7 @@ public class Penumbra : IDalamudPlugin
         sb.AppendLine("**Collections**");
         sb.Append($"> **`#Collections:                 `** {CollectionManager.Storage.Count - 1}\n");
         sb.Append($"> **`#Temp Collections:            `** {TempCollections.Count}\n");
-        sb.Append($"> **`Active Collections:           `** {CollectionManager.Caches.Count}\n");
+        sb.Append($"> **`Active Collections:           `** {CollectionManager.Caches.Count - TempCollections.Count}\n");
         sb.Append($"> **`Base Collection:              `** {CollectionManager.Active.Default.AnonymizedName}\n");
         sb.Append($"> **`Interface Collection:         `** {CollectionManager.Active.Interface.AnonymizedName}\n");
         sb.Append($"> **`Selected Collection:          `** {CollectionManager.Active.Current.AnonymizedName}\n");
@@ -274,8 +273,8 @@ public class Penumbra : IDalamudPlugin
         foreach (var (name, id, collection) in CollectionManager.Active.Individuals.Assignments)
             sb.Append($"> **`{CharacterName(id[0], name),-30}`** {collection.AnonymizedName}\n");
 
-        foreach (var collection in CollectionManager.Caches.Active)
-            PrintCollection(collection);
+        foreach (var (collection, cache) in CollectionManager.Caches.Active)
+            PrintCollection(collection, cache);
 
         return sb.ToString();
     }

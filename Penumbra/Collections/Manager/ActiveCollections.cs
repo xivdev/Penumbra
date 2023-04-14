@@ -262,7 +262,7 @@ public class ActiveCollections : ISavable, IDisposable
 
     /// <summary>
     /// Load default, current, special, and character collections from config.
-    /// Then create caches. If a collection does not exist anymore, reset it to an appropriate default.
+    /// If a collection does not exist anymore, reset it to an appropriate default.
     /// </summary>
     private void LoadCollections()
     {
@@ -338,7 +338,7 @@ public class ActiveCollections : ISavable, IDisposable
         configChanged |= ActiveCollectionMigration.MigrateIndividualCollections(_storage, Individuals, jObject);
         configChanged |= Individuals.ReadJObject(jObject[nameof(Individuals)] as JArray, _storage);
 
-        // Save any changes and create all required caches.
+        // Save any changes.
         if (configChanged)
             _saveService.ImmediateSave(this);
     }

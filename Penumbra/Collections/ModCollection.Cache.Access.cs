@@ -1,6 +1,5 @@
 using OtterGui.Classes;
 using Penumbra.GameData.Enums;
-using Penumbra.Meta.Manager;
 using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
@@ -25,25 +24,6 @@ public partial class ModCollection
     public bool HasCache
         => _cache != null;
 
-    /// <summary>
-    /// Count the number of changes of the effective file list.
-    /// This is used for material and imc changes.
-    /// </summary>
-    public int ChangeCounter { get; internal set; }
-
-    // Only create, do not update. 
-    internal void CreateCache(bool isDefault)
-    {
-        if (_cache != null)
-            return;
-
-        CalculateEffectiveFileList(isDefault);
-        Penumbra.Log.Verbose($"Created new cache for collection {Name}.");
-    }
-
-    // Force an update with metadata for this cache.
-    internal void ForceCacheUpdate()
-        => CalculateEffectiveFileList(this == Penumbra.CollectionManager.Active.Default);
 
     // Handle temporary mods for this collection.
     public void Apply(TemporaryMod tempMod, bool created)
@@ -57,15 +37,6 @@ public partial class ModCollection
     public void Remove(TemporaryMod tempMod)
     {
         _cache?.RemoveMod(tempMod, tempMod.TotalManipulations > 0);
-    }
-
-
-    // Clear the current cache.
-    internal void ClearCache()
-    {
-        _cache?.Dispose();
-        _cache = null;
-        Penumbra.Log.Verbose($"Cleared cache of collection {Name}.");
     }
 
     public IEnumerable<Utf8GamePath> ReverseResolvePath(FullPath path)
@@ -99,7 +70,7 @@ public partial class ModCollection
         => _cache!.ResolvedFiles.Remove(path);
 
     // Obtain data from the cache.
-    internal MetaManager? MetaCache
+    internal MetaCache? MetaCache
         => _cache?.MetaManipulations;
 
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
@@ -122,25 +93,6 @@ public partial class ModCollection
 
     internal SingleArray<ModConflicts> Conflicts(Mod mod)
         => _cache?.Conflicts(mod) ?? new SingleArray<ModConflicts>();
-
-    // Update the effective file list for the given cache.
-    // Creates a cache if necessary.
-    public void CalculateEffectiveFileList(bool isDefault)
-        => Penumbra.Framework.RegisterImportant(nameof(CalculateEffectiveFileList) + Name, () =>
-            CalculateEffectiveFileListInternal(isDefault));
-
-    internal void CalculateEffectiveFileListInternal(bool isDefault)
-    {
-        // Skip the empty collection.
-        if (Index == 0)
-            return;
-
-        Penumbra.Log.Debug($"[{Thread.CurrentThread.ManagedThreadId}] Recalculating effective file list for {AnonymizedName}");
-        _cache ??= new ModCollectionCache(this);
-        _cache.FullRecalculation(isDefault);
-
-        Penumbra.Log.Debug($"[{Thread.CurrentThread.ManagedThreadId}] Recalculation of effective file list for {AnonymizedName} finished.");
-    }
 
     public void SetFiles()
     {

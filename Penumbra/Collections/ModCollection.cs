@@ -44,6 +44,12 @@ public partial class ModCollection
     public int Index { get; internal set; }
 
     /// <summary>
+    /// Count the number of changes of the effective file list.
+    /// This is used for material and imc changes.
+    /// </summary>
+    public int ChangeCounter { get; internal set; }
+
+    /// <summary>
     /// If a ModSetting is null, it can be inherited from other collections.
     /// If no collection provides a setting for the mod, it is just disabled.
     /// </summary>
@@ -123,7 +129,6 @@ public partial class ModCollection
         Debug.Assert(index < 0, "Temporary collection created with non-negative index.");
         var ret = new ModCollection(name, index, changeCounter, CurrentVersion, new List<ModSettings?>(), new List<ModCollection>(),
             new Dictionary<string, ModSettings.SavedSettings>());
-        ret.CreateCache(false);
         return ret;
     }
 

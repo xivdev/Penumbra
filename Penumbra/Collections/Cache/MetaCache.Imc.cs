@@ -6,9 +6,9 @@ using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
-namespace Penumbra.Meta.Manager;
+namespace Penumbra.Collections.Cache;
 
-public partial class MetaManager
+public partial class MetaCache
 {
     private readonly Dictionary< Utf8GamePath, ImcFile > _imcFiles         = new();
     private readonly List< ImcManipulation >             _imcManipulations = new();

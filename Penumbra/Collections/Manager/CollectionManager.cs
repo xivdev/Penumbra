@@ -1,3 +1,5 @@
+using Penumbra.Collections.Cache;
+
 namespace Penumbra.Collections.Manager;
 
 public class CollectionManager
