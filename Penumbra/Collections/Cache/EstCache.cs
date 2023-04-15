@@ -9,7 +9,7 @@ using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Collections.Cache;
 
-public partial class MetaCache
+public struct EstCache : IDisposable
 {
     private EstFile? _estFaceFile = null;
     private EstFile? _estHairFile = null;
@@ -18,23 +18,18 @@ public partial class MetaCache
 
     private readonly List< EstManipulation > _estManipulations = new();
 
-    public void SetEstFiles()
+    public EstCache()
+    {}
+
+    public void SetFiles(CollectionCacheManager manager)
     {
-        SetFile( _estFaceFile, MetaIndex.FaceEst );
-        SetFile( _estHairFile, MetaIndex.HairEst );
-        SetFile( _estBodyFile, MetaIndex.BodyEst );
-        SetFile( _estHeadFile, MetaIndex.HeadEst );
+        manager.SetFile( _estFaceFile, MetaIndex.FaceEst );
+        manager.SetFile( _estHairFile, MetaIndex.HairEst );
+        manager.SetFile( _estBodyFile, MetaIndex.BodyEst );
+        manager.SetFile( _estHeadFile, MetaIndex.HeadEst );
     }
 
-    public static void ResetEstFiles()
-    {
-        SetFile( null, MetaIndex.FaceEst );
-        SetFile( null, MetaIndex.HairEst );
-        SetFile( null, MetaIndex.BodyEst );
-        SetFile( null, MetaIndex.HeadEst );
-    }
-
-    public CharacterUtility.MetaList.MetaReverter? TemporarilySetEstFile(EstManipulation.EstType type)
+    public CharacterUtility.MetaList.MetaReverter? TemporarilySetFiles(CollectionCacheManager manager, EstManipulation.EstType type)
     {
         var (file, idx) = type switch
         {
@@ -45,10 +40,10 @@ public partial class MetaCache
             _                            => ( null, 0 ),
         };
         
-        return idx != 0 ? TemporarilySetFile( file, idx ) : null;
+        return idx != 0 ? manager.TemporarilySetFile( file, idx ) : null;
     }
 
-    public void ResetEst()
+    public void Reset()
     {
         _estFaceFile?.Reset();
         _estHairFile?.Reset();
@@ -57,7 +52,7 @@ public partial class MetaCache
         _estManipulations.Clear();
     }
 
-    public bool ApplyMod( EstManipulation m )
+    public bool ApplyMod( CollectionCacheManager manager, EstManipulation m )
     {
         _estManipulations.AddOrReplace( m );
         var file = m.Slot switch
@@ -71,27 +66,26 @@ public partial class MetaCache
         return m.Apply( file );
     }
 
-    public bool RevertMod( EstManipulation m )
+    public bool RevertMod( CollectionCacheManager manager, EstManipulation m )
     {
-        if( _estManipulations.Remove( m ) )
-        {
-            var def   = EstFile.GetDefault( m.Slot, Names.CombinedRace( m.Gender, m.Race ), m.SetId );
-            var manip = new EstManipulation( m.Gender, m.Race, m.Slot, m.SetId, def );
-            var file = m.Slot switch
-            {
-                EstManipulation.EstType.Hair => _estHairFile!,
-                EstManipulation.EstType.Face => _estFaceFile!,
-                EstManipulation.EstType.Body => _estBodyFile!,
-                EstManipulation.EstType.Head => _estHeadFile!,
-                _                            => throw new ArgumentOutOfRangeException(),
-            };
-            return manip.Apply( file );
-        }
+        if (!_estManipulations.Remove(m))
+            return false;
 
-        return false;
+        var def   = EstFile.GetDefault( m.Slot, Names.CombinedRace( m.Gender, m.Race ), m.SetId );
+        var manip = new EstManipulation( m.Gender, m.Race, m.Slot, m.SetId, def );
+        var file = m.Slot switch
+        {
+            EstManipulation.EstType.Hair => _estHairFile!,
+            EstManipulation.EstType.Face => _estFaceFile!,
+            EstManipulation.EstType.Body => _estBodyFile!,
+            EstManipulation.EstType.Head => _estHeadFile!,
+            _                            => throw new ArgumentOutOfRangeException(),
+        };
+        return manip.Apply( file );
+
     }
 
-    public void DisposeEst()
+    public void Dispose()
     {
         _estFaceFile?.Dispose();
         _estHairFile?.Dispose();

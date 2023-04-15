@@ -17,15 +17,17 @@ namespace Penumbra.Collections.Cache;
 
 public class CollectionCacheManager : IDisposable
 {
-    private readonly FrameworkManager        _framework;
-    private readonly ActiveCollections       _active;
-    private readonly CommunicatorService     _communicator;
-    private readonly CharacterUtility        _characterUtility;
-    private readonly TempModManager          _tempMods;
-    private readonly ModStorage              _modStorage;
-    private readonly ModCacheManager         _modCaches;
-    private readonly Configuration           _config;
-    private readonly ResidentResourceManager _resources;
+    private readonly FrameworkManager    _framework;
+    private readonly ActiveCollections   _active;
+    private readonly CommunicatorService _communicator;
+    private readonly TempModManager      _tempMods;
+    private readonly ModStorage          _modStorage;
+    private readonly ModCacheManager     _modCaches;
+    private readonly Configuration       _config;
+
+    internal readonly ValidityChecker         ValidityChecker;
+    internal readonly CharacterUtility        CharacterUtility;
+    internal readonly ResidentResourceManager ResidentResources;
 
     private readonly Dictionary<ModCollection, CollectionCache> _caches = new();
 
@@ -37,17 +39,18 @@ public class CollectionCacheManager : IDisposable
 
     public CollectionCacheManager(FrameworkManager framework, ActiveCollections active, CommunicatorService communicator,
         CharacterUtility characterUtility, TempModManager tempMods, ModStorage modStorage, Configuration config,
-        ResidentResourceManager resources, ModCacheManager modCaches)
+        ResidentResourceManager residentResources, ModCacheManager modCaches, ValidityChecker validityChecker)
     {
         _framework        = framework;
         _active           = active;
         _communicator     = communicator;
-        _characterUtility = characterUtility;
+        CharacterUtility  = characterUtility;
         _tempMods         = tempMods;
         _modStorage       = modStorage;
         _config           = config;
-        _resources        = resources;
+        ResidentResources = residentResources;
         _modCaches        = modCaches;
+        ValidityChecker  = validityChecker;
 
         _communicator.CollectionChange.Subscribe(OnCollectionChange);
         _communicator.ModPathChanged.Subscribe(OnModChangeAddition, -100);
@@ -58,8 +61,8 @@ public class CollectionCacheManager : IDisposable
         _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange);
         CreateNecessaryCaches();
 
-        if (!_characterUtility.Ready)
-            _characterUtility.LoadingFinished += IncrementCounters;
+        if (!CharacterUtility.Ready)
+            CharacterUtility.LoadingFinished += IncrementCounters;
     }
 
     public void Dispose()
@@ -71,7 +74,7 @@ public class CollectionCacheManager : IDisposable
         _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
         _communicator.CollectionInheritanceChanged.Unsubscribe(OnCollectionInheritanceChange);
-        _characterUtility.LoadingFinished -= IncrementCounters;
+        CharacterUtility.LoadingFinished -= IncrementCounters;
     }
 
     /// <summary> Only creates a new cache, does not update an existing one. </summary>
@@ -80,7 +83,7 @@ public class CollectionCacheManager : IDisposable
         if (_caches.ContainsKey(collection) || collection.Index == ModCollection.Empty.Index)
             return false;
 
-        var cache = new CollectionCache(collection);
+        var cache = new CollectionCache(this, collection);
         _caches.Add(collection, cache);
         collection._cache = cache;
         Penumbra.Log.Verbose($"Created new cache for collection {collection.AnonymizedName}.");
@@ -94,6 +97,9 @@ public class CollectionCacheManager : IDisposable
     public void CalculateEffectiveFileList(ModCollection collection)
         => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Name,
             () => CalculateEffectiveFileListInternal(collection));
+
+    public bool IsDefault(ModCollection collection)
+        => _active.Default == collection;
 
     private void CalculateEffectiveFileListInternal(ModCollection collection)
     {
@@ -133,10 +139,10 @@ public class CollectionCacheManager : IDisposable
 
         ++collection.ChangeCounter;
 
-        if (_active.Default != collection || !_characterUtility.Ready || !_config.EnableMods)
+        if (_active.Default != collection || !CharacterUtility.Ready || !_config.EnableMods)
             return;
 
-        _resources.Reload();
+        ResidentResources.Reload();
         cache.MetaManipulations.SetFiles();
     }
 
@@ -232,7 +238,7 @@ public class CollectionCacheManager : IDisposable
     {
         foreach (var (collection, _) in _caches)
             ++collection.ChangeCounter;
-        _characterUtility.LoadingFinished -= IncrementCounters;
+        CharacterUtility.LoadingFinished -= IncrementCounters;
     }
 
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool _)

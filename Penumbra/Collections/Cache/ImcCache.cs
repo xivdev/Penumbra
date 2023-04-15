@@ -8,46 +8,32 @@ using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
-public partial class MetaCache
+public readonly struct ImcCache : IDisposable
 {
     private readonly Dictionary< Utf8GamePath, ImcFile > _imcFiles         = new();
     private readonly List< ImcManipulation >             _imcManipulations = new();
 
-    public void SetImcFiles()
-    {
-        if( !_collection.HasCache )
-        {
-            return;
-        }
+    public ImcCache()
+    { }
 
+    public void SetFiles(CollectionCacheManager manager, ModCollection collection)
+    {
         foreach( var path in _imcFiles.Keys )
-        {
-            _collection.ForceFile( path, CreateImcPath( path ) );
-        }
+            collection._cache!.ForceFile( path, CreateImcPath( collection, path ) );
     }
 
-    public void ResetImc()
+    public void Reset(CollectionCacheManager manager, ModCollection collection)
     {
-        if( _collection.HasCache )
+        foreach( var (path, file) in _imcFiles )
         {
-            foreach( var (path, file) in _imcFiles )
-            {
-                _collection.RemoveFile( path );
-                file.Reset();
-            }
-        }
-        else
-        {
-            foreach( var (_, file) in _imcFiles )
-            {
-                file.Reset();
-            }
+            collection._cache!.RemoveFile( path );
+            file.Reset();
         }
 
         _imcManipulations.Clear();
     }
 
-    public bool ApplyMod( ImcManipulation manip )
+    public bool ApplyMod( CollectionCacheManager manager, ModCollection collection, ImcManipulation manip )
     {
         if( !manip.Valid )
         {
@@ -69,17 +55,14 @@ public partial class MetaCache
             }
 
             _imcFiles[ path ] = file;
-            var fullPath = CreateImcPath( path );
-            if( _collection.HasCache )
-            {
-                _collection.ForceFile( path, fullPath );
-            }
+            var fullPath = CreateImcPath( collection, path );
+            collection._cache!.ForceFile( path, fullPath );
 
             return true;
         }
         catch( ImcException e )
         {
-            Penumbra.ValidityChecker.ImcExceptions.Add( e );
+            manager.ValidityChecker.ImcExceptions.Add( e );
             Penumbra.Log.Error( e.ToString() );
         }
         catch( Exception e )
@@ -90,7 +73,7 @@ public partial class MetaCache
         return false;
     }
 
-    public bool RevertMod( ImcManipulation m )
+    public bool RevertMod( CollectionCacheManager manager, ModCollection collection, ImcManipulation m )
     {
         if( !m.Valid || !_imcManipulations.Remove( m ) )
         {
@@ -106,32 +89,25 @@ public partial class MetaCache
         var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant, out _ );
         var manip = m.Copy( def );
         if( !manip.Apply( file ) )
-        {
             return false;
-        }
 
-        var fullPath = CreateImcPath( path );
-        if( _collection.HasCache )
-        {
-            _collection.ForceFile( path, fullPath );
-        }
+        var fullPath = CreateImcPath( collection, path );
+        collection._cache!.ForceFile( path, fullPath );
 
         return true;
     }
 
-    public void DisposeImc()
+    public void Dispose()
     {
         foreach( var file in _imcFiles.Values )
-        {
             file.Dispose();
-        }
 
         _imcFiles.Clear();
         _imcManipulations.Clear();
     }
 
-    private FullPath CreateImcPath( Utf8GamePath path )
-        => new($"|{_collection.Name}_{_collection.ChangeCounter}|{path}");
+    private static FullPath CreateImcPath( ModCollection collection, Utf8GamePath path )
+        => new($"|{collection.Name}_{collection.ChangeCounter}|{path}");
 
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
         => _imcFiles.TryGetValue(path, out file);
