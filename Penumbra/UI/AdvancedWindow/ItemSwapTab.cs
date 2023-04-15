@@ -743,7 +743,7 @@ public class ItemSwapTab : IDisposable, ITab
     private void OnCollectionChange(CollectionType collectionType, ModCollection? oldCollection,
         ModCollection? newCollection, string _)
     {
-        if (collectionType != CollectionType.Current || _mod == null || newCollection == null)
+        if (collectionType is not CollectionType.Current || _mod == null || newCollection == null)
             return;
 
         UpdateMod(_mod, _mod.Index < newCollection.Settings.Count ? newCollection[_mod.Index].Settings : null);

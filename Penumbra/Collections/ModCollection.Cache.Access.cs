@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
@@ -19,7 +18,7 @@ namespace Penumbra.Collections;
 public partial class ModCollection
 {
     // Only active collections need to have a cache.
-    internal ModCollectionCache? _cache;
+    internal CollectionCache? _cache;
 
     public bool HasCache
         => _cache != null;

@@ -129,7 +129,7 @@ public unsafe class GameEventManager : IDisposable
                 }
             }
 
-        Penumbra.Log.Verbose($"{Prefix} {nameof(ResourceHandleDestructor)} triggered with 0x{(nint)handle:X}.");
+        Penumbra.Log.Excessive($"{Prefix} {nameof(ResourceHandleDestructor)} triggered with 0x{(nint)handle:X}.");
         return _resourceHandleDestructorHook!.Original(handle);
     }
 

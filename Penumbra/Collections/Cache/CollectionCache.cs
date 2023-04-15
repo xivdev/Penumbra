@@ -19,12 +19,13 @@ public record ModConflicts(IMod Mod2, List<object> Conflicts, bool HasPriority, 
 /// The Cache contains all required temporary data to use a collection.
 /// It will only be setup if a collection gets activated in any way.
 /// </summary>
-public class ModCollectionCache : IDisposable
+public class CollectionCache : IDisposable
 {
+    private readonly CollectionCacheManager                           _manager;
     private readonly ModCollection                                    _collection;
     public readonly  SortedList<string, (SingleArray<IMod>, object?)> _changedItems = new();
     public readonly  Dictionary<Utf8GamePath, ModPath>                ResolvedFiles = new();
-    public readonly  MetaCache                                      MetaManipulations;
+    public readonly  MetaCache                                        MetaManipulations;
     public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      _conflicts = new();
 
     public IEnumerable<SingleArray<ModConflicts>> AllConflicts
@@ -46,8 +47,9 @@ public class ModCollectionCache : IDisposable
     }
 
     // The cache reacts through events on its collection changing.
-    public ModCollectionCache(ModCollection collection)
+    public CollectionCache(CollectionCacheManager manager, ModCollection collection)
     {
+        _manager          = manager;
         _collection       = collection;
         MetaManipulations = new MetaCache(_collection);
     }
@@ -205,7 +207,7 @@ public class ModCollectionCache : IDisposable
         if (addMetaChanges)
         {
             ++_collection.ChangeCounter;
-            if (Penumbra.ModCaches[mod.Index].TotalManipulations > 0)
+            if ((mod is TemporaryMod temp ? temp.TotalManipulations : Penumbra.ModCaches[mod.Index].TotalManipulations) > 0)
                 AddMetaFiles();
 
             if (_collection == Penumbra.CollectionManager.Active.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods)

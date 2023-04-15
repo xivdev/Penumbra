@@ -395,7 +395,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     private void OnCollectionChange(CollectionType collectionType, ModCollection? oldCollection, ModCollection? newCollection, string _)
     {
-        if (collectionType != CollectionType.Current || oldCollection == newCollection)
+        if (collectionType is not CollectionType.Current || oldCollection == newCollection)
             return;
 
         SetFilterDirty();

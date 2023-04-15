@@ -16,11 +16,11 @@ namespace Penumbra.UI.Tabs;
 
 public class CollectionsTab : IDisposable, ITab
 {
-    private readonly CommunicatorService   _communicator;
-    private readonly Configuration         _config;
-    private readonly CollectionManager _collectionManager;
-    private readonly TutorialService       _tutorial;
-    private readonly SpecialCombo          _specialCollectionCombo;
+    private readonly CommunicatorService _communicator;
+    private readonly Configuration       _config;
+    private readonly CollectionManager   _collectionManager;
+    private readonly TutorialService     _tutorial;
+    private readonly SpecialCombo        _specialCollectionCombo;
 
     private readonly CollectionSelector     _collectionsWithEmpty;
     private readonly CollectionSelector     _collectionSelector;

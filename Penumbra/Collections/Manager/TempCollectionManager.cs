@@ -53,6 +53,7 @@ public class TempCollectionManager : IDisposable
         if (GlobalChangeCounter == int.MaxValue)
             GlobalChangeCounter = 0;
         var collection = ModCollection.CreateTemporary(name, ~Count, GlobalChangeCounter++);
+        Penumbra.Log.Debug($"Creating temporary collection {collection.AnonymizedName}.");
         if (_customCollections.TryAdd(collection.Name.ToLowerInvariant(), collection))
         {
             // Temporary collection created.
@@ -66,8 +67,12 @@ public class TempCollectionManager : IDisposable
     public bool RemoveTemporaryCollection(string collectionName)
     {
         if (!_customCollections.Remove(collectionName.ToLowerInvariant(), out var collection))
+        {
+            Penumbra.Log.Debug($"Tried to delete temporary collection {collectionName.ToLowerInvariant()}, but did not exist.");
             return false;
+        }
 
+        Penumbra.Log.Debug($"Deleted temporary collection {collection.AnonymizedName}.");
         GlobalChangeCounter += Math.Max(collection.ChangeCounter + 1 - GlobalChangeCounter, 0);
         for (var i = 0; i < Collections.Count; ++i)
         {
@@ -76,6 +81,7 @@ public class TempCollectionManager : IDisposable
 
             // Temporary collection assignment removed.
             _communicator.CollectionChange.Invoke(CollectionType.Temporary, collection, null, Collections[i].DisplayName);
+            Penumbra.Log.Verbose($"Unassigned temporary collection {collection.AnonymizedName} from {Collections[i].DisplayName}.");
             Collections.Delete(i--);
         }
 
@@ -88,6 +94,7 @@ public class TempCollectionManager : IDisposable
             return false;
 
         // Temporary collection assignment added.
+        Penumbra.Log.Verbose($"Assigned temporary collection {collection.AnonymizedName} to {Collections.Last().DisplayName}.");
         _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, Collections.Last().DisplayName);
         return true;
 

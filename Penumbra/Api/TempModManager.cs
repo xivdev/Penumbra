@@ -45,6 +45,7 @@ public class TempModManager : IDisposable
         HashSet<MetaManipulation> manips, int priority)
     {
         var mod = GetOrCreateMod(tag, collection, priority, out var created);
+        Penumbra.Log.Verbose($"{(created ? "Created" : "Changed")} temporary Mod {mod.Name}.");
         mod.SetAll(dict, manips);
         ApplyModChange(mod, collection, created, false);
         return RedirectResult.Success;
@@ -52,6 +53,7 @@ public class TempModManager : IDisposable
 
     public RedirectResult Unregister(string tag, ModCollection? collection, int? priority)
     {
+        Penumbra.Log.Verbose($"Removing temporary mod with tag {tag}...");
         var list = collection == null ? _modsForAllCollections : _mods.TryGetValue(collection, out var l) ? l : null;
         if (list == null)
             return RedirectResult.NotRegistered;
@@ -80,12 +82,19 @@ public class TempModManager : IDisposable
         if (collection != null)
         {
             if (removed)
+            {
+                Penumbra.Log.Verbose($"Removing temporary Mod {mod.Name} from {collection.AnonymizedName}.");
                 collection.Remove(mod);
+            }
             else
+            {
+                Penumbra.Log.Verbose($"Adding {(created ? "new " : string.Empty)}temporary Mod {mod.Name} to {collection.AnonymizedName}.");
                 collection.Apply(mod, created);
+            }
         }
         else
         {
+            Penumbra.Log.Verbose($"Triggering global mod change for {(created ? "new " : string.Empty)}temporary Mod {mod.Name}.");
             _communicator.TemporaryGlobalModChange.Invoke(mod, created, removed);
         }
     }

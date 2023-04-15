@@ -15,16 +15,16 @@ namespace Penumbra.Mods.Manager;
 public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 {
     private readonly CommunicatorService _communicator;
-    private readonly IdentifierService _identifier;
-    private readonly IReadOnlyList<Mod> _modManager;
+    private readonly IdentifierService   _identifier;
+    private readonly ModStorage          _modManager;
 
     private readonly List<ModCache> _cache = new();
 
-    public ModCacheManager(CommunicatorService communicator, IdentifierService identifier, ModManager modManager)
+    public ModCacheManager(CommunicatorService communicator, IdentifierService identifier, ModStorage modStorage)
     {
         _communicator = communicator;
-        _identifier = identifier;
-        _modManager = modManager;
+        _identifier   = identifier;
+        _modManager   = modStorage;
 
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange);
         _communicator.ModPathChanged.Subscribe(OnModPathChange);
@@ -232,17 +232,17 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 
     private static void UpdateCounts(ModCache cache, Mod mod)
     {
-        cache.TotalFileCount = mod.Default.Files.Count;
-        cache.TotalSwapCount = mod.Default.FileSwaps.Count;
+        cache.TotalFileCount     = mod.Default.Files.Count;
+        cache.TotalSwapCount     = mod.Default.FileSwaps.Count;
         cache.TotalManipulations = mod.Default.Manipulations.Count;
-        cache.HasOptions = false;
+        cache.HasOptions         = false;
         foreach (var group in mod.Groups)
         {
             cache.HasOptions |= group.IsOption;
             foreach (var s in group)
             {
-                cache.TotalFileCount += s.Files.Count;
-                cache.TotalSwapCount += s.FileSwaps.Count;
+                cache.TotalFileCount     += s.Files.Count;
+                cache.TotalSwapCount     += s.FileSwaps.Count;
                 cache.TotalManipulations += s.Manipulations.Count;
             }
         }
