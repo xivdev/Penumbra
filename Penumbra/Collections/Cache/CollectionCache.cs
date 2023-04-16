@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Penumbra.Api.Enums;
 using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
@@ -51,13 +52,16 @@ public class CollectionCache : IDisposable
     {
         _manager          = manager;
         _collection       = collection;
-        MetaManipulations = new MetaCache(_collection);
+        MetaManipulations = new MetaCache(manager.MetaFileManager, _collection);
     }
 
     public void Dispose()
     {
         MetaManipulations.Dispose();
     }
+
+    ~CollectionCache()
+        => MetaManipulations.Dispose();
 
     // Resolve a given game path according to this collection.
     public FullPath? ResolvePath(Utf8GamePath gameResourcePath)
@@ -114,6 +118,17 @@ public class CollectionCache : IDisposable
 
         return ret;
     }
+
+    /// <summary> Force a file to be resolved to a specific path regardless of conflicts. </summary>
+    internal void ForceFile(Utf8GamePath path, FullPath fullPath)
+    {
+        if (CheckFullPath(path, fullPath))
+            ResolvedFiles[path] = new ModPath(Mod.ForcedFiles, fullPath);
+    }
+
+    /// <summary> Force a file resolve to be removed. </summary>
+    internal void RemoveFile(Utf8GamePath path)
+        => ResolvedFiles.Remove(path);
 
     public void ReloadMod(IMod mod, bool addMetaChanges)
     {
@@ -234,7 +249,7 @@ public class CollectionCache : IDisposable
     // Inside the same mod, conflicts are not recorded.
     private void AddFile(Utf8GamePath path, FullPath file, IMod mod)
     {
-        if (!ModCollection.CheckFullPath(path, file))
+        if (!CheckFullPath(path, file))
             return;
 
         if (ResolvedFiles.TryAdd(path, new ModPath(mod, file)))
@@ -386,5 +401,15 @@ public class CollectionCache : IDisposable
         {
             Penumbra.Log.Error($"Unknown Error:\n{e}");
         }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool CheckFullPath(Utf8GamePath path, FullPath fullPath)
+    {
+        if (fullPath.InternalName.Length < Utf8GamePath.MaxGamePathLength)
+            return true;
+
+        Penumbra.Log.Error($"The redirected path is too long to add the redirection\n\t{path}\n\t--> {fullPath}");
+        return false;
     }
 }

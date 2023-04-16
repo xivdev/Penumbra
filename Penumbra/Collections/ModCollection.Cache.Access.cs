@@ -47,27 +47,6 @@ public partial class ModCollection
     public FullPath? ResolvePath(Utf8GamePath path)
         => _cache?.ResolvePath(path);
 
-    // Force a file to be resolved to a specific path regardless of conflicts.
-    internal void ForceFile(Utf8GamePath path, FullPath fullPath)
-    {
-        if (CheckFullPath(path, fullPath))
-            _cache!.ResolvedFiles[path] = new ModPath(Mod.ForcedFiles, fullPath);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool CheckFullPath(Utf8GamePath path, FullPath fullPath)
-    {
-        if (fullPath.InternalName.Length < Utf8GamePath.MaxGamePathLength)
-            return true;
-
-        Penumbra.Log.Error($"The redirected path is too long to add the redirection\n\t{path}\n\t--> {fullPath}");
-        return false;
-    }
-
-    // Force a file resolve to be removed.
-    internal void RemoveFile(Utf8GamePath path)
-        => _cache!.ResolvedFiles.Remove(path);
-
     // Obtain data from the cache.
     internal MetaCache? MetaCache
         => _cache?.MetaManipulations;
@@ -134,4 +113,9 @@ public partial class ModCollection
     public CharacterUtility.MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
         => _cache?.MetaManipulations.TemporarilySetEstFile(type)
          ?? Penumbra.CharacterUtility.TemporarilyResetResource((MetaIndex)type);
+}
+
+
+public static class CollectionCacheExtensions
+{
 }

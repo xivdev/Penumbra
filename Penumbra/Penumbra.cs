@@ -28,6 +28,7 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
+using Penumbra.Meta;
 
 namespace Penumbra;
 

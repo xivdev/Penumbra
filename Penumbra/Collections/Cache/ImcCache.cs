@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using OtterGui.Filesystem;
+using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
@@ -16,13 +17,13 @@ public readonly struct ImcCache : IDisposable
     public ImcCache()
     { }
 
-    public void SetFiles(CollectionCacheManager manager, ModCollection collection)
+    public void SetFiles(ModCollection collection)
     {
         foreach( var path in _imcFiles.Keys )
             collection._cache!.ForceFile( path, CreateImcPath( collection, path ) );
     }
 
-    public void Reset(CollectionCacheManager manager, ModCollection collection)
+    public void Reset(ModCollection collection)
     {
         foreach( var (path, file) in _imcFiles )
         {
@@ -33,7 +34,7 @@ public readonly struct ImcCache : IDisposable
         _imcManipulations.Clear();
     }
 
-    public bool ApplyMod( CollectionCacheManager manager, ModCollection collection, ImcManipulation manip )
+    public bool ApplyMod( MetaFileManager manager, ModCollection collection, ImcManipulation manip )
     {
         if( !manip.Valid )
         {
@@ -46,7 +47,7 @@ public readonly struct ImcCache : IDisposable
         {
             if( !_imcFiles.TryGetValue( path, out var file ) )
             {
-                file = new ImcFile( manip );
+                file = new ImcFile( manager, manip );
             }
 
             if( !manip.Apply( file ) )
@@ -73,7 +74,7 @@ public readonly struct ImcCache : IDisposable
         return false;
     }
 
-    public bool RevertMod( CollectionCacheManager manager, ModCollection collection, ImcManipulation m )
+    public bool RevertMod( MetaFileManager manager, ModCollection collection, ImcManipulation m )
     {
         if( !m.Valid || !_imcManipulations.Remove( m ) )
         {
@@ -86,7 +87,7 @@ public readonly struct ImcCache : IDisposable
             return false;
         }
 
-        var def   = ImcFile.GetDefault( path, m.EquipSlot, m.Variant, out _ );
+        var def   = ImcFile.GetDefault( manager, path, m.EquipSlot, m.Variant, out _ );
         var manip = m.Copy( def );
         if( !manip.Apply( file ) )
             return false;

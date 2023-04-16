@@ -9,12 +9,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Penumbra.GameData;
+using Penumbra.Meta;
 using Penumbra.Mods.Manager;
 
 namespace Penumbra.Mods.ItemSwap;
 
 public class ItemSwapContainer
 {
+    private readonly MetaFileManager   _manager;
     private readonly IObjectIdentifier _identifier;
 
     private Dictionary< Utf8GamePath, FullPath > _modRedirections  = new();
@@ -112,8 +114,9 @@ public class ItemSwapContainer
         }
     }
 
-    public ItemSwapContainer(IObjectIdentifier identifier)
+    public ItemSwapContainer(MetaFileManager manager, IObjectIdentifier identifier)
     {
+        _manager    = manager;
         _identifier = identifier;
         LoadMod( null, null );
     }
@@ -133,7 +136,7 @@ public class ItemSwapContainer
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateItemSwap( _identifier, Swaps, PathResolver( collection ), MetaResolver( collection ), from, to, useRightRing, useLeftRing );
+        var ret = EquipmentSwap.CreateItemSwap( _manager, _identifier, Swaps, PathResolver( collection ), MetaResolver( collection ), from, to, useRightRing, useLeftRing );
         Loaded = true;
         return ret;
     }
@@ -142,15 +145,15 @@ public class ItemSwapContainer
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateTypeSwap( _identifier, Swaps, PathResolver( collection ), MetaResolver( collection ), slotFrom, from, slotTo, to );
+        var ret = EquipmentSwap.CreateTypeSwap( _manager, _identifier, Swaps, PathResolver( collection ), MetaResolver( collection ), slotFrom, from, slotTo, to );
         Loaded = true;
         return ret;
     }
 
-    public bool LoadCustomization( BodySlot slot, GenderRace race, SetId from, SetId to, ModCollection? collection = null )
+    public bool LoadCustomization( MetaFileManager manager, BodySlot slot, GenderRace race, SetId from, SetId to, ModCollection? collection = null )
     {
         var pathResolver = PathResolver( collection );
-        var mdl          = CustomizationSwap.CreateMdl( pathResolver, slot, race, from, to );
+        var mdl          = CustomizationSwap.CreateMdl( manager, pathResolver, slot, race, from, to );
         var type = slot switch
         {
             BodySlot.Hair => EstManipulation.EstType.Hair,
@@ -159,7 +162,7 @@ public class ItemSwapContainer
         };
 
         var metaResolver = MetaResolver( collection );
-        var est          = ItemSwap.CreateEst( pathResolver, metaResolver, type, race, from, to, true );
+        var est          = ItemSwap.CreateEst( manager, pathResolver, metaResolver, type, race, from, to, true );
 
         Swaps.Add( mdl );
         if( est != null )

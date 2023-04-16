@@ -15,6 +15,7 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.ItemSwap;
 using Penumbra.Mods.Manager;
@@ -25,21 +26,23 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public class ItemSwapTab : IDisposable, ITab
 {
-    private readonly CommunicatorService   _communicator;
-    private readonly ItemService           _itemService;
-    private readonly CollectionManager _collectionManager;
-    private readonly ModManager           _modManager;
-    private readonly Configuration         _config;
+    private readonly CommunicatorService _communicator;
+    private readonly ItemService         _itemService;
+    private readonly CollectionManager   _collectionManager;
+    private readonly ModManager          _modManager;
+    private readonly Configuration       _config;
+    private readonly MetaFileManager     _metaFileManager;
 
     public ItemSwapTab(CommunicatorService communicator, ItemService itemService, CollectionManager collectionManager,
-        ModManager modManager, Configuration config, IdentifierService identifier)
+        ModManager modManager, Configuration config, IdentifierService identifier, MetaFileManager metaFileManager)
     {
         _communicator      = communicator;
         _itemService       = itemService;
         _collectionManager = collectionManager;
         _modManager        = modManager;
         _config            = config;
-        _swapData          = new ItemSwapContainer(identifier.AwaitedService);
+        _metaFileManager   = metaFileManager;
+        _swapData          = new ItemSwapContainer(metaFileManager, identifier.AwaitedService);
 
         _selectors = new Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)>
         {
@@ -215,22 +218,22 @@ public class ItemSwapTab : IDisposable, ITab
                             _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(BodySlot.Hair, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Hair, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Face when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(BodySlot.Face, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Face, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(BodySlot.Zear, Names.CombinedRace(_currentGender, ModelRace.Viera), (SetId)_sourceId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Zear, Names.CombinedRace(_currentGender, ModelRace.Viera), (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Tail when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(BodySlot.Tail, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Tail, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
@@ -312,7 +315,8 @@ public class ItemSwapTab : IDisposable, ITab
                 optionCreated    = true;
                 optionFolderName = Directory.CreateDirectory(optionFolderName.FullName);
                 dirCreated       = true;
-                if (!_swapData.WriteMod(_modManager, _mod, _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps,
+                if (!_swapData.WriteMod(_modManager, _mod,
+                        _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps,
                         optionFolderName,
                         _mod.Groups.IndexOf(_selectedGroup), _selectedGroup.Count - 1))
                     throw new Exception("Failure writing files for mod swap.");
@@ -751,7 +755,6 @@ public class ItemSwapTab : IDisposable, ITab
 
     private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool inherited)
     {
-
         if (collection != _collectionManager.Active.Current || mod != _mod)
             return;
 
@@ -773,6 +776,7 @@ public class ItemSwapTab : IDisposable, ITab
     {
         if (type is ModOptionChangeType.PrepareChange or ModOptionChangeType.GroupAdded or ModOptionChangeType.OptionAdded || mod != _mod)
             return;
+
         _swapData.LoadMod(_mod, _modSettings);
         UpdateOption();
         _dirty = true;

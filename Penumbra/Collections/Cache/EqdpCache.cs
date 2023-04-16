@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
+using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
@@ -19,23 +21,29 @@ public readonly struct EqdpCache : IDisposable
     public EqdpCache()
     { }
 
-    public void SetFiles(CollectionCacheManager manager)
+    public void SetFiles(MetaFileManager manager)
     {
         for (var i = 0; i < CharacterUtilityData.EqdpIndices.Length; ++i)
             manager.SetFile(_eqdpFiles[i], CharacterUtilityData.EqdpIndices[i]);
     }
 
-    public CharacterUtility.MetaList.MetaReverter? TemporarilySetEqdpFile(CollectionCacheManager manager, GenderRace genderRace, bool accessory)
+    public void SetFile(MetaFileManager manager, MetaIndex index)
     {
-        var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
-        if ((int)idx == -1)
-            return null;
-
-        var i = CharacterUtilityData.EqdpIndices.IndexOf(idx);
-        return i != -1 ? manager.TemporarilySetFile(_eqdpFiles[i], idx) : null;
+        var i = CharacterUtilityData.EqdpIndices.IndexOf(index);
+        if (i != -1)
+            manager.SetFile(_eqdpFiles[i], index);
     }
 
-    public void Reset(CollectionCacheManager manager)
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager, GenderRace genderRace, bool accessory)
+    {
+        var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
+        Debug.Assert(idx >= 0, $"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");
+        var i = CharacterUtilityData.EqdpIndices.IndexOf(idx);
+        Debug.Assert(i >= 0, $"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");
+        return manager.TemporarilySetFile(_eqdpFiles[i], idx);
+    }
+
+    public void Reset()
     {
         foreach (var file in _eqdpFiles.OfType<ExpandedEqdpFile>())
         {
@@ -46,20 +54,20 @@ public readonly struct EqdpCache : IDisposable
         _eqdpManipulations.Clear();
     }
 
-    public bool ApplyMod(CollectionCacheManager manager, EqdpManipulation manip)
+    public bool ApplyMod(MetaFileManager manager, EqdpManipulation manip)
     {
         _eqdpManipulations.AddOrReplace(manip);
         var file = _eqdpFiles[Array.IndexOf(CharacterUtilityData.EqdpIndices, manip.FileIndex())] ??=
-            new ExpandedEqdpFile(Names.CombinedRace(manip.Gender, manip.Race), manip.Slot.IsAccessory()); // TODO: female Hrothgar
+            new ExpandedEqdpFile(manager, Names.CombinedRace(manip.Gender, manip.Race), manip.Slot.IsAccessory()); // TODO: female Hrothgar
         return manip.Apply(file);
     }
 
-    public bool RevertMod(CollectionCacheManager manager, EqdpManipulation manip)
+    public bool RevertMod(MetaFileManager manager, EqdpManipulation manip)
     {
         if (!_eqdpManipulations.Remove(manip))
             return false;
 
-        var def  = ExpandedEqdpFile.GetDefault(Names.CombinedRace(manip.Gender, manip.Race), manip.Slot.IsAccessory(), manip.SetId);
+        var def  = ExpandedEqdpFile.GetDefault(manager, Names.CombinedRace(manip.Gender, manip.Race), manip.Slot.IsAccessory(), manip.SetId);
         var file = _eqdpFiles[Array.IndexOf(CharacterUtilityData.EqdpIndices, manip.FileIndex())]!;
         manip = new EqdpManipulation(def, manip.Slot, manip.Gender, manip.Race, manip.SetId);
         return manip.Apply(file);

@@ -9,6 +9,7 @@ using OtterGui.Raii;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
+using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
@@ -62,7 +63,7 @@ public partial class ModEditWindow
         CopyToClipboardButton("Copy all current manipulations to clipboard.", _iconSize, _editor.MetaEditor.Recombine());
         ImGui.SameLine();
         if (ImGui.Button("Write as TexTools Files"))
-            _mod!.WriteAllTexToolsMeta();
+            _mod!.WriteAllTexToolsMeta(_metaFileManager);
 
         using var child = ImRaii.Child("##meta", -Vector2.One, true);
         if (!child)
@@ -77,9 +78,9 @@ public partial class ModEditWindow
     }
 
 
-    // The headers for the different meta changes all have basically the same structure for different types.
-    private void DrawEditHeader<T>(IReadOnlyCollection<T> items, string label, int numColumns, Action<T, ModEditor, Vector2> draw,
-        Action<ModEditor, Vector2> drawNew)
+    /// <summary> The headers for the different meta changes all have basically the same structure for different types.</summary>
+    private void DrawEditHeader<T>(IReadOnlyCollection<T> items, string label, int numColumns, Action<MetaFileManager, T, ModEditor, Vector2> draw,
+        Action<MetaFileManager, ModEditor, Vector2> drawNew)
     {
         const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.BordersInnerV;
         if (!ImGui.CollapsingHeader($"{items.Count} {label}"))
@@ -89,11 +90,11 @@ public partial class ModEditWindow
         {
             if (table)
             {
-                drawNew(_editor, _iconSize);
+                drawNew(_metaFileManager, _editor, _iconSize);
                 foreach (var (item, index) in items.ToArray().WithIndex())
                 {
                     using var id = ImRaii.PushId(index);
-                    draw(item, _editor, _iconSize);
+                    draw(_metaFileManager, item, _editor, _iconSize);
                 }
             }
         }
@@ -108,7 +109,7 @@ public partial class ModEditWindow
         private static float IdWidth
             => 100 * UiHelpers.Scale;
 
-        public static void DrawNew(ModEditor editor, Vector2 iconSize)
+        public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
         {
             ImGui.TableNextColumn();
             CopyToClipboardButton("Copy all current EQP manipulations to clipboard.", iconSize,
@@ -116,20 +117,20 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             var canAdd       = editor.MetaEditor.CanAdd(_new);
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
-            var defaultEntry = ExpandedEqpFile.GetDefault(_new.SetId);
+            var defaultEntry = ExpandedEqpFile.GetDefault(metaFileManager, _new.SetId);
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, tt, !canAdd, true))
                 editor.MetaEditor.Add(_new.Copy(defaultEntry));
 
             // Identifier
             ImGui.TableNextColumn();
             if (IdInput("##eqpId", IdWidth, _new.SetId, out var setId, 1, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
-                _new = new EqpManipulation(ExpandedEqpFile.GetDefault(setId), _new.Slot, setId);
+                _new = new EqpManipulation(ExpandedEqpFile.GetDefault(metaFileManager, setId), _new.Slot, setId);
 
             ImGuiUtil.HoverTooltip(ModelSetIdTooltip);
 
             ImGui.TableNextColumn();
             if (Combos.EqpEquipSlot("##eqpSlot", 100, _new.Slot, out var slot))
-                _new = new EqpManipulation(ExpandedEqpFile.GetDefault(setId), slot, _new.SetId);
+                _new = new EqpManipulation(ExpandedEqpFile.GetDefault(metaFileManager, setId), slot, _new.SetId);
 
             ImGuiUtil.HoverTooltip(EquipSlotTooltip);
 
@@ -148,7 +149,7 @@ public partial class ModEditWindow
             ImGui.NewLine();
         }
 
-        public static void Draw(EqpManipulation meta, ModEditor editor, Vector2 iconSize)
+        public static void Draw(MetaFileManager metaFileManager, EqpManipulation meta, ModEditor editor, Vector2 iconSize)
         {
             DrawMetaButtons(meta, editor, iconSize);
 
@@ -157,7 +158,7 @@ public partial class ModEditWindow
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
             ImGui.TextUnformatted(meta.SetId.ToString());
             ImGuiUtil.HoverTooltip(ModelSetIdTooltipShort);
-            var defaultEntry = ExpandedEqpFile.GetDefault(meta.SetId);
+            var defaultEntry = ExpandedEqpFile.GetDefault(metaFileManager, meta.SetId);
 
             ImGui.TableNextColumn();
             ImGui.SetCursorPosX(ImGui.GetCursorPosX() + ImGui.GetStyle().FramePadding.X);
@@ -192,7 +193,7 @@ public partial class ModEditWindow
         private static float IdWidth
             => 100 * UiHelpers.Scale;
 
-        public static void DrawNew(ModEditor editor, Vector2 iconSize)
+        public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
         {
             ImGui.TableNextColumn();
             CopyToClipboardButton("Copy all current EQDP manipulations to clipboard.", iconSize,
@@ -204,7 +205,7 @@ public partial class ModEditWindow
             var tt = canAdd   ? "Stage this edit." :
                 validRaceCode ? "This entry is already edited." : "This combination of race and gender can not be used.";
             var defaultEntry = validRaceCode
-                ? ExpandedEqdpFile.GetDefault(Names.CombinedRace(_new.Gender, _new.Race), _new.Slot.IsAccessory(), _new.SetId)
+                ? ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, _new.Race), _new.Slot.IsAccessory(), _new.SetId)
                 : 0;
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, tt, !canAdd, true))
                 editor.MetaEditor.Add(_new.Copy(defaultEntry));
@@ -213,7 +214,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (IdInput("##eqdpId", IdWidth, _new.SetId, out var setId, 0, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
             {
-                var newDefaultEntry = ExpandedEqdpFile.GetDefault(Names.CombinedRace(_new.Gender, _new.Race), _new.Slot.IsAccessory(), setId);
+                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, _new.Race), _new.Slot.IsAccessory(), setId);
                 _new = new EqdpManipulation(newDefaultEntry, _new.Slot, _new.Gender, _new.Race, setId);
             }
 
@@ -222,7 +223,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.Race("##eqdpRace", _new.Race, out var race))
             {
-                var newDefaultEntry = ExpandedEqdpFile.GetDefault(Names.CombinedRace(_new.Gender, race), _new.Slot.IsAccessory(), _new.SetId);
+                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, race), _new.Slot.IsAccessory(), _new.SetId);
                 _new = new EqdpManipulation(newDefaultEntry, _new.Slot, _new.Gender, race, _new.SetId);
             }
 
@@ -231,7 +232,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.Gender("##eqdpGender", _new.Gender, out var gender))
             {
-                var newDefaultEntry = ExpandedEqdpFile.GetDefault(Names.CombinedRace(gender, _new.Race), _new.Slot.IsAccessory(), _new.SetId);
+                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(gender, _new.Race), _new.Slot.IsAccessory(), _new.SetId);
                 _new = new EqdpManipulation(newDefaultEntry, _new.Slot, gender, _new.Race, _new.SetId);
             }
 
@@ -240,7 +241,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.EqdpEquipSlot("##eqdpSlot", _new.Slot, out var slot))
             {
-                var newDefaultEntry = ExpandedEqdpFile.GetDefault(Names.CombinedRace(_new.Gender, _new.Race), slot.IsAccessory(), _new.SetId);
+                var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, _new.Race), slot.IsAccessory(), _new.SetId);
                 _new = new EqdpManipulation(newDefaultEntry, slot, _new.Gender, _new.Race, _new.SetId);
             }
 
@@ -255,7 +256,7 @@ public partial class ModEditWindow
             Checkmark("Model##eqdpCheck2", string.Empty, bit2, bit2, out _);
         }
 
-        public static void Draw(EqdpManipulation meta, ModEditor editor, Vector2 iconSize)
+        public static void Draw(MetaFileManager metaFileManager, EqdpManipulation meta, ModEditor editor, Vector2 iconSize)
         {
             DrawMetaButtons(meta, editor, iconSize);
 
@@ -278,7 +279,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip(EquipSlotTooltip);
 
             // Values
-            var defaultEntry = ExpandedEqdpFile.GetDefault(Names.CombinedRace(meta.Gender, meta.Race), meta.Slot.IsAccessory(), meta.SetId);
+            var defaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(meta.Gender, meta.Race), meta.Slot.IsAccessory(), meta.SetId);
             var (defaultBit1, defaultBit2) = defaultEntry.ToBits(meta.Slot);
             var (bit1, bit2)               = meta.Entry.ToBits(meta.Slot);
             ImGui.TableNextColumn();
@@ -301,12 +302,12 @@ public partial class ModEditWindow
         private static float SmallIdWidth
             => 45 * UiHelpers.Scale;
 
-        // Convert throwing to null-return if the file does not exist.
-        private static ImcEntry? GetDefault(ImcManipulation imc)
+        /// <summary> Convert throwing to null-return if the file does not exist. </summary>
+        private static ImcEntry? GetDefault(MetaFileManager metaFileManager, ImcManipulation imc)
         {
             try
             {
-                return ImcFile.GetDefault(imc.GamePath(), imc.EquipSlot, imc.Variant, out _);
+                return ImcFile.GetDefault(metaFileManager, imc.GamePath(), imc.EquipSlot, imc.Variant, out _);
             }
             catch
             {
@@ -314,13 +315,13 @@ public partial class ModEditWindow
             }
         }
 
-        public static void DrawNew(ModEditor editor, Vector2 iconSize)
+        public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
         {
             ImGui.TableNextColumn();
             CopyToClipboardButton("Copy all current IMC manipulations to clipboard.", iconSize,
                 editor.MetaEditor.Imc.Select(m => (MetaManipulation)m));
             ImGui.TableNextColumn();
-            var defaultEntry = GetDefault(_new);
+            var defaultEntry = GetDefault(metaFileManager, _new);
             var canAdd = defaultEntry != null && editor.MetaEditor.CanAdd(_new);
             var tt = canAdd ? "Stage this edit." : defaultEntry == null ? "This IMC file does not exist." : "This entry is already edited.";
             defaultEntry ??= new ImcEntry();
@@ -347,7 +348,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (IdInput("##imcId", IdWidth, _new.PrimaryId, out var setId, 0, ushort.MaxValue, _new.PrimaryId <= 1))
                 _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, setId, _new.SecondaryId, _new.Variant, _new.EquipSlot, _new.Entry)
-                    .Copy(GetDefault(_new)
+                    .Copy(GetDefault(metaFileManager, _new)
                      ?? new ImcEntry());
 
             ImGuiUtil.HoverTooltip(PrimaryIdTooltip);
@@ -361,7 +362,7 @@ public partial class ModEditWindow
             {
                 if (Combos.EqpEquipSlot("##imcSlot", 100, _new.EquipSlot, out var slot))
                     _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry)
-                        .Copy(GetDefault(_new)
+                        .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
                 ImGuiUtil.HoverTooltip(EquipSlotTooltip);
@@ -370,7 +371,7 @@ public partial class ModEditWindow
             {
                 if (Combos.AccessorySlot("##imcSlot", _new.EquipSlot, out var slot))
                     _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry)
-                        .Copy(GetDefault(_new)
+                        .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
                 ImGuiUtil.HoverTooltip(EquipSlotTooltip);
@@ -379,7 +380,7 @@ public partial class ModEditWindow
             {
                 if (IdInput("##imcId2", 100 * UiHelpers.Scale, _new.SecondaryId, out var setId2, 0, ushort.MaxValue, false))
                     _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, setId2, _new.Variant, _new.EquipSlot, _new.Entry)
-                        .Copy(GetDefault(_new)
+                        .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
                 ImGuiUtil.HoverTooltip(SecondaryIdTooltip);
@@ -388,7 +389,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (IdInput("##imcVariant", SmallIdWidth, _new.Variant, out var variant, 0, byte.MaxValue, false))
                 _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, variant, _new.EquipSlot,
-                    _new.Entry).Copy(GetDefault(_new)
+                    _new.Entry).Copy(GetDefault(metaFileManager, _new)
                  ?? new ImcEntry());
 
             ImGui.TableNextColumn();
@@ -396,7 +397,7 @@ public partial class ModEditWindow
             {
                 if (Combos.EqpEquipSlot("##imcSlot", 70, _new.EquipSlot, out var slot))
                     _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry)
-                        .Copy(GetDefault(_new)
+                        .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
                 ImGuiUtil.HoverTooltip(EquipSlotTooltip);
@@ -438,7 +439,7 @@ public partial class ModEditWindow
             ImGui.NewLine();
         }
 
-        public static void Draw(ImcManipulation meta, ModEditor editor, Vector2 iconSize)
+        public static void Draw(MetaFileManager metaFileManager, ImcManipulation meta, ModEditor editor, Vector2 iconSize)
         {
             DrawMetaButtons(meta, editor, iconSize);
 
@@ -479,7 +480,7 @@ public partial class ModEditWindow
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
                 new Vector2(3 * UiHelpers.Scale, ImGui.GetStyle().ItemSpacing.Y));
             ImGui.TableNextColumn();
-            var defaultEntry = GetDefault(meta) ?? new ImcEntry();
+            var defaultEntry = GetDefault(metaFileManager, meta) ?? new ImcEntry();
             if (IntDragInput("##imcMaterialId", $"Material ID\nDefault Value: {defaultEntry.MaterialId}", SmallIdWidth, meta.Entry.MaterialId,
                     defaultEntry.MaterialId,    out var materialId,                                       1,            byte.MaxValue, 0.01f))
                 editor.MetaEditor.Change(meta.Copy(meta.Entry with { MaterialId = (byte)materialId }));
@@ -530,7 +531,7 @@ public partial class ModEditWindow
         private static float IdWidth
             => 100 * UiHelpers.Scale;
 
-        public static void DrawNew(ModEditor editor, Vector2 iconSize)
+        public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
         {
             ImGui.TableNextColumn();
             CopyToClipboardButton("Copy all current EST manipulations to clipboard.", iconSize,
@@ -538,7 +539,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             var canAdd       = editor.MetaEditor.CanAdd(_new);
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
-            var defaultEntry = EstFile.GetDefault(_new.Slot, Names.CombinedRace(_new.Gender, _new.Race), _new.SetId);
+            var defaultEntry = EstFile.GetDefault(metaFileManager, _new.Slot, Names.CombinedRace(_new.Gender, _new.Race), _new.SetId);
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, tt, !canAdd, true))
                 editor.MetaEditor.Add(_new.Copy(defaultEntry));
 
@@ -546,7 +547,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (IdInput("##estId", IdWidth, _new.SetId, out var setId, 0, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
             {
-                var newDefaultEntry = EstFile.GetDefault(_new.Slot, Names.CombinedRace(_new.Gender, _new.Race), setId);
+                var newDefaultEntry = EstFile.GetDefault(metaFileManager, _new.Slot, Names.CombinedRace(_new.Gender, _new.Race), setId);
                 _new = new EstManipulation(_new.Gender, _new.Race, _new.Slot, setId, newDefaultEntry);
             }
 
@@ -555,7 +556,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.Race("##estRace", _new.Race, out var race))
             {
-                var newDefaultEntry = EstFile.GetDefault(_new.Slot, Names.CombinedRace(_new.Gender, race), _new.SetId);
+                var newDefaultEntry = EstFile.GetDefault(metaFileManager, _new.Slot, Names.CombinedRace(_new.Gender, race), _new.SetId);
                 _new = new EstManipulation(_new.Gender, race, _new.Slot, _new.SetId, newDefaultEntry);
             }
 
@@ -564,7 +565,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.Gender("##estGender", _new.Gender, out var gender))
             {
-                var newDefaultEntry = EstFile.GetDefault(_new.Slot, Names.CombinedRace(gender, _new.Race), _new.SetId);
+                var newDefaultEntry = EstFile.GetDefault(metaFileManager, _new.Slot, Names.CombinedRace(gender, _new.Race), _new.SetId);
                 _new = new EstManipulation(gender, _new.Race, _new.Slot, _new.SetId, newDefaultEntry);
             }
 
@@ -573,7 +574,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             if (Combos.EstSlot("##estSlot", _new.Slot, out var slot))
             {
-                var newDefaultEntry = EstFile.GetDefault(slot, Names.CombinedRace(_new.Gender, _new.Race), _new.SetId);
+                var newDefaultEntry = EstFile.GetDefault(metaFileManager, slot, Names.CombinedRace(_new.Gender, _new.Race), _new.SetId);
                 _new = new EstManipulation(_new.Gender, _new.Race, slot, _new.SetId, newDefaultEntry);
             }
 
@@ -585,7 +586,7 @@ public partial class ModEditWindow
             IntDragInput("##estSkeleton", "Skeleton Index", IdWidth, _new.Entry, defaultEntry, out _, 0, ushort.MaxValue, 0.05f);
         }
 
-        public static void Draw(EstManipulation meta, ModEditor editor, Vector2 iconSize)
+        public static void Draw(MetaFileManager metaFileManager, EstManipulation meta, ModEditor editor, Vector2 iconSize)
         {
             DrawMetaButtons(meta, editor, iconSize);
 
@@ -608,7 +609,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip(EstTypeTooltip);
 
             // Values
-            var defaultEntry = EstFile.GetDefault(meta.Slot, Names.CombinedRace(meta.Gender, meta.Race), meta.SetId);
+            var defaultEntry = EstFile.GetDefault(metaFileManager, meta.Slot, Names.CombinedRace(meta.Gender, meta.Race), meta.SetId);
             ImGui.TableNextColumn();
             if (IntDragInput("##estSkeleton", $"Skeleton Index\nDefault Value: {defaultEntry}", IdWidth,         meta.Entry, defaultEntry,
                     out var entry,            0,                                                ushort.MaxValue, 0.05f))
@@ -629,7 +630,7 @@ public partial class ModEditWindow
         private static float IdWidth
             => 100 * UiHelpers.Scale;
 
-        public static void DrawNew(ModEditor editor, Vector2 iconSize)
+        public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
         {
             ImGui.TableNextColumn();
             CopyToClipboardButton("Copy all current GMP manipulations to clipboard.", iconSize,
@@ -637,14 +638,14 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             var canAdd       = editor.MetaEditor.CanAdd(_new);
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
-            var defaultEntry = ExpandedGmpFile.GetDefault(_new.SetId);
+            var defaultEntry = ExpandedGmpFile.GetDefault(metaFileManager, _new.SetId);
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, tt, !canAdd, true))
                 editor.MetaEditor.Add(_new.Copy(defaultEntry));
 
             // Identifier
             ImGui.TableNextColumn();
             if (IdInput("##gmpId", IdWidth, _new.SetId, out var setId, 1, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
-                _new = new GmpManipulation(ExpandedGmpFile.GetDefault(setId), setId);
+                _new = new GmpManipulation(ExpandedGmpFile.GetDefault(metaFileManager, setId), setId);
 
             ImGuiUtil.HoverTooltip(ModelSetIdTooltip);
 
@@ -669,7 +670,7 @@ public partial class ModEditWindow
             IntDragInput("##gmpUnkB", "Animation Type B?", UnkWidth, defaultEntry.UnknownB, defaultEntry.UnknownB, out _, 0, 15, 0f);
         }
 
-        public static void Draw(GmpManipulation meta, ModEditor editor, Vector2 iconSize)
+        public static void Draw(MetaFileManager metaFileManager, GmpManipulation meta, ModEditor editor, Vector2 iconSize)
         {
             DrawMetaButtons(meta, editor, iconSize);
 
@@ -680,7 +681,7 @@ public partial class ModEditWindow
             ImGuiUtil.HoverTooltip(ModelSetIdTooltipShort);
 
             // Values
-            var defaultEntry = ExpandedGmpFile.GetDefault(meta.SetId);
+            var defaultEntry = ExpandedGmpFile.GetDefault(metaFileManager, meta.SetId);
             ImGui.TableNextColumn();
             if (Checkmark("##gmpEnabled", "Gimmick Enabled", meta.Entry.Enabled, defaultEntry.Enabled, out var enabled))
                 editor.MetaEditor.Change(meta.Copy(meta.Entry with { Enabled = enabled }));
@@ -723,7 +724,7 @@ public partial class ModEditWindow
         private static float FloatWidth
             => 150 * UiHelpers.Scale;
 
-        public static void DrawNew(ModEditor editor, Vector2 iconSize)
+        public static void DrawNew(MetaFileManager metaFileManager, ModEditor editor, Vector2 iconSize)
         {
             ImGui.TableNextColumn();
             CopyToClipboardButton("Copy all current RSP manipulations to clipboard.", iconSize,
@@ -731,20 +732,20 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             var canAdd       = editor.MetaEditor.CanAdd(_new);
             var tt           = canAdd ? "Stage this edit." : "This entry is already edited.";
-            var defaultEntry = CmpFile.GetDefault(_new.SubRace, _new.Attribute);
+            var defaultEntry = CmpFile.GetDefault(metaFileManager, _new.SubRace, _new.Attribute);
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), iconSize, tt, !canAdd, true))
                 editor.MetaEditor.Add(_new.Copy(defaultEntry));
 
             // Identifier
             ImGui.TableNextColumn();
             if (Combos.SubRace("##rspSubRace", _new.SubRace, out var subRace))
-                _new = new RspManipulation(subRace, _new.Attribute, CmpFile.GetDefault(subRace, _new.Attribute));
+                _new = new RspManipulation(subRace, _new.Attribute, CmpFile.GetDefault(metaFileManager, subRace, _new.Attribute));
 
             ImGuiUtil.HoverTooltip(RacialTribeTooltip);
 
             ImGui.TableNextColumn();
             if (Combos.RspAttribute("##rspAttribute", _new.Attribute, out var attribute))
-                _new = new RspManipulation(_new.SubRace, attribute, CmpFile.GetDefault(subRace, attribute));
+                _new = new RspManipulation(_new.SubRace, attribute, CmpFile.GetDefault(metaFileManager, subRace, attribute));
 
             ImGuiUtil.HoverTooltip(ScalingTypeTooltip);
 
@@ -755,7 +756,7 @@ public partial class ModEditWindow
             ImGui.DragFloat("##rspValue", ref defaultEntry, 0f);
         }
 
-        public static void Draw(RspManipulation meta, ModEditor editor, Vector2 iconSize)
+        public static void Draw(MetaFileManager metaFileManager, RspManipulation meta, ModEditor editor, Vector2 iconSize)
         {
             DrawMetaButtons(meta, editor, iconSize);
 
@@ -771,7 +772,7 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
 
             // Values
-            var def   = CmpFile.GetDefault(meta.SubRace, meta.Attribute);
+            var def   = CmpFile.GetDefault(metaFileManager, meta.SubRace, meta.Attribute);
             var value = meta.Entry;
             ImGui.SetNextItemWidth(FloatWidth);
             using var color = ImRaii.PushColor(ImGuiCol.FrameBg,

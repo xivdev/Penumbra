@@ -6,6 +6,7 @@ using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
+using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Services;
@@ -27,7 +28,7 @@ public static class ItemSwap
             => Type = type;
     }
 
-    private static bool LoadFile( FullPath path, out byte[] data )
+    private static bool LoadFile( MetaFileManager manager, FullPath path, out byte[] data )
     {
         if( path.FullName.Length > 0 )
         {
@@ -39,7 +40,7 @@ public static class ItemSwap
                     return true;
                 }
 
-                var file = DalamudServices.SGameData.GetFile( path.InternalName.ToString() );
+                var file = manager.GameData.GetFile( path.InternalName.ToString() );
                 if( file != null )
                 {
                     data = file.Data;
@@ -61,18 +62,18 @@ public static class ItemSwap
         public readonly byte[] Data;
         public bool Valid { get; }
 
-        public GenericFile( FullPath path )
-            => Valid = LoadFile( path, out Data );
+        public GenericFile( MetaFileManager manager, FullPath path )
+            => Valid = LoadFile( manager, path, out Data );
 
         public byte[] Write()
             => Data;
 
-        public static readonly GenericFile Invalid = new(FullPath.Empty);
+        public static readonly GenericFile Invalid = new(null!, FullPath.Empty);
     }
 
-    public static bool LoadFile( FullPath path, [NotNullWhen( true )] out GenericFile? file )
+    public static bool LoadFile( MetaFileManager manager, FullPath path, [NotNullWhen( true )] out GenericFile? file )
     {
-        file = new GenericFile( path );
+        file = new GenericFile( manager, path );
         if( file.Valid )
         {
             return true;
@@ -82,11 +83,11 @@ public static class ItemSwap
         return false;
     }
 
-    public static bool LoadMdl( FullPath path, [NotNullWhen( true )] out MdlFile? file )
+    public static bool LoadMdl( MetaFileManager manager, FullPath path, [NotNullWhen( true )] out MdlFile? file )
     {
         try
         {
-            if( LoadFile( path, out byte[] data ) )
+            if( LoadFile( manager, path, out byte[] data ) )
             {
                 file = new MdlFile( data );
                 return true;
@@ -101,11 +102,11 @@ public static class ItemSwap
         return false;
     }
 
-    public static bool LoadMtrl( FullPath path, [NotNullWhen( true )] out MtrlFile? file )
+    public static bool LoadMtrl(MetaFileManager manager, FullPath path, [NotNullWhen( true )] out MtrlFile? file )
     {
         try
         {
-            if( LoadFile( path, out byte[] data ) )
+            if( LoadFile( manager, path, out byte[] data ) )
             {
                 file = new MtrlFile( data );
                 return true;
@@ -120,11 +121,11 @@ public static class ItemSwap
         return false;
     }
 
-    public static bool LoadAvfx( FullPath path, [NotNullWhen( true )] out AvfxFile? file )
+    public static bool LoadAvfx( MetaFileManager manager, FullPath path, [NotNullWhen( true )] out AvfxFile? file )
     {
         try
         {
-            if( LoadFile( path, out byte[] data ) )
+            if( LoadFile( manager, path, out byte[] data ) )
             {
                 file = new AvfxFile( data );
                 return true;
@@ -140,20 +141,20 @@ public static class ItemSwap
     }
 
 
-    public static FileSwap CreatePhyb( Func< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry )
+    public static FileSwap CreatePhyb(MetaFileManager manager, Func< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry )
     {
         var phybPath = GamePaths.Skeleton.Phyb.Path( race, EstManipulation.ToName( type ), estEntry );
-        return FileSwap.CreateSwap( ResourceType.Phyb, redirections, phybPath, phybPath );
+        return FileSwap.CreateSwap( manager, ResourceType.Phyb, redirections, phybPath, phybPath );
     }
 
-    public static FileSwap CreateSklb( Func< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry )
+    public static FileSwap CreateSklb(MetaFileManager manager, Func< Utf8GamePath, FullPath > redirections, EstManipulation.EstType type, GenderRace race, ushort estEntry )
     {
         var sklbPath = GamePaths.Skeleton.Sklb.Path( race, EstManipulation.ToName( type ), estEntry );
-        return FileSwap.CreateSwap( ResourceType.Sklb, redirections, sklbPath, sklbPath );
+        return FileSwap.CreateSwap(manager, ResourceType.Sklb, redirections, sklbPath, sklbPath );
     }
 
     /// <remarks> metaChanges is not manipulated, but IReadOnlySet does not support TryGetValue. </remarks>
-    public static MetaSwap? CreateEst( Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, EstManipulation.EstType type,
+    public static MetaSwap? CreateEst( MetaFileManager manager, Func< Utf8GamePath, FullPath > redirections, Func< MetaManipulation, MetaManipulation > manips, EstManipulation.EstType type,
         GenderRace genderRace, SetId idFrom, SetId idTo, bool ownMdl )
     {
         if( type == 0 )
@@ -162,15 +163,15 @@ public static class ItemSwap
         }
 
         var (gender, race) = genderRace.Split();
-        var fromDefault = new EstManipulation( gender, race, type, idFrom.Value, EstFile.GetDefault( type, genderRace, idFrom.Value ) );
-        var toDefault   = new EstManipulation( gender, race, type, idTo.Value, EstFile.GetDefault( type, genderRace, idTo.Value ) );
+        var fromDefault = new EstManipulation( gender, race, type, idFrom.Value, EstFile.GetDefault( manager, type, genderRace, idFrom.Value ) );
+        var toDefault   = new EstManipulation( gender, race, type, idTo.Value, EstFile.GetDefault( manager, type, genderRace, idTo.Value ) );
         var est         = new MetaSwap( manips, fromDefault, toDefault );
 
         if( ownMdl && est.SwapApplied.Est.Entry >= 2 )
         {
-            var phyb = CreatePhyb( redirections, type, genderRace, est.SwapApplied.Est.Entry );
+            var phyb = CreatePhyb( manager, redirections, type, genderRace, est.SwapApplied.Est.Entry );
             est.ChildSwaps.Add( phyb );
-            var sklb = CreateSklb( redirections, type, genderRace, est.SwapApplied.Est.Entry );
+            var sklb = CreateSklb( manager, redirections, type, genderRace, est.SwapApplied.Est.Entry );
             est.ChildSwaps.Add( sklb );
         }
         else if( est.SwapAppliedIsDefault )

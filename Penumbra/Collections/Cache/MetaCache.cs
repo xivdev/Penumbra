@@ -2,19 +2,19 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using OtterGui;
+using Penumbra.GameData.Enums;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
-using Penumbra.Meta.Files;
+using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
-public struct MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation, IMod>>
+public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation, IMod>>
 {
-    private readonly CollectionCacheManager             _manager;
+    private readonly MetaFileManager                    _manager;
     private readonly ModCollection                      _collection;
     private readonly Dictionary<MetaManipulation, IMod> _manipulations = new();
     private          EqpCache                           _eqpCache      = new();
@@ -22,7 +22,7 @@ public struct MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation
     private          EstCache                           _estCache      = new();
     private          GmpCache                           _gmpCache      = new();
     private          CmpCache                           _cmpCache      = new();
-    private readonly ImcCache                           _imcCache;
+    private readonly ImcCache                           _imcCache      = new();
 
     public bool TryGetValue(MetaManipulation manip, [NotNullWhen(true)] out IMod? mod)
         => _manipulations.TryGetValue(manip, out mod);
@@ -39,10 +39,10 @@ public struct MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
 
-    public MetaCache(CollectionCacheManager manager, ModCollection collection)
+    public MetaCache(MetaFileManager manager, ModCollection collection)
     {
-        _manager  = manager;
-        _imcCache = new ImcCache(collection);
+        _manager    = manager;
+        _collection = collection;
         if (!_manager.CharacterUtility.Ready)
             _manager.CharacterUtility.LoadingFinished += ApplyStoredManipulations;
     }
@@ -54,17 +54,17 @@ public struct MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation
         _estCache.SetFiles(_manager);
         _gmpCache.SetFiles(_manager);
         _cmpCache.SetFiles(_manager);
-        _imcCache.SetFiles(_manager, _collection);
+        _imcCache.SetFiles(_collection);
     }
 
     public void Reset()
     {
-        _eqpCache.Reset(_manager);
-        _eqdpCache.Reset(_manager);
-        _estCache.Reset(_manager);
-        _gmpCache.Reset(_manager);
-        _cmpCache.Reset(_manager);
-        _imcCache.Reset(_manager, _collection);
+        _eqpCache.Reset();
+        _eqdpCache.Reset();
+        _estCache.Reset();
+        _gmpCache.Reset();
+        _cmpCache.Reset();
+        _imcCache.Reset(_collection);
         _manipulations.Clear();
     }
 
@@ -79,6 +79,9 @@ public struct MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation
         _imcCache.Dispose();
         _manipulations.Clear();
     }
+
+    ~MetaCache()
+        => Dispose();
 
     public bool ApplyMod(MetaManipulation manip, IMod mod)
     {
@@ -126,10 +129,60 @@ public struct MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation
         };
     }
 
-    // Use this when CharacterUtility becomes ready.
+    /// <summary> Set a single file. </summary>
+    public void SetFile(MetaIndex metaIndex)
+    {
+        switch (metaIndex)
+        {
+            case MetaIndex.Eqp:
+                _eqpCache.SetFiles(_manager);
+                break;
+            case MetaIndex.Gmp:
+                _gmpCache.SetFiles(_manager);
+                break;
+            case MetaIndex.HumanCmp:
+                _cmpCache.SetFiles(_manager);
+                break;
+            case MetaIndex.FaceEst:
+            case MetaIndex.HairEst:
+            case MetaIndex.HeadEst:
+            case MetaIndex.BodyEst:
+                _estCache.SetFile(_manager, metaIndex);
+                break;
+            default:
+                _eqdpCache.SetFile(_manager, metaIndex);
+                break;
+        }
+    }
+
+    /// <summary> Set the currently relevant IMC files for the collection cache. </summary>
+    public void SetImcFiles()
+        => _imcCache.SetFiles(_collection);
+
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqpFile()
+        => _eqpCache.TemporarilySetFiles(_manager);
+
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
+        => _eqdpCache.TemporarilySetFiles(_manager, genderRace, accessory);
+
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetGmpFile()
+        => _gmpCache.TemporarilySetFiles(_manager);
+
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetCmpFile()
+        => _cmpCache.TemporarilySetFiles(_manager);
+
+    public CharacterUtility.MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
+        => _estCache.TemporarilySetFiles(_manager, type);
+
+
+    /// <summary> Try to obtain a manipulated IMC file. </summary>
+    public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out Meta.Files.ImcFile? file)
+        => _imcCache.GetImcFile(path, out file);
+
+    /// <summary> Use this when CharacterUtility becomes ready. </summary>
     private void ApplyStoredManipulations()
     {
-        if (!Penumbra.CharacterUtility.Ready)
+        if (!_manager.CharacterUtility.Ready)
             return;
 
         var loaded = 0;
@@ -150,28 +203,8 @@ public struct MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation
                 : 0;
         }
 
-        if (_manager.IsDefault(_collection))
-        {
-            SetFiles();
-            _manager.ResidentResources.Reload();
-        }
-
+        _manager.ApplyDefaultFiles(_collection);
         _manager.CharacterUtility.LoadingFinished -= ApplyStoredManipulations;
         Penumbra.Log.Debug($"{_collection.AnonymizedName}: Loaded {loaded} delayed meta manipulations.");
     }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public unsafe void SetFile(MetaBaseFile? file, MetaIndex metaIndex)
-    {
-        if (file == null)
-            _manager.CharacterUtility.ResetResource(metaIndex);
-        else
-            _manager.CharacterUtility.SetResource(metaIndex, (IntPtr)file.Data, file.Length);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public unsafe CharacterUtility.MetaList.MetaReverter TemporarilySetFile(MetaBaseFile? file, MetaIndex metaIndex)
-        => file == null
-            ? _manager.CharacterUtility.TemporarilyResetResource(metaIndex)
-            : _manager.CharacterUtility.TemporarilySetResource(metaIndex, (IntPtr)file.Data, file.Length);
 }

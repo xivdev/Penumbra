@@ -5,6 +5,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.Api.Enums;
+using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
 
@@ -109,11 +110,11 @@ public partial class Mod
         }
     }
 
-    public void WriteAllTexToolsMeta()
+    public void WriteAllTexToolsMeta(MetaFileManager manager)
     {
         try
         {
-            _default.WriteTexToolsMeta(ModPath);
+            _default.WriteTexToolsMeta(manager, ModPath);
             foreach (var group in Groups)
             {
                 var dir = ModCreator.NewOptionDirectory(ModPath, group.Name);
@@ -126,7 +127,7 @@ public partial class Mod
                     if (!optionDir.Exists)
                         optionDir.Create();
 
-                    option.WriteTexToolsMeta(optionDir);
+                    option.WriteTexToolsMeta(manager, optionDir);
                 }
             }
         }

@@ -23,6 +23,7 @@ using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
 using Penumbra.Mods.Manager;
 using Penumbra.Collections.Cache;
+using Penumbra.Meta;
 
 namespace Penumbra;
 
@@ -66,7 +67,6 @@ public class PenumbraNew
         // Add Game Services
         services.AddSingleton<GameEventManager>()
             .AddSingleton<FrameworkManager>()
-            .AddSingleton<MetaFileManager>()
             .AddSingleton<CutsceneService>()
             .AddSingleton<CharacterUtility>()
             .AddSingleton<ResourceManagerService>()
@@ -77,10 +77,6 @@ public class PenumbraNew
             .AddSingleton<ResidentResourceManager>()
             .AddSingleton<FontReloader>()
             .AddSingleton<RedrawService>();
-
-        // Add PathResolver
-        services.AddSingleton<CutsceneService>()
-            .AddSingleton<IdentifiedCollectionCache>();
 
         // Add Configuration
         services.AddTransient<ConfigMigrationService>()
@@ -109,7 +105,8 @@ public class PenumbraNew
         // Add Resource services
         services.AddSingleton<ResourceLoader>()
             .AddSingleton<ResourceWatcher>()
-            .AddSingleton<ResourceTreeFactory>();
+            .AddSingleton<ResourceTreeFactory>()
+            .AddSingleton<MetaFileManager>();
 
         // Add Path Resolver
         services.AddSingleton<AnimationHookService>()
