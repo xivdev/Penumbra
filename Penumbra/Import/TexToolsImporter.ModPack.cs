@@ -40,7 +40,7 @@ public partial class TexToolsImporter
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream( extractedModPack, "TTMPD.mpd" );
         ExtractSimpleModList( _currentModDirectory, modList );
-        ModCreator.CreateDefaultFiles( _currentModDirectory );
+        _modManager.Creator.CreateDefaultFiles( _currentModDirectory );
         ResetStreamDisposer();
         return _currentModDirectory;
     }
@@ -97,7 +97,7 @@ public partial class TexToolsImporter
         // Open the mod data file from the mod pack as a SqPackStream
         _streamDisposer = GetSqPackStreamStream( extractedModPack, "TTMPD.mpd" );
         ExtractSimpleModList( _currentModDirectory, modList.SimpleModsList );
-        ModCreator.CreateDefaultFiles( _currentModDirectory );
+        _modManager.Creator.CreateDefaultFiles( _currentModDirectory );
         ResetStreamDisposer();
         return _currentModDirectory;
     }
@@ -185,7 +185,7 @@ public partial class TexToolsImporter
                         var optionFolder = ModCreator.NewSubFolderName( groupFolder, option.Name )
                          ?? new DirectoryInfo( Path.Combine( groupFolder.FullName, $"Option {i + optionIdx + 1}" ) );
                         ExtractSimpleModList( optionFolder, option.ModsJsons );
-                        options.Add( ModCreator.CreateSubMod( _currentModDirectory, optionFolder, option ) );
+                        options.Add( _modManager.Creator.CreateSubMod( _currentModDirectory, optionFolder, option ) );
                         if( option.IsChecked )
                         {
                             defaultSettings = group.SelectionType == GroupType.Multi
@@ -211,7 +211,7 @@ public partial class TexToolsImporter
                         }
                     }
 
-                    ModCreator.CreateOptionGroup( _currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
+                    _modManager.Creator.CreateOptionGroup( _currentModDirectory, group.SelectionType, name, groupPriority, groupPriority,
                         defaultSettings ?? 0, group.Description, options );
                     ++groupPriority;
                 }
@@ -219,7 +219,7 @@ public partial class TexToolsImporter
         }
 
         ResetStreamDisposer();
-        ModCreator.CreateDefaultFiles( _currentModDirectory );
+        _modManager.Creator.CreateDefaultFiles( _currentModDirectory );
         return _currentModDirectory;
     }
 

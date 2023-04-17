@@ -550,19 +550,19 @@ public class CommandHandler : IDisposable
 
     private void Print(string text)
     {
-        if (Penumbra.Config.PrintSuccessfulCommandsToChat)
+        if (_config.PrintSuccessfulCommandsToChat)
             _chat.Print(text);
     }
 
     private void Print(DefaultInterpolatedStringHandler text)
     {
-        if (Penumbra.Config.PrintSuccessfulCommandsToChat)
+        if (_config.PrintSuccessfulCommandsToChat)
             _chat.Print(text.ToStringAndClear());
     }
 
     private void Print(Func<SeString> text)
     {
-        if (Penumbra.Config.PrintSuccessfulCommandsToChat)
+        if (_config.PrintSuccessfulCommandsToChat)
             _chat.Print(text());
     }
 }

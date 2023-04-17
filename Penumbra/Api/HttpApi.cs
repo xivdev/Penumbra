@@ -26,10 +26,10 @@ public class HttpApi : IDisposable
     private readonly IPenumbraApi _api;
     private          WebServer?   _server;
 
-    public HttpApi(IPenumbraApi api)
+    public HttpApi(Configuration config, IPenumbraApi api)
     {
         _api = api;
-        if (Penumbra.Config.EnableHttpApi)
+        if (config.EnableHttpApi)
             CreateWebServer();
     }
 

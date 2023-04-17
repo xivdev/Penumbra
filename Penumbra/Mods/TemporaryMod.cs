@@ -7,6 +7,7 @@ using Penumbra.Collections;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
@@ -19,33 +20,33 @@ public class TemporaryMod : IMod
     public int TotalManipulations
         => Default.Manipulations.Count;
 
-    public ISubMod Default
-        => _default;
+    public readonly SubMod Default;
+
+    ISubMod IMod.Default
+        => Default;
 
     public IReadOnlyList< IModGroup > Groups
         => Array.Empty< IModGroup >();
 
-    public IEnumerable< ISubMod > AllSubMods
+    public IEnumerable< SubMod > AllSubMods
         => new[] { Default };
 
-    private readonly SubMod _default;
-
     public TemporaryMod()
-        => _default = new SubMod( this );
+        => Default = new SubMod( this );
 
     public void SetFile( Utf8GamePath gamePath, FullPath fullPath )
-        => _default.FileData[ gamePath ] = fullPath;
+        => Default.FileData[ gamePath ] = fullPath;
 
     public bool SetManipulation( MetaManipulation manip )
-        => _default.ManipulationData.Remove( manip ) | _default.ManipulationData.Add( manip );
+        => Default.ManipulationData.Remove( manip ) | Default.ManipulationData.Add( manip );
 
     public void SetAll( Dictionary< Utf8GamePath, FullPath > dict, HashSet< MetaManipulation > manips )
     {
-        _default.FileData         = dict;
-        _default.ManipulationData = manips;
+        Default.FileData         = dict;
+        Default.ManipulationData = manips;
     }
 
-    public static void SaveTempCollection( ModManager modManager, ModCollection collection, string? character = null )
+    public static void SaveTempCollection( SaveService saveService, ModManager modManager, ModCollection collection, string? character = null )
     {
         DirectoryInfo? dir = null;
         try
@@ -55,7 +56,7 @@ public class TemporaryMod : IMod
             modManager.DataEditor.CreateMeta( dir, collection.Name, character ?? Penumbra.Config.DefaultModAuthor,
                 $"Mod generated from temporary collection {collection.Name} for {character ?? "Unknown Character"}.", null, null );
             var mod        = new Mod( dir );
-            var defaultMod = (SubMod) mod.Default;
+            var defaultMod = mod.Default;
             foreach( var (gamePath, fullPath) in collection.ResolvedFiles )
             {
                 if( gamePath.Path.EndsWith( ".imc"u8 ) )
@@ -84,7 +85,7 @@ public class TemporaryMod : IMod
             foreach( var manip in collection.MetaCache?.Manipulations ?? Array.Empty< MetaManipulation >() )
                 defaultMod.ManipulationData.Add( manip );
 
-            Penumbra.SaveService.ImmediateSave(new ModSaveGroup(dir, defaultMod));
+            saveService.ImmediateSave(new ModSaveGroup(dir, defaultMod));
             modManager.AddMod( dir );
             Penumbra.Log.Information( $"Successfully generated mod {mod.Name} at {mod.ModPath.FullName} for collection {collection.Name}." );
         }

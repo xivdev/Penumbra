@@ -20,8 +20,8 @@ public static partial class ModMigration
     [GeneratedRegex("^group_", RegexOptions.Compiled)]
     private static partial Regex GroupStartRegex();
 
-    public static bool Migrate(SaveService saveService, Mod mod, JObject json, ref uint fileVersion)
-        => MigrateV0ToV1(saveService, mod, json, ref fileVersion) || MigrateV1ToV2(mod, ref fileVersion) || MigrateV2ToV3(mod, ref fileVersion);
+    public static bool Migrate(ModCreator creator, SaveService saveService, Mod mod, JObject json, ref uint fileVersion)
+        => MigrateV0ToV1(creator, saveService, mod, json, ref fileVersion) || MigrateV1ToV2(saveService, mod, ref fileVersion) || MigrateV2ToV3(mod, ref fileVersion);
 
     private static bool MigrateV2ToV3(Mod _, ref uint fileVersion)
     {
@@ -33,13 +33,13 @@ public static partial class ModMigration
         return true;
     }
 
-    private static bool MigrateV1ToV2(Mod mod, ref uint fileVersion)
+    private static bool MigrateV1ToV2(SaveService saveService, Mod mod, ref uint fileVersion)
     {
         if (fileVersion > 1)
             return false;
 
-        if (!mod.GroupFiles.All(g => GroupRegex().IsMatch(g.Name)))
-            foreach (var (group, index) in mod.GroupFiles.WithIndex().ToArray())
+        if (!saveService.FileNames.GetOptionGroupFiles(mod).All(g => GroupRegex().IsMatch(g.Name)))
+            foreach (var (group, index) in saveService.FileNames.GetOptionGroupFiles(mod).WithIndex().ToArray())
             {
                 var newName = GroupStartRegex().Replace(group.Name, $"group_{index + 1:D3}_");
                 try
@@ -58,7 +58,7 @@ public static partial class ModMigration
         return true;
     }
 
-    private static bool MigrateV0ToV1(SaveService saveService, Mod mod, JObject json, ref uint fileVersion)
+    private static bool MigrateV0ToV1(ModCreator creator, SaveService saveService, Mod mod, JObject json, ref uint fileVersion)
     {
         if (fileVersion > 0)
             return false;
@@ -69,21 +69,21 @@ public static partial class ModMigration
         var priority = 1;
         var seenMetaFiles = new HashSet<FullPath>();
         foreach (var group in groups.Values)
-            ConvertGroup(mod, group, ref priority, seenMetaFiles);
+            ConvertGroup(creator, mod, group, ref priority, seenMetaFiles);
 
         foreach (var unusedFile in mod.FindUnusedFiles().Where(f => !seenMetaFiles.Contains(f)))
         {
             if (unusedFile.ToGamePath(mod.ModPath, out var gamePath)
-             && !mod._default.FileData.TryAdd(gamePath, unusedFile))
-                Penumbra.Log.Error($"Could not add {gamePath} because it already points to {mod._default.FileData[gamePath]}.");
+             && !mod.Default.FileData.TryAdd(gamePath, unusedFile))
+                Penumbra.Log.Error($"Could not add {gamePath} because it already points to {mod.Default.FileData[gamePath]}.");
         }
 
-        mod._default.FileSwapData.Clear();
-        mod._default.FileSwapData.EnsureCapacity(swaps.Count);
+        mod.Default.FileSwapData.Clear();
+        mod.Default.FileSwapData.EnsureCapacity(swaps.Count);
         foreach (var (gamePath, swapPath) in swaps)
-            mod._default.FileSwapData.Add(gamePath, swapPath);
+            mod.Default.FileSwapData.Add(gamePath, swapPath);
 
-        mod._default.IncorporateMetaChanges(mod.ModPath, true);
+        creator.IncorporateMetaChanges(mod.Default, mod.ModPath, true);
         foreach (var (_, index) in mod.Groups.WithIndex())
             saveService.ImmediateSave(new ModSaveGroup(mod, index));
 
@@ -118,7 +118,7 @@ public static partial class ModMigration
         return true;
     }
 
-    private static void ConvertGroup(Mod mod, OptionGroupV0 group, ref int priority, HashSet<FullPath> seenMetaFiles)
+    private static void ConvertGroup(ModCreator creator, Mod mod, OptionGroupV0 group, ref int priority, HashSet<FullPath> seenMetaFiles)
     {
         if (group.Options.Count == 0)
             return;
@@ -134,15 +134,15 @@ public static partial class ModMigration
                     Priority = priority++,
                     Description = string.Empty,
                 };
-                mod._groups.Add(newMultiGroup);
+                mod.Groups.Add(newMultiGroup);
                 foreach (var option in group.Options)
-                    newMultiGroup.PrioritizedOptions.Add((SubModFromOption(mod, option, seenMetaFiles), optionPriority++));
+                    newMultiGroup.PrioritizedOptions.Add((SubModFromOption(creator, mod, option, seenMetaFiles), optionPriority++));
 
                 break;
             case GroupType.Single:
                 if (group.Options.Count == 1)
                 {
-                    AddFilesToSubMod(mod._default, mod.ModPath, group.Options[0], seenMetaFiles);
+                    AddFilesToSubMod(mod.Default, mod.ModPath, group.Options[0], seenMetaFiles);
                     return;
                 }
 
@@ -152,9 +152,9 @@ public static partial class ModMigration
                     Priority = priority++,
                     Description = string.Empty,
                 };
-                mod._groups.Add(newSingleGroup);
+                mod.Groups.Add(newSingleGroup);
                 foreach (var option in group.Options)
-                    newSingleGroup.OptionData.Add(SubModFromOption(mod, option, seenMetaFiles));
+                    newSingleGroup.OptionData.Add(SubModFromOption(creator, mod, option, seenMetaFiles));
 
                 break;
         }
@@ -173,11 +173,11 @@ public static partial class ModMigration
         }
     }
 
-    private static SubMod SubModFromOption(Mod mod, OptionV0 option, HashSet<FullPath> seenMetaFiles)
+    private static SubMod SubModFromOption(ModCreator creator, Mod mod, OptionV0 option, HashSet<FullPath> seenMetaFiles)
     {
         var subMod = new SubMod(mod) { Name = option.OptionName };
         AddFilesToSubMod(subMod, mod.ModPath, option, seenMetaFiles);
-        subMod.IncorporateMetaChanges(mod.ModPath, false);
+        creator.IncorporateMetaChanges(subMod, mod.ModPath, false);
         return subMod;
     }
 

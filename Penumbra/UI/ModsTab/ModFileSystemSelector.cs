@@ -119,18 +119,14 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         DrawHelpPopup();
 
         if (ImGuiUtil.OpenNameField("Create New Mod", ref _newModName))
-            try
+        {
+            var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName);
+            if (newDir != null)
             {
-                var newDir = ModCreator.CreateModFolder(Penumbra.ModManager.BasePath, _newModName);
-                _modManager.DataEditor.CreateMeta(newDir, _newModName, Penumbra.Config.DefaultModAuthor, string.Empty, "1.0", string.Empty);
-                ModCreator.CreateDefaultFiles(newDir);
                 _modManager.AddMod(newDir);
                 _newModName = string.Empty;
             }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Could not create directory for new Mod {_newModName}:\n{e}");
-            }
+        }
 
         while (_modImportManager.AddUnpackedMod(out var mod))
         {

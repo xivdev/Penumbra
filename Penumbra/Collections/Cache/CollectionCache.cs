@@ -26,7 +26,7 @@ public class CollectionCache : IDisposable
     private readonly ModCollection                                    _collection;
     public readonly  SortedList<string, (SingleArray<IMod>, object?)> _changedItems = new();
     public readonly  Dictionary<Utf8GamePath, ModPath>                ResolvedFiles = new();
-    public readonly  MetaCache                                        MetaManipulations;
+    public readonly  MetaCache                                        Meta;
     public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      _conflicts = new();
 
     public IEnumerable<SingleArray<ModConflicts>> AllConflicts
@@ -50,18 +50,18 @@ public class CollectionCache : IDisposable
     // The cache reacts through events on its collection changing.
     public CollectionCache(CollectionCacheManager manager, ModCollection collection)
     {
-        _manager          = manager;
-        _collection       = collection;
-        MetaManipulations = new MetaCache(manager.MetaFileManager, _collection);
+        _manager    = manager;
+        _collection = collection;
+        Meta        = new MetaCache(manager.MetaFileManager, _collection);
     }
 
     public void Dispose()
     {
-        MetaManipulations.Dispose();
+        Meta.Dispose();
     }
 
     ~CollectionCache()
-        => MetaManipulations.Dispose();
+        => Meta.Dispose();
 
     // Resolve a given game path according to this collection.
     public FullPath? ResolvePath(Utf8GamePath gameResourcePath)
@@ -151,8 +151,8 @@ public class CollectionCache : IDisposable
 
         foreach (var manipulation in mod.AllSubMods.SelectMany(s => s.Manipulations))
         {
-            if (MetaManipulations.TryGetValue(manipulation, out var registeredMod) && registeredMod == mod)
-                MetaManipulations.RevertMod(manipulation);
+            if (Meta.TryGetValue(manipulation, out var registeredMod) && registeredMod == mod)
+                Meta.RevertMod(manipulation);
         }
 
         _conflicts.Remove(mod);
@@ -175,11 +175,7 @@ public class CollectionCache : IDisposable
         if (addMetaChanges)
         {
             ++_collection.ChangeCounter;
-            if (_collection == Penumbra.CollectionManager.Active.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods)
-            {
-                Penumbra.ResidentResources.Reload();
-                MetaManipulations.SetFiles();
-            }
+            _manager.MetaFileManager.ApplyDefaultFiles(_collection);
         }
     }
 
@@ -225,11 +221,7 @@ public class CollectionCache : IDisposable
             if ((mod is TemporaryMod temp ? temp.TotalManipulations : Penumbra.ModCaches[mod.Index].TotalManipulations) > 0)
                 AddMetaFiles();
 
-            if (_collection == Penumbra.CollectionManager.Active.Default && Penumbra.CharacterUtility.Ready && Penumbra.Config.EnableMods)
-            {
-                Penumbra.ResidentResources.Reload();
-                MetaManipulations.SetFiles();
-            }
+            _manager.MetaFileManager.ApplyDefaultFiles(_collection);
         }
     }
 
@@ -335,9 +327,9 @@ public class CollectionCache : IDisposable
     // Inside the same mod, conflicts are not recorded.
     private void AddManipulation(MetaManipulation manip, IMod mod)
     {
-        if (!MetaManipulations.TryGetValue(manip, out var existingMod))
+        if (!Meta.TryGetValue(manip, out var existingMod))
         {
-            MetaManipulations.ApplyMod(manip, mod);
+            Meta.ApplyMod(manip, mod);
             return;
         }
 
@@ -346,13 +338,13 @@ public class CollectionCache : IDisposable
             return;
 
         if (AddConflict(manip, mod, existingMod))
-            MetaManipulations.ApplyMod(manip, mod);
+            Meta.ApplyMod(manip, mod);
     }
 
 
     // Add all necessary meta file redirects.
     public void AddMetaFiles()
-        => MetaManipulations.SetImcFiles();
+        => Meta.SetImcFiles();
 
 
     // Identify and record all manipulated objects for this entire collection.
@@ -367,7 +359,7 @@ public class CollectionCache : IDisposable
             _changedItems.Clear();
             // Skip IMCs because they would result in far too many false-positive items,
             // since they are per set instead of per item-slot/item/variant.
-            var identifier = Penumbra.Identifier;
+            var identifier = _manager.MetaFileManager.Identifier.AwaitedService;
             var items      = new SortedList<string, object?>(512);
 
             void AddItems(IMod mod)
@@ -391,7 +383,7 @@ public class CollectionCache : IDisposable
                 AddItems(modPath.Mod);
             }
 
-            foreach (var (manip, mod) in MetaManipulations)
+            foreach (var (manip, mod) in Meta)
             {
                 ModCacheManager.ComputeChangedItems(identifier, items, manip);
                 AddItems(mod);

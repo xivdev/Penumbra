@@ -10,7 +10,6 @@ using Penumbra.GameData.Actors;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.Util;
-using static OtterGui.Raii.ImRaii;
 
 namespace Penumbra.Collections.Manager;
 
@@ -22,7 +21,7 @@ public class ActiveCollections : ISavable, IDisposable
     private readonly CommunicatorService _communicator;
     private readonly SaveService         _saveService;
 
-    public ActiveCollections(CollectionStorage storage, ActorService actors, CommunicatorService communicator, SaveService saveService)
+    public ActiveCollections(Configuration config, CollectionStorage storage, ActorService actors, CommunicatorService communicator, SaveService saveService)
     {
         _storage      = storage;
         _communicator = communicator;
@@ -30,7 +29,7 @@ public class ActiveCollections : ISavable, IDisposable
         Current       = storage.DefaultNamed;
         Default       = storage.DefaultNamed;
         Interface     = storage.DefaultNamed;
-        Individuals   = new IndividualCollections(actors.AwaitedService);
+        Individuals   = new IndividualCollections(actors.AwaitedService, config);
         _communicator.CollectionChange.Subscribe(OnCollectionChange);
         LoadCollections();
         UpdateCurrentCollectionInUse();

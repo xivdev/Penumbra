@@ -116,7 +116,7 @@ public class ModDataEditor
         return changes;
     }
 
-    public ModDataChangeType LoadMeta(Mod mod)
+    public ModDataChangeType LoadMeta(ModCreator creator, Mod mod)
     {
         var metaFile = _saveService.FileNames.ModMetaPath(mod);
         if (!File.Exists(metaFile))
@@ -171,7 +171,7 @@ public class ModDataEditor
             }
 
             if (newFileVersion != ModMeta.FileVersion)
-                if (ModMigration.Migrate(_saveService, mod, json, ref newFileVersion))
+                if (ModMigration.Migrate(creator, _saveService, mod, json, ref newFileVersion))
                 {
                     changes |= ModDataChangeType.Migration;
                     _saveService.ImmediateSave(new ModMeta(mod));

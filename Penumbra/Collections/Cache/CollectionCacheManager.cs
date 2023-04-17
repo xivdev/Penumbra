@@ -112,7 +112,7 @@ public class CollectionCacheManager : IDisposable
     private void FullRecalculation(ModCollection collection, CollectionCache cache)
     {
         cache.ResolvedFiles.Clear();
-        cache.MetaManipulations.Reset();
+        cache.Meta.Reset();
         cache._conflicts.Clear();
 
         // Add all forced redirects.

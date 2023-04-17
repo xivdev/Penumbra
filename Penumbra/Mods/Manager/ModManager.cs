@@ -24,18 +24,21 @@ public sealed class ModManager : ModStorage
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
 
+    public readonly ModCreator      Creator;
     public readonly ModDataEditor   DataEditor;
     public readonly ModOptionEditor OptionEditor;
 
     public DirectoryInfo BasePath { get; private set; } = null!;
     public bool          Valid    { get; private set; }
 
-    public ModManager(Configuration config, CommunicatorService communicator, ModDataEditor dataEditor, ModOptionEditor optionEditor)
+    public ModManager(Configuration config, CommunicatorService communicator, ModDataEditor dataEditor, ModOptionEditor optionEditor,
+        ModCreator creator)
     {
         _config       = config;
         _communicator = communicator;
         DataEditor    = dataEditor;
         OptionEditor  = optionEditor;
+        Creator    = creator;
         SetBaseDirectory(config.ModDirectory, true);
         DiscoverMods();
     }
@@ -73,8 +76,8 @@ public sealed class ModManager : ModStorage
         if (this.Any(m => m.ModPath.Name == modFolder.Name))
             return;
 
-        ModCreator.SplitMultiGroups(modFolder);
-        var mod = Mod.LoadMod(this, modFolder, true);
+        Creator.SplitMultiGroups(modFolder);
+        var mod = Creator.LoadMod(modFolder, true);
         if (mod == null)
             return;
 
@@ -119,7 +122,7 @@ public sealed class ModManager : ModStorage
         var oldName = mod.Name;
 
         _communicator.ModPathChanged.Invoke(ModPathChangeType.StartingReload, mod, mod.ModPath, mod.ModPath);
-        if (!mod.Reload(Penumbra.ModManager, true, out var metaChange))
+        if (!Creator.ReloadMod(mod, true, out var metaChange))
         {
             Penumbra.Log.Warning(mod.Name.Length == 0
                 ? $"Reloading mod {oldName} has failed, new name is empty. Deleting instead."
@@ -185,7 +188,7 @@ public sealed class ModManager : ModStorage
 
         dir.Refresh();
         mod.ModPath = dir;
-        if (!mod.Reload(Penumbra.ModManager, false, out var metaChange))
+        if (!Creator.ReloadMod(mod, false, out var metaChange))
         {
             Penumbra.Log.Error($"Error reloading moved mod {mod.Name}.");
             return;
@@ -307,7 +310,7 @@ public sealed class ModManager : ModStorage
         var queue = new ConcurrentQueue<Mod>();
         Parallel.ForEach(BasePath.EnumerateDirectories(), options, dir =>
         {
-            var mod = Mod.LoadMod(this, dir, false);
+            var mod = Creator.LoadMod(dir, false);
             if (mod != null)
                 queue.Enqueue(mod);
         });

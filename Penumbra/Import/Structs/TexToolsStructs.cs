@@ -12,7 +12,7 @@ internal static class DefaultTexToolsData
 }
 
 [Serializable]
-internal class SimpleMod
+public class SimpleMod
 {
     public string  Name         = string.Empty;
     public string  Category     = string.Empty;
@@ -24,14 +24,14 @@ internal class SimpleMod
 }
 
 [Serializable]
-internal class ModPackPage
+public class ModPackPage
 {
     public int        PageIndex = 0;
     public ModGroup[] ModGroups = Array.Empty<ModGroup>();
 }
 
 [Serializable]
-internal class ModGroup
+public class ModGroup
 {
     public string       GroupName     = string.Empty;
     public GroupType    SelectionType = GroupType.Single;
@@ -40,7 +40,7 @@ internal class ModGroup
 }
 
 [Serializable]
-internal class OptionList
+public class OptionList
 {
     public string      Name          = string.Empty;
     public string      Description   = string.Empty;
@@ -52,7 +52,7 @@ internal class OptionList
 }
 
 [Serializable]
-internal class ExtendedModPack
+public class ExtendedModPack
 {
     public string        PackVersion    = string.Empty;
     public string        Name           = DefaultTexToolsData.Name;
@@ -65,7 +65,7 @@ internal class ExtendedModPack
 }
 
 [Serializable]
-internal class SimpleModPack
+public class SimpleModPack
 {
     public string      TtmpVersion    = string.Empty;
     public string      Name           = DefaultTexToolsData.Name;

@@ -13,7 +13,7 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private static bool DrawMaterialColorSetChange( MtrlFile file, bool disabled )
+    private bool DrawMaterialColorSetChange( MtrlFile file, bool disabled )
     {
         if( !file.ColorSets.Any( c => c.HasRows ) )
         {
@@ -95,9 +95,9 @@ public partial class ModEditWindow
         }
     }
 
-    private static bool DrawPreviewDye( MtrlFile file, bool disabled )
+    private bool DrawPreviewDye( MtrlFile file, bool disabled )
     {
-        var (dyeId, (name, dyeColor, _)) = Penumbra.StainService.StainCombo.CurrentSelection;
+        var (dyeId, (name, dyeColor, _)) = _stainService.StainCombo.CurrentSelection;
         var tt = dyeId == 0 ? "Select a preview dye first." : "Apply all preview values corresponding to the dye template and chosen dye where dyeing is enabled.";
         if( ImGuiUtil.DrawDisabledButton( "Apply Preview Dye", Vector2.Zero, tt, disabled || dyeId == 0 ) )
         {
@@ -106,7 +106,7 @@ public partial class ModEditWindow
             {
                 for( var i = 0; i < MtrlFile.ColorSet.RowArray.NumRows; ++i )
                 {
-                    ret |= file.ApplyDyeTemplate( Penumbra.StainService.StmFile, j, i, dyeId );
+                    ret |= file.ApplyDyeTemplate( _stainService.StmFile, j, i, dyeId );
                 }
             }
 
@@ -115,7 +115,7 @@ public partial class ModEditWindow
 
         ImGui.SameLine();
         var label = dyeId == 0 ? "Preview Dye###previewDye" : $"{name} (Preview)###previewDye";
-        Penumbra.StainService.StainCombo.Draw( label, dyeColor, string.Empty, true );
+        _stainService.StainCombo.Draw( label, dyeColor, string.Empty, true );
         return false;
     }
 
@@ -217,7 +217,7 @@ public partial class ModEditWindow
         return false;
     }
 
-    private static bool DrawColorSetRow( MtrlFile file, int colorSetIdx, int rowIdx, bool disabled )
+    private bool DrawColorSetRow( MtrlFile file, int colorSetIdx, int rowIdx, bool disabled )
     {
         static bool FixFloat( ref float val, float current )
         {
@@ -355,10 +355,10 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         if( hasDye )
         {
-            if( Penumbra.StainService.TemplateCombo.Draw( "##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
+            if(_stainService.TemplateCombo.Draw( "##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
                  + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton ) )
             {
-                file.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ].Template = Penumbra.StainService.TemplateCombo.CurrentSelection;
+                file.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ].Template = _stainService.TemplateCombo.CurrentSelection;
                 ret                                                      = true;
             }
 
@@ -376,10 +376,10 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private static bool DrawDyePreview( MtrlFile file, int colorSetIdx, int rowIdx, bool disabled, MtrlFile.ColorDyeSet.Row dye, float floatSize )
+    private bool DrawDyePreview( MtrlFile file, int colorSetIdx, int rowIdx, bool disabled, MtrlFile.ColorDyeSet.Row dye, float floatSize )
     {
-        var stain = Penumbra.StainService.StainCombo.CurrentSelection.Key;
-        if( stain == 0 || !Penumbra.StainService.StmFile.Entries.TryGetValue( dye.Template, out var entry ) )
+        var stain = _stainService.StainCombo.CurrentSelection.Key;
+        if( stain == 0 || !_stainService.StmFile.Entries.TryGetValue( dye.Template, out var entry ) )
         {
             return false;
         }
@@ -390,7 +390,7 @@ public partial class ModEditWindow
         var ret = ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.PaintBrush.ToIconString(), new Vector2( ImGui.GetFrameHeight() ),
             "Apply the selected dye to this row.", disabled, true );
 
-        ret = ret && file.ApplyDyeTemplate( Penumbra.StainService.StmFile, colorSetIdx, rowIdx, stain );
+        ret = ret && file.ApplyDyeTemplate(_stainService.StmFile, colorSetIdx, rowIdx, stain );
 
         ImGui.SameLine();
         ColorPicker( "##diffusePreview", string.Empty, values.Diffuse, _ => { }, "D" );

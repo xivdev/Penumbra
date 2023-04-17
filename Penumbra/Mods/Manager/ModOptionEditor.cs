@@ -46,11 +46,11 @@ public class ModOptionEditor
     /// <summary> Change the type of a group given by mod and index to type, if possible. </summary>
     public void ChangeModGroupType(Mod mod, int groupIdx, GroupType type)
     {
-        var group = mod._groups[groupIdx];
+        var group = mod.Groups[groupIdx];
         if (group.Type == type)
             return;
 
-        mod._groups[groupIdx] = group.Convert(type);
+        mod.Groups[groupIdx] = group.Convert(type);
         _saveService.QueueSave(new ModSaveGroup(mod, groupIdx));
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupTypeChanged, mod, groupIdx, -1, -1);
     }
@@ -58,7 +58,7 @@ public class ModOptionEditor
     /// <summary> Change the settings stored as default options in a mod.</summary>
     public void ChangeModGroupDefaultOption(Mod mod, int groupIdx, uint defaultOption)
     {
-        var group = mod._groups[groupIdx];
+        var group = mod.Groups[groupIdx];
         if (group.DefaultSettings == defaultOption)
             return;
 
@@ -70,7 +70,7 @@ public class ModOptionEditor
     /// <summary> Rename an option group if possible. </summary>
     public void RenameModGroup(Mod mod, int groupIdx, string newName)
     {
-        var group   = mod._groups[groupIdx];
+        var group   = mod.Groups[groupIdx];
         var oldName = group.Name;
         if (oldName == newName || !VerifyFileName(mod, group, newName, true))
             return;
@@ -93,9 +93,9 @@ public class ModOptionEditor
         if (!VerifyFileName(mod, null, newName, true))
             return;
 
-        var maxPriority = mod._groups.Count == 0 ? 0 : mod._groups.Max(o => o.Priority) + 1;
+        var maxPriority = mod.Groups.Count == 0 ? 0 : mod.Groups.Max(o => o.Priority) + 1;
 
-        mod._groups.Add(type == GroupType.Multi
+        mod.Groups.Add(type == GroupType.Multi
             ? new MultiModGroup
             {
                 Name     = newName,
@@ -106,16 +106,16 @@ public class ModOptionEditor
                 Name     = newName,
                 Priority = maxPriority,
             });
-        _saveService.ImmediateSave(new ModSaveGroup(mod, mod._groups.Count - 1));
-        _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, mod._groups.Count - 1, -1, -1);
+        _saveService.ImmediateSave(new ModSaveGroup(mod, mod.Groups.Count - 1));
+        _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, mod.Groups.Count - 1, -1, -1);
     }
 
     /// <summary> Delete a given option group. Fires an event to prepare before actually deleting. </summary>
     public void DeleteModGroup(Mod mod, int groupIdx)
     {
-        var group = mod._groups[groupIdx];
+        var group = mod.Groups[groupIdx];
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, -1, -1);
-        mod._groups.RemoveAt(groupIdx);
+        mod.Groups.RemoveAt(groupIdx);
         UpdateSubModPositions(mod, groupIdx);
         _saveService.SaveAllOptionGroups(mod);
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupDeleted, mod, groupIdx, -1, -1);
@@ -124,7 +124,7 @@ public class ModOptionEditor
     /// <summary> Move the index of a given option group. </summary>
     public void MoveModGroup(Mod mod, int groupIdxFrom, int groupIdxTo)
     {
-        if (!mod._groups.Move(groupIdxFrom, groupIdxTo))
+        if (!mod.Groups.Move(groupIdxFrom, groupIdxTo))
             return;
 
         UpdateSubModPositions(mod, Math.Min(groupIdxFrom, groupIdxTo));
@@ -135,7 +135,7 @@ public class ModOptionEditor
     /// <summary> Change the description of the given option group. </summary>
     public void ChangeGroupDescription(Mod mod, int groupIdx, string newDescription)
     {
-        var group = mod._groups[groupIdx];
+        var group = mod.Groups[groupIdx];
         if (group.Description == newDescription)
             return;
 
@@ -152,7 +152,7 @@ public class ModOptionEditor
     /// <summary> Change the description of the given option. </summary>
     public void ChangeOptionDescription(Mod mod, int groupIdx, int optionIdx, string newDescription)
     {
-        var group  = mod._groups[groupIdx];
+        var group  = mod.Groups[groupIdx];
         var option = group[optionIdx];
         if (option.Description == newDescription || option is not SubMod s)
             return;
@@ -165,7 +165,7 @@ public class ModOptionEditor
     /// <summary> Change the internal priority of the given option group. </summary>
     public void ChangeGroupPriority(Mod mod, int groupIdx, int newPriority)
     {
-        var group = mod._groups[groupIdx];
+        var group = mod.Groups[groupIdx];
         if (group.Priority == newPriority)
             return;
 
@@ -182,7 +182,7 @@ public class ModOptionEditor
     /// <summary> Change the internal priority of the given option. </summary>
     public void ChangeOptionPriority(Mod mod, int groupIdx, int optionIdx, int newPriority)
     {
-        switch (mod._groups[groupIdx])
+        switch (mod.Groups[groupIdx])
         {
             case SingleModGroup:
                 ChangeGroupPriority(mod, groupIdx, newPriority);
@@ -201,7 +201,7 @@ public class ModOptionEditor
     /// <summary> Rename the given option. </summary>
     public void RenameOption(Mod mod, int groupIdx, int optionIdx, string newName)
     {
-        switch (mod._groups[groupIdx])
+        switch (mod.Groups[groupIdx])
         {
             case SingleModGroup s:
                 if (s.OptionData[optionIdx].Name == newName)
@@ -225,7 +225,7 @@ public class ModOptionEditor
     /// <summary> Add a new empty option of the given name for the given group. </summary>
     public void AddOption(Mod mod, int groupIdx, string newName)
     {
-        var group  = mod._groups[groupIdx];
+        var group  = mod.Groups[groupIdx];
         var subMod = new SubMod(mod) { Name = newName };
         subMod.SetPosition(groupIdx, group.Count);
         switch (group)
@@ -248,7 +248,7 @@ public class ModOptionEditor
         if (option is not SubMod o)
             return;
 
-        var group = mod._groups[groupIdx];
+        var group = mod.Groups[groupIdx];
         if (group.Type is GroupType.Multi && group.Count >= IModGroup.MaxMultiOptions)
         {
             Penumbra.Log.Error(
@@ -276,7 +276,7 @@ public class ModOptionEditor
     /// <summary> Delete the given option from the given group. </summary>
     public void DeleteOption(Mod mod, int groupIdx, int optionIdx)
     {
-        var group = mod._groups[groupIdx];
+        var group = mod.Groups[groupIdx];
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
         switch (group)
         {
@@ -297,7 +297,7 @@ public class ModOptionEditor
     /// <summary> Move an option inside the given option group. </summary>
     public void MoveOption(Mod mod, int groupIdx, int optionIdxFrom, int optionIdxTo)
     {
-        var group = mod._groups[groupIdx];
+        var group = mod.Groups[groupIdx];
         if (!group.MoveOption(optionIdxFrom, optionIdxTo))
             return;
 
@@ -379,7 +379,7 @@ public class ModOptionEditor
     /// <summary> Update the indices stored in options from a given group on. </summary>
     private static void UpdateSubModPositions(Mod mod, int fromGroup)
     {
-        foreach (var (group, groupIdx) in mod._groups.WithIndex().Skip(fromGroup))
+        foreach (var (group, groupIdx) in mod.Groups.WithIndex().Skip(fromGroup))
         {
             foreach (var (o, optionIdx) in group.OfType<SubMod>().WithIndex())
                 o.SetPosition(groupIdx, optionIdx);
@@ -390,9 +390,9 @@ public class ModOptionEditor
     private static SubMod GetSubMod(Mod mod, int groupIdx, int optionIdx)
     {
         if (groupIdx == -1 && optionIdx == 0)
-            return mod._default;
+            return mod.Default;
 
-        return mod._groups[groupIdx] switch
+        return mod.Groups[groupIdx] switch
         {
             SingleModGroup s => s.OptionData[optionIdx],
             MultiModGroup m  => m.PrioritizedOptions[optionIdx].Mod,

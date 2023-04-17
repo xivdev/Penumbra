@@ -221,10 +221,10 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
         if (!_identifier.Valid)
             return;
 
-        foreach (var gamePath in mod.AllRedirects)
+        foreach (var gamePath in mod.AllSubMods.SelectMany(m => m.Files.Keys.Concat(m.FileSwaps.Keys)))
             _identifier.AwaitedService.Identify(cache.ChangedItems, gamePath.ToString());
 
-        foreach (var manip in mod.AllManipulations)
+        foreach (var manip in mod.AllSubMods.SelectMany(m => m.Manipulations))
             ComputeChangedItems(_identifier.AwaitedService, cache.ChangedItems, manip);
 
         cache.LowerChangedItemsString = string.Join("\0", cache.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));

@@ -93,57 +93,6 @@ public sealed class SubMod : ISubMod
                 ManipulationData.Add(s);
     }
 
-    // If .meta or .rgsp files are encountered, parse them and incorporate their meta changes into the mod.
-    // If delete is true, the files are deleted afterwards.
-    public (bool Changes, List<string> DeleteList) IncorporateMetaChanges(DirectoryInfo basePath, bool delete)
-    {
-        var deleteList   = new List<string>();
-        var oldSize      = ManipulationData.Count;
-        var deleteString = delete ? "with deletion." : "without deletion.";
-        foreach (var (key, file) in Files.ToList())
-        {
-            var ext1 = key.Extension().AsciiToLower().ToString();
-            var ext2 = file.Extension.ToLowerInvariant();
-            try
-            {
-                if (ext1 == ".meta" || ext2 == ".meta")
-                {
-                    FileData.Remove(key);
-                    if (!file.Exists)
-                        continue;
-
-                    var meta = new TexToolsMeta(Penumbra.MetaFileManager, Penumbra.GamePathParser, File.ReadAllBytes(file.FullName),
-                        Penumbra.Config.KeepDefaultMetaChanges);
-                    Penumbra.Log.Verbose(
-                        $"Incorporating {file} as Metadata file of {meta.MetaManipulations.Count} manipulations {deleteString}");
-                    deleteList.Add(file.FullName);
-                    ManipulationData.UnionWith(meta.MetaManipulations);
-                }
-                else if (ext1 == ".rgsp" || ext2 == ".rgsp")
-                {
-                    FileData.Remove(key);
-                    if (!file.Exists)
-                        continue;
-
-                    var rgsp = TexToolsMeta.FromRgspFile(Penumbra.MetaFileManager, file.FullName, File.ReadAllBytes(file.FullName),
-                        Penumbra.Config.KeepDefaultMetaChanges);
-                    Penumbra.Log.Verbose(
-                        $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}");
-                    deleteList.Add(file.FullName);
-
-                    ManipulationData.UnionWith(rgsp.MetaManipulations);
-                }
-            }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Could not incorporate meta changes in mod {basePath} from file {file.FullName}:\n{e}");
-            }
-        }
-
-        DeleteDeleteList(deleteList, delete);
-        return (oldSize < ManipulationData.Count, deleteList);
-    }
-
     internal static void DeleteDeleteList(IEnumerable<string> deleteList, bool delete)
     {
         if (!delete)
@@ -159,65 +108,6 @@ public sealed class SubMod : ISubMod
             {
                 Penumbra.Log.Error($"Could not delete incorporated meta file {file}:\n{e}");
             }
-        }
-    }
-
-    public void WriteTexToolsMeta(MetaFileManager manager, DirectoryInfo basePath, bool test = false)
-    {
-        var files = TexToolsMeta.ConvertToTexTools(manager, Manipulations);
-
-        foreach (var (file, data) in files)
-        {
-            var path = Path.Combine(basePath.FullName, file);
-            try
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-                File.WriteAllBytes(path, data);
-            }
-            catch (Exception e)
-            {
-                Penumbra.Log.Error($"Could not write meta file {path}:\n{e}");
-            }
-        }
-
-        if (test)
-            TestMetaWriting(manager, files);
-    }
-
-    [Conditional("DEBUG")]
-    private void TestMetaWriting(MetaFileManager manager, Dictionary<string, byte[]> files)
-    {
-        var meta = new HashSet<MetaManipulation>(Manipulations.Count);
-        foreach (var (file, data) in files)
-        {
-            try
-            {
-                var x = file.EndsWith("rgsp")
-                    ? TexToolsMeta.FromRgspFile(manager, file, data, Penumbra.Config.KeepDefaultMetaChanges)
-                    : new TexToolsMeta(manager, Penumbra.GamePathParser, data, Penumbra.Config.KeepDefaultMetaChanges);
-                meta.UnionWith(x.MetaManipulations);
-            }
-            catch
-            {
-                // ignored
-            }
-        }
-
-        if (!Manipulations.SetEquals(meta))
-        {
-            Penumbra.Log.Information("Meta Sets do not equal.");
-            foreach (var (m1, m2) in Manipulations.Zip(meta))
-                Penumbra.Log.Information($"{m1} {m1.EntryToString()} | {m2} {m2.EntryToString()}");
-
-            foreach (var m in Manipulations.Skip(meta.Count))
-                Penumbra.Log.Information($"{m} {m.EntryToString()} ");
-
-            foreach (var m in meta.Skip(Manipulations.Count))
-                Penumbra.Log.Information($"{m} {m.EntryToString()} ");
-        }
-        else
-        {
-            Penumbra.Log.Information("Meta Sets are equal.");
         }
     }
 }

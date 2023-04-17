@@ -16,6 +16,7 @@ using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
@@ -33,6 +34,7 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly ItemSwapTab        _itemSwapTab;
     private readonly DataManager        _gameData;
     private readonly MetaFileManager    _metaFileManager;
+    private readonly StainService       _stainService;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -495,17 +497,18 @@ public partial class ModEditWindow : Window, IDisposable
     }
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
-        Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, ModCacheManager modCaches, MetaFileManager metaFileManager)
+        Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, ModCacheManager modCaches, MetaFileManager metaFileManager, StainService stainService)
         : base(WindowBaseLabel)
     {
-        _performance          = performance;
-        _itemSwapTab          = itemSwapTab;
-        _config               = config;
-        _editor               = editor;
-        _modCaches            = modCaches;
-        _metaFileManager = metaFileManager;
-        _gameData             = gameData;
-        _fileDialog           = fileDialog;
+        _performance       = performance;
+        _itemSwapTab       = itemSwapTab;
+        _config            = config;
+        _editor            = editor;
+        _modCaches         = modCaches;
+        _metaFileManager   = metaFileManager;
+        _stainService = stainService;
+        _gameData          = gameData;
+        _fileDialog        = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));

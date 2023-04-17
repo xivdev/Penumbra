@@ -8,7 +8,6 @@ using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
@@ -39,32 +38,26 @@ public class Penumbra : IDalamudPlugin
 
     public static Logger          Log         { get; private set; } = null!;
     public static ChatService     ChatService { get; private set; } = null!;
-    public static FilenameService Filenames   { get; private set; } = null!;
-    public static SaveService     SaveService { get; private set; } = null!;
     public static Configuration   Config      { get; private set; } = null!;
 
-    public static ResidentResourceManager ResidentResources { get; private set; } = null!;
-    public static CharacterUtility        CharacterUtility  { get; private set; } = null!;
-    public static MetaFileManager         MetaFileManager   { get; private set; } = null!;
-    public static ModManager              ModManager        { get; private set; } = null!;
-    public static ModCacheManager         ModCaches         { get; private set; } = null!;
-    public static CollectionManager       CollectionManager { get; private set; } = null!;
-    public static TempCollectionManager   TempCollections   { get; private set; } = null!;
-    public static TempModManager          TempMods          { get; private set; } = null!;
-    public static ActorManager            Actors            { get; private set; } = null!;
-    public static IObjectIdentifier       Identifier        { get; private set; } = null!;
-    public static IGamePathParser         GamePathParser    { get; private set; } = null!;
-    public static StainService            StainService      { get; private set; } = null!;
+    public static    CharacterUtility      CharacterUtility  { get; private set; } = null!;
+    public static    MetaFileManager       MetaFileManager   { get; private set; } = null!;
+    public static    ModManager            ModManager        { get; private set; } = null!;
+    public static    ModCacheManager       ModCaches         { get; private set; } = null!;
+    public static    CollectionManager     CollectionManager { get; private set; } = null!;
+    public static    ActorManager          Actors         { get; private set; } = null!;
 
-    // TODO
-    public static ValidityChecker ValidityChecker { get; private set; } = null!;
+    public readonly RedrawService RedrawService;
+    public readonly ModFileSystem ModFileSystem;
+    public          HttpApi       HttpApi = null!;
+    internal        ConfigWindow? ConfigWindow { get; private set; }
 
-    public readonly RedrawService         RedrawService;
-    public readonly ModFileSystem         ModFileSystem;
-    public          HttpApi               HttpApi = null!;
-    internal        ConfigWindow?         ConfigWindow { get; private set; }
-    private         PenumbraWindowSystem? _windowSystem;
-    private         bool                  _disposed;
+    private readonly ValidityChecker         _validityChecker;
+    private readonly ResidentResourceManager _residentResources;
+    private readonly TempModManager          _tempMods;
+    private readonly TempCollectionManager   _tempCollections;
+    private          PenumbraWindowSystem?   _windowSystem;
+    private          bool                    _disposed;
 
     private readonly PenumbraNew _tmp;
 
@@ -73,29 +66,24 @@ public class Penumbra : IDalamudPlugin
         Log = PenumbraNew.Log;
         try
         {
-            _tmp            = new PenumbraNew(this, pluginInterface);
-            ChatService     = _tmp.Services.GetRequiredService<ChatService>();
-            Filenames       = _tmp.Services.GetRequiredService<FilenameService>();
-            SaveService     = _tmp.Services.GetRequiredService<SaveService>();
-            ValidityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
+            _tmp             = new PenumbraNew(this, pluginInterface);
+            ChatService      = _tmp.Services.GetRequiredService<ChatService>();
+            _validityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
             _tmp.Services.GetRequiredService<BackupService>();
             Config            = _tmp.Services.GetRequiredService<Configuration>();
             CharacterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
             MetaFileManager   = _tmp.Services.GetRequiredService<MetaFileManager>();
             Actors            = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
-            Identifier        = _tmp.Services.GetRequiredService<IdentifierService>().AwaitedService;
-            GamePathParser    = _tmp.Services.GetRequiredService<IGamePathParser>();
-            StainService      = _tmp.Services.GetRequiredService<StainService>();
-            TempMods          = _tmp.Services.GetRequiredService<TempModManager>();
-            ResidentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
+            _tempMods          = _tmp.Services.GetRequiredService<TempModManager>();
+            _residentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             _tmp.Services.GetRequiredService<ResourceManagerService>();
             ModManager        = _tmp.Services.GetRequiredService<ModManager>();
             CollectionManager = _tmp.Services.GetRequiredService<CollectionManager>();
-            TempCollections   = _tmp.Services.GetRequiredService<TempCollectionManager>();
+            _tempCollections   = _tmp.Services.GetRequiredService<TempCollectionManager>();
             ModFileSystem     = _tmp.Services.GetRequiredService<ModFileSystem>();
             RedrawService     = _tmp.Services.GetRequiredService<RedrawService>();
             _tmp.Services.GetRequiredService<ResourceService>();
-            ModCaches      = _tmp.Services.GetRequiredService<ModCacheManager>();
+            ModCaches = _tmp.Services.GetRequiredService<ModCacheManager>();
             using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {
                 _tmp.Services.GetRequiredService<PathResolver>();
@@ -104,14 +92,14 @@ public class Penumbra : IDalamudPlugin
             SetupInterface();
             SetupApi();
 
-            ValidityChecker.LogExceptions();
+            _validityChecker.LogExceptions();
             Log.Information(
-                $"Penumbra Version {ValidityChecker.Version}, Commit #{ValidityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
+                $"Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
             OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
             Log.Information($"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}.");
 
             if (CharacterUtility.Ready)
-                ResidentResources.Reload();
+                _residentResources.Reload();
         }
         catch
         {
@@ -173,7 +161,7 @@ public class Penumbra : IDalamudPlugin
             if (CharacterUtility.Ready)
             {
                 CollectionManager.Active.Default.SetFiles();
-                ResidentResources.Reload();
+                _residentResources.Reload();
                 RedrawService.RedrawAll(RedrawType.Redraw);
             }
         }
@@ -182,7 +170,7 @@ public class Penumbra : IDalamudPlugin
             if (CharacterUtility.Ready)
             {
                 CharacterUtility.ResetAll();
-                ResidentResources.Reload();
+                _residentResources.Reload();
                 RedrawService.RedrawAll(RedrawType.Redraw);
             }
         }
@@ -211,8 +199,8 @@ public class Penumbra : IDalamudPlugin
         var exists = Config.ModDirectory.Length > 0 && Directory.Exists(Config.ModDirectory);
         var drive  = exists ? new DriveInfo(new DirectoryInfo(Config.ModDirectory).Root.FullName) : null;
         sb.AppendLine("**Settings**");
-        sb.Append($"> **`Plugin Version:              `** {ValidityChecker.Version}\n");
-        sb.Append($"> **`Commit Hash:                 `** {ValidityChecker.CommitHash}\n");
+        sb.Append($"> **`Plugin Version:              `** {_validityChecker.Version}\n");
+        sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
         sb.Append($"> **`Enable Mods:                 `** {Config.EnableMods}\n");
         sb.Append($"> **`Enable HTTP API:             `** {Config.EnableHttpApi}\n");
         sb.Append($"> **`Operating System:            `** {(DalamudUtil.IsLinux() ? "Mac/Linux (Wine)" : "Windows")}\n");
@@ -235,9 +223,9 @@ public class Penumbra : IDalamudPlugin
             $"> **`Mods with FileSwaps:         `** {ModCaches.Count(m => m.TotalSwapCount > 0)}, Total: {ModCaches.Sum(m => m.TotalSwapCount)}\n");
         sb.Append(
             $"> **`Mods with Meta Manipulations:`** {ModCaches.Count(m => m.TotalManipulations > 0)}, Total {ModCaches.Sum(m => m.TotalManipulations)}\n");
-        sb.Append($"> **`IMC Exceptions Thrown:       `** {ValidityChecker.ImcExceptions.Count}\n");
+        sb.Append($"> **`IMC Exceptions Thrown:       `** {_validityChecker.ImcExceptions.Count}\n");
         sb.Append(
-            $"> **`#Temp Mods:                  `** {TempMods.Mods.Sum(kvp => kvp.Value.Count) + TempMods.ModsForAllCollections.Count}\n");
+            $"> **`#Temp Mods:                  `** {_tempMods.Mods.Sum(kvp => kvp.Value.Count) + _tempMods.ModsForAllCollections.Count}\n");
 
         string CharacterName(ActorIdentifier id, string name)
         {
@@ -259,8 +247,8 @@ public class Penumbra : IDalamudPlugin
 
         sb.AppendLine("**Collections**");
         sb.Append($"> **`#Collections:                 `** {CollectionManager.Storage.Count - 1}\n");
-        sb.Append($"> **`#Temp Collections:            `** {TempCollections.Count}\n");
-        sb.Append($"> **`Active Collections:           `** {CollectionManager.Caches.Count - TempCollections.Count}\n");
+        sb.Append($"> **`#Temp Collections:            `** {_tempCollections.Count}\n");
+        sb.Append($"> **`Active Collections:           `** {CollectionManager.Caches.Count - _tempCollections.Count}\n");
         sb.Append($"> **`Base Collection:              `** {CollectionManager.Active.Default.AnonymizedName}\n");
         sb.Append($"> **`Interface Collection:         `** {CollectionManager.Active.Interface.AnonymizedName}\n");
         sb.Append($"> **`Selected Collection:          `** {CollectionManager.Active.Current.AnonymizedName}\n");

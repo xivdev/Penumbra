@@ -218,22 +218,26 @@ public class ItemSwapTab : IDisposable, ITab
                             _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Hair, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Hair, Names.CombinedRace(_currentGender, _currentRace),
+                        (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Face when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Face, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Face, Names.CombinedRace(_currentGender, _currentRace),
+                        (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Ears when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Zear, Names.CombinedRace(_currentGender, ModelRace.Viera), (SetId)_sourceId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Zear, Names.CombinedRace(_currentGender, ModelRace.Viera),
+                        (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Tail when _targetId > 0 && _sourceId > 0:
-                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Tail, Names.CombinedRace(_currentGender, _currentRace), (SetId)_sourceId,
+                    _swapData.LoadCustomization(_metaFileManager, BodySlot.Tail, Names.CombinedRace(_currentGender, _currentRace),
+                        (SetId)_sourceId,
                         (SetId)_targetId,
                         _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
@@ -276,9 +280,10 @@ public class ItemSwapTab : IDisposable, ITab
 
     private void CreateMod()
     {
-        var newDir = ModCreator.CreateModFolder(_modManager.BasePath, _newModName);
-        _modManager.DataEditor.CreateMeta(newDir, _newModName, _config.DefaultModAuthor, CreateDescription(), "1.0", string.Empty);
-        ModCreator.CreateDefaultFiles(newDir);
+        var newDir = _modManager.Creator.CreateEmptyMod(_modManager.BasePath, _newModName, CreateDescription());
+        if (newDir == null)
+            return;
+
         _modManager.AddMod(newDir);
         if (!_swapData.WriteMod(_modManager, _modManager[^1],
                 _useFileSwaps ? ItemSwapContainer.WriteType.UseSwaps : ItemSwapContainer.WriteType.NoSwaps))

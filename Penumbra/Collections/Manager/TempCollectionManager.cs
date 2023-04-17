@@ -19,11 +19,11 @@ public class TempCollectionManager : IDisposable
     private readonly CollectionStorage                 _storage;
     private readonly Dictionary<string, ModCollection> _customCollections = new();
 
-    public TempCollectionManager(CommunicatorService communicator, ActorService actors, CollectionStorage storage)
+    public TempCollectionManager(Configuration config, CommunicatorService communicator, ActorService actors, CollectionStorage storage)
     {
         _communicator = communicator;
         _storage      = storage;
-        Collections   = new IndividualCollections(actors);
+        Collections   = new IndividualCollections(actors, config);
 
         _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange);
     }

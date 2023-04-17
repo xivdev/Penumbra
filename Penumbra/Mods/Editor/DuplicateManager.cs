@@ -244,7 +244,7 @@ public class DuplicateManager
         try
         {
             var mod = new Mod(modDirectory);
-            mod.Reload(_modManager, true, out _);
+            _modManager.Creator.ReloadMod(mod, true, out _);
 
             Finished = false;
             _files.UpdateAll(mod, mod.Default);

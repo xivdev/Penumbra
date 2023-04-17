@@ -15,14 +15,14 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
 {
     private readonly ModManager          _modManager;
     private readonly CommunicatorService _communicator;
-    private readonly FilenameService     _files;
+    private readonly SaveService         _saveService;
 
     // Create a new ModFileSystem from the currently loaded mods and the current sort order file.
-    public ModFileSystem(ModManager modManager, CommunicatorService communicator, FilenameService files)
+    public ModFileSystem(ModManager modManager, CommunicatorService communicator, SaveService saveService)
     {
         _modManager   = modManager;
         _communicator = communicator;
-        _files        = files;
+        _saveService  = saveService;
         Reload();
         Changed += OnChange;
         _communicator.ModDiscoveryFinished.Subscribe(Reload);
@@ -66,8 +66,8 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
     private void Reload()
     {
         // TODO
-        if (Load(new FileInfo(_files.FilesystemFile), _modManager, ModToIdentifier, ModToName))
-            Penumbra.SaveService.ImmediateSave(this);
+        if (Load(new FileInfo(_saveService.FileNames.FilesystemFile), _modManager, ModToIdentifier, ModToName))
+            _saveService.ImmediateSave(this);
 
         Penumbra.Log.Debug("Reloaded mod filesystem.");
     }
@@ -76,7 +76,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
     private void OnChange(FileSystemChangeType type, IPath _1, IPath? _2, IPath? _3)
     {
         if (type != FileSystemChangeType.Reload)
-            Penumbra.SaveService.QueueSave(this);
+            _saveService.QueueSave(this);
     }
 
     // Update sort order when defaulted mod names change.
@@ -111,7 +111,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
 
                 break;
             case ModPathChangeType.Moved:
-                Penumbra.SaveService.QueueSave(this);
+                _saveService.QueueSave(this);
                 break;
             case ModPathChangeType.Reloaded:
                 // Nothing

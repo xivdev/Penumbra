@@ -13,5 +13,5 @@ public interface IMod
     public ISubMod Default { get; }
     public IReadOnlyList< IModGroup > Groups { get; }
 
-    public IEnumerable< ISubMod > AllSubMods { get; }
+    public IEnumerable< SubMod > AllSubMods { get; }
 }

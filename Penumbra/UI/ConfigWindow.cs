@@ -66,7 +66,7 @@ public sealed class ConfigWindow : Window
         UiHelpers.SetupCommonSizes();
         try
         {
-            if (Penumbra.ValidityChecker.ImcExceptions.Count > 0)
+            if (_validityChecker.ImcExceptions.Count > 0)
             {
                 DrawProblemWindow(
                     $"There were {_validityChecker.ImcExceptions.Count} errors while trying to load IMC files from the game data.\n"
@@ -75,14 +75,14 @@ public sealed class ConfigWindow : Window
                   + "Please use the Launcher's Repair Game Files function to repair your client installation.");
                 DrawImcExceptions();
             }
-            else if (!Penumbra.ValidityChecker.IsValidSourceRepo)
+            else if (!_validityChecker.IsValidSourceRepo)
             {
                 DrawProblemWindow(
                     $"You are loading a release version of Penumbra from the repository \"{_pluginInterface.SourceRepository}\" instead of the official repository.\n"
                   + $"Please use the official repository at {ValidityChecker.Repository}.\n\n"
                   + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.");
             }
-            else if (Penumbra.ValidityChecker.IsNotInstalledPenumbra)
+            else if (_validityChecker.IsNotInstalledPenumbra)
             {
                 DrawProblemWindow(
                     $"You are loading a release version of Penumbra from \"{_pluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\" instead of the installedPlugins directory.\n\n"
@@ -90,7 +90,7 @@ public sealed class ConfigWindow : Window
                   + "If you do not know how to do this, please take a look at the readme in Penumbras github repository or join us in discord.\n"
                   + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.");
             }
-            else if (Penumbra.ValidityChecker.DevPenumbraExists)
+            else if (_validityChecker.DevPenumbraExists)
             {
                 DrawProblemWindow(
                     $"You are loading a installed version of Penumbra from \"{_pluginInterface.AssemblyLocation.Directory?.FullName ?? "Unknown"}\", "

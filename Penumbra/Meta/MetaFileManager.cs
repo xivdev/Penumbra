@@ -9,6 +9,7 @@ using Penumbra.GameData;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
+using Penumbra.Services;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
 namespace Penumbra.Meta;
@@ -21,9 +22,10 @@ public unsafe class MetaFileManager
     internal readonly DataManager             GameData;
     internal readonly ActiveCollections       ActiveCollections;
     internal readonly ValidityChecker         ValidityChecker;
+    internal readonly IdentifierService       Identifier;
 
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, DataManager gameData,
-        ActiveCollections activeCollections, Configuration config, ValidityChecker validityChecker)
+        ActiveCollections activeCollections, Configuration config, ValidityChecker validityChecker, IdentifierService identifier)
     {
         CharacterUtility  = characterUtility;
         ResidentResources = residentResources;
@@ -31,6 +33,7 @@ public unsafe class MetaFileManager
         ActiveCollections = activeCollections;
         Config            = config;
         ValidityChecker   = validityChecker;
+        Identifier        = identifier;
         SignatureHelper.Initialise(this);
     }
 
@@ -55,7 +58,7 @@ public unsafe class MetaFileManager
             return;
 
         ResidentResources.Reload();
-        collection._cache?.MetaManipulations.SetFiles();
+        collection._cache?.Meta.SetFiles();
     }
 
     /// <summary>

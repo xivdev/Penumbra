@@ -13,6 +13,25 @@ namespace Penumbra.Import;
 
 public partial class TexToolsMeta
 {
+    public static void WriteTexToolsMeta(MetaFileManager manager, IEnumerable<MetaManipulation> manipulations, DirectoryInfo basePath)
+    {
+        var files = ConvertToTexTools(manager, manipulations);
+
+        foreach (var (file, data) in files)
+        {
+            var path = Path.Combine(basePath.FullName, file);
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllBytes(path, data);
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not write meta file {path}:\n{e}");
+            }
+        }
+    }
+
     public static Dictionary< string, byte[] > ConvertToTexTools( MetaFileManager manager, IEnumerable< MetaManipulation > manips )
     {
         var ret = new Dictionary< string, byte[] >();

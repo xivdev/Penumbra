@@ -160,7 +160,7 @@ public class ModFileEditor
         if (deletions <= 0)
             return;
 
-        mod.Reload(_modManager, false, out _);
+        _modManager.Creator.ReloadMod(mod, false, out _);
         _files.UpdateAll(mod, option);
     }
 

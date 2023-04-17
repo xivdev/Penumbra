@@ -19,6 +19,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.Collections.Manager;
+using Penumbra.Util;
 
 namespace Penumbra.Api;
 
@@ -39,7 +40,8 @@ public class IpcTester : IDisposable
     private readonly ModSettings   _modSettings;
     private readonly Temporary     _temporary;
 
-    public IpcTester(DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders, ModManager modManager)
+    public IpcTester(DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders, ModManager modManager, CollectionManager collections,
+        TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService)
     {
         _ipcProviders  = ipcProviders;
         _pluginState   = new PluginState(pi);
@@ -52,7 +54,7 @@ public class IpcTester : IDisposable
         _meta          = new Meta(pi);
         _mods          = new Mods(pi);
         _modSettings   = new ModSettings(pi);
-        _temporary     = new Temporary(pi, modManager);
+        _temporary     = new Temporary(pi, modManager, collections, tempMods, tempCollections, saveService);
         UnsubscribeEvents();
     }
 
@@ -1151,11 +1153,20 @@ public class IpcTester : IDisposable
     {
         private readonly DalamudPluginInterface _pi;
         private readonly ModManager             _modManager;
+        private readonly CollectionManager      _collections;
+        private readonly TempModManager         _tempMods;
+        private readonly TempCollectionManager  _tempCollections;
+        private readonly SaveService            _saveService;
 
-        public Temporary(DalamudPluginInterface pi, ModManager modManager)
+        public Temporary(DalamudPluginInterface pi, ModManager modManager, CollectionManager collections, TempModManager tempMods,
+            TempCollectionManager tempCollections, SaveService saveService)
         {
-            _pi         = pi;
-            _modManager = modManager;
+            _pi              = pi;
+            _modManager      = modManager;
+            _collections     = collections;
+            _tempMods        = tempMods;
+            _tempCollections = tempCollections;
+            _saveService     = saveService;
         }
 
         public string LastCreatedCollectionName = string.Empty;
@@ -1223,7 +1234,7 @@ public class IpcTester : IDisposable
             DrawIntro(Ipc.CreateTemporaryCollection.Label, "Copy Existing Collection");
             if (ImGuiUtil.DrawDisabledButton("Copy##Collection", Vector2.Zero,
                     "Copies the effective list from the collection named in Temporary Mod Name...",
-                    !Penumbra.CollectionManager.Storage.ByName(_tempModName, out var copyCollection))
+                    !_collections.Storage.ByName(_tempModName, out var copyCollection))
              && copyCollection is { HasCache: true })
             {
                 var files = copyCollection.ResolvedFiles.ToDictionary(kvp => kvp.Key.ToString(), kvp => kvp.Value.Path.ToString());
@@ -1249,7 +1260,7 @@ public class IpcTester : IDisposable
 
         public void DrawCollections()
         {
-            using var collTree = ImRaii.TreeNode("Collections##TempCollections");
+            using var collTree = ImRaii.TreeNode("Temporary Collections##TempCollections");
             if (!collTree)
                 return;
 
@@ -1257,26 +1268,26 @@ public class IpcTester : IDisposable
             if (!table)
                 return;
 
-            foreach (var collection in Penumbra.TempCollections.Values)
+            foreach (var collection in _tempCollections.Values)
             {
                 ImGui.TableNextColumn();
-                var character = Penumbra.TempCollections.Collections.Where(p => p.Collection == collection).Select(p => p.DisplayName)
+                var character = _tempCollections.Collections.Where(p => p.Collection == collection).Select(p => p.DisplayName)
                         .FirstOrDefault()
                  ?? "Unknown";
                 if (ImGui.Button($"Save##{collection.Name}"))
-                    TemporaryMod.SaveTempCollection(_modManager, collection, character);
+                    TemporaryMod.SaveTempCollection(_saveService, _modManager, collection, character);
 
                 ImGuiUtil.DrawTableColumn(collection.Name);
                 ImGuiUtil.DrawTableColumn(collection.ResolvedFiles.Count.ToString());
                 ImGuiUtil.DrawTableColumn(collection.MetaCache?.Count.ToString() ?? "0");
                 ImGuiUtil.DrawTableColumn(string.Join(", ",
-                    Penumbra.TempCollections.Collections.Where(p => p.Collection == collection).Select(c => c.DisplayName)));
+                    _tempCollections.Collections.Where(p => p.Collection == collection).Select(c => c.DisplayName)));
             }
         }
 
         public void DrawMods()
         {
-            using var modTree = ImRaii.TreeNode("Mods##TempMods");
+            using var modTree = ImRaii.TreeNode("Temporary Mods##TempMods");
             if (!modTree)
                 return;
 
@@ -1314,8 +1325,8 @@ public class IpcTester : IDisposable
 
             if (table)
             {
-                PrintList("All", Penumbra.TempMods.ModsForAllCollections);
-                foreach (var (collection, list) in Penumbra.TempMods.Mods)
+                PrintList("All", _tempMods.ModsForAllCollections);
+                foreach (var (collection, list) in _tempMods.Mods)
                     PrintList(collection.Name, list);
             }
         }

@@ -12,6 +12,7 @@ namespace Penumbra.Collections.Manager;
 
 public sealed partial class IndividualCollections
 {
+    private readonly Configuration                                                                                    _config;
     private readonly ActorManager                                                                                     _actorManager;
     private readonly List<(string DisplayName, IReadOnlyList<ActorIdentifier> Identifiers, ModCollection Collection)> _assignments = new();
     private readonly Dictionary<ActorIdentifier, ModCollection>                                                       _individuals = new();
@@ -20,11 +21,17 @@ public sealed partial class IndividualCollections
         => _assignments;
 
     // TODO
-    public IndividualCollections(ActorService actorManager)
-        => _actorManager = actorManager.AwaitedService;
+    public IndividualCollections(ActorService actorManager, Configuration config)
+    {
+        _config       = config;
+        _actorManager = actorManager.AwaitedService;
+    }
 
-    public IndividualCollections(ActorManager actorManager)
-        => _actorManager = actorManager;
+    public IndividualCollections(ActorManager actorManager, Configuration config)
+    {
+        _actorManager = actorManager;
+        _config       = config;
+    }
 
     public enum AddResult
     {

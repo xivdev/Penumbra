@@ -18,11 +18,13 @@ namespace Penumbra.Import;
 
 public partial class TexToolsImporter
 {
-    // Extract regular compressed archives that are folders containing penumbra-formatted mods.
-    // The mod has to either contain a meta.json at top level, or one folder deep.
-    // If the meta.json is one folder deep, all other files have to be in the same folder.
-    // The extracted folder gets its name either from that one top-level folder or from the mod name.
-    // All data is extracted without manipulation of the files or metadata.
+    /// <summary>
+    /// Extract regular compressed archives that are folders containing penumbra-formatted mods.
+    /// The mod has to either contain a meta.json at top level, or one folder deep.
+    /// If the meta.json is one folder deep, all other files have to be in the same folder.
+    /// The extracted folder gets its name either from that one top-level folder or from the mod name.
+    /// All data is extracted without manipulation of the files or metadata.
+    /// </summary>
     private DirectoryInfo HandleRegularArchive( FileInfo modPackFile )
     {
         using var zfs     = modPackFile.OpenRead();
@@ -111,7 +113,7 @@ public partial class TexToolsImporter
         }
 
         _currentModDirectory.Refresh();
-        ModCreator.SplitMultiGroups( _currentModDirectory );
+        _modManager.Creator.SplitMultiGroups( _currentModDirectory );
 
         return _currentModDirectory;
     }

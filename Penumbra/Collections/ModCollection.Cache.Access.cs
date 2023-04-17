@@ -49,12 +49,12 @@ public partial class ModCollection
 
     // Obtain data from the cache.
     internal MetaCache? MetaCache
-        => _cache?.MetaManipulations;
+        => _cache?.Meta;
 
     public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
     {
         if (_cache != null)
-            return _cache.MetaManipulations.GetImcFile(path, out file);
+            return _cache.Meta.GetImcFile(path, out file);
 
         file = null;
         return false;
@@ -80,7 +80,7 @@ public partial class ModCollection
         }
         else
         {
-            _cache.MetaManipulations.SetFiles();
+            _cache.Meta.SetFiles();
             Penumbra.Log.Debug($"Set CharacterUtility resources for collection {Name}.");
         }
     }
@@ -90,28 +90,28 @@ public partial class ModCollection
         if (_cache == null)
             Penumbra.CharacterUtility.ResetResource(idx);
         else
-            _cache.MetaManipulations.SetFile(idx);
+            _cache.Meta.SetFile(idx);
     }
 
     // Used for short periods of changed files.
     public CharacterUtility.MetaList.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
-        => _cache?.MetaManipulations.TemporarilySetEqdpFile(genderRace, accessory)
+        => _cache?.Meta.TemporarilySetEqdpFile(genderRace, accessory)
          ?? Penumbra.CharacterUtility.TemporarilyResetResource(Interop.Structs.CharacterUtilityData.EqdpIdx(genderRace, accessory));
 
     public CharacterUtility.MetaList.MetaReverter TemporarilySetEqpFile()
-        => _cache?.MetaManipulations.TemporarilySetEqpFile()
+        => _cache?.Meta.TemporarilySetEqpFile()
          ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.Eqp);
 
     public CharacterUtility.MetaList.MetaReverter TemporarilySetGmpFile()
-        => _cache?.MetaManipulations.TemporarilySetGmpFile()
+        => _cache?.Meta.TemporarilySetGmpFile()
          ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.Gmp);
 
     public CharacterUtility.MetaList.MetaReverter TemporarilySetCmpFile()
-        => _cache?.MetaManipulations.TemporarilySetCmpFile()
+        => _cache?.Meta.TemporarilySetCmpFile()
          ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.HumanCmp);
 
     public CharacterUtility.MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
-        => _cache?.MetaManipulations.TemporarilySetEstFile(type)
+        => _cache?.Meta.TemporarilySetEstFile(type)
          ?? Penumbra.CharacterUtility.TemporarilyResetResource((MetaIndex)type);
 }
 
