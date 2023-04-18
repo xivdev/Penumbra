@@ -2,6 +2,7 @@ using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using Penumbra.GameData;
 using System;
+using System.Diagnostics;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Interop.Structs;
@@ -30,6 +31,7 @@ public unsafe class GameEventManager : IDisposable
         _characterBaseCreateHook.Enable();
         _characterBaseDestructorHook.Enable();
         _weaponReloadHook.Enable();
+        EnableDebugHook();
         Penumbra.Log.Verbose($"{Prefix} Created.");
     }
 
@@ -41,6 +43,7 @@ public unsafe class GameEventManager : IDisposable
         _characterBaseCreateHook.Dispose();
         _characterBaseDestructorHook.Dispose();
         _weaponReloadHook.Dispose();
+        DisposeDebugHook();
         Penumbra.Log.Verbose($"{Prefix} Disposed.");
     }
 
@@ -254,6 +257,29 @@ public unsafe class GameEventManager : IDisposable
 
     public delegate void WeaponReloadingEvent(nint drawDataContainer, nint gameObject);
     public delegate void WeaponReloadedEvent(nint drawDataContainer, nint gameObject);
+
+    #endregion
+
+    #region Testing
+
+#if DEBUG
+    //[Signature("48 89 5C 24 ?? 48 89 74 24 ?? 89 54 24 ?? 57 48 83 EC ?? 48 8B F9", DetourName = nameof(TestDetour))]
+    private readonly Hook<TestDelegate>? _testHook = null;
+
+    private delegate void TestDelegate(nint a1, int a2);
+    private void TestDetour(nint a1, int a2)
+    {
+        Penumbra.Log.Information($"Test: {a1:X} {a2}");
+        _testHook!.Original(a1, a2);
+    }
+    #endif
+    [Conditional("DEBUG")]
+    private void EnableDebugHook()
+        => _testHook?.Enable();
+
+    [Conditional("DEBUG")]
+    private void DisposeDebugHook()
+        => _testHook?.Dispose();
 
     #endregion
 }
