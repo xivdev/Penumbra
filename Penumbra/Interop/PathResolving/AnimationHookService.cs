@@ -46,6 +46,7 @@ public unsafe class AnimationHookService : IDisposable
         _loadAreaVfxHook.Enable();
         _scheduleClipUpdateHook.Enable();
         _unkMountAnimationHook.Enable();
+        _unkParasolAnimationHook.Enable();
     }
 
     public bool HandleFiles(ResourceType type, Utf8GamePath _, out ResolveData resolveData)
@@ -101,6 +102,7 @@ public unsafe class AnimationHookService : IDisposable
         _loadAreaVfxHook.Dispose();
         _scheduleClipUpdateHook.Dispose();
         _unkMountAnimationHook.Dispose();
+        _unkParasolAnimationHook.Dispose();
     }
 
     /// <summary> Characters load some of their voice lines or whatever with this function. </summary>
@@ -317,9 +319,23 @@ public unsafe class AnimationHookService : IDisposable
 
     private void UnkMountAnimationDetour(DrawObject* drawObject, uint unk1, byte unk2, uint unk3)
     {
-        var last     = _animationLoadData.Value;
+        var last = _animationLoadData.Value;
         _animationLoadData.Value = _collectionResolver.IdentifyCollection(drawObject, true);
         _unkMountAnimationHook.Original(drawObject, unk1, unk2, unk3);
+        _animationLoadData.Value = last;
+    }
+
+
+    private delegate void UnkParasolAnimationDelegate(DrawObject* drawObject, int unk1);
+
+    [Signature("48 89 5C 24 ?? 48 89 74 24 ?? 89 54 24 ?? 57 48 83 EC ?? 48 8B F9", DetourName = nameof(UnkParasolAnimationDetour))]
+    private readonly Hook<UnkParasolAnimationDelegate> _unkParasolAnimationHook = null!;
+
+    private void UnkParasolAnimationDetour(DrawObject* drawObject, int unk1)
+    {
+        var last = _animationLoadData.Value;
+        _animationLoadData.Value = _collectionResolver.IdentifyCollection(drawObject, true);
+        _unkParasolAnimationHook!.Original(drawObject, unk1);
         _animationLoadData.Value = last;
     }
 }
