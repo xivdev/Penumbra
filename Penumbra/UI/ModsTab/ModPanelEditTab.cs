@@ -198,13 +198,13 @@ public class ModPanelEditTab : ITab
             _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_filenames, _mod, Input.Description));
 
         ImGui.SameLine();
-        var fileExists = File.Exists(_modManager.DataEditor.MetaFile(_mod));
+        var fileExists = File.Exists(_filenames.ModMetaPath(_mod));
         var tt = fileExists
             ? "Open the metadata json file in the text editor of your choice."
             : "The metadata json file does not exist.";
         if (ImGuiUtil.DrawDisabledButton($"{FontAwesomeIcon.FileExport.ToIconString()}##metaFile", UiHelpers.IconButtonSize, tt,
                 !fileExists, true))
-            Process.Start(new ProcessStartInfo(_modManager.DataEditor.MetaFile(_mod)) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(_filenames.ModMetaPath(_mod)) { UseShellExecute = true });
     }
 
     /// <summary> Do some edits outside of iterations. </summary>

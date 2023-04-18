@@ -10,7 +10,6 @@ using Penumbra.Mods;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
 using Penumbra.Util;
-
 namespace Penumbra.UI;
 
 public sealed class ConfigWindow : Window
@@ -45,7 +44,7 @@ public sealed class ConfigWindow : Window
         RespectCloseHotkey = true;
         SizeConstraints = new WindowSizeConstraints()
         {
-            MinimumSize = new Vector2(800,  600),
+            MinimumSize = new Vector2(900,  600),
             MaximumSize = new Vector2(4096, 2160),
         };
         tutorial.UpdateTutorialStep();
@@ -112,8 +111,11 @@ public sealed class ConfigWindow : Window
                 var text = e.ToString();
                 if (text == _lastException)
                     return;
-
                 _lastException = text;
+            }
+            else
+            {
+                _lastException = e.ToString();
             }
 
             Penumbra.Log.Error($"Exception thrown during UI Render:\n{_lastException}");
