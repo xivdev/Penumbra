@@ -1,13 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Data;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using Penumbra.GameData.Files;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
@@ -17,30 +20,27 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public class FileEditor<T> where T : class, IWritable
 {
-    private readonly Configuration     _config;
     private readonly FileDialogService _fileDialog;
     private readonly DataManager       _gameData;
-    private readonly ModEditWindow     _owner; 
+    private readonly ModEditWindow     _owner;
 
-    public FileEditor(ModEditWindow owner, DataManager gameData, Configuration config, FileDialogService fileDialog, string tabName, string fileType,
-        Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
+    public FileEditor(ModEditWindow owner, DataManager gameData, Configuration config, FileDialogService fileDialog, string tabName,
+        string fileType, Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
         Func<byte[], T?>? parseFile)
     {
-        _owner          = owner; 
+        _owner          = owner;
         _gameData       = gameData;
-        _config         = config;
         _fileDialog     = fileDialog;
         _tabName        = tabName;
         _fileType       = fileType;
-        _getFiles       = getFiles;
         _drawEdit       = drawEdit;
         _getInitialPath = getInitialPath;
         _parseFile      = parseFile ?? DefaultParseFile;
+        _combo          = new Combo(config, getFiles);
     }
 
     public void Draw()
     {
-        _list = _getFiles();
         using var tab = ImRaii.TabItem(_tabName);
         if (!tab)
         {
@@ -60,12 +60,11 @@ public class FileEditor<T> where T : class, IWritable
         DrawFilePanel();
     }
 
-    private readonly string                            _tabName;
-    private readonly string                            _fileType;
-    private readonly Func<IReadOnlyList<FileRegistry>> _getFiles;
-    private readonly Func<T, bool, bool>               _drawEdit;
-    private readonly Func<string>                      _getInitialPath;
-    private readonly Func<byte[], T?>                  _parseFile;
+    private readonly string              _tabName;
+    private readonly string              _fileType;
+    private readonly Func<T, bool, bool> _drawEdit;
+    private readonly Func<string>        _getInitialPath;
+    private readonly Func<byte[], T?>    _parseFile;
 
     private FileRegistry? _currentPath;
     private T?            _currentFile;
@@ -79,7 +78,7 @@ public class FileEditor<T> where T : class, IWritable
     private T?           _defaultFile;
     private Exception?   _defaultException;
 
-    private IReadOnlyList<FileRegistry> _list = null!;
+    private readonly Combo _combo;
 
     private ModEditWindow.QuickImportAction? _quickImport;
 
@@ -134,9 +133,11 @@ public class FileEditor<T> where T : class, IWritable
                     }
                 }, _getInitialPath(), false);
 
-        _quickImport ??= ModEditWindow.QuickImportAction.Prepare(_owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile);
+        _quickImport ??=
+            ModEditWindow.QuickImportAction.Prepare(_owner, _isDefaultPathUtf8Valid ? _defaultPathUtf8 : Utf8GamePath.Empty, _defaultFile);
         ImGui.SameLine();
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), new Vector2(ImGui.GetFrameHeight()), $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute, true))
+        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.FileImport.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
+                $"Add a copy of this file to {_quickImport.OptionName}.", !_quickImport.CanExecute, true))
         {
             try
             {
@@ -146,6 +147,7 @@ public class FileEditor<T> where T : class, IWritable
             {
                 Penumbra.Log.Error($"Could not add a copy of {_quickImport.GamePath} to {_quickImport.OptionName}:\n{e}");
             }
+
             _quickImport = null;
         }
 
@@ -162,39 +164,10 @@ public class FileEditor<T> where T : class, IWritable
 
     private void DrawFileSelectCombo()
     {
-        ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
-        using var combo = ImRaii.Combo("##fileSelect", _currentPath?.RelPath.ToString() ?? $"Select {_fileType} File...");
-        if (!combo)
-            return;
-
-        foreach (var file in _list)
-        {
-            if (ImGui.Selectable(file.RelPath.ToString(), ReferenceEquals(file, _currentPath)))
-                UpdateCurrentFile(file);
-
-            if (ImGui.IsItemHovered())
-            {
-                using var tt = ImRaii.Tooltip();
-                ImGui.TextUnformatted("All Game Paths");
-                ImGui.Separator();
-                using var t = ImRaii.Table("##Tooltip", 2, ImGuiTableFlags.SizingFixedFit);
-                foreach (var (option, gamePath) in file.SubModUsage)
-                {
-                    ImGui.TableNextColumn();
-                    UiHelpers.Text(gamePath.Path);
-                    ImGui.TableNextColumn();
-                    using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value(_config));
-                    ImGui.TextUnformatted(option.FullName);
-                }
-            }
-
-            if (file.SubModUsage.Count > 0)
-            {
-                ImGui.SameLine();
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value(_config));
-                ImGuiUtil.RightAlign(file.SubModUsage[0].Item2.Path.ToString());
-            }
-        }
+        if (_combo.Draw("##fileSelect", _currentPath?.RelPath.ToString() ?? $"Select {_fileType} File...", string.Empty,
+                ImGui.GetContentRegionAvail().X, ImGui.GetTextLineHeight())
+         && _combo.CurrentSelection != null)
+            UpdateCurrentFile(_combo.CurrentSelection);
     }
 
     private static T? DefaultParseFile(byte[] bytes)
@@ -290,5 +263,49 @@ public class FileEditor<T> where T : class, IWritable
                 _drawEdit(_defaultFile, true);
             }
         }
+    }
+
+    private class Combo : FilterComboCache<FileRegistry>
+    {
+        private readonly Configuration _config;
+
+        public Combo(Configuration config, Func<IReadOnlyList<FileRegistry>> generator)
+            : base(generator)
+            => _config = config;
+
+        protected override bool DrawSelectable(int globalIdx, bool selected)
+        {
+            var file = Items[globalIdx];
+            var ret  = ImGui.Selectable(file.RelPath.ToString(), selected);
+
+            if (ImGui.IsItemHovered())
+            {
+                using var tt = ImRaii.Tooltip();
+                ImGui.TextUnformatted("All Game Paths");
+                ImGui.Separator();
+                using var t = ImRaii.Table("##Tooltip", 2, ImGuiTableFlags.SizingFixedFit);
+                foreach (var (option, gamePath) in file.SubModUsage)
+                {
+                    ImGui.TableNextColumn();
+                    UiHelpers.Text(gamePath.Path);
+                    ImGui.TableNextColumn();
+                    using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value(_config));
+                    ImGui.TextUnformatted(option.FullName);
+                }
+            }
+
+            if (file.SubModUsage.Count > 0)
+            {
+                ImGui.SameLine();
+                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value(_config));
+                ImGuiUtil.RightAlign(file.SubModUsage[0].Item2.Path.ToString());
+            }
+
+            return ret;
+        }
+
+        protected override bool IsVisible(int globalIndex, LowerString filter)
+            => filter.IsContained(Items[globalIndex].File.FullName)
+             || Items[globalIndex].SubModUsage.Any(f => filter.IsContained(f.Item2.ToString()));
     }
 }
