@@ -8,16 +8,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Penumbra.GameData;
 using Penumbra.Meta;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 
 namespace Penumbra.Mods.ItemSwap;
 
 public class ItemSwapContainer
 {
     private readonly MetaFileManager   _manager;
-    private readonly IObjectIdentifier _identifier;
+    private readonly IdentifierService _identifier;
 
     private Dictionary< Utf8GamePath, FullPath > _modRedirections  = new();
     private HashSet< MetaManipulation >          _modManipulations = new();
@@ -114,7 +114,7 @@ public class ItemSwapContainer
         }
     }
 
-    public ItemSwapContainer(MetaFileManager manager, IObjectIdentifier identifier)
+    public ItemSwapContainer(MetaFileManager manager, IdentifierService identifier)
     {
         _manager    = manager;
         _identifier = identifier;
@@ -136,7 +136,7 @@ public class ItemSwapContainer
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateItemSwap( _manager, _identifier, Swaps, PathResolver( collection ), MetaResolver( collection ), from, to, useRightRing, useLeftRing );
+        var ret = EquipmentSwap.CreateItemSwap( _manager, _identifier.AwaitedService, Swaps, PathResolver( collection ), MetaResolver( collection ), from, to, useRightRing, useLeftRing );
         Loaded = true;
         return ret;
     }
@@ -145,7 +145,7 @@ public class ItemSwapContainer
     {
         Swaps.Clear();
         Loaded = false;
-        var ret = EquipmentSwap.CreateTypeSwap( _manager, _identifier, Swaps, PathResolver( collection ), MetaResolver( collection ), slotFrom, from, slotTo, to );
+        var ret = EquipmentSwap.CreateTypeSwap( _manager, _identifier.AwaitedService, Swaps, PathResolver( collection ), MetaResolver( collection ), slotFrom, from, slotTo, to );
         Loaded = true;
         return ret;
     }

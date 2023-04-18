@@ -38,12 +38,6 @@ public class ModDataEditor
         _communicatorService = communicatorService;
     }
 
-    public string MetaFile(Mod mod)
-        => _saveService.FileNames.ModMetaPath(mod);
-
-    public string DataFile(Mod mod)
-        => _saveService.FileNames.LocalDataFile(mod);
-
     /// <summary> Create the file containing the meta information about a mod from scratch. </summary>
     public void CreateMeta(DirectoryInfo directory, string? name, string? author, string? description, string? version,
         string? website)

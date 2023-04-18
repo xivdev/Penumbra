@@ -18,9 +18,9 @@ public class IndividualCollectionUi
 {
     private readonly ActorService _actorService;
     private readonly CollectionManager _collectionManager;
-    private readonly CollectionSelector _withEmpty;
+    private readonly CollectionCombo _withEmpty;
 
-    public IndividualCollectionUi(ActorService actors, CollectionManager collectionManager, CollectionSelector withEmpty)
+    public IndividualCollectionUi(ActorService actors, CollectionManager collectionManager, CollectionCombo withEmpty)
     {
         _actorService = actors;
         _collectionManager = collectionManager;

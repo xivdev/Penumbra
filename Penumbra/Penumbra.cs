@@ -41,7 +41,6 @@ public class Penumbra : IDalamudPlugin
     public static Configuration   Config      { get; private set; } = null!;
 
     public static    CharacterUtility      CharacterUtility  { get; private set; } = null!;
-    public static    MetaFileManager       MetaFileManager   { get; private set; } = null!;
     public static    ModManager            ModManager        { get; private set; } = null!;
     public static    ModCacheManager       ModCaches         { get; private set; } = null!;
     public static    CollectionManager     CollectionManager { get; private set; } = null!;
@@ -72,7 +71,6 @@ public class Penumbra : IDalamudPlugin
             _tmp.Services.GetRequiredService<BackupService>();
             Config            = _tmp.Services.GetRequiredService<Configuration>();
             CharacterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
-            MetaFileManager   = _tmp.Services.GetRequiredService<MetaFileManager>();
             Actors            = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
             _tempMods          = _tmp.Services.GetRequiredService<TempModManager>();
             _residentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
@@ -114,8 +112,6 @@ public class Penumbra : IDalamudPlugin
         var       api   = _tmp.Services.GetRequiredService<IPenumbraApi>();
         HttpApi = _tmp.Services.GetRequiredService<HttpApi>();
         _tmp.Services.GetRequiredService<PenumbraIpcProviders>();
-        if (Config.EnableHttpApi)
-            HttpApi.CreateWebServer();
         api.ChangedItemTooltip += it =>
         {
             if (it is Item)

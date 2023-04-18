@@ -252,11 +252,11 @@ public class ConfigMigrationService
             using var j      = new JsonTextWriter(writer);
             j.Formatting = Formatting.Indented;
             j.WriteStartObject();
-            j.WritePropertyName(nameof(ActiveCollections.Default));
+            j.WritePropertyName(nameof(ActiveCollectionData.Default));
             j.WriteValue(def);
-            j.WritePropertyName(nameof(ActiveCollections.Interface));
+            j.WritePropertyName(nameof(ActiveCollectionData.Interface));
             j.WriteValue(ui);
-            j.WritePropertyName(nameof(ActiveCollections.Current));
+            j.WritePropertyName(nameof(ActiveCollectionData.Current));
             j.WriteValue(current);
             foreach (var (type, collection) in special)
             {

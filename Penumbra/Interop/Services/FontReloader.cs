@@ -21,24 +21,27 @@ public unsafe class FontReloader
             Penumbra.Log.Error("Could not reload fonts, function could not be found.");
     }
 
-    private readonly AtkModule* _atkModule = null!;
-    private readonly delegate* unmanaged<AtkModule*, bool, bool, void> _reloadFontsFunc = null!;
+    private AtkModule*                                        _atkModule       = null!;
+    private delegate* unmanaged<AtkModule*, bool, bool, void> _reloadFontsFunc = null!;
 
-    public FontReloader()
+    public FontReloader(Dalamud.Game.Framework dFramework)
     {
-        var framework = Framework.Instance();
-        if (framework == null)
-            return;
+        dFramework.RunOnFrameworkThread(() =>
+        {
+            var framework = Framework.Instance();
+            if (framework == null)
+                return;
 
-        var uiModule = framework->GetUiModule();
-        if (uiModule == null)
-            return;
+            var uiModule = framework->GetUiModule();
+            if (uiModule == null)
+                return;
 
-        var atkModule = uiModule->GetRaptureAtkModule();
-        if (atkModule == null)
-            return;
+            var atkModule = uiModule->GetRaptureAtkModule();
+            if (atkModule == null)
+                return;
 
-        _atkModule = &atkModule->AtkModule;
-        _reloadFontsFunc = ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->vtbl)[Offsets.ReloadFontsVfunc];
+            _atkModule       = &atkModule->AtkModule;
+            _reloadFontsFunc = ((delegate* unmanaged<AtkModule*, bool, bool, void>*)_atkModule->vtbl)[Offsets.ReloadFontsVfunc];
+        });
     }
 }

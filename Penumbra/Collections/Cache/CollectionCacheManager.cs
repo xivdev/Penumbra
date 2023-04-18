@@ -43,7 +43,7 @@ public class CollectionCacheManager : IDisposable
         MetaFileManager = metaFileManager;
         _active         = active;
 
-        _communicator.CollectionChange.Subscribe(OnCollectionChange);
+        _communicator.CollectionChange.Subscribe(OnCollectionChange, -100);
         _communicator.ModPathChanged.Subscribe(OnModChangeAddition, -100);
         _communicator.ModPathChanged.Subscribe(OnModChangeRemoval,  100);
         _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange);

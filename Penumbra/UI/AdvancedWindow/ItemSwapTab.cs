@@ -30,19 +30,17 @@ public class ItemSwapTab : IDisposable, ITab
     private readonly ItemService         _itemService;
     private readonly CollectionManager   _collectionManager;
     private readonly ModManager          _modManager;
-    private readonly Configuration       _config;
     private readonly MetaFileManager     _metaFileManager;
 
     public ItemSwapTab(CommunicatorService communicator, ItemService itemService, CollectionManager collectionManager,
-        ModManager modManager, Configuration config, IdentifierService identifier, MetaFileManager metaFileManager)
+        ModManager modManager, IdentifierService identifier, MetaFileManager metaFileManager)
     {
         _communicator      = communicator;
         _itemService       = itemService;
         _collectionManager = collectionManager;
         _modManager        = modManager;
-        _config            = config;
         _metaFileManager   = metaFileManager;
-        _swapData          = new ItemSwapContainer(metaFileManager, identifier.AwaitedService);
+        _swapData          = new ItemSwapContainer(metaFileManager, identifier);
 
         _selectors = new Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)>
         {

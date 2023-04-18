@@ -1,7 +1,6 @@
 using ImGuiNET;
 using OtterGui.Classes;
 using OtterGui.Widgets;
-using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 
 namespace Penumbra.UI.CollectionTab;

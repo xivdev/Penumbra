@@ -220,7 +220,7 @@ public partial class ModCreator
                     if (!file.Exists)
                         continue;
 
-                    var rgsp = TexToolsMeta.FromRgspFile(Penumbra.MetaFileManager, file.FullName, File.ReadAllBytes(file.FullName),
+                    var rgsp = TexToolsMeta.FromRgspFile(_metaFileManager, file.FullName, File.ReadAllBytes(file.FullName),
                         _config.KeepDefaultMetaChanges);
                     Penumbra.Log.Verbose(
                         $"Incorporating {file} as racial scaling file of {rgsp.MetaManipulations.Count} manipulations {deleteString}");

@@ -84,6 +84,7 @@ public class PenumbraNew
 
         // Add Collection Services
         services.AddSingleton<CollectionStorage>()
+            .AddSingleton<ActiveCollectionData>()
             .AddSingleton<ActiveCollections>()
             .AddSingleton<InheritanceManager>()
             .AddSingleton<CollectionCacheManager>()
@@ -139,6 +140,7 @@ public class PenumbraNew
             .AddSingleton<ModPanelEditTab>()
             .AddSingleton<ModPanelChangedItemsTab>()
             .AddSingleton<ModPanelConflictsTab>()
+            .AddSingleton<ModPanelCollectionsTab>()
             .AddSingleton<ModPanelTabBar>()
             .AddSingleton<ModFileSystemSelector>()
             .AddSingleton<CollectionsTab>()

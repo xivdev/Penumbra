@@ -113,7 +113,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             return false;
         }
 
-        var newCollection = duplicate?.Duplicate(name, _collections.Count) ?? ModCollection.CreateEmpty(name, _collections.Count);
+        var newCollection = duplicate?.Duplicate(name, _collections.Count) ?? ModCollection.CreateEmpty(name, _collections.Count, _modStorage.Count);
         _collections.Add(newCollection);
 
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
@@ -200,7 +200,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     /// Does not check for uniqueness.
     /// </summary>
     private static bool IsValidName(string name)
-        => name.Length > 0 && name.All(c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath());
+        => name.Length is > 0 and < 32 && name.All(c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath());
 
     /// <summary>
     /// Read all collection files in the Collection Directory.

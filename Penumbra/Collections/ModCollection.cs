@@ -28,7 +28,7 @@ public partial class ModCollection
     /// Create the always available Empty Collection that will always sit at index 0,
     /// can not be deleted and does never create a cache.
     /// </summary>
-    public static readonly ModCollection Empty = CreateEmpty(EmptyCollectionName, 0);
+    public static readonly ModCollection Empty = CreateEmpty(EmptyCollectionName, 0, 0);
 
     /// <summary> The name of a collection can not contain characters invalid in a path. </summary>
     public string Name { get; internal init; }
@@ -133,10 +133,10 @@ public partial class ModCollection
     }
 
     /// <summary> Constructor for empty collections. </summary>
-    public static ModCollection CreateEmpty(string name, int index)
+    public static ModCollection CreateEmpty(string name, int index, int modCount)
     {
         Debug.Assert(index >= 0, "Empty collection created with negative index.");
-        return new ModCollection(name, index, 0, CurrentVersion, new List<ModSettings?>(), new List<ModCollection>(),
+        return new ModCollection(name, index, 0, CurrentVersion, Enumerable.Repeat((ModSettings?) null, modCount).ToList(), new List<ModCollection>(),
             new Dictionary<string, ModSettings.SavedSettings>());
     }
 

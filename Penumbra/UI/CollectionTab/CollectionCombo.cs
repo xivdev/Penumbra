@@ -8,11 +8,11 @@ using Penumbra.GameData.Actors;
 
 namespace Penumbra.UI.CollectionTab;
 
-public sealed class CollectionSelector : FilterComboCache<ModCollection>
+public sealed class CollectionCombo : FilterComboCache<ModCollection>
 {
     private readonly CollectionManager _collectionManager;
 
-    public CollectionSelector(CollectionManager manager, Func<IReadOnlyList<ModCollection>> items)
+    public CollectionCombo(CollectionManager manager, Func<IReadOnlyList<ModCollection>> items)
         : base(items)
         => _collectionManager = manager;
 

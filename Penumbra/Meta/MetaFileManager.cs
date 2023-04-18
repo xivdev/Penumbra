@@ -20,12 +20,12 @@ public unsafe class MetaFileManager
     internal readonly CharacterUtility        CharacterUtility;
     internal readonly ResidentResourceManager ResidentResources;
     internal readonly DataManager             GameData;
-    internal readonly ActiveCollections       ActiveCollections;
+    internal readonly ActiveCollectionData    ActiveCollections;
     internal readonly ValidityChecker         ValidityChecker;
     internal readonly IdentifierService       Identifier;
 
     public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, DataManager gameData,
-        ActiveCollections activeCollections, Configuration config, ValidityChecker validityChecker, IdentifierService identifier)
+        ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, IdentifierService identifier)
     {
         CharacterUtility  = characterUtility;
         ResidentResources = residentResources;
