@@ -78,9 +78,14 @@ public abstract class AsyncServiceWrapper<T> : IServiceWrapper<T>
             {
                 Service = service;
                 Penumbra.Log.Verbose($"[{Name}] Created.");
-                FinishedCreation?.Invoke();
+                _task = null;
             }
         });
+        _task.ContinueWith((t, x) =>
+        {
+            if (!_isDisposed)
+                FinishedCreation?.Invoke();
+        }, null);
     }
 
     protected AsyncServiceWrapper(string name, Func<T> factory)
@@ -99,9 +104,13 @@ public abstract class AsyncServiceWrapper<T> : IServiceWrapper<T>
                 Service = service;
                 Penumbra.Log.Verbose($"[{Name}] Created.");
                 _task = null;
-                FinishedCreation?.Invoke();
             }
         });
+        _task.ContinueWith((t, x) =>
+        {
+            if (!_isDisposed)
+                FinishedCreation?.Invoke();
+        }, null);
     }
 
     public void Dispose()
