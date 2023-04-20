@@ -513,9 +513,9 @@ public partial class ModEditWindow : Window, IDisposable
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
         _modelTab = new FileEditor<MdlFile>(this, gameData, config, _fileDialog, "Models", ".mdl",
-            () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, null);
+            () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, bytes => new MdlFile(bytes));
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shader Packages", ".shpk",
-            () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty, null);
+            () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty, bytes => new ShpkTab(_fileDialog, bytes));
         _center            = new CombinedTexture(_left, _right);
         _quickImportViewer = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
     }

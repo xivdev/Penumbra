@@ -26,7 +26,7 @@ public class FileEditor<T> where T : class, IWritable
 
     public FileEditor(ModEditWindow owner, DataManager gameData, Configuration config, FileDialogService fileDialog, string tabName,
         string fileType, Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
-        Func<byte[], T?>? parseFile)
+        Func<byte[], T?> parseFile)
     {
         _owner          = owner;
         _gameData       = gameData;
@@ -35,7 +35,7 @@ public class FileEditor<T> where T : class, IWritable
         _fileType       = fileType;
         _drawEdit       = drawEdit;
         _getInitialPath = getInitialPath;
-        _parseFile      = parseFile ?? DefaultParseFile;
+        _parseFile      = parseFile;
         _combo          = new Combo(config, getFiles);
     }
 
@@ -169,9 +169,6 @@ public class FileEditor<T> where T : class, IWritable
          && _combo.CurrentSelection != null)
             UpdateCurrentFile(_combo.CurrentSelection);
     }
-
-    private static T? DefaultParseFile(byte[] bytes)
-        => Activator.CreateInstance(typeof(T), bytes) as T;
 
     private void UpdateCurrentFile(FileRegistry path)
     {
