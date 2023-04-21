@@ -17,11 +17,13 @@ public class TempCollectionManager : IDisposable
 
     private readonly CommunicatorService               _communicator;
     private readonly CollectionStorage                 _storage;
+    private readonly ActorService                      _actors;
     private readonly Dictionary<string, ModCollection> _customCollections = new();
 
     public TempCollectionManager(Configuration config, CommunicatorService communicator, ActorService actors, CollectionStorage storage)
     {
         _communicator = communicator;
+        _actors       = actors;
         _storage      = storage;
         Collections   = new IndividualCollections(actors, config);
 
@@ -97,7 +99,6 @@ public class TempCollectionManager : IDisposable
         Penumbra.Log.Verbose($"Assigned temporary collection {collection.AnonymizedName} to {Collections.Last().DisplayName}.");
         _communicator.CollectionChange.Invoke(CollectionType.Temporary, null, collection, Collections.Last().DisplayName);
         return true;
-
     }
 
     public bool AddIdentifier(string collectionName, params ActorIdentifier[] identifiers)
@@ -113,7 +114,7 @@ public class TempCollectionManager : IDisposable
         if (!ByteString.FromString(characterName, out var byteString, false))
             return false;
 
-        var identifier = Penumbra.Actors.CreatePlayer(byteString, worldId);
+        var identifier = _actors.AwaitedService.CreatePlayer(byteString, worldId);
         if (!identifier.IsValid)
             return false;
 
@@ -125,7 +126,7 @@ public class TempCollectionManager : IDisposable
         if (!ByteString.FromString(characterName, out var byteString, false))
             return false;
 
-        var identifier = Penumbra.Actors.CreatePlayer(byteString, worldId);
+        var identifier = _actors.AwaitedService.CreatePlayer(byteString, worldId);
         return Collections.TryGetValue(identifier, out var collection) && RemoveTemporaryCollection(collection.Name);
     }
 }

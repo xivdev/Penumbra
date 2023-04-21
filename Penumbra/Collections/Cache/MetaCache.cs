@@ -111,7 +111,7 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     public bool RevertMod(MetaManipulation manip)
     {
         var ret = _manipulations.Remove(manip);
-        if (!Penumbra.CharacterUtility.Ready)
+        if (!_manager.CharacterUtility.Ready)
             return ret;
 
         // Imc manipulations do not require character utility,

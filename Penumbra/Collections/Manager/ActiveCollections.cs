@@ -30,10 +30,13 @@ public class ActiveCollections : ISavable, IDisposable
     private readonly CommunicatorService  _communicator;
     private readonly SaveService          _saveService;
     private readonly ActiveCollectionData _data;
+    private readonly ActorService         _actors;
 
-    public ActiveCollections(Configuration config, CollectionStorage storage, ActorService actors, CommunicatorService communicator, SaveService saveService, ActiveCollectionData data)
+    public ActiveCollections(Configuration config, CollectionStorage storage, ActorService actors, CommunicatorService communicator,
+        SaveService saveService, ActiveCollectionData data)
     {
         _storage      = storage;
+        _actors       = actors;
         _communicator = communicator;
         _saveService  = saveService;
         _data         = data;
@@ -190,7 +193,9 @@ public class ActiveCollections : ISavable, IDisposable
         else
         {
             if (collection == null)
+            {
                 RemoveSpecialCollection(collectionType);
+            }
             else
             {
                 CreateSpecialCollection(collectionType);
@@ -207,8 +212,9 @@ public class ActiveCollections : ISavable, IDisposable
             CollectionType.Default   => Default,
             CollectionType.Interface => Interface,
             CollectionType.Current   => Current,
-            CollectionType.Individual when individualIndex >= 0 && individualIndex < Individuals.Count => Individuals[individualIndex].Collection,
-            CollectionType.Individual => null,
+            CollectionType.Individual when individualIndex >= 0 && individualIndex < Individuals.Count => Individuals[individualIndex]
+                .Collection,
+            CollectionType.Individual         => null,
             _ when collectionType.IsSpecial() => SpecialCollections[(int)collectionType] ?? Default,
             _                                 => null,
         };
@@ -433,7 +439,7 @@ public class ActiveCollections : ISavable, IDisposable
                 {
                     case IdentifierType.Player when id.HomeWorld != ushort.MaxValue:
                     {
-                        var global = ByType(CollectionType.Individual, Penumbra.Actors.CreatePlayer(id.PlayerName, ushort.MaxValue));
+                        var global = ByType(CollectionType.Individual, _actors.AwaitedService.CreatePlayer(id.PlayerName, ushort.MaxValue));
                         return global?.Index == checkAssignment.Index
                             ? "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it."
                             : string.Empty;
@@ -442,12 +448,12 @@ public class ActiveCollections : ISavable, IDisposable
                         if (id.HomeWorld != ushort.MaxValue)
                         {
                             var global = ByType(CollectionType.Individual,
-                                Penumbra.Actors.CreateOwned(id.PlayerName, ushort.MaxValue, id.Kind, id.DataId));
+                                _actors.AwaitedService.CreateOwned(id.PlayerName, ushort.MaxValue, id.Kind, id.DataId));
                             if (global?.Index == checkAssignment.Index)
                                 return "Assignment is redundant due to an identical Any-World assignment existing.\nYou can remove it.";
                         }
 
-                        var unowned = ByType(CollectionType.Individual, Penumbra.Actors.CreateNpc(id.Kind, id.DataId));
+                        var unowned = ByType(CollectionType.Individual, _actors.AwaitedService.CreateNpc(id.Kind, id.DataId));
                         return unowned?.Index == checkAssignment.Index
                             ? "Assignment is redundant due to an identical unowned NPC assignment existing.\nYou can remove it."
                             : string.Empty;

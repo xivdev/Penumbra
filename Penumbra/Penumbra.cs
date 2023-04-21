@@ -39,7 +39,6 @@ public class Penumbra : IDalamudPlugin
 
     public static CharacterUtility  CharacterUtility  { get; private set; } = null!;
     public static CollectionManager CollectionManager { get; private set; } = null!;
-    public static ActorManager      Actors            { get; private set; } = null!;
 
     public readonly RedrawService RedrawService;
     public readonly ModFileSystem ModFileSystem;
@@ -68,7 +67,6 @@ public class Penumbra : IDalamudPlugin
             _tmp.Services.GetRequiredService<BackupService>();
             _config             = _tmp.Services.GetRequiredService<Configuration>();
             CharacterUtility   = _tmp.Services.GetRequiredService<CharacterUtility>();
-            Actors             = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
             _tempMods          = _tmp.Services.GetRequiredService<TempModManager>();
             _residentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             _tmp.Services.GetRequiredService<ResourceManagerService>();
