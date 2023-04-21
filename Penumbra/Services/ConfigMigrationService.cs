@@ -2,17 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Plugin;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui.Filesystem;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
-using SixLabors.ImageSharp;
 
 namespace Penumbra.Services;
 
@@ -50,7 +49,7 @@ public class ConfigMigrationService
             config.Save();
     }
 
-    public void Migrate(Configuration config)
+    public void Migrate(CharacterUtility utility, Configuration config)
     {
         _config = config;
         // Do this on every migration from now on for a while
@@ -67,7 +66,7 @@ public class ConfigMigrationService
         CreateBackup();
 
         Version0To1();
-        Version1To2();
+        Version1To2(utility);
         Version2To3();
         Version3To4();
         Version4To5();
@@ -149,14 +148,15 @@ public class ConfigMigrationService
     // Sort Order was moved to a separate file and may contain empty folders.
     // Active collections in general were moved to their own file.
     // Delete the penumbrametatmp folder if it exists.
-    private void Version1To2()
+    private void Version1To2(CharacterUtility utility)
     {
         if (_config.Version != 1)
             return;
 
         // Ensure the right meta files are loaded.
         DeleteMetaTmp();
-        Penumbra.CharacterUtility.LoadCharacterResources();
+        if (utility.Ready)
+            utility.LoadCharacterResources();
         ResettleSortOrder();
         ResettleCollectionSettings();
         ResettleForcedCollection();

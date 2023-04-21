@@ -24,7 +24,7 @@ public struct EqpCache : IDisposable
     public static void ResetFiles(MetaFileManager manager)
         => manager.SetFile( null, MetaIndex.Eqp );
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
+    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
         => manager.TemporarilySetFile( _eqpFile, MetaIndex.Eqp );
 
     public void Reset()

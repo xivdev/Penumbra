@@ -5,13 +5,12 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
-using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using Penumbra.Collections.Cache;
+using Penumbra.Interop.Services;
 
 namespace Penumbra.Collections;
 
@@ -94,28 +93,23 @@ public partial class ModCollection
     }
 
     // Used for short periods of changed files.
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
+    public MetaList.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
         => _cache?.Meta.TemporarilySetEqdpFile(genderRace, accessory)
          ?? Penumbra.CharacterUtility.TemporarilyResetResource(Interop.Structs.CharacterUtilityData.EqdpIdx(genderRace, accessory));
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqpFile()
+    public MetaList.MetaReverter TemporarilySetEqpFile()
         => _cache?.Meta.TemporarilySetEqpFile()
          ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.Eqp);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetGmpFile()
+    public MetaList.MetaReverter TemporarilySetGmpFile()
         => _cache?.Meta.TemporarilySetGmpFile()
          ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.Gmp);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetCmpFile()
+    public MetaList.MetaReverter TemporarilySetCmpFile()
         => _cache?.Meta.TemporarilySetCmpFile()
          ?? Penumbra.CharacterUtility.TemporarilyResetResource(MetaIndex.HumanCmp);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
+    public MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
         => _cache?.Meta.TemporarilySetEstFile(type)
          ?? Penumbra.CharacterUtility.TemporarilyResetResource((MetaIndex)type);
-}
-
-
-public static class CollectionCacheExtensions
-{
 }

@@ -78,7 +78,7 @@ public unsafe class MetaFileManager
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetFile(MetaBaseFile? file, MetaIndex metaIndex)
+    public MetaList.MetaReverter TemporarilySetFile(MetaBaseFile? file, MetaIndex metaIndex)
         => file == null
             ? CharacterUtility.TemporarilyResetResource(metaIndex)
             : CharacterUtility.TemporarilySetResource(metaIndex, (nint)file.Data, file.Length);

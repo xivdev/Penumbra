@@ -9,13 +9,13 @@ using Dalamud.Interface.Windowing;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;
-using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
@@ -33,6 +33,7 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly ItemSwapTab        _itemSwapTab;
     private readonly DataManager        _gameData;
     private readonly MetaFileManager    _metaFileManager;
+    private readonly ActiveCollections  _activeCollections;
     private readonly StainService       _stainService;
 
     private Mod?    _mod;
@@ -56,7 +57,7 @@ public partial class ModEditWindow : Window, IDisposable
         _modelTab.Reset();
         _materialTab.Reset();
         _shaderPackageTab.Reset();
-        _itemSwapTab.UpdateMod(mod, Penumbra.CollectionManager.Active.Current[mod.Index].Settings);
+        _itemSwapTab.UpdateMod(mod, _activeCollections.Current[mod.Index].Settings);
     }
 
     public void ChangeOption(SubMod? subMod)
@@ -479,7 +480,7 @@ public partial class ModEditWindow : Window, IDisposable
     /// </remarks>
     private FullPath FindBestMatch(Utf8GamePath path)
     {
-        var currentFile = Penumbra.CollectionManager.Active.Current.ResolvePath(path);
+        var currentFile = _activeCollections.Current.ResolvePath(path);
         if (currentFile != null)
             return currentFile.Value;
 
@@ -497,17 +498,18 @@ public partial class ModEditWindow : Window, IDisposable
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
-        StainService stainService)
+        StainService stainService, ActiveCollections activeCollections)
         : base(WindowBaseLabel)
     {
-        _performance     = performance;
-        _itemSwapTab     = itemSwapTab;
-        _config          = config;
-        _editor          = editor;
-        _metaFileManager = metaFileManager;
-        _stainService    = stainService;
-        _gameData        = gameData;
-        _fileDialog      = fileDialog;
+        _performance            = performance;
+        _itemSwapTab            = itemSwapTab;
+        _config                 = config;
+        _editor                 = editor;
+        _metaFileManager        = metaFileManager;
+        _stainService           = stainService;
+        _activeCollections = activeCollections;
+        _gameData               = gameData;
+        _fileDialog             = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));

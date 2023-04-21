@@ -34,7 +34,7 @@ public readonly struct EqdpCache : IDisposable
             manager.SetFile(_eqdpFiles[i], index);
     }
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager, GenderRace genderRace, bool accessory)
+    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager, GenderRace genderRace, bool accessory)
     {
         var idx = CharacterUtilityData.EqdpIdx(genderRace, accessory);
         Debug.Assert(idx >= 0, $"Invalid Gender, Race or Accessory for EQDP file {genderRace}, {accessory}.");

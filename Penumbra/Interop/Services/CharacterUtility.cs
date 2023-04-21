@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Game;
 using Dalamud.Utility.Signatures;
+using Penumbra.Collections.Manager;
 using Penumbra.GameData;
 using Penumbra.Interop.Structs;
 
@@ -45,9 +46,7 @@ public unsafe partial class CharacterUtility : IDisposable
             .Select(i => new InternalIndex(Array.IndexOf(RelevantIndices, (MetaIndex)i)))
             .ToArray();
 
-    private readonly MetaList[] _lists = Enumerable.Range(0, RelevantIndices.Length)
-        .Select(idx => new MetaList(new InternalIndex(idx)))
-        .ToArray();
+    private readonly MetaList[] _lists;
 
     public IReadOnlyList<MetaList> Lists
         => _lists;
@@ -55,12 +54,17 @@ public unsafe partial class CharacterUtility : IDisposable
     public (nint Address, int Size) DefaultResource(InternalIndex idx)
         => _lists[idx.Value].DefaultResource;
 
-    private readonly Framework _framework;
+    private readonly Framework            _framework;
+    public readonly  ActiveCollectionData Active;
 
-    public CharacterUtility(Framework framework)
+    public CharacterUtility(Framework framework, ActiveCollectionData active)
     {
         SignatureHelper.Initialise(this);
+        _lists = Enumerable.Range(0, RelevantIndices.Length)
+            .Select(idx => new MetaList(this, new InternalIndex(idx)))
+            .ToArray();
         _framework      =  framework;
+        Active          =  active;
         LoadingFinished += () => Penumbra.Log.Debug("Loading of CharacterUtility finished.");
         LoadDefaultResources(null!);
         if (!Ready)

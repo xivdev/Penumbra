@@ -159,19 +159,19 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     public void SetImcFiles()
         => _imcCache.SetFiles(_collection);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqpFile()
+    public MetaList.MetaReverter TemporarilySetEqpFile()
         => _eqpCache.TemporarilySetFiles(_manager);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
+    public MetaList.MetaReverter TemporarilySetEqdpFile(GenderRace genderRace, bool accessory)
         => _eqdpCache.TemporarilySetFiles(_manager, genderRace, accessory);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetGmpFile()
+    public MetaList.MetaReverter TemporarilySetGmpFile()
         => _gmpCache.TemporarilySetFiles(_manager);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetCmpFile()
+    public MetaList.MetaReverter TemporarilySetCmpFile()
         => _cmpCache.TemporarilySetFiles(_manager);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
+    public MetaList.MetaReverter TemporarilySetEstFile(EstManipulation.EstType type)
         => _estCache.TemporarilySetFiles(_manager, type);
 
 

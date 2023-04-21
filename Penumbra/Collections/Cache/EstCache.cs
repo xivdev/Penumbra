@@ -49,7 +49,7 @@ public struct EstCache : IDisposable
         }
     }
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager, EstManipulation.EstType type)
+    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager, EstManipulation.EstType type)
     {
         var (file, idx) = type switch
         {

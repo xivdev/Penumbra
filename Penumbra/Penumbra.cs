@@ -15,12 +15,8 @@ using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
-using Penumbra.GameData.Actors;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
-using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
-using DalamudUtil = Dalamud.Utility.Util;
-using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Penumbra.Services;
 using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
@@ -34,11 +30,10 @@ public class Penumbra : IDalamudPlugin
     public string Name
         => "Penumbra";
 
-    public static Logger        Log         { get; private set; } = null!;
-    public static ChatService   ChatService { get; private set; } = null!;
+    public static Logger      Log         { get; private set; } = null!;
+    public static ChatService ChatService { get; private set; } = null!;
 
-    public static CharacterUtility  CharacterUtility  { get; private set; } = null!;
-    public static CollectionManager CollectionManager { get; private set; } = null!;
+    public static CharacterUtility  CharacterUtility   { get; private set; } = null!;
 
     public readonly RedrawService RedrawService;
     public readonly ModFileSystem ModFileSystem;
@@ -50,7 +45,9 @@ public class Penumbra : IDalamudPlugin
     private readonly TempModManager          _tempMods;
     private readonly TempCollectionManager   _tempCollections;
     private readonly ModManager              _modManager;
+    private readonly CollectionManager       _collectionManager;
     private readonly Configuration           _config;
+    private readonly CharacterUtility        _characterUtility;
     private          PenumbraWindowSystem?   _windowSystem;
     private          bool                    _disposed;
 
@@ -65,16 +62,17 @@ public class Penumbra : IDalamudPlugin
             ChatService      = _tmp.Services.GetRequiredService<ChatService>();
             _validityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
             _tmp.Services.GetRequiredService<BackupService>();
-            _config             = _tmp.Services.GetRequiredService<Configuration>();
-            CharacterUtility   = _tmp.Services.GetRequiredService<CharacterUtility>();
+            _config            = _tmp.Services.GetRequiredService<Configuration>();
+            _characterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
+            CharacterUtility   = _characterUtility;
             _tempMods          = _tmp.Services.GetRequiredService<TempModManager>();
             _residentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             _tmp.Services.GetRequiredService<ResourceManagerService>();
-            _modManager       = _tmp.Services.GetRequiredService<ModManager>();
-            CollectionManager = _tmp.Services.GetRequiredService<CollectionManager>();
-            _tempCollections  = _tmp.Services.GetRequiredService<TempCollectionManager>();
-            ModFileSystem     = _tmp.Services.GetRequiredService<ModFileSystem>();
-            RedrawService     = _tmp.Services.GetRequiredService<RedrawService>();
+            _modManager        = _tmp.Services.GetRequiredService<ModManager>();
+            _collectionManager = _tmp.Services.GetRequiredService<CollectionManager>();
+            _tempCollections   = _tmp.Services.GetRequiredService<TempCollectionManager>();
+            ModFileSystem      = _tmp.Services.GetRequiredService<ModFileSystem>();
+            RedrawService      = _tmp.Services.GetRequiredService<RedrawService>();
             _tmp.Services.GetRequiredService<ResourceService>(); // Initialize because not required anywhere else.
             _tmp.Services.GetRequiredService<ModCacheManager>(); // Initialize because not required anywhere else.
             using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
@@ -91,7 +89,7 @@ public class Penumbra : IDalamudPlugin
             OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
             Log.Information($"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}.");
 
-            if (CharacterUtility.Ready)
+            if (_characterUtility.Ready)
                 _residentResources.Reload();
         }
         catch
@@ -149,18 +147,18 @@ public class Penumbra : IDalamudPlugin
         _config.EnableMods = enabled;
         if (enabled)
         {
-            if (CharacterUtility.Ready)
+            if (_characterUtility.Ready)
             {
-                CollectionManager.Active.Default.SetFiles();
+                _collectionManager.Active.Default.SetFiles();
                 _residentResources.Reload();
                 RedrawService.RedrawAll(RedrawType.Redraw);
             }
         }
         else
         {
-            if (CharacterUtility.Ready)
+            if (_characterUtility.Ready)
             {
-                CharacterUtility.ResetAll();
+                _characterUtility.ResetAll();
                 _residentResources.Reload();
                 RedrawService.RedrawAll(RedrawType.Redraw);
             }
@@ -194,7 +192,7 @@ public class Penumbra : IDalamudPlugin
         sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
         sb.Append($"> **`Enable Mods:                 `** {_config.EnableMods}\n");
         sb.Append($"> **`Enable HTTP API:             `** {_config.EnableHttpApi}\n");
-        sb.Append($"> **`Operating System:            `** {(DalamudUtil.IsLinux() ? "Mac/Linux (Wine)" : "Windows")}\n");
+        sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsLinux() ? "Mac/Linux (Wine)" : "Windows")}\n");
         sb.Append($"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}\n");
         sb.Append(
             $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
@@ -225,23 +223,23 @@ public class Penumbra : IDalamudPlugin
               + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority && x.Solved ? x.Conflicts.Count : 0)}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0)}\n");
 
         sb.AppendLine("**Collections**");
-        sb.Append($"> **`#Collections:                 `** {CollectionManager.Storage.Count - 1}\n");
+        sb.Append($"> **`#Collections:                 `** {_collectionManager.Storage.Count - 1}\n");
         sb.Append($"> **`#Temp Collections:            `** {_tempCollections.Count}\n");
-        sb.Append($"> **`Active Collections:           `** {CollectionManager.Caches.Count - _tempCollections.Count}\n");
-        sb.Append($"> **`Base Collection:              `** {CollectionManager.Active.Default.AnonymizedName}\n");
-        sb.Append($"> **`Interface Collection:         `** {CollectionManager.Active.Interface.AnonymizedName}\n");
-        sb.Append($"> **`Selected Collection:          `** {CollectionManager.Active.Current.AnonymizedName}\n");
+        sb.Append($"> **`Active Collections:           `** {_collectionManager.Caches.Count - _tempCollections.Count}\n");
+        sb.Append($"> **`Base Collection:              `** {_collectionManager.Active.Default.AnonymizedName}\n");
+        sb.Append($"> **`Interface Collection:         `** {_collectionManager.Active.Interface.AnonymizedName}\n");
+        sb.Append($"> **`Selected Collection:          `** {_collectionManager.Active.Current.AnonymizedName}\n");
         foreach (var (type, name, _) in CollectionTypeExtensions.Special)
         {
-            var collection = CollectionManager.Active.ByType(type);
+            var collection = _collectionManager.Active.ByType(type);
             if (collection != null)
                 sb.Append($"> **`{name,-30}`** {collection.AnonymizedName}\n");
         }
 
-        foreach (var (name, id, collection) in CollectionManager.Active.Individuals.Assignments)
+        foreach (var (name, id, collection) in _collectionManager.Active.Individuals.Assignments)
             sb.Append($"> **`{id[0].Incognito(name) + ':',-30}`** {collection.AnonymizedName}\n");
 
-        foreach (var (collection, cache) in CollectionManager.Caches.Active)
+        foreach (var (collection, cache) in _collectionManager.Caches.Active)
             PrintCollection(collection, cache);
 
         return sb.ToString();

@@ -10,6 +10,7 @@ using OtterGui.Filesystem;
 using OtterGui.Widgets;
 using Penumbra.GameData.Enums;
 using Penumbra.Import.Structs;
+using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI;
@@ -101,14 +102,14 @@ public class Configuration : IPluginConfiguration, ISavable
     /// Load the current configuration.
     /// Includes adding new colors and migrating from old versions.
     /// </summary>
-    public Configuration(FilenameService fileNames, ConfigMigrationService migrator, SaveService saveService)
+    public Configuration(CharacterUtility utility, FilenameService fileNames, ConfigMigrationService migrator, SaveService saveService)
     {
         _saveService = saveService;
-        Load(fileNames, migrator);
+        Load(utility, fileNames, migrator);
         UI.Classes.Colors.SetColors(this);
     }
 
-    public void Load(FilenameService fileNames, ConfigMigrationService migrator)
+    public void Load(CharacterUtility utility, FilenameService fileNames, ConfigMigrationService migrator)
     {
         static void HandleDeserializationError(object? sender, ErrorEventArgs errorArgs)
         {
@@ -126,7 +127,7 @@ public class Configuration : IPluginConfiguration, ISavable
             });
         }
 
-        migrator.Migrate(this);
+        migrator.Migrate(utility, this);
     }
 
     /// <summary> Save the current configuration. </summary>

@@ -21,7 +21,7 @@ public struct GmpCache : IDisposable
     public void SetFiles(MetaFileManager manager)
         => manager.SetFile( _gmpFile, MetaIndex.Gmp );
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
+    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
         => manager.TemporarilySetFile( _gmpFile, MetaIndex.Gmp );
 
     public void Reset()

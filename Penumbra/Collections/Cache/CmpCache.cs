@@ -21,7 +21,7 @@ public struct CmpCache : IDisposable
     public void SetFiles(MetaFileManager manager)
         => manager.SetFile(_cmpFile, MetaIndex.HumanCmp);
 
-    public CharacterUtility.MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
+    public MetaList.MetaReverter TemporarilySetFiles(MetaFileManager manager)
         => manager.TemporarilySetFile(_cmpFile, MetaIndex.HumanCmp);
 
     public void Reset()
