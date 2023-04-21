@@ -34,14 +34,14 @@ public class Penumbra : IDalamudPlugin
     public string Name
         => "Penumbra";
 
-    public static Logger          Log         { get; private set; } = null!;
-    public static ChatService     ChatService { get; private set; } = null!;
-    public static Configuration   Config      { get; private set; } = null!;
+    public static Logger        Log         { get; private set; } = null!;
+    public static ChatService   ChatService { get; private set; } = null!;
+    public static Configuration Config      { get; private set; } = null!;
 
-    public static    CharacterUtility      CharacterUtility  { get; private set; } = null!;
-    public static    ModCacheManager       ModCaches         { get; private set; } = null!;
-    public static    CollectionManager     CollectionManager { get; private set; } = null!;
-    public static    ActorManager          Actors         { get; private set; } = null!;
+    public static CharacterUtility  CharacterUtility  { get; private set; } = null!;
+    public static ModCacheManager   ModCaches         { get; private set; } = null!;
+    public static CollectionManager CollectionManager { get; private set; } = null!;
+    public static ActorManager      Actors            { get; private set; } = null!;
 
     public readonly RedrawService RedrawService;
     public readonly ModFileSystem ModFileSystem;
@@ -67,15 +67,15 @@ public class Penumbra : IDalamudPlugin
             ChatService      = _tmp.Services.GetRequiredService<ChatService>();
             _validityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
             _tmp.Services.GetRequiredService<BackupService>();
-            Config            = _tmp.Services.GetRequiredService<Configuration>();
-            CharacterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
-            Actors            = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
+            Config             = _tmp.Services.GetRequiredService<Configuration>();
+            CharacterUtility   = _tmp.Services.GetRequiredService<CharacterUtility>();
+            Actors             = _tmp.Services.GetRequiredService<ActorService>().AwaitedService;
             _tempMods          = _tmp.Services.GetRequiredService<TempModManager>();
             _residentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             _tmp.Services.GetRequiredService<ResourceManagerService>();
-            _modManager        = _tmp.Services.GetRequiredService<ModManager>();
+            _modManager       = _tmp.Services.GetRequiredService<ModManager>();
             CollectionManager = _tmp.Services.GetRequiredService<CollectionManager>();
-            _tempCollections   = _tmp.Services.GetRequiredService<TempCollectionManager>();
+            _tempCollections  = _tmp.Services.GetRequiredService<TempCollectionManager>();
             ModFileSystem     = _tmp.Services.GetRequiredService<ModFileSystem>();
             RedrawService     = _tmp.Services.GetRequiredService<RedrawService>();
             _tmp.Services.GetRequiredService<ResourceService>();

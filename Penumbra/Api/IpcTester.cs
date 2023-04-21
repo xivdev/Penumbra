@@ -28,33 +28,34 @@ public class IpcTester : IDisposable
     private readonly PenumbraIpcProviders _ipcProviders;
     private          bool                 _subscribed = true;
 
-    private readonly PluginState   _pluginState;
-    private readonly Configuration _configuration;
-    private readonly Ui            _ui;
-    private readonly Redrawing     _redrawing;
-    private readonly GameState     _gameState;
-    private readonly Resolve       _resolve;
-    private readonly Collections   _collections;
-    private readonly Meta          _meta;
-    private readonly Mods          _mods;
-    private readonly ModSettings   _modSettings;
-    private readonly Temporary     _temporary;
+    private readonly PluginState      _pluginState;
+    private readonly IpcConfiguration _ipcConfiguration;
+    private readonly Ui               _ui;
+    private readonly Redrawing        _redrawing;
+    private readonly GameState        _gameState;
+    private readonly Resolve          _resolve;
+    private readonly Collections      _collections;
+    private readonly Meta             _meta;
+    private readonly Mods             _mods;
+    private readonly ModSettings      _modSettings;
+    private readonly Temporary        _temporary;
 
-    public IpcTester(DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders, ModManager modManager, CollectionManager collections,
+    public IpcTester(Configuration config, DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders, ModManager modManager,
+        CollectionManager collections,
         TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService)
     {
-        _ipcProviders  = ipcProviders;
-        _pluginState   = new PluginState(pi);
-        _configuration = new Configuration(pi);
-        _ui            = new Ui(pi);
-        _redrawing     = new Redrawing(pi);
-        _gameState     = new GameState(pi);
-        _resolve       = new Resolve(pi);
-        _collections   = new Collections(pi);
-        _meta          = new Meta(pi);
-        _mods          = new Mods(pi);
-        _modSettings   = new ModSettings(pi);
-        _temporary     = new Temporary(pi, modManager, collections, tempMods, tempCollections, saveService, _configuration);
+        _ipcProviders     = ipcProviders;
+        _pluginState      = new PluginState(pi);
+        _ipcConfiguration = new IpcConfiguration(pi);
+        _ui               = new Ui(pi);
+        _redrawing        = new Redrawing(pi);
+        _gameState        = new GameState(pi);
+        _resolve          = new Resolve(pi);
+        _collections      = new Collections(pi);
+        _meta             = new Meta(pi);
+        _mods             = new Mods(pi);
+        _modSettings      = new ModSettings(pi);
+        _temporary        = new Temporary(pi, modManager, collections, tempMods, tempCollections, saveService, config);
         UnsubscribeEvents();
     }
 
@@ -65,7 +66,7 @@ public class IpcTester : IDisposable
             SubscribeEvents();
             ImGui.TextUnformatted($"API Version: {_ipcProviders.Api.ApiVersion.Breaking}.{_ipcProviders.Api.ApiVersion.Feature:D4}");
             _pluginState.Draw();
-            _configuration.Draw();
+            _ipcConfiguration.Draw();
             _ui.Draw();
             _redrawing.Draw();
             _gameState.Draw();
@@ -97,7 +98,7 @@ public class IpcTester : IDisposable
             _modSettings.SettingChanged.Enable();
             _gameState.CharacterBaseCreating.Enable();
             _gameState.CharacterBaseCreated.Enable();
-            _configuration.ModDirectoryChanged.Enable();
+            _ipcConfiguration.ModDirectoryChanged.Enable();
             _gameState.GameObjectResourcePathResolved.Enable();
             _mods.DeleteSubscriber.Enable();
             _mods.AddSubscriber.Enable();
@@ -121,7 +122,7 @@ public class IpcTester : IDisposable
             _modSettings.SettingChanged.Disable();
             _gameState.CharacterBaseCreating.Disable();
             _gameState.CharacterBaseCreated.Disable();
-            _configuration.ModDirectoryChanged.Disable();
+            _ipcConfiguration.ModDirectoryChanged.Disable();
             _gameState.GameObjectResourcePathResolved.Disable();
             _mods.DeleteSubscriber.Disable();
             _mods.AddSubscriber.Disable();
@@ -143,7 +144,7 @@ public class IpcTester : IDisposable
         _modSettings.SettingChanged.Dispose();
         _gameState.CharacterBaseCreating.Dispose();
         _gameState.CharacterBaseCreated.Dispose();
-        _configuration.ModDirectoryChanged.Dispose();
+        _ipcConfiguration.ModDirectoryChanged.Dispose();
         _gameState.GameObjectResourcePathResolved.Dispose();
         _mods.DeleteSubscriber.Dispose();
         _mods.AddSubscriber.Dispose();
@@ -229,7 +230,7 @@ public class IpcTester : IDisposable
             => (_lastEnabledChange, _lastEnabledValue) = (DateTimeOffset.Now, val);
     }
 
-    private class Configuration
+    private class IpcConfiguration
     {
         private readonly DalamudPluginInterface        _pi;
         public readonly  EventSubscriber<string, bool> ModDirectoryChanged;
@@ -239,7 +240,7 @@ public class IpcTester : IDisposable
         private bool           _lastModDirectoryValid;
         private DateTimeOffset _lastModDirectoryTime = DateTimeOffset.MinValue;
 
-        public Configuration(DalamudPluginInterface pi)
+        public IpcConfiguration(DalamudPluginInterface pi)
         {
             _pi                 = pi;
             ModDirectoryChanged = Ipc.ModDirectoryChanged.Subscriber(pi, UpdateModDirectoryChanged);

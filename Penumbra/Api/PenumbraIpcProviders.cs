@@ -116,7 +116,7 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider<string, string, int, PenumbraApiEc>                                     RemoveTemporaryMod;
 
     public PenumbraIpcProviders(DalamudPluginInterface pi, IPenumbraApi api, ModManager modManager, CollectionManager collections,
-        TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService)
+        TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService, Configuration config)
     {
         Api = api;
 
@@ -228,7 +228,7 @@ public class PenumbraIpcProviders : IDisposable
         RemoveTemporaryModAll           = Ipc.RemoveTemporaryModAll.Provider(pi, Api.RemoveTemporaryModAll);
         RemoveTemporaryMod              = Ipc.RemoveTemporaryMod.Provider(pi, Api.RemoveTemporaryMod);
 
-        Tester = new IpcTester(pi, this, modManager, collections, tempMods, tempCollections, saveService);
+        Tester = new IpcTester(config, pi, this, modManager, collections, tempMods, tempCollections, saveService);
 
         Initialized.Invoke();
     }

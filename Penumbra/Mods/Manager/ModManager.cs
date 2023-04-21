@@ -19,6 +19,16 @@ public enum NewDirectoryState
     Empty,
 }
 
+/// <summary> Describes the state of a changed mod event. </summary>
+public enum ModPathChangeType
+{
+    Added,
+    Deleted,
+    Moved,
+    Reloaded,
+    StartingReload,
+}
+
 public sealed class ModManager : ModStorage
 {
     private readonly Configuration       _config;
