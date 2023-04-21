@@ -37,8 +37,8 @@ public class ConfigTabBar
         Tabs = new ITab[]
         {
             Settings,
-            Mods,
             Collections,
+            Mods,
             ChangedItems,
             Effective,
             OnScreenTab,

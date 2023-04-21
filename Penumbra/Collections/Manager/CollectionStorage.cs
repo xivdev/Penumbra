@@ -113,7 +113,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             return false;
         }
 
-        var newCollection = duplicate?.Duplicate(name, _collections.Count) ?? ModCollection.CreateEmpty(name, _collections.Count, _modStorage.Count);
+        var newCollection = duplicate?.Duplicate(name, _collections.Count)
+         ?? ModCollection.CreateEmpty(name, _collections.Count, _modStorage.Count);
         _collections.Add(newCollection);
 
         _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
@@ -195,6 +196,13 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
             _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
     }
 
+    /// <summary> Remove a specific setting for not currently-installed mods from the given collection. </summary>
+    public void CleanUnavailableSetting(ModCollection collection, string? setting)
+    {
+        if (setting != null && ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(setting))
+            _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+    }
+
     /// <summary>
     /// Check if a name is valid to use for a collection.
     /// Does not check for uniqueness.
@@ -214,7 +222,8 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
 
         foreach (var file in _saveService.FileNames.CollectionFiles)
         {
-            if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance) || !IsValidName(name))
+            if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance)
+             || !IsValidName(name))
                 continue;
 
             if (ByName(name, out _))
@@ -224,7 +233,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
                 continue;
             }
 
-            var collection = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings);
+            var collection  = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings);
             var correctName = _saveService.FileNames.CollectionFile(collection);
             if (file.FullName != correctName)
                 Penumbra.ChatService.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.", "Warning",

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Newtonsoft.Json.Linq;
@@ -64,6 +65,17 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
 
     public bool IsValid
         => Type is not (IdentifierType.UnkObject or IdentifierType.Invalid);
+
+    public string Incognito(string? name)
+    {
+        name ??= ToString();
+        if (Type is not (IdentifierType.Player or IdentifierType.Owned))
+            return name;
+
+        var parts = name.Split(' ', 3);
+        return string.Join(" ",
+            parts.Length != 3 ? parts.Select(n => $"{n[0]}.") : parts[..2].Select(n => $"{n[0]}.").Append(parts[2]));
+    }
 
     public override string ToString()
         => Manager?.ToString(this)

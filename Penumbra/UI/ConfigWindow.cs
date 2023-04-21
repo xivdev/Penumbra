@@ -44,7 +44,7 @@ public sealed class ConfigWindow : Window
         RespectCloseHotkey = true;
         SizeConstraints = new WindowSizeConstraints()
         {
-            MinimumSize = new Vector2(900,  600),
+            MinimumSize = new Vector2(900,  675),
             MaximumSize = new Vector2(4096, 2160),
         };
         tutorial.UpdateTutorialStep();

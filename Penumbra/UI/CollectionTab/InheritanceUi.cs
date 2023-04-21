@@ -14,23 +14,44 @@ namespace Penumbra.UI.CollectionTab;
 
 public class InheritanceUi
 {
-    private const int InheritedCollectionHeight = 9;
-    private const string InheritanceDragDropLabel = "##InheritanceMove";
+    private const int    InheritedCollectionHeight = 9;
+    private const string InheritanceDragDropLabel  = "##InheritanceMove";
 
-    private readonly CollectionManager _collectionManager;
+    private readonly Configuration      _config;
+    private readonly CollectionStorage  _collections;
+    private readonly ActiveCollections  _active;
+    private readonly InheritanceManager _inheritance;
+    private readonly CollectionSelector _selector;
 
-    public InheritanceUi(CollectionManager collectionManager)
-        => _collectionManager = collectionManager;
+    public InheritanceUi(Configuration config, CollectionManager collectionManager, CollectionSelector selector)
+    {
+        _config      = config;
+        _selector    = selector;
+        _collections = collectionManager.Storage;
+        _active      = collectionManager.Active;
+        _inheritance = collectionManager.Inheritances;
+    }
+
 
     /// <summary> Draw the whole inheritance block. </summary>
     public void Draw()
     {
-        using var group = ImRaii.Group();
-        using var id = ImRaii.PushId("##Inheritance");
-        ImGui.TextUnformatted($"The {TutorialService.SelectedCollection} inherits from:");
+        using var id    = ImRaii.PushId("##Inheritance");
+        ImGuiUtil.DrawColoredText(($"The {TutorialService.SelectedCollection} ", 0), (Name(_active.Current), ColorId.SelectedCollection.Value(_config) | 0xFF000000), (" inherits from:", 0));
+        ImGui.Dummy(Vector2.One);
+
         DrawCurrentCollectionInheritance();
+        ImGui.SameLine();
         DrawInheritanceTrashButton();
+        ImGui.SameLine();
+        DrawRightText();
+
         DrawNewInheritanceSelection();
+        ImGui.SameLine();
+        if (ImGui.Button("More Information about Inheritance", new Vector2(ImGui.GetContentRegionAvail().X, 0)))
+            ImGui.OpenPopup("InheritanceHelp");
+
+        DrawHelpPopup();
         DelayedActions();
     }
 
@@ -40,8 +61,45 @@ public class InheritanceUi
     // Execute changes only outside of loops.
     private ModCollection? _newInheritance;
     private ModCollection? _movedInheritance;
-    private (int, int)? _inheritanceAction;
+    private (int, int)?    _inheritanceAction;
     private ModCollection? _newCurrentCollection;
+
+    private void DrawRightText()
+    {
+        using var group = ImRaii.Group();
+        ImGuiUtil.TextWrapped(
+            "Inheritance is a way to use a baseline of mods across multiple collections, without needing to change all those collections if you want to add a single mod.");
+        ImGuiUtil.TextWrapped(
+            "You can select inheritances from the combo below to add them.\nSince the order of inheritances is important, you can reorder them here via drag and drop.\nYou can also delete inheritances by dragging them onto the trash can.");
+    }
+
+    private void DrawHelpPopup()
+    => ImGuiUtil.HelpPopup("InheritanceHelp", new Vector2(1000 * UiHelpers.Scale, 20 * ImGui.GetTextLineHeightWithSpacing()), () =>
+    {
+        ImGui.NewLine();
+        ImGui.TextUnformatted("Every mod in a collection can have three basic states: 'Enabled', 'Disabled' and 'Unconfigured'.");
+        ImGui.BulletText("If the mod is 'Enabled' or 'Disabled', it does not matter if the collection inherits from other collections.");
+        ImGui.BulletText(
+            "If the mod is unconfigured, those inherited-from collections are checked in the order displayed here, including sub-inheritances.");
+        ImGui.BulletText(
+            "If a collection is found in which the mod is either 'Enabled' or 'Disabled', the settings from this collection will be used.");
+        ImGui.BulletText("If no such collection is found, the mod will be treated as disabled.");
+        ImGui.BulletText(
+            "Highlighted collections in the left box are never reached because they are already checked in a sub-inheritance before.");
+        ImGui.NewLine();
+        ImGui.TextUnformatted("Example");
+        ImGui.BulletText("Collection A has the Bibo+ body and a Hempen Camise mod enabled.");
+        ImGui.BulletText(
+            "Collection B inherits from A, leaves Bibo+ unconfigured, but has the Hempen Camise enabled with different settings than A.");
+        ImGui.BulletText("Collection C also inherits from A, has Bibo+ explicitly disabled and the Hempen Camise unconfigured.");
+        ImGui.BulletText("Collection D inherits from C and then B and leaves everything unconfigured.");
+        using var indent = ImRaii.PushIndent();
+        ImGui.BulletText("B uses Bibo+ settings from A and its own Hempen Camise settings.");
+        ImGui.BulletText("C has Bibo+ disabled and uses A's Hempen Camise settings.");
+        ImGui.BulletText(
+            "D has Bibo+ disabled and uses A's Hempen Camise settings, not B's. It traversed the collections in Order D -> (C -> A) -> (B -> A).");
+    });
+
 
     /// <summary>
     /// If an inherited collection is expanded,
@@ -49,15 +107,15 @@ public class InheritanceUi
     /// </summary>
     private void DrawInheritedChildren(ModCollection collection)
     {
-        using var id = ImRaii.PushId(collection.Index);
+        using var id     = ImRaii.PushId(collection.Index);
         using var indent = ImRaii.PushIndent();
 
         // Get start point for the lines (top of the selector).
         // Tree line stuff.
         var lineStart = ImGui.GetCursorScreenPos();
-        var offsetX = -ImGui.GetStyle().IndentSpacing + ImGui.GetTreeNodeToLabelSpacing() / 2;
-        var drawList = ImGui.GetWindowDrawList();
-        var lineSize = Math.Max(0, ImGui.GetStyle().IndentSpacing - 9 * UiHelpers.Scale);
+        var offsetX   = -ImGui.GetStyle().IndentSpacing + ImGui.GetTreeNodeToLabelSpacing() / 2;
+        var drawList  = ImGui.GetWindowDrawList();
+        var lineSize  = Math.Max(0, ImGui.GetStyle().IndentSpacing - 9 * UiHelpers.Scale);
         lineStart.X += offsetX;
         lineStart.Y -= 2 * UiHelpers.Scale;
         var lineEnd = lineStart;
@@ -70,7 +128,7 @@ public class InheritanceUi
                 _seenInheritedCollections.Contains(inheritance));
             _seenInheritedCollections.Add(inheritance);
 
-            ImRaii.TreeNode(inheritance.Name, ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet);
+            ImRaii.TreeNode($"{Name(inheritance)}###{inheritance.Name}", ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet);
             var (minRect, maxRect) = (ImGui.GetItemRectMin(), ImGui.GetItemRectMax());
             DrawInheritanceTreeClicks(inheritance, false);
 
@@ -95,7 +153,7 @@ public class InheritanceUi
         using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(Penumbra.Config),
             _seenInheritedCollections.Contains(collection));
         _seenInheritedCollections.Add(collection);
-        using var tree = ImRaii.TreeNode(collection.Name, ImGuiTreeNodeFlags.NoTreePushOnOpen);
+        using var tree = ImRaii.TreeNode($"{Name(collection)}###{collection.Name}", ImGuiTreeNodeFlags.NoTreePushOnOpen);
         color.Pop();
         DrawInheritanceTreeClicks(collection, true);
         DrawInheritanceDropSource(collection);
@@ -117,16 +175,15 @@ public class InheritanceUi
             return;
 
         _seenInheritedCollections.Clear();
-        _seenInheritedCollections.Add(_collectionManager.Active.Current);
-        foreach (var collection in _collectionManager.Active.Current.DirectlyInheritsFrom.ToList())
+        _seenInheritedCollections.Add(_active.Current);
+        foreach (var collection in _active.Current.DirectlyInheritsFrom.ToList())
             DrawInheritance(collection);
     }
 
     /// <summary> Draw a drag and drop button to delete. </summary>
     private void DrawInheritanceTrashButton()
     {
-        ImGui.SameLine();
-        var size = UiHelpers.IconButtonSize with { Y = ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight };
+        var size        = UiHelpers.IconButtonSize with { Y = ImGui.GetTextLineHeightWithSpacing() * InheritedCollectionHeight };
         var buttonColor = ImGui.GetColorU32(ImGuiCol.Button);
         // Prevent hovering from highlighting the button.
         using var color = ImRaii.PushColor(ImGuiCol.ButtonActive, buttonColor)
@@ -136,7 +193,7 @@ public class InheritanceUi
 
         using var target = ImRaii.DragDropTarget();
         if (target.Success && ImGuiUtil.IsDropping(InheritanceDragDropLabel))
-            _inheritanceAction = (_collectionManager.Active.Current.DirectlyInheritsFrom.IndexOf(_movedInheritance!), -1);
+            _inheritanceAction = (_active.Current.DirectlyInheritsFrom.IndexOf(_movedInheritance!), -1);
     }
 
     /// <summary>
@@ -147,7 +204,7 @@ public class InheritanceUi
     {
         if (_newCurrentCollection != null)
         {
-            _collectionManager.Active.SetCollection(_newCurrentCollection, CollectionType.Current);
+            _active.SetCollection(_newCurrentCollection, CollectionType.Current);
             _newCurrentCollection = null;
         }
 
@@ -157,9 +214,9 @@ public class InheritanceUi
         if (_inheritanceAction.Value.Item1 >= 0)
         {
             if (_inheritanceAction.Value.Item2 == -1)
-                _collectionManager.Inheritances.RemoveInheritance(_collectionManager.Active.Current, _inheritanceAction.Value.Item1);
+                _inheritance.RemoveInheritance(_active.Current, _inheritanceAction.Value.Item1);
             else
-                _collectionManager.Inheritances.MoveInheritance(_collectionManager.Active.Current, _inheritanceAction.Value.Item1, _inheritanceAction.Value.Item2);
+                _inheritance.MoveInheritance(_active.Current, _inheritanceAction.Value.Item1, _inheritanceAction.Value.Item2);
         }
 
         _inheritanceAction = null;
@@ -173,57 +230,23 @@ public class InheritanceUi
     {
         DrawNewInheritanceCombo();
         ImGui.SameLine();
-        var inheritance = InheritanceManager.CheckValidInheritance(_collectionManager.Active.Current, _newInheritance);
+        var inheritance = InheritanceManager.CheckValidInheritance(_active.Current, _newInheritance);
         var tt = inheritance switch
         {
-            InheritanceManager.ValidInheritance.Empty => "No valid collection to inherit from selected.",
-            InheritanceManager.ValidInheritance.Valid => $"Let the {TutorialService.SelectedCollection} inherit from this collection.",
-            InheritanceManager.ValidInheritance.Self => "The collection can not inherit from itself.",
+            InheritanceManager.ValidInheritance.Empty     => "No valid collection to inherit from selected.",
+            InheritanceManager.ValidInheritance.Valid     => $"Let the {TutorialService.SelectedCollection} inherit from this collection.",
+            InheritanceManager.ValidInheritance.Self      => "The collection can not inherit from itself.",
             InheritanceManager.ValidInheritance.Contained => "Already inheriting from this collection.",
-            InheritanceManager.ValidInheritance.Circle => "Inheriting from this collection would lead to cyclic inheritance.",
-            _ => string.Empty,
+            InheritanceManager.ValidInheritance.Circle    => "Inheriting from this collection would lead to cyclic inheritance.",
+            _                                             => string.Empty,
         };
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Plus.ToIconString(), UiHelpers.IconButtonSize, tt,
                 inheritance != InheritanceManager.ValidInheritance.Valid, true)
-         && _collectionManager.Inheritances.AddInheritance(_collectionManager.Active.Current, _newInheritance!))
+         && _inheritance.AddInheritance(_active.Current, _newInheritance!))
             _newInheritance = null;
 
         if (inheritance != InheritanceManager.ValidInheritance.Valid)
             _newInheritance = null;
-
-        ImGui.SameLine();
-        if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.QuestionCircle.ToIconString(), UiHelpers.IconButtonSize, "What is Inheritance?",
-                false, true))
-            ImGui.OpenPopup("InheritanceHelp");
-
-        ImGuiUtil.HelpPopup("InheritanceHelp", new Vector2(1000 * UiHelpers.Scale, 21 * ImGui.GetTextLineHeightWithSpacing()), () =>
-        {
-            ImGui.NewLine();
-            ImGui.TextWrapped(
-                "Inheritance is a way to use a baseline of mods across multiple collections, without needing to change all those collections if you want to add a single mod.");
-            ImGui.NewLine();
-            ImGui.TextUnformatted("Every mod in a collection can have three basic states: 'Enabled', 'Disabled' and 'Unconfigured'.");
-            ImGui.BulletText("If the mod is 'Enabled' or 'Disabled', it does not matter if the collection inherits from other collections.");
-            ImGui.BulletText(
-                "If the mod is unconfigured, those inherited-from collections are checked in the order displayed here, including sub-inheritances.");
-            ImGui.BulletText(
-                "If a collection is found in which the mod is either 'Enabled' or 'Disabled', the settings from this collection will be used.");
-            ImGui.BulletText("If no such collection is found, the mod will be treated as disabled.");
-            ImGui.BulletText(
-                "Highlighted collections in the left box are never reached because they are already checked in a sub-inheritance before.");
-            ImGui.NewLine();
-            ImGui.TextUnformatted("Example");
-            ImGui.BulletText("Collection A has the Bibo+ body and a Hempen Camise mod enabled.");
-            ImGui.BulletText(
-                "Collection B inherits from A, leaves Bibo+ unconfigured, but has the Hempen Camise enabled with different settings than A.");
-            ImGui.BulletText("Collection C also inherits from A, has Bibo+ explicitly disabled and the Hempen Camise unconfigured.");
-            ImGui.BulletText("Collection D inherits from C and then B and leaves everything unconfigured.");
-            using var indent = ImRaii.PushIndent();
-            ImGui.BulletText("B uses Bibo+ settings from A and its own Hempen Camise settings.");
-            ImGui.BulletText("C has Bibo+ disabled and uses A's Hempen Camise settings.");
-            ImGui.BulletText(
-                "D has Bibo+ disabled and uses A's Hempen Camise settings, not B's. It traversed the collections in Order D -> (C -> A) -> (B -> A).");
-        });
     }
 
     /// <summary>
@@ -233,18 +256,18 @@ public class InheritanceUi
     private void DrawNewInheritanceCombo()
     {
         ImGui.SetNextItemWidth(UiHelpers.InputTextMinusButton);
-        _newInheritance ??= _collectionManager.Storage.FirstOrDefault(c
-                => c != _collectionManager.Active.Current && !_collectionManager.Active.Current.DirectlyInheritsFrom.Contains(c))
+        _newInheritance ??= _collections.FirstOrDefault(c
+                => c != _active.Current && !_active.Current.DirectlyInheritsFrom.Contains(c))
          ?? ModCollection.Empty;
-        using var combo = ImRaii.Combo("##newInheritance", _newInheritance.Name);
+        using var combo = ImRaii.Combo("##newInheritance", Name(_newInheritance));
         if (!combo)
             return;
 
-        foreach (var collection in _collectionManager.Storage
-                     .Where(c => InheritanceManager.CheckValidInheritance(_collectionManager.Active.Current, c) == InheritanceManager.ValidInheritance.Valid)
+        foreach (var collection in _collections
+                     .Where(c => InheritanceManager.CheckValidInheritance(_active.Current, c) == InheritanceManager.ValidInheritance.Valid)
                      .OrderBy(c => c.Name))
         {
-            if (ImGui.Selectable(collection.Name, _newInheritance == collection))
+            if (ImGui.Selectable(Name(collection), _newInheritance == collection))
                 _newInheritance = collection;
         }
     }
@@ -261,8 +284,8 @@ public class InheritanceUi
 
         if (_movedInheritance != null)
         {
-            var idx1 = _collectionManager.Active.Current.DirectlyInheritsFrom.IndexOf(_movedInheritance);
-            var idx2 = _collectionManager.Active.Current.DirectlyInheritsFrom.IndexOf(collection);
+            var idx1 = _active.Current.DirectlyInheritsFrom.IndexOf(_movedInheritance);
+            var idx2 = _active.Current.DirectlyInheritsFrom.IndexOf(collection);
             if (idx1 >= 0 && idx2 >= 0)
                 _inheritanceAction = (idx1, idx2);
         }
@@ -279,7 +302,7 @@ public class InheritanceUi
 
         ImGui.SetDragDropPayload(InheritanceDragDropLabel, nint.Zero, 0);
         _movedInheritance = collection;
-        ImGui.TextUnformatted($"Moving {_movedInheritance?.Name ?? "Unknown"}...");
+        ImGui.TextUnformatted($"Moving {(_movedInheritance != null ? Name(_movedInheritance) : "Unknown")}...");
     }
 
     /// <summary>
@@ -292,7 +315,7 @@ public class InheritanceUi
         if (ImGui.GetIO().KeyCtrl && ImGui.IsItemClicked(ImGuiMouseButton.Right))
         {
             if (withDelete && ImGui.GetIO().KeyShift)
-                _inheritanceAction = (_collectionManager.Active.Current.DirectlyInheritsFrom.IndexOf(collection), -1);
+                _inheritanceAction = (_active.Current.DirectlyInheritsFrom.IndexOf(collection), -1);
             else
                 _newCurrentCollection = collection;
         }
@@ -300,4 +323,7 @@ public class InheritanceUi
         ImGuiUtil.HoverTooltip($"Control + Right-Click to switch the {TutorialService.SelectedCollection} to this one."
           + (withDelete ? "\nControl + Shift + Right-Click to remove this inheritance." : string.Empty));
     }
+
+    private string Name(ModCollection collection)
+        => _selector.IncognitoMode ? collection.AnonymizedName : collection.Name;
 }

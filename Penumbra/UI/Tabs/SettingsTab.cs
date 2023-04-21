@@ -60,7 +60,6 @@ public class SettingsTab : ITab
         _tutorial.OpenTutorial(BasicTutorialSteps.Fin);
         _tutorial.OpenTutorial(BasicTutorialSteps.Faq1);
         _tutorial.OpenTutorial(BasicTutorialSteps.Faq2);
-        _tutorial.OpenTutorial(BasicTutorialSteps.Faq3);
     }
 
     public void DrawContent()
@@ -633,7 +632,7 @@ public class SettingsTab : ITab
     private void DrawAdvancedSettings()
     {
         var header = ImGui.CollapsingHeader("Advanced");
-        _tutorial.OpenTutorial(BasicTutorialSteps.AdvancedSettings);
+        _tutorial.OpenTutorial(BasicTutorialSteps.Deprecated1);
 
         if (!header)
             return;

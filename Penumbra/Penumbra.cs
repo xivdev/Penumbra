@@ -223,18 +223,6 @@ public class Penumbra : IDalamudPlugin
         sb.Append(
             $"> **`#Temp Mods:                  `** {_tempMods.Mods.Sum(kvp => kvp.Value.Count) + _tempMods.ModsForAllCollections.Count}\n");
 
-        string CharacterName(ActorIdentifier id, string name)
-        {
-            if (id.Type is IdentifierType.Player or IdentifierType.Owned)
-            {
-                var parts = name.Split(' ', 3);
-                return string.Join(" ",
-                    parts.Length != 3 ? parts.Select(n => $"{n[0]}.") : parts[..2].Select(n => $"{n[0]}.").Append(parts[2]));
-            }
-
-            return name + ':';
-        }
-
         void PrintCollection(ModCollection c, CollectionCache _)
             => sb.Append($"**Collection {c.AnonymizedName}**\n"
               + $"> **`Inheritances:                 `** {c.DirectlyInheritsFrom.Count}\n"
@@ -256,7 +244,7 @@ public class Penumbra : IDalamudPlugin
         }
 
         foreach (var (name, id, collection) in CollectionManager.Active.Individuals.Assignments)
-            sb.Append($"> **`{CharacterName(id[0], name),-30}`** {collection.AnonymizedName}\n");
+            sb.Append($"> **`{id[0].Incognito(name) + ':',-30}`** {collection.AnonymizedName}\n");
 
         foreach (var (collection, cache) in CollectionManager.Caches.Active)
             PrintCollection(collection, cache);

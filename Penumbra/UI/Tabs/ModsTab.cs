@@ -172,7 +172,7 @@ public class ModsTab : ITab
             ImGui.SameLine();
             DrawInheritedCollectionButton(3 * buttonSize);
             ImGui.SameLine();
-            _collectionCombo.Draw("##collectionSelector", 2 * buttonSize.X, CollectionType.Current);
+            _collectionCombo.Draw("##collectionSelector", 2 * buttonSize.X, ColorId.SelectedCollection.Value(_config));
         }
 
         _tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);

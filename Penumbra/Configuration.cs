@@ -15,6 +15,7 @@ using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
+using Penumbra.UI.Tabs;
 using Penumbra.Util;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
@@ -72,16 +73,17 @@ public class Configuration : IPluginConfiguration, ISavable
     [JsonProperty(Order = int.MaxValue)]
     public ISortMode<Mod> SortMode = ISortMode<Mod>.FoldersFirst;
 
-    public bool           ScaleModSelector        { get; set; } = false;
-    public float          ModSelectorAbsoluteSize { get; set; } = Constants.DefaultAbsoluteSize;
-    public int            ModSelectorScaledSize   { get; set; } = Constants.DefaultScaledSize;
-    public bool           OpenFoldersByDefault    { get; set; } = false;
-    public int            SingleGroupRadioMax     { get; set; } = 2;
-    public string         DefaultImportFolder     { get; set; } = string.Empty;
-    public string         QuickMoveFolder1        { get; set; } = string.Empty;
-    public string         QuickMoveFolder2        { get; set; } = string.Empty;
-    public string         QuickMoveFolder3        { get; set; } = string.Empty;
-    public DoubleModifier DeleteModModifier       { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
+    public bool                     ScaleModSelector        { get; set; } = false;
+    public float                    ModSelectorAbsoluteSize { get; set; } = Constants.DefaultAbsoluteSize;
+    public int                      ModSelectorScaledSize   { get; set; } = Constants.DefaultScaledSize;
+    public bool                     OpenFoldersByDefault    { get; set; } = false;
+    public int                      SingleGroupRadioMax     { get; set; } = 2;
+    public string                   DefaultImportFolder     { get; set; } = string.Empty;
+    public string                   QuickMoveFolder1        { get; set; } = string.Empty;
+    public string                   QuickMoveFolder2        { get; set; } = string.Empty;
+    public string                   QuickMoveFolder3        { get; set; } = string.Empty;
+    public DoubleModifier           DeleteModModifier       { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
+    public CollectionsTab.PanelMode CollectionPanel         { get; set; } = CollectionsTab.PanelMode.SimpleAssignment;
 
     public bool PrintSuccessfulCommandsToChat { get; set; } = true;
     public bool FixMainWindow                 { get; set; } = false;
