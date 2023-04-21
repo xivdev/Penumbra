@@ -54,7 +54,7 @@ public class IpcTester : IDisposable
         _meta          = new Meta(pi);
         _mods          = new Mods(pi);
         _modSettings   = new ModSettings(pi);
-        _temporary     = new Temporary(pi, modManager, collections, tempMods, tempCollections, saveService);
+        _temporary     = new Temporary(pi, modManager, collections, tempMods, tempCollections, saveService, _configuration);
         UnsubscribeEvents();
     }
 
@@ -1157,9 +1157,10 @@ public class IpcTester : IDisposable
         private readonly TempModManager         _tempMods;
         private readonly TempCollectionManager  _tempCollections;
         private readonly SaveService            _saveService;
+        private readonly Configuration          _config;
 
         public Temporary(DalamudPluginInterface pi, ModManager modManager, CollectionManager collections, TempModManager tempMods,
-            TempCollectionManager tempCollections, SaveService saveService)
+            TempCollectionManager tempCollections, SaveService saveService, Configuration config)
         {
             _pi              = pi;
             _modManager      = modManager;
@@ -1167,6 +1168,7 @@ public class IpcTester : IDisposable
             _tempMods        = tempMods;
             _tempCollections = tempCollections;
             _saveService     = saveService;
+            _config          = config;
         }
 
         public string LastCreatedCollectionName = string.Empty;
@@ -1275,7 +1277,7 @@ public class IpcTester : IDisposable
                         .FirstOrDefault()
                  ?? "Unknown";
                 if (ImGui.Button($"Save##{collection.Name}"))
-                    TemporaryMod.SaveTempCollection(_saveService, _modManager, collection, character);
+                    TemporaryMod.SaveTempCollection(_config, _saveService, _modManager, collection, character);
 
                 ImGuiUtil.DrawTableColumn(collection.Name);
                 ImGuiUtil.DrawTableColumn(collection.ResolvedFiles.Count.ToString());

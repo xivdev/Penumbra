@@ -15,7 +15,6 @@ using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
-using Penumbra.GameData;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
@@ -27,7 +26,6 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
-using Penumbra.Meta;
 
 namespace Penumbra;
 
@@ -41,7 +39,6 @@ public class Penumbra : IDalamudPlugin
     public static Configuration   Config      { get; private set; } = null!;
 
     public static    CharacterUtility      CharacterUtility  { get; private set; } = null!;
-    public static    ModManager            ModManager        { get; private set; } = null!;
     public static    ModCacheManager       ModCaches         { get; private set; } = null!;
     public static    CollectionManager     CollectionManager { get; private set; } = null!;
     public static    ActorManager          Actors         { get; private set; } = null!;
@@ -55,6 +52,7 @@ public class Penumbra : IDalamudPlugin
     private readonly ResidentResourceManager _residentResources;
     private readonly TempModManager          _tempMods;
     private readonly TempCollectionManager   _tempCollections;
+    private readonly ModManager              _modManager;
     private          PenumbraWindowSystem?   _windowSystem;
     private          bool                    _disposed;
 
@@ -75,7 +73,7 @@ public class Penumbra : IDalamudPlugin
             _tempMods          = _tmp.Services.GetRequiredService<TempModManager>();
             _residentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             _tmp.Services.GetRequiredService<ResourceManagerService>();
-            ModManager        = _tmp.Services.GetRequiredService<ModManager>();
+            _modManager        = _tmp.Services.GetRequiredService<ModManager>();
             CollectionManager = _tmp.Services.GetRequiredService<CollectionManager>();
             _tempCollections   = _tmp.Services.GetRequiredService<TempCollectionManager>();
             ModFileSystem     = _tmp.Services.GetRequiredService<ModFileSystem>();
@@ -211,7 +209,7 @@ public class Penumbra : IDalamudPlugin
             $"> **`Logging:                     `** Log: {Config.EnableResourceLogging}, Watcher: {Config.EnableResourceWatcher} ({Config.MaxResourceWatcherRecords})\n");
         sb.Append($"> **`Use Ownership:               `** {Config.UseOwnerNameForCharacterCollection}\n");
         sb.AppendLine("**Mods**");
-        sb.Append($"> **`Installed Mods:              `** {ModManager.Count}\n");
+        sb.Append($"> **`Installed Mods:              `** {_modManager.Count}\n");
         sb.Append($"> **`Mods with Config:            `** {ModCaches.Count(m => m.HasOptions)}\n");
         sb.Append(
             $"> **`Mods with File Redirections: `** {ModCaches.Count(m => m.TotalFileCount > 0)}, Total: {ModCaches.Sum(m => m.TotalFileCount)}\n");

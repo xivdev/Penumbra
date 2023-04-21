@@ -46,14 +46,14 @@ public class TemporaryMod : IMod
         Default.ManipulationData = manips;
     }
 
-    public static void SaveTempCollection( SaveService saveService, ModManager modManager, ModCollection collection, string? character = null )
+    public static void SaveTempCollection( Configuration config, SaveService saveService, ModManager modManager, ModCollection collection, string? character = null )
     {
         DirectoryInfo? dir = null;
         try
         {
-            dir = ModCreator.CreateModFolder( Penumbra.ModManager.BasePath, collection.Name );
+            dir = ModCreator.CreateModFolder( modManager.BasePath, collection.Name );
             var fileDir = Directory.CreateDirectory( Path.Combine( dir.FullName, "files" ) );
-            modManager.DataEditor.CreateMeta( dir, collection.Name, character ?? Penumbra.Config.DefaultModAuthor,
+            modManager.DataEditor.CreateMeta( dir, collection.Name, character ?? config.DefaultModAuthor,
                 $"Mod generated from temporary collection {collection.Name} for {character ?? "Unknown Character"}.", null, null );
             var mod        = new Mod( dir );
             var defaultMod = mod.Default;
