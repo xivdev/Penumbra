@@ -28,7 +28,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private readonly Configuration       _config;
     private readonly FileDialogService   _fileDialog;
     private readonly ModManager          _modManager;
-    private readonly ModCacheManager     _modCaches;
     private readonly CollectionManager   _collectionManager;
     private readonly TutorialService     _tutorial;
     private readonly ModImportManager    _modImportManager;
@@ -37,7 +36,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
     public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
-        ModCacheManager modCaches, ModImportManager modImportManager)
+        ModImportManager modImportManager)
         : base(fileSystem, DalamudServices.KeyState, HandleException)
     {
         _communicator      = communicator;
@@ -47,7 +46,6 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         _tutorial          = tutorial;
         _fileDialog        = fileDialog;
         _chat              = chat;
-        _modCaches         = modCaches;
         _modImportManager  = modImportManager;
 
         // @formatter:off
@@ -103,13 +101,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         => _config.SortMode;
 
     protected override uint ExpandedFolderColor
-        => ColorId.FolderExpanded.Value(_config);
+        => ColorId.FolderExpanded.Value();
 
     protected override uint CollapsedFolderColor
-        => ColorId.FolderCollapsed.Value(_config);
+        => ColorId.FolderCollapsed.Value();
 
     protected override uint FolderLineColor
-        => ColorId.FolderLine.Value(_config);
+        => ColorId.FolderLine.Value();
 
     protected override bool FoldersDefaultOpen
         => _config.OpenFoldersByDefault;
@@ -138,7 +136,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     protected override void DrawLeafName(FileSystem<Mod>.Leaf leaf, in ModState state, bool selected)
     {
         var flags = selected ? ImGuiTreeNodeFlags.Selected | LeafFlags : LeafFlags;
-        using var c = ImRaii.PushColor(ImGuiCol.Text, state.Color.Value(_config))
+        using var c = ImRaii.PushColor(ImGuiCol.Text, state.Color.Value())
             .Push(ImGuiCol.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite);
         using var id = ImRaii.PushId(leaf.Value.Index);
         ImRaii.TreeNode(leaf.Value.Name, flags).Dispose();
@@ -285,7 +283,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             if (leaf == null)
                 throw new Exception("Mod was not found at root.");
 
-            var folder = FileSystem.FindOrCreateAllFolders(Penumbra.Config.DefaultImportFolder);
+            var folder = FileSystem.FindOrCreateAllFolders(_config.DefaultImportFolder);
             FileSystem.Move(leaf, folder);
         }
         catch (Exception e)
@@ -315,19 +313,19 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             ImGui.BulletText("Select a mod to obtain more information or change settings.");
             ImGui.BulletText("Names are colored according to your config and their current state in the collection:");
             indent.Push();
-            ImGuiUtil.BulletTextColored(ColorId.EnabledMod.Value(_config),           "enabled in the current collection.");
-            ImGuiUtil.BulletTextColored(ColorId.DisabledMod.Value(_config),          "disabled in the current collection.");
-            ImGuiUtil.BulletTextColored(ColorId.InheritedMod.Value(_config),         "enabled due to inheritance from another collection.");
-            ImGuiUtil.BulletTextColored(ColorId.InheritedDisabledMod.Value(_config), "disabled due to inheritance from another collection.");
-            ImGuiUtil.BulletTextColored(ColorId.UndefinedMod.Value(_config),         "unconfigured in all inherited collections.");
-            ImGuiUtil.BulletTextColored(ColorId.NewMod.Value(_config),
+            ImGuiUtil.BulletTextColored(ColorId.EnabledMod.Value(),           "enabled in the current collection.");
+            ImGuiUtil.BulletTextColored(ColorId.DisabledMod.Value(),          "disabled in the current collection.");
+            ImGuiUtil.BulletTextColored(ColorId.InheritedMod.Value(),         "enabled due to inheritance from another collection.");
+            ImGuiUtil.BulletTextColored(ColorId.InheritedDisabledMod.Value(), "disabled due to inheritance from another collection.");
+            ImGuiUtil.BulletTextColored(ColorId.UndefinedMod.Value(),         "unconfigured in all inherited collections.");
+            ImGuiUtil.BulletTextColored(ColorId.NewMod.Value(),
                 "newly imported during this session. Will go away when first enabling a mod or when Penumbra is reloaded.");
-            ImGuiUtil.BulletTextColored(ColorId.HandledConflictMod.Value(_config),
+            ImGuiUtil.BulletTextColored(ColorId.HandledConflictMod.Value(),
                 "enabled and conflicting with another enabled Mod, but on different priorities (i.e. the conflict is solved).");
-            ImGuiUtil.BulletTextColored(ColorId.ConflictingMod.Value(_config),
+            ImGuiUtil.BulletTextColored(ColorId.ConflictingMod.Value(),
                 "enabled and conflicting with another enabled Mod on the same priority.");
-            ImGuiUtil.BulletTextColored(ColorId.FolderExpanded.Value(_config),  "expanded mod folder.");
-            ImGuiUtil.BulletTextColored(ColorId.FolderCollapsed.Value(_config), "collapsed mod folder");
+            ImGuiUtil.BulletTextColored(ColorId.FolderExpanded.Value(),  "expanded mod folder.");
+            ImGuiUtil.BulletTextColored(ColorId.FolderCollapsed.Value(), "collapsed mod folder");
             indent.Pop(1);
             ImGui.BulletText("Right-click a mod to enter its sort order, which is its name by default, possibly with a duplicate number.");
             indent.Push();
@@ -359,7 +357,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private void OnSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool inherited)
     {
         if (collection != _collectionManager.Active.Current)
-            return; 
+            return;
 
         SetFilterDirty();
         if (mod == Selected)
@@ -524,8 +522,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             0  => !(leaf.FullName().Contains(_modFilter.Lower, IgnoreCase) || mod.Name.Contains(_modFilter)),
             1  => !mod.Name.Contains(_modFilter),
             2  => !mod.Author.Contains(_modFilter),
-            3  => !_modCaches[mod].LowerChangedItemsString.Contains(_modFilter.Lower),
-            4  => !_modCaches[mod].AllTagsLower.Contains(_modFilter.Lower),
+            3  => !mod.LowerChangedItemsString.Contains(_modFilter.Lower),
+            4  => !mod.AllTagsLower.Contains(_modFilter.Lower),
             _  => false, // Should never happen
         };
     }
@@ -554,13 +552,12 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private bool CheckStateFilters(Mod mod, ModSettings? settings, ModCollection collection, ref ModState state)
     {
         var isNew = _modManager.IsNew(mod);
-        var cache = _modCaches[mod.Index];
         // Handle mod details.
-        if (CheckFlags(cache.TotalFileCount,     ModFilter.HasNoFiles,             ModFilter.HasFiles)
-         || CheckFlags(cache.TotalSwapCount,     ModFilter.HasNoFileSwaps,         ModFilter.HasFileSwaps)
-         || CheckFlags(cache.TotalManipulations, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations)
-         || CheckFlags(cache.HasOptions ? 1 : 0, ModFilter.HasNoConfig,            ModFilter.HasConfig)
-         || CheckFlags(isNew ? 1 : 0,            ModFilter.NotNew,                 ModFilter.IsNew))
+        if (CheckFlags(mod.TotalFileCount,     ModFilter.HasNoFiles,             ModFilter.HasFiles)
+         || CheckFlags(mod.TotalSwapCount,     ModFilter.HasNoFileSwaps,         ModFilter.HasFileSwaps)
+         || CheckFlags(mod.TotalManipulations, ModFilter.HasNoMetaManipulations, ModFilter.HasMetaManipulations)
+         || CheckFlags(mod.HasOptions ? 1 : 0, ModFilter.HasNoConfig,            ModFilter.HasConfig)
+         || CheckFlags(isNew ? 1 : 0,          ModFilter.NotNew,                 ModFilter.IsNew))
             return true;
 
         // Handle Favoritism

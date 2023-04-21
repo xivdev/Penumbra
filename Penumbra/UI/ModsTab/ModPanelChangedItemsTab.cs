@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using ImGuiNET;
 using OtterGui;
@@ -14,20 +15,18 @@ public class ModPanelChangedItemsTab : ITab
 {
     private readonly ModFileSystemSelector _selector;
     private readonly PenumbraApi           _api;
-    private readonly ModCacheManager       _modCaches;
 
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
 
-    public ModPanelChangedItemsTab(PenumbraApi api, ModFileSystemSelector selector, ModCacheManager modCaches)
+    public ModPanelChangedItemsTab(PenumbraApi api, ModFileSystemSelector selector)
     {
-        _api       = api;
-        _selector  = selector;
-        _modCaches = modCaches;
+        _api      = api;
+        _selector = selector;
     }
 
     public bool IsVisible
-        => _modCaches[_selector.Selected!].ChangedItems.Count > 0;
+        => _selector.Selected!.ChangedItems.Count > 0;
 
     public void DrawContent()
     {
@@ -35,7 +34,7 @@ public class ModPanelChangedItemsTab : ITab
         if (!list)
             return;
 
-        var zipList = ZipList.FromSortedList(_modCaches[_selector.Selected!].ChangedItems);
+        var zipList = ZipList.FromSortedList((SortedList<string, object?>)_selector.Selected!.ChangedItems);
         var height  = ImGui.GetTextLineHeight();
         ImGuiClip.ClippedDraw(zipList, kvp => UiHelpers.DrawChangedItem(_api, kvp.Item1, kvp.Item2, true), height);
     }

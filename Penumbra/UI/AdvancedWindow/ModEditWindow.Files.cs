@@ -82,7 +82,7 @@ public partial class ModEditWindow
             return f.SubModUsage.Count == 0
                 ? Enumerable.Repeat((file, "Unused", string.Empty, 0x40000080u), 1)
                 : f.SubModUsage.Select(s => (file, s.Item2.ToString(), s.Item1.FullName,
-                    _editor.Option! == s.Item1 && _modCaches[_mod!].HasOptions ? 0x40008000u : 0u));
+                    _editor.Option! == s.Item1 && _mod!.HasOptions ? 0x40008000u : 0u));
         });
 
         void DrawLine((string, string, string, uint) data)
@@ -179,7 +179,7 @@ public partial class ModEditWindow
         var selected = _selectedFiles.Contains(registry);
         var color = registry.SubModUsage.Count == 0             ? ColorId.ConflictingMod :
             registry.CurrentUsage == registry.SubModUsage.Count ? ColorId.NewMod : ColorId.InheritedMod;
-        using var c = ImRaii.PushColor(ImGuiCol.Text, color.Value(Penumbra.Config));
+        using var c = ImRaii.PushColor(ImGuiCol.Text, color.Value());
         if (UiHelpers.Selectable(registry.RelPath.Path, selected))
         {
             if (selected)

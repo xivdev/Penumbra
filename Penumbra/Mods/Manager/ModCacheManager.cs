@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,13 +11,11 @@ using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
 
-public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
+public class ModCacheManager : IDisposable
 {
     private readonly CommunicatorService _communicator;
     private readonly IdentifierService   _identifier;
     private readonly ModStorage          _modManager;
-
-    private readonly List<ModCache> _cache = new();
 
     public ModCacheManager(CommunicatorService communicator, IdentifierService identifier, ModStorage modStorage)
     {
@@ -34,20 +31,6 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
             identifier.FinishedCreation += OnIdentifierCreation;
         OnModDiscoveryFinished();
     }
-
-    public IEnumerator<ModCache> GetEnumerator()
-        => _cache.Take(Count).GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator()
-        => GetEnumerator();
-
-    public int Count { get; private set; }
-
-    public ModCache this[int index]
-        => _cache[index];
-
-    public ModCache this[Mod mod]
-        => _cache[mod.Index];
 
     public void Dispose()
     {
@@ -127,35 +110,30 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
 
     private void OnModOptionChange(ModOptionChangeType type, Mod mod, int groupIdx, int _, int _2)
     {
-        ModCache cache;
         switch (type)
         {
             case ModOptionChangeType.GroupAdded:
             case ModOptionChangeType.GroupDeleted:
             case ModOptionChangeType.OptionAdded:
             case ModOptionChangeType.OptionDeleted:
-                cache = EnsureCount(mod);
-                UpdateChangedItems(cache, mod);
-                UpdateCounts(cache, mod);
+                UpdateChangedItems(mod);
+                UpdateCounts(mod);
                 break;
             case ModOptionChangeType.GroupTypeChanged:
-                UpdateHasOptions(EnsureCount(mod), mod);
+                UpdateHasOptions(mod);
                 break;
             case ModOptionChangeType.OptionFilesChanged:
             case ModOptionChangeType.OptionFilesAdded:
-                cache = EnsureCount(mod);
-                UpdateChangedItems(cache, mod);
-                UpdateFileCount(cache, mod);
+                UpdateChangedItems(mod);
+                UpdateFileCount(mod);
                 break;
             case ModOptionChangeType.OptionSwapsChanged:
-                cache = EnsureCount(mod);
-                UpdateChangedItems(cache, mod);
-                UpdateSwapCount(cache, mod);
+                UpdateChangedItems(mod);
+                UpdateSwapCount(mod);
                 break;
             case ModOptionChangeType.OptionMetaChanged:
-                cache = EnsureCount(mod);
-                UpdateChangedItems(cache, mod);
-                UpdateMetaCount(cache, mod);
+                UpdateChangedItems(mod);
+                UpdateMetaCount(mod);
                 break;
         }
     }
@@ -166,106 +144,79 @@ public class ModCacheManager : IDisposable, IReadOnlyList<ModCache>
         {
             case ModPathChangeType.Added:
             case ModPathChangeType.Reloaded:
-                Refresh(EnsureCount(mod), mod);
-                break;
-            case ModPathChangeType.Deleted:
-                --Count;
-                var oldCache = _cache[mod.Index];
-                oldCache.Reset();
-                for (var i = mod.Index; i < Count; ++i)
-                    _cache[i] = _cache[i + 1];
-                _cache[Count] = oldCache;
+                Refresh(mod);
                 break;
         }
     }
 
-    private void OnModDataChange(ModDataChangeType type, Mod mod, string? _)
+    private static void OnModDataChange(ModDataChangeType type, Mod mod, string? _)
     {
         if ((type & (ModDataChangeType.LocalTags | ModDataChangeType.ModTags)) != 0)
-            UpdateTags(EnsureCount(mod), mod);
+            UpdateTags(mod);
     }
 
     private void OnModDiscoveryFinished()
-    {
-        if (_modManager.Count > _cache.Count)
-            _cache.AddRange(Enumerable.Range(0, _modManager.Count - _cache.Count).Select(_ => new ModCache()));
-
-        Parallel.ForEach(Enumerable.Range(0, _modManager.Count), idx => { Refresh(_cache[idx], _modManager[idx]); });
-        Count = _modManager.Count;
-    }
+        => Parallel.ForEach(_modManager, Refresh);
 
     private void OnIdentifierCreation()
     {
-        Parallel.ForEach(Enumerable.Range(0, _modManager.Count), idx => { UpdateChangedItems(_cache[idx], _modManager[idx]); });
+        Parallel.ForEach(_modManager, UpdateChangedItems);
         _identifier.FinishedCreation -= OnIdentifierCreation;
     }
 
-    private static void UpdateFileCount(ModCache cache, Mod mod)
-        => cache.TotalFileCount = mod.AllSubMods.Sum(s => s.Files.Count);
+    private static void UpdateFileCount(Mod mod)
+        => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.Files.Count);
 
-    private static void UpdateSwapCount(ModCache cache, Mod mod)
-        => cache.TotalFileCount = mod.AllSubMods.Sum(s => s.FileSwaps.Count);
+    private static void UpdateSwapCount(Mod mod)
+        => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.FileSwaps.Count);
 
-    private static void UpdateMetaCount(ModCache cache, Mod mod)
-        => cache.TotalFileCount = mod.AllSubMods.Sum(s => s.Manipulations.Count);
+    private static void UpdateMetaCount(Mod mod)
+        => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.Manipulations.Count);
 
-    private static void UpdateHasOptions(ModCache cache, Mod mod)
-        => cache.HasOptions = mod.Groups.Any(o => o.IsOption);
+    private static void UpdateHasOptions(Mod mod)
+        => mod.HasOptions = mod.Groups.Any(o => o.IsOption);
 
-    private static void UpdateTags(ModCache cache, Mod mod)
-        => cache.AllTagsLower = string.Join('\0', mod.ModTags.Concat(mod.LocalTags).Select(s => s.ToLowerInvariant()));
+    private static void UpdateTags(Mod mod)
+        => mod.AllTagsLower = string.Join('\0', mod.ModTags.Concat(mod.LocalTags).Select(s => s.ToLowerInvariant()));
 
-    private void UpdateChangedItems(ModCache cache, Mod mod)
+    private void UpdateChangedItems(Mod mod)
     {
-        cache.ChangedItems.Clear();
+        var changedItems = (SortedList<string, object?>)mod.ChangedItems;
+        changedItems.Clear();
         if (!_identifier.Valid)
             return;
 
         foreach (var gamePath in mod.AllSubMods.SelectMany(m => m.Files.Keys.Concat(m.FileSwaps.Keys)))
-            _identifier.AwaitedService.Identify(cache.ChangedItems, gamePath.ToString());
+            _identifier.AwaitedService.Identify(changedItems, gamePath.ToString());
 
         foreach (var manip in mod.AllSubMods.SelectMany(m => m.Manipulations))
-            ComputeChangedItems(_identifier.AwaitedService, cache.ChangedItems, manip);
+            ComputeChangedItems(_identifier.AwaitedService, changedItems, manip);
 
-        cache.LowerChangedItemsString = string.Join("\0", cache.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
+        mod.LowerChangedItemsString = string.Join("\0", mod.ChangedItems.Keys.Select(k => k.ToLowerInvariant()));
     }
 
-    private static void UpdateCounts(ModCache cache, Mod mod)
+    private static void UpdateCounts(Mod mod)
     {
-        cache.TotalFileCount     = mod.Default.Files.Count;
-        cache.TotalSwapCount     = mod.Default.FileSwaps.Count;
-        cache.TotalManipulations = mod.Default.Manipulations.Count;
-        cache.HasOptions         = false;
+        mod.TotalFileCount     = mod.Default.Files.Count;
+        mod.TotalSwapCount     = mod.Default.FileSwaps.Count;
+        mod.TotalManipulations = mod.Default.Manipulations.Count;
+        mod.HasOptions         = false;
         foreach (var group in mod.Groups)
         {
-            cache.HasOptions |= group.IsOption;
+            mod.HasOptions |= group.IsOption;
             foreach (var s in group)
             {
-                cache.TotalFileCount     += s.Files.Count;
-                cache.TotalSwapCount     += s.FileSwaps.Count;
-                cache.TotalManipulations += s.Manipulations.Count;
+                mod.TotalFileCount     += s.Files.Count;
+                mod.TotalSwapCount     += s.FileSwaps.Count;
+                mod.TotalManipulations += s.Manipulations.Count;
             }
         }
     }
 
-    private void Refresh(ModCache cache, Mod mod)
+    private void Refresh(Mod mod)
     {
-        UpdateTags(cache, mod);
-        UpdateCounts(cache, mod);
-        UpdateChangedItems(cache, mod);
-    }
-
-    private ModCache EnsureCount(Mod mod)
-    {
-        if (mod.Index < Count)
-            return _cache[mod.Index];
-
-
-        if (mod.Index >= _cache.Count)
-            _cache.AddRange(Enumerable.Range(0, mod.Index + 1 - _cache.Count).Select(_ => new ModCache()));
-        for (var i = Count; i < mod.Index; ++i)
-            Refresh(_cache[i], _modManager[i]);
-        Count = mod.Index + 1;
-        return _cache[mod.Index];
+        UpdateTags(mod);
+        UpdateCounts(mod);
+        UpdateChangedItems(mod);
     }
 }

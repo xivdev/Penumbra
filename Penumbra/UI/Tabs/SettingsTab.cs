@@ -69,8 +69,8 @@ public class SettingsTab : ITab
             return;
 
         DrawEnabledBox();
-        Checkbox("Lock Main Window", "Prevent the main window from being resized or moved.", Penumbra.Config.FixMainWindow,
-            v => Penumbra.Config.FixMainWindow = v);
+        Checkbox("Lock Main Window", "Prevent the main window from being resized or moved.", _config.FixMainWindow,
+            v => _config.FixMainWindow = v);
 
         ImGui.NewLine();
         DrawRootFolder();
@@ -220,7 +220,7 @@ public class SettingsTab : ITab
 
         if (_config.ModDirectory != _newModDirectory
          && _newModDirectory.Length != 0
-         && DrawPressEnterWarning(_newModDirectory, Penumbra.Config.ModDirectory, pos, save, selected))
+         && DrawPressEnterWarning(_newModDirectory, _config.ModDirectory, pos, save, selected))
             _modManager.DiscoverMods(_newModDirectory);
     }
 
@@ -344,14 +344,14 @@ public class SettingsTab : ITab
                 _dalamud.UiBuilder.DisableUserUiHide = !v;
             });
         Checkbox("Hide Config Window when in Cutscenes",
-            "Hide the penumbra main window when you are currently watching a cutscene.", Penumbra.Config.HideUiInCutscenes,
+            "Hide the penumbra main window when you are currently watching a cutscene.", _config.HideUiInCutscenes,
             v =>
             {
                 _config.HideUiInCutscenes                = v;
                 _dalamud.UiBuilder.DisableCutsceneUiHide = !v;
             });
         Checkbox("Hide Config Window when in GPose",
-            "Hide the penumbra main window when you are currently in GPose mode.", Penumbra.Config.HideUiInGPose,
+            "Hide the penumbra main window when you are currently in GPose mode.", _config.HideUiInGPose,
             v =>
             {
                 _config.HideUiInGPose                 = v;
@@ -481,7 +481,7 @@ public class SettingsTab : ITab
 
         Widget.DoubleModifierSelector("Mod Deletion Modifier",
             "A modifier you need to hold while clicking the Delete Mod button for it to take effect.", UiHelpers.InputTextWidth.X,
-            Penumbra.Config.DeleteModModifier,
+            _config.DeleteModModifier,
             v =>
             {
                 _config.DeleteModModifier = v;
@@ -742,8 +742,8 @@ public class SettingsTab : ITab
         ImGui.SetCursorPos(new Vector2(xPos, 3 * ImGui.GetFrameHeightWithSpacing()));
         if (ImGui.Button("Restart Tutorial", new Vector2(width, 0)))
         {
-            Penumbra.Config.TutorialStep = 0;
-            Penumbra.Config.Save();
+            _config.TutorialStep = 0;
+            _config.Save();
         }
 
         ImGui.SetCursorPos(new Vector2(xPos, 4 * ImGui.GetFrameHeightWithSpacing()));

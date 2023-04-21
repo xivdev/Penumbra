@@ -94,12 +94,12 @@ public partial class TexToolsImporter
             ImGui.TableNextColumn();
             if( ex == null )
             {
-                using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.FolderExpanded.Value(Penumbra.Config) );
+                using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.FolderExpanded.Value() );
                 ImGui.TextUnformatted( dir?.FullName[ ( _baseDirectory.FullName.Length + 1 ).. ] ?? "Unknown Directory" );
             }
             else
             {
-                using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.ConflictingMod.Value(Penumbra.Config) );
+                using var color = ImRaii.PushColor( ImGuiCol.Text, ColorId.ConflictingMod.Value() );
                 ImGui.TextUnformatted( ex.Message );
                 ImGuiUtil.HoverTooltip( ex.ToString() );
             }

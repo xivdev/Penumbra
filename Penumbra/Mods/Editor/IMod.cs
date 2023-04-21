@@ -14,4 +14,7 @@ public interface IMod
     public IReadOnlyList< IModGroup > Groups { get; }
 
     public IEnumerable< SubMod > AllSubMods { get; }
+
+    // Cache
+    public int TotalManipulations { get; }
 }

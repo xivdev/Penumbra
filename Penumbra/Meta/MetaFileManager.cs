@@ -1,14 +1,18 @@
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Dalamud.Data;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using Penumbra.Collections;
+using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
+using Penumbra.Import;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
+using Penumbra.Mods;
 using Penumbra.Services;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 
@@ -35,6 +39,33 @@ public unsafe class MetaFileManager
         ValidityChecker   = validityChecker;
         Identifier        = identifier;
         SignatureHelper.Initialise(this);
+    }
+
+    public void WriteAllTexToolsMeta(Mod mod)
+    {
+        try
+        {
+            TexToolsMeta.WriteTexToolsMeta(this, mod.Default.Manipulations, mod.ModPath);
+            foreach (var group in mod.Groups)
+            {
+                var dir = ModCreator.NewOptionDirectory(mod.ModPath, group.Name);
+                if (!dir.Exists)
+                    dir.Create();
+
+                foreach (var option in group.OfType<SubMod>())
+                {
+                    var optionDir = ModCreator.NewOptionDirectory(dir, option.Name);
+                    if (!optionDir.Exists)
+                        optionDir.Create();
+
+                    TexToolsMeta.WriteTexToolsMeta(this, option.Manipulations, optionDir);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Penumbra.Log.Error($"Error writing TexToolsMeta:\n{e}");
+        }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

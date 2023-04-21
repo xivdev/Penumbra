@@ -11,7 +11,6 @@ using OtterGui.Widgets;
 using Penumbra.GameData.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
-using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
@@ -106,6 +105,7 @@ public class Configuration : IPluginConfiguration, ISavable
     {
         _saveService = saveService;
         Load(fileNames, migrator);
+        UI.Classes.Colors.SetColors(this);
     }
 
     public void Load(FilenameService fileNames, ConfigMigrationService migrator)

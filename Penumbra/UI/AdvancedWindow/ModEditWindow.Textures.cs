@@ -42,7 +42,7 @@ public partial class ModEditWindow
         ImGui.NewLine();
 
         tex.PathInputBox("##input", "Import Image...", "Can import game paths as well as your own files.", _mod!.ModPath.FullName,
-            _fileDialog);
+            _fileDialog, _config.DefaultModImportPath);
         var files = _editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
             .Prepend((f.File.FullName, false)));
         tex.PathSelectBox("##combo", "Select the textures included in this mod on your drive or the ones they replace from the game files.",

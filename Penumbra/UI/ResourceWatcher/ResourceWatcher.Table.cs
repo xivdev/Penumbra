@@ -18,18 +18,18 @@ internal sealed class ResourceWatcherTable : Table<Record>
     public ResourceWatcherTable(Configuration config, ICollection<Record> records)
         : base("##records",
             records,
-            new PathColumn { Label               = "Path" },
-            new RecordTypeColumn(config) { Label = "Record" },
-            new CollectionColumn { Label         = "Collection" },
-            new ObjectColumn { Label             = "Game Object" },
-            new CustomLoadColumn { Label         = "Custom" },
-            new SynchronousLoadColumn { Label    = "Sync" },
-            new OriginalPathColumn { Label       = "Original Path" },
-            new ResourceCategoryColumn { Label   = "Category" },
-            new ResourceTypeColumn { Label       = "Type" },
-            new HandleColumn { Label             = "Resource" },
-            new RefCountColumn { Label           = "#Ref" },
-            new DateColumn { Label               = "Time" }
+            new PathColumn { Label                     = "Path" },
+            new RecordTypeColumn(config) { Label       = "Record" },
+            new CollectionColumn { Label               = "Collection" },
+            new ObjectColumn { Label                   = "Game Object" },
+            new CustomLoadColumn { Label               = "Custom" },
+            new SynchronousLoadColumn { Label          = "Sync" },
+            new OriginalPathColumn { Label             = "Original Path" },
+            new ResourceCategoryColumn(config) { Label = "Category" },
+            new ResourceTypeColumn(config) { Label     = "Type" },
+            new HandleColumn { Label                   = "Resource" },
+            new RefCountColumn { Label                 = "#Ref" },
+            new DateColumn { Label                     = "Time" }
         )
     { }
 
@@ -111,7 +111,7 @@ internal sealed class ResourceWatcherTable : Table<Record>
             else
                 _config.ResourceWatcherRecordTypes &= ~value;
 
-            Penumbra.Config.Save();
+            _config.Save();
         }
 
         public override void DrawColumn(Record item, int idx)
@@ -175,8 +175,13 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
     private sealed class ResourceCategoryColumn : ColumnFlags<ResourceCategoryFlag, Record>
     {
-        public ResourceCategoryColumn()
-            => AllFlags = ResourceExtensions.AllResourceCategories;
+        private readonly Configuration _config;
+
+        public ResourceCategoryColumn(Configuration config)
+        {
+            _config  = config;
+            AllFlags = ResourceExtensions.AllResourceCategories;
+        }
 
         public override float Width
             => 80 * UiHelpers.Scale;
@@ -185,16 +190,16 @@ internal sealed class ResourceWatcherTable : Table<Record>
             => FilterValue.HasFlag(item.Category);
 
         public override ResourceCategoryFlag FilterValue
-            => Penumbra.Config.ResourceWatcherResourceCategories;
+            => _config.ResourceWatcherResourceCategories;
 
         protected override void SetValue(ResourceCategoryFlag value, bool enable)
         {
             if (enable)
-                Penumbra.Config.ResourceWatcherResourceCategories |= value;
+                _config.ResourceWatcherResourceCategories |= value;
             else
-                Penumbra.Config.ResourceWatcherResourceCategories &= ~value;
+                _config.ResourceWatcherResourceCategories &= ~value;
 
-            Penumbra.Config.Save();
+            _config.Save();
         }
 
         public override void DrawColumn(Record item, int idx)
@@ -205,8 +210,11 @@ internal sealed class ResourceWatcherTable : Table<Record>
 
     private sealed class ResourceTypeColumn : ColumnFlags<ResourceTypeFlag, Record>
     {
-        public ResourceTypeColumn()
+        private readonly Configuration _config;
+
+        public ResourceTypeColumn(Configuration config)
         {
+            _config  = config;
             AllFlags = Enum.GetValues<ResourceTypeFlag>().Aggregate((v, f) => v | f);
             for (var i = 0; i < Names.Length; ++i)
                 Names[i] = Names[i].ToLowerInvariant();
@@ -219,16 +227,16 @@ internal sealed class ResourceWatcherTable : Table<Record>
             => FilterValue.HasFlag(item.ResourceType);
 
         public override ResourceTypeFlag FilterValue
-            => Penumbra.Config.ResourceWatcherResourceTypes;
+            => _config.ResourceWatcherResourceTypes;
 
         protected override void SetValue(ResourceTypeFlag value, bool enable)
         {
             if (enable)
-                Penumbra.Config.ResourceWatcherResourceTypes |= value;
+                _config.ResourceWatcherResourceTypes |= value;
             else
-                Penumbra.Config.ResourceWatcherResourceTypes &= ~value;
+                _config.ResourceWatcherResourceTypes &= ~value;
 
-            Penumbra.Config.Save();
+            _config.Save();
         }
 
         public override void DrawColumn(Record item, int idx)

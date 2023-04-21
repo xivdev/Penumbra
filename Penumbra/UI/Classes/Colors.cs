@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Penumbra.UI.Classes;
 
@@ -64,6 +65,13 @@ public static class Colors
             // @formatter:on
         };
 
-    public static uint Value(this ColorId color, Configuration config)
-        => config.Colors.TryGetValue(color, out var value) ? value : color.Data().DefaultColor;
+    private static IReadOnlyDictionary<ColorId, uint> _colors = new Dictionary<ColorId, uint>();
+
+    /// <summary> Obtain the configured value for a color. </summary>
+    public static uint Value(this ColorId color)
+        => _colors.TryGetValue(color, out var value) ? value : color.Data().DefaultColor;
+
+    /// <summary> Set the configurable colors dictionary to a value. </summary>
+    public static void SetColors(Configuration config)
+        => _colors = config.Colors;
 }

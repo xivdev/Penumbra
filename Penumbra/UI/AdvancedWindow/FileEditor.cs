@@ -286,7 +286,7 @@ public class FileEditor<T> where T : class, IWritable
                     ImGui.TableNextColumn();
                     UiHelpers.Text(gamePath.Path);
                     ImGui.TableNextColumn();
-                    using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value(_config));
+                    using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
                     ImGui.TextUnformatted(option.FullName);
                 }
             }
@@ -294,7 +294,7 @@ public class FileEditor<T> where T : class, IWritable
             if (file.SubModUsage.Count > 0)
             {
                 ImGui.SameLine();
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value(_config));
+                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
                 ImGuiUtil.RightAlign(file.SubModUsage[0].Item2.Path.ToString());
             }
 

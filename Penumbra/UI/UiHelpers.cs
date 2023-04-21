@@ -86,7 +86,7 @@ public static class UiHelpers
             return;
 
         ImGui.SameLine(ImGui.GetContentRegionAvail().X);
-        ImGuiUtil.RightJustify(text, ColorId.ItemId.Value(Penumbra.Config));
+        ImGuiUtil.RightJustify(text, ColorId.ItemId.Value());
     }
 
     /// <summary> Return more detailed object information in text, if it exists. </summary>

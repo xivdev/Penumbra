@@ -111,7 +111,7 @@ public class ModsTab : ITab
 
     private void DrawRedrawLine()
     {
-        if (Penumbra.Config.HideRedrawBar)
+        if (_config.HideRedrawBar)
         {
             _tutorial.SkipTutorial(BasicTutorialSteps.Redrawing);
             return;
@@ -172,7 +172,7 @@ public class ModsTab : ITab
             ImGui.SameLine();
             DrawInheritedCollectionButton(3 * buttonSize);
             ImGui.SameLine();
-            _collectionCombo.Draw("##collectionSelector", 2 * buttonSize.X, ColorId.SelectedCollection.Value(_config));
+            _collectionCombo.Draw("##collectionSelector", 2 * buttonSize.X, ColorId.SelectedCollection.Value());
         }
 
         _tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);

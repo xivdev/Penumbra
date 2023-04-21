@@ -75,7 +75,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
 
     protected override bool OnDraw(int idx)
     {
-        using var color  = ImRaii.PushColor(ImGuiCol.Header, ColorId.SelectedCollection.Value(_config));
+        using var color  = ImRaii.PushColor(ImGuiCol.Header, ColorId.SelectedCollection.Value());
         var       ret    = ImGui.Selectable(Name(Items[idx]), idx == CurrentIdx);
         using var source = ImRaii.DragDropSource();
 

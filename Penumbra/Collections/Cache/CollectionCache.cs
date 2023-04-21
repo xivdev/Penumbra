@@ -218,7 +218,7 @@ public class CollectionCache : IDisposable
         if (addMetaChanges)
         {
             ++_collection.ChangeCounter;
-            if ((mod is TemporaryMod temp ? temp.TotalManipulations : Penumbra.ModCaches[mod.Index].TotalManipulations) > 0)
+            if (mod.TotalManipulations > 0)
                 AddMetaFiles();
 
             _manager.MetaFileManager.ApplyDefaultFiles(_collection);

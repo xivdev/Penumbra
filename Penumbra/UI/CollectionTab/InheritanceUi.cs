@@ -17,15 +17,13 @@ public class InheritanceUi
     private const int    InheritedCollectionHeight = 9;
     private const string InheritanceDragDropLabel  = "##InheritanceMove";
 
-    private readonly Configuration      _config;
     private readonly CollectionStorage  _collections;
     private readonly ActiveCollections  _active;
     private readonly InheritanceManager _inheritance;
     private readonly CollectionSelector _selector;
 
-    public InheritanceUi(Configuration config, CollectionManager collectionManager, CollectionSelector selector)
+    public InheritanceUi(CollectionManager collectionManager, CollectionSelector selector)
     {
-        _config      = config;
         _selector    = selector;
         _collections = collectionManager.Storage;
         _active      = collectionManager.Active;
@@ -37,7 +35,7 @@ public class InheritanceUi
     public void Draw()
     {
         using var id    = ImRaii.PushId("##Inheritance");
-        ImGuiUtil.DrawColoredText(($"The {TutorialService.SelectedCollection} ", 0), (Name(_active.Current), ColorId.SelectedCollection.Value(_config) | 0xFF000000), (" inherits from:", 0));
+        ImGuiUtil.DrawColoredText(($"The {TutorialService.SelectedCollection} ", 0), (Name(_active.Current), ColorId.SelectedCollection.Value() | 0xFF000000), (" inherits from:", 0));
         ImGui.Dummy(Vector2.One);
 
         DrawCurrentCollectionInheritance();
@@ -124,7 +122,7 @@ public class InheritanceUi
         foreach (var inheritance in collection.GetFlattenedInheritance().Skip(1))
         {
             // Draw the child, already seen collections are colored as conflicts.
-            using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(Penumbra.Config),
+            using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(),
                 _seenInheritedCollections.Contains(inheritance));
             _seenInheritedCollections.Add(inheritance);
 
@@ -150,7 +148,7 @@ public class InheritanceUi
     /// <summary> Draw a single primary inherited collection. </summary>
     private void DrawInheritance(ModCollection collection)
     {
-        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(Penumbra.Config),
+        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.HandledConflictMod.Value(),
             _seenInheritedCollections.Contains(collection));
         _seenInheritedCollections.Add(collection);
         using var tree = ImRaii.TreeNode($"{Name(collection)}###{collection.Name}", ImGuiTreeNodeFlags.NoTreePushOnOpen);

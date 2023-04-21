@@ -29,7 +29,6 @@ public partial class ModEditWindow : Window, IDisposable
 
     private readonly PerformanceTracker _performance;
     private readonly ModEditor          _editor;
-    private readonly ModCacheManager    _modCaches;
     private readonly Configuration      _config;
     private readonly ItemSwapTab        _itemSwapTab;
     private readonly DataManager        _gameData;
@@ -277,7 +276,7 @@ public partial class ModEditWindow : Window, IDisposable
         var modifier = _config.DeleteModModifier.IsActive();
 
         var tt = _allowReduplicate ? desc :
-            modifier ? desc : desc + $"\n\nNo duplicates detected! Hold {Penumbra.Config.DeleteModModifier} to force normalization anyway.";
+            modifier ? desc : desc + $"\n\nNo duplicates detected! Hold {_config.DeleteModModifier} to force normalization anyway.";
 
         if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
         {
@@ -497,25 +496,26 @@ public partial class ModEditWindow : Window, IDisposable
     }
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
-        Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, ModCacheManager modCaches, MetaFileManager metaFileManager, StainService stainService)
+        Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
+        StainService stainService)
         : base(WindowBaseLabel)
     {
-        _performance       = performance;
-        _itemSwapTab       = itemSwapTab;
-        _config            = config;
-        _editor            = editor;
-        _modCaches         = modCaches;
-        _metaFileManager   = metaFileManager;
-        _stainService = stainService;
-        _gameData          = gameData;
-        _fileDialog        = fileDialog;
+        _performance     = performance;
+        _itemSwapTab     = itemSwapTab;
+        _config          = config;
+        _editor          = editor;
+        _metaFileManager = metaFileManager;
+        _stainService    = stainService;
+        _gameData        = gameData;
+        _fileDialog      = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
         _modelTab = new FileEditor<MdlFile>(this, gameData, config, _fileDialog, "Models", ".mdl",
             () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, bytes => new MdlFile(bytes));
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shader Packages", ".shpk",
-            () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty, bytes => new ShpkTab(_fileDialog, bytes));
+            () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
+            bytes => new ShpkTab(_fileDialog, bytes));
         _center            = new CombinedTexture(_left, _right);
         _quickImportViewer = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
     }

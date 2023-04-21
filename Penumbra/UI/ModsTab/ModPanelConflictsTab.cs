@@ -43,7 +43,7 @@ public class ModPanelConflictsTab : ITab
 
             ImGui.SameLine();
             using (var color = ImRaii.PushColor(ImGuiCol.Text,
-                       conflict.HasPriority ? ColorId.HandledConflictMod.Value(Penumbra.Config) : ColorId.ConflictingMod.Value(Penumbra.Config)))
+                       conflict.HasPriority ? ColorId.HandledConflictMod.Value() : ColorId.ConflictingMod.Value()))
             {
                 var priority = conflict.Mod2.Index < 0
                     ? conflict.Mod2.Priority

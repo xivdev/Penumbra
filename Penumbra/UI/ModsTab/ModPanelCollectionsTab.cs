@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Dalamud.Interface;
 using ImGuiNET;
-using Lumina.Data.Parsing.Layer;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
@@ -15,15 +14,13 @@ namespace Penumbra.UI.ModsTab;
 
 public class ModPanelCollectionsTab : ITab
 {
-    private readonly Configuration         _config;
     private readonly ModFileSystemSelector _selector;
     private readonly CollectionStorage     _collections;
 
     private readonly List<(ModCollection, ModCollection, uint, string)> _cache = new();
 
-    public ModPanelCollectionsTab(Configuration config, CollectionStorage storage, ModFileSystemSelector selector)
+    public ModPanelCollectionsTab(CollectionStorage storage, ModFileSystemSelector selector)
     {
-        _config      = config;
         _collections = storage;
         _selector    = selector;
     }
@@ -42,9 +39,8 @@ public class ModPanelCollectionsTab : ITab
         else
             ImGui.TextUnformatted($"This Mod is directly configured in {direct} collections.");
         if (inherited > 0)
-        {
-            ImGui.TextUnformatted($"It is also implicitly used in {inherited} {(inherited == 1 ? "collection" : "collections")} through inheritance.");
-        }
+            ImGui.TextUnformatted(
+                $"It is also implicitly used in {inherited} {(inherited == 1 ? "collection" : "collections")} through inheritance.");
 
         ImGui.NewLine();
         ImGui.Separator();
@@ -79,13 +75,13 @@ public class ModPanelCollectionsTab : ITab
     private (int Direct, int Inherited) CountUsage(Mod mod)
     {
         _cache.Clear();
-        var undefined    = ColorId.UndefinedMod.Value(_config);
-        var enabled      = ColorId.EnabledMod.Value(_config);
-        var inherited    = ColorId.InheritedMod.Value(_config);
-        var disabled     = ColorId.DisabledMod.Value(_config);
-        var disInherited = ColorId.InheritedDisabledMod.Value(_config);
-        var directCount       = 0;
-        var inheritedCount    = 0;
+        var undefined      = ColorId.UndefinedMod.Value();
+        var enabled        = ColorId.EnabledMod.Value();
+        var inherited      = ColorId.InheritedMod.Value();
+        var disabled       = ColorId.DisabledMod.Value();
+        var disInherited   = ColorId.InheritedDisabledMod.Value();
+        var directCount    = 0;
+        var inheritedCount = 0;
         foreach (var collection in _collections)
         {
             var (settings, parent) = collection[mod.Index];

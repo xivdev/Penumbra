@@ -46,7 +46,7 @@ public class CollectionsTab : IDisposable, ITab
         _config   = configuration;
         _tutorial = tutorial;
         _selector = new CollectionSelector(configuration, communicator, collectionManager.Storage, collectionManager.Active, _tutorial);
-        _panel    = new CollectionPanel(pi, configuration, communicator, collectionManager, _selector, actors, targets, modStorage);
+        _panel    = new CollectionPanel(pi, communicator, collectionManager, _selector, actors, targets, modStorage);
     }
 
     public void Dispose()
@@ -116,8 +116,8 @@ public class CollectionsTab : IDisposable, ITab
         ImGui.SameLine();
         
         style.Push(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
-        color.Push(ImGuiCol.Text, ColorId.FolderExpanded.Value(_config))
-            .Push(ImGuiCol.Border, ColorId.FolderExpanded.Value(_config));
+        color.Push(ImGuiCol.Text, ColorId.FolderExpanded.Value())
+            .Push(ImGuiCol.Border, ColorId.FolderExpanded.Value());
         if (ImGuiUtil.DrawDisabledButton(
                 $"{(_selector.IncognitoMode ? FontAwesomeIcon.Eye : FontAwesomeIcon.EyeSlash).ToIconString()}###IncognitoMode",
                 buttonSize with { X = withSpacing }, string.Empty, false, true))

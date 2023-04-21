@@ -94,7 +94,7 @@ public class ChangedItemsTab : ITab
         if (!UiHelpers.GetChangedItemObject(item.Value.Item2, out var text))
             return;
 
-        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value(Penumbra.Config));
+        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
         ImGuiUtil.RightAlign(text);
     }
 }

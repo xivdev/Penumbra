@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using OtterGui;
 using OtterGui.Classes;
+using Penumbra.Collections.Cache;
 using Penumbra.Import;
 using Penumbra.Meta;
 using Penumbra.String.Classes;
@@ -21,8 +22,10 @@ public sealed partial class Mod : IMod
 
     // Main Data
     public DirectoryInfo ModPath { get; internal set; }
+
     public string Identifier
         => Index >= 0 ? ModPath.Name : Name;
+
     public int Index { get; internal set; } = -1;
 
     public bool IsTemporary
@@ -32,11 +35,14 @@ public sealed partial class Mod : IMod
     public int Priority
         => 0;
 
-    public Mod(DirectoryInfo modPath)
+    internal Mod(DirectoryInfo modPath)
     {
         ModPath = modPath;
         Default = new SubMod(this);
     }
+
+    public override string ToString()
+        => Name.Text;
 
     // Meta Data
     public LowerString           Name        { get; internal set; } = "New Mod";
@@ -80,35 +86,14 @@ public sealed partial class Mod : IMod
             .ToList();
     }
 
-    // Access
-    public override string ToString()
-        => Name.Text;
+    // Cache
+    public readonly IReadOnlyDictionary<string, object?> ChangedItems = new SortedList<string, object?>();
 
-    public void WriteAllTexToolsMeta(MetaFileManager manager)
-    {
-        try
-        {
-            TexToolsMeta.WriteTexToolsMeta(manager, Default.Manipulations, ModPath);
-            foreach (var group in Groups)
-            {
-                var dir = ModCreator.NewOptionDirectory(ModPath, group.Name);
-                if (!dir.Exists)
-                    dir.Create();
+    public string LowerChangedItemsString { get; internal set; } = string.Empty;
+    public string AllTagsLower            { get; internal set; } = string.Empty;
 
-                foreach (var option in group.OfType<SubMod>())
-                {
-                    var optionDir = ModCreator.NewOptionDirectory(dir, option.Name);
-                    if (!optionDir.Exists)
-                        optionDir.Create();
-
-                    TexToolsMeta.WriteTexToolsMeta(manager, option.Manipulations, optionDir);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Error writing TexToolsMeta:\n{e}");
-        }
-    }
-
+    public int  TotalFileCount     { get; internal set; }
+    public int  TotalSwapCount     { get; internal set; }
+    public int  TotalManipulations { get; internal set; }
+    public bool HasOptions         { get; internal set; }
 }

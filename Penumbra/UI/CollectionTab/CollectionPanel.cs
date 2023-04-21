@@ -23,7 +23,6 @@ namespace Penumbra.UI.CollectionTab;
 
 public sealed class CollectionPanel : IDisposable
 {
-    private readonly Configuration          _config;
     private readonly CollectionStorage      _collections;
     private readonly ActiveCollections      _active;
     private readonly CollectionSelector     _selector;
@@ -39,10 +38,9 @@ public sealed class CollectionPanel : IDisposable
     private static readonly IReadOnlyList<(CollectionType, bool, bool, string, uint)>       AdvancedTree = CreateTree();
     private readonly        List<(CollectionType Type, ActorIdentifier Identifier)>         _inUseCache  = new();
 
-    public CollectionPanel(DalamudPluginInterface pi, Configuration config, CommunicatorService communicator, CollectionManager manager,
+    public CollectionPanel(DalamudPluginInterface pi, CommunicatorService communicator, CollectionManager manager,
         CollectionSelector selector, ActorService actors, TargetManager targets, ModStorage mods)
     {
-        _config                 = config;
         _collections            = manager.Storage;
         _active                 = manager.Active;
         _selector               = selector;
@@ -50,7 +48,7 @@ public sealed class CollectionPanel : IDisposable
         _targets                = targets;
         _mods                   = mods;
         _individualAssignmentUi = new IndividualAssignmentUi(communicator, actors, manager);
-        _inheritanceUi          = new InheritanceUi(_config, manager, _selector);
+        _inheritanceUi          = new InheritanceUi(manager, _selector);
         _nameFont               = pi.UiBuilder.GetGameFontHandle(new GameFontStyle(GameFontFamilyAndSize.Jupiter23));
     }
 
@@ -81,7 +79,7 @@ public sealed class CollectionPanel : IDisposable
         DrawSimpleCollectionButton(CollectionType.MaleNonPlayerCharacter,   buttonWidth);
         DrawSimpleCollectionButton(CollectionType.FemaleNonPlayerCharacter, buttonWidth);
 
-        ImGuiUtil.DrawColoredText(("Individual ", ColorId.NewMod.Value(_config)),
+        ImGuiUtil.DrawColoredText(("Individual ", ColorId.NewMod.Value()),
             ("Assignments take precedence before anything else and only apply to one specific character or monster.", 0));
         ImGui.Dummy(Vector2.UnitX);
 
@@ -254,13 +252,13 @@ public sealed class CollectionPanel : IDisposable
         collection ??= _active.ByType(type, id);
         using var color = ImRaii.PushColor(ImGuiCol.Button,
                 collection == null
-                    ? ColorId.NoAssignment.Value(_config)
+                    ? ColorId.NoAssignment.Value()
                     : redundancy.Length > 0
-                        ? ColorId.RedundantAssignment.Value(_config)
+                        ? ColorId.RedundantAssignment.Value()
                         : collection == _active.Current
-                            ? ColorId.SelectedCollection.Value(_config)
+                            ? ColorId.SelectedCollection.Value()
                             : collection == ModCollection.Empty
-                                ? ColorId.NoModsAssignment.Value(_config)
+                                ? ColorId.NoModsAssignment.Value()
                                 : ImGui.GetColorU32(ImGuiCol.Button), !invalid)
             .Push(ImGuiCol.Border, borderColor == 0 ? ImGui.GetColorU32(ImGuiCol.TextDisabled) : borderColor);
         using var disabled = ImRaii.Disabled(invalid);
@@ -295,27 +293,27 @@ public sealed class CollectionPanel : IDisposable
                     ImGui.TextUnformatted("Overruled by any other Assignment.");
                     break;
                 case CollectionType.Yourself:
-                    ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Individual ", ColorId.NewMod.Value(_config)), ("Assignments.", 0));
+                    ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
                     break;
                 case CollectionType.MalePlayerCharacter:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Male Racial Player", Colors.DiscordColor), (", ", 0),
-                        ("Your Character", ColorId.HandledConflictMod.Value(_config)), (", or ", 0),
-                        ("Individual ", ColorId.NewMod.Value(_config)), ("Assignments.", 0));
+                        ("Your Character", ColorId.HandledConflictMod.Value()), (", or ", 0),
+                        ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
                     break;
                 case CollectionType.FemalePlayerCharacter:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Female Racial Player", Colors.ReniColorActive), (", ", 0),
-                        ("Your Character", ColorId.HandledConflictMod.Value(_config)), (", or ", 0),
-                        ("Individual ", ColorId.NewMod.Value(_config)), ("Assignments.", 0));
+                        ("Your Character", ColorId.HandledConflictMod.Value()), (", or ", 0),
+                        ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
                     break;
                 case CollectionType.MaleNonPlayerCharacter:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Male Racial NPC", Colors.DiscordColor), (", ", 0),
-                        ("Children", ColorId.FolderLine.Value(_config)), (", ", 0), ("Elderly", Colors.MetaInfoText), (", or ", 0),
-                        ("Individual ", ColorId.NewMod.Value(_config)), ("Assignments.", 0));
+                        ("Children", ColorId.FolderLine.Value()), (", ", 0), ("Elderly", Colors.MetaInfoText), (", or ", 0),
+                        ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
                     break;
                 case CollectionType.FemaleNonPlayerCharacter:
                     ImGuiUtil.DrawColoredText(("Overruled by ", 0), ("Female Racial NPC", Colors.ReniColorActive), (", ", 0),
-                        ("Children", ColorId.FolderLine.Value(_config)), (", ", 0), ("Elderly", Colors.MetaInfoText), (", or ", 0),
-                        ("Individual ", ColorId.NewMod.Value(_config)), ("Assignments.", 0));
+                        ("Children", ColorId.FolderLine.Value()), (", ", 0), ("Elderly", Colors.MetaInfoText), (", or ", 0),
+                        ("Individual ", ColorId.NewMod.Value()), ("Assignments.", 0));
                     break;
             }
         }

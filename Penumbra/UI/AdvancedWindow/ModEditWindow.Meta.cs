@@ -63,7 +63,7 @@ public partial class ModEditWindow
         CopyToClipboardButton("Copy all current manipulations to clipboard.", _iconSize, _editor.MetaEditor.Recombine());
         ImGui.SameLine();
         if (ImGui.Button("Write as TexTools Files"))
-            _mod!.WriteAllTexToolsMeta(_metaFileManager);
+            _metaFileManager.WriteAllTexToolsMeta(_mod!);
 
         using var child = ImRaii.Child("##meta", -Vector2.One, true);
         if (!child)
@@ -776,7 +776,7 @@ public partial class ModEditWindow
             var value = meta.Entry;
             ImGui.SetNextItemWidth(FloatWidth);
             using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
-                def < value ? ColorId.IncreasedMetaValue.Value(Penumbra.Config) : ColorId.DecreasedMetaValue.Value(Penumbra.Config),
+                def < value ? ColorId.IncreasedMetaValue.Value() : ColorId.DecreasedMetaValue.Value(),
                 def != value);
             if (ImGui.DragFloat("##rspValue", ref value, 0.001f, 0.01f, 8f) && value is >= 0.01f and <= 8f)
                 editor.MetaEditor.Change(meta.Copy(value));
@@ -805,7 +805,7 @@ public partial class ModEditWindow
     private static bool Checkmark(string label, string tooltip, bool currentValue, bool defaultValue, out bool newValue)
     {
         using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
-            defaultValue ? ColorId.DecreasedMetaValue.Value(Penumbra.Config) : ColorId.IncreasedMetaValue.Value(Penumbra.Config),
+            defaultValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(),
             defaultValue != currentValue);
         newValue = currentValue;
         ImGui.Checkbox(label, ref newValue);
@@ -820,7 +820,7 @@ public partial class ModEditWindow
     {
         newValue = currentValue;
         using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
-            defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value(Penumbra.Config) : ColorId.IncreasedMetaValue.Value(Penumbra.Config),
+            defaultValue > currentValue ? ColorId.DecreasedMetaValue.Value() : ColorId.IncreasedMetaValue.Value(),
             defaultValue != currentValue);
         ImGui.SetNextItemWidth(width);
         if (ImGui.DragInt(label, ref newValue, speed, minValue, maxValue))
