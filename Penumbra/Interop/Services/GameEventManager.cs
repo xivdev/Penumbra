@@ -272,14 +272,18 @@ public unsafe class GameEventManager : IDisposable
         Penumbra.Log.Information($"Test: {a1:X} {a2}");
         _testHook!.Original(a1, a2);
     }
-    #endif
-    [Conditional("DEBUG")]
     private void EnableDebugHook()
         => _testHook?.Enable();
 
-    [Conditional("DEBUG")]
     private void DisposeDebugHook()
         => _testHook?.Dispose();
+#else
+    private void EnableDebugHook()
+    { }
+
+    private void DisposeDebugHook()
+    { }
+#endif
 
     #endregion
 }
