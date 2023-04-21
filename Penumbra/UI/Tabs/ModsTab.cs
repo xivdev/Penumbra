@@ -6,6 +6,7 @@ using Penumbra.UI.Classes;
 using System;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Game.ClientState;
 using Dalamud.Interface;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
@@ -30,9 +31,10 @@ public class ModsTab : ITab
     private readonly RedrawService         _redrawService;
     private readonly Configuration         _config;
     private readonly CollectionCombo       _collectionCombo;
+    private readonly ClientState           _clientState;
 
     public ModsTab(ModManager modManager, CollectionManager collectionManager, ModFileSystemSelector selector, ModPanel panel,
-        TutorialService tutorial, RedrawService redrawService, Configuration config)
+        TutorialService tutorial, RedrawService redrawService, Configuration config, ClientState clientState)
     {
         _modManager        = modManager;
         _activeCollections = collectionManager.Active;
@@ -41,6 +43,7 @@ public class ModsTab : ITab
         _tutorial          = tutorial;
         _redrawService     = redrawService;
         _config            = config;
+        _clientState       = clientState;
         _collectionCombo   = new CollectionCombo(collectionManager, () => collectionManager.Storage.OrderBy(c => c.Name).ToList());
     }
 
@@ -148,7 +151,7 @@ public class ModsTab : ITab
             ImGuiUtil.HoverTooltip(lower.Length > 0 ? $"Execute '/penumbra redraw {lower}'." : $"Execute '/penumbra redraw'.");
         }
 
-        using var disabled = ImRaii.Disabled(DalamudServices.SClientState.LocalPlayer == null);
+        using var disabled = ImRaii.Disabled(_clientState.LocalPlayer == null);
         ImGui.SameLine();
         var buttonWidth = frameHeight with { X = ImGui.GetContentRegionAvail().X / 4 };
         DrawButton(buttonWidth, "All", string.Empty);

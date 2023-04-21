@@ -7,6 +7,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 using Penumbra.Util;
 
 namespace Penumbra.Api;
@@ -115,9 +116,10 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider<string, int, PenumbraApiEc>                                             RemoveTemporaryModAll;
     internal readonly FuncProvider<string, string, int, PenumbraApiEc>                                     RemoveTemporaryMod;
 
-    public PenumbraIpcProviders(DalamudPluginInterface pi, IPenumbraApi api, ModManager modManager, CollectionManager collections,
+    public PenumbraIpcProviders(DalamudServices dalamud, IPenumbraApi api, ModManager modManager, CollectionManager collections,
         TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService, Configuration config)
     {
+        var pi = dalamud.PluginInterface;
         Api = api;
 
         // Plugin State
@@ -228,7 +230,7 @@ public class PenumbraIpcProviders : IDisposable
         RemoveTemporaryModAll           = Ipc.RemoveTemporaryModAll.Provider(pi, Api.RemoveTemporaryModAll);
         RemoveTemporaryMod              = Ipc.RemoveTemporaryMod.Provider(pi, Api.RemoveTemporaryMod);
 
-        Tester = new IpcTester(config, pi, this, modManager, collections, tempMods, tempCollections, saveService);
+        Tester = new IpcTester(config, dalamud, this, modManager, collections, tempMods, tempCollections, saveService);
 
         Initialized.Invoke();
     }

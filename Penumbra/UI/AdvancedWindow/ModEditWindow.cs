@@ -31,7 +31,7 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly ModEditor          _editor;
     private readonly Configuration      _config;
     private readonly ItemSwapTab        _itemSwapTab;
-    private readonly DataManager        _gameData;
+    private readonly DalamudServices    _dalamud;
     private readonly MetaFileManager    _metaFileManager;
     private readonly ActiveCollections  _activeCollections;
     private readonly StainService       _stainService;
@@ -498,18 +498,18 @@ public partial class ModEditWindow : Window, IDisposable
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
-        StainService stainService, ActiveCollections activeCollections)
+        StainService stainService, ActiveCollections activeCollections, UiBuilder uiBuilder, DalamudServices dalamud)
         : base(WindowBaseLabel)
     {
-        _performance            = performance;
-        _itemSwapTab            = itemSwapTab;
-        _config                 = config;
-        _editor                 = editor;
-        _metaFileManager        = metaFileManager;
-        _stainService           = stainService;
+        _performance       = performance;
+        _itemSwapTab       = itemSwapTab;
+        _config            = config;
+        _editor            = editor;
+        _metaFileManager   = metaFileManager;
+        _stainService      = stainService;
         _activeCollections = activeCollections;
-        _gameData               = gameData;
-        _fileDialog             = fileDialog;
+        _dalamud           = dalamud;
+        _fileDialog        = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));

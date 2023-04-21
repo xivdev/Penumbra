@@ -81,7 +81,7 @@ public partial class ModEditWindow
                 LoadedShpkPath = path;
                 var data = LoadedShpkPath.IsRooted
                     ? File.ReadAllBytes( LoadedShpkPath.FullName )
-                    : DalamudServices.SGameData.GetFile( LoadedShpkPath.InternalName.ToString() )?.Data;
+                    : _edit._dalamud.GameData.GetFile( LoadedShpkPath.InternalName.ToString() )?.Data;
                 AssociatedShpk     = data?.Length > 0 ? new ShpkFile( data ) : throw new Exception( "Failure to load file data." );
                 LoadedShpkPathName = path.ToPath();
             }

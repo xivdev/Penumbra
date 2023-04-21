@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
@@ -34,10 +35,10 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     public           ModSettings         SelectedSettings          { get; private set; } = ModSettings.Empty;
     public           ModCollection       SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
-    public ModFileSystemSelector(CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
+    public ModFileSystemSelector(KeyState keyState, CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
         ModImportManager modImportManager)
-        : base(fileSystem, DalamudServices.KeyState, HandleException)
+        : base(fileSystem, keyState, HandleException)
     {
         _communicator      = communicator;
         _modManager        = modManager;

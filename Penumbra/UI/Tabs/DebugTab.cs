@@ -191,7 +191,7 @@ public class DebugTab : ITab
         DrawSpecial("Current Card",    _actorService.AwaitedService.GetCardPlayer());
         DrawSpecial("Current Glamour", _actorService.AwaitedService.GetGlamourPlayer());
 
-        foreach (var obj in DalamudServices.SObjects)
+        foreach (var obj in _dalamud.Objects)
         {
             ImGuiUtil.DrawTableColumn($"{((GameObject*)obj.Address)->ObjectIndex}");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");

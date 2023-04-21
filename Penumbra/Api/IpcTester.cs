@@ -40,22 +40,21 @@ public class IpcTester : IDisposable
     private readonly ModSettings      _modSettings;
     private readonly Temporary        _temporary;
 
-    public IpcTester(Configuration config, DalamudPluginInterface pi, PenumbraIpcProviders ipcProviders, ModManager modManager,
-        CollectionManager collections,
-        TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService)
+    public IpcTester(Configuration config, DalamudServices dalamud, PenumbraIpcProviders ipcProviders, ModManager modManager,
+        CollectionManager collections, TempModManager tempMods, TempCollectionManager tempCollections, SaveService saveService)
     {
         _ipcProviders     = ipcProviders;
-        _pluginState      = new PluginState(pi);
-        _ipcConfiguration = new IpcConfiguration(pi);
-        _ui               = new Ui(pi);
-        _redrawing        = new Redrawing(pi);
-        _gameState        = new GameState(pi);
-        _resolve          = new Resolve(pi);
-        _collections      = new Collections(pi);
-        _meta             = new Meta(pi);
-        _mods             = new Mods(pi);
-        _modSettings      = new ModSettings(pi);
-        _temporary        = new Temporary(pi, modManager, collections, tempMods, tempCollections, saveService, config);
+        _pluginState      = new PluginState(dalamud.PluginInterface);
+        _ipcConfiguration = new IpcConfiguration(dalamud.PluginInterface);
+        _ui               = new Ui(dalamud.PluginInterface);
+        _redrawing        = new Redrawing(dalamud);
+        _gameState        = new GameState(dalamud.PluginInterface);
+        _resolve          = new Resolve(dalamud.PluginInterface);
+        _collections      = new Collections(dalamud.PluginInterface);
+        _meta             = new Meta(dalamud.PluginInterface);
+        _mods             = new Mods(dalamud.PluginInterface);
+        _modSettings      = new ModSettings(dalamud.PluginInterface);
+        _temporary        = new Temporary(dalamud.PluginInterface, modManager, collections, tempMods, tempCollections, saveService, config);
         UnsubscribeEvents();
     }
 
@@ -395,17 +394,17 @@ public class IpcTester : IDisposable
 
     private class Redrawing
     {
-        private readonly DalamudPluginInterface       _pi;
+        private readonly DalamudServices              _dalamud;
         public readonly  EventSubscriber<IntPtr, int> Redrawn;
 
         private string _redrawName        = string.Empty;
         private int    _redrawIndex       = 0;
         private string _lastRedrawnString = "None";
 
-        public Redrawing(DalamudPluginInterface pi)
+        public Redrawing(DalamudServices dalamud)
         {
-            _pi     = pi;
-            Redrawn = Ipc.GameObjectRedrawn.Subscriber(pi, SetLastRedrawn);
+            _dalamud = dalamud;
+            Redrawn = Ipc.GameObjectRedrawn.Subscriber(_dalamud.PluginInterface, SetLastRedrawn);
         }
 
         public void Draw()
@@ -423,25 +422,25 @@ public class IpcTester : IDisposable
             ImGui.InputTextWithHint("##redrawName", "Name...", ref _redrawName, 32);
             ImGui.SameLine();
             if (ImGui.Button("Redraw##Name"))
-                Ipc.RedrawObjectByName.Subscriber(_pi).Invoke(_redrawName, RedrawType.Redraw);
+                Ipc.RedrawObjectByName.Subscriber(_dalamud.PluginInterface).Invoke(_redrawName, RedrawType.Redraw);
 
             DrawIntro(Ipc.RedrawObject.Label, "Redraw Player Character");
-            if (ImGui.Button("Redraw##pc") && DalamudServices.SClientState.LocalPlayer != null)
-                Ipc.RedrawObject.Subscriber(_pi).Invoke(DalamudServices.SClientState.LocalPlayer, RedrawType.Redraw);
+            if (ImGui.Button("Redraw##pc") && _dalamud.ClientState.LocalPlayer != null)
+                Ipc.RedrawObject.Subscriber(_dalamud.PluginInterface).Invoke(_dalamud.ClientState.LocalPlayer, RedrawType.Redraw);
 
             DrawIntro(Ipc.RedrawObjectByIndex.Label, "Redraw by Index");
             var tmp = _redrawIndex;
             ImGui.SetNextItemWidth(100 * UiHelpers.Scale);
-            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, DalamudServices.SObjects.Length))
-                _redrawIndex = Math.Clamp(tmp, 0, DalamudServices.SObjects.Length);
+            if (ImGui.DragInt("##redrawIndex", ref tmp, 0.1f, 0, _dalamud.Objects.Length))
+                _redrawIndex = Math.Clamp(tmp, 0, _dalamud.Objects.Length);
 
             ImGui.SameLine();
             if (ImGui.Button("Redraw##Index"))
-                Ipc.RedrawObjectByIndex.Subscriber(_pi).Invoke(_redrawIndex, RedrawType.Redraw);
+                Ipc.RedrawObjectByIndex.Subscriber(_dalamud.PluginInterface).Invoke(_redrawIndex, RedrawType.Redraw);
 
             DrawIntro(Ipc.RedrawAll.Label, "Redraw All");
             if (ImGui.Button("Redraw##All"))
-                Ipc.RedrawAll.Subscriber(_pi).Invoke(RedrawType.Redraw);
+                Ipc.RedrawAll.Subscriber(_dalamud.PluginInterface).Invoke(RedrawType.Redraw);
 
             DrawIntro(Ipc.GameObjectRedrawn.Label, "Last Redrawn Object:");
             ImGui.TextUnformatted(_lastRedrawnString);
@@ -450,12 +449,12 @@ public class IpcTester : IDisposable
         private void SetLastRedrawn(IntPtr address, int index)
         {
             if (index < 0
-             || index > DalamudServices.SObjects.Length
+             || index > _dalamud.Objects.Length
              || address == IntPtr.Zero
-             || DalamudServices.SObjects[index]?.Address != address)
+             || _dalamud.Objects[index]?.Address != address)
                 _lastRedrawnString = "Invalid";
 
-            _lastRedrawnString = $"{DalamudServices.SObjects[index]!.Name} (0x{address:X}, {index})";
+            _lastRedrawnString = $"{_dalamud.Objects[index]!.Name} (0x{address:X}, {index})";
         }
     }
 

@@ -50,7 +50,7 @@ public partial class ModEditWindow
             }
             else
             {
-                var file = _gameData.GetFile(path);
+                var file = _dalamud.GameData.GetFile(path);
                 writable = file == null ? null : new RawGameFileWritable(file);
             }
 

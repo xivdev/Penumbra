@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Numerics;
+using Dalamud.Data;
 using Dalamud.Interface;
 using ImGuiNET;
 using ImGuiScene;
@@ -121,7 +122,7 @@ public sealed class Texture : IDisposable
 
     public event Action<bool>? Loaded;
 
-    private void Load(string path)
+    private void Load(DalamudServices dalamud, string path)
     {
         _tmpPath = null;
         if (path == Path)
@@ -136,9 +137,9 @@ public sealed class Texture : IDisposable
         {
             var _ = System.IO.Path.GetExtension(Path).ToLowerInvariant() switch
             {
-                ".dds" => LoadDds(),
-                ".png" => LoadPng(),
-                ".tex" => LoadTex(),
+                ".dds" => LoadDds(dalamud),
+                ".png" => LoadPng(dalamud),
+                ".tex" => LoadTex(dalamud),
                 _      => throw new Exception($"Extension {System.IO.Path.GetExtension(Path)} unknown."),
             };
             Loaded?.Invoke(true);
@@ -150,18 +151,18 @@ public sealed class Texture : IDisposable
         }
     }
 
-    private bool LoadDds()
+    private bool LoadDds(DalamudServices dalamud)
     {
         Type = FileType.Dds;
         var scratch = ScratchImage.LoadDDS(Path);
         BaseImage = scratch;
         var rgba = scratch.GetRGBA(out var f).ThrowIfError(f);
         RGBAPixels = rgba.Pixels[..(f.Meta.Width * f.Meta.Height * f.Meta.Format.BitsPerPixel() / 8)].ToArray();
-        CreateTextureWrap(f.Meta.Width, f.Meta.Height);
+        CreateTextureWrap(dalamud.UiBuilder, f.Meta.Width, f.Meta.Height);
         return true;
     }
 
-    private bool LoadPng()
+    private bool LoadPng(DalamudServices dalamud)
     {
         Type      = FileType.Png;
         BaseImage = null;
@@ -169,37 +170,37 @@ public sealed class Texture : IDisposable
         using var png    = Image.Load<Rgba32>(stream);
         RGBAPixels = new byte[png.Height * png.Width * 4];
         png.CopyPixelDataTo(RGBAPixels);
-        CreateTextureWrap(png.Width, png.Height);
+        CreateTextureWrap(dalamud.UiBuilder, png.Width, png.Height);
         return true;
     }
 
-    private bool LoadTex()
+    private bool LoadTex(DalamudServices dalamud)
     {
         Type = FileType.Tex;
-        using var stream  = OpenTexStream();
+        using var stream  = OpenTexStream(dalamud.GameData);
         var       scratch = TexFileParser.Parse(stream);
         BaseImage = scratch;
         var rgba = scratch.GetRGBA(out var f).ThrowIfError(f);
         RGBAPixels = rgba.Pixels[..(f.Meta.Width * f.Meta.Height * f.Meta.Format.BitsPerPixel() / 8)].ToArray();
-        CreateTextureWrap(scratch.Meta.Width, scratch.Meta.Height);
+        CreateTextureWrap(dalamud.UiBuilder, scratch.Meta.Width, scratch.Meta.Height);
         return true;
     }
 
-    private Stream OpenTexStream()
+    private Stream OpenTexStream(DataManager gameData)
     {
         if (System.IO.Path.IsPathRooted(Path))
             return File.OpenRead(Path);
 
-        var file = DalamudServices.SGameData.GetFile(Path);
+        var file = gameData.GetFile(Path);
         return file != null ? new MemoryStream(file.Data) : throw new Exception($"Unable to obtain \"{Path}\" from game files.");
     }
 
-    private void CreateTextureWrap(int width, int height)
-        => TextureWrap = DalamudServices.PluginInterface.UiBuilder.LoadImageRaw(RGBAPixels, width, height, 4);
+    private void CreateTextureWrap(UiBuilder builder, int width, int height)
+        => TextureWrap = builder.LoadImageRaw(RGBAPixels, width, height, 4);
 
     private string? _tmpPath;
 
-    public void PathSelectBox(string label, string tooltip, IEnumerable<(string, bool)> paths, int skipPrefix)
+    public void PathSelectBox(DalamudServices dalamud, string label, string tooltip, IEnumerable<(string, bool)> paths, int skipPrefix)
     {
         ImGui.SetNextItemWidth(-0.0001f);
         var       startPath = Path.Length > 0 ? Path : "Choose a modded texture from this mod here...";
@@ -209,7 +210,7 @@ public sealed class Texture : IDisposable
             {
                 if (game)
                 {
-                    if (!DalamudServices.SGameData.FileExists(path))
+                    if (!dalamud.GameData.FileExists(path))
                         continue;
                 }
                 else if (!File.Exists(path))
@@ -222,7 +223,7 @@ public sealed class Texture : IDisposable
                 {
                     var p = game ? $"--> {path}" : path[skipPrefix..];
                     if (ImGui.Selectable(p, path == startPath) && path != startPath)
-                        Load(path);
+                        Load(dalamud, path);
                 }
 
                 ImGuiUtil.HoverTooltip(game
@@ -233,7 +234,7 @@ public sealed class Texture : IDisposable
         ImGuiUtil.HoverTooltip(tooltip);
     }
 
-    public void PathInputBox(string label, string hint, string tooltip, string startPath, FileDialogService fileDialog,
+    public void PathInputBox(DalamudServices dalamud, string label, string hint, string tooltip, string startPath, FileDialogService fileDialog,
         string defaultModImportPath)
     {
         _tmpPath ??= Path;
@@ -242,7 +243,7 @@ public sealed class Texture : IDisposable
         ImGui.SetNextItemWidth(-2 * ImGui.GetFrameHeight() - 7 * UiHelpers.Scale);
         ImGui.InputTextWithHint(label, hint, ref _tmpPath, Utf8GamePath.MaxGamePathLength);
         if (ImGui.IsItemDeactivatedAfterEdit())
-            Load(_tmpPath);
+            Load(dalamud, _tmpPath);
 
         ImGuiUtil.HoverTooltip(tooltip);
         ImGui.SameLine();
@@ -257,7 +258,7 @@ public sealed class Texture : IDisposable
             void UpdatePath(bool success, List<string> paths)
             {
                 if (success && paths.Count > 0)
-                    texture.Load(paths[0]);
+                    texture.Load(dalamud, paths[0]);
             }
 
             fileDialog.OpenFilePicker("Open Image...", "Textures{.png,.dds,.tex}", UpdatePath, 1, startPath, false);
@@ -270,7 +271,7 @@ public sealed class Texture : IDisposable
         {
             var path = Path;
             Path = string.Empty;
-            Load(path);
+            Load(dalamud, path);
         }
     }
 }

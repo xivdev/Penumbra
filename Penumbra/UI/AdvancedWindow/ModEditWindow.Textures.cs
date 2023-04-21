@@ -41,11 +41,11 @@ public partial class ModEditWindow
         ImGuiUtil.DrawTextButton(label, new Vector2(-1, 0), ImGui.GetColorU32(ImGuiCol.FrameBg));
         ImGui.NewLine();
 
-        tex.PathInputBox("##input", "Import Image...", "Can import game paths as well as your own files.", _mod!.ModPath.FullName,
+        tex.PathInputBox(_dalamud, "##input", "Import Image...", "Can import game paths as well as your own files.", _mod!.ModPath.FullName,
             _fileDialog, _config.DefaultModImportPath);
         var files = _editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
             .Prepend((f.File.FullName, false)));
-        tex.PathSelectBox("##combo", "Select the textures included in this mod on your drive or the ones they replace from the game files.",
+        tex.PathSelectBox(_dalamud, "##combo", "Select the textures included in this mod on your drive or the ones they replace from the game files.",
             files, _mod.ModPath.FullName.Length + 1);
 
         if (tex == _left)
@@ -139,7 +139,7 @@ public partial class ModEditWindow
 
         using var child2 = ImRaii.Child("image");
         if (child2)
-            _center.Draw(imageSize);
+            _center.Draw(_dalamud.UiBuilder, imageSize);
     }
 
     private Vector2 GetChildWidth()

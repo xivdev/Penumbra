@@ -63,48 +63,40 @@ public class DalamudServices
     {
         services.AddSingleton(PluginInterface);
         services.AddSingleton(Commands);
-        services.AddSingleton(SGameData);
-        services.AddSingleton(SClientState);
+        services.AddSingleton(GameData);
+        services.AddSingleton(ClientState);
         services.AddSingleton(Chat);
         services.AddSingleton(Framework);
         services.AddSingleton(Conditions);
         services.AddSingleton(Targets);
-        services.AddSingleton(SObjects);
+        services.AddSingleton(Objects);
         services.AddSingleton(TitleScreenMenu);
         services.AddSingleton(GameGui);
         services.AddSingleton(KeyState);
         services.AddSingleton(SigScanner);
         services.AddSingleton(this);
+        services.AddSingleton(UiBuilder);
     }
 
     // TODO remove static
     // @formatter:off
-    [PluginService][RequiredVersion("1.0")] public static DalamudPluginInterface PluginInterface { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static CommandManager Commands { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static DataManager SGameData { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static ClientState SClientState { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static ChatGui Chat { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static Framework Framework { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static Condition Conditions { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static TargetManager Targets { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static ObjectTable SObjects { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static TitleScreenMenu TitleScreenMenu { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static GameGui GameGui { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static KeyState KeyState { get; private set; } = null!;
-    [PluginService][RequiredVersion("1.0")] public static SigScanner SigScanner { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public DalamudPluginInterface PluginInterface { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public CommandManager         Commands        { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public DataManager            GameData        { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public ClientState            ClientState     { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public ChatGui                Chat            { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public Framework              Framework       { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public Condition              Conditions      { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public TargetManager          Targets         { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public ObjectTable            Objects         { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public TitleScreenMenu        TitleScreenMenu { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public GameGui                GameGui         { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public KeyState               KeyState        { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public SigScanner             SigScanner      { get; private set; } = null!;
     // @formatter:on
 
     public UiBuilder UiBuilder
         => PluginInterface.UiBuilder;
-
-    public ObjectTable Objects
-        => SObjects;
-
-    public ClientState ClientState
-        => SClientState;
-
-    public DataManager GameData
-        => SGameData;
 
     public const string WaitingForPluginsOption = "IsResumeGameAfterPluginLoad";
 

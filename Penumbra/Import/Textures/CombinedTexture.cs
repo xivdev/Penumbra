@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Numerics;
+using Dalamud.Interface;
 using Lumina.Data.Files;
 using OtterTex;
 using Penumbra.Services;
@@ -43,13 +44,13 @@ public partial class CombinedTexture : IDisposable
 
     public Exception? SaveException { get; private set; } = null;
 
-    public void Draw( Vector2 size )
+    public void Draw( UiBuilder builder, Vector2 size )
     {
         if( _mode == Mode.Custom && !_centerStorage.IsLoaded )
         {
             var (width, height) = CombineImage();
             _centerStorage.TextureWrap =
-                DalamudServices.PluginInterface.UiBuilder.LoadImageRaw( _centerStorage.RGBAPixels, width, height, 4 );
+                builder.LoadImageRaw( _centerStorage.RGBAPixels, width, height, 4 );
         }
 
         _current?.Draw( size );

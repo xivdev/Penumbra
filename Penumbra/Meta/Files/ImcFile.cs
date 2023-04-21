@@ -130,7 +130,7 @@ public unsafe class ImcFile : MetaBaseFile
 
     public override void Reset()
     {
-        var file = DalamudServices.SGameData.GetFile(Path.ToString());
+        var file = Manager.GameData.GetFile(Path.ToString());
         fixed (byte* ptr = file!.Data)
         {
             MemoryUtility.MemCpyUnchecked(Data, ptr, file.Data.Length);

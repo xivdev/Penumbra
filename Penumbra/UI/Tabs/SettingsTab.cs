@@ -10,12 +10,10 @@ using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Interop.Services;
-using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
-using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
-using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
+using Penumbra.UI.ModsTab;
 
 namespace Penumbra.UI.Tabs;
 
@@ -104,7 +102,7 @@ public class SettingsTab : ITab
     /// Do not change the directory without explicitly pressing enter or this button.
     /// Shows up only if the current input does not correspond to the current directory.
     /// </summary>
-    private static bool DrawPressEnterWarning(string newName, string old, float width, bool saved, bool selected)
+    private bool DrawPressEnterWarning(string newName, string old, float width, bool saved, bool selected)
     {
         using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.PressEnterWarningBg);
         var       w     = new Vector2(width, 0);
@@ -114,7 +112,7 @@ public class SettingsTab : ITab
     }
 
     /// <summary> Check a potential new root directory for validity and return the button text and whether it is valid. </summary>
-    private static (string Text, bool Valid) CheckRootDirectoryPath(string newName, string old, bool selected)
+    private (string Text, bool Valid) CheckRootDirectoryPath(string newName, string old, bool selected)
     {
         static bool IsSubPathOf(string basePath, string subPath)
         {
@@ -140,14 +138,14 @@ public class SettingsTab : ITab
         if (IsSubPathOf(programFiles, newName) || IsSubPathOf(programFilesX86, newName))
             return ("Path is not allowed to be in ProgramFiles.", false);
 
-        var dalamud = DalamudServices.PluginInterface.ConfigDirectory.Parent!.Parent!;
+        var dalamud = _dalamud.PluginInterface.ConfigDirectory.Parent!.Parent!;
         if (IsSubPathOf(dalamud.FullName, newName))
             return ("Path is not allowed to be inside your Dalamud directories.", false);
 
         if (Functions.GetDownloadsFolder(out var downloads) && IsSubPathOf(downloads, newName))
             return ("Path is not allowed to be inside your Downloads folder.", false);
 
-        var gameDir = DalamudServices.SGameData.GameData.DataPath.Parent!.Parent!.FullName;
+        var gameDir = _dalamud.GameData.GameData.DataPath.Parent!.Parent!.FullName;
         if (IsSubPathOf(gameDir, newName))
             return ("Path is not allowed to be inside your game folder.", false);
 
