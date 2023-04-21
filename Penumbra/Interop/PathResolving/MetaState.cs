@@ -45,18 +45,18 @@ public unsafe class MetaState : IDisposable
     [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
     private readonly nint* _humanVTable = null!;
 
-    private readonly CommunicatorService       _communicator;
-    private readonly PerformanceTracker        _performance;
-    private readonly CollectionResolver        _collectionResolver;
-    private readonly ResourceService           _resources;
-    private readonly GameEventManager          _gameEventManager;
-    private readonly Services.CharacterUtility _characterUtility;
+    private readonly CommunicatorService _communicator;
+    private readonly PerformanceTracker  _performance;
+    private readonly CollectionResolver  _collectionResolver;
+    private readonly ResourceService     _resources;
+    private readonly GameEventManager    _gameEventManager;
+    private readonly CharacterUtility    _characterUtility;
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
 
     public MetaState(PerformanceTracker performance, CommunicatorService communicator, CollectionResolver collectionResolver,
-        ResourceService resources, GameEventManager gameEventManager, Services.CharacterUtility characterUtility)
+        ResourceService resources, GameEventManager gameEventManager, CharacterUtility characterUtility)
     {
         _performance        = performance;
         _communicator       = communicator;
@@ -90,17 +90,17 @@ public unsafe class MetaState : IDisposable
         return false;
     }
 
-    public static DisposableContainer ResolveEqdpData(ModCollection collection, GenderRace race, bool equipment, bool accessory)
+    public DisposableContainer ResolveEqdpData(ModCollection collection, GenderRace race, bool equipment, bool accessory)
     {
         var races = race.Dependencies();
         if (races.Length == 0)
             return DisposableContainer.Empty;
 
         var equipmentEnumerable = equipment
-            ? races.Select(r => collection.TemporarilySetEqdpFile(r, false))
+            ? races.Select(r => collection.TemporarilySetEqdpFile(_characterUtility, r, false))
             : Array.Empty<IDisposable?>().AsEnumerable();
         var accessoryEnumerable = accessory
-            ? races.Select(r => collection.TemporarilySetEqdpFile(r, true))
+            ? races.Select(r => collection.TemporarilySetEqdpFile(_characterUtility, r, true))
             : Array.Empty<IDisposable?>().AsEnumerable();
         return new DisposableContainer(equipmentEnumerable.Concat(accessoryEnumerable));
     }
@@ -128,7 +128,7 @@ public unsafe class MetaState : IDisposable
                 _lastCreatedCollection.ModCollection.Name, (nint)(&modelCharaId), customize, equipData);
 
         var decal = new DecalReverter(_characterUtility, _resources, _lastCreatedCollection.ModCollection, UsesDecal(modelCharaId, equipData));
-        var cmp   = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile();
+        var cmp   = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);
     }
@@ -149,7 +149,7 @@ public unsafe class MetaState : IDisposable
     private void OnModelLoadCompleteDetour(nint drawObject)
     {
         var       collection = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        using var eqp        = collection.ModCollection.TemporarilySetEqpFile();
+        using var eqp        = collection.ModCollection.TemporarilySetEqpFile(_characterUtility);
         using var eqdp       = ResolveEqdpData(collection.ModCollection, GetDrawObjectGenderRace(drawObject), true, true);
         _onModelLoadCompleteHook.Original.Invoke(drawObject);
     }
@@ -169,7 +169,7 @@ public unsafe class MetaState : IDisposable
         using var performance = _performance.Measure(PerformanceType.UpdateModels);
 
         var       collection = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        using var eqp        = collection.ModCollection.TemporarilySetEqpFile();
+        using var eqp        = collection.ModCollection.TemporarilySetEqpFile(_characterUtility);
         using var eqdp       = ResolveEqdpData(collection.ModCollection, GetDrawObjectGenderRace(drawObject), true, true);
         _updateModelsHook.Original.Invoke(drawObject);
     }
@@ -198,7 +198,7 @@ public unsafe class MetaState : IDisposable
 
         using var performance = _performance.Measure(PerformanceType.GetEqp);
         var       resolveData = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        using var eqp         = resolveData.ModCollection.TemporarilySetEqpFile();
+        using var eqp         = resolveData.ModCollection.TemporarilySetEqpFile(_characterUtility);
         _getEqpIndirectHook.Original(drawObject);
     }
 
@@ -214,7 +214,7 @@ public unsafe class MetaState : IDisposable
     {
         using var performance = _performance.Measure(PerformanceType.SetupVisor);
         var       resolveData = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        using var gmp         = resolveData.ModCollection.TemporarilySetGmpFile();
+        using var gmp         = resolveData.ModCollection.TemporarilySetGmpFile(_characterUtility);
         return _setupVisorHook.Original(drawObject, modelId, visorState);
     }
 
@@ -234,7 +234,7 @@ public unsafe class MetaState : IDisposable
         {
             using var performance = _performance.Measure(PerformanceType.SetupCharacter);
             var       resolveData = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-            using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile();
+            using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile(_characterUtility);
             _rspSetupCharacterHook.Original(drawObject, unk2, unk3, unk4, unk5);
         }
     }
@@ -252,7 +252,7 @@ public unsafe class MetaState : IDisposable
         using var performance = _performance.Measure(PerformanceType.ChangeCustomize);
         _inChangeCustomize = true;
         var       resolveData = _collectionResolver.IdentifyCollection((DrawObject*)human, true);
-        using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile();
+        using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile(_characterUtility);
         using var decals =
             new DecalReverter(_characterUtility, _resources, resolveData.ModCollection, UsesDecal(0, data));
         var ret = _changeCustomize.Original(human, data, skipEquipment);

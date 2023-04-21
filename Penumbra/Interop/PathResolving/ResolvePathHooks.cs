@@ -144,7 +144,7 @@ public unsafe class ResolvePathHooks : IDisposable
         var data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
         using var eqdp = modelType > 9
             ? DisposableContainer.Empty
-            : MetaState.ResolveEqdpData(data.ModCollection, MetaState.GetHumanGenderRace(drawObject), modelType < 5, modelType > 4);
+            : _parent.MetaState.ResolveEqdpData(data.ModCollection, MetaState.GetHumanGenderRace(drawObject), modelType < 5, modelType > 4);
         return ResolvePath(data, _resolveMdlPathHook.Original(drawObject, path, unk3, modelType));
     }
 
@@ -175,10 +175,10 @@ public unsafe class ResolvePathHooks : IDisposable
     private DisposableContainer GetEstChanges(nint drawObject, out ResolveData data)
     {
         data = _parent.CollectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-        return new DisposableContainer(data.ModCollection.TemporarilySetEstFile(EstManipulation.EstType.Face),
-            data.ModCollection.TemporarilySetEstFile(EstManipulation.EstType.Body),
-            data.ModCollection.TemporarilySetEstFile(EstManipulation.EstType.Hair),
-            data.ModCollection.TemporarilySetEstFile(EstManipulation.EstType.Head));
+        return new DisposableContainer(data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility, EstManipulation.EstType.Face),
+            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Body),
+            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Hair),
+            data.ModCollection.TemporarilySetEstFile(_parent.CharacterUtility,                            EstManipulation.EstType.Head));
     }
 
     private nint ResolveDecalWeapon(nint drawObject, nint path, nint unk3, uint unk4)

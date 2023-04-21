@@ -33,8 +33,6 @@ public class Penumbra : IDalamudPlugin
     public static Logger      Log         { get; private set; } = null!;
     public static ChatService ChatService { get; private set; } = null!;
 
-    public static CharacterUtility  CharacterUtility   { get; private set; } = null!;
-
     public readonly RedrawService RedrawService;
     public readonly ModFileSystem ModFileSystem;
     public          HttpApi       HttpApi = null!;
@@ -64,7 +62,6 @@ public class Penumbra : IDalamudPlugin
             _tmp.Services.GetRequiredService<BackupService>();
             _config            = _tmp.Services.GetRequiredService<Configuration>();
             _characterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
-            CharacterUtility   = _characterUtility;
             _tempMods          = _tmp.Services.GetRequiredService<TempModManager>();
             _residentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
             _tmp.Services.GetRequiredService<ResourceManagerService>();
@@ -149,7 +146,7 @@ public class Penumbra : IDalamudPlugin
         {
             if (_characterUtility.Ready)
             {
-                _collectionManager.Active.Default.SetFiles();
+                _collectionManager.Active.Default.SetFiles(_characterUtility);
                 _residentResources.Reload();
                 RedrawService.RedrawAll(RedrawType.Redraw);
             }

@@ -5,6 +5,7 @@ using System.Threading;
 using Dalamud.Utility.Signatures;
 using Penumbra.Collections;
 using Penumbra.GameData;
+using Penumbra.Interop.Services;
 using Penumbra.String;
 
 namespace Penumbra.Interop.PathResolving;
@@ -24,6 +25,8 @@ public unsafe class PathState : IDisposable
     private readonly nint* _monsterVTable = null!;
 
     public readonly CollectionResolver CollectionResolver;
+    public readonly MetaState          MetaState;
+    public readonly CharacterUtility   CharacterUtility;
 
     private readonly ResolvePathHooks _human;
     private readonly ResolvePathHooks _weapon;
@@ -35,10 +38,12 @@ public unsafe class PathState : IDisposable
     public IList<ResolveData> CurrentData
         => _resolveData.Values;
 
-    public PathState(CollectionResolver collectionResolver)
+    public PathState(CollectionResolver collectionResolver, MetaState metaState, CharacterUtility characterUtility)
     {
         SignatureHelper.Initialise(this);
         CollectionResolver = collectionResolver;
+        MetaState          = metaState;
+        CharacterUtility   = characterUtility;
         _human             = new ResolvePathHooks(this, _humanVTable,     ResolvePathHooks.Type.Human);
         _weapon            = new ResolvePathHooks(this, _weaponVTable,    ResolvePathHooks.Type.Weapon);
         _demiHuman         = new ResolvePathHooks(this, _demiHumanVTable, ResolvePathHooks.Type.Other);
@@ -59,7 +64,7 @@ public unsafe class PathState : IDisposable
         _monster.Dispose();
     }
 
-    public bool Consume(ByteString path, out ResolveData collection)
+    public bool Consume(ByteString _, out ResolveData collection)
     {
         if (_resolveData.IsValueCreated)
         {
