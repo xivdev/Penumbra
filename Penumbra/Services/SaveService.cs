@@ -4,9 +4,8 @@ using System.Text;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Mods;
-using Penumbra.Services;
 
-namespace Penumbra.Util;
+namespace Penumbra.Services;
 
 /// <summary>
 /// Any file type that we want to save via SaveService.

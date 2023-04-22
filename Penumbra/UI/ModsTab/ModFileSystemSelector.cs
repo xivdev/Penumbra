@@ -18,7 +18,7 @@ using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
-using Penumbra.Util;
+using ChatService = Penumbra.Services.ChatService;
 
 namespace Penumbra.UI.ModsTab;
 

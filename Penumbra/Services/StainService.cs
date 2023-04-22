@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Dalamud.Data;
 using Dalamud.Plugin;
-using OtterGui.Classes;
 using OtterGui.Widgets;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;

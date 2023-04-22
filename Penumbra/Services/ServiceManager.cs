@@ -18,7 +18,6 @@ using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
-using Penumbra.Util;
 
 namespace Penumbra.Services;
 

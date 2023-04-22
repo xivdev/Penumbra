@@ -225,12 +225,9 @@ public unsafe class AnimationHookService : IDisposable
         }
 
         var ret = _loadCharacterVfxHook.Original(vfxPath, vfxParams, unk1, unk2, unk3, unk4);
-#if DEBUG
-        var path = new ByteString(vfxPath);
-        Penumbra.Log.Verbose(
-            $"Load Character VFX: {path} 0x{vfxParams->GameObjectId:X} {vfxParams->TargetCount} {unk1} {unk2} {unk3} {unk4} -> "
+        Penumbra.Log.Excessive(
+            $"Load Character VFX: {new ByteString(vfxPath)} 0x{vfxParams->GameObjectId:X} {vfxParams->TargetCount} {unk1} {unk2} {unk3} {unk4} -> "
           + $"0x{ret:X} {_animationLoadData.Value.ModCollection.Name} {_animationLoadData.Value.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}");
-#endif
         _animationLoadData.Value = last;
         return ret;
     }
@@ -250,11 +247,9 @@ public unsafe class AnimationHookService : IDisposable
             : ResolveData.Invalid;
 
         var ret = _loadAreaVfxHook.Original(vfxId, pos, caster, unk1, unk2, unk3);
-#if DEBUG
-        Penumbra.Log.Verbose(
+        Penumbra.Log.Excessive(
             $"Load Area VFX: {vfxId}, {pos[0]} {pos[1]} {pos[2]} {(caster != null ? new ByteString(caster->GetName()).ToString() : "Unknown")} {unk1} {unk2} {unk3}"
           + $" -> {ret:X} {_animationLoadData.Value.ModCollection.Name} {_animationLoadData.Value.AssociatedGameObject} {last.ModCollection.Name} {last.AssociatedGameObject}");
-#endif
         _animationLoadData.Value = last;
         return ret;
     }

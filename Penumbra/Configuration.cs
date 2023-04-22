@@ -16,7 +16,6 @@ using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
-using Penumbra.Util;
 using ErrorEventArgs = Newtonsoft.Json.Serialization.ErrorEventArgs;
 
 namespace Penumbra;

@@ -15,7 +15,6 @@ using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
-using Penumbra.Util;
 
 namespace Penumbra.UI.ModsTab;
 
