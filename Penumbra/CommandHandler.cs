@@ -6,6 +6,7 @@ using Dalamud.Game.Command;
 using Dalamud.Game.Gui;
 using Dalamud.Game.Text.SeStringHandling;
 using ImGuiNET;
+using OtterGui.Classes;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
