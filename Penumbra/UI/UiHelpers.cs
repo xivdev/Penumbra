@@ -13,6 +13,7 @@ using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
+using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.UI.Classes;
 
@@ -60,7 +61,7 @@ public static class UiHelpers
     /// Draw a changed item, invoking the Api-Events for clicks and tooltips.
     /// Also draw the item Id in grey if requested.
     /// </summary>
-    public static void DrawChangedItem(PenumbraApi api, string name, object? data, bool drawId)
+    public static void DrawChangedItem(CommunicatorService communicator, string name, object? data, bool drawId)
     {
         name = ChangedItemName(name, data);
         var ret = ImGui.Selectable(name) ? MouseButton.Left : MouseButton.None;
@@ -68,15 +69,15 @@ public static class UiHelpers
         ret = ImGui.IsItemClicked(ImGuiMouseButton.Middle) ? MouseButton.Middle : ret;
 
         if (ret != MouseButton.None)
-            api.InvokeClick(ret, data);
+            communicator.ChangedItemClick.Invoke(ret, data);
 
-        if (api.HasTooltip && ImGui.IsItemHovered())
+        if (communicator.ChangedItemHover.HasTooltip && ImGui.IsItemHovered())
         {
             // We can not be sure that any subscriber actually prints something in any case.
             // Circumvent ugly blank tooltip with less-ugly useless tooltip.
             using var tt    = ImRaii.Tooltip();
             using var group = ImRaii.Group();
-            api.InvokeTooltip(data);
+            communicator.ChangedItemHover.Invoke(data);
             group.Dispose();
             if (ImGui.GetItemRectSize() == Vector2.Zero)
                 ImGui.TextUnformatted("No actions available.");

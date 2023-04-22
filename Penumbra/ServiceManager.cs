@@ -1,10 +1,8 @@
-using System;
 using Dalamud.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Api;
-using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
@@ -27,22 +25,18 @@ using Penumbra.Meta;
 
 namespace Penumbra;
 
-public class PenumbraNew
+public class ServiceManager
 {
-    public string Name
-        => "Penumbra";
+    public readonly ServiceProvider Services;
 
-    public static readonly Logger          Log = new();
-    public readonly        ServiceProvider Services;
-
-    public PenumbraNew(Penumbra penumbra, DalamudPluginInterface pi)
+    public ServiceManager(Penumbra penumbra, DalamudPluginInterface pi, Logger log)
     {
         var       startTimer = new StartTracker();
         using var time       = startTimer.Measure(StartTimeType.Total);
 
         var services = new ServiceCollection();
         // Add meta services.
-        services.AddSingleton(Log)
+        services.AddSingleton(log)
             .AddSingleton(startTimer)
             .AddSingleton<ValidityChecker>()
             .AddSingleton<PerformanceTracker>()

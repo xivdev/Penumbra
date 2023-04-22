@@ -7,22 +7,22 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.Api;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
 
 public class ChangedItemsTab : ITab
 {
-    private readonly CollectionManager _collectionManager;
-    private readonly PenumbraApi       _api;
+    private readonly CollectionManager   _collectionManager;
+    private readonly CommunicatorService _communicator;
 
-    public ChangedItemsTab(CollectionManager collectionManager, PenumbraApi api)
+    public ChangedItemsTab(CollectionManager collectionManager, CommunicatorService communicator)
     {
         _collectionManager = collectionManager;
-        _api               = api;
+        _communicator      = communicator;
     }
 
     public ReadOnlySpan<byte> Label
@@ -81,7 +81,7 @@ public class ChangedItemsTab : ITab
     private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
     {
         ImGui.TableNextColumn();
-        UiHelpers.DrawChangedItem(_api, item.Key, item.Value.Item2, false);
+        UiHelpers.DrawChangedItem(_communicator, item.Key, item.Value.Item2, false);
         ImGui.TableNextColumn();
         if (item.Value.Item1.Count > 0)
         {

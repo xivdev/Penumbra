@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -11,7 +10,6 @@ using OtterGui;
 using OtterGui.Log;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
 using Penumbra.Collections.Cache;
@@ -21,7 +19,7 @@ using Penumbra.Services;
 using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Collections.Manager;
-using Penumbra.Mods;
+using Penumbra.UI.Tabs;
 
 namespace Penumbra;
 
@@ -30,13 +28,8 @@ public class Penumbra : IDalamudPlugin
     public string Name
         => "Penumbra";
 
-    public static Logger      Log         { get; private set; } = null!;
-    public static ChatService ChatService { get; private set; } = null!;
-
-    public readonly RedrawService RedrawService;
-    public readonly ModFileSystem ModFileSystem;
-    public          HttpApi       HttpApi = null!;
-    internal        ConfigWindow? ConfigWindow { get; private set; }
+    public static readonly Logger      Log = new();
+    public static          ChatService ChatService { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker;
     private readonly ResidentResourceManager _residentResources;
@@ -46,30 +39,31 @@ public class Penumbra : IDalamudPlugin
     private readonly CollectionManager       _collectionManager;
     private readonly Configuration           _config;
     private readonly CharacterUtility        _characterUtility;
+    private readonly RedrawService           _redrawService;
+    private readonly CommunicatorService     _communicatorService;
     private          PenumbraWindowSystem?   _windowSystem;
     private          bool                    _disposed;
 
-    private readonly PenumbraNew _tmp;
+    private readonly ServiceManager _tmp;
 
     public Penumbra(DalamudPluginInterface pluginInterface)
     {
-        Log = PenumbraNew.Log;
         try
         {
-            _tmp             = new PenumbraNew(this, pluginInterface);
+            _tmp             = new ServiceManager(this, pluginInterface, Log);
             ChatService      = _tmp.Services.GetRequiredService<ChatService>();
             _validityChecker = _tmp.Services.GetRequiredService<ValidityChecker>();
-            _tmp.Services.GetRequiredService<BackupService>();
+            _tmp.Services.GetRequiredService<BackupService>(); // Initialize because not required anywhere else.
             _config            = _tmp.Services.GetRequiredService<Configuration>();
             _characterUtility  = _tmp.Services.GetRequiredService<CharacterUtility>();
             _tempMods          = _tmp.Services.GetRequiredService<TempModManager>();
             _residentResources = _tmp.Services.GetRequiredService<ResidentResourceManager>();
-            _tmp.Services.GetRequiredService<ResourceManagerService>();
-            _modManager        = _tmp.Services.GetRequiredService<ModManager>();
-            _collectionManager = _tmp.Services.GetRequiredService<CollectionManager>();
-            _tempCollections   = _tmp.Services.GetRequiredService<TempCollectionManager>();
-            ModFileSystem      = _tmp.Services.GetRequiredService<ModFileSystem>();
-            RedrawService      = _tmp.Services.GetRequiredService<RedrawService>();
+            _tmp.Services.GetRequiredService<ResourceManagerService>(); // Initialize because not required anywhere else.
+            _modManager          = _tmp.Services.GetRequiredService<ModManager>();
+            _collectionManager   = _tmp.Services.GetRequiredService<CollectionManager>();
+            _tempCollections     = _tmp.Services.GetRequiredService<TempCollectionManager>();
+            _redrawService       = _tmp.Services.GetRequiredService<RedrawService>();
+            _communicatorService = _tmp.Services.GetRequiredService<CommunicatorService>();
             _tmp.Services.GetRequiredService<ResourceService>(); // Initialize because not required anywhere else.
             _tmp.Services.GetRequiredService<ModCacheManager>(); // Initialize because not required anywhere else.
             using (var t = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
@@ -100,7 +94,6 @@ public class Penumbra : IDalamudPlugin
     {
         using var timer = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api);
         var       api   = _tmp.Services.GetRequiredService<IPenumbraApi>();
-        HttpApi = _tmp.Services.GetRequiredService<HttpApi>();
         _tmp.Services.GetRequiredService<PenumbraIpcProviders>();
         api.ChangedItemTooltip += it =>
         {
@@ -120,21 +113,15 @@ public class Penumbra : IDalamudPlugin
             {
                 using var tInterface = _tmp.Services.GetRequiredService<StartTracker>().Measure(StartTimeType.Interface);
                 var       system     = _tmp.Services.GetRequiredService<PenumbraWindowSystem>();
+                system.Window.Setup(this, _tmp.Services.GetRequiredService<ConfigTabBar>());
                 _tmp.Services.GetRequiredService<CommandHandler>();
                 if (!_disposed)
-                {
                     _windowSystem = system;
-                    ConfigWindow  = system.Window;
-                }
                 else
-                {
                     system.Dispose();
-                }
             }
         );
     }
-
-    public event Action<bool>? EnabledChange;
 
     public bool SetEnabled(bool enabled)
     {
@@ -148,7 +135,7 @@ public class Penumbra : IDalamudPlugin
             {
                 _collectionManager.Active.Default.SetFiles(_characterUtility);
                 _residentResources.Reload();
-                RedrawService.RedrawAll(RedrawType.Redraw);
+                _redrawService.RedrawAll(RedrawType.Redraw);
             }
         }
         else
@@ -157,12 +144,12 @@ public class Penumbra : IDalamudPlugin
             {
                 _characterUtility.ResetAll();
                 _residentResources.Reload();
-                RedrawService.RedrawAll(RedrawType.Redraw);
+                _redrawService.RedrawAll(RedrawType.Redraw);
             }
         }
 
         _config.Save();
-        EnabledChange?.Invoke(enabled);
+        _communicatorService.EnabledChanged.Invoke(enabled);
 
         return true;
     }

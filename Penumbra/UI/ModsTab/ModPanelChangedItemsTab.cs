@@ -7,22 +7,22 @@ using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api;
-using Penumbra.Mods.Manager;
+using Penumbra.Services;
 
 namespace Penumbra.UI.ModsTab;
 
 public class ModPanelChangedItemsTab : ITab
 {
     private readonly ModFileSystemSelector _selector;
-    private readonly PenumbraApi           _api;
+    private readonly CommunicatorService   _communicator;
 
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
 
-    public ModPanelChangedItemsTab(PenumbraApi api, ModFileSystemSelector selector)
+    public ModPanelChangedItemsTab(ModFileSystemSelector selector, CommunicatorService communicator)
     {
-        _api      = api;
-        _selector = selector;
+        _selector     = selector;
+        _communicator = communicator;
     }
 
     public bool IsVisible
@@ -36,6 +36,6 @@ public class ModPanelChangedItemsTab : ITab
 
         var zipList = ZipList.FromSortedList((SortedList<string, object?>)_selector.Selected!.ChangedItems);
         var height  = ImGui.GetTextLineHeight();
-        ImGuiClip.ClippedDraw(zipList, kvp => UiHelpers.DrawChangedItem(_api, kvp.Item1, kvp.Item2, true), height);
+        ImGuiClip.ClippedDraw(zipList, kvp => UiHelpers.DrawChangedItem(_communicator, kvp.Item1, kvp.Item2, true), height);
     }
 }

@@ -9,6 +9,7 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.Api;
 using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -35,10 +36,11 @@ public class SettingsTab : ITab
     private readonly CharacterUtility        _characterUtility;
     private readonly ResidentResourceManager _residentResources;
     private readonly DalamudServices         _dalamud;
+    private readonly HttpApi                 _httpApi;
 
     public SettingsTab(Configuration config, FontReloader fontReloader, TutorialService tutorial, Penumbra penumbra,
         FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
-        ResidentResourceManager residentResources, DalamudServices dalamud, ModExportManager modExportManager)
+        ResidentResourceManager residentResources, DalamudServices dalamud, ModExportManager modExportManager, HttpApi httpApi)
     {
         _config            = config;
         _fontReloader      = fontReloader;
@@ -51,6 +53,7 @@ public class SettingsTab : ITab
         _residentResources = residentResources;
         _dalamud           = dalamud;
         _modExportManager  = modExportManager;
+        _httpApi           = httpApi;
     }
 
     public void DrawHeader()
@@ -630,7 +633,6 @@ public class SettingsTab : ITab
     private void DrawAdvancedSettings()
     {
         var header = ImGui.CollapsingHeader("Advanced");
-        _tutorial.OpenTutorial(BasicTutorialSteps.Deprecated1);
 
         if (!header)
             return;
@@ -657,9 +659,9 @@ public class SettingsTab : ITab
         if (ImGui.Checkbox("##http", ref http))
         {
             if (http)
-                _penumbra.HttpApi.CreateWebServer();
+                _httpApi.CreateWebServer();
             else
-                _penumbra.HttpApi.ShutdownWebServer();
+                _httpApi.ShutdownWebServer();
 
             _config.EnableHttpApi = http;
             _config.Save();

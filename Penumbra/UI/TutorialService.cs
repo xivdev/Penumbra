@@ -47,10 +47,7 @@ public class TutorialService
     public const string SelectedCollection    = "Selected Collection";
     public const string DefaultCollection     = "Base Collection";
     public const string InterfaceCollection   = "Interface Collection";
-    public const string ActiveCollections     = "Active Collections";
     public const string AssignedCollections   = "Assigned Collections";
-    public const string GroupAssignment       = "Group Assignment";
-    public const string IndividualAssignments = "Individual Assignments";
 
     public const string SupportedRedrawModifiers = "    - nothing, to redraw all characters\n"
       + "    - 'self' or '<me>': your own character\n"

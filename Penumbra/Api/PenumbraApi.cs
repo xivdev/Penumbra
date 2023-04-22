@@ -23,6 +23,8 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Services;
 using Penumbra.Collections.Manager;
+using Penumbra.Interop.Services;
+using Penumbra.UI;
 
 namespace Penumbra.Api;
 
@@ -31,20 +33,29 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public (int, int) ApiVersion
         => (4, 19);
 
-    public event Action<string>? PreSettingsPanelDraw;
-    public event Action<string>? PostSettingsPanelDraw;
+    public event Action<string>? PreSettingsPanelDraw
+    {
+        add => _communicator.PreSettingsPanelDraw.Subscribe(value!);
+        remove => _communicator.PreSettingsPanelDraw.Unsubscribe(value!);
+    }
+
+    public event Action<string>? PostSettingsPanelDraw
+    {
+        add => _communicator.PostSettingsPanelDraw.Subscribe(value!);
+        remove => _communicator.PostSettingsPanelDraw.Unsubscribe(value!);
+    }
 
     public event GameObjectRedrawnDelegate? GameObjectRedrawn
     {
         add
         {
             CheckInitialized();
-            _penumbra!.RedrawService.GameObjectRedrawn += value;
+            _redrawService.GameObjectRedrawn += value;
         }
         remove
         {
             CheckInitialized();
-            _penumbra!.RedrawService.GameObjectRedrawn -= value;
+            _redrawService.GameObjectRedrawn -= value;
         }
     }
 
@@ -91,10 +102,9 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     }
 
     public bool Valid
-        => _penumbra != null;
+        => _lumina != null;
 
     private CommunicatorService _communicator;
-    private Penumbra            _penumbra;
     private Lumina.GameData?    _lumina;
 
     private ModManager            _modManager;
@@ -109,25 +119,32 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private CutsceneService       _cutsceneService;
     private ModImportManager      _modImportManager;
     private CollectionEditor      _collectionEditor;
+    private RedrawService         _redrawService;
+    private ModFileSystem         _modFileSystem;
+    private ConfigWindow          _configWindow;
 
-    public unsafe PenumbraApi(CommunicatorService communicator, Penumbra penumbra, ModManager modManager, ResourceLoader resourceLoader,
+    public unsafe PenumbraApi(CommunicatorService communicator, ModManager modManager, ResourceLoader resourceLoader,
         Configuration config, CollectionManager collectionManager, DalamudServices dalamud, TempCollectionManager tempCollections,
-        TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService, ModImportManager modImportManager, CollectionEditor collectionEditor)
+        TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService,
+        ModImportManager modImportManager, CollectionEditor collectionEditor, RedrawService redrawService, ModFileSystem modFileSystem,
+        ConfigWindow configWindow)
     {
-        _communicator          = communicator;
-        _penumbra              = penumbra;
-        _modManager            = modManager;
-        _resourceLoader        = resourceLoader;
-        _config                = config;
-        _collectionManager     = collectionManager;
-        _dalamud               = dalamud;
-        _tempCollections       = tempCollections;
-        _tempMods              = tempMods;
-        _actors                = actors;
-        _collectionResolver    = collectionResolver;
-        _cutsceneService       = cutsceneService;
-        _modImportManager = modImportManager;
-        _collectionEditor = collectionEditor;
+        _communicator       = communicator;
+        _modManager         = modManager;
+        _resourceLoader     = resourceLoader;
+        _config             = config;
+        _collectionManager  = collectionManager;
+        _dalamud            = dalamud;
+        _tempCollections    = tempCollections;
+        _tempMods           = tempMods;
+        _actors             = actors;
+        _collectionResolver = collectionResolver;
+        _cutsceneService    = cutsceneService;
+        _modImportManager   = modImportManager;
+        _collectionEditor   = collectionEditor;
+        _redrawService      = redrawService;
+        _modFileSystem      = modFileSystem;
+        _configWindow       = configWindow;
 
         _lumina = (Lumina.GameData?)_dalamud.GameData.GetType()
             .GetField("gameData", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -148,7 +165,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
         _lumina             = null;
         _communicator       = null!;
-        _penumbra           = null!;
         _modManager         = null!;
         _resourceLoader     = null!;
         _config             = null!;
@@ -161,9 +177,16 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _cutsceneService    = null!;
         _modImportManager   = null!;
         _collectionEditor   = null!;
+        _redrawService      = null!;
+        _modFileSystem      = null!;
+        _configWindow       = null!;
     }
 
-    public event ChangedItemClick? ChangedItemClicked;
+    public event ChangedItemClick? ChangedItemClicked
+    {
+        add => _communicator.ChangedItemClick.Subscribe(new Action<MouseButton, object?>(value!));
+        remove => _communicator.ChangedItemClick.Unsubscribe(new Action<MouseButton, object?>(value!));
+    }
 
     public string GetModDirectory()
     {
@@ -201,12 +224,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         add
         {
             CheckInitialized();
-            _penumbra!.EnabledChange += value;
+            _communicator.EnabledChanged.Subscribe(value!, int.MinValue);
         }
         remove
         {
             CheckInitialized();
-            _penumbra!.EnabledChange -= value;
+            _communicator.EnabledChanged.Unsubscribe(value!);
         }
     }
 
@@ -216,27 +239,32 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return JsonConvert.SerializeObject(_config, Formatting.Indented);
     }
 
-    public event ChangedItemHover?                   ChangedItemTooltip;
+    public event ChangedItemHover? ChangedItemTooltip
+    {
+        add => _communicator.ChangedItemHover.Subscribe(new Action<object?>(value!));
+        remove => _communicator.ChangedItemHover.Unsubscribe(new Action<object?>(value!));
+    }
+
     public event GameObjectResourceResolvedDelegate? GameObjectResourceResolved;
 
     public PenumbraApiEc OpenMainWindow(TabType tab, string modDirectory, string modName)
     {
         CheckInitialized();
-        if (_penumbra!.ConfigWindow == null)
+        if (_configWindow == null)
             return PenumbraApiEc.SystemDisposed;
 
-        _penumbra!.ConfigWindow.IsOpen = true;
+        _configWindow.IsOpen = true;
 
         if (!Enum.IsDefined(tab))
             return PenumbraApiEc.InvalidArgument;
 
         if (tab != TabType.None)
-            _penumbra!.ConfigWindow.SelectTab(tab);
+            _configWindow.SelectTab(tab);
 
         if (tab == TabType.Mods && (modDirectory.Length > 0 || modName.Length > 0))
         {
             if (_modManager.TryGetMod(modDirectory, modName, out var mod))
-                _penumbra!.ConfigWindow.SelectMod(mod);
+                _configWindow.SelectMod(mod);
             else
                 return PenumbraApiEc.ModMissing;
         }
@@ -247,34 +275,34 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     public void CloseMainWindow()
     {
         CheckInitialized();
-        if (_penumbra!.ConfigWindow == null)
+        if (_configWindow == null)
             return;
 
-        _penumbra!.ConfigWindow.IsOpen = false;
+        _configWindow.IsOpen = false;
     }
 
     public void RedrawObject(int tableIndex, RedrawType setting)
     {
         CheckInitialized();
-        _penumbra!.RedrawService.RedrawObject(tableIndex, setting);
+        _redrawService.RedrawObject(tableIndex, setting);
     }
 
     public void RedrawObject(string name, RedrawType setting)
     {
         CheckInitialized();
-        _penumbra!.RedrawService.RedrawObject(name, setting);
+        _redrawService.RedrawObject(name, setting);
     }
 
     public void RedrawObject(GameObject? gameObject, RedrawType setting)
     {
         CheckInitialized();
-        _penumbra!.RedrawService.RedrawObject(gameObject, setting);
+        _redrawService.RedrawObject(gameObject, setting);
     }
 
     public void RedrawAll(RedrawType setting)
     {
         CheckInitialized();
-        _penumbra!.RedrawService.RedrawAll(setting);
+        _redrawService.RedrawAll(setting);
     }
 
     public string ResolveDefaultPath(string path)
@@ -657,7 +685,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     {
         CheckInitialized();
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod)
-         || !_penumbra!.ModFileSystem.FindLeaf(mod, out var leaf))
+         || !_modFileSystem.FindLeaf(mod, out var leaf))
             return (PenumbraApiEc.ModMissing, string.Empty, false);
 
         var fullPath = leaf.FullName();
@@ -672,12 +700,12 @@ public class PenumbraApi : IDisposable, IPenumbraApi
             return PenumbraApiEc.InvalidArgument;
 
         if (!_modManager.TryGetMod(modDirectory, modName, out var mod)
-         || !_penumbra!.ModFileSystem.FindLeaf(mod, out var leaf))
+         || !_modFileSystem.FindLeaf(mod, out var leaf))
             return PenumbraApiEc.ModMissing;
 
         try
         {
-            _penumbra.ModFileSystem.RenameAndMove(leaf, newPath);
+            _modFileSystem.RenameAndMove(leaf, newPath);
             return PenumbraApiEc.Success;
         }
         catch
@@ -986,16 +1014,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         return Functions.ToCompressedBase64(set, MetaManipulation.CurrentVersion);
     }
 
-    internal bool HasTooltip
-        => ChangedItemTooltip != null;
-
-    internal void InvokeTooltip(object? it)
-        => ChangedItemTooltip?.Invoke(it);
-
-    internal void InvokeClick(MouseButton button, object? it)
-        => ChangedItemClicked?.Invoke(button, it);
-
-
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void CheckInitialized()
     {
@@ -1116,12 +1134,6 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
         return true;
     }
-
-    public void InvokePreSettingsPanel(string modDirectory)
-        => PreSettingsPanelDraw?.Invoke(modDirectory);
-
-    public void InvokePostSettingsPanel(string modDirectory)
-        => PostSettingsPanelDraw?.Invoke(modDirectory);
 
     // TODO: replace all usages with ActorIdentifier stuff when incrementing API
     private ActorIdentifier NameToIdentifier(string name, ushort worldId)

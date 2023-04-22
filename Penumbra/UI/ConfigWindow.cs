@@ -10,6 +10,7 @@ using Penumbra.Mods;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
 using Penumbra.Util;
+
 namespace Penumbra.UI;
 
 public sealed class ConfigWindow : Window
@@ -18,8 +19,8 @@ public sealed class ConfigWindow : Window
     private readonly Configuration          _config;
     private readonly PerformanceTracker     _tracker;
     private readonly ValidityChecker        _validityChecker;
-    private readonly Penumbra               _penumbra;
-    private readonly ConfigTabBar           _configTabs;
+    private          Penumbra?              _penumbra;
+    private          ConfigTabBar           _configTabs = null!;
     private          string?                _lastException;
 
     public void SelectTab(TabType tab)
@@ -31,15 +32,13 @@ public sealed class ConfigWindow : Window
 
 
     public ConfigWindow(PerformanceTracker tracker, DalamudPluginInterface pi, Configuration config, ValidityChecker checker,
-        TutorialService tutorial, Penumbra penumbra, ConfigTabBar configTabs)
+        TutorialService tutorial)
         : base(GetLabel(checker))
     {
         _pluginInterface = pi;
         _config          = config;
         _tracker         = tracker;
         _validityChecker = checker;
-        _penumbra        = penumbra;
-        _configTabs      = configTabs;
 
         RespectCloseHotkey = true;
         SizeConstraints = new WindowSizeConstraints()
@@ -50,6 +49,15 @@ public sealed class ConfigWindow : Window
         tutorial.UpdateTutorialStep();
         IsOpen = _config.DebugMode;
     }
+
+    public void Setup(Penumbra penumbra, ConfigTabBar configTabs)
+    {
+        _penumbra   = penumbra;
+        _configTabs = configTabs;
+    }
+
+    public override bool DrawConditions()
+        => _penumbra != null;
 
     public override void PreDraw()
     {
@@ -111,6 +119,7 @@ public sealed class ConfigWindow : Window
                 var text = e.ToString();
                 if (text == _lastException)
                     return;
+
                 _lastException = text;
             }
             else
@@ -139,7 +148,7 @@ public sealed class ConfigWindow : Window
         ImGui.NewLine();
         UiHelpers.DrawDiscordButton(0);
         ImGui.SameLine();
-        UiHelpers.DrawSupportButton(_penumbra);
+        UiHelpers.DrawSupportButton(_penumbra!);
         ImGui.NewLine();
         ImGui.NewLine();
     }

@@ -9,6 +9,9 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
     private readonly string                                  _name;
     private readonly List<(object Subscriber, int Priority)> _event = new();
 
+    public bool HasSubscribers
+        => _event.Count > 0;
+
     protected EventWrapper(string name)
         => _name = name;
 

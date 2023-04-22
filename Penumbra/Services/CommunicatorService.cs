@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
@@ -211,6 +210,90 @@ public sealed class CollectionInheritanceChanged : EventWrapper<Action<ModCollec
         => Invoke(this, collection, inherited);
 }
 
+/// <summary>
+/// Triggered when the general Enabled state of Penumbra is changed.
+/// <list type="number">
+///     <item>Parameter is whether Penumbra is now Enabled (true) or Disabled (false). </item>
+/// </list>
+/// </summary>
+public sealed class EnabledChanged : EventWrapper<Action<bool>>
+{
+    public EnabledChanged()
+        : base(nameof(EnabledChanged))
+    { }
+
+    public void Invoke(bool enabled)
+        => Invoke(this, enabled);
+}
+
+/// <summary>
+/// Triggered before the settings panel is drawn.
+/// <list type="number">
+///     <item>Parameter is the identifier (directory name) of the currently selected mod. </item>
+/// </list>
+/// </summary>
+public sealed class PreSettingsPanelDraw : EventWrapper<Action<string>>
+{
+    public PreSettingsPanelDraw()
+        : base(nameof(PreSettingsPanelDraw))
+    { }
+
+    public void Invoke(string modDirectory)
+        => Invoke(this, modDirectory);
+}
+
+/// <summary>
+/// Triggered after the settings panel is drawn.
+/// <list type="number">
+///     <item>Parameter is the identifier (directory name) of the currently selected mod. </item>
+/// </list>
+/// </summary>
+public sealed class PostSettingsPanelDraw : EventWrapper<Action<string>>
+{
+    public PostSettingsPanelDraw()
+        : base(nameof(PostSettingsPanelDraw))
+    { }
+
+    public void Invoke(string modDirectory)
+        => Invoke(this, modDirectory);
+}
+
+/// <summary>
+/// Triggered when a Changed Item in Penumbra is hovered.
+/// <list type="number">
+///     <item>Parameter is the hovered object data if any. </item>
+/// </list>
+/// </summary>
+public sealed class ChangedItemHover : EventWrapper<Action<object?>>
+{
+    public ChangedItemHover()
+        : base(nameof(ChangedItemHover))
+    { }
+
+    public void Invoke(object? data)
+        => Invoke(this, data);
+
+    public bool HasTooltip
+        => HasSubscribers;
+}
+
+/// <summary>
+/// Triggered when a Changed Item in Penumbra is clicked.
+/// <list type="number">
+///     <item>Parameter is the clicked mouse button. </item>
+///     <item>Parameter is the clicked object data if any.. </item>
+/// </list>
+/// </summary>
+public sealed class ChangedItemClick : EventWrapper<Action<MouseButton, object?>>
+{
+    public ChangedItemClick()
+        : base(nameof(ChangedItemClick))
+    { }
+
+    public void Invoke(MouseButton button, object? data)
+        => Invoke(this, button, data);
+}
+
 public class CommunicatorService : IDisposable
 {
     /// <inheritdoc cref="Services.CollectionChange"/>
@@ -249,6 +332,21 @@ public class CommunicatorService : IDisposable
     /// <inheritdoc cref="Services.CollectionInheritanceChanged"/>
     public readonly CollectionInheritanceChanged CollectionInheritanceChanged = new();
 
+    /// <inheritdoc cref="Services.EnabledChanged"/>
+    public readonly EnabledChanged EnabledChanged = new();
+
+    /// <inheritdoc cref="Services.PreSettingsPanelDraw"/>
+    public readonly PreSettingsPanelDraw PreSettingsPanelDraw = new();
+
+    /// <inheritdoc cref="Services.PostSettingsPanelDraw"/>
+    public readonly PostSettingsPanelDraw PostSettingsPanelDraw = new();
+
+    /// <inheritdoc cref="Services.ChangedItemHover"/>
+    public readonly ChangedItemHover ChangedItemHover = new();
+
+    /// <inheritdoc cref="Services.ChangedItemClick"/>
+    public readonly ChangedItemClick ChangedItemClick = new();
+
     public void Dispose()
     {
         CollectionChange.Dispose();
@@ -263,5 +361,10 @@ public class CommunicatorService : IDisposable
         ModPathChanged.Dispose();
         ModSettingChanged.Dispose();
         CollectionInheritanceChanged.Dispose();
+        EnabledChanged.Dispose();
+        PreSettingsPanelDraw.Dispose();
+        PostSettingsPanelDraw.Dispose();
+        ChangedItemHover.Dispose();
+        ChangedItemClick.Dispose();
     }
 }

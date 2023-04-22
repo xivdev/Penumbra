@@ -5,7 +5,6 @@ using ImGuiNET;
 using OtterGui.Raii;
 using OtterGui;
 using OtterGui.Widgets;
-using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Mods;
@@ -14,16 +13,17 @@ using Dalamud.Interface.Components;
 using Dalamud.Interface;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
+using Penumbra.Services;
 
 namespace Penumbra.UI.ModsTab;
 
 public class ModPanelSettingsTab : ITab
 {
     private readonly Configuration         _config;
+    private readonly CommunicatorService   _communicator;
     private readonly CollectionManager     _collectionManager;
     private readonly ModFileSystemSelector _selector;
     private readonly TutorialService       _tutorial;
-    private readonly PenumbraApi           _api;
     private readonly ModManager            _modManager;
 
     private bool          _inherited;
@@ -33,13 +33,13 @@ public class ModPanelSettingsTab : ITab
     private int?          _currentPriority = null;
 
     public ModPanelSettingsTab(CollectionManager collectionManager, ModManager modManager, ModFileSystemSelector selector,
-        TutorialService tutorial, PenumbraApi api, Configuration config)
+        TutorialService tutorial, CommunicatorService communicator, Configuration config)
     {
         _collectionManager = collectionManager;
+        _communicator      = communicator;
         _modManager        = modManager;
         _selector          = selector;
         _tutorial          = tutorial;
-        _api               = api;
         _config            = config;
     }
 
@@ -65,7 +65,7 @@ public class ModPanelSettingsTab : ITab
 
         DrawInheritedWarning();
         UiHelpers.DefaultLineSpace();
-        _api.InvokePreSettingsPanel(_selector.Selected!.ModPath.Name);
+        _communicator.PreSettingsPanelDraw.Invoke(_selector.Selected!.ModPath.Name);
         DrawEnabledInput();
         _tutorial.OpenTutorial(BasicTutorialSteps.EnablingMods);
         ImGui.SameLine();
@@ -102,7 +102,7 @@ public class ModPanelSettingsTab : ITab
         }
 
         UiHelpers.DefaultLineSpace();
-        _api.InvokePostSettingsPanel(_selector.Selected!.ModPath.Name);
+        _communicator.PostSettingsPanelDraw.Invoke(_selector.Selected!.ModPath.Name);
     }
 
     /// <summary> Draw a big red bar if the current setting is inherited. </summary>
