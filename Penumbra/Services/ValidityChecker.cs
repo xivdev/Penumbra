@@ -1,13 +1,10 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Plugin;
-using Penumbra.Util;
 
-namespace Penumbra;
+namespace Penumbra.Services;
 
 public class ValidityChecker
 {

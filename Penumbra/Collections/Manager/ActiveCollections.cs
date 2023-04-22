@@ -43,7 +43,7 @@ public class ActiveCollections : ISavable, IDisposable
         Current       = storage.DefaultNamed;
         Default       = storage.DefaultNamed;
         Interface     = storage.DefaultNamed;
-        Individuals   = new IndividualCollections(actors.AwaitedService, config);
+        Individuals   = new IndividualCollections(actors, config);
         _communicator.CollectionChange.Subscribe(OnCollectionChange, -100);
         LoadCollections();
         UpdateCurrentCollectionInUse();
@@ -396,7 +396,7 @@ public class ActiveCollections : ISavable, IDisposable
         }
 
         configChanged |= ActiveCollectionMigration.MigrateIndividualCollections(_storage, Individuals, jObject);
-        configChanged |= Individuals.ReadJObject(jObject[nameof(Individuals)] as JArray, _storage);
+        configChanged |= Individuals.ReadJObject(_saveService, this, jObject[nameof(Individuals)] as JArray, _storage);
 
         // Save any changes.
         if (configChanged)

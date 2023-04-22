@@ -13,24 +13,17 @@ namespace Penumbra.Collections.Manager;
 public sealed partial class IndividualCollections
 {
     private readonly Configuration                                                                                    _config;
-    private readonly ActorManager                                                                                     _actorManager;
+    private readonly ActorService                                                                                     _actorService;
     private readonly List<(string DisplayName, IReadOnlyList<ActorIdentifier> Identifiers, ModCollection Collection)> _assignments = new();
     private readonly Dictionary<ActorIdentifier, ModCollection>                                                       _individuals = new();
 
     public IReadOnlyList<(string DisplayName, IReadOnlyList<ActorIdentifier> Identifiers, ModCollection Collection)> Assignments
         => _assignments;
 
-    // TODO
-    public IndividualCollections(ActorService actorManager, Configuration config)
+    public IndividualCollections(ActorService actorService, Configuration config)
     {
         _config       = config;
-        _actorManager = actorManager.AwaitedService;
-    }
-
-    public IndividualCollections(ActorManager actorManager, Configuration config)
-    {
-        _actorManager = actorManager;
-        _config       = config;
+        _actorService = actorService;
     }
 
     public enum AddResult
@@ -78,6 +71,7 @@ public sealed partial class IndividualCollections
     {
         identifiers = Array.Empty<ActorIdentifier>();
 
+        var manager = _actorService.AwaitedService;
         switch (type)
         {
             case IdentifierType.Player:
@@ -86,7 +80,7 @@ public sealed partial class IndividualCollections
 
                 identifiers = new[]
                 {
-                    _actorManager.CreatePlayer(playerName, homeWorld),
+                    manager.CreatePlayer(playerName, homeWorld),
                 };
                 break;
             case IdentifierType.Retainer:
@@ -95,18 +89,18 @@ public sealed partial class IndividualCollections
 
                 identifiers = new[]
                 {
-                    _actorManager.CreateRetainer(retainerName, 0),
+                    manager.CreateRetainer(retainerName, 0),
                 };
                 break;
             case IdentifierType.Owned:
                 if (!ByteString.FromString(name, out var ownerName))
                     return AddResult.Invalid;
 
-                identifiers = dataIds.Select(id => _actorManager.CreateOwned(ownerName, homeWorld, kind, id)).ToArray();
+                identifiers = dataIds.Select(id => manager.CreateOwned(ownerName, homeWorld, kind, id)).ToArray();
                 break;
             case IdentifierType.Npc:
                 identifiers = dataIds
-                    .Select(id => _actorManager.CreateIndividual(IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, kind, id)).ToArray();
+                    .Select(id => manager.CreateIndividual(IdentifierType.Npc, ByteString.Empty, ushort.MaxValue, kind, id)).ToArray();
                 break;
             default:
                 identifiers = Array.Empty<ActorIdentifier>();
@@ -152,8 +146,8 @@ public sealed partial class IndividualCollections
             {
                 identifier.CreatePermanent(),
             },
-            IdentifierType.Owned => CreateNpcs(_actorManager, identifier.CreatePermanent()),
-            IdentifierType.Npc   => CreateNpcs(_actorManager, identifier),
+            IdentifierType.Owned => CreateNpcs(_actorService.AwaitedService, identifier.CreatePermanent()),
+            IdentifierType.Npc   => CreateNpcs(_actorService.AwaitedService, identifier),
             _                    => Array.Empty<ActorIdentifier>(),
         };
     }
@@ -244,11 +238,11 @@ public sealed partial class IndividualCollections
     {
         return identifier.Type switch
         {
-            IdentifierType.Player => $"{identifier.PlayerName} ({_actorManager.Data.ToWorldName(identifier.HomeWorld)})",
+            IdentifierType.Player => $"{identifier.PlayerName} ({_actorService.AwaitedService.Data.ToWorldName(identifier.HomeWorld)})",
             IdentifierType.Retainer => $"{identifier.PlayerName} (Retainer)",
             IdentifierType.Owned =>
-                $"{identifier.PlayerName} ({_actorManager.Data.ToWorldName(identifier.HomeWorld)})'s {_actorManager.Data.ToName(identifier.Kind, identifier.DataId)}",
-            IdentifierType.Npc => $"{_actorManager.Data.ToName(identifier.Kind, identifier.DataId)} ({identifier.Kind.ToName()})",
+                $"{identifier.PlayerName} ({_actorService.AwaitedService.Data.ToWorldName(identifier.HomeWorld)})'s {_actorService.AwaitedService.Data.ToName(identifier.Kind, identifier.DataId)}",
+            IdentifierType.Npc => $"{_actorService.AwaitedService.Data.ToName(identifier.Kind, identifier.DataId)} ({identifier.Kind.ToName()})",
             _                  => string.Empty,
         };
     }

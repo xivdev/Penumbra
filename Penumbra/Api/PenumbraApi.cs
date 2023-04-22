@@ -145,10 +145,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _redrawService      = redrawService;
         _modFileSystem      = modFileSystem;
         _configWindow       = configWindow;
-
-        _lumina = (Lumina.GameData?)_dalamud.GameData.GetType()
-            .GetField("gameData", BindingFlags.Instance | BindingFlags.NonPublic)
-            ?.GetValue(_dalamud.GameData);
+        _lumina             = _dalamud.GameData.GameData;
 
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
         _communicator.ModPathChanged.Subscribe(ModPathChangeSubscriber);

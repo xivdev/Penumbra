@@ -3,42 +3,58 @@ using Microsoft.Extensions.DependencyInjection;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Api;
+using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
-using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
+using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Interop.Services;
+using Penumbra.Meta;
 using Penumbra.Mods;
-using Penumbra.Services;
+using Penumbra.Mods.Manager;
 using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
 using Penumbra.Util;
-using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
-using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
-using Penumbra.Mods.Manager;
-using Penumbra.Collections.Cache;
-using Penumbra.Meta;
 
-namespace Penumbra;
+namespace Penumbra.Services;
 
-public class ServiceManager
+public static class ServiceManager
 {
-    public readonly ServiceProvider Services;
-
-    public ServiceManager(Penumbra penumbra, DalamudPluginInterface pi, Logger log)
+    public static ServiceProvider CreateProvider(Penumbra penumbra, DalamudPluginInterface pi, Logger log, StartTracker startTimer)
     {
-        var       startTimer = new StartTracker();
-        using var time       = startTimer.Measure(StartTimeType.Total);
-
-        var services = new ServiceCollection();
-        // Add meta services.
-        services.AddSingleton(log)
+        var services = new ServiceCollection()
+            .AddSingleton(log)
             .AddSingleton(startTimer)
-            .AddSingleton<ValidityChecker>()
+            .AddSingleton(penumbra)
+            .AddDalamud(pi)
+            .AddMeta()
+            .AddGameData()
+            .AddInterop()
+            .AddConfiguration()
+            .AddCollections()
+            .AddMods()
+            .AddResources()
+            .AddResolvers()
+            .AddInterface()
+            .AddModEditor()
+            .AddApi();
+
+        return services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
+    }
+
+    private static IServiceCollection AddDalamud(this IServiceCollection services, DalamudPluginInterface pi)
+    {
+        var dalamud = new DalamudServices(pi);
+        dalamud.AddServices(services);
+        return services;
+    }
+
+    private static IServiceCollection AddMeta(this IServiceCollection services)
+        => services.AddSingleton<ValidityChecker>()
             .AddSingleton<PerformanceTracker>()
             .AddSingleton<FilenameService>()
             .AddSingleton<BackupService>()
@@ -46,20 +62,16 @@ public class ServiceManager
             .AddSingleton<ChatService>()
             .AddSingleton<SaveService>();
 
-        // Add Dalamud services
-        var dalamud = new DalamudServices(pi);
-        dalamud.AddServices(services);
-        services.AddSingleton(penumbra);
 
-        // Add Game Data
-        services.AddSingleton<IGamePathParser, GamePathParser>()
+    private static IServiceCollection AddGameData(this IServiceCollection services)
+        => services.AddSingleton<IGamePathParser, GamePathParser>()
             .AddSingleton<IdentifierService>()
             .AddSingleton<StainService>()
             .AddSingleton<ItemService>()
             .AddSingleton<ActorService>();
 
-        // Add Game Services
-        services.AddSingleton<GameEventManager>()
+    private static IServiceCollection AddInterop(this IServiceCollection services)
+        => services.AddSingleton<GameEventManager>()
             .AddSingleton<FrameworkManager>()
             .AddSingleton<CutsceneService>()
             .AddSingleton<CharacterUtility>()
@@ -72,12 +84,12 @@ public class ServiceManager
             .AddSingleton<FontReloader>()
             .AddSingleton<RedrawService>();
 
-        // Add Configuration
-        services.AddTransient<ConfigMigrationService>()
+    private static IServiceCollection AddConfiguration(this IServiceCollection services)
+        => services.AddTransient<ConfigMigrationService>()
             .AddSingleton<Configuration>();
 
-        // Add Collection Services
-        services.AddSingleton<CollectionStorage>()
+    private static IServiceCollection AddCollections(this IServiceCollection services)
+        => services.AddSingleton<CollectionStorage>()
             .AddSingleton<ActiveCollectionData>()
             .AddSingleton<ActiveCollections>()
             .AddSingleton<InheritanceManager>()
@@ -86,8 +98,8 @@ public class ServiceManager
             .AddSingleton<CollectionEditor>()
             .AddSingleton<CollectionManager>();
 
-        // Add Mod Services
-        services.AddSingleton<TempModManager>()
+    private static IServiceCollection AddMods(this IServiceCollection services)
+        => services.AddSingleton<TempModManager>()
             .AddSingleton<ModDataEditor>()
             .AddSingleton<ModOptionEditor>()
             .AddSingleton<ModCreator>()
@@ -96,16 +108,16 @@ public class ServiceManager
             .AddSingleton<ModImportManager>()
             .AddSingleton<ModFileSystem>()
             .AddSingleton<ModCacheManager>()
-            .AddSingleton(s => (ModStorage) s.GetRequiredService<ModManager>());
+            .AddSingleton(s => (ModStorage)s.GetRequiredService<ModManager>());
 
-        // Add Resource services
-        services.AddSingleton<ResourceLoader>()
+    private static IServiceCollection AddResources(this IServiceCollection services)
+        => services.AddSingleton<ResourceLoader>()
             .AddSingleton<ResourceWatcher>()
             .AddSingleton<ResourceTreeFactory>()
             .AddSingleton<MetaFileManager>();
 
-        // Add Path Resolver
-        services.AddSingleton<AnimationHookService>()
+    private static IServiceCollection AddResolvers(this IServiceCollection services)
+        => services.AddSingleton<AnimationHookService>()
             .AddSingleton<CollectionResolver>()
             .AddSingleton<CutsceneService>()
             .AddSingleton<DrawObjectState>()
@@ -115,8 +127,8 @@ public class ServiceManager
             .AddSingleton<IdentifiedCollectionCache>()
             .AddSingleton<PathResolver>();
 
-        // Add Interface
-        services.AddSingleton<FileDialogService>()
+    private static IServiceCollection AddInterface(this IServiceCollection services)
+        => services.AddSingleton<FileDialogService>()
             .AddSingleton<TutorialService>()
             .AddSingleton<PenumbraChangelog>()
             .AddSingleton<LaunchButton>()
@@ -147,8 +159,8 @@ public class ServiceManager
             .AddSingleton<ResourceWatcher>()
             .AddSingleton<ItemSwapTab>();
 
-        // Add Mod Editor
-        services.AddSingleton<ModFileCollection>()
+    private static IServiceCollection AddModEditor(this IServiceCollection services)
+        => services.AddSingleton<ModFileCollection>()
             .AddSingleton<DuplicateManager>()
             .AddSingleton<MdlMaterialEditor>()
             .AddSingleton<ModFileEditor>()
@@ -157,17 +169,9 @@ public class ServiceManager
             .AddSingleton<ModNormalizer>()
             .AddSingleton<ModEditor>();
 
-        // Add API
-        services.AddSingleton<PenumbraApi>()
+    private static IServiceCollection AddApi(this IServiceCollection services)
+        => services.AddSingleton<PenumbraApi>()
             .AddSingleton<IPenumbraApi>(x => x.GetRequiredService<PenumbraApi>())
             .AddSingleton<PenumbraIpcProviders>()
             .AddSingleton<HttpApi>();
-
-        Services = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true });
-    }
-
-    public void Dispose()
-    {
-        Services.Dispose();
-    }
 }

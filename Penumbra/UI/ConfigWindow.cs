@@ -7,6 +7,7 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Api.Enums;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
 using Penumbra.Util;
