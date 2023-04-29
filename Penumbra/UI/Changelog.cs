@@ -34,9 +34,46 @@ public class PenumbraChangelog
         Add6_5_2(Changelog);
         Add6_6_0(Changelog);
         Add6_6_1(Changelog);
+        Add7_0_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add7_0_0(Changelog log)
+        => log.NextVersion("Version 0.7.0.0")
+            .RegisterHighlight("The entire backend was reworked (this is still in progress). While this does not come with a lot of functionality changes, basically every file and functionality was touched.")
+            .RegisterEntry("This may have (re-)introduced some bugs that have not yet been noticed despite a long testing period - there are not many users of the testing branch.", 1)
+            .RegisterEntry("If you encounter any - but especially breaking or lossy - bugs, please report them immediately.", 1)
+            .RegisterEntry("This also fixed or improved numerous bugs and issues that will not be listed here.", 1)
+            .RegisterEntry("GitHub currently reports 321 changed files with 34541 additions and 28464 deletions.", 1)
+            .RegisterEntry("Added Notifications on many failures that previously only wrote to log.")
+            .RegisterEntry("Reworked the Collections Tab to hopefully be much more intuitive. It should be self-explanatory now.")
+            .RegisterEntry("The tutorial was adapted to the new window, if you are unsure, maybe try restarting it.", 1)
+            .RegisterEntry("You can now toggle an incognito mode in the collection window so it shows shortened names of collections and players.", 1)
+            .RegisterEntry("You can get an overview about the current usage of a selected collection and its active and unused mod settings in the Collection Details panel.", 1)
+            .RegisterEntry("The currently selected collection is now highlighted in green (default, configurable) in multiple places.", 1)
+            .RegisterEntry("Mods now have a 'Collections' panel in the Mod Panel containing an overview about usage of the mod in all collections.")
+            .RegisterEntry("The 'Changed Items' and 'Effective Changes' tab now contain a collection selector.")
+            .RegisterEntry("Added the On-Screen tab to find what files a specific character is actually using (by Ny).")
+            .RegisterEntry("Added 3 Quick Move folders in the mod selector that can be setup in context menus for easier cleanup.")
+            .RegisterEntry("Added handling for certain animation files for mounts and fashion accessories to correctly associate them to players.")
+            .RegisterEntry("The file selectors in the Advanced Mod Editing Window now use filterable combos.")
+            .RegisterEntry("The Advanced Mod Editing Window now shows the number of meta edits and file swaps in unselected options and highlights the option selector.")
+            .RegisterEntry("Added API/IPC to start unpacking and installing mods from external tools (by Sebastina).")
+            .RegisterEntry("Hidden files and folders are now ignored for unused files in Advanced Mod Editing (by myr)")
+            .RegisterEntry("Paths in mods are now automatically trimmed of whitespace on loading.")
+            .RegisterEntry("Fixed double 'by' in mod author display (by Caraxi).")
+            .RegisterEntry("Fixed a crash when trying to obtain names from the game data.")
+            .RegisterEntry("Fixed some issues with tutorial windows.")
+            .RegisterEntry("Fixed some bugs in the Resource Logger.")
+            .RegisterEntry("Fixed Button Sizing for collapsible groups and several related bugs.")
+            .RegisterEntry("Fixed issue with mods with default settings other than 0.")
+            .RegisterEntry("Fixed issue with commands not registering on startup. (0.6.6.5)")
+            .RegisterEntry("Improved Startup Times and Time Tracking. (0.6.6.4)")
+            .RegisterEntry("Add Item Swapping between different types of Accessories and Hats. (0.6.6.4)")
+            .RegisterEntry("Fixed bugs with assignment of temporary collections and their deletion. (0.6.6.4)")
+            .RegisterEntry("Fixed bugs with new file loading mechanism. (0.6.6.2, 0.6.6.3)")
+            .RegisterEntry("Added API/IPC to open and close the main window and select specific tabs and mods. (0.6.6.2)");
 
     private static void Add6_6_1(Changelog log)
         => log.NextVersion("Version 0.6.6.1")
