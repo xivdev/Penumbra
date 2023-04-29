@@ -160,6 +160,27 @@ public class DebugTab : ITab
             foreach (var collection in _collectionManager.Storage)
                 PrintValue(collection.Name, collection.HasCache.ToString());
         }
+
+        using (var tree = TreeNode("Mods"))
+        {
+            if (!tree)
+                return;
+
+            using var table = Table("##DebugModsTable", 3, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
+                return;
+
+            var lastIndex = -1;
+            foreach (var mod in _modManager)
+            {
+                PrintValue(mod.Name, mod.Index.ToString("D5"));
+                ImGui.TableNextColumn();
+                var index     = mod.Index;
+                if (index != lastIndex + 1)
+                    ImGui.TextUnformatted("!!!");
+                lastIndex = index;
+            }
+        }
     }
 
     private void DrawPerformanceTab()
