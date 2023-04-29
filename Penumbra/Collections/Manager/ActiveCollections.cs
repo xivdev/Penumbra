@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Enums;
 using Penumbra.Services;
 using Penumbra.UI;
 using Penumbra.Util;
@@ -433,32 +434,45 @@ public class ActiveCollections : ISavable, IDisposable
 
         switch (type)
         {
-            // Yourself is redundant if 
             case CollectionType.Yourself:
                 var yourself = ByType(CollectionType.Yourself);
                 if (yourself == null)
                     return string.Empty;
 
+                var racial = false;
+                foreach (var race in Enum.GetValues<SubRace>().Skip(1))
+                {
+                    var m = ByType(CollectionTypeExtensions.FromParts(race, Gender.Male, false));
+                    if (m != null && m != yourself)
+                        return string.Empty;
+                    var f = ByType(CollectionTypeExtensions.FromParts(race, Gender.Female, false));
+                    if (f != null && f != yourself)
+                        return string.Empty;
+
+                    racial |= m != null || f != null;
+                }
+
+                var racialString = racial ? " and Racial Assignments" : string.Empty;
                 var @base  = ByType(CollectionType.Default);
                 var male   = ByType(CollectionType.MalePlayerCharacter);
                 var female = ByType(CollectionType.FemalePlayerCharacter);
                 if (male == yourself && female == yourself)
                     return
-                        "Assignment is redundant due to overwriting Male Players and Female Players with an identical collection.\nYou can remove it.";
-
+                        $"Assignment is redundant due to overwriting Male Players and Female Players{racialString} with an identical collection.\nYou can remove it.";
+                
                 if (male == null)
                 {
                     if (female == null && @base == yourself)
-                        return "Assignment is redundant due to overwriting Base with an identical collection.\nYou can remove it.";
+                        return $"Assignment is redundant due to overwriting Base{racialString} with an identical collection.\nYou can remove it.";
                     if (female == yourself && @base == yourself)
                         return
-                            "Assignment is redundant due to overwriting Base and Female Players with an identical collection.\nYou can remove it.";
+                            $"Assignment is redundant due to overwriting Base and Female Players{racialString} with an identical collection.\nYou can remove it.";
                 }
                 else if (male == yourself && female == null && @base == yourself)
                 {
-                    return "Assignment is redundant due to overwriting Base and Male Players with an identical collection.\nYou can remove it.";
+                    return $"Assignment is redundant due to overwriting Base and Male Players{racialString} with an identical collection.\nYou can remove it.";
                 }
-
+                
                 break;
             // Check individual assignments. We can only be sure of redundancy for world-overlap or ownership overlap.
             case CollectionType.Individual:
