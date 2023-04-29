@@ -208,7 +208,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     /// Does not check for uniqueness.
     /// </summary>
     private static bool IsValidName(string name)
-        => name.Length is > 0 and < 32 && name.All(c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath());
+        => name.Length is > 0 and < 64 && name.All(c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath());
 
     /// <summary>
     /// Read all collection files in the Collection Directory.
