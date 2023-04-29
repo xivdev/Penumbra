@@ -10,7 +10,6 @@ using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Services;
 using Penumbra.UI;
-using Penumbra.Util;
 
 namespace Penumbra.Collections.Manager;
 
@@ -276,7 +275,7 @@ public class ActiveCollections : ISavable, IDisposable
         jObj.WriteTo(j);
     }
 
-    private void UpdateCurrentCollectionInUse()
+    public void UpdateCurrentCollectionInUse()
         => CurrentCollectionInUse = SpecialCollections
             .OfType<ModCollection>()
             .Prepend(Interface)

@@ -7,7 +7,6 @@ using Newtonsoft.Json.Linq;
 using Penumbra.GameData.Actors;
 using Penumbra.Services;
 using Penumbra.String;
-using Penumbra.Util;
 
 namespace Penumbra.Collections.Manager;
 
@@ -35,6 +34,7 @@ public partial class IndividualCollections
         {
             if (ReadJObjectInternal(obj, storage))
                 saver.ImmediateSave(parent);
+            parent.UpdateCurrentCollectionInUse();
             _actorService.FinishedCreation -= Func;
         }
         _actorService.FinishedCreation += Func;
