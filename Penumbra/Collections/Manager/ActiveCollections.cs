@@ -47,6 +47,7 @@ public class ActiveCollections : ISavable, IDisposable
         _communicator.CollectionChange.Subscribe(OnCollectionChange, -100);
         LoadCollections();
         UpdateCurrentCollectionInUse();
+        Individuals.Loaded += UpdateCurrentCollectionInUse;
     }
 
     public void Dispose()
@@ -275,7 +276,7 @@ public class ActiveCollections : ISavable, IDisposable
         jObj.WriteTo(j);
     }
 
-    public void UpdateCurrentCollectionInUse()
+    private void UpdateCurrentCollectionInUse()
         => CurrentCollectionInUse = SpecialCollections
             .OfType<ModCollection>()
             .Prepend(Interface)

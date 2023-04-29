@@ -34,7 +34,7 @@ public partial class IndividualCollections
         {
             if (ReadJObjectInternal(obj, storage))
                 saver.ImmediateSave(parent);
-            parent.UpdateCurrentCollectionInUse();
+            Loaded?.Invoke();
             _actorService.FinishedCreation -= Func;
         }
         _actorService.FinishedCreation += Func;

@@ -17,6 +17,8 @@ public sealed partial class IndividualCollections
     private readonly List<(string DisplayName, IReadOnlyList<ActorIdentifier> Identifiers, ModCollection Collection)> _assignments = new();
     private readonly Dictionary<ActorIdentifier, ModCollection>                                                       _individuals = new();
 
+    public event Action? Loaded;
+
     public IReadOnlyList<(string DisplayName, IReadOnlyList<ActorIdentifier> Identifiers, ModCollection Collection)> Assignments
         => _assignments;
 
@@ -242,8 +244,9 @@ public sealed partial class IndividualCollections
             IdentifierType.Retainer => $"{identifier.PlayerName} (Retainer)",
             IdentifierType.Owned =>
                 $"{identifier.PlayerName} ({_actorService.AwaitedService.Data.ToWorldName(identifier.HomeWorld)})'s {_actorService.AwaitedService.Data.ToName(identifier.Kind, identifier.DataId)}",
-            IdentifierType.Npc => $"{_actorService.AwaitedService.Data.ToName(identifier.Kind, identifier.DataId)} ({identifier.Kind.ToName()})",
-            _                  => string.Empty,
+            IdentifierType.Npc =>
+                $"{_actorService.AwaitedService.Data.ToName(identifier.Kind, identifier.DataId)} ({identifier.Kind.ToName()})",
+            _ => string.Empty,
         };
     }
 }

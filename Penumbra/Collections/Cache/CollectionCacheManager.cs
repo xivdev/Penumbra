@@ -51,6 +51,7 @@ public class CollectionCacheManager : IDisposable
         _communicator.ModSettingChanged.Subscribe(OnModSettingChange);
         _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange);
         CreateNecessaryCaches();
+        _active.Individuals.Loaded += CreateNecessaryCaches;
 
         if (!MetaFileManager.CharacterUtility.Ready)
             MetaFileManager.CharacterUtility.LoadingFinished += IncrementCounters;
