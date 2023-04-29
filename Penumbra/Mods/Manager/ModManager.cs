@@ -116,9 +116,9 @@ public sealed class ModManager : ModStorage
             }
 
         _communicator.ModPathChanged.Invoke(ModPathChangeType.Deleted, mod, mod.ModPath, null);
-        Mods.RemoveAt(mod.Index);
-        foreach (var remainingMod in this.Skip(mod.Index))
+        foreach (var remainingMod in Mods.Skip(mod.Index))
             --remainingMod.Index;
+        Mods.RemoveAt(mod.Index);
 
         Penumbra.Log.Debug($"Deleted mod {mod.Name}.");
     }
