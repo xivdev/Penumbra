@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text;
+using Dalamud.Game;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Mods;
@@ -32,22 +33,21 @@ public class SaveService
     private readonly FrameworkManager _framework;
 
     public readonly FilenameService FileNames;
+    public readonly Framework       DalamudFramework;
 
-    public SaveService(Logger log, FrameworkManager framework, FilenameService fileNames)
+    public SaveService(Logger log, FrameworkManager framework, FilenameService fileNames, Framework dalamudFramework)
     {
-        _log       = log;
-        _framework = framework;
-        FileNames  = fileNames;
+        _log             = log;
+        _framework       = framework;
+        FileNames        = fileNames;
+        DalamudFramework = dalamudFramework;
     }
 
     /// <summary> Queue a save for the next framework tick. </summary>
     public void QueueSave(ISavable value)
     {
         var file = value.ToFilename(FileNames);
-        _framework.RegisterDelayed(value.GetType().Name + file, () =>
-        {
-            ImmediateSave(value);
-        });
+        _framework.RegisterDelayed(value.GetType().Name + file, () => { ImmediateSave(value); });
     }
 
     /// <summary> Immediately trigger a save. </summary>
@@ -57,9 +57,7 @@ public class SaveService
         try
         {
             if (name.Length == 0)
-            {
                 throw new Exception("Invalid object returned empty filename.");
-            }
 
             _log.Debug($"Saving {value.TypeName} {value.LogName(name)}...");
             var file = new FileInfo(name);
@@ -80,9 +78,7 @@ public class SaveService
         try
         {
             if (name.Length == 0)
-            {
                 throw new Exception("Invalid object returned empty filename.");
-            }
 
             if (!File.Exists(name))
                 return;

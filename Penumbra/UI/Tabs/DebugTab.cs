@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.Interop;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
@@ -128,23 +129,37 @@ public class DebugTab : ITab
         if (!ImGui.CollapsingHeader("General"))
             return;
 
-        using var table = Table("##DebugGeneralTable", 2, ImGuiTableFlags.SizingFixedFit,
-            new Vector2(-1, ImGui.GetTextLineHeightWithSpacing() * 1));
-        if (!table)
-            return;
+        using (var table = Table("##DebugGeneralTable", 2, ImGuiTableFlags.SizingFixedFit))
+        {
+            if (table)
+            {
+                PrintValue("Penumbra Version",                 $"{_validityChecker.Version} {DebugVersionString}");
+                PrintValue("Git Commit Hash",                  _validityChecker.CommitHash);
+                PrintValue(TutorialService.SelectedCollection, _collectionManager.Active.Current.Name);
+                PrintValue("    has Cache",                    _collectionManager.Active.Current.HasCache.ToString());
+                PrintValue(TutorialService.DefaultCollection,  _collectionManager.Active.Default.Name);
+                PrintValue("    has Cache",                    _collectionManager.Active.Default.HasCache.ToString());
+                PrintValue("Mod Manager BasePath",             _modManager.BasePath.Name);
+                PrintValue("Mod Manager BasePath-Full",        _modManager.BasePath.FullName);
+                PrintValue("Mod Manager BasePath IsRooted",    Path.IsPathRooted(_config.ModDirectory).ToString());
+                PrintValue("Mod Manager BasePath Exists",      Directory.Exists(_modManager.BasePath.FullName).ToString());
+                PrintValue("Mod Manager Valid",                _modManager.Valid.ToString());
+                PrintValue("Web Server Enabled",               _httpApi.Enabled.ToString());
+            }
+        }
 
-        PrintValue("Penumbra Version",                 $"{_validityChecker.Version} {DebugVersionString}");
-        PrintValue("Git Commit Hash",                  _validityChecker.CommitHash);
-        PrintValue(TutorialService.SelectedCollection, _collectionManager.Active.Current.Name);
-        PrintValue("    has Cache",                    _collectionManager.Active.Current.HasCache.ToString());
-        PrintValue(TutorialService.DefaultCollection,  _collectionManager.Active.Default.Name);
-        PrintValue("    has Cache",                    _collectionManager.Active.Default.HasCache.ToString());
-        PrintValue("Mod Manager BasePath",             _modManager.BasePath.Name);
-        PrintValue("Mod Manager BasePath-Full",        _modManager.BasePath.FullName);
-        PrintValue("Mod Manager BasePath IsRooted",    Path.IsPathRooted(_config.ModDirectory).ToString());
-        PrintValue("Mod Manager BasePath Exists",      Directory.Exists(_modManager.BasePath.FullName).ToString());
-        PrintValue("Mod Manager Valid",                _modManager.Valid.ToString());
-        PrintValue("Web Server Enabled",               _httpApi.Enabled.ToString());
+        using (var tree = TreeNode("Collections"))
+        {
+            if (!tree)
+                return;
+
+            using var table = Table("##DebugCollectionsTable", 2, ImGuiTableFlags.SizingFixedFit);
+            if (!table)
+                return;
+
+            foreach (var collection in _collectionManager.Storage)
+                PrintValue(collection.Name, collection.HasCache.ToString());
+        }
     }
 
     private void DrawPerformanceTab()
