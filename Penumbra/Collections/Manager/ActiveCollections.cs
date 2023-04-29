@@ -433,6 +433,33 @@ public class ActiveCollections : ISavable, IDisposable
 
         switch (type)
         {
+            // Yourself is redundant if 
+            case CollectionType.Yourself:
+                var yourself = ByType(CollectionType.Yourself);
+                if (yourself == null)
+                    return string.Empty;
+
+                var @base  = ByType(CollectionType.Default);
+                var male   = ByType(CollectionType.MalePlayerCharacter);
+                var female = ByType(CollectionType.FemalePlayerCharacter);
+                if (male == yourself && female == yourself)
+                    return
+                        "Assignment is redundant due to overwriting Male Players and Female Players with an identical collection.\nYou can remove it.";
+
+                if (male == null)
+                {
+                    if (female == null && @base == yourself)
+                        return "Assignment is redundant due to overwriting Base with an identical collection.\nYou can remove it.";
+                    if (female == yourself && @base == yourself)
+                        return
+                            "Assignment is redundant due to overwriting Base and Female Players with an identical collection.\nYou can remove it.";
+                }
+                else if (male == yourself && female == null && @base == yourself)
+                {
+                    return "Assignment is redundant due to overwriting Base and Male Players with an identical collection.\nYou can remove it.";
+                }
+
+                break;
             // Check individual assignments. We can only be sure of redundancy for world-overlap or ownership overlap.
             case CollectionType.Individual:
                 switch (id.Type)
