@@ -116,7 +116,7 @@ public sealed class ModManager : ModStorage
             }
 
         _communicator.ModPathChanged.Invoke(ModPathChangeType.Deleted, mod, mod.ModPath, null);
-        foreach (var remainingMod in Mods.Skip(mod.Index))
+        foreach (var remainingMod in Mods.Skip(mod.Index + 1))
             --remainingMod.Index;
         Mods.RemoveAt(mod.Index);
 
