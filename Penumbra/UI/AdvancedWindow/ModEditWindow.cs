@@ -367,9 +367,9 @@ public partial class ModEditWindow : Window, IDisposable
     {
         const string defaultOption = "Default Option";
         using var    style         = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero).Push(ImGuiStyleVar.FrameRounding, 0);
-        var          width         = new Vector2(ImGui.GetWindowWidth() / 3, 0);
+        var          width         = new Vector2(ImGui.GetContentRegionAvail().X / 3, 0);
         if (ImGuiUtil.DrawDisabledButton(defaultOption, width, "Switch to the default option for the mod.\nThis resets unsaved changes.",
-                _editor!.Option!.IsDefault))
+                _editor.Option!.IsDefault))
             _editor.LoadOption(-1, 0);
 
         ImGui.SameLine();
@@ -377,12 +377,14 @@ public partial class ModEditWindow : Window, IDisposable
             _editor.LoadMod(_editor.Mod!, _editor.GroupIdx, _editor.OptionIdx);
 
         ImGui.SameLine();
-
-        using var combo = ImRaii.Combo("##optionSelector", _editor.Option.FullName, ImGuiComboFlags.NoArrowButton);
+        ImGui.SetNextItemWidth(width.X);
+        style.Push(ImGuiStyleVar.FrameBorderSize, ImGuiHelpers.GlobalScale);
+        using var color = ImRaii.PushColor(ImGuiCol.Border, ColorId.FolderLine.Value());
+        using var combo = ImRaii.Combo("##optionSelector", _editor.Option.FullName);
         if (!combo)
             return;
 
-        foreach (var option in _mod!.AllSubMods.Cast<SubMod>())
+        foreach (var option in _mod!.AllSubMods)
         {
             if (ImGui.Selectable(option.FullName, option == _editor.Option))
                 _editor.LoadOption(option.GroupIdx, option.OptionIdx);
@@ -411,6 +413,13 @@ public partial class ModEditWindow : Window, IDisposable
         if (ImGuiUtil.DrawDisabledButton("Revert Changes", Vector2.Zero, tt, setsEqual))
             _editor.SwapEditor.Revert(_editor.Option!);
 
+        var otherSwaps = _editor.Mod!.TotalSwapCount - _editor.SwapEditor.Swaps.Count;
+        if (otherSwaps > 0)
+        {
+            ImGui.SameLine();
+            ImGuiUtil.DrawTextButton($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero, ColorId.RedundantAssignment.Value());
+        }
+
         using var child = ImRaii.Child("##swaps", -Vector2.One, true);
         if (!child)
             return;
@@ -434,18 +443,18 @@ public partial class ModEditWindow : Window, IDisposable
                 _editor.SwapEditor.Remove(gamePath);
 
             ImGui.TableNextColumn();
-            var tmp = gamePath.Path.ToString();
+            var tmp = file.FullName;
+            ImGui.SetNextItemWidth(-1);
+            if (ImGui.InputText("##value", ref tmp, Utf8GamePath.MaxGamePathLength) && tmp.Length > 0)
+                _editor.SwapEditor.Change(gamePath, new FullPath(tmp));
+
+            ImGui.TableNextColumn();
+            tmp = gamePath.Path.ToString();
             ImGui.SetNextItemWidth(-1);
             if (ImGui.InputText("##key", ref tmp, Utf8GamePath.MaxGamePathLength)
              && Utf8GamePath.FromString(tmp, out var path)
              && !_editor.SwapEditor.Swaps.ContainsKey(path))
                 _editor.SwapEditor.Change(gamePath, path);
-
-            ImGui.TableNextColumn();
-            tmp = file.FullName;
-            ImGui.SetNextItemWidth(-1);
-            if (ImGui.InputText("##value", ref tmp, Utf8GamePath.MaxGamePathLength) && tmp.Length > 0)
-                _editor.SwapEditor.Change(gamePath, new FullPath(tmp));
         }
 
         ImGui.TableNextColumn();

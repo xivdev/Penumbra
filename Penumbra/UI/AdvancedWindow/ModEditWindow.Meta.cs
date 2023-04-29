@@ -53,7 +53,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         tt = setsEqual ? "No changes staged." : "Revert all currently staged changes.";
         if (ImGuiUtil.DrawDisabledButton("Revert Changes", Vector2.Zero, tt, setsEqual))
-            _editor.MetaEditor.Load(_editor.Option!);
+            _editor.MetaEditor.Load(_editor.Mod!, _editor.Option!);
 
         ImGui.SameLine();
         AddFromClipboardButton();
@@ -69,21 +69,33 @@ public partial class ModEditWindow
         if (!child)
             return;
 
-        DrawEditHeader(_editor.MetaEditor.Eqp,  "Equipment Parameter Edits (EQP)###EQP", 5,  EqpRow.Draw,  EqpRow.DrawNew);
-        DrawEditHeader(_editor.MetaEditor.Eqdp, "Racial Model Edits (EQDP)###EQDP",      7,  EqdpRow.Draw, EqdpRow.DrawNew);
-        DrawEditHeader(_editor.MetaEditor.Imc,  "Variant Edits (IMC)###IMC",             10, ImcRow.Draw,  ImcRow.DrawNew);
-        DrawEditHeader(_editor.MetaEditor.Est,  "Extra Skeleton Parameters (EST)###EST", 7,  EstRow.Draw,  EstRow.DrawNew);
-        DrawEditHeader(_editor.MetaEditor.Gmp,  "Visor/Gimmick Edits (GMP)###GMP",       7,  GmpRow.Draw,  GmpRow.DrawNew);
-        DrawEditHeader(_editor.MetaEditor.Rsp,  "Racial Scaling Edits (RSP)###RSP",      5,  RspRow.Draw,  RspRow.DrawNew);
+        DrawEditHeader(_editor.MetaEditor.Eqp,  "Equipment Parameter Edits (EQP)###EQP", 5,  EqpRow.Draw,  EqpRow.DrawNew , _editor.MetaEditor.OtherEqpCount);
+        DrawEditHeader(_editor.MetaEditor.Eqdp, "Racial Model Edits (EQDP)###EQDP",      7,  EqdpRow.Draw, EqdpRow.DrawNew, _editor.MetaEditor.OtherEqdpCount);
+        DrawEditHeader(_editor.MetaEditor.Imc,  "Variant Edits (IMC)###IMC",             10, ImcRow.Draw,  ImcRow.DrawNew , _editor.MetaEditor.OtherImcCount);
+        DrawEditHeader(_editor.MetaEditor.Est,  "Extra Skeleton Parameters (EST)###EST", 7,  EstRow.Draw,  EstRow.DrawNew , _editor.MetaEditor.OtherEstCount);
+        DrawEditHeader(_editor.MetaEditor.Gmp,  "Visor/Gimmick Edits (GMP)###GMP",       7,  GmpRow.Draw,  GmpRow.DrawNew , _editor.MetaEditor.OtherGmpCount);
+        DrawEditHeader(_editor.MetaEditor.Rsp,  "Racial Scaling Edits (RSP)###RSP",      5,  RspRow.Draw,  RspRow.DrawNew , _editor.MetaEditor.OtherRspCount);
     }
 
 
     /// <summary> The headers for the different meta changes all have basically the same structure for different types.</summary>
     private void DrawEditHeader<T>(IReadOnlyCollection<T> items, string label, int numColumns, Action<MetaFileManager, T, ModEditor, Vector2> draw,
-        Action<MetaFileManager, ModEditor, Vector2> drawNew)
+        Action<MetaFileManager, ModEditor, Vector2> drawNew, int otherCount)
     {
-        const ImGuiTableFlags flags = ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.BordersInnerV;
-        if (!ImGui.CollapsingHeader($"{items.Count} {label}"))
+        const ImGuiTableFlags flags  = ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.BordersInnerV;
+
+        var oldPos = ImGui.GetCursorPosY();
+        var header = ImGui.CollapsingHeader($"{items.Count} {label}");
+        var newPos = ImGui.GetCursorPos();
+        if (otherCount > 0)
+        {
+            var text = $"{otherCount} Edits in other Options";
+            var size = ImGui.CalcTextSize(text).X;
+            ImGui.SetCursorPos(new Vector2(ImGui.GetContentRegionAvail().X - size, oldPos + ImGui.GetStyle().FramePadding.Y));
+            ImGuiUtil.TextColored(ColorId.RedundantAssignment.Value() | 0xFF000000, text);
+            ImGui.SetCursorPos(newPos);
+        }
+        if (!header)
             return;
 
         using (var table = ImRaii.Table(label, numColumns, flags))

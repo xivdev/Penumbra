@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Penumbra.Meta.Manipulations;
@@ -15,6 +16,14 @@ public class ModMetaEditor
     private readonly HashSet<GmpManipulation>  _gmp  = new();
     private readonly HashSet<EstManipulation>  _est  = new();
     private readonly HashSet<RspManipulation>  _rsp  = new();
+
+    public int OtherImcCount  { get; private set; }
+    public int OtherEqpCount  { get; private set; }
+    public int OtherEqdpCount { get; private set; }
+    public int OtherGmpCount  { get; private set; }
+    public int OtherEstCount  { get; private set; }
+    public int OtherRspCount  { get; private set; }
+
 
     public ModMetaEditor(ModManager modManager)
         => _modManager = modManager;
@@ -102,8 +111,46 @@ public class ModMetaEditor
         Changes = true;
     }
 
-    public void Load(ISubMod mod)
-        => Split(mod.Manipulations);
+    public void Load(Mod mod, ISubMod currentOption)
+    {
+        OtherImcCount  = 0;
+        OtherEqpCount  = 0;
+        OtherEqdpCount = 0;
+        OtherGmpCount  = 0;
+        OtherEstCount  = 0;
+        OtherRspCount  = 0;
+        foreach (var option in mod.AllSubMods)
+        {
+            if (option == currentOption)
+                continue;
+
+            foreach (var manip in option.Manipulations)
+            {
+                switch (manip.ManipulationType)
+                {
+                    case MetaManipulation.Type.Imc:
+                        ++OtherImcCount;
+                        break;
+                    case MetaManipulation.Type.Eqdp:
+                        ++OtherEqdpCount;
+                        break;
+                    case MetaManipulation.Type.Eqp:
+                        ++OtherEqpCount;
+                        break;
+                    case MetaManipulation.Type.Est:
+                        ++OtherEstCount;
+                        break;
+                    case MetaManipulation.Type.Gmp:
+                        ++OtherGmpCount;
+                        break;
+                    case MetaManipulation.Type.Rsp:
+                        ++OtherRspCount;
+                        break;
+                }
+            }
+        }
+        Split(currentOption.Manipulations);
+    }
 
     public void Apply(Mod mod, int groupIdx, int optionIdx)
     {

@@ -42,7 +42,7 @@ public class ModEditor : IDisposable
         LoadOption(groupIdx, optionIdx, true);
         Files.UpdateAll(mod, Option!);
         SwapEditor.Revert(Option!);
-        MetaEditor.Load(Option!);
+        MetaEditor.Load(Mod!, Option!);
         Duplicates.Clear();
     }
 
@@ -51,7 +51,7 @@ public class ModEditor : IDisposable
         LoadOption(groupIdx, optionIdx, true);
         SwapEditor.Revert(Option!);
         Files.UpdatePaths(Mod!, Option!);
-        MetaEditor.Load(Option!);
+        MetaEditor.Load(Mod!, Option!);
         FileEditor.Clear();
         Duplicates.Clear();
     }
