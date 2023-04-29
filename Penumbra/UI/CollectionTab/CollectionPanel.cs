@@ -14,7 +14,6 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
-using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -37,6 +36,8 @@ public sealed class CollectionPanel : IDisposable
     private static readonly IReadOnlyDictionary<CollectionType, (string Name, uint Border)> Buttons      = CreateButtons();
     private static readonly IReadOnlyList<(CollectionType, bool, bool, string, uint)>       AdvancedTree = CreateTree();
     private readonly        List<(CollectionType Type, ActorIdentifier Identifier)>         _inUseCache  = new();
+
+    private int _draggedIndividualAssignment = -1;
 
     public CollectionPanel(DalamudPluginInterface pi, CommunicatorService communicator, CollectionManager manager,
         CollectionSelector selector, ActorService actors, TargetManager targets, ModStorage mods)
@@ -264,6 +265,8 @@ public sealed class CollectionPanel : IDisposable
         using var disabled = ImRaii.Disabled(invalid);
         var       button   = ImGui.Button(text, width) || ImGui.IsItemClicked(ImGuiMouseButton.Right);
         var       hovered  = redundancy.Length > 0 && ImGui.IsItemHovered();
+        DrawIndividualDragSource(text, id);
+        DrawIndividualDragTarget(text, id);
         if (!invalid)
         {
             _selector.DragTargetAssignment(type, id);
@@ -278,6 +281,35 @@ public sealed class CollectionPanel : IDisposable
             ImGui.SetTooltip(redundancy);
 
         return button;
+    }
+
+    private void DrawIndividualDragSource(string text, ActorIdentifier id)
+    {
+        if (!id.IsValid)
+            return;
+
+        using var source = ImRaii.DragDropSource();
+        if (!source)
+            return;
+
+        ImGui.SetDragDropPayload("DragIndividual", nint.Zero, 0);
+        ImGui.TextUnformatted($"Re-ordering {text}...");
+        _draggedIndividualAssignment = _active.Individuals.Index(id);
+    }
+
+    private void DrawIndividualDragTarget(string text, ActorIdentifier id)
+    {
+        if (!id.IsValid)
+            return;
+
+        using var target = ImRaii.DragDropTarget();
+        if (!target || !ImGuiUtil.IsDropping("DragIndividual"))
+            return;
+
+        var currentIdx = _active.Individuals.Index(id);
+        if (_draggedIndividualAssignment != -1 && currentIdx != -1)
+            _active.MoveIndividualCollection(_draggedIndividualAssignment, currentIdx);
+        _draggedIndividualAssignment = -1;
     }
 
     private void DrawSimpleCollectionButton(CollectionType type, Vector2 width)
