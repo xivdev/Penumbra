@@ -14,15 +14,20 @@ using Penumbra.Collections.Manager;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using Penumbra.String.Classes;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
 
 public class EffectiveTab : ITab
 {
-    private readonly CollectionManager _collectionManager;
+    private readonly CollectionManager      _collectionManager;
+    private readonly CollectionSelectHeader _collectionHeader;
 
-    public EffectiveTab(CollectionManager collectionManager)
-        => _collectionManager = collectionManager;
+    public EffectiveTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader)
+    {
+        _collectionManager = collectionManager;
+        _collectionHeader  = collectionHeader;
+    }
 
     public ReadOnlySpan<byte> Label
         => "Effective Changes"u8;
@@ -30,20 +35,21 @@ public class EffectiveTab : ITab
     public void DrawContent()
     {
         SetupEffectiveSizes();
+        _collectionHeader.Draw(true);
         DrawFilters();
         using var child = ImRaii.Child("##EffectiveChangesTab", -Vector2.One, false);
         if (!child)
             return;
 
-        var height = ImGui.GetTextLineHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
-        var skips = ImGuiClip.GetNecessarySkips(height);
-        using var table = ImRaii.Table("##EffectiveChangesTable", 3, ImGuiTableFlags.RowBg);
+        var       height = ImGui.GetTextLineHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
+        var       skips  = ImGuiClip.GetNecessarySkips(height);
+        using var table  = ImRaii.Table("##EffectiveChangesTable", 3, ImGuiTableFlags.RowBg);
         if (!table)
             return;
 
         ImGui.TableSetupColumn("##gamePath", ImGuiTableColumnFlags.WidthFixed, _effectiveLeftTextLength);
         ImGui.TableSetupColumn(string.Empty, ImGuiTableColumnFlags.WidthFixed, _effectiveArrowLength);
-        ImGui.TableSetupColumn("##file", ImGuiTableColumnFlags.WidthFixed, _effectiveRightTextLength);
+        ImGui.TableSetupColumn("##file",     ImGuiTableColumnFlags.WidthFixed, _effectiveRightTextLength);
 
         DrawEffectiveRows(_collectionManager.Active.Current, skips, height,
             _effectiveFilePathFilter.Length > 0 || _effectiveGamePathFilter.Length > 0);
@@ -69,8 +75,8 @@ public class EffectiveTab : ITab
                 ImGui.CalcTextSize(FontAwesomeIcon.LongArrowAltLeft.ToIconString()).X / UiHelpers.Scale;
         }
 
-        _effectiveArrowLength = _effectiveUnscaledArrowLength * UiHelpers.Scale;
-        _effectiveLeftTextLength = 450 * UiHelpers.Scale;
+        _effectiveArrowLength     = _effectiveUnscaledArrowLength * UiHelpers.Scale;
+        _effectiveLeftTextLength  = 450 * UiHelpers.Scale;
         _effectiveRightTextLength = ImGui.GetWindowSize().X - _effectiveArrowLength - _effectiveLeftTextLength;
     }
 

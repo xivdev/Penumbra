@@ -16,6 +16,7 @@ using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
+using Penumbra.UI.Classes;
 using Penumbra.UI.ModsTab;
 using Penumbra.UI.Tabs;
 
@@ -139,6 +140,7 @@ public static class ServiceManager
             .AddSingleton<ModsTab>()
             .AddSingleton<ModPanel>()
             .AddSingleton<ModFileSystemSelector>()
+            .AddSingleton<CollectionSelectHeader>()
             .AddSingleton<ImportPopup>()
             .AddSingleton<ModPanelDescriptionTab>()
             .AddSingleton<ModPanelSettingsTab>()

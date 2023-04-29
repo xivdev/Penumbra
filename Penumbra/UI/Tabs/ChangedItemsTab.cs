@@ -16,13 +16,15 @@ namespace Penumbra.UI.Tabs;
 
 public class ChangedItemsTab : ITab
 {
-    private readonly CollectionManager   _collectionManager;
-    private readonly CommunicatorService _communicator;
+    private readonly CollectionManager      _collectionManager;
+    private readonly CommunicatorService    _communicator;
+    private readonly CollectionSelectHeader _collectionHeader;
 
-    public ChangedItemsTab(CollectionManager collectionManager, CommunicatorService communicator)
+    public ChangedItemsTab(CollectionManager collectionManager, CommunicatorService communicator, CollectionSelectHeader collectionHeader)
     {
         _collectionManager = collectionManager;
         _communicator      = communicator;
+        _collectionHeader  = collectionHeader;
     }
 
     public ReadOnlySpan<byte> Label
@@ -33,6 +35,7 @@ public class ChangedItemsTab : ITab
 
     public void DrawContent()
     {
+        _collectionHeader.Draw(true);
         var       varWidth = DrawFilters();
         using var child    = ImRaii.Child("##changedItemsChild", -Vector2.One);
         if (!child)

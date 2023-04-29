@@ -23,18 +23,19 @@ namespace Penumbra.UI.Tabs;
 
 public class ModsTab : ITab
 {
-    private readonly ModFileSystemSelector _selector;
-    private readonly ModPanel              _panel;
-    private readonly TutorialService       _tutorial;
-    private readonly ModManager            _modManager;
-    private readonly ActiveCollections     _activeCollections;
-    private readonly RedrawService         _redrawService;
-    private readonly Configuration         _config;
-    private readonly CollectionCombo       _collectionCombo;
-    private readonly ClientState           _clientState;
+    private readonly ModFileSystemSelector  _selector;
+    private readonly ModPanel               _panel;
+    private readonly TutorialService        _tutorial;
+    private readonly ModManager             _modManager;
+    private readonly ActiveCollections      _activeCollections;
+    private readonly RedrawService          _redrawService;
+    private readonly Configuration          _config;
+    private readonly ClientState            _clientState;
+    private readonly CollectionSelectHeader _collectionHeader;
 
     public ModsTab(ModManager modManager, CollectionManager collectionManager, ModFileSystemSelector selector, ModPanel panel,
-        TutorialService tutorial, RedrawService redrawService, Configuration config, ClientState clientState)
+        TutorialService tutorial, RedrawService redrawService, Configuration config, ClientState clientState,
+        CollectionSelectHeader collectionHeader)
     {
         _modManager        = modManager;
         _activeCollections = collectionManager.Active;
@@ -44,7 +45,7 @@ public class ModsTab : ITab
         _redrawService     = redrawService;
         _config            = config;
         _clientState       = clientState;
-        _collectionCombo   = new CollectionCombo(collectionManager, () => collectionManager.Storage.OrderBy(c => c.Name).ToList());
+        _collectionHeader  = collectionHeader;
     }
 
     public bool IsVisible
@@ -68,7 +69,7 @@ public class ModsTab : ITab
             _selector.Draw(GetModSelectorSize(_config));
             ImGui.SameLine();
             using var group = ImRaii.Group();
-            DrawHeaderLine();
+            _collectionHeader.Draw(false);
 
             using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
 
@@ -161,54 +162,5 @@ public class ModsTab : ITab
         DrawButton(buttonWidth, "Target", "target");
         ImGui.SameLine();
         DrawButton(frameHeight with { X = ImGui.GetContentRegionAvail().X - 1 }, "Focus", "focus");
-    }
-
-    /// <summary> Draw the header line that can quick switch between collections. </summary>
-    private void DrawHeaderLine()
-    {
-        using var style      = ImRaii.PushStyle(ImGuiStyleVar.FrameRounding, 0).Push(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        var       buttonSize = new Vector2(ImGui.GetContentRegionAvail().X / 8f, 0);
-
-        using (var _ = ImRaii.Group())
-        {
-            DrawDefaultCollectionButton(3 * buttonSize);
-            ImGui.SameLine();
-            DrawInheritedCollectionButton(3 * buttonSize);
-            ImGui.SameLine();
-            _collectionCombo.Draw("##collectionSelector", 2 * buttonSize.X, ColorId.SelectedCollection.Value());
-        }
-
-        _tutorial.OpenTutorial(BasicTutorialSteps.CollectionSelectors);
-
-        if (!_activeCollections.CurrentCollectionInUse)
-            ImGuiUtil.DrawTextButton("The currently selected collection is not used in any way.", -Vector2.UnitX, Colors.PressEnterWarningBg);
-    }
-
-    private void DrawDefaultCollectionButton(Vector2 width)
-    {
-        var name      = $"{TutorialService.DefaultCollection} ({_activeCollections.Default.Name})";
-        var isCurrent = _activeCollections.Default == _activeCollections.Current;
-        var isEmpty   = _activeCollections.Default == ModCollection.Empty;
-        var tt = isCurrent ? $"The current collection is already the configured {TutorialService.DefaultCollection}."
-            : isEmpty      ? $"The {TutorialService.DefaultCollection} is configured to be empty."
-                             : $"Set the {TutorialService.SelectedCollection} to the configured {TutorialService.DefaultCollection}.";
-        if (ImGuiUtil.DrawDisabledButton(name, width, tt, isCurrent || isEmpty))
-            _activeCollections.SetCollection(_activeCollections.Default, CollectionType.Current);
-    }
-
-    private void DrawInheritedCollectionButton(Vector2 width)
-    {
-        var noModSelected = _selector.Selected == null;
-        var collection    = _selector.SelectedSettingCollection;
-        var modInherited  = collection != _activeCollections.Current;
-        var (name, tt) = (noModSelected, modInherited) switch
-        {
-            (true, _) => ("Inherited Collection", "No mod selected."),
-            (false, true) => ($"Inherited Collection ({collection.Name})",
-                "Set the current collection to the collection the selected mod inherits its settings from."),
-            (false, false) => ("Not Inherited", "The selected mod does not inherit its settings."),
-        };
-        if (ImGuiUtil.DrawDisabledButton(name, width, tt, noModSelected || !modInherited))
-            _activeCollections.SetCollection(collection, CollectionType.Current);
     }
 }
