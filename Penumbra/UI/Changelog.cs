@@ -35,10 +35,18 @@ public class PenumbraChangelog
         Add6_6_0(Changelog);
         Add6_6_1(Changelog);
         Add7_0_0(Changelog);
+        Add7_0_1(Changelog);
     }
 
     #region Changelogs
 
+    private static void Add7_0_1(Changelog log)
+        => log.NextVersion("Version 0.7.0.1")
+            .RegisterEntry("Individual assignments can again be re-ordered by drag-and-dropping them.")
+            .RegisterEntry("Relax the restriction of a maximum of 32 characters for collection names to 64 characters.")
+            .RegisterEntry("Fixed a bug that showed the Your Character collection as redundant even if it was not.")
+            .RegisterEntry("Fixed a bug that caused some required collection caches to not be built on startup and thus mods not to apply.")
+            .RegisterEntry("Fixed a bug that showed the current collection as unused even if it was used.");
     private static void Add7_0_0(Changelog log)
         => log.NextVersion("Version 0.7.0.0")
             .RegisterHighlight("The entire backend was reworked (this is still in progress). While this does not come with a lot of functionality changes, basically every file and functionality was touched.")
