@@ -352,7 +352,7 @@ public partial class ModCreator
                 sb.Append(c);
         }
 
-        return sb.ToString();
+        return sb.ToString().Trim();
     }
 
     public void SplitMultiGroups(DirectoryInfo baseDir)
