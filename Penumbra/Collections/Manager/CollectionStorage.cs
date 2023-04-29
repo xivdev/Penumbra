@@ -222,9 +222,16 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
 
         foreach (var file in _saveService.FileNames.CollectionFiles)
         {
-            if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance)
-             || !IsValidName(name))
+            if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance))
                 continue;
+
+            if (!IsValidName(name))
+            {
+                // TODO: handle better.
+                Penumbra.ChatService.NotificationMessage($"Collection of unsupported name found: {name} is not a valid collection name.",
+                    "Warning", NotificationType.Warning);
+                continue;
+            }
 
             if (ByName(name, out _))
             {
