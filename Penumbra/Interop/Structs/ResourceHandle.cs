@@ -58,8 +58,11 @@ public unsafe struct ResourceHandle
     public ByteString FileName()
         => ByteString.FromByteStringUnsafe( FileNamePtr(), FileNameLength, true );
 
+    public ReadOnlySpan< byte > FileNameAsSpan()
+        => new( FileNamePtr(), FileNameLength );
+
     public bool GamePath( out Utf8GamePath path )
-        => Utf8GamePath.FromSpan( new ReadOnlySpan< byte >( FileNamePtr(), FileNameLength ), out path );
+        => Utf8GamePath.FromSpan( FileNameAsSpan(), out path );
 
     [FieldOffset( 0x00 )]
     public void** VTable;

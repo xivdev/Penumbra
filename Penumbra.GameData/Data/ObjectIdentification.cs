@@ -29,7 +29,6 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
     public readonly  IReadOnlyDictionary<string, IReadOnlyList<Action>>           Actions;
     private readonly ActorManager.ActorManagerData                                _actorData;
 
-
     private readonly EquipmentIdentificationList _equipment;
     private readonly WeaponIdentificationList    _weapons;
     private readonly ModelIdentificationList     _modelIdentifierToModelChara;

@@ -2,41 +2,46 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Penumbra.GameData;
+using Penumbra.Import.Structs;
+using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
 
 namespace Penumbra.Import;
 
-// TexTools provices custom generated *.meta files for its modpacks, that contain changes to
-//     - imc files
-//     - eqp files
-//     - gmp files
-//     - est files
-//     - eqdp files
-// made by the mod. The filename determines to what the changes are applied, and the binary file itself contains changes.
-// We parse every *.meta file in a mod and combine all actual changes that do not keep data on default values and that can be applied to the game in a .json.
-// TexTools may also generate files that contain non-existing changes, e.g. *.imc files for weapon offhands, which will be ignored.
-// TexTools also provides .rgsp files, that contain changes to the racial scaling parameters in the human.cmp file.
+/// <summary>TexTools provices custom generated *.meta files for its modpacks, that contain changes to
+///     - imc files
+///     - eqp files
+///     - gmp files
+///     - est files
+///     - eqdp files
+/// made by the mod. The filename determines to what the changes are applied, and the binary file itself contains changes.
+/// We parse every *.meta file in a mod and combine all actual changes that do not keep data on default values and that can be applied to the game in a .json.
+/// TexTools may also generate files that contain non-existing changes, e.g. *.imc files for weapon offhands, which will be ignored.
+/// TexTools also provides .rgsp files, that contain changes to the racial scaling parameters in the human.cmp file.</summary>
 public partial class TexToolsMeta
 {
-    // An empty TexToolsMeta.
-    public static readonly TexToolsMeta Invalid = new(string.Empty, 0);
+    /// <summary> An empty TexToolsMeta. </summary>
+    public static readonly TexToolsMeta Invalid = new(null!, string.Empty, 0);
 
     // The info class determines the files or table locations the changes need to apply to from the filename.
-
     public readonly  uint                     Version;
     public readonly  string                   FilePath;
     public readonly  List< MetaManipulation > MetaManipulations = new();
     private readonly bool                     _keepDefault      = false;
 
-    public TexToolsMeta( byte[] data, bool keepDefault )
+    private readonly MetaFileManager _metaFileManager;
+
+    public TexToolsMeta( MetaFileManager metaFileManager, IGamePathParser parser, byte[] data, bool keepDefault )
     {
+        _metaFileManager = metaFileManager;
         _keepDefault = keepDefault;
         try
         {
             using var reader = new BinaryReader( new MemoryStream( data ) );
             Version  = reader.ReadUInt32();
             FilePath = ReadNullTerminated( reader );
-            var metaInfo    = new MetaFileInfo( FilePath );
+            var metaInfo    = new MetaFileInfo( parser, FilePath );
             var numHeaders  = reader.ReadUInt32();
             var headerSize  = reader.ReadUInt32();
             var headerStart = reader.ReadUInt32();
@@ -78,10 +83,11 @@ public partial class TexToolsMeta
         }
     }
 
-    private TexToolsMeta( string filePath, uint version )
+    private TexToolsMeta( MetaFileManager metaFileManager, string filePath, uint version )
     {
-        FilePath = filePath;
-        Version  = version;
+        _metaFileManager = metaFileManager;
+        FilePath         = filePath;
+        Version          = version;
     }
 
     // Read a null terminated string from a binary reader.

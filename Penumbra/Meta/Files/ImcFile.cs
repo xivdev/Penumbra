@@ -1,10 +1,10 @@
 using System;
 using System.Numerics;
-using Newtonsoft.Json;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 
@@ -15,7 +15,7 @@ public class ImcException : Exception
     public readonly ImcManipulation Manipulation;
     public readonly string          GamePath;
 
-    public ImcException( ImcManipulation manip, Utf8GamePath path )
+    public ImcException(ImcManipulation manip, Utf8GamePath path)
     {
         Manipulation = manip;
         GamePath     = path.ToString();
@@ -33,44 +33,42 @@ public unsafe class ImcFile : MetaBaseFile
     private const int PreambleSize = 4;
 
     public int ActualLength
-        => NumParts * sizeof( ImcEntry ) * ( Count + 1 ) + PreambleSize;
+        => NumParts * sizeof(ImcEntry) * (Count + 1) + PreambleSize;
 
     public int Count
-        => CountInternal( Data );
+        => CountInternal(Data);
 
     public readonly Utf8GamePath Path;
     public readonly int          NumParts;
 
-    public ReadOnlySpan< ImcEntry > Span
-        => new(( ImcEntry* )( Data + PreambleSize ), ( Length - PreambleSize ) / sizeof( ImcEntry ));
+    public ReadOnlySpan<ImcEntry> Span
+        => new((ImcEntry*)(Data + PreambleSize), (Length - PreambleSize) / sizeof(ImcEntry));
 
-    private static int CountInternal( byte* data )
-        => *( ushort* )data;
+    private static int CountInternal(byte* data)
+        => *(ushort*)data;
 
-    private static ushort PartMask( byte* data )
-        => *( ushort* )( data + 2 );
+    private static ushort PartMask(byte* data)
+        => *(ushort*)(data + 2);
 
-    private static ImcEntry* VariantPtr( byte* data, int partIdx, int variantIdx )
+    private static ImcEntry* VariantPtr(byte* data, int partIdx, int variantIdx)
     {
         var flag = 1 << partIdx;
-        if( ( PartMask( data ) & flag ) == 0 || variantIdx > CountInternal( data ) )
-        {
+        if ((PartMask(data) & flag) == 0 || variantIdx > CountInternal(data))
             return null;
-        }
 
-        var numParts = BitOperations.PopCount( PartMask( data ) );
-        var ptr      = ( ImcEntry* )( data + PreambleSize );
+        var numParts = BitOperations.PopCount(PartMask(data));
+        var ptr      = (ImcEntry*)(data + PreambleSize);
         ptr += variantIdx * numParts + partIdx;
         return ptr;
     }
 
-    public ImcEntry GetEntry( int partIdx, int variantIdx )
+    public ImcEntry GetEntry(int partIdx, int variantIdx)
     {
-        var ptr = VariantPtr( Data, partIdx, variantIdx );
+        var ptr = VariantPtr(Data, partIdx, variantIdx);
         return ptr == null ? new ImcEntry() : *ptr;
     }
 
-    public static int PartIndex( EquipSlot slot )
+    public static int PartIndex(EquipSlot slot)
         => slot switch
         {
             EquipSlot.Head    => 0,
@@ -86,52 +84,44 @@ public unsafe class ImcFile : MetaBaseFile
             _                 => 0,
         };
 
-    public bool EnsureVariantCount( int numVariants )
+    public bool EnsureVariantCount(int numVariants)
     {
-        if( numVariants <= Count )
-        {
+        if (numVariants <= Count)
             return true;
-        }
 
         var oldCount = Count;
-        *( ushort* )Data = ( ushort )numVariants;
-        if( ActualLength > Length )
+        *(ushort*)Data = (ushort)numVariants;
+        if (ActualLength > Length)
         {
-            var newLength = ( ( ( ActualLength - 1 ) >> 7 ) + 1 ) << 7;
-            Penumbra.Log.Verbose( $"Resized IMC {Path} from {Length} to {newLength}." );
-            ResizeResources( newLength );
+            var newLength = (((ActualLength - 1) >> 7) + 1) << 7;
+            Penumbra.Log.Verbose($"Resized IMC {Path} from {Length} to {newLength}.");
+            ResizeResources(newLength);
         }
 
-        var defaultPtr = ( ImcEntry* )( Data + PreambleSize );
-        for( var i = oldCount + 1; i < numVariants + 1; ++i )
-        {
-            MemoryUtility.MemCpyUnchecked( defaultPtr + i * NumParts, defaultPtr, NumParts * sizeof( ImcEntry ) );
-        }
+        var defaultPtr = (ImcEntry*)(Data + PreambleSize);
+        for (var i = oldCount + 1; i < numVariants + 1; ++i)
+            MemoryUtility.MemCpyUnchecked(defaultPtr + i * NumParts, defaultPtr, NumParts * sizeof(ImcEntry));
 
-        Penumbra.Log.Verbose( $"Expanded IMC {Path} from {oldCount} to {numVariants} variants." );
+        Penumbra.Log.Verbose($"Expanded IMC {Path} from {oldCount} to {numVariants} variants.");
         return true;
     }
 
-    public bool SetEntry( int partIdx, int variantIdx, ImcEntry entry )
+    public bool SetEntry(int partIdx, int variantIdx, ImcEntry entry)
     {
-        if( partIdx >= NumParts )
+        if (partIdx >= NumParts)
+            return false;
+
+        EnsureVariantCount(variantIdx);
+
+        var variantPtr = VariantPtr(Data, partIdx, variantIdx);
+        if (variantPtr == null)
         {
+            Penumbra.Log.Error("Error during expansion of imc file.");
             return false;
         }
 
-        EnsureVariantCount( variantIdx );
-
-        var variantPtr = VariantPtr( Data, partIdx, variantIdx );
-        if( variantPtr == null )
-        {
-            Penumbra.Log.Error( "Error during expansion of imc file." );
+        if (variantPtr->Equals(entry))
             return false;
-        }
-
-        if( variantPtr->Equals( entry ) )
-        {
-            return false;
-        }
 
         *variantPtr = entry;
         return true;
@@ -140,70 +130,64 @@ public unsafe class ImcFile : MetaBaseFile
 
     public override void Reset()
     {
-        var file = Dalamud.GameData.GetFile( Path.ToString() );
-        fixed( byte* ptr = file!.Data )
+        var file = Manager.GameData.GetFile(Path.ToString());
+        fixed (byte* ptr = file!.Data)
         {
-            MemoryUtility.MemCpyUnchecked( Data, ptr, file.Data.Length );
-            MemoryUtility.MemSet( Data + file.Data.Length, 0, Length - file.Data.Length );
+            MemoryUtility.MemCpyUnchecked(Data, ptr, file.Data.Length);
+            MemoryUtility.MemSet(Data + file.Data.Length, 0, Length - file.Data.Length);
         }
     }
 
-    public ImcFile( ImcManipulation manip )
-        : base( 0 )
+    public ImcFile(MetaFileManager manager, ImcManipulation manip)
+        : base(manager, 0)
     {
         Path = manip.GamePath();
-        var file = Dalamud.GameData.GetFile( Path.ToString() );
-        if( file == null )
-        {
-            throw new ImcException( manip, Path );
-        }
+        var file = manager.GameData.GetFile(Path.ToString());
+        if (file == null)
+            throw new ImcException(manip, Path);
 
-        fixed( byte* ptr = file.Data )
+        fixed (byte* ptr = file.Data)
         {
-            NumParts = BitOperations.PopCount( *( ushort* )( ptr + 2 ) );
-            AllocateData( file.Data.Length );
-            MemoryUtility.MemCpyUnchecked( Data, ptr, file.Data.Length );
+            NumParts = BitOperations.PopCount(*(ushort*)(ptr + 2));
+            AllocateData(file.Data.Length);
+            MemoryUtility.MemCpyUnchecked(Data, ptr, file.Data.Length);
         }
     }
 
-    public static ImcEntry GetDefault( Utf8GamePath path, EquipSlot slot, int variantIdx, out bool exists )
-        => GetDefault( path.ToString(), slot, variantIdx, out exists );
+    public static ImcEntry GetDefault(MetaFileManager manager, Utf8GamePath path, EquipSlot slot, int variantIdx, out bool exists)
+        => GetDefault(manager, path.ToString(), slot, variantIdx, out exists);
 
-    public static ImcEntry GetDefault( string path, EquipSlot slot, int variantIdx, out bool exists )
+    public static ImcEntry GetDefault(MetaFileManager manager, string path, EquipSlot slot, int variantIdx, out bool exists)
     {
-        var file = Dalamud.GameData.GetFile( path );
+        var file = manager.GameData.GetFile(path);
         exists = false;
-        if( file == null )
-        {
+        if (file == null)
             throw new Exception();
-        }
 
-        fixed( byte* ptr = file.Data )
+        fixed (byte* ptr = file.Data)
         {
-            var entry = VariantPtr( ptr, PartIndex( slot ), variantIdx );
-            if( entry != null )
-            {
-                exists = true;
-                return *entry;
-            }
+            var entry = VariantPtr(ptr, PartIndex(slot), variantIdx);
+            if (entry == null)
+                return new ImcEntry();
 
-            return new ImcEntry();
+            exists = true;
+            return *entry;
         }
     }
 
-    public void Replace( ResourceHandle* resource )
+    public void Replace(ResourceHandle* resource)
     {
         var (data, length) = resource->GetData();
-        var newData = Penumbra.MetaFileManager.AllocateDefaultMemory( ActualLength, 8 );
-        if( newData == null )
+        var newData = Manager.AllocateDefaultMemory(ActualLength, 8);
+        if (newData == null)
         {
-            Penumbra.Log.Error( $"Could not replace loaded IMC data at 0x{( ulong )resource:X}, allocation failed." );
+            Penumbra.Log.Error($"Could not replace loaded IMC data at 0x{(ulong)resource:X}, allocation failed.");
             return;
         }
 
-        MemoryUtility.MemCpyUnchecked( newData, Data, ActualLength );
+        MemoryUtility.MemCpyUnchecked(newData, Data, ActualLength);
 
-        Penumbra.MetaFileManager.Free( data, length );
-        resource->SetData( ( IntPtr )newData, ActualLength );
+        Manager.Free(data, length);
+        resource->SetData((IntPtr)newData, ActualLength);
     }
 }

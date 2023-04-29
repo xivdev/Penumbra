@@ -71,6 +71,7 @@
         <PackageReference Include="EmbedIO" Version="3.4.3" />
         <PackageReference Include="SixLabors.ImageSharp" Version="2.1.2" />
         <PackageReference Include="SharpCompress" Version="0.32.1" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="7.0.0" />
     </ItemGroup>
 
     <ItemGroup>

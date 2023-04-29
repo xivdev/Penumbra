@@ -2,24 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
-using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
+using Penumbra.Services;
+using Penumbra.Util;
 
 namespace Penumbra.Mods;
 
-public interface IModGroup : IEnumerable< ISubMod >
+public interface IModGroup : IEnumerable<ISubMod>
 {
     public const int MaxMultiOptions = 32;
 
-    public string Name { get; }
-    public string Description { get; }
-    public GroupType Type { get; }
-    public int Priority { get; }
-    public uint DefaultSettings { get; set; }
+    public string    Name            { get; }
+    public string    Description     { get; }
+    public GroupType Type            { get; }
+    public int       Priority        { get; }
+    public uint      DefaultSettings { get; set; }
 
-    public int OptionPriority( Index optionIdx );
+    public int OptionPriority(Index optionIdx);
 
-    public ISubMod this[ Index idx ] { get; }
+    public ISubMod this[Index idx] { get; }
 
     public int Count { get; }
 
@@ -28,72 +29,76 @@ public interface IModGroup : IEnumerable< ISubMod >
         {
             GroupType.Single => Count > 1,
             GroupType.Multi  => Count > 0,
-            _                 => false,
+            _                => false,
         };
 
-    public string FileName( DirectoryInfo basePath, int groupIdx )
-        => Path.Combine( basePath.FullName, $"group_{groupIdx + 1:D3}_{Name.RemoveInvalidPathSymbols().ToLowerInvariant()}.json" );
+    public IModGroup Convert(GroupType type);
+    public bool      MoveOption(int optionIdxFrom, int optionIdxTo);
+    public void      UpdatePositions(int from = 0);
+}
 
-    public void DeleteFile( DirectoryInfo basePath, int groupIdx )
+public readonly struct ModSaveGroup : ISavable
+{
+    private readonly DirectoryInfo _basePath;
+    private readonly IModGroup?    _group;
+    private readonly int           _groupIdx;
+    private readonly ISubMod?      _defaultMod;
+
+    public ModSaveGroup(Mod mod, int groupIdx)
     {
-        var file = FileName( basePath, groupIdx );
-        if( !File.Exists( file ) )
-        {
-            return;
-        }
-
-        try
-        {
-            File.Delete( file );
-            Penumbra.Log.Debug( $"Deleted group file {file} for group {groupIdx + 1}: {Name}." );
-        }
-        catch( Exception e )
-        {
-            Penumbra.Log.Error( $"Could not delete file {file}:\n{e}" );
-            throw;
-        }
+        _basePath = mod.ModPath;
+        _groupIdx = groupIdx;
+        if (_groupIdx < 0)
+            _defaultMod = mod.Default;
+        else
+            _group = mod.Groups[_groupIdx];
     }
 
-    public static void SaveDelayed( IModGroup group, DirectoryInfo basePath, int groupIdx )
+    public ModSaveGroup(DirectoryInfo basePath, IModGroup group, int groupIdx)
     {
-        Penumbra.Framework.RegisterDelayed( $"{nameof( SaveModGroup )}_{basePath.Name}_{group.Name}",
-            () => SaveModGroup( group, basePath, groupIdx ) );
+        _basePath = basePath;
+        _group    = group;
+        _groupIdx = groupIdx;
     }
 
-    public static void Save( IModGroup group, DirectoryInfo basePath, int groupIdx )
-        => SaveModGroup( group, basePath, groupIdx );
-
-    private static void SaveModGroup( IModGroup group, DirectoryInfo basePath, int groupIdx )
+    public ModSaveGroup(DirectoryInfo basePath, ISubMod @default)
     {
-        var       file       = group.FileName( basePath, groupIdx );
-        using var s          = File.Exists( file ) ? File.Open( file, FileMode.Truncate ) : File.Open( file, FileMode.CreateNew );
-        using var writer     = new StreamWriter( s );
-        using var j          = new JsonTextWriter( writer ) { Formatting = Formatting.Indented };
-        var       serializer = new JsonSerializer { Formatting           = Formatting.Indented };
-        j.WriteStartObject();
-        j.WritePropertyName( nameof( group.Name ) );
-        j.WriteValue( group.Name );
-        j.WritePropertyName( nameof( group.Description ) );
-        j.WriteValue( group.Description );
-        j.WritePropertyName( nameof( group.Priority ) );
-        j.WriteValue( group.Priority );
-        j.WritePropertyName( nameof( Type ) );
-        j.WriteValue( group.Type.ToString() );
-        j.WritePropertyName( nameof( group.DefaultSettings ) );
-        j.WriteValue( group.DefaultSettings );
-        j.WritePropertyName( "Options" );
-        j.WriteStartArray();
-        for( var idx = 0; idx < group.Count; ++idx )
+        _basePath   = basePath;
+        _groupIdx   = -1;
+        _defaultMod = @default;
+    }
+
+    public string ToFilename(FilenameService fileNames)
+        => fileNames.OptionGroupFile(_basePath.FullName, _groupIdx, _group?.Name ?? string.Empty);
+
+    public void Save(StreamWriter writer)
+    {
+        using var j          = new JsonTextWriter(writer) { Formatting = Formatting.Indented };
+        var       serializer = new JsonSerializer { Formatting         = Formatting.Indented };
+        if (_groupIdx >= 0)
         {
-            ISubMod.WriteSubMod( j, serializer, group[ idx ], basePath, group.Type == GroupType.Multi ? group.OptionPriority( idx ) : null );
+            j.WriteStartObject();
+            j.WritePropertyName(nameof(_group.Name));
+            j.WriteValue(_group!.Name);
+            j.WritePropertyName(nameof(_group.Description));
+            j.WriteValue(_group.Description);
+            j.WritePropertyName(nameof(_group.Priority));
+            j.WriteValue(_group.Priority);
+            j.WritePropertyName(nameof(Type));
+            j.WriteValue(_group.Type.ToString());
+            j.WritePropertyName(nameof(_group.DefaultSettings));
+            j.WriteValue(_group.DefaultSettings);
+            j.WritePropertyName("Options");
+            j.WriteStartArray();
+            for (var idx = 0; idx < _group.Count; ++idx)
+                ISubMod.WriteSubMod(j, serializer, _group[idx], _basePath, _group.Type == GroupType.Multi ? _group.OptionPriority(idx) : null);
+
+            j.WriteEndArray();
+            j.WriteEndObject();
         }
-
-        j.WriteEndArray();
-        j.WriteEndObject();
-        Penumbra.Log.Debug( $"Saved group file {file} for group {groupIdx + 1}: {group.Name}." );
+        else
+        {
+            ISubMod.WriteSubMod(j, serializer, _defaultMod!, _basePath, null);
+        }
     }
-
-    public IModGroup Convert( GroupType type );
-    public bool      MoveOption( int optionIdxFrom, int optionIdxTo );
-    public void      UpdatePositions( int from = 0 );
 }

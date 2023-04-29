@@ -6,6 +6,9 @@ namespace Penumbra.GameData.Structs;
 
 public readonly unsafe struct CharacterEquip
 {
+    public const int Slots = 10;
+    public const int Size  = CharacterArmor.Size * Slots;
+
     public static readonly CharacterEquip Null = new(null);
 
     private readonly CharacterArmor* _armor;

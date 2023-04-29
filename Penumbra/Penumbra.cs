@@ -1,33 +1,25 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
+using Microsoft.Extensions.DependencyInjection;
 using OtterGui;
-using OtterGui.Classes;
 using OtterGui.Log;
-using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
-using Penumbra.Interop;
-using Penumbra.UI;
 using Penumbra.Util;
 using Penumbra.Collections;
-using Penumbra.GameData;
-using Penumbra.GameData.Actors;
-using Penumbra.GameData.Data;
-using Penumbra.Interop.Loader;
-using Penumbra.Interop.Resolver;
-using Penumbra.Mods;
-using CharacterUtility = Penumbra.Interop.CharacterUtility;
-using DalamudUtil = Dalamud.Utility.Util;
-using ResidentResourceManager = Penumbra.Interop.ResidentResourceManager;
+using Penumbra.Collections.Cache;
+using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.PathResolving;
+using Penumbra.Services;
+using Penumbra.Interop.Services;
+using Penumbra.Mods.Manager;
+using Penumbra.Collections.Manager;
+using Penumbra.UI.Tabs;
 
 namespace Penumbra;
 
@@ -36,136 +28,62 @@ public class Penumbra : IDalamudPlugin
     public string Name
         => "Penumbra";
 
-    public static readonly string Version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? string.Empty;
+    public static readonly Logger      Log = new();
+    public static          ChatService ChatService { get; private set; } = null!;
 
-    public static readonly string CommitHash =
-        Assembly.GetExecutingAssembly().GetCustomAttribute< AssemblyInformationalVersionAttribute >()?.InformationalVersion ?? "Unknown";
+    private readonly ValidityChecker         _validityChecker;
+    private readonly ResidentResourceManager _residentResources;
+    private readonly TempModManager          _tempMods;
+    private readonly TempCollectionManager   _tempCollections;
+    private readonly ModManager              _modManager;
+    private readonly CollectionManager       _collectionManager;
+    private readonly Configuration           _config;
+    private readonly CharacterUtility        _characterUtility;
+    private readonly RedrawService           _redrawService;
+    private readonly CommunicatorService     _communicatorService;
+    private          PenumbraWindowSystem?   _windowSystem;
+    private          bool                    _disposed;
 
-    public static Logger Log { get; private set; } = null!;
-    public static Configuration Config { get; private set; } = null!;
+    private readonly ServiceProvider _services;
 
-    public static ResidentResourceManager ResidentResources { get; private set; } = null!;
-    public static CharacterUtility CharacterUtility { get; private set; } = null!;
-    public static GameEventManager GameEvents { get; private set; } = null!;
-    public static MetaFileManager MetaFileManager { get; private set; } = null!;
-    public static Mod.Manager ModManager { get; private set; } = null!;
-    public static ModCollection.Manager CollectionManager { get; private set; } = null!;
-    public static TempModManager TempMods { get; private set; } = null!;
-    public static ResourceLoader ResourceLoader { get; private set; } = null!;
-    public static FrameworkManager Framework { get; private set; } = null!;
-    public static ActorManager Actors { get; private set; } = null!;
-    public static IObjectIdentifier Identifier { get; private set; } = null!;
-    public static IGamePathParser GamePathParser { get; private set; } = null!;
-    public static StainManager StainManager { get; private set; } = null!;
-
-    public static ValidityChecker ValidityChecker { get; private set; } = null!;
-
-    public static PerformanceTracker< PerformanceType > Performance { get; private set; } = null!;
-
-    public static readonly StartTimeTracker< StartTimeType > StartTimer = new();
-
-    public readonly ResourceLogger       ResourceLogger;
-    public readonly PathResolver         PathResolver;
-    public readonly ObjectReloader       ObjectReloader;
-    public readonly ModFileSystem        ModFileSystem;
-    public readonly PenumbraApi          Api;
-    public readonly HttpApi              HttpApi;
-    public readonly PenumbraIpcProviders IpcProviders;
-    internal ConfigWindow? ConfigWindow { get; private set; }
-    private          LaunchButton?   _launchButton;
-    private          WindowSystem?   _windowSystem;
-    private          Changelog?      _changelog;
-    private          CommandHandler? _commandHandler;
-    private readonly ResourceWatcher _resourceWatcher;
-    private          bool            _disposed;
-
-    public static ItemData ItemData { get; private set; } = null!;
-
-    public Penumbra( DalamudPluginInterface pluginInterface )
+    public Penumbra(DalamudPluginInterface pluginInterface)
     {
-        using var time = StartTimer.Measure( StartTimeType.Total );
-
         try
         {
-            Dalamud.Initialize( pluginInterface );
-
-            Performance     = new PerformanceTracker< PerformanceType >( Dalamud.Framework );
-            Log             = new Logger();
-            ValidityChecker = new ValidityChecker( Dalamud.PluginInterface );
-
-            GameEvents = new GameEventManager();
-            StartTimer.Measure( StartTimeType.Identifier, () => Identifier         = GameData.GameData.GetIdentifier( Dalamud.PluginInterface, Dalamud.GameData ) );
-            StartTimer.Measure( StartTimeType.GamePathParser, () => GamePathParser = GameData.GameData.GetGamePathParser() );
-            StartTimer.Measure( StartTimeType.Stains, () => StainManager           = new StainManager( Dalamud.PluginInterface, Dalamud.GameData ) );
-            ItemData = StartTimer.Measure( StartTimeType.Items, () => new ItemData( Dalamud.PluginInterface, Dalamud.GameData, Dalamud.GameData.Language ) );
-            StartTimer.Measure( StartTimeType.Actors,
-                () => Actors = new ActorManager( Dalamud.PluginInterface, Dalamud.Objects, Dalamud.ClientState, Dalamud.Framework, Dalamud.GameData, Dalamud.GameGui,
-                    ResolveCutscene ) );
-
-            Framework        = new FrameworkManager( Dalamud.Framework, Log );
-            CharacterUtility = new CharacterUtility();
-
-            StartTimer.Measure( StartTimeType.Backup, () => Backup.CreateBackup( pluginInterface.ConfigDirectory, PenumbraBackupFiles() ) );
-            Config = Configuration.Load();
-
-            TempMods        = new TempModManager();
-            MetaFileManager = new MetaFileManager();
-            ResourceLoader  = new ResourceLoader( this );
-            ResourceLoader.EnableHooks();
-            _resourceWatcher  = new ResourceWatcher( ResourceLoader );
-            ResourceLogger    = new ResourceLogger( ResourceLoader );
-            ResidentResources = new ResidentResourceManager();
-            StartTimer.Measure( StartTimeType.Mods, () =>
+            var       startTimer = new StartTracker();
+            using var timer      = startTimer.Measure(StartTimeType.Total);
+            _services        = ServiceManager.CreateProvider(this, pluginInterface, Log, startTimer);
+            ChatService      = _services.GetRequiredService<ChatService>();
+            _validityChecker = _services.GetRequiredService<ValidityChecker>();
+            _services.GetRequiredService<BackupService>(); // Initialize because not required anywhere else.
+            _config            = _services.GetRequiredService<Configuration>();
+            _characterUtility  = _services.GetRequiredService<CharacterUtility>();
+            _tempMods          = _services.GetRequiredService<TempModManager>();
+            _residentResources = _services.GetRequiredService<ResidentResourceManager>();
+            _services.GetRequiredService<ResourceManagerService>(); // Initialize because not required anywhere else.
+            _modManager          = _services.GetRequiredService<ModManager>();
+            _collectionManager   = _services.GetRequiredService<CollectionManager>();
+            _tempCollections     = _services.GetRequiredService<TempCollectionManager>();
+            _redrawService       = _services.GetRequiredService<RedrawService>();
+            _communicatorService = _services.GetRequiredService<CommunicatorService>();
+            _services.GetRequiredService<ResourceService>(); // Initialize because not required anywhere else.
+            _services.GetRequiredService<ModCacheManager>(); // Initialize because not required anywhere else.
+            using (var t = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {
-                ModManager = new Mod.Manager( Config.ModDirectory );
-                ModManager.DiscoverMods();
-            } );
-
-            StartTimer.Measure( StartTimeType.Collections, () =>
-            {
-                CollectionManager = new ModCollection.Manager( ModManager );
-                CollectionManager.CreateNecessaryCaches();
-            } );
-
-            ModFileSystem  = ModFileSystem.Load();
-            ObjectReloader = new ObjectReloader();
-            PathResolver   = new PathResolver( ResourceLoader );
+                _services.GetRequiredService<PathResolver>();
+            }
 
             SetupInterface();
+            SetupApi();
 
-            if( Config.EnableMods )
-            {
-                ResourceLoader.EnableReplacements();
-                PathResolver.Enable();
-            }
+            _validityChecker.LogExceptions();
+            Log.Information(
+                $"Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} successfully Loaded from {pluginInterface.SourceRepository}.");
+            OtterTex.NativeDll.Initialize(pluginInterface.AssemblyLocation.DirectoryName);
+            Log.Information($"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}.");
 
-            if( Config.DebugMode )
-            {
-                ResourceLoader.EnableDebug();
-            }
-
-            using( var tApi = StartTimer.Measure( StartTimeType.Api ) )
-            {
-                Api          = new PenumbraApi( this );
-                IpcProviders = new PenumbraIpcProviders( Dalamud.PluginInterface, Api );
-                HttpApi      = new HttpApi( Api );
-                if( Config.EnableHttpApi )
-                {
-                    HttpApi.CreateWebServer();
-                }
-
-                SubscribeItemLinks();
-            }
-
-            ValidityChecker.LogExceptions();
-            Log.Information( $"Penumbra Version {Version}, Commit #{CommitHash} successfully Loaded from {pluginInterface.SourceRepository}." );
-            OtterTex.NativeDll.Initialize( Dalamud.PluginInterface.AssemblyLocation.DirectoryName );
-            Log.Information( $"Loading native OtterTex assembly from {OtterTex.NativeDll.Directory}." );
-
-            if( CharacterUtility.Ready )
-            {
-                ResidentResources.Reload();
-            }
+            if (_characterUtility.Ready)
+                _residentResources.Reload();
         }
         catch
         {
@@ -174,238 +92,141 @@ public class Penumbra : IDalamudPlugin
         }
     }
 
+    private void SetupApi()
+    {
+        using var timer = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api);
+        var       api   = _services.GetRequiredService<IPenumbraApi>();
+        _services.GetRequiredService<PenumbraIpcProviders>();
+        api.ChangedItemTooltip += it =>
+        {
+            if (it is Item)
+                ImGui.TextUnformatted("Left Click to create an item link in chat.");
+        };
+        api.ChangedItemClicked += (button, it) =>
+        {
+            if (button == MouseButton.Left && it is Item item)
+                ChatService.LinkItem(item);
+        };
+    }
+
     private void SetupInterface()
     {
-        Task.Run( () =>
+        Task.Run(() =>
             {
-                using var tInterface = StartTimer.Measure( StartTimeType.Interface );
-                var       changelog  = ConfigWindow.CreateChangelog();
-                var cfg = new ConfigWindow( this, _resourceWatcher )
-                {
-                    IsOpen = Config.DebugMode,
-                };
-                var btn    = new LaunchButton( cfg );
-                var system = new WindowSystem( Name );
-                var cmd    = new CommandHandler( Dalamud.Framework, Dalamud.Commands, ObjectReloader, Config, this, cfg, ModManager, CollectionManager, Actors );
-                system.AddWindow( cfg );
-                system.AddWindow( cfg.ModEditPopup );
-                system.AddWindow( changelog );
-                if( !_disposed )
-                {
-                    _changelog                                     =  changelog;
-                    ConfigWindow                                   =  cfg;
-                    _windowSystem                                  =  system;
-                    _launchButton                                  =  btn;
-                    _commandHandler                                =  cmd;
-                    Dalamud.PluginInterface.UiBuilder.OpenConfigUi += cfg.Toggle;
-                    Dalamud.PluginInterface.UiBuilder.Draw         += _windowSystem.Draw;
-                }
+                using var tInterface = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.Interface);
+                var       system     = _services.GetRequiredService<PenumbraWindowSystem>();
+                system.Window.Setup(this, _services.GetRequiredService<ConfigTabBar>());
+                _services.GetRequiredService<CommandHandler>();
+                if (!_disposed)
+                    _windowSystem = system;
                 else
-                {
-                    cfg.Dispose();
-                    btn.Dispose();
-                    cmd.Dispose();
-                }
+                    system.Dispose();
             }
         );
     }
 
-    private void DisposeInterface()
+    public bool SetEnabled(bool enabled)
     {
-        if( _windowSystem != null )
-        {
-            Dalamud.PluginInterface.UiBuilder.Draw -= _windowSystem.Draw;
-        }
-
-        _launchButton?.Dispose();
-        if( ConfigWindow != null )
-        {
-            Dalamud.PluginInterface.UiBuilder.OpenConfigUi -= ConfigWindow.Toggle;
-            ConfigWindow.Dispose();
-        }
-    }
-
-    public event Action< bool >? EnabledChange;
-
-    public bool SetEnabled( bool enabled )
-    {
-        if( enabled == Config.EnableMods )
-        {
+        if (enabled == _config.EnableMods)
             return false;
-        }
 
-        Config.EnableMods = enabled;
-        if( enabled )
+        _config.EnableMods = enabled;
+        if (enabled)
         {
-            ResourceLoader.EnableReplacements();
-            PathResolver.Enable();
-            if( CharacterUtility.Ready )
+            if (_characterUtility.Ready)
             {
-                CollectionManager.Default.SetFiles();
-                ResidentResources.Reload();
-                ObjectReloader.RedrawAll( RedrawType.Redraw );
+                _collectionManager.Active.Default.SetFiles(_characterUtility);
+                _residentResources.Reload();
+                _redrawService.RedrawAll(RedrawType.Redraw);
             }
         }
         else
         {
-            ResourceLoader.DisableReplacements();
-            PathResolver.Disable();
-            if( CharacterUtility.Ready )
+            if (_characterUtility.Ready)
             {
-                CharacterUtility.ResetAll();
-                ResidentResources.Reload();
-                ObjectReloader.RedrawAll( RedrawType.Redraw );
+                _characterUtility.ResetAll();
+                _residentResources.Reload();
+                _redrawService.RedrawAll(RedrawType.Redraw);
             }
         }
 
-        Config.Save();
-        EnabledChange?.Invoke( enabled );
+        _config.Save();
+        _communicatorService.EnabledChanged.Invoke(enabled);
 
         return true;
     }
 
     public void ForceChangelogOpen()
-    {
-        if( _changelog != null )
-        {
-            _changelog.ForceOpen = true;
-        }
-    }
-
-    private void SubscribeItemLinks()
-    {
-        Api.ChangedItemTooltip += it =>
-        {
-            if( it is Item )
-            {
-                ImGui.TextUnformatted( "Left Click to create an item link in chat." );
-            }
-        };
-        Api.ChangedItemClicked += ( button, it ) =>
-        {
-            if( button == MouseButton.Left && it is Item item )
-            {
-                ChatUtil.LinkItem( item );
-            }
-        };
-    }
-
-    private short ResolveCutscene( ushort index )
-        => ( short )PathResolver.CutsceneActor( index );
+        => _windowSystem?.ForceChangelogOpen();
 
     public void Dispose()
     {
-        if( _disposed )
-        {
+        if (_disposed)
             return;
-        }
 
+        _services?.Dispose();
         _disposed = true;
-        HttpApi?.Dispose();
-        IpcProviders?.Dispose();
-        Api?.Dispose();
-        _commandHandler?.Dispose();
-        StainManager?.Dispose();
-        ItemData?.Dispose();
-        Actors?.Dispose();
-        Identifier?.Dispose();
-        Framework?.Dispose();
-        DisposeInterface();
-        ObjectReloader?.Dispose();
-        ModFileSystem?.Dispose();
-        CollectionManager?.Dispose();
-        PathResolver?.Dispose();
-        ResourceLogger?.Dispose();
-        _resourceWatcher?.Dispose();
-        ResourceLoader?.Dispose();
-        GameEvents?.Dispose();
-        CharacterUtility?.Dispose();
-        Performance?.Dispose();
     }
 
-    // Collect all relevant files for penumbra configuration.
-    private static IReadOnlyList< FileInfo > PenumbraBackupFiles()
+    public string GatherSupportInformation()
     {
-        var collectionDir = ModCollection.CollectionDirectory;
-        var list = Directory.Exists( collectionDir )
-            ? new DirectoryInfo( collectionDir ).EnumerateFiles( "*.json" ).ToList()
-            : new List< FileInfo >();
-        list.AddRange( Mod.LocalDataDirectory.Exists ? Mod.LocalDataDirectory.EnumerateFiles( "*.json" ) : Enumerable.Empty< FileInfo >() );
-        list.Add( Dalamud.PluginInterface.ConfigFile );
-        list.Add( new FileInfo( ModFileSystem.ModFileSystemFile ) );
-        list.Add( new FileInfo( ModCollection.Manager.ActiveCollectionFile ) );
-        return list;
-    }
+        var sb     = new StringBuilder(10240);
+        var exists = _config.ModDirectory.Length > 0 && Directory.Exists(_config.ModDirectory);
+        var drive  = exists ? new DriveInfo(new DirectoryInfo(_config.ModDirectory).Root.FullName) : null;
+        sb.AppendLine("**Settings**");
+        sb.Append($"> **`Plugin Version:              `** {_validityChecker.Version}\n");
+        sb.Append($"> **`Commit Hash:                 `** {_validityChecker.CommitHash}\n");
+        sb.Append($"> **`Enable Mods:                 `** {_config.EnableMods}\n");
+        sb.Append($"> **`Enable HTTP API:             `** {_config.EnableHttpApi}\n");
+        sb.Append($"> **`Operating System:            `** {(Dalamud.Utility.Util.IsLinux() ? "Mac/Linux (Wine)" : "Windows")}\n");
+        sb.Append($"> **`Root Directory:              `** `{_config.ModDirectory}`, {(exists ? "Exists" : "Not Existing")}\n");
+        sb.Append(
+            $"> **`Free Drive Space:            `** {(drive != null ? Functions.HumanReadableSize(drive.AvailableFreeSpace) : "Unknown")}\n");
+        sb.Append($"> **`Auto-Deduplication:          `** {_config.AutoDeduplicateOnImport}\n");
+        sb.Append($"> **`Debug Mode:                  `** {_config.DebugMode}\n");
+        sb.Append(
+            $"> **`Synchronous Load (Dalamud):  `** {(_services.GetRequiredService<DalamudServices>().GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool v) ? v.ToString() : "Unknown")}\n");
+        sb.Append(
+            $"> **`Logging:                     `** Log: {_config.EnableResourceLogging}, Watcher: {_config.EnableResourceWatcher} ({_config.MaxResourceWatcherRecords})\n");
+        sb.Append($"> **`Use Ownership:               `** {_config.UseOwnerNameForCharacterCollection}\n");
+        sb.AppendLine("**Mods**");
+        sb.Append($"> **`Installed Mods:              `** {_modManager.Count}\n");
+        sb.Append($"> **`Mods with Config:            `** {_modManager.Count(m => m.HasOptions)}\n");
+        sb.Append(
+            $"> **`Mods with File Redirections: `** {_modManager.Count(m => m.TotalFileCount > 0)}, Total: {_modManager.Sum(m => m.TotalFileCount)}\n");
+        sb.Append(
+            $"> **`Mods with FileSwaps:         `** {_modManager.Count(m => m.TotalSwapCount > 0)}, Total: {_modManager.Sum(m => m.TotalSwapCount)}\n");
+        sb.Append(
+            $"> **`Mods with Meta Manipulations:`** {_modManager.Count(m => m.TotalManipulations > 0)}, Total {_modManager.Sum(m => m.TotalManipulations)}\n");
+        sb.Append($"> **`IMC Exceptions Thrown:       `** {_validityChecker.ImcExceptions.Count}\n");
+        sb.Append(
+            $"> **`#Temp Mods:                  `** {_tempMods.Mods.Sum(kvp => kvp.Value.Count) + _tempMods.ModsForAllCollections.Count}\n");
 
-    public static string GatherSupportInformation()
-    {
-        var sb     = new StringBuilder( 10240 );
-        var exists = Config.ModDirectory.Length > 0 && Directory.Exists( Config.ModDirectory );
-        var drive  = exists ? new DriveInfo( new DirectoryInfo( Config.ModDirectory ).Root.FullName ) : null;
-        sb.AppendLine( "**Settings**" );
-        sb.Append( $"> **`Plugin Version:              `** {Version}\n" );
-        sb.Append( $"> **`Commit Hash:                 `** {CommitHash}\n" );
-        sb.Append( $"> **`Enable Mods:                 `** {Config.EnableMods}\n" );
-        sb.Append( $"> **`Enable HTTP API:             `** {Config.EnableHttpApi}\n" );
-        sb.Append( $"> **`Operating System:            `** {( DalamudUtil.IsLinux() ? "Mac/Linux (Wine)" : "Windows" )}\n" );
-        sb.Append( $"> **`Root Directory:              `** `{Config.ModDirectory}`, {( exists ? "Exists" : "Not Existing" )}\n" );
-        sb.Append( $"> **`Free Drive Space:            `** {( drive != null ? Functions.HumanReadableSize( drive.AvailableFreeSpace ) : "Unknown" )}\n" );
-        sb.Append( $"> **`Auto-Deduplication:          `** {Config.AutoDeduplicateOnImport}\n" );
-        sb.Append( $"> **`Debug Mode:                  `** {Config.DebugMode}\n" );
-        sb.Append( $"> **`Synchronous Load (Dalamud):  `** {( Dalamud.GetDalamudConfig( Dalamud.WaitingForPluginsOption, out bool v ) ? v.ToString() : "Unknown" )}\n" );
-        sb.Append( $"> **`Logging:                     `** Log: {Config.EnableResourceLogging}, Watcher: {Config.EnableResourceWatcher} ({Config.MaxResourceWatcherRecords})\n" );
-        sb.Append( $"> **`Use Ownership:               `** {Config.UseOwnerNameForCharacterCollection}\n" );
-        sb.AppendLine( "**Mods**" );
-        sb.Append( $"> **`Installed Mods:              `** {ModManager.Count}\n" );
-        sb.Append( $"> **`Mods with Config:            `** {ModManager.Count( m => m.HasOptions )}\n" );
-        sb.Append( $"> **`Mods with File Redirections: `** {ModManager.Count( m => m.TotalFileCount     > 0 )}, Total: {ModManager.Sum( m => m.TotalFileCount )}\n" );
-        sb.Append( $"> **`Mods with FileSwaps:         `** {ModManager.Count( m => m.TotalSwapCount     > 0 )}, Total: {ModManager.Sum( m => m.TotalSwapCount )}\n" );
-        sb.Append( $"> **`Mods with Meta Manipulations:`** {ModManager.Count( m => m.TotalManipulations > 0 )}, Total {ModManager.Sum( m => m.TotalManipulations )}\n" );
-        sb.Append( $"> **`IMC Exceptions Thrown:       `** {ValidityChecker.ImcExceptions.Count}\n" );
-        sb.Append( $"> **`#Temp Mods:                  `** {TempMods.Mods.Sum( kvp => kvp.Value.Count ) + TempMods.ModsForAllCollections.Count}\n" );
+        void PrintCollection(ModCollection c, CollectionCache _)
+            => sb.Append($"**Collection {c.AnonymizedName}**\n"
+              + $"> **`Inheritances:                 `** {c.DirectlyInheritsFrom.Count}\n"
+              + $"> **`Enabled Mods:                 `** {c.ActualSettings.Count(s => s is { Enabled: true })}\n"
+              + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority && x.Solved ? x.Conflicts.Count : 0)}/{c.AllConflicts.SelectMany(x => x).Sum(x => x.HasPriority ? x.Conflicts.Count : 0)}\n");
 
-        string CharacterName( ActorIdentifier id, string name )
+        sb.AppendLine("**Collections**");
+        sb.Append($"> **`#Collections:                 `** {_collectionManager.Storage.Count - 1}\n");
+        sb.Append($"> **`#Temp Collections:            `** {_tempCollections.Count}\n");
+        sb.Append($"> **`Active Collections:           `** {_collectionManager.Caches.Count - _tempCollections.Count}\n");
+        sb.Append($"> **`Base Collection:              `** {_collectionManager.Active.Default.AnonymizedName}\n");
+        sb.Append($"> **`Interface Collection:         `** {_collectionManager.Active.Interface.AnonymizedName}\n");
+        sb.Append($"> **`Selected Collection:          `** {_collectionManager.Active.Current.AnonymizedName}\n");
+        foreach (var (type, name, _) in CollectionTypeExtensions.Special)
         {
-            if( id.Type is IdentifierType.Player or IdentifierType.Owned )
-            {
-                var parts = name.Split( ' ', 3 );
-                return string.Join( " ", parts.Length != 3 ? parts.Select( n => $"{n[ 0 ]}." ) : parts[ ..2 ].Select( n => $"{n[ 0 ]}." ).Append( parts[ 2 ] ) );
-            }
-
-            return name + ':';
+            var collection = _collectionManager.Active.ByType(type);
+            if (collection != null)
+                sb.Append($"> **`{name,-30}`** {collection.AnonymizedName}\n");
         }
 
-        void PrintCollection( ModCollection c )
-            => sb.Append( $"**Collection {c.AnonymizedName}**\n"
-              + $"> **`Inheritances:                 `** {c.Inheritance.Count}\n"
-              + $"> **`Enabled Mods:                 `** {c.ActualSettings.Count( s => s is { Enabled: true } )}\n"
-              + $"> **`Conflicts (Solved/Total):     `** {c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority ? 0 : x.Conflicts.Count )}/{c.AllConflicts.SelectMany( x => x ).Sum( x => x.HasPriority || !x.Solved ? 0 : x.Conflicts.Count )}\n" );
+        foreach (var (name, id, collection) in _collectionManager.Active.Individuals.Assignments)
+            sb.Append($"> **`{id[0].Incognito(name) + ':',-30}`** {collection.AnonymizedName}\n");
 
-        sb.AppendLine( "**Collections**" );
-        sb.Append( $"> **`#Collections:                 `** {CollectionManager.Count - 1}\n" );
-        sb.Append( $"> **`#Temp Collections:            `** {TempMods.CustomCollections.Count}\n" );
-        sb.Append( $"> **`Active Collections:           `** {CollectionManager.Count( c => c.HasCache )}\n" );
-        sb.Append( $"> **`Base Collection:              `** {CollectionManager.Default.AnonymizedName}\n" );
-        sb.Append( $"> **`Interface Collection:         `** {CollectionManager.Interface.AnonymizedName}\n" );
-        sb.Append( $"> **`Selected Collection:          `** {CollectionManager.Current.AnonymizedName}\n" );
-        foreach( var (type, name, _) in CollectionTypeExtensions.Special )
-        {
-            var collection = CollectionManager.ByType( type );
-            if( collection != null )
-            {
-                sb.Append( $"> **`{name,-30}`** {collection.AnonymizedName}\n" );
-            }
-        }
-
-        foreach( var (name, id, collection) in CollectionManager.Individuals.Assignments )
-        {
-            sb.Append( $"> **`{CharacterName( id[ 0 ], name ),-30}`** {collection.AnonymizedName}\n" );
-        }
-
-        foreach( var collection in CollectionManager.Where( c => c.HasCache ) )
-        {
-            PrintCollection( collection );
-        }
+        foreach (var (collection, cache) in _collectionManager.Caches.Active)
+            PrintCollection(collection, cache);
 
         return sb.ToString();
     }

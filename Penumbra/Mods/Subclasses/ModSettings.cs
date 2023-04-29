@@ -6,11 +6,12 @@ using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Manager;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;
 
-// Contains the settings for a given mod.
+/// <summary> Contains the settings for a given mod. </summary>
 public class ModSettings
 {
     public static readonly ModSettings Empty = new();

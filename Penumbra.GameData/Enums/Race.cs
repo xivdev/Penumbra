@@ -221,6 +221,16 @@ public static class RaceEnumExtensions
         };
     }
 
+    public static string ToShortName(this SubRace subRace)
+    {
+        return subRace switch
+        {
+            SubRace.SeekerOfTheSun  => "Sunseeker",
+            SubRace.KeeperOfTheMoon => "Moonkeeper",
+            _                       => subRace.ToName(),
+        };
+    }
+
     public static bool FitsRace(this SubRace subRace, Race race)
         => subRace.ToRace() == race;
 

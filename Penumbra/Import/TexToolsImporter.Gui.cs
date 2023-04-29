@@ -3,6 +3,7 @@ using System.Numerics;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using Penumbra.Import.Structs;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.Import;

@@ -3,16 +3,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using Penumbra.GameData.Structs;
+using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.String.Functions;
 
 namespace Penumbra.Meta.Files;
 
-// EQP/GMP Structure:
-// 64 x [Block collapsed or not bit]
-// 159 x [EquipmentParameter:ulong]
-// (CountSetBits(Block Collapsed or not) - 1) x 160 x [EquipmentParameter:ulong]
-// Item 0 does not exist and is sent to Item 1 instead.
+/// <summary>
+/// EQP/GMP Structure:
+/// 64 x [Block collapsed or not bit]
+/// 159 x [EquipmentParameter:ulong]
+/// (CountSetBits(Block Collapsed or not) - 1) x 160 x [EquipmentParameter:ulong]
+/// Item 0 does not exist and is sent to Item 1 instead.
+/// </summary>
 public unsafe class ExpandedEqpGmpBase : MetaBaseFile
 {
     protected const int BlockSize = 160;
@@ -23,19 +26,19 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     public const int Count = BlockSize * NumBlocks;
 
     public ulong ControlBlock
-        => *( ulong* )Data;
+        => *(ulong*)Data;
 
-    protected ulong GetInternal( int idx )
+    protected ulong GetInternal(int idx)
     {
         return idx switch
         {
             >= Count => throw new IndexOutOfRangeException(),
-            <= 1     => *( ( ulong* )Data + 1 ),
-            _        => *( ( ulong* )Data + idx ),
+            <= 1     => *((ulong*)Data + 1),
+            _        => *((ulong*)Data + idx),
         };
     }
 
-    protected void SetInternal( int idx, ulong value )
+    protected void SetInternal(int idx, ulong value)
     {
         idx = idx switch
         {
@@ -44,112 +47,103 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
             _        => idx,
         };
 
-        *( ( ulong* )Data + idx ) = value;
+        *((ulong*)Data + idx) = value;
     }
 
-    protected virtual void SetEmptyBlock( int idx )
+    protected virtual void SetEmptyBlock(int idx)
     {
-        MemoryUtility.MemSet( Data + idx * BlockSize * EntrySize, 0, BlockSize * EntrySize );
+        MemoryUtility.MemSet(Data + idx * BlockSize * EntrySize, 0, BlockSize * EntrySize);
     }
 
     public sealed override void Reset()
     {
-        var ptr            = ( byte* )DefaultData.Data;
-        var controlBlock   = *( ulong* )ptr;
+        var ptr            = (byte*)DefaultData.Data;
+        var controlBlock   = *(ulong*)ptr;
         var expandedBlocks = 0;
-        for( var i = 0; i < NumBlocks; ++i )
+        for (var i = 0; i < NumBlocks; ++i)
         {
-            var collapsed = ( ( controlBlock >> i ) & 1 ) == 0;
-            if( !collapsed )
+            var collapsed = ((controlBlock >> i) & 1) == 0;
+            if (!collapsed)
             {
-                MemoryUtility.MemCpyUnchecked( Data + i * BlockSize * EntrySize, ptr + expandedBlocks * BlockSize * EntrySize, BlockSize * EntrySize );
+                MemoryUtility.MemCpyUnchecked(Data + i * BlockSize * EntrySize, ptr + expandedBlocks * BlockSize * EntrySize,
+                    BlockSize * EntrySize);
                 expandedBlocks++;
             }
             else
             {
-                SetEmptyBlock( i );
+                SetEmptyBlock(i);
             }
         }
 
-        *( ulong* )Data = ulong.MaxValue;
+        *(ulong*)Data = ulong.MaxValue;
     }
 
-    public ExpandedEqpGmpBase( bool gmp )
-        : base( gmp ? CharacterUtility.Index.Gmp : CharacterUtility.Index.Eqp )
+    public ExpandedEqpGmpBase(MetaFileManager manager, bool gmp)
+        : base(manager, gmp ? MetaIndex.Gmp : MetaIndex.Eqp)
     {
-        AllocateData( MaxSize );
+        AllocateData(MaxSize);
         Reset();
     }
 
-    protected static ulong GetDefaultInternal( Interop.CharacterUtility.InternalIndex fileIndex, int setIdx, ulong def )
+    protected static ulong GetDefaultInternal(MetaFileManager manager, CharacterUtility.InternalIndex fileIndex, int setIdx, ulong def)
     {
-        var data = ( byte* )Penumbra.CharacterUtility.DefaultResource(fileIndex).Address;
-        if( setIdx == 0 )
-        {
+        var data = (byte*)manager.CharacterUtility.DefaultResource(fileIndex).Address;
+        if (setIdx == 0)
             setIdx = 1;
-        }
 
         var blockIdx = setIdx / BlockSize;
-        if( blockIdx >= NumBlocks )
-        {
+        if (blockIdx >= NumBlocks)
             return def;
-        }
 
-        var control  = *( ulong* )data;
+        var control  = *(ulong*)data;
         var blockBit = 1ul << blockIdx;
-        if( ( control & blockBit ) == 0 )
-        {
+        if ((control & blockBit) == 0)
             return def;
-        }
 
-        var count = BitOperations.PopCount( control & ( blockBit - 1 ) );
+        var count = BitOperations.PopCount(control & (blockBit - 1));
         var idx   = setIdx % BlockSize;
-        var ptr   = ( ulong* )data + BlockSize * count + idx;
+        var ptr   = (ulong*)data + BlockSize * count + idx;
         return *ptr;
     }
 }
 
 public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 {
-    public static readonly Interop.CharacterUtility.InternalIndex InternalIndex =
-        Interop.CharacterUtility.ReverseIndices[ (int) CharacterUtility.Index.Eqp ];
+    public static readonly CharacterUtility.InternalIndex InternalIndex =
+        CharacterUtility.ReverseIndices[(int)MetaIndex.Eqp];
 
-    public ExpandedEqpFile()
-        : base( false )
+    public ExpandedEqpFile(MetaFileManager manager)
+        : base(manager, false)
     { }
 
-    public EqpEntry this[ int idx ]
+    public EqpEntry this[int idx]
     {
-        get => ( EqpEntry )GetInternal( idx );
-        set => SetInternal( idx, ( ulong )value );
+        get => (EqpEntry)GetInternal(idx);
+        set => SetInternal(idx, (ulong)value);
     }
 
 
-    public static EqpEntry GetDefault( int setIdx )
-        => ( EqpEntry )GetDefaultInternal( InternalIndex, setIdx, ( ulong )Eqp.DefaultEntry );
+    public static EqpEntry GetDefault(MetaFileManager manager, int setIdx)
+        => (EqpEntry)GetDefaultInternal(manager, InternalIndex, setIdx, (ulong)Eqp.DefaultEntry);
 
-    protected override unsafe void SetEmptyBlock( int idx )
+    protected override unsafe void SetEmptyBlock(int idx)
     {
-        var blockPtr = ( ulong* )( Data + idx * BlockSize * EntrySize );
+        var blockPtr = (ulong*)(Data + idx * BlockSize * EntrySize);
         var endPtr   = blockPtr + BlockSize;
-        for( var ptr = blockPtr; ptr < endPtr; ++ptr )
-        {
-            *ptr = ( ulong )Eqp.DefaultEntry;
-        }
+        for (var ptr = blockPtr; ptr < endPtr; ++ptr)
+            *ptr = (ulong)Eqp.DefaultEntry;
     }
 
-    public void Reset( IEnumerable< int > entries )
+    public void Reset(IEnumerable<int> entries)
     {
-        foreach( var entry in entries )
-        {
-            this[ entry ] = GetDefault( entry );
-        }
+        foreach (var entry in entries)
+            this[entry] = GetDefault(Manager, entry);
     }
 
-    public IEnumerator< EqpEntry > GetEnumerator()
+    public IEnumerator<EqpEntry> GetEnumerator()
     {
-        for( var idx = 1; idx < Count; ++idx )
-            yield return this[ idx ];
+        for (var idx = 1; idx < Count; ++idx)
+            yield return this[idx];
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -158,33 +152,31 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 
 public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
 {
-    public static readonly Interop.CharacterUtility.InternalIndex InternalIndex =
-        Interop.CharacterUtility.ReverseIndices[( int )CharacterUtility.Index.Gmp];
+    public static readonly CharacterUtility.InternalIndex InternalIndex =
+        CharacterUtility.ReverseIndices[(int)MetaIndex.Gmp];
 
-    public ExpandedGmpFile()
-        : base( true )
+    public ExpandedGmpFile(MetaFileManager manager)
+        : base(manager, true)
     { }
 
-    public GmpEntry this[ int idx ]
+    public GmpEntry this[int idx]
     {
-        get => ( GmpEntry )GetInternal( idx );
-        set => SetInternal( idx, ( ulong )value );
+        get => (GmpEntry)GetInternal(idx);
+        set => SetInternal(idx, (ulong)value);
     }
 
-    public static GmpEntry GetDefault( int setIdx )
-        => ( GmpEntry )GetDefaultInternal( InternalIndex, setIdx, ( ulong )GmpEntry.Default );
+    public static GmpEntry GetDefault(MetaFileManager manager, int setIdx)
+        => (GmpEntry)GetDefaultInternal(manager, InternalIndex, setIdx, (ulong)GmpEntry.Default);
 
-    public void Reset( IEnumerable< int > entries )
+    public void Reset(IEnumerable<int> entries)
     {
-        foreach( var entry in entries )
-        {
-            this[ entry ] = GetDefault( entry );
-        }
+        foreach (var entry in entries)
+            this[entry] = GetDefault(Manager, entry);
     }
 
     public IEnumerator<GmpEntry> GetEnumerator()
     {
-        for( var idx = 1; idx < Count; ++idx )
+        for (var idx = 1; idx < Count; ++idx)
             yield return this[idx];
     }
 

@@ -49,8 +49,8 @@ public readonly struct RspManipulation : IMetaManipulation< RspManipulation >
         return s != 0 ? s : Attribute.CompareTo( other.Attribute );
     }
 
-    public CharacterUtility.Index FileIndex()
-        => CharacterUtility.Index.HumanCmp;
+    public MetaIndex FileIndex()
+        => MetaIndex.HumanCmp;
 
     public bool Apply( CmpFile file )
     {

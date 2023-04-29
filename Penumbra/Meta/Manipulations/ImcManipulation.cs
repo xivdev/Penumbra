@@ -142,8 +142,8 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
         return b != 0 ? b : Variant.CompareTo( other.Variant );
     }
 
-    public CharacterUtility.Index FileIndex()
-        => ( CharacterUtility.Index )( -1 );
+    public MetaIndex FileIndex()
+        => ( MetaIndex )( -1 );
 
     public Utf8GamePath GamePath()
     {

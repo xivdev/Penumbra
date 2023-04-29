@@ -1,81 +1,81 @@
 using System;
 using Dalamud.Memory;
+using Penumbra.Interop.Structs;
 using Penumbra.String.Functions;
-using CharacterUtility = Penumbra.Interop.CharacterUtility;
+using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 
 namespace Penumbra.Meta.Files;
 
 public unsafe class MetaBaseFile : IDisposable
 {
-    public byte* Data { get; private set; }
-    public int Length { get; private set; }
-    public CharacterUtility.InternalIndex Index { get; }
+    protected readonly MetaFileManager Manager;
 
-    public MetaBaseFile( Interop.Structs.CharacterUtility.Index idx )
-        => Index = CharacterUtility.ReverseIndices[ ( int )idx ];
+    public byte*                          Data   { get; private set; }
+    public int                            Length { get; private set; }
+    public CharacterUtility.InternalIndex Index  { get; }
+
+    public MetaBaseFile(MetaFileManager manager, MetaIndex idx)
+    {
+        Manager = manager;
+        Index   = CharacterUtility.ReverseIndices[(int)idx];
+    }
 
     protected (IntPtr Data, int Length) DefaultData
-        => Penumbra.CharacterUtility.DefaultResource( Index );
+        => Manager.CharacterUtility.DefaultResource(Index);
 
-    // Reset to default values.
+    /// <summary> Reset to default values. </summary>
     public virtual void Reset()
     { }
 
-    // Obtain memory.
-    protected void AllocateData( int length )
+    /// <summary> Obtain memory. </summary>
+    protected void AllocateData(int length)
     {
         Length = length;
-        Data   = ( byte* )Penumbra.MetaFileManager.AllocateFileMemory( length );
-        if( length > 0 )
-        {
-            GC.AddMemoryPressure( length );
-        }
+        Data   = (byte*)Manager.AllocateFileMemory(length);
+        if (length > 0)
+            GC.AddMemoryPressure(length);
     }
 
-    // Free memory.
+    /// <summary> Free memory. </summary>
     protected void ReleaseUnmanagedResources()
     {
-        var ptr = ( IntPtr )Data;
-        MemoryHelper.GameFree( ref ptr, ( ulong )Length );
-        if( Length > 0 )
-        {
-            GC.RemoveMemoryPressure( Length );
-        }
+        var ptr = (IntPtr)Data;
+        MemoryHelper.GameFree(ref ptr, (ulong)Length);
+        if (Length > 0)
+            GC.RemoveMemoryPressure(Length);
 
         Length = 0;
         Data   = null;
     }
 
-    // Resize memory while retaining data.
-    protected void ResizeResources( int newLength )
+    /// <summary> Resize memory while retaining data. </summary>
+    protected void ResizeResources(int newLength)
     {
-        if( newLength == Length )
-        {
+        if (newLength == Length)
             return;
-        }
 
-        var data = ( byte* )Penumbra.MetaFileManager.AllocateFileMemory( ( ulong )newLength );
-        if( newLength > Length )
+        var data = (byte*)Manager.AllocateFileMemory((ulong)newLength);
+        if (newLength > Length)
         {
-            MemoryUtility.MemCpyUnchecked( data, Data, Length );
-            MemoryUtility.MemSet( data + Length, 0, newLength - Length );
+            MemoryUtility.MemCpyUnchecked(data, Data, Length);
+            MemoryUtility.MemSet(data + Length, 0, newLength - Length);
         }
         else
         {
-            MemoryUtility.MemCpyUnchecked( data, Data, newLength );
+            MemoryUtility.MemCpyUnchecked(data, Data, newLength);
         }
 
         ReleaseUnmanagedResources();
-        GC.AddMemoryPressure( newLength );
+        GC.AddMemoryPressure(newLength);
         Data   = data;
         Length = newLength;
     }
 
-    // Manually free memory. 
+    /// <summary> Manually free memory.  </summary>
     public void Dispose()
     {
         ReleaseUnmanagedResources();
-        GC.SuppressFinalize( this );
+        GC.SuppressFinalize(this);
     }
 
     ~MetaBaseFile()

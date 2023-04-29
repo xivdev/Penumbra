@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
@@ -12,7 +13,26 @@ namespace Penumbra.Import;
 
 public partial class TexToolsMeta
 {
-    public static Dictionary< string, byte[] > ConvertToTexTools( IEnumerable< MetaManipulation > manips )
+    public static void WriteTexToolsMeta(MetaFileManager manager, IEnumerable<MetaManipulation> manipulations, DirectoryInfo basePath)
+    {
+        var files = ConvertToTexTools(manager, manipulations);
+
+        foreach (var (file, data) in files)
+        {
+            var path = Path.Combine(basePath.FullName, file);
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllBytes(path, data);
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Could not write meta file {path}:\n{e}");
+            }
+        }
+    }
+
+    public static Dictionary< string, byte[] > ConvertToTexTools( MetaFileManager manager, IEnumerable< MetaManipulation > manips )
     {
         var ret = new Dictionary< string, byte[] >();
         foreach( var group in manips.GroupBy( ManipToPath ) )
@@ -23,8 +43,8 @@ public partial class TexToolsMeta
             }
 
             var bytes = group.Key.EndsWith( ".rgsp" )
-                ? WriteRgspFile( group.Key, group )
-                : WriteMetaFile( group.Key, group );
+                ? WriteRgspFile( manager, group.Key, group )
+                : WriteMetaFile( manager, group.Key, group );
             if( bytes.Length == 0 )
             {
                 continue;
@@ -36,7 +56,7 @@ public partial class TexToolsMeta
         return ret;
     }
 
-    private static byte[] WriteRgspFile( string path, IEnumerable< MetaManipulation > manips )
+    private static byte[] WriteRgspFile( MetaFileManager manager, string path, IEnumerable< MetaManipulation > manips )
     {
         var       list = manips.GroupBy( m => m.Rsp.Attribute ).ToDictionary( m => m.Key, m => m.Last().Rsp );
         using var m    = new MemoryStream( 45 );
@@ -54,7 +74,7 @@ public partial class TexToolsMeta
         {
             foreach( var attribute in attributes )
             {
-                var value = list.TryGetValue( attribute, out var tmp ) ? tmp.Entry : CmpFile.GetDefault( race, attribute );
+                var value = list.TryGetValue( attribute, out var tmp ) ? tmp.Entry : CmpFile.GetDefault( manager, race, attribute );
                 b.Write( value );
             }
         }
@@ -72,7 +92,7 @@ public partial class TexToolsMeta
         return m.GetBuffer();
     }
 
-    private static byte[] WriteMetaFile( string path, IEnumerable< MetaManipulation > manips )
+    private static byte[] WriteMetaFile( MetaFileManager manager, string path, IEnumerable< MetaManipulation > manips )
     {
         var filteredManips = manips.GroupBy( m => m.ManipulationType ).ToDictionary( p => p.Key, p => p.Select( x => x ) );
 
@@ -103,7 +123,7 @@ public partial class TexToolsMeta
             b.Write( ( uint )header );
             b.Write( offset );
 
-            var size = WriteData( b, offset, header, data );
+            var size = WriteData( manager, b, offset, header, data );
             b.Write( size );
             offset += size;
         }
@@ -111,7 +131,7 @@ public partial class TexToolsMeta
         return m.ToArray();
     }
 
-    private static uint WriteData( BinaryWriter b, uint offset, MetaManipulation.Type type, IEnumerable< MetaManipulation > manips )
+    private static uint WriteData( MetaFileManager manager, BinaryWriter b, uint offset, MetaManipulation.Type type, IEnumerable< MetaManipulation > manips )
     {
         var oldPos = b.BaseStream.Position;
         b.Seek( ( int )offset, SeekOrigin.Begin );
@@ -120,7 +140,7 @@ public partial class TexToolsMeta
         {
             case MetaManipulation.Type.Imc:
                 var allManips = manips.ToList();
-                var baseFile  = new ImcFile( allManips[ 0 ].Imc );
+                var baseFile  = new ImcFile( manager, allManips[ 0 ].Imc );
                 foreach( var manip in allManips )
                 {
                     manip.Imc.Apply( baseFile );

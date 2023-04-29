@@ -40,6 +40,12 @@ public struct CharacterWeapon : IEquatable<CharacterWeapon>
         Stain   = (StainId)(value >> 48);
     }
 
+    public CharacterArmor ToArmor()
+        => new(Set, (byte)Variant, Stain);
+
+    public CharacterArmor ToArmor(StainId stain)
+        => new(Set, (byte)Variant, stain);
+
     public static readonly CharacterWeapon Empty = new(0, 0, 0, 0);
 
     public bool Equals(CharacterWeapon other)

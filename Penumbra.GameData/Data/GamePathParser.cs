@@ -8,8 +8,9 @@ using Penumbra.GameData.Structs;
 
 namespace Penumbra.GameData.Data;
 
-internal class GamePathParser : IGamePathParser
+public class GamePathParser : IGamePathParser
 {
+    /// <summary> Obtain basic information about a file path. </summary>
     public GameObjectInfo GetFileInfo(string path)
     {
         path = path.ToLowerInvariant().Replace('\\', '/');
@@ -49,6 +50,8 @@ internal class GamePathParser : IGamePathParser
         };
     }
 
+    /// <summary> Get the key of a VFX symbol. </summary>
+    /// <returns>The lower-case key or an empty string if no match is found.</returns>
     public string VfxToKey(string path)
     {
         var match = GamePaths.Vfx.Tmb().Match(path);
@@ -59,25 +62,7 @@ internal class GamePathParser : IGamePathParser
         return match.Success ? match.Groups["key"].Value.ToLowerInvariant() : string.Empty;
     }
 
-    private const string CharacterFolder = "chara";
-    private const string EquipmentFolder = "equipment";
-    private const string PlayerFolder    = "human";
-    private const string WeaponFolder    = "weapon";
-    private const string AccessoryFolder = "accessory";
-    private const string DemiHumanFolder = "demihuman";
-    private const string MonsterFolder   = "monster";
-    private const string CommonFolder    = "common";
-    private const string UiFolder        = "ui";
-    private const string IconFolder      = "icon";
-    private const string LoadingFolder   = "loadingimage";
-    private const string MapFolder       = "map";
-    private const string InterfaceFolder = "uld";
-    private const string FontFolder      = "font";
-    private const string HousingFolder   = "hou";
-    private const string VfxFolder       = "vfx";
-    private const string WorldFolder1    = "bgcommon";
-    private const string WorldFolder2    = "bg";
-
+    /// <summary> Obtain the ObjectType from a given path.</summary>
     public ObjectType PathToObjectType(string path)
     {
         if (path.Length == 0)
@@ -124,6 +109,25 @@ internal class GamePathParser : IGamePathParser
             _            => ObjectType.Unknown,
         };
     }
+
+    private const string CharacterFolder = "chara";
+    private const string EquipmentFolder = "equipment";
+    private const string PlayerFolder    = "human";
+    private const string WeaponFolder    = "weapon";
+    private const string AccessoryFolder = "accessory";
+    private const string DemiHumanFolder = "demihuman";
+    private const string MonsterFolder   = "monster";
+    private const string CommonFolder    = "common";
+    private const string UiFolder        = "ui";
+    private const string IconFolder      = "icon";
+    private const string LoadingFolder   = "loadingimage";
+    private const string MapFolder       = "map";
+    private const string InterfaceFolder = "uld";
+    private const string FontFolder      = "font";
+    private const string HousingFolder   = "hou";
+    private const string VfxFolder       = "vfx";
+    private const string WorldFolder1    = "bgcommon";
+    private const string WorldFolder2    = "bg";
 
     private (FileType, ObjectType, Match?) ParseGamePath(string path)
     {

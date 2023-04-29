@@ -1,8 +1,9 @@
 using System;
+using System.Numerics;
 
 namespace Penumbra.GameData.Structs;
 
-public readonly struct StainId : IEquatable< StainId >
+public readonly struct StainId : IEquatable< StainId >, IEqualityOperators<StainId, StainId, bool>
 {
     public readonly byte Value;
 
@@ -26,4 +27,10 @@ public readonly struct StainId : IEquatable< StainId >
 
     public override int GetHashCode()
         => Value.GetHashCode();
+
+    public static bool operator ==(StainId left, StainId right)
+        => left.Value == right.Value;
+
+    public static bool operator !=(StainId left, StainId right)
+        => left.Value != right.Value;
 }

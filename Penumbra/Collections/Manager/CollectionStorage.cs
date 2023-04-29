@@ -1,0 +1,317 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Linq;
+using Dalamud.Interface.Internal.Notifications;
+using OtterGui;
+using OtterGui.Filesystem;
+using Penumbra.Mods;
+using Penumbra.Mods.Manager;
+using Penumbra.Services;
+using Penumbra.Util;
+
+namespace Penumbra.Collections.Manager;
+
+public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
+{
+    private readonly CommunicatorService _communicator;
+    private readonly SaveService         _saveService;
+    private readonly ModStorage          _modStorage;
+
+    /// <remarks> The empty collection is always available at Index 0. </remarks>
+    private readonly List<ModCollection> _collections = new()
+    {
+        ModCollection.Empty,
+    };
+
+    public readonly ModCollection DefaultNamed;
+
+    /// <summary> Default enumeration skips the empty collection. </summary>
+    public IEnumerator<ModCollection> GetEnumerator()
+        => _collections.Skip(1).GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
+
+    public int Count
+        => _collections.Count;
+
+    public ModCollection this[int index]
+        => _collections[index];
+
+    /// <summary> Find a collection by its name. If the name is empty or None, the empty collection is returned. </summary>
+    public bool ByName(string name, [NotNullWhen(true)] out ModCollection? collection)
+    {
+        if (name.Length != 0)
+            return _collections.FindFirst(c => string.Equals(c.Name, name, StringComparison.OrdinalIgnoreCase), out collection);
+
+        collection = ModCollection.Empty;
+        return true;
+    }
+
+    public CollectionStorage(CommunicatorService communicator, SaveService saveService, ModStorage modStorage)
+    {
+        _communicator = communicator;
+        _saveService  = saveService;
+        _modStorage   = modStorage;
+        _communicator.ModDiscoveryStarted.Subscribe(OnModDiscoveryStarted);
+        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange, 10);
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, 100);
+        ReadCollections(out DefaultNamed);
+    }
+
+    public void Dispose()
+    {
+        _communicator.ModDiscoveryStarted.Unsubscribe(OnModDiscoveryStarted);
+        _communicator.ModDiscoveryFinished.Unsubscribe(OnModDiscoveryFinished);
+        _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
+        _communicator.ModOptionChanged.Unsubscribe(OnModOptionChange);
+    }
+
+    /// <summary>
+    /// Returns true if the name is not empty, it is not the name of the empty collection
+    /// and no existing collection results in the same filename as name. Also returns the fixed name.
+    /// </summary>
+    public bool CanAddCollection(string name, out string fixedName)
+    {
+        if (!IsValidName(name))
+        {
+            fixedName = string.Empty;
+            return false;
+        }
+
+        name = name.ToLowerInvariant();
+        if (name.Length == 0
+         || name == ModCollection.Empty.Name.ToLowerInvariant()
+         || _collections.Any(c => c.Name.ToLowerInvariant() == name))
+        {
+            fixedName = string.Empty;
+            return false;
+        }
+
+        fixedName = name;
+        return true;
+    }
+
+    /// <summary>
+    /// Add a new collection of the given name.
+    /// If duplicate is not-null, the new collection will be a duplicate of it.
+    /// If the name of the collection would result in an already existing filename, skip it.
+    /// Returns true if the collection was successfully created and fires a Inactive event. 
+    /// Also sets the current collection to the new collection afterwards. 
+    /// </summary>
+    public bool AddCollection(string name, ModCollection? duplicate)
+    {
+        if (!CanAddCollection(name, out var fixedName))
+        {
+            Penumbra.ChatService.NotificationMessage(
+                $"The new collection {name} would lead to the same path {fixedName} as one that already exists.", "Warning",
+                NotificationType.Warning);
+            return false;
+        }
+
+        var newCollection = duplicate?.Duplicate(name, _collections.Count)
+         ?? ModCollection.CreateEmpty(name, _collections.Count, _modStorage.Count);
+        _collections.Add(newCollection);
+
+        _saveService.ImmediateSave(new ModCollectionSave(_modStorage, newCollection));
+        Penumbra.ChatService.NotificationMessage($"Created new collection {newCollection.AnonymizedName}.", "Success",
+            NotificationType.Success);
+        _communicator.CollectionChange.Invoke(CollectionType.Inactive, null, newCollection, string.Empty);
+        return true;
+    }
+
+    /// <summary>
+    /// Remove the given collection if it exists and is neither the empty nor the default-named collection.
+    /// </summary>
+    public bool RemoveCollection(ModCollection collection)
+    {
+        if (collection.Index <= ModCollection.Empty.Index || collection.Index >= _collections.Count)
+        {
+            Penumbra.ChatService.NotificationMessage("Can not remove the empty collection.", "Error", NotificationType.Error);
+            return false;
+        }
+
+        if (collection.Index == DefaultNamed.Index)
+        {
+            Penumbra.ChatService.NotificationMessage("Can not remove the default collection.", "Error", NotificationType.Error);
+            return false;
+        }
+
+        _saveService.ImmediateDelete(new ModCollectionSave(_modStorage, collection));
+        _collections.RemoveAt(collection.Index);
+        // Update indices.
+        for (var i = collection.Index; i < Count; ++i)
+            _collections[i].Index = i;
+
+        Penumbra.ChatService.NotificationMessage($"Deleted collection {collection.AnonymizedName}.", "Success", NotificationType.Success);
+        _communicator.CollectionChange.Invoke(CollectionType.Inactive, collection, null, string.Empty);
+        return true;
+    }
+
+    /// <summary> Stored after loading to be consumed and passed to the inheritance manager later. </summary>
+    private List<IReadOnlyList<string>>? _inheritancesByName = new();
+
+    /// <summary> Return an enumerable of collections and the collections they should inherit. </summary>
+    public IEnumerable<(ModCollection Collection, IReadOnlyList<ModCollection> Inheritance, bool LoadChanges)> ConsumeInheritanceNames()
+    {
+        if (_inheritancesByName == null)
+            throw new Exception("Inheritances were already consumed. This method can not be called twice.");
+
+        var inheritances = _inheritancesByName;
+        _inheritancesByName = null;
+        var list = new List<ModCollection>();
+        foreach (var (collection, inheritance) in _collections.Zip(inheritances))
+        {
+            list.Clear();
+            var changes = false;
+            foreach (var subCollectionName in inheritance)
+            {
+                if (ByName(subCollectionName, out var subCollection))
+                {
+                    list.Add(subCollection);
+                }
+                else
+                {
+                    Penumbra.ChatService.NotificationMessage(
+                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.", "Warning",
+                        NotificationType.Warning);
+                    changes = true;
+                }
+            }
+
+            yield return (collection, list, changes);
+        }
+    }
+
+    /// <summary> Remove all settings for not currently-installed mods from the given collection. </summary>
+    public void CleanUnavailableSettings(ModCollection collection)
+    {
+        var any = collection.UnusedSettings.Count > 0;
+        ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Clear();
+        if (any)
+            _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+    }
+
+    /// <summary> Remove a specific setting for not currently-installed mods from the given collection. </summary>
+    public void CleanUnavailableSetting(ModCollection collection, string? setting)
+    {
+        if (setting != null && ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(setting))
+            _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+    }
+
+    /// <summary>
+    /// Check if a name is valid to use for a collection.
+    /// Does not check for uniqueness.
+    /// </summary>
+    private static bool IsValidName(string name)
+        => name.Length is > 0 and < 32 && name.All(c => !c.IsInvalidAscii() && c is not '|' && !c.IsInvalidInPath());
+
+    /// <summary>
+    /// Read all collection files in the Collection Directory.
+    /// Ensure that the default named collection exists, and apply inheritances afterwards.
+    /// Duplicate collection files are not deleted, just not added here.
+    /// </summary>
+    private void ReadCollections(out ModCollection defaultNamedCollection)
+    {
+        _inheritancesByName?.Clear();
+        _inheritancesByName?.Add(Array.Empty<string>()); // None.
+
+        foreach (var file in _saveService.FileNames.CollectionFiles)
+        {
+            if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance)
+             || !IsValidName(name))
+                continue;
+
+            if (ByName(name, out _))
+            {
+                Penumbra.ChatService.NotificationMessage($"Duplicate collection found: {name} already exists. Import skipped.",
+                    "Warning", NotificationType.Warning);
+                continue;
+            }
+
+            var collection  = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings);
+            var correctName = _saveService.FileNames.CollectionFile(collection);
+            if (file.FullName != correctName)
+                Penumbra.ChatService.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.", "Warning",
+                    NotificationType.Warning);
+
+            _inheritancesByName?.Add(inheritance);
+            _collections.Add(collection);
+        }
+
+        defaultNamedCollection = SetDefaultNamedCollection();
+    }
+
+    /// <summary>
+    /// Add the collection with the default name if it does not exist.
+    /// It should always be ensured that it exists, otherwise it will be created.
+    /// This can also not be deleted, so there are always at least the empty and a collection with default name.
+    /// </summary>
+    private ModCollection SetDefaultNamedCollection()
+    {
+        if (ByName(ModCollection.DefaultCollectionName, out var collection))
+            return collection;
+
+        if (AddCollection(ModCollection.DefaultCollectionName, null))
+            return _collections[^1];
+
+        Penumbra.ChatService.NotificationMessage(
+            $"Unknown problem creating a collection with the name {ModCollection.DefaultCollectionName}, which is required to exist.", "Error",
+            NotificationType.Error);
+        return Count > 1 ? _collections[1] : _collections[0];
+    }
+
+    /// <summary> Move all settings in all collections to unused settings. </summary>
+    private void OnModDiscoveryStarted()
+    {
+        foreach (var collection in this)
+            collection.PrepareModDiscovery(_modStorage);
+    }
+
+    /// <summary> Restore all settings in all collections to mods. </summary>
+    private void OnModDiscoveryFinished()
+    {
+        // Re-apply all mod settings.
+        foreach (var collection in this)
+            collection.ApplyModSettings(_saveService, _modStorage);
+    }
+
+    /// <summary> Add or remove a mod from all collections, or re-save all collections where the mod has settings. </summary>
+    private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
+        DirectoryInfo? newDirectory)
+    {
+        switch (type)
+        {
+            case ModPathChangeType.Added:
+                foreach (var collection in this)
+                    collection.AddMod(mod);
+                break;
+            case ModPathChangeType.Deleted:
+                foreach (var collection in this)
+                    collection.RemoveMod(mod);
+                break;
+            case ModPathChangeType.Moved:
+                foreach (var collection in this.Where(collection => collection.Settings[mod.Index] != null))
+                    _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+                break;
+        }
+    }
+
+    /// <summary> Save all collections where the mod has settings and the change requires saving. </summary>
+    private void OnModOptionChange(ModOptionChangeType type, Mod mod, int groupIdx, int optionIdx, int movedToIdx)
+    {
+        type.HandlingInfo(out var requiresSaving, out _, out _);
+        if (!requiresSaving)
+            return;
+
+        foreach (var collection in this)
+        {
+            if (collection.Settings[mod.Index]?.HandleChanges(type, mod, groupIdx, optionIdx, movedToIdx) ?? false)
+                _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+        }
+    }
+}

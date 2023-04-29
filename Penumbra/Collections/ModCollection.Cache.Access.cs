@@ -1,185 +1,115 @@
 using OtterGui.Classes;
 using Penumbra.GameData.Enums;
-using Penumbra.Meta.Manager;
 using Penumbra.Mods;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading;
-using Penumbra.Interop;
+using Penumbra.Interop.Structs;
+using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 using Penumbra.String.Classes;
+using Penumbra.Collections.Cache;
+using Penumbra.Interop.Services;
 
 namespace Penumbra.Collections;
 
 public partial class ModCollection
 {
     // Only active collections need to have a cache.
-    private Cache? _cache;
+    internal CollectionCache? _cache;
 
     public bool HasCache
         => _cache != null;
 
-    // Count the number of changes of the effective file list.
-    // This is used for material and imc changes.
-    public int ChangeCounter { get; private set; }
-
-    // Only create, do not update. 
-    private void CreateCache()
-    {
-        if( _cache == null )
-        {
-            CalculateEffectiveFileList();
-            Penumbra.Log.Verbose( $"Created new cache for collection {Name}." );
-        }
-    }
-
-    // Force an update with metadata for this cache.
-    private void ForceCacheUpdate()
-        => CalculateEffectiveFileList();
 
     // Handle temporary mods for this collection.
-    public void Apply( Mod.TemporaryMod tempMod, bool created )
+    public void Apply(TemporaryMod tempMod, bool created)
     {
-        if( created )
-        {
-            _cache?.AddMod( tempMod, tempMod.TotalManipulations > 0 );
-        }
+        if (created)
+            _cache?.AddMod(tempMod, tempMod.TotalManipulations > 0);
         else
-        {
-            _cache?.ReloadMod( tempMod, tempMod.TotalManipulations > 0 );
-        }
+            _cache?.ReloadMod(tempMod, tempMod.TotalManipulations > 0);
     }
 
-    public void Remove( Mod.TemporaryMod tempMod )
+    public void Remove(TemporaryMod tempMod)
     {
-        _cache?.RemoveMod( tempMod, tempMod.TotalManipulations > 0 );
+        _cache?.RemoveMod(tempMod, tempMod.TotalManipulations > 0);
     }
 
+    public IEnumerable<Utf8GamePath> ReverseResolvePath(FullPath path)
+        => _cache?.ReverseResolvePath(path) ?? Array.Empty<Utf8GamePath>();
 
-    // Clear the current cache.
-    internal void ClearCache()
+    public HashSet<Utf8GamePath>[] ReverseResolvePaths(string[] paths)
+        => _cache?.ReverseResolvePaths(paths) ?? paths.Select(_ => new HashSet<Utf8GamePath>()).ToArray();
+
+    public FullPath? ResolvePath(Utf8GamePath path)
+        => _cache?.ResolvePath(path);
+
+    // Obtain data from the cache.
+    internal MetaCache? MetaCache
+        => _cache?.Meta;
+
+    public bool GetImcFile(Utf8GamePath path, [NotNullWhen(true)] out ImcFile? file)
     {
-        _cache?.Dispose();
-        _cache = null;
-        Penumbra.Log.Verbose( $"Cleared cache of collection {Name}." );
-    }
+        if (_cache != null)
+            return _cache.Meta.GetImcFile(path, out file);
 
-    public IEnumerable< Utf8GamePath > ReverseResolvePath( FullPath path )
-        => _cache?.ReverseResolvePath( path ) ?? Array.Empty< Utf8GamePath >();
-
-    public HashSet< Utf8GamePath >[] ReverseResolvePaths( string[] paths )
-        => _cache?.ReverseResolvePaths( paths ) ?? paths.Select( _ => new HashSet< Utf8GamePath >() ).ToArray();
-
-    public FullPath? ResolvePath( Utf8GamePath path )
-        => _cache?.ResolvePath( path );
-
-    // Force a file to be resolved to a specific path regardless of conflicts.
-    internal void ForceFile( Utf8GamePath path, FullPath fullPath )
-    {
-        if( CheckFullPath( path, fullPath ) )
-        {
-            _cache!.ResolvedFiles[ path ] = new ModPath( Mod.ForcedFiles, fullPath );
-        }
-    }
-
-    [MethodImpl( MethodImplOptions.AggressiveInlining )]
-    private static bool CheckFullPath( Utf8GamePath path, FullPath fullPath )
-    {
-        if( fullPath.InternalName.Length < Utf8GamePath.MaxGamePathLength )
-        {
-            return true;
-        }
-
-        Penumbra.Log.Error( $"The redirected path is too long to add the redirection\n\t{path}\n\t--> {fullPath}" );
+        file = null;
         return false;
     }
 
-    // Force a file resolve to be removed.
-    internal void RemoveFile( Utf8GamePath path )
-        => _cache!.ResolvedFiles.Remove( path );
+    internal IReadOnlyDictionary<Utf8GamePath, ModPath> ResolvedFiles
+        => _cache?.ResolvedFiles ?? new Dictionary<Utf8GamePath, ModPath>();
 
-    // Obtain data from the cache.
-    internal MetaManager? MetaCache
-        => _cache?.MetaManipulations;
+    internal IReadOnlyDictionary<string, (SingleArray<IMod>, object?)> ChangedItems
+        => _cache?.ChangedItems ?? new Dictionary<string, (SingleArray<IMod>, object?)>();
 
-    internal IReadOnlyDictionary< Utf8GamePath, ModPath > ResolvedFiles
-        => _cache?.ResolvedFiles ?? new Dictionary< Utf8GamePath, ModPath >();
+    internal IEnumerable<SingleArray<ModConflicts>> AllConflicts
+        => _cache?.AllConflicts ?? Array.Empty<SingleArray<ModConflicts>>();
 
-    internal IReadOnlyDictionary< string, (SingleArray< IMod >, object?) > ChangedItems
-        => _cache?.ChangedItems ?? new Dictionary< string, (SingleArray< IMod >, object?) >();
+    internal SingleArray<ModConflicts> Conflicts(Mod mod)
+        => _cache?.Conflicts(mod) ?? new SingleArray<ModConflicts>();
 
-    internal IEnumerable< SingleArray< ModConflicts > > AllConflicts
-        => _cache?.AllConflicts ?? Array.Empty< SingleArray< ModConflicts > >();
-
-    internal SingleArray< ModConflicts > Conflicts( Mod mod )
-        => _cache?.Conflicts( mod ) ?? new SingleArray< ModConflicts >();
-
-    // Update the effective file list for the given cache.
-    // Creates a cache if necessary.
-    public void CalculateEffectiveFileList()
-        => Penumbra.Framework.RegisterImportant( nameof( CalculateEffectiveFileList ) + Name,
-            CalculateEffectiveFileListInternal );
-
-    private void CalculateEffectiveFileListInternal()
+    public void SetFiles(CharacterUtility utility)
     {
-        // Skip the empty collection.
-        if( Index == 0 )
+        if (_cache == null)
         {
-            return;
-        }
-
-        Penumbra.Log.Debug( $"[{Thread.CurrentThread.ManagedThreadId}] Recalculating effective file list for {AnonymizedName}" );
-        _cache ??= new Cache( this );
-        _cache.FullRecalculation();
-
-        Penumbra.Log.Debug( $"[{Thread.CurrentThread.ManagedThreadId}] Recalculation of effective file list for {AnonymizedName} finished." );
-    }
-
-    public void SetFiles()
-    {
-        if( _cache == null )
-        {
-            Penumbra.CharacterUtility.ResetAll();
+            utility.ResetAll();
         }
         else
         {
-            _cache.MetaManipulations.SetFiles();
-            Penumbra.Log.Debug( $"Set CharacterUtility resources for collection {Name}." );
+            _cache.Meta.SetFiles();
+            Penumbra.Log.Debug($"Set CharacterUtility resources for collection {Name}.");
         }
     }
 
-    public void SetMetaFile( Interop.Structs.CharacterUtility.Index idx )
+    public void SetMetaFile(CharacterUtility utility, MetaIndex idx)
     {
-        if( _cache == null )
-        {
-            Penumbra.CharacterUtility.ResetResource( idx );
-        }
+        if (_cache == null)
+            utility.ResetResource(idx);
         else
-        {
-            _cache.MetaManipulations.SetFile( idx );
-        }
+            _cache.Meta.SetFile(idx);
     }
 
     // Used for short periods of changed files.
-    public CharacterUtility.List.MetaReverter TemporarilySetEqdpFile( GenderRace genderRace, bool accessory )
-        => _cache?.MetaManipulations.TemporarilySetEqdpFile( genderRace, accessory )
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource( Interop.Structs.CharacterUtility.EqdpIdx( genderRace, accessory ) );
+    public MetaList.MetaReverter TemporarilySetEqdpFile(CharacterUtility utility, GenderRace genderRace, bool accessory)
+        => _cache?.Meta.TemporarilySetEqdpFile(genderRace, accessory)
+         ?? utility.TemporarilyResetResource(Interop.Structs.CharacterUtilityData.EqdpIdx(genderRace, accessory));
 
-    public CharacterUtility.List.MetaReverter TemporarilySetEqpFile()
-        => _cache?.MetaManipulations.TemporarilySetEqpFile()
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource( Interop.Structs.CharacterUtility.Index.Eqp );
+    public MetaList.MetaReverter TemporarilySetEqpFile(CharacterUtility utility)
+        => _cache?.Meta.TemporarilySetEqpFile()
+         ?? utility.TemporarilyResetResource(MetaIndex.Eqp);
 
-    public CharacterUtility.List.MetaReverter TemporarilySetGmpFile()
-        => _cache?.MetaManipulations.TemporarilySetGmpFile()
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource( Interop.Structs.CharacterUtility.Index.Gmp );
+    public MetaList.MetaReverter TemporarilySetGmpFile(CharacterUtility utility)
+        => _cache?.Meta.TemporarilySetGmpFile()
+         ?? utility.TemporarilyResetResource(MetaIndex.Gmp);
 
-    public CharacterUtility.List.MetaReverter TemporarilySetCmpFile()
-        => _cache?.MetaManipulations.TemporarilySetCmpFile()
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource( Interop.Structs.CharacterUtility.Index.HumanCmp );
+    public MetaList.MetaReverter TemporarilySetCmpFile(CharacterUtility utility)
+        => _cache?.Meta.TemporarilySetCmpFile()
+         ?? utility.TemporarilyResetResource(MetaIndex.HumanCmp);
 
-    public CharacterUtility.List.MetaReverter TemporarilySetEstFile( EstManipulation.EstType type )
-        => _cache?.MetaManipulations.TemporarilySetEstFile( type )
-         ?? Penumbra.CharacterUtility.TemporarilyResetResource( ( Interop.Structs.CharacterUtility.Index )type );
+    public MetaList.MetaReverter TemporarilySetEstFile(CharacterUtility utility, EstManipulation.EstType type)
+        => _cache?.Meta.TemporarilySetEstFile(type)
+         ?? utility.TemporarilyResetResource((MetaIndex)type);
 }

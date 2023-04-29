@@ -77,6 +77,7 @@ jobs:
 
           git fetch origin master
           git fetch origin test
+          git branch -f test ${{ github.sha }}
           git checkout master
           git add repo.json
           git commit -m "[CI] Updating repo.json for ${{ github.ref }}" || true

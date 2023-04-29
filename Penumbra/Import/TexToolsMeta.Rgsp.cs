@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using Penumbra.GameData.Enums;
+using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
 
@@ -9,7 +10,7 @@ namespace Penumbra.Import;
 public partial class TexToolsMeta
 {
     // Parse a single rgsp file.
-    public static TexToolsMeta FromRgspFile( string filePath, byte[] data, bool keepDefault )
+    public static TexToolsMeta FromRgspFile( MetaFileManager manager, string filePath, byte[] data, bool keepDefault )
     {
         if( data.Length != 45 && data.Length != 42 )
         {
@@ -25,7 +26,7 @@ public partial class TexToolsMeta
         var flag    = br.ReadByte();
         var version = flag != 255 ? ( uint )1 : br.ReadUInt16();
 
-        var ret = new TexToolsMeta( filePath, version );
+        var ret = new TexToolsMeta( manager, filePath, version );
 
         // SubRace is offset by one due to Unknown.
         var subRace = ( SubRace )( version == 1 ? flag + 1 : br.ReadByte() + 1 );
@@ -46,7 +47,7 @@ public partial class TexToolsMeta
         // Add the given values to the manipulations if they are not default.
         void Add( RspAttribute attribute, float value )
         {
-            var def = CmpFile.GetDefault( subRace, attribute );
+            var def = CmpFile.GetDefault( manager, subRace, attribute );
             if( keepDefault || value != def )
             {
                 ret.MetaManipulations.Add( new RspManipulation( subRace, attribute, value ) );
