@@ -180,8 +180,8 @@ public sealed class Texture : IDisposable
         using var stream  = OpenTexStream(dalamud.GameData);
         var       scratch = TexFileParser.Parse(stream);
         BaseImage = scratch;
-        var rgba = scratch.GetRGBA(out var f).ThrowIfError(f);
-        RGBAPixels = rgba.Pixels[..(f.Meta.Width * f.Meta.Height * f.Meta.Format.BitsPerPixel() / 8)].ToArray();
+        var rgba    = scratch.GetRGBA(out var f).ThrowIfError(f);
+        RGBAPixels = rgba.Pixels[..(f.Meta.Width * f.Meta.Height * (f.Meta.Format.BitsPerPixel() / 8))].ToArray();
         CreateTextureWrap(dalamud.UiBuilder, scratch.Meta.Width, scratch.Meta.Height);
         return true;
     }
