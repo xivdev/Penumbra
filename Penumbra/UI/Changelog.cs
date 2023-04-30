@@ -36,9 +36,21 @@ public class PenumbraChangelog
         Add6_6_1(Changelog);
         Add7_0_0(Changelog);
         Add7_0_1(Changelog);
+        Add7_0_4(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add7_0_4(Changelog log)
+        => log.NextVersion("Version 0.7.0.4")
+            .RegisterEntry("Added options to the bulktag slash command to check all/local/mod tags specifically.")
+            .RegisterEntry("Possibly improved handling of the delayed loading of individual assignments.")
+            .RegisterEntry("Fixed a bug that caused metadata edits to apply even though mods were disabled.")
+            .RegisterEntry("Fixed a bug that prevented material reassignments from working.")
+            .RegisterEntry("Reverted trimming of whitespace for relative paths to only trim the end, not the start. (0.7.0.3)")
+            .RegisterEntry("Fixed a bug that caused an integer overflow on textures of high dimensions. (0.7.0.3)")
+            .RegisterEntry("Fixed a bug that caused Penumbra to enter invalid state when deleting mods. (0.7.0.2)")
+            .RegisterEntry("Added Notification on invalid collection names. (0.7.0.2)");
 
     private static void Add7_0_1(Changelog log)
         => log.NextVersion("Version 0.7.0.1")
