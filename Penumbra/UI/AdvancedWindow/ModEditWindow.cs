@@ -58,6 +58,7 @@ public partial class ModEditWindow : Window, IDisposable
         _materialTab.Reset();
         _shaderPackageTab.Reset();
         _itemSwapTab.UpdateMod(mod, _activeCollections.Current[mod.Index].Settings);
+        UpdateModels();
     }
 
     public void ChangeOption(SubMod? subMod)
