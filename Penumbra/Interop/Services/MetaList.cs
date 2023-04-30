@@ -106,6 +106,8 @@ public unsafe class MetaList : IDisposable
 
     public sealed class MetaReverter : IDisposable
     {
+        public static readonly MetaReverter Disabled = new(null!) { Disposed = true };
+
         public readonly MetaList MetaList;
         public readonly nint     Data;
         public readonly int      Length;

@@ -45,6 +45,7 @@ public unsafe class MetaState : IDisposable
     [Signature(Sigs.HumanVTable, ScanType = ScanType.StaticAddress)]
     private readonly nint* _humanVTable = null!;
 
+    private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
     private readonly PerformanceTracker  _performance;
     private readonly CollectionResolver  _collectionResolver;
@@ -56,7 +57,7 @@ public unsafe class MetaState : IDisposable
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
 
     public MetaState(PerformanceTracker performance, CommunicatorService communicator, CollectionResolver collectionResolver,
-        ResourceService resources, GameEventManager gameEventManager, CharacterUtility characterUtility)
+        ResourceService resources, GameEventManager gameEventManager, CharacterUtility characterUtility, Configuration config)
     {
         _performance        = performance;
         _communicator       = communicator;
@@ -64,6 +65,7 @@ public unsafe class MetaState : IDisposable
         _resources          = resources;
         _gameEventManager   = gameEventManager;
         _characterUtility   = characterUtility;
+        _config             = config;
         SignatureHelper.Initialise(this);
         _onModelLoadCompleteHook = Hook<OnModelLoadCompleteDelegate>.FromAddress(_humanVTable[58], OnModelLoadCompleteDetour);
         _getEqpIndirectHook.Enable();
@@ -127,7 +129,7 @@ public unsafe class MetaState : IDisposable
             _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection.Name, (nint)(&modelCharaId), customize, equipData);
 
-        var decal = new DecalReverter(_characterUtility, _resources, _lastCreatedCollection.ModCollection, UsesDecal(modelCharaId, equipData));
+        var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection.ModCollection, UsesDecal(modelCharaId, equipData));
         var cmp   = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);
@@ -254,7 +256,7 @@ public unsafe class MetaState : IDisposable
         var       resolveData = _collectionResolver.IdentifyCollection((DrawObject*)human, true);
         using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile(_characterUtility);
         using var decals =
-            new DecalReverter(_characterUtility, _resources, resolveData.ModCollection, UsesDecal(0, data));
+            new DecalReverter(_config, _characterUtility, _resources, resolveData.ModCollection, UsesDecal(0, data));
         var ret = _changeCustomize.Original(human, data, skipEquipment);
         _inChangeCustomize = false;
         return ret;

@@ -5,7 +5,6 @@ using Dalamud.Data;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using Penumbra.Collections;
-using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
 using Penumbra.Import;
@@ -71,7 +70,7 @@ public unsafe class MetaFileManager
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public void SetFile(MetaBaseFile? file, MetaIndex metaIndex)
     {
-        if (file == null)
+        if (file == null || !Config.EnableMods)
             CharacterUtility.ResetResource(metaIndex);
         else
             CharacterUtility.SetResource(metaIndex, (nint)file.Data, file.Length);
@@ -79,9 +78,11 @@ public unsafe class MetaFileManager
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public MetaList.MetaReverter TemporarilySetFile(MetaBaseFile? file, MetaIndex metaIndex)
-        => file == null
-            ? CharacterUtility.TemporarilyResetResource(metaIndex)
-            : CharacterUtility.TemporarilySetResource(metaIndex, (nint)file.Data, file.Length);
+        => Config.EnableMods
+            ? file == null
+                ? CharacterUtility.TemporarilyResetResource(metaIndex)
+                : CharacterUtility.TemporarilySetResource(metaIndex, (nint)file.Data, file.Length)
+            : MetaList.MetaReverter.Disabled;
 
     public void ApplyDefaultFiles(ModCollection collection)
     {

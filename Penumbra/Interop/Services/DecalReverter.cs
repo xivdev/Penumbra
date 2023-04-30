@@ -19,12 +19,15 @@ public sealed unsafe class DecalReverter : IDisposable
     private readonly Structs.TextureResourceHandle* _decal;
     private readonly Structs.TextureResourceHandle* _transparent;
 
-    public DecalReverter(CharacterUtility utility, ResourceService resources, ModCollection? collection, bool doDecal)
+    public DecalReverter(Configuration config, CharacterUtility utility, ResourceService resources, ModCollection? collection, bool doDecal)
     {
         _utility = utility;
         var ptr = _utility.Address;
         _decal = null;
         _transparent = null;
+        if (!config.EnableMods)
+            return;
+
         if (doDecal)
         {
             var decalPath = collection?.ResolvePath(DecalPath)?.InternalName ?? DecalPath.Path;
