@@ -395,6 +395,13 @@ public class CommandHandler : IDisposable
         return false;
     }
 
+    private enum TagType
+    {
+        Local,
+        Mod,
+        Both,
+    }
+
     private bool SetTag(string arguments)
     {
         if (arguments.Length == 0)
@@ -402,8 +409,17 @@ public class CommandHandler : IDisposable
             var seString = new SeStringBuilder()
                 .AddText("Use with /penumbra bulktag ").AddBlue("[enable|disable|toggle|inherit]").AddText("  ").AddYellow("[Collection Name]")
                 .AddText(" | ")
-                .AddPurple("[Local Tag]");
+                .AddPurple("[Tag]");
             _chat.Print(seString.BuiltString);
+            var tagString = new SeStringBuilder()
+                .AddText("    》 ")
+                .AddPurple("[Tag]")
+                .AddText(" is only Local tags by default, but can be prefixed with '")
+                .AddWhite("b:")
+                .AddText("' for both types of tags or '")
+                .AddWhite("m:")
+                .AddText("' for only Mod tags.");
+            _chat.Print(tagString.BuiltString);
             return true;
         }
 
@@ -428,11 +444,26 @@ public class CommandHandler : IDisposable
         if (!GetModCollection(nameSplit[0], out var collection) || collection == ModCollection.Empty)
             return false;
 
-        var mods = _modManager.Where(m => m.LocalTags.Contains(nameSplit[1], StringComparer.OrdinalIgnoreCase)).ToList();
+        var tagType = nameSplit[1].Length < 3 || nameSplit[1][1] != ':'
+            ? TagType.Local
+            : nameSplit[1][0] switch
+            {
+                'b' => TagType.Both,
+                'm' => TagType.Mod,
+                _   => TagType.Local,
+            };
+        var tag = tagType is TagType.Local ? nameSplit[1] : nameSplit[1][2..];
+
+        var mods = tagType switch
+        {
+            TagType.Local => _modManager.Where(m => m.LocalTags.Contains(tag, StringComparer.OrdinalIgnoreCase)).ToList(),
+            TagType.Mod   => _modManager.Where(m => m.ModTags.Contains(tag, StringComparer.OrdinalIgnoreCase)).ToList(),
+            _             => _modManager.Where(m => m.LocalTags.Concat(m.ModTags).Contains(tag, StringComparer.OrdinalIgnoreCase)).ToList(),
+        };
 
         if (mods.Count == 0)
         {
-            _chat.Print(new SeStringBuilder().AddText("The tag ").AddRed(nameSplit[1], true).AddText(" does not match any mods.")
+            _chat.Print(new SeStringBuilder().AddText("The tag ").AddRed(tag, true).AddText(" does not match any mods.")
                 .BuiltString);
             return false;
         }
@@ -543,7 +574,6 @@ public class CommandHandler : IDisposable
                     .AddYellow(collection.Name, true)
                     .AddText(" to inherit.").BuiltString);
                 return true;
-
         }
 
         return false;
