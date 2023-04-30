@@ -33,10 +33,13 @@ public partial class IndividualCollections
             return ReadJObjectInternal(obj, storage);
         void Func()
         {
-            if (ReadJObjectInternal(obj, storage))
-                saver.ImmediateSave(parent);
-            saver.DalamudFramework.RunOnFrameworkThread(() => Loaded.Invoke());
-            _actorService.FinishedCreation -= Func;
+            saver.DalamudFramework.RunOnFrameworkThread(() =>
+            {
+                if (ReadJObjectInternal(obj, storage))
+                    saver.ImmediateSave(parent);
+                Loaded.Invoke();
+                _actorService.FinishedCreation -= Func;
+            });
         }
         _actorService.FinishedCreation += Func;
         return false;

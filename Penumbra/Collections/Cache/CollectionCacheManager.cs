@@ -296,8 +296,8 @@ public class CollectionCacheManager : IDisposable
             .Prepend(_active.Current)
             .Prepend(_active.Default)
             .Prepend(_active.Interface)
-            .Distinct()
-            .Select(c => CreateCache(c) ? Task.Run(() => CalculateEffectiveFileListInternal(c)) : Task.CompletedTask)
+            .Where(CreateCache)
+            .Select(c => Task.Run(() => CalculateEffectiveFileListInternal(c)))
             .ToArray();
 
         Task.WaitAll(tasks);
