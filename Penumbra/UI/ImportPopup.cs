@@ -5,7 +5,6 @@ using ImGuiNET;
 using OtterGui.Raii;
 using Penumbra.Import.Structs;
 using Penumbra.Mods.Manager;
-using Penumbra.Services;
 
 namespace Penumbra.UI;
 
@@ -31,9 +30,15 @@ public sealed class ImportPopup : Window
         };
     }
 
-    public override void Draw()
+    public override void PreDraw()
     {
         _modImportManager.TryUnpacking();
+        ImGui.SetNextWindowCollapsed(false, ImGuiCond.Always);
+        IsOpen = true;
+    }
+
+    public override void Draw()
+    {
         if (!_modImportManager.IsImporting(out var import))
             return;
 
