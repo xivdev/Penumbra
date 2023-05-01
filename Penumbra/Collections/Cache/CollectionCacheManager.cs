@@ -21,20 +21,18 @@ public class CollectionCacheManager : IDisposable
     private readonly CommunicatorService _communicator;
     private readonly TempModManager      _tempMods;
     private readonly ModStorage          _modStorage;
+    private readonly CollectionStorage   _storage;
     private readonly ActiveCollections   _active;
 
     internal readonly MetaFileManager MetaFileManager;
 
-    private readonly Dictionary<ModCollection, CollectionCache> _caches = new();
+    public int Count { get; private set; }
 
-    public int Count
-        => _caches.Count;
-
-    public IEnumerable<(ModCollection Collection, CollectionCache Cache)> Active
-        => _caches.Where(c => c.Key.Index > ModCollection.Empty.Index).Select(p => (p.Key, p.Value));
+    public IEnumerable<ModCollection> Active
+        => _storage.Where(c => c.HasCache);
 
     public CollectionCacheManager(FrameworkManager framework, CommunicatorService communicator,
-        TempModManager tempMods, ModStorage modStorage, MetaFileManager metaFileManager, ActiveCollections active)
+        TempModManager tempMods, ModStorage modStorage, MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage)
     {
         _framework      = framework;
         _communicator   = communicator;
@@ -42,6 +40,7 @@ public class CollectionCacheManager : IDisposable
         _modStorage     = modStorage;
         MetaFileManager = metaFileManager;
         _active         = active;
+        _storage        = storage;
 
         _communicator.CollectionChange.Subscribe(OnCollectionChange, -100);
         _communicator.ModPathChanged.Subscribe(OnModChangeAddition, -100);
@@ -72,12 +71,11 @@ public class CollectionCacheManager : IDisposable
     /// <summary> Only creates a new cache, does not update an existing one. </summary>
     public bool CreateCache(ModCollection collection)
     {
-        if (_caches.ContainsKey(collection) || collection.Index == ModCollection.Empty.Index)
+        if (collection.HasCache || collection.Index == ModCollection.Empty.Index)
             return false;
 
-        var cache = new CollectionCache(this, collection);
-        _caches.Add(collection, cache);
-        collection._cache = cache;
+        collection._cache = new CollectionCache(this, collection);
+        ++Count;
         Penumbra.Log.Verbose($"Created new cache for collection {collection.AnonymizedName}.");
         return true;
     }
@@ -97,28 +95,34 @@ public class CollectionCacheManager : IDisposable
             return;
 
         Penumbra.Log.Debug($"[{Thread.CurrentThread.ManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName}");
-        if (!_caches.TryGetValue(collection, out var cache))
+        if (!collection.HasCache)
         {
             Penumbra.Log.Error(
                 $"[{Thread.CurrentThread.ManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName} failed, no cache exists.");
             return;
         }
 
-        FullRecalculation(collection, cache);
+        FullRecalculation(collection);
 
         Penumbra.Log.Debug(
             $"[{Thread.CurrentThread.ManagedThreadId}] Recalculation of effective file list for {collection.AnonymizedName} finished.");
     }
 
-    private void FullRecalculation(ModCollection collection, CollectionCache cache)
+    private void FullRecalculation(ModCollection collection)
     {
+        var cache = collection._cache;
+        if (cache == null)
+            return;
+
         cache.ResolvedFiles.Clear();
         cache.Meta.Reset();
         cache._conflicts.Clear();
 
         // Add all forced redirects.
-        foreach (var tempMod in _tempMods.ModsForAllCollections.Concat(
-                     _tempMods.Mods.TryGetValue(collection, out var list) ? list : Array.Empty<TemporaryMod>()))
+        foreach (var tempMod in _tempMods.ModsForAllCollections
+                     .Concat(_tempMods.Mods.TryGetValue(collection, out var list)
+                         ? list
+                         : Array.Empty<TemporaryMod>()))
             cache.AddMod(tempMod, false);
 
         foreach (var mod in _modStorage)
@@ -157,11 +161,11 @@ public class CollectionCacheManager : IDisposable
         {
             case ModPathChangeType.Deleted:
             case ModPathChangeType.StartingReload:
-                foreach (var collection in _caches.Keys.Where(c => c[mod.Index].Settings?.Enabled == true))
+                foreach (var collection in _storage.Where(c => c.HasCache && c[mod.Index].Settings?.Enabled == true))
                     collection._cache!.RemoveMod(mod, true);
                 break;
             case ModPathChangeType.Moved:
-                foreach (var collection in _caches.Keys.Where(c => c.HasCache && c[mod.Index].Settings?.Enabled == true))
+                foreach (var collection in _storage.Where(c => c.HasCache && c[mod.Index].Settings?.Enabled == true))
                     collection._cache!.ReloadMod(mod, true);
                 break;
         }
@@ -172,13 +176,13 @@ public class CollectionCacheManager : IDisposable
         if (type is not (ModPathChangeType.Added or ModPathChangeType.Reloaded))
             return;
 
-        foreach (var collection in _caches.Keys.Where(c => c[mod.Index].Settings?.Enabled == true))
+        foreach (var collection in _storage.Where(c => c.HasCache && c[mod.Index].Settings?.Enabled == true))
             collection._cache!.AddMod(mod, true);
     }
 
     /// <summary> Apply a mod change to all collections with a cache. </summary>
     private void OnGlobalModChange(TemporaryMod mod, bool created, bool removed)
-        => TempModManager.OnGlobalModChange(_caches.Keys, mod, created, removed);
+        => TempModManager.OnGlobalModChange(_storage.Where(c => c.HasCache), mod, created, removed);
 
     /// <summary> Remove a cache from a collection if it is active. </summary>
     private void RemoveCache(ModCollection? collection)
@@ -198,7 +202,7 @@ public class CollectionCacheManager : IDisposable
     {
         if (type is ModOptionChangeType.PrepareChange)
         {
-            foreach (var collection in _caches.Keys.Where(collection => collection[mod.Index].Settings is { Enabled: true }))
+            foreach (var collection in _storage.Where(collection => collection.HasCache && collection[mod.Index].Settings is { Enabled: true }))
                 collection._cache!.RemoveMod(mod, false);
 
             return;
@@ -209,7 +213,7 @@ public class CollectionCacheManager : IDisposable
         if (!recomputeList)
             return;
 
-        foreach (var collection in _caches.Keys.Where(collection => collection[mod.Index].Settings is { Enabled: true }))
+        foreach (var collection in _storage.Where(collection => collection.HasCache && collection[mod.Index].Settings is { Enabled: true }))
         {
             if (reload)
                 collection._cache!.ReloadMod(mod, true);
@@ -221,16 +225,17 @@ public class CollectionCacheManager : IDisposable
     /// <summary> Increment the counter to ensure new files are loaded after applying meta changes. </summary>
     private void IncrementCounters()
     {
-        foreach (var (collection, _) in _caches)
+        foreach (var collection in _storage.Where(c => c.HasCache))
             ++collection.ChangeCounter;
         MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
     }
 
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx, bool _)
     {
-        if (!_caches.TryGetValue(collection, out var cache))
+        if (!collection.HasCache)
             return;
 
+        var cache = collection._cache!;
         switch (type)
         {
             case ModSettingChange.Inheritance:
@@ -259,7 +264,7 @@ public class CollectionCacheManager : IDisposable
                 break;
             case ModSettingChange.MultiInheritance:
             case ModSettingChange.MultiEnableState:
-                FullRecalculation(collection, cache);
+                FullRecalculation(collection);
                 break;
         }
     }
@@ -269,19 +274,17 @@ public class CollectionCacheManager : IDisposable
     /// just recompute everything.
     /// </summary>
     private void OnCollectionInheritanceChange(ModCollection collection, bool _)
-    {
-        if (_caches.TryGetValue(collection, out var cache))
-            FullRecalculation(collection, cache);
-    }
+        => FullRecalculation(collection);
 
     /// <summary> Clear the current cache of a collection. </summary>
     private void ClearCache(ModCollection collection)
     {
-        if (!_caches.Remove(collection, out var cache))
+        if (!collection.HasCache)
             return;
 
-        cache.Dispose();
+        collection._cache!.Dispose();
         collection._cache = null;
+        --Count;
         Penumbra.Log.Verbose($"Cleared cache of collection {collection.AnonymizedName}.");
     }
 

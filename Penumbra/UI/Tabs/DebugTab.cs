@@ -6,10 +6,8 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
-using FFXIVClientStructs.Interop;
 using ImGuiNET;
 using OtterGui;
-using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
@@ -148,37 +146,36 @@ public class DebugTab : ITab
             }
         }
 
-        using (var tree = TreeNode("Collections"))
+        using (var tree = TreeNode($"Collections ({_collectionManager.Caches.Count}/{_collectionManager.Storage.Count - 1})###Collections"))
         {
-            if (!tree)
-                return;
-
-            using var table = Table("##DebugCollectionsTable", 2, ImGuiTableFlags.SizingFixedFit);
-            if (!table)
-                return;
-
-            foreach (var collection in _collectionManager.Storage)
-                PrintValue(collection.Name, collection.HasCache.ToString());
+            if (tree)
+            {
+                using var table = Table("##DebugCollectionsTable", 2, ImGuiTableFlags.SizingFixedFit);
+                if (table)
+                    foreach (var collection in _collectionManager.Storage)
+                        PrintValue(collection.Name, collection.HasCache.ToString());
+            }
         }
 
-        using (var tree = TreeNode("Mods"))
+        var issues = _modManager.WithIndex().Count(p => p.Index != p.Value.Index);
+        using (var tree = TreeNode($"Mods ({issues} Issues)###Mods"))
         {
-            if (!tree)
-                return;
-
-            using var table = Table("##DebugModsTable", 3, ImGuiTableFlags.SizingFixedFit);
-            if (!table)
-                return;
-
-            var lastIndex = -1;
-            foreach (var mod in _modManager)
+            if (tree)
             {
-                PrintValue(mod.Name, mod.Index.ToString("D5"));
-                ImGui.TableNextColumn();
-                var index     = mod.Index;
-                if (index != lastIndex + 1)
-                    ImGui.TextUnformatted("!!!");
-                lastIndex = index;
+                using var table = Table("##DebugModsTable", 3, ImGuiTableFlags.SizingFixedFit);
+                if (table)
+                {
+                    var lastIndex = -1;
+                    foreach (var mod in _modManager)
+                    {
+                        PrintValue(mod.Name, mod.Index.ToString("D5"));
+                        ImGui.TableNextColumn();
+                        var index = mod.Index;
+                        if (index != lastIndex + 1)
+                            ImGui.TextUnformatted("!!!");
+                        lastIndex = index;
+                    }
+                }
             }
         }
     }

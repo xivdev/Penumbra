@@ -225,8 +225,8 @@ public class Penumbra : IDalamudPlugin
         foreach (var (name, id, collection) in _collectionManager.Active.Individuals.Assignments)
             sb.Append($"> **`{id[0].Incognito(name) + ':',-30}`** {collection.AnonymizedName}\n");
 
-        foreach (var (collection, cache) in _collectionManager.Caches.Active)
-            PrintCollection(collection, cache);
+        foreach (var collection in _collectionManager.Caches.Active)
+            PrintCollection(collection, collection._cache!);
 
         return sb.ToString();
     }
