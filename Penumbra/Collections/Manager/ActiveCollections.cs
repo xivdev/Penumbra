@@ -43,7 +43,7 @@ public class ActiveCollections : ISavable, IDisposable
         Current       = storage.DefaultNamed;
         Default       = storage.DefaultNamed;
         Interface     = storage.DefaultNamed;
-        Individuals   = new IndividualCollections(actors, config);
+        Individuals   = new IndividualCollections(actors, config, false);
         _communicator.CollectionChange.Subscribe(OnCollectionChange, -100);
         LoadCollections();
         UpdateCurrentCollectionInUse();

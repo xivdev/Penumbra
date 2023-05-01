@@ -42,6 +42,8 @@ public class CollectionCacheManager : IDisposable
         _active         = active;
         _storage        = storage;
 
+        if (!_active.Individuals.IsLoaded)
+            _active.Individuals.Loaded += CreateNecessaryCaches;
         _communicator.CollectionChange.Subscribe(OnCollectionChange, -100);
         _communicator.ModPathChanged.Subscribe(OnModChangeAddition, -100);
         _communicator.ModPathChanged.Subscribe(OnModChangeRemoval,  100);
@@ -49,11 +51,11 @@ public class CollectionCacheManager : IDisposable
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, -100);
         _communicator.ModSettingChanged.Subscribe(OnModSettingChange);
         _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange);
-        CreateNecessaryCaches();
-        _active.Individuals.Loaded += CreateNecessaryCaches;
 
         if (!MetaFileManager.CharacterUtility.Ready)
             MetaFileManager.CharacterUtility.LoadingFinished += IncrementCounters;
+
+        CreateNecessaryCaches();
     }
 
     public void Dispose()
@@ -303,6 +305,7 @@ public class CollectionCacheManager : IDisposable
             .Select(c => Task.Run(() => CalculateEffectiveFileListInternal(c)))
             .ToArray();
 
+        Penumbra.Log.Debug($"Creating {tasks.Length} necessary caches.");
         Task.WaitAll(tasks);
     }
 }

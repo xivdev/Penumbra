@@ -25,7 +25,7 @@ public class TempCollectionManager : IDisposable
         _communicator = communicator;
         _actors       = actors;
         _storage      = storage;
-        Collections   = new IndividualCollections(actors, config);
+        Collections   = new IndividualCollections(actors, config, true);
 
         _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange);
     }

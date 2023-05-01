@@ -18,14 +18,16 @@ public sealed partial class IndividualCollections
     private readonly Dictionary<ActorIdentifier, ModCollection>                                                       _individuals = new();
 
     public event Action Loaded;
+    public bool         IsLoaded { get; private set; }
 
     public IReadOnlyList<(string DisplayName, IReadOnlyList<ActorIdentifier> Identifiers, ModCollection Collection)> Assignments
         => _assignments;
 
-    public IndividualCollections(ActorService actorService, Configuration config)
+    public IndividualCollections(ActorService actorService, Configuration config, bool temporary)
     {
         _config       =  config;
         _actorService =  actorService;
+        IsLoaded      =  temporary;
         Loaded        += () => Penumbra.Log.Information($"{_assignments.Count} Individual Assignments loaded after delay.");
     }
 
