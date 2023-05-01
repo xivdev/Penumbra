@@ -44,6 +44,7 @@ public class ModEditor : IDisposable
         SwapEditor.Revert(Option!);
         MetaEditor.Load(Mod!, Option!);
         Duplicates.Clear();
+        MdlMaterialEditor.ScanModels(Mod!);
     }
 
     public void LoadOption(int groupIdx, int optionIdx)
