@@ -214,9 +214,9 @@ public sealed class CollectionPanel : IDisposable
         DrawSettingsList(collection);
     }
 
-    private void DrawContext(bool open, ModCollection? collection, CollectionType type, ActorIdentifier identifier, char suffix)
+    private void DrawContext(bool open, ModCollection? collection, CollectionType type, ActorIdentifier identifier, string text, char suffix)
     {
-        var label = $"{type}{identifier}{suffix}";
+        var label = $"{type}{text}{suffix}";
         if (open)
             ImGui.OpenPopup(label);
 
@@ -274,7 +274,7 @@ public sealed class CollectionPanel : IDisposable
             var size    = ImGui.CalcTextSize(name);
             var textPos = ImGui.GetItemRectMax() - size - ImGui.GetStyle().FramePadding;
             ImGui.GetWindowDrawList().AddText(textPos, ImGui.GetColorU32(ImGuiCol.Text), name);
-            DrawContext(button, collection, type, id, suffix);
+            DrawContext(button, collection, type, id, text, suffix);
         }
 
         if (hovered)
