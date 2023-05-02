@@ -168,10 +168,10 @@ public class ModCacheManager : IDisposable
         => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.Files.Count);
 
     private static void UpdateSwapCount(Mod mod)
-        => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.FileSwaps.Count);
+        => mod.TotalSwapCount = mod.AllSubMods.Sum(s => s.FileSwaps.Count);
 
     private static void UpdateMetaCount(Mod mod)
-        => mod.TotalFileCount = mod.AllSubMods.Sum(s => s.Manipulations.Count);
+        => mod.TotalManipulations = mod.AllSubMods.Sum(s => s.Manipulations.Count);
 
     private static void UpdateHasOptions(Mod mod)
         => mod.HasOptions = mod.Groups.Any(o => o.IsOption);

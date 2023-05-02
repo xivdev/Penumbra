@@ -51,6 +51,8 @@ public class CollectionCacheManager : IDisposable
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, -100);
         _communicator.ModSettingChanged.Subscribe(OnModSettingChange);
         _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange);
+        _communicator.ModDiscoveryStarted.Subscribe(OnModDiscoveryStarted);
+        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, -100);
 
         if (!MetaFileManager.CharacterUtility.Ready)
             MetaFileManager.CharacterUtility.LoadingFinished += IncrementCounters;
@@ -306,6 +308,22 @@ public class CollectionCacheManager : IDisposable
             .ToArray();
 
         Penumbra.Log.Debug($"Creating {tasks.Length} necessary caches.");
+        Task.WaitAll(tasks);
+    }
+
+    private void OnModDiscoveryStarted()
+    {
+        foreach (var collection in Active)
+        {
+            collection._cache!.ResolvedFiles.Clear();
+            collection._cache!.Meta.Reset();
+            collection._cache!._conflicts.Clear();
+        }
+    }
+
+    private void OnModDiscoveryFinished()
+    {
+        var tasks = Active.Select(c => Task.Run(() => CalculateEffectiveFileListInternal(c))).ToArray();
         Task.WaitAll(tasks);
     }
 }

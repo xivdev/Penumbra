@@ -314,7 +314,7 @@ public class ModOptionEditor
             return;
 
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
-        subMod.ManipulationData = manipulations;
+        subMod.ManipulationData.SetTo(manipulations);
         _saveService.QueueSave(new ModSaveGroup(mod, groupIdx));
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionMetaChanged, mod, groupIdx, optionIdx, -1);
     }
@@ -327,7 +327,7 @@ public class ModOptionEditor
             return;
 
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
-        subMod.FileData = replacements;
+        subMod.FileData.SetTo(replacements);
         _saveService.QueueSave(new ModSaveGroup(mod, groupIdx));
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionFilesChanged, mod, groupIdx, optionIdx, -1);
     }
@@ -353,7 +353,7 @@ public class ModOptionEditor
             return;
 
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, optionIdx, -1);
-        subMod.FileSwapData = swaps;
+        subMod.FileSwapData.SetTo(swaps);
         _saveService.QueueSave(new ModSaveGroup(mod, groupIdx));
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionSwapsChanged, mod, groupIdx, optionIdx, -1);
     }

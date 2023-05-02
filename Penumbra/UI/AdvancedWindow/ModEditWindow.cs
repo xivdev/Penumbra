@@ -414,7 +414,7 @@ public partial class ModEditWindow : Window, IDisposable
         if (ImGuiUtil.DrawDisabledButton("Revert Changes", Vector2.Zero, tt, setsEqual))
             _editor.SwapEditor.Revert(_editor.Option!);
 
-        var otherSwaps = _editor.Mod!.TotalSwapCount - _editor.SwapEditor.Swaps.Count;
+        var otherSwaps = _editor.Mod!.TotalSwapCount - _editor.Option!.FileSwaps.Count;
         if (otherSwaps > 0)
         {
             ImGui.SameLine();

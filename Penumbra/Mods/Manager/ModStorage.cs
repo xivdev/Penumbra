@@ -53,14 +53,17 @@ public class ModStorage : IReadOnlyList<Mod>
     /// Mods are removed when they are deleted or when they are toggled in any collection.
     /// Also gets cleared on mod rediscovery.
     /// </summary>
-    protected readonly HashSet<Mod> NewMods = new();
+    private readonly HashSet<Mod> _newMods = new();
 
     public bool IsNew(Mod mod)
-        => NewMods.Contains(mod);
+        => _newMods.Contains(mod);
 
     public void SetNew(Mod mod)
-        => NewMods.Add(mod);
+        => _newMods.Add(mod);
 
     public void SetKnown(Mod mod)
-        => NewMods.Remove(mod);
+        => _newMods.Remove(mod);
+
+    public void ClearNewMods()
+        => _newMods.Clear();
 }

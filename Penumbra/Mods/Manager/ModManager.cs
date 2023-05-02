@@ -29,7 +29,7 @@ public enum ModPathChangeType
     StartingReload,
 }
 
-public sealed class ModManager : ModStorage
+public sealed class ModManager : ModStorage, IDisposable
 {
     private readonly Configuration       _config;
     private readonly CommunicatorService _communicator;
@@ -50,6 +50,7 @@ public sealed class ModManager : ModStorage
         OptionEditor  = optionEditor;
         Creator    = creator;
         SetBaseDirectory(config.ModDirectory, true);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange);
         DiscoverMods();
     }
 
@@ -66,7 +67,7 @@ public sealed class ModManager : ModStorage
     public void DiscoverMods()
     {
         _communicator.ModDiscoveryStarted.Invoke();
-        NewMods.Clear();
+        ClearNewMods();
         Mods.Clear();
         BasePath.Refresh();
 
@@ -243,11 +244,11 @@ public sealed class ModManager : ModStorage
     {
         switch (type)
         {
-            case ModPathChangeType.Added:
-                NewMods.Add(mod);
+            case ModPathChangeType.Added: 
+                SetNew(mod);
                 break;
             case ModPathChangeType.Deleted:
-                NewMods.Remove(mod);
+                SetKnown(mod);
                 break;
             case ModPathChangeType.Moved:
                 if (oldDirectory != null && newDirectory != null)
@@ -258,7 +259,7 @@ public sealed class ModManager : ModStorage
     }
 
     public void Dispose()
-    { }
+        => _communicator.ModPathChanged.Unsubscribe(OnModPathChange);
 
     /// <summary>
     /// Set the mod base directory.
