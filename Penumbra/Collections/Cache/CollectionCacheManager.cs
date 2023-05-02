@@ -27,7 +27,8 @@ public class CollectionCacheManager : IDisposable
 
     internal readonly MetaFileManager MetaFileManager;
 
-    public int Count { get; private set; }
+    public int  Count       { get; private set; }
+    public bool Calculating { get; private set; }
 
     public IEnumerable<ModCollection> Active
         => _storage.Where(c => c.HasCache);
@@ -116,28 +117,36 @@ public class CollectionCacheManager : IDisposable
     private void FullRecalculation(ModCollection collection)
     {
         var cache = collection._cache;
-        if (cache == null)
+        if (cache == null || Calculating)
             return;
 
-        cache.ResolvedFiles.Clear();
-        cache.Meta.Reset();
-        cache._conflicts.Clear();
+        Calculating = true;
+        try
+        {
+            cache.ResolvedFiles.Clear();
+            cache.Meta.Reset();
+            cache._conflicts.Clear();
 
-        // Add all forced redirects.
-        foreach (var tempMod in _tempMods.ModsForAllCollections
-                     .Concat(_tempMods.Mods.TryGetValue(collection, out var list)
-                         ? list
-                         : Array.Empty<TemporaryMod>()))
-            cache.AddMod(tempMod, false);
+            // Add all forced redirects.
+            foreach (var tempMod in _tempMods.ModsForAllCollections
+                         .Concat(_tempMods.Mods.TryGetValue(collection, out var list)
+                             ? list
+                             : Array.Empty<TemporaryMod>()))
+                cache.AddMod(tempMod, false);
 
-        foreach (var mod in _modStorage)
-            cache.AddMod(mod, false);
+            foreach (var mod in _modStorage)
+                cache.AddMod(mod, false);
 
-        cache.AddMetaFiles();
+            cache.AddMetaFiles();
 
-        ++collection.ChangeCounter;
+            ++collection.ChangeCounter;
 
-        MetaFileManager.ApplyDefaultFiles(collection);
+            MetaFileManager.ApplyDefaultFiles(collection);
+        }
+        finally
+        {
+            Calculating = false;
+        }
     }
 
     private void OnCollectionChange(CollectionType type, ModCollection? old, ModCollection? newCollection, string displayName)
