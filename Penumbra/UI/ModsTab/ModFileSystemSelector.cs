@@ -215,9 +215,11 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         if (!button)
             return;
 
-        var modPath = !_config.AlwaysOpenDefaultImport ? null
-            : _config.DefaultModImportPath.Length > 0  ? _config.DefaultModImportPath
-            : _config.ModDirectory.Length > 0          ? _config.ModDirectory : null;
+        var modPath = _config.DefaultModImportPath.Length > 0
+            ? _config.DefaultModImportPath
+            : _config.ModDirectory.Length > 0
+                ? _config.ModDirectory
+                : null;
 
         _fileDialog.OpenFilePicker("Import Mod Pack",
             "Mod Packs{.ttmp,.ttmp2,.pmp},TexTools Mod Packs{.ttmp,.ttmp2},Penumbra Mod Packs{.pmp},Archives{.zip,.7z,.rar}", (s, f) =>
