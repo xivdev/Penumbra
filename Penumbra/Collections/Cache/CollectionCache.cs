@@ -29,6 +29,8 @@ public class CollectionCache : IDisposable
     public readonly  MetaCache                                        Meta;
     public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      _conflicts = new();
 
+    public bool Calculating;
+
     public IEnumerable<SingleArray<ModConflicts>> AllConflicts
         => _conflicts.Values;
 

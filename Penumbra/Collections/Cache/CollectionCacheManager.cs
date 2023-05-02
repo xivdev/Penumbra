@@ -28,7 +28,6 @@ public class CollectionCacheManager : IDisposable
     internal readonly MetaFileManager MetaFileManager;
 
     public int  Count       { get; private set; }
-    public bool Calculating { get; private set; }
 
     public IEnumerable<ModCollection> Active
         => _storage.Where(c => c.HasCache);
@@ -117,10 +116,10 @@ public class CollectionCacheManager : IDisposable
     private void FullRecalculation(ModCollection collection)
     {
         var cache = collection._cache;
-        if (cache == null || Calculating)
+        if (cache == null || cache.Calculating)
             return;
 
-        Calculating = true;
+        cache.Calculating = true;
         try
         {
             cache.ResolvedFiles.Clear();
@@ -145,7 +144,7 @@ public class CollectionCacheManager : IDisposable
         }
         finally
         {
-            Calculating = false;
+            cache.Calculating = false;
         }
     }
 
