@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
@@ -50,7 +51,7 @@ public sealed class ModManager : ModStorage, IDisposable
         OptionEditor  = optionEditor;
         Creator    = creator;
         SetBaseDirectory(config.ModDirectory, true);
-        _communicator.ModPathChanged.Subscribe(OnModPathChange);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModManager);
         DiscoverMods();
     }
 

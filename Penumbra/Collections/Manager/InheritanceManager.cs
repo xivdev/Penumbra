@@ -4,6 +4,7 @@ using System.Linq;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Filesystem;
+using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Util;
@@ -47,7 +48,7 @@ public class InheritanceManager : IDisposable
         _modStorage   = modStorage;
 
         ApplyInheritances();
-        _communicator.CollectionChange.Subscribe(OnCollectionChange);
+        _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.InheritanceManager);
     }
 
     public void Dispose()

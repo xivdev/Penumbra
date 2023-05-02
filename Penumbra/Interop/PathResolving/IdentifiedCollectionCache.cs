@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
 using Penumbra.Services;
@@ -26,7 +27,7 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
         _communicator = communicator;
         _events       = events;
 
-        _communicator.CollectionChange.Subscribe(CollectionChangeClear);
+        _communicator.CollectionChange.Subscribe(CollectionChangeClear, CollectionChange.Priority.IdentifiedCollectionCache);
         _clientState.TerritoryChanged        += TerritoryClear;
         _events.CharacterDestructor          += OnCharacterDestruct;
     }

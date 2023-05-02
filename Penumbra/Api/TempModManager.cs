@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 
 namespace Penumbra.Api;
 
@@ -27,7 +28,7 @@ public class TempModManager : IDisposable
     public TempModManager(CommunicatorService communicator)
     {
         _communicator                        =  communicator;
-        _communicator.CollectionChange.Subscribe(OnCollectionChange);
+        _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.TempModManager);
     }
 
     public void Dispose()

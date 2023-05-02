@@ -6,6 +6,7 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -34,7 +35,7 @@ public sealed class CollectionSelector : ItemSelector<ModCollection>, IDisposabl
         _active       = active;
         _tutorial     = tutorial;
 
-        _communicator.CollectionChange.Subscribe(OnCollectionChange);
+        _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.CollectionSelector);
         // Set items.
         OnCollectionChange(CollectionType.Inactive, null, null, string.Empty);
         // Set selection.

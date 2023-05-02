@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using OtterGui.Filesystem;
+using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.Util;
@@ -25,9 +26,9 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
         _saveService  = saveService;
         Reload();
         Changed += OnChange;
-        _communicator.ModDiscoveryFinished.Subscribe(Reload);
-        _communicator.ModDataChanged.Subscribe(OnDataChange);
-        _communicator.ModPathChanged.Subscribe(OnModPathChange);
+        _communicator.ModDiscoveryFinished.Subscribe(Reload, ModDiscoveryFinished.Priority.ModFileSystem);
+        _communicator.ModDataChanged.Subscribe(OnDataChange, ModDataChanged.Priority.ModFileSystem);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModFileSystem);
     }
 
     public void Dispose()

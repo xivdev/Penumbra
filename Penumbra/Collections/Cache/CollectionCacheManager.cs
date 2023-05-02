@@ -8,6 +8,7 @@ using OtterGui.Classes;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -44,15 +45,15 @@ public class CollectionCacheManager : IDisposable
 
         if (!_active.Individuals.IsLoaded)
             _active.Individuals.Loaded += CreateNecessaryCaches;
-        _communicator.CollectionChange.Subscribe(OnCollectionChange, -100);
-        _communicator.ModPathChanged.Subscribe(OnModChangeAddition, -100);
-        _communicator.ModPathChanged.Subscribe(OnModChangeRemoval,  100);
-        _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange);
-        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, -100);
-        _communicator.ModSettingChanged.Subscribe(OnModSettingChange);
-        _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange);
-        _communicator.ModDiscoveryStarted.Subscribe(OnModDiscoveryStarted);
-        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, -100);
+        _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.CollectionCacheManager);
+        _communicator.ModPathChanged.Subscribe(OnModChangeAddition, ModPathChanged.Priority.CollectionCacheManagerAddition);
+        _communicator.ModPathChanged.Subscribe(OnModChangeRemoval,  ModPathChanged.Priority.CollectionCacheManagerRemoval);
+        _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange, TemporaryGlobalModChange.Priority.CollectionCacheManager);
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.CollectionCacheManager);
+        _communicator.ModSettingChanged.Subscribe(OnModSettingChange, ModSettingChanged.Priority.CollectionCacheManager);
+        _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange, CollectionInheritanceChanged.Priority.CollectionCacheManager);
+        _communicator.ModDiscoveryStarted.Subscribe(OnModDiscoveryStarted, ModDiscoveryStarted.Priority.CollectionCacheManager);
+        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.CollectionCacheManager);
 
         if (!MetaFileManager.CharacterUtility.Ready)
             MetaFileManager.CharacterUtility.LoadingFinished += IncrementCounters;

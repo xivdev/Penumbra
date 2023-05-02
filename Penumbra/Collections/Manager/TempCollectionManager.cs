@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Penumbra.Api;
+using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.Mods;
 using Penumbra.Services;
@@ -27,7 +28,7 @@ public class TempCollectionManager : IDisposable
         _storage      = storage;
         Collections   = new IndividualCollections(actors, config, true);
 
-        _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange);
+        _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange, TemporaryGlobalModChange.Priority.TempCollectionManager);
     }
 
     public void Dispose()

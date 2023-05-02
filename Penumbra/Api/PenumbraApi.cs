@@ -22,6 +22,7 @@ using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.Services;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.Interop.Services;
 using Penumbra.UI;
 
@@ -34,13 +35,13 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public event Action<string>? PreSettingsPanelDraw
     {
-        add => _communicator.PreSettingsPanelDraw.Subscribe(value!);
+        add => _communicator.PreSettingsPanelDraw.Subscribe(value!, Communication.PreSettingsPanelDraw.Priority.Default);
         remove => _communicator.PreSettingsPanelDraw.Unsubscribe(value!);
     }
 
     public event Action<string>? PostSettingsPanelDraw
     {
-        add => _communicator.PostSettingsPanelDraw.Subscribe(value!);
+        add => _communicator.PostSettingsPanelDraw.Subscribe(value!, Communication.PostSettingsPanelDraw.Priority.Default);
         remove => _communicator.PostSettingsPanelDraw.Unsubscribe(value!);
     }
 
@@ -68,7 +69,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                 return;
 
             CheckInitialized();
-            _communicator.CreatingCharacterBase.Subscribe(new Action<nint, string, nint, nint, nint>(value));
+            _communicator.CreatingCharacterBase.Subscribe(new Action<nint, string, nint, nint, nint>(value), Communication.CreatingCharacterBase.Priority.Api);
         }
         remove
         {
@@ -88,7 +89,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                 return;
 
             CheckInitialized();
-            _communicator.CreatedCharacterBase.Subscribe(new Action<nint, string, nint>(value));
+            _communicator.CreatedCharacterBase.Subscribe(new Action<nint, string, nint>(value), Communication.CreatedCharacterBase.Priority.Api);
         }
         remove
         {
@@ -147,8 +148,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _lumina             = _dalamud.GameData.GameData;
 
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
-        _communicator.ModPathChanged.Subscribe(ModPathChangeSubscriber);
-        _communicator.ModSettingChanged.Subscribe(OnModSettingChange, -1000);
+        _communicator.ModPathChanged.Subscribe(ModPathChangeSubscriber, ModPathChanged.Priority.Api);
+        _communicator.ModSettingChanged.Subscribe(OnModSettingChange, Communication.ModSettingChanged.Priority.Api);
     }
 
     public unsafe void Dispose()
@@ -180,7 +181,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public event ChangedItemClick? ChangedItemClicked
     {
-        add => _communicator.ChangedItemClick.Subscribe(new Action<MouseButton, object?>(value!));
+        add => _communicator.ChangedItemClick.Subscribe(new Action<MouseButton, object?>(value!), Communication.ChangedItemClick.Priority.Default);
         remove => _communicator.ChangedItemClick.Unsubscribe(new Action<MouseButton, object?>(value!));
     }
 
@@ -203,7 +204,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         add
         {
             CheckInitialized();
-            _communicator.ModDirectoryChanged.Subscribe(value!);
+            _communicator.ModDirectoryChanged.Subscribe(value!, Communication.ModDirectoryChanged.Priority.Api);
         }
         remove
         {
@@ -220,7 +221,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         add
         {
             CheckInitialized();
-            _communicator.EnabledChanged.Subscribe(value!, int.MinValue);
+            _communicator.EnabledChanged.Subscribe(value!, EnabledChanged.Priority.Api);
         }
         remove
         {
@@ -237,7 +238,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public event ChangedItemHover? ChangedItemTooltip
     {
-        add => _communicator.ChangedItemHover.Subscribe(new Action<object?>(value!));
+        add => _communicator.ChangedItemHover.Subscribe(new Action<object?>(value!), Communication.ChangedItemHover.Priority.Default);
         remove => _communicator.ChangedItemHover.Unsubscribe(new Action<object?>(value!));
     }
 

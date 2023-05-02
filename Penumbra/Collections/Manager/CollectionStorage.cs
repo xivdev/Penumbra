@@ -7,6 +7,7 @@ using System.Linq;
 using Dalamud.Interface.Internal.Notifications;
 using OtterGui;
 using OtterGui.Filesystem;
+using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -56,10 +57,10 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         _communicator = communicator;
         _saveService  = saveService;
         _modStorage   = modStorage;
-        _communicator.ModDiscoveryStarted.Subscribe(OnModDiscoveryStarted);
-        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished);
-        _communicator.ModPathChanged.Subscribe(OnModPathChange, 10);
-        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, 100);
+        _communicator.ModDiscoveryStarted.Subscribe(OnModDiscoveryStarted, ModDiscoveryStarted.Priority.CollectionStorage);
+        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.CollectionStorage);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.CollectionStorage);
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.CollectionStorage);
         ReadCollections(out DefaultNamed);
     }
 

@@ -4,10 +4,12 @@ using System.Linq;
 
 namespace Penumbra.Util;
 
-public abstract class EventWrapper<T> : IDisposable where T : Delegate
+public abstract class EventWrapper<T, TPriority> : IDisposable
+    where T : Delegate
+    where TPriority : struct, Enum
 {
-    private readonly string                                  _name;
-    private readonly List<(object Subscriber, int Priority)> _event = new();
+    private readonly string                                        _name;
+    private readonly List<(object Subscriber, TPriority Priority)> _event = new();
 
     public bool HasSubscribers
         => _event.Count > 0;
@@ -23,12 +25,12 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
         }
     }
 
-    public void Subscribe(T subscriber, int priority = 0)
+    public void Subscribe(T subscriber, TPriority priority)
     {
         lock (_event)
         {
-            var existingIdx = _event.FindIndex(p => (T) p.Subscriber == subscriber);
-            var idx         = _event.FindIndex(p => p.Priority > priority);
+            var existingIdx = _event.FindIndex(p => (T)p.Subscriber == subscriber);
+            var idx         = _event.FindIndex(p => p.Priority.CompareTo(priority) > 0);
             if (idx == existingIdx)
             {
                 if (idx < 0)
@@ -53,14 +55,14 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
     {
         lock (_event)
         {
-            var idx = _event.FindIndex(p => (T) p.Subscriber == subscriber);
+            var idx = _event.FindIndex(p => (T)p.Subscriber == subscriber);
             if (idx >= 0)
                 _event.RemoveAt(idx);
         }
     }
 
 
-    protected static void Invoke(EventWrapper<T> wrapper)
+    protected static void Invoke(EventWrapper<T, TPriority> wrapper)
     {
         lock (wrapper._event)
         {
@@ -78,7 +80,7 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
         }
     }
 
-    protected static void Invoke<T1>(EventWrapper<T> wrapper, T1 a)
+    protected static void Invoke<T1>(EventWrapper<T, TPriority> wrapper, T1 a)
     {
         lock (wrapper._event)
         {
@@ -96,7 +98,7 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
         }
     }
 
-    protected static void Invoke<T1, T2>(EventWrapper<T> wrapper, T1 a, T2 b)
+    protected static void Invoke<T1, T2>(EventWrapper<T, TPriority> wrapper, T1 a, T2 b)
     {
         lock (wrapper._event)
         {
@@ -114,7 +116,7 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
         }
     }
 
-    protected static void Invoke<T1, T2, T3>(EventWrapper<T> wrapper, T1 a, T2 b, T3 c)
+    protected static void Invoke<T1, T2, T3>(EventWrapper<T, TPriority> wrapper, T1 a, T2 b, T3 c)
     {
         lock (wrapper._event)
         {
@@ -132,7 +134,7 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
         }
     }
 
-    protected static void Invoke<T1, T2, T3, T4>(EventWrapper<T> wrapper, T1 a, T2 b, T3 c, T4 d)
+    protected static void Invoke<T1, T2, T3, T4>(EventWrapper<T, TPriority> wrapper, T1 a, T2 b, T3 c, T4 d)
     {
         lock (wrapper._event)
         {
@@ -150,7 +152,7 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
         }
     }
 
-    protected static void Invoke<T1, T2, T3, T4, T5>(EventWrapper<T> wrapper, T1 a, T2 b, T3 c, T4 d, T5 e)
+    protected static void Invoke<T1, T2, T3, T4, T5>(EventWrapper<T, TPriority> wrapper, T1 a, T2 b, T3 c, T4 d, T5 e)
     {
         lock (wrapper._event)
         {
@@ -168,7 +170,7 @@ public abstract class EventWrapper<T> : IDisposable where T : Delegate
         }
     }
 
-    protected static void Invoke<T1, T2, T3, T4, T5, T6>(EventWrapper<T> wrapper, T1 a, T2 b, T3 c, T4 d, T5 e, T6 f)
+    protected static void Invoke<T1, T2, T3, T4, T5, T6>(EventWrapper<T, TPriority> wrapper, T1 a, T2 b, T3 c, T4 d, T5 e, T6 f)
     {
         lock (wrapper._event)
         {

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.Mods.Manager;
@@ -21,7 +22,7 @@ public class ModExportManager : IDisposable
         _communicator = communicator;
         _modManager   = modManager;
         UpdateExportDirectory(_config.ExportDirectory, false);
-        _communicator.ModPathChanged.Subscribe(OnModPathChange);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModExportManager);
     }
 
     /// <inheritdoc cref="UpdateExportDirectory(string, bool)"/>

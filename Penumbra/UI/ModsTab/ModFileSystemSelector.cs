@@ -14,6 +14,7 @@ using OtterGui.Raii;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -72,12 +73,12 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         SetFilterTooltip();
 
         SelectionChanged += OnSelectionChange;
-        _communicator.CollectionChange.Subscribe(OnCollectionChange);
-        _communicator.ModSettingChanged.Subscribe(OnSettingChange);
-        _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange);
-        _communicator.ModDataChanged.Subscribe(OnModDataChange);
-        _communicator.ModDiscoveryStarted.Subscribe(StoreCurrentSelection);
-        _communicator.ModDiscoveryFinished.Subscribe(RestoreLastSelection);
+        _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ModFileSystemSelector);
+        _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ModFileSystemSelector);
+        _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ModFileSystemSelector);
+        _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModFileSystemSelector);
+        _communicator.ModDiscoveryStarted.Subscribe(StoreCurrentSelection, ModDiscoveryStarted.Priority.ModFileSystemSelector);
+        _communicator.ModDiscoveryFinished.Subscribe(RestoreLastSelection, ModDiscoveryFinished.Priority.ModFileSystemSelector);
         OnCollectionChange(CollectionType.Current, null, _collectionManager.Active.Current, "");
     }
 

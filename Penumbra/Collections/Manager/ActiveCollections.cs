@@ -6,6 +6,7 @@ using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OtterGui;
+using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Enums;
 using Penumbra.Services;
@@ -44,7 +45,7 @@ public class ActiveCollections : ISavable, IDisposable
         Default       = storage.DefaultNamed;
         Interface     = storage.DefaultNamed;
         Individuals   = new IndividualCollections(actors, config, false);
-        _communicator.CollectionChange.Subscribe(OnCollectionChange, -100);
+        _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ActiveCollections);
         LoadCollections();
         UpdateCurrentCollectionInUse();
         Individuals.Loaded += UpdateCurrentCollectionInUse;

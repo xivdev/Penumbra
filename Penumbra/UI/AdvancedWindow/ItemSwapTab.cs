@@ -13,6 +13,7 @@ using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Meta;
@@ -57,10 +58,10 @@ public class ItemSwapTab : IDisposable, ITab
             // @formatter:on
         };
 
-        _communicator.CollectionChange.Subscribe(OnCollectionChange);
-        _communicator.ModSettingChanged.Subscribe(OnSettingChange);
-        _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange);
-        _communicator.ModOptionChanged.Subscribe(OnModOptionChange);
+        _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.ItemSwapTab);
+        _communicator.ModSettingChanged.Subscribe(OnSettingChange, ModSettingChanged.Priority.ItemSwapTab);
+        _communicator.CollectionInheritanceChanged.Subscribe(OnInheritanceChange, CollectionInheritanceChanged.Priority.ItemSwapTab);
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.ItemSwapTab);
     }
 
     /// <summary> Update the currently selected mod or its settings. </summary>

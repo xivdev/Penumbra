@@ -9,6 +9,7 @@ using Dalamud.Interface.ImGuiFileDialog;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
+using Penumbra.Communication;
 using Penumbra.Services;
 
 namespace Penumbra.UI;
@@ -22,9 +23,9 @@ public class FileDialogService : IDisposable
 
     public FileDialogService(CommunicatorService communicator, Configuration config)
     {
-        _communicator                           =  communicator;
-        _manager                                =  SetupFileManager(config.ModDirectory);
-        _communicator.ModDirectoryChanged.Subscribe(OnModDirectoryChange);
+        _communicator = communicator;
+        _manager      = SetupFileManager(config.ModDirectory);
+        _communicator.ModDirectoryChanged.Subscribe(OnModDirectoryChange, ModDirectoryChanged.Priority.FileDialogService);
     }
 
     public void OpenFilePicker(string title, string filters, Action<bool, List<string>> callback, int selectionCountMax, string? startPath,

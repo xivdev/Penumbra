@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Penumbra.Communication;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -23,10 +24,10 @@ public class ModCacheManager : IDisposable
         _identifier   = identifier;
         _modManager   = modStorage;
 
-        _communicator.ModOptionChanged.Subscribe(OnModOptionChange);
-        _communicator.ModPathChanged.Subscribe(OnModPathChange);
-        _communicator.ModDataChanged.Subscribe(OnModDataChange);
-        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished);
+        _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.ModCacheManager);
+        _communicator.ModPathChanged.Subscribe(OnModPathChange, ModPathChanged.Priority.ModCacheManager);
+        _communicator.ModDataChanged.Subscribe(OnModDataChange, ModDataChanged.Priority.ModCacheManager);
+        _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.ModCacheManager);
         if (!identifier.Valid)
             identifier.FinishedCreation += OnIdentifierCreation;
         OnModDiscoveryFinished();

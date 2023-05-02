@@ -5,6 +5,7 @@ using ImGuiNET;
 using OtterGui.Raii;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.GameData.Actors;
 using Penumbra.Services;
 
@@ -30,7 +31,7 @@ public class IndividualAssignmentUi : IDisposable
         _communicator      = communicator;
         _actorService      = actors;
         _collectionManager = collectionManager;
-        _communicator.CollectionChange.Subscribe(UpdateIdentifiers);
+        _communicator.CollectionChange.Subscribe(UpdateIdentifiers, CollectionChange.Priority.IndividualAssignmentUi);
         if (_actorService.Valid)
             SetupCombos();
         else
@@ -57,7 +58,7 @@ public class IndividualAssignmentUi : IDisposable
     public void DrawWorldCombo(float width)
     {
         if (_ready && _worldCombo.Draw(width))
-            UpdateIdentifiers();
+            UpdateIdentifiersInternal();
     }
 
     public void DrawObjectKindCombo(float width)
@@ -76,7 +77,7 @@ public class IndividualAssignmentUi : IDisposable
                 continue;
 
             _newKind = kind;
-            UpdateIdentifiers();
+            UpdateIdentifiersInternal();
         }
     }
 
@@ -87,7 +88,7 @@ public class IndividualAssignmentUi : IDisposable
 
         ImGui.SetNextItemWidth(width);
         if (ImGui.InputTextWithHint("##NewCharacter", "Character Name...", ref _newCharacterName, 32))
-            UpdateIdentifiers();
+            UpdateIdentifiersInternal();
     }
 
     public void DrawNewNpcCollection(float width)
@@ -97,7 +98,7 @@ public class IndividualAssignmentUi : IDisposable
 
         var combo = GetNpcCombo(_newKind);
         if (combo.Draw(width))
-            UpdateIdentifiers();
+            UpdateIdentifiersInternal();
     }
 
     public void Dispose()
@@ -154,10 +155,10 @@ public class IndividualAssignmentUi : IDisposable
     private void UpdateIdentifiers(CollectionType type, ModCollection? _1, ModCollection? _2, string _3)
     {
         if (type == CollectionType.Individual)
-            UpdateIdentifiers();
+            UpdateIdentifiersInternal();
     }
 
-    private void UpdateIdentifiers()
+    private void UpdateIdentifiersInternal()
     {
         var combo = GetNpcCombo(_newKind);
         PlayerTooltip = _collectionManager.Active.Individuals.CanAdd(IdentifierType.Player, _newCharacterName,
