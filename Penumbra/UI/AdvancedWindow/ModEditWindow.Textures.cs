@@ -45,7 +45,8 @@ public partial class ModEditWindow
             _fileDialog, _config.DefaultModImportPath);
         var files = _editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
             .Prepend((f.File.FullName, false)));
-        tex.PathSelectBox(_dalamud, "##combo", "Select the textures included in this mod on your drive or the ones they replace from the game files.",
+        tex.PathSelectBox(_dalamud, "##combo",
+            "Select the textures included in this mod on your drive or the ones they replace from the game files.",
             files, _mod.ModPath.FullName.Length + 1);
 
         if (tex == _left)
@@ -84,6 +85,8 @@ public partial class ModEditWindow
             "Add the appropriate number of MipMaps to the file.");
     }
 
+    private bool _forceTextureStartPath = true;
+
     private void DrawOutputChild(Vector2 size, Vector2 imageSize)
     {
         using var child = ImRaii.Child("Output", size, true);
@@ -102,7 +105,8 @@ public partial class ModEditWindow
                 {
                     if (a)
                         _center.SaveAsTex(b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                }, _mod!.ModPath.FullName, false);
+                }, _mod!.ModPath.FullName, _forceTextureStartPath);
+                _forceTextureStartPath = false;
             }
 
             if (ImGui.Button("Save as DDS", -Vector2.UnitX))
@@ -112,7 +116,8 @@ public partial class ModEditWindow
                 {
                     if (a)
                         _center.SaveAsDds(b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                }, _mod!.ModPath.FullName, false);
+                }, _mod!.ModPath.FullName, _forceTextureStartPath);
+                _forceTextureStartPath = false;
             }
 
             ImGui.NewLine();
@@ -124,7 +129,8 @@ public partial class ModEditWindow
                 {
                     if (a)
                         _center.SaveAsPng(b);
-                }, _mod!.ModPath.FullName, false);
+                }, _mod!.ModPath.FullName, _forceTextureStartPath);
+                _forceTextureStartPath = false;
             }
 
             ImGui.NewLine();

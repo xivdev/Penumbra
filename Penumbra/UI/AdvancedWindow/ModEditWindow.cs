@@ -59,6 +59,7 @@ public partial class ModEditWindow : Window, IDisposable
         _shaderPackageTab.Reset();
         _itemSwapTab.UpdateMod(mod, _activeCollections.Current[mod.Index].Settings);
         UpdateModels();
+        _forceTextureStartPath = true;
     }
 
     public void ChangeOption(SubMod? subMod)
