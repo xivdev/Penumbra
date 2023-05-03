@@ -49,6 +49,7 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool HideRedrawBar             { get; set; } = false;
     public int  OptionGroupCollapsibleMin { get; set; } = 5;
 
+    public bool DebugSeparateWindow = false;
 #if DEBUG
     public bool DebugMode { get; set; } = true;
 #else

@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface;
+using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
@@ -13,6 +15,7 @@ using Penumbra.Api;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Files;
+using Penumbra.Import.Structs;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Structs;
@@ -28,7 +31,7 @@ using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManage
 
 namespace Penumbra.UI.Tabs;
 
-public class DebugTab : ITab
+public class DebugTab : Window, ITab
 {
     private readonly StartTracker              _timer;
     private readonly PerformanceTracker        _performance;
@@ -50,14 +53,23 @@ public class DebugTab : ITab
     private readonly SubfileHelper             _subfileHelper;
     private readonly IdentifiedCollectionCache _identifiedCollectionCache;
     private readonly CutsceneService           _cutsceneService;
+    private readonly ModImportManager          _modImporter;
+    private readonly ImportPopup               _importPopup;
 
     public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorService actorService,
         DalamudServices dalamud, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
-        CutsceneService cutsceneService)
+        CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup)
+        : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse, false)
     {
+        IsOpen = true;
+        SizeConstraints = new WindowSizeConstraints
+        {
+            MinimumSize = new Vector2(200,  200),
+            MaximumSize = new Vector2(2000, 2000),
+        };
         _timer                     = timer;
         _performance               = performance;
         _config                    = config;
@@ -78,13 +90,15 @@ public class DebugTab : ITab
         _subfileHelper             = subfileHelper;
         _identifiedCollectionCache = identifiedCollectionCache;
         _cutsceneService           = cutsceneService;
+        _modImporter               = modImporter;
+        _importPopup               = importPopup;
     }
 
     public ReadOnlySpan<byte> Label
         => "Debug"u8;
 
     public bool IsVisible
-        => _config.DebugMode;
+        => _config.DebugMode && !_config.DebugSeparateWindow;
 
 #if DEBUG
     private const string DebugVersionString = "(Debug)";
@@ -126,6 +140,14 @@ public class DebugTab : ITab
     {
         if (!ImGui.CollapsingHeader("General"))
             return;
+
+        var separateWindow = _config.DebugSeparateWindow;
+        if (ImGui.Checkbox("Draw as Separate Window", ref separateWindow))
+        {
+            IsOpen                      = true;
+            _config.DebugSeparateWindow = separateWindow;
+            _config.Save();
+        }
 
         using (var table = Table("##DebugGeneralTable", 2, ImGuiTableFlags.SizingFixedFit))
         {
@@ -174,6 +196,40 @@ public class DebugTab : ITab
                         if (index != lastIndex + 1)
                             ImGui.TextUnformatted("!!!");
                         lastIndex = index;
+                    }
+                }
+            }
+        }
+
+        using (var tree = TreeNode("Mod Import"))
+        {
+            if (tree)
+            {
+                using var table = Table("##DebugModImport", 2, ImGuiTableFlags.SizingFixedFit);
+                if (table)
+                {
+                    var importing = _modImporter.IsImporting(out var importer);
+                    PrintValue("Is Importing",   importing.ToString());
+                    PrintValue("Importer State", (importer?.State ?? ImporterState.None).ToString());
+                    PrintValue("Import Window Was Drawn", _importPopup.WasDrawn.ToString());
+                    PrintValue("Import Popup Was Drawn", _importPopup.PopupWasDrawn.ToString());
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted("Import Batches");
+                    ImGui.TableNextColumn();
+                    foreach (var (batch, index) in _modImporter.ModBatches.WithIndex())
+                    {
+                        foreach (var mod in batch)
+                            PrintValue(index.ToString(), mod);
+                    }
+
+                    ImGui.TableNextColumn();
+                    ImGui.TextUnformatted("Addable Mods");
+                    ImGui.TableNextColumn();
+                    foreach (var mod in _modImporter.AddableMods)
+                    {
+                        ImGui.TableNextColumn();
+                        ImGui.TableNextColumn();
+                        ImGui.TextUnformatted(mod.Name);
                     }
                 }
             }
@@ -654,5 +710,17 @@ public class DebugTab : ITab
         ImGui.TextUnformatted(name);
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(value);
+    }
+
+    public override void Draw()
+        => DrawContent();
+
+    public override bool DrawConditions()
+        => _config.DebugMode && _config.DebugSeparateWindow;
+
+    public override void OnClose()
+    {
+        _config.DebugSeparateWindow = false;
+        _config.Save();
     }
 }

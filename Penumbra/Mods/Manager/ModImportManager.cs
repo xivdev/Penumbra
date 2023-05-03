@@ -23,6 +23,14 @@ public class ModImportManager : IDisposable
 
     private TexToolsImporter? _import;
 
+
+    internal IEnumerable<string[]> ModBatches
+        => _modsToUnpack;
+
+    internal IEnumerable<DirectoryInfo> AddableMods
+        => _modsToAdd;
+
+
     public ModImportManager(ModManager modManager, Configuration config, ModEditor modEditor)
     {
         _modManager = modManager;
@@ -43,9 +51,9 @@ public class ModImportManager : IDisposable
             Penumbra.ChatService.NotificationMessage($"Failed to import queued mod at {s}, the file does not exist.", "Warning",
                 NotificationType.Warning);
             return false;
-
         }).Select(s => new FileInfo(s)).ToArray();
 
+        Penumbra.Log.Debug($"Unpacking mods: {string.Join("\n\t", files.Select(f => f.FullName))}.");
         if (files.Length == 0)
             return;
 
@@ -62,10 +70,13 @@ public class ModImportManager : IDisposable
     }
 
     public void AddUnpack(IEnumerable<string> paths)
-        => _modsToUnpack.Enqueue(paths.ToArray());
+        => AddUnpack(paths.ToArray());
 
     public void AddUnpack(params string[] paths)
-        => _modsToUnpack.Enqueue(paths);
+    {
+        Penumbra.Log.Debug($"Adding mods to install: {string.Join("\n\t", paths)}");
+        _modsToUnpack.Enqueue(paths);
+    }
 
     public void ClearImport()
     {
@@ -117,6 +128,7 @@ public class ModImportManager : IDisposable
         }
         else if (dir != null)
         {
+            Penumbra.Log.Debug($"Adding newly installed mod to queue: {dir.FullName}");
             _modsToAdd.Enqueue(dir);
         }
     }
