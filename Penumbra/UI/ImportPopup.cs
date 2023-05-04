@@ -24,10 +24,17 @@ public sealed class ImportPopup : Window
           | ImGuiWindowFlags.NoDecoration
           | ImGuiWindowFlags.NoBackground
           | ImGuiWindowFlags.NoMove
-          | ImGuiWindowFlags.NoInputs, true)
+          | ImGuiWindowFlags.NoInputs
+          | ImGuiWindowFlags.NoNavFocus
+          | ImGuiWindowFlags.NoFocusOnAppearing
+          | ImGuiWindowFlags.NoBringToFrontOnFocus
+          | ImGuiWindowFlags.NoDocking
+          | ImGuiWindowFlags.NoTitleBar, true)
     {
-        _modImportManager = modImportManager;
-        IsOpen            = true;
+        _modImportManager  = modImportManager;
+        IsOpen             = true;
+        RespectCloseHotkey = false;
+        Collapsed          = false;
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = Vector2.Zero,
@@ -40,6 +47,7 @@ public sealed class ImportPopup : Window
         WasDrawn      = false;
         PopupWasDrawn = false;
         _modImportManager.TryUnpacking();
+        IsOpen = true;
     }
 
     public override void Draw()
