@@ -47,6 +47,7 @@ public unsafe class AnimationHookService : IDisposable
         _scheduleClipUpdateHook.Enable();
         _unkMountAnimationHook.Enable();
         _unkParasolAnimationHook.Enable();
+        _dismountHook.Enable();
     }
 
     public bool HandleFiles(ResourceType type, Utf8GamePath _, out ResolveData resolveData)
@@ -103,6 +104,7 @@ public unsafe class AnimationHookService : IDisposable
         _scheduleClipUpdateHook.Dispose();
         _unkMountAnimationHook.Dispose();
         _unkParasolAnimationHook.Dispose();
+        _dismountHook.Dispose();
     }
 
     /// <summary> Characters load some of their voice lines or whatever with this function. </summary>
@@ -331,6 +333,32 @@ public unsafe class AnimationHookService : IDisposable
         var last = _animationLoadData.Value;
         _animationLoadData.Value = _collectionResolver.IdentifyCollection(drawObject, true);
         _unkParasolAnimationHook!.Original(drawObject, unk1);
+        _animationLoadData.Value = last;
+    }
+
+    [Signature("E8 ?? ?? ?? ?? F6 43 ?? ?? 74 ?? 48 8B CB", DetourName = nameof(DismountDetour))]
+    private readonly Hook<DismountDelegate> _dismountHook = null;
+
+    private delegate void DismountDelegate(nint a1, nint a2);
+
+    private void DismountDetour(nint a1, nint a2)
+    {
+        if (a1 == nint.Zero)
+        {
+            _dismountHook!.Original(a1, a2);
+            return;
+        }
+
+        var gameObject = *(GameObject**)(a1 + 8);
+        if (gameObject == null)
+        {
+            _dismountHook!.Original(a1, a2);
+            return;
+        }
+
+        var last = _animationLoadData.Value;
+        _animationLoadData.Value = _collectionResolver.IdentifyCollection(gameObject, true);
+        _dismountHook!.Original(a1, a2);
         _animationLoadData.Value = last;
     }
 }
