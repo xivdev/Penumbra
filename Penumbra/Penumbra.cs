@@ -68,6 +68,7 @@ public class Penumbra : IDalamudPlugin
             _communicatorService = _services.GetRequiredService<CommunicatorService>();
             _services.GetRequiredService<ResourceService>(); // Initialize because not required anywhere else.
             _services.GetRequiredService<ModCacheManager>(); // Initialize because not required anywhere else.
+            _collectionManager.Caches.CreateNecessaryCaches();
             using (var t = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.PathResolver))
             {
                 _services.GetRequiredService<PathResolver>();

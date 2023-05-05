@@ -57,8 +57,6 @@ public class CollectionCacheManager : IDisposable
 
         if (!MetaFileManager.CharacterUtility.Ready)
             MetaFileManager.CharacterUtility.LoadingFinished += IncrementCounters;
-
-        CreateNecessaryCaches();
     }
 
     public void Dispose()
@@ -305,7 +303,7 @@ public class CollectionCacheManager : IDisposable
     /// Cache handling. Usually recreate caches on the next framework tick,
     /// but at launch create all of them at once.
     /// </summary>
-    private void CreateNecessaryCaches()
+    public void CreateNecessaryCaches()
     {
         var tasks = _active.SpecialAssignments.Select(p => p.Value)
             .Concat(_active.Individuals.Select(p => p.Collection))
