@@ -2,8 +2,23 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using OtterGui.Classes;
+using OtterGui.Widgets;
 
 namespace Penumbra.Mods.Manager;
+
+public class ModCombo : FilterComboCache<Mod>
+{
+    protected override bool IsVisible(int globalIndex, LowerString filter)
+        => Items[globalIndex].Name.Contains(filter);
+
+    protected override string ToString(Mod obj)
+        => obj.Name.Text;
+
+    public ModCombo(Func<IReadOnlyList<Mod>> generator)
+        : base(generator)
+    { }
+}
 
 public class ModStorage : IReadOnlyList<Mod>
 {

@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Dalamud.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui.Classes;
@@ -13,6 +14,7 @@ using Penumbra.Interop.ResourceTree;
 using Penumbra.Interop.Services;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.UI;
 using Penumbra.UI.AdvancedWindow;
@@ -158,7 +160,8 @@ public static class ServiceManager
             .AddSingleton<ResourceTab>()
             .AddSingleton<ConfigTabBar>()
             .AddSingleton<ResourceWatcher>()
-            .AddSingleton<ItemSwapTab>();
+            .AddSingleton<ItemSwapTab>()
+            .AddSingleton<ModMergeTab>();
 
     private static IServiceCollection AddModEditor(this IServiceCollection services)
         => services.AddSingleton<ModFileCollection>()
@@ -168,6 +171,7 @@ public static class ServiceManager
             .AddSingleton<ModMetaEditor>()
             .AddSingleton<ModSwapEditor>()
             .AddSingleton<ModNormalizer>()
+            .AddSingleton<ModMerger>()
             .AddSingleton<ModEditor>();
 
     private static IServiceCollection AddApi(this IServiceCollection services)

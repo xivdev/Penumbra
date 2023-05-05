@@ -35,6 +35,7 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly MetaFileManager    _metaFileManager;
     private readonly ActiveCollections  _activeCollections;
     private readonly StainService       _stainService;
+    private readonly ModMergeTab        _modMergeTab;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -144,6 +145,7 @@ public partial class ModEditWindow : Window, IDisposable
         DrawFileTab();
         DrawMetaTab();
         DrawSwapTab();
+        _modMergeTab.Draw();
         DrawMissingFilesTab();
         DrawDuplicatesTab();
         DrawQuickImportTab();
@@ -311,7 +313,7 @@ public partial class ModEditWindow : Window, IDisposable
         }
 
         if (ImGui.Button("Delete and Redirect Duplicates"))
-            _editor.Duplicates.DeleteDuplicates(_editor.Mod!, _editor.Option!, true);
+            _editor.Duplicates.DeleteDuplicates(_editor.Files, _editor.Mod!, _editor.Option!, true);
 
         if (_editor.Duplicates.SavedSpace > 0)
         {
@@ -419,7 +421,8 @@ public partial class ModEditWindow : Window, IDisposable
         if (otherSwaps > 0)
         {
             ImGui.SameLine();
-            ImGuiUtil.DrawTextButton($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero, ColorId.RedundantAssignment.Value());
+            ImGuiUtil.DrawTextButton($"There are {otherSwaps} file swaps configured in other options.", Vector2.Zero,
+                ColorId.RedundantAssignment.Value());
         }
 
         using var child = ImRaii.Child("##swaps", -Vector2.One, true);
@@ -509,7 +512,7 @@ public partial class ModEditWindow : Window, IDisposable
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
-        StainService stainService, ActiveCollections activeCollections, UiBuilder uiBuilder, DalamudServices dalamud)
+        StainService stainService, ActiveCollections activeCollections, UiBuilder uiBuilder, DalamudServices dalamud, ModMergeTab modMergeTab)
         : base(WindowBaseLabel)
     {
         _performance       = performance;
@@ -520,6 +523,7 @@ public partial class ModEditWindow : Window, IDisposable
         _stainService      = stainService;
         _activeCollections = activeCollections;
         _dalamud           = dalamud;
+        _modMergeTab       = modMergeTab;
         _fileDialog        = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,

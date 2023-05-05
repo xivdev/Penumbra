@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using OtterGui;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
+using Penumbra.Mods.Editor;
 
 namespace Penumbra.Mods;
 

@@ -8,22 +8,19 @@ using System.Threading.Tasks;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String.Classes;
-using Penumbra.Util;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
 public class DuplicateManager
 {
     private readonly SaveService                                      _saveService;
     private readonly ModManager                                       _modManager;
     private readonly SHA256                                           _hasher = SHA256.Create();
-    private readonly ModFileCollection                                _files;
     private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = new();
 
-    public DuplicateManager(ModFileCollection files, ModManager modManager, SaveService saveService)
+    public DuplicateManager(ModManager modManager, SaveService saveService)
     {
-        _files            = files;
-        _modManager       = modManager;
+        _modManager  = modManager;
         _saveService = saveService;
     }
 
@@ -43,7 +40,7 @@ public class DuplicateManager
         Task.Run(() => CheckDuplicates(filesTmp));
     }
 
-    public void DeleteDuplicates(Mod mod, ISubMod option, bool useModManager)
+    public void DeleteDuplicates(ModFileCollection files, Mod mod, ISubMod option, bool useModManager)
     {
         if (!Finished || _duplicates.Count == 0)
             return;
@@ -60,7 +57,7 @@ public class DuplicateManager
 
         _duplicates.Clear();
         DeleteEmptyDirectories(mod.ModPath);
-        _files.UpdateAll(mod, option);
+        files.UpdateAll(mod, option);
     }
 
     public void Clear()
@@ -248,9 +245,10 @@ public class DuplicateManager
             _modManager.Creator.ReloadMod(mod, true, out _);
 
             Finished = false;
-            _files.UpdateAll(mod, mod.Default);
-            CheckDuplicates(_files.Available.OrderByDescending(f => f.FileSize).ToArray());
-            DeleteDuplicates(mod, mod.Default, false);
+            var files = new ModFileCollection();
+            files.UpdateAll(mod, mod.Default);
+            CheckDuplicates(files.Available.OrderByDescending(f => f.FileSize).ToArray());
+            DeleteDuplicates(files, mod, mod.Default, false);
         }
         catch (Exception e)
         {

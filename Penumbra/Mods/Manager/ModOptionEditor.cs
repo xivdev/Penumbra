@@ -87,7 +87,7 @@ public class ModOptionEditor
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupRenamed, mod, groupIdx, -1, -1);
     }
 
-    /// <summary> Add a new mod, empty option group of the given type and name. </summary>
+    /// <summary> Add a new, empty option group of the given type and name. </summary>
     public void AddModGroup(Mod mod, GroupType type, string newName)
     {
         if (!VerifyFileName(mod, null, newName, true))
@@ -108,6 +108,20 @@ public class ModOptionEditor
             });
         _saveService.ImmediateSave(new ModSaveGroup(mod, mod.Groups.Count - 1));
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupAdded, mod, mod.Groups.Count - 1, -1, -1);
+    }
+
+    /// <summary> Add a new mod, empty option group of the given type and name if it does not exist already. </summary>
+    public (IModGroup, int, bool) FindOrAddModGroup(Mod mod, GroupType type, string newName)
+    {
+        var idx = mod.Groups.IndexOf(g => g.Name == newName);
+        if (idx >= 0)
+            return (mod.Groups[idx], idx, false);
+
+        AddModGroup(mod, type, newName);
+        if (mod.Groups[^1].Name != newName)
+            throw new Exception($"Could not create new mod group with name {newName}.");
+
+        return (mod.Groups[^1], mod.Groups.Count - 1, true);
     }
 
     /// <summary> Delete a given option group. Fires an event to prepare before actually deleting. </summary>
@@ -240,6 +254,21 @@ public class ModOptionEditor
 
         _saveService.QueueSave(new ModSaveGroup(mod, groupIdx));
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.OptionAdded, mod, groupIdx, group.Count - 1, -1);
+    }
+
+    /// <summary> Add a new empty option of the given name for the given group if it does not exist already. </summary>
+    public (SubMod, bool) FindOrAddOption(Mod mod, int groupIdx, string newName)
+    {
+        var group = mod.Groups[groupIdx];
+        var idx   = group.IndexOf(o => o.Name == newName);
+        if (idx >= 0)
+            return ((SubMod)group[idx], false);
+
+        AddOption(mod, groupIdx, newName);
+        if (group[^1].Name != newName)
+            throw new Exception($"Could not create new option with name {newName} in {group.Name}.");
+
+        return ((SubMod)group[^1], true);
     }
 
     /// <summary> Add an existing option to a given group with a given priority. </summary>

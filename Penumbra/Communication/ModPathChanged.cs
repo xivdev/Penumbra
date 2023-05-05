@@ -37,13 +37,14 @@ public sealed class ModPathChanged : EventWrapper<Action<ModPathChangeType, Mod,
         /// <seealso cref="Mods.Manager.ModManager.OnModPathChange"/>
         ModManager = 0,
 
+        /// <seealso cref="Mods.Editor.ModMerger.OnModPathChange"/>
+        ModMerger = 0,
+
         /// <seealso cref="Collections.Manager.CollectionStorage.OnModPathChange"/>
         CollectionStorage = 10,
 
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeRemoval"/>
         CollectionCacheManagerRemoval = 100,
-
-
     }
     public ModPathChanged()
         : base(nameof(ModPathChanged))
