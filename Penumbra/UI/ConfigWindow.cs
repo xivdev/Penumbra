@@ -42,11 +42,6 @@ public sealed class ConfigWindow : Window
         _validityChecker = checker;
 
         RespectCloseHotkey = true;
-        SizeConstraints = new WindowSizeConstraints()
-        {
-            MinimumSize = new Vector2(900,  675),
-            MaximumSize = new Vector2(4096, 2160),
-        };
         tutorial.UpdateTutorialStep();
         IsOpen = _config.DebugMode;
     }
@@ -66,6 +61,11 @@ public sealed class ConfigWindow : Window
             Flags |= ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove;
         else
             Flags &= ~(ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove);
+        SizeConstraints = new WindowSizeConstraints()
+        {
+            MinimumSize = _config.MinimumSize,
+            MaximumSize = new Vector2(4096, 2160),
+        };
     }
 
     public override void Draw()

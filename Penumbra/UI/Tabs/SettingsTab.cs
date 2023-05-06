@@ -38,6 +38,9 @@ public class SettingsTab : ITab
     private readonly DalamudServices         _dalamud;
     private readonly HttpApi                 _httpApi;
 
+    private int _minimumX = int.MaxValue;
+    private int _minimumY = int.MaxValue;
+
     public SettingsTab(Configuration config, FontReloader fontReloader, TutorialService tutorial, Penumbra penumbra,
         FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
         ResidentResourceManager residentResources, DalamudServices dalamud, ModExportManager modExportManager, HttpApi httpApi)
@@ -637,6 +640,7 @@ public class SettingsTab : ITab
         if (!header)
             return;
 
+        DrawMinimumDimensionConfig();
         Checkbox("Auto Deduplicate on Import",
             "Automatically deduplicate mod files on import. This will make mod file sizes smaller, but deletes (binary identical) files.",
             _config.AutoDeduplicateOnImport, v => _config.AutoDeduplicateOnImport = v);
@@ -650,6 +654,58 @@ public class SettingsTab : ITab
         DrawReloadResourceButton();
         DrawReloadFontsButton();
         ImGui.NewLine();
+    }
+
+    /// <summary> Draw two integral inputs for minimum dimensions of this window. </summary>
+    private void DrawMinimumDimensionConfig()
+    {
+        var x = _minimumX == int.MaxValue ? (int)_config.MinimumSize.X : _minimumX;
+        var y = _minimumY == int.MaxValue ? (int)_config.MinimumSize.Y : _minimumY;
+
+        var warning = x < Configuration.Constants.MinimumSizeX
+            ? y < Configuration.Constants.MinimumSizeY
+                ? "Size is smaller than default: This may look undesirable."
+                : "Width is smaller than default: This may look undesirable."
+            : y < Configuration.Constants.MinimumSizeY
+                ? "Height is smaller than default: This may look undesirable."
+                : string.Empty;
+        var buttonWidth = UiHelpers.InputTextWidth.X / 2.5f;
+        ImGui.SetNextItemWidth(buttonWidth);
+        if (ImGui.DragInt("##xMinSize", ref x, 0.1f, 500, 1500))
+            _minimumX = x;
+        var edited = ImGui.IsItemDeactivatedAfterEdit();
+
+        ImGui.SameLine();
+        ImGui.SetNextItemWidth(buttonWidth);
+        if (ImGui.DragInt("##yMinSize", ref y, 0.1f, 300, 1500))
+            _minimumY = y;
+        edited |= ImGui.IsItemDeactivatedAfterEdit();
+
+        ImGui.SameLine();
+        if (ImGuiUtil.DrawDisabledButton("Reset##resetMinSize", new Vector2(buttonWidth / 2 - ImGui.GetStyle().ItemSpacing.X * 2, 0),
+                $"Reset minimum dimensions to ({Configuration.Constants.MinimumSizeX}, {Configuration.Constants.MinimumSizeY}).",
+                x == Configuration.Constants.MinimumSizeX && y == Configuration.Constants.MinimumSizeY))
+        {
+            x = Configuration.Constants.MinimumSizeX;
+            y = Configuration.Constants.MinimumSizeY;
+            edited    = true;
+        }
+
+        ImGuiUtil.LabeledHelpMarker("Minimum Window Dimensions",
+            "Set the minimum dimensions for resizing this window. Reducing these dimensions may cause the window to look bad or more confusing and is not recommended.");
+
+        if (warning.Length > 0)
+            ImGuiUtil.DrawTextButton(warning, UiHelpers.InputTextWidth, Colors.PressEnterWarningBg);
+        else
+            ImGui.NewLine();
+
+        if (!edited)
+            return;
+
+        _config.MinimumSize = new Vector2(x, y);
+        _minimumX           = int.MaxValue;
+        _minimumY           = int.MaxValue;
+        _config.Save();
     }
 
     /// <summary> Draw a checkbox for the HTTP API that creates and destroys the web server when toggled. </summary>

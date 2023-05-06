@@ -79,6 +79,7 @@ public class CommandHandler : IDisposable
             "reload"     => Reload(arguments),
             "redraw"     => Redraw(arguments),
             "lockui"     => SetUiLockState(arguments),
+            "size"       => SetUiMinimumSize(arguments),
             "debug"      => SetDebug(arguments),
             "collection" => SetCollection(arguments),
             "mod"        => SetMod(arguments),
@@ -110,6 +111,7 @@ public class CommandHandler : IDisposable
         _chat.Print(new SeStringBuilder()
             .AddCommand("lockui", "Toggle the locked state of the main Penumbra window. Can be used with [on|off] to force specific state.")
             .BuiltString);
+        _chat.Print(new SeStringBuilder().AddCommand("size", "Reset the minimum config window size to its default values.").BuiltString);
         _chat.Print(new SeStringBuilder()
             .AddCommand("debug", "Toggle debug mode for Penumbra. Can be used with [on|off] to force specific state.").BuiltString);
         _chat.Print(new SeStringBuilder()
@@ -199,6 +201,16 @@ public class CommandHandler : IDisposable
         }
 
         _config.FixMainWindow = value;
+        _config.Save();
+        return true;
+    }
+
+    private bool SetUiMinimumSize(string _)
+    {
+        if (_config.MinimumSize.X == Configuration.Constants.MinimumSizeX && _config.MinimumSize.Y == Configuration.Constants.MinimumSizeY)
+            return false;
+        _config.MinimumSize.X = Configuration.Constants.MinimumSizeX;
+        _config.MinimumSize.Y = Configuration.Constants.MinimumSizeY;
         _config.Save();
         return true;
     }

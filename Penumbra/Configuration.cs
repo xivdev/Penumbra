@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using Dalamud.Configuration;
 using Newtonsoft.Json;
 using OtterGui;
@@ -49,7 +50,9 @@ public class Configuration : IPluginConfiguration, ISavable
     public bool HideRedrawBar             { get; set; } = false;
     public int  OptionGroupCollapsibleMin { get; set; } = 5;
 
-    public bool DebugSeparateWindow = false;
+    public bool    DebugSeparateWindow = false;
+    public Vector2 MinimumSize         = new(Constants.MinimumSizeX, Constants.MinimumSizeY);
+
 #if DEBUG
     public bool DebugMode { get; set; } = true;
 #else
@@ -144,6 +147,8 @@ public class Configuration : IPluginConfiguration, ISavable
         public const int   MaxScaledSize       = 80;
         public const int   DefaultScaledSize   = 20;
         public const int   MinScaledSize       = 5;
+        public const int   MinimumSizeX        = 900;
+        public const int   MinimumSizeY        = 675;
 
         public static readonly ISortMode<Mod>[] ValidSortModes =
         {
