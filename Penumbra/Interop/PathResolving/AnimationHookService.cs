@@ -48,6 +48,7 @@ public unsafe class AnimationHookService : IDisposable
         _unkMountAnimationHook.Enable();
         _unkParasolAnimationHook.Enable();
         _dismountHook.Enable();
+        _vfxWeaponHook.Enable();
     }
 
     public bool HandleFiles(ResourceType type, Utf8GamePath _, out ResolveData resolveData)
@@ -105,6 +106,7 @@ public unsafe class AnimationHookService : IDisposable
         _unkMountAnimationHook.Dispose();
         _unkParasolAnimationHook.Dispose();
         _dismountHook.Dispose();
+        _vfxWeaponHook.Dispose();
     }
 
     /// <summary> Characters load some of their voice lines or whatever with this function. </summary>
@@ -337,7 +339,7 @@ public unsafe class AnimationHookService : IDisposable
     }
 
     [Signature("E8 ?? ?? ?? ?? F6 43 ?? ?? 74 ?? 48 8B CB", DetourName = nameof(DismountDetour))]
-    private readonly Hook<DismountDelegate> _dismountHook = null;
+    private readonly Hook<DismountDelegate> _dismountHook = null!;
 
     private delegate void DismountDelegate(nint a1, nint a2);
 
@@ -345,20 +347,41 @@ public unsafe class AnimationHookService : IDisposable
     {
         if (a1 == nint.Zero)
         {
-            _dismountHook!.Original(a1, a2);
+            _dismountHook.Original(a1, a2);
             return;
         }
 
         var gameObject = *(GameObject**)(a1 + 8);
         if (gameObject == null)
         {
-            _dismountHook!.Original(a1, a2);
+            _dismountHook.Original(a1, a2);
             return;
         }
 
         var last = _animationLoadData.Value;
         _animationLoadData.Value = _collectionResolver.IdentifyCollection(gameObject, true);
-        _dismountHook!.Original(a1, a2);
+        _dismountHook.Original(a1, a2);
         _animationLoadData.Value = last;
+    }
+
+    [Signature("48 89 6C 24 ?? 41 54 41 56 41 57 48 81 EC", DetourName = nameof(VfxWeaponDetour))]
+    private readonly Hook<VfxWeaponDelegate> _vfxWeaponHook = null!;
+
+    private delegate nint VfxWeaponDelegate(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+
+    private nint VfxWeaponDetour(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6)
+    {
+        if (a6 == nint.Zero)
+            return _vfxWeaponHook!.Original(a1, a2, a3, a4, a5, a6);
+
+        var drawObject = ((DrawObject**)a6)[1];
+        if (drawObject == null)
+            return _vfxWeaponHook!.Original(a1, a2, a3, a4, a5, a6);
+
+        var last = _animationLoadData.Value;
+        _animationLoadData.Value = _collectionResolver.IdentifyCollection(drawObject, true);
+        var ret = _vfxWeaponHook!.Original(a1, a2, a3, a4, a5, a6);
+        _animationLoadData.Value = last;
+        return ret;
     }
 }
