@@ -237,7 +237,7 @@ public sealed class CollectionPanel : IDisposable
                 _active.SetCollection(null, type, _active.Individuals.GetGroup(identifier));
         }
 
-        foreach (var coll in _collections)
+        foreach (var coll in _collections.OrderBy(c => c.Name))
         {
             if (coll != collection && ImGui.MenuItem($"Use {coll.Name}."))
                 _active.SetCollection(coll, type, _active.Individuals.GetGroup(identifier));
