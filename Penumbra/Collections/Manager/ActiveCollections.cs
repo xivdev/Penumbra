@@ -170,7 +170,7 @@ public class ActiveCollections : ISavable, IDisposable
     public void MoveIndividualCollection(int from, int to)
     {
         if (Individuals.Move(from, to))
-            _saveService.QueueSave(this);
+            _saveService.DelaySave(this);
     }
 
     /// <summary> Set and create an active collection, can be used to set Default, Current, Interface, Special, or Individual collections. </summary>
@@ -318,7 +318,7 @@ public class ActiveCollections : ISavable, IDisposable
         }
         else if (collectionType is not CollectionType.Temporary)
         {
-            _saveService.QueueSave(this);
+            _saveService.DelaySave(this);
         }
     }
 

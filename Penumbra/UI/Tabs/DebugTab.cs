@@ -10,6 +10,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
@@ -55,13 +56,14 @@ public class DebugTab : Window, ITab
     private readonly CutsceneService           _cutsceneService;
     private readonly ModImportManager          _modImporter;
     private readonly ImportPopup               _importPopup;
+    private readonly FrameworkManager          _framework;
 
     public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorService actorService,
         DalamudServices dalamud, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
-        CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup)
+        CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse, false)
     {
         IsOpen = true;
@@ -92,6 +94,7 @@ public class DebugTab : Window, ITab
         _cutsceneService           = cutsceneService;
         _modImporter               = modImporter;
         _importPopup               = importPopup;
+        _framework                 = framework;
     }
 
     public ReadOnlySpan<byte> Label
@@ -209,10 +212,10 @@ public class DebugTab : Window, ITab
                 if (table)
                 {
                     var importing = _modImporter.IsImporting(out var importer);
-                    PrintValue("Is Importing",   importing.ToString());
-                    PrintValue("Importer State", (importer?.State ?? ImporterState.None).ToString());
+                    PrintValue("Is Importing",            importing.ToString());
+                    PrintValue("Importer State",          (importer?.State ?? ImporterState.None).ToString());
                     PrintValue("Import Window Was Drawn", _importPopup.WasDrawn.ToString());
-                    PrintValue("Import Popup Was Drawn", _importPopup.PopupWasDrawn.ToString());
+                    PrintValue("Import Popup Was Drawn",  _importPopup.PopupWasDrawn.ToString());
                     ImGui.TableNextColumn();
                     ImGui.TextUnformatted("Import Batches");
                     ImGui.TableNextColumn();
@@ -230,6 +233,28 @@ public class DebugTab : Window, ITab
                         ImGui.TableNextColumn();
                         ImGui.TableNextColumn();
                         ImGui.TextUnformatted(mod.Name);
+                    }
+                }
+            }
+        }
+
+        using (var tree = TreeNode("Framework"))
+        {
+            if (tree)
+            {
+                using var table = Table("##DebugFramework", 2, ImGuiTableFlags.SizingFixedFit);
+                if (table)
+                {
+                    foreach(var important in _framework.Important)
+                        PrintValue(important, "Immediate");
+
+                    foreach (var (onTick, idx) in _framework.OnTick.WithIndex())
+                        PrintValue(onTick, $"{idx + 1} Tick(s) From Now");
+
+                    foreach (var (time, name) in _framework.Delayed)
+                    {
+                        var span = time - DateTime.UtcNow;
+                        PrintValue(name, $"After {span.Minutes:D2}:{span.Seconds:D2}.{span.Milliseconds / 10:D2} (+ Ticks)");
                     }
                 }
             }

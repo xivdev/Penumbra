@@ -29,6 +29,8 @@ public interface ISavable
 
 public class SaveService
 {
+    private static readonly TimeSpan StandardDelay = TimeSpan.FromSeconds(30);
+
     private readonly Logger           _log;
     private readonly FrameworkManager _framework;
 
@@ -47,7 +49,18 @@ public class SaveService
     public void QueueSave(ISavable value)
     {
         var file = value.ToFilename(FileNames);
-        _framework.RegisterDelayed(value.GetType().Name + file, () => { ImmediateSave(value); });
+        _framework.RegisterOnTick($"{value.GetType().Name} ## {file}", () => { ImmediateSave(value); });
+    }
+
+    /// <summary> Queue a delayed save with the standard delay for after the delay is over. </summary>
+    public void DelaySave(ISavable value)
+        => DelaySave(value, StandardDelay);
+
+    /// <summary> Queue a delayed save for after the delay is over. </summary>
+    public void DelaySave(ISavable value, TimeSpan delay)
+    {
+        var file = value.ToFilename(FileNames);
+        _framework.RegisterDelayed($"{value.GetType().Name} ## {file}", () => { ImmediateSave(value); }, delay);
     }
 
     /// <summary> Immediately trigger a save. </summary>

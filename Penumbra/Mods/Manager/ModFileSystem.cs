@@ -77,7 +77,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
     private void OnChange(FileSystemChangeType type, IPath _1, IPath? _2, IPath? _3)
     {
         if (type != FileSystemChangeType.Reload)
-            _saveService.QueueSave(this);
+            _saveService.DelaySave(this);
     }
 
     // Update sort order when defaulted mod names change.
@@ -112,7 +112,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
 
                 break;
             case ModPathChangeType.Moved:
-                _saveService.QueueSave(this);
+                _saveService.DelaySave(this);
                 break;
             case ModPathChangeType.Reloaded:
                 // Nothing

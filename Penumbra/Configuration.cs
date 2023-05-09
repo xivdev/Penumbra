@@ -135,7 +135,7 @@ public class Configuration : IPluginConfiguration, ISavable
 
     /// <summary> Save the current configuration. </summary>
     public void Save()
-        => _saveService.QueueSave(this);
+        => _saveService.DelaySave(this);
 
     /// <summary> Contains some default values or boundaries for config values. </summary>
     public static class Constants

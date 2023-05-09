@@ -194,14 +194,14 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         var any = collection.UnusedSettings.Count > 0;
         ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Clear();
         if (any)
-            _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+            _saveService.DelaySave(new ModCollectionSave(_modStorage, collection));
     }
 
     /// <summary> Remove a specific setting for not currently-installed mods from the given collection. </summary>
     public void CleanUnavailableSetting(ModCollection collection, string? setting)
     {
         if (setting != null && ((Dictionary<string, ModSettings.SavedSettings>)collection.UnusedSettings).Remove(setting))
-            _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+            _saveService.DelaySave(new ModCollectionSave(_modStorage, collection));
     }
 
     /// <summary>
@@ -292,7 +292,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     private void OnModPathChange(ModPathChangeType type, Mod mod, DirectoryInfo? oldDirectory,
         DirectoryInfo? newDirectory)
     {
-        switch (type)
+        switch (type)   
         {
             case ModPathChangeType.Added:
                 foreach (var collection in this)
@@ -304,7 +304,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
                 break;
             case ModPathChangeType.Moved:
                 foreach (var collection in this.Where(collection => collection.Settings[mod.Index] != null))
-                    _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+                    _saveService.DelaySave(new ModCollectionSave(_modStorage, collection));
                 break;
         }
     }
@@ -319,7 +319,7 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         foreach (var collection in this)
         {
             if (collection.Settings[mod.Index]?.HandleChanges(type, mod, groupIdx, optionIdx, movedToIdx) ?? false)
-                _saveService.QueueSave(new ModCollectionSave(_modStorage, collection));
+                _saveService.DelaySave(new ModCollectionSave(_modStorage, collection));
         }
     }
 }
