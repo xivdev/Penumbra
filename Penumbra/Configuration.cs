@@ -9,6 +9,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Filesystem;
 using OtterGui.Widgets;
+using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Interop.Services;
@@ -87,6 +88,7 @@ public class Configuration : IPluginConfiguration, ISavable
     public string                   QuickMoveFolder3        { get; set; } = string.Empty;
     public DoubleModifier           DeleteModModifier       { get; set; } = new(ModifierHotkey.Control, ModifierHotkey.Shift);
     public CollectionsTab.PanelMode CollectionPanel         { get; set; } = CollectionsTab.PanelMode.SimpleAssignment;
+    public TabType                  SelectedTab             { get; set; } = TabType.Settings;
 
     public bool PrintSuccessfulCommandsToChat { get; set; } = true;
     public bool FixMainWindow                 { get; set; } = false;

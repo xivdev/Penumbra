@@ -48,10 +48,12 @@ public class ConfigTabBar
         };
     }
 
-    public void Draw()
+    public TabType Draw()
     {
-        if (TabBar.Draw(string.Empty, ImGuiTabBarFlags.NoTooltip, ToLabel(SelectTab), out _, () => { }, Tabs))
+        if (TabBar.Draw(string.Empty, ImGuiTabBarFlags.NoTooltip, ToLabel(SelectTab), out var currentLabel, () => { }, Tabs))
             SelectTab = TabType.None;
+
+        return FromLabel(currentLabel);
     }
 
     private ReadOnlySpan<byte> ToLabel(TabType type)
@@ -68,4 +70,20 @@ public class ConfigTabBar
             TabType.ResourceManager  => Resource.Label,
             _                        => ReadOnlySpan<byte>.Empty,
         };
+
+    private TabType FromLabel(ReadOnlySpan<byte> label)
+    {
+        // @formatter:off
+        if (label == Mods.Label)         return TabType.Mods;
+        if (label == Collections.Label)  return TabType.Collections;
+        if (label == Settings.Label)     return TabType.Settings;
+        if (label == ChangedItems.Label) return TabType.ChangedItems;
+        if (label == Effective.Label)    return TabType.EffectiveChanges;
+        if (label == OnScreenTab.Label)  return TabType.OnScreen;
+        if (label == Watcher.Label)      return TabType.ResourceWatcher;
+        if (label == Debug.Label)        return TabType.Debug;
+        if (label == Resource.Label)     return TabType.ResourceManager;
+        // @formatter:on
+        return TabType.None;
+    }
 }

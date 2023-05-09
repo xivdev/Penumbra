@@ -43,13 +43,14 @@ public sealed class ConfigWindow : Window
 
         RespectCloseHotkey = true;
         tutorial.UpdateTutorialStep();
-        IsOpen = _config.DebugMode;
+        IsOpen                = _config.DebugMode;
     }
 
     public void Setup(Penumbra penumbra, ConfigTabBar configTabs)
     {
         _penumbra   = penumbra;
         _configTabs = configTabs;
+        SelectTab(_config.SelectedTab);
     }
 
     public override bool DrawConditions()
@@ -108,7 +109,12 @@ public sealed class ConfigWindow : Window
             }
             else
             {
-                _configTabs.Draw();
+                var type = _configTabs.Draw();
+                if (type != _config.SelectedTab)
+                {
+                    _config.SelectedTab = type;
+                    _config.Save();
+                }
             }
 
             _lastException = null;
