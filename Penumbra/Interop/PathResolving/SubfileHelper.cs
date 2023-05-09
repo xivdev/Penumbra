@@ -85,7 +85,7 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
         return false;
     }
 
-    /// <summary> Materials and AVFX need to be set per collection so they can load their textures independently from each other. </summary>
+    /// <summary> Materials, TMB, and AVFX need to be set per collection so they can load their sub files independently from each other. </summary>
     public static void HandleCollection(ResolveData resolveData, ByteString path, bool nonDefault, ResourceType type, FullPath? resolved,
         out (FullPath?, ResolveData) data)
     {
@@ -94,6 +94,7 @@ public unsafe class SubfileHelper : IDisposable, IReadOnlyCollection<KeyValuePai
             {
                 case ResourceType.Mtrl:
                 case ResourceType.Avfx:
+                case ResourceType.Tmb:
                     var fullPath = new FullPath($"|{resolveData.ModCollection.Name}_{resolveData.ModCollection.ChangeCounter}|{path}");
                     data = (fullPath, resolveData);
                     return;
