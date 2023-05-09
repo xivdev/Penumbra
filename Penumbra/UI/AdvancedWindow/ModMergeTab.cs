@@ -38,11 +38,14 @@ public class ModMergeTab
         ImGui.SameLine();
         DrawCombo();
 
-        ImGui.SetNextItemWidth(300 * ImGuiHelpers.GlobalScale);
-        ImGui.InputTextWithHint("##optionGroupInput", "Target Option Group", ref _modMerger.OptionGroupName, 64);
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(300 * ImGuiHelpers.GlobalScale);
-        ImGui.InputTextWithHint("##optionInput", "Target Option Name", ref _modMerger.OptionName, 64);
+        using (var disabled = ImRaii.Disabled(_modMerger.MergeFromMod.HasOptions))
+        {
+            ImGui.SetNextItemWidth(300 * ImGuiHelpers.GlobalScale);
+            ImGui.InputTextWithHint("##optionGroupInput", "Target Option Group", ref _modMerger.OptionGroupName, 64);
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(300 * ImGuiHelpers.GlobalScale);
+            ImGui.InputTextWithHint("##optionInput", "Target Option Name", ref _modMerger.OptionName, 64);
+        }
 
         if (ImGuiUtil.DrawDisabledButton("Merge", Vector2.Zero, string.Empty, !_modMerger.CanMerge))
             _modMerger.Merge();
@@ -50,7 +53,8 @@ public class ModMergeTab
         ImGui.Dummy(Vector2.One);
         ImGui.Separator();
         ImGui.Dummy(Vector2.One);
-        using (var table = ImRaii.Table("##options", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.ScrollY, ImGui.GetContentRegionAvail() with { Y = 6 * ImGui.GetFrameHeightWithSpacing()}))
+        using (var table = ImRaii.Table("##options", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.ScrollY,
+                   ImGui.GetContentRegionAvail() with { Y = 6 * ImGui.GetFrameHeightWithSpacing() }))
         {
             foreach (var (option, idx) in _modMerger.MergeFromMod.AllSubMods.WithIndex())
             {
@@ -79,12 +83,26 @@ public class ModMergeTab
                 ImGuiUtil.DrawTableColumn(option.FileData.Count.ToString());
                 ImGuiUtil.DrawTableColumn(option.FileSwapData.Count.ToString());
                 ImGuiUtil.DrawTableColumn(option.Manipulations.Count.ToString());
-
             }
         }
+
         ImGui.InputTextWithHint("##newModInput", "New Mod Name...", ref _newModName, 64);
-        if (ImGuiUtil.DrawDisabledButton("Split Off", Vector2.Zero, string.Empty, _newModName.Length == 0 || _modMerger.SelectedOptions.Count == 0))
+        if (ImGuiUtil.DrawDisabledButton("Split Off", Vector2.Zero, string.Empty,
+                _newModName.Length == 0 || _modMerger.SelectedOptions.Count == 0))
             _modMerger.SplitIntoMod(_newModName);
+
+        if (_modMerger.Warnings.Count > 0)
+        {
+            ImGui.Separator();
+            ImGui.Dummy(Vector2.One);
+            using var color = ImRaii.PushColor(ImGuiCol.Text, Colors.TutorialBorder);
+            foreach (var warning in _modMerger.Warnings.SkipLast(1))
+            {
+                ImGuiUtil.TextWrapped(warning);
+                ImGui.Separator();
+            }
+            ImGuiUtil.TextWrapped(_modMerger.Warnings[^1]);
+        }
 
         if (_modMerger.Error != null)
         {

@@ -15,7 +15,7 @@ public class DuplicateManager
 {
     private readonly SaveService                                      _saveService;
     private readonly ModManager                                       _modManager;
-    private readonly SHA256                                           _hasher = SHA256.Create();
+    private readonly SHA256                                           _hasher     = SHA256.Create();
     private readonly List<(FullPath[] Paths, long Size, byte[] Hash)> _duplicates = new();
 
     public DuplicateManager(ModManager modManager, SaveService saveService)
@@ -175,7 +175,8 @@ public class DuplicateManager
         }
     }
 
-    private static unsafe bool CompareFilesDirectly(FullPath f1, FullPath f2)
+    /// <summary> Check if two files are identical on a binary level. Returns true if they are identical. </summary>
+    public static unsafe bool CompareFilesDirectly(FullPath f1, FullPath f2)
     {
         if (!f1.Exists || !f2.Exists)
             return false;

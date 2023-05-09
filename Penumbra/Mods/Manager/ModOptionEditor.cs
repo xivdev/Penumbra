@@ -349,7 +349,7 @@ public class ModOptionEditor
     }
 
     /// <summary> Set the file redirections for a given option. Replaces existing redirections. </summary>
-    public void OptionSetFiles(Mod mod, int groupIdx, int optionIdx, Dictionary<Utf8GamePath, FullPath> replacements)
+    public void OptionSetFiles(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> replacements)
     {
         var subMod = GetSubMod(mod, groupIdx, optionIdx);
         if (subMod.FileData.SetEquals(replacements))
@@ -362,7 +362,7 @@ public class ModOptionEditor
     }
 
     /// <summary> Add additional file redirections to a given option, keeping already existing ones. Only fires an event if anything is actually added.</summary>
-    public void OptionAddFiles(Mod mod, int groupIdx, int optionIdx, Dictionary<Utf8GamePath, FullPath> additions)
+    public void OptionAddFiles(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> additions)
     {
         var subMod   = GetSubMod(mod, groupIdx, optionIdx);
         var oldCount = subMod.FileData.Count;
@@ -375,7 +375,7 @@ public class ModOptionEditor
     }
 
     /// <summary> Set the file swaps for a given option. Replaces existing swaps. </summary>
-    public void OptionSetFileSwaps(Mod mod, int groupIdx, int optionIdx, Dictionary<Utf8GamePath, FullPath> swaps)
+    public void OptionSetFileSwaps(Mod mod, int groupIdx, int optionIdx, IReadOnlyDictionary<Utf8GamePath, FullPath> swaps)
     {
         var subMod = GetSubMod(mod, groupIdx, optionIdx);
         if (subMod.FileSwapData.SetEquals(swaps))
