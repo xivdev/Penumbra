@@ -82,7 +82,7 @@ public class ItemSwapTab : IDisposable, ITab
     }
 
     public ReadOnlySpan<byte> Label
-        => "Item Swap (WIP)"u8;
+        => "Item Swap"u8;
 
     public void DrawContent()
     {
@@ -416,10 +416,10 @@ public class ItemSwapTab : IDisposable, ITab
         DrawEquipmentSwap(SwapType.Ring);
         DrawAccessorySwap();
         DrawHairSwap();
-        DrawFaceSwap();
+        //DrawFaceSwap();
         DrawEarSwap();
         DrawTailSwap();
-        DrawWeaponSwap();
+        //DrawWeaponSwap();
     }
 
     private ImRaii.IEndObject DrawTab(SwapType newTab)

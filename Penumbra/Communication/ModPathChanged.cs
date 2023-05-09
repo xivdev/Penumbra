@@ -40,6 +40,9 @@ public sealed class ModPathChanged : EventWrapper<Action<ModPathChangeType, Mod,
         /// <seealso cref="Mods.Editor.ModMerger.OnModPathChange"/>
         ModMerger = 0,
 
+        /// <seealso cref="UI.AdvancedWindow.ModEditWindow.OnModPathChange"/>
+        ModEditWindow = 0,
+
         /// <seealso cref="Collections.Manager.CollectionStorage.OnModPathChange"/>
         CollectionStorage = 10,
 

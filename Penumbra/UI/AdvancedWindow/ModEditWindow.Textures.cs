@@ -162,7 +162,7 @@ public partial class ModEditWindow
 
     private void DrawTextureTab()
     {
-        using var tab = ImRaii.TabItem("Texture Import/Export");
+        using var tab = ImRaii.TabItem("Textures");
         if (!tab)
             return;
 

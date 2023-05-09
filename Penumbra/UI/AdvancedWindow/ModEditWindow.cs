@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -10,12 +11,14 @@ using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Collections.Manager;
+using Penumbra.Communication;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
 using Penumbra.Meta;
 using Penumbra.Mods;
+using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
@@ -27,15 +30,16 @@ public partial class ModEditWindow : Window, IDisposable
 {
     private const string WindowBaseLabel = "###SubModEdit";
 
-    private readonly PerformanceTracker _performance;
-    private readonly ModEditor          _editor;
-    private readonly Configuration      _config;
-    private readonly ItemSwapTab        _itemSwapTab;
-    private readonly DalamudServices    _dalamud;
-    private readonly MetaFileManager    _metaFileManager;
-    private readonly ActiveCollections  _activeCollections;
-    private readonly StainService       _stainService;
-    private readonly ModMergeTab        _modMergeTab;
+    private readonly PerformanceTracker  _performance;
+    private readonly ModEditor           _editor;
+    private readonly Configuration       _config;
+    private readonly ItemSwapTab         _itemSwapTab;
+    private readonly DalamudServices     _dalamud;
+    private readonly MetaFileManager     _metaFileManager;
+    private readonly ActiveCollections   _activeCollections;
+    private readonly StainService        _stainService;
+    private readonly ModMergeTab         _modMergeTab;
+    private readonly CommunicatorService _communicator;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -146,17 +150,20 @@ public partial class ModEditWindow : Window, IDisposable
         DrawMetaTab();
         DrawSwapTab();
         _modMergeTab.Draw();
-        DrawMissingFilesTab();
         DrawDuplicatesTab();
-        DrawQuickImportTab();
         DrawMaterialReassignmentTab();
+        DrawQuickImportTab();
         _modelTab.Draw();
         _materialTab.Draw();
         DrawTextureTab();
         _shaderPackageTab.Draw();
-        using var tab = ImRaii.TabItem("Item Swap (WIP)");
-        if (tab)
-            _itemSwapTab.DrawContent();
+        using (var tab = ImRaii.TabItem("Item Swap"))
+        {
+            if (tab)
+                _itemSwapTab.DrawContent();
+        }
+
+        DrawMissingFilesTab();
     }
 
     /// <summary> A row of three buttonSizes and a help marker that can be used for material suffix changing. </summary>
@@ -512,7 +519,8 @@ public partial class ModEditWindow : Window, IDisposable
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
-        StainService stainService, ActiveCollections activeCollections, UiBuilder uiBuilder, DalamudServices dalamud, ModMergeTab modMergeTab)
+        StainService stainService, ActiveCollections activeCollections, UiBuilder uiBuilder, DalamudServices dalamud, ModMergeTab modMergeTab,
+        CommunicatorService communicator)
         : base(WindowBaseLabel)
     {
         _performance       = performance;
@@ -524,24 +532,33 @@ public partial class ModEditWindow : Window, IDisposable
         _activeCollections = activeCollections;
         _dalamud           = dalamud;
         _modMergeTab       = modMergeTab;
+        _communicator      = communicator;
         _fileDialog        = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
         _modelTab = new FileEditor<MdlFile>(this, gameData, config, _fileDialog, "Models", ".mdl",
             () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, bytes => new MdlFile(bytes));
-        _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shader Packages", ".shpk",
+        _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shaders", ".shpk",
             () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new ShpkTab(_fileDialog, bytes));
         _center            = new CombinedTexture(_left, _right);
         _quickImportViewer = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
+        _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ModEditWindow);
     }
 
     public void Dispose()
     {
+        _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
         _editor?.Dispose();
         _left.Dispose();
         _right.Dispose();
         _center.Dispose();
+    }
+
+    private void OnModPathChanged(ModPathChangeType type, Mod mod, DirectoryInfo? _1, DirectoryInfo? _2)
+    {
+        if (type is ModPathChangeType.Reloaded)
+            ChangeMod(mod);
     }
 }
