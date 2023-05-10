@@ -31,7 +31,6 @@ public class ModMerger : IDisposable
     public string OptionGroupName = "Merges";
     public string OptionName      = string.Empty;
 
-
     private readonly Dictionary<string, string> _fileToFile         = new();
     private readonly HashSet<string>            _createdDirectories = new();
     private readonly HashSet<int>               _createdGroups      = new();

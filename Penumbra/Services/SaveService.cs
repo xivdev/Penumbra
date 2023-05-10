@@ -29,7 +29,11 @@ public interface ISavable
 
 public class SaveService
 {
-    private static readonly TimeSpan StandardDelay = TimeSpan.FromSeconds(30);
+#if DEBUG
+    private static readonly TimeSpan StandardDelay = TimeSpan.FromSeconds(2);
+#else
+    private static readonly TimeSpan StandardDelay = TimeSpan.FromSeconds(10);
+#endif
 
     private readonly Logger           _log;
     private readonly FrameworkManager _framework;
