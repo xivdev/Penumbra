@@ -48,7 +48,7 @@ public unsafe class AnimationHookService : IDisposable
         _unkMountAnimationHook.Enable();
         _unkParasolAnimationHook.Enable();
         _dismountHook.Enable();
-        _vfxWeaponHook.Enable();
+        _apricotListenerSoundPlayHook.Enable();
     }
 
     public bool HandleFiles(ResourceType type, Utf8GamePath _, out ResolveData resolveData)
@@ -106,7 +106,7 @@ public unsafe class AnimationHookService : IDisposable
         _unkMountAnimationHook.Dispose();
         _unkParasolAnimationHook.Dispose();
         _dismountHook.Dispose();
-        _vfxWeaponHook.Dispose();
+        _apricotListenerSoundPlayHook.Dispose();
     }
 
     /// <summary> Characters load some of their voice lines or whatever with this function. </summary>
@@ -364,23 +364,34 @@ public unsafe class AnimationHookService : IDisposable
         _animationLoadData.Value = last;
     }
 
-    [Signature("48 89 6C 24 ?? 41 54 41 56 41 57 48 81 EC", DetourName = nameof(VfxWeaponDetour))]
-    private readonly Hook<VfxWeaponDelegate> _vfxWeaponHook = null!;
+    [Signature("48 89 6C 24 ?? 41 54 41 56 41 57 48 81 EC", DetourName = nameof(ApricotListenerSoundPlayDetour))]
+    private readonly Hook<ApricotListenerSoundPlayDelegate> _apricotListenerSoundPlayHook = null!;
 
-    private delegate nint VfxWeaponDelegate(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+    private delegate nint ApricotListenerSoundPlayDelegate(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
 
-    private nint VfxWeaponDetour(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6)
+    private nint ApricotListenerSoundPlayDetour(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6)
     {
         if (a6 == nint.Zero)
-            return _vfxWeaponHook!.Original(a1, a2, a3, a4, a5, a6);
+            return _apricotListenerSoundPlayHook!.Original(a1, a2, a3, a4, a5, a6);
 
-        var drawObject = ((DrawObject**)a6)[1];
-        if (drawObject == null)
-            return _vfxWeaponHook!.Original(a1, a2, a3, a4, a5, a6);
+        var last       = _animationLoadData.Value;
+        // a6 is some instance of Apricot.IInstanceListenner, in some cases we can obtain the associated caster via vfunc 1.
+        var gameObject = (*(delegate* unmanaged<nint, GameObject*>**)a6)[1](a6);
+        if (gameObject != null)
+        {
+            _animationLoadData.Value = _collectionResolver.IdentifyCollection(gameObject, true);
+        }
+        else
+        {
+            // for VfxListenner we can obtain the associated draw object as its first member,
+            // if the object has different type, drawObject will contain other values or garbage,
+            // but only be used in a dictionary pointer lookup, so this does not hurt.
+            var drawObject = ((DrawObject**)a6)[1];
+            if (drawObject != null)
+                _animationLoadData.Value = _collectionResolver.IdentifyCollection(drawObject, true);
+        }
 
-        var last = _animationLoadData.Value;
-        _animationLoadData.Value = _collectionResolver.IdentifyCollection(drawObject, true);
-        var ret = _vfxWeaponHook!.Original(a1, a2, a3, a4, a5, a6);
+        var ret = _apricotListenerSoundPlayHook!.Original(a1, a2, a3, a4, a5, a6);
         _animationLoadData.Value = last;
         return ret;
     }

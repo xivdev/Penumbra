@@ -205,7 +205,7 @@ public class CollectionEditor
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void InvokeChange(ModCollection changedCollection, ModSettingChange type, Mod? mod, int oldValue, int groupIdx)
     {
-        _saveService.DelaySave(new ModCollectionSave(_modStorage, changedCollection));
+        _saveService.QueueSave(new ModCollectionSave(_modStorage, changedCollection));
         _communicator.ModSettingChanged.Invoke(changedCollection, type, mod, oldValue, groupIdx, false);
         RecurseInheritors(changedCollection, type, mod, oldValue, groupIdx);
     }
