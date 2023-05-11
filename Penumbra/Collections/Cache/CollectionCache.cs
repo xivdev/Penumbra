@@ -151,6 +151,10 @@ public class CollectionCache : IDisposable
     {
         var conflicts = Conflicts(mod);
         var (paths, manipulations) = ModData.RemoveMod(mod);
+
+        if (addMetaChanges)
+            ++_collection.ChangeCounter;
+
         foreach (var path in paths)
         {
             if (ResolvedFiles.Remove(path, out var mp) && mp.Mod != mod)
@@ -183,10 +187,7 @@ public class CollectionCache : IDisposable
         }
 
         if (addMetaChanges)
-        {
-            ++_collection.ChangeCounter;
             _manager.MetaFileManager.ApplyDefaultFiles(_collection);
-        }
     }
 
 

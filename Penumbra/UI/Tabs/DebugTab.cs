@@ -154,7 +154,7 @@ public class DebugTab : Window, ITab
             if (collection.HasCache)
             {
                 using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
-                using var node  = TreeNode(collection.AnonymizedName);
+                using var node  = TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})");
                 if (!node)
                     continue;
 
@@ -177,7 +177,7 @@ public class DebugTab : Window, ITab
             else
             {
                 using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
-                TreeNode(collection.AnonymizedName, ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})", ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
             }
         }
     }

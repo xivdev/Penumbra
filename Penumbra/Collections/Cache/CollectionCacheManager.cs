@@ -27,7 +27,10 @@ public class CollectionCacheManager : IDisposable
 
     internal readonly MetaFileManager MetaFileManager;
 
-    public int  Count       { get; private set; }
+    private int _count;
+
+    public int Count
+        => _count;
 
     public IEnumerable<ModCollection> Active
         => _storage.Where(c => c.HasCache);
@@ -78,7 +81,8 @@ public class CollectionCacheManager : IDisposable
             return false;
 
         collection._cache = new CollectionCache(this, collection);
-        ++Count;
+        if (collection.Index > 0)
+            Interlocked.Increment(ref _count);
         Penumbra.Log.Verbose($"Created new cache for collection {collection.AnonymizedName}.");
         return true;
     }
@@ -295,7 +299,8 @@ public class CollectionCacheManager : IDisposable
 
         collection._cache!.Dispose();
         collection._cache = null;
-        --Count;
+        if (collection.Index > 0)
+            Interlocked.Decrement(ref _count);
         Penumbra.Log.Verbose($"Cleared cache of collection {collection.AnonymizedName}.");
     }
 
