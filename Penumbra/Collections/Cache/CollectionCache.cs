@@ -24,6 +24,7 @@ public class CollectionCache : IDisposable
 {
     private readonly CollectionCacheManager                           _manager;
     private readonly ModCollection                                    _collection;
+    public readonly  CollectionModData                                ModData       = new();
     public readonly  SortedList<string, (SingleArray<IMod>, object?)> _changedItems = new();
     public readonly  Dictionary<Utf8GamePath, ModPath>                ResolvedFiles = new();
     public readonly  MetaCache                                        Meta;
@@ -124,13 +125,21 @@ public class CollectionCache : IDisposable
     /// <summary> Force a file to be resolved to a specific path regardless of conflicts. </summary>
     internal void ForceFile(Utf8GamePath path, FullPath fullPath)
     {
-        if (CheckFullPath(path, fullPath))
-            ResolvedFiles[path] = new ModPath(Mod.ForcedFiles, fullPath);
+        if (!CheckFullPath(path, fullPath))
+            return;
+
+        if (ResolvedFiles.Remove(path, out var modPath))
+            ModData.RemovePath(modPath.Mod, path);
+        ResolvedFiles.Add(path, new ModPath(Mod.ForcedFiles, fullPath));
+        ModData.AddPath(Mod.ForcedFiles, path);
     }
 
     /// <summary> Force a file resolve to be removed. </summary>
-    internal void RemoveFile(Utf8GamePath path)
-        => ResolvedFiles.Remove(path);
+    internal void RemovePath(Utf8GamePath path)
+    {
+        if (ResolvedFiles.Remove(path, out var modPath))
+            ModData.RemovePath(modPath.Mod, path);
+    }
 
     public void ReloadMod(IMod mod, bool addMetaChanges)
     {
@@ -141,20 +150,19 @@ public class CollectionCache : IDisposable
     public void RemoveMod(IMod mod, bool addMetaChanges)
     {
         var conflicts = Conflicts(mod);
-
-        foreach (var (path, _) in mod.AllSubMods.SelectMany(s => s.Files.Concat(s.FileSwaps)))
+        var (paths, manipulations) = ModData.RemoveMod(mod);
+        foreach (var path in paths)
         {
-            if (!ResolvedFiles.TryGetValue(path, out var modPath))
-                continue;
-
-            if (modPath.Mod == mod)
-                ResolvedFiles.Remove(path);
+            if (ResolvedFiles.Remove(path, out var mp) && mp.Mod != mod)
+                Penumbra.Log.Warning(
+                    $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
         }
 
-        foreach (var manipulation in mod.AllSubMods.SelectMany(s => s.Manipulations))
+        foreach (var manipulation in manipulations)
         {
-            if (Meta.TryGetValue(manipulation, out var registeredMod) && registeredMod == mod)
-                Meta.RevertMod(manipulation);
+            if (Meta.RevertMod(manipulation, out var mp) && mp != mod)
+                Penumbra.Log.Warning(
+                    $"Invalid mod state, removing {mod.Name} and associated manipulation {manipulation} returned current mod {mp.Name}.");
         }
 
         _conflicts.Remove(mod);
@@ -247,7 +255,10 @@ public class CollectionCache : IDisposable
             return;
 
         if (ResolvedFiles.TryAdd(path, new ModPath(mod, file)))
+        {
+            ModData.AddPath(mod, path);
             return;
+        }
 
         var modPath = ResolvedFiles[path];
         // Lower prioritized option in the same mod.
@@ -255,7 +266,11 @@ public class CollectionCache : IDisposable
             return;
 
         if (AddConflict(path, mod, modPath.Mod))
+        {
+            ModData.RemovePath(modPath.Mod, path);
             ResolvedFiles[path] = new ModPath(mod, file);
+            ModData.AddPath(mod, path);
+        }
     }
 
 
@@ -332,6 +347,7 @@ public class CollectionCache : IDisposable
         if (!Meta.TryGetValue(manip, out var existingMod))
         {
             Meta.ApplyMod(manip, mod);
+            ModData.AddManip(mod, manip);
             return;
         }
 
@@ -340,7 +356,11 @@ public class CollectionCache : IDisposable
             return;
 
         if (AddConflict(manip, mod, existingMod))
+        {
+            ModData.RemoveManip(existingMod, manip);
             Meta.ApplyMod(manip, mod);
+            ModData.AddManip(mod, manip);
+        }
     }
 
 

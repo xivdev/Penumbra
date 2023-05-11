@@ -27,7 +27,7 @@ public readonly struct ImcCache : IDisposable
     {
         foreach( var (path, file) in _imcFiles )
         {
-            collection._cache!.RemoveFile( path );
+            collection._cache!.RemovePath( path );
             file.Reset();
         }
 

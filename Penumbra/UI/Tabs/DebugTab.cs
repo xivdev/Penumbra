@@ -11,6 +11,7 @@ using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
+using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api;
 using Penumbra.Collections.Manager;
@@ -20,9 +21,11 @@ using Penumbra.Import.Structs;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Structs;
+using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
 using Penumbra.String;
+using Penumbra.UI.Classes;
 using Penumbra.Util;
 using static OtterGui.Raii.ImRaii;
 using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBase;
@@ -122,6 +125,8 @@ public class DebugTab : Window, ITab
         ImGui.NewLine();
         DrawActorsDebug();
         ImGui.NewLine();
+        DrawCollectionCaches();
+        ImGui.NewLine();
         DrawDebugCharacterUtility();
         ImGui.NewLine();
         DrawStainTemplates();
@@ -136,6 +141,45 @@ public class DebugTab : Window, ITab
         ImGui.NewLine();
         DrawDebugTabIpc();
         ImGui.NewLine();
+    }
+
+
+    private void DrawCollectionCaches()
+    {
+        if (!ImGui.CollapsingHeader($"Collections ({_collectionManager.Caches.Count}/{_collectionManager.Storage.Count - 1} Caches)###Collections"))
+            return;
+
+        foreach (var collection in _collectionManager.Storage)
+        {
+            if (collection.HasCache)
+            {
+                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
+                using var node  = TreeNode(collection.AnonymizedName);
+                if (!node)
+                    continue;
+
+                color.Pop();
+                foreach (var (mod, paths, manips) in collection._cache!.ModData.Data.OrderBy(t => t.Item1.Name))
+                {
+                    using var id    = mod is TemporaryMod t ? PushId(t.Priority) : PushId(((Mod)mod).ModPath.Name);
+                    using var node2 = TreeNode(mod.Name.Text);
+                    if (!node2)
+                        continue;
+
+                    foreach (var path in paths)
+
+                        TreeNode(path.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+
+                    foreach (var manip in manips)
+                        TreeNode(manip.ToString(), ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                }
+            }
+            else
+            {
+                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
+                TreeNode(collection.AnonymizedName, ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+            }
+        }
     }
 
     /// <summary> Draw general information about mod and collection state. </summary>
@@ -168,17 +212,6 @@ public class DebugTab : Window, ITab
                 PrintValue("Mod Manager BasePath Exists",      Directory.Exists(_modManager.BasePath.FullName).ToString());
                 PrintValue("Mod Manager Valid",                _modManager.Valid.ToString());
                 PrintValue("Web Server Enabled",               _httpApi.Enabled.ToString());
-            }
-        }
-
-        using (var tree = TreeNode($"Collections ({_collectionManager.Caches.Count}/{_collectionManager.Storage.Count - 1})###Collections"))
-        {
-            if (tree)
-            {
-                using var table = Table("##DebugCollectionsTable", 2, ImGuiTableFlags.SizingFixedFit);
-                if (table)
-                    foreach (var collection in _collectionManager.Storage)
-                        PrintValue(collection.Name, collection.HasCache.ToString());
             }
         }
 
@@ -245,7 +278,7 @@ public class DebugTab : Window, ITab
                 using var table = Table("##DebugFramework", 2, ImGuiTableFlags.SizingFixedFit);
                 if (table)
                 {
-                    foreach(var important in _framework.Important)
+                    foreach (var important in _framework.Important)
                         PrintValue(important, "Immediate");
 
                     foreach (var (onTick, idx) in _framework.OnTick.WithIndex())

@@ -108,9 +108,9 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
         };
     }
 
-    public bool RevertMod(MetaManipulation manip)
+    public bool RevertMod(MetaManipulation manip, [NotNullWhen(true)] out IMod? mod)
     {
-        var ret = _manipulations.Remove(manip);
+        var ret = _manipulations.Remove(manip, out mod);
         if (!_manager.CharacterUtility.Ready)
             return ret;
 
