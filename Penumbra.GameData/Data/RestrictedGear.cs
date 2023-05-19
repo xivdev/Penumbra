@@ -405,10 +405,6 @@ public sealed class RestrictedGear : DataSharer
         AddItem(m2f, f2m, 36821, 27933, false);       // Archfiend Helm                             <-  Scion Hearer's Hood
         AddItem(m2f, f2m, 36822, 27934, false);       // Archfiend Armor                            <-  Scion Hearer's Coat
         AddItem(m2f, f2m, 36825, 27935, false);       // Archfiend Sabatons                         <-  Scion Hearer's Shoes
-        AddItem(m2f, f2m, 38253, 38257);              // Valentione Emissary's Hat                  <-> Valentione Emissary's Dress Hat
-        AddItem(m2f, f2m, 38254, 38258);              // Valentione Emissary's Jacket               <-> Valentione Emissary's Ruffled Dress
-        AddItem(m2f, f2m, 38255, 38259);              // Valentione Emissary's Bottoms              <-> Valentione Emissary's Culottes
-        AddItem(m2f, f2m, 38256, 38260);              // Valentione Emissary's Boots                <-> Valentione Emissary's Boots
         AddItem(m2f, f2m, 32393, 39302, false);       // Edenmete Gown of Casting                   <-  Gaia's Attire
     }
 
