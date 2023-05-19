@@ -1,4 +1,5 @@
 using System;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -71,15 +72,6 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
             EquipSlot   = variant > byte.MaxValue ? EquipSlot.All : EquipSlot.Unknown;
         }
     }
-
-    public bool Valid
-        => ObjectType switch
-        {
-            ObjectType.Accessory => BodySlot  == BodySlot.Unknown,
-            ObjectType.Equipment => BodySlot  == BodySlot.Unknown,
-            ObjectType.DemiHuman => BodySlot  == BodySlot.Unknown,
-            _                    => EquipSlot == EquipSlot.Unknown,
-        };
 
     public ImcManipulation Copy( ImcEntry entry )
         => new(ObjectType, BodySlot, PrimaryId, SecondaryId, Variant, EquipSlot, entry);
@@ -160,4 +152,39 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
 
     public bool Apply( ImcFile file )
         => file.SetEntry( ImcFile.PartIndex( EquipSlot ), Variant, Entry );
+
+    public bool Validate()
+    {
+        switch (ObjectType)
+        {
+            case ObjectType.Accessory:
+            case ObjectType.Equipment:
+                if (BodySlot is not BodySlot.Unknown)
+                    return false;
+                if (!EquipSlot.IsEquipmentPiece())
+                    return false;
+                if (SecondaryId != 0)
+                    return false;
+                break;
+            case ObjectType.DemiHuman:
+                if (BodySlot is not BodySlot.Unknown)
+                    return false;
+                if (!EquipSlot.IsEquipmentPiece())
+                    return false;
+                break;
+            default:
+                if (!Enum.IsDefined(BodySlot))
+                    return false;
+                if (EquipSlot is not EquipSlot.Unknown)
+                    return false;
+                if (!Enum.IsDefined(ObjectType))
+                    return false;
+                break;
+        }
+
+        if (Entry.MaterialId == 0)
+            return false;
+
+        return true;
+    }
 }

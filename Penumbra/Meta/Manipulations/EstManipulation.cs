@@ -103,4 +103,14 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
             _                                => throw new ArgumentOutOfRangeException(),
         };
     }
+
+    public bool Validate()
+    {
+        if (!Enum.IsDefined(Slot))
+            return false;
+        if (Names.CombinedRace(Gender, Race) == GenderRace.Unknown)
+            return false;
+        // No known check for set id or entry.
+        return true;
+    }
 }

@@ -67,4 +67,17 @@ public readonly struct EqpManipulation : IMetaManipulation< EqpManipulation >
         file[ SetId ] = ( entry & ~mask ) | Entry;
         return true;
     }
+
+    public bool Validate()
+    {
+        var mask = Eqp.Mask(Slot);
+        if (mask == 0)
+            return false;
+        if ((Entry & mask) != Entry)
+            return false;
+
+        // No check for set id.
+
+        return true;
+    }
 }

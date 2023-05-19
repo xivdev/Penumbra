@@ -1,4 +1,5 @@
 using System;
+using Penumbra.Api;
 using Penumbra.Util;
 
 namespace Penumbra.Communication;
@@ -14,7 +15,7 @@ public sealed class ModDirectoryChanged : EventWrapper<Action<string, bool>, Mod
 {
     public enum Priority
     {
-        /// <seealso cref="Api.PenumbraApi.ModDirectoryChanged"/>
+        /// <seealso cref="PenumbraApi.ModDirectoryChanged"/>
         Api = 0,
 
         /// <seealso cref="UI.FileDialogService.OnModDirectoryChange"/>

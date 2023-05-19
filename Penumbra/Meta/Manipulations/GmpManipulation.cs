@@ -51,4 +51,10 @@ public readonly struct GmpManipulation : IMetaManipulation< GmpManipulation >
         file[ SetId ] = Entry;
         return true;
     }
+
+    public bool Validate()
+    {
+        // No known conditions.
+        return true;
+    }
 }

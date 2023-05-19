@@ -1,4 +1,5 @@
 using System;
+using Penumbra.Api;
 using Penumbra.Util;
 
 namespace Penumbra.Communication;
@@ -13,7 +14,7 @@ public sealed class EnabledChanged : EventWrapper<Action<bool>, EnabledChanged.P
 {
     public enum Priority
     {
-        /// <seealso cref="Api.PenumbraApi.EnabledChange"/>
+        /// <seealso cref="Ipc.EnabledChange"/>
         Api = int.MinValue,
     }
 

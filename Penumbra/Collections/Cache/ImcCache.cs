@@ -36,7 +36,7 @@ public readonly struct ImcCache : IDisposable
 
     public bool ApplyMod( MetaFileManager manager, ModCollection collection, ImcManipulation manip )
     {
-        if( !manip.Valid )
+        if( !manip.Validate() )
         {
             return false;
         }
@@ -76,7 +76,7 @@ public readonly struct ImcCache : IDisposable
 
     public bool RevertMod( MetaFileManager manager, ModCollection collection, ImcManipulation m )
     {
-        if( !m.Valid || !_imcManipulations.Remove( m ) )
+        if( !m.Validate() || !_imcManipulations.Remove( m ) )
         {
             return false;
         }

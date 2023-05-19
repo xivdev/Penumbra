@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using Penumbra.Api;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Util;
@@ -22,7 +23,7 @@ public sealed class ModPathChanged : EventWrapper<Action<ModPathChangeType, Mod,
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnModChangeAddition"/>
         CollectionCacheManagerAddition = -100,
 
-        /// <seealso cref="Api.PenumbraApi.ModPathChangeSubscriber"/>
+        /// <seealso cref="PenumbraApi.ModPathChangeSubscriber"/>
         Api = 0,
 
         /// <seealso cref="Mods.Manager.ModCacheManager.OnModPathChange"/>

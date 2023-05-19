@@ -69,7 +69,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                 return;
 
             CheckInitialized();
-            _communicator.CreatingCharacterBase.Subscribe(new Action<nint, string, nint, nint, nint>(value), Communication.CreatingCharacterBase.Priority.Api);
+            _communicator.CreatingCharacterBase.Subscribe(new Action<nint, string, nint, nint, nint>(value),
+                Communication.CreatingCharacterBase.Priority.Api);
         }
         remove
         {
@@ -89,7 +90,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
                 return;
 
             CheckInitialized();
-            _communicator.CreatedCharacterBase.Subscribe(new Action<nint, string, nint>(value), Communication.CreatedCharacterBase.Priority.Api);
+            _communicator.CreatedCharacterBase.Subscribe(new Action<nint, string, nint>(value),
+                Communication.CreatedCharacterBase.Priority.Api);
         }
         remove
         {
@@ -181,7 +183,8 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     public event ChangedItemClick? ChangedItemClicked
     {
-        add => _communicator.ChangedItemClick.Subscribe(new Action<MouseButton, object?>(value!), Communication.ChangedItemClick.Priority.Default);
+        add => _communicator.ChangedItemClick.Subscribe(new Action<MouseButton, object?>(value!),
+            Communication.ChangedItemClick.Priority.Default);
         remove => _communicator.ChangedItemClick.Unsubscribe(new Action<MouseButton, object?>(value!));
     }
 
@@ -1120,13 +1123,14 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
 
         manips = new HashSet<MetaManipulation>(manipArray!.Length);
-        foreach (var manip in manipArray.Where(m => m.ManipulationType != MetaManipulation.Type.Unknown))
+        foreach (var manip in manipArray.Where(m => m.Validate()))
         {
-            if (!manips.Add(manip))
-            {
-                manips = null;
-                return false;
-            }
+            if (manips.Add(manip))
+                continue;
+
+            Penumbra.Log.Warning($"Manipulation {manip} {manip.EntryToString()} is invalid and was skipped.");
+            manips = null;
+            return false;
         }
 
         return true;

@@ -122,7 +122,7 @@ public partial class TexToolsMeta
                 {
                     var imc = new ImcManipulation(manip.ObjectType, manip.BodySlot, manip.PrimaryId, manip.SecondaryId, i, manip.EquipSlot,
                         value);
-                    if (imc.Valid)
+                    if (imc.Validate())
                         MetaManipulations.Add(imc);
                 }
 

@@ -1,4 +1,5 @@
 using System;
+using Penumbra.Api;
 using Penumbra.Util;
 
 namespace Penumbra.Communication;
@@ -12,7 +13,7 @@ public sealed class CreatedCharacterBase : EventWrapper<Action<nint, string, nin
 {
     public enum Priority
     {
-        /// <seealso cref="Api.PenumbraApi.CreatedCharacterBase"/>
+        /// <seealso cref="PenumbraApi.CreatedCharacterBase"/>
         Api = 0,
     }
 
