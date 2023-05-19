@@ -333,7 +333,7 @@ public class ConfigMigrationService
                 dict = dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value with { Priority = maxPriority - kvp.Value.Priority });
 
             var emptyStorage = new ModStorage();
-            var collection   = ModCollection.CreateFromData(_saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict);
+            var collection   = ModCollection.CreateFromData(_saveService, emptyStorage, ModCollection.DefaultCollectionName, 0, 1, dict, Array.Empty<string>());
             _saveService.ImmediateSave(new ModCollectionSave(emptyStorage, collection));
         }
         catch (Exception e)

@@ -11,7 +11,6 @@ using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.Util;
 
 namespace Penumbra.Collections.Manager;
 
@@ -153,41 +152,6 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
         return true;
     }
 
-    /// <summary> Stored after loading to be consumed and passed to the inheritance manager later. </summary>
-    private List<IReadOnlyList<string>>? _inheritancesByName = new();
-
-    /// <summary> Return an enumerable of collections and the collections they should inherit. </summary>
-    public IEnumerable<(ModCollection Collection, IReadOnlyList<ModCollection> Inheritance, bool LoadChanges)> ConsumeInheritanceNames()
-    {
-        if (_inheritancesByName == null)
-            throw new Exception("Inheritances were already consumed. This method can not be called twice.");
-
-        var inheritances = _inheritancesByName;
-        _inheritancesByName = null;
-        var list = new List<ModCollection>();
-        foreach (var (collection, inheritance) in _collections.Zip(inheritances))
-        {
-            list.Clear();
-            var changes = false;
-            foreach (var subCollectionName in inheritance)
-            {
-                if (ByName(subCollectionName, out var subCollection))
-                {
-                    list.Add(subCollection);
-                }
-                else
-                {
-                    Penumbra.ChatService.NotificationMessage(
-                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.", "Warning",
-                        NotificationType.Warning);
-                    changes = true;
-                }
-            }
-
-            yield return (collection, list, changes);
-        }
-    }
-
     /// <summary> Remove all settings for not currently-installed mods from the given collection. </summary>
     public void CleanUnavailableSettings(ModCollection collection)
     {
@@ -218,9 +182,6 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
     /// </summary>
     private void ReadCollections(out ModCollection defaultNamedCollection)
     {
-        _inheritancesByName?.Clear();
-        _inheritancesByName?.Add(Array.Empty<string>()); // None.
-
         foreach (var file in _saveService.FileNames.CollectionFiles)
         {
             if (!ModCollectionSave.LoadFromFile(file, out var name, out var version, out var settings, out var inheritance))
@@ -241,13 +202,11 @@ public class CollectionStorage : IReadOnlyList<ModCollection>, IDisposable
                 continue;
             }
 
-            var collection  = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings);
+            var collection  = ModCollection.CreateFromData(_saveService, _modStorage, name, version, Count, settings, inheritance);
             var correctName = _saveService.FileNames.CollectionFile(collection);
             if (file.FullName != correctName)
                 Penumbra.ChatService.NotificationMessage($"Collection {file.Name} does not correspond to {collection.Name}.", "Warning",
                     NotificationType.Warning);
-
-            _inheritancesByName?.Add(inheritance);
             _collections.Add(collection);
         }
 

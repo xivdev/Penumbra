@@ -48,17 +48,18 @@ internal readonly struct ModCollectionSave : ISavable
 
         // Write all used and unused settings by mod directory name.
         j.WriteStartObject();
+        var list = new List<(string, ModSettings.SavedSettings)>(_modCollection.Settings.Count + _modCollection.UnusedSettings.Count);
         for (var i = 0; i < _modCollection.Settings.Count; ++i)
         {
             var settings = _modCollection.Settings[i];
             if (settings != null)
-            {
-                j.WritePropertyName(_modStorage[i].ModPath.Name);
-                x.Serialize(j, new ModSettings.SavedSettings(settings, _modStorage[i]));
-            }
+                list.Add((_modStorage[i].ModPath.Name, new ModSettings.SavedSettings(settings, _modStorage[i])));
         }
 
-        foreach (var (modDir, settings) in _modCollection.UnusedSettings)
+        list.AddRange(_modCollection.UnusedSettings.Select(kvp => (kvp.Key, kvp.Value)));
+        list.Sort((a, b) => string.Compare(a.Item1, b.Item1, StringComparison.OrdinalIgnoreCase));
+
+        foreach (var (modDir, settings) in list)
         {
             j.WritePropertyName(modDir);
             x.Serialize(j, settings);
@@ -68,7 +69,7 @@ internal readonly struct ModCollectionSave : ISavable
 
         // Inherit by collection name.
         j.WritePropertyName("Inheritance");
-        x.Serialize(j, _modCollection.DirectlyInheritsFrom.Select(c => c.Name));
+        x.Serialize(j, _modCollection.InheritanceByName ?? _modCollection.DirectlyInheritsFrom.Select(c => c.Name));
         j.WriteEndObject();
     }
 

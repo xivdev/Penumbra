@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Penumbra.Mods.Manager;
-using Penumbra.Util;
 using Penumbra.Collections.Manager;
 using Penumbra.Services;
 
@@ -58,6 +57,9 @@ public partial class ModCollection
 
     /// <summary> Settings for deleted mods will be kept via the mods identifier (directory name). </summary>
     public readonly IReadOnlyDictionary<string, ModSettings.SavedSettings> UnusedSettings;
+
+    /// <summary> Inheritances stored before they can be applied. </summary>
+    public IReadOnlyList<string>? InheritanceByName;
 
     /// <summary> Contains all direct parent collections this collection inherits settings from. </summary>
     public readonly IReadOnlyList<ModCollection> DirectlyInheritsFrom;
@@ -115,10 +117,13 @@ public partial class ModCollection
 
     /// <summary> Constructor for reading from files. </summary>
     public static ModCollection CreateFromData(SaveService saver, ModStorage mods, string name, int version, int index,
-        Dictionary<string, ModSettings.SavedSettings> allSettings)
+        Dictionary<string, ModSettings.SavedSettings> allSettings, IReadOnlyList<string> inheritances)
     {
         Debug.Assert(index > 0, "Collection read with non-positive index.");
-        var ret = new ModCollection(name, index, 0, version, new List<ModSettings?>(), new List<ModCollection>(), allSettings);
+        var ret = new ModCollection(name, index, 0, version, new List<ModSettings?>(), new List<ModCollection>(), allSettings)
+        {
+            InheritanceByName = inheritances,
+        };
         ret.ApplyModSettings(saver, mods);
         ModCollectionMigration.Migrate(saver, mods, version, ret);
         return ret;

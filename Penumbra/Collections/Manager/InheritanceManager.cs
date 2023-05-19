@@ -7,6 +7,7 @@ using OtterGui.Filesystem;
 using Penumbra.Communication;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.UI.CollectionTab;
 using Penumbra.Util;
 
 namespace Penumbra.Collections.Manager;
@@ -131,20 +132,34 @@ public class InheritanceManager : IDisposable
     /// </summary>
     private void ApplyInheritances()
     {
-        foreach (var (collection, directParents, changes) in _storage.ConsumeInheritanceNames())
+        foreach (var collection in _storage)
         {
-            var localChanges = changes;
-            foreach (var parent in directParents)
-            {
-                if (AddInheritance(collection, parent, false))
-                    continue;
+            if (collection.InheritanceByName == null)
+                continue;
 
-                localChanges = true;
-                Penumbra.ChatService.NotificationMessage($"{collection.Name} can not inherit from {parent.Name}, removed.", "Warning",
-                    NotificationType.Warning);
+            var changes = false;
+            foreach (var subCollectionName in collection.InheritanceByName)
+            {
+                if (_storage.ByName(subCollectionName, out var subCollection))
+                {
+                    if (AddInheritance(collection, subCollection, false))
+                        continue;
+
+                    changes = true;
+                    Penumbra.ChatService.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", "Warning",
+                        NotificationType.Warning);
+                }
+                else
+                {
+                    Penumbra.ChatService.NotificationMessage(
+                        $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.", "Warning",
+                        NotificationType.Warning);
+                    changes = true;
+                }
             }
 
-            if (localChanges)
+            collection.InheritanceByName = null;
+            if (changes)
                 _saveService.ImmediateSave(new ModCollectionSave(_modStorage, collection));
         }
     }
