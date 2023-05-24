@@ -37,9 +37,34 @@ public class PenumbraChangelog
         Add7_0_0(Changelog);
         Add7_0_1(Changelog);
         Add7_0_4(Changelog);
+        Add7_1_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add7_1_0(Changelog log)
+        => log.NextVersion("Version 0.7.1.0")
+            .RegisterEntry("Updated for patch 6.4 - there may be some oversights on edge cases, but I could not find any issues myself.")
+            .RegisterHighlight("This update changed some Dragoon skills that were moving the player character before to not do that anymore. If you have any mods that applied to those skills, please make sure that they do not contain any redirections for .tmb files. If skills that should no longer move your character still do that for some reason, this is be detectable by the server.", 1)
+            .RegisterEntry("Added a Mod Merging tab in the Advanced Editing Window. This can help you merge multiple mods to one, or split off specific options from an existing mod into a new mod.")
+            .RegisterEntry("Added advanced options to configure the minimum allowed window size for the main window (to reduce it). This is not quite supported and may look bad, so only use it if you really need smaller windows.")
+            .RegisterEntry("The last tab selected in the main window is now saved and re-used when relaunching Penumbra.")
+            .RegisterEntry("Added a hook to correctly associate some sounds that are played while weapons are drawn.")
+            .RegisterEntry("Added a hook to correctly associate sounds that are played while dismounting.")
+            .RegisterEntry("A hook to associate weapon-associated VFX was expanded to work in more cases.")
+            .RegisterEntry("TMB resources now use a collection prefix to prevent retained state in some cases.")
+            .RegisterEntry("Improved startup times a bit.")
+            .RegisterEntry("Right-Click context menus for collections are now also ordered by name.")
+            .RegisterEntry("Advanced Editing tabs have been reordered and renamed slightly.")
+            .RegisterEntry("Added some validation of metadata changes to prevent stalling on load of bad IMC edits.")
+            .RegisterEntry("Fixed an issue where collections could lose their configured inheritances during startup in some cases.")
+            .RegisterEntry("Fixed some bugs when mods were removed from collection caches.")
+            .RegisterEntry("Fixed some bugs with IMC files not correctly reverting to default values in some cases.")
+            .RegisterEntry("Fixed an issue with the mod import popup not appearing (0.7.0.10)")
+            .RegisterEntry("Fixed an issue with the file selectors not always opening at the expected locations. (0.7.0.7)")
+            .RegisterEntry("Fixed some cache handling issues. (0.7.0.5 - 0.7.0.10)")
+            .RegisterEntry("Fixed an issue with multiple collection context menus appearing for some identifiers (0.7.0.5)")
+            .RegisterEntry("Fixed an issue where the Update Bibo button did only work if the Advanced Editing window was opened before. (0.7.0.5)");
 
     private static void Add7_0_4(Changelog log)
         => log.NextVersion("Version 0.7.0.4")
