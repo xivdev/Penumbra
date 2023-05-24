@@ -35,7 +35,7 @@ public class ResourceTree
     {
         var character = (Character*)SourceAddress;
         var model     = (CharacterBase*)character->GameObject.GetDrawObject();
-        var equipment = new ReadOnlySpan<CharacterArmor>(character->EquipSlotData, 10);
+        var equipment = new ReadOnlySpan<CharacterArmor>(&character->DrawData.Head, 10);
         // var customize = new ReadOnlySpan<byte>( character->CustomizeData, 26 );
         ModelId       = character->ModelCharaId;
         CustomizeData = character->DrawData.CustomizeData;

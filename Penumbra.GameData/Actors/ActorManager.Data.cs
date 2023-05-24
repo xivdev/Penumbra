@@ -250,7 +250,7 @@ public sealed partial class ActorManager : IDisposable
     private unsafe bool SearchPlayerCustomize(Character* character, int idx, out ActorIdentifier id)
     {
         var other = (Character*)_objects.GetObjectAddress(idx);
-        if (other == null || !CustomizeData.ScreenActorEquals((CustomizeData*)character->CustomizeData, (CustomizeData*)other->CustomizeData))
+        if (other == null || !CustomizeData.ScreenActorEquals((CustomizeData*)character->DrawData.CustomizeData.Data, (CustomizeData*)other->DrawData.CustomizeData.Data))
         {
             id = ActorIdentifier.Invalid;
             return false;
@@ -271,8 +271,8 @@ public sealed partial class ActorManager : IDisposable
     {
         static bool Compare(Character* a, Character* b)
         {
-            var data1  = (CustomizeData*)a->CustomizeData;
-            var data2  = (CustomizeData*)b->CustomizeData;
+            var data1  = (CustomizeData*)a->DrawData.CustomizeData.Data;
+            var data2  = (CustomizeData*)b->DrawData.CustomizeData.Data;
             var equals = CustomizeData.ScreenActorEquals(data1, data2);
             return equals;
         }

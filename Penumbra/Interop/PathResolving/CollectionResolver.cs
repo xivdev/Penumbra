@@ -216,13 +216,13 @@ public unsafe class CollectionResolver
         if (!IsModelHuman((uint)character->ModelCharaId))
             return null;
 
-        if (character->CustomizeData[0] == 0)
+        if (character->DrawData.CustomizeData[0] == 0)
         {
             notYetReady = true;
             return null;
         }
 
-        var bodyType = character->CustomizeData[2];
+        var bodyType = character->DrawData.CustomizeData[2];
         var collection = bodyType switch
         {
             3 => _collectionManager.Active.ByType(CollectionType.NonPlayerElderly),
@@ -232,8 +232,8 @@ public unsafe class CollectionResolver
         if (collection != null)
             return collection;
 
-        var race   = (SubRace)character->CustomizeData[4];
-        var gender = (Gender)(character->CustomizeData[1] + 1);
+        var race   = (SubRace)character->DrawData.CustomizeData[4];
+        var gender = (Gender)(character->DrawData.CustomizeData[1] + 1);
         var isNpc  = actor->ObjectKind != (byte)ObjectKind.Player;
 
         var type = CollectionTypeExtensions.FromParts(race, gender, isNpc);
