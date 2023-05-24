@@ -30,7 +30,7 @@ public readonly struct Stain
         => ((color & 0xFF) << 16) | ((color >> 16) & 0xFF) | (color & 0xFF00) | 0xFF000000;
 
     public Stain(Lumina.Excel.GeneratedSheets.Stain stain)
-        : this(stain.Name.ToDalamudString().ToString(), SeColorToRgba(stain.Color), (byte)stain.RowId, stain.Unknown4)
+        : this(stain.Name.ToDalamudString().ToString(), SeColorToRgba(stain.Color), (byte)stain.RowId, stain.Unknown5)
     { }
 
     internal Stain(string name, uint dye, byte index, bool gloss)
