@@ -790,7 +790,7 @@ public partial class ModEditWindow
             using var color = ImRaii.PushColor(ImGuiCol.FrameBg,
                 def < value ? ColorId.IncreasedMetaValue.Value() : ColorId.DecreasedMetaValue.Value(),
                 def != value);
-            if (ImGui.DragFloat("##rspValue", ref value, 0.001f, 0.01f, 8f) && value is >= 0.01f and <= 8f)
+            if (ImGui.DragFloat("##rspValue", ref value, 0.001f, RspManipulation.MinValue, RspManipulation.MaxValue) && value is >= RspManipulation.MinValue and <= RspManipulation.MaxValue)
                 editor.MetaEditor.Change(meta.Copy(value));
 
             ImGuiUtil.HoverTooltip($"Default Value: {def:0.###}");
