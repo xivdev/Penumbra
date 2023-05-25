@@ -161,7 +161,7 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
             case ObjectType.Equipment:
                 if (BodySlot is not BodySlot.Unknown)
                     return false;
-                if (!EquipSlot.IsEquipmentPiece())
+                if (!EquipSlot.IsEquipment() && !EquipSlot.IsAccessory())
                     return false;
                 if (SecondaryId != 0)
                     return false;
@@ -169,7 +169,7 @@ public readonly struct ImcManipulation : IMetaManipulation< ImcManipulation >
             case ObjectType.DemiHuman:
                 if (BodySlot is not BodySlot.Unknown)
                     return false;
-                if (!EquipSlot.IsEquipmentPiece())
+                if (!EquipSlot.IsEquipment() && !EquipSlot.IsAccessory())
                     return false;
                 break;
             default:
