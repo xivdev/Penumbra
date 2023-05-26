@@ -3,6 +3,7 @@ using OtterGui.Classes;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -128,18 +129,12 @@ public class CollectionCache : IDisposable
         if (!CheckFullPath(path, fullPath))
             return;
 
-        if (ResolvedFiles.Remove(path, out var modPath))
-            ModData.RemovePath(modPath.Mod, path);
-        ResolvedFiles.Add(path, new ModPath(Mod.ForcedFiles, fullPath));
-        ModData.AddPath(Mod.ForcedFiles, path);
+        _manager.ForceFile(this, path, fullPath);
     }
 
     /// <summary> Force a file resolve to be removed. </summary>
     internal void RemovePath(Utf8GamePath path)
-    {
-        if (ResolvedFiles.Remove(path, out var modPath))
-            ModData.RemovePath(modPath.Mod, path);
-    }
+        => _manager.ForceFile(this, path, FullPath.Empty);
 
     public void ReloadMod(IMod mod, bool addMetaChanges)
     {

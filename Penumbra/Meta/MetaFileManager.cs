@@ -84,13 +84,16 @@ public unsafe class MetaFileManager
                 : CharacterUtility.TemporarilySetResource(metaIndex, (nint)file.Data, file.Length)
             : MetaList.MetaReverter.Disabled;
 
-    public void ApplyDefaultFiles(ModCollection collection)
+    public void ApplyDefaultFiles(ModCollection? collection)
     {
         if (ActiveCollections.Default != collection || !CharacterUtility.Ready || !Config.EnableMods)
             return;
 
         ResidentResources.Reload();
-        collection._cache?.Meta.SetFiles();
+        if (collection?._cache == null)
+            CharacterUtility.ResetAll();
+        else
+            collection._cache.Meta.SetFiles();
     }
 
     /// <summary>

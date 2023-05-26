@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dalamud.Game;
 using OtterGui.Classes;
 using Penumbra.Api;
 using Penumbra.Api.Enums;
@@ -13,6 +15,7 @@ using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
@@ -26,6 +29,8 @@ public class CollectionCacheManager : IDisposable
     private readonly ActiveCollections   _active;
 
     internal readonly MetaFileManager MetaFileManager;
+
+    private readonly ConcurrentQueue<(CollectionCache, Utf8GamePath, FullPath)> _forcedFileQueue = new();
 
     private int _count;
 
@@ -48,13 +53,15 @@ public class CollectionCacheManager : IDisposable
 
         if (!_active.Individuals.IsLoaded)
             _active.Individuals.Loaded += CreateNecessaryCaches;
+        _framework.Framework.Update += OnFramework;
         _communicator.CollectionChange.Subscribe(OnCollectionChange, CollectionChange.Priority.CollectionCacheManager);
         _communicator.ModPathChanged.Subscribe(OnModChangeAddition, ModPathChanged.Priority.CollectionCacheManagerAddition);
         _communicator.ModPathChanged.Subscribe(OnModChangeRemoval,  ModPathChanged.Priority.CollectionCacheManagerRemoval);
         _communicator.TemporaryGlobalModChange.Subscribe(OnGlobalModChange, TemporaryGlobalModChange.Priority.CollectionCacheManager);
         _communicator.ModOptionChanged.Subscribe(OnModOptionChange, ModOptionChanged.Priority.CollectionCacheManager);
         _communicator.ModSettingChanged.Subscribe(OnModSettingChange, ModSettingChanged.Priority.CollectionCacheManager);
-        _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange, CollectionInheritanceChanged.Priority.CollectionCacheManager);
+        _communicator.CollectionInheritanceChanged.Subscribe(OnCollectionInheritanceChange,
+            CollectionInheritanceChanged.Priority.CollectionCacheManager);
         _communicator.ModDiscoveryStarted.Subscribe(OnModDiscoveryStarted, ModDiscoveryStarted.Priority.CollectionCacheManager);
         _communicator.ModDiscoveryFinished.Subscribe(OnModDiscoveryFinished, ModDiscoveryFinished.Priority.CollectionCacheManager);
 
@@ -94,6 +101,9 @@ public class CollectionCacheManager : IDisposable
     public void CalculateEffectiveFileList(ModCollection collection)
         => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Name,
             () => CalculateEffectiveFileListInternal(collection));
+
+    public void ForceFile(CollectionCache cache, Utf8GamePath path, FullPath fullPath)
+        => _forcedFileQueue.Enqueue((cache, path, fullPath));
 
     private void CalculateEffectiveFileListInternal(ModCollection collection)
     {
@@ -163,9 +173,14 @@ public class CollectionCacheManager : IDisposable
         else
         {
             RemoveCache(old);
-
             if (type is not CollectionType.Inactive && newCollection != null && newCollection.Index != 0 && CreateCache(newCollection))
                 CalculateEffectiveFileList(newCollection);
+
+            if (type is CollectionType.Default)
+                if (newCollection != null)
+                    MetaFileManager.ApplyDefaultFiles(newCollection);
+                else
+                    MetaFileManager.CharacterUtility.ResetAll();
         }
     }
 
@@ -337,5 +352,19 @@ public class CollectionCacheManager : IDisposable
     {
         var tasks = Active.Select(c => Task.Run(() => CalculateEffectiveFileListInternal(c))).ToArray();
         Task.WaitAll(tasks);
+    }
+
+    /// <summary>
+    /// Update forced files only on framework.
+    /// </summary>
+    private void OnFramework(Framework _)
+    {
+        while (_forcedFileQueue.TryDequeue(out var tuple))
+        {
+            if (tuple.Item1.ResolvedFiles.Remove(tuple.Item2, out var modPath))
+                tuple.Item1.ModData.RemovePath(modPath.Mod, tuple.Item2);
+            if (tuple.Item3.FullName.Length > 0)
+                tuple.Item1.ResolvedFiles.Add(tuple.Item2, new ModPath(Mod.ForcedFiles, tuple.Item3));
+        }
     }
 }
