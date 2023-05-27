@@ -41,7 +41,7 @@ public class ModNormalizer
         Step                  = 0;
         TotalSteps            = mod.TotalFileCount + 5;
 
-        Worker = Task.Run(NormalizeSync);
+        Worker = TrackedTask.Run(NormalizeSync);
     }
 
     private void NormalizeSync()

@@ -9,6 +9,7 @@ using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
+using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
 using Penumbra.Util;

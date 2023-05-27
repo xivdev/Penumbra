@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Threading.Tasks;
+using OtterGui;
 using Penumbra.Mods.Manager;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Editor;
 
 /// <summary> Utility to create and apply a zipped backup of a mod. </summary>
 public class ModBackup
@@ -80,7 +81,7 @@ public class ModBackup
             return;
 
         CreatingBackup = true;
-        await Task.Run(Create);
+        await AsyncTask.Run(Create);
         CreatingBackup = false;
     }
 

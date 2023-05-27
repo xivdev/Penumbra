@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using OtterGui;
 using Penumbra.Util;
 
 namespace Penumbra.Services;
@@ -58,7 +59,7 @@ public abstract class AsyncServiceWrapper<T>
     protected AsyncServiceWrapper(string name, StartTracker tracker, StartTimeType type, Func<T> factory)
     {
         Name = name;
-        _task = Task.Run(() =>
+        _task = TrackedTask.Run(() =>
         {
             using var timer   = tracker.Measure(type);
             var       service = factory();
@@ -84,7 +85,7 @@ public abstract class AsyncServiceWrapper<T>
     protected AsyncServiceWrapper(string name, Func<T> factory)
     {
         Name = name;
-        _task = Task.Run(() =>
+        _task = TrackedTask.Run(() =>
         {
             var service = factory();
             if (_isDisposed)

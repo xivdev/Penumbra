@@ -56,6 +56,10 @@ public class Penumbra : IDalamudPlugin
             _services        = ServiceManager.CreateProvider(this, pluginInterface, Log, startTimer);
             ChatService      = _services.GetRequiredService<ChatService>();
             _validityChecker = _services.GetRequiredService<ValidityChecker>();
+            var startup = _services.GetRequiredService<DalamudServices>().GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool s)
+                ? s.ToString()
+                : "Unknown";
+            Log.Information($"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
             _services.GetRequiredService<BackupService>(); // Initialize because not required anywhere else.
             _config            = _services.GetRequiredService<Configuration>();
             _characterUtility  = _services.GetRequiredService<CharacterUtility>();
@@ -114,7 +118,7 @@ public class Penumbra : IDalamudPlugin
 
     private void SetupInterface()
     {
-        Task.Run(() =>
+        AsyncTask.Run(() =>
             {
                 using var tInterface = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.Interface);
                 var       system     = _services.GetRequiredService<PenumbraWindowSystem>();

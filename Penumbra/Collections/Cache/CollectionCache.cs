@@ -122,26 +122,40 @@ public class CollectionCache : IDisposable
         return ret;
     }
 
+    public void ForceFile(Utf8GamePath path, FullPath fullPath)
+        => _manager.AddChange(ChangeData.ForcedFile(this, path, fullPath));
+
+    public void RemovePath(Utf8GamePath path)
+        => _manager.AddChange(ChangeData.ForcedFile(this, path, FullPath.Empty));
+
+    public void ReloadMod(IMod mod, bool addMetaChanges)
+        => _manager.AddChange(ChangeData.ModReload(this, mod, addMetaChanges));
+
+    public void AddMod(IMod mod, bool addMetaChanges)
+        => _manager.AddChange(ChangeData.ModAddition(this, mod, addMetaChanges));
+
+    public void RemoveMod(IMod mod, bool addMetaChanges)
+        => _manager.AddChange(ChangeData.ModRemoval(this, mod, addMetaChanges));
+
     /// <summary> Force a file to be resolved to a specific path regardless of conflicts. </summary>
-    internal void ForceFile(Utf8GamePath path, FullPath fullPath)
+    private void ForceFileSync(Utf8GamePath path, FullPath fullPath)
     {
         if (!CheckFullPath(path, fullPath))
             return;
 
-        _manager.ForceFile(this, path, fullPath);
+        if (ResolvedFiles.Remove(path, out var modPath))
+            ModData.RemovePath(modPath.Mod, path);
+        if (fullPath.FullName.Length > 0)
+            ResolvedFiles.Add(path, new ModPath(Mod.ForcedFiles, fullPath));
     }
 
-    /// <summary> Force a file resolve to be removed. </summary>
-    internal void RemovePath(Utf8GamePath path)
-        => _manager.ForceFile(this, path, FullPath.Empty);
-
-    public void ReloadMod(IMod mod, bool addMetaChanges)
+    internal void ReloadModSync(IMod mod, bool addMetaChanges)
     {
-        RemoveMod(mod, addMetaChanges);
-        AddMod(mod, addMetaChanges);
+        RemoveModSync(mod, addMetaChanges);
+        AddModSync(mod, addMetaChanges);
     }
 
-    public void RemoveMod(IMod mod, bool addMetaChanges)
+    internal void RemoveModSync(IMod mod, bool addMetaChanges)
     {
         var conflicts = Conflicts(mod);
         var (paths, manipulations) = ModData.RemoveMod(mod);
@@ -168,7 +182,7 @@ public class CollectionCache : IDisposable
         {
             if (conflict.HasPriority)
             {
-                ReloadMod(conflict.Mod2, false);
+                ReloadModSync(conflict.Mod2, false);
             }
             else
             {
@@ -185,8 +199,8 @@ public class CollectionCache : IDisposable
     }
 
 
-    // Add all files and possibly manipulations of a given mod according to its settings in this collection.
-    public void AddMod(IMod mod, bool addMetaChanges)
+    /// <summary> Add all files and possibly manipulations of a given mod according to its settings in this collection. </summary>
+    internal void AddModSync(IMod mod, bool addMetaChanges)
     {
         if (mod.Index >= 0)
         {
@@ -420,5 +434,56 @@ public class CollectionCache : IDisposable
 
         Penumbra.Log.Error($"The redirected path is too long to add the redirection\n\t{path}\n\t--> {fullPath}");
         return false;
+    }
+
+    public readonly record struct ChangeData
+    {
+        public readonly CollectionCache Cache;
+        public readonly Utf8GamePath    Path;
+        public readonly FullPath        FullPath;
+        public readonly IMod            Mod;
+        public readonly byte            Type;
+        public readonly bool            AddMetaChanges;
+
+        private ChangeData(CollectionCache cache, Utf8GamePath p, FullPath fp, IMod m, byte t, bool a)
+        {
+            Cache          = cache;
+            Path           = p;
+            FullPath       = fp;
+            Mod            = m;
+            Type           = t;
+            AddMetaChanges = a;
+        }
+
+        public static ChangeData ModRemoval(CollectionCache cache, IMod mod, bool addMetaChanges)
+            => new(cache, Utf8GamePath.Empty, FullPath.Empty, mod, 0, addMetaChanges);
+
+        public static ChangeData ModAddition(CollectionCache cache, IMod mod, bool addMetaChanges)
+            => new(cache, Utf8GamePath.Empty, FullPath.Empty, mod, 1, addMetaChanges);
+
+        public static ChangeData ModReload(CollectionCache cache, IMod mod, bool addMetaChanges)
+            => new(cache, Utf8GamePath.Empty, FullPath.Empty, mod, 2, addMetaChanges);
+
+        public static ChangeData ForcedFile(CollectionCache cache, Utf8GamePath p, FullPath fp)
+            => new(cache, p, fp, Mods.Mod.ForcedFiles, 3, false);
+
+        public void Apply()
+        {
+            switch (Type)
+            {
+                case 0:
+                    Cache.RemoveModSync(Mod, AddMetaChanges);
+                    break;
+                case 1:
+                    Cache.AddModSync(Mod, AddMetaChanges);
+                    break;
+                case 2:
+                    Cache.ReloadModSync(Mod, AddMetaChanges);
+                    break;
+                case 3:
+                    Cache.ForceFileSync(Path, FullPath);
+                    break;
+            }
+        }
     }
 }

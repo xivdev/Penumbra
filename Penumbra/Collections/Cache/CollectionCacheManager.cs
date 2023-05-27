@@ -15,7 +15,6 @@ using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
-using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
@@ -30,7 +29,7 @@ public class CollectionCacheManager : IDisposable
 
     internal readonly MetaFileManager MetaFileManager;
 
-    private readonly ConcurrentQueue<(CollectionCache, Utf8GamePath, FullPath)> _forcedFileQueue = new();
+    private readonly ConcurrentQueue<CollectionCache.ChangeData> _changeQueue = new();
 
     private int _count;
 
@@ -81,6 +80,14 @@ public class CollectionCacheManager : IDisposable
         MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
     }
 
+    public void AddChange(CollectionCache.ChangeData data)
+    {
+        if (_framework.Framework.IsInFrameworkUpdateThread)
+            data.Apply();
+        else
+            _changeQueue.Enqueue(data);
+    }
+
     /// <summary> Only creates a new cache, does not update an existing one. </summary>
     public bool CreateCache(ModCollection collection)
     {
@@ -101,9 +108,6 @@ public class CollectionCacheManager : IDisposable
     public void CalculateEffectiveFileList(ModCollection collection)
         => _framework.RegisterImportant(nameof(CalculateEffectiveFileList) + collection.Name,
             () => CalculateEffectiveFileListInternal(collection));
-
-    public void ForceFile(CollectionCache cache, Utf8GamePath path, FullPath fullPath)
-        => _forcedFileQueue.Enqueue((cache, path, fullPath));
 
     private void CalculateEffectiveFileListInternal(ModCollection collection)
     {
@@ -143,10 +147,10 @@ public class CollectionCacheManager : IDisposable
                          .Concat(_tempMods.Mods.TryGetValue(collection, out var list)
                              ? list
                              : Array.Empty<TemporaryMod>()))
-                cache.AddMod(tempMod, false);
+                cache.AddModSync(tempMod, false);
 
             foreach (var mod in _modStorage)
-                cache.AddMod(mod, false);
+                cache.AddModSync(mod, false);
 
             cache.AddMetaFiles();
 
@@ -351,12 +355,7 @@ public class CollectionCacheManager : IDisposable
     /// </summary>
     private void OnFramework(Framework _)
     {
-        while (_forcedFileQueue.TryDequeue(out var tuple))
-        {
-            if (tuple.Item1.ResolvedFiles.Remove(tuple.Item2, out var modPath))
-                tuple.Item1.ModData.RemovePath(modPath.Mod, tuple.Item2);
-            if (tuple.Item3.FullName.Length > 0)
-                tuple.Item1.ResolvedFiles.Add(tuple.Item2, new ModPath(Mod.ForcedFiles, tuple.Item3));
-        }
+        while (_changeQueue.TryDequeue(out var changeData))
+            changeData.Apply();
     }
 }
