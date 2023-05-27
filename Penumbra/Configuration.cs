@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Configuration;
+using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json;
 using OtterGui;
 using OtterGui.Classes;
@@ -124,13 +125,20 @@ public class Configuration : IPluginConfiguration, ISavable
         }
 
         if (File.Exists(fileNames.ConfigFile))
-        {
-            var text = File.ReadAllText(fileNames.ConfigFile);
-            JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
+            try
             {
-                Error = HandleDeserializationError,
-            });
-        }
+                var text = File.ReadAllText(fileNames.ConfigFile);
+                JsonConvert.PopulateObject(text, this, new JsonSerializerSettings
+                {
+                    Error = HandleDeserializationError,
+                });
+            }
+            catch (Exception ex)
+            {
+                Penumbra.ChatService.NotificationMessage(ex,
+                    "Error reading Configuration, reverting to default.\nYou may be able to restore your configuration using the rolling backups in the XIVLauncher/backups/Penumbra directory.",
+                    "Error reading Configuration", "Error", NotificationType.Error);
+            }
 
         migrator.Migrate(utility, this);
     }
