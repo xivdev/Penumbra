@@ -38,14 +38,26 @@ public class PenumbraChangelog
         Add7_0_1(Changelog);
         Add7_0_4(Changelog);
         Add7_1_0(Changelog);
+        Add7_1_2(Changelog);
     }
 
     #region Changelogs
 
+    private static void Add7_1_2(Changelog log)
+        => log.NextVersion("Version 0.7.1.2")
+            .RegisterEntry("Changed threaded handling of collection caches. Maybe this fixes the startup problems some people are experiencing.")
+            .RegisterEntry("This is just testing and may not be the solution, or may even make things worse. Sorry if I have to put out multiple small patches again to get this right.", 1)
+            .RegisterEntry("Fixed Penumbra failing to load if the main configuration file is corrupted.")
+            .RegisterEntry("Some miscellaneous small bug fixes.")
+            .RegisterEntry("Slight changes in behaviour for deduplicator/normalizer, mostly backend.")
+            .RegisterEntry("A typo in the 0.7.1.0 Changelog was been fixed.")
+            .RegisterEntry("Fixed left rings not being valid for IMC entries after validation. (7.1.1)")
+            .RegisterEntry("Relaxed the scaling restrictions for RSP scaling values to go from 0.01 to 512.0 instead of the prior upper limit of 8.0, in interface as well as validation, to better support the fetish community. (7.1.1)");
+
     private static void Add7_1_0(Changelog log)
         => log.NextVersion("Version 0.7.1.0")
             .RegisterEntry("Updated for patch 6.4 - there may be some oversights on edge cases, but I could not find any issues myself.")
-            .RegisterHighlight("This update changed some Dragoon skills that were moving the player character before to not do that anymore. If you have any mods that applied to those skills, please make sure that they do not contain any redirections for .tmb files. If skills that should no longer move your character still do that for some reason, this is be detectable by the server.", 1)
+            .RegisterHighlight("This update changed some Dragoon skills that were moving the player character before to not do that anymore. If you have any mods that applied to those skills, please make sure that they do not contain any redirections for .tmb files. If skills that should no longer move your character still do that for some reason, this is detectable by the server.", 1)
             .RegisterEntry("Added a Mod Merging tab in the Advanced Editing Window. This can help you merge multiple mods to one, or split off specific options from an existing mod into a new mod.")
             .RegisterEntry("Added advanced options to configure the minimum allowed window size for the main window (to reduce it). This is not quite supported and may look bad, so only use it if you really need smaller windows.")
             .RegisterEntry("The last tab selected in the main window is now saved and re-used when relaunching Penumbra.")
