@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -86,8 +87,9 @@ public class Penumbra : IDalamudPlugin
             if (_characterUtility.Ready)
                 _residentResources.Reload();
         }
-        catch
+        catch(Exception ex)
         {
+            Log.Error($"Error constructing Penumbra, Disposing again:\n{ex}");
             Dispose();
             throw;
         }

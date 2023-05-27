@@ -141,6 +141,9 @@ public unsafe partial class CharacterUtility : IDisposable
     /// <summary> Return all relevant resources to the default resource. </summary>
     public void ResetAll()
     {
+        if (!Ready)
+            return;
+
         foreach (var list in _lists)
             list.Dispose();
 

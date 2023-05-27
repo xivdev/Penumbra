@@ -325,17 +325,12 @@ public class CollectionCacheManager : IDisposable
     /// </summary>
     public void CreateNecessaryCaches()
     {
-        var tasks = _active.SpecialAssignments.Select(p => p.Value)
+        Parallel.ForEach(_active.SpecialAssignments.Select(p => p.Value)
             .Concat(_active.Individuals.Select(p => p.Collection))
             .Prepend(_active.Current)
             .Prepend(_active.Default)
             .Prepend(_active.Interface)
-            .Where(CreateCache)
-            .Select(c => Task.Run(() => CalculateEffectiveFileListInternal(c)))
-            .ToArray();
-
-        Penumbra.Log.Debug($"Creating {tasks.Length} necessary caches.");
-        Task.WaitAll(tasks);
+            .Where(CreateCache), CalculateEffectiveFileListInternal);
     }
 
     private void OnModDiscoveryStarted()
@@ -349,10 +344,7 @@ public class CollectionCacheManager : IDisposable
     }
 
     private void OnModDiscoveryFinished()
-    {
-        var tasks = Active.Select(c => Task.Run(() => CalculateEffectiveFileListInternal(c))).ToArray();
-        Task.WaitAll(tasks);
-    }
+        => Parallel.ForEach(Active, CalculateEffectiveFileListInternal);
 
     /// <summary>
     /// Update forced files only on framework.
