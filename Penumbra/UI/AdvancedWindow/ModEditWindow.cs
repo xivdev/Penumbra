@@ -126,7 +126,7 @@ public partial class ModEditWindow : Window, IDisposable
         if (swaps > 0)
             sb.Append($"   |   {swaps} Swaps");
 
-        _allowReduplicate = redirections != _editor.Files.Available.Count || _editor.Files.Available.Count > 0;
+        _allowReduplicate = redirections != _editor.Files.Available.Count || _editor.Files.Missing.Count > 0 || unused > 0;
         sb.Append(WindowBaseLabel);
         WindowName = sb.ToString();
     }
@@ -275,10 +275,17 @@ public partial class ModEditWindow : Window, IDisposable
         if (!tab)
             return;
 
-        var buttonText = _editor.Duplicates.Finished ? "Scan for Duplicates###ScanButton" : "Scanning for Duplicates...###ScanButton";
-        if (ImGuiUtil.DrawDisabledButton(buttonText, Vector2.Zero, "Search for identical files in this mod. This may take a while.",
-                !_editor.Duplicates.Finished))
-            _editor.Duplicates.StartDuplicateCheck(_editor.Files.Available);
+        if (_editor.Duplicates.Worker.IsCompleted)
+        {
+            if (ImGuiUtil.DrawDisabledButton("Scan for Duplicates", Vector2.Zero,
+                    "Search for identical files in this mod. This may take a while.", false))
+                _editor.Duplicates.StartDuplicateCheck(_editor.Files.Available);
+        }
+        else
+        {
+            if (ImGuiUtil.DrawDisabledButton("Cancel Scanning for Duplicates", Vector2.Zero, "Cancel the current scanning operation...", false))
+                _editor.Duplicates.Clear();
+        }
 
         const string desc =
             "Tries to create a unique copy of a file for every game path manipulated and put them in [Groupname]/[Optionname]/[GamePath] order.\n"
@@ -290,27 +297,20 @@ public partial class ModEditWindow : Window, IDisposable
         var tt = _allowReduplicate ? desc :
             modifier ? desc : desc + $"\n\nNo duplicates detected! Hold {_config.DeleteModModifier} to force normalization anyway.";
 
-        if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
-        {
-            _editor.ModNormalizer.Normalize(_mod!);
-            _editor.LoadMod(_mod!, _editor.GroupIdx, _editor.OptionIdx);
-        }
-
         if (_editor.ModNormalizer.Running)
         {
-            using var popup = ImRaii.Popup("Normalization", ImGuiWindowFlags.Modal);
             ImGui.ProgressBar((float)_editor.ModNormalizer.Step / _editor.ModNormalizer.TotalSteps,
                 new Vector2(300 * UiHelpers.Scale, ImGui.GetFrameHeight()),
                 $"{_editor.ModNormalizer.Step} / {_editor.ModNormalizer.TotalSteps}");
         }
-
-        if (!_editor.Duplicates.Finished)
+        else if(ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
         {
-            ImGui.SameLine();
-            if (ImGui.Button("Cancel"))
-                _editor.Duplicates.Clear();
-            return;
+            _editor.ModNormalizer.Normalize(_mod!);
+            _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(_mod!, _editor.GroupIdx, _editor.OptionIdx));
         }
+
+        if (!_editor.Duplicates.Worker.IsCompleted)
+            return;
 
         if (_editor.Duplicates.Duplicates.Count == 0)
         {

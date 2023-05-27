@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
@@ -28,21 +29,23 @@ public class DuplicateManager
         => _duplicates;
 
     public long SavedSpace { get; private set; } = 0;
-    public bool Finished   { get; private set; } = true;
+    public Task Worker     { get; private set; } = Task.CompletedTask;
+
+    private CancellationTokenSource _cancellationTokenSource = new();
 
     public void StartDuplicateCheck(IEnumerable<FileRegistry> files)
     {
-        if (!Finished)
+        if (!Worker.IsCompleted)
             return;
 
-        Finished = false;
         var filesTmp = files.OrderByDescending(f => f.FileSize).ToArray();
-        Task.Run(() => CheckDuplicates(filesTmp));
+        _cancellationTokenSource = new CancellationTokenSource();
+        Worker                   = Task.Run(() => CheckDuplicates(filesTmp, _cancellationTokenSource.Token), _cancellationTokenSource.Token);
     }
 
     public void DeleteDuplicates(ModFileCollection files, Mod mod, ISubMod option, bool useModManager)
     {
-        if (!Finished || _duplicates.Count == 0)
+        if (!Worker.IsCompleted || _duplicates.Count == 0)
             return;
 
         foreach (var (set, _, _) in _duplicates)
@@ -62,7 +65,9 @@ public class DuplicateManager
 
     public void Clear()
     {
-        Finished   = true;
+        _cancellationTokenSource.Cancel();
+        Worker     = Task.CompletedTask;
+        _duplicates.Clear();
         SavedSpace = 0;
     }
 
@@ -110,7 +115,7 @@ public class DuplicateManager
         return to;
     }
 
-    private void CheckDuplicates(IReadOnlyList<FileRegistry> files)
+    private void CheckDuplicates(IReadOnlyList<FileRegistry> files, CancellationToken token)
     {
         _duplicates.Clear();
         SavedSpace = 0;
@@ -122,8 +127,7 @@ public class DuplicateManager
             if (file.SubModUsage.Any(f => f.Item2.Path.StartsWith("ui/"u8)))
                 continue;
 
-            if (Finished)
-                return;
+            token.ThrowIfCancellationRequested();
 
             if (file.FileSize == lastSize)
             {
@@ -132,7 +136,7 @@ public class DuplicateManager
             }
 
             if (list.Count >= 2)
-                CheckMultiDuplicates(list, lastSize);
+                CheckMultiDuplicates(list, lastSize, token);
 
             lastSize = file.FileSize;
 
@@ -141,26 +145,23 @@ public class DuplicateManager
         }
 
         if (list.Count >= 2)
-            CheckMultiDuplicates(list, lastSize);
+            CheckMultiDuplicates(list, lastSize, token);
 
         _duplicates.Sort((a, b) => a.Size != b.Size ? b.Size.CompareTo(a.Size) : a.Paths[0].CompareTo(b.Paths[0]));
-        Finished = true;
     }
 
-    private void CheckMultiDuplicates(IReadOnlyList<FullPath> list, long size)
+    private void CheckMultiDuplicates(IReadOnlyList<FullPath> list, long size, CancellationToken token)
     {
         var hashes = list.Select(f => (f, ComputeHash(f))).ToList();
         while (hashes.Count > 0)
         {
-            if (Finished)
-                return;
+            token.ThrowIfCancellationRequested();
 
             var set  = new HashSet<FullPath> { hashes[0].Item1 };
             var hash = hashes[0];
             for (var j = 1; j < hashes.Count; ++j)
             {
-                if (Finished)
-                    return;
+                token.ThrowIfCancellationRequested();
 
                 if (CompareHashes(hash.Item2, hashes[j].Item2) && CompareFilesDirectly(hashes[0].Item1, hashes[j].Item1))
                     set.Add(hashes[j].Item1);
@@ -245,10 +246,10 @@ public class DuplicateManager
             var mod = new Mod(modDirectory);
             _modManager.Creator.ReloadMod(mod, true, out _);
 
-            Finished = false;
+            Clear();
             var files = new ModFileCollection();
             files.UpdateAll(mod, mod.Default);
-            CheckDuplicates(files.Available.OrderByDescending(f => f.FileSize).ToArray());
+            CheckDuplicates(files.Available.OrderByDescending(f => f.FileSize).ToArray(), CancellationToken.None);
             DeleteDuplicates(files, mod, mod.Default, false);
         }
         catch (Exception e)

@@ -19,11 +19,13 @@ public class ModNormalizer
     private string _normalizationDirName = null!;
     private string _oldDirName           = null!;
 
-    public int Step       { get; private set; }
-    public int TotalSteps { get; private set; }
+    public int  Step       { get; private set; }
+    public int  TotalSteps { get; private set; }
+    public Task Worker     { get; private set; } = Task.CompletedTask;
+
 
     public bool Running
-        => Step < TotalSteps;
+        => !Worker.IsCompleted;
 
     public ModNormalizer(ModManager modManager)
         => _modManager = modManager;
@@ -39,7 +41,7 @@ public class ModNormalizer
         Step                  = 0;
         TotalSteps            = mod.TotalFileCount + 5;
 
-        Task.Run(NormalizeSync);
+        Worker = Task.Run(NormalizeSync);
     }
 
     private void NormalizeSync()
@@ -280,7 +282,7 @@ public class ModNormalizer
 
     private void ApplyRedirections()
     {
-        foreach (var option in Mod.AllSubMods.OfType<SubMod>())
+        foreach (var option in Mod.AllSubMods)
             _modManager.OptionEditor.OptionSetFiles(Mod, option.GroupIdx, option.OptionIdx,
                 _redirections[option.GroupIdx + 1][option.OptionIdx]);
 
