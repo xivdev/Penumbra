@@ -77,7 +77,7 @@ public sealed class ModManager : ModStorage, IDisposable
             ScanMods();
 
         _communicator.ModDiscoveryFinished.Invoke();
-        Penumbra.Log.Information("Rediscovered mods.");
+        Penumbra.Log.Information($"Rediscovered {Mods.Count} mods.");
 
         if (ModBackup.MigrateModBackups)
             ModBackup.MigrateZipToPmp(this);

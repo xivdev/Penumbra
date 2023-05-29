@@ -17,10 +17,18 @@ public readonly struct ImcCache : IDisposable
     public ImcCache()
     { }
 
-    public void SetFiles(ModCollection collection)
+    public void SetFiles(ModCollection collection, bool fromFullCompute)
     {
-        foreach( var path in _imcFiles.Keys )
-            collection._cache!.ForceFile( path, CreateImcPath( collection, path ) );
+        if (fromFullCompute)
+        {
+            foreach (var path in _imcFiles.Keys)
+                collection._cache!.ForceFileSync(path, CreateImcPath(collection, path));
+        }
+        else
+        {
+            foreach (var path in _imcFiles.Keys)
+                collection._cache!.ForceFile(path, CreateImcPath(collection, path));
+        }
     }
 
     public void Reset(ModCollection collection)

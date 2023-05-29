@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Penumbra.Api.Enums;
 using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
@@ -30,7 +31,10 @@ public class CollectionCache : IDisposable
     public readonly  MetaCache                                        Meta;
     public readonly  Dictionary<IMod, SingleArray<ModConflicts>>      _conflicts = new();
 
-    public bool Calculating;
+    public int Calculating = -1;
+
+    public string AnonymizedName
+        => _collection.AnonymizedName;
 
     public IEnumerable<SingleArray<ModConflicts>> AllConflicts
         => _conflicts.Values;
@@ -138,7 +142,7 @@ public class CollectionCache : IDisposable
         => _manager.AddChange(ChangeData.ModRemoval(this, mod, addMetaChanges));
 
     /// <summary> Force a file to be resolved to a specific path regardless of conflicts. </summary>
-    private void ForceFileSync(Utf8GamePath path, FullPath fullPath)
+    internal void ForceFileSync(Utf8GamePath path, FullPath fullPath)
     {
         if (!CheckFullPath(path, fullPath))
             return;
@@ -149,7 +153,7 @@ public class CollectionCache : IDisposable
             ResolvedFiles.Add(path, new ModPath(Mod.ForcedFiles, fullPath));
     }
 
-    internal void ReloadModSync(IMod mod, bool addMetaChanges)
+    private void ReloadModSync(IMod mod, bool addMetaChanges)
     {
         RemoveModSync(mod, addMetaChanges);
         AddModSync(mod, addMetaChanges);
@@ -238,7 +242,7 @@ public class CollectionCache : IDisposable
         {
             ++_collection.ChangeCounter;
             if (mod.TotalManipulations > 0)
-                AddMetaFiles();
+                AddMetaFiles(false);
 
             _manager.MetaFileManager.ApplyDefaultFiles(_collection);
         }
@@ -263,22 +267,29 @@ public class CollectionCache : IDisposable
         if (!CheckFullPath(path, file))
             return;
 
-        if (ResolvedFiles.TryAdd(path, new ModPath(mod, file)))
+        try
         {
-            ModData.AddPath(mod, path);
-            return;
+            if (ResolvedFiles.TryAdd(path, new ModPath(mod, file)))
+            {
+                ModData.AddPath(mod, path);
+                return;
+            }
+
+            var modPath = ResolvedFiles[path];
+            // Lower prioritized option in the same mod.
+            if (mod == modPath.Mod)
+                return;
+
+            if (AddConflict(path, mod, modPath.Mod))
+            {
+                ModData.RemovePath(modPath.Mod, path);
+                ResolvedFiles[path] = new ModPath(mod, file);
+                ModData.AddPath(mod, path);
+            }
         }
-
-        var modPath = ResolvedFiles[path];
-        // Lower prioritized option in the same mod.
-        if (mod == modPath.Mod)
-            return;
-
-        if (AddConflict(path, mod, modPath.Mod))
+        catch (Exception ex)
         {
-            ModData.RemovePath(modPath.Mod, path);
-            ResolvedFiles[path] = new ModPath(mod, file);
-            ModData.AddPath(mod, path);
+            Penumbra.Log.Error($"[{Thread.CurrentThread.ManagedThreadId}] Error adding redirection {file} -> {path} for mod {mod.Name} to collection cache {AnonymizedName}:\n{ex}");
         }
     }
 
@@ -374,8 +385,8 @@ public class CollectionCache : IDisposable
 
 
     // Add all necessary meta file redirects.
-    public void AddMetaFiles()
-        => Meta.SetImcFiles();
+    public void AddMetaFiles(bool fromFullCompute)
+        => Meta.SetImcFiles(fromFullCompute);
 
 
     // Identify and record all manipulated objects for this entire collection.

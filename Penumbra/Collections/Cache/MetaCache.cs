@@ -59,7 +59,7 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
         _estCache.SetFiles(_manager);
         _gmpCache.SetFiles(_manager);
         _cmpCache.SetFiles(_manager);
-        _imcCache.SetFiles(_collection);
+        _imcCache.SetFiles(_collection, false);
     }
 
     public void Reset()
@@ -167,8 +167,8 @@ public class MetaCache : IDisposable, IEnumerable<KeyValuePair<MetaManipulation,
     }
 
     /// <summary> Set the currently relevant IMC files for the collection cache. </summary>
-    public void SetImcFiles()
-        => _imcCache.SetFiles(_collection);
+    public void SetImcFiles(bool fromFullCompute)
+        => _imcCache.SetFiles(_collection, fromFullCompute);
 
     public MetaList.MetaReverter TemporarilySetEqpFile()
         => _eqpCache.TemporarilySetFiles(_manager);

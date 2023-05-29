@@ -82,16 +82,30 @@ public class CollectionCacheManager : IDisposable
 
     public void AddChange(CollectionCache.ChangeData data)
     {
-        if (_framework.Framework.IsInFrameworkUpdateThread)
+        if (data.Cache.Calculating == -1)
+        {
+            if (_framework.Framework.IsInFrameworkUpdateThread)
+                data.Apply();
+            else
+                _changeQueue.Enqueue(data);
+        }
+        else if (data.Cache.Calculating == Environment.CurrentManagedThreadId)
+        {
             data.Apply();
+        }
         else
+        {
             _changeQueue.Enqueue(data);
+        }
     }
 
     /// <summary> Only creates a new cache, does not update an existing one. </summary>
     public bool CreateCache(ModCollection collection)
     {
-        if (collection.HasCache || collection.Index == ModCollection.Empty.Index)
+        if (collection.Index == ModCollection.Empty.Index)
+            return false;
+
+        if (collection._cache != null)
             return false;
 
         collection._cache = new CollectionCache(this, collection);
@@ -115,27 +129,33 @@ public class CollectionCacheManager : IDisposable
         if (collection.Index == 0)
             return;
 
-        Penumbra.Log.Debug($"[{Thread.CurrentThread.ManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName}");
+        Penumbra.Log.Debug($"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName}");
         if (!collection.HasCache)
         {
             Penumbra.Log.Error(
-                $"[{Thread.CurrentThread.ManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName} failed, no cache exists.");
-            return;
+                $"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName} failed, no cache exists.");
         }
+        else if (collection._cache!.Calculating != -1)
+        {
+            Penumbra.Log.Error(
+                $"[{Environment.CurrentManagedThreadId}] Recalculating effective file list for {collection.AnonymizedName} failed, already in calculation on [{collection._cache!.Calculating}].");
+        }
+        else
+        {
+            FullRecalculation(collection);
 
-        FullRecalculation(collection);
-
-        Penumbra.Log.Debug(
-            $"[{Thread.CurrentThread.ManagedThreadId}] Recalculation of effective file list for {collection.AnonymizedName} finished.");
+            Penumbra.Log.Debug(
+                $"[{Environment.CurrentManagedThreadId}] Recalculation of effective file list for {collection.AnonymizedName} finished.");
+        }
     }
 
     private void FullRecalculation(ModCollection collection)
     {
         var cache = collection._cache;
-        if (cache == null || cache.Calculating)
+        if (cache is not { Calculating: -1 })
             return;
 
-        cache.Calculating = true;
+        cache.Calculating = Environment.CurrentManagedThreadId;
         try
         {
             cache.ResolvedFiles.Clear();
@@ -152,7 +172,7 @@ public class CollectionCacheManager : IDisposable
             foreach (var mod in _modStorage)
                 cache.AddModSync(mod, false);
 
-            cache.AddMetaFiles();
+            cache.AddMetaFiles(true);
 
             ++collection.ChangeCounter;
 
@@ -160,7 +180,7 @@ public class CollectionCacheManager : IDisposable
         }
         finally
         {
-            cache.Calculating = false;
+            cache.Calculating = -1;
         }
     }
 
@@ -329,12 +349,19 @@ public class CollectionCacheManager : IDisposable
     /// </summary>
     public void CreateNecessaryCaches()
     {
-        Parallel.ForEach(_active.SpecialAssignments.Select(p => p.Value)
-            .Concat(_active.Individuals.Select(p => p.Collection))
-            .Prepend(_active.Current)
-            .Prepend(_active.Default)
-            .Prepend(_active.Interface)
-            .Where(CreateCache), CalculateEffectiveFileListInternal);
+        ModCollection[] caches;
+        // Lock to make sure no race conditions during CreateCache happen.
+        lock (this)
+        {
+            caches = _active.SpecialAssignments.Select(p => p.Value)
+                .Concat(_active.Individuals.Select(p => p.Collection))
+                .Prepend(_active.Current)
+                .Prepend(_active.Default)
+                .Prepend(_active.Interface)
+                .Where(CreateCache).ToArray();
+        }
+
+        Parallel.ForEach(caches, CalculateEffectiveFileListInternal);
     }
 
     private void OnModDiscoveryStarted()
