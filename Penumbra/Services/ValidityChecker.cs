@@ -10,9 +10,10 @@ namespace Penumbra.Services;
 
 public class ValidityChecker
 {
-    public const string Repository          = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
-    public const string RepositoryLower     = "https://raw.githubusercontent.com/xivdev/penumbra/master/repo.json";
-    public const string TestRepositoryLower = "https://raw.githubusercontent.com/xivdev/penumbra/test/repo.json";
+    public const string Repository      = "https://raw.githubusercontent.com/xivdev/Penumbra/master/repo.json";
+    public const string SeaOfStars      = "https://raw.githubusercontent.com/Ottermandias/SeaOfStars/main/repo.json";
+    public const string RepositoryLower = "https://raw.githubusercontent.com/xivdev/penumbra/master/repo.json";
+    public const string SeaOfStarsLower = "https://raw.githubusercontent.com/ottermandias/seaofstars/main/repo.json";
 
     public readonly bool DevPenumbraExists;
     public readonly bool IsNotInstalledPenumbra;
@@ -82,11 +83,11 @@ public class ValidityChecker
     private static bool CheckSourceRepo( DalamudPluginInterface pi )
     {
 #if !DEBUG
-        return pi.SourceRepository.Trim().ToLowerInvariant() switch
+        return pi.SourceRepository?.Trim().ToLowerInvariant() switch
         {
             null                => false,
             RepositoryLower     => true,
-            TestRepositoryLower => true,
+            SeaOfStarsLower     => true,
             _                   => false,
         };
 #else

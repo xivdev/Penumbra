@@ -88,7 +88,7 @@ public sealed class ConfigWindow : Window
             {
                 DrawProblemWindow(
                     $"You are loading a release version of Penumbra from the repository \"{_pluginInterface.SourceRepository}\" instead of the official repository.\n"
-                  + $"Please use the official repository at {ValidityChecker.Repository}.\n\n"
+                  + $"Please use the official repository at {ValidityChecker.Repository} or the suite repository at {ValidityChecker.SeaOfStars}.\n\n"
                   + "If you are developing for Penumbra and see this, you should compile your version in debug mode to avoid it.");
             }
             else if (_validityChecker.IsNotInstalledPenumbra)
