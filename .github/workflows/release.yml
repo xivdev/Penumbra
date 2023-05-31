@@ -24,14 +24,15 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
       - name: Build
         run: |
-          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
+          $ver = '${{ github.ref_name }}'
           invoke-expression 'dotnet build --no-restore --configuration Release --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
-      - name: write version into json
+      - name: write version into jsons
         run: |
-          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
+          $ver = '${{ github.ref_name }}'
           $path = './Penumbra/bin/Release/Penumbra.json'
-          $content = get-content -path $path
-          $content = $content -replace '1.0.0.0',$ver
+          $json = Get-Content -Raw $path | ConvertFrom-Json
+          $json.AssemblyVersion = $ver
+          $content = $json | ConvertTo-Json
           set-content -Path $path -Value $content
       - name: Archive
         run: Compress-Archive -Path Penumbra/bin/Release/* -DestinationPath Penumbra.zip
@@ -63,26 +64,24 @@ jobs:
 
       - name: Write out repo.json
         run: |
-          $ver = '${{ github.ref }}' -replace 'refs/tags/',''
-          $path = './base_repo.json'
-          $new_path = './repo.json'
-          $content = get-content -path $path
-          $content = $content -replace '1.0.0.0',$ver
-          set-content -Path $new_path -Value $content
+          $ver = '${{ github.ref_name }}'
+          $path = './repo.json'
+          $json = Get-Content -Raw $path | ConvertFrom-Json
+          $json[0].AssemblyVersion = $ver
+          $json[0].TestingAssemblyVersion = $ver
+          $json[0].DownloadLinkInstall = $json.DownloadLinkInstall -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
+          $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
+          $json[0].DownloadLinkUpdate = $json.DownloadLinkUpdate -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
+          $content = $json | ConvertTo-Json
+          set-content -Path $path -Value $content
 
       - name: Commit repo.json
         run: |
           git config --global user.name "Actions User"
           git config --global user.email "actions@github.com"
-
           git fetch origin master
-          git fetch origin test
-          git branch -f test ${{ github.sha }}
+          git branch -f master ${{ github.sha }}
           git checkout master
           git add repo.json
-          git commit -m "[CI] Updating repo.json for ${{ github.ref }}" || true
-
+          git commit -m "[CI] Updating repo.json for ${{ github.ref_name }}" || true
           git push origin master
-          git branch -f test origin/master
-          git checkout test
-          git push origin test -f || true
