@@ -72,7 +72,7 @@ jobs:
           $json[0].DownloadLinkInstall = $json.DownloadLinkInstall -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
           $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
           $json[0].DownloadLinkUpdate = $json.DownloadLinkUpdate -replace '[^/]+/Penumbra.zip',"$ver/Penumbra.zip"
-          $content = $json | ConvertTo-Json
+          $content = $json | ConvertTo-Json -AsArray
           set-content -Path $path -Value $content
 
       - name: Commit repo.json

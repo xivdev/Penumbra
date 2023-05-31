@@ -70,7 +70,7 @@ jobs:
           $json = Get-Content -Raw $path | ConvertFrom-Json
           $json[0].TestingAssemblyVersion = $ver          
           $json[0].DownloadLinkTesting = $json.DownloadLinkTesting -replace '[^/]+/Penumbra.zip',"$verT/Penumbra.zip"
-          $content = $json | ConvertTo-Json
+          $content = $json | ConvertTo-Json -AsArray
           set-content -Path $path -Value $content
 
       - name: Commit repo.json
