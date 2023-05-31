@@ -1,22 +1,24 @@
-{
-  "Author": "Ottermandias, Adam, Wintermute",
-  "Name": "Penumbra",
-  "Description": "Runtime mod loader and manager.",
-  "InternalName": "Penumbra",
-  "AssemblyVersion": "0.7.1.4",
-  "TestingAssemblyVersion": "0.7.1.5",
-  "RepoUrl": "https://github.com/xivdev/Penumbra",
-  "ApplicableVersion": "any",
-  "DalamudApiLevel": 8,
-  "IsHide": "False",
-  "IsTestingExclusive": "False",
-  "DownloadCount": 0,
-  "LastUpdate": 0,
-  "LoadPriority": 69420,
-  "LoadRequiredState": 2,
-  "LoadSync": true,
-  "DownloadLinkInstall": "https://github.com/xivdev/Penumbra/releases/download/0.7.1.4/Penumbra.zip",
-  "DownloadLinkTesting": "https://github.com/xivdev/Penumbra/releases/download/t0.7.1.5/Penumbra.zip",
-  "DownloadLinkUpdate": "https://github.com/xivdev/Penumbra/releases/download/0.7.1.4/Penumbra.zip",
-  "IconUrl": "https://raw.githubusercontent.com/xivdev/Penumbra/master/images/icon.png"
-}
+[
+  {
+    "Author": "Ottermandias, Adam, Wintermute",
+    "Name": "Penumbra",
+    "Description": "Runtime mod loader and manager.",
+    "InternalName": "Penumbra",
+    "AssemblyVersion": "0.7.1.4",
+    "TestingAssemblyVersion": "0.7.1.5",
+    "RepoUrl": "https://github.com/xivdev/Penumbra",
+    "ApplicableVersion": "any",
+    "DalamudApiLevel": 8,
+    "IsHide": "False",
+    "IsTestingExclusive": "False",
+    "DownloadCount": 0,
+    "LastUpdate": 0,
+    "LoadPriority": 69420,
+    "LoadRequiredState": 2,
+    "LoadSync": true,
+    "DownloadLinkInstall": "https://github.com/xivdev/Penumbra/releases/download/0.7.1.4/Penumbra.zip",
+    "DownloadLinkTesting": "https://github.com/xivdev/Penumbra/releases/download/t0.7.1.5/Penumbra.zip",
+    "DownloadLinkUpdate": "https://github.com/xivdev/Penumbra/releases/download/0.7.1.4/Penumbra.zip",
+    "IconUrl": "https://raw.githubusercontent.com/xivdev/Penumbra/master/images/icon.png"
+  }
+]
