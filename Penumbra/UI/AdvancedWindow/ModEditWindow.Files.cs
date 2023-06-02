@@ -293,7 +293,7 @@ public partial class ModEditWindow
         if (_selectedFiles.Count == 0)
             tt += "\n\nNo files selected.";
         else if (!active)
-            tt += $"\n\nHold {_config.DeleteModModifier.ToString()} to delete.";
+            tt += $"\n\nHold {_config.DeleteModModifier} to delete.";
 
         if (ImGuiUtil.DrawDisabledButton("Delete Selected Files", Vector2.Zero, tt, _selectedFiles.Count == 0 || !active))
             _editor.FileEditor.DeleteFiles(_editor.Mod!, _editor.Option!, _editor.Files.Available.Where(_selectedFiles.Contains));

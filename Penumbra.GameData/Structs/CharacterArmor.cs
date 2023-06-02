@@ -28,13 +28,13 @@ public struct CharacterArmor : IEquatable<CharacterArmor>
         Stain   = stain;
     }
 
-    public CharacterArmor With(StainId stain)
+    public readonly CharacterArmor With(StainId stain)
         => new(Set, Variant, stain);
 
-    public CharacterWeapon ToWeapon()
+    public readonly CharacterWeapon ToWeapon()
         => new(Set, 0, Variant, Stain);
 
-    public CharacterWeapon ToWeapon(StainId stain)
+    public readonly CharacterWeapon ToWeapon(StainId stain)
         => new(Set, 0, Variant, stain);
 
     public override string ToString()
