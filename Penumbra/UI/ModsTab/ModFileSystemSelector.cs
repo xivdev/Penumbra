@@ -652,12 +652,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         return false;
     }
 
-    private void DrawFilterCombo(ref bool everything)
+    private bool DrawFilterCombo(ref bool everything)
     {
         using var combo = ImRaii.Combo("##filterCombo", string.Empty,
             ImGuiComboFlags.NoPreview | ImGuiComboFlags.PopupAlignLeft | ImGuiComboFlags.HeightLargest);
+        var ret = ImGui.IsItemClicked(ImGuiMouseButton.Right);
         if (!combo)
-            return;
+            return ret;
 
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing,
             ImGui.GetStyle().ItemSpacing with { Y = 3 * UiHelpers.Scale });
@@ -679,10 +680,12 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
                 SetFilterDirty();
             }
         }
+
+        return ret;
     }
 
     /// <summary> Add the state filter combo-button to the right of the filter box. </summary>
-    protected override float CustomFilters(float width)
+    protected override (float, bool) CustomFilters(float width)
     {
         var pos            = ImGui.GetCursorPos();
         var remainingWidth = width - ImGui.GetFrameHeight();
@@ -693,9 +696,9 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         ImGui.SetCursorPos(comboPos);
         // Draw combo button
         using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.FilterActive, !everything);
-        DrawFilterCombo(ref everything);
+        var rightClick = DrawFilterCombo(ref everything);
         _tutorial.OpenTutorial(BasicTutorialSteps.ModFilters);
-        if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+        if (rightClick)
         {
             _stateFilter = ModFilterExtensions.UnfilteredStateMods;
             SetFilterDirty();
@@ -703,7 +706,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         ImGuiUtil.HoverTooltip("Filter mods for their activation status.\nRight-Click to clear all filters.");
         ImGui.SetCursorPos(pos);
-        return remainingWidth;
+        return (remainingWidth, rightClick);
     }
 
     #endregion
