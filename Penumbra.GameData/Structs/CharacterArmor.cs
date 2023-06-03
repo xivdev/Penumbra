@@ -9,7 +9,7 @@ public struct CharacterArmor : IEquatable<CharacterArmor>
     public const int Size = 4;
 
     [FieldOffset(0)]
-    public uint Value;
+    public readonly uint Value;
 
     [FieldOffset(0)]
     public SetId Set;
@@ -37,18 +37,18 @@ public struct CharacterArmor : IEquatable<CharacterArmor>
     public readonly CharacterWeapon ToWeapon(StainId stain)
         => new(Set, 0, Variant, stain);
 
-    public override string ToString()
+    public override readonly string ToString()
         => $"{Set},{Variant},{Stain}";
 
     public static readonly CharacterArmor Empty;
 
-    public bool Equals(CharacterArmor other)
+    public readonly bool Equals(CharacterArmor other)
         => Value == other.Value;
 
-    public override bool Equals(object? obj)
+    public override readonly bool Equals(object? obj)
         => obj is CharacterArmor other && Equals(other);
 
-    public override int GetHashCode()
+    public override readonly int GetHashCode()
         => (int)Value;
 
     public static bool operator ==(CharacterArmor left, CharacterArmor right)

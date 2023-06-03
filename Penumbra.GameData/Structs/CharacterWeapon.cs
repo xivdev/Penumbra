@@ -18,10 +18,10 @@ public struct CharacterWeapon : IEquatable<CharacterWeapon>
     [FieldOffset(6)]
     public StainId Stain;
 
-    public ulong Value
+    public readonly ulong Value
         => (ulong)Set | ((ulong)Type << 16) | ((ulong)Variant << 32) | ((ulong)Stain << 48);
 
-    public override string ToString()
+    public override readonly string ToString()
         => $"{Set},{Type},{Variant},{Stain}";
 
     public CharacterWeapon(SetId set, WeaponType type, ushort variant, StainId stain)
@@ -48,13 +48,13 @@ public struct CharacterWeapon : IEquatable<CharacterWeapon>
 
     public static readonly CharacterWeapon Empty = new(0, 0, 0, 0);
 
-    public bool Equals(CharacterWeapon other)
+    public readonly bool Equals(CharacterWeapon other)
         => Value == other.Value;
 
-    public override bool Equals(object? obj)
+    public override readonly bool Equals(object? obj)
         => obj is CharacterWeapon other && Equals(other);
 
-    public override int GetHashCode()
+    public override readonly int GetHashCode()
         => Value.GetHashCode();
 
     public static bool operator ==(CharacterWeapon left, CharacterWeapon right)
