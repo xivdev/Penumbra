@@ -16,7 +16,7 @@ public class PathResolver : IDisposable
 {
     private readonly PerformanceTracker    _performance;
     private readonly Configuration         _config;
-    private readonly CollectionManager _collectionManager;
+    private readonly CollectionManager     _collectionManager;
     private readonly TempCollectionManager _tempCollections;
     private readonly ResourceLoader        _loader;
 
@@ -57,8 +57,7 @@ public class PathResolver : IDisposable
         return category switch
         {
             // Only Interface collection.
-            ResourceCategory.Ui => (_collectionManager.Active.Interface.ResolvePath(path),
-                _collectionManager.Active.Interface.ToResolveData()),
+            ResourceCategory.Ui => ResolveUi(path),
             // Never allow changing scripts.
             ResourceCategory.UiScript   => (null, ResolveData.Invalid),
             ResourceCategory.GameScript => (null, ResolveData.Invalid),
@@ -68,8 +67,11 @@ public class PathResolver : IDisposable
             ResourceCategory.Vfx    => Resolve(path, resourceType),
             ResourceCategory.Sound  => Resolve(path, resourceType),
             // None of these files are ever associated with specific characters,
-            // always use the default resolver for now.
-            ResourceCategory.Common   => DefaultResolver(path),
+            // always use the default resolver for now,
+            // except that common/font is conceptually more UI.
+            ResourceCategory.Common => path.Path.StartsWith("common/font"u8)
+                ? ResolveUi(path)
+                : DefaultResolver(path),
             ResourceCategory.BgCommon => DefaultResolver(path),
             ResourceCategory.Bg       => DefaultResolver(path),
             ResourceCategory.Cut      => DefaultResolver(path),
@@ -137,4 +139,9 @@ public class PathResolver : IDisposable
                 $"[ResourceLoader] Loaded {gamePath} from file and replaced with IMC from collection {collection.AnonymizedName}.");
         }
     }
+
+    /// <summary> Resolve a path from the interface collection. </summary>
+    private (FullPath?, ResolveData) ResolveUi(Utf8GamePath path)
+        => (_collectionManager.Active.Interface.ResolvePath(path),
+            _collectionManager.Active.Interface.ToResolveData());
 }
