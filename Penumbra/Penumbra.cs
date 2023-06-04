@@ -218,7 +218,7 @@ public class Penumbra : IDalamudPlugin
         sb.AppendLine("**Collections**");
         sb.Append($"> **`#Collections:                 `** {_collectionManager.Storage.Count - 1}\n");
         sb.Append($"> **`#Temp Collections:            `** {_tempCollections.Count}\n");
-        sb.Append($"> **`Active Collections:           `** {_collectionManager.Caches.Count - _tempCollections.Count}\n");
+        sb.Append($"> **`Active Collections:           `** {_collectionManager.Caches.Count}\n");
         sb.Append($"> **`Base Collection:              `** {_collectionManager.Active.Default.AnonymizedName}\n");
         sb.Append($"> **`Interface Collection:         `** {_collectionManager.Active.Interface.AnonymizedName}\n");
         sb.Append($"> **`Selected Collection:          `** {_collectionManager.Active.Current.AnonymizedName}\n");
