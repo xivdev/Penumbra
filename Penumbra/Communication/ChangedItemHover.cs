@@ -1,5 +1,5 @@
 using System;
-using Penumbra.Util;
+using OtterGui.Classes;
 
 namespace Penumbra.Communication;
 

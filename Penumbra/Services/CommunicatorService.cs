@@ -1,10 +1,17 @@
 using System;
+using OtterGui.Classes;
+using OtterGui.Log;
 using Penumbra.Communication;
 
 namespace Penumbra.Services;
 
 public class CommunicatorService : IDisposable
 {
+    public CommunicatorService(Logger logger)
+    {
+        EventWrapper.ChangeLogger(logger);
+    }
+
     /// <inheritdoc cref="Communication.CollectionChange"/>
     public readonly CollectionChange CollectionChange = new();
 

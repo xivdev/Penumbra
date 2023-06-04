@@ -74,7 +74,7 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
         }
     }
 
-    public string WriteBytes()
+    public override string ToString()
     {
         var sb = new StringBuilder(Size * 3);
         for (var i = 0; i < Size - 1; ++i)
