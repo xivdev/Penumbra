@@ -332,7 +332,10 @@ public partial class ModCreator
 
     /// <summary> Return the name of a new valid directory based on the base directory and the given name. </summary>
     public static DirectoryInfo NewOptionDirectory(DirectoryInfo baseDir, string optionName)
-        => new(Path.Combine(baseDir.FullName, ReplaceBadXivSymbols(optionName)));
+    {
+        var option = ReplaceBadXivSymbols(optionName);
+        return new DirectoryInfo(Path.Combine(baseDir.FullName, option.Length > 0 ? option : "_"));
+    }
 
     /// <summary> Normalize for nicer names, and remove invalid symbols or invalid paths. </summary>
     public static string ReplaceBadXivSymbols(string s, string replacement = "_")
