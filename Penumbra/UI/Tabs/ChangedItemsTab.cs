@@ -9,7 +9,6 @@ using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
-using Penumbra.Services;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
@@ -17,14 +16,14 @@ namespace Penumbra.UI.Tabs;
 public class ChangedItemsTab : ITab
 {
     private readonly CollectionManager      _collectionManager;
-    private readonly CommunicatorService    _communicator;
+    private readonly ChangedItemDrawer      _drawer;
     private readonly CollectionSelectHeader _collectionHeader;
 
-    public ChangedItemsTab(CollectionManager collectionManager, CommunicatorService communicator, CollectionSelectHeader collectionHeader)
+    public ChangedItemsTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader, ChangedItemDrawer drawer)
     {
         _collectionManager = collectionManager;
-        _communicator      = communicator;
         _collectionHeader  = collectionHeader;
+        _drawer            = drawer;
     }
 
     public ReadOnlySpan<byte> Label
@@ -49,8 +48,8 @@ public class ChangedItemsTab : ITab
 
         const ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.NoResize | ImGuiTableColumnFlags.WidthFixed;
         ImGui.TableSetupColumn("items", flags, 400 * UiHelpers.Scale);
-        ImGui.TableSetupColumn("mods",  flags, varWidth - 120 * UiHelpers.Scale);
-        ImGui.TableSetupColumn("id",    flags, 120 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("mods",  flags, varWidth - 130 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("id",    flags, 130 * UiHelpers.Scale);
 
         var items = _collectionManager.Active.Current.ChangedItems;
         var rest = _changedItemFilter.IsEmpty && _changedItemModFilter.IsEmpty
@@ -76,7 +75,7 @@ public class ChangedItemsTab : ITab
     /// <summary> Apply the current filters. </summary>
     private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
         => (_changedItemFilter.IsEmpty
-             || UiHelpers.ChangedItemName(item.Key, item.Value.Item2)
+             || ChangedItemDrawer.ChangedItemFilterName(item.Key, item.Value.Item2)
                     .Contains(_changedItemFilter.Lower, StringComparison.OrdinalIgnoreCase))
          && (_changedItemModFilter.IsEmpty || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter)));
 
@@ -84,7 +83,7 @@ public class ChangedItemsTab : ITab
     private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
     {
         ImGui.TableNextColumn();
-        UiHelpers.DrawChangedItem(_communicator, item.Key, item.Value.Item2, false);
+        _drawer.DrawChangedItem(item.Key, item.Value.Item2, false);
         ImGui.TableNextColumn();
         if (item.Value.Item1.Count > 0)
         {
@@ -94,7 +93,7 @@ public class ChangedItemsTab : ITab
         }
 
         ImGui.TableNextColumn();
-        if (!UiHelpers.GetChangedItemObject(item.Value.Item2, out var text))
+        if (!ChangedItemDrawer.GetChangedItemObject(item.Value.Item2, out var text))
             return;
 
         using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
