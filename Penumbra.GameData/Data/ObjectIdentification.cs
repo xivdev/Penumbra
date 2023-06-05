@@ -50,13 +50,12 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
     {
         if (path.EndsWith(".pap", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".tmb", StringComparison.OrdinalIgnoreCase))
         {
-            IdentifyVfx(set, path);
+            if (IdentifyVfx(set, path))
+                return;
         }
-        else
-        {
-            var info = GamePathParser.GetFileInfo(path);
-            IdentifyParsed(set, info);
-        }
+
+        var info = GamePathParser.GetFileInfo(path);
+        IdentifyParsed(set, info);
     }
 
     public Dictionary<string, object?> Identify(string path)
@@ -161,24 +160,22 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 
     private void IdentifyParsed(IDictionary<string, object?> set, GameObjectInfo info)
     {
+        switch (info.FileType)
+        {
+            case FileType.Sound:
+                AddCounterString(set, FileType.Sound.ToString());
+                return;
+            case FileType.Animation:
+            case FileType.Pap:
+                AddCounterString(set, FileType.Animation.ToString());
+                return;
+            case FileType.Shader:
+                AddCounterString(set, FileType.Shader.ToString());
+                return;
+        }
+
         switch (info.ObjectType)
         {
-            case ObjectType.Unknown:
-                switch (info.FileType)
-                {
-                    case FileType.Sound:
-                        AddCounterString(set, FileType.Sound.ToString());
-                        break;
-                    case FileType.Animation:
-                    case FileType.Pap:
-                        AddCounterString(set, FileType.Animation.ToString());
-                        break;
-                    case FileType.Shader:
-                        AddCounterString(set, FileType.Shader.ToString());
-                        break;
-                }
-
-                break;
             case ObjectType.LoadingScreen:
             case ObjectType.Map:
             case ObjectType.Interface:
@@ -235,19 +232,18 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
                 }
 
                 break;
-
-            default: throw new InvalidEnumArgumentException();
         }
     }
 
-    private void IdentifyVfx(IDictionary<string, object?> set, string path)
+    private bool IdentifyVfx(IDictionary<string, object?> set, string path)
     {
         var key = GamePathParser.VfxToKey(path);
-        if (key.Length == 0 || !Actions.TryGetValue(key, out var actions))
-            return;
+        if (key.Length == 0 || !Actions.TryGetValue(key, out var actions) || actions.Count == 0)
+            return false;
 
         foreach (var action in actions)
             set[$"Action: {action.Name}"] = action;
+        return true;
     }
 
     private IReadOnlyList<IReadOnlyList<(string Name, ObjectKind Kind)>> CreateModelObjects(ActorManager.ActorManagerData actors,
