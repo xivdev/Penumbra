@@ -6,7 +6,6 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
-using Penumbra.Services;
 
 namespace Penumbra.UI.ModsTab;
 
@@ -34,7 +33,7 @@ public class ModPanelChangedItemsTab : ITab
             return;
 
         var zipList = ZipList.FromSortedList((SortedList<string, object?>)_selector.Selected!.ChangedItems);
-        var height  = ImGui.GetTextLineHeight();
+        var height  = ImGui.GetFrameHeight();
         ImGuiClip.ClippedDraw(zipList, kvp => _drawer.DrawChangedItem(kvp.Item1, kvp.Item2, true), height);
     }
 }

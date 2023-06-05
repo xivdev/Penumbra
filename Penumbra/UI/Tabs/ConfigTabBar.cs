@@ -46,6 +46,7 @@ public class ConfigTabBar
             Resource,
             Watcher,
         };
+        ChangedItems.SetTabBar(this);
     }
 
     public TabType Draw()

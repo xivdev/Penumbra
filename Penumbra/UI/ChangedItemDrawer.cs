@@ -26,11 +26,11 @@ public class ChangedItemDrawer : IDisposable
     private const EquipSlot ActionSlot        = (EquipSlot)103;
 
     private readonly CommunicatorService                _communicator;
-    private readonly Dictionary<EquipSlot, TextureWrap> _icons;
+    private readonly Dictionary<EquipSlot, TextureWrap> _icons = new(16);
 
     public ChangedItemDrawer(UiBuilder uiBuilder, DataManager gameData, CommunicatorService communicator)
     {
-        _icons        = CreateEquipSlotIcons(uiBuilder, gameData);
+        uiBuilder.RunWhenUiPrepared(() => CreateEquipSlotIcons(uiBuilder, gameData), true);
         _communicator = communicator;
     }
 
@@ -64,12 +64,15 @@ public class ChangedItemDrawer : IDisposable
         name = ChangedItemName(name, data);
         DrawCategoryIcon(name, data);
         ImGui.SameLine();
-        var ret = ImGui.Selectable(name) ? MouseButton.Left : MouseButton.None;
-        ret = ImGui.IsItemClicked(ImGuiMouseButton.Right) ? MouseButton.Right : ret;
-        ret = ImGui.IsItemClicked(ImGuiMouseButton.Middle) ? MouseButton.Middle : ret;
-
-        if (ret != MouseButton.None)
-            _communicator.ChangedItemClick.Invoke(ret, data);
+        using (var style = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0,   0.5f))
+                   .Push(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, ImGui.GetStyle().CellPadding.Y * 2)))
+        {
+            var ret = ImGui.Selectable(name, false, ImGuiSelectableFlags.None, new Vector2(0, ImGui.GetFrameHeight())) ? MouseButton.Left : MouseButton.None;
+            ret = ImGui.IsItemClicked(ImGuiMouseButton.Right) ? MouseButton.Right : ret;
+            ret = ImGui.IsItemClicked(ImGuiMouseButton.Middle) ? MouseButton.Middle : ret;
+            if (ret != MouseButton.None)
+                _communicator.ChangedItemClick.Invoke(ret, data);
+        }
 
         if (_communicator.ChangedItemHover.HasTooltip && ImGui.IsItemHovered())
         {
@@ -87,12 +90,13 @@ public class ChangedItemDrawer : IDisposable
             return;
 
         ImGui.SameLine(ImGui.GetContentRegionAvail().X);
+        ImGui.AlignTextToFramePadding();
         ImGuiUtil.RightJustify(text, ColorId.ItemId.Value());
     }
 
     private void DrawCategoryIcon(string name, object? obj)
     {
-        var height = ImGui.GetTextLineHeight();
+        var height = ImGui.GetFrameHeight();
         var slot   = EquipSlot.Unknown;
         var desc   = string.Empty;
         if (obj is Item it)
@@ -152,104 +156,102 @@ public class ChangedItemDrawer : IDisposable
         }
     }
 
-    private static Dictionary<EquipSlot, TextureWrap> CreateEquipSlotIcons(UiBuilder uiBuilder, DataManager gameData)
+    private bool CreateEquipSlotIcons(UiBuilder uiBuilder, DataManager gameData)
     {
         using var equipTypeIcons = uiBuilder.LoadUld("ui/uld/ArmouryBoard.uld");
 
         if (!equipTypeIcons.Valid)
-            return new Dictionary<EquipSlot, TextureWrap>();
-
-        var dict = new Dictionary<EquipSlot, TextureWrap>(12);
+            return false;
 
         // Weapon
         var tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 0);
         if (tex != null)
         {
-            dict.Add(EquipSlot.MainHand, tex);
-            dict.Add(EquipSlot.BothHand, tex);
+            _icons.Add(EquipSlot.MainHand, tex);
+            _icons.Add(EquipSlot.BothHand, tex);
         }
 
         // Hat
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 1);
         if (tex != null)
-            dict.Add(EquipSlot.Head, tex);
+            _icons.Add(EquipSlot.Head, tex);
 
         // Body
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 2);
         if (tex != null)
         {
-            dict.Add(EquipSlot.Body,              tex);
-            dict.Add(EquipSlot.BodyHands,         tex);
-            dict.Add(EquipSlot.BodyHandsLegsFeet, tex);
-            dict.Add(EquipSlot.BodyLegsFeet,      tex);
-            dict.Add(EquipSlot.ChestHands,        tex);
-            dict.Add(EquipSlot.FullBody,          tex);
-            dict.Add(EquipSlot.HeadBody,          tex);
+            _icons.Add(EquipSlot.Body,              tex);
+            _icons.Add(EquipSlot.BodyHands,         tex);
+            _icons.Add(EquipSlot.BodyHandsLegsFeet, tex);
+            _icons.Add(EquipSlot.BodyLegsFeet,      tex);
+            _icons.Add(EquipSlot.ChestHands,        tex);
+            _icons.Add(EquipSlot.FullBody,          tex);
+            _icons.Add(EquipSlot.HeadBody,          tex);
         }
 
         // Hands
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 3);
         if (tex != null)
-            dict.Add(EquipSlot.Hands, tex);
+            _icons.Add(EquipSlot.Hands, tex);
 
         // Pants
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 5);
         if (tex != null)
         {
-            dict.Add(EquipSlot.Legs,     tex);
-            dict.Add(EquipSlot.LegsFeet, tex);
+            _icons.Add(EquipSlot.Legs,     tex);
+            _icons.Add(EquipSlot.LegsFeet, tex);
         }
 
         // Shoes
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 6);
         if (tex != null)
-            dict.Add(EquipSlot.Feet, tex);
+            _icons.Add(EquipSlot.Feet, tex);
 
         // Offhand
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 7);
         if (tex != null)
-            dict.Add(EquipSlot.OffHand, tex);
+            _icons.Add(EquipSlot.OffHand, tex);
 
         // Earrings
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 8);
         if (tex != null)
-            dict.Add(EquipSlot.Ears, tex);
+            _icons.Add(EquipSlot.Ears, tex);
 
         // Necklace
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 9);
         if (tex != null)
-            dict.Add(EquipSlot.Neck, tex);
+            _icons.Add(EquipSlot.Neck, tex);
 
         // Bracelet
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 10);
         if (tex != null)
-            dict.Add(EquipSlot.Wrists, tex);
+            _icons.Add(EquipSlot.Wrists, tex);
 
         // Ring
         tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 11);
         if (tex != null)
-            dict.Add(EquipSlot.RFinger, tex);
+            _icons.Add(EquipSlot.RFinger, tex);
 
         // Monster
         tex = gameData.GetImGuiTexture("ui/icon/062000/062042_hr1.tex");
         if (tex != null)
-            dict.Add(MonsterSlot, tex);
+            _icons.Add(MonsterSlot, tex);
 
         // Demihuman
         tex = gameData.GetImGuiTexture("ui/icon/062000/062041_hr1.tex");
         if (tex != null)
-            dict.Add(DemihumanSlot, tex);
+            _icons.Add(DemihumanSlot, tex);
 
         // Customization
         tex = gameData.GetImGuiTexture("ui/icon/062000/062043_hr1.tex");
         if (tex != null)
-            dict.Add(CustomizationSlot, tex);
+            _icons.Add(CustomizationSlot, tex);
 
         // Action
         tex = gameData.GetImGuiTexture("ui/icon/062000/062001_hr1.tex");
         if (tex != null)
-            dict.Add(ActionSlot, tex);
+            _icons.Add(ActionSlot, tex);
 
-        return dict;
+        return true;
     }
 }

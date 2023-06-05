@@ -7,6 +7,7 @@ using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterGui.Widgets;
+using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
 using Penumbra.UI.Classes;
@@ -18,6 +19,7 @@ public class ChangedItemsTab : ITab
     private readonly CollectionManager      _collectionManager;
     private readonly ChangedItemDrawer      _drawer;
     private readonly CollectionSelectHeader _collectionHeader;
+    private          ConfigTabBar?          _tabBar = null;
 
     public ChangedItemsTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader, ChangedItemDrawer drawer)
     {
@@ -25,6 +27,9 @@ public class ChangedItemsTab : ITab
         _collectionHeader  = collectionHeader;
         _drawer            = drawer;
     }
+
+    public void SetTabBar(ConfigTabBar tabBar)
+        => _tabBar = tabBar;
 
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
@@ -40,14 +45,14 @@ public class ChangedItemsTab : ITab
         if (!child)
             return;
 
-        var       height = ImGui.GetTextLineHeightWithSpacing() + 2 * ImGui.GetStyle().CellPadding.Y;
+        var       height = ImGui.GetFrameHeight() + 2 * ImGui.GetStyle().CellPadding.Y;
         var       skips  = ImGuiClip.GetNecessarySkips(height);
         using var list   = ImRaii.Table("##changedItems", 3, ImGuiTableFlags.RowBg, -Vector2.One);
         if (!list)
             return;
 
         const ImGuiTableColumnFlags flags = ImGuiTableColumnFlags.NoResize | ImGuiTableColumnFlags.WidthFixed;
-        ImGui.TableSetupColumn("items", flags, 400 * UiHelpers.Scale);
+        ImGui.TableSetupColumn("items", flags, 450 * UiHelpers.Scale);
         ImGui.TableSetupColumn("mods",  flags, varWidth - 130 * UiHelpers.Scale);
         ImGui.TableSetupColumn("id",    flags, 130 * UiHelpers.Scale);
 
@@ -62,9 +67,9 @@ public class ChangedItemsTab : ITab
     private float DrawFilters()
     {
         var varWidth = ImGui.GetContentRegionAvail().X
-          - 400 * UiHelpers.Scale
+          - 450 * UiHelpers.Scale
           - ImGui.GetStyle().ItemSpacing.X;
-        ImGui.SetNextItemWidth(400 * UiHelpers.Scale);
+        ImGui.SetNextItemWidth(450 * UiHelpers.Scale);
         LowerString.InputWithHint("##changedItemsFilter", "Filter Item...", ref _changedItemFilter, 128);
         ImGui.SameLine();
         ImGui.SetNextItemWidth(varWidth);
@@ -85,18 +90,39 @@ public class ChangedItemsTab : ITab
         ImGui.TableNextColumn();
         _drawer.DrawChangedItem(item.Key, item.Value.Item2, false);
         ImGui.TableNextColumn();
-        if (item.Value.Item1.Count > 0)
-        {
-            ImGui.TextUnformatted(item.Value.Item1[0].Name);
-            if (item.Value.Item1.Count > 1 && ImGui.IsItemHovered())
-                ImGui.SetTooltip(string.Join("\n", item.Value.Item1.Skip(1).Select(m => m.Name)));
-        }
+        DrawModColumn(item.Value.Item1);
 
         ImGui.TableNextColumn();
         if (!ChangedItemDrawer.GetChangedItemObject(item.Value.Item2, out var text))
             return;
 
         using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
+        ImGui.AlignTextToFramePadding();
         ImGuiUtil.RightAlign(text);
+    }
+
+    private void DrawModColumn(SingleArray<IMod> mods)
+    {
+        if (mods.Count <= 0)
+            return;
+
+        var       first   = mods[0];
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0, 0.5f));
+        if (ImGui.Selectable(first.Name, false, ImGuiSelectableFlags.None, new Vector2(0, ImGui.GetFrameHeight()))
+            && ImGui.GetIO().KeyCtrl
+         && _tabBar != null
+         && first is Mod mod)
+        {
+            _tabBar.SelectTab      = TabType.Mods;
+            _tabBar.Mods.SelectMod = mod;
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            using var _ = ImRaii.Tooltip();
+            ImGui.TextUnformatted("Hold Control and click to jump to mod.\n");
+            if (mods.Count > 1)
+                ImGui.TextUnformatted("Other mods affecting this item:\n" + string.Join("\n", mods.Skip(1).Select(m => m.Name)));
+        }
     }
 }

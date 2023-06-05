@@ -27,10 +27,8 @@ public sealed class ConfigWindow : Window
     public void SelectTab(TabType tab)
         => _configTabs.SelectTab = tab;
 
-
     public void SelectMod(Mod mod)
         => _configTabs.Mods.SelectMod = mod;
-
 
     public ConfigWindow(PerformanceTracker tracker, DalamudPluginInterface pi, Configuration config, ValidityChecker checker,
         TutorialService tutorial)
