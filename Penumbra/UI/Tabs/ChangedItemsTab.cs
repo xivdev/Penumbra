@@ -10,6 +10,7 @@ using OtterGui.Widgets;
 using Penumbra.Api.Enums;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods;
+using Penumbra.Services;
 using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.Tabs;
@@ -19,17 +20,16 @@ public class ChangedItemsTab : ITab
     private readonly CollectionManager      _collectionManager;
     private readonly ChangedItemDrawer      _drawer;
     private readonly CollectionSelectHeader _collectionHeader;
-    private          ConfigTabBar?          _tabBar = null;
+    private readonly CommunicatorService    _communicator;
 
-    public ChangedItemsTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader, ChangedItemDrawer drawer)
+    public ChangedItemsTab(CollectionManager collectionManager, CollectionSelectHeader collectionHeader, ChangedItemDrawer drawer,
+        CommunicatorService communicator)
     {
         _collectionManager = collectionManager;
         _collectionHeader  = collectionHeader;
         _drawer            = drawer;
+        _communicator      = communicator;
     }
-
-    public void SetTabBar(ConfigTabBar tabBar)
-        => _tabBar = tabBar;
 
     public ReadOnlySpan<byte> Label
         => "Changed Items"u8;
@@ -106,16 +106,12 @@ public class ChangedItemsTab : ITab
         if (mods.Count <= 0)
             return;
 
-        var       first   = mods[0];
+        var       first = mods[0];
         using var style = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0, 0.5f));
         if (ImGui.Selectable(first.Name, false, ImGuiSelectableFlags.None, new Vector2(0, ImGui.GetFrameHeight()))
-            && ImGui.GetIO().KeyCtrl
-         && _tabBar != null
+         && ImGui.GetIO().KeyCtrl
          && first is Mod mod)
-        {
-            _tabBar.SelectTab      = TabType.Mods;
-            _tabBar.Mods.SelectMod = mod;
-        }
+            _communicator.SelectTab.Invoke(TabType.Mods, mod);
 
         if (ImGui.IsItemHovered())
         {

@@ -5,8 +5,6 @@ using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.Api.Enums;
-using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 using Penumbra.UI.Tabs;
@@ -24,12 +22,6 @@ public sealed class ConfigWindow : Window
     private          ConfigTabBar           _configTabs = null!;
     private          string?                _lastException;
 
-    public void SelectTab(TabType tab)
-        => _configTabs.SelectTab = tab;
-
-    public void SelectMod(Mod mod)
-        => _configTabs.Mods.SelectMod = mod;
-
     public ConfigWindow(PerformanceTracker tracker, DalamudPluginInterface pi, Configuration config, ValidityChecker checker,
         TutorialService tutorial)
         : base(GetLabel(checker))
@@ -41,14 +33,14 @@ public sealed class ConfigWindow : Window
 
         RespectCloseHotkey = true;
         tutorial.UpdateTutorialStep();
-        IsOpen                = _config.DebugMode;
+        IsOpen = _config.DebugMode;
     }
 
     public void Setup(Penumbra penumbra, ConfigTabBar configTabs)
     {
-        _penumbra   = penumbra;
-        _configTabs = configTabs;
-        SelectTab(_config.SelectedTab);
+        _penumbra             = penumbra;
+        _configTabs           = configTabs;
+        _configTabs.SelectTab = _config.SelectedTab;
     }
 
     public override bool DrawConditions()

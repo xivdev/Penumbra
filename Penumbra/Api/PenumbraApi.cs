@@ -258,15 +258,16 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         if (!Enum.IsDefined(tab))
             return PenumbraApiEc.InvalidArgument;
 
-        if (tab != TabType.None)
-            _configWindow.SelectTab(tab);
-
         if (tab == TabType.Mods && (modDirectory.Length > 0 || modName.Length > 0))
         {
             if (_modManager.TryGetMod(modDirectory, modName, out var mod))
-                _configWindow.SelectMod(mod);
+                _communicator.SelectTab.Invoke(tab, mod);
             else
                 return PenumbraApiEc.ModMissing;
+        }
+        else if (tab != TabType.None)
+        {
+            _communicator.SelectTab.Invoke(tab);
         }
 
         return PenumbraApiEc.Success;

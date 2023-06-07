@@ -89,7 +89,7 @@ public class ResourceTree
                             ? imcNode.WithName(imcNode.Name ?? $"{subObjectNamePrefix} #{subObjectIndex}, IMC #{i}")
                             : imcNode);
 
-                    var mdl     = (RenderModel*)subObject->ModelArray[i];
+                    var mdl     = (RenderModel*)subObject->Models[i];
                     var mdlNode = subObjectContext.CreateNodeFromRenderModel(mdl);
                     if (mdlNode != null)
                         subObjectNodes.Add(globalContext.WithNames

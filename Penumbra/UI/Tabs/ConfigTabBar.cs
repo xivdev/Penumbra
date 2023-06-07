@@ -2,11 +2,15 @@ using System;
 using ImGuiNET;
 using OtterGui.Widgets;
 using Penumbra.Api.Enums;
+using Penumbra.Mods;
+using Penumbra.Services;
 
 namespace Penumbra.UI.Tabs;
 
-public class ConfigTabBar
+public class ConfigTabBar : IDisposable
 {
+    private readonly CommunicatorService _communicator;
+
     public readonly SettingsTab     Settings;
     public readonly ModsTab         Mods;
     public readonly CollectionsTab  Collections;
@@ -22,9 +26,12 @@ public class ConfigTabBar
     /// <summary> The tab to select on the next Draw call, if any. </summary>
     public TabType SelectTab = TabType.None;
 
-    public ConfigTabBar(SettingsTab settings, ModsTab mods, CollectionsTab collections, ChangedItemsTab changedItems, EffectiveTab effective,
-        DebugTab debug, ResourceTab resource, ResourceWatcher watcher, OnScreenTab onScreenTab)
+    public ConfigTabBar(CommunicatorService communicator, SettingsTab settings, ModsTab mods, CollectionsTab collections,
+        ChangedItemsTab changedItems, EffectiveTab effective, DebugTab debug, ResourceTab resource, ResourceWatcher watcher,
+        OnScreenTab onScreenTab)
     {
+        _communicator = communicator;
+
         Settings     = settings;
         Mods         = mods;
         Collections  = collections;
@@ -46,8 +53,11 @@ public class ConfigTabBar
             Resource,
             Watcher,
         };
-        ChangedItems.SetTabBar(this);
+        _communicator.SelectTab.Subscribe(OnSelectTab, Communication.SelectTab.Priority.ConfigTabBar);
     }
+
+    public void Dispose()
+        => _communicator.SelectTab.Unsubscribe(OnSelectTab);
 
     public TabType Draw()
     {
@@ -86,5 +96,12 @@ public class ConfigTabBar
         if (label == Resource.Label)     return TabType.ResourceManager;
         // @formatter:on
         return TabType.None;
+    }
+
+    private void OnSelectTab(TabType tab, Mod? mod)
+    {
+        SelectTab = tab;
+        if (mod != null)
+            Mods.SelectMod = mod;
     }
 }

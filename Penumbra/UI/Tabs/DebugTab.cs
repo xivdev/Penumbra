@@ -696,7 +696,7 @@ public class DebugTab : Window, ITab
             if (imc != null)
                 UiHelpers.Text(imc);
 
-            var mdl = (RenderModel*)model->ModelArray[i];
+            var mdl = (RenderModel*)model->Models[i];
             ImGui.TableNextColumn();
             ImGui.TextUnformatted(mdl == null ? "NULL" : $"0x{(ulong)mdl:X}");
             if (mdl == null || mdl->ResourceHandle == null || mdl->ResourceHandle->Category != ResourceCategory.Chara)

@@ -267,7 +267,6 @@ public class ModDataEditor
         _communicatorService.ModDataChanged.Invoke(ModDataChangeType.Favorite, mod, null);
     }
 
-
     private void ChangeTag(Mod mod, int tagIdx, string newTag, bool local)
     {
         var which = local ? mod.LocalTags : mod.ModTags;

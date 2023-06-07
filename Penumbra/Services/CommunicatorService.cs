@@ -63,6 +63,9 @@ public class CommunicatorService : IDisposable
     /// <inheritdoc cref="Communication.ChangedItemClick"/>
     public readonly ChangedItemClick ChangedItemClick = new();
 
+    /// <inheritdoc cref="Communication.SelectTab"/>
+    public readonly SelectTab SelectTab = new();
+
     public void Dispose()
     {
         CollectionChange.Dispose();
@@ -82,5 +85,6 @@ public class CommunicatorService : IDisposable
         PostSettingsPanelDraw.Dispose();
         ChangedItemHover.Dispose();
         ChangedItemClick.Dispose();
+        SelectTab.Dispose();
     }
 }
