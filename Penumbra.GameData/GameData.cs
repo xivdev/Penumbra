@@ -58,10 +58,10 @@ public interface IObjectIdentifier : IDisposable
     /// <param name="weaponType">The secondary model ID for weapons, WeaponType.Zero for equipment and accessories.</param>
     /// <param name="variant">The variant ID of the model.</param>
     /// <param name="slot">The equipment slot the piece of equipment uses.</param>
-    public IEnumerable<Item> Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot);
+    public IEnumerable<EquipItem> Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot);
 
     /// <inheritdoc cref="Identify(SetId, WeaponType, ushort, EquipSlot)"/>
-    public IEnumerable<Item> Identify(SetId setId, ushort variant, EquipSlot slot)
+    public IEnumerable<EquipItem> Identify(SetId setId, ushort variant, EquipSlot slot)
         => Identify(setId, 0, variant, slot);
 }
 

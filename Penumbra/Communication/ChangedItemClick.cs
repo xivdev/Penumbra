@@ -17,6 +17,9 @@ public sealed class ChangedItemClick : EventWrapper<Action<MouseButton, object?>
     {
         /// <seealso cref="Api.PenumbraApi.ChangedItemClicked"/>
         Default = 0,
+
+        /// <seealso cref="Penumbra.SetupApi"/>
+        Link = 1,
     }
 
     public ChangedItemClick()

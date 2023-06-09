@@ -91,6 +91,8 @@ public class Configuration : IPluginConfiguration, ISavable
     public CollectionsTab.PanelMode CollectionPanel         { get; set; } = CollectionsTab.PanelMode.SimpleAssignment;
     public TabType                  SelectedTab             { get; set; } = TabType.Settings;
 
+    public ChangedItemDrawer.ChangedItemIcon ChangedItemFilter { get; set; } = ChangedItemDrawer.DefaultFlags;
+
     public bool PrintSuccessfulCommandsToChat { get; set; } = true;
     public bool FixMainWindow                 { get; set; } = false;
     public bool AutoDeduplicateOnImport       { get; set; } = true;

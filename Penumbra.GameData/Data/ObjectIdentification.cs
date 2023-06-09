@@ -65,7 +65,7 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
         return ret;
     }
 
-    public IEnumerable<Item> Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot)
+    public IEnumerable<EquipItem> Identify(SetId setId, WeaponType weaponType, ushort variant, EquipSlot slot)
         => slot switch
         {
             EquipSlot.MainHand => _weapons.Between(setId, weaponType, (byte)variant),

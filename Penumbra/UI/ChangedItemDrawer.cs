@@ -4,15 +4,19 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Data;
 using Dalamud.Interface;
+using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
 using ImGuiScene;
-using Lumina.Data.Parsing;
+using Lumina.Data.Files;
+using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 
@@ -20,18 +24,42 @@ namespace Penumbra.UI;
 
 public class ChangedItemDrawer : IDisposable
 {
-    private const EquipSlot MonsterSlot       = (EquipSlot)100;
-    private const EquipSlot DemihumanSlot     = (EquipSlot)101;
-    private const EquipSlot CustomizationSlot = (EquipSlot)102;
-    private const EquipSlot ActionSlot        = (EquipSlot)103;
-
-    private readonly CommunicatorService                _communicator;
-    private readonly Dictionary<EquipSlot, TextureWrap> _icons = new(16);
-
-    public ChangedItemDrawer(UiBuilder uiBuilder, DataManager gameData, CommunicatorService communicator)
+    [Flags]
+    public enum ChangedItemIcon : uint
     {
+        Head          = 0x0001,
+        Body          = 0x0002,
+        Hands         = 0x0004,
+        Legs          = 0x0008,
+        Feet          = 0x0010,
+        Ears          = 0x0020,
+        Neck          = 0x0040,
+        Wrists        = 0x0080,
+        Finger        = 0x0100,
+        Monster       = 0x0200,
+        Demihuman     = 0x0400,
+        Customization = 0x0800,
+        Action        = 0x1000,
+        Mainhand      = 0x2000,
+        Offhand       = 0x4000,
+        Unknown       = 0x8000,
+    }
+
+    public const ChangedItemIcon AllFlags     = (ChangedItemIcon)0xFFFF;
+    public const ChangedItemIcon DefaultFlags = AllFlags & ~ChangedItemIcon.Offhand;
+
+    private readonly Configuration                            _config;
+    private readonly ExcelSheet<Item>                         _items;
+    private readonly CommunicatorService                      _communicator;
+    private readonly Dictionary<ChangedItemIcon, TextureWrap> _icons             = new(16);
+    private          float                                    _smallestIconWidth = 0;
+
+    public ChangedItemDrawer(UiBuilder uiBuilder, DataManager gameData, CommunicatorService communicator, Configuration config)
+    {
+        _items = gameData.GetExcelSheet<Item>()!;
         uiBuilder.RunWhenUiPrepared(() => CreateEquipSlotIcons(uiBuilder, gameData), true);
         _communicator = communicator;
+        _config       = config;
     }
 
     public void Dispose()
@@ -41,37 +69,49 @@ public class ChangedItemDrawer : IDisposable
         _icons.Clear();
     }
 
-    /// <summary> Apply Changed Item Counters to the Name if necessary. </summary>
-    public static string ChangedItemName(string name, object? data)
-        => data is int counter ? $"{counter} Files Manipulating {name}s" : name;
+    /// <summary> Check if a changed item should be drawn based on its category. </summary>
+    public bool FilterChangedItem(string name, object? data, LowerString filter)
+        => (_config.ChangedItemFilter == AllFlags || _config.ChangedItemFilter.HasFlag(GetCategoryIcon(name, data)))
+         && (filter.IsEmpty || filter.IsContained(ChangedItemFilterName(name, data)));
 
-    /// <summary> Add filterable information to the string. </summary>
-    public static string ChangedItemFilterName(string name, object? data)
-        => data switch
+    /// <summary> Draw the icon corresponding to the category of a changed item. </summary>
+    public void DrawCategoryIcon(string name, object? data)
+    {
+        var height   = ImGui.GetFrameHeight();
+        var iconType = GetCategoryIcon(name, data);
+        if (!_icons.TryGetValue(iconType, out var icon))
         {
-            int counter => $"{counter} Files Manipulating {name}s",
-            Item it => $"{name}\0{((EquipSlot)it.EquipSlotCategory.Row).ToName()}\0{(GetChangedItemObject(it, out var t) ? t : string.Empty)}",
-            ModelChara m => $"{name}\0{(GetChangedItemObject(m, out var t) ? t : string.Empty)}",
-            _ => name,
-        };
+            ImGui.Dummy(new Vector2(height));
+            return;
+        }
+
+        ImGui.Image(icon.ImGuiHandle, new Vector2(height));
+        if (ImGui.IsItemHovered())
+        {
+            using var tt = ImRaii.Tooltip();
+            ImGui.Image(icon.ImGuiHandle, new Vector2(_smallestIconWidth));
+            ImGui.SameLine();
+            ImGuiUtil.DrawTextButton(ToDescription(iconType), new Vector2(0, _smallestIconWidth), 0);
+        }
+    }
 
     /// <summary>
     /// Draw a changed item, invoking the Api-Events for clicks and tooltips.
     /// Also draw the item Id in grey if requested.
     /// </summary>
-    public void DrawChangedItem(string name, object? data, bool drawId)
+    public void DrawChangedItem(string name, object? data)
     {
         name = ChangedItemName(name, data);
-        DrawCategoryIcon(name, data);
-        ImGui.SameLine();
         using (var style = ImRaii.PushStyle(ImGuiStyleVar.SelectableTextAlign, new Vector2(0,   0.5f))
                    .Push(ImGuiStyleVar.ItemSpacing, new Vector2(ImGui.GetStyle().ItemSpacing.X, ImGui.GetStyle().CellPadding.Y * 2)))
         {
-            var ret = ImGui.Selectable(name, false, ImGuiSelectableFlags.None, new Vector2(0, ImGui.GetFrameHeight())) ? MouseButton.Left : MouseButton.None;
+            var ret = ImGui.Selectable(name, false, ImGuiSelectableFlags.None, new Vector2(0, ImGui.GetFrameHeight()))
+                ? MouseButton.Left
+                : MouseButton.None;
             ret = ImGui.IsItemClicked(ImGuiMouseButton.Right) ? MouseButton.Right : ret;
             ret = ImGui.IsItemClicked(ImGuiMouseButton.Middle) ? MouseButton.Middle : ret;
             if (ret != MouseButton.None)
-                _communicator.ChangedItemClick.Invoke(ret, data);
+                _communicator.ChangedItemClick.Invoke(ret, Convert(data));
         }
 
         if (_communicator.ChangedItemHover.HasTooltip && ImGui.IsItemHovered())
@@ -80,13 +120,17 @@ public class ChangedItemDrawer : IDisposable
             // Circumvent ugly blank tooltip with less-ugly useless tooltip.
             using var tt    = ImRaii.Tooltip();
             using var group = ImRaii.Group();
-            _communicator.ChangedItemHover.Invoke(data);
+            _communicator.ChangedItemHover.Invoke(Convert(data));
             group.Dispose();
             if (ImGui.GetItemRectSize() == Vector2.Zero)
                 ImGui.TextUnformatted("No actions available.");
         }
+    }
 
-        if (!drawId || !GetChangedItemObject(data, out var text))
+    /// <summary> Draw the model information, right-justified. </summary>
+    public void DrawModelData(object? data)
+    {
+        if (!GetChangedItemObject(data, out var text))
             return;
 
         ImGui.SameLine(ImGui.GetContentRegionAvail().X);
@@ -94,58 +138,147 @@ public class ChangedItemDrawer : IDisposable
         ImGuiUtil.RightJustify(text, ColorId.ItemId.Value());
     }
 
-    private void DrawCategoryIcon(string name, object? obj)
+    /// <summary> Draw a header line with the different icon types to filter them. </summary>
+    public void DrawTypeFilter()
     {
-        var height = ImGui.GetFrameHeight();
-        var slot   = EquipSlot.Unknown;
-        var desc   = string.Empty;
-        if (obj is Item it)
-        {
-            slot = (EquipSlot)it.EquipSlotCategory.Row;
-            desc = slot.ToName();
-        }
-        else if (obj is ModelChara m)
-        {
-            (slot, desc) = (CharacterBase.ModelType)m.Type switch
+        using var _         = ImRaii.PushId("ChangedItemIconFilter");
+        var       available = ImGui.GetContentRegionAvail().X;
+        var (numLines, size) = available / _icons.Count > ImGui.GetTextLineHeight() * 2
+            ? (1, new Vector2(Math.Min(_smallestIconWidth, available / _icons.Count)))
+            : (2, new Vector2(Math.Min(_smallestIconWidth, 2 * available / _icons.Count)));
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        var lines = numLines == 2
+            ? new[]
             {
-                CharacterBase.ModelType.DemiHuman => (DemihumanSlot, "Demi-Human"),
-                CharacterBase.ModelType.Monster   => (MonsterSlot, "Monster"),
-                _                                 => (EquipSlot.Unknown, string.Empty),
+                new[]
+                {
+                    ChangedItemIcon.Head,
+                    ChangedItemIcon.Body,
+                    ChangedItemIcon.Hands,
+                    ChangedItemIcon.Legs,
+                    ChangedItemIcon.Feet,
+                    ChangedItemIcon.Mainhand,
+                    ChangedItemIcon.Offhand,
+                    ChangedItemIcon.Unknown,
+                },
+                new[]
+                {
+                    ChangedItemIcon.Ears,
+                    ChangedItemIcon.Neck,
+                    ChangedItemIcon.Wrists,
+                    ChangedItemIcon.Finger,
+                    ChangedItemIcon.Customization,
+                    ChangedItemIcon.Action,
+                    ChangedItemIcon.Monster,
+                    ChangedItemIcon.Demihuman,
+                },
+            }
+            : new[]
+            {
+                new[]
+                {
+                    ChangedItemIcon.Head,
+                    ChangedItemIcon.Body,
+                    ChangedItemIcon.Hands,
+                    ChangedItemIcon.Legs,
+                    ChangedItemIcon.Feet,
+                    ChangedItemIcon.Ears,
+                    ChangedItemIcon.Neck,
+                    ChangedItemIcon.Wrists,
+                    ChangedItemIcon.Finger,
+                    ChangedItemIcon.Mainhand,
+                    ChangedItemIcon.Offhand,
+                    ChangedItemIcon.Customization,
+                    ChangedItemIcon.Action,
+                    ChangedItemIcon.Monster,
+                    ChangedItemIcon.Demihuman,
+                    ChangedItemIcon.Unknown,
+                },
             };
-        }
-        else if (name.StartsWith("Action: "))
+
+        void DrawIcon(ChangedItemIcon type)
         {
-            (slot, desc) = (ActionSlot, "Action");
-        }
-        else if (name.StartsWith("Customization: "))
-        {
-            (slot, desc) = (CustomizationSlot, "Customization");
+            var icon = _icons[type];
+            var flag = _config.ChangedItemFilter.HasFlag(type);
+            ImGui.Image(icon.ImGuiHandle, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
+            if (ImGui.IsItemClicked())
+            {
+                _config.ChangedItemFilter = flag ? _config.ChangedItemFilter & ~type : _config.ChangedItemFilter | type;
+                _config.Save();
+            }
+
+            if (ImGui.IsItemHovered())
+            {
+                using var tt = ImRaii.Tooltip();
+                ImGui.Image(icon.ImGuiHandle, new Vector2(_smallestIconWidth));
+                ImGui.SameLine();
+                ImGuiUtil.DrawTextButton(ToDescription(type), new Vector2(0, _smallestIconWidth), 0);
+            }
         }
 
-        if (!_icons.TryGetValue(slot, out var icon))
+        foreach (var line in lines)
         {
-            ImGui.Dummy(new Vector2(height));
-            return;
-        }
+            foreach (var iconType in line.SkipLast(1))
+            {
+                DrawIcon(iconType);
+                ImGui.SameLine();
+            }
 
-        ImGui.Image(icon.ImGuiHandle, new Vector2(height));
-        if (ImGui.IsItemHovered() && icon.Height > height)
-        {
-            using var tt = ImRaii.Tooltip();
-            ImGui.Image(icon.ImGuiHandle, new Vector2(icon.Width, icon.Height));
-            ImGui.SameLine();
-            ImGuiUtil.DrawTextButton(desc, new Vector2(0, icon.Height), 0);
+            DrawIcon(line.Last());
         }
     }
 
+    /// <summary> Obtain the icon category corresponding to a changed item. </summary>
+    private static ChangedItemIcon GetCategoryIcon(string name, object? obj)
+    {
+        var iconType = ChangedItemIcon.Unknown;
+        switch (obj)
+        {
+            case EquipItem it:
+                iconType = it.Slot switch
+                {
+                    EquipSlot.MainHand => ChangedItemIcon.Mainhand,
+                    EquipSlot.OffHand  => ChangedItemIcon.Offhand,
+                    EquipSlot.Head     => ChangedItemIcon.Head,
+                    EquipSlot.Body     => ChangedItemIcon.Body,
+                    EquipSlot.Hands    => ChangedItemIcon.Hands,
+                    EquipSlot.Legs     => ChangedItemIcon.Legs,
+                    EquipSlot.Feet     => ChangedItemIcon.Feet,
+                    EquipSlot.Ears     => ChangedItemIcon.Ears,
+                    EquipSlot.Neck     => ChangedItemIcon.Neck,
+                    EquipSlot.Wrists   => ChangedItemIcon.Wrists,
+                    EquipSlot.RFinger  => ChangedItemIcon.Finger,
+                    _                  => ChangedItemIcon.Unknown,
+                };
+                break;
+            case ModelChara m:
+                iconType = (CharacterBase.ModelType)m.Type switch
+                {
+                    CharacterBase.ModelType.DemiHuman => ChangedItemIcon.Demihuman,
+                    CharacterBase.ModelType.Monster   => ChangedItemIcon.Monster,
+                    _                                 => ChangedItemIcon.Unknown,
+                };
+                break;
+            default:
+            {
+                if (name.StartsWith("Action: "))
+                    iconType = ChangedItemIcon.Action;
+                else if (name.StartsWith("Customization: "))
+                    iconType = ChangedItemIcon.Customization;
+                break;
+            }
+        }
+
+        return iconType;
+    }
+
     /// <summary> Return more detailed object information in text, if it exists. </summary>
-    public static bool GetChangedItemObject(object? obj, out string text)
+    private static bool GetChangedItemObject(object? obj, out string text)
     {
         switch (obj)
         {
-            case Item it:
-                var quad = (Quad)it.ModelMain;
-                text = quad.C == 0 ? $"({quad.A}-{quad.B})" : $"({quad.A}-{quad.B}-{quad.C})";
+            case EquipItem it:
+                text = it.WeaponType == 0 ? $"({it.ModelId.Value}-{it.Variant})" : $"({it.ModelId.Value}-{it.WeaponType.Value}-{it.Variant})";
                 return true;
             case ModelChara m:
                 text = $"({((CharacterBase.ModelType)m.Type).ToName()} {m.Model}-{m.Base}-{m.Variant})";
@@ -156,6 +289,51 @@ public class ChangedItemDrawer : IDisposable
         }
     }
 
+    /// <summary> We need to transform the internal EquipItem type to the Lumina Item type for API-events. </summary>
+    private object? Convert(object? data)
+    {
+        if (data is EquipItem it)
+            return _items.GetRow(it.Id);
+
+        return data;
+    }
+
+    private static string ToDescription(ChangedItemIcon icon)
+        => icon switch
+        {
+            ChangedItemIcon.Head          => EquipSlot.Head.ToName(),
+            ChangedItemIcon.Body          => EquipSlot.Body.ToName(),
+            ChangedItemIcon.Hands         => EquipSlot.Hands.ToName(),
+            ChangedItemIcon.Legs          => EquipSlot.Legs.ToName(),
+            ChangedItemIcon.Feet          => EquipSlot.Feet.ToName(),
+            ChangedItemIcon.Ears          => EquipSlot.Ears.ToName(),
+            ChangedItemIcon.Neck          => EquipSlot.Neck.ToName(),
+            ChangedItemIcon.Wrists        => EquipSlot.Wrists.ToName(),
+            ChangedItemIcon.Finger        => "Ring",
+            ChangedItemIcon.Monster       => "Monster",
+            ChangedItemIcon.Demihuman     => "Demi-Human",
+            ChangedItemIcon.Customization => "Customization",
+            ChangedItemIcon.Action        => "Action",
+            ChangedItemIcon.Mainhand      => "Weapon (Mainhand)",
+            ChangedItemIcon.Offhand       => "Weapon (Offhand)",
+            _                             => "Other",
+        };
+
+    /// <summary> Apply Changed Item Counters to the Name if necessary. </summary>
+    private static string ChangedItemName(string name, object? data)
+        => data is int counter ? $"{counter} Files Manipulating {name}s" : name;
+
+    /// <summary> Add filterable information to the string. </summary>
+    private static string ChangedItemFilterName(string name, object? data)
+        => data switch
+        {
+            int counter  => $"{counter} Files Manipulating {name}s",
+            EquipItem it => $"{name}\0{(GetChangedItemObject(it, out var t) ? t : string.Empty)}",
+            ModelChara m => $"{name}\0{(GetChangedItemObject(m,  out var t) ? t : string.Empty)}",
+            _            => name,
+        };
+
+    /// <summary> Initialize the icons. </summary>
     private bool CreateEquipSlotIcons(UiBuilder uiBuilder, DataManager gameData)
     {
         using var equipTypeIcons = uiBuilder.LoadUld("ui/uld/ArmouryBoard.uld");
@@ -163,94 +341,40 @@ public class ChangedItemDrawer : IDisposable
         if (!equipTypeIcons.Valid)
             return false;
 
-        // Weapon
-        var tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 0);
-        if (tex != null)
+        void Add(ChangedItemIcon icon, TextureWrap? tex)
         {
-            _icons.Add(EquipSlot.MainHand, tex);
-            _icons.Add(EquipSlot.BothHand, tex);
+            if (tex != null)
+                _icons.Add(icon, tex);
         }
 
-        // Hat
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 1);
-        if (tex != null)
-            _icons.Add(EquipSlot.Head, tex);
+        Add(ChangedItemIcon.Mainhand,      equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 0));
+        Add(ChangedItemIcon.Head,          equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 1));
+        Add(ChangedItemIcon.Body,          equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 2));
+        Add(ChangedItemIcon.Hands,         equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 3));
+        Add(ChangedItemIcon.Legs,          equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 5));
+        Add(ChangedItemIcon.Feet,          equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 6));
+        Add(ChangedItemIcon.Offhand,       equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 7));
+        Add(ChangedItemIcon.Ears,          equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 8));
+        Add(ChangedItemIcon.Neck,          equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 9));
+        Add(ChangedItemIcon.Wrists,        equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 10));
+        Add(ChangedItemIcon.Finger,        equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 11));
+        Add(ChangedItemIcon.Monster,       gameData.GetImGuiTexture("ui/icon/062000/062042_hr1.tex"));
+        Add(ChangedItemIcon.Demihuman,     gameData.GetImGuiTexture("ui/icon/062000/062041_hr1.tex"));
+        Add(ChangedItemIcon.Customization, gameData.GetImGuiTexture("ui/icon/062000/062043_hr1.tex"));
+        Add(ChangedItemIcon.Action,        gameData.GetImGuiTexture("ui/icon/062000/062001_hr1.tex"));
 
-        // Body
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 2);
-        if (tex != null)
-        {
-            _icons.Add(EquipSlot.Body,              tex);
-            _icons.Add(EquipSlot.BodyHands,         tex);
-            _icons.Add(EquipSlot.BodyHandsLegsFeet, tex);
-            _icons.Add(EquipSlot.BodyLegsFeet,      tex);
-            _icons.Add(EquipSlot.ChestHands,        tex);
-            _icons.Add(EquipSlot.FullBody,          tex);
-            _icons.Add(EquipSlot.HeadBody,          tex);
-        }
+        var unk = gameData.GetFile<TexFile>("ui/uld/levelup2_hr1.tex");
+        if (unk == null)
+            return true;
 
-        // Hands
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 3);
-        if (tex != null)
-            _icons.Add(EquipSlot.Hands, tex);
+        var image = unk.GetRgbaImageData();
+        var bytes = new byte[unk.Header.Height * unk.Header.Height * 4];
+        var diff  = 2 * (unk.Header.Height - unk.Header.Width);
+        for (var y = 0; y < unk.Header.Height; ++y)
+            image.AsSpan(4 * y * unk.Header.Width, 4 * unk.Header.Width).CopyTo(bytes.AsSpan(4 * y * unk.Header.Height + diff));
+        Add(ChangedItemIcon.Unknown, uiBuilder.LoadImageRaw(bytes, unk.Header.Height, unk.Header.Height, 4));
 
-        // Pants
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 5);
-        if (tex != null)
-        {
-            _icons.Add(EquipSlot.Legs,     tex);
-            _icons.Add(EquipSlot.LegsFeet, tex);
-        }
-
-        // Shoes
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 6);
-        if (tex != null)
-            _icons.Add(EquipSlot.Feet, tex);
-
-        // Offhand
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 7);
-        if (tex != null)
-            _icons.Add(EquipSlot.OffHand, tex);
-
-        // Earrings
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 8);
-        if (tex != null)
-            _icons.Add(EquipSlot.Ears, tex);
-
-        // Necklace
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 9);
-        if (tex != null)
-            _icons.Add(EquipSlot.Neck, tex);
-
-        // Bracelet
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 10);
-        if (tex != null)
-            _icons.Add(EquipSlot.Wrists, tex);
-
-        // Ring
-        tex = equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 11);
-        if (tex != null)
-            _icons.Add(EquipSlot.RFinger, tex);
-
-        // Monster
-        tex = gameData.GetImGuiTexture("ui/icon/062000/062042_hr1.tex");
-        if (tex != null)
-            _icons.Add(MonsterSlot, tex);
-
-        // Demihuman
-        tex = gameData.GetImGuiTexture("ui/icon/062000/062041_hr1.tex");
-        if (tex != null)
-            _icons.Add(DemihumanSlot, tex);
-
-        // Customization
-        tex = gameData.GetImGuiTexture("ui/icon/062000/062043_hr1.tex");
-        if (tex != null)
-            _icons.Add(CustomizationSlot, tex);
-
-        // Action
-        tex = gameData.GetImGuiTexture("ui/icon/062000/062001_hr1.tex");
-        if (tex != null)
-            _icons.Add(ActionSlot, tex);
+        _smallestIconWidth = _icons.Values.Min(i => i.Width);
 
         return true;
     }

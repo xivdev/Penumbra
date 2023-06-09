@@ -5,32 +5,41 @@ using System.Linq;
 using Dalamud;
 using Dalamud.Data;
 using Dalamud.Plugin;
-using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 
 namespace Penumbra.GameData.Data;
 
-public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IReadOnlyList<Item>>
+public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IReadOnlyList<EquipItem>>
 {
-    private readonly IReadOnlyList<IReadOnlyList<Item>> _items;
+    private readonly IReadOnlyList<IReadOnlyList<EquipItem>> _items;
 
-    private static IReadOnlyList<IReadOnlyList<Item>> CreateItems(DataManager dataManager, ClientLanguage language)
+    private static IReadOnlyList<IReadOnlyList<EquipItem>> CreateItems(DataManager dataManager, ClientLanguage language)
     {
-        var tmp = Enum.GetValues<FullEquipType>().Select(t => new List<Item>(1024)).ToArray();
+        var tmp = Enum.GetValues<FullEquipType>().Select(_ => new List<EquipItem>(1024)).ToArray();
 
         var itemSheet = dataManager.GetExcelSheet<Item>(language)!;
-        foreach (var item in itemSheet)
+        foreach (var item in itemSheet.Where(i => i.Name.RawData.Length > 1))
         {
             var type = item.ToEquipType();
-            if (type != FullEquipType.Unknown && item.Name.RawData.Length > 1)
-                tmp[(int)type].Add(item);
+            if (type.IsWeapon())
+            {
+                if (item.ModelMain != 0)
+                    tmp[(int)type].Add(EquipItem.FromMainhand(item));
+                if (item.ModelSub != 0)
+                    tmp[(int)type].Add(EquipItem.FromOffhand(item));
+            }
+            else if (type != FullEquipType.Unknown)
+            {
+                tmp[(int)type].Add(EquipItem.FromArmor(item));
+            }
         }
 
-        var ret = new IReadOnlyList<Item>[tmp.Length];
-        ret[0] = Array.Empty<Item>();
+        var ret = new IReadOnlyList<EquipItem>[tmp.Length];
+        ret[0] = Array.Empty<EquipItem>();
         for (var i = 1; i < tmp.Length; ++i)
-            ret[i] = tmp[i].OrderBy(item => item.Name.ToDalamudString().TextValue).ToArray();
+            ret[i] = tmp[i].OrderBy(item => item.Name).ToArray();
 
         return ret;
     }
@@ -44,10 +53,10 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
     protected override void DisposeInternal()
         => DisposeTag("ItemList");
 
-    public IEnumerator<KeyValuePair<FullEquipType, IReadOnlyList<Item>>> GetEnumerator()
+    public IEnumerator<KeyValuePair<FullEquipType, IReadOnlyList<EquipItem>>> GetEnumerator()
     {
         for (var i = 1; i < _items.Count; ++i)
-            yield return new KeyValuePair<FullEquipType, IReadOnlyList<Item>>((FullEquipType)i, _items[i]);
+            yield return new KeyValuePair<FullEquipType, IReadOnlyList<EquipItem>>((FullEquipType)i, _items[i]);
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -59,7 +68,7 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
     public bool ContainsKey(FullEquipType key)
         => (int)key < _items.Count && key != FullEquipType.Unknown;
 
-    public bool TryGetValue(FullEquipType key, out IReadOnlyList<Item> value)
+    public bool TryGetValue(FullEquipType key, out IReadOnlyList<EquipItem> value)
     {
         if (ContainsKey(key))
         {
@@ -71,12 +80,12 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
         return false;
     }
 
-    public IReadOnlyList<Item> this[FullEquipType key]
+    public IReadOnlyList<EquipItem> this[FullEquipType key]
         => TryGetValue(key, out var ret) ? ret : throw new IndexOutOfRangeException();
 
     public IEnumerable<FullEquipType> Keys
         => Enum.GetValues<FullEquipType>().Skip(1);
 
-    public IEnumerable<IReadOnlyList<Item>> Values
+    public IEnumerable<IReadOnlyList<EquipItem>> Values
         => _items.Skip(1);
 }

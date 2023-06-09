@@ -20,26 +20,34 @@ public enum FullEquipType : byte
     Wrists,
     Finger,
 
-    Fists,      // PGL, MNK
-    Sword,      // GLA, PLD Main
-    Axe,        // MRD, WAR
-    Bow,        // ARC, BRD
-    Lance,      // LNC, DRG,
-    Staff,      // THM, BLM, CNJ, WHM
-    Wand,       // THM, BLM, CNJ, WHM Main
-    Book,       // ACN, SMN, SCH
-    Daggers,    // ROG, NIN
+    Fists, // PGL, MNK
+    FistsOff,
+    Sword, // GLA, PLD Main
+    Axe,   // MRD, WAR
+    Bow,   // ARC, BRD
+    BowOff,
+    Lance,   // LNC, DRG,
+    Staff,   // THM, BLM, CNJ, WHM
+    Wand,    // THM, BLM, CNJ, WHM Main
+    Book,    // ACN, SMN, SCH
+    Daggers, // ROG, NIN
+    DaggersOff,
     Broadsword, // DRK,
     Gun,        // MCH,
-    Orrery,     // AST,
-    Katana,     // SAM
-    Rapier,     // RDM
-    Cane,       // BLU
-    Gunblade,   // GNB,
-    Glaives,    // DNC,
-    Scythe,     // RPR,
-    Nouliths,   // SGE
-    Shield,     // GLA, PLD, THM, BLM, CNJ, WHM Off
+    GunOff,
+    Orrery, // AST,
+    OrreryOff,
+    Katana, // SAM
+    KatanaOff,
+    Rapier, // RDM
+    RapierOff,
+    Cane,     // BLU
+    Gunblade, // GNB,
+    Glaives,  // DNC,
+    GlaivesOff,
+    Scythe,   // RPR,
+    Nouliths, // SGE
+    Shield,   // GLA, PLD, THM, BLM, CNJ, WHM Off
 
     Saw,             // CRP
     CrossPeinHammer, // BSM
@@ -68,7 +76,7 @@ public enum FullEquipType : byte
 
 public static class FullEquipTypeExtensions
 {
-    public static FullEquipType ToEquipType(this Item item)
+    internal static FullEquipType ToEquipType(this Item item)
     {
         var slot   = (EquipSlot)item.EquipSlotCategory.Row;
         var weapon = (WeaponCategory)item.ItemUICategory.Row;
@@ -152,22 +160,30 @@ public static class FullEquipTypeExtensions
             FullEquipType.Wrists          => EquipSlot.Wrists.ToName(),
             FullEquipType.Finger          => "Ring",
             FullEquipType.Fists           => "Fist Weapon",
+            FullEquipType.FistsOff        => "Fist Weapon (Offhand)",
             FullEquipType.Sword           => "Sword",
             FullEquipType.Axe             => "Axe",
             FullEquipType.Bow             => "Bow",
+            FullEquipType.BowOff          => "Quiver",
             FullEquipType.Lance           => "Lance",
             FullEquipType.Staff           => "Staff",
             FullEquipType.Wand            => "Mace",
             FullEquipType.Book            => "Book",
             FullEquipType.Daggers         => "Dagger",
+            FullEquipType.DaggersOff      => "Dagger (Offhand)",
             FullEquipType.Broadsword      => "Broadsword",
             FullEquipType.Gun             => "Gun",
+            FullEquipType.GunOff          => "Aetherotransformer",
             FullEquipType.Orrery          => "Orrery",
+            FullEquipType.OrreryOff       => "Card Holder",
             FullEquipType.Katana          => "Katana",
+            FullEquipType.KatanaOff       => "Sheathe",
             FullEquipType.Rapier          => "Rapier",
+            FullEquipType.RapierOff       => "Focus",
             FullEquipType.Cane            => "Cane",
             FullEquipType.Gunblade        => "Gunblade",
             FullEquipType.Glaives         => "Glaive",
+            FullEquipType.GlaivesOff      => "Glaive (Offhand)",
             FullEquipType.Scythe          => "Scythe",
             FullEquipType.Nouliths        => "Nouliths",
             FullEquipType.Shield          => "Shield",
@@ -209,22 +225,30 @@ public static class FullEquipTypeExtensions
             FullEquipType.Wrists          => EquipSlot.Wrists,
             FullEquipType.Finger          => EquipSlot.RFinger,
             FullEquipType.Fists           => EquipSlot.MainHand,
+            FullEquipType.FistsOff        => EquipSlot.OffHand,
             FullEquipType.Sword           => EquipSlot.MainHand,
             FullEquipType.Axe             => EquipSlot.MainHand,
             FullEquipType.Bow             => EquipSlot.MainHand,
+            FullEquipType.BowOff          => EquipSlot.OffHand,
             FullEquipType.Lance           => EquipSlot.MainHand,
             FullEquipType.Staff           => EquipSlot.MainHand,
             FullEquipType.Wand            => EquipSlot.MainHand,
             FullEquipType.Book            => EquipSlot.MainHand,
             FullEquipType.Daggers         => EquipSlot.MainHand,
+            FullEquipType.DaggersOff      => EquipSlot.OffHand,
             FullEquipType.Broadsword      => EquipSlot.MainHand,
             FullEquipType.Gun             => EquipSlot.MainHand,
+            FullEquipType.GunOff          => EquipSlot.OffHand,
             FullEquipType.Orrery          => EquipSlot.MainHand,
+            FullEquipType.OrreryOff       => EquipSlot.OffHand,
             FullEquipType.Katana          => EquipSlot.MainHand,
+            FullEquipType.KatanaOff       => EquipSlot.OffHand,
             FullEquipType.Rapier          => EquipSlot.MainHand,
+            FullEquipType.RapierOff       => EquipSlot.OffHand,
             FullEquipType.Cane            => EquipSlot.MainHand,
             FullEquipType.Gunblade        => EquipSlot.MainHand,
             FullEquipType.Glaives         => EquipSlot.MainHand,
+            FullEquipType.GlaivesOff      => EquipSlot.OffHand,
             FullEquipType.Scythe          => EquipSlot.MainHand,
             FullEquipType.Nouliths        => EquipSlot.MainHand,
             FullEquipType.Shield          => EquipSlot.OffHand,
@@ -253,7 +277,7 @@ public static class FullEquipTypeExtensions
             _                             => EquipSlot.Unknown,
         };
 
-    public static FullEquipType ToEquipType(this EquipSlot slot, WeaponCategory category = WeaponCategory.Unknown)
+    public static FullEquipType ToEquipType(this EquipSlot slot, WeaponCategory category = WeaponCategory.Unknown, bool mainhand = true)
         => slot switch
         {
             EquipSlot.Head              => FullEquipType.Head,
@@ -273,75 +297,99 @@ public static class FullEquipTypeExtensions
             EquipSlot.BodyHands         => FullEquipType.Body,
             EquipSlot.BodyLegsFeet      => FullEquipType.Body,
             EquipSlot.ChestHands        => FullEquipType.Body,
-            EquipSlot.MainHand          => category.ToEquipType(),
-            EquipSlot.OffHand           => category.ToEquipType(),
-            EquipSlot.BothHand          => category.ToEquipType(),
+            EquipSlot.MainHand          => category.ToEquipType(mainhand),
+            EquipSlot.OffHand           => category.ToEquipType(mainhand),
+            EquipSlot.BothHand          => category.ToEquipType(mainhand),
             _                           => FullEquipType.Unknown,
         };
 
-    public static FullEquipType ToEquipType(this WeaponCategory category)
+    public static FullEquipType ToEquipType(this WeaponCategory category, bool mainhand = true)
         => category switch
         {
-            WeaponCategory.Pugilist          => FullEquipType.Fists,
-            WeaponCategory.Gladiator         => FullEquipType.Sword,
-            WeaponCategory.Marauder          => FullEquipType.Axe,
-            WeaponCategory.Archer            => FullEquipType.Bow,
-            WeaponCategory.Lancer            => FullEquipType.Lance,
-            WeaponCategory.Thaumaturge1      => FullEquipType.Wand,
-            WeaponCategory.Thaumaturge2      => FullEquipType.Staff,
-            WeaponCategory.Conjurer1         => FullEquipType.Wand,
-            WeaponCategory.Conjurer2         => FullEquipType.Staff,
-            WeaponCategory.Arcanist          => FullEquipType.Book,
-            WeaponCategory.Shield            => FullEquipType.Shield,
-            WeaponCategory.CarpenterMain     => FullEquipType.Saw,
-            WeaponCategory.CarpenterOff      => FullEquipType.ClawHammer,
-            WeaponCategory.BlacksmithMain    => FullEquipType.CrossPeinHammer,
-            WeaponCategory.BlacksmithOff     => FullEquipType.File,
-            WeaponCategory.ArmorerMain       => FullEquipType.RaisingHammer,
-            WeaponCategory.ArmorerOff        => FullEquipType.Pliers,
-            WeaponCategory.GoldsmithMain     => FullEquipType.LapidaryHammer,
-            WeaponCategory.GoldsmithOff      => FullEquipType.GrindingWheel,
-            WeaponCategory.LeatherworkerMain => FullEquipType.Knife,
-            WeaponCategory.LeatherworkerOff  => FullEquipType.Awl,
-            WeaponCategory.WeaverMain        => FullEquipType.Needle,
-            WeaponCategory.WeaverOff         => FullEquipType.SpinningWheel,
-            WeaponCategory.AlchemistMain     => FullEquipType.Alembic,
-            WeaponCategory.AlchemistOff      => FullEquipType.Mortar,
-            WeaponCategory.CulinarianMain    => FullEquipType.Frypan,
-            WeaponCategory.CulinarianOff     => FullEquipType.CulinaryKnife,
-            WeaponCategory.MinerMain         => FullEquipType.Pickaxe,
-            WeaponCategory.MinerOff          => FullEquipType.Sledgehammer,
-            WeaponCategory.BotanistMain      => FullEquipType.Hatchet,
-            WeaponCategory.BotanistOff       => FullEquipType.GardenScythe,
-            WeaponCategory.FisherMain        => FullEquipType.FishingRod,
-            WeaponCategory.Rogue             => FullEquipType.Gig,
-            WeaponCategory.DarkKnight        => FullEquipType.Broadsword,
-            WeaponCategory.Machinist         => FullEquipType.Gun,
-            WeaponCategory.Astrologian       => FullEquipType.Orrery,
-            WeaponCategory.Samurai           => FullEquipType.Katana,
-            WeaponCategory.RedMage           => FullEquipType.Rapier,
-            WeaponCategory.Scholar           => FullEquipType.Book,
-            WeaponCategory.FisherOff         => FullEquipType.Gig,
-            WeaponCategory.BlueMage          => FullEquipType.Cane,
-            WeaponCategory.Gunbreaker        => FullEquipType.Gunblade,
-            WeaponCategory.Dancer            => FullEquipType.Glaives,
-            WeaponCategory.Reaper            => FullEquipType.Scythe,
-            WeaponCategory.Sage              => FullEquipType.Nouliths,
-            _                                => FullEquipType.Unknown,
+            WeaponCategory.Pugilist when mainhand    => FullEquipType.Fists,
+            WeaponCategory.Pugilist                  => FullEquipType.FistsOff,
+            WeaponCategory.Gladiator                 => FullEquipType.Sword,
+            WeaponCategory.Marauder                  => FullEquipType.Axe,
+            WeaponCategory.Archer when mainhand      => FullEquipType.Bow,
+            WeaponCategory.Archer                    => FullEquipType.BowOff,
+            WeaponCategory.Lancer                    => FullEquipType.Lance,
+            WeaponCategory.Thaumaturge1              => FullEquipType.Wand,
+            WeaponCategory.Thaumaturge2              => FullEquipType.Staff,
+            WeaponCategory.Conjurer1                 => FullEquipType.Wand,
+            WeaponCategory.Conjurer2                 => FullEquipType.Staff,
+            WeaponCategory.Arcanist                  => FullEquipType.Book,
+            WeaponCategory.Shield                    => FullEquipType.Shield,
+            WeaponCategory.CarpenterMain             => FullEquipType.Saw,
+            WeaponCategory.CarpenterOff              => FullEquipType.ClawHammer,
+            WeaponCategory.BlacksmithMain            => FullEquipType.CrossPeinHammer,
+            WeaponCategory.BlacksmithOff             => FullEquipType.File,
+            WeaponCategory.ArmorerMain               => FullEquipType.RaisingHammer,
+            WeaponCategory.ArmorerOff                => FullEquipType.Pliers,
+            WeaponCategory.GoldsmithMain             => FullEquipType.LapidaryHammer,
+            WeaponCategory.GoldsmithOff              => FullEquipType.GrindingWheel,
+            WeaponCategory.LeatherworkerMain         => FullEquipType.Knife,
+            WeaponCategory.LeatherworkerOff          => FullEquipType.Awl,
+            WeaponCategory.WeaverMain                => FullEquipType.Needle,
+            WeaponCategory.WeaverOff                 => FullEquipType.SpinningWheel,
+            WeaponCategory.AlchemistMain             => FullEquipType.Alembic,
+            WeaponCategory.AlchemistOff              => FullEquipType.Mortar,
+            WeaponCategory.CulinarianMain            => FullEquipType.Frypan,
+            WeaponCategory.CulinarianOff             => FullEquipType.CulinaryKnife,
+            WeaponCategory.MinerMain                 => FullEquipType.Pickaxe,
+            WeaponCategory.MinerOff                  => FullEquipType.Sledgehammer,
+            WeaponCategory.BotanistMain              => FullEquipType.Hatchet,
+            WeaponCategory.BotanistOff               => FullEquipType.GardenScythe,
+            WeaponCategory.FisherMain                => FullEquipType.FishingRod,
+            WeaponCategory.FisherOff                 => FullEquipType.Gig,
+            WeaponCategory.Rogue when mainhand       => FullEquipType.DaggersOff,
+            WeaponCategory.Rogue                     => FullEquipType.Daggers,
+            WeaponCategory.DarkKnight                => FullEquipType.Broadsword,
+            WeaponCategory.Machinist when mainhand   => FullEquipType.Gun,
+            WeaponCategory.Machinist                 => FullEquipType.GunOff,
+            WeaponCategory.Astrologian when mainhand => FullEquipType.Orrery,
+            WeaponCategory.Astrologian               => FullEquipType.OrreryOff,
+            WeaponCategory.Samurai when mainhand     => FullEquipType.Katana,
+            WeaponCategory.Samurai                   => FullEquipType.KatanaOff,
+            WeaponCategory.RedMage when mainhand     => FullEquipType.Rapier,
+            WeaponCategory.RedMage                   => FullEquipType.RapierOff,
+            WeaponCategory.Scholar                   => FullEquipType.Book,
+            WeaponCategory.BlueMage                  => FullEquipType.Cane,
+            WeaponCategory.Gunbreaker                => FullEquipType.Gunblade,
+            WeaponCategory.Dancer when mainhand      => FullEquipType.Glaives,
+            WeaponCategory.Dancer                    => FullEquipType.GlaivesOff,
+            WeaponCategory.Reaper                    => FullEquipType.Scythe,
+            WeaponCategory.Sage                      => FullEquipType.Nouliths,
+            _                                        => FullEquipType.Unknown,
         };
 
     public static FullEquipType Offhand(this FullEquipType type)
         => type switch
         {
-            FullEquipType.Fists   => FullEquipType.Fists,
+            FullEquipType.Fists   => FullEquipType.FistsOff,
             FullEquipType.Sword   => FullEquipType.Shield,
             FullEquipType.Wand    => FullEquipType.Shield,
-            FullEquipType.Daggers => FullEquipType.Daggers,
-            FullEquipType.Gun     => FullEquipType.Gun,
-            FullEquipType.Orrery  => FullEquipType.Orrery,
-            FullEquipType.Rapier  => FullEquipType.Rapier,
-            FullEquipType.Glaives => FullEquipType.Glaives,
+            FullEquipType.Daggers => FullEquipType.DaggersOff,
+            FullEquipType.Gun     => FullEquipType.GunOff,
+            FullEquipType.Orrery  => FullEquipType.OrreryOff,
+            FullEquipType.Rapier  => FullEquipType.RapierOff,
+            FullEquipType.Glaives => FullEquipType.GlaivesOff,
+            FullEquipType.Bow     => FullEquipType.BowOff,
+            FullEquipType.Katana  => FullEquipType.KatanaOff,
             _                     => FullEquipType.Unknown,
+        };
+
+    internal static string OffhandTypeSuffix(this FullEquipType type)
+        => type switch
+        {
+            FullEquipType.FistsOff   => " (Offhand)",
+            FullEquipType.DaggersOff => " (Offhand)",
+            FullEquipType.GunOff     => " (Aetherotransformer)",
+            FullEquipType.OrreryOff  => " (Card Holder)",
+            FullEquipType.RapierOff  => " (Focus)",
+            FullEquipType.GlaivesOff => " (Offhand)",
+            FullEquipType.BowOff     => " (Quiver)",
+            FullEquipType.KatanaOff  => " (Sheathe)",
+            _                        => string.Empty,
         };
 
     public static readonly IReadOnlyList<FullEquipType> WeaponTypes

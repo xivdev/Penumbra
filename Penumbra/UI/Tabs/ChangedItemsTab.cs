@@ -40,6 +40,7 @@ public class ChangedItemsTab : ITab
     public void DrawContent()
     {
         _collectionHeader.Draw(true);
+        _drawer.DrawTypeFilter();
         var       varWidth = DrawFilters();
         using var child    = ImRaii.Child("##changedItemsChild", -Vector2.One);
         if (!child)
@@ -57,9 +58,7 @@ public class ChangedItemsTab : ITab
         ImGui.TableSetupColumn("id",    flags, 130 * UiHelpers.Scale);
 
         var items = _collectionManager.Active.Current.ChangedItems;
-        var rest = _changedItemFilter.IsEmpty && _changedItemModFilter.IsEmpty
-            ? ImGuiClip.ClippedDraw(items, skips, DrawChangedItemColumn, items.Count)
-            : ImGuiClip.FilteredClippedDraw(items, skips, FilterChangedItem, DrawChangedItemColumn);
+        var rest  = ImGuiClip.FilteredClippedDraw(items, skips, FilterChangedItem, DrawChangedItemColumn);
         ImGuiClip.DrawEndDummy(rest, height);
     }
 
@@ -79,26 +78,21 @@ public class ChangedItemsTab : ITab
 
     /// <summary> Apply the current filters. </summary>
     private bool FilterChangedItem(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
-        => (_changedItemFilter.IsEmpty
-             || ChangedItemDrawer.ChangedItemFilterName(item.Key, item.Value.Item2)
-                    .Contains(_changedItemFilter.Lower, StringComparison.OrdinalIgnoreCase))
+        => _drawer.FilterChangedItem(item.Key, item.Value.Item2, _changedItemFilter)
          && (_changedItemModFilter.IsEmpty || item.Value.Item1.Any(m => m.Name.Contains(_changedItemModFilter)));
 
     /// <summary> Draw a full column for a changed item. </summary>
     private void DrawChangedItemColumn(KeyValuePair<string, (SingleArray<IMod>, object?)> item)
     {
         ImGui.TableNextColumn();
-        _drawer.DrawChangedItem(item.Key, item.Value.Item2, false);
+        _drawer.DrawCategoryIcon(item.Key, item.Value.Item2);
+        ImGui.SameLine();
+        _drawer.DrawChangedItem(item.Key, item.Value.Item2);
         ImGui.TableNextColumn();
         DrawModColumn(item.Value.Item1);
 
         ImGui.TableNextColumn();
-        if (!ChangedItemDrawer.GetChangedItemObject(item.Value.Item2, out var text))
-            return;
-
-        using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.ItemId.Value());
-        ImGui.AlignTextToFramePadding();
-        ImGuiUtil.RightAlign(text);
+        _drawer.DrawModelData(item.Value.Item2);
     }
 
     private void DrawModColumn(SingleArray<IMod> mods)

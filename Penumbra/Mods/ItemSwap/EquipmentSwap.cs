@@ -2,8 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Lumina.Data.Parsing;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
@@ -46,9 +44,9 @@ public static class EquipmentSwap
                 : Array.Empty<EquipSlot>();
     }
 
-    public static Item[] CreateTypeSwap(MetaFileManager manager, IObjectIdentifier identifier, List<Swap> swaps,
+    public static EquipItem[] CreateTypeSwap(MetaFileManager manager, IObjectIdentifier identifier, List<Swap> swaps,
         Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips,
-        EquipSlot slotFrom, Item itemFrom, EquipSlot slotTo, Item itemTo)
+        EquipSlot slotFrom, EquipItem itemFrom, EquipSlot slotTo, EquipItem itemTo)
     {
         LookupItem(itemFrom, out var actualSlotFrom, out var idFrom, out var variantFrom);
         LookupItem(itemTo,   out var actualSlotTo,   out var idTo,   out var variantTo);
@@ -104,9 +102,9 @@ public static class EquipmentSwap
         return affectedItems;
     }
 
-    public static Item[] CreateItemSwap(MetaFileManager manager, IObjectIdentifier identifier, List<Swap> swaps,
-        Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips, Item itemFrom,
-        Item itemTo, bool rFinger = true, bool lFinger = true)
+    public static EquipItem[] CreateItemSwap(MetaFileManager manager, IObjectIdentifier identifier, List<Swap> swaps,
+        Func<Utf8GamePath, FullPath> redirections, Func<MetaManipulation, MetaManipulation> manips, EquipItem itemFrom,
+        EquipItem itemTo, bool rFinger = true, bool lFinger = true)
     {
         // Check actual ids, variants and slots. We only support using the same slot.
         LookupItem(itemFrom, out var slotFrom, out var idFrom, out var variantFrom);
@@ -122,7 +120,7 @@ public static class EquipmentSwap
         if (gmp != null)
             swaps.Add(gmp);
 
-        var affectedItems = Array.Empty<Item>();
+        var affectedItems = Array.Empty<EquipItem>();
         foreach (var slot in ConvertSlots(slotFrom, rFinger, lFinger))
         {
             (var imcFileFrom, var variants, affectedItems) = GetVariants(manager, identifier, slot, idFrom, idTo, variantFrom);
@@ -242,22 +240,22 @@ public static class EquipmentSwap
         return mdl;
     }
 
-    private static void LookupItem(Item i, out EquipSlot slot, out SetId modelId, out byte variant)
+    private static void LookupItem(EquipItem i, out EquipSlot slot, out SetId modelId, out byte variant)
     {
-        slot = ((EquipSlot)i.EquipSlotCategory.Row).ToSlot();
-        if (!slot.IsEquipmentPiece())
+        if (!i.Slot.IsEquipmentPiece())
             throw new ItemSwap.InvalidItemTypeException();
 
-        modelId = ((Quad)i.ModelMain).A;
-        variant = (byte)((Quad)i.ModelMain).B;
+        slot    = i.Slot;
+        modelId = i.ModelId;
+        variant = i.Variant;
     }
 
-    private static (ImcFile, byte[], Item[]) GetVariants(MetaFileManager manager, IObjectIdentifier identifier, EquipSlot slotFrom,
+    private static (ImcFile, byte[], EquipItem[]) GetVariants(MetaFileManager manager, IObjectIdentifier identifier, EquipSlot slotFrom,
         SetId idFrom, SetId idTo, byte variantFrom)
     {
         var    entry = new ImcManipulation(slotFrom, variantFrom, idFrom.Value, default);
         var    imc   = new ImcFile(manager, entry);
-        Item[] items;
+        EquipItem[] items;
         byte[] variants;
         if (idFrom.Value == idTo.Value)
         {
@@ -271,7 +269,7 @@ public static class EquipmentSwap
         {
             items = identifier.Identify(slotFrom.IsEquipment()
                 ? GamePaths.Equipment.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)
-                : GamePaths.Accessory.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)).Select(kvp => kvp.Value).OfType<Item>().ToArray();
+                : GamePaths.Accessory.Mdl.Path(idFrom, GenderRace.MidlanderMale, slotFrom)).Select(kvp => kvp.Value).OfType<EquipItem>().ToArray();
             variants = Enumerable.Range(0, imc.Count + 1).Select(i => (byte)i).ToArray();
         }
 

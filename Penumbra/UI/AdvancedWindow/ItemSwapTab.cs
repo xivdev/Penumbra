@@ -129,14 +129,14 @@ public class ItemSwapTab : IDisposable, ITab
         Weapon,
     }
 
-    private class ItemSelector : FilterComboCache<(string, Item)>
+    private class ItemSelector : FilterComboCache<EquipItem>
     {
         public ItemSelector(ItemService data, FullEquipType type)
-            : base(() => data.AwaitedService[type].Select(i => (i.Name.ToDalamudString().TextValue, i)).ToArray())
+            : base(() => data.AwaitedService[type])
         { }
 
-        protected override string ToString((string, Item) obj)
-            => obj.Item1;
+        protected override string ToString(EquipItem obj)
+            => obj.Name;
     }
 
     private class WeaponSelector : FilterComboCache<FullEquipType>
@@ -179,7 +179,7 @@ public class ItemSwapTab : IDisposable, ITab
     private bool       _useLeftRing  = true;
     private bool       _useRightRing = true;
 
-    private Item[]? _affectedItems;
+    private EquipItem[]? _affectedItems;
 
     private void UpdateState()
     {
@@ -203,17 +203,16 @@ public class ItemSwapTab : IDisposable, ITab
                 case SwapType.Bracelet:
                 case SwapType.Ring:
                     var values = _selectors[_lastTab];
-                    if (values.Source.CurrentSelection.Item2 != null && values.Target.CurrentSelection.Item2 != null)
-                        _affectedItems = _swapData.LoadEquipment(values.Target.CurrentSelection.Item2, values.Source.CurrentSelection.Item2,
+                    if (values.Source.CurrentSelection.Type != FullEquipType.Unknown && values.Target.CurrentSelection.Type != FullEquipType.Unknown)
+                        _affectedItems = _swapData.LoadEquipment(values.Target.CurrentSelection, values.Source.CurrentSelection,
                             _useCurrentCollection ? _collectionManager.Active.Current : null, _useRightRing, _useLeftRing);
 
                     break;
                 case SwapType.BetweenSlots:
                     var (_, _, selectorFrom) = GetAccessorySelector(_slotFrom, true);
                     var (_, _, selectorTo)   = GetAccessorySelector(_slotTo,   false);
-                    if (selectorFrom.CurrentSelection.Item2 != null && selectorTo.CurrentSelection.Item2 != null)
-                        _affectedItems = _swapData.LoadTypeSwap(_slotTo, selectorTo.CurrentSelection.Item2, _slotFrom,
-                            selectorFrom.CurrentSelection.Item2,
+                    if (selectorFrom.CurrentSelection.Valid && selectorTo.CurrentSelection.Valid)
+                        _affectedItems = _swapData.LoadTypeSwap(_slotTo, selectorTo.CurrentSelection, _slotFrom, selectorFrom.CurrentSelection,
                             _useCurrentCollection ? _collectionManager.Active.Current : null);
                     break;
                 case SwapType.Hair when _targetId > 0 && _sourceId > 0:
@@ -468,7 +467,7 @@ public class ItemSwapTab : IDisposable, ITab
         }
 
         ImGui.TableNextColumn();
-        _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2,
+        _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Name ?? string.Empty, string.Empty, InputWidth * 2,
             ImGui.GetTextLineHeightWithSpacing());
 
         (article1, _, selector) = GetAccessorySelector(_slotTo, false);
@@ -493,7 +492,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         ImGui.TableNextColumn();
 
-        _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2,
+        _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Name, string.Empty, InputWidth * 2,
             ImGui.GetTextLineHeightWithSpacing());
         if (_affectedItems is not { Length: > 1 })
             return;
@@ -502,8 +501,8 @@ public class ItemSwapTab : IDisposable, ITab
         ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero,
             Colors.PressEnterWarningBg);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i, selector.CurrentSelection.Item2))
-                .Select(i => i.Name.ToDalamudString().TextValue)));
+            ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i.Name, selector.CurrentSelection.Name))
+                .Select(i => i.Name)));
     }
 
     private (string, string, ItemSelector) GetAccessorySelector(EquipSlot slot, bool source)
@@ -534,7 +533,7 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(text1);
         ImGui.TableNextColumn();
-        _dirty |= sourceSelector.Draw("##itemSource", sourceSelector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2,
+        _dirty |= sourceSelector.Draw("##itemSource", sourceSelector.CurrentSelection.Name, string.Empty, InputWidth * 2,
             ImGui.GetTextLineHeightWithSpacing());
 
         if (type == SwapType.Ring)
@@ -547,7 +546,7 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(text2);
         ImGui.TableNextColumn();
-        _dirty |= targetSelector.Draw("##itemTarget", targetSelector.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2,
+        _dirty |= targetSelector.Draw("##itemTarget", targetSelector.CurrentSelection.Name, string.Empty, InputWidth * 2,
             ImGui.GetTextLineHeightWithSpacing());
         if (type == SwapType.Ring)
         {
@@ -562,8 +561,8 @@ public class ItemSwapTab : IDisposable, ITab
         ImGuiUtil.DrawTextButton($"which will also affect {_affectedItems.Length - 1} other Items.", Vector2.Zero,
             Colors.PressEnterWarningBg);
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i, targetSelector.CurrentSelection.Item2))
-                .Select(i => i.Name.ToDalamudString().TextValue)));
+            ImGui.SetTooltip(string.Join('\n', _affectedItems.Where(i => !ReferenceEquals(i.Name, targetSelector.CurrentSelection.Name))
+                .Select(i => i.Name)));
     }
 
     private void DrawHairSwap()
@@ -647,14 +646,14 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted("and put this variant of it");
         ImGui.TableNextColumn();
-        _dirty |= _weaponSource.Draw("##weaponSource", _weaponSource.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2,
+        _dirty |= _weaponSource.Draw("##weaponSource", _weaponSource.CurrentSelection.Name, string.Empty, InputWidth * 2,
             ImGui.GetTextLineHeightWithSpacing());
 
         ImGui.TableNextColumn();
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted("onto this one");
         ImGui.TableNextColumn();
-        _dirty |= _weaponTarget.Draw("##weaponTarget", _weaponTarget.CurrentSelection.Item1 ?? string.Empty, string.Empty, InputWidth * 2,
+        _dirty |= _weaponTarget.Draw("##weaponTarget", _weaponTarget.CurrentSelection.Name, string.Empty, InputWidth * 2,
             ImGui.GetTextLineHeightWithSpacing());
     }
 

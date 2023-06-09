@@ -2,7 +2,6 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Dalamud.Plugin;
 using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
@@ -21,6 +20,8 @@ using Penumbra.Interop.Services;
 using Penumbra.Mods.Manager;
 using Penumbra.Collections.Manager;
 using Penumbra.UI.Tabs;
+using ChangedItemClick = Penumbra.Communication.ChangedItemClick;
+using ChangedItemHover = Penumbra.Communication.ChangedItemHover;
 
 namespace Penumbra;
 
@@ -59,7 +60,8 @@ public class Penumbra : IDalamudPlugin
             var startup = _services.GetRequiredService<DalamudServices>().GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool s)
                 ? s.ToString()
                 : "Unknown";
-            Log.Information($"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
+            Log.Information(
+                $"Loading Penumbra Version {_validityChecker.Version}, Commit #{_validityChecker.CommitHash} with Waiting For Plugins: {startup}...");
             _services.GetRequiredService<BackupService>(); // Initialize because not required anywhere else.
             _config            = _services.GetRequiredService<Configuration>();
             _characterUtility  = _services.GetRequiredService<CharacterUtility>();
@@ -91,7 +93,7 @@ public class Penumbra : IDalamudPlugin
             if (_characterUtility.Ready)
                 _residentResources.Reload();
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             Log.Error($"Error constructing Penumbra, Disposing again:\n{ex}");
             Dispose();
@@ -104,16 +106,17 @@ public class Penumbra : IDalamudPlugin
         using var timer = _services.GetRequiredService<StartTracker>().Measure(StartTimeType.Api);
         var       api   = _services.GetRequiredService<IPenumbraApi>();
         _services.GetRequiredService<PenumbraIpcProviders>();
-        api.ChangedItemTooltip += it =>
+        _communicatorService.ChangedItemHover.Subscribe(it =>
         {
             if (it is Item)
                 ImGui.TextUnformatted("Left Click to create an item link in chat.");
-        };
-        api.ChangedItemClicked += (button, it) =>
+        }, ChangedItemHover.Priority.Link);
+
+        _communicatorService.ChangedItemClick.Subscribe((button, it) =>
         {
             if (button == MouseButton.Left && it is Item item)
                 ChatService.LinkItem(item);
-        };
+        }, ChangedItemClick.Priority.Link);
     }
 
     private void SetupInterface()

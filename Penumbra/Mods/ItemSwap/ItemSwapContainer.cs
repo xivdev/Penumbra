@@ -132,7 +132,7 @@ public class ItemSwapContainer
         return m => set.TryGetValue( m, out var a ) ? a : m;
     }
 
-    public Item[] LoadEquipment( Item from, Item to, ModCollection? collection = null, bool useRightRing = true, bool useLeftRing = true )
+    public EquipItem[] LoadEquipment( EquipItem from, EquipItem to, ModCollection? collection = null, bool useRightRing = true, bool useLeftRing = true )
     {
         Swaps.Clear();
         Loaded = false;
@@ -141,7 +141,7 @@ public class ItemSwapContainer
         return ret;
     }
 
-    public Item[] LoadTypeSwap( EquipSlot slotFrom, Item from, EquipSlot slotTo, Item to, ModCollection? collection = null )
+    public EquipItem[] LoadTypeSwap( EquipSlot slotFrom, EquipItem from, EquipSlot slotTo, EquipItem to, ModCollection? collection = null )
     {
         Swaps.Clear();
         Loaded = false;

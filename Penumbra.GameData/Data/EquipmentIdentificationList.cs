@@ -9,15 +9,15 @@ using Penumbra.GameData.Structs;
 
 namespace Penumbra.GameData.Data;
 
-internal sealed class EquipmentIdentificationList : KeyList<Item>
+internal sealed class EquipmentIdentificationList : KeyList<EquipItem>
 {
-    private const string Tag     = "EquipmentIdentification";
+    private const string Tag = "EquipmentIdentification";
 
     public EquipmentIdentificationList(DalamudPluginInterface pi, ClientLanguage language, DataManager gameData)
         : base(pi, Tag, language, ObjectIdentification.IdentificationVersion, CreateEquipmentList(gameData, language))
     { }
 
-    public IEnumerable<Item> Between(SetId modelId, EquipSlot slot = EquipSlot.Unknown, byte variant = 0)
+    public IEnumerable<EquipItem> Between(SetId modelId, EquipSlot slot = EquipSlot.Unknown, byte variant = 0)
     {
         if (slot == EquipSlot.Unknown)
             return Between(ToKey(modelId, 0, 0), ToKey(modelId, (EquipSlot)0xFF, 0xFF));
@@ -33,15 +33,10 @@ internal sealed class EquipmentIdentificationList : KeyList<Item>
     public static ulong ToKey(SetId modelId, EquipSlot slot, byte variant)
         => ((ulong)modelId << 32) | ((ulong)slot << 16) | variant;
 
-    public static ulong ToKey(Item i)
-    {
-        var model   = (SetId)((Lumina.Data.Parsing.Quad)i.ModelMain).A;
-        var slot    = ((EquipSlot)i.EquipSlotCategory.Row).ToSlot();
-        var variant = (byte)((Lumina.Data.Parsing.Quad)i.ModelMain).B;
-        return ToKey(model, slot, variant);
-    }
+    public static ulong ToKey(EquipItem i)
+        => ToKey(i.ModelId, i.Slot, i.Variant);
 
-    protected override IEnumerable<ulong> ToKeys(Item i)
+    protected override IEnumerable<ulong> ToKeys(EquipItem i)
     {
         yield return ToKey(i);
     }
@@ -49,12 +44,12 @@ internal sealed class EquipmentIdentificationList : KeyList<Item>
     protected override bool ValidKey(ulong key)
         => key != 0;
 
-    protected override int ValueKeySelector(Item data)
-        => (int)data.RowId;
+    protected override int ValueKeySelector(EquipItem data)
+        => (int)data.Id;
 
-    private static IEnumerable<Item> CreateEquipmentList(DataManager gameData, ClientLanguage language)
+    private static IEnumerable<EquipItem> CreateEquipmentList(DataManager gameData, ClientLanguage language)
     {
         var items = gameData.GetExcelSheet<Item>(language)!;
-        return items.Where(i => ((EquipSlot)i.EquipSlotCategory.Row).IsEquipmentPiece());
+        return items.Where(i => ((EquipSlot)i.EquipSlotCategory.Row).IsEquipmentPiece()).Select(EquipItem.FromArmor);
     }
 }
