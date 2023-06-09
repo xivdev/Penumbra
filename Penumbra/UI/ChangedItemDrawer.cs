@@ -142,59 +142,27 @@ public class ChangedItemDrawer : IDisposable
     public void DrawTypeFilter()
     {
         using var _         = ImRaii.PushId("ChangedItemIconFilter");
-        var       available = ImGui.GetContentRegionAvail().X;
-        var (numLines, size) = available / _icons.Count > ImGui.GetTextLineHeight() * 2
-            ? (1, new Vector2(Math.Min(_smallestIconWidth, available / _icons.Count)))
-            : (2, new Vector2(Math.Min(_smallestIconWidth, 2 * available / _icons.Count)));
-        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
-        var lines = numLines == 2
-            ? new[]
-            {
-                new[]
-                {
-                    ChangedItemIcon.Head,
-                    ChangedItemIcon.Body,
-                    ChangedItemIcon.Hands,
-                    ChangedItemIcon.Legs,
-                    ChangedItemIcon.Feet,
-                    ChangedItemIcon.Mainhand,
-                    ChangedItemIcon.Offhand,
-                    ChangedItemIcon.Unknown,
-                },
-                new[]
-                {
-                    ChangedItemIcon.Ears,
-                    ChangedItemIcon.Neck,
-                    ChangedItemIcon.Wrists,
-                    ChangedItemIcon.Finger,
-                    ChangedItemIcon.Customization,
-                    ChangedItemIcon.Action,
-                    ChangedItemIcon.Monster,
-                    ChangedItemIcon.Demihuman,
-                },
-            }
-            : new[]
-            {
-                new[]
-                {
-                    ChangedItemIcon.Head,
-                    ChangedItemIcon.Body,
-                    ChangedItemIcon.Hands,
-                    ChangedItemIcon.Legs,
-                    ChangedItemIcon.Feet,
-                    ChangedItemIcon.Ears,
-                    ChangedItemIcon.Neck,
-                    ChangedItemIcon.Wrists,
-                    ChangedItemIcon.Finger,
-                    ChangedItemIcon.Mainhand,
-                    ChangedItemIcon.Offhand,
-                    ChangedItemIcon.Customization,
-                    ChangedItemIcon.Action,
-                    ChangedItemIcon.Monster,
-                    ChangedItemIcon.Demihuman,
-                    ChangedItemIcon.Unknown,
-                },
-            };
+        var       size      = new Vector2(2 * ImGui.GetTextLineHeight());
+        using var style     = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        var order = new[]
+        {
+            ChangedItemIcon.Head,
+            ChangedItemIcon.Body,
+            ChangedItemIcon.Hands,
+            ChangedItemIcon.Legs,
+            ChangedItemIcon.Feet,
+            ChangedItemIcon.Ears,
+            ChangedItemIcon.Neck,
+            ChangedItemIcon.Wrists,
+            ChangedItemIcon.Finger,
+            ChangedItemIcon.Mainhand,
+            ChangedItemIcon.Offhand,
+            ChangedItemIcon.Customization,
+            ChangedItemIcon.Action,
+            ChangedItemIcon.Monster,
+            ChangedItemIcon.Demihuman,
+            ChangedItemIcon.Unknown,
+        };
 
         void DrawIcon(ChangedItemIcon type)
         {
@@ -216,16 +184,13 @@ public class ChangedItemDrawer : IDisposable
             }
         }
 
-        foreach (var line in lines)
+        foreach (var iconType in order.SkipLast(1))
         {
-            foreach (var iconType in line.SkipLast(1))
-            {
-                DrawIcon(iconType);
-                ImGui.SameLine();
-            }
-
-            DrawIcon(line.Last());
+            DrawIcon(iconType);
+            ImGui.SameLine();
         }
+
+        DrawIcon(order.Last());
     }
 
     /// <summary> Obtain the icon category corresponding to a changed item. </summary>
