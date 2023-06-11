@@ -141,9 +141,9 @@ public class ChangedItemDrawer : IDisposable
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
     public void DrawTypeFilter()
     {
-        using var _         = ImRaii.PushId("ChangedItemIconFilter");
-        var       size      = new Vector2(2 * ImGui.GetTextLineHeight());
-        using var style     = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
+        using var _     = ImRaii.PushId("ChangedItemIconFilter");
+        var       size  = new Vector2(2 * ImGui.GetTextLineHeight());
+        using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);
         var order = new[]
         {
             ChangedItemIcon.Head,
@@ -184,13 +184,21 @@ public class ChangedItemDrawer : IDisposable
             }
         }
 
-        foreach (var iconType in order.SkipLast(1))
+        foreach (var iconType in order)
         {
             DrawIcon(iconType);
             ImGui.SameLine();
         }
 
-        DrawIcon(order.Last());
+        ImGui.SetCursorPosX(ImGui.GetContentRegionMax().X - size.X);
+        ImGui.Image(_icons[AllFlags].ImGuiHandle, size, Vector2.Zero, Vector2.One,
+            _config.ChangedItemFilter == 0        ? new Vector4(0.6f,  0.3f,  0.3f,  1f) :
+            _config.ChangedItemFilter == AllFlags ? new Vector4(0.75f, 0.75f, 0.75f, 1f) : new Vector4(0.5f, 0.5f, 1f, 1f));
+        if (ImGui.IsItemClicked())
+        {
+            _config.ChangedItemFilter = _config.ChangedItemFilter == AllFlags ? 0 : AllFlags;
+            _config.Save();
+        }
     }
 
     /// <summary> Obtain the icon category corresponding to a changed item. </summary>
@@ -327,6 +335,7 @@ public class ChangedItemDrawer : IDisposable
         Add(ChangedItemIcon.Demihuman,     gameData.GetImGuiTexture("ui/icon/062000/062041_hr1.tex"));
         Add(ChangedItemIcon.Customization, gameData.GetImGuiTexture("ui/icon/062000/062043_hr1.tex"));
         Add(ChangedItemIcon.Action,        gameData.GetImGuiTexture("ui/icon/062000/062001_hr1.tex"));
+        Add(AllFlags,                      gameData.GetImGuiTexture("ui/icon/114000/114052_hr1.tex"));
 
         var unk = gameData.GetFile<TexFile>("ui/uld/levelup2_hr1.tex");
         if (unk == null)
