@@ -38,7 +38,7 @@ public readonly struct EquipItem
     public EquipItem(string name, uint id, ushort iconId, SetId modelId, WeaponType weaponType, byte variant, FullEquipType type,
         EquipSlot slot)
     {
-        Name       = name;
+        Name       = string.Intern(name);
         Id         = id;
         IconId     = iconId;
         ModelId    = modelId;
@@ -48,12 +48,11 @@ public readonly struct EquipItem
         Slot       = slot;
     }
 
-
     public static EquipItem FromArmor(Item item)
     {
         var type    = item.ToEquipType();
         var slot    = type.ToSlot();
-        var name    = string.Intern(item.Name.ToDalamudString().TextValue);
+        var name    = item.Name.ToDalamudString().TextValue;
         var id      = item.RowId;
         var icon    = item.Icon;
         var model   = (SetId)item.ModelMain;
@@ -65,7 +64,7 @@ public readonly struct EquipItem
     public static EquipItem FromMainhand(Item item)
     {
         var type    = item.ToEquipType();
-        var name    = string.Intern(item.Name.ToDalamudString().TextValue);
+        var name    = item.Name.ToDalamudString().TextValue;
         var id      = item.RowId;
         var icon    = item.Icon;
         var model   = (SetId)item.ModelMain;
@@ -77,7 +76,7 @@ public readonly struct EquipItem
     public static EquipItem FromOffhand(Item item)
     {
         var type    = item.ToEquipType().Offhand();
-        var name    = string.Intern(item.Name.ToDalamudString().TextValue + type.OffhandTypeSuffix());
+        var name    = item.Name.ToDalamudString().TextValue + type.OffhandTypeSuffix();
         var id      = item.RowId;
         var icon    = item.Icon;
         var model   = (SetId)item.ModelSub;
