@@ -195,7 +195,7 @@ public class ModPanelEditTab : ITab
 
         var reducedSize = new Vector2(UiHelpers.InputTextMinusButton3, 0);
         if (ImGui.Button("Edit Description", reducedSize))
-            _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_filenames, _mod, Input.Description));
+            _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_mod, Input.Description));
 
         ImGui.SameLine();
         var fileExists = File.Exists(_filenames.ModMetaPath(_mod));
@@ -304,16 +304,15 @@ public class ModPanelEditTab : ITab
     /// <summary> Open a popup to edit a multi-line mod or option description. </summary>
     private static class DescriptionEdit
     {
-        private const  string           PopupName                = "Edit Description";
-        private static string           _newDescription          = string.Empty;
-        private static int              _newDescriptionIdx       = -1;
-        private static int              _newDescriptionOptionIdx = -1;
-        private static Mod?             _mod;
-        private static FilenameService? _fileNames;
+        private const  string PopupName                = "Edit Description";
+        private static string _newDescription          = string.Empty;
+        private static string _oldDescription          = string.Empty;
+        private static int    _newDescriptionIdx       = -1;
+        private static int    _newDescriptionOptionIdx = -1;
+        private static Mod?   _mod;
 
-        public static void OpenPopup(FilenameService filenames, Mod mod, int groupIdx, int optionIdx = -1)
+        public static void OpenPopup(Mod mod, int groupIdx, int optionIdx = -1)
         {
-            _fileNames               = filenames;
             _newDescriptionIdx       = groupIdx;
             _newDescriptionOptionIdx = optionIdx;
             _newDescription = groupIdx < 0
@@ -321,6 +320,7 @@ public class ModPanelEditTab : ITab
                 : optionIdx < 0
                     ? mod.Groups[groupIdx].Description
                     : mod.Groups[groupIdx][optionIdx].Description;
+            _oldDescription = _newDescription;
 
             _mod = mod;
             ImGui.OpenPopup(PopupName);
@@ -347,11 +347,7 @@ public class ModPanelEditTab : ITab
               + ImGui.GetStyle().ItemSpacing.X;
             ImGui.SetCursorPosX((800 * UiHelpers.Scale - width) / 2);
 
-            var oldDescription = _newDescriptionIdx == Input.Description
-                ? _mod.Description
-                : _mod.Groups[_newDescriptionIdx].Description;
-
-            var tooltip = _newDescription != oldDescription ? string.Empty : "No changes made yet.";
+            var tooltip = _newDescription != _oldDescription ? string.Empty : "No changes made yet.";
 
             if (ImGuiUtil.DrawDisabledButton("Save", buttonSize, tooltip, tooltip.Length > 0))
             {
@@ -429,7 +425,7 @@ public class ModPanelEditTab : ITab
 
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Edit.ToIconString(), UiHelpers.IconButtonSize,
                 "Edit group description.", false, true))
-            _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_filenames, _mod, groupIdx));
+            _delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(_mod, groupIdx));
 
         ImGui.SameLine();
         var fileName   = _filenames.OptionGroupFile(_mod, groupIdx);
@@ -523,7 +519,7 @@ public class ModPanelEditTab : ITab
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Edit.ToIconString(), UiHelpers.IconButtonSize, "Edit option description.",
                     false, true))
-                panel._delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(panel._filenames, panel._mod, groupIdx, optionIdx));
+                panel._delayedActions.Enqueue(() => DescriptionEdit.OpenPopup(panel._mod, groupIdx, optionIdx));
 
             ImGui.TableNextColumn();
             if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Trash.ToIconString(), UiHelpers.IconButtonSize,
