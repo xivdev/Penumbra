@@ -169,10 +169,21 @@ public class ChangedItemDrawer : IDisposable
             var icon = _icons[type];
             var flag = _config.ChangedItemFilter.HasFlag(type);
             ImGui.Image(icon.ImGuiHandle, size, Vector2.Zero, Vector2.One, flag ? Vector4.One : new Vector4(0.6f, 0.3f, 0.3f, 1f));
-            if (ImGui.IsItemClicked())
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             {
                 _config.ChangedItemFilter = flag ? _config.ChangedItemFilter & ~type : _config.ChangedItemFilter | type;
                 _config.Save();
+            }
+
+            using var popup = ImRaii.ContextPopupItem(type.ToString());
+            if (popup)
+            {
+                if (ImGui.MenuItem("Enable Only This"))
+                {
+                    _config.ChangedItemFilter = type;
+                    _config.Save();
+                    ImGui.CloseCurrentPopup();
+                }
             }
 
             if (ImGui.IsItemHovered())
