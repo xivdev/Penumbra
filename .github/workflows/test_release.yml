@@ -3,7 +3,7 @@ name: Create Test Release
 on:
   push:
     tags:
-      - t*
+      - testing_*
 
 jobs:
   build:
@@ -24,11 +24,11 @@ jobs:
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
       - name: Build
         run: |
-          $ver = '${{ github.ref_name }}' -replace 't'
+          $ver = '${{ github.ref_name }}' -replace 'testing_'
           invoke-expression 'dotnet build --no-restore --configuration Debug --nologo -p:Version=$ver -p:FileVersion=$ver -p:AssemblyVersion=$ver'
       - name: write version into json
         run: |
-          $ver = '${{ github.ref_name }}' -replace 't'
+          $ver = '${{ github.ref_name }}' -replace 'testing_'
           $path = './Penumbra/bin/Debug/Penumbra.json'
           $json = Get-Content -Raw $path | ConvertFrom-Json
           $json.AssemblyVersion = $ver
@@ -65,7 +65,7 @@ jobs:
       - name: Write out repo.json
         run: |
           $verT = '${{ github.ref_name }}'
-          $ver = $verT -replace 't'
+          $ver = $verT -replace 'testing_'
           $path = './repo.json'
           $json = Get-Content -Raw $path | ConvertFrom-Json
           $json[0].TestingAssemblyVersion = $ver          
