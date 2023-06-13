@@ -165,7 +165,7 @@ public class CollectionCache : IDisposable
         var (paths, manipulations) = ModData.RemoveMod(mod);
 
         if (addMetaChanges)
-            ++_collection.ChangeCounter;
+            _collection.IncrementCounter();
 
         foreach (var path in paths)
         {
@@ -240,7 +240,7 @@ public class CollectionCache : IDisposable
 
         if (addMetaChanges)
         {
-            ++_collection.ChangeCounter;
+            _collection.IncrementCounter();
             if (mod.TotalManipulations > 0)
                 AddMetaFiles(false);
 

@@ -47,7 +47,11 @@ public partial class ModCollection
     /// Count the number of changes of the effective file list.
     /// This is used for material and imc changes.
     /// </summary>
-    public int ChangeCounter { get; internal set; }
+    public int ChangeCounter { get; private set; }
+
+    /// <summary> Increment the number of changes in the effective file list. </summary>
+    public int IncrementCounter()
+        => ++ChangeCounter;
 
     /// <summary>
     /// If a ModSetting is null, it can be inherited from other collections.

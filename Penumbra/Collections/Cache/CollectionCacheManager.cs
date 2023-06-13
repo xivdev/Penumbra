@@ -174,7 +174,7 @@ public class CollectionCacheManager : IDisposable
 
             cache.AddMetaFiles(true);
 
-            ++collection.ChangeCounter;
+            collection.IncrementCounter();
 
             MetaFileManager.ApplyDefaultFiles(collection);
         }
@@ -280,7 +280,7 @@ public class CollectionCacheManager : IDisposable
     private void IncrementCounters()
     {
         foreach (var collection in _storage.Where(c => c.HasCache))
-            ++collection.ChangeCounter;
+            collection.IncrementCounter();
         MetaFileManager.CharacterUtility.LoadingFinished -= IncrementCounters;
     }
 
