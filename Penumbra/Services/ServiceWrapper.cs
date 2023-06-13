@@ -5,7 +5,7 @@ using Penumbra.Util;
 
 namespace Penumbra.Services;
 
-public abstract class SyncServiceWrapper<T>
+public abstract class SyncServiceWrapper<T> : IDisposable
 {
     public  string Name    { get; }
     public  T      Service { get; }
@@ -34,7 +34,7 @@ public abstract class SyncServiceWrapper<T>
     }
 }
 
-public abstract class AsyncServiceWrapper<T>
+public abstract class AsyncServiceWrapper<T> : IDisposable
 {
     public string Name    { get; }
     public T?     Service { get; private set; }

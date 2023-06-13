@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 
@@ -17,7 +16,6 @@ public static partial class GamePaths
             ? Names.GenderRaceFromCode(match.Groups["racecode"].Value)
             : GenderRace.Unknown;
     }
-
 
     public static partial class Monster
     {

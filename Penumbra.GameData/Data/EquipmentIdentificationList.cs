@@ -6,10 +6,11 @@ using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
+using PseudoEquipItem = System.ValueTuple<string, uint, ushort, ushort, ushort, byte, byte>;
 
 namespace Penumbra.GameData.Data;
 
-internal sealed class EquipmentIdentificationList : KeyList<EquipItem>
+internal sealed class EquipmentIdentificationList : KeyList<PseudoEquipItem>
 {
     private const string Tag = "EquipmentIdentification";
 
@@ -20,11 +21,11 @@ internal sealed class EquipmentIdentificationList : KeyList<EquipItem>
     public IEnumerable<EquipItem> Between(SetId modelId, EquipSlot slot = EquipSlot.Unknown, byte variant = 0)
     {
         if (slot == EquipSlot.Unknown)
-            return Between(ToKey(modelId, 0, 0), ToKey(modelId, (EquipSlot)0xFF, 0xFF));
+            return Between(ToKey(modelId, 0, 0), ToKey(modelId, (EquipSlot)0xFF, 0xFF)).Select(e => (EquipItem)e);
         if (variant == 0)
-            return Between(ToKey(modelId, slot, 0), ToKey(modelId, slot, 0xFF));
+            return Between(ToKey(modelId, slot, 0), ToKey(modelId, slot, 0xFF)).Select(e => (EquipItem)e);
 
-        return Between(ToKey(modelId, slot, variant), ToKey(modelId, slot, variant));
+        return Between(ToKey(modelId, slot, variant), ToKey(modelId, slot, variant)).Select(e => (EquipItem)e);
     }
 
     public void Dispose(DalamudPluginInterface pi, ClientLanguage language)
@@ -34,9 +35,9 @@ internal sealed class EquipmentIdentificationList : KeyList<EquipItem>
         => ((ulong)modelId << 32) | ((ulong)slot << 16) | variant;
 
     public static ulong ToKey(EquipItem i)
-        => ToKey(i.ModelId, i.Slot, i.Variant);
+        => ToKey(i.ModelId, i.Type.ToSlot(), i.Variant);
 
-    protected override IEnumerable<ulong> ToKeys(EquipItem i)
+    protected override IEnumerable<ulong> ToKeys(PseudoEquipItem i)
     {
         yield return ToKey(i);
     }
@@ -44,12 +45,12 @@ internal sealed class EquipmentIdentificationList : KeyList<EquipItem>
     protected override bool ValidKey(ulong key)
         => key != 0;
 
-    protected override int ValueKeySelector(EquipItem data)
-        => (int)data.Id;
+    protected override int ValueKeySelector(PseudoEquipItem data)
+        => (int)data.Item2;
 
-    private static IEnumerable<EquipItem> CreateEquipmentList(DataManager gameData, ClientLanguage language)
+    private static IEnumerable<PseudoEquipItem> CreateEquipmentList(DataManager gameData, ClientLanguage language)
     {
         var items = gameData.GetExcelSheet<Item>(language)!;
-        return items.Where(i => ((EquipSlot)i.EquipSlotCategory.Row).IsEquipmentPiece()).Select(EquipItem.FromArmor);
+        return items.Where(i => ((EquipSlot)i.EquipSlotCategory.Row).IsEquipmentPiece()).Select(i => (PseudoEquipItem)EquipItem.FromArmor(i));
     }
 }

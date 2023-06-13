@@ -219,7 +219,7 @@ public class ChangedItemDrawer : IDisposable
         switch (obj)
         {
             case EquipItem it:
-                iconType = it.Slot switch
+                iconType = it.Type.ToSlot() switch
                 {
                     EquipSlot.MainHand => ChangedItemIcon.Mainhand,
                     EquipSlot.OffHand  => ChangedItemIcon.Offhand,

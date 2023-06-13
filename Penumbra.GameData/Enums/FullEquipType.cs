@@ -403,4 +403,7 @@ public static class FullEquipTypeExtensions
 
     public static readonly IReadOnlyList<FullEquipType> AccessoryTypes
         = Enum.GetValues<FullEquipType>().Where(v => v.IsAccessory()).ToArray();
+
+    public static readonly IReadOnlyList<FullEquipType> OffhandTypes
+        = Enum.GetValues<FullEquipType>().Where(v => v.OffhandTypeSuffix().Length > 0).ToArray();
 }

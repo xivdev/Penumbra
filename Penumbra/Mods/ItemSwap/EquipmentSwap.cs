@@ -242,10 +242,10 @@ public static class EquipmentSwap
 
     private static void LookupItem(EquipItem i, out EquipSlot slot, out SetId modelId, out byte variant)
     {
-        if (!i.Slot.IsEquipmentPiece())
+        slot = i.Type.ToSlot();
+        if (!slot.IsEquipmentPiece())
             throw new ItemSwap.InvalidItemTypeException();
 
-        slot    = i.Slot;
         modelId = i.ModelId;
         variant = i.Variant;
     }
