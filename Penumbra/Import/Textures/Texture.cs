@@ -54,6 +54,22 @@ public sealed class Texture : IDisposable
     public bool IsLoaded
         => TextureWrap != null;
 
+    public DXGIFormat Format
+        => BaseImage switch
+        {
+            ScratchImage s => s.Meta.Format,
+            TexFile t      => t.Header.Format.ToDXGI(),
+            _              => DXGIFormat.Unknown,
+        };
+
+    public int MipMaps
+        => BaseImage switch
+        {
+            ScratchImage s => s.Meta.MipLevels,
+            TexFile t      => t.Header.MipLevels,
+            _              => 1,
+        };
+
     public void Draw(Vector2 size)
     {
         if (TextureWrap != null)
@@ -151,6 +167,13 @@ public sealed class Texture : IDisposable
         }
     }
 
+    public void Reload(DalamudServices dalamud)
+    {
+        var path = Path;
+        Path = string.Empty;
+        Load(dalamud, path);
+    }
+
     private bool LoadDds(DalamudServices dalamud)
     {
         Type = FileType.Dds;
@@ -180,7 +203,7 @@ public sealed class Texture : IDisposable
         using var stream  = OpenTexStream(dalamud.GameData);
         var       scratch = TexFileParser.Parse(stream);
         BaseImage = scratch;
-        var rgba    = scratch.GetRGBA(out var f).ThrowIfError(f);
+        var rgba = scratch.GetRGBA(out var f).ThrowIfError(f);
         RGBAPixels = rgba.Pixels[..(f.Meta.Width * f.Meta.Height * (f.Meta.Format.BitsPerPixel() / 8))].ToArray();
         CreateTextureWrap(dalamud.UiBuilder, scratch.Meta.Width, scratch.Meta.Height);
         return true;
@@ -268,10 +291,6 @@ public sealed class Texture : IDisposable
         if (ImGuiUtil.DrawDisabledButton(FontAwesomeIcon.Recycle.ToIconString(), new Vector2(ImGui.GetFrameHeight()),
                 "Reload the currently selected path.", false,
                 true))
-        {
-            var path = Path;
-            Path = string.Empty;
-            Load(dalamud, path);
-        }
+            Reload(dalamud);
     }
 }

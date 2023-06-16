@@ -5,6 +5,7 @@ using System.Numerics;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterTex;
 using Penumbra.Import.Textures;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -133,6 +134,39 @@ public partial class ModEditWindow
                 _forceTextureStartPath = false;
             }
 
+            if (_left.Type is Texture.FileType.Tex && _center.IsLeftCopy)
+            {
+                var buttonSize = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X * 2) / 3, 0);
+                if (ImGuiUtil.DrawDisabledButton("Convert to BC7", buttonSize,
+                        "This converts the texture to BC7 format in place. This is not revertible.",
+                        _left.Format is DXGIFormat.BC7Typeless or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB))
+                {
+                    _center.SaveAsTex(_left.Path, CombinedTexture.TextureSaveType.BC7, _left.MipMaps > 1);
+                    _left.Reload(_dalamud);
+                }
+
+                ImGui.SameLine();
+                if (ImGuiUtil.DrawDisabledButton("Convert to BC3", buttonSize,
+                        "This converts the texture to BC3 format in place. This is not revertible.",
+                        _left.Format is DXGIFormat.BC3Typeless or DXGIFormat.BC3UNorm or DXGIFormat.BC3UNormSRGB))
+                {
+                    _center.SaveAsTex(_left.Path, CombinedTexture.TextureSaveType.BC3, _left.MipMaps > 1);
+                    _left.Reload(_dalamud);
+                }
+
+                ImGui.SameLine();
+                if (ImGuiUtil.DrawDisabledButton("Convert to RGBA", buttonSize,
+                        "This converts the texture to RGBA format in place. This is not revertible.",
+                        _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
+                {
+                    _center.SaveAsTex(_left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
+                    _left.Reload(_dalamud);
+                }
+            }
+            else
+            {
+                ImGui.NewLine();
+            }
             ImGui.NewLine();
         }
 

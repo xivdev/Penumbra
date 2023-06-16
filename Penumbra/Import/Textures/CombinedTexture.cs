@@ -4,7 +4,6 @@ using System.Numerics;
 using Dalamud.Interface;
 using Lumina.Data.Files;
 using OtterTex;
-using Penumbra.Services;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
@@ -41,6 +40,9 @@ public partial class CombinedTexture : IDisposable
 
     public bool IsLoaded
         => _mode != Mode.Empty;
+
+    public bool IsLeftCopy
+        => _mode == Mode.LeftCopy;
 
     public Exception? SaveException { get; private set; } = null;
 
