@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
@@ -22,18 +23,20 @@ public unsafe class AnimationHookService : IDisposable
     private readonly CollectionResolver _collectionResolver;
     private readonly DrawObjectState    _drawObjectState;
     private readonly CollectionResolver _resolver;
+    private readonly Condition          _conditions;
 
     private readonly ThreadLocal<ResolveData> _animationLoadData  = new(() => ResolveData.Invalid, true);
     private readonly ThreadLocal<ResolveData> _characterSoundData = new(() => ResolveData.Invalid, true);
 
     public AnimationHookService(PerformanceTracker performance, ObjectTable objects, CollectionResolver collectionResolver,
-        DrawObjectState drawObjectState, CollectionResolver resolver)
+        DrawObjectState drawObjectState, CollectionResolver resolver, Condition conditions)
     {
         _performance        = performance;
         _objects            = objects;
         _collectionResolver = collectionResolver;
         _drawObjectState    = drawObjectState;
         _resolver           = resolver;
+        _conditions    = conditions;
 
         SignatureHelper.Initialise(this);
 
@@ -137,6 +140,10 @@ public unsafe class AnimationHookService : IDisposable
     private ulong LoadTimelineResourcesDetour(IntPtr timeline)
     {
         using var performance = _performance.Measure(PerformanceType.TimelineResources);
+        // Do not check timeline loading in cutscenes.
+        if (_conditions[ConditionFlag.OccupiedInCutSceneEvent] || _conditions[ConditionFlag.WatchingCutscene] || _conditions[ConditionFlag.WatchingCutscene78])
+            return _loadTimelineResourcesHook.Original(timeline);
+
         var       last        = _animationLoadData.Value;
         _animationLoadData.Value = GetDataFromTimeline(timeline);
         var ret = _loadTimelineResourcesHook.Original(timeline);
@@ -287,17 +294,17 @@ public unsafe class AnimationHookService : IDisposable
     }
 
     /// <summary> Use timelines vfuncs to obtain the associated game object. </summary>
-    private ResolveData GetDataFromTimeline(IntPtr timeline)
+    private ResolveData GetDataFromTimeline(nint timeline)
     {
         try
         {
             if (timeline != IntPtr.Zero)
             {
-                var getGameObjectIdx = ((delegate* unmanaged<IntPtr, int>**)timeline)[0][Offsets.GetGameObjectIdxVfunc];
+                var getGameObjectIdx = ((delegate* unmanaged<nint, int>**)timeline)[0][Offsets.GetGameObjectIdxVfunc];
                 var idx              = getGameObjectIdx(timeline);
                 if (idx >= 0 && idx < _objects.Length)
                 {
-                    var obj = (GameObject*)_objects.GetObjectAddress(idx);
+                    var obj          = (GameObject*)_objects.GetObjectAddress(idx);
                     return obj != null ? _collectionResolver.IdentifyCollection(obj, true) : ResolveData.Invalid;
                 }
             }
@@ -309,7 +316,6 @@ public unsafe class AnimationHookService : IDisposable
 
         return ResolveData.Invalid;
     }
-
 
     private delegate void UnkMountAnimationDelegate(DrawObject* drawObject, uint unk1, byte unk2, uint unk3);
 
@@ -334,7 +340,7 @@ public unsafe class AnimationHookService : IDisposable
     {
         var last = _animationLoadData.Value;
         _animationLoadData.Value = _collectionResolver.IdentifyCollection(drawObject, true);
-        _unkParasolAnimationHook!.Original(drawObject, unk1);
+        _unkParasolAnimationHook.Original(drawObject, unk1);
         _animationLoadData.Value = last;
     }
 
