@@ -65,7 +65,7 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
         }
     }
 
-    public string WriteBase64()
+    public readonly string WriteBase64()
     {
         fixed( byte* ptr = Data )
         {

@@ -12,7 +12,6 @@ using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
 using Penumbra.UI.Classes;
-using Penumbra.Util;
 
 namespace Penumbra.Services;
 
@@ -48,6 +47,8 @@ public class ConfigMigrationService
 
         if (save || forceSave)
             config.Save();
+
+        Colors.SetColors(config);
     }
 
     public void Migrate(CharacterUtility utility, Configuration config)

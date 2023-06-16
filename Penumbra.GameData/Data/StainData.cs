@@ -34,7 +34,9 @@ public sealed class StainData : DataSharer, IReadOnlyDictionary<StainId, Stain>
     }
 
     public IEnumerator<KeyValuePair<StainId, Stain>> GetEnumerator()
-        => Data.Select(kvp => new KeyValuePair<StainId, Stain>(new StainId(kvp.Key), new Stain())).GetEnumerator();
+        => Data.Select(kvp
+                => new KeyValuePair<StainId, Stain>(new StainId(kvp.Key), new Stain(kvp.Value.Name, kvp.Value.Dye, kvp.Key, kvp.Value.Gloss)))
+            .GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator()
         => GetEnumerator();
