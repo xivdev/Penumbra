@@ -105,7 +105,7 @@ public static class TextureDrawer
                 ImGuiUtil.DrawTableColumn("Format");
                 ImGuiUtil.DrawTableColumn(t.Header.Format.ToString());
                 ImGuiUtil.DrawTableColumn("Mip Levels");
-                ImGuiUtil.DrawTableColumn(t.Header.MipLevelsCount.ToString());
+                ImGuiUtil.DrawTableColumn(t.Header.MipLevels.ToString());
                 ImGuiUtil.DrawTableColumn("Data Size");
                 ImGuiUtil.DrawTableColumn($"{Functions.HumanReadableSize(t.ImageData.Length)} ({t.ImageData.Length} Bytes)");
                 break;
