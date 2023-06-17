@@ -1,3 +1,8 @@
+using FFXIVLooseTextureCompiler.ImageProcessing;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
+
 namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture : IDisposable
@@ -138,8 +143,67 @@ public partial class CombinedTexture : IDisposable
                 break;
         }
     }
+    public void ImageToEyeMaps(string path, string textureCompilerDLC)
+    {
+        if (!IsLoaded || _current == null)
+        {
+            return;
+        }
 
-    private void Clean()
+        try
+        {
+            var image = Image.LoadPixelData<Rgba32>(_current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height);
+            image.Save(path, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression });
+            ImageManipulation.ConvertToEyeMaps(path, textureCompilerDLC);
+        }
+        catch (Exception e)
+        {
+
+        }
+    }
+    internal void EyeMultiToGrayscale(string path)
+    {
+        if (!IsLoaded || _current == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var image = Image.LoadPixelData<Rgba32>(_current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height);
+            image.Save(path, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression });
+            System.Drawing.Bitmap multi = TexLoader.ResolveBitmap(path);
+            ImageManipulation.ExtractRed(multi).Save(ImageManipulation.AddSuffix(path, "_grayscale"));
+        }
+        catch (Exception e)
+        {
+
+        }
+    }
+
+    public void AtramentumLuminisDiffuseToGlowMap(string path)
+    {
+        if (!IsLoaded || _current == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var image = Image.LoadPixelData<Rgba32>(_current.RgbaPixels, _current.TextureWrap!.Width,
+                _current.TextureWrap!.Height);
+            image.Save(path, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression });
+            System.Drawing.Bitmap diffuse = TexLoader.ResolveBitmap(path);
+            AtramentumLuminisGlow.ExtractGlowMapFromDiffuse(diffuse).Save(path, System.Drawing.Imaging.ImageFormat.Png);
+        }
+        catch (Exception e)
+        {
+
+        }
+    }
+        private void Clean()
     {
         _centerStorage.Dispose();
         _current = null;

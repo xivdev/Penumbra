@@ -2,7 +2,6 @@ using Dalamud.Interface.Internal;
 using OtterTex;
 
 namespace Penumbra.Import.Textures;
-
 public enum TextureType
 {
     Unknown,
@@ -11,9 +10,9 @@ public enum TextureType
     Png,
     Bitmap,
 }
-
 public sealed class Texture : IDisposable
 {
+
     // Path to the file we tried to load.
     public string Path = string.Empty;
 
