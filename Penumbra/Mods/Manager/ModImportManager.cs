@@ -48,7 +48,7 @@ public class ModImportManager : IDisposable
             if (File.Exists(s))
                 return true;
 
-            Penumbra.ChatService.NotificationMessage($"Failed to import queued mod at {s}, the file does not exist.", "Warning",
+            Penumbra.Chat.NotificationMessage($"Failed to import queued mod at {s}, the file does not exist.", "Warning",
                 NotificationType.Warning);
             return false;
         }).Select(s => new FileInfo(s)).ToArray();

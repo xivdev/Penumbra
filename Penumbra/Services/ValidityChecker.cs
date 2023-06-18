@@ -38,7 +38,7 @@ public class ValidityChecker
     public void LogExceptions()
     {
         if( ImcExceptions.Count > 0 )
-            Penumbra.ChatService.NotificationMessage( $"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.", "Warning", NotificationType.Warning );
+            Penumbra.Chat.NotificationMessage( $"{ImcExceptions} IMC Exceptions thrown during Penumbra load. Please repair your game files.", "Warning", NotificationType.Warning );
     }
 
     // Because remnants of penumbra in devPlugins cause issues, we check for them to warn users to remove them.

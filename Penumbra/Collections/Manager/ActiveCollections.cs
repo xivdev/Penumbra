@@ -335,7 +335,7 @@ public class ActiveCollections : ISavable, IDisposable
          ?? (configChanged ? ModCollection.DefaultCollectionName : ModCollection.Empty.Name);
         if (!_storage.ByName(defaultName, out var defaultCollection))
         {
-            Penumbra.ChatService.NotificationMessage(
+            Penumbra.Chat.NotificationMessage(
                 $"Last choice of {TutorialService.DefaultCollection} {defaultName} is not available, reset to {ModCollection.Empty.Name}.",
                 "Load Failure",
                 NotificationType.Warning);
@@ -351,7 +351,7 @@ public class ActiveCollections : ISavable, IDisposable
         var interfaceName = jObject[nameof(Interface)]?.ToObject<string>() ?? Default.Name;
         if (!_storage.ByName(interfaceName, out var interfaceCollection))
         {
-            Penumbra.ChatService.NotificationMessage(
+            Penumbra.Chat.NotificationMessage(
                 $"Last choice of {TutorialService.InterfaceCollection} {interfaceName} is not available, reset to {ModCollection.Empty.Name}.",
                 "Load Failure", NotificationType.Warning);
             Interface     = ModCollection.Empty;
@@ -366,7 +366,7 @@ public class ActiveCollections : ISavable, IDisposable
         var currentName = jObject[nameof(Current)]?.ToObject<string>() ?? Default.Name;
         if (!_storage.ByName(currentName, out var currentCollection))
         {
-            Penumbra.ChatService.NotificationMessage(
+            Penumbra.Chat.NotificationMessage(
                 $"Last choice of {TutorialService.SelectedCollection} {currentName} is not available, reset to {ModCollection.DefaultCollectionName}.",
                 "Load Failure", NotificationType.Warning);
             Current       = _storage.DefaultNamed;
@@ -385,7 +385,7 @@ public class ActiveCollections : ISavable, IDisposable
             {
                 if (!_storage.ByName(typeName, out var typeCollection))
                 {
-                    Penumbra.ChatService.NotificationMessage($"Last choice of {name} Collection {typeName} is not available, removed.",
+                    Penumbra.Chat.NotificationMessage($"Last choice of {name} Collection {typeName} is not available, removed.",
                         "Load Failure",
                         NotificationType.Warning);
                     configChanged = true;

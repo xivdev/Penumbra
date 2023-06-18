@@ -50,7 +50,7 @@ public static class ActiveCollectionMigration
         {
             if (!storage.ByName(collectionName, out var collection))
             {
-                Penumbra.ChatService.NotificationMessage(
+                Penumbra.Chat.NotificationMessage(
                     $"Last choice of <{player}>'s Collection {collectionName} is not available, reset to {ModCollection.Empty.Name}.", "Load Failure",
                     NotificationType.Warning);
                 dict.Add(player, ModCollection.Empty);

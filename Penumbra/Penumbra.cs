@@ -31,7 +31,7 @@ public class Penumbra : IDalamudPlugin
         => "Penumbra";
 
     public static readonly Logger      Log = new();
-    public static          ChatService ChatService { get; private set; } = null!;
+    public static          ChatService Chat { get; private set; } = null!;
 
     private readonly ValidityChecker         _validityChecker;
     private readonly ResidentResourceManager _residentResources;
@@ -55,7 +55,7 @@ public class Penumbra : IDalamudPlugin
             var       startTimer = new StartTracker();
             using var timer      = startTimer.Measure(StartTimeType.Total);
             _services        = ServiceManager.CreateProvider(this, pluginInterface, Log, startTimer);
-            ChatService      = _services.GetRequiredService<ChatService>();
+            Chat      = _services.GetRequiredService<ChatService>();
             _validityChecker = _services.GetRequiredService<ValidityChecker>();
             var startup = _services.GetRequiredService<DalamudServices>().GetDalamudConfig(DalamudServices.WaitingForPluginsOption, out bool s)
                 ? s.ToString()
@@ -115,7 +115,7 @@ public class Penumbra : IDalamudPlugin
         _communicatorService.ChangedItemClick.Subscribe((button, it) =>
         {
             if (button == MouseButton.Left && it is Item item)
-                ChatService.LinkItem(item);
+                Chat.LinkItem(item);
         }, ChangedItemClick.Priority.Link);
     }
 

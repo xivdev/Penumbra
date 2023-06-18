@@ -4,6 +4,7 @@ using Dalamud.Interface.Windowing;
 using Dalamud.Plugin;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Custom;
 using OtterGui.Raii;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
@@ -143,7 +144,7 @@ public sealed class ConfigWindow : Window
 
         ImGui.NewLine();
         ImGui.NewLine();
-        UiHelpers.DrawDiscordButton(0);
+        CustomGui.DrawDiscordButton(Penumbra.ChatService, 0);
         ImGui.SameLine();
         UiHelpers.DrawSupportButton(_penumbra!);
         ImGui.NewLine();

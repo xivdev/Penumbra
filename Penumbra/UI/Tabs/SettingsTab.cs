@@ -7,6 +7,7 @@ using Dalamud.Interface.Components;
 using Dalamud.Utility;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Custom;
 using OtterGui.Raii;
 using OtterGui.Widgets;
 using Penumbra.Api;
@@ -790,10 +791,10 @@ public class SettingsTab : ITab
         UiHelpers.DrawSupportButton(_penumbra);
 
         ImGui.SetCursorPos(new Vector2(xPos, 0));
-        UiHelpers.DrawDiscordButton(width);
+        CustomGui.DrawDiscordButton(Penumbra.Chat, width);
 
         ImGui.SetCursorPos(new Vector2(xPos, 2 * ImGui.GetFrameHeightWithSpacing()));
-        UiHelpers.DrawGuideButton(width);
+        CustomGui.DrawGuideButton(Penumbra.Chat, width);
 
         ImGui.SetCursorPos(new Vector2(xPos, 3 * ImGui.GetFrameHeightWithSpacing()));
         if (ImGui.Button("Restart Tutorial", new Vector2(width, 0)))

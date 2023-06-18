@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using OtterGui.Custom;
 
 namespace Penumbra.UI.Classes;
 
@@ -31,13 +32,13 @@ public static class Colors
     public const uint RegexWarningBorder  = 0xFF0000B0;
     public const uint MetaInfoText        = 0xAAFFFFFF;
     public const uint RedTableBgTint      = 0x40000080;
-    public const uint DiscordColor        = 0xFFDA8972;
+    public const uint DiscordColor        = CustomGui.DiscordColor;
     public const uint FilterActive        = 0x807070FF;
     public const uint TutorialMarker      = 0xFF20FFFF;
     public const uint TutorialBorder      = 0xD00000FF;
-    public const uint ReniColorButton     = 0xFFCC648D;
-    public const uint ReniColorHovered    = 0xFFB070B0;
-    public const uint ReniColorActive     = 0xFF9070E0;
+    public const uint ReniColorButton     = CustomGui.ReniColorButton;
+    public const uint ReniColorHovered    = CustomGui.ReniColorHovered;
+    public const uint ReniColorActive     = CustomGui.ReniColorActive ;
 
     public static (uint DefaultColor, string Name, string Description) Data(this ColorId color)
         => color switch

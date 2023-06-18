@@ -146,12 +146,12 @@ public class InheritanceManager : IDisposable
                         continue;
 
                     changes = true;
-                    Penumbra.ChatService.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", "Warning",
+                    Penumbra.Chat.NotificationMessage($"{collection.Name} can not inherit from {subCollection.Name}, removed.", "Warning",
                         NotificationType.Warning);
                 }
                 else
                 {
-                    Penumbra.ChatService.NotificationMessage(
+                    Penumbra.Chat.NotificationMessage(
                         $"Inherited collection {subCollectionName} for {collection.AnonymizedName} does not exist, it was removed.", "Warning",
                         NotificationType.Warning);
                     changes = true;

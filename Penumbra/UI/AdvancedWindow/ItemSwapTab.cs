@@ -327,7 +327,7 @@ public class ItemSwapTab : IDisposable, ITab
         }
         catch (Exception e)
         {
-            Penumbra.ChatService.NotificationMessage($"Could not create new Swap Option:\n{e}", "Error", NotificationType.Error);
+            Penumbra.Chat.NotificationMessage($"Could not create new Swap Option:\n{e}", "Error", NotificationType.Error);
             try
             {
                 if (optionCreated && _selectedGroup != null)

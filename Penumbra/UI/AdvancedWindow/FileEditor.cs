@@ -129,7 +129,7 @@ public class FileEditor<T> where T : class, IWritable
                     }
                     catch (Exception e)
                     {
-                        Penumbra.ChatService.NotificationMessage($"Could not export {_defaultPath}:\n{e}", "Error", NotificationType.Error);
+                        Penumbra.Chat.NotificationMessage($"Could not export {_defaultPath}:\n{e}", "Error", NotificationType.Error);
                     }
                 }, _getInitialPath(), false);
 

@@ -51,7 +51,7 @@ public partial class ModCreator
         }
         catch (Exception e)
         {
-            Penumbra.ChatService.NotificationMessage($"Could not create directory for new Mod {newName}:\n{e}", "Failure",
+            Penumbra.Chat.NotificationMessage($"Could not create directory for new Mod {newName}:\n{e}", "Failure",
                 NotificationType.Error);
             return null;
         }

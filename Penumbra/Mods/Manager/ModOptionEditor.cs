@@ -398,7 +398,7 @@ public class ModOptionEditor
             return true;
 
         if (message)
-            Penumbra.ChatService.NotificationMessage(
+            Penumbra.Chat.NotificationMessage(
                 $"Could not name option {newName} because option with same filename {path} already exists.",
                 "Warning", NotificationType.Warning);
 

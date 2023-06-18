@@ -80,12 +80,12 @@ public partial class ModEditWindow
             }
             catch( Exception e )
             {
-                Penumbra.ChatService.NotificationMessage( $"Could not export {defaultName}{tab.Extension} to {name}:\n{e.Message}", "Penumbra Advanced Editing",
+                Penumbra.Chat.NotificationMessage( $"Could not export {defaultName}{tab.Extension} to {name}:\n{e.Message}", "Penumbra Advanced Editing",
                     NotificationType.Error );
                 return;
             }
 
-            Penumbra.ChatService.NotificationMessage( $"Shader Program Blob {defaultName}{tab.Extension} exported successfully to {Path.GetFileName( name )}",
+            Penumbra.Chat.NotificationMessage( $"Shader Program Blob {defaultName}{tab.Extension} exported successfully to {Path.GetFileName( name )}",
                 "Penumbra Advanced Editing", NotificationType.Success );
         }, null, false );
     }
@@ -110,7 +110,7 @@ public partial class ModEditWindow
             }
             catch( Exception e )
             {
-                Penumbra.ChatService.NotificationMessage( $"Could not import {name}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
+                Penumbra.Chat.NotificationMessage( $"Could not import {name}:\n{e.Message}", "Penumbra Advanced Editing", NotificationType.Error );
                 return;
             }
 
@@ -122,7 +122,7 @@ public partial class ModEditWindow
             catch( Exception e )
             {
                 tab.Shpk.SetInvalid();
-                Penumbra.ChatService.NotificationMessage( $"Failed to update resources after importing {name}:\n{e.Message}", "Penumbra Advanced Editing",
+                Penumbra.Chat.NotificationMessage( $"Failed to update resources after importing {name}:\n{e.Message}", "Penumbra Advanced Editing",
                     NotificationType.Error );
                 return;
             }

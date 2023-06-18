@@ -8,7 +8,6 @@ using OtterGui;
 using OtterGui.Raii;
 using Penumbra.Interop.Structs;
 using Penumbra.String;
-using Penumbra.UI.Classes;
 
 namespace Penumbra.UI;
 
@@ -46,29 +45,6 @@ public static class UiHelpers
             ImGui.SetTooltip("Click to copy to clipboard.");
     }
 
-    /// <summary> Draw a button to open the official discord server. </summary>
-    /// <param name="width">The desired width of the button.</param>
-    public static void DrawDiscordButton(float width)
-    {
-        const string address = @"https://discord.gg/kVva7DHV4r";
-        using var    color   = ImRaii.PushColor(ImGuiCol.Button, Colors.DiscordColor);
-        if (ImGui.Button("Join Discord for Support", new Vector2(width, 0)))
-            try
-            {
-                var process = new ProcessStartInfo(address)
-                {
-                    UseShellExecute = true,
-                };
-                Process.Start(process);
-            }
-            catch
-            {
-                Penumbra.ChatService.NotificationMessage($"Unable to open Discord at {address}.", "Error", NotificationType.Error);
-            }
-
-        ImGuiUtil.HoverTooltip($"Open {address}");
-    }
-
     /// <summary> The longest support button text. </summary>
     public const string SupportInfoButtonText = "Copy Support Info to Clipboard";
 
@@ -99,33 +75,6 @@ public static class UiHelpers
             {
                 UseShellExecute = true,
             });
-    }
-
-    /// <summary> Draw the button that opens the ReniGuide. </summary>
-    public static void DrawGuideButton(float width)
-    {
-        const string address = @"https://reniguide.info/";
-        using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.ReniColorButton)
-            .Push(ImGuiCol.ButtonHovered, Colors.ReniColorHovered)
-            .Push(ImGuiCol.ButtonActive,  Colors.ReniColorActive);
-        if (ImGui.Button("Beginner's Guides", new Vector2(width, 0)))
-            try
-            {
-                var process = new ProcessStartInfo(address)
-                {
-                    UseShellExecute = true,
-                };
-                Process.Start(process);
-            }
-            catch
-            {
-                Penumbra.ChatService.NotificationMessage($"Could not open guide at {address} in external browser.", "Error",
-                    NotificationType.Error);
-            }
-
-        ImGuiUtil.HoverTooltip(
-            $"Open {address}\nImage and text based guides for most functionality of Penumbra made by Serenity.\n"
-          + "Not directly affiliated and potentially, but not usually out of date.");
     }
 
     /// <summary> Draw default vertical space. </summary>

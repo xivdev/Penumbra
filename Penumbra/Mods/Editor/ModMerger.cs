@@ -84,7 +84,7 @@ public class ModMerger : IDisposable
         catch (Exception ex)
         {
             Error = ex;
-            Penumbra.ChatService.NotificationMessage(
+            Penumbra.Chat.NotificationMessage(
                 $"Could not merge {MergeFromMod!.Name} into {MergeToMod!.Name}, cleaning up changes.:\n{ex}", "Failure",
                 NotificationType.Error);
             FailureCleanup();

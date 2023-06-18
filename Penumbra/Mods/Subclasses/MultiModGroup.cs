@@ -59,7 +59,7 @@ public sealed class MultiModGroup : IModGroup
             {
                 if (ret.PrioritizedOptions.Count == IModGroup.MaxMultiOptions)
                 {
-                    Penumbra.ChatService.NotificationMessage(
+                    Penumbra.Chat.NotificationMessage(
                         $"Multi Group {ret.Name} has more than {IModGroup.MaxMultiOptions} options, ignoring excessive options.", "Warning",
                         NotificationType.Warning);
                     break;
