@@ -136,7 +136,7 @@ public class Configuration : IPluginConfiguration, ISavable
             }
             catch (Exception ex)
             {
-                Penumbra.ChatService.NotificationMessage(ex,
+                Penumbra.Chat.NotificationMessage(ex,
                     "Error reading Configuration, reverting to default.\nYou may be able to restore your configuration using the rolling backups in the XIVLauncher/backups/Penumbra directory.",
                     "Error reading Configuration", "Error", NotificationType.Error);
             }

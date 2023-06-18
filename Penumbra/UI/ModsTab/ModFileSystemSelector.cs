@@ -352,7 +352,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     }
 
     private static void HandleException(Exception e)
-        => Penumbra.ChatService.NotificationMessage(e.Message, "Failure", NotificationType.Warning);
+        => Penumbra.Chat.NotificationMessage(e.Message, "Failure", NotificationType.Warning);
 
     #endregion
 

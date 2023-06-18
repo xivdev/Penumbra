@@ -144,7 +144,7 @@ public sealed class ConfigWindow : Window
 
         ImGui.NewLine();
         ImGui.NewLine();
-        CustomGui.DrawDiscordButton(Penumbra.ChatService, 0);
+        CustomGui.DrawDiscordButton(Penumbra.Chat, 0);
         ImGui.SameLine();
         UiHelpers.DrawSupportButton(_penumbra!);
         ImGui.NewLine();

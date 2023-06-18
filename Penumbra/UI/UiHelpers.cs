@@ -59,7 +59,7 @@ public static class UiHelpers
 
         var text = penumbra.GatherSupportInformation();
         ImGui.SetClipboardText(text);
-        Penumbra.ChatService.NotificationMessage($"Copied Support Info to Clipboard.", "Success", NotificationType.Success);
+        Penumbra.Chat.NotificationMessage($"Copied Support Info to Clipboard.", "Success", NotificationType.Success);
     }
 
     /// <summary> Draw a button to open a specific directory in a file explorer.</summary>
