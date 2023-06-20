@@ -48,8 +48,9 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
                 prefixed[lastDirectorySeparator + 1] = (byte)'-';
                 prefixed[lastDirectorySeparator + 2] = (byte)'-';
                 gamePath.Span[(lastDirectorySeparator + 1)..].CopyTo(prefixed[(lastDirectorySeparator + 3)..]);
+                prefixed[^1] = 0;
 
-                if (!Utf8GamePath.FromSpan(prefixed, out var tmp))
+                if (!Utf8GamePath.FromSpan(prefixed[..^1], out var tmp))
                     return null;
 
                 gamePath = tmp.Path.Clone();
