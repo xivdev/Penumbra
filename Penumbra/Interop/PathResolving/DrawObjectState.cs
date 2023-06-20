@@ -132,15 +132,15 @@ public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, boo
     /// EnableDraw is what creates DrawObjects for gameObjects,
     /// so we always keep track of the current GameObject to be able to link it to the DrawObject.
     /// </summary>
-    private delegate void EnableDrawDelegate(nint gameObject, nint b, nint c, nint d);
+    private delegate void EnableDrawDelegate(nint gameObject);
 
     [Signature(Sigs.EnableDraw, DetourName = nameof(EnableDrawDetour))]
     private readonly Hook<EnableDrawDelegate> _enableDrawHook = null!;
 
-    private void EnableDrawDetour(nint gameObject, nint b, nint c, nint d)
+    private void EnableDrawDetour(nint gameObject)
     {
         _lastGameObject.Value!.Enqueue(gameObject);
-        _enableDrawHook.Original.Invoke(gameObject, b, c, d);
+        _enableDrawHook.Original.Invoke(gameObject);
         _lastGameObject.Value!.TryDequeue(out _);
     }
 }

@@ -403,6 +403,9 @@ public static class FullEquipTypeExtensions
             _                        => string.Empty,
         };
 
+    public static bool IsOffhandType(this FullEquipType type)
+        => type.OffhandTypeSuffix().Length > 0;
+
     public static readonly IReadOnlyList<FullEquipType> WeaponTypes
         = Enum.GetValues<FullEquipType>().Where(v => v.IsWeapon()).ToArray();
 
