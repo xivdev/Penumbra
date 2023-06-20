@@ -43,14 +43,13 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
             if (gamePath[lastDirectorySeparator + 1] != (byte)'-' || gamePath[lastDirectorySeparator + 2] != (byte)'-')
             {
-                Span<byte> prefixed = stackalloc byte[gamePath.Length + 3];
+                Span<byte> prefixed = stackalloc byte[gamePath.Length + 2];
                 gamePath.Span[..(lastDirectorySeparator + 1)].CopyTo(prefixed);
                 prefixed[lastDirectorySeparator + 1] = (byte)'-';
                 prefixed[lastDirectorySeparator + 2] = (byte)'-';
                 gamePath.Span[(lastDirectorySeparator + 1)..].CopyTo(prefixed[(lastDirectorySeparator + 3)..]);
-                prefixed[^1] = 0;
 
-                if (!Utf8GamePath.FromSpan(prefixed[..^1], out var tmp))
+                if (!Utf8GamePath.FromSpan(prefixed, out var tmp))
                     return null;
 
                 gamePath = tmp.Path.Clone();
