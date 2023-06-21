@@ -40,6 +40,9 @@ public struct CharacterWeapon : IEquatable<CharacterWeapon>
         Stain   = (StainId)(value >> 48);
     }
 
+    public readonly CharacterWeapon With(StainId stain)
+        => new(Set, Type, Variant, stain);
+
     public readonly CharacterArmor ToArmor()
         => new(Set, (byte)Variant, Stain);
 
