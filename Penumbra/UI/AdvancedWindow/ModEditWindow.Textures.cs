@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using ImGuiNET;
 using OtterGui;
+using OtterGui.Classes;
 using OtterGui.Raii;
 using OtterTex;
 using Penumbra.Import.Textures;
@@ -20,6 +21,8 @@ public partial class ModEditWindow
 
     private bool _addMipMaps = true;
     private int  _currentSaveAs;
+
+    private LowerString _filter = LowerString.Empty;
 
     private static readonly (string, string)[] SaveAsStrings =
     {
@@ -48,7 +51,7 @@ public partial class ModEditWindow
             .Prepend((f.File.FullName, false)));
         tex.PathSelectBox(_dalamud, "##combo",
             "Select the textures included in this mod on your drive or the ones they replace from the game files.",
-            files, _mod.ModPath.FullName.Length + 1);
+            files, _mod.ModPath.FullName.Length + 1, _filter);
 
         if (tex == _left)
             _center.DrawMatrixInputLeft(size.X);

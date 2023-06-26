@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Data;
 using Dalamud.Interface;
@@ -223,24 +224,39 @@ public sealed class Texture : IDisposable
 
     private string? _tmpPath;
 
-    public void PathSelectBox(DalamudServices dalamud, string label, string tooltip, IEnumerable<(string, bool)> paths, int skipPrefix)
+    public void PathSelectBox(DalamudServices dalamud, string label, string tooltip, IEnumerable<(string, bool)> paths, int skipPrefix, string filter)
     {
         ImGui.SetNextItemWidth(-0.0001f);
-        var       startPath = Path.Length > 0 ? Path : "Choose a modded texture from this mod here...";
-        using var combo     = ImRaii.Combo(label, startPath);
-        if (combo)
-            foreach (var ((path, game), idx) in paths.WithIndex())
-            {
-                if (game)
-                {
-                    if (!dalamud.GameData.FileExists(path))
-                        continue;
-                }
-                else if (!File.Exists(path))
-                {
-                    continue;
-                }
+        var startPath = Path.Length > 0 ? Path : "Choose a modded texture from this mod here...";
 
+        //ImRaii.PushStyle(ImGuiStyleVar.ScrollbarSize, 0f);
+        //ImRaii.PushStyle(ImGuiStyleVar.ScrollbarRounding, 0f);
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 0f);
+        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, 0f);
+        using var combo = ImRaii.Combo(label, startPath);
+        ImGui.PopStyleVar(2);
+
+        if (combo)
+        {
+            ImGui.SetNextItemWidth(ImGui.GetContentRegionAvail().X);
+            ImGui.InputTextWithHint($"##Filter", "Filter...", ref filter, 128);
+
+            IEnumerable<(string, bool)> filteredPaths;
+
+            if (string.IsNullOrEmpty(filter))
+            {
+                filteredPaths = paths;
+            }
+            else
+            {
+                filter.Trim();
+                filteredPaths = paths.Where(path => (path.Item1.ToLower().Contains(filter.ToLower())));
+            }
+            var height = ImGui.GetFrameHeightWithSpacing() * Math.Min(filteredPaths.Count(), 7);
+            ImGui.BeginChild("ComboScrollingRegion", new Vector2(0, height), false);
+
+            foreach (var ((path, game), idx) in filteredPaths.WithIndex())
+            {
                 using var id = ImRaii.PushId(idx);
                 using (var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value(), game))
                 {
@@ -253,9 +269,13 @@ public sealed class Texture : IDisposable
                     ? "This is a game path and refers to an unmanipulated file from your game data."
                     : "This is a path to a modded file on your file system.");
             }
+            ImGui.EndChild();
+        }
 
         ImGuiUtil.HoverTooltip(tooltip);
     }
+
+
 
     public void PathInputBox(DalamudServices dalamud, string label, string hint, string tooltip, string startPath, FileDialogService fileDialog,
         string defaultModImportPath)
