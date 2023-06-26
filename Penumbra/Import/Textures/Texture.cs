@@ -229,12 +229,10 @@ public sealed class Texture : IDisposable
         ImGui.SetNextItemWidth(-0.0001f);
         var startPath = Path.Length > 0 ? Path : "Choose a modded texture from this mod here...";
 
-        //ImRaii.PushStyle(ImGuiStyleVar.ScrollbarSize, 0f);
-        //ImRaii.PushStyle(ImGuiStyleVar.ScrollbarRounding, 0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 0f);
-        ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, 0f);
+        //ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarSize, 0f);
+        //ImGui.PushStyleVar(ImGuiStyleVar.ScrollbarRounding, 0f);
         using var combo = ImRaii.Combo(label, startPath);
-        ImGui.PopStyleVar(2);
+        //ImGui.PopStyleVar(2);
 
         if (combo)
         {
@@ -252,7 +250,7 @@ public sealed class Texture : IDisposable
                 filter.Trim();
                 filteredPaths = paths.Where(path => (path.Item1.ToLower().Contains(filter.ToLower())));
             }
-            var height = ImGui.GetFrameHeightWithSpacing() * Math.Min(filteredPaths.Count(), 7);
+            var height = (ImGui.GetFrameHeight() - 3.3f) * Math.Min(filteredPaths.Count(), 7);
             ImGui.BeginChild("ComboScrollingRegion", new Vector2(0, height), false);
 
             foreach (var ((path, game), idx) in filteredPaths.WithIndex())
