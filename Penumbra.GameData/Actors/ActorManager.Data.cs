@@ -98,7 +98,7 @@ public sealed partial class ActorManager : IDisposable
             {
                 ObjectKind.MountType => Mounts.TryGetValue(dataId, out name),
                 ObjectKind.Companion => Companions.TryGetValue(dataId, out name),
-                (ObjectKind)15       => Ornaments.TryGetValue(dataId, out name), // TODO: CS Update
+                ObjectKind.Ornament  => Ornaments.TryGetValue(dataId, out name),
                 ObjectKind.BattleNpc => BNpcs.TryGetValue(dataId, out name),
                 ObjectKind.EventNpc  => ENpcs.TryGetValue(dataId, out name),
                 _                    => false,

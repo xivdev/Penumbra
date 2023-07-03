@@ -46,6 +46,9 @@ public readonly struct EquipItem
         Type       = type;
     }
 
+    public string ModelString
+        => WeaponType == 0 ? $"{ModelId.Value}-{Variant}" : $"{ModelId.Value}-{WeaponType.Value}-{Variant}";
+
     public static implicit operator EquipItem(PseudoEquipItem it)
         => new(it.Item1, it.Item2, it.Item3, it.Item4, it.Item5, it.Item6, (FullEquipType)it.Item7);
 

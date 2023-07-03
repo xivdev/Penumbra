@@ -15,7 +15,7 @@ namespace Penumbra.UI;
 
 internal sealed class ResourceWatcherTable : Table<Record>
 {
-    public ResourceWatcherTable(Configuration config, ICollection<Record> records)
+    public ResourceWatcherTable(Configuration config, IReadOnlyCollection<Record> records)
         : base("##records",
             records,
             new PathColumn { Label                     = "Path" },

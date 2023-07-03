@@ -171,7 +171,7 @@ public static class ActorManagerExtensions
         {
             ObjectKind.MountType => manager.Data.Mounts,
             ObjectKind.Companion => manager.Data.Companions,
-            (ObjectKind)15       => manager.Data.Ornaments, // TODO: CS Update
+            ObjectKind.Ornament  => manager.Data.Ornaments,
             ObjectKind.BattleNpc => manager.Data.BNpcs,
             ObjectKind.EventNpc  => manager.Data.ENpcs,
             _                    => new Dictionary<uint, string>(),
@@ -190,7 +190,7 @@ public static class ActorManagerExtensions
             ObjectKind.EventNpc  => "Event NPC",
             ObjectKind.MountType => "Mount",
             ObjectKind.Companion => "Companion",
-            (ObjectKind)15       => "Accessory", // TODO: CS update
+            ObjectKind.Ornament  => "Accessory",
             _                    => kind.ToString(),
         };
 

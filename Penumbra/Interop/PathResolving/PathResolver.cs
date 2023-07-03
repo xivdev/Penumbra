@@ -66,6 +66,11 @@ public class PathResolver : IDisposable
             ResourceCategory.Shader => Resolve(path, resourceType),
             ResourceCategory.Vfx    => Resolve(path, resourceType),
             ResourceCategory.Sound  => Resolve(path, resourceType),
+            // EXD Modding in general should probably be prohibited but is currently used for fan translations.
+            // We prevent WebURL specifically because it technically allows launching arbitrary programs / to execute arbitrary code.
+            ResourceCategory.Exd => path.Path.StartsWith("exd/weburl"u8)
+                ? (null, ResolveData.Invalid)
+                : DefaultResolver(path),
             // None of these files are ever associated with specific characters,
             // always use the default resolver for now,
             // except that common/font is conceptually more UI.
@@ -75,7 +80,6 @@ public class PathResolver : IDisposable
             ResourceCategory.BgCommon => DefaultResolver(path),
             ResourceCategory.Bg       => DefaultResolver(path),
             ResourceCategory.Cut      => DefaultResolver(path),
-            ResourceCategory.Exd      => DefaultResolver(path),
             ResourceCategory.Music    => DefaultResolver(path),
             _                         => DefaultResolver(path),
         };

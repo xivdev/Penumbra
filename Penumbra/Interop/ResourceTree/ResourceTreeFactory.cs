@@ -74,7 +74,7 @@ public class ResourceTreeFactory
         var (name, related) = GetCharacterName(character, cache);
         var tree = new ResourceTree(name, (nint)gameObjStruct, related, collectionResolveData.ModCollection.Name);
         var globalContext = new GlobalResolveContext(_config, _identifier.AwaitedService, cache, collectionResolveData.ModCollection,
-            ((Character*)gameObjStruct)->ModelCharaId, withNames);
+            ((Character*)gameObjStruct)->CharacterData.ModelCharaId, withNames);
         tree.LoadResources(globalContext);
         return tree;
     }

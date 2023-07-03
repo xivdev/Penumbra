@@ -179,9 +179,8 @@ public partial class ActorManager
                 case "o":
                 case "accessory":
                 case "ornament":
-                    // TODO: Objectkind ornament.
                     return FindDataId(split[1], Data.Ornaments, out id)
-                        ? ((ObjectKind)15, id)
+                        ? (ObjectKind.Ornament, id)
                         : throw new IdentifierParseError($"Could not identify an Accessory named {split[1]}.");
                 case "e":
                 case "enpc":
@@ -334,7 +333,7 @@ public partial class ActorManager
             }
             case ObjectKind.MountType:
             case ObjectKind.Companion:
-            case (ObjectKind)15: // TODO: CS Update
+            case ObjectKind.Ornament:
             {
                 owner = HandleCutscene(
                     (FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)_objects.GetObjectAddress(actor->ObjectIndex - 1));
@@ -369,12 +368,12 @@ public partial class ActorManager
     /// Obtain the current companion ID for an object by its actor and owner.
     /// </summary>
     private unsafe uint GetCompanionId(FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* actor,
-        Character* owner) // TODO: CS Update
+        Character* owner)
     {
         return (ObjectKind)actor->ObjectKind switch
         {
             ObjectKind.MountType => owner->Mount.MountId,
-            (ObjectKind)15       => owner->Ornament.OrnamentId,
+            ObjectKind.Ornament  => owner->Ornament.OrnamentId,
             ObjectKind.Companion => actor->DataID,
             _                    => actor->DataID,
         };
@@ -571,7 +570,7 @@ public partial class ActorManager
         {
             ObjectKind.MountType => Data.Mounts.ContainsKey(dataId),
             ObjectKind.Companion => Data.Companions.ContainsKey(dataId),
-            (ObjectKind)15       => Data.Ornaments.ContainsKey(dataId), // TODO: CS Update
+            ObjectKind.Ornament  => Data.Ornaments.ContainsKey(dataId),
             ObjectKind.BattleNpc => Data.BNpcs.ContainsKey(dataId),
             _                    => false,
         };
@@ -582,7 +581,7 @@ public partial class ActorManager
         {
             ObjectKind.MountType => Data.Mounts.ContainsKey(dataId),
             ObjectKind.Companion => Data.Companions.ContainsKey(dataId),
-            (ObjectKind)15       => Data.Ornaments.ContainsKey(dataId), // TODO: CS Update
+            ObjectKind.Ornament  => Data.Ornaments.ContainsKey(dataId),
             ObjectKind.BattleNpc => Data.BNpcs.ContainsKey(dataId),
             ObjectKind.EventNpc  => Data.ENpcs.ContainsKey(dataId),
             _                    => false,

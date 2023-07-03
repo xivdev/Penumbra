@@ -119,7 +119,7 @@ public unsafe class CollectionResolver
 
     /// <summary> Return whether the given character has a human model. </summary>
     public bool IsModelHuman(Character* character)
-        => character != null && IsModelHuman((uint)character->ModelCharaId);
+        => character != null && IsModelHuman((uint)character->CharacterData.ModelCharaId);
 
     /// <summary>
     /// Used if on the Login screen. Names are populated after actors are drawn,
@@ -213,7 +213,7 @@ public unsafe class CollectionResolver
 
         // Only handle human models.
         var character = (Character*)actor;
-        if (!IsModelHuman((uint)character->ModelCharaId))
+        if (!IsModelHuman((uint)character->CharacterData.ModelCharaId))
             return null;
 
         if (character->DrawData.CustomizeData[0] == 0)

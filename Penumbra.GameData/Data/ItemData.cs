@@ -138,6 +138,9 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
     public IEnumerable<(uint, EquipItem)> AllItems(bool main)
         => (main ? _mainItems : _offItems).Select(i => (i.Key, (EquipItem)i.Value));
 
+    public int TotalItemCount(bool main)
+        => main ? _mainItems.Count : _offItems.Count;
+
     public bool TryGetValue(uint key, bool main, out EquipItem value)
     {
         var dict = main ? _mainItems : _offItems;

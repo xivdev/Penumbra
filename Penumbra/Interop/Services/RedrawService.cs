@@ -209,7 +209,7 @@ public sealed unsafe partial class RedrawService : IDisposable
         if (actor == null || _targets.Target != null)
             return;
 
-        _targets.SetTarget(actor);
+        _targets.Target = actor;
         _target = -1;
     }
 

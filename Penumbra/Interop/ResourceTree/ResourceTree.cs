@@ -37,7 +37,7 @@ public class ResourceTree
         var model     = (CharacterBase*)character->GameObject.GetDrawObject();
         var equipment = new ReadOnlySpan<CharacterArmor>(&character->DrawData.Head, 10);
         // var customize = new ReadOnlySpan<byte>( character->CustomizeData, 26 );
-        ModelId       = character->ModelCharaId;
+        ModelId       = character->CharacterData.ModelCharaId;
         CustomizeData = character->DrawData.CustomizeData;
         RaceCode      = model->GetModelType() == CharacterBase.ModelType.Human ? (GenderRace) ((Human*)model)->RaceSexId : GenderRace.Unknown;
 

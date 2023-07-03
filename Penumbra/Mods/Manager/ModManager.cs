@@ -318,7 +318,7 @@ public sealed class ModManager : ModStorage, IDisposable
     {
         var options = new ParallelOptions()
         {
-            MaxDegreeOfParallelism = Environment.ProcessorCount / 2,
+            MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2),
         };
         var queue = new ConcurrentQueue<Mod>();
         Parallel.ForEach(BasePath.EnumerateDirectories(), options, dir =>
