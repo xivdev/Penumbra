@@ -4,6 +4,7 @@ using Dalamud.Game.ClientState.Conditions;
 using Dalamud.Game.ClientState.Objects;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;
 using Penumbra.GameData;
@@ -59,13 +60,13 @@ public unsafe class AnimationHookService : IDisposable
         switch (type)
         {
             case ResourceType.Scd:
-                if (_characterSoundData.IsValueCreated && _characterSoundData.Value.Valid)
+                if (_characterSoundData is { IsValueCreated: true, Value.Valid: true })
                 {
                     resolveData = _characterSoundData.Value;
                     return true;
                 }
 
-                if (_animationLoadData.IsValueCreated && _animationLoadData.Value.Valid)
+                if (_animationLoadData is { IsValueCreated: true, Value.Valid: true })
                 {
                     resolveData = _animationLoadData.Value;
                     return true;
@@ -76,7 +77,7 @@ public unsafe class AnimationHookService : IDisposable
             case ResourceType.Pap:
             case ResourceType.Avfx:
             case ResourceType.Atex:
-                if (_animationLoadData.IsValueCreated && _animationLoadData.Value.Valid)
+                if (_animationLoadData is { IsValueCreated: true, Value.Valid: true })
                 {
                     resolveData = _animationLoadData.Value;
                     return true;
@@ -141,7 +142,7 @@ public unsafe class AnimationHookService : IDisposable
     {
         using var performance = _performance.Measure(PerformanceType.TimelineResources);
         // Do not check timeline loading in cutscenes.
-        if (_conditions[ConditionFlag.OccupiedInCutSceneEvent] || _conditions[ConditionFlag.WatchingCutscene] || _conditions[ConditionFlag.WatchingCutscene78])
+        if (_conditions[ConditionFlag.OccupiedInCutSceneEvent] || _conditions[ConditionFlag.WatchingCutscene78])
             return _loadTimelineResourcesHook.Original(timeline);
 
         var       last        = _animationLoadData.Value;
