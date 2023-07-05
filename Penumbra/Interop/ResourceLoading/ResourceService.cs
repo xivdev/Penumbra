@@ -2,6 +2,7 @@ using System;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using Penumbra.Collections;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.Structs;
@@ -60,7 +61,8 @@ public unsafe class ResourceService : IDisposable
     /// <param name="parameters">Mainly used for SCD streaming, can be null.</param>
     /// <param name="sync">Whether to request the resource synchronously or asynchronously.</param>
     /// <param name="returnValue">The returned resource handle. If this is not null, calling original will be skipped. </param>
-    public delegate void GetResourcePreDelegate(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path, Utf8GamePath original,
+    public delegate void GetResourcePreDelegate(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
+        Utf8GamePath original,
         GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue);
 
     /// <summary> <inheritdoc cref="GetResourcePreDelegate"/> <para/>

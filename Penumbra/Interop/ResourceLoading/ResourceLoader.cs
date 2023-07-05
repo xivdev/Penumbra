@@ -16,6 +16,8 @@ public unsafe class ResourceLoader : IDisposable
     private readonly FileReadService _fileReadService;
     private readonly TexMdlService   _texMdlService;
 
+    private ResolveData _resolvedData = ResolveData.Invalid;
+
     public ResourceLoader(ResourceService resources, FileReadService fileReadService, TexMdlService texMdlService,
         CreateFileWHook _)
     {
@@ -28,6 +30,15 @@ public unsafe class ResourceLoader : IDisposable
         _resources.ResourceHandleIncRef += IncRefProtection;
         _resources.ResourceHandleDecRef += DecRefProtection;
         _fileReadService.ReadSqPack     += ReadSqPackDetour;
+    }
+
+    /// <summary> Load a resource for a given path and a specific collection. </summary>
+    public ResourceHandle* LoadResolvedResource(ResourceCategory category, ResourceType type, ByteString path, ResolveData resolveData)
+    {
+        _resolvedData = resolveData;
+        var ret = _resources.GetResource(category, type, path);
+        _resolvedData = ResolveData.Invalid;
+        return ret;
     }
 
     /// <summary> The function to use to resolve a given path. </summary>
@@ -66,7 +77,8 @@ public unsafe class ResourceLoader : IDisposable
         _fileReadService.ReadSqPack     -= ReadSqPackDetour;
     }
 
-    private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path, Utf8GamePath original,
+    private void ResourceHandler(ref ResourceCategory category, ref ResourceType type, ref int hash, ref Utf8GamePath path,
+        Utf8GamePath original,
         GetResourceParameters* parameters, ref bool sync, ref ResourceHandle* returnValue)
     {
         if (returnValue != null)
@@ -75,7 +87,12 @@ public unsafe class ResourceLoader : IDisposable
         CompareHash(ComputeHash(path.Path, parameters), hash, path);
 
         // If no replacements are being made, we still want to be able to trigger the event.
-        var (resolvedPath, data) = _incMode.Value ? (null, ResolveData.Invalid) : ResolvePath(path, category, type);
+        var (resolvedPath, data) = _incMode.Value
+            ? (null, ResolveData.Invalid)
+            : _resolvedData.Valid
+                ? (_resolvedData.ModCollection.ResolvePath(path), _resolvedData)
+                : ResolvePath(path, category, type);
+
         if (resolvedPath == null || !Utf8GamePath.FromByteString(resolvedPath.Value.InternalName, out var p))
         {
             returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters);
@@ -85,7 +102,7 @@ public unsafe class ResourceLoader : IDisposable
 
         _texMdlService.AddCrc(type, resolvedPath);
         // Replace the hash and path with the correct one for the replacement.
-        hash        = ComputeHash(resolvedPath.Value.InternalName, parameters);
+        hash = ComputeHash(resolvedPath.Value.InternalName, parameters);
         var oldPath = path;
         path        = p;
         returnValue = _resources.GetOriginalResource(sync, category, type, hash, path.Path, parameters);

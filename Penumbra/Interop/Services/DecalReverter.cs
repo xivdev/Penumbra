@@ -19,7 +19,7 @@ public sealed unsafe class DecalReverter : IDisposable
     private readonly Structs.TextureResourceHandle* _decal;
     private readonly Structs.TextureResourceHandle* _transparent;
 
-    public DecalReverter(Configuration config, CharacterUtility utility, ResourceService resources, ModCollection? collection, bool doDecal)
+    public DecalReverter(Configuration config, CharacterUtility utility, ResourceLoader resources, ResolveData resolveData, bool doDecal)
     {
         _utility = utility;
         var ptr = _utility.Address;
@@ -30,16 +30,14 @@ public sealed unsafe class DecalReverter : IDisposable
 
         if (doDecal)
         {
-            var decalPath = collection?.ResolvePath(DecalPath)?.InternalName ?? DecalPath.Path;
-            var decalHandle = resources.GetResource(ResourceCategory.Chara, ResourceType.Tex, decalPath);
+            var decalHandle = resources.LoadResolvedResource(ResourceCategory.Chara, ResourceType.Tex, DecalPath.Path, resolveData);
             _decal = (Structs.TextureResourceHandle*)decalHandle;
             if (_decal != null)
                 ptr->DecalTexResource = _decal;
         }
         else
         {
-            var transparentPath = collection?.ResolvePath(TransparentPath)?.InternalName ?? TransparentPath.Path;
-            var transparentHandle = resources.GetResource(ResourceCategory.Chara, ResourceType.Tex, transparentPath);
+            var transparentHandle = resources.LoadResolvedResource(ResourceCategory.Chara, ResourceType.Tex, TransparentPath.Path, resolveData);
             _transparent = (Structs.TextureResourceHandle*)transparentHandle;
             if (_transparent != null)
                 ptr->TransparentTexResource = _transparent;
