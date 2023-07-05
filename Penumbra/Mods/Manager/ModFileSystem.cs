@@ -83,12 +83,12 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
     // Update sort order when defaulted mod names change.
     private void OnDataChange(ModDataChangeType type, Mod mod, string? oldName)
     {
-        if (type.HasFlag(ModDataChangeType.Name) && oldName != null)
-        {
-            var old = oldName.FixName();
-            if (Find(old, out var child) && child is not Folder)
-                Rename(child, mod.Name.Text);
-        }
+        if (!type.HasFlag(ModDataChangeType.Name) || oldName == null || !FindLeaf(mod, out var leaf))
+            return;
+
+        var old = oldName.FixName();
+        if (old == leaf.Name || leaf.Name.IsDuplicateName(out var baseName, out _) && baseName == old)
+            RenameWithDuplicates(leaf, mod.Name.Text);
     }
 
     // Update the filesystem if a mod has been added or removed.
@@ -98,13 +98,7 @@ public sealed class ModFileSystem : FileSystem<Mod>, IDisposable, ISavable
         switch (type)
         {
             case ModPathChangeType.Added:
-                var originalName = mod.Name.Text.FixName();
-                var name         = originalName;
-                var counter      = 1;
-                while (Find(name, out _))
-                    name = $"{originalName} ({++counter})";
-
-                CreateLeaf(Root, name, mod);
+                CreateDuplicateLeaf(Root, mod.Name.Text, mod);
                 break;
             case ModPathChangeType.Deleted:
                 if (FindLeaf(mod, out var leaf))

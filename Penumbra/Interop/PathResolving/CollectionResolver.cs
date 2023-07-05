@@ -1,15 +1,11 @@
 using System;
-using System.Collections;
-using System.Linq;
-using Dalamud.Data;
 using Dalamud.Game.ClientState;
 using Dalamud.Game.Gui;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
-using Lumina.Excel.GeneratedSheets;
-using OtterGui;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
+using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.Services;
 using Penumbra.Util;
@@ -23,7 +19,7 @@ public unsafe class CollectionResolver
 {
     private readonly PerformanceTracker        _performance;
     private readonly IdentifiedCollectionCache _cache;
-    private readonly BitArray                  _validHumanModels;
+    private readonly HumanModelList            _humanModels;
 
     private readonly ClientState     _clientState;
     private readonly GameGui         _gameGui;
@@ -36,8 +32,8 @@ public unsafe class CollectionResolver
     private readonly DrawObjectState       _drawObjectState;
 
     public CollectionResolver(PerformanceTracker performance, IdentifiedCollectionCache cache, ClientState clientState, GameGui gameGui,
-        DataManager gameData, ActorService actors, CutsceneService cutscenes, Configuration config, CollectionManager collectionManager,
-        TempCollectionManager tempCollections, DrawObjectState drawObjectState)
+        ActorService actors, CutsceneService cutscenes, Configuration config, CollectionManager collectionManager,
+        TempCollectionManager tempCollections, DrawObjectState drawObjectState, HumanModelList humanModels)
     {
         _performance       = performance;
         _cache             = cache;
@@ -49,7 +45,7 @@ public unsafe class CollectionResolver
         _collectionManager = collectionManager;
         _tempCollections   = tempCollections;
         _drawObjectState   = drawObjectState;
-        _validHumanModels  = GetValidHumanModels(gameData);
+        _humanModels       = humanModels;
     }
 
     /// <summary>
@@ -115,7 +111,7 @@ public unsafe class CollectionResolver
 
     /// <summary> Return whether the given ModelChara id refers to a human-type model. </summary>
     public bool IsModelHuman(uint modelCharaId)
-        => modelCharaId < _validHumanModels.Length && _validHumanModels[(int)modelCharaId];
+        => _humanModels.IsHuman(modelCharaId);
 
     /// <summary> Return whether the given character has a human model. </summary>
     public bool IsModelHuman(Character* character)
@@ -253,18 +249,5 @@ public unsafe class CollectionResolver
             uint.MaxValue);
         return CheckYourself(id, owner)
          ?? CollectionByAttributes(owner, ref notYetReady);
-    }
-
-    /// <summary>
-    /// Go through all ModelChara rows and return a bitfield of those that resolve to human models.
-    /// </summary>
-    private static BitArray GetValidHumanModels(DataManager gameData)
-    {
-        var sheet = gameData.GetExcelSheet<ModelChara>()!;
-        var ret   = new BitArray((int)sheet.RowCount, false);
-        foreach (var (_, idx) in sheet.WithIndex().Where(p => p.Value.Type == (byte)CharacterBase.ModelType.Human))
-            ret[idx] = true;
-
-        return ret;
     }
 }

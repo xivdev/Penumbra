@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Dalamud.Plugin;
 using Microsoft.Extensions.DependencyInjection;
 using OtterGui.Classes;
@@ -70,7 +69,8 @@ public static class ServiceManager
             .AddSingleton<IdentifierService>()
             .AddSingleton<StainService>()
             .AddSingleton<ItemService>()
-            .AddSingleton<ActorService>();
+            .AddSingleton<ActorService>()
+            .AddSingleton<HumanModelList>();
 
     private static IServiceCollection AddInterop(this IServiceCollection services)
         => services.AddSingleton<GameEventManager>()

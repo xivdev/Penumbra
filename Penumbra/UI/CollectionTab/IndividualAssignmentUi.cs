@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Dalamud.Game.ClientState.Objects.Enums;
 using ImGuiNET;
-using OtterGui.Raii;
+using OtterGui.Custom;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
@@ -63,22 +63,8 @@ public class IndividualAssignmentUi : IDisposable
 
     public void DrawObjectKindCombo(float width)
     {
-        if (!_ready)
-            return;
-
-        ImGui.SetNextItemWidth(width);
-        using var combo = ImRaii.Combo("##newKind", _newKind.ToName());
-        if (!combo)
-            return;
-
-        foreach (var kind in ObjectKinds)
-        {
-            if (!ImGui.Selectable(kind.ToName(), _newKind == kind))
-                continue;
-
-            _newKind = kind;
+        if (_ready && IndividualHelpers.DrawObjectKindCombo(width, _newKind, out _newKind, ObjectKinds))
             UpdateIdentifiersInternal();
-        }
     }
 
     public void DrawNewPlayerCollection(float width)

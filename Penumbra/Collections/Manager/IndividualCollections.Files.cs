@@ -4,6 +4,7 @@ using System.Linq;
 using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Interface.Internal.Notifications;
 using Newtonsoft.Json.Linq;
+using OtterGui.Custom;
 using Penumbra.GameData.Actors;
 using Penumbra.Services;
 using Penumbra.String;
