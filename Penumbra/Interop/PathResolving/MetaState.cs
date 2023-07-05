@@ -129,7 +129,7 @@ public unsafe class MetaState : IDisposable
             _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection.Name, (nint)(&modelCharaId), customize, equipData);
 
-        var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection.ModCollection, UsesDecal(modelCharaId, equipData));
+        var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection.ModCollection, UsesDecal(modelCharaId, customize));
         var cmp   = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);
