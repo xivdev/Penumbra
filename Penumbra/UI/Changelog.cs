@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using OtterGui.Widgets;
 
 namespace Penumbra.UI;
@@ -39,9 +40,38 @@ public class PenumbraChangelog
         Add7_0_4(Changelog);
         Add7_1_0(Changelog);
         Add7_1_2(Changelog);
+        Add7_2_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add7_2_0(Changelog log)
+        => log.NextVersion("Version 0.7.2.0")
+            .RegisterEntry("Added Changed Item Categories and icons that can filter for specific types of Changed Items, in the Changed Items Tab as well as in the Changed Items panel for specific mods..")
+            .RegisterEntry("Icons at the top can be clicked to filter, as well as right-clicked to open a context menu with the option to inverse-filter for them", 1)
+            .RegisterEntry("There is also an ALL button that can be toggled.", 1)
+            .RegisterEntry("Modded files in the Font category now resolve from the Interface assignment instead of the base assignment, despite not technically being in the UI category.")
+            .RegisterEntry("Timeline files will no longer be associated with specific characters in cutscenes, since there is no way to correctly do this, and it could cause crashes if IVCS-requiring animations were used on characters without IVCS.")
+            .RegisterEntry("File deletion in the Advanced Editing Window now also checks for your configured deletion key combo.")
+            .RegisterEntry("The Texture tab in the Advanced Editing Window now has some quick convert buttons to just convert the selected texture to a different format in-place.")
+            .RegisterEntry("These buttons only appear if only one texture is selected on the left side, it is not otherwise manipulated, and the texture is a .tex file.", 1)
+            .RegisterEntry("The text part of the mod filter in the mod selector now also resets when right-clicking the drop-down arrow.")
+            .RegisterEntry("The Dissolve Folder option in the mod selector context menu has been moved to the bottom.")
+            .RegisterEntry("Somewhat improved IMC handling to prevent some issues.")
+            .RegisterEntry("Improved the handling of mod renames on mods with default-search names to correctly rename their search-name in (hopefully) all cases too.")
+            .RegisterEntry("A lot of backend improvements and changes related to the pending Glamourer rework.")
+            .RegisterEntry("Fixed an issue where the displayed active collection count in the support info was wrong.")
+            .RegisterEntry("Fixed an issue with created directories dealing badly with non-standard whitespace characters like half-width or non-breaking spaces.")
+            .RegisterEntry("Fixed an issue with unknown animation and vfx edits not being recognized correctly.")
+            .RegisterEntry("Fixed an issue where changing option descriptions to be empty was not working correctly.")
+            .RegisterEntry("Fixed an issue with texture names in the resource tree of the On-Screen views.")
+            .RegisterEntry("Fixed a bug where the game would crash when drawing folders in the mod selector that contained a '%' symbol.")
+            .RegisterEntry("Fixed an issue with parallel algorithms obtaining the wrong number of available cores.")
+            .RegisterEntry("Updated the available selection of Battle NPC names.")
+            .RegisterEntry("A typo in the 0.7.1.2 Changlog has been fixed.")
+            .RegisterEntry("Added the Sea of Stars as accepted repository. (0.7.1.4)")
+            .RegisterEntry("Fixed an issue with collections sometimes not loading correctly, and IMC files not applying correctly. (0.7.1.3)");
+
 
     private static void Add7_1_2(Changelog log)
         => log.NextVersion("Version 0.7.1.2")
@@ -50,7 +80,7 @@ public class PenumbraChangelog
             .RegisterEntry("Fixed Penumbra failing to load if the main configuration file is corrupted.")
             .RegisterEntry("Some miscellaneous small bug fixes.")
             .RegisterEntry("Slight changes in behaviour for deduplicator/normalizer, mostly backend.")
-            .RegisterEntry("A typo in the 0.7.1.0 Changelog was been fixed.")
+            .RegisterEntry("A typo in the 0.7.1.0 Changelog has been fixed.")
             .RegisterEntry("Fixed left rings not being valid for IMC entries after validation. (7.1.1)")
             .RegisterEntry("Relaxed the scaling restrictions for RSP scaling values to go from 0.01 to 512.0 instead of the prior upper limit of 8.0, in interface as well as validation, to better support the fetish community. (7.1.1)");
 
