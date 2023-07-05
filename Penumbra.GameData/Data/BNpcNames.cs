@@ -5,7 +5,7 @@ namespace Penumbra.GameData.Data;
 
 public static class NpcNames
 {
-    /// <summary>Generated from https://api.ffxivteamcraft.com/gubal on 2023-06-23.</summary>
+    /// <summary>Generated from https://api.ffxivteamcraft.com/gubal on 2023-07-05.</summary>
     public static IReadOnlyList<IReadOnlyList<uint>> CreateNames()
         => new IReadOnlyList<uint>[]
         {
@@ -16065,7 +16065,7 @@ public static class NpcNames
             new uint[]{12287},
             new uint[]{12288},
             new uint[]{12289},
-            Array.Empty<uint>(),
+            new uint[]{12290},
             new uint[]{12291},
             new uint[]{12298},
             Array.Empty<uint>(),
