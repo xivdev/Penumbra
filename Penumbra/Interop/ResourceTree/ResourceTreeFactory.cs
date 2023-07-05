@@ -4,7 +4,6 @@ using Dalamud.Data;
 using Dalamud.Game.ClientState.Objects;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
-using OtterGui.Custom;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Services;
