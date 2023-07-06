@@ -395,8 +395,9 @@ public partial class ModEditWindow : Window, IDisposable
         if (!combo)
             return;
 
-        foreach (var option in _mod!.AllSubMods)
+        foreach (var (option, idx) in _mod!.AllSubMods.WithIndex())
         {
+            using var id = ImRaii.PushId(idx);
             if (ImGui.Selectable(option.FullName, option == _editor.Option))
                 _editor.LoadOption(option.GroupIdx, option.OptionIdx);
         }
