@@ -141,6 +141,9 @@ public class ChangedItemDrawer : IDisposable
     /// <summary> Draw a header line with the different icon types to filter them. </summary>
     public void DrawTypeFilter()
     {
+        if (_config.HideChangedItemFilters)
+            return;
+
         using var _     = ImRaii.PushId("ChangedItemIconFilter");
         var       size  = new Vector2(2 * ImGui.GetTextLineHeight());
         using var style = ImRaii.PushStyle(ImGuiStyleVar.ItemSpacing, Vector2.Zero);

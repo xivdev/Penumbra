@@ -372,6 +372,13 @@ public class SettingsTab : ITab
             _config.PrintSuccessfulCommandsToChat, v => _config.PrintSuccessfulCommandsToChat = v);
         Checkbox("Hide Redraw Bar in Mod Panel", "Hides the lower redraw buttons in the mod panel in your Mods tab.",
             _config.HideRedrawBar,               v => _config.HideRedrawBar = v);
+        Checkbox("Hide Changed Item Filters", "Hides the category filter line in the Changed Items tab and the Changed Items mod panel.",
+            _config.HideChangedItemFilters,   v =>
+            {
+                _config.HideChangedItemFilters = v;
+                if (v)
+                    _config.ChangedItemFilter = ChangedItemDrawer.AllFlags;
+            });
         DrawSingleSelectRadioMax();
         DrawCollapsibleGroupMin();
     }
@@ -687,9 +694,9 @@ public class SettingsTab : ITab
                 $"Reset minimum dimensions to ({Configuration.Constants.MinimumSizeX}, {Configuration.Constants.MinimumSizeY}).",
                 x == Configuration.Constants.MinimumSizeX && y == Configuration.Constants.MinimumSizeY))
         {
-            x = Configuration.Constants.MinimumSizeX;
-            y = Configuration.Constants.MinimumSizeY;
-            edited    = true;
+            x      = Configuration.Constants.MinimumSizeX;
+            y      = Configuration.Constants.MinimumSizeY;
+            edited = true;
         }
 
         ImGuiUtil.LabeledHelpMarker("Minimum Window Dimensions",

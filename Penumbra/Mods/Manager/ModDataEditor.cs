@@ -183,7 +183,7 @@ public class ModDataEditor
         }
         catch (Exception e)
         {
-            Penumbra.Log.Error($"Could not load mod meta:\n{e}");
+            Penumbra.Log.Error($"Could not load mod meta for {metaFile}:\n{e}");
             return ModDataChangeType.Deletion;
         }
     }
