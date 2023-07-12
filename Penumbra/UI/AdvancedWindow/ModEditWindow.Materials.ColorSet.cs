@@ -97,7 +97,7 @@ public partial class ModEditWindow
 
     private bool DrawPreviewDye( MtrlFile file, bool disabled )
     {
-        var (dyeId, (name, dyeColor, _)) = _stainService.StainCombo.CurrentSelection;
+        var (dyeId, (name, dyeColor, gloss)) = _stainService.StainCombo.CurrentSelection;
         var tt = dyeId == 0 ? "Select a preview dye first." : "Apply all preview values corresponding to the dye template and chosen dye where dyeing is enabled.";
         if( ImGuiUtil.DrawDisabledButton( "Apply Preview Dye", Vector2.Zero, tt, disabled || dyeId == 0 ) )
         {
@@ -115,7 +115,7 @@ public partial class ModEditWindow
 
         ImGui.SameLine();
         var label = dyeId == 0 ? "Preview Dye###previewDye" : $"{name} (Preview)###previewDye";
-        _stainService.StainCombo.Draw( label, dyeColor, string.Empty, true );
+        _stainService.StainCombo.Draw( label, dyeColor, string.Empty, true, gloss);
         return false;
     }
 

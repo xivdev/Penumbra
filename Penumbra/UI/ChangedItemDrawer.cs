@@ -280,7 +280,7 @@ public class ChangedItemDrawer : IDisposable
     private object? Convert(object? data)
     {
         if (data is EquipItem it)
-            return _items.GetRow(it.Id);
+            return _items.GetRow(it.ItemId);
 
         return data;
     }
