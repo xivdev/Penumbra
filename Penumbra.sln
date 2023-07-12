@@ -8,7 +8,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F89C9EAE-25C8-43BE-8108-5921E5A93502}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
-		base_repo.json = base_repo.json
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Penumbra.GameData", "Penumbra.GameData\Penumbra.GameData.csproj", "{EE551E87-FDB3-4612-B500-DC870C07C605}"
