@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
 using Penumbra.String.Functions;
@@ -6,45 +8,61 @@ using Penumbra.String.Functions;
 namespace Penumbra.GameData.Structs;
 
 [StructLayout(LayoutKind.Sequential, Size = Size)]
-public unsafe struct CustomizeData : IEquatable< CustomizeData >
+public unsafe struct CustomizeData : IEquatable<CustomizeData>, IReadOnlyCollection<byte>
 {
     public const int Size = 26;
 
     public fixed byte Data[Size];
 
-    public void Read( void* source )
+    public int Count
+        => Size;
+
+    public IEnumerator<byte> GetEnumerator()
     {
-        fixed( byte* ptr = Data )
+        for (var i = 0; i < Size; ++i)
+            yield return At(i);
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+        => GetEnumerator();
+
+
+    private unsafe byte At(int index)
+        => Data[index];
+
+    public void Read(void* source)
+    {
+        fixed (byte* ptr = Data)
         {
-            MemoryUtility.MemCpyUnchecked( ptr, source, Size );
+            MemoryUtility.MemCpyUnchecked(ptr, source, Size);
         }
     }
 
-    public readonly void Write( void* target )
+    public readonly void Write(void* target)
     {
-        fixed( byte* ptr = Data )
+        fixed (byte* ptr = Data)
         {
-            MemoryUtility.MemCpyUnchecked( target, ptr, Size );
+            MemoryUtility.MemCpyUnchecked(target, ptr, Size);
         }
     }
 
     public readonly CustomizeData Clone()
     {
         var ret = new CustomizeData();
-        Write( ret.Data );
+        Write(ret.Data);
         return ret;
     }
 
-    public readonly bool Equals( CustomizeData other )
+    public readonly bool Equals(CustomizeData other)
     {
-        fixed( byte* ptr = Data )
+        fixed (byte* ptr = Data)
         {
-            return MemoryUtility.MemCmpUnchecked( ptr, other.Data, Size ) == 0;
+            return MemoryUtility.MemCmpUnchecked(ptr, other.Data, Size) == 0;
         }
     }
 
-    public override bool Equals( object? obj )
-        => obj is CustomizeData other && Equals( other );
+    public override bool Equals(object? obj)
+        => obj is CustomizeData other && Equals(other);
 
     public static bool Equals(CustomizeData* lhs, CustomizeData* rhs)
         => MemoryUtility.MemCmpUnchecked(lhs, rhs, Size) == 0;
@@ -57,20 +75,20 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
 
     public override int GetHashCode()
     {
-        fixed( byte* ptr = Data )
+        fixed (byte* ptr = Data)
         {
-            var p = ( int* )ptr;
-            var u = *( ushort* )( p + 6 );
-            return HashCode.Combine( *p, p[ 1 ], p[ 2 ], p[ 3 ], p[ 4 ], p[ 5 ], u );
+            var p = (int*)ptr;
+            var u = *(ushort*)(p + 6);
+            return HashCode.Combine(*p, p[1], p[2], p[3], p[4], p[5], u);
         }
     }
 
     public readonly string WriteBase64()
     {
-        fixed( byte* ptr = Data )
+        fixed (byte* ptr = Data)
         {
-            var data = new ReadOnlySpan< byte >( ptr, Size );
-            return Convert.ToBase64String( data );
+            var data = new ReadOnlySpan<byte>(ptr, Size);
+            return Convert.ToBase64String(data);
         }
     }
 
@@ -78,23 +96,20 @@ public unsafe struct CustomizeData : IEquatable< CustomizeData >
     {
         var sb = new StringBuilder(Size * 3);
         for (var i = 0; i < Size - 1; ++i)
-        {
             sb.Append($"{Data[i]:X2} ");
-        }
         sb.Append($"{Data[Size - 1]:X2}");
         return sb.ToString();
     }
 
-    public bool LoadBase64( string base64 )
+
+    public bool LoadBase64(string base64)
     {
         var buffer = stackalloc byte[Size];
-        var span   = new Span< byte >( buffer, Size );
-        if( !Convert.TryFromBase64String( base64, span, out var written ) || written != Size )
-        {
+        var span   = new Span<byte>(buffer, Size);
+        if (!Convert.TryFromBase64String(base64, span, out var written) || written != Size)
             return false;
-        }
 
-        Read( buffer );
+        Read(buffer);
         return true;
     }
 }

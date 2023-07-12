@@ -91,6 +91,23 @@ public partial class ActorManager
         };
     }
 
+    /// <summary>
+    /// Use stored data to convert an ActorIdentifier to a name only.
+    /// </summary>
+    public string ToName(ActorIdentifier id)
+    {
+        return id.Type switch
+        {
+            IdentifierType.Player    => id.PlayerName.ToString(),
+            IdentifierType.Retainer  => id.PlayerName.ToString(),
+            IdentifierType.Owned     => $"{id.PlayerName}s {Data.ToName(id.Kind, id.DataId)}",
+            IdentifierType.Special   => id.Special.ToName(),
+            IdentifierType.Npc       => Data.ToName(id.Kind, id.DataId),
+            IdentifierType.UnkObject => id.PlayerName.IsEmpty ? id.PlayerName.ToString() : "Unknown Object",
+            _                        => "Invalid",
+        };
+    }
+
     private unsafe FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* HandleCutscene(
         FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* main)
     {
@@ -382,7 +399,7 @@ public partial class ActorManager
     public unsafe ActorIdentifier FromObject(GameObject? actor, out FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject* owner,
         bool allowPlayerNpc, bool check, bool withoutIndex)
         => FromObject((FFXIVClientStructs.FFXIV.Client.Game.Object.GameObject*)(actor?.Address ?? IntPtr.Zero), out owner, allowPlayerNpc,
-            check, withoutIndex);
+            check,                                                                                              withoutIndex);
 
     public unsafe ActorIdentifier FromObject(GameObject? actor, bool allowPlayerNpc, bool check, bool withoutIndex)
         => FromObject(actor, out _, allowPlayerNpc, check, withoutIndex);

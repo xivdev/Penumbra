@@ -122,14 +122,14 @@ public unsafe class MetaState : IDisposable
         _gameEventManager.CharacterBaseCreated  -= OnCharacterBaseCreated;
     }
 
-    private void OnCreatingCharacterBase(uint modelCharaId, nint customize, nint equipData)
+    private void OnCreatingCharacterBase(nint modelCharaId, nint customize, nint equipData)
     {
         _lastCreatedCollection = _collectionResolver.IdentifyLastGameObjectCollection(true);
         if (_lastCreatedCollection.Valid && _lastCreatedCollection.AssociatedGameObject != nint.Zero)
             _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
-                _lastCreatedCollection.ModCollection.Name, (nint)(&modelCharaId), customize, equipData);
+                _lastCreatedCollection.ModCollection.Name, modelCharaId, customize, equipData);
 
-        var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection, UsesDecal(modelCharaId, customize));
+        var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection, UsesDecal(*(uint*)modelCharaId, customize));
         var cmp   = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);

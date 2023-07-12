@@ -6,7 +6,7 @@ using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using PseudoEquipItem = System.ValueTuple<string, uint, ushort, ushort, ushort, byte, byte>;
+using PseudoEquipItem = System.ValueTuple<string, ulong, ushort, ushort, ushort, byte, byte>;
 
 namespace Penumbra.GameData.Data;
 
@@ -51,6 +51,14 @@ internal sealed class EquipmentIdentificationList : KeyList<PseudoEquipItem>
     private static IEnumerable<PseudoEquipItem> CreateEquipmentList(DataManager gameData, ClientLanguage language)
     {
         var items = gameData.GetExcelSheet<Item>(language)!;
-        return items.Where(i => ((EquipSlot)i.EquipSlotCategory.Row).IsEquipmentPiece()).Select(i => (PseudoEquipItem)EquipItem.FromArmor(i));
+        return items.Where(i => ((EquipSlot)i.EquipSlotCategory.Row).IsEquipmentPiece())
+            .Select(i => (PseudoEquipItem)EquipItem.FromArmor(i))
+            .Concat(CustomList);
     }
+
+    private static IEnumerable<PseudoEquipItem> CustomList
+        => new[]
+        {
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 8100, 0, 1, FullEquipType.Body, "Reaper Shroud"),
+        };
 }

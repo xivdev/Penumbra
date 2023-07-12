@@ -6,7 +6,6 @@ using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 using Dalamud.Game.ClientState.Objects.Enums;
@@ -23,11 +22,11 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 {
     public const int IdentificationVersion = 1;
 
-    public           IGamePathParser                                              GamePathParser { get; } = new GamePathParser();
-    public readonly  IReadOnlyList<IReadOnlyList<uint>>                           BnpcNames;
-    public readonly  IReadOnlyList<IReadOnlyList<(string Name, ObjectKind Kind)>> ModelCharaToObjects;
-    public readonly  IReadOnlyDictionary<string, IReadOnlyList<Action>>           Actions;
-    private readonly ActorManager.ActorManagerData                                _actorData;
+    public           IGamePathParser                                                       GamePathParser { get; } = new GamePathParser();
+    public readonly  IReadOnlyList<IReadOnlyList<uint>>                                    BnpcNames;
+    public readonly  IReadOnlyList<IReadOnlyList<(string Name, ObjectKind Kind, uint Id)>> ModelCharaToObjects;
+    public readonly  IReadOnlyDictionary<string, IReadOnlyList<Action>>                    Actions;
+    private readonly ActorManager.ActorManagerData                                         _actorData;
 
     private readonly EquipmentIdentificationList _equipment;
     private readonly WeaponIdentificationList    _weapons;
@@ -49,10 +48,8 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
     public void Identify(IDictionary<string, object?> set, string path)
     {
         if (path.EndsWith(".pap", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".tmb", StringComparison.OrdinalIgnoreCase))
-        {
             if (IdentifyVfx(set, path))
                 return;
-        }
 
         var info = GamePathParser.GetFileInfo(path);
         IdentifyParsed(set, info);
@@ -72,6 +69,15 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
             EquipSlot.OffHand  => _weapons.Between(setId, weaponType, (byte)variant),
             _                  => _equipment.Between(setId, slot, (byte)variant),
         };
+
+    public IReadOnlyList<uint> GetBnpcNames(uint bNpcId)
+        => bNpcId >= BnpcNames.Count ? Array.Empty<uint>() : BnpcNames[(int)bNpcId];
+
+    public IReadOnlyList<(string Name, ObjectKind Kind, uint Id)> ModelCharaNames(uint modelId)
+        => modelId >= ModelCharaToObjects.Count ? Array.Empty<(string Name, ObjectKind Kind, uint Id)>() : ModelCharaToObjects[(int)modelId];
+
+    public int NumModelChara
+        => ModelCharaToObjects.Count;
 
     protected override void DisposeInternal()
     {
@@ -125,14 +131,14 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
     {
         var items = _equipment.Between(info.PrimaryId, info.EquipSlot, info.Variant);
         foreach (var item in items)
-            set[item.Name.ToString()] = item;
+            set[item.Name] = item;
     }
 
     private void FindWeapon(IDictionary<string, object?> set, GameObjectInfo info)
     {
         var items = _weapons.Between(info.PrimaryId, info.SecondaryId, info.Variant);
         foreach (var item in items)
-            set[item.Name.ToString()] = item;
+            set[item.Name] = item;
     }
 
     private void FindModel(IDictionary<string, object?> set, GameObjectInfo info)
@@ -142,10 +148,10 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
             return;
 
         var models = _modelIdentifierToModelChara.Between(type, info.PrimaryId, (byte)info.SecondaryId, info.Variant);
-        foreach (var model in models.Where(m => m.RowId < ModelCharaToObjects.Count))
+        foreach (var model in models.Where(m => m.RowId != 0 && m.RowId < ModelCharaToObjects.Count))
         {
             var objectList = ModelCharaToObjects[(int)model.RowId];
-            foreach (var (name, kind) in objectList)
+            foreach (var (name, kind, _) in objectList)
                 set[$"{name} ({kind.ToName()})"] = model;
         }
     }
@@ -246,46 +252,46 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
         return true;
     }
 
-    private IReadOnlyList<IReadOnlyList<(string Name, ObjectKind Kind)>> CreateModelObjects(ActorManager.ActorManagerData actors,
+    private IReadOnlyList<IReadOnlyList<(string Name, ObjectKind Kind, uint Id)>> CreateModelObjects(ActorManager.ActorManagerData actors,
         DataManager gameData, ClientLanguage language)
     {
         var modelSheet = gameData.GetExcelSheet<ModelChara>(language)!;
-        var ret        = new List<ConcurrentBag<(string Name, ObjectKind Kind)>>((int)modelSheet.RowCount);
+        var ret        = new List<ConcurrentBag<(string Name, ObjectKind Kind, uint Id)>>((int)modelSheet.RowCount);
 
         for (var i = -1; i < modelSheet.Last().RowId; ++i)
-            ret.Add(new ConcurrentBag<(string Name, ObjectKind Kind)>());
+            ret.Add(new ConcurrentBag<(string Name, ObjectKind Kind, uint Id)>());
 
-        void AddChara(int modelChara, ObjectKind kind, uint dataId)
+        void AddChara(int modelChara, ObjectKind kind, uint dataId, uint displayId)
         {
-            if (modelChara == 0 || modelChara >= ret.Count)
+            if (modelChara >= ret.Count)
                 return;
 
             if (actors.TryGetName(kind, dataId, out var name))
-                ret[modelChara].Add((name, kind));
+                ret[modelChara].Add((name, kind, displayId));
         }
 
         var oTask = Task.Run(() =>
         {
             foreach (var ornament in gameData.GetExcelSheet<Ornament>(language)!)
-                AddChara(ornament.Model, (ObjectKind)15, ornament.RowId);
+                AddChara(ornament.Model, ObjectKind.Ornament, ornament.RowId, ornament.RowId);
         });
 
         var mTask = Task.Run(() =>
         {
             foreach (var mount in gameData.GetExcelSheet<Mount>(language)!)
-                AddChara((int)mount.ModelChara.Row, ObjectKind.MountType, mount.RowId);
+                AddChara((int)mount.ModelChara.Row, ObjectKind.MountType, mount.RowId, mount.RowId);
         });
 
         var cTask = Task.Run(() =>
         {
             foreach (var companion in gameData.GetExcelSheet<Companion>(language)!)
-                AddChara((int)companion.Model.Row, ObjectKind.Companion, companion.RowId);
+                AddChara((int)companion.Model.Row, ObjectKind.Companion, companion.RowId, companion.RowId);
         });
 
         var eTask = Task.Run(() =>
         {
             foreach (var eNpc in gameData.GetExcelSheet<ENpcBase>(language)!)
-                AddChara((int)eNpc.ModelChara.Row, ObjectKind.EventNpc, eNpc.RowId);
+                AddChara((int)eNpc.ModelChara.Row, ObjectKind.EventNpc, eNpc.RowId, eNpc.RowId);
         });
 
         var options = new ParallelOptions()
@@ -296,14 +302,14 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
         Parallel.ForEach(gameData.GetExcelSheet<BNpcBase>(language)!.Where(b => b.RowId < BnpcNames.Count), options, bNpc =>
         {
             foreach (var name in BnpcNames[(int)bNpc.RowId])
-                AddChara((int)bNpc.ModelChara.Row, ObjectKind.BattleNpc, name);
+                AddChara((int)bNpc.ModelChara.Row, ObjectKind.BattleNpc, name, bNpc.RowId);
         });
 
         Task.WaitAll(oTask, mTask, cTask, eTask);
 
-        return ret.Select(s => s.Count > 0
+        return ret.Select(s => !s.IsEmpty
             ? s.ToArray()
-            : Array.Empty<(string Name, ObjectKind Kind)>()).ToArray();
+            : Array.Empty<(string Name, ObjectKind Kind, uint Id)>()).ToArray();
     }
 
     public static unsafe ulong KeyFromCharacterBase(CharacterBase* drawObject)

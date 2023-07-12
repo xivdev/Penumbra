@@ -2,7 +2,7 @@
 using Dalamud.Utility;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
-using PseudoEquipItem = System.ValueTuple<string, uint, ushort, ushort, ushort, byte, byte>;
+using PseudoEquipItem = System.ValueTuple<string, ulong, ushort, ushort, ushort, byte, byte>;
 
 namespace Penumbra.GameData.Structs;
 
@@ -10,12 +10,15 @@ namespace Penumbra.GameData.Structs;
 public readonly struct EquipItem
 {
     public readonly string        Name;
-    public readonly uint          Id;
+    public readonly ulong         Id;
     public readonly ushort        IconId;
     public readonly SetId         ModelId;
     public readonly WeaponType    WeaponType;
     public readonly byte          Variant;
     public readonly FullEquipType Type;
+
+    public uint ItemId
+        => (uint)Id;
 
     public bool Valid
         => Type != FullEquipType.Unknown;
@@ -35,7 +38,7 @@ public readonly struct EquipItem
     public EquipItem()
         => Name = string.Empty;
 
-    public EquipItem(string name, uint id, ushort iconId, SetId modelId, WeaponType weaponType, byte variant, FullEquipType type)
+    public EquipItem(string name, ulong id, ushort iconId, SetId modelId, WeaponType weaponType, byte variant, FullEquipType type)
     {
         Name       = string.Intern(name);
         Id         = id;
@@ -53,7 +56,7 @@ public readonly struct EquipItem
         => new(it.Item1, it.Item2, it.Item3, it.Item4, it.Item5, it.Item6, (FullEquipType)it.Item7);
 
     public static explicit operator PseudoEquipItem(EquipItem it)
-        => (it.Name, it.Id, it.IconId, (ushort)it.ModelId, (ushort)it.WeaponType, it.Variant, (byte)it.Type);
+        => (it.Name, it.ItemId, it.IconId, (ushort)it.ModelId, (ushort)it.WeaponType, it.Variant, (byte)it.Type);
 
     public static EquipItem FromArmor(Item item)
     {
@@ -90,4 +93,28 @@ public readonly struct EquipItem
         var variant = (byte)(item.ModelSub >> 32);
         return new EquipItem(name, id, icon, model, weapon, variant, type);
     }
+
+    public static EquipItem FromIds(uint itemId, ushort iconId, SetId modelId, WeaponType type, byte variant,
+        FullEquipType equipType = FullEquipType.Unknown, string? name = null)
+    {
+        name ??= $"Unknown ({modelId.Value}-{(type.Value != 0 ? $"{type.Value}-" : string.Empty)}{variant})";
+        var fullId = itemId == 0
+            ? modelId.Value | ((ulong)type.Value << 16) | ((ulong)variant << 32) | ((ulong)equipType << 40) | (1ul << 48)
+            : itemId;
+        return new EquipItem(name, fullId, iconId, modelId, type, variant, equipType);
+    }
+
+
+    public static EquipItem FromId(ulong id)
+    {
+        var setId     = (SetId)id;
+        var type      = (WeaponType)(id >> 16);
+        var variant   = (byte)(id >> 32);
+        var equipType = (FullEquipType)(id >> 40);
+        return new EquipItem($"Unknown ({setId.Value}-{(type.Value != 0 ? $"{type.Value}-" : string.Empty)}{variant})", id, 0, setId, type,
+            variant, equipType);
+    }
+
+    public override string ToString()
+        => Name;
 }

@@ -204,6 +204,14 @@ public static class EquipSlotExtensions
     public static readonly EquipSlot[] EquipmentSlots = Enum.GetValues<EquipSlot>().Where(e => e.IsEquipment()).ToArray();
     public static readonly EquipSlot[] AccessorySlots = Enum.GetValues<EquipSlot>().Where(e => e.IsAccessory()).ToArray();
     public static readonly EquipSlot[] EqdpSlots      = EquipmentSlots.Concat(AccessorySlots).ToArray();
+
+    public static readonly EquipSlot[] WeaponSlots =
+    {
+        EquipSlot.MainHand,
+        EquipSlot.OffHand,
+    };
+
+    public static readonly EquipSlot[] FullSlots = WeaponSlots.Concat(EqdpSlots).ToArray();
 }
 
 public static partial class Names

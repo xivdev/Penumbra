@@ -6,7 +6,7 @@ using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using PseudoEquipItem = System.ValueTuple<string, uint, ushort, ushort, ushort, byte, byte>;
+using PseudoEquipItem = System.ValueTuple<string, ulong, ushort, ushort, ushort, byte, byte>;
 
 namespace Penumbra.GameData.Data;
 

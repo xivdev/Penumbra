@@ -10,7 +10,7 @@ namespace Penumbra.GameData.Data;
 
 public sealed class HumanModelList : DataSharer
 {
-    public const string Tag     = "HumanModels";
+    public const string Tag            = "HumanModels";
     public const int    CurrentVersion = 1;
 
     private readonly BitArray _humanModels;
@@ -23,6 +23,9 @@ public sealed class HumanModelList : DataSharer
 
     public bool IsHuman(uint modelId)
         => modelId < _humanModels.Count && _humanModels[(int)modelId];
+
+    public int Count
+        => _humanModels.Count;
 
     protected override void DisposeInternal()
     {

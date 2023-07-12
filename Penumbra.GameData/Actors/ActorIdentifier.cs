@@ -17,8 +17,8 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
 
     public enum RetainerType : ushort
     {
-        Both = 0,
-        Bell = 1,
+        Both      = 0,
+        Bell      = 1,
         Mannequin = 2,
     }
 
@@ -94,6 +94,9 @@ public readonly struct ActorIdentifier : IEquatable<ActorIdentifier>
                     : $"{PlayerName} at {Index}",
                 _ => "Invalid",
             };
+
+    public string ToName()
+        => Manager?.ToName(this) ?? "Unknown Object";
 
     public override int GetHashCode()
         => Type switch
@@ -217,6 +220,6 @@ public static class ActorManagerExtensions
             ScreenActor.FittingRoom     => "Fitting Room Actor",
             ScreenActor.DyePreview      => "Dye Preview Actor",
             ScreenActor.Portrait        => "Portrait Actor",
-            _                            => "Invalid",
+            _                           => "Invalid",
         };
 }

@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using Dalamud;
 using Dalamud.Data;
+using Dalamud.Game.ClientState.Objects.Enums;
 using Dalamud.Plugin;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -63,6 +63,14 @@ public interface IObjectIdentifier : IDisposable
     /// <inheritdoc cref="Identify(SetId, WeaponType, ushort, EquipSlot)"/>
     public IEnumerable<EquipItem> Identify(SetId setId, ushort variant, EquipSlot slot)
         => Identify(setId, 0, variant, slot);
+
+    /// <summary> Obtain a list of BNPC Name Ids associated with a BNPC Id. </summary>
+    public IReadOnlyList<uint> GetBnpcNames(uint bNpcId);
+
+    /// <summary> Obtain a list of Names and Object Kinds associated with a ModelChara ID. </summary>
+    public IReadOnlyList<(string Name, ObjectKind Kind, uint Id)> ModelCharaNames(uint modelId);
+
+    public int NumModelChara { get; }
 }
 
 public interface IGamePathParser

@@ -8,7 +8,7 @@ using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
-using PseudoEquipItem = System.ValueTuple<string, uint, ushort, ushort, ushort, byte, byte>;
+using PseudoEquipItem = System.ValueTuple<string, ulong, ushort, ushort, ushort, byte, byte>;
 
 namespace Penumbra.GameData.Data;
 
@@ -54,7 +54,7 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
         {
             var list = items[(int)type];
             foreach (var item in list)
-                dict.TryAdd(item.Item2, item);
+                dict.TryAdd((uint) item.Item2, item);
         }
 
         dict.TrimExcess();
@@ -68,7 +68,7 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
         {
             var list = items[(int)type];
             foreach (var item in list)
-                dict.TryAdd(item.Item2, item);
+                dict.TryAdd((uint) item.Item2, item);
         }
 
         dict.TrimExcess();
