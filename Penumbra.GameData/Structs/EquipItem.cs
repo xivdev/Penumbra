@@ -84,7 +84,7 @@ public readonly struct EquipItem
 
     public static EquipItem FromOffhand(Item item)
     {
-        var type    = item.ToEquipType().Offhand();
+        var type    = item.ToEquipType().ValidOffhand();
         var name    = item.Name.ToDalamudString().TextValue + type.OffhandTypeSuffix();
         var id      = item.RowId;
         var icon    = item.Icon;

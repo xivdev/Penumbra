@@ -30,7 +30,7 @@ public sealed class RestrictedGear : DataSharer
     public readonly IReadOnlyDictionary<uint, uint> FemaleToMale;
 
     public RestrictedGear(DalamudPluginInterface pi, ClientLanguage language, DataManager gameData)
-        : base(pi, language, 1)
+        : base(pi, language, 2)
     {
         _items                                      = gameData.GetExcelSheet<Item>()!;
         _categories                                 = gameData.GetExcelSheet<EquipRaceCategory>()!;

@@ -203,7 +203,8 @@ public class ItemSwapTab : IDisposable, ITab
                 case SwapType.Bracelet:
                 case SwapType.Ring:
                     var values = _selectors[_lastTab];
-                    if (values.Source.CurrentSelection.Type != FullEquipType.Unknown && values.Target.CurrentSelection.Type != FullEquipType.Unknown)
+                    if (values.Source.CurrentSelection.Type != FullEquipType.Unknown
+                     && values.Target.CurrentSelection.Type != FullEquipType.Unknown)
                         _affectedItems = _swapData.LoadEquipment(values.Target.CurrentSelection, values.Source.CurrentSelection,
                             _useCurrentCollection ? _collectionManager.Active.Current : null, _useRightRing, _useLeftRing);
 

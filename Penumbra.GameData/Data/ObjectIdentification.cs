@@ -20,7 +20,7 @@ namespace Penumbra.GameData.Data;
 
 internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 {
-    public const int IdentificationVersion = 1;
+    public const int IdentificationVersion = 2;
 
     public           IGamePathParser                                                       GamePathParser { get; } = new GamePathParser();
     public readonly  IReadOnlyList<IReadOnlyList<uint>>                                    BnpcNames;

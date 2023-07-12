@@ -11,7 +11,7 @@ namespace Penumbra.GameData.Data;
 public sealed class HumanModelList : DataSharer
 {
     public const string Tag            = "HumanModels";
-    public const int    CurrentVersion = 1;
+    public const int    CurrentVersion = 2;
 
     private readonly BitArray _humanModels;
 

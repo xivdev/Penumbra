@@ -26,12 +26,12 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
         foreach (var item in itemSheet.Where(i => i.Name.RawData.Length > 1))
         {
             var type = item.ToEquipType();
-            if (type.IsWeapon())
+            if (type.IsWeapon() || type.IsTool())
             {
                 if (item.ModelMain != 0)
                     tmp[(int)type].Add(EquipItem.FromMainhand(item));
                 if (item.ModelSub != 0)
-                    tmp[(int)type.Offhand()].Add(EquipItem.FromOffhand(item));
+                    tmp[(int)type.ValidOffhand()].Add(EquipItem.FromOffhand(item));
             }
             else if (type != FullEquipType.Unknown)
             {
@@ -76,7 +76,7 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
     }
 
     public ItemData(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
-        : base(pluginInterface, language, 1)
+        : base(pluginInterface, language, 2)
     {
         _byType    = TryCatchData("ItemList",     () => CreateItems(dataManager, language));
         _mainItems = TryCatchData("ItemDictMain", () => CreateMainItems(_byType));

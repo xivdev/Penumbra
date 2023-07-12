@@ -123,6 +123,17 @@ public static class FullEquipTypeExtensions
             FullEquipType.Pickaxe         => true,
             FullEquipType.Hatchet         => true,
             FullEquipType.FishingRod      => true,
+            FullEquipType.ClawHammer      => true,
+            FullEquipType.File            => true,
+            FullEquipType.Pliers          => true,
+            FullEquipType.GrindingWheel   => true,
+            FullEquipType.Awl             => true,
+            FullEquipType.SpinningWheel   => true,
+            FullEquipType.Mortar          => true,
+            FullEquipType.CulinaryKnife   => true,
+            FullEquipType.Sledgehammer    => true,
+            FullEquipType.GardenScythe    => true,
+            FullEquipType.Gig             => true,
             _                             => false,
         };
 
@@ -360,6 +371,22 @@ public static class FullEquipTypeExtensions
             WeaponCategory.Reaper                    => FullEquipType.Scythe,
             WeaponCategory.Sage                      => FullEquipType.Nouliths,
             _                                        => FullEquipType.Unknown,
+        };
+
+    public static FullEquipType ValidOffhand(this FullEquipType type)
+        => type switch
+        {
+            FullEquipType.Fists   => FullEquipType.FistsOff,
+            FullEquipType.Sword   => FullEquipType.Shield,
+            FullEquipType.Wand    => FullEquipType.Shield,
+            FullEquipType.Daggers => FullEquipType.DaggersOff,
+            FullEquipType.Gun     => FullEquipType.GunOff,
+            FullEquipType.Orrery  => FullEquipType.OrreryOff,
+            FullEquipType.Rapier  => FullEquipType.RapierOff,
+            FullEquipType.Glaives => FullEquipType.GlaivesOff,
+            FullEquipType.Bow     => FullEquipType.BowOff,
+            FullEquipType.Katana  => FullEquipType.KatanaOff,
+            _                     => FullEquipType.Unknown,
         };
 
     public static FullEquipType Offhand(this FullEquipType type)

@@ -48,7 +48,7 @@ public sealed partial class ActorManager : IDisposable
         public IReadOnlyDictionary<uint, string> ENpcs { get; }
 
         public ActorManagerData(DalamudPluginInterface pluginInterface, DataManager gameData, ClientLanguage language)
-            : base(pluginInterface, language, 1)
+            : base(pluginInterface, language, 2)
         {
             var worldTask      = TryCatchDataAsync("Worlds",     CreateWorldData(gameData));
             var mountsTask     = TryCatchDataAsync("Mounts",     CreateMountData(gameData));
