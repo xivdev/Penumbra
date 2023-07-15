@@ -387,7 +387,7 @@ public sealed class RestrictedGear : DataSharer
         AddItem(m2f, f2m, 22453, 20634);              // Torn Manderville Coatee                    <-> Blackbosom Dress
         AddItem(m2f, f2m, 22454, 20635);              // Singed Manderville Gloves                  <-> Blackbosom Dress Gloves
         AddItem(m2f, f2m, 22455, 10035, true, false); // Stained Manderville Bottoms                 -> The Emperor's New Breeches
-        AddItem(m2f, f2m, 22456, 20636);              // Scuffed Manderville Gaiters                <-> lackbosom Boots
+        AddItem(m2f, f2m, 22456, 20636);              // Scuffed Manderville Gaiters                <-> Blackbosom Boots
         AddItem(m2f, f2m, 23013, 21302);              // Doman Liege's Dogi                         <-> Scion Liberator's Jacket
         AddItem(m2f, f2m, 23014, 21303);              // Doman Liege's Kote                         <-> Scion Liberator's Fingerless Gloves
         AddItem(m2f, f2m, 23015, 21304);              // Doman Liege's Kyakui                       <-> Scion Liberator's Pantalettes
