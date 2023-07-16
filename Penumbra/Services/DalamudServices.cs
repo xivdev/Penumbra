@@ -12,6 +12,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using System.Linq;
 using System.Reflection;
+using Dalamud.Interface.DragDrop;
 using Microsoft.Extensions.DependencyInjection;
 
 // ReSharper disable AutoPropertyCanBeMadeGetOnly.Local
@@ -76,6 +77,7 @@ public class DalamudServices
         services.AddSingleton(SigScanner);
         services.AddSingleton(this);
         services.AddSingleton(UiBuilder);
+        services.AddSingleton(DragDropManager);
     }
 
     // TODO remove static
@@ -93,6 +95,7 @@ public class DalamudServices
     [PluginService][RequiredVersion("1.0")] public GameGui                GameGui         { get; private set; } = null!;
     [PluginService][RequiredVersion("1.0")] public KeyState               KeyState        { get; private set; } = null!;
     [PluginService][RequiredVersion("1.0")] public SigScanner             SigScanner      { get; private set; } = null!;
+    [PluginService][RequiredVersion("1.0")] public IDragDropManager       DragDropManager { get; private set; } = null!;
     // @formatter:on
 
     public UiBuilder UiBuilder

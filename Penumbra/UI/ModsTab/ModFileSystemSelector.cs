@@ -1,9 +1,11 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface;
+using Dalamud.Interface.DragDrop;
 using Dalamud.Interface.Internal.Notifications;
 using ImGuiNET;
 using OtterGui;
@@ -33,12 +35,13 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     private readonly CollectionManager   _collectionManager;
     private readonly TutorialService     _tutorial;
     private readonly ModImportManager    _modImportManager;
+    private readonly IDragDropManager    _dragDrop;
     public           ModSettings         SelectedSettings          { get; private set; } = ModSettings.Empty;
     public           ModCollection       SelectedSettingCollection { get; private set; } = ModCollection.Empty;
 
     public ModFileSystemSelector(KeyState keyState, CommunicatorService communicator, ModFileSystem fileSystem, ModManager modManager,
         CollectionManager collectionManager, Configuration config, TutorialService tutorial, FileDialogService fileDialog, ChatService chat,
-        ModImportManager modImportManager)
+        ModImportManager modImportManager, IDragDropManager dragDrop)
         : base(fileSystem, keyState, HandleException)
     {
         _communicator      = communicator;
@@ -49,6 +52,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         _fileDialog        = fileDialog;
         _chat              = chat;
         _modImportManager  = modImportManager;
+        _dragDrop          = dragDrop;
 
         // @formatter:off
         SubscribeRightClickFolder(EnableDescendants, 10);
@@ -80,6 +84,28 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         _communicator.ModDiscoveryStarted.Subscribe(StoreCurrentSelection, ModDiscoveryStarted.Priority.ModFileSystemSelector);
         _communicator.ModDiscoveryFinished.Subscribe(RestoreLastSelection, ModDiscoveryFinished.Priority.ModFileSystemSelector);
         OnCollectionChange(CollectionType.Current, null, _collectionManager.Active.Current, "");
+    }
+
+    private static readonly string[] ValidModExtensions = new[]
+    {
+        ".ttmp",
+        ".ttmp2",
+        ".pmp",
+        ".zip",
+        ".rar",
+        ".7z",
+    };
+
+    public new void Draw(float width)
+    {
+        _dragDrop.CreateImGuiSource("ModDragDrop", m => m.Extensions.Any(e => ValidModExtensions.Contains(e.ToLowerInvariant())), m =>
+        {
+            ImGui.TextUnformatted($"Dragging mods for import:\n\t{string.Join("\n\t", m.Files.Select(Path.GetFileName))}");
+            return true;
+        });
+        base.Draw(width);
+        if (_dragDrop.CreateImGuiTarget("ModDragDrop", out var files, out _))
+            _modImportManager.AddUnpack(files.Where(f => ValidModExtensions.Contains(Path.GetExtension(f.ToLowerInvariant()))));
     }
 
     public override void Dispose()
@@ -695,8 +721,8 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
 
         ImGui.SetCursorPos(comboPos);
         // Draw combo button
-        using var color = ImRaii.PushColor(ImGuiCol.Button, Colors.FilterActive, !everything);
-        var rightClick = DrawFilterCombo(ref everything);
+        using var color      = ImRaii.PushColor(ImGuiCol.Button, Colors.FilterActive, !everything);
+        var       rightClick = DrawFilterCombo(ref everything);
         _tutorial.OpenTutorial(BasicTutorialSteps.ModFilters);
         if (rightClick)
         {

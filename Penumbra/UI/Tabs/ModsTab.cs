@@ -1,7 +1,6 @@
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using Penumbra.Collections;
 using Penumbra.UI.Classes;
 using System;
 using System.Linq;
@@ -13,11 +12,9 @@ using Penumbra.Api.Enums;
 using Penumbra.Interop.Services;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
-using Penumbra.Services;
 using Penumbra.UI.ModsTab;
 using ModFileSystemSelector = Penumbra.UI.ModsTab.ModFileSystemSelector;
 using Penumbra.Collections.Manager;
-using Penumbra.UI.CollectionTab;
 
 namespace Penumbra.UI.Tabs;
 
