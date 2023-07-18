@@ -92,7 +92,7 @@ public class CommandHandler : IDisposable
 
     private bool PrintHelp(string arguments)
     {
-        if (!string.Equals(arguments, "help", StringComparison.OrdinalIgnoreCase) && arguments == "?")
+        if (!string.Equals(arguments, "help", StringComparison.OrdinalIgnoreCase) && arguments != "?")
             _chat.Print(new SeStringBuilder().AddText("The given argument ").AddRed(arguments, true)
                 .AddText(" is not valid. Valid arguments are:").BuiltString);
         else

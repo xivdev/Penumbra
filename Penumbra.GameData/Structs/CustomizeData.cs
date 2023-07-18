@@ -27,8 +27,11 @@ public unsafe struct CustomizeData : IEquatable<CustomizeData>, IReadOnlyCollect
         => GetEnumerator();
 
 
-    private unsafe byte At(int index)
+    public byte At(int index)
         => Data[index];
+
+    public void Set(int index, byte value)
+        => Data[index] = value;
 
     public void Read(void* source)
     {
