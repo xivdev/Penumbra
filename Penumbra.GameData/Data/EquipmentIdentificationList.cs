@@ -48,16 +48,16 @@ internal sealed class EquipmentIdentificationList : KeyList<PseudoEquipItem>
 
     private static IEnumerable<PseudoEquipItem> CreateEquipmentList(ItemData data)
     {
-        var items = gameData.GetExcelSheet<Item>(language)!;
-        return items.Where(i => ((EquipSlot)i.EquipSlotCategory.Row).IsEquipmentPiece())
-            .Select(i => (PseudoEquipItem)EquipItem.FromArmor(i))
+        return data.Where(kvp => kvp.Key.IsEquipment() || kvp.Key.IsAccessory())
+            .SelectMany(kvp => kvp.Value)
+            .Select(i => (PseudoEquipItem)i)
             .Concat(CustomList);
     }
 
     private static IEnumerable<PseudoEquipItem> CustomList
         => new[]
         {
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 8100, 0, 1, FullEquipType.Body,  "Reaper Shroud"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 8100, 0, 1, FullEquipType.Body, "Reaper Shroud"),
             (PseudoEquipItem)EquipItem.FromIds(0, 0, 9041, 0, 1, FullEquipType.Head,  "Cid's Bandana (9041)"),
             (PseudoEquipItem)EquipItem.FromIds(0, 0, 9041, 0, 1, FullEquipType.Body,  "Cid's Body (9041)"),
             (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Head,  "Smallclothes (NPC, 9903)"),

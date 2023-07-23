@@ -212,8 +212,16 @@ public unsafe class ResourceLoader : IDisposable
         if (handle->RefCount != 0)
             return;
 
-        Penumbra.Log.Error(
-            $"[ResourceLoader] Caught decrease of Reference Counter for {handle->FileName()} at 0x{(ulong)handle} below 0.");
+        try
+        {
+            Penumbra.Log.Error(
+                $"[ResourceLoader] Caught decrease of Reference Counter for {handle->FileName()} at 0x{(ulong)handle} below 0.");
+        }
+        catch
+        {
+            // ignored
+        }
+
         returnValue = 1;
     }
 
