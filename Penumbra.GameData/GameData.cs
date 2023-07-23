@@ -15,14 +15,14 @@ public static class GameData
     /// <summary>
     /// Obtain an object identifier that can link a game path to game objects that use it, using your client language.
     /// </summary>
-    public static IObjectIdentifier GetIdentifier(DalamudPluginInterface pluginInterface, DataManager dataManager)
-        => new ObjectIdentification(pluginInterface, dataManager, dataManager.Language);
+    public static IObjectIdentifier GetIdentifier(DalamudPluginInterface pluginInterface, DataManager dataManager, ItemData itemData)
+        => new ObjectIdentification(pluginInterface, dataManager, itemData, dataManager.Language);
 
     /// <summary>
     /// Obtain an object identifier that can link a game path to game objects that use it using the given language.
     /// </summary>
-    public static IObjectIdentifier GetIdentifier(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
-        => new ObjectIdentification(pluginInterface, dataManager, language);
+    public static IObjectIdentifier GetIdentifier(DalamudPluginInterface pluginInterface, DataManager dataManager, ItemData itemData, ClientLanguage language)
+        => new ObjectIdentification(pluginInterface, dataManager, itemData, language);
 
     /// <summary>
     /// Obtain a parser for game paths.

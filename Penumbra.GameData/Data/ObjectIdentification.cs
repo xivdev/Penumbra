@@ -20,7 +20,7 @@ namespace Penumbra.GameData.Data;
 
 internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
 {
-    public const int IdentificationVersion = 2;
+    public const int IdentificationVersion = 3;
 
     public           IGamePathParser                                                       GamePathParser { get; } = new GamePathParser();
     public readonly  IReadOnlyList<IReadOnlyList<uint>>                                    BnpcNames;
@@ -32,12 +32,12 @@ internal sealed class ObjectIdentification : DataSharer, IObjectIdentifier
     private readonly WeaponIdentificationList    _weapons;
     private readonly ModelIdentificationList     _modelIdentifierToModelChara;
 
-    public ObjectIdentification(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
+    public ObjectIdentification(DalamudPluginInterface pluginInterface, DataManager dataManager, ItemData itemData, ClientLanguage language)
         : base(pluginInterface, language, IdentificationVersion)
     {
         _actorData = new ActorManager.ActorManagerData(pluginInterface, dataManager, language);
-        _equipment = new EquipmentIdentificationList(pluginInterface, language, dataManager);
-        _weapons   = new WeaponIdentificationList(pluginInterface, language, dataManager);
+        _equipment = new EquipmentIdentificationList(pluginInterface, language, itemData);
+        _weapons   = new WeaponIdentificationList(pluginInterface, language, itemData);
         Actions    = TryCatchData("Actions", () => CreateActionList(dataManager));
 
         _modelIdentifierToModelChara = new ModelIdentificationList(pluginInterface, language, dataManager);

@@ -16,6 +16,7 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
 {
     private readonly IReadOnlyDictionary<uint, PseudoEquipItem>    _mainItems;
     private readonly IReadOnlyDictionary<uint, PseudoEquipItem>    _offItems;
+    private readonly IReadOnlyDictionary<uint, PseudoEquipItem>    _gauntlets;
     private readonly IReadOnlyList<IReadOnlyList<PseudoEquipItem>> _byType;
 
     private static IReadOnlyList<IReadOnlyList<PseudoEquipItem>> CreateItems(DataManager dataManager, ClientLanguage language)
@@ -28,10 +29,23 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
             var type = item.ToEquipType();
             if (type.IsWeapon() || type.IsTool())
             {
+                var mh = EquipItem.FromMainhand(item);
                 if (item.ModelMain != 0)
-                    tmp[(int)type].Add(EquipItem.FromMainhand(item));
+                    tmp[(int)type].Add(mh);
                 if (item.ModelSub != 0)
-                    tmp[(int)type.ValidOffhand()].Add(EquipItem.FromOffhand(item));
+                {
+                    if (type is FullEquipType.Fists && item.ModelSub < 0x100000000)
+                    {
+                        tmp[(int)FullEquipType.Hands].Add(new EquipItem(mh.Name + $" (Gauntlets)", mh.Id, mh.IconId, (SetId)item.ModelSub, 0,
+                            (byte)(item.ModelSub >> 16), FullEquipType.Hands));
+                        tmp[(int)FullEquipType.FistsOff].Add(new EquipItem(mh.Name + FullEquipType.FistsOff.OffhandTypeSuffix(), mh.Id,
+                            mh.IconId, (SetId)(mh.ModelId.Value + 50), mh.WeaponType, mh.Variant, FullEquipType.FistsOff));
+                    }
+                    else
+                    {
+                        tmp[(int)type.ValidOffhand()].Add(EquipItem.FromOffhand(item));
+                    }
+                }
             }
             else if (type != FullEquipType.Unknown)
             {
@@ -47,18 +61,26 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
         return ret;
     }
 
-    private static IReadOnlyDictionary<uint, PseudoEquipItem> CreateMainItems(IReadOnlyList<IReadOnlyList<PseudoEquipItem>> items)
+    private static Tuple<IReadOnlyDictionary<uint, PseudoEquipItem>, IReadOnlyDictionary<uint, PseudoEquipItem>> CreateMainItems(
+        IReadOnlyList<IReadOnlyList<PseudoEquipItem>> items)
     {
         var dict = new Dictionary<uint, PseudoEquipItem>(1024 * 4);
+        foreach (var fistWeapon in items[(int)FullEquipType.Fists])
+            dict.TryAdd((uint)fistWeapon.Item2, fistWeapon);
+
+        var gauntlets = items[(int)FullEquipType.Hands].Where(g => dict.ContainsKey((uint)g.Item2)).ToDictionary(g => (uint)g.Item2, g => g);
+        gauntlets.TrimExcess();
+
         foreach (var type in Enum.GetValues<FullEquipType>().Where(v => !FullEquipTypeExtensions.OffhandTypes.Contains(v)))
         {
             var list = items[(int)type];
             foreach (var item in list)
-                dict.TryAdd((uint) item.Item2, item);
+                dict.TryAdd((uint)item.Item2, item);
         }
 
         dict.TrimExcess();
-        return dict;
+        return new Tuple<IReadOnlyDictionary<uint, (string, ulong, ushort, ushort, ushort, byte, byte)>,
+            IReadOnlyDictionary<uint, (string, ulong, ushort, ushort, ushort, byte, byte)>>(dict, gauntlets);
     }
 
     private static IReadOnlyDictionary<uint, PseudoEquipItem> CreateOffItems(IReadOnlyList<IReadOnlyList<PseudoEquipItem>> items)
@@ -68,7 +90,7 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
         {
             var list = items[(int)type];
             foreach (var item in list)
-                dict.TryAdd((uint) item.Item2, item);
+                dict.TryAdd((uint)item.Item2, item);
         }
 
         dict.TrimExcess();
@@ -76,11 +98,11 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
     }
 
     public ItemData(DalamudPluginInterface pluginInterface, DataManager dataManager, ClientLanguage language)
-        : base(pluginInterface, language, 2)
+        : base(pluginInterface, language, 4)
     {
-        _byType    = TryCatchData("ItemList",     () => CreateItems(dataManager, language));
-        _mainItems = TryCatchData("ItemDictMain", () => CreateMainItems(_byType));
-        _offItems  = TryCatchData("ItemDictOff",  () => CreateOffItems(_byType));
+        _byType                  = TryCatchData("ItemList",     () => CreateItems(dataManager, language));
+        (_mainItems, _gauntlets) = TryCatchData("ItemDictMain", () => CreateMainItems(_byType));
+        _offItems                = TryCatchData("ItemDictOff",  () => CreateOffItems(_byType));
     }
 
     protected override void DisposeInternal()
@@ -120,31 +142,16 @@ public sealed class ItemData : DataSharer, IReadOnlyDictionary<FullEquipType, IR
     public IReadOnlyList<EquipItem> this[FullEquipType key]
         => TryGetValue(key, out var ret) ? ret : throw new IndexOutOfRangeException();
 
-    public bool ContainsKey(uint key, bool main = true)
-        => main ? _mainItems.ContainsKey(key) : _offItems.ContainsKey(key);
-
-    public bool TryGetValue(uint key, out EquipItem value)
-    {
-        if (_mainItems.TryGetValue(key, out var v))
-        {
-            value = v;
-            return true;
-        }
-
-        value = default;
-        return false;
-    }
-
     public IEnumerable<(uint, EquipItem)> AllItems(bool main)
         => (main ? _mainItems : _offItems).Select(i => (i.Key, (EquipItem)i.Value));
 
     public int TotalItemCount(bool main)
         => main ? _mainItems.Count : _offItems.Count;
 
-    public bool TryGetValue(uint key, bool main, out EquipItem value)
+    public bool TryGetValue(uint key, EquipSlot slot, out EquipItem value)
     {
-        var dict = main ? _mainItems : _offItems;
-        if (dict.TryGetValue(key, out var v))
+        var dict = slot is EquipSlot.OffHand ? _offItems : _mainItems;
+        if (slot is EquipSlot.Hands && _gauntlets.TryGetValue(key, out var v) || dict.TryGetValue(key, out v))
         {
             value = v;
             return true;

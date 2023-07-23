@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud;
-using Dalamud.Data;
 using Dalamud.Plugin;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using PseudoEquipItem = System.ValueTuple<string, ulong, ushort, ushort, ushort, byte, byte>;
@@ -13,10 +11,10 @@ namespace Penumbra.GameData.Data;
 internal sealed class WeaponIdentificationList : KeyList<PseudoEquipItem>
 {
     private const string Tag     = "WeaponIdentification";
-    private const int    Version = 1;
+    private const int    Version = 2;
 
-    public WeaponIdentificationList(DalamudPluginInterface pi, ClientLanguage language, DataManager gameData)
-        : base(pi, Tag, language, Version, CreateWeaponList(gameData, language))
+    public WeaponIdentificationList(DalamudPluginInterface pi, ClientLanguage language, ItemData data)
+        : base(pi, Tag, language, Version, CreateWeaponList(data))
     { }
 
     public IEnumerable<EquipItem> Between(SetId modelId)
@@ -52,17 +50,8 @@ internal sealed class WeaponIdentificationList : KeyList<PseudoEquipItem>
     protected override int ValueKeySelector(PseudoEquipItem data)
         => (int)data.Item2;
 
-    private static IEnumerable<PseudoEquipItem> CreateWeaponList(DataManager gameData, ClientLanguage language)
-        => gameData.GetExcelSheet<Item>(language)!.SelectMany(ToEquipItems);
-
-    private static IEnumerable<PseudoEquipItem> ToEquipItems(Item item)
-    {
-        if ((EquipSlot)item.EquipSlotCategory.Row is not (EquipSlot.MainHand or EquipSlot.OffHand or EquipSlot.BothHand))
-            yield break;
-
-        if (item.ModelMain != 0)
-            yield return (PseudoEquipItem)EquipItem.FromMainhand(item);
-        if (item.ModelSub != 0)
-            yield return (PseudoEquipItem)EquipItem.FromOffhand(item);
-    }
+    private static IEnumerable<PseudoEquipItem> CreateWeaponList(ItemData data)
+        => data.Where(kvp => !kvp.Key.IsEquipment() && !kvp.Key.IsAccessory())
+            .SelectMany(kvp => kvp.Value)
+            .Select(i => (PseudoEquipItem)i);
 }

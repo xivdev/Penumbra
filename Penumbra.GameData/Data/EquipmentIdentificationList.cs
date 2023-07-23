@@ -1,9 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Dalamud;
-using Dalamud.Data;
 using Dalamud.Plugin;
-using Lumina.Excel.GeneratedSheets;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using PseudoEquipItem = System.ValueTuple<string, ulong, ushort, ushort, ushort, byte, byte>;
@@ -14,8 +12,8 @@ internal sealed class EquipmentIdentificationList : KeyList<PseudoEquipItem>
 {
     private const string Tag = "EquipmentIdentification";
 
-    public EquipmentIdentificationList(DalamudPluginInterface pi, ClientLanguage language, DataManager gameData)
-        : base(pi, Tag, language, ObjectIdentification.IdentificationVersion, CreateEquipmentList(gameData, language))
+    public EquipmentIdentificationList(DalamudPluginInterface pi, ClientLanguage language, ItemData data)
+        : base(pi, Tag, language, ObjectIdentification.IdentificationVersion, CreateEquipmentList(data))
     { }
 
     public IEnumerable<EquipItem> Between(SetId modelId, EquipSlot slot = EquipSlot.Unknown, byte variant = 0)
@@ -48,7 +46,7 @@ internal sealed class EquipmentIdentificationList : KeyList<PseudoEquipItem>
     protected override int ValueKeySelector(PseudoEquipItem data)
         => (int)data.Item2;
 
-    private static IEnumerable<PseudoEquipItem> CreateEquipmentList(DataManager gameData, ClientLanguage language)
+    private static IEnumerable<PseudoEquipItem> CreateEquipmentList(ItemData data)
     {
         var items = gameData.GetExcelSheet<Item>(language)!;
         return items.Where(i => ((EquipSlot)i.EquipSlotCategory.Row).IsEquipmentPiece())
@@ -59,6 +57,13 @@ internal sealed class EquipmentIdentificationList : KeyList<PseudoEquipItem>
     private static IEnumerable<PseudoEquipItem> CustomList
         => new[]
         {
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 8100, 0, 1, FullEquipType.Body, "Reaper Shroud"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 8100, 0, 1, FullEquipType.Body,  "Reaper Shroud"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9041, 0, 1, FullEquipType.Head,  "Cid's Bandana (9041)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9041, 0, 1, FullEquipType.Body,  "Cid's Body (9041)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Head,  "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Body,  "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Hands, "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Legs,  "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Feet,  "Smallclothes (NPC, 9903)"),
         };
 }
