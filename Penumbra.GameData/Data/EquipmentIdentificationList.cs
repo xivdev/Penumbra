@@ -57,13 +57,16 @@ internal sealed class EquipmentIdentificationList : KeyList<PseudoEquipItem>
     private static IEnumerable<PseudoEquipItem> CustomList
         => new[]
         {
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 8100, 0, 1, FullEquipType.Body, "Reaper Shroud"),
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9041, 0, 1, FullEquipType.Head,  "Cid's Bandana (9041)"),
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9041, 0, 1, FullEquipType.Body,  "Cid's Body (9041)"),
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Head,  "Smallclothes (NPC, 9903)"),
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Body,  "Smallclothes (NPC, 9903)"),
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Hands, "Smallclothes (NPC, 9903)"),
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Legs,  "Smallclothes (NPC, 9903)"),
-            (PseudoEquipItem)EquipItem.FromIds(0, 0, 9903, 0, 1, FullEquipType.Feet,  "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)8100, (WeaponType)0, 01, FullEquipType.Body,  "Reaper Shroud"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9041, (WeaponType)0, 01, FullEquipType.Head,  "Cid's Bandana (9041)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9041, (WeaponType)0, 01, FullEquipType.Body,  "Cid's Body (9041)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9903, (WeaponType)0, 01, FullEquipType.Head,  "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9903, (WeaponType)0, 01, FullEquipType.Body,  "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9903, (WeaponType)0, 01, FullEquipType.Hands, "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9903, (WeaponType)0, 01, FullEquipType.Legs,  "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9903, (WeaponType)0, 01, FullEquipType.Feet,  "Smallclothes (NPC, 9903)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9212, (WeaponType)0, 12, FullEquipType.Body,  "Ancient Robes (Lahabrea)"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9212, (WeaponType)0, 01, FullEquipType.Legs,  "Ancient Legs"),
+            (PseudoEquipItem)EquipItem.FromIds(0, 0, (SetId)9212, (WeaponType)0, 01, FullEquipType.Feet,  "Ancient Shoes"),
         };
 }
