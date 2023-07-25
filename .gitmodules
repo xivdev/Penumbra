@@ -10,3 +10,7 @@
 	path = Penumbra.String
 	url = git@github.com:Ottermandias/Penumbra.String.git
 	branch = main
+[submodule "Penumbra.GameData"]
+	path = Penumbra.GameData
+	url = git@github.com:Ottermandias/Penumbra.GameData.git
+	branch = main
