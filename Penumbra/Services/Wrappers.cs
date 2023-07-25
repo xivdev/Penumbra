@@ -14,8 +14,8 @@ namespace Penumbra.Services;
 
 public sealed class IdentifierService : AsyncServiceWrapper<IObjectIdentifier>
 {
-    public IdentifierService(StartTracker tracker, DalamudPluginInterface pi, DataManager data)
-        : base(nameof(IdentifierService), tracker, StartTimeType.Identifier, () => GameData.GameData.GetIdentifier(pi, data))
+    public IdentifierService(StartTracker tracker, DalamudPluginInterface pi, DataManager data, ItemService items)
+        : base(nameof(IdentifierService), tracker, StartTimeType.Identifier, () => GameData.GameData.GetIdentifier(pi, data, items.AwaitedService))
     { }
 }
 
