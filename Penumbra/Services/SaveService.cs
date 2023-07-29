@@ -2,6 +2,7 @@ using System;
 using OtterGui.Classes;
 using OtterGui.Log;
 using Penumbra.Mods;
+using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Services;
 
@@ -18,18 +19,21 @@ public sealed class SaveService : SaveServiceBase<FilenameService>
     { }
 
     /// <summary> Immediately delete all existing option group files for a mod and save them anew. </summary>
-    public void SaveAllOptionGroups(Mod mod)
+    public void SaveAllOptionGroups(Mod mod, bool backup)
     {
         foreach (var file in FileNames.GetOptionGroupFiles(mod))
         {
             try
             {
                 if (file.Exists)
-                    file.Delete();
+                    if (backup)
+                        file.MoveTo(file.FullName + ".bak", true);
+                    else
+                        file.Delete();
             }
             catch (Exception e)
             {
-                Log.Error($"Could not delete outdated group file {file}:\n{e}");
+                Log.Error($"Could not {(backup ? "move" : "delete")} outdated group file {file}:\n{e}");
             }
         }
 
