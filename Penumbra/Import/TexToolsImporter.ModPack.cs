@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.Import.Structs;
 using Penumbra.Mods;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Util;
 using SharpCompress.Archives.Zip;
 

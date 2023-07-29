@@ -4,9 +4,8 @@ using System.IO;
 using Newtonsoft.Json;
 using Penumbra.Api.Enums;
 using Penumbra.Services;
-using Penumbra.Util;
 
-namespace Penumbra.Mods;
+namespace Penumbra.Mods.Subclasses;
 
 public interface IModGroup : IEnumerable<ISubMod>
 {

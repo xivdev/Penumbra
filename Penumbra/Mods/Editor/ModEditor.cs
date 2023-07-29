@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using OtterGui;
 using Penumbra.Mods.Editor;
+using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Mods;
 

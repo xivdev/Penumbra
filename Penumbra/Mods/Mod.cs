@@ -7,6 +7,7 @@ using OtterGui.Classes;
 using Penumbra.Collections.Cache;
 using Penumbra.Import;
 using Penumbra.Meta;
+using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;

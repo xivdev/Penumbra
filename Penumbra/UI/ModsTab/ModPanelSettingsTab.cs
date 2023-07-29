@@ -13,6 +13,7 @@ using Dalamud.Interface.Components;
 using Dalamud.Interface;
 using Penumbra.Collections.Manager;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 
 namespace Penumbra.UI.ModsTab;

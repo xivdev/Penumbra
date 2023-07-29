@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using Penumbra.Import;
 using Penumbra.Meta;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Subclasses;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods;

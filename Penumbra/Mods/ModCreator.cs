@@ -15,6 +15,7 @@ using Penumbra.Import;
 using Penumbra.Import.Structs;
 using Penumbra.Meta;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -117,7 +118,9 @@ public partial class ModCreator
         }
 
         if (changes)
-            _saveService.SaveAllOptionGroups(mod);
+        {
+            _saveService.SaveAllOptionGroups(mod, true);
+        }
     }
 
     /// <summary> Load the default option for a given mod.</summary>
@@ -182,7 +185,7 @@ public partial class ModCreator
         if (!changes)
             return;
 
-        _saveService.SaveAllOptionGroups(mod);
+        _saveService.SaveAllOptionGroups(mod, false);
         _saveService.ImmediateSave(new ModSaveGroup(mod.ModPath, mod.Default));
     }
 

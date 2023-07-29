@@ -20,6 +20,7 @@ using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.ItemSwap;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.UI.Classes;
 

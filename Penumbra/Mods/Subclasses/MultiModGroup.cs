@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
+using Penumbra.Mods.Subclasses;
 
 namespace Penumbra.Mods;
 

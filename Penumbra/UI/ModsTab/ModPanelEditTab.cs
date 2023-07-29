@@ -14,6 +14,7 @@ using Penumbra.Api.Enums;
 using Penumbra.Mods;
 using Penumbra.Mods.Editor;
 using Penumbra.Mods.Manager;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.UI.AdvancedWindow;
 

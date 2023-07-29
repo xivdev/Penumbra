@@ -6,6 +6,7 @@ using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.Api.Enums;
 using Penumbra.Meta.Manipulations;
+using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -127,11 +128,10 @@ public class ModOptionEditor
     /// <summary> Delete a given option group. Fires an event to prepare before actually deleting. </summary>
     public void DeleteModGroup(Mod mod, int groupIdx)
     {
-        var group = mod.Groups[groupIdx];
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.PrepareChange, mod, groupIdx, -1, -1);
         mod.Groups.RemoveAt(groupIdx);
         UpdateSubModPositions(mod, groupIdx);
-        _saveService.SaveAllOptionGroups(mod);
+        _saveService.SaveAllOptionGroups(mod, false);
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupDeleted, mod, groupIdx, -1, -1);
     }
 
@@ -142,7 +142,7 @@ public class ModOptionEditor
             return;
 
         UpdateSubModPositions(mod, Math.Min(groupIdxFrom, groupIdxTo));
-        _saveService.SaveAllOptionGroups(mod);
+        _saveService.SaveAllOptionGroups(mod, false);
         _communicator.ModOptionChanged.Invoke(ModOptionChangeType.GroupMoved, mod, groupIdxFrom, -1, groupIdxTo);
     }
 
