@@ -10,10 +10,10 @@ namespace Penumbra.Meta.Manipulations;
 public readonly struct GmpManipulation : IMetaManipulation< GmpManipulation >
 {
     public GmpEntry Entry { get; private init; }
-    public ushort SetId { get; private init; }
+    public SetId SetId { get; private init; }
 
     [JsonConstructor]
-    public GmpManipulation( GmpEntry entry, ushort setId )
+    public GmpManipulation( GmpEntry entry, SetId setId )
     {
         Entry = entry;
         SetId = setId;
@@ -35,7 +35,7 @@ public readonly struct GmpManipulation : IMetaManipulation< GmpManipulation >
         => SetId.GetHashCode();
 
     public int CompareTo( GmpManipulation other )
-        => SetId.CompareTo( other.SetId );
+        => SetId.Id.CompareTo( other.SetId.Id );
 
     public MetaIndex FileIndex()
         => MetaIndex.Gmp;

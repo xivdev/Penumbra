@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Files;
 
@@ -37,13 +38,13 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
     [JsonConverter( typeof( StringEnumConverter ) )]
     public ModelRace Race { get; private init; }
 
-    public ushort SetId { get; private init; }
+    public SetId SetId { get; private init; }
 
     [JsonConverter( typeof( StringEnumConverter ) )]
     public EstType Slot { get; private init; }
 
     [JsonConstructor]
-    public EstManipulation( Gender gender, ModelRace race, EstType slot, ushort setId, ushort entry )
+    public EstManipulation( Gender gender, ModelRace race, EstType slot, SetId setId, ushort entry )
     {
         Entry  = entry;
         Gender = gender;
@@ -86,7 +87,7 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
         }
 
         var s = Slot.CompareTo( other.Slot );
-        return s != 0 ? s : SetId.CompareTo( other.SetId );
+        return s != 0 ? s : SetId.Id.CompareTo( other.SetId.Id );
     }
 
     public MetaIndex FileIndex()
@@ -94,7 +95,7 @@ public readonly struct EstManipulation : IMetaManipulation< EstManipulation >
 
     public bool Apply( EstFile file )
     {
-        return file.SetEntry( Names.CombinedRace( Gender, Race ), SetId, Entry ) switch
+        return file.SetEntry( Names.CombinedRace( Gender, Race ), SetId.Id, Entry ) switch
         {
             EstFile.EstEntryChange.Unchanged => false,
             EstFile.EstEntryChange.Changed   => true,

@@ -135,7 +135,7 @@ public sealed partial class IndividualCollections
                 _                    => throw new NotImplementedException(),
             };
             return table.Where(kvp => kvp.Value == name)
-                .Select(kvp => manager.CreateIndividualUnchecked(identifier.Type, identifier.PlayerName, identifier.HomeWorld, identifier.Kind,
+                .Select(kvp => manager.CreateIndividualUnchecked(identifier.Type, identifier.PlayerName, identifier.HomeWorld.Id, identifier.Kind,
                     kvp.Key)).ToArray();
         }
 

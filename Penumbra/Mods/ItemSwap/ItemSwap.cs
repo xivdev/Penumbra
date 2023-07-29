@@ -9,7 +9,6 @@ using Penumbra.GameData.Structs;
 using Penumbra.Meta;
 using Penumbra.Meta.Files;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Services;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Mods.ItemSwap;
@@ -163,8 +162,8 @@ public static class ItemSwap
         }
 
         var (gender, race) = genderRace.Split();
-        var fromDefault = new EstManipulation( gender, race, type, idFrom.Value, EstFile.GetDefault( manager, type, genderRace, idFrom.Value ) );
-        var toDefault   = new EstManipulation( gender, race, type, idTo.Value, EstFile.GetDefault( manager, type, genderRace, idTo.Value ) );
+        var fromDefault = new EstManipulation( gender, race, type, idFrom, EstFile.GetDefault( manager, type, genderRace, idFrom ) );
+        var toDefault   = new EstManipulation( gender, race, type, idTo, EstFile.GetDefault( manager, type, genderRace, idTo ) );
         var est         = new MetaSwap( manips, fromDefault, toDefault );
 
         if( ownMdl && est.SwapApplied.Est.Entry >= 2 )
@@ -206,7 +205,7 @@ public static class ItemSwap
 
     public static string ReplaceAnyId( string path, char idType, SetId id, bool condition = true )
         => condition
-            ? Regex.Replace( path, $"{idType}\\d{{4}}", $"{idType}{id.Value:D4}" )
+            ? Regex.Replace( path, $"{idType}\\d{{4}}", $"{idType}{id.Id:D4}" )
             : path;
 
     public static string ReplaceAnyRace( string path, GenderRace to, bool condition = true )
@@ -217,7 +216,7 @@ public static class ItemSwap
 
     public static string ReplaceId( string path, char type, SetId idFrom, SetId idTo, bool condition = true )
         => condition
-            ? path.Replace( $"{type}{idFrom.Value:D4}", $"{type}{idTo.Value:D4}" )
+            ? path.Replace( $"{type}{idFrom.Id:D4}", $"{type}{idTo.Id:D4}" )
             : path;
 
     public static string ReplaceSlot( string path, EquipSlot from, EquipSlot to, bool condition = true )

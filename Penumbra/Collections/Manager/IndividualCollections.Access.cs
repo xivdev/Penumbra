@@ -59,7 +59,7 @@ public sealed partial class IndividualCollections : IReadOnlyList<(string Displa
                 if (!_config.UseOwnerNameForCharacterCollection)
                     return false;
 
-                identifier = _actorService.AwaitedService.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld,
+                identifier = _actorService.AwaitedService.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld.Id,
                     ObjectKind.None, uint.MaxValue);
                 return CheckWorlds(identifier, out collection);
             }

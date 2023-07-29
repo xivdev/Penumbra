@@ -118,7 +118,7 @@ public partial class TexToolsMeta
             var partIdx = ImcFile.PartIndex(manip.EquipSlot); // Gets turned to unknown for things without equip, and unknown turns to 0.
             foreach (var value in values)
             {
-                if (_keepDefault || !value.Equals(def.GetEntry(partIdx, i)))
+                if (_keepDefault || !value.Equals(def.GetEntry(partIdx, (Variant) i)))
                 {
                     var imc = new ImcManipulation(manip.ObjectType, manip.BodySlot, manip.PrimaryId, manip.SecondaryId, i, manip.EquipSlot,
                         value);

@@ -135,7 +135,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if (IdInput("##eqpId", IdWidth, _new.SetId, out var setId, 1, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
+            if (IdInput("##eqpId", IdWidth, _new.SetId.Id, out var setId, 1, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
                 _new = new EqpManipulation(ExpandedEqpFile.GetDefault(metaFileManager, setId), _new.Slot, setId);
 
             ImGuiUtil.HoverTooltip(ModelSetIdTooltip);
@@ -224,7 +224,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if (IdInput("##eqdpId", IdWidth, _new.SetId, out var setId, 0, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
+            if (IdInput("##eqdpId", IdWidth, _new.SetId.Id, out var setId, 0, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
             {
                 var newDefaultEntry = ExpandedEqdpFile.GetDefault(metaFileManager, Names.CombinedRace(_new.Gender, _new.Race), _new.Slot.IsAccessory(), setId);
                 _new = new EqdpManipulation(newDefaultEntry, _new.Slot, _new.Gender, _new.Race, setId);
@@ -352,14 +352,14 @@ public partial class ModEditWindow
                     _                    => EquipSlot.Unknown,
                 };
                 _new = new ImcManipulation(type, _new.BodySlot, _new.PrimaryId, _new.SecondaryId == 0 ? (ushort)1 : _new.SecondaryId,
-                    _new.Variant, equipSlot, _new.Entry);
+                    _new.Variant.Id, equipSlot, _new.Entry);
             }
 
             ImGuiUtil.HoverTooltip(ObjectTypeTooltip);
 
             ImGui.TableNextColumn();
-            if (IdInput("##imcId", IdWidth, _new.PrimaryId, out var setId, 0, ushort.MaxValue, _new.PrimaryId <= 1))
-                _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, setId, _new.SecondaryId, _new.Variant, _new.EquipSlot, _new.Entry)
+            if (IdInput("##imcId", IdWidth, _new.PrimaryId.Id, out var setId, 0, ushort.MaxValue, _new.PrimaryId <= 1))
+                _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, setId, _new.SecondaryId, _new.Variant.Id, _new.EquipSlot, _new.Entry)
                     .Copy(GetDefault(metaFileManager, _new)
                      ?? new ImcEntry());
 
@@ -373,7 +373,7 @@ public partial class ModEditWindow
             if (_new.ObjectType is ObjectType.Equipment)
             {
                 if (Combos.EqpEquipSlot("##imcSlot", 100, _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry)
+                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot, _new.Entry)
                         .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
@@ -382,7 +382,7 @@ public partial class ModEditWindow
             else if (_new.ObjectType is ObjectType.Accessory)
             {
                 if (Combos.AccessorySlot("##imcSlot", _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry)
+                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot, _new.Entry)
                         .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
@@ -390,8 +390,8 @@ public partial class ModEditWindow
             }
             else
             {
-                if (IdInput("##imcId2", 100 * UiHelpers.Scale, _new.SecondaryId, out var setId2, 0, ushort.MaxValue, false))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, setId2, _new.Variant, _new.EquipSlot, _new.Entry)
+                if (IdInput("##imcId2", 100 * UiHelpers.Scale, _new.SecondaryId.Id, out var setId2, 0, ushort.MaxValue, false))
+                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, setId2, _new.Variant.Id, _new.EquipSlot, _new.Entry)
                         .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
@@ -399,7 +399,7 @@ public partial class ModEditWindow
             }
 
             ImGui.TableNextColumn();
-            if (IdInput("##imcVariant", SmallIdWidth, _new.Variant, out var variant, 0, byte.MaxValue, false))
+            if (IdInput("##imcVariant", SmallIdWidth, _new.Variant.Id, out var variant, 0, byte.MaxValue, false))
                 _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, variant, _new.EquipSlot,
                     _new.Entry).Copy(GetDefault(metaFileManager, _new)
                  ?? new ImcEntry());
@@ -408,7 +408,7 @@ public partial class ModEditWindow
             if (_new.ObjectType is ObjectType.DemiHuman)
             {
                 if (Combos.EqpEquipSlot("##imcSlot", 70, _new.EquipSlot, out var slot))
-                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant, slot, _new.Entry)
+                    _new = new ImcManipulation(_new.ObjectType, _new.BodySlot, _new.PrimaryId, _new.SecondaryId, _new.Variant.Id, slot, _new.Entry)
                         .Copy(GetDefault(metaFileManager, _new)
                          ?? new ImcEntry());
 
@@ -557,7 +557,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if (IdInput("##estId", IdWidth, _new.SetId, out var setId, 0, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
+            if (IdInput("##estId", IdWidth, _new.SetId.Id, out var setId, 0, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
             {
                 var newDefaultEntry = EstFile.GetDefault(metaFileManager, _new.Slot, Names.CombinedRace(_new.Gender, _new.Race), setId);
                 _new = new EstManipulation(_new.Gender, _new.Race, _new.Slot, setId, newDefaultEntry);
@@ -656,7 +656,7 @@ public partial class ModEditWindow
 
             // Identifier
             ImGui.TableNextColumn();
-            if (IdInput("##gmpId", IdWidth, _new.SetId, out var setId, 1, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
+            if (IdInput("##gmpId", IdWidth, _new.SetId.Id, out var setId, 1, ExpandedEqpGmpBase.Count - 1, _new.SetId <= 1))
                 _new = new GmpManipulation(ExpandedGmpFile.GetDefault(metaFileManager, setId), setId);
 
             ImGuiUtil.HoverTooltip(ModelSetIdTooltip);

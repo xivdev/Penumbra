@@ -244,7 +244,7 @@ public unsafe class CollectionResolver
         if (identifier.Type != IdentifierType.Owned || !_config.UseOwnerNameForCharacterCollection || owner == null)
             return null;
 
-        var id = _actors.AwaitedService.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld,
+        var id = _actors.AwaitedService.CreateIndividualUnchecked(IdentifierType.Player, identifier.PlayerName, identifier.HomeWorld.Id,
             ObjectKind.None,
             uint.MaxValue);
         return CheckYourself(id, owner)

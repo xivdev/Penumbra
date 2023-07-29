@@ -225,10 +225,10 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         {
             "chara" => SafeGet(path, 1) switch
             {
-                "accessory" => IsMatchEquipment(path[2..], $"a{Equipment.Set.Value:D4}"),
-                "equipment" => IsMatchEquipment(path[2..], $"e{Equipment.Set.Value:D4}"),
+                "accessory" => IsMatchEquipment(path[2..], $"a{Equipment.Set.Id:D4}"),
+                "equipment" => IsMatchEquipment(path[2..], $"e{Equipment.Set.Id:D4}"),
                 "monster"   => SafeGet(path, 2) == $"m{Skeleton:D4}",
-                "weapon"    => IsMatchEquipment(path[2..], $"w{Equipment.Set.Value:D4}"),
+                "weapon"    => IsMatchEquipment(path[2..], $"w{Equipment.Set.Id:D4}"),
                 _           => null,
             },
             _ => null,
@@ -238,7 +238,7 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         => SafeGet(path, 0) == equipmentDir
             ? SafeGet(path, 1) switch
             {
-                "material" => SafeGet(path, 2) == $"v{Equipment.Variant:D4}",
+                "material" => SafeGet(path, 2) == $"v{Equipment.Variant.Id:D4}",
                 _          => null,
             }
             : false;

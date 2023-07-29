@@ -152,7 +152,7 @@ public partial class TexToolsMeta
 
                 for( var i = 0; i <= baseFile.Count; ++i )
                 {
-                    var entry = baseFile.GetEntry( partIdx, i );
+                    var entry = baseFile.GetEntry( partIdx, (Variant)i );
                     b.Write( entry.MaterialId );
                     b.Write( entry.DecalId );
                     b.Write( entry.AttributeAndSound );
@@ -184,7 +184,7 @@ public partial class TexToolsMeta
                 foreach( var manip in manips )
                 {
                     b.Write( ( ushort )Names.CombinedRace( manip.Est.Gender, manip.Est.Race ) );
-                    b.Write( manip.Est.SetId );
+                    b.Write( manip.Est.SetId.Id );
                     b.Write( manip.Est.Entry );
                 }
 

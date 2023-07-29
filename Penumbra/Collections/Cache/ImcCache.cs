@@ -99,7 +99,7 @@ public readonly struct ImcCache : IDisposable
             return true;
         }
 
-        var def   = ImcFile.GetDefault(manager, file.Path, m.EquipSlot, m.Variant, out _);
+        var def   = ImcFile.GetDefault(manager, file.Path, m.EquipSlot, m.Variant.Id, out _);
         var manip = m.Copy(def);
         if (!manip.Apply(file))
             return false;

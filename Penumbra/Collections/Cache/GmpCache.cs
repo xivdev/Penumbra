@@ -29,7 +29,7 @@ public struct GmpCache : IDisposable
         if( _gmpFile == null )
             return;
 
-        _gmpFile.Reset( _gmpManipulations.Select( m => ( int )m.SetId ) );
+        _gmpFile.Reset( _gmpManipulations.Select( m => m.SetId ) );
         _gmpManipulations.Clear();
     }
 

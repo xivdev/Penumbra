@@ -4,7 +4,6 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
-using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.String.Functions;
 
@@ -50,19 +49,19 @@ public unsafe class ImcFile : MetaBaseFile
     private static ushort PartMask(byte* data)
         => *(ushort*)(data + 2);
 
-    private static ImcEntry* VariantPtr(byte* data, int partIdx, int variantIdx)
+    private static ImcEntry* VariantPtr(byte* data, int partIdx, Variant variantIdx)
     {
         var flag = 1 << partIdx;
-        if ((PartMask(data) & flag) == 0 || variantIdx > CountInternal(data))
+        if ((PartMask(data) & flag) == 0 || variantIdx.Id > CountInternal(data))
             return null;
 
         var numParts = BitOperations.PopCount(PartMask(data));
         var ptr      = (ImcEntry*)(data + PreambleSize);
-        ptr += variantIdx * numParts + partIdx;
+        ptr += variantIdx.Id * numParts + partIdx;
         return ptr;
     }
 
-    public ImcEntry GetEntry(int partIdx, int variantIdx)
+    public ImcEntry GetEntry(int partIdx, Variant variantIdx)
     {
         var ptr = VariantPtr(Data, partIdx, variantIdx);
         return ptr == null ? new ImcEntry() : *ptr;
@@ -106,12 +105,12 @@ public unsafe class ImcFile : MetaBaseFile
         return true;
     }
 
-    public bool SetEntry(int partIdx, int variantIdx, ImcEntry entry)
+    public bool SetEntry(int partIdx, Variant variantIdx, ImcEntry entry)
     {
         if (partIdx >= NumParts)
             return false;
 
-        EnsureVariantCount(variantIdx);
+        EnsureVariantCount(variantIdx.Id);
 
         var variantPtr = VariantPtr(Data, partIdx, variantIdx);
         if (variantPtr == null)
@@ -154,10 +153,10 @@ public unsafe class ImcFile : MetaBaseFile
         }
     }
 
-    public static ImcEntry GetDefault(MetaFileManager manager, Utf8GamePath path, EquipSlot slot, int variantIdx, out bool exists)
+    public static ImcEntry GetDefault(MetaFileManager manager, Utf8GamePath path, EquipSlot slot, Variant variantIdx, out bool exists)
         => GetDefault(manager, path.ToString(), slot, variantIdx, out exists);
 
-    public static ImcEntry GetDefault(MetaFileManager manager, string path, EquipSlot slot, int variantIdx, out bool exists)
+    public static ImcEntry GetDefault(MetaFileManager manager, string path, EquipSlot slot, Variant variantIdx, out bool exists)
     {
         var file = manager.GameData.GetFile(path);
         exists = false;

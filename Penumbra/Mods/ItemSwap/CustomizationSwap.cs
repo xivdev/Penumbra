@@ -15,7 +15,7 @@ public static class CustomizationSwap
     /// The .mdl file for customizations is unique per racecode, slot and id, thus the .mdl redirection itself is independent of the mode.
     public static FileSwap CreateMdl( MetaFileManager manager, Func< Utf8GamePath, FullPath > redirections, BodySlot slot, GenderRace race, SetId idFrom, SetId idTo )
     {
-        if( idFrom.Value > byte.MaxValue )
+        if( idFrom.Id > byte.MaxValue )
         {
             throw new Exception( $"The Customization ID {idFrom} is too large for {slot}." );
         }
@@ -51,9 +51,9 @@ public static class CustomizationSwap
 
         var newFileName = fileName;
         newFileName = ItemSwap.ReplaceRace( newFileName, gameRaceTo, race, gameRaceTo     != race );
-        newFileName = ItemSwap.ReplaceBody( newFileName, slot, idTo, idFrom, idFrom.Value != idTo.Value );
+        newFileName = ItemSwap.ReplaceBody( newFileName, slot, idTo, idFrom, idFrom != idTo );
         newFileName = ItemSwap.AddSuffix( newFileName, ".mtrl", $"_c{race.ToRaceCode()}", gameRaceFrom != race || MaterialHandling.IsSpecialCase( race, idFrom ) );
-        newFileName = ItemSwap.AddSuffix( newFileName, ".mtrl", $"_{slot.ToAbbreviation()}{idFrom.Value:D4}", gameSetIdFrom.Value != idFrom.Value );
+        newFileName = ItemSwap.AddSuffix( newFileName, ".mtrl", $"_{slot.ToAbbreviation()}{idFrom.Id:D4}", gameSetIdFrom != idFrom );
 
         var actualMtrlFromPath = mtrlFromPath;
         if( newFileName != fileName )

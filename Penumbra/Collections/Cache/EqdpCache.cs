@@ -5,6 +5,7 @@ using System.Linq;
 using OtterGui;
 using OtterGui.Filesystem;
 using Penumbra.GameData.Enums;
+using Penumbra.GameData.Structs;
 using Penumbra.Interop.Services;
 using Penumbra.Interop.Structs;
 using Penumbra.Meta;
@@ -48,7 +49,7 @@ public readonly struct EqdpCache : IDisposable
         foreach (var file in _eqdpFiles.OfType<ExpandedEqdpFile>())
         {
             var relevant = CharacterUtility.RelevantIndices[file.Index.Value];
-            file.Reset(_eqdpManipulations.Where(m => m.FileIndex() == relevant).Select(m => (int)m.SetId));
+            file.Reset(_eqdpManipulations.Where(m => m.FileIndex() == relevant).Select(m => (SetId) m.SetId));
         }
 
         _eqdpManipulations.Clear();

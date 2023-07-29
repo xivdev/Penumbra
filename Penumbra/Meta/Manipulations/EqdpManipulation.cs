@@ -20,13 +20,13 @@ public readonly struct EqdpManipulation : IMetaManipulation<EqdpManipulation>
     [JsonConverter(typeof(StringEnumConverter))]
     public ModelRace Race { get; private init; }
 
-    public ushort SetId { get; private init; }
+    public SetId SetId { get; private init; }
 
     [JsonConverter(typeof(StringEnumConverter))]
     public EquipSlot Slot { get; private init; }
 
     [JsonConstructor]
-    public EqdpManipulation(EqdpEntry entry, EquipSlot slot, Gender gender, ModelRace race, ushort setId)
+    public EqdpManipulation(EqdpEntry entry, EquipSlot slot, Gender gender, ModelRace race, SetId setId)
     {
         Gender = gender;
         Race   = race;
@@ -74,7 +74,7 @@ public readonly struct EqdpManipulation : IMetaManipulation<EqdpManipulation>
         if (g != 0)
             return g;
 
-        var set = SetId.CompareTo(other.SetId);
+        var set = SetId.Id.CompareTo(other.SetId.Id);
         return set != 0 ? set : Slot.CompareTo(other.Slot);
     }
 

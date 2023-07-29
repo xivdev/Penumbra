@@ -28,26 +28,26 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
     public ulong ControlBlock
         => *(ulong*)Data;
 
-    protected ulong GetInternal(int idx)
+    protected ulong GetInternal(SetId idx)
     {
-        return idx switch
+        return idx.Id switch
         {
             >= Count => throw new IndexOutOfRangeException(),
             <= 1     => *((ulong*)Data + 1),
-            _        => *((ulong*)Data + idx),
+            _        => *((ulong*)Data + idx.Id),
         };
     }
 
-    protected void SetInternal(int idx, ulong value)
+    protected void SetInternal(SetId idx, ulong value)
     {
-        idx = idx switch
+        idx = idx.Id switch
         {
             >= Count => throw new IndexOutOfRangeException(),
             <= 0     => 1,
             _        => idx,
         };
 
-        *((ulong*)Data + idx) = value;
+        *((ulong*)Data + idx.Id) = value;
     }
 
     protected virtual void SetEmptyBlock(int idx)
@@ -85,13 +85,13 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
         Reset();
     }
 
-    protected static ulong GetDefaultInternal(MetaFileManager manager, CharacterUtility.InternalIndex fileIndex, int setIdx, ulong def)
+    protected static ulong GetDefaultInternal(MetaFileManager manager, CharacterUtility.InternalIndex fileIndex, SetId setId, ulong def)
     {
         var data = (byte*)manager.CharacterUtility.DefaultResource(fileIndex).Address;
-        if (setIdx == 0)
-            setIdx = 1;
+        if (setId == 0)
+            setId = 1;
 
-        var blockIdx = setIdx / BlockSize;
+        var blockIdx = setId.Id / BlockSize;
         if (blockIdx >= NumBlocks)
             return def;
 
@@ -101,7 +101,7 @@ public unsafe class ExpandedEqpGmpBase : MetaBaseFile
             return def;
 
         var count = BitOperations.PopCount(control & (blockBit - 1));
-        var idx   = setIdx % BlockSize;
+        var idx   = setId.Id % BlockSize;
         var ptr   = (ulong*)data + BlockSize * count + idx;
         return *ptr;
     }
@@ -116,14 +116,14 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
         : base(manager, false)
     { }
 
-    public EqpEntry this[int idx]
+    public EqpEntry this[SetId idx]
     {
         get => (EqpEntry)GetInternal(idx);
         set => SetInternal(idx, (ulong)value);
     }
 
 
-    public static EqpEntry GetDefault(MetaFileManager manager, int setIdx)
+    public static EqpEntry GetDefault(MetaFileManager manager, SetId setIdx)
         => (EqpEntry)GetDefaultInternal(manager, InternalIndex, setIdx, (ulong)Eqp.DefaultEntry);
 
     protected override unsafe void SetEmptyBlock(int idx)
@@ -134,7 +134,7 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
             *ptr = (ulong)Eqp.DefaultEntry;
     }
 
-    public void Reset(IEnumerable<int> entries)
+    public void Reset(IEnumerable<SetId> entries)
     {
         foreach (var entry in entries)
             this[entry] = GetDefault(Manager, entry);
@@ -142,7 +142,7 @@ public sealed class ExpandedEqpFile : ExpandedEqpGmpBase, IEnumerable<EqpEntry>
 
     public IEnumerator<EqpEntry> GetEnumerator()
     {
-        for (var idx = 1; idx < Count; ++idx)
+        for (ushort idx = 1; idx < Count; ++idx)
             yield return this[idx];
     }
 
@@ -159,16 +159,16 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
         : base(manager, true)
     { }
 
-    public GmpEntry this[int idx]
+    public GmpEntry this[SetId idx]
     {
         get => (GmpEntry)GetInternal(idx);
         set => SetInternal(idx, (ulong)value);
     }
 
-    public static GmpEntry GetDefault(MetaFileManager manager, int setIdx)
+    public static GmpEntry GetDefault(MetaFileManager manager, SetId setIdx)
         => (GmpEntry)GetDefaultInternal(manager, InternalIndex, setIdx, (ulong)GmpEntry.Default);
 
-    public void Reset(IEnumerable<int> entries)
+    public void Reset(IEnumerable<SetId> entries)
     {
         foreach (var entry in entries)
             this[entry] = GetDefault(Manager, entry);
@@ -176,7 +176,7 @@ public sealed class ExpandedGmpFile : ExpandedEqpGmpBase, IEnumerable<GmpEntry>
 
     public IEnumerator<GmpEntry> GetEnumerator()
     {
-        for (var idx = 1; idx < Count; ++idx)
+        for (ushort idx = 1; idx < Count; ++idx)
             yield return this[idx];
     }
 

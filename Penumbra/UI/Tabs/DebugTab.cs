@@ -8,6 +8,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Group;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
@@ -503,10 +504,10 @@ public class DebugTab : Window, ITab
                     if (table)
                         for (var i = 0; i < 8; ++i)
                         {
-                            var c = agent->Character(i);
+                            ref var c = ref agent->Data->CharacterArraySpan[i];
                             ImGuiUtil.DrawTableColumn($"Character {i}");
-                            var name = c->Name1.ToString();
-                            ImGuiUtil.DrawTableColumn(name.Length == 0 ? "NULL" : $"{name} ({c->WorldId})");
+                            var name = c.Name1.ToString();
+                            ImGuiUtil.DrawTableColumn(name.Length == 0 ? "NULL" : $"{name} ({c.WorldId})");
                         }
                 }
                 else

@@ -32,7 +32,7 @@ public struct EqpCache : IDisposable
         if (_eqpFile == null)
             return;
 
-        _eqpFile.Reset(_eqpManipulations.Select(m => (int)m.SetId));
+        _eqpFile.Reset(_eqpManipulations.Select(m => m.SetId));
         _eqpManipulations.Clear();
     }
 

@@ -52,7 +52,7 @@ public class ChangedItemDrawer : IDisposable
     private readonly ExcelSheet<Item>                         _items;
     private readonly CommunicatorService                      _communicator;
     private readonly Dictionary<ChangedItemIcon, TextureWrap> _icons             = new(16);
-    private          float                                    _smallestIconWidth = 0;
+    private          float                                    _smallestIconWidth;
 
     public ChangedItemDrawer(UiBuilder uiBuilder, DataManager gameData, CommunicatorService communicator, Configuration config)
     {
@@ -265,7 +265,7 @@ public class ChangedItemDrawer : IDisposable
         switch (obj)
         {
             case EquipItem it:
-                text = it.WeaponType == 0 ? $"({it.ModelId.Value}-{it.Variant})" : $"({it.ModelId.Value}-{it.WeaponType.Value}-{it.Variant})";
+                text = it.ModelString;
                 return true;
             case ModelChara m:
                 text = $"({((CharacterBase.ModelType)m.Type).ToName()} {m.Model}-{m.Base}-{m.Variant})";
@@ -280,7 +280,7 @@ public class ChangedItemDrawer : IDisposable
     private object? Convert(object? data)
     {
         if (data is EquipItem it)
-            return _items.GetRow(it.ItemId);
+            return _items.GetRow(it.ItemId.Id);
 
         return data;
     }
