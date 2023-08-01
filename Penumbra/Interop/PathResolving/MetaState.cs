@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Threading;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
@@ -54,6 +53,7 @@ public unsafe class MetaState : IDisposable
     private readonly CharacterUtility    _characterUtility;
 
     private ResolveData         _lastCreatedCollection          = ResolveData.Invalid;
+    private ResolveData         _customizeChangeCollection      = ResolveData.Invalid;
     private DisposableContainer _characterBaseCreateMetaChanges = DisposableContainer.Empty;
 
     public MetaState(PerformanceTracker performance, CommunicatorService communicator, CollectionResolver collectionResolver,
@@ -81,10 +81,10 @@ public unsafe class MetaState : IDisposable
     public bool HandleDecalFile(ResourceType type, Utf8GamePath gamePath, out ResolveData resolveData)
     {
         if (type == ResourceType.Tex
-         && _lastCreatedCollection.Valid
+         && (_lastCreatedCollection.Valid || _customizeChangeCollection.Valid)
          && gamePath.Path.Substring("chara/common/texture/".Length).StartsWith("decal"u8))
         {
-            resolveData = _lastCreatedCollection;
+            resolveData = _lastCreatedCollection.Valid ? _lastCreatedCollection : _customizeChangeCollection;
             return true;
         }
 
@@ -129,8 +129,9 @@ public unsafe class MetaState : IDisposable
             _communicator.CreatingCharacterBase.Invoke(_lastCreatedCollection.AssociatedGameObject,
                 _lastCreatedCollection.ModCollection.Name, modelCharaId, customize, equipData);
 
-        var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection, UsesDecal(*(uint*)modelCharaId, customize));
-        var cmp   = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
+        var decal = new DecalReverter(_config, _characterUtility, _resources, _lastCreatedCollection,
+            UsesDecal(*(uint*)modelCharaId, customize));
+        var cmp = _lastCreatedCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
         _characterBaseCreateMetaChanges.Dispose(); // Should always be empty.
         _characterBaseCreateMetaChanges = new DisposableContainer(decal, cmp);
     }
@@ -228,7 +229,7 @@ public unsafe class MetaState : IDisposable
 
     private void RspSetupCharacterDetour(nint drawObject, nint unk2, float unk3, nint unk4, byte unk5)
     {
-        if (_inChangeCustomize)
+        if (_customizeChangeCollection.Valid)
         {
             _rspSetupCharacterHook.Original(drawObject, unk2, unk3, unk4, unk5);
         }
@@ -241,9 +242,6 @@ public unsafe class MetaState : IDisposable
         }
     }
 
-    /// <summary> ChangeCustomize calls RspSetupCharacter, so skip the additional cmp change. </summary>
-    private bool _inChangeCustomize;
-
     private delegate bool ChangeCustomizeDelegate(nint human, nint data, byte skipEquipment);
 
     [Signature(Sigs.ChangeCustomize, DetourName = nameof(ChangeCustomizeDetour))]
@@ -252,13 +250,12 @@ public unsafe class MetaState : IDisposable
     private bool ChangeCustomizeDetour(nint human, nint data, byte skipEquipment)
     {
         using var performance = _performance.Measure(PerformanceType.ChangeCustomize);
-        _inChangeCustomize = true;
-        var       resolveData = _collectionResolver.IdentifyCollection((DrawObject*)human, true);
-        using var cmp         = resolveData.ModCollection.TemporarilySetCmpFile(_characterUtility);
-        using var decals      = new DecalReverter(_config, _characterUtility, _resources, resolveData, true);
-        using var decal2      = new DecalReverter(_config, _characterUtility, _resources, resolveData, false);
-        var       ret         = _changeCustomize.Original(human, data, skipEquipment);
-        _inChangeCustomize = false;
+        _customizeChangeCollection = _collectionResolver.IdentifyCollection((DrawObject*)human, true);
+        using var cmp    = _customizeChangeCollection.ModCollection.TemporarilySetCmpFile(_characterUtility);
+        using var decals = new DecalReverter(_config, _characterUtility, _resources, _customizeChangeCollection, true);
+        using var decal2 = new DecalReverter(_config, _characterUtility, _resources, _customizeChangeCollection, false);
+        var       ret    = _changeCustomize.Original(human, data, skipEquipment);
+        _customizeChangeCollection = ResolveData.Invalid;
         return ret;
     }
 
