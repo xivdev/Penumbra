@@ -170,24 +170,18 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
         ImRaii.TreeNode(leaf.Value.Name, flags).Dispose();
         if (state.Priority != 0 && !_config.HidePrioritiesInSelector)
         {
-            var       priorityString = $"[{state.Priority}]";
-            var       requiredSize   = ImGui.CalcTextSize(priorityString).X;
-            ImGui.SameLine();
-            var remainingSpace = ImGui.GetContentRegionAvail().X;
+            var line           = ImGui.GetItemRectMin().Y;
+            var itemPos        = ImGui.GetItemRectMax().X;
+            var maxWidth       = ImGui.GetWindowPos().X + ImGui.GetWindowContentRegionMax().X;
+            var priorityString = $"[{state.Priority}]";
+            var requiredSize   = ImGui.CalcTextSize(priorityString).X;
+            var remainingSpace = maxWidth - itemPos;
             var offset         = remainingSpace - requiredSize;
             if (ImGui.GetScrollMaxY() == 0)
                 offset -= ImGui.GetStyle().ItemInnerSpacing.X;
-
+        
             if (offset > ImGui.GetStyle().ItemSpacing.X)
-            {
-                c.Push(ImGuiCol.Text, ColorId.SelectorPriority.Value());
-                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
-                ImGui.TextUnformatted(priorityString);
-            }
-            else
-            {
-                ImGui.NewLine();
-            }
+                ImGui.GetWindowDrawList().AddText(new Vector2(itemPos + offset, line), ColorId.SelectorPriority.Value(), priorityString);
         }
     }
 
