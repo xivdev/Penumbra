@@ -18,7 +18,6 @@ using Penumbra.Mods.Manager;
 using Penumbra.Mods.Subclasses;
 using Penumbra.Services;
 using Penumbra.String.Classes;
-using Penumbra.Util;
 
 namespace Penumbra.Mods;
 

@@ -379,6 +379,9 @@ public class SettingsTab : ITab
                 if (v)
                     _config.ChangedItemFilter = ChangedItemDrawer.AllFlags;
             });
+        Checkbox("Hide Priority Numbers in Mod Selector",
+            "Hides the bracketed non-zero priority numbers displayed in the mod selector when there is enough space for them.",
+            _config.HidePrioritiesInSelector, v => _config.HidePrioritiesInSelector = v);
         DrawSingleSelectRadioMax();
         DrawCollapsibleGroupMin();
     }

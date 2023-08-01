@@ -24,6 +24,7 @@ public enum ColorId
     RedundantAssignment,
     NoModsAssignment,
     NoAssignment,
+    SelectorPriority,
 }
 
 public static class Colors
@@ -62,6 +63,7 @@ public static class Colors
             ColorId.RedundantAssignment  => ( 0x6050D0D0, "Redundant Collection Assignment",     "A collection assignment that currently has no effect as it is redundant with more general assignments."),
             ColorId.NoModsAssignment     => ( 0x50000080, "'Use No Mods' Collection Assignment", "A collection assignment set to not use any mods at all."),
             ColorId.NoAssignment         => ( 0x00000000, "Unassigned Collection Assignment",    "A collection assignment that is not configured to any collection and thus just has no specific treatment."),
+            ColorId.SelectorPriority     => ( 0xFF808080, "Mod Selector Priority",               "The priority displayed for non-zero priority mods in the mod selector."),
             _                            => throw new ArgumentOutOfRangeException( nameof( color ), color, null ),
             // @formatter:on
         };

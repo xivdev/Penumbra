@@ -168,6 +168,27 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
             .Push(ImGuiCol.HeaderHovered, 0x4000FFFF, leaf.Value.Favorite);
         using var id = ImRaii.PushId(leaf.Value.Index);
         ImRaii.TreeNode(leaf.Value.Name, flags).Dispose();
+        if (state.Priority != 0 && !_config.HidePrioritiesInSelector)
+        {
+            var       priorityString = $"[{state.Priority}]";
+            var       requiredSize   = ImGui.CalcTextSize(priorityString).X;
+            ImGui.SameLine();
+            var remainingSpace = ImGui.GetContentRegionAvail().X;
+            var offset         = remainingSpace - requiredSize;
+            if (ImGui.GetScrollMaxY() == 0)
+                offset -= ImGui.GetStyle().ItemInnerSpacing.X;
+
+            if (offset > ImGui.GetStyle().ItemSpacing.X)
+            {
+                c.Push(ImGuiCol.Text, ColorId.SelectorPriority.Value());
+                ImGui.SetCursorPosX(ImGui.GetCursorPosX() + offset);
+                ImGui.TextUnformatted(priorityString);
+            }
+            else
+            {
+                ImGui.NewLine();
+            }
+        }
     }
 
 
@@ -468,6 +489,7 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     public struct ModState
     {
         public ColorId Color;
+        public int     Priority;
     }
 
     private const StringComparison IgnoreCase   = StringComparison.OrdinalIgnoreCase;
@@ -664,10 +686,14 @@ public sealed class ModFileSystemSelector : FileSystemSelector<Mod, ModFileSyste
     /// <summary> Combined wrapper for handling all filters and setting state. </summary>
     private bool ApplyFiltersAndState(ModFileSystem.Leaf leaf, out ModState state)
     {
-        state = new ModState { Color = ColorId.EnabledMod };
         var mod = leaf.Value;
         var (settings, collection) = _collectionManager.Active.Current[mod.Index];
 
+        state = new ModState
+        {
+            Color    = ColorId.EnabledMod,
+            Priority = settings?.Priority ?? 0,
+        };
         if (ApplyStringFilters(leaf, mod))
             return true;
 
