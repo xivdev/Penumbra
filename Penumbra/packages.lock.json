@@ -22,9 +22,9 @@
       },
       "SharpCompress": {
         "type": "Direct",
-        "requested": "[0.32.1, )",
-        "resolved": "0.32.1",
-        "contentHash": "9Cwj3lK/p7wkiBaQPCvaKINuHYuZ0ACDldA4M3o5ISSq7cjbbq3yqigTDBUoKjtyyXpqmQHUkw6fhLnjNF30ow=="
+        "requested": "[0.33.0, )",
+        "resolved": "0.33.0",
+        "contentHash": "FlHfpTAADzaSlVCBF33iKJk9UhOr3Xj+r5LXbW2GzqYr0SrhiOf6shLX2LC2fqs7g7d+YlwKbBXqWFtb+e7icw=="
       },
       "SixLabors.ImageSharp": {
         "type": "Direct",
@@ -81,8 +81,8 @@
       "penumbra.gamedata": {
         "type": "Project",
         "dependencies": {
-          "Penumbra.Api": "[1.0.7, )",
-          "Penumbra.String": "[1.0.3, )"
+          "Penumbra.Api": "[1.0.8, )",
+          "Penumbra.String": "[1.0.4, )"
         }
       },
       "penumbra.string": {
