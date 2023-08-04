@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
 using Dalamud.Utility;
 using ImGuiNET;
@@ -469,7 +470,7 @@ public class ItemSwapTab : IDisposable, ITab
         }
 
         ImGui.TableNextColumn();
-        _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Name ?? string.Empty, string.Empty, InputWidth * 2,
+        _dirty |= selector.Draw("##itemSource", selector.CurrentSelection.Name ?? string.Empty, string.Empty, InputWidth * 2 * UiHelpers.Scale,
             ImGui.GetTextLineHeightWithSpacing());
 
         (article1, _, selector) = GetAccessorySelector(_slotTo, false);
@@ -494,7 +495,7 @@ public class ItemSwapTab : IDisposable, ITab
 
         ImGui.TableNextColumn();
 
-        _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Name, string.Empty, InputWidth * 2,
+        _dirty |= selector.Draw("##itemTarget", selector.CurrentSelection.Name, string.Empty, InputWidth * 2 * UiHelpers.Scale,
             ImGui.GetTextLineHeightWithSpacing());
         if (_affectedItems is not { Length: > 1 })
             return;
@@ -535,7 +536,7 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(text1);
         ImGui.TableNextColumn();
-        _dirty |= sourceSelector.Draw("##itemSource", sourceSelector.CurrentSelection.Name, string.Empty, InputWidth * 2,
+        _dirty |= sourceSelector.Draw("##itemSource", sourceSelector.CurrentSelection.Name, string.Empty, InputWidth * 2 * UiHelpers.Scale,
             ImGui.GetTextLineHeightWithSpacing());
 
         if (type == SwapType.Ring)
@@ -548,7 +549,7 @@ public class ItemSwapTab : IDisposable, ITab
         ImGui.AlignTextToFramePadding();
         ImGui.TextUnformatted(text2);
         ImGui.TableNextColumn();
-        _dirty |= targetSelector.Draw("##itemTarget", targetSelector.CurrentSelection.Name, string.Empty, InputWidth * 2,
+        _dirty |= targetSelector.Draw("##itemTarget", targetSelector.CurrentSelection.Name, string.Empty, InputWidth * 2 * UiHelpers.Scale,
             ImGui.GetTextLineHeightWithSpacing());
         if (type == SwapType.Ring)
         {
@@ -615,48 +616,6 @@ public class ItemSwapTab : IDisposable, ITab
         DrawTargetIdInput("Take this Ear Type");
         DrawSourceIdInput();
         DrawGenderInput("for all Viera", 0);
-    }
-
-
-    private void DrawWeaponSwap()
-    {
-        using var disabled = ImRaii.Disabled();
-        using var tab      = DrawTab(SwapType.Weapon);
-        if (!tab)
-            return;
-
-        using var table = ImRaii.Table("##settings", 2, ImGuiTableFlags.SizingFixedFit);
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted("Select the weapon or tool you want");
-        ImGui.TableNextColumn();
-        if (_slotSelector.Draw("##weaponSlot", _slotSelector.CurrentSelection.ToName(), string.Empty, InputWidth * 2,
-                ImGui.GetTextLineHeightWithSpacing()))
-        {
-            _dirty        = true;
-            _weaponSource = new ItemSelector(_itemService, _slotSelector.CurrentSelection);
-            _weaponTarget = new ItemSelector(_itemService, _slotSelector.CurrentSelection);
-        }
-        else
-        {
-            _dirty        =   _weaponSource == null || _weaponTarget == null;
-            _weaponSource ??= new ItemSelector(_itemService, _slotSelector.CurrentSelection);
-            _weaponTarget ??= new ItemSelector(_itemService, _slotSelector.CurrentSelection);
-        }
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted("and put this variant of it");
-        ImGui.TableNextColumn();
-        _dirty |= _weaponSource.Draw("##weaponSource", _weaponSource.CurrentSelection.Name, string.Empty, InputWidth * 2,
-            ImGui.GetTextLineHeightWithSpacing());
-
-        ImGui.TableNextColumn();
-        ImGui.AlignTextToFramePadding();
-        ImGui.TextUnformatted("onto this one");
-        ImGui.TableNextColumn();
-        _dirty |= _weaponTarget.Draw("##weaponTarget", _weaponTarget.CurrentSelection.Name, string.Empty, InputWidth * 2,
-            ImGui.GetTextLineHeightWithSpacing());
     }
 
     private const float InputWidth = 120;
