@@ -500,11 +500,13 @@ public class DebugTab : Window, ITab
 
                 if (agent->Data != null)
                 {
-                    using var table = Table("###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit);
+                    // TODO fix when updated in CS.
+                    var       characterData = (AgentBannerInterface.Storage.CharacterData*)((byte*)agent->Data + 0x20);
+                    using var table         = Table("###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit);
                     if (table)
                         for (var i = 0; i < 8; ++i)
                         {
-                            ref var c = ref agent->Data->CharacterArraySpan[i];
+                            ref var c = ref *(characterData + i);
                             ImGuiUtil.DrawTableColumn($"Character {i}");
                             var name = c.Name1.ToString();
                             ImGuiUtil.DrawTableColumn(name.Length == 0 ? "NULL" : $"{name} ({c.WorldId})");

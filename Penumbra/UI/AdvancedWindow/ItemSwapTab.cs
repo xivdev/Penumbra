@@ -152,11 +152,7 @@ public class ItemSwapTab : IDisposable, ITab
     }
 
     private readonly Dictionary<SwapType, (ItemSelector Source, ItemSelector Target, string TextFrom, string TextTo)> _selectors;
-
-    private          ItemSelector?     _weaponSource;
-    private          ItemSelector?     _weaponTarget;
-    private readonly WeaponSelector    _slotSelector = new();
-    private readonly ItemSwapContainer _swapData;
+    private readonly ItemSwapContainer                                                                                _swapData;
 
     private Mod?         _mod;
     private ModSettings? _modSettings;
