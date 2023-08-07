@@ -7,6 +7,7 @@ using Penumbra.Collections.Cache;
 using Penumbra.Collections.Manager;
 using Penumbra.GameData;
 using Penumbra.GameData.Data;
+using Penumbra.Import.Textures;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.ResourceTree;
@@ -173,7 +174,8 @@ public static class ServiceManager
             .AddSingleton<ModSwapEditor>()
             .AddSingleton<ModNormalizer>()
             .AddSingleton<ModMerger>()
-            .AddSingleton<ModEditor>();
+            .AddSingleton<ModEditor>()
+            .AddSingleton<TextureManager>();
 
     private static IServiceCollection AddApi(this IServiceCollection services)
         => services.AddSingleton<PenumbraApi>()

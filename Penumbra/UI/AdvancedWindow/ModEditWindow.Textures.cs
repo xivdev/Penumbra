@@ -5,6 +5,7 @@ using System.Numerics;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Tasks;
 using OtterTex;
 using Penumbra.Import.Textures;
 
@@ -12,13 +13,14 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
+    private readonly TextureManager _textures;
+
     private readonly Texture         _left  = new();
     private readonly Texture         _right = new();
     private readonly CombinedTexture _center;
 
     private bool _overlayCollapsed = true;
-
-    private bool _addMipMaps = true;
+    private bool _addMipMaps       = true;
     private int  _currentSaveAs;
 
     private static readonly (string, string)[] SaveAsStrings =
@@ -42,13 +44,13 @@ public partial class ModEditWindow
         ImGuiUtil.DrawTextButton(label, new Vector2(-1, 0), ImGui.GetColorU32(ImGuiCol.FrameBg));
         ImGui.NewLine();
 
-        tex.PathInputBox(_dalamud, "##input", "Import Image...", "Can import game paths as well as your own files.", _mod!.ModPath.FullName,
-            _fileDialog, _config.DefaultModImportPath);
+        TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
+            "Can import game paths as well as your own files.", _mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
         var files = _editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
             .Prepend((f.File.FullName, false)));
-        tex.PathSelectBox(_dalamud, "##combo",
-            "Select the textures included in this mod on your drive or the ones they replace from the game files.",
-            files, _mod.ModPath.FullName.Length + 1);
+        TextureDrawer.PathSelectBox(_textures, tex, "##combo",
+            "Select the textures included in this mod on your drive or the ones they replace from the game files.", files,
+            _mod.ModPath.FullName.Length + 1);
 
         if (tex == _left)
             _center.DrawMatrixInputLeft(size.X);
@@ -58,7 +60,7 @@ public partial class ModEditWindow
         ImGui.NewLine();
         using var child2 = ImRaii.Child("image");
         if (child2)
-            tex.Draw(imageSize);
+            TextureDrawer.Draw(tex, imageSize);
     }
 
     private void SaveAsCombo()
@@ -105,7 +107,7 @@ public partial class ModEditWindow
                 _fileDialog.OpenSavePicker("Save Texture as TEX...", ".tex", fileName, ".tex", (a, b) =>
                 {
                     if (a)
-                        _center.SaveAsTex(b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
+                        _center.SaveAsTex(_textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
                 }, _mod!.ModPath.FullName, _forceTextureStartPath);
                 _forceTextureStartPath = false;
             }
@@ -116,7 +118,7 @@ public partial class ModEditWindow
                 _fileDialog.OpenSavePicker("Save Texture as DDS...", ".dds", fileName, ".dds", (a, b) =>
                 {
                     if (a)
-                        _center.SaveAsDds(b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
+                        _center.SaveAsDds(_textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
                 }, _mod!.ModPath.FullName, _forceTextureStartPath);
                 _forceTextureStartPath = false;
             }
@@ -129,20 +131,20 @@ public partial class ModEditWindow
                 _fileDialog.OpenSavePicker("Save Texture as PNG...", ".png", fileName, ".png", (a, b) =>
                 {
                     if (a)
-                        _center.SaveAsPng(b);
+                        _center.SaveAsPng(_textures, b);
                 }, _mod!.ModPath.FullName, _forceTextureStartPath);
                 _forceTextureStartPath = false;
             }
 
-            if (_left.Type is Texture.FileType.Tex && _center.IsLeftCopy)
+            if (_left.Type is TextureType.Tex && _center.IsLeftCopy)
             {
                 var buttonSize = new Vector2((ImGui.GetContentRegionAvail().X - ImGui.GetStyle().ItemSpacing.X * 2) / 3, 0);
                 if (ImGuiUtil.DrawDisabledButton("Convert to BC7", buttonSize,
                         "This converts the texture to BC7 format in place. This is not revertible.",
                         _left.Format is DXGIFormat.BC7Typeless or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB))
                 {
-                    _center.SaveAsTex(_left.Path, CombinedTexture.TextureSaveType.BC7, _left.MipMaps > 1);
-                    _left.Reload(_dalamud);
+                    _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC7, _left.MipMaps > 1);
+                    ReloadConvertedSubscribe(_left.Path, _center.SaveGuid);
                 }
 
                 ImGui.SameLine();
@@ -150,8 +152,8 @@ public partial class ModEditWindow
                         "This converts the texture to BC3 format in place. This is not revertible.",
                         _left.Format is DXGIFormat.BC3Typeless or DXGIFormat.BC3UNorm or DXGIFormat.BC3UNormSRGB))
                 {
-                    _center.SaveAsTex(_left.Path, CombinedTexture.TextureSaveType.BC3, _left.MipMaps > 1);
-                    _left.Reload(_dalamud);
+                    _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC3, _left.MipMaps > 1);
+                    ReloadConvertedSubscribe(_left.Path, _center.SaveGuid);
                 }
 
                 ImGui.SameLine();
@@ -159,27 +161,55 @@ public partial class ModEditWindow
                         "This converts the texture to RGBA format in place. This is not revertible.",
                         _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
                 {
-                    _center.SaveAsTex(_left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
-                    _left.Reload(_dalamud);
+                    _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
+                    ReloadConvertedSubscribe(_left.Path, _center.SaveGuid);
                 }
             }
             else
             {
                 ImGui.NewLine();
             }
+
             ImGui.NewLine();
         }
 
-        if (_center.SaveException != null)
+        if (_center.SaveGuid != Guid.Empty)
         {
-            ImGui.TextUnformatted("Could not save file:");
-            using var color = ImRaii.PushColor(ImGuiCol.Text, 0xFF0000FF);
-            ImGuiUtil.TextWrapped(_center.SaveException.ToString());
+            var state = _textures.GetState(_center.SaveGuid, out var saveException, out _, out _);
+            if (saveException != null)
+            {
+                ImGui.TextUnformatted("Could not save file:");
+                using var color = ImRaii.PushColor(ImGuiCol.Text, 0xFF0000FF);
+                ImGuiUtil.TextWrapped(saveException.ToString());
+            }
+            else if (state == ActionState.Running)
+            {
+                ImGui.TextUnformatted("Computing...");
+            }
         }
 
         using var child2 = ImRaii.Child("image");
         if (child2)
-            _center.Draw(_dalamud.UiBuilder, imageSize);
+            _center.Draw(_textures, imageSize);
+    }
+
+
+    private void ReloadConvertedSubscribe(string path, Guid guid)
+    {
+        void Reload(Guid eventGuid, ActionState state, Exception? ex)
+        {
+            if (guid != eventGuid)
+                return;
+
+            if (_left.Path != path)
+                return;
+
+            if (state is ActionState.Succeeded)
+                _dalamud.Framework.RunOnFrameworkThread(() => _left.Reload(_textures));
+            _textures.Finished -= Reload;
+        }
+
+        _textures.Finished += Reload;
     }
 
     private Vector2 GetChildWidth()

@@ -18,12 +18,11 @@ public partial class CombinedTexture
     private int       _offsetX         = 0;
     private int       _offsetY         = 0;
 
-
     private Vector4 DataLeft( int offset )
-        => CappedVector( _left.RGBAPixels, offset, _multiplierLeft, _invertLeft );
+        => CappedVector( _left.RgbaPixels, offset, _multiplierLeft, _invertLeft );
 
     private Vector4 DataRight( int offset )
-        => CappedVector( _right.RGBAPixels, offset, _multiplierRight, _invertRight );
+        => CappedVector( _right.RgbaPixels, offset, _multiplierRight, _invertRight );
 
     private Vector4 DataRight( int x, int y )
     {
@@ -35,7 +34,7 @@ public partial class CombinedTexture
         }
 
         var offset = ( y * _right.TextureWrap!.Width + x ) * 4;
-        return CappedVector( _right.RGBAPixels, offset, _multiplierRight, _invertRight );
+        return CappedVector( _right.RgbaPixels, offset, _multiplierRight, _invertRight );
     }
 
     private void AddPixelsMultiplied( int y, ParallelLoopState _ )
@@ -49,10 +48,10 @@ public partial class CombinedTexture
             var rgba = alpha == 0
                 ? new Rgba32()
                 : new Rgba32( ( ( right * right.W + left * left.W * ( 1 - right.W ) ) / alpha ) with { W = alpha } );
-            _centerStorage.RGBAPixels[ offset ]     = rgba.R;
-            _centerStorage.RGBAPixels[ offset + 1 ] = rgba.G;
-            _centerStorage.RGBAPixels[ offset + 2 ] = rgba.B;
-            _centerStorage.RGBAPixels[ offset + 3 ] = rgba.A;
+            _centerStorage.RgbaPixels[ offset ]     = rgba.R;
+            _centerStorage.RgbaPixels[ offset + 1 ] = rgba.G;
+            _centerStorage.RgbaPixels[ offset + 2 ] = rgba.B;
+            _centerStorage.RgbaPixels[ offset + 3 ] = rgba.A;
         }
     }
 
@@ -63,10 +62,10 @@ public partial class CombinedTexture
             var offset = ( _left.TextureWrap!.Width * y + x ) * 4;
             var left   = DataLeft( offset );
             var rgba   = new Rgba32( left );
-            _centerStorage.RGBAPixels[ offset ]     = rgba.R;
-            _centerStorage.RGBAPixels[ offset + 1 ] = rgba.G;
-            _centerStorage.RGBAPixels[ offset + 2 ] = rgba.B;
-            _centerStorage.RGBAPixels[ offset + 3 ] = rgba.A;
+            _centerStorage.RgbaPixels[ offset ]     = rgba.R;
+            _centerStorage.RgbaPixels[ offset + 1 ] = rgba.G;
+            _centerStorage.RgbaPixels[ offset + 2 ] = rgba.B;
+            _centerStorage.RgbaPixels[ offset + 3 ] = rgba.A;
         }
     }
 
@@ -77,10 +76,10 @@ public partial class CombinedTexture
             var offset = ( _right.TextureWrap!.Width * y + x ) * 4;
             var left   = DataRight( offset );
             var rgba   = new Rgba32( left );
-            _centerStorage.RGBAPixels[ offset ]     = rgba.R;
-            _centerStorage.RGBAPixels[ offset + 1 ] = rgba.G;
-            _centerStorage.RGBAPixels[ offset + 2 ] = rgba.B;
-            _centerStorage.RGBAPixels[ offset + 3 ] = rgba.A;
+            _centerStorage.RgbaPixels[ offset ]     = rgba.R;
+            _centerStorage.RgbaPixels[ offset + 1 ] = rgba.G;
+            _centerStorage.RgbaPixels[ offset + 2 ] = rgba.B;
+            _centerStorage.RgbaPixels[ offset + 3 ] = rgba.A;
         }
     }
 
@@ -90,8 +89,8 @@ public partial class CombinedTexture
         var (width, height) = _left.IsLoaded
             ? ( _left.TextureWrap!.Width, _left.TextureWrap!.Height )
             : ( _right.TextureWrap!.Width, _right.TextureWrap!.Height );
-        _centerStorage.RGBAPixels = new byte[width * height * 4];
-        _centerStorage.Type       = Texture.FileType.Bitmap;
+        _centerStorage.RgbaPixels = new byte[width * height * 4];
+        _centerStorage.Type       = TextureType.Bitmap;
         if( _left.IsLoaded )
         {
             Parallel.For( 0, height, _right.IsLoaded ? AddPixelsMultiplied : MultiplyPixelsLeft );
@@ -103,7 +102,6 @@ public partial class CombinedTexture
 
         return ( width, height );
     }
-
     private static Vector4 CappedVector( IReadOnlyList< byte > bytes, int offset, Matrix4x4 transform, bool invert )
     {
         if( bytes.Count == 0 )

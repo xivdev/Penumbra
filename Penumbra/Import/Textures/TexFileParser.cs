@@ -101,7 +101,7 @@ public static class TexFileParser
             Height    = (ushort)meta.Height,
             Width     = (ushort)meta.Width,
             Depth     = (ushort)Math.Max(meta.Depth, 1),
-            MipLevels = (byte)Math.Min(meta.MipLevels, 12),
+            MipLevels = (byte)Math.Min(meta.MipLevels, 13),
             Format    = meta.Format.ToTexFormat(),
             Type = meta.Dimension switch
             {

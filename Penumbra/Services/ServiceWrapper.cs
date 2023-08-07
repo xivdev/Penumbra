@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using OtterGui;
+using OtterGui.Tasks;
 using Penumbra.Util;
 
 namespace Penumbra.Services;

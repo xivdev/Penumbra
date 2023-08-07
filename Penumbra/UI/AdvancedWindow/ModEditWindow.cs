@@ -521,7 +521,7 @@ public partial class ModEditWindow : Window, IDisposable
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, UiBuilder uiBuilder, DalamudServices dalamud, ModMergeTab modMergeTab,
-        CommunicatorService communicator)
+        CommunicatorService communicator, TextureManager textures)
         : base(WindowBaseLabel)
     {
         _performance       = performance;
@@ -534,6 +534,7 @@ public partial class ModEditWindow : Window, IDisposable
         _dalamud           = dalamud;
         _modMergeTab       = modMergeTab;
         _communicator      = communicator;
+        _textures     = textures;
         _fileDialog        = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
