@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -144,7 +145,7 @@ public partial class ModEditWindow
                         _left.Format is DXGIFormat.BC7Typeless or DXGIFormat.BC7UNorm or DXGIFormat.BC7UNormSRGB))
                 {
                     _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC7, _left.MipMaps > 1);
-                    ReloadConvertedSubscribe(_left.Path, _center.SaveGuid);
+                    AddReloadTask(_left.Path);
                 }
 
                 ImGui.SameLine();
@@ -153,7 +154,7 @@ public partial class ModEditWindow
                         _left.Format is DXGIFormat.BC3Typeless or DXGIFormat.BC3UNorm or DXGIFormat.BC3UNormSRGB))
                 {
                     _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.BC3, _left.MipMaps > 1);
-                    ReloadConvertedSubscribe(_left.Path, _center.SaveGuid);
+                    AddReloadTask(_left.Path);
                 }
 
                 ImGui.SameLine();
@@ -162,7 +163,7 @@ public partial class ModEditWindow
                         _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
                 {
                     _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
-                    ReloadConvertedSubscribe(_left.Path, _center.SaveGuid);
+                    AddReloadTask(_left.Path);
                 }
             }
             else
@@ -173,18 +174,20 @@ public partial class ModEditWindow
             ImGui.NewLine();
         }
 
-        if (_center.SaveGuid != Guid.Empty)
+        switch (_center.SaveTask.Status)
         {
-            var state = _textures.GetState(_center.SaveGuid, out var saveException, out _, out _);
-            if (saveException != null)
+            case TaskStatus.WaitingForActivation:
+            case TaskStatus.WaitingToRun:
+            case TaskStatus.Running:
+                ImGui.TextUnformatted("Computing...");
+                break;
+            case TaskStatus.Canceled:
+            case TaskStatus.Faulted:
             {
                 ImGui.TextUnformatted("Could not save file:");
                 using var color = ImRaii.PushColor(ImGuiCol.Text, 0xFF0000FF);
-                ImGuiUtil.TextWrapped(saveException.ToString());
-            }
-            else if (state == ActionState.Running)
-            {
-                ImGui.TextUnformatted("Computing...");
+                ImGuiUtil.TextWrapped(_center.SaveTask.Exception?.ToString() ?? "Unknown Error");
+                break;
             }
         }
 
@@ -193,23 +196,18 @@ public partial class ModEditWindow
             _center.Draw(_textures, imageSize);
     }
 
-
-    private void ReloadConvertedSubscribe(string path, Guid guid)
+    private void AddReloadTask(string path)
     {
-        void Reload(Guid eventGuid, ActionState state, Exception? ex)
+        _center.SaveTask.ContinueWith(t =>
         {
-            if (guid != eventGuid)
+            if (!t.IsCompletedSuccessfully)
                 return;
 
             if (_left.Path != path)
                 return;
 
-            if (state is ActionState.Succeeded)
-                _dalamud.Framework.RunOnFrameworkThread(() => _left.Reload(_textures));
-            _textures.Finished -= Reload;
-        }
-
-        _textures.Finished += Reload;
+            _dalamud.Framework.RunOnFrameworkThread(() => _left.Reload(_textures));
+        });
     }
 
     private Vector2 GetChildWidth()

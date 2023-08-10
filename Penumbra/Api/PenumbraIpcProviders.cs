@@ -3,6 +3,7 @@ using Dalamud.Plugin;
 using Penumbra.GameData.Enums;
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Penumbra.Api.Enums;
 using Penumbra.Api.Helpers;
 using Penumbra.Collections.Manager;
@@ -104,6 +105,10 @@ public class PenumbraIpcProviders : IDisposable
     internal readonly FuncProvider<string, string, string, string, IReadOnlyList<string>, PenumbraApiEc> TrySetModSettings;
     internal readonly EventProvider<ModSettingChange, string, string, bool>                              ModSettingChanged;
     internal readonly FuncProvider<string, string, string, PenumbraApiEc>                                CopyModSettings;
+
+    // Editing
+    internal readonly FuncProvider<string, string, TextureType, bool, Task>      ConvertTextureFile;
+    internal readonly FuncProvider<byte[], int, string, TextureType, bool, Task> ConvertTextureData;
 
     // Temporary
     internal readonly FuncProvider<string, string, bool, (PenumbraApiEc, string)>                          CreateTemporaryCollection;
@@ -218,6 +223,10 @@ public class PenumbraIpcProviders : IDisposable
             () => Api.ModSettingChanged += ModSettingChangedEvent,
             () => Api.ModSettingChanged -= ModSettingChangedEvent);
         CopyModSettings = Ipc.CopyModSettings.Provider(pi, Api.CopyModSettings);
+
+        // Editing
+        ConvertTextureFile = Ipc.ConvertTextureFile.Provider(pi, Api.ConvertTextureFile);
+        ConvertTextureData = Ipc.ConvertTextureData.Provider(pi, Api.ConvertTextureData);
 
         // Temporary
         CreateTemporaryCollection       = Ipc.CreateTemporaryCollection.Provider(pi, Api.CreateTemporaryCollection);
@@ -334,6 +343,10 @@ public class PenumbraIpcProviders : IDisposable
         AddTemporaryMod.Dispose();
         RemoveTemporaryModAll.Dispose();
         RemoveTemporaryMod.Dispose();
+
+        // Editing
+        ConvertTextureFile.Dispose();
+        ConvertTextureData.Dispose();
 
         Disposed.Invoke();
         Disposed.Dispose();

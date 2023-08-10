@@ -19,6 +19,7 @@ using Penumbra.Collections.Manager;
 using Penumbra.GameData.Actors;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Structs;
+using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceLoading;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.Structs;
@@ -61,13 +62,15 @@ public class DebugTab : Window, ITab
     private readonly ModImportManager          _modImporter;
     private readonly ImportPopup               _importPopup;
     private readonly FrameworkManager          _framework;
+    private readonly TextureManager            _textureManager;
 
     public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorService actorService,
         DalamudServices dalamud, StainService stains, CharacterUtility characterUtility, ResidentResourceManager residentResources,
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
-        CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework)
+        CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
+        TextureManager textureManager)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse, false)
     {
         IsOpen = true;
@@ -99,6 +102,7 @@ public class DebugTab : Window, ITab
         _modImporter               = modImporter;
         _importPopup               = importPopup;
         _framework                 = framework;
+        _textureManager            = textureManager;
     }
 
     public ReadOnlySpan<byte> Label
@@ -147,14 +151,15 @@ public class DebugTab : Window, ITab
 
     private void DrawCollectionCaches()
     {
-        if (!ImGui.CollapsingHeader($"Collections ({_collectionManager.Caches.Count}/{_collectionManager.Storage.Count - 1} Caches)###Collections"))
+        if (!ImGui.CollapsingHeader(
+                $"Collections ({_collectionManager.Caches.Count}/{_collectionManager.Storage.Count - 1} Caches)###Collections"))
             return;
 
         foreach (var collection in _collectionManager.Storage)
         {
             if (collection.HasCache)
             {
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
+                using var color = PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value());
                 using var node  = TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})");
                 if (!node)
                     continue;
@@ -177,8 +182,9 @@ public class DebugTab : Window, ITab
             }
             else
             {
-                using var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
-                TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})", ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
+                using var color = PushColor(ImGuiCol.Text, ColorId.UndefinedMod.Value());
+                TreeNode($"{collection.AnonymizedName} (Change Counter {collection.ChangeCounter})",
+                    ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.Leaf).Dispose();
             }
         }
     }
@@ -291,6 +297,20 @@ public class DebugTab : Window, ITab
                         PrintValue(name, $"After {span.Minutes:D2}:{span.Seconds:D2}.{span.Milliseconds / 10:D2} (+ Ticks)");
                     }
                 }
+            }
+        }
+
+        using (var tree = TreeNode($"Texture Manager {_textureManager.Tasks.Count}###Texture Manager"))
+        {
+            if (tree)
+            {
+                using var table = Table("##Tasks", 2, ImGuiTableFlags.RowBg);
+                if (table)
+                    foreach (var task in _textureManager.Tasks)
+                    {
+                        ImGuiUtil.DrawTableColumn(task.Key.ToString()!);
+                        ImGuiUtil.DrawTableColumn(task.Value.Item1.Status.ToString());
+                    }
             }
         }
     }
@@ -500,7 +520,7 @@ public class DebugTab : Window, ITab
 
                 if (agent->Data != null)
                 {
-                    using var table         = Table("###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit);
+                    using var table = Table("###PBannerTable", 2, ImGuiTableFlags.SizingFixedFit);
                     if (table)
                         for (var i = 0; i < 8; ++i)
                         {

@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading;
+using System.Threading.Tasks;
 using Dalamud.Data;
 using Dalamud.Interface;
 using ImGuiScene;
@@ -11,100 +14,71 @@ using OtterGui.Log;
 using OtterGui.Tasks;
 using OtterTex;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
+using Swan;
 using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
 
-public sealed class TextureManager : AsyncTaskManager
+public sealed class TextureManager : SingleTaskQueue, IDisposable
 {
+    private readonly Logger      _logger;
     private readonly UiBuilder   _uiBuilder;
     private readonly DataManager _gameData;
 
-    public TextureManager(Logger logger, UiBuilder uiBuilder, DataManager gameData)
-        : base(logger)
+    private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks    = new();
+    private          bool                                                           _disposed = false;
+
+    public TextureManager(UiBuilder uiBuilder, DataManager gameData, Logger logger)
     {
         _uiBuilder = uiBuilder;
         _gameData  = gameData;
+        _logger    = logger;
     }
 
-    public Guid SavePng(string input, string output)
+    public IReadOnlyDictionary<IAction, (Task, CancellationTokenSource)> Tasks
+        => _tasks;
+
+    public void Dispose()
+    {
+        _disposed = true;
+        foreach (var (_, cancel) in _tasks.Values.ToArray())
+            cancel.Cancel();
+        _tasks.Clear();
+    }
+
+    public Task SavePng(string input, string output)
         => Enqueue(new SavePngAction(this, input, output));
 
-    public Guid SavePng(BaseImage image, string path, byte[]? rgba = null, int width = 0, int height = 0)
+    public Task SavePng(BaseImage image, string path, byte[]? rgba = null, int width = 0, int height = 0)
         => Enqueue(new SavePngAction(this, image, path, rgba, width, height));
 
-    public Guid SaveAs(CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, string input, string output)
+    public Task SaveAs(CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, string input, string output)
         => Enqueue(new SaveAsAction(this, type, mipMaps, asTex, input, output));
 
-    public Guid SaveAs(CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, BaseImage image, string path, byte[]? rgba = null,
+    public Task SaveAs(CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, BaseImage image, string path, byte[]? rgba = null,
         int width = 0, int height = 0)
         => Enqueue(new SaveAsAction(this, type, mipMaps, asTex, image, path, rgba, width, height));
 
-    private readonly struct ImageInputData
+    private Task Enqueue(IAction action)
     {
-        private readonly string? _inputPath;
+        if (_disposed)
+            return Task.FromException(new ObjectDisposedException(nameof(TextureManager)));
 
-        private readonly BaseImage _image;
-        private readonly byte[]?   _rgba;
-        private readonly int       _width;
-        private readonly int       _height;
-
-        public ImageInputData(string inputPath)
+        Task t;
+        lock (_tasks)
         {
-            _inputPath = inputPath;
-            _image     = new BaseImage();
-            _rgba      = null;
-            _width     = 0;
-            _height    = 0;
+            t = _tasks.GetOrAdd(action, a =>
+            {
+                var token = new CancellationTokenSource();
+                var task  = Enqueue(a, token.Token);
+                task.ContinueWith(_ => _tasks.TryRemove(a, out var unused), CancellationToken.None);
+                return (task, token);
+            }).Item1;
         }
 
-        public ImageInputData(BaseImage image, byte[]? rgba = null, int width = 0, int height = 0)
-        {
-            _inputPath = null;
-            _image     = image.Width == 0 || image.Height == 0 ? new BaseImage() : image;
-            _rgba      = rgba?.ToArray();
-            _width     = width;
-            _height    = height;
-        }
-
-        public (BaseImage Image, byte[]? Rgba, int Width, int Height) GetData(TextureManager textures)
-        {
-            if (_inputPath == null)
-                return (_image, _rgba, _width, _height);
-
-            if (!File.Exists(_inputPath))
-                throw new FileNotFoundException($"Input texture file {_inputPath} not Found.", _inputPath);
-
-            var (image, _) = textures.Load(_inputPath);
-            return (image, null, 0, 0);
-        }
-
-        public bool Equals(ImageInputData rhs)
-        {
-            if (_inputPath != null)
-                return string.Equals(_inputPath, rhs._inputPath, StringComparison.OrdinalIgnoreCase);
-
-            if (rhs._inputPath != null)
-                return false;
-
-            if (_image.Image != null)
-                return ReferenceEquals(_image.Image, rhs._image.Image);
-
-            return _width == rhs._width && _height == rhs._height && _rgba != null && rhs._rgba != null && _rgba.SequenceEqual(rhs._rgba);
-        }
-
-        public override string ToString()
-            => _inputPath
-             ?? _image.Type switch
-                {
-                    TextureType.Unknown => $"Custom {_width} x {_height} RGBA Image",
-                    TextureType.Dds     => $"Custom {_width} x {_height} {_image.Format} Image",
-                    TextureType.Tex     => $"Custom {_width} x {_height} {_image.Format} Image",
-                    TextureType.Png     => $"Custom {_width} x {_height} .png Image",
-                    TextureType.Bitmap  => $"Custom {_width} x {_height} RGBA Image",
-                    _                   => "Unknown Image",
-                };
+        return t;
     }
 
     private class SavePngAction : IAction
@@ -129,7 +103,7 @@ public sealed class TextureManager : AsyncTaskManager
 
         public void Execute(CancellationToken cancel)
         {
-            _textures.Logger.Information($"[{nameof(TextureManager)}] Saving {_input} as .png to {_outputPath}...");
+            _textures._logger.Information($"[{nameof(TextureManager)}] Saving {_input} as .png to {_outputPath}...");
             var (image, rgba, width, height) = _input.GetData(_textures);
             cancel.ThrowIfCancellationRequested();
             Image<Rgba32>? png = null;
@@ -144,8 +118,11 @@ public sealed class TextureManager : AsyncTaskManager
             }
 
             cancel.ThrowIfCancellationRequested();
-            png?.SaveAsync(_outputPath, cancel).Wait(cancel);
+            png?.SaveAsync(_outputPath, new PngEncoder() { CompressionLevel = PngCompressionLevel.NoCompression }, cancel).Wait(cancel);
         }
+
+        public override string ToString()
+            => $"{_input} to {_outputPath} PNG";
 
         public bool Equals(IAction? other)
         {
@@ -154,6 +131,9 @@ public sealed class TextureManager : AsyncTaskManager
 
             return string.Equals(_outputPath, rhs._outputPath, StringComparison.OrdinalIgnoreCase) && _input.Equals(rhs._input);
         }
+
+        public override int GetHashCode()
+            => HashCode.Combine(_outputPath.ToLowerInvariant(), _input);
     }
 
     private class SaveAsAction : IAction
@@ -177,8 +157,7 @@ public sealed class TextureManager : AsyncTaskManager
         }
 
         public SaveAsAction(TextureManager textures, CombinedTexture.TextureSaveType type, bool mipMaps, bool asTex, BaseImage image,
-            string path,
-            byte[]? rgba = null, int width = 0, int height = 0)
+            string path, byte[]? rgba = null, int width = 0, int height = 0)
         {
             _textures   = textures;
             _input      = new ImageInputData(image, rgba, width, height);
@@ -190,7 +169,7 @@ public sealed class TextureManager : AsyncTaskManager
 
         public void Execute(CancellationToken cancel)
         {
-            _textures.Logger.Information(
+            _textures._logger.Information(
                 $"[{nameof(TextureManager)}] Saving {_input} as {_type} {(_asTex ? ".tex" : ".dds")} file{(_mipMaps ? " with mip maps" : string.Empty)} to {_outputPath}...");
             var (image, rgba, width, height) = _input.GetData(_textures);
             if (image.Type is TextureType.Unknown)
@@ -220,6 +199,9 @@ public sealed class TextureManager : AsyncTaskManager
                 dds.AsDds!.SaveDDS(_outputPath);
         }
 
+        public override string ToString()
+            => $"{_input} to {_outputPath} {_type} {(_asTex ? "TEX" : "DDS")}{(_mipMaps ? " with MipMaps" : string.Empty)}";
+
         public bool Equals(IAction? other)
         {
             if (other is not SaveAsAction rhs)
@@ -231,6 +213,9 @@ public sealed class TextureManager : AsyncTaskManager
              && string.Equals(_outputPath, rhs._outputPath, StringComparison.OrdinalIgnoreCase)
              && _input.Equals(rhs._input);
         }
+
+        public override int GetHashCode()
+            => HashCode.Combine(_outputPath.ToLowerInvariant(), _type, _mipMaps, _asTex, _input);
     }
 
     /// <summary> Load a texture wrap for a given image. </summary>
@@ -434,5 +419,74 @@ public sealed class TextureManager : AsyncTaskManager
         using var w      = new BinaryWriter(stream);
         header.Write(w);
         w.Write(input.Pixels);
+    }
+
+    private readonly struct ImageInputData
+    {
+        private readonly string? _inputPath;
+
+        private readonly BaseImage _image;
+        private readonly byte[]?   _rgba;
+        private readonly int       _width;
+        private readonly int       _height;
+
+        public ImageInputData(string inputPath)
+        {
+            _inputPath = inputPath;
+            _image     = new BaseImage();
+            _rgba      = null;
+            _width     = 0;
+            _height    = 0;
+        }
+
+        public ImageInputData(BaseImage image, byte[]? rgba = null, int width = 0, int height = 0)
+        {
+            _inputPath = null;
+            _image     = image.Width == 0 || image.Height == 0 ? new BaseImage() : image;
+            _rgba      = rgba?.ToArray();
+            _width     = width;
+            _height    = height;
+        }
+
+        public (BaseImage Image, byte[]? Rgba, int Width, int Height) GetData(TextureManager textures)
+        {
+            if (_inputPath == null)
+                return (_image, _rgba, _width, _height);
+
+            if (!File.Exists(_inputPath))
+                throw new FileNotFoundException($"Input texture file {_inputPath} not Found.", _inputPath);
+
+            var (image, _) = textures.Load(_inputPath);
+            return (image, null, 0, 0);
+        }
+
+        public bool Equals(ImageInputData rhs)
+        {
+            if (_inputPath != null)
+                return string.Equals(_inputPath, rhs._inputPath, StringComparison.OrdinalIgnoreCase);
+
+            if (rhs._inputPath != null)
+                return false;
+
+            if (_image.Image != null)
+                return ReferenceEquals(_image.Image, rhs._image.Image);
+
+            return _width == rhs._width && _height == rhs._height && _rgba != null && rhs._rgba != null && _rgba.SequenceEqual(rhs._rgba);
+        }
+
+        public override string ToString()
+            => _inputPath
+             ?? _image.Type switch
+                {
+                    TextureType.Unknown => $"Custom {_width} x {_height} RGBA Image",
+                    TextureType.Dds     => $"Custom {_width} x {_height} {_image.Format} Image",
+                    TextureType.Tex     => $"Custom {_width} x {_height} {_image.Format} Image",
+                    TextureType.Png     => $"Custom {_width} x {_height} .png Image",
+                    TextureType.Bitmap  => $"Custom {_width} x {_height} RGBA Image",
+                    _                   => "Unknown Image",
+                };
+
+        public override int GetHashCode()
+            => _inputPath != null ? _inputPath.ToLowerInvariant().GetHashCode() : HashCode.Combine(_width, _height);
     }
 }

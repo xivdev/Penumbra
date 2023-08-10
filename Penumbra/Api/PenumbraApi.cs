@@ -8,11 +8,13 @@ using Penumbra.Interop.Structs;
 using Penumbra.Meta.Manipulations;
 using Penumbra.Mods;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Api.Enums;
 using Penumbra.GameData.Actors;
@@ -23,15 +25,17 @@ using Penumbra.String.Classes;
 using Penumbra.Services;
 using Penumbra.Collections.Manager;
 using Penumbra.Communication;
+using Penumbra.Import.Textures;
 using Penumbra.Interop.Services;
 using Penumbra.UI;
+using TextureType = Penumbra.Api.Enums.TextureType;
 
 namespace Penumbra.Api;
 
 public class PenumbraApi : IDisposable, IPenumbraApi
 {
     public (int, int) ApiVersion
-        => (4, 20);
+        => (4, 21);
 
     public event Action<string>? PreSettingsPanelDraw
     {
@@ -124,12 +128,13 @@ public class PenumbraApi : IDisposable, IPenumbraApi
     private RedrawService         _redrawService;
     private ModFileSystem         _modFileSystem;
     private ConfigWindow          _configWindow;
+    private TextureManager        _textureManager;
 
     public unsafe PenumbraApi(CommunicatorService communicator, ModManager modManager, ResourceLoader resourceLoader,
         Configuration config, CollectionManager collectionManager, DalamudServices dalamud, TempCollectionManager tempCollections,
         TempModManager tempMods, ActorService actors, CollectionResolver collectionResolver, CutsceneService cutsceneService,
         ModImportManager modImportManager, CollectionEditor collectionEditor, RedrawService redrawService, ModFileSystem modFileSystem,
-        ConfigWindow configWindow)
+        ConfigWindow configWindow, TextureManager textureManager)
     {
         _communicator       = communicator;
         _modManager         = modManager;
@@ -147,6 +152,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _redrawService      = redrawService;
         _modFileSystem      = modFileSystem;
         _configWindow       = configWindow;
+        _textureManager     = textureManager;
         _lumina             = _dalamud.GameData.GameData;
 
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
@@ -179,6 +185,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _redrawService      = null!;
         _modFileSystem      = null!;
         _configWindow       = null!;
+        _textureManager     = null!;
     }
 
     public event ChangedItemClick? ChangedItemClicked
@@ -991,6 +998,39 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         var set        = collection.MetaCache?.Manipulations.ToArray() ?? Array.Empty<MetaManipulation>();
         return Functions.ToCompressedBase64(set, MetaManipulation.CurrentVersion);
     }
+
+    public Task ConvertTextureFile(string inputFile, string outputFile, TextureType textureType, bool mipMaps)
+        => textureType switch
+        {
+            TextureType.Png     => _textureManager.SavePng(inputFile, outputFile),
+            TextureType.AsIsTex => _textureManager.SaveAs(CombinedTexture.TextureSaveType.AsIs,   mipMaps, true,  inputFile, outputFile),
+            TextureType.AsIsDds => _textureManager.SaveAs(CombinedTexture.TextureSaveType.AsIs,   mipMaps, false, inputFile, outputFile),
+            TextureType.RgbaTex => _textureManager.SaveAs(CombinedTexture.TextureSaveType.Bitmap, mipMaps, true,  inputFile, outputFile),
+            TextureType.RgbaDds => _textureManager.SaveAs(CombinedTexture.TextureSaveType.Bitmap, mipMaps, false, inputFile, outputFile),
+            TextureType.Bc3Tex  => _textureManager.SaveAs(CombinedTexture.TextureSaveType.BC3,    mipMaps, true,  inputFile, outputFile),
+            TextureType.Bc3Dds  => _textureManager.SaveAs(CombinedTexture.TextureSaveType.BC3,    mipMaps, false, inputFile, outputFile),
+            TextureType.Bc7Tex  => _textureManager.SaveAs(CombinedTexture.TextureSaveType.BC7,    mipMaps, true,  inputFile, outputFile),
+            TextureType.Bc7Dds  => _textureManager.SaveAs(CombinedTexture.TextureSaveType.BC7,    mipMaps, false, inputFile, outputFile),
+            _                   => Task.FromException(new Exception($"Invalid input value {textureType}.")),
+        };
+
+    // @formatter:off
+    public Task ConvertTextureData(byte[] rgbaData, int width, string outputFile, TextureType textureType, bool mipMaps)
+        => textureType switch
+        {
+            TextureType.Png     => _textureManager.SavePng(new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            TextureType.AsIsTex => _textureManager.SaveAs(CombinedTexture.TextureSaveType.AsIs,   mipMaps, true,  new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            TextureType.AsIsDds => _textureManager.SaveAs(CombinedTexture.TextureSaveType.AsIs,   mipMaps, false, new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            TextureType.RgbaTex => _textureManager.SaveAs(CombinedTexture.TextureSaveType.Bitmap, mipMaps, true,  new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            TextureType.RgbaDds => _textureManager.SaveAs(CombinedTexture.TextureSaveType.Bitmap, mipMaps, false, new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            TextureType.Bc3Tex  => _textureManager.SaveAs(CombinedTexture.TextureSaveType.BC3,    mipMaps, true,  new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            TextureType.Bc3Dds  => _textureManager.SaveAs(CombinedTexture.TextureSaveType.BC3,    mipMaps, false, new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            TextureType.Bc7Tex  => _textureManager.SaveAs(CombinedTexture.TextureSaveType.BC7,    mipMaps, true,  new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            TextureType.Bc7Dds  => _textureManager.SaveAs(CombinedTexture.TextureSaveType.BC7,    mipMaps, false, new BaseImage(), outputFile, rgbaData, width, rgbaData.Length / 4 / width),
+            _                   => Task.FromException(new Exception($"Invalid input value {textureType}.")),
+        };
+    // @formatter:on
+
 
     // TODO: cleanup when incrementing API
     public string GetMetaManipulations(string characterName)

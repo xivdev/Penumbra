@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using System.Threading.Tasks;
 
 namespace Penumbra.Import.Textures;
 
@@ -29,7 +30,7 @@ public partial class CombinedTexture : IDisposable
 
     private readonly Texture _centerStorage = new();
 
-    public Guid SaveGuid { get; private set; } = Guid.Empty;
+    public Task SaveTask { get; private set; } = Task.CompletedTask;
 
     public bool IsLoaded
         => _mode != Mode.Empty;
@@ -55,7 +56,7 @@ public partial class CombinedTexture : IDisposable
         if (!IsLoaded || _current == null)
             return;
 
-        SaveGuid = textures.SavePng(_current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width, _current.TextureWrap!.Height);
+        SaveTask = textures.SavePng(_current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width, _current.TextureWrap!.Height);
     }
 
     private void SaveAs(TextureManager textures, string path, TextureSaveType type, bool mipMaps, bool writeTex)
@@ -63,7 +64,7 @@ public partial class CombinedTexture : IDisposable
         if (!IsLoaded || _current == null)
             return;
 
-        SaveGuid = textures.SaveAs(type, mipMaps, writeTex, _current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width,
+        SaveTask = textures.SaveAs(type, mipMaps, writeTex, _current.BaseImage, path, _current.RgbaPixels, _current.TextureWrap!.Width,
             _current.TextureWrap!.Height);
     }
 
@@ -133,7 +134,7 @@ public partial class CombinedTexture : IDisposable
     {
         _centerStorage.Dispose();
         _current = null;
-        SaveGuid = Guid.Empty;
+        SaveTask = Task.CompletedTask;
         _mode    = Mode.Empty;
     }
 }
