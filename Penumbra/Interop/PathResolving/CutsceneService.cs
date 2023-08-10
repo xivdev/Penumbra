@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Dalamud.Game.ClientState.Objects;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using Penumbra.GameData.Actors;
 using Penumbra.Interop.Services;
@@ -16,7 +16,7 @@ public class CutsceneService : IDisposable
     public const int CutsceneSlots    = CutsceneEndIdx - CutsceneStartIdx;
 
     private readonly GameEventManager _events;
-    private readonly ObjectTable      _objects;
+    private readonly IObjectTable     _objects;
     private readonly short[]          _copiedCharacters = Enumerable.Repeat((short)-1, CutsceneSlots).ToArray();
 
     public IEnumerable<KeyValuePair<int, Dalamud.Game.ClientState.Objects.Types.GameObject>> Actors
@@ -24,7 +24,7 @@ public class CutsceneService : IDisposable
             .Where(i => _objects[i] != null)
             .Select(i => KeyValuePair.Create(i, this[i] ?? _objects[i]!));
 
-    public unsafe CutsceneService(ObjectTable objects, GameEventManager events)
+    public unsafe CutsceneService(IObjectTable objects, GameEventManager events)
     {
         _objects                    =  objects;
         _events                     =  events;

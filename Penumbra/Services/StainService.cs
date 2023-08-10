@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Data;
 using Dalamud.Plugin;
+using Dalamud.Plugin.Services;
 using OtterGui.Widgets;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
@@ -24,7 +24,7 @@ public class StainService : IDisposable
     public readonly StmFile StmFile;
     public readonly StainTemplateCombo TemplateCombo;
 
-    public StainService(StartTracker timer, DalamudPluginInterface pluginInterface, DataManager dataManager)
+    public StainService(StartTracker timer, DalamudPluginInterface pluginInterface, IDataManager dataManager)
     {
         using var t = timer.Measure(StartTimeType.Stains);
         StainData = new StainData(pluginInterface, dataManager, dataManager.Language);

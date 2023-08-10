@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Data;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
@@ -21,10 +21,10 @@ namespace Penumbra.UI.AdvancedWindow;
 public class FileEditor<T> where T : class, IWritable
 {
     private readonly FileDialogService _fileDialog;
-    private readonly DataManager       _gameData;
+    private readonly IDataManager       _gameData;
     private readonly ModEditWindow     _owner;
 
-    public FileEditor(ModEditWindow owner, DataManager gameData, Configuration config, FileDialogService fileDialog, string tabName,
+    public FileEditor(ModEditWindow owner, IDataManager gameData, Configuration config, FileDialogService fileDialog, string tabName,
         string fileType, Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
         Func<byte[], T?> parseFile)
     {

@@ -4,7 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
-using Dalamud.Game.ClientState.Objects;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.GameData;
 using Penumbra.Interop.Services;
@@ -14,7 +14,7 @@ namespace Penumbra.Interop.PathResolving;
 
 public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, bool)>
 {
-    private readonly ObjectTable      _objects;
+    private readonly IObjectTable      _objects;
     private readonly GameEventManager _gameEvents;
 
     private readonly Dictionary<nint, (nint GameObject, bool IsChild)> _drawObjectToGameObject = new();
@@ -24,7 +24,7 @@ public class DrawObjectState : IDisposable, IReadOnlyDictionary<nint, (nint, boo
     public nint LastGameObject
         => _lastGameObject.IsValueCreated && _lastGameObject.Value!.Count > 0 ? _lastGameObject.Value.Peek() : nint.Zero;
 
-    public DrawObjectState(ObjectTable objects, GameEventManager gameEvents)
+    public DrawObjectState(IObjectTable objects, GameEventManager gameEvents)
     {
         SignatureHelper.Initialise(this);
         _enableDrawHook.Enable();

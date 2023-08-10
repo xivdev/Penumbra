@@ -1,7 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Dalamud.Game.ClientState;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.Collections;
@@ -17,11 +17,11 @@ public unsafe class IdentifiedCollectionCache : IDisposable, IEnumerable<(nint A
 {
     private readonly CommunicatorService                                _communicator;
     private readonly GameEventManager                                   _events;
-    private readonly ClientState                                        _clientState;
+    private readonly IClientState                                       _clientState;
     private readonly Dictionary<nint, (ActorIdentifier, ModCollection)> _cache = new(317);
     private          bool                                               _dirty;
 
-    public IdentifiedCollectionCache(ClientState clientState, CommunicatorService communicator, GameEventManager events)
+    public IdentifiedCollectionCache(IClientState clientState, CommunicatorService communicator, GameEventManager events)
     {
         _clientState  = clientState;
         _communicator = communicator;

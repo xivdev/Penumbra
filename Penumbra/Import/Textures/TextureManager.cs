@@ -6,8 +6,8 @@ using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
-using Dalamud.Data;
 using Dalamud.Interface;
+using Dalamud.Plugin.Services;
 using ImGuiScene;
 using Lumina.Data.Files;
 using OtterGui.Log;
@@ -16,21 +16,20 @@ using OtterTex;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
-using Swan;
 using Image = SixLabors.ImageSharp.Image;
 
 namespace Penumbra.Import.Textures;
 
 public sealed class TextureManager : SingleTaskQueue, IDisposable
 {
-    private readonly Logger      _logger;
-    private readonly UiBuilder   _uiBuilder;
-    private readonly DataManager _gameData;
+    private readonly Logger       _logger;
+    private readonly UiBuilder    _uiBuilder;
+    private readonly IDataManager _gameData;
 
     private readonly ConcurrentDictionary<IAction, (Task, CancellationTokenSource)> _tasks    = new();
     private          bool                                                           _disposed = false;
 
-    public TextureManager(UiBuilder uiBuilder, DataManager gameData, Logger logger)
+    public TextureManager(UiBuilder uiBuilder, IDataManager gameData, Logger logger)
     {
         _uiBuilder = uiBuilder;
         _gameData  = gameData;

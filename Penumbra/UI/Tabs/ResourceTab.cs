@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Numerics;
 using Dalamud.Game;
-using Dalamud.Interface;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using FFXIVClientStructs.FFXIV.Client.System.Resource.Handle;
 using FFXIVClientStructs.Interop;
@@ -20,9 +19,9 @@ public class ResourceTab : ITab
 {
     private readonly Configuration          _config;
     private readonly ResourceManagerService _resourceManager;
-    private readonly SigScanner             _sigScanner;
+    private readonly ISigScanner            _sigScanner;
 
-    public ResourceTab(Configuration config, ResourceManagerService resourceManager, SigScanner sigScanner)
+    public ResourceTab(Configuration config, ResourceManagerService resourceManager, ISigScanner sigScanner)
     {
         _config          = config;
         _resourceManager = resourceManager;

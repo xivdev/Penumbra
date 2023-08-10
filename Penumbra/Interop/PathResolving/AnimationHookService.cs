@@ -1,10 +1,9 @@
 using System;
 using System.Threading;
 using Dalamud.Game.ClientState.Conditions;
-using Dalamud.Game.ClientState.Objects;
 using Dalamud.Hooking;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
-using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;
 using Penumbra.GameData;
@@ -20,7 +19,7 @@ namespace Penumbra.Interop.PathResolving;
 public unsafe class AnimationHookService : IDisposable
 {
     private readonly PerformanceTracker _performance;
-    private readonly ObjectTable        _objects;
+    private readonly IObjectTable        _objects;
     private readonly CollectionResolver _collectionResolver;
     private readonly DrawObjectState    _drawObjectState;
     private readonly CollectionResolver _resolver;
@@ -29,7 +28,7 @@ public unsafe class AnimationHookService : IDisposable
     private readonly ThreadLocal<ResolveData> _animationLoadData  = new(() => ResolveData.Invalid, true);
     private readonly ThreadLocal<ResolveData> _characterSoundData = new(() => ResolveData.Invalid, true);
 
-    public AnimationHookService(PerformanceTracker performance, ObjectTable objects, CollectionResolver collectionResolver,
+    public AnimationHookService(PerformanceTracker performance, IObjectTable objects, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, CollectionResolver resolver, Condition conditions)
     {
         _performance        = performance;

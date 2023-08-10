@@ -3,7 +3,6 @@ using Dalamud.Game.Gui;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Interface;
 using Dalamud.Plugin;
 using Lumina.Excel.GeneratedSheets;
 using OtterGui.Log;
@@ -14,7 +13,7 @@ public class ChatService : OtterGui.Classes.ChatService
 {
     private readonly ChatGui _chat;
 
-    public ChatService(Logger log, DalamudPluginInterface pi, ChatGui chat, UiBuilder uiBuilder)
+    public ChatService(Logger log, DalamudPluginInterface pi, ChatGui chat)
         : base(log, pi)
         => _chat = chat;
 

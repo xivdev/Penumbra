@@ -41,7 +41,7 @@ public class CollectionsTab : IDisposable, ITab
     }
 
     public CollectionsTab(DalamudPluginInterface pi, Configuration configuration, CommunicatorService communicator,
-        CollectionManager collectionManager, ModStorage modStorage, ActorService actors, TargetManager targets, TutorialService tutorial)
+        CollectionManager collectionManager, ModStorage modStorage, ActorService actors, ITargetManager targets, TutorialService tutorial)
     {
         _config   = configuration;
         _tutorial = tutorial;

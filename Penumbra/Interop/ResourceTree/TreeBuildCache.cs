@@ -2,9 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Dalamud.Data;
-using Dalamud.Game.ClientState.Objects;
 using Dalamud.Game.ClientState.Objects.Types;
+using Dalamud.Plugin.Services;
 using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
@@ -12,13 +11,13 @@ namespace Penumbra.Interop.ResourceTree;
 
 internal class TreeBuildCache
 {
-    private readonly DataManager                     _dataManager;
+    private readonly IDataManager                    _dataManager;
     private readonly Dictionary<FullPath, MtrlFile?> _materials      = new();
     private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = new();
     public readonly  List<Character>                 Characters;
     public readonly  Dictionary<uint, Character>     CharactersById;
 
-    public TreeBuildCache(ObjectTable objects, DataManager dataManager)
+    public TreeBuildCache(IObjectTable objects, IDataManager dataManager)
     {
         _dataManager = dataManager;
         Characters   = objects.Where(c => c is Character ch && ch.IsValid()).Cast<Character>().ToList();
@@ -36,7 +35,7 @@ internal class TreeBuildCache
     public ShpkFile? ReadShaderPackage(FullPath path)
         => ReadFile(_dataManager, path, _shaderPackages, bytes => new ShpkFile(bytes));
 
-    private static T? ReadFile<T>(DataManager dataManager, FullPath path, Dictionary<FullPath, T?> cache, Func<byte[], T> parseFile)
+    private static T? ReadFile<T>(IDataManager dataManager, FullPath path, Dictionary<FullPath, T?> cache, Func<byte[], T> parseFile)
         where T : class
     {
         if (path.FullName.Length == 0)

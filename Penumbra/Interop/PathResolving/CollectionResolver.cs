@@ -1,6 +1,5 @@
 using System;
-using Dalamud.Game.ClientState;
-using Dalamud.Game.Gui;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.Collections;
 using Penumbra.Collections.Manager;
@@ -21,8 +20,8 @@ public unsafe class CollectionResolver
     private readonly IdentifiedCollectionCache _cache;
     private readonly HumanModelList            _humanModels;
 
-    private readonly ClientState     _clientState;
-    private readonly GameGui         _gameGui;
+    private readonly IClientState    _clientState;
+    private readonly IGameGui         _gameGui;
     private readonly ActorService    _actors;
     private readonly CutsceneService _cutscenes;
 
@@ -31,7 +30,7 @@ public unsafe class CollectionResolver
     private readonly TempCollectionManager _tempCollections;
     private readonly DrawObjectState       _drawObjectState;
 
-    public CollectionResolver(PerformanceTracker performance, IdentifiedCollectionCache cache, ClientState clientState, GameGui gameGui,
+    public CollectionResolver(PerformanceTracker performance, IdentifiedCollectionCache cache, IClientState clientState, IGameGui gameGui,
         ActorService actors, CutsceneService cutscenes, Configuration config, CollectionManager collectionManager,
         TempCollectionManager tempCollections, DrawObjectState drawObjectState, HumanModelList humanModels)
     {

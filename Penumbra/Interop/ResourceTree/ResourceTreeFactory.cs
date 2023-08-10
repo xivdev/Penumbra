@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using Dalamud.Data;
-using Dalamud.Game.ClientState.Objects;
+using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using Penumbra.GameData.Actors;
@@ -12,14 +11,14 @@ namespace Penumbra.Interop.ResourceTree;
 
 public class ResourceTreeFactory
 {
-    private readonly DataManager        _gameData;
-    private readonly ObjectTable        _objects;
+    private readonly IDataManager       _gameData;
+    private readonly IObjectTable       _objects;
     private readonly CollectionResolver _collectionResolver;
     private readonly IdentifierService  _identifier;
     private readonly Configuration      _config;
     private readonly ActorService       _actors;
 
-    public ResourceTreeFactory(DataManager gameData, ObjectTable objects, CollectionResolver resolver, IdentifierService identifier,
+    public ResourceTreeFactory(IDataManager gameData, IObjectTable objects, CollectionResolver resolver, IdentifierService identifier,
         Configuration config, ActorService actors)
     {
         _gameData           = gameData;

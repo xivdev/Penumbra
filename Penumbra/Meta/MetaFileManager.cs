@@ -1,7 +1,7 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Dalamud.Data;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.System.Memory;
 using Penumbra.Collections;
@@ -22,12 +22,12 @@ public unsafe class MetaFileManager
     internal readonly Configuration           Config;
     internal readonly CharacterUtility        CharacterUtility;
     internal readonly ResidentResourceManager ResidentResources;
-    internal readonly DataManager             GameData;
+    internal readonly IDataManager            GameData;
     internal readonly ActiveCollectionData    ActiveCollections;
     internal readonly ValidityChecker         ValidityChecker;
     internal readonly IdentifierService       Identifier;
 
-    public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, DataManager gameData,
+    public MetaFileManager(CharacterUtility characterUtility, ResidentResourceManager residentResources, IDataManager gameData,
         ActiveCollectionData activeCollections, Configuration config, ValidityChecker validityChecker, IdentifierService identifier)
     {
         CharacterUtility  = characterUtility;

@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Dalamud.Data;
 using Dalamud.Interface;
+using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
@@ -54,10 +54,10 @@ public class ChangedItemDrawer : IDisposable
     private readonly Dictionary<ChangedItemIcon, TextureWrap> _icons             = new(16);
     private          float                                    _smallestIconWidth;
 
-    public ChangedItemDrawer(UiBuilder uiBuilder, DataManager gameData, CommunicatorService communicator, Configuration config)
+    public ChangedItemDrawer(UiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider, CommunicatorService communicator, Configuration config)
     {
         _items = gameData.GetExcelSheet<Item>()!;
-        uiBuilder.RunWhenUiPrepared(() => CreateEquipSlotIcons(uiBuilder, gameData), true);
+        uiBuilder.RunWhenUiPrepared(() => CreateEquipSlotIcons(uiBuilder, gameData, textureProvider), true);
         _communicator = communicator;
         _config       = config;
     }
@@ -321,7 +321,7 @@ public class ChangedItemDrawer : IDisposable
         };
 
     /// <summary> Initialize the icons. </summary>
-    private bool CreateEquipSlotIcons(UiBuilder uiBuilder, DataManager gameData)
+    private bool CreateEquipSlotIcons(UiBuilder uiBuilder, IDataManager gameData, ITextureProvider textureProvider)
     {
         using var equipTypeIcons = uiBuilder.LoadUld("ui/uld/ArmouryBoard.uld");
 
@@ -345,11 +345,11 @@ public class ChangedItemDrawer : IDisposable
         Add(ChangedItemIcon.Neck,          equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 9));
         Add(ChangedItemIcon.Wrists,        equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 10));
         Add(ChangedItemIcon.Finger,        equipTypeIcons.LoadTexturePart("ui/uld/ArmouryBoard_hr1.tex", 11));
-        Add(ChangedItemIcon.Monster,       gameData.GetImGuiTexture("ui/icon/062000/062042_hr1.tex"));
-        Add(ChangedItemIcon.Demihuman,     gameData.GetImGuiTexture("ui/icon/062000/062041_hr1.tex"));
-        Add(ChangedItemIcon.Customization, gameData.GetImGuiTexture("ui/icon/062000/062043_hr1.tex"));
-        Add(ChangedItemIcon.Action,        gameData.GetImGuiTexture("ui/icon/062000/062001_hr1.tex"));
-        Add(AllFlags,                      gameData.GetImGuiTexture("ui/icon/114000/114052_hr1.tex"));
+        Add(ChangedItemIcon.Monster,       textureProvider.GetTextureFromGame("ui/icon/062000/062042_hr1.tex", true));
+        Add(ChangedItemIcon.Demihuman,     textureProvider.GetTextureFromGame("ui/icon/062000/062041_hr1.tex", true));
+        Add(ChangedItemIcon.Customization, textureProvider.GetTextureFromGame("ui/icon/062000/062043_hr1.tex", true));
+        Add(ChangedItemIcon.Action,        textureProvider.GetTextureFromGame("ui/icon/062000/062001_hr1.tex", true));
+        Add(AllFlags,                      textureProvider.GetTextureFromGame("ui/icon/114000/114052_hr1.tex", true));
 
         var unk = gameData.GetFile<TexFile>("ui/uld/levelup2_hr1.tex");
         if (unk == null)

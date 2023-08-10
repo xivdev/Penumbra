@@ -3,10 +3,10 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Text;
-using Dalamud.Data;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Windowing;
+using Dalamud.Plugin.Services;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -518,7 +518,7 @@ public partial class ModEditWindow : Window, IDisposable
         return new FullPath(path);
     }
 
-    public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, DataManager gameData,
+    public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, UiBuilder uiBuilder, DalamudServices dalamud, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures)
