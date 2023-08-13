@@ -1,12 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using ImGuiNET;
 using Lumina.Data.Files;
 using OtterGui;
 using OtterGui.Raii;
+using OtterGui.Widgets;
 using OtterTex;
+using Penumbra.Mods;
 using Penumbra.String.Classes;
 using Penumbra.UI;
 using Penumbra.UI.Classes;
@@ -31,41 +35,6 @@ public static class TextureDrawer
             ImGui.TextUnformatted("Could not load file:");
             ImGuiUtil.TextColored(Colors.RegexWarningBorder, texture.LoadError.ToString());
         }
-    }
-
-    public static void PathSelectBox(TextureManager textures, Texture current, string label, string tooltip, IEnumerable<(string, bool)> paths,
-        int skipPrefix)
-    {
-        ImGui.SetNextItemWidth(-0.0001f);
-        var       startPath = current.Path.Length > 0 ? current.Path : "Choose a modded texture from this mod here...";
-        using var combo     = ImRaii.Combo(label, startPath);
-        if (combo)
-            foreach (var ((path, game), idx) in paths.WithIndex())
-            {
-                if (game)
-                {
-                    if (!textures.GameFileExists(path))
-                        continue;
-                }
-                else if (!File.Exists(path))
-                {
-                    continue;
-                }
-
-                using var id = ImRaii.PushId(idx);
-                using (var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value(), game))
-                {
-                    var p = game ? $"--> {path}" : path[skipPrefix..];
-                    if (ImGui.Selectable(p, path == startPath) && path != startPath)
-                        current.Load(textures, path);
-                }
-
-                ImGuiUtil.HoverTooltip(game
-                    ? "This is a game path and refers to an unmanipulated file from your game data."
-                    : "This is a path to a modded file on your file system.");
-            }
-
-        ImGuiUtil.HoverTooltip(tooltip);
     }
 
     public static void PathInputBox(TextureManager textures, Texture current, ref string? tmpPath, string label, string hint, string tooltip,
@@ -134,6 +103,55 @@ public static class TextureDrawer
                 ImGuiUtil.DrawTableColumn("Data Size");
                 ImGuiUtil.DrawTableColumn($"{Functions.HumanReadableSize(t.ImageData.Length)} ({t.ImageData.Length} Bytes)");
                 break;
+        }
+    }
+
+    public sealed class PathSelectCombo : FilterComboCache<(string, bool)>
+    {
+        private int    _skipPrefix = 0;
+
+        public PathSelectCombo(TextureManager textures, ModEditor editor)
+            : base(() => CreateFiles(textures, editor))
+        { }
+
+        protected override string ToString((string, bool) obj)
+            => obj.Item1;
+
+        protected override bool DrawSelectable(int globalIdx, bool selected)
+        {
+            var (path, game) = Items[globalIdx];
+            bool ret;
+            using (var color = ImRaii.PushColor(ImGuiCol.Text, ColorId.FolderExpanded.Value(), game))
+            {
+                var equals = string.Equals(CurrentSelection.Item1, path, StringComparison.OrdinalIgnoreCase);
+                var p      = game ? $"--> {path}" : path[_skipPrefix..];
+                ret = ImGui.Selectable(p, selected) && !equals;
+            }
+
+            ImGuiUtil.HoverTooltip(game
+                ? "This is a game path and refers to an unmanipulated file from your game data."
+                : "This is a path to a modded file on your file system.");
+            return ret;
+        }
+
+        private static IReadOnlyList<(string, bool)> CreateFiles(TextureManager textures, ModEditor editor)
+            => editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
+                    .Prepend((f.File.FullName, false)))
+                .Where(p => p.Item2 ? textures.GameFileExists(p.Item1) : File.Exists(p.Item1))
+                .ToList();
+
+        public bool Draw(string label, string tooltip, string current, int skipPrefix, out string newPath)
+        {
+            _skipPrefix = skipPrefix;
+            var startPath = current.Length > 0 ? current : "Choose a modded texture from this mod here...";
+            if (!Draw(label, startPath, tooltip, -0.0001f, ImGui.GetTextLineHeightWithSpacing()))
+            {
+                newPath = current;
+                return false;
+            }
+
+            newPath = CurrentSelection.Item1;
+            return true;
         }
     }
 }

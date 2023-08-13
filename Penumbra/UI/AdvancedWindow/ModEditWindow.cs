@@ -520,22 +520,22 @@ public partial class ModEditWindow : Window, IDisposable
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
-        StainService stainService, ActiveCollections activeCollections, UiBuilder uiBuilder, DalamudServices dalamud, ModMergeTab modMergeTab,
+        StainService stainService, ActiveCollections activeCollections, DalamudServices dalamud, ModMergeTab modMergeTab,
         CommunicatorService communicator, TextureManager textures)
         : base(WindowBaseLabel)
     {
-        _performance       = performance;
-        _itemSwapTab       = itemSwapTab;
-        _config            = config;
-        _editor            = editor;
-        _metaFileManager   = metaFileManager;
-        _stainService      = stainService;
-        _activeCollections = activeCollections;
-        _dalamud           = dalamud;
-        _modMergeTab       = modMergeTab;
-        _communicator      = communicator;
-        _textures     = textures;
-        _fileDialog        = fileDialog;
+        _performance          = performance;
+        _itemSwapTab          = itemSwapTab;
+        _config               = config;
+        _editor               = editor;
+        _metaFileManager      = metaFileManager;
+        _stainService         = stainService;
+        _activeCollections    = activeCollections;
+        _dalamud              = dalamud;
+        _modMergeTab          = modMergeTab;
+        _communicator         = communicator;
+        _textures             = textures;
+        _fileDialog           = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
@@ -544,8 +544,9 @@ public partial class ModEditWindow : Window, IDisposable
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shaders", ".shpk",
             () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new ShpkTab(_fileDialog, bytes));
-        _center            = new CombinedTexture(_left, _right);
-        _quickImportViewer = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
+        _center             = new CombinedTexture(_left, _right);
+        _textureSelectCombo = new TextureDrawer.PathSelectCombo(textures, editor);
+        _quickImportViewer  = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
         _communicator.ModPathChanged.Subscribe(OnModPathChanged, ModPathChanged.Priority.ModEditWindow);
     }
 

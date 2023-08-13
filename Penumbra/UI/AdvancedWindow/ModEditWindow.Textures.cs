@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
-using OtterGui.Tasks;
 using OtterTex;
 using Penumbra.Import.Textures;
 
@@ -16,9 +15,10 @@ public partial class ModEditWindow
 {
     private readonly TextureManager _textures;
 
-    private readonly Texture         _left  = new();
-    private readonly Texture         _right = new();
-    private readonly CombinedTexture _center;
+    private readonly Texture                       _left  = new();
+    private readonly Texture                       _right = new();
+    private readonly CombinedTexture               _center;
+    private readonly TextureDrawer.PathSelectCombo _textureSelectCombo;
 
     private bool _overlayCollapsed = true;
     private bool _addMipMaps       = true;
@@ -47,11 +47,10 @@ public partial class ModEditWindow
 
         TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
             "Can import game paths as well as your own files.", _mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
-        var files = _editor.Files.Tex.SelectMany(f => f.SubModUsage.Select(p => (p.Item2.ToString(), true))
-            .Prepend((f.File.FullName, false)));
-        TextureDrawer.PathSelectBox(_textures, tex, "##combo",
-            "Select the textures included in this mod on your drive or the ones they replace from the game files.", files,
-            _mod.ModPath.FullName.Length + 1);
+        if (_textureSelectCombo.Draw("##combo",
+                "Select the textures included in this mod on your drive or the ones they replace from the game files.", tex.Path,
+                _mod.ModPath.FullName.Length + 1, out var newPath) && newPath != tex.Path)
+            tex.Load(_textures, newPath);
 
         if (tex == _left)
             _center.DrawMatrixInputLeft(size.X);
