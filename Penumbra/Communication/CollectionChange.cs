@@ -17,6 +17,9 @@ public sealed class CollectionChange : EventWrapper<Action<CollectionType, ModCo
 {
     public enum Priority
     {
+        /// <seealso cref="Api.DalamudSubstitutionProvider.OnCollectionChange"/>
+        DalamudSubstitutionProvider = -3,
+
         /// <seealso cref="Collections.Cache.CollectionCacheManager.OnCollectionChange"/>
         CollectionCacheManager = -2,
 
@@ -43,6 +46,7 @@ public sealed class CollectionChange : EventWrapper<Action<CollectionType, ModCo
 
         /// <seealso cref="UI.ModsTab.ModFileSystemSelector.OnCollectionChange"/>
         ModFileSystemSelector = 0,
+
     }
 
     public CollectionChange()

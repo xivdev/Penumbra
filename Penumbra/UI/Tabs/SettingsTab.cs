@@ -26,38 +26,41 @@ public class SettingsTab : ITab
     public ReadOnlySpan<byte> Label
         => "Settings"u8;
 
-    private readonly Configuration           _config;
-    private readonly FontReloader            _fontReloader;
-    private readonly TutorialService         _tutorial;
-    private readonly Penumbra                _penumbra;
-    private readonly FileDialogService       _fileDialog;
-    private readonly ModManager              _modManager;
-    private readonly ModExportManager        _modExportManager;
-    private readonly ModFileSystemSelector   _selector;
-    private readonly CharacterUtility        _characterUtility;
-    private readonly ResidentResourceManager _residentResources;
-    private readonly DalamudServices         _dalamud;
-    private readonly HttpApi                 _httpApi;
+    private readonly Configuration               _config;
+    private readonly FontReloader                _fontReloader;
+    private readonly TutorialService             _tutorial;
+    private readonly Penumbra                    _penumbra;
+    private readonly FileDialogService           _fileDialog;
+    private readonly ModManager                  _modManager;
+    private readonly ModExportManager            _modExportManager;
+    private readonly ModFileSystemSelector       _selector;
+    private readonly CharacterUtility            _characterUtility;
+    private readonly ResidentResourceManager     _residentResources;
+    private readonly DalamudServices             _dalamud;
+    private readonly HttpApi                     _httpApi;
+    private readonly DalamudSubstitutionProvider _dalamudSubstitutionProvider;
 
     private int _minimumX = int.MaxValue;
     private int _minimumY = int.MaxValue;
 
     public SettingsTab(Configuration config, FontReloader fontReloader, TutorialService tutorial, Penumbra penumbra,
         FileDialogService fileDialog, ModManager modManager, ModFileSystemSelector selector, CharacterUtility characterUtility,
-        ResidentResourceManager residentResources, DalamudServices dalamud, ModExportManager modExportManager, HttpApi httpApi)
+        ResidentResourceManager residentResources, DalamudServices dalamud, ModExportManager modExportManager, HttpApi httpApi,
+        DalamudSubstitutionProvider dalamudSubstitutionProvider)
     {
-        _config            = config;
-        _fontReloader      = fontReloader;
-        _tutorial          = tutorial;
-        _penumbra          = penumbra;
-        _fileDialog        = fileDialog;
-        _modManager        = modManager;
-        _selector          = selector;
-        _characterUtility  = characterUtility;
-        _residentResources = residentResources;
-        _dalamud           = dalamud;
-        _modExportManager  = modExportManager;
-        _httpApi           = httpApi;
+        _config                      = config;
+        _fontReloader                = fontReloader;
+        _tutorial                    = tutorial;
+        _penumbra                    = penumbra;
+        _fileDialog                  = fileDialog;
+        _modManager                  = modManager;
+        _selector                    = selector;
+        _characterUtility            = characterUtility;
+        _residentResources           = residentResources;
+        _dalamud                     = dalamud;
+        _modExportManager            = modExportManager;
+        _httpApi                     = httpApi;
+        _dalamudSubstitutionProvider = dalamudSubstitutionProvider;
     }
 
     public void DrawHeader()
@@ -389,6 +392,12 @@ public class SettingsTab : ITab
     /// <summary> Draw all settings pertaining to actor identification for collections. </summary>
     private void DrawIdentificationSettings()
     {
+        Checkbox("Use Interface Collection for other Plugin UIs",
+            "Use the collection assigned to your interface for other plugins requesting UI-textures and icons through Dalamud.",
+            _dalamudSubstitutionProvider.Enabled, _dalamudSubstitutionProvider.Set);
+        var icon = _dalamud.TextureProvider.GetIcon(60026);
+        if (icon != null)
+            ImGui.Image(icon.ImGuiHandle, new Vector2(icon.Width, icon.Height));
         Checkbox($"Use {TutorialService.AssignedCollections} in Character Window",
             "Use the individual collection for your characters name or the Your Character collection in your main character window, if it is set.",
             _config.UseCharacterCollectionInMainWindow, v => _config.UseCharacterCollectionInMainWindow = v);

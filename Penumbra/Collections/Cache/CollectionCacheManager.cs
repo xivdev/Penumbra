@@ -15,17 +15,19 @@ using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.String.Classes;
 
 namespace Penumbra.Collections.Cache;
 
 public class CollectionCacheManager : IDisposable
 {
-    private readonly FrameworkManager    _framework;
-    private readonly CommunicatorService _communicator;
-    private readonly TempModManager      _tempMods;
-    private readonly ModStorage          _modStorage;
-    private readonly CollectionStorage   _storage;
-    private readonly ActiveCollections   _active;
+    private readonly  FrameworkManager    _framework;
+    private readonly  CommunicatorService _communicator;
+    private readonly  TempModManager      _tempMods;
+    private readonly  ModStorage          _modStorage;
+    private readonly  CollectionStorage   _storage;
+    private readonly  ActiveCollections   _active;
+    internal readonly ResolvedFileChanged ResolvedFileChanged;
 
     internal readonly MetaFileManager MetaFileManager;
 
@@ -39,16 +41,17 @@ public class CollectionCacheManager : IDisposable
     public IEnumerable<ModCollection> Active
         => _storage.Where(c => c.HasCache);
 
-    public CollectionCacheManager(FrameworkManager framework, CommunicatorService communicator,
-        TempModManager tempMods, ModStorage modStorage, MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage)
+    public CollectionCacheManager(FrameworkManager framework, CommunicatorService communicator, TempModManager tempMods, ModStorage modStorage,
+        MetaFileManager metaFileManager, ActiveCollections active, CollectionStorage storage)
     {
-        _framework      = framework;
-        _communicator   = communicator;
-        _tempMods       = tempMods;
-        _modStorage     = modStorage;
-        MetaFileManager = metaFileManager;
-        _active         = active;
-        _storage        = storage;
+        _framework          = framework;
+        _communicator       = communicator;
+        _tempMods           = tempMods;
+        _modStorage         = modStorage;
+        MetaFileManager     = metaFileManager;
+        _active             = active;
+        _storage            = storage;
+        ResolvedFileChanged = _communicator.ResolvedFileChanged;
 
         if (!_active.Individuals.IsLoaded)
             _active.Individuals.Loaded += CreateNecessaryCaches;
@@ -158,6 +161,9 @@ public class CollectionCacheManager : IDisposable
         cache.Calculating = Environment.CurrentManagedThreadId;
         try
         {
+            ResolvedFileChanged.Invoke(collection, ResolvedFileChanged.Type.FullRecomputeStart, Utf8GamePath.Empty, FullPath.Empty,
+                FullPath.Empty,
+                null);
             cache.ResolvedFiles.Clear();
             cache.Meta.Reset();
             cache._conflicts.Clear();
@@ -177,6 +183,9 @@ public class CollectionCacheManager : IDisposable
             collection.IncrementCounter();
 
             MetaFileManager.ApplyDefaultFiles(collection);
+            ResolvedFileChanged.Invoke(collection, ResolvedFileChanged.Type.FullRecomputeFinished, Utf8GamePath.Empty, FullPath.Empty,
+                FullPath.Empty,
+                null);
         }
         finally
         {

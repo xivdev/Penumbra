@@ -16,6 +16,9 @@ public sealed class EnabledChanged : EventWrapper<Action<bool>, EnabledChanged.P
     {
         /// <seealso cref="Ipc.EnabledChange"/>
         Api = int.MinValue,
+
+        /// <seealso cref="Api.DalamudSubstitutionProvider.OnEnabledChange"/>
+        DalamudSubstitutionProvider = 0,
     }
 
     public EnabledChanged()

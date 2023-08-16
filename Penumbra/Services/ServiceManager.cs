@@ -181,5 +181,6 @@ public static class ServiceManager
         => services.AddSingleton<PenumbraApi>()
             .AddSingleton<IPenumbraApi>(x => x.GetRequiredService<PenumbraApi>())
             .AddSingleton<PenumbraIpcProviders>()
-            .AddSingleton<HttpApi>();
+            .AddSingleton<HttpApi>()
+            .AddSingleton<DalamudSubstitutionProvider>();
 }

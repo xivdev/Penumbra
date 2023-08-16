@@ -38,9 +38,10 @@ public class Configuration : IPluginConfiguration, ISavable
     public string ModDirectory    { get; set; } = string.Empty;
     public string ExportDirectory { get; set; } = string.Empty;
 
-    public bool HideUiInGPose      { get; set; } = false;
-    public bool HideUiInCutscenes  { get; set; } = true;
-    public bool HideUiWhenUiHidden { get; set; } = false;
+    public bool HideUiInGPose                  { get; set; } = false;
+    public bool HideUiInCutscenes              { get; set; } = true;
+    public bool HideUiWhenUiHidden             { get; set; } = false;
+    public bool UseDalamudUiTextureRedirection { get; set; } = true;
 
     public bool UseCharacterCollectionInMainWindow { get; set; } = true;
     public bool UseCharacterCollectionsInCards     { get; set; } = true;

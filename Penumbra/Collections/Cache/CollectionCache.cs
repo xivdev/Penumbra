@@ -9,6 +9,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Penumbra.Api.Enums;
+using Penumbra.Communication;
 using Penumbra.String.Classes;
 using Penumbra.Mods.Manager;
 
@@ -63,9 +64,7 @@ public class CollectionCache : IDisposable
     }
 
     public void Dispose()
-    {
-        Meta.Dispose();
-    }
+        => Meta.Dispose();
 
     ~CollectionCache()
         => Meta.Dispose();
@@ -148,9 +147,24 @@ public class CollectionCache : IDisposable
             return;
 
         if (ResolvedFiles.Remove(path, out var modPath))
+        {
             ModData.RemovePath(modPath.Mod, path);
-        if (fullPath.FullName.Length > 0)
+            if (fullPath.FullName.Length > 0)
+            {
+                ResolvedFiles.Add(path, new ModPath(Mod.ForcedFiles, fullPath));
+                InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, fullPath, modPath.Path,
+                    Mod.ForcedFiles);
+            }
+            else
+            {
+                InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Removed, path, FullPath.Empty, modPath.Path, null);
+            }
+        }
+        else if (fullPath.FullName.Length > 0)
+        {
             ResolvedFiles.Add(path, new ModPath(Mod.ForcedFiles, fullPath));
+            InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, fullPath, FullPath.Empty, Mod.ForcedFiles);
+        }
     }
 
     private void ReloadModSync(IMod mod, bool addMetaChanges)
@@ -169,9 +183,14 @@ public class CollectionCache : IDisposable
 
         foreach (var path in paths)
         {
-            if (ResolvedFiles.Remove(path, out var mp) && mp.Mod != mod)
-                Penumbra.Log.Warning(
-                    $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
+            if (ResolvedFiles.Remove(path, out var mp))
+            {
+                if (mp.Mod != mod)
+                    Penumbra.Log.Warning(
+                        $"Invalid mod state, removing {mod.Name} and associated file {path} returned current mod {mp.Mod.Name}.");
+                else
+                    _manager.ResolvedFileChanged.Invoke(_collection, ResolvedFileChanged.Type.Removed, path, FullPath.Empty, mp.Path, mp.Mod);
+            }
         }
 
         foreach (var manipulation in manipulations)
@@ -258,6 +277,14 @@ public class CollectionCache : IDisposable
             AddManipulation(manip, parentMod);
     }
 
+    /// <summary> Invoke only if not in a full recalculation. </summary>
+    private void InvokeResolvedFileChange(ModCollection collection, ResolvedFileChanged.Type type, Utf8GamePath key, FullPath value,
+        FullPath old, IMod? mod)
+    {
+        if (Calculating == -1)
+            _manager.ResolvedFileChanged.Invoke(collection, type, key, value, old, mod);
+    }
+
     // Add a specific file redirection, handling potential conflicts.
     // For different mods, higher mod priority takes precedence before option group priority,
     // which takes precedence before option priority, which takes precedence before ordering.
@@ -272,6 +299,7 @@ public class CollectionCache : IDisposable
             if (ResolvedFiles.TryAdd(path, new ModPath(mod, file)))
             {
                 ModData.AddPath(mod, path);
+                InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Added, path, file, FullPath.Empty, mod);
                 return;
             }
 
@@ -285,11 +313,13 @@ public class CollectionCache : IDisposable
                 ModData.RemovePath(modPath.Mod, path);
                 ResolvedFiles[path] = new ModPath(mod, file);
                 ModData.AddPath(mod, path);
+                InvokeResolvedFileChange(_collection, ResolvedFileChanged.Type.Replaced, path, file, modPath.Path, mod);
             }
         }
         catch (Exception ex)
         {
-            Penumbra.Log.Error($"[{Thread.CurrentThread.ManagedThreadId}] Error adding redirection {file} -> {path} for mod {mod.Name} to collection cache {AnonymizedName}:\n{ex}");
+            Penumbra.Log.Error(
+                $"[{Thread.CurrentThread.ManagedThreadId}] Error adding redirection {file} -> {path} for mod {mod.Name} to collection cache {AnonymizedName}:\n{ex}");
         }
     }
 
