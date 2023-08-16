@@ -395,9 +395,6 @@ public class SettingsTab : ITab
         Checkbox("Use Interface Collection for other Plugin UIs",
             "Use the collection assigned to your interface for other plugins requesting UI-textures and icons through Dalamud.",
             _dalamudSubstitutionProvider.Enabled, _dalamudSubstitutionProvider.Set);
-        var icon = _dalamud.TextureProvider.GetIcon(60026);
-        if (icon != null)
-            ImGui.Image(icon.ImGuiHandle, new Vector2(icon.Width, icon.Height));
         Checkbox($"Use {TutorialService.AssignedCollections} in Character Window",
             "Use the individual collection for your characters name or the Your Character collection in your main character window, if it is set.",
             _config.UseCharacterCollectionInMainWindow, v => _config.UseCharacterCollectionInMainWindow = v);

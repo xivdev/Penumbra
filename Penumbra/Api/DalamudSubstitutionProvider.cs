@@ -8,7 +8,6 @@ using Penumbra.Communication;
 using Penumbra.Mods;
 using Penumbra.Services;
 using Penumbra.String.Classes;
-using static Penumbra.Api.Ipc;
 
 namespace Penumbra.Api;
 
