@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -37,30 +39,36 @@ public partial class ModEditWindow
 
     private void DrawInputChild(string label, Texture tex, Vector2 size, Vector2 imageSize)
     {
-        using var child = ImRaii.Child(label, size, true);
-        if (!child)
-            return;
+        using (var child = ImRaii.Child(label, size, true))
+        {
+            if (!child)
+                return;
 
-        using var id = ImRaii.PushId(label);
-        ImGuiUtil.DrawTextButton(label, new Vector2(-1, 0), ImGui.GetColorU32(ImGuiCol.FrameBg));
-        ImGui.NewLine();
+            using var id = ImRaii.PushId(label);
+            ImGuiUtil.DrawTextButton(label, new Vector2(-1, 0), ImGui.GetColorU32(ImGuiCol.FrameBg));
+            ImGui.NewLine();
 
-        TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
-            "Can import game paths as well as your own files.", _mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
-        if (_textureSelectCombo.Draw("##combo",
-                "Select the textures included in this mod on your drive or the ones they replace from the game files.", tex.Path,
-                _mod.ModPath.FullName.Length + 1, out var newPath) && newPath != tex.Path)
-            tex.Load(_textures, newPath);
+            TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
+                "Can import game paths as well as your own files.", _mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
+            if (_textureSelectCombo.Draw("##combo",
+                    "Select the textures included in this mod on your drive or the ones they replace from the game files.", tex.Path,
+                    _mod.ModPath.FullName.Length + 1, out var newPath)
+             && newPath != tex.Path)
+                tex.Load(_textures, newPath);
 
-        if (tex == _left)
-            _center.DrawMatrixInputLeft(size.X);
-        else
-            _center.DrawMatrixInputRight(size.X);
+            if (tex == _left)
+                _center.DrawMatrixInputLeft(size.X);
+            else
+                _center.DrawMatrixInputRight(size.X);
 
-        ImGui.NewLine();
-        using var child2 = ImRaii.Child("image");
-        if (child2)
-            TextureDrawer.Draw(tex, imageSize);
+            ImGui.NewLine();
+            using var child2 = ImRaii.Child("image");
+            if (child2)
+                TextureDrawer.Draw(tex, imageSize);
+        }
+
+        if (_dragDropManager.CreateImGuiTarget("TextureDragDrop", out var files, out _) && GetFirstTexture(files, out var file))
+            tex.Load(_textures, file);
     }
 
     private void SaveAsCombo()
@@ -229,6 +237,15 @@ public partial class ModEditWindow
 
         try
         {
+            _dragDropManager.CreateImGuiSource("TextureDragDrop",
+                m => m.Extensions.Any(e => ValidTextureExtensions.Contains(e.ToLowerInvariant())), m =>
+                {
+                    if (!GetFirstTexture(m.Files, out var file))
+                        return false;
+
+                    ImGui.TextUnformatted($"Dragging texture for editing: {Path.GetFileName(file)}");
+                    return true;
+                });
             var childWidth = GetChildWidth();
             var imageSize  = new Vector2(childWidth.X - ImGui.GetStyle().FramePadding.X * 2);
             DrawInputChild("Input Texture", _left, childWidth, imageSize);
@@ -259,4 +276,17 @@ public partial class ModEditWindow
 
         ImGuiUtil.HoverTooltip(tooltip);
     }
+
+    private static bool GetFirstTexture(IEnumerable<string> files, [NotNullWhen(true)] out string? file)
+    {
+        file = files.FirstOrDefault(f => ValidTextureExtensions.Contains(Path.GetExtension(f).ToLowerInvariant()));
+        return file != null;
+    }
+
+    private static readonly string[] ValidTextureExtensions =
+    {
+        ".png",
+        ".dds",
+        ".tex",
+    };
 }

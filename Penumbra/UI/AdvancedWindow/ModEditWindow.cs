@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Text;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
+using Dalamud.Interface.DragDrop;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using ImGuiNET;
@@ -40,6 +41,7 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly StainService        _stainService;
     private readonly ModMergeTab         _modMergeTab;
     private readonly CommunicatorService _communicator;
+    private readonly IDragDropManager    _dragDropManager;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -303,7 +305,7 @@ public partial class ModEditWindow : Window, IDisposable
                 new Vector2(300 * UiHelpers.Scale, ImGui.GetFrameHeight()),
                 $"{_editor.ModNormalizer.Step} / {_editor.ModNormalizer.TotalSteps}");
         }
-        else if(ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
+        else if (ImGuiUtil.DrawDisabledButton("Re-Duplicate and Normalize Mod", Vector2.Zero, tt, !_allowReduplicate && !modifier))
         {
             _editor.ModNormalizer.Normalize(_mod!);
             _editor.ModNormalizer.Worker.ContinueWith(_ => _editor.LoadMod(_mod!, _editor.GroupIdx, _editor.OptionIdx));
@@ -521,21 +523,22 @@ public partial class ModEditWindow : Window, IDisposable
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, DalamudServices dalamud, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures)
+        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager)
         : base(WindowBaseLabel)
     {
-        _performance          = performance;
-        _itemSwapTab          = itemSwapTab;
-        _config               = config;
-        _editor               = editor;
-        _metaFileManager      = metaFileManager;
-        _stainService         = stainService;
-        _activeCollections    = activeCollections;
-        _dalamud              = dalamud;
-        _modMergeTab          = modMergeTab;
-        _communicator         = communicator;
-        _textures             = textures;
-        _fileDialog           = fileDialog;
+        _performance       = performance;
+        _itemSwapTab       = itemSwapTab;
+        _config            = config;
+        _editor            = editor;
+        _metaFileManager   = metaFileManager;
+        _stainService      = stainService;
+        _activeCollections = activeCollections;
+        _dalamud           = dalamud;
+        _modMergeTab       = modMergeTab;
+        _communicator      = communicator;
+        _dragDropManager   = dragDropManager;
+        _textures          = textures;
+        _fileDialog        = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             bytes => new MtrlTab(this, new MtrlFile(bytes)));
