@@ -41,9 +41,29 @@ public class PenumbraChangelog
         Add7_1_0(Changelog);
         Add7_1_2(Changelog);
         Add7_2_0(Changelog);
+        Add7_3_0(Changelog);
     }
 
     #region Changelogs
+
+    private static void Add7_3_0(Changelog log)
+        => log.NextVersion("Version 0.7.3.0")
+            .RegisterEntry("Added the ability to drag and drop mod files from external sources (like a file explorer or browser) into Penumbras mod selector to import them.")
+            .RegisterEntry("You can also drag and drop texture files into the textures tab of the Advanced Editing Window.", 1)
+            .RegisterEntry("Added a priority display to the mod selector using the currently selected collections priorities. This can be hidden in settings.")
+            .RegisterEntry("Added IPC for texture conversion, improved texture handling backend and threading.")
+            .RegisterEntry("Added Dalamud Substitution so that other plugins can more easily use replaced icons from Penumbras Interface collection when using Dalamuds new Texture Provider.")
+            .RegisterEntry("Added a filter to texture selection combos in the textures tab of the Advanced Editing Window.")
+            .RegisterEntry("Changed behaviour when failing to load group JSON files for mods - the pre-existing but failing files are now backed up before being deleted or overwritten.")
+            .RegisterEntry("Further backend changes, mostly relating to the Glamourer rework.")
+            .RegisterEntry("Fixed an issue with modded decals not loading correctly when used with the Glamourer rework.")
+            .RegisterEntry("Fixed missing scaling with UI Scale for some combos.")
+            .RegisterEntry("Updated the used version of SharpCompress to deal with Zip64 correctly.")
+            .RegisterEntry("Added a toggle to not display the Changed Item categories in settings (0.7.2.2).")
+            .RegisterEntry("Many backend changes relating to the Glamourer rework (0.7.2.2).")
+            .RegisterEntry("Fixed an issue when multiple options in the same option group had the same label (0.7.2.2).")
+            .RegisterEntry("Fixed an issue with a GPose condition breaking animation and vfx modding in GPose (0.7.2.1).")
+            .RegisterEntry("Fixed some handling of decals (0.7.2.1).");
 
     private static void Add7_2_0(Changelog log)
         => log.NextVersion("Version 0.7.2.0")
