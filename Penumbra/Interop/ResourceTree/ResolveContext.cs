@@ -65,26 +65,34 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
     private ResourceNode CreateNodeFromGamePath(ResourceType type, nint sourceAddress, Utf8GamePath gamePath, bool @internal)
         => new(null, type, sourceAddress, gamePath, FilterFullPath(Collection.ResolvePath(gamePath) ?? new FullPath(gamePath)), @internal);
 
+    public static unsafe FullPath GetResourceHandlePath(ResourceHandle* handle)
+    {
+        var name = handle->FileName();
+        if (name.IsEmpty)
+            return FullPath.Empty;
+
+        if (name[0] == (byte)'|')
+        {
+            var pos = name.IndexOf((byte)'|', 1);
+            if (pos < 0)
+                return FullPath.Empty;
+
+            name = name.Substring(pos + 1);
+        }
+
+        return new FullPath(Utf8GamePath.FromByteString(name, out var p) ? p : Utf8GamePath.Empty);
+    }
+
     private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint sourceAddress, ResourceHandle* handle, bool @internal,
         bool withName)
     {
         if (handle == null)
             return null;
 
-        var name = handle->FileName();
-        if (name.IsEmpty)
+        var fullPath  = GetResourceHandlePath(handle);
+        if (fullPath.InternalName.IsEmpty)
             return null;
 
-        if (name[0] == (byte)'|')
-        {
-            var pos = name.IndexOf((byte)'|', 1);
-            if (pos < 0)
-                return null;
-
-            name = name.Substring(pos + 1);
-        }
-
-        var fullPath  = new FullPath(Utf8GamePath.FromByteString(name, out var p) ? p : Utf8GamePath.Empty);
         var gamePaths = Collection.ReverseResolvePath(fullPath).ToList();
         fullPath = FilterFullPath(fullPath);
 
@@ -161,7 +169,7 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         if (mtrl == null)
             return null;
 
-        var resource = (MtrlResource*)mtrl->ResourceHandle;
+        var resource = mtrl->ResourceHandle;
         var node     = CreateNodeFromResourceHandle(ResourceType.Mtrl, (nint) mtrl, &resource->Handle, false, WithNames);
         if (node == null)
             return null;

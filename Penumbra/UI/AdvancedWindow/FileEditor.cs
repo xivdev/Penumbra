@@ -18,7 +18,7 @@ using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
-public class FileEditor<T> where T : class, IWritable
+public class FileEditor<T> : IDisposable where T : class, IWritable
 {
     private readonly FileDialogService _fileDialog;
     private readonly IDataManager       _gameData;
@@ -26,7 +26,7 @@ public class FileEditor<T> where T : class, IWritable
 
     public FileEditor(ModEditWindow owner, IDataManager gameData, Configuration config, FileDialogService fileDialog, string tabName,
         string fileType, Func<IReadOnlyList<FileRegistry>> getFiles, Func<T, bool, bool> drawEdit, Func<string> getInitialPath,
-        Func<byte[], T?> parseFile)
+        Func<byte[], string, bool, T?> parseFile)
     {
         _owner          = owner;
         _gameData       = gameData;
@@ -37,6 +37,11 @@ public class FileEditor<T> where T : class, IWritable
         _getInitialPath = getInitialPath;
         _parseFile      = parseFile;
         _combo          = new Combo(config, getFiles);
+    }
+
+    ~FileEditor()
+    {
+        DoDispose();
     }
 
     public void Draw()
@@ -60,11 +65,23 @@ public class FileEditor<T> where T : class, IWritable
         DrawFilePanel();
     }
 
-    private readonly string              _tabName;
-    private readonly string              _fileType;
-    private readonly Func<T, bool, bool> _drawEdit;
-    private readonly Func<string>        _getInitialPath;
-    private readonly Func<byte[], T?>    _parseFile;
+    public void Dispose()
+    {
+        DoDispose();
+        GC.SuppressFinalize(this);
+    }
+
+    private void DoDispose()
+    {
+        (_currentFile as IDisposable)?.Dispose();
+        _currentFile = null;
+    }
+
+    private readonly string                         _tabName;
+    private readonly string                         _fileType;
+    private readonly Func<T, bool, bool>            _drawEdit;
+    private readonly Func<string>                   _getInitialPath;
+    private readonly Func<byte[], string, bool, T?> _parseFile;
 
     private FileRegistry? _currentPath;
     private T?            _currentFile;
@@ -99,7 +116,9 @@ public class FileEditor<T> where T : class, IWritable
                 if (file != null)
                 {
                     _defaultException = null;
-                    _defaultFile      = _parseFile(file.Data);
+                    (_defaultFile as IDisposable)?.Dispose();
+                    _defaultFile      = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
+                    _defaultFile      = _parseFile(file.Data, _defaultPath, false);
                 }
                 else
                 {
@@ -158,6 +177,7 @@ public class FileEditor<T> where T : class, IWritable
     {
         _currentException = null;
         _currentPath      = null;
+        (_currentFile as IDisposable)?.Dispose();
         _currentFile      = null;
         _changed          = false;
     }
@@ -181,10 +201,13 @@ public class FileEditor<T> where T : class, IWritable
         try
         {
             var bytes = File.ReadAllBytes(_currentPath.File.FullName);
-            _currentFile = _parseFile(bytes);
+            (_currentFile as IDisposable)?.Dispose();
+            _currentFile = null; // Avoid double disposal if an exception occurs during the parsing of the new file.
+            _currentFile = _parseFile(bytes, _currentPath.File.FullName, true);
         }
         catch (Exception e)
         {
+            (_currentFile as IDisposable)?.Dispose();
             _currentFile      = null;
             _currentException = e;
         }

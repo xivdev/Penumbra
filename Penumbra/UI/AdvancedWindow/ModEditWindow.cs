@@ -137,6 +137,9 @@ public partial class ModEditWindow : Window, IDisposable
     {
         _left.Dispose();
         _right.Dispose();
+        _materialTab.Reset();
+        _modelTab.Reset();
+        _shaderPackageTab.Reset();
     }
 
     public override void Draw()
@@ -541,12 +544,12 @@ public partial class ModEditWindow : Window, IDisposable
         _fileDialog        = fileDialog;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
-            bytes => new MtrlTab(this, new MtrlFile(bytes)));
+            (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));
         _modelTab = new FileEditor<MdlFile>(this, gameData, config, _fileDialog, "Models", ".mdl",
-            () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, bytes => new MdlFile(bytes));
+            () => _editor.Files.Mdl, DrawModelPanel, () => _mod?.ModPath.FullName ?? string.Empty, (bytes, _, _) => new MdlFile(bytes));
         _shaderPackageTab = new FileEditor<ShpkTab>(this, gameData, config, _fileDialog, "Shaders", ".shpk",
             () => _editor.Files.Shpk, DrawShaderPackagePanel, () => _mod?.ModPath.FullName ?? string.Empty,
-            bytes => new ShpkTab(_fileDialog, bytes));
+            (bytes, _, _) => new ShpkTab(_fileDialog, bytes));
         _center             = new CombinedTexture(_left, _right);
         _textureSelectCombo = new TextureDrawer.PathSelectCombo(textures, editor);
         _quickImportViewer  = new ResourceTreeViewer(_config, resourceTreeFactory, 2, OnQuickImportRefresh, DrawQuickImportActions);
@@ -557,6 +560,9 @@ public partial class ModEditWindow : Window, IDisposable
     {
         _communicator.ModPathChanged.Unsubscribe(OnModPathChanged);
         _editor?.Dispose();
+        _materialTab.Dispose();
+        _modelTab.Dispose();
+        _shaderPackageTab.Dispose();
         _left.Dispose();
         _right.Dispose();
         _center.Dispose();

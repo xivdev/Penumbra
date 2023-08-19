@@ -2,14 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Classes;
 using OtterGui.Raii;
+using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
+using Penumbra.GameData.Structs;
 using Penumbra.Services;
 using Penumbra.String.Classes;
 using Penumbra.Util;
@@ -19,10 +24,12 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
-    private sealed class MtrlTab : IWritable
+    private sealed class MtrlTab : IWritable, IDisposable
     {
         private readonly ModEditWindow _edit;
         public readonly  MtrlFile      Mtrl;
+        public readonly  string        FilePath;
+        public readonly  bool          Writable;
 
         public uint NewKeyId;
         public uint NewKeyDefault;
@@ -57,11 +64,17 @@ public partial class ModEditWindow
         public bool     HasMalformedMaterialConstants;
 
         // Samplers
-        public readonly List< (string Label, string FileName) > Samplers         = new(4);
-        public readonly List< (string Name, uint Id) >          MissingSamplers  = new(4);
-        public readonly HashSet< uint >                         DefinedSamplers  = new(4);
-        public          IndexSet                                OrphanedSamplers = new(0, false);
-        public          int                                     AliasedSamplerCount;
+        public readonly List< (string Label, string FileName, uint Id) > Samplers         = new(4);
+        public readonly List< (string Name, uint Id) >                   MissingSamplers  = new(4);
+        public readonly HashSet< uint >                                  DefinedSamplers  = new(4);
+        public          IndexSet                                         OrphanedSamplers = new(0, false);
+        public          int                                              AliasedSamplerCount;
+
+        // Live-Previewers
+        public readonly List<LiveMaterialPreviewer> MaterialPreviewers     = new(4);
+        public readonly List<LiveColorSetPreviewer> ColorSetPreviewers     = new(4);
+        public          int                         HighlightedColorSetRow = -1;
+        public          int                         HighlightTime          = -1;
 
         public FullPath FindAssociatedShpk( out string defaultPath, out Utf8GamePath defaultGamePath )
         {
@@ -243,7 +256,7 @@ public partial class ModEditWindow
                     ? $"#{idx}: {shpk.Value.Name} (ID: 0x{sampler.SamplerId:X8})##{sampler.SamplerId}"
                     : $"#{idx} (ID: 0x{sampler.SamplerId:X8})##{sampler.SamplerId}";
                 var fileName = $"Texture #{sampler.TextureIndex} - {Path.GetFileName( Mtrl.Textures[ sampler.TextureIndex ].Path )}";
-                Samplers.Add( ( label, fileName ) );
+                Samplers.Add( ( label, fileName, sampler.SamplerId ) );
             }
 
             MissingSamplers.Clear();
@@ -269,6 +282,220 @@ public partial class ModEditWindow
             }
         }
 
+        public unsafe void BindToMaterialInstances()
+        {
+            UnbindFromMaterialInstances();
+
+            var localPlayer = FindLocalPlayer(_edit._dalamud.Objects);
+            if (null == localPlayer)
+                return;
+
+            var drawObject = (CharacterBase*)localPlayer->GameObject.GetDrawObject();
+            if (null == drawObject)
+                return;
+
+            var instances = FindMaterial(drawObject, -1, FilePath);
+
+            var drawObjects = stackalloc CharacterBase*[4];
+            drawObjects[0] = drawObject;
+
+            for (var i = 0; i < 3; ++i)
+            {
+                var subActor = FindSubActor(localPlayer, i);
+                if (null == subActor)
+                    continue;
+
+                var subDrawObject = (CharacterBase*)subActor->GameObject.GetDrawObject();
+                if (null == subDrawObject)
+                    continue;
+
+                instances.AddRange(FindMaterial(subDrawObject, i, FilePath));
+                drawObjects[i + 1] = subDrawObject;
+            }
+
+            var foundMaterials = new HashSet<nint>();
+            foreach (var (subActorType, childObjectIndex, modelSlot, materialSlot) in instances)
+            {
+                var material = GetDrawObjectMaterial(drawObjects[subActorType + 1], modelSlot, materialSlot);
+                if (foundMaterials.Contains((nint)material))
+                    continue;
+                try
+                {
+                    MaterialPreviewers.Add(new LiveMaterialPreviewer(_edit._dalamud.Objects, subActorType, childObjectIndex, modelSlot, materialSlot));
+                    foundMaterials.Add((nint)material);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Carry on without that previewer.
+                }
+            }
+
+            var colorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
+
+            if (colorSet.HasValue)
+            {
+                foreach (var (subActorType, childObjectIndex, modelSlot, materialSlot) in instances)
+                {
+                    try
+                    {
+                        ColorSetPreviewers.Add(new LiveColorSetPreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, subActorType, childObjectIndex, modelSlot, materialSlot));
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Carry on without that previewer.
+                    }
+                }
+                UpdateColorSetPreview();
+            }
+        }
+
+        public void UnbindFromMaterialInstances()
+        {
+            foreach (var previewer in MaterialPreviewers)
+                previewer.Dispose();
+            MaterialPreviewers.Clear();
+
+            foreach (var previewer in ColorSetPreviewers)
+                previewer.Dispose();
+            ColorSetPreviewers.Clear();
+        }
+
+        public void SetShaderPackageFlags(uint shPkFlags)
+        {
+            foreach (var previewer in MaterialPreviewers)
+                previewer.SetShaderPackageFlags(shPkFlags);
+        }
+
+        public void SetMaterialParameter(uint parameterCrc, Index offset, Span<float> value)
+        {
+            foreach (var previewer in MaterialPreviewers)
+                previewer.SetMaterialParameter(parameterCrc, offset, value);
+        }
+
+        public void SetSamplerFlags(uint samplerCrc, uint samplerFlags)
+        {
+            foreach (var previewer in MaterialPreviewers)
+                previewer.SetSamplerFlags(samplerCrc, samplerFlags);
+        }
+
+        public void HighlightColorSetRow(int rowIdx)
+        {
+            var oldRowIdx = HighlightedColorSetRow;
+
+            HighlightedColorSetRow = rowIdx;
+            HighlightTime          = (HighlightTime + 1) % 32;
+
+            if (oldRowIdx >= 0)
+                UpdateColorSetRowPreview(oldRowIdx);
+            if (rowIdx >= 0)
+                UpdateColorSetRowPreview(rowIdx);
+        }
+
+        public void CancelColorSetHighlight()
+        {
+            var rowIdx = HighlightedColorSetRow;
+
+            HighlightedColorSetRow = -1;
+            HighlightTime          = -1;
+
+            if (rowIdx >= 0)
+                UpdateColorSetRowPreview(rowIdx);
+        }
+
+        public unsafe void UpdateColorSetRowPreview(int rowIdx)
+        {
+            if (ColorSetPreviewers.Count == 0)
+                return;
+
+            var maybeColorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
+            if (!maybeColorSet.HasValue)
+                return;
+
+            var colorSet = maybeColorSet.Value;
+            var maybeColorDyeSet = Mtrl.ColorDyeSets.FirstOrNull(colorDyeSet => colorDyeSet.Index == colorSet.Index);
+
+            var row = colorSet.Rows[rowIdx];
+            if (maybeColorDyeSet.HasValue)
+            {
+                var stm = _edit._stainService.StmFile;
+                var dye = maybeColorDyeSet.Value.Rows[rowIdx];
+                if (stm.TryGetValue(dye.Template, (StainId)_edit._stainService.StainCombo.CurrentSelection.Key, out var dyes))
+                    ApplyDye(ref row, dye, dyes);
+            }
+
+            if (HighlightedColorSetRow == rowIdx)
+                ApplyHighlight(ref row, HighlightTime);
+
+            foreach (var previewer in ColorSetPreviewers)
+            {
+                fixed (Half* pDest = previewer.ColorSet)
+                    Buffer.MemoryCopy(&row, pDest + LiveColorSetPreviewer.TextureWidth * 4 * rowIdx, LiveColorSetPreviewer.TextureWidth * 4 * sizeof(Half), sizeof(MtrlFile.ColorSet.Row));
+                previewer.ScheduleUpdate();
+            }
+        }
+
+        public unsafe void UpdateColorSetPreview()
+        {
+            if (ColorSetPreviewers.Count == 0)
+                return;
+
+            var maybeColorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
+            if (!maybeColorSet.HasValue)
+                return;
+
+            var colorSet = maybeColorSet.Value;
+            var maybeColorDyeSet = Mtrl.ColorDyeSets.FirstOrNull(colorDyeSet => colorDyeSet.Index == colorSet.Index);
+
+            var rows = colorSet.Rows;
+            if (maybeColorDyeSet.HasValue)
+            {
+                var stm = _edit._stainService.StmFile;
+                var stainId = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
+                var colorDyeSet = maybeColorDyeSet.Value;
+                for (var i = 0; i < MtrlFile.ColorSet.RowArray.NumRows; ++i)
+                {
+                    ref var row = ref rows[i];
+                    var dye = colorDyeSet.Rows[i];
+                    if (stm.TryGetValue(dye.Template, stainId, out var dyes))
+                        ApplyDye(ref row, dye, dyes);
+                }
+            }
+
+            if (HighlightedColorSetRow >= 0)
+                ApplyHighlight(ref rows[HighlightedColorSetRow], HighlightTime);
+
+            foreach (var previewer in ColorSetPreviewers)
+            {
+                fixed (Half* pDest = previewer.ColorSet)
+                    Buffer.MemoryCopy(&rows, pDest, LiveColorSetPreviewer.TextureLength * sizeof(Half), sizeof(MtrlFile.ColorSet.RowArray));
+                previewer.ScheduleUpdate();
+            }
+        }
+
+        private static void ApplyDye(ref MtrlFile.ColorSet.Row row, MtrlFile.ColorDyeSet.Row dye, StmFile.DyePack dyes)
+        {
+            if (dye.Diffuse)
+                row.Diffuse = dyes.Diffuse;
+            if (dye.Specular)
+                row.Specular = dyes.Specular;
+            if (dye.SpecularStrength)
+                row.SpecularStrength = dyes.SpecularPower;
+            if (dye.Emissive)
+                row.Emissive = dyes.Emissive;
+            if (dye.Gloss)
+                row.GlossStrength = dyes.Gloss;
+        }
+
+        private static void ApplyHighlight(ref MtrlFile.ColorSet.Row row, int time)
+        {
+            var level = Math.Sin(time * Math.PI / 16) * 0.5 + 0.5;
+            var levelSq = (float)(level * level);
+
+            row.Diffuse = Vector3.Zero;
+            row.Specular = Vector3.Zero;
+            row.Emissive = new Vector3(levelSq);
+        }
+
         public void Update()
         {
             UpdateTextureLabels();
@@ -277,11 +504,31 @@ public partial class ModEditWindow
             UpdateSamplers();
         }
 
-        public MtrlTab( ModEditWindow edit, MtrlFile file )
+        public MtrlTab( ModEditWindow edit, MtrlFile file, string filePath, bool writable )
         {
-            _edit = edit;
-            Mtrl  = file;
+            _edit    = edit;
+            Mtrl     = file;
+            FilePath = filePath;
+            Writable = writable;
             LoadShpk( FindAssociatedShpk( out _, out _ ) );
+            if (writable)
+                BindToMaterialInstances();
+        }
+
+        ~MtrlTab()
+        {
+            DoDispose();
+        }
+
+        public void Dispose()
+        {
+            DoDispose();
+            GC.SuppressFinalize(this);
+        }
+
+        private void DoDispose()
+        {
+            UnbindFromMaterialInstances();
         }
 
         public bool Valid

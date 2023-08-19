@@ -37,16 +37,17 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private static bool DrawShaderFlagsInput(MtrlFile file, bool disabled)
+    private static bool DrawShaderFlagsInput(MtrlTab tab, bool disabled)
     {
         var ret       = false;
-        var shpkFlags = (int)file.ShaderPackage.Flags;
+        var shpkFlags = (int)tab.Mtrl.ShaderPackage.Flags;
         ImGui.SetNextItemWidth(UiHelpers.Scale * 150.0f);
         if (ImGui.InputInt("Shader Package Flags", ref shpkFlags, 0, 0,
                 ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
         {
-            file.ShaderPackage.Flags = (uint)shpkFlags;
-            ret                      = true;
+            tab.Mtrl.ShaderPackage.Flags = (uint)shpkFlags;
+            ret                          = true;
+            tab.SetShaderPackageFlags((uint)shpkFlags);
         }
 
         return ret;
@@ -221,6 +222,7 @@ public partial class ModEditWindow
                 {
                     ret = true;
                     tab.UpdateConstantLabels();
+                    tab.SetMaterialParameter(constant.Id, valueIdx, values.Slice(valueIdx, 1));
                 }
             }
         }
@@ -247,6 +249,7 @@ public partial class ModEditWindow
 
             ret = true;
             tab.UpdateConstantLabels();
+            tab.SetMaterialParameter(constant.Id, 0, new float[constant.ByteSize >> 2]);
         }
 
         return ret;
@@ -336,7 +339,7 @@ public partial class ModEditWindow
 
     private static bool DrawMaterialSampler(MtrlTab tab, bool disabled, ref int idx)
     {
-        var (label, filename) = tab.Samplers[idx];
+        var (label, filename, samplerCrc) = tab.Samplers[idx];
         using var tree = ImRaii.TreeNode(label);
         if (!tree)
             return false;
@@ -366,6 +369,7 @@ public partial class ModEditWindow
         {
             tab.Mtrl.ShaderPackage.Samplers[idx].Flags = (uint)samplerFlags;
             ret                                        = true;
+            tab.SetSamplerFlags(samplerCrc, (uint)samplerFlags);
         }
 
         if (!disabled
@@ -410,9 +414,10 @@ public partial class ModEditWindow
         if (!ImGui.Button("Add Sampler"))
             return false;
 
+        var newSamplerId = tab.NewSamplerId;
         tab.Mtrl.ShaderPackage.Samplers = tab.Mtrl.ShaderPackage.Samplers.AddItem(new Sampler
         {
-            SamplerId    = tab.NewSamplerId,
+            SamplerId    = newSamplerId,
             TextureIndex = (byte)tab.Mtrl.Textures.Length,
             Flags        = 0,
         });
@@ -423,6 +428,7 @@ public partial class ModEditWindow
         });
         tab.UpdateSamplers();
         tab.UpdateTextureLabels();
+        tab.SetSamplerFlags(newSamplerId, 0);
         return true;
     }
 
@@ -467,7 +473,7 @@ public partial class ModEditWindow
             return ret;
 
         ret |= DrawPackageNameInput(tab, disabled);
-        ret |= DrawShaderFlagsInput(tab.Mtrl, disabled);
+        ret |= DrawShaderFlagsInput(tab, disabled);
         DrawCustomAssociations(tab);
         ret |= DrawMaterialShaderKeys(tab, disabled);
         DrawMaterialShaders(tab);

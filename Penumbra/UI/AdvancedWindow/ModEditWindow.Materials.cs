@@ -15,13 +15,16 @@ public partial class ModEditWindow
 
     private bool DrawMaterialPanel( MtrlTab tab, bool disabled )
     {
+        DrawMaterialLivePreviewRebind( tab, disabled );
+
+        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
         var ret = DrawMaterialTextureChange( tab, disabled );
 
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-        ret |= DrawBackFaceAndTransparency( tab.Mtrl, disabled );
+        ret |= DrawBackFaceAndTransparency( tab, disabled );
 
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-        ret |= DrawMaterialColorSetChange( tab.Mtrl, disabled );
+        ret |= DrawMaterialColorSetChange( tab, disabled );
 
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
         ret |= DrawMaterialShaderResources( tab, disabled );
@@ -30,6 +33,15 @@ public partial class ModEditWindow
         DrawOtherMaterialDetails( tab.Mtrl, disabled );
 
         return !disabled && ret;
+    }
+
+    private static void DrawMaterialLivePreviewRebind( MtrlTab tab, bool disabled )
+    {
+        if (disabled)
+            return;
+
+        if (ImGui.Button("Reload live-preview"))
+            tab.BindToMaterialInstances();
     }
 
     private static bool DrawMaterialTextureChange( MtrlTab tab, bool disabled )
@@ -62,7 +74,7 @@ public partial class ModEditWindow
         return ret;
     }
 
-    private static bool DrawBackFaceAndTransparency( MtrlFile file, bool disabled )
+    private static bool DrawBackFaceAndTransparency( MtrlTab tab, bool disabled )
     {
         const uint transparencyBit = 0x10;
         const uint backfaceBit     = 0x01;
@@ -71,19 +83,21 @@ public partial class ModEditWindow
 
         using var dis = ImRaii.Disabled( disabled );
 
-        var tmp = ( file.ShaderPackage.Flags & transparencyBit ) != 0;
+        var tmp = ( tab.Mtrl.ShaderPackage.Flags & transparencyBit ) != 0;
         if( ImGui.Checkbox( "Enable Transparency", ref tmp ) )
         {
-            file.ShaderPackage.Flags = tmp ? file.ShaderPackage.Flags | transparencyBit : file.ShaderPackage.Flags & ~transparencyBit;
-            ret                      = true;
+            tab.Mtrl.ShaderPackage.Flags = tmp ? tab.Mtrl.ShaderPackage.Flags | transparencyBit : tab.Mtrl.ShaderPackage.Flags & ~transparencyBit;
+            ret                          = true;
+            tab.SetShaderPackageFlags(tab.Mtrl.ShaderPackage.Flags);
         }
 
         ImGui.SameLine( 200 * UiHelpers.Scale + ImGui.GetStyle().ItemSpacing.X + ImGui.GetStyle().WindowPadding.X );
-        tmp = ( file.ShaderPackage.Flags & backfaceBit ) != 0;
+        tmp = ( tab.Mtrl.ShaderPackage.Flags & backfaceBit ) != 0;
         if( ImGui.Checkbox( "Hide Backfaces", ref tmp ) )
         {
-            file.ShaderPackage.Flags = tmp ? file.ShaderPackage.Flags | backfaceBit : file.ShaderPackage.Flags & ~backfaceBit;
-            ret                      = true;
+            tab.Mtrl.ShaderPackage.Flags = tmp ? tab.Mtrl.ShaderPackage.Flags | backfaceBit : tab.Mtrl.ShaderPackage.Flags & ~backfaceBit;
+            ret                          = true;
+            tab.SetShaderPackageFlags(tab.Mtrl.ShaderPackage.Flags);
         }
 
         return ret;
