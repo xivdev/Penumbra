@@ -412,12 +412,13 @@ public partial class ModEditWindow
     private static bool ColorPicker( string label, string tooltip, Vector3 input, Action< Vector3 > setter, string letter = "" )
     {
         var ret = false;
-        var tmp = input;
+        var inputSqrt = Vector3.SquareRoot( input );
+        var tmp = inputSqrt;
         if( ImGui.ColorEdit3( label, ref tmp,
                ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.DisplayRGB | ImGuiColorEditFlags.InputRGB | ImGuiColorEditFlags.NoTooltip )
-        && tmp != input )
+        && tmp != inputSqrt )
         {
-            setter( tmp );
+            setter( tmp * tmp );
             ret = true;
         }
 
