@@ -5,11 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
 using OtterTex;
 using Penumbra.Import.Textures;
+using Penumbra.UI.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
 
@@ -48,18 +50,21 @@ public partial class ModEditWindow
             ImGuiUtil.DrawTextButton(label, new Vector2(-1, 0), ImGui.GetColorU32(ImGuiCol.FrameBg));
             ImGui.NewLine();
 
-            TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
-                "Can import game paths as well as your own files.", _mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
-            if (_textureSelectCombo.Draw("##combo",
-                    "Select the textures included in this mod on your drive or the ones they replace from the game files.", tex.Path,
-                    _mod.ModPath.FullName.Length + 1, out var newPath)
-             && newPath != tex.Path)
-                tex.Load(_textures, newPath);
+            using (var disabled = ImRaii.Disabled(!_center.SaveTask.IsCompleted))
+            {
+                TextureDrawer.PathInputBox(_textures, tex, ref tex.TmpPath, "##input", "Import Image...",
+                    "Can import game paths as well as your own files.", _mod!.ModPath.FullName, _fileDialog, _config.DefaultModImportPath);
+                if (_textureSelectCombo.Draw("##combo",
+                        "Select the textures included in this mod on your drive or the ones they replace from the game files.", tex.Path,
+                        _mod.ModPath.FullName.Length + 1, out var newPath)
+                 && newPath != tex.Path)
+                    tex.Load(_textures, newPath);
 
-            if (tex == _left)
-                _center.DrawMatrixInputLeft(size.X);
-            else
-                _center.DrawMatrixInputRight(size.X);
+                if (tex == _left)
+                    _center.DrawMatrixInputLeft(size.X);
+                else
+                    _center.DrawMatrixInputRight(size.X);
+            }
 
             ImGui.NewLine();
             using var child2 = ImRaii.Child("image");
@@ -177,8 +182,6 @@ public partial class ModEditWindow
             {
                 ImGui.NewLine();
             }
-
-            ImGui.NewLine();
         }
 
         switch (_center.SaveTask.Status)
@@ -186,7 +189,8 @@ public partial class ModEditWindow
             case TaskStatus.WaitingForActivation:
             case TaskStatus.WaitingToRun:
             case TaskStatus.Running:
-                ImGui.TextUnformatted("Computing...");
+                ImGuiUtil.DrawTextButton("Computing...", -Vector2.UnitX, Colors.PressEnterWarningBg);
+
                 break;
             case TaskStatus.Canceled:
             case TaskStatus.Faulted:
@@ -196,7 +200,12 @@ public partial class ModEditWindow
                 ImGuiUtil.TextWrapped(_center.SaveTask.Exception?.ToString() ?? "Unknown Error");
                 break;
             }
+            default:
+                ImGui.Dummy(new Vector2(1, ImGui.GetFrameHeight()));
+                break;
         }
+
+        ImGui.NewLine();
 
         using var child2 = ImRaii.Child("image");
         if (child2)

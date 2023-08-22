@@ -186,8 +186,7 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
                 CombinedTexture.TextureSaveType.AsIs when image.Type is TextureType.Dds => AddMipMaps(image.AsDds!, _mipMaps),
                 CombinedTexture.TextureSaveType.Bitmap => ConvertToRgbaDds(image, _mipMaps, cancel, rgba, width, height),
                 CombinedTexture.TextureSaveType.BC3 => ConvertToCompressedDds(image, _mipMaps, false, cancel, rgba, width, height),
-                CombinedTexture.TextureSaveType.BC7 =>
-                    ConvertToCompressedDds(image, _mipMaps, true, cancel, rgba, width, height),
+                CombinedTexture.TextureSaveType.BC7 => ConvertToCompressedDds(image, _mipMaps, true, cancel, rgba, width, height),
                 _ => throw new Exception("Wrong save type."),
             };
 
@@ -344,10 +343,11 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
         if (numMips == input.Meta.MipLevels)
             return input;
 
-        var ec = input.GenerateMipMaps(out var ret, numMips,
-            (Dalamud.Utility.Util.IsLinux() ? FilterFlags.ForceNonWIC : 0) | FilterFlags.SeparateAlpha);
+        var flags = (Dalamud.Utility.Util.IsLinux() ? FilterFlags.ForceNonWIC : 0) | FilterFlags.SeparateAlpha;
+        var ec    = input.GenerateMipMaps(out var ret, numMips, flags);
         if (ec != ErrorCode.Ok)
-            throw new Exception($"Could not create the requested {numMips} mip maps, maybe retry with the top-right checkbox unchecked:\n{ec}");
+            throw new Exception(
+                $"Could not create the requested {numMips} mip maps (input has {input.Meta.MipLevels}) with flags [{flags}], maybe retry with the top-right checkbox unchecked:\n{ec}");
 
         return ret;
     }
