@@ -418,6 +418,8 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
         using var w      = new BinaryWriter(stream);
         header.Write(w);
         w.Write(input.Pixels);
+        // No idea why this is necessary, but it is.
+        GC.KeepAlive(input);
     }
 
     private readonly struct ImageInputData
