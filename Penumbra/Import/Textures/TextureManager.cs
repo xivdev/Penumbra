@@ -418,7 +418,8 @@ public sealed class TextureManager : SingleTaskQueue, IDisposable
         using var w      = new BinaryWriter(stream);
         header.Write(w);
         w.Write(input.Pixels);
-        // No idea why this is necessary, but it is.
+        // Necessary due to the GC being allowed to collect after the last invocation of an object,
+        // thus invalidating the ReadOnlySpan.
         GC.KeepAlive(input);
     }
 
