@@ -398,7 +398,7 @@ public partial class ModEditWindow
             if (mtrlHandle == null)
                 throw new InvalidOperationException("Material doesn't have a resource handle");
 
-            var colorSetTextures = *(Texture***)((nint)DrawObject + 0x258);
+            var colorSetTextures = ((Structs.CharacterBaseExt*)DrawObject)->ColorSetTextures;
             if (colorSetTextures == null)
                 throw new InvalidOperationException("Draw object doesn't have color set textures");
 
@@ -424,7 +424,8 @@ public partial class ModEditWindow
             if (reset)
             {
                 var oldTexture = (Texture*)Interlocked.Exchange(ref *(nint*)_colorSetTexture, (nint)_originalColorSetTexture);
-                Structs.TextureUtility.DecRef(oldTexture);
+                if (oldTexture != null)
+                    Structs.TextureUtility.DecRef(oldTexture);
             }
             else
                 Structs.TextureUtility.DecRef(_originalColorSetTexture);
@@ -460,7 +461,8 @@ public partial class ModEditWindow
             if (success)
             {
                 var oldTexture = (Texture*)Interlocked.Exchange(ref *(nint*)_colorSetTexture, (nint)newTexture);
-                Structs.TextureUtility.DecRef(oldTexture);
+                if (oldTexture != null)
+                    Structs.TextureUtility.DecRef(oldTexture);
             }
             else
                 Structs.TextureUtility.DecRef(newTexture);
@@ -471,7 +473,7 @@ public partial class ModEditWindow
             if (!base.IsStillValid())
                 return false;
 
-            var colorSetTextures = *(Texture***)((nint)DrawObject + 0x258);
+            var colorSetTextures = ((Structs.CharacterBaseExt*)DrawObject)->ColorSetTextures;
             if (colorSetTextures == null)
                 return false;
 

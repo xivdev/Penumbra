@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -21,6 +23,7 @@ using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
 using Penumbra.Services;
+using Penumbra.String;
 using Penumbra.String.Classes;
 using Penumbra.UI.Classes;
 using Penumbra.Util;
@@ -521,6 +524,23 @@ public partial class ModEditWindow : Window, IDisposable
             }
 
         return new FullPath(path);
+    }
+
+    private HashSet<Utf8GamePath> FindPathsStartingWith(ByteString prefix)
+    {
+        var ret = new HashSet<Utf8GamePath>();
+
+        foreach (var path in _activeCollections.Current.ResolvedFiles.Keys)
+            if (path.Path.StartsWith(prefix))
+                ret.Add(path);
+
+        if (_mod != null)
+            foreach (var option in _mod.Groups.SelectMany(g => g).Append(_mod.Default))
+                foreach (var path in option.Files.Keys)
+                    if (path.Path.StartsWith(prefix))
+                        ret.Add(path);
+
+        return ret;
     }
 
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,

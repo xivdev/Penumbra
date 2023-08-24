@@ -18,16 +18,14 @@ public partial class ModEditWindow
         DrawMaterialLivePreviewRebind( tab, disabled );
 
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-        var ret = DrawMaterialTextureChange( tab, disabled );
+        var ret = DrawBackFaceAndTransparency( tab, disabled );
 
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-        ret |= DrawBackFaceAndTransparency( tab, disabled );
+        ret |= DrawMaterialShader( tab, disabled );
 
-        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
+        ret |= DrawMaterialTextureChange( tab, disabled );
         ret |= DrawMaterialColorSetChange( tab, disabled );
-
-        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-        ret |= DrawMaterialShaderResources( tab, disabled );
+        ret |= DrawMaterialConstants( tab, disabled );
 
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
         DrawOtherMaterialDetails( tab.Mtrl, disabled );
@@ -40,35 +38,87 @@ public partial class ModEditWindow
         if (disabled)
             return;
 
-        if (ImGui.Button("Reload live-preview"))
+        if (ImGui.Button("Reload live preview"))
             tab.BindToMaterialInstances();
+
+        if (tab.MaterialPreviewers.Count == 0 && tab.ColorSetPreviewers.Count == 0)
+        {
+            ImGui.SameLine();
+
+            var textColor        = ImGui.GetColorU32(ImGuiCol.Text);
+            var textColorWarning = (textColor & 0xFF000000u) | ((textColor & 0x00FEFEFE) >> 1) | 0x80u; // Half red
+
+            using var c = ImRaii.PushColor(ImGuiCol.Text, textColorWarning);
+
+            ImGui.TextUnformatted("The current material has not been found on your character. Please check the Import from Screen tab for more information.");
+        }
     }
 
     private static bool DrawMaterialTextureChange( MtrlTab tab, bool disabled )
     {
-        var       ret   = false;
-        using var table = ImRaii.Table( "##Textures", 2 );
-        ImGui.TableSetupColumn( "Path", ImGuiTableColumnFlags.WidthStretch );
-        ImGui.TableSetupColumn( "Name", ImGuiTableColumnFlags.WidthFixed, tab.TextureLabelWidth * UiHelpers.Scale );
-        for( var i = 0; i < tab.Mtrl.Textures.Length; ++i )
+        if( tab.Textures.Count == 0 )
         {
-            using var _   = ImRaii.PushId( i );
-            var       tmp = tab.Mtrl.Textures[ i ].Path;
+            return false;
+        }
+
+        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
+        if( !ImGui.CollapsingHeader( "Textures and Samplers", ImGuiTreeNodeFlags.DefaultOpen ) )
+        {
+            return false;
+        }
+
+        var       frameHeight = ImGui.GetFrameHeight();
+        var       ret         = false;
+        using var table       = ImRaii.Table( "##Textures", 3 );
+
+        ImGui.TableSetupColumn( string.Empty, ImGuiTableColumnFlags.WidthFixed, frameHeight );
+        ImGui.TableSetupColumn( "Path"      , ImGuiTableColumnFlags.WidthStretch );
+        ImGui.TableSetupColumn( "Name"      , ImGuiTableColumnFlags.WidthFixed, tab.TextureLabelWidth * UiHelpers.Scale );
+        for( var i = 0; i < tab.Textures.Count; ++i )
+        {
+            var (label, textureI, samplerI, description, monoFont) = tab.Textures[i];
+
+            using var _        = ImRaii.PushId( samplerI );
+            var       tmp      = tab.Mtrl.Textures[ textureI ].Path;
+            var       unfolded = tab.UnfoldedTextures.Contains( samplerI );
+            ImGui.TableNextColumn();
+            if( ImGuiUtil.DrawDisabledButton( ( unfolded ? FontAwesomeIcon.CaretDown : FontAwesomeIcon.CaretRight ).ToIconString(), new Vector2( frameHeight ),
+                "Settings for this texture and the associated sampler", false, true ) )
+            {
+                unfolded = !unfolded;
+                if( unfolded )
+                    tab.UnfoldedTextures.Add( samplerI );
+                else
+                    tab.UnfoldedTextures.Remove( samplerI );
+            }
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth( ImGui.GetContentRegionAvail().X );
             if( ImGui.InputText( string.Empty, ref tmp, Utf8GamePath.MaxGamePathLength,
                    disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None )
             && tmp.Length > 0
-            && tmp        != tab.Mtrl.Textures[ i ].Path )
+            && tmp        != tab.Mtrl.Textures[ textureI ].Path )
             {
-                ret                     = true;
-                tab.Mtrl.Textures[ i ].Path = tmp;
+                ret                                = true;
+                tab.Mtrl.Textures[ textureI ].Path = tmp;
             }
 
             ImGui.TableNextColumn();
-            using var font = ImRaii.PushFont( UiBuilder.MonoFont );
-            ImGui.AlignTextToFramePadding();
-            ImGui.TextUnformatted( tab.TextureLabels[ i ] );
+            using( var font = ImRaii.PushFont( UiBuilder.MonoFont, monoFont ) )
+            {
+                ImGui.AlignTextToFramePadding();
+                if( description.Length > 0 )
+                    ImGuiUtil.LabeledHelpMarker( label, description );
+                else
+                    ImGui.TextUnformatted( label );
+            }
+
+            if( unfolded )
+            {
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ret |= DrawMaterialSampler( tab, disabled, textureI, samplerI );
+                ImGui.TableNextColumn();
+            }
         }
 
         return ret;

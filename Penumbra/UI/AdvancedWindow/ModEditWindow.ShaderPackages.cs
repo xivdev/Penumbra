@@ -14,7 +14,6 @@ using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.String;
-using Penumbra.UI.AdvancedWindow;
 using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -40,7 +39,13 @@ public partial class ModEditWindow
         ret |= DrawShaderPackageMaterialParamLayout( file, disabled );
 
         ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
-        ret |= DrawOtherShaderPackageDetails( file, disabled );
+        ret |= DrawShaderPackageResources( file, disabled );
+
+        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
+        DrawShaderPackageSelection( file );
+
+        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
+        DrawOtherShaderPackageDetails( file );
 
         file.FileDialog.Draw();
 
@@ -50,7 +55,18 @@ public partial class ModEditWindow
     }
 
     private static void DrawShaderPackageSummary( ShpkTab tab )
-        => ImGui.TextUnformatted( tab.Header );
+    {
+        ImGui.TextUnformatted( tab.Header );
+        if( !tab.Shpk.Disassembled )
+        {
+            var textColor        = ImGui.GetColorU32( ImGuiCol.Text );
+            var textColorWarning = ( textColor & 0xFF000000u ) | ( ( textColor & 0x00FEFEFE )  >> 1 ) | 0x80u; // Half red
+
+            using var c = ImRaii.PushColor( ImGuiCol.Text, textColorWarning );
+
+            ImGui.TextUnformatted( "Your system doesn't support disassembling shaders. Some functionality will be missing." );
+        }
+    }
 
     private static void DrawShaderExportButton( ShpkTab tab, string objectName, Shader shader, int idx )
     {
@@ -163,7 +179,7 @@ public partial class ModEditWindow
             }
 
             DrawShaderExportButton( tab, objectName, shader, idx );
-            if( !disabled )
+            if( !disabled && tab.Shpk.Disassembled )
             {
                 ImGui.SameLine();
                 DrawShaderImportButton( tab, objectName, shaders, idx );
@@ -182,7 +198,8 @@ public partial class ModEditWindow
                 }
             }
 
-            DrawRawDisassembly( shader );
+            if( tab.Shpk.Disassembled )
+                DrawRawDisassembly( shader );
         }
 
         return ret;
@@ -276,7 +293,9 @@ public partial class ModEditWindow
 
     private static bool DrawShaderPackageMaterialMatrix( ShpkTab tab, bool disabled )
     {
-        ImGui.TextUnformatted( "Parameter positions (continuations are grayed out, unused values are red):" );
+        ImGui.TextUnformatted( tab.Shpk.Disassembled
+            ? "Parameter positions (continuations are grayed out, unused values are red):"
+            : "Parameter positions (continuations are grayed out):" );
 
         using var table = ImRaii.Table( "##MaterialParamLayout", 5,
             ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg );
@@ -471,6 +490,22 @@ public partial class ModEditWindow
         return ret;
     }
 
+    private static bool DrawShaderPackageResources( ShpkTab tab, bool disabled )
+    {
+        var ret = false;
+
+        if( !ImGui.CollapsingHeader( "Shader Resources" ) )
+        {
+            return false;
+        }
+
+        ret |= DrawShaderPackageResourceArray( "Constant Buffers", "type", true, tab.Shpk.Constants, disabled );
+        ret |= DrawShaderPackageResourceArray( "Samplers", "type", false, tab.Shpk.Samplers, disabled );
+        ret |= DrawShaderPackageResourceArray( "Unordered Access Views", "type", false, tab.Shpk.Uavs, disabled );
+
+        return ret;
+    }
+
     private static void DrawKeyArray( string arrayName, bool withId, IReadOnlyCollection< Key > keys )
     {
         if( keys.Count == 0 )
@@ -513,7 +548,7 @@ public partial class ModEditWindow
         foreach( var (node, idx) in tab.Shpk.Nodes.WithIndex() )
         {
             using var font = ImRaii.PushFont( UiBuilder.MonoFont );
-            using var t2   = ImRaii.TreeNode( $"#{idx:D4}: ID: 0x{node.Id:X8}" );
+            using var t2   = ImRaii.TreeNode( $"#{idx:D4}: Selector: 0x{node.Selector:X8}" );
             if( !t2 )
             {
                 continue;
@@ -549,20 +584,12 @@ public partial class ModEditWindow
         }
     }
 
-    private static bool DrawOtherShaderPackageDetails( ShpkTab tab, bool disabled )
+    private static void DrawShaderPackageSelection( ShpkTab tab )
     {
-        var ret = false;
-
-        if( !ImGui.CollapsingHeader( "Further Content" ) )
+        if( !ImGui.CollapsingHeader( "Shader Selection" ) )
         {
-            return false;
+            return;
         }
-
-        ImRaii.TreeNode( $"Version: 0x{tab.Shpk.Version:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet ).Dispose();
-
-        ret |= DrawShaderPackageResourceArray( "Constant Buffers", "type", true, tab.Shpk.Constants, disabled );
-        ret |= DrawShaderPackageResourceArray( "Samplers", "type", false, tab.Shpk.Samplers, disabled );
-        ret |= DrawShaderPackageResourceArray( "Unordered Access Views", "type", false, tab.Shpk.Uavs, disabled );
 
         DrawKeyArray( "System Keys", true, tab.Shpk.SystemKeys );
         DrawKeyArray( "Scene Keys", true, tab.Shpk.SceneKeys );
@@ -570,18 +597,25 @@ public partial class ModEditWindow
         DrawKeyArray( "Sub-View Keys", false, tab.Shpk.SubViewKeys );
 
         DrawShaderPackageNodes( tab );
-        if( tab.Shpk.Items.Length > 0 )
+        using var t = ImRaii.TreeNode( $"Node Selectors ({tab.Shpk.NodeSelectors.Count})###NodeSelectors" );
+        if( t )
         {
-            using var t = ImRaii.TreeNode( $"Items ({tab.Shpk.Items.Length})###Items" );
-            if( t )
+            using var font = ImRaii.PushFont( UiBuilder.MonoFont );
+            foreach( var selector in tab.Shpk.NodeSelectors )
             {
-                using var font = ImRaii.PushFont( UiBuilder.MonoFont );
-                foreach( var (item, idx) in tab.Shpk.Items.WithIndex() )
-                {
-                    ImRaii.TreeNode( $"#{idx:D4}: ID: 0x{item.Id:X8}, node: {item.Node}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet ).Dispose();
-                }
+                ImRaii.TreeNode( $"#{selector.Value:D4}: Selector: 0x{selector.Key:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet ).Dispose();
             }
         }
+    }
+
+    private static void DrawOtherShaderPackageDetails( ShpkTab tab )
+    {
+        if( !ImGui.CollapsingHeader( "Further Content" ) )
+        {
+            return;
+        }
+
+        ImRaii.TreeNode( $"Version: 0x{tab.Shpk.Version:X8}", ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.Bullet ).Dispose();
 
         if( tab.Shpk.AdditionalData.Length > 0 )
         {
@@ -591,8 +625,6 @@ public partial class ModEditWindow
                 ImGuiUtil.TextWrapped( string.Join( ' ', tab.Shpk.AdditionalData.Select( c => $"{c:X2}" ) ) );
             }
         }
-
-        return ret;
     }
 
     private static string UsedComponentString( bool withSize, in Resource resource )

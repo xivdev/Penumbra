@@ -190,7 +190,7 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
             if (WithNames)
             {
-                var name = samplers != null && i < samplers.Count ? samplers[i].Item2?.Name : null;
+                var name = samplers != null && i < samplers.Length ? samplers[i].ShpkSampler?.Name : null;
                 node.Children.Add(texNode.WithName(name ?? $"Texture #{i}"));
             }
             else

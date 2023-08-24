@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -7,6 +8,7 @@ using Dalamud.Interface;
 using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
 using Lumina.Data.Parsing;
+using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData;
@@ -19,20 +21,92 @@ public partial class ModEditWindow
 {
     private readonly FileDialogService _fileDialog;
 
-    private bool DrawPackageNameInput(MtrlTab tab, bool disabled)
+    // strings path/to/the.exe | grep --fixed-strings '.shpk' | sort -u | sed -e 's#^shader/sm5/shpk/##'
+    // Apricot shader packages are unlisted because
+    // 1. they cause performance/memory issues when calculating the effective shader set
+    // 2. they probably aren't intended for use with materials anyway
+    private static readonly IReadOnlyList<string> StandardShaderPackages = new string[]
     {
-        var ret = false;
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 150.0f);
-        if (ImGui.InputText("Shader Package Name", ref tab.Mtrl.ShaderPackage.Name, 63,
-                disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
+        "3dui.shpk",
+        // "apricot_decal_dummy.shpk",
+        // "apricot_decal_ring.shpk",
+        // "apricot_decal.shpk",
+        // "apricot_lightmodel.shpk",
+        // "apricot_model_dummy.shpk",
+        // "apricot_model_morph.shpk",
+        // "apricot_model.shpk",
+        // "apricot_powder_dummy.shpk",
+        // "apricot_powder.shpk",
+        // "apricot_shape_dummy.shpk",
+        // "apricot_shape.shpk",
+        "bgcolorchange.shpk",
+        "bgcrestchange.shpk",
+        "bgdecal.shpk",
+        "bg.shpk",
+        "bguvscroll.shpk",
+        "channeling.shpk",
+        "characterglass.shpk",
+        "character.shpk",
+        "cloud.shpk",
+        "createviewposition.shpk",
+        "crystal.shpk",
+        "directionallighting.shpk",
+        "directionalshadow.shpk",
+        "grass.shpk",
+        "hair.shpk",
+        "iris.shpk",
+        "lightshaft.shpk",
+        "linelighting.shpk",
+        "planelighting.shpk",
+        "pointlighting.shpk",
+        "river.shpk",
+        "shadowmask.shpk",
+        "skin.shpk",
+        "spotlighting.shpk",
+        "verticalfog.shpk",
+        "water.shpk",
+        "weather.shpk",
+    };
+
+    private enum TextureAddressMode : uint
+    {
+        Wrap   = 0,
+        Mirror = 1,
+        Clamp  = 2,
+        Border = 3,
+    }
+
+    private static readonly IReadOnlyList<string> TextureAddressModeTooltips = new string[]
+    {
+        "Tile the texture at every UV integer junction.\n\nFor example, for U values between 0 and 3, the texture is repeated three times.",
+        "Flip the texture at every UV integer junction.\n\nFor U values between 0 and 1, for example, the texture is addressed normally; between 1 and 2, the texture is mirrored; between 2 and 3, the texture is normal again; and so on.",
+        "Texture coordinates outside the range [0.0, 1.0] are set to the texture color at 0.0 or 1.0, respectively.",
+        "Texture coordinates outside the range [0.0, 1.0] are set to the border color (generally black).",
+    };
+
+    private static bool DrawPackageNameInput(MtrlTab tab, bool disabled)
+    {
+        if (disabled)
         {
-            ret                = true;
-            tab.AssociatedShpk = null;
-            tab.LoadedShpkPath = FullPath.Empty;
+            ImGui.TextUnformatted("Shader Package: " + tab.Mtrl.ShaderPackage.Name);
+            return false;
         }
 
-        if (ImGui.IsItemDeactivatedAfterEdit())
-            tab.LoadShpk(tab.FindAssociatedShpk(out _, out _));
+        var ret = false;
+        ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
+        using var c = ImRaii.Combo("Shader Package", tab.Mtrl.ShaderPackage.Name);
+        if (c)
+            foreach (var value in tab.GetShpkNames())
+            {
+                if (ImGui.Selectable(value, value == tab.Mtrl.ShaderPackage.Name))
+                {
+                    tab.Mtrl.ShaderPackage.Name = value;
+                    ret                = true;
+                    tab.AssociatedShpk = null;
+                    tab.LoadedShpkPath = FullPath.Empty;
+                    tab.LoadShpk(tab.FindAssociatedShpk(out _, out _));
+                }
+            }
 
         return ret;
     }
@@ -41,8 +115,8 @@ public partial class ModEditWindow
     {
         var ret       = false;
         var shpkFlags = (int)tab.Mtrl.ShaderPackage.Flags;
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 150.0f);
-        if (ImGui.InputInt("Shader Package Flags", ref shpkFlags, 0, 0,
+        ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
+        if (ImGui.InputInt("Shader Flags", ref shpkFlags, 0, 0,
                 ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
         {
             tab.Mtrl.ShaderPackage.Flags = (uint)shpkFlags;
@@ -62,11 +136,27 @@ public partial class ModEditWindow
         var text = tab.AssociatedShpk == null
             ? "Associated .shpk file: None"
             : $"Associated .shpk file: {tab.LoadedShpkPathName}";
+        var devkitText = tab.AssociatedShpkDevkit == null
+            ? "Associated dev-kit file: None"
+            : $"Associated dev-kit file: {tab.LoadedShpkDevkitPathName}";
+        var baseDevkitText = tab.AssociatedBaseDevkit == null
+            ? "Base dev-kit file: None"
+            : $"Base dev-kit file: {tab.LoadedBaseDevkitPathName}";
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
         if (ImGui.Selectable(text))
             ImGui.SetClipboardText(tab.LoadedShpkPathName);
+
+        ImGuiUtil.HoverTooltip("Click to copy file path to clipboard.");
+
+        if (ImGui.Selectable(devkitText))
+            ImGui.SetClipboardText(tab.LoadedShpkDevkitPathName);
+
+        ImGuiUtil.HoverTooltip("Click to copy file path to clipboard.");
+
+        if (ImGui.Selectable(baseDevkitText))
+            ImGui.SetClipboardText(tab.LoadedBaseDevkitPathName);
 
         ImGuiUtil.HoverTooltip("Click to copy file path to clipboard.");
 
@@ -94,94 +184,50 @@ public partial class ModEditWindow
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
     }
 
-
-    private static bool DrawShaderKey(MtrlTab tab, bool disabled, ref int idx)
-    {
-        var       ret = false;
-        using var t2  = ImRaii.TreeNode(tab.ShaderKeyLabels[idx], disabled ? ImGuiTreeNodeFlags.Leaf : 0);
-        if (!t2 || disabled)
-            return ret;
-
-        var key     = tab.Mtrl.ShaderPackage.ShaderKeys[idx];
-        var shpkKey = tab.AssociatedShpk?.GetMaterialKeyById(key.Category);
-        if (shpkKey.HasValue)
-        {
-            ImGui.SetNextItemWidth(UiHelpers.Scale * 150.0f);
-            using var c = ImRaii.Combo("Value", $"0x{key.Value:X8}");
-            if (c)
-                foreach (var value in shpkKey.Value.Values)
-                {
-                    if (ImGui.Selectable($"0x{value:X8}", value == key.Value))
-                    {
-                        tab.Mtrl.ShaderPackage.ShaderKeys[idx].Value = value;
-                        ret                                          = true;
-                        tab.UpdateShaderKeyLabels();
-                    }
-                }
-        }
-
-        if (ImGui.Button("Remove Key"))
-        {
-            tab.Mtrl.ShaderPackage.ShaderKeys = tab.Mtrl.ShaderPackage.ShaderKeys.RemoveItems(idx--);
-            ret                               = true;
-            tab.UpdateShaderKeyLabels();
-        }
-
-        return ret;
-    }
-
-    private static bool DrawNewShaderKey(MtrlTab tab)
-    {
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 150.0f);
-        var ret = false;
-        using (var c = ImRaii.Combo("##NewConstantId", $"ID: 0x{tab.NewKeyId:X8}"))
-        {
-            if (c)
-                foreach (var idx in tab.MissingShaderKeyIndices)
-                {
-                    var key = tab.AssociatedShpk!.MaterialKeys[idx];
-
-                    if (ImGui.Selectable($"ID: 0x{key.Id:X8}", key.Id == tab.NewKeyId))
-                    {
-                        tab.NewKeyDefault = key.DefaultValue;
-                        tab.NewKeyId      = key.Id;
-                        ret               = true;
-                        tab.UpdateShaderKeyLabels();
-                    }
-                }
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("Add Key"))
-        {
-            tab.Mtrl.ShaderPackage.ShaderKeys = tab.Mtrl.ShaderPackage.ShaderKeys.AddItem(new ShaderKey
-            {
-                Category = tab.NewKeyId,
-                Value    = tab.NewKeyDefault,
-            });
-            ret = true;
-            tab.UpdateShaderKeyLabels();
-        }
-
-        return ret;
-    }
-
     private static bool DrawMaterialShaderKeys(MtrlTab tab, bool disabled)
     {
-        if (tab.Mtrl.ShaderPackage.ShaderKeys.Length <= 0
-         && (disabled || tab.AssociatedShpk == null || tab.AssociatedShpk.MaterialKeys.Length <= 0))
-            return false;
-
-        using var t = ImRaii.TreeNode("Shader Keys");
-        if (!t)
+        if (tab.ShaderKeys.Count == 0)
             return false;
 
         var ret = false;
-        for (var idx = 0; idx < tab.Mtrl.ShaderPackage.ShaderKeys.Length; ++idx)
-            ret |= DrawShaderKey(tab, disabled, ref idx);
+        foreach (var (label, index, description, monoFont, values) in tab.ShaderKeys)
+        {
+            using var font = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
+            ref var key = ref tab.Mtrl.ShaderPackage.ShaderKeys[index];
+            var shpkKey = tab.AssociatedShpk?.GetMaterialKeyById(key.Category);
+            var currentValue = key.Value;
+            var (currentLabel, _, currentDescription) = values.FirstOrNull(v => v.Value == currentValue) ?? ($"0x{currentValue:X8}", currentValue, string.Empty);
+            if (!disabled && shpkKey.HasValue)
+            {
+                ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
+                using (var c = ImRaii.Combo($"##{key.Category:X8}", currentLabel))
+                {
+                    if (c)
+                        foreach (var (valueLabel, value, valueDescription) in values)
+                        {
+                            if (ImGui.Selectable(valueLabel, value == currentValue))
+                            {
+                                key.Value = value;
+                                ret       = true;
+                                tab.Update();
+                            }
 
-        if (!disabled && tab.AssociatedShpk != null && tab.MissingShaderKeyIndices.Count != 0)
-            ret |= DrawNewShaderKey(tab);
+                            if (valueDescription.Length > 0)
+                                ImGuiUtil.SelectableHelpMarker(valueDescription);
+                        }
+                }
+                ImGui.SameLine();
+                if (description.Length > 0)
+                    ImGuiUtil.LabeledHelpMarker(label, description);
+                else
+                    ImGui.TextUnformatted(label);
+            }
+            else if (description.Length > 0 || currentDescription.Length > 0)
+                ImGuiUtil.LabeledHelpMarker($"{label}: {currentLabel}",
+                    description + ((description.Length > 0 && currentDescription.Length > 0) ? "\n\n" : string.Empty) + currentDescription);
+            else
+                ImGui.TextUnformatted($"{label}: {currentLabel}");
+        }
 
         return ret;
     }
@@ -191,162 +237,64 @@ public partial class ModEditWindow
         if (tab.AssociatedShpk == null)
             return;
 
-        ImRaii.TreeNode(tab.VertexShaders, ImGuiTreeNodeFlags.Leaf).Dispose();
-        ImRaii.TreeNode(tab.PixelShaders,  ImGuiTreeNodeFlags.Leaf).Dispose();
-    }
+        ImRaii.TreeNode(tab.VertexShadersString, ImGuiTreeNodeFlags.Leaf).Dispose();
+        ImRaii.TreeNode(tab.PixelShadersString,  ImGuiTreeNodeFlags.Leaf).Dispose();
 
-
-    private static bool DrawMaterialConstantValues(MtrlTab tab, bool disabled, ref int idx)
-    {
-        var (name, componentOnly, paramValueOffset) = tab.MaterialConstants[idx];
-        using var font = ImRaii.PushFont(UiBuilder.MonoFont);
-        using var t2   = ImRaii.TreeNode(name);
-        if (!t2)
-            return false;
-
-        font.Dispose();
-
-        var constant = tab.Mtrl.ShaderPackage.Constants[idx];
-        var ret      = false;
-        var values   = tab.Mtrl.GetConstantValues(constant);
-        if (values.Length > 0)
+        if (tab.ShaderComment.Length > 0)
         {
-            var valueOffset = constant.ByteOffset >> 2;
-
-            for (var valueIdx = 0; valueIdx < values.Length; ++valueIdx)
-            {
-                var paramName = MaterialParamName(componentOnly, paramValueOffset + valueIdx) ?? $"#{valueIdx}";
-                ImGui.SetNextItemWidth(UiHelpers.Scale * 150.0f);
-                if (ImGui.InputFloat($"{paramName} (at 0x{(valueOffset + valueIdx) << 2:X4})", ref values[valueIdx], 0.0f, 0.0f, "%.3f",
-                        disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
-                {
-                    ret = true;
-                    tab.UpdateConstantLabels();
-                    tab.SetMaterialParameter(constant.Id, valueIdx, values.Slice(valueIdx, 1));
-                }
-            }
+            ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+            ImGui.TextUnformatted(tab.ShaderComment);
         }
-        else
-        {
-            ImRaii.TreeNode($"Offset: 0x{constant.ByteOffset:X4}", ImGuiTreeNodeFlags.Leaf).Dispose();
-            ImRaii.TreeNode($"Size: 0x{constant.ByteSize:X4}",     ImGuiTreeNodeFlags.Leaf).Dispose();
-        }
-
-        if (!disabled
-         && !tab.HasMalformedMaterialConstants
-         && tab.OrphanedMaterialValues.Count == 0
-         && tab.AliasedMaterialValueCount == 0
-         && ImGui.Button("Remove Constant"))
-        {
-            tab.Mtrl.ShaderPackage.ShaderValues =
-                tab.Mtrl.ShaderPackage.ShaderValues.RemoveItems(constant.ByteOffset >> 2, constant.ByteSize >> 2);
-            tab.Mtrl.ShaderPackage.Constants = tab.Mtrl.ShaderPackage.Constants.RemoveItems(idx--);
-            for (var i = 0; i < tab.Mtrl.ShaderPackage.Constants.Length; ++i)
-            {
-                if (tab.Mtrl.ShaderPackage.Constants[i].ByteOffset >= constant.ByteOffset)
-                    tab.Mtrl.ShaderPackage.Constants[i].ByteOffset -= constant.ByteSize;
-            }
-
-            ret = true;
-            tab.UpdateConstantLabels();
-            tab.SetMaterialParameter(constant.Id, 0, new float[constant.ByteSize >> 2]);
-        }
-
-        return ret;
-    }
-
-    private static bool DrawMaterialOrphans(MtrlTab tab, bool disabled)
-    {
-        using var t2 = ImRaii.TreeNode($"Orphan Values ({tab.OrphanedMaterialValues.Count})");
-        if (!t2)
-            return false;
-
-        var ret = false;
-        foreach (var idx in tab.OrphanedMaterialValues)
-        {
-            ImGui.SetNextItemWidth(ImGui.GetFontSize() * 10.0f);
-            if (ImGui.InputFloat($"#{idx} (at 0x{idx << 2:X4})",
-                    ref tab.Mtrl.ShaderPackage.ShaderValues[idx], 0.0f, 0.0f, "%.3f",
-                    disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
-            {
-                ret = true;
-                tab.UpdateConstantLabels();
-            }
-        }
-
-        return ret;
-    }
-
-    private static bool DrawNewMaterialParam(MtrlTab tab)
-    {
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 450.0f);
-        using (var font = ImRaii.PushFont(UiBuilder.MonoFont))
-        {
-            using var c = ImRaii.Combo("##NewConstantId", tab.MissingMaterialConstants[tab.NewConstantIdx].Name);
-            if (c)
-                foreach (var (constant, idx) in tab.MissingMaterialConstants.WithIndex())
-                {
-                    if (ImGui.Selectable(constant.Name, constant.Id == tab.NewConstantId))
-                    {
-                        tab.NewConstantIdx = idx;
-                        tab.NewConstantId  = constant.Id;
-                    }
-                }
-        }
-
-        ImGui.SameLine();
-        if (ImGui.Button("Add Constant"))
-        {
-            var (_, _, byteSize) = tab.MissingMaterialConstants[tab.NewConstantIdx];
-            tab.Mtrl.ShaderPackage.Constants = tab.Mtrl.ShaderPackage.Constants.AddItem(new MtrlFile.Constant
-            {
-                Id         = tab.NewConstantId,
-                ByteOffset = (ushort)(tab.Mtrl.ShaderPackage.ShaderValues.Length << 2),
-                ByteSize   = byteSize,
-            });
-            tab.Mtrl.ShaderPackage.ShaderValues = tab.Mtrl.ShaderPackage.ShaderValues.AddItem(0.0f, byteSize >> 2);
-            tab.UpdateConstantLabels();
-            return true;
-        }
-
-        return false;
     }
 
     private static bool DrawMaterialConstants(MtrlTab tab, bool disabled)
     {
-        if (tab.Mtrl.ShaderPackage.Constants.Length == 0
-         && tab.Mtrl.ShaderPackage.ShaderValues.Length == 0
-         && (disabled || tab.AssociatedShpk == null || tab.AssociatedShpk.MaterialParams.Length == 0))
+        if (tab.Constants.Count == 0)
             return false;
 
-        using var font = ImRaii.PushFont(UiBuilder.MonoFont);
-        using var t    = ImRaii.TreeNode(tab.MaterialConstantLabel);
-        if (!t)
+        ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+        if (!ImGui.CollapsingHeader("Material Constants"))
             return false;
 
-        font.Dispose();
+        using var _ = ImRaii.PushId("MaterialConstants");
+
         var ret = false;
-        for (var idx = 0; idx < tab.Mtrl.ShaderPackage.Constants.Length; ++idx)
-            ret |= DrawMaterialConstantValues(tab, disabled, ref idx);
+        foreach (var (header, group) in tab.Constants)
+        {
+            using var t = ImRaii.TreeNode(header, ImGuiTreeNodeFlags.DefaultOpen);
+            if (!t)
+                continue;
 
-        if (tab.OrphanedMaterialValues.Count > 0)
-            ret |= DrawMaterialOrphans(tab, disabled);
-        else if (!disabled && !tab.HasMalformedMaterialConstants && tab.MissingMaterialConstants.Count > 0)
-            ret |= DrawNewMaterialParam(tab);
+            foreach (var (label, constantIndex, slice, description, monoFont, editor) in group)
+            {
+                var constant = tab.Mtrl.ShaderPackage.Constants[constantIndex];
+                var buffer = tab.Mtrl.GetConstantValues(constant);
+                if (buffer.Length > 0)
+                {
+                    using var id = ImRaii.PushId($"##{constant.Id:X8}:{slice.Start}");
+                    if (editor.Draw(buffer[slice], disabled, 250.0f))
+                    {
+                        ret = true;
+                        tab.SetMaterialParameter(constant.Id, slice.Start, buffer[slice]);
+                    }
+                    ImGui.SameLine();
+                    using var font = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
+                    if (description.Length > 0)
+                        ImGuiUtil.LabeledHelpMarker(label, description);
+                    else
+                        ImGui.TextUnformatted(label);
+                }
+            }
+        }
 
         return ret;
     }
 
-    private static bool DrawMaterialSampler(MtrlTab tab, bool disabled, ref int idx)
+    private static bool DrawMaterialSampler(MtrlTab tab, bool disabled, int textureIdx, int samplerIdx)
     {
-        var (label, filename, samplerCrc) = tab.Samplers[idx];
-        using var tree = ImRaii.TreeNode(label);
-        if (!tree)
-            return false;
-
-        ImRaii.TreeNode(filename, ImGuiTreeNodeFlags.Leaf).Dispose();
-        var ret     = false;
-        var sampler = tab.Mtrl.ShaderPackage.Samplers[idx];
+        var     ret     = false;
+        ref var texture = ref tab.Mtrl.Textures[textureIdx];
+        ref var sampler = ref tab.Mtrl.ShaderPackage.Samplers[samplerIdx];
 
         // FIXME this probably doesn't belong here
         static unsafe bool InputHexUInt16(string label, ref ushort v, ImGuiInputTextFlags flags)
@@ -357,128 +305,123 @@ public partial class ModEditWindow
             }
         }
 
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 150.0f);
-        if (InputHexUInt16("Texture Flags", ref tab.Mtrl.Textures[sampler.TextureIndex].Flags,
+        static bool ComboTextureAddressMode(string label, ref uint samplerFlags, int bitOffset)
+        {
+            var current = (TextureAddressMode)((samplerFlags >> bitOffset) & 0x3u);
+            using var c = ImRaii.Combo(label, current.ToString());
+            if (!c)
+                return false;
+
+            var ret = false;
+            foreach (var value in Enum.GetValues<TextureAddressMode>())
+            {
+                if (ImGui.Selectable(value.ToString(), value == current))
+                {
+                    samplerFlags = (samplerFlags & ~(0x3u << bitOffset)) | ((uint)value << bitOffset);
+                    ret          = true;
+                }
+
+                ImGuiUtil.SelectableHelpMarker(TextureAddressModeTooltips[(int)value]);
+            }
+            return ret;
+        }
+
+        var dx11 = texture.DX11;
+        if (ImGui.Checkbox("Prepend -- to the file name on DirectX 11", ref dx11))
+        {
+            texture.DX11 = dx11;
+            ret          = true;
+        }
+
+        ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+        if (ComboTextureAddressMode("##UAddressMode", ref sampler.Flags, 2))
+        {
+            ret = true;
+            tab.SetSamplerFlags(sampler.SamplerId, sampler.Flags);
+        }
+        ImGui.SameLine();
+        ImGuiUtil.LabeledHelpMarker("U Address Mode", "Method to use for resolving a U texture coordinate that is outside the 0 to 1 range.");
+
+        ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+        if (ComboTextureAddressMode("##VAddressMode", ref sampler.Flags, 0))
+        {
+            ret = true;
+            tab.SetSamplerFlags(sampler.SamplerId, sampler.Flags);
+        }
+        ImGui.SameLine();
+        ImGuiUtil.LabeledHelpMarker("V Address Mode", "Method to use for resolving a V texture coordinate that is outside the 0 to 1 range.");
+
+        var lodBias = ((int)(sampler.Flags << 12) >> 22) / 64.0f;
+        ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+        if (ImGui.DragFloat("##LoDBias", ref lodBias, 0.1f, -8.0f, 7.984375f))
+        {
+            sampler.Flags = (uint)((sampler.Flags & ~0x000FFC00) | (uint)((int)Math.Round(Math.Clamp(lodBias, -8.0f, 7.984375f) * 64.0f) & 0x3FF) << 10);
+            ret           = true;
+            tab.SetSamplerFlags(sampler.SamplerId, sampler.Flags);
+        }
+        ImGui.SameLine();
+        ImGuiUtil.LabeledHelpMarker("Level of Detail Bias", "Offset from the calculated mipmap level.\n\nHigher means that the texture will start to lose detail nearer.\nLower means that the texture will keep its detail until farther.");
+
+        var minLod = (int)((sampler.Flags >> 20) & 0xF);
+        ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+        if (ImGui.DragInt("##MinLoD", ref minLod, 0.1f, 0, 15))
+        {
+            sampler.Flags = (uint)((sampler.Flags & ~0x00F00000) | ((uint)Math.Clamp(minLod, 0, 15) << 20));
+            ret           = true;
+            tab.SetSamplerFlags(sampler.SamplerId, sampler.Flags);
+        }
+        ImGui.SameLine();
+        ImGuiUtil.LabeledHelpMarker("Minimum Level of Detail", "Most detailed mipmap level to use.\n\n0 is the full-sized texture, 1 is the half-sized texture, 2 is the quarter-sized texture, and so on.\n15 will forcibly reduce the texture to its smallest mipmap.");
+
+        using var t = ImRaii.TreeNode("Advanced Settings");
+        if (!t)
+            return ret;
+
+        ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
+        if (InputHexUInt16("Texture Flags", ref texture.Flags,
                 disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None))
             ret = true;
 
         var samplerFlags = (int)sampler.Flags;
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 150.0f);
+        ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
         if (ImGui.InputInt("Sampler Flags", ref samplerFlags, 0, 0,
                 ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
         {
-            tab.Mtrl.ShaderPackage.Samplers[idx].Flags = (uint)samplerFlags;
-            ret                                        = true;
-            tab.SetSamplerFlags(samplerCrc, (uint)samplerFlags);
-        }
-
-        if (!disabled
-         && tab.OrphanedSamplers.Count == 0
-         && tab.AliasedSamplerCount == 0
-         && ImGui.Button("Remove Sampler"))
-        {
-            tab.Mtrl.Textures               = tab.Mtrl.Textures.RemoveItems(sampler.TextureIndex);
-            tab.Mtrl.ShaderPackage.Samplers = tab.Mtrl.ShaderPackage.Samplers.RemoveItems(idx--);
-            for (var i = 0; i < tab.Mtrl.ShaderPackage.Samplers.Length; ++i)
-            {
-                if (tab.Mtrl.ShaderPackage.Samplers[i].TextureIndex >= sampler.TextureIndex)
-                    --tab.Mtrl.ShaderPackage.Samplers[i].TextureIndex;
-            }
-
-            ret = true;
-            tab.UpdateSamplers();
-            tab.UpdateTextureLabels();
+            sampler.Flags = (uint)samplerFlags;
+            ret           = true;
+            tab.SetSamplerFlags(sampler.SamplerId, (uint)samplerFlags);
         }
 
         return ret;
     }
 
-    private static bool DrawMaterialNewSampler(MtrlTab tab)
-    {
-        var (name, id) = tab.MissingSamplers[tab.NewSamplerIdx];
-        ImGui.SetNextItemWidth(UiHelpers.Scale * 450.0f);
-        using (var c = ImRaii.Combo("##NewSamplerId", $"{name} (ID: 0x{id:X8})"))
-        {
-            if (c)
-                foreach (var (sampler, idx) in tab.MissingSamplers.WithIndex())
-                {
-                    if (ImGui.Selectable($"{sampler.Name} (ID: 0x{sampler.Id:X8})", sampler.Id == tab.NewSamplerId))
-                    {
-                        tab.NewSamplerIdx = idx;
-                        tab.NewSamplerId  = sampler.Id;
-                    }
-                }
-        }
-
-        ImGui.SameLine();
-        if (!ImGui.Button("Add Sampler"))
-            return false;
-
-        var newSamplerId = tab.NewSamplerId;
-        tab.Mtrl.ShaderPackage.Samplers = tab.Mtrl.ShaderPackage.Samplers.AddItem(new Sampler
-        {
-            SamplerId    = newSamplerId,
-            TextureIndex = (byte)tab.Mtrl.Textures.Length,
-            Flags        = 0,
-        });
-        tab.Mtrl.Textures = tab.Mtrl.Textures.AddItem(new MtrlFile.Texture
-        {
-            Path  = string.Empty,
-            Flags = 0,
-        });
-        tab.UpdateSamplers();
-        tab.UpdateTextureLabels();
-        tab.SetSamplerFlags(newSamplerId, 0);
-        return true;
-    }
-
-    private static bool DrawMaterialSamplers(MtrlTab tab, bool disabled)
-    {
-        if (tab.Mtrl.ShaderPackage.Samplers.Length == 0
-         && tab.Mtrl.Textures.Length == 0
-         && (disabled || (tab.AssociatedShpk?.Samplers.All(sampler => sampler.Slot != 2) ?? false)))
-            return false;
-
-        using var t = ImRaii.TreeNode("Samplers");
-        if (!t)
-            return false;
-
-        var ret = false;
-        for (var idx = 0; idx < tab.Mtrl.ShaderPackage.Samplers.Length; ++idx)
-            ret |= DrawMaterialSampler(tab, disabled, ref idx);
-
-        if (tab.OrphanedSamplers.Count > 0)
-        {
-            using var t2 = ImRaii.TreeNode($"Orphan Textures ({tab.OrphanedSamplers.Count})");
-            if (t2)
-                foreach (var idx in tab.OrphanedSamplers)
-                {
-                    ImRaii.TreeNode($"#{idx}: {Path.GetFileName(tab.Mtrl.Textures[idx].Path)} - {tab.Mtrl.Textures[idx].Flags:X4}",
-                            ImGuiTreeNodeFlags.Leaf)
-                        .Dispose();
-                }
-        }
-        else if (!disabled && tab.MissingSamplers.Count > 0 && tab.AliasedSamplerCount == 0 && tab.Mtrl.Textures.Length < 255)
-        {
-            ret |= DrawMaterialNewSampler(tab);
-        }
-
-        return ret;
-    }
-
-    private bool DrawMaterialShaderResources(MtrlTab tab, bool disabled)
+    private bool DrawMaterialShader(MtrlTab tab, bool disabled)
     {
         var ret = false;
-        if (!ImGui.CollapsingHeader("Advanced Shader Resources"))
-            return ret;
+        if (ImGui.CollapsingHeader(tab.ShaderHeader))
+        {
+            ret |= DrawPackageNameInput(tab, disabled);
+            ret |= DrawShaderFlagsInput(tab, disabled);
+            DrawCustomAssociations(tab);
+            ret |= DrawMaterialShaderKeys(tab, disabled);
+            DrawMaterialShaders(tab);
+        }
 
-        ret |= DrawPackageNameInput(tab, disabled);
-        ret |= DrawShaderFlagsInput(tab, disabled);
-        DrawCustomAssociations(tab);
-        ret |= DrawMaterialShaderKeys(tab, disabled);
-        DrawMaterialShaders(tab);
-        ret |= DrawMaterialConstants(tab, disabled);
-        ret |= DrawMaterialSamplers(tab, disabled);
+        if (tab.AssociatedShpkDevkit == null)
+        {
+            ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
+            GC.KeepAlive(tab);
+
+            var textColor = ImGui.GetColorU32(ImGuiCol.Text);
+            var textColorWarning = (textColor & 0xFF000000u) | ((textColor & 0x00FEFEFE) >> 1) | (tab.AssociatedShpk == null ? 0x80u : 0x8080u); // Half red or yellow
+
+            using var c = ImRaii.PushColor(ImGuiCol.Text, textColorWarning);
+
+            ImGui.TextUnformatted(tab.AssociatedShpk == null
+                ? "Unable to find a suitable .shpk file for cross-references. Some functionality will be missing."
+                : "No dev-kit file found for this material's shaders. Please install one for optimal editing experience, such as actual constant names instead of hexadecimal identifiers.");
+        }
+
         return ret;
     }
 
@@ -500,26 +443,25 @@ public partial class ModEditWindow
             _          => null,
         };
     }
+    private static string VectorSwizzle(int firstComponent, int lastComponent)
+        => (firstComponent, lastComponent) switch
+        {
+            (0, 4) => "     ",
+            (0, 0) => ".x   ",
+            (0, 1) => ".xy  ",
+            (0, 2) => ".xyz ",
+            (0, 3) => "     ",
+            (1, 1) => ".y   ",
+            (1, 2) => ".yz  ",
+            (1, 3) => ".yzw ",
+            (2, 2) => ".z   ",
+            (2, 3) => ".zw  ",
+            (3, 3) => ".w   ",
+            _      => string.Empty,
+        };
 
     private static (string? Name, bool ComponentOnly) MaterialParamRangeName(string prefix, int valueOffset, int valueLength)
     {
-        static string VectorSwizzle(int firstComponent, int lastComponent)
-            => (firstComponent, lastComponent) switch
-            {
-                (0, 4) => "     ",
-                (0, 0) => ".x   ",
-                (0, 1) => ".xy  ",
-                (0, 2) => ".xyz ",
-                (0, 3) => "     ",
-                (1, 1) => ".y   ",
-                (1, 2) => ".yz  ",
-                (1, 3) => ".yzw ",
-                (2, 2) => ".z   ",
-                (2, 3) => ".zw  ",
-                (3, 3) => ".w   ",
-                _      => string.Empty,
-            };
-
         if (valueLength == 0 || valueOffset < 0)
             return (null, false);
 

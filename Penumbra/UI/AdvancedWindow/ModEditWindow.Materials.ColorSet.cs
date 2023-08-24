@@ -13,22 +13,44 @@ namespace Penumbra.UI.AdvancedWindow;
 
 public partial class ModEditWindow
 {
+    private static readonly float HalfMinValue = (float)Half.MinValue;
+    private static readonly float HalfMaxValue = (float)Half.MaxValue;
+    private static readonly float HalfEpsilon  = (float)Half.Epsilon;
+
     private bool DrawMaterialColorSetChange( MtrlTab tab, bool disabled )
     {
-        if( !tab.Mtrl.ColorSets.Any( c => c.HasRows ) )
+        if( !tab.SamplerIds.Contains( ShpkFile.TableSamplerId ) || !tab.Mtrl.ColorSets.Any( c => c.HasRows ) )
         {
             return false;
         }
 
+        ImGui.Dummy( new Vector2( ImGui.GetTextLineHeight() / 2 ) );
+        if( !ImGui.CollapsingHeader( "Color Set", ImGuiTreeNodeFlags.DefaultOpen ) )
+        {
+            return false;
+        }
+
+        var hasAnyDye = tab.UseColorDyeSet;
+
         ColorSetCopyAllClipboardButton( tab.Mtrl, 0 );
         ImGui.SameLine();
-        var ret = ColorSetPasteAllClipboardButton( tab, 0 );
-        ImGui.SameLine();
-        ImGui.Dummy( ImGuiHelpers.ScaledVector2( 20, 0 ) );
-        ImGui.SameLine();
-        ret |= DrawPreviewDye( tab, disabled );
+        var ret = ColorSetPasteAllClipboardButton( tab, 0, disabled );
+        if( !disabled )
+        {
+            ImGui.SameLine();
+            ImGui.Dummy( ImGuiHelpers.ScaledVector2( 20, 0 ) );
+            ImGui.SameLine();
+            ret |= ColorSetDyeableCheckbox( tab, ref hasAnyDye );
+        }
+        if( hasAnyDye )
+        {
+            ImGui.SameLine();
+            ImGui.Dummy( ImGuiHelpers.ScaledVector2( 20, 0 ) );
+            ImGui.SameLine();
+            ret |= DrawPreviewDye( tab, disabled );
+        }
 
-        using var table = ImRaii.Table( "##ColorSets", 11,
+        using var table = ImRaii.Table( "##ColorSets", hasAnyDye ? 11 : 9,
             ImGuiTableFlags.SizingFixedFit | ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV );
         if( !table )
         {
@@ -53,17 +75,20 @@ public partial class ModEditWindow
         ImGui.TableHeader( "Repeat" );
         ImGui.TableNextColumn();
         ImGui.TableHeader( "Skew" );
-        ImGui.TableNextColumn();
-        ImGui.TableHeader( "Dye" );
-        ImGui.TableNextColumn();
-        ImGui.TableHeader( "Dye Preview" );
+        if( hasAnyDye )
+        {
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Dye");
+            ImGui.TableNextColumn();
+            ImGui.TableHeader("Dye Preview");
+        }
 
         for( var j = 0; j < tab.Mtrl.ColorSets.Length; ++j )
         {
             using var _ = ImRaii.PushId( j );
             for( var i = 0; i < MtrlFile.ColorSet.RowArray.NumRows; ++i )
             {
-                ret |= DrawColorSetRow( tab, j, i, disabled );
+                ret |= DrawColorSetRow( tab, j, i, disabled, hasAnyDye );
                 ImGui.TableNextRow();
             }
         }
@@ -122,9 +147,9 @@ public partial class ModEditWindow
         return false;
     }
 
-    private static unsafe bool ColorSetPasteAllClipboardButton( MtrlTab tab, int colorSetIdx )
+    private static unsafe bool ColorSetPasteAllClipboardButton( MtrlTab tab, int colorSetIdx, bool disabled )
     {
-        if( !ImGui.Button( "Import All Rows from Clipboard", ImGuiHelpers.ScaledVector2( 200, 0 ) ) || tab.Mtrl.ColorSets.Length <= colorSetIdx )
+        if( !ImGuiUtil.DrawDisabledButton( "Import All Rows from Clipboard", ImGuiHelpers.ScaledVector2( 200, 0 ), string.Empty, disabled ) || tab.Mtrl.ColorSets.Length <= colorSetIdx )
         {
             return false;
         }
@@ -187,6 +212,21 @@ public partial class ModEditWindow
         }
     }
 
+    private static bool ColorSetDyeableCheckbox( MtrlTab tab, ref bool dyeable )
+    {
+        var ret = ImGui.Checkbox( "Dyeable", ref dyeable );
+
+        if( ret )
+        {
+            tab.UseColorDyeSet = dyeable;
+            if( dyeable )
+                tab.Mtrl.FindOrAddColorDyeSet();
+            tab.UpdateColorSetPreview();
+        }
+
+        return ret;
+    }
+
     private static unsafe bool ColorSetPasteFromClipboardButton( MtrlTab tab, int colorSetIdx, int rowIdx, bool disabled )
     {
         if( ImGuiUtil.DrawDisabledButton( FontAwesomeIcon.Paste.ToIconString(), ImGui.GetFrameHeight() * Vector2.One,
@@ -235,7 +275,7 @@ public partial class ModEditWindow
             tab.CancelColorSetHighlight();
     }
 
-    private bool DrawColorSetRow( MtrlTab tab, int colorSetIdx, int rowIdx, bool disabled )
+    private bool DrawColorSetRow( MtrlTab tab, int colorSetIdx, int rowIdx, bool disabled, bool hasAnyDye )
     {
         static bool FixFloat( ref float val, float current )
         {
@@ -245,7 +285,7 @@ public partial class ModEditWindow
 
         using var id        = ImRaii.PushId( rowIdx );
         var       row       = tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ];
-        var       hasDye    = tab.Mtrl.ColorDyeSets.Length > colorSetIdx;
+        var       hasDye    = hasAnyDye && tab.Mtrl.ColorDyeSets.Length > colorSetIdx;
         var       dye       = hasDye ? tab.Mtrl.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ] : new MtrlFile.ColorDyeSet.Row();
         var       floatSize = 70 * UiHelpers.Scale;
         var       intSize   = 45 * UiHelpers.Scale;
@@ -274,7 +314,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         var tmpFloat = row.SpecularStrength;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##SpecularStrength", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.SpecularStrength ) )
+        if( ImGui.DragFloat( "##SpecularStrength", ref tmpFloat, 0.1f, 0f, HalfMaxValue, "%.2f" ) && FixFloat( ref tmpFloat, row.SpecularStrength ) )
         {
             tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].SpecularStrength = tmpFloat;
             ret                                                               = true;
@@ -305,9 +345,9 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.GlossStrength;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##GlossStrength", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.GlossStrength ) )
+        if( ImGui.DragFloat( "##GlossStrength", ref tmpFloat, Math.Max( 0.1f, tmpFloat * 0.025f ), HalfEpsilon, HalfMaxValue, "%.1f" ) && FixFloat( ref tmpFloat, row.GlossStrength ) )
         {
-            tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].GlossStrength = tmpFloat;
+            tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].GlossStrength = Math.Max(tmpFloat, HalfEpsilon);
             ret                                                            = true;
             tab.UpdateColorSetRowPreview(rowIdx);
         }
@@ -323,9 +363,9 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         int tmpInt = row.TileSet;
         ImGui.SetNextItemWidth( intSize );
-        if( ImGui.InputInt( "##TileSet", ref tmpInt, 0, 0 ) && tmpInt != row.TileSet && tmpInt is >= 0 and <= ushort.MaxValue )
+        if( ImGui.DragInt( "##TileSet", ref tmpInt, 0.25f, 0, 63 ) && tmpInt != row.TileSet && tmpInt is >= 0 and <= ushort.MaxValue )
         {
-            tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].TileSet = ( ushort )tmpInt;
+            tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].TileSet = ( ushort )Math.Clamp(tmpInt, 0, 63);
             ret                                                      = true;
             tab.UpdateColorSetRowPreview(rowIdx);
         }
@@ -335,7 +375,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.MaterialRepeat.X;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##RepeatX", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.MaterialRepeat.X ) )
+        if( ImGui.DragFloat( "##RepeatX", ref tmpFloat, 0.1f, HalfMinValue, HalfMaxValue, "%.2f" ) && FixFloat( ref tmpFloat, row.MaterialRepeat.X ) )
         {
             tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialRepeat = row.MaterialRepeat with { X = tmpFloat };
             ret                                                             = true;
@@ -346,7 +386,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         tmpFloat = row.MaterialRepeat.Y;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##RepeatY", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.MaterialRepeat.Y ) )
+        if( ImGui.DragFloat( "##RepeatY", ref tmpFloat, 0.1f, HalfMinValue, HalfMaxValue, "%.2f" ) && FixFloat( ref tmpFloat, row.MaterialRepeat.Y ) )
         {
             tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialRepeat = row.MaterialRepeat with { Y = tmpFloat };
             ret                                                             = true;
@@ -358,7 +398,7 @@ public partial class ModEditWindow
         ImGui.TableNextColumn();
         tmpFloat = row.MaterialSkew.X;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##SkewX", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.MaterialSkew.X ) )
+        if( ImGui.DragFloat( "##SkewX", ref tmpFloat, 0.1f, HalfMinValue, HalfMaxValue, "%.2f" ) && FixFloat( ref tmpFloat, row.MaterialSkew.X ) )
         {
             tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialSkew = row.MaterialSkew with { X = tmpFloat };
             ret                                                           = true;
@@ -370,7 +410,7 @@ public partial class ModEditWindow
         ImGui.SameLine();
         tmpFloat = row.MaterialSkew.Y;
         ImGui.SetNextItemWidth( floatSize );
-        if( ImGui.DragFloat( "##SkewY", ref tmpFloat, 0.1f, 0f ) && FixFloat( ref tmpFloat, row.MaterialSkew.Y ) )
+        if( ImGui.DragFloat( "##SkewY", ref tmpFloat, 0.1f, HalfMinValue, HalfMaxValue, "%.2f" ) && FixFloat( ref tmpFloat, row.MaterialSkew.Y ) )
         {
             tab.Mtrl.ColorSets[ colorSetIdx ].Rows[ rowIdx ].MaterialSkew = row.MaterialSkew with { Y = tmpFloat };
             ret                                                           = true;
@@ -379,10 +419,10 @@ public partial class ModEditWindow
 
         ImGuiUtil.HoverTooltip( "Skew Y", ImGuiHoveredFlags.AllowWhenDisabled );
 
-        ImGui.TableNextColumn();
         if( hasDye )
         {
-            if(_stainService.TemplateCombo.Draw( "##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
+            ImGui.TableNextColumn();
+            if (_stainService.TemplateCombo.Draw( "##dyeTemplate", dye.Template.ToString(), string.Empty, intSize
                  + ImGui.GetStyle().ScrollbarSize / 2, ImGui.GetTextLineHeightWithSpacing(), ImGuiComboFlags.NoArrowButton ) )
             {
                 tab.Mtrl.ColorDyeSets[ colorSetIdx ].Rows[ rowIdx ].Template = _stainService.TemplateCombo.CurrentSelection;
@@ -395,8 +435,9 @@ public partial class ModEditWindow
             ImGui.TableNextColumn();
             ret |= DrawDyePreview( tab, colorSetIdx, rowIdx, disabled, dye, floatSize );
         }
-        else
+        else if ( hasAnyDye )
         {
+            ImGui.TableNextColumn();
             ImGui.TableNextColumn();
         }
 
@@ -431,10 +472,10 @@ public partial class ModEditWindow
         ImGui.SameLine();
         using var dis = ImRaii.Disabled();
         ImGui.SetNextItemWidth( floatSize );
-        ImGui.DragFloat( "##gloss", ref values.Gloss, 0, 0, 0, "%.2f G" );
+        ImGui.DragFloat( "##gloss", ref values.Gloss, 0, values.Gloss, values.Gloss, "%.1f G" );
         ImGui.SameLine();
         ImGui.SetNextItemWidth( floatSize );
-        ImGui.DragFloat( "##specularStrength", ref values.SpecularPower, 0, 0, 0, "%.2f S" );
+        ImGui.DragFloat( "##specularStrength", ref values.SpecularPower, 0, values.SpecularPower, values.SpecularPower, "%.2f S" );
 
         return ret;
     }
