@@ -15,12 +15,12 @@ public partial class CombinedTexture
 {
     private enum CombineOp
     {
+        LeftMultiply  = -4,
         LeftCopy      = -3,
         RightCopy     = -2,
         Invalid       = -1,
         Over          = 0,
         Under         = 1,
-        LeftMultiply  = 2,
         RightMultiply = 3,
         CopyChannels  = 4,
     }
@@ -47,7 +47,6 @@ public partial class CombinedTexture
     {
         "Overlay over Input",
         "Input over Overlay",
-        "Ignore Overlay",
         "Replace Input",
         "Copy Channels",
     };
@@ -55,9 +54,8 @@ public partial class CombinedTexture
     private static readonly IReadOnlyList<string> CombineOpTooltips = new string[]
     {
         "Standard composition.\nApply the overlay over the input.",
-        "Standard composition, reversed.\nApply the input over the overlay.",
-        "Use only the input, and ignore the overlay.",
-        "Completely replace the input with the overlay.",
+        "Standard composition, reversed.\nApply the input over the overlay ; can be used to fix some wrong imports.",
+        "Completely replace the input with the overlay.\nCan be used to select the destination file as input and the source file as overlay.",
         "Replace some input channels with those from the overlay.\nUseful for Multi maps.",
     };
 
