@@ -71,19 +71,14 @@ public partial class CombinedTexture : IDisposable
 
     public void SaveAs(TextureType? texType, TextureManager textures, string path, TextureSaveType type, bool mipMaps)
     {
-        TextureType finalTexType;
-        if (texType.HasValue)
-            finalTexType = texType.Value;
-        else
-        {
-            finalTexType = Path.GetExtension(path).ToLowerInvariant() switch
+        var finalTexType = texType
+         ?? Path.GetExtension(path).ToLowerInvariant() switch
             {
                 ".tex" => TextureType.Tex,
                 ".dds" => TextureType.Dds,
                 ".png" => TextureType.Png,
                 _      => TextureType.Unknown,
             };
-        }
 
         switch (finalTexType)
         {
@@ -97,7 +92,8 @@ public partial class CombinedTexture : IDisposable
                 SaveAsPng(textures, path);
                 break;
             default:
-                throw new ArgumentException($"Cannot save texture as TextureType {finalTexType} with extension {Path.GetExtension(path).ToLowerInvariant()}");
+                throw new ArgumentException(
+                    $"Cannot save texture as TextureType {finalTexType} with extension {Path.GetExtension(path).ToLowerInvariant()}");
         }
     }
 
@@ -132,8 +128,7 @@ public partial class CombinedTexture : IDisposable
         Clean();
         switch (GetActualCombineOp())
         {
-            case CombineOp.Invalid:
-                break;
+            case CombineOp.Invalid: break;
             case CombineOp.LeftCopy:
                 _mode    = Mode.LeftCopy;
                 _current = _left;

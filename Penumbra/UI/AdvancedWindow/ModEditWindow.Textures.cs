@@ -130,17 +130,18 @@ public partial class ModEditWindow
             if (ImGui.Button("Save as TEX, DDS or PNG", buttonSize2))
             {
                 var fileName = Path.GetFileNameWithoutExtension(_left.Path.Length > 0 ? _left.Path : _right.Path);
-                _fileDialog.OpenSavePicker("Save Texture as TEX, DDS or PNG...", "Textures{.png,.dds,.tex},.tex,.dds,.png", fileName, ".tex", (a, b) =>
-                {
-                    if (a)
+                _fileDialog.OpenSavePicker("Save Texture as TEX, DDS or PNG...", "Textures{.png,.dds,.tex},.tex,.dds,.png", fileName, ".tex",
+                    (a, b) =>
                     {
-                        _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                        if (b == _left.Path)
-                            AddReloadTask(_left.Path, false);
-                        else if (b == _right.Path)
-                            AddReloadTask(_right.Path, true);
-                    }
-                }, _mod!.ModPath.FullName, _forceTextureStartPath);
+                        if (a)
+                        {
+                            _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
+                            if (b == _left.Path)
+                                AddReloadTask(_left.Path, false);
+                            else if (b == _right.Path)
+                                AddReloadTask(_right.Path, true);
+                        }
+                    }, _mod!.ModPath.FullName, _forceTextureStartPath);
                 _forceTextureStartPath = false;
             }
 
@@ -169,7 +170,8 @@ public partial class ModEditWindow
             ImGui.SameLine();
             if (ImGuiUtil.DrawDisabledButton("Convert to RGBA", buttonSize3,
                     "This converts the texture to RGBA format in place. This is not revertible.",
-                    !canConvertInPlace || _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
+                    !canConvertInPlace
+                 || _left.Format is DXGIFormat.B8G8R8A8UNorm or DXGIFormat.B8G8R8A8Typeless or DXGIFormat.B8G8R8A8UNormSRGB))
             {
                 _center.SaveAsTex(_textures, _left.Path, CombinedTexture.TextureSaveType.Bitmap, _left.MipMaps > 1);
                 AddReloadTask(_left.Path, false);
