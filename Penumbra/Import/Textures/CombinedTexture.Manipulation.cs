@@ -21,8 +21,8 @@ public partial class CombinedTexture
         Invalid       = -1,
         Over          = 0,
         Under         = 1,
-        RightMultiply = 3,
-        CopyChannels  = 4,
+        RightMultiply = 2,
+        CopyChannels  = 3,
     }
 
     [Flags]
