@@ -148,7 +148,7 @@ public partial class ModEditWindow
                 var value = new Vector3(values);
                 if (_squaredRgb)
                     value = Vector3.SquareRoot(value);
-                if (ImGui.ColorEdit3("##0", ref value) && !disabled)
+                if (ImGui.ColorEdit3("##0", ref value, ImGuiColorEditFlags.Float | (_clamped ? 0 : ImGuiColorEditFlags.HDR)) && !disabled)
                 {
                     if (_squaredRgb)
                         value *= value;
@@ -166,7 +166,7 @@ public partial class ModEditWindow
                 var value = new Vector4(values);
                 if (_squaredRgb)
                     value = new Vector4(MathF.Sqrt(value.X), MathF.Sqrt(value.Y), MathF.Sqrt(value.Z), value.W);
-                if (ImGui.ColorEdit4("##0", ref value) && !disabled)
+                if (ImGui.ColorEdit4("##0", ref value, ImGuiColorEditFlags.Float | ImGuiColorEditFlags.AlphaPreviewHalf | (_clamped ? 0 : ImGuiColorEditFlags.HDR)) && !disabled)
                 {
                     if (_squaredRgb)
                         value *= new Vector4(value.X, value.Y, value.Z, 1.0f);
