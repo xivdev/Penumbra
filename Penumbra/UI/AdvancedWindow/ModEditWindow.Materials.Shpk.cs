@@ -101,9 +101,9 @@ public partial class ModEditWindow
                 if (ImGui.Selectable(value, value == tab.Mtrl.ShaderPackage.Name))
                 {
                     tab.Mtrl.ShaderPackage.Name = value;
-                    ret                = true;
-                    tab.AssociatedShpk = null;
-                    tab.LoadedShpkPath = FullPath.Empty;
+                    ret                         = true;
+                    tab.AssociatedShpk          = null;
+                    tab.LoadedShpkPath          = FullPath.Empty;
                     tab.LoadShpk(tab.FindAssociatedShpk(out _, out _));
                 }
             }
@@ -133,6 +133,7 @@ public partial class ModEditWindow
     /// </summary>
     private void DrawCustomAssociations(MtrlTab tab)
     {
+        const string tooltip = "Click to copy file path to clipboard.";
         var text = tab.AssociatedShpk == null
             ? "Associated .shpk file: None"
             : $"Associated .shpk file: {tab.LoadedShpkPathName}";
@@ -145,20 +146,9 @@ public partial class ModEditWindow
 
         ImGui.Dummy(new Vector2(ImGui.GetTextLineHeight() / 2));
 
-        if (ImGui.Selectable(text))
-            ImGui.SetClipboardText(tab.LoadedShpkPathName);
-
-        ImGuiUtil.HoverTooltip("Click to copy file path to clipboard.");
-
-        if (ImGui.Selectable(devkitText))
-            ImGui.SetClipboardText(tab.LoadedShpkDevkitPathName);
-
-        ImGuiUtil.HoverTooltip("Click to copy file path to clipboard.");
-
-        if (ImGui.Selectable(baseDevkitText))
-            ImGui.SetClipboardText(tab.LoadedBaseDevkitPathName);
-
-        ImGuiUtil.HoverTooltip("Click to copy file path to clipboard.");
+        ImGuiUtil.CopyOnClickSelectable(text,           tab.LoadedShpkPathName,       tooltip);
+        ImGuiUtil.CopyOnClickSelectable(devkitText,     tab.LoadedShpkDevkitPathName, tooltip);
+        ImGuiUtil.CopyOnClickSelectable(baseDevkitText, tab.LoadedBaseDevkitPathName, tooltip);
 
         if (ImGui.Button("Associate Custom .shpk File"))
             _fileDialog.OpenFilePicker("Associate Custom .shpk File...", ".shpk", (success, name) =>
@@ -192,11 +182,12 @@ public partial class ModEditWindow
         var ret = false;
         foreach (var (label, index, description, monoFont, values) in tab.ShaderKeys)
         {
-            using var font = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
-            ref var key = ref tab.Mtrl.ShaderPackage.ShaderKeys[index];
-            var shpkKey = tab.AssociatedShpk?.GetMaterialKeyById(key.Category);
-            var currentValue = key.Value;
-            var (currentLabel, _, currentDescription) = values.FirstOrNull(v => v.Value == currentValue) ?? ($"0x{currentValue:X8}", currentValue, string.Empty);
+            using var font         = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
+            ref var   key          = ref tab.Mtrl.ShaderPackage.ShaderKeys[index];
+            var       shpkKey      = tab.AssociatedShpk?.GetMaterialKeyById(key.Category);
+            var       currentValue = key.Value;
+            var (currentLabel, _, currentDescription) =
+                values.FirstOrNull(v => v.Value == currentValue) ?? ($"0x{currentValue:X8}", currentValue, string.Empty);
             if (!disabled && shpkKey.HasValue)
             {
                 ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
@@ -216,6 +207,7 @@ public partial class ModEditWindow
                                 ImGuiUtil.SelectableHelpMarker(valueDescription);
                         }
                 }
+
                 ImGui.SameLine();
                 if (description.Length > 0)
                     ImGuiUtil.LabeledHelpMarker(label, description);
@@ -223,10 +215,14 @@ public partial class ModEditWindow
                     ImGui.TextUnformatted(label);
             }
             else if (description.Length > 0 || currentDescription.Length > 0)
+            {
                 ImGuiUtil.LabeledHelpMarker($"{label}: {currentLabel}",
-                    description + ((description.Length > 0 && currentDescription.Length > 0) ? "\n\n" : string.Empty) + currentDescription);
+                    description + (description.Length > 0 && currentDescription.Length > 0 ? "\n\n" : string.Empty) + currentDescription);
+            }
             else
+            {
                 ImGui.TextUnformatted($"{label}: {currentLabel}");
+            }
         }
 
         return ret;
@@ -268,7 +264,7 @@ public partial class ModEditWindow
             foreach (var (label, constantIndex, slice, description, monoFont, editor) in group)
             {
                 var constant = tab.Mtrl.ShaderPackage.Constants[constantIndex];
-                var buffer = tab.Mtrl.GetConstantValues(constant);
+                var buffer   = tab.Mtrl.GetConstantValues(constant);
                 if (buffer.Length > 0)
                 {
                     using var id = ImRaii.PushId($"##{constant.Id:X8}:{slice.Start}");
@@ -277,6 +273,7 @@ public partial class ModEditWindow
                         ret = true;
                         tab.SetMaterialParameter(constant.Id, slice.Start, buffer[slice]);
                     }
+
                     ImGui.SameLine();
                     using var font = ImRaii.PushFont(UiBuilder.MonoFont, monoFont);
                     if (description.Length > 0)
@@ -307,8 +304,8 @@ public partial class ModEditWindow
 
         static bool ComboTextureAddressMode(string label, ref uint samplerFlags, int bitOffset)
         {
-            var current = (TextureAddressMode)((samplerFlags >> bitOffset) & 0x3u);
-            using var c = ImRaii.Combo(label, current.ToString());
+            var       current = (TextureAddressMode)((samplerFlags >> bitOffset) & 0x3u);
+            using var c       = ImRaii.Combo(label, current.ToString());
             if (!c)
                 return false;
 
@@ -323,6 +320,7 @@ public partial class ModEditWindow
 
                 ImGuiUtil.SelectableHelpMarker(TextureAddressModeTooltips[(int)value]);
             }
+
             return ret;
         }
 
@@ -339,6 +337,7 @@ public partial class ModEditWindow
             ret = true;
             tab.SetSamplerFlags(sampler.SamplerId, sampler.Flags);
         }
+
         ImGui.SameLine();
         ImGuiUtil.LabeledHelpMarker("U Address Mode", "Method to use for resolving a U texture coordinate that is outside the 0 to 1 range.");
 
@@ -348,6 +347,7 @@ public partial class ModEditWindow
             ret = true;
             tab.SetSamplerFlags(sampler.SamplerId, sampler.Flags);
         }
+
         ImGui.SameLine();
         ImGuiUtil.LabeledHelpMarker("V Address Mode", "Method to use for resolving a V texture coordinate that is outside the 0 to 1 range.");
 
@@ -355,12 +355,15 @@ public partial class ModEditWindow
         ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
         if (ImGui.DragFloat("##LoDBias", ref lodBias, 0.1f, -8.0f, 7.984375f))
         {
-            sampler.Flags = (uint)((sampler.Flags & ~0x000FFC00) | (uint)((int)Math.Round(Math.Clamp(lodBias, -8.0f, 7.984375f) * 64.0f) & 0x3FF) << 10);
-            ret           = true;
+            sampler.Flags = (uint)((sampler.Flags & ~0x000FFC00)
+              | ((uint)((int)Math.Round(Math.Clamp(lodBias, -8.0f, 7.984375f) * 64.0f) & 0x3FF) << 10));
+            ret = true;
             tab.SetSamplerFlags(sampler.SamplerId, sampler.Flags);
         }
+
         ImGui.SameLine();
-        ImGuiUtil.LabeledHelpMarker("Level of Detail Bias", "Offset from the calculated mipmap level.\n\nHigher means that the texture will start to lose detail nearer.\nLower means that the texture will keep its detail until farther.");
+        ImGuiUtil.LabeledHelpMarker("Level of Detail Bias",
+            "Offset from the calculated mipmap level.\n\nHigher means that the texture will start to lose detail nearer.\nLower means that the texture will keep its detail until farther.");
 
         var minLod = (int)((sampler.Flags >> 20) & 0xF);
         ImGui.SetNextItemWidth(UiHelpers.Scale * 100.0f);
@@ -370,8 +373,10 @@ public partial class ModEditWindow
             ret           = true;
             tab.SetSamplerFlags(sampler.SamplerId, sampler.Flags);
         }
+
         ImGui.SameLine();
-        ImGuiUtil.LabeledHelpMarker("Minimum Level of Detail", "Most detailed mipmap level to use.\n\n0 is the full-sized texture, 1 is the half-sized texture, 2 is the quarter-sized texture, and so on.\n15 will forcibly reduce the texture to its smallest mipmap.");
+        ImGuiUtil.LabeledHelpMarker("Minimum Level of Detail",
+            "Most detailed mipmap level to use.\n\n0 is the full-sized texture, 1 is the half-sized texture, 2 is the quarter-sized texture, and so on.\n15 will forcibly reduce the texture to its smallest mipmap.");
 
         using var t = ImRaii.TreeNode("Advanced Settings");
         if (!t)
@@ -413,7 +418,10 @@ public partial class ModEditWindow
             GC.KeepAlive(tab);
 
             var textColor = ImGui.GetColorU32(ImGuiCol.Text);
-            var textColorWarning = (textColor & 0xFF000000u) | ((textColor & 0x00FEFEFE) >> 1) | (tab.AssociatedShpk == null ? 0x80u : 0x8080u); // Half red or yellow
+            var textColorWarning =
+                (textColor & 0xFF000000u)
+              | ((textColor & 0x00FEFEFE) >> 1)
+              | (tab.AssociatedShpk == null ? 0x80u : 0x8080u); // Half red or yellow
 
             using var c = ImRaii.PushColor(ImGuiCol.Text, textColorWarning);
 
@@ -443,6 +451,7 @@ public partial class ModEditWindow
             _          => null,
         };
     }
+
     private static string VectorSwizzle(int firstComponent, int lastComponent)
         => (firstComponent, lastComponent) switch
         {
