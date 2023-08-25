@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
-using Dalamud.Interface;
 using ImGuiNET;
 using OtterGui;
 using OtterGui.Raii;
@@ -127,23 +126,14 @@ public partial class ModEditWindow
             }
 
             ImGui.SameLine();
-            if (ImGui.Button("Save as TEX, DDS or PNG", buttonSize2))
-            {
-                var fileName = Path.GetFileNameWithoutExtension(_left.Path.Length > 0 ? _left.Path : _right.Path);
-                _fileDialog.OpenSavePicker("Save Texture as TEX, DDS or PNG...", "Textures{.png,.dds,.tex},.tex,.dds,.png", fileName, ".tex",
-                    (a, b) =>
-                    {
-                        if (a)
-                        {
-                            _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
-                            if (b == _left.Path)
-                                AddReloadTask(_left.Path, false);
-                            else if (b == _right.Path)
-                                AddReloadTask(_right.Path, true);
-                        }
-                    }, _mod!.ModPath.FullName, _forceTextureStartPath);
-                _forceTextureStartPath = false;
-            }
+            if (ImGui.Button("Save as TEX", buttonSize2))
+                OpenSaveAsDialog(".tex");
+
+            if (ImGui.Button("Export as PNG", buttonSize2))
+                OpenSaveAsDialog(".png");
+            ImGui.SameLine();
+            if (ImGui.Button("Export as DDS", buttonSize2))
+                OpenSaveAsDialog(".dds");
 
             ImGui.NewLine();
 
@@ -204,6 +194,23 @@ public partial class ModEditWindow
         using var child2 = ImRaii.Child("image");
         if (child2)
             _center.Draw(_textures, imageSize);
+    }
+
+    private void OpenSaveAsDialog(string defaultExtension)
+    {
+        var fileName = Path.GetFileNameWithoutExtension(_left.Path.Length > 0 ? _left.Path : _right.Path);
+        _fileDialog.OpenSavePicker("Save Texture as TEX, DDS or PNG...", "Textures{.png,.dds,.tex},.tex,.dds,.png", fileName, defaultExtension, (a, b) =>
+        {
+            if (a)
+            {
+                _center.SaveAs(null, _textures, b, (CombinedTexture.TextureSaveType)_currentSaveAs, _addMipMaps);
+                if (b == _left.Path)
+                    AddReloadTask(_left.Path, false);
+                else if (b == _right.Path)
+                    AddReloadTask(_right.Path, true);
+            }
+        }, _mod!.ModPath.FullName, _forceTextureStartPath);
+        _forceTextureStartPath = false;
     }
 
     private void AddReloadTask(string path, bool right)
