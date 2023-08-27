@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
@@ -102,20 +103,23 @@ public unsafe class SkinFixer : IDisposable
         if (((CharacterBase*)drawObject)->GetModelType() != CharacterBase.ModelType.Human)
             return;
 
-        nint skinShpk;
-        try
+        Task.Run(delegate
         {
-            var data = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-            skinShpk = data.Valid ? (nint)_resources.LoadResolvedResource(ResourceCategory.Shader, ResourceType.Shpk, SkinShpkPath.Path, data) : nint.Zero;
-        }
-        catch (Exception e)
-        {
-            Penumbra.Log.Error($"Error while resolving skin.shpk for human {drawObject:X}: {e}");
-            skinShpk = nint.Zero;
-        }
+            nint skinShpk;
+            try
+            {
+                var data = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
+                skinShpk = data.Valid ? (nint)_resources.LoadResolvedResource(ResourceCategory.Shader, ResourceType.Shpk, SkinShpkPath.Path, data) : nint.Zero;
+            }
+            catch (Exception e)
+            {
+                Penumbra.Log.Error($"Error while resolving skin.shpk for human {drawObject:X}: {e}");
+                skinShpk = nint.Zero;
+            }
 
-        if (skinShpk != nint.Zero && _skinShpks.TryAdd(drawObject, skinShpk) && skinShpk != _utility.DefaultSkinShpkResource)
-            Interlocked.Increment(ref _moddedSkinShpkCount);
+            if (skinShpk != nint.Zero && _skinShpks.TryAdd(drawObject, skinShpk) && skinShpk != _utility.DefaultSkinShpkResource)
+                Interlocked.Increment(ref _moddedSkinShpkCount);
+        });
     }
 
     private void OnCharacterBaseDestructor(nint characterBase)
