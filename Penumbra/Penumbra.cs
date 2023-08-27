@@ -81,6 +81,7 @@ public class Penumbra : IDalamudPlugin
             {
                 _services.GetRequiredService<PathResolver>();
             }
+            _services.GetRequiredService<SkinFixer>();
 
             SetupInterface();
             SetupApi();

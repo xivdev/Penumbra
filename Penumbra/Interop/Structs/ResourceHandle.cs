@@ -1,5 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.GameData;
 using Penumbra.GameData.Enums;
@@ -18,10 +20,20 @@ public unsafe struct TextureResourceHandle
     public IntPtr Unk;
 
     [FieldOffset( 0x118 )]
-    public IntPtr KernelTexture;
+    public Texture* KernelTexture;
 
     [FieldOffset( 0x20 )]
     public IntPtr NewKernelTexture;
+}
+
+[StructLayout(LayoutKind.Explicit)]
+public unsafe struct ShaderPackageResourceHandle
+{
+    [FieldOffset( 0x0 )]
+    public ResourceHandle Handle;
+
+    [FieldOffset( 0xB0 )]
+    public ShaderPackage* ShaderPackage;
 }
 
 [StructLayout( LayoutKind.Explicit )]

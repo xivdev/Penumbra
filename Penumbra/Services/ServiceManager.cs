@@ -117,7 +117,8 @@ public static class ServiceManager
         => services.AddSingleton<ResourceLoader>()
             .AddSingleton<ResourceWatcher>()
             .AddSingleton<ResourceTreeFactory>()
-            .AddSingleton<MetaFileManager>();
+            .AddSingleton<MetaFileManager>()
+            .AddSingleton<SkinFixer>();
 
     private static IServiceCollection AddResolvers(this IServiceCollection services)
         => services.AddSingleton<AnimationHookService>()
