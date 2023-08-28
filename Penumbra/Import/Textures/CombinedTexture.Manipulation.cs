@@ -249,12 +249,10 @@ public partial class CombinedTexture
         if (sourceWidth == _targetWidth && sourceHeight == _targetHeight)
             return rgbaPixels;
 
-        byte[] resizedPixels;
+        var resizedPixels = new byte[_targetWidth * _targetHeight * 4];
         using (var image = Image.LoadPixelData<Rgba32>(rgbaPixels, sourceWidth, sourceHeight))
         {
-            image.Mutate(ctx => ctx.Resize(_targetWidth, _targetHeight));
-
-            resizedPixels = new byte[_targetWidth * _targetHeight * 4];
+            image.Mutate(ctx => ctx.Resize(_targetWidth, _targetHeight, KnownResamplers.Lanczos3));
             image.CopyPixelDataTo(resizedPixels);
         }
 
@@ -267,9 +265,13 @@ public partial class CombinedTexture
         var combineOp = GetActualCombineOp();
         var (usesLeft, usesRight) = GetCombineOpFlags(combineOp);
         var resizeOp = usesLeft && usesRight ? _resizeOp : ResizeOp.None;
-        (_targetWidth, _targetHeight) = usesLeft && resizeOp != ResizeOp.ToRight
-            ? (_left.TextureWrap!.Width, _left.TextureWrap!.Height)
-            : (_right.TextureWrap!.Width, _right.TextureWrap!.Height);
+        (_targetWidth, _targetHeight) = resizeOp switch
+        {
+            ResizeOp.ToLeft             => (_left.TextureWrap!.Width, _left.TextureWrap!.Height),
+            ResizeOp.ToRight            => (_right.TextureWrap!.Width, _right.TextureWrap!.Height),
+            ResizeOp.None when usesLeft => (_left.TextureWrap!.Width, _left.TextureWrap!.Height),
+            _                           => (_right.TextureWrap!.Width, _right.TextureWrap!.Height),
+        };
         _centerStorage.RgbaPixels = new byte[_targetWidth * _targetHeight * 4];
         _centerStorage.Type       = TextureType.Bitmap;
         try
