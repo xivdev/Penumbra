@@ -277,7 +277,7 @@ public partial class CombinedTexture
         try
         {
             if (usesLeft)
-                _leftPixels = (resizeOp == ResizeOp.ToRight) ? ResizePixels(_left.RgbaPixels, _left.TextureWrap!.Width, _left.TextureWrap!.Height) : _left.RgbaPixels;
+                _leftPixels = ResizePixels(_left.RgbaPixels, _left.TextureWrap!.Width, _left.TextureWrap!.Height);
             if (usesRight)
                 (_rightWidth, _rightHeight, _rightPixels) = (resizeOp == ResizeOp.ToLeft)
                     ? (_targetWidth, _targetHeight, ResizePixels(_right.RgbaPixels, _right.TextureWrap!.Width, _right.TextureWrap!.Height))
