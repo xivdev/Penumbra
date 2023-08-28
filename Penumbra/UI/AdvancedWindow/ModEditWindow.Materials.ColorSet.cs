@@ -483,13 +483,13 @@ public partial class ModEditWindow
     private static bool ColorPicker( string label, string tooltip, Vector3 input, Action< Vector3 > setter, string letter = "" )
     {
         var ret = false;
-        var inputSqrt = Vector3.SquareRoot( input );
+        var inputSqrt = PseudoSqrtRgb( input );
         var tmp = inputSqrt;
         if( ImGui.ColorEdit3( label, ref tmp,
-               ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.DisplayRGB | ImGuiColorEditFlags.InputRGB | ImGuiColorEditFlags.NoTooltip )
+               ImGuiColorEditFlags.NoInputs | ImGuiColorEditFlags.DisplayRGB | ImGuiColorEditFlags.InputRGB | ImGuiColorEditFlags.NoTooltip | ImGuiColorEditFlags.HDR )
         && tmp != inputSqrt )
         {
-            setter( tmp * tmp );
+            setter( PseudoSquareRgb( tmp ) );
             ret = true;
         }
 
@@ -505,4 +505,24 @@ public partial class ModEditWindow
 
         return ret;
     }
+
+    // Functions to deal with squared RGB values without making negatives useless.
+
+    private static float PseudoSquareRgb(float x)
+        => x < 0.0f ? -(x * x) : (x * x);
+
+    private static Vector3 PseudoSquareRgb(Vector3 vec)
+        => new(PseudoSquareRgb(vec.X), PseudoSquareRgb(vec.Y), PseudoSquareRgb(vec.Z));
+
+    private static Vector4 PseudoSquareRgb(Vector4 vec)
+        => new(PseudoSquareRgb(vec.X), PseudoSquareRgb(vec.Y), PseudoSquareRgb(vec.Z), vec.W);
+
+    private static float PseudoSqrtRgb(float x)
+        => x < 0.0f ? -MathF.Sqrt(-x) : MathF.Sqrt(x);
+
+    private static Vector3 PseudoSqrtRgb(Vector3 vec)
+        => new(PseudoSqrtRgb(vec.X), PseudoSqrtRgb(vec.Y), PseudoSqrtRgb(vec.Z));
+
+    private static Vector4 PseudoSqrtRgb(Vector4 vec)
+        => new(PseudoSqrtRgb(vec.X), PseudoSqrtRgb(vec.Y), PseudoSqrtRgb(vec.Z), vec.W);
 }

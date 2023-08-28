@@ -147,11 +147,11 @@ public partial class ModEditWindow
                 ImGui.SetNextItemWidth(editorWidth);
                 var value = new Vector3(values);
                 if (_squaredRgb)
-                    value = Vector3.SquareRoot(value);
+                    value = PseudoSqrtRgb(value);
                 if (ImGui.ColorEdit3("##0", ref value, ImGuiColorEditFlags.Float | (_clamped ? 0 : ImGuiColorEditFlags.HDR)) && !disabled)
                 {
                     if (_squaredRgb)
-                        value *= value;
+                        value = PseudoSquareRgb(value);
                     if (_clamped)
                         value = Vector3.Clamp(value, Vector3.Zero, Vector3.One);
                     value.CopyTo(values);
@@ -165,11 +165,11 @@ public partial class ModEditWindow
                 ImGui.SetNextItemWidth(editorWidth);
                 var value = new Vector4(values);
                 if (_squaredRgb)
-                    value = new Vector4(MathF.Sqrt(value.X), MathF.Sqrt(value.Y), MathF.Sqrt(value.Z), value.W);
+                    value = PseudoSqrtRgb(value);
                 if (ImGui.ColorEdit4("##0", ref value, ImGuiColorEditFlags.Float | ImGuiColorEditFlags.AlphaPreviewHalf | (_clamped ? 0 : ImGuiColorEditFlags.HDR)) && !disabled)
                 {
                     if (_squaredRgb)
-                        value *= new Vector4(value.X, value.Y, value.Z, 1.0f);
+                        value = PseudoSquareRgb(value);
                     if (_clamped)
                         value = Vector4.Clamp(value, Vector4.Zero, Vector4.One);
                     value.CopyTo(values);
