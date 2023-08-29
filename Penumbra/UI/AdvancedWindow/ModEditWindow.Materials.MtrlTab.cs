@@ -512,6 +512,29 @@ public partial class ModEditWindow
             ColorSetPreviewers.Clear();
         }
 
+        public unsafe void UnbindFromDrawObjectMaterialInstances(nint characterBase)
+        {
+            for (var i = MaterialPreviewers.Count; i-- > 0; )
+            {
+                var previewer = MaterialPreviewers[i];
+                if ((nint)previewer.DrawObject != characterBase)
+                    continue;
+
+                previewer.Dispose();
+                MaterialPreviewers.RemoveAt(i);
+            }
+
+            for (var i = ColorSetPreviewers.Count; i-- > 0;)
+            {
+                var previewer = ColorSetPreviewers[i];
+                if ((nint)previewer.DrawObject != characterBase)
+                    continue;
+
+                previewer.Dispose();
+                ColorSetPreviewers.RemoveAt(i);
+            }
+        }
+
         public void SetShaderPackageFlags(uint shPkFlags)
         {
             foreach (var previewer in MaterialPreviewers)
@@ -665,7 +688,10 @@ public partial class ModEditWindow
             AssociatedBaseDevkit = TryLoadShpkDevkit( "_base", out LoadedBaseDevkitPathName );
             LoadShpk( FindAssociatedShpk( out _, out _ ) );
             if (writable)
+            {
+                _edit._gameEvents.CharacterBaseDestructor += UnbindFromDrawObjectMaterialInstances;
                 BindToMaterialInstances();
+            }
         }
 
         ~MtrlTab()
@@ -682,6 +708,8 @@ public partial class ModEditWindow
         private void DoDispose()
         {
             UnbindFromMaterialInstances();
+            if (Writable)
+                _edit._gameEvents.CharacterBaseDestructor -= UnbindFromDrawObjectMaterialInstances;
         }
 
         public bool Valid

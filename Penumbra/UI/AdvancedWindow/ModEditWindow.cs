@@ -19,6 +19,7 @@ using Penumbra.GameData.Enums;
 using Penumbra.GameData.Files;
 using Penumbra.Import.Textures;
 using Penumbra.Interop.ResourceTree;
+using Penumbra.Interop.Services;
 using Penumbra.Meta;
 using Penumbra.Mods;
 using Penumbra.Mods.Manager;
@@ -45,6 +46,7 @@ public partial class ModEditWindow : Window, IDisposable
     private readonly ModMergeTab         _modMergeTab;
     private readonly CommunicatorService _communicator;
     private readonly IDragDropManager    _dragDropManager;
+    private readonly GameEventManager    _gameEvents;
 
     private Mod?    _mod;
     private Vector2 _iconSize = Vector2.Zero;
@@ -546,7 +548,7 @@ public partial class ModEditWindow : Window, IDisposable
     public ModEditWindow(PerformanceTracker performance, FileDialogService fileDialog, ItemSwapTab itemSwapTab, IDataManager gameData,
         Configuration config, ModEditor editor, ResourceTreeFactory resourceTreeFactory, MetaFileManager metaFileManager,
         StainService stainService, ActiveCollections activeCollections, DalamudServices dalamud, ModMergeTab modMergeTab,
-        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager)
+        CommunicatorService communicator, TextureManager textures, IDragDropManager dragDropManager, GameEventManager gameEvents)
         : base(WindowBaseLabel)
     {
         _performance       = performance;
@@ -562,6 +564,7 @@ public partial class ModEditWindow : Window, IDisposable
         _dragDropManager   = dragDropManager;
         _textures          = textures;
         _fileDialog        = fileDialog;
+        _gameEvents        = gameEvents;
         _materialTab = new FileEditor<MtrlTab>(this, gameData, config, _fileDialog, "Materials", ".mtrl",
             () => _editor.Files.Mtrl, DrawMaterialPanel, () => _mod?.ModPath.FullName ?? string.Empty,
             (bytes, path, writable) => new MtrlTab(this, new MtrlFile(bytes), path, writable));

@@ -154,7 +154,7 @@ public partial class ModEditWindow
         protected readonly int ModelSlot;
         protected readonly int MaterialSlot;
 
-        protected readonly CharacterBase* DrawObject;
+        public    readonly CharacterBase* DrawObject;
         protected readonly Material*      Material;
 
         protected bool Valid;
