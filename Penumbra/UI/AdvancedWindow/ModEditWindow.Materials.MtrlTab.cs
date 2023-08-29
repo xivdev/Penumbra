@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -74,7 +75,7 @@ public partial class ModEditWindow
         public readonly List<LiveMaterialPreviewer> MaterialPreviewers     = new(4);
         public readonly List<LiveColorSetPreviewer> ColorSetPreviewers     = new(4);
         public          int                         HighlightedColorSetRow = -1;
-        public          int                         HighlightTime          = -1;
+        public readonly Stopwatch                   HighlightTime          = new();
 
         public FullPath FindAssociatedShpk( out string defaultPath, out Utf8GamePath defaultGamePath )
         {
@@ -546,8 +547,11 @@ public partial class ModEditWindow
         {
             var oldRowIdx = HighlightedColorSetRow;
 
-            HighlightedColorSetRow = rowIdx;
-            HighlightTime          = (HighlightTime + 1) % 32;
+            if (HighlightedColorSetRow != rowIdx)
+            {
+                HighlightedColorSetRow = rowIdx;
+                HighlightTime.Restart();
+            }
 
             if (oldRowIdx >= 0)
                 UpdateColorSetRowPreview(oldRowIdx);
@@ -560,7 +564,7 @@ public partial class ModEditWindow
             var rowIdx = HighlightedColorSetRow;
 
             HighlightedColorSetRow = -1;
-            HighlightTime          = -1;
+            HighlightTime.Reset();
 
             if (rowIdx >= 0)
                 UpdateColorSetRowPreview(rowIdx);
@@ -588,7 +592,7 @@ public partial class ModEditWindow
             }
 
             if (HighlightedColorSetRow == rowIdx)
-                ApplyHighlight(ref row, HighlightTime);
+                ApplyHighlight(ref row, (float)HighlightTime.Elapsed.TotalSeconds);
 
             foreach (var previewer in ColorSetPreviewers)
             {
@@ -625,7 +629,7 @@ public partial class ModEditWindow
             }
 
             if (HighlightedColorSetRow >= 0)
-                ApplyHighlight(ref rows[HighlightedColorSetRow], HighlightTime);
+                ApplyHighlight(ref rows[HighlightedColorSetRow], (float)HighlightTime.Elapsed.TotalSeconds);
 
             foreach (var previewer in ColorSetPreviewers)
             {
@@ -634,9 +638,9 @@ public partial class ModEditWindow
             }
         }
 
-        private static void ApplyHighlight(ref MtrlFile.ColorSet.Row row, int time)
+        private static void ApplyHighlight(ref MtrlFile.ColorSet.Row row, float time)
         {
-            var level = Math.Sin(time * Math.PI / 16) * 0.5 + 0.5;
+            var level = Math.Sin(time * 2.0 * Math.PI) * 0.25 + 0.5;
             var levelSq = (float)(level * level);
 
             row.Diffuse = Vector3.Zero;
