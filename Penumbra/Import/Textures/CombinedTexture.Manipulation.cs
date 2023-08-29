@@ -10,6 +10,7 @@ using Dalamud.Interface;
 using Penumbra.UI;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+using System.Linq;
 
 namespace Penumbra.Import.Textures;
 
@@ -29,9 +30,11 @@ public partial class CombinedTexture
 
     private enum ResizeOp
     {
-        None    = 0,
-        ToLeft  = 1,
-        ToRight = 2,
+        LeftOnly  = -2,
+        RightOnly = -1,
+        None      = 0,
+        ToLeft    = 1,
+        ToRight   = 2,
     }
 
     [Flags]
@@ -41,6 +44,38 @@ public partial class CombinedTexture
         Green = 2,
         Blue  = 4,
         Alpha = 8,
+    }
+
+    private readonly record struct RgbaPixelData(int Width, int Height, byte[] PixelData)
+    {
+        public static readonly RgbaPixelData Empty = new(0, 0, Array.Empty<byte>());
+
+        public (int Width, int Height) Size
+            => (Width, Height);
+
+        public Image<Rgba32> ToImage()
+            => Image.LoadPixelData<Rgba32>(PixelData, Width, Height);
+
+        public RgbaPixelData Resize((int Width, int Height) size)
+        {
+            if (Width == size.Width && Height == size.Height)
+                return this;
+
+            var result = WithNewPixelData(size);
+            using (var image = ToImage())
+            {
+                image.Mutate(ctx => ctx.Resize(size.Width, size.Height, KnownResamplers.Lanczos3));
+                image.CopyPixelDataTo(result.PixelData);
+            }
+
+            return result;
+        }
+
+        public static RgbaPixelData WithNewPixelData((int Width, int Height) size)
+            => new(size.Width, size.Height, new byte[size.Width * size.Height * 4]);
+
+        public static RgbaPixelData FromTexture(Texture texture)
+            => new(texture.TextureWrap!.Width, texture.TextureWrap!.Height, texture.RgbaPixels);
     }
 
     private Matrix4x4 _multiplierLeft  = Matrix4x4.Identity;
@@ -53,12 +88,9 @@ public partial class CombinedTexture
     private ResizeOp  _resizeOp        = ResizeOp.None;
     private Channels  _copyChannels    = Channels.Red | Channels.Green | Channels.Blue | Channels.Alpha;
 
-    private int    _rightWidth   = 0;
-    private int    _rightHeight  = 0;
-    private int    _targetWidth  = 0;
-    private int    _targetHeight = 0;
-    private byte[] _leftPixels   = Array.Empty<byte>();
-    private byte[] _rightPixels  = Array.Empty<byte>();
+    private RgbaPixelData _targetPixels = RgbaPixelData.Empty;
+    private RgbaPixelData _leftPixels   = RgbaPixelData.Empty;
+    private RgbaPixelData _rightPixels  = RgbaPixelData.Empty;
 
     private static readonly IReadOnlyList<string> CombineOpLabels = new string[]
     {
@@ -76,16 +108,16 @@ public partial class CombinedTexture
         "Replace some input channels with those from the overlay.\nUseful for Multi maps.",
     };
 
-    private static (bool UsesLeft, bool UsesRight) GetCombineOpFlags(CombineOp combineOp)
+    private static ResizeOp GetActualResizeOp(ResizeOp resizeOp, CombineOp combineOp)
         => combineOp switch
         {
-            CombineOp.LeftCopy      => (true, false),
-            CombineOp.LeftMultiply  => (true, false),
-            CombineOp.RightCopy     => (false, true),
-            CombineOp.RightMultiply => (false, true),
-            CombineOp.Over          => (true, true),
-            CombineOp.Under         => (true, true),
-            CombineOp.CopyChannels  => (true, true),
+            CombineOp.LeftCopy      => ResizeOp.LeftOnly,
+            CombineOp.LeftMultiply  => ResizeOp.LeftOnly,
+            CombineOp.RightCopy     => ResizeOp.RightOnly,
+            CombineOp.RightMultiply => ResizeOp.RightOnly,
+            CombineOp.Over          => resizeOp,
+            CombineOp.Under         => resizeOp,
+            CombineOp.CopyChannels  => resizeOp,
             _                       => throw new ArgumentException($"Invalid combine operation {combineOp}"),
         };
 
@@ -145,27 +177,27 @@ public partial class CombinedTexture
     }
 
     private Vector4 DataLeft(int offset)
-        => CappedVector(_leftPixels, offset, _multiplierLeft, _constantLeft);
+        => CappedVector(_leftPixels.PixelData, offset, _multiplierLeft, _constantLeft);
 
     private Vector4 DataRight(int offset)
-        => CappedVector(_rightPixels, offset, _multiplierRight, _constantRight);
+        => CappedVector(_rightPixels.PixelData, offset, _multiplierRight, _constantRight);
 
     private Vector4 DataRight(int x, int y)
     {
         x += _offsetX;
         y += _offsetY;
-        if (x < 0 || x >= _rightWidth || y < 0 || y >= _rightHeight)
+        if (x < 0 || x >= _rightPixels.Width || y < 0 || y >= _rightPixels.Height)
             return Vector4.Zero;
 
-        var offset = (y * _rightWidth + x) * 4;
-        return CappedVector(_rightPixels, offset, _multiplierRight, _constantRight);
+        var offset = (y * _rightPixels.Width + x) * 4;
+        return CappedVector(_rightPixels.PixelData, offset, _multiplierRight, _constantRight);
     }
 
     private void AddPixelsMultiplied(int y, ParallelLoopState _)
     {
-        for (var x = 0; x < _targetWidth; ++x)
+        for (var x = 0; x < _targetPixels.Width; ++x)
         {
-            var offset = (_targetWidth * y + x) * 4;
+            var offset = (_targetPixels.Width * y + x) * 4;
             var left   = DataLeft(offset);
             var right  = DataRight(x, y);
             var alpha  = right.W + left.W * (1 - right.W);
@@ -181,9 +213,9 @@ public partial class CombinedTexture
 
     private void ReverseAddPixelsMultiplied(int y, ParallelLoopState _)
     {
-        for (var x = 0; x < _targetWidth; ++x)
+        for (var x = 0; x < _targetPixels.Width; ++x)
         {
-            var offset = (_targetWidth * y + x) * 4;
+            var offset = (_targetPixels.Width * y + x) * 4;
             var left   = DataLeft(offset);
             var right  = DataRight(x, y);
             var alpha  = left.W + right.W * (1 - left.W);
@@ -200,9 +232,9 @@ public partial class CombinedTexture
     private void ChannelMergePixelsMultiplied(int y, ParallelLoopState _)
     {
         var channels = _copyChannels;
-        for (var x = 0; x < _targetWidth; ++x)
+        for (var x = 0; x < _targetPixels.Width; ++x)
         {
-            var offset = (_targetWidth * y + x) * 4;
+            var offset = (_targetPixels.Width * y + x) * 4;
             var left   = DataLeft(offset);
             var right  = DataRight(x, y);
             var rgba = new Rgba32((channels & Channels.Red) != 0 ? right.X : left.X,
@@ -218,9 +250,9 @@ public partial class CombinedTexture
 
     private void MultiplyPixelsLeft(int y, ParallelLoopState _)
     {
-        for (var x = 0; x < _targetWidth; ++x)
+        for (var x = 0; x < _targetPixels.Width; ++x)
         {
-            var offset = (_targetWidth * y + x) * 4;
+            var offset = (_targetPixels.Width * y + x) * 4;
             var left   = DataLeft(offset);
             var rgba   = new Rgba32(left);
             _centerStorage.RgbaPixels[offset]     = rgba.R;
@@ -232,9 +264,9 @@ public partial class CombinedTexture
 
     private void MultiplyPixelsRight(int y, ParallelLoopState _)
     {
-        for (var x = 0; x < _targetWidth; ++x)
+        for (var x = 0; x < _targetPixels.Width; ++x)
         {
-            var offset = (_targetWidth * y + x) * 4;
+            var offset = (_targetPixels.Width * y + x) * 4;
             var right  = DataRight(offset);
             var rgba   = new Rgba32(right);
             _centerStorage.RgbaPixels[offset]     = rgba.R;
@@ -244,45 +276,42 @@ public partial class CombinedTexture
         }
     }
 
-    private byte[] ResizePixels(byte[] rgbaPixels, int sourceWidth, int sourceHeight)
-    {
-        if (sourceWidth == _targetWidth && sourceHeight == _targetHeight)
-            return rgbaPixels;
-
-        var resizedPixels = new byte[_targetWidth * _targetHeight * 4];
-        using (var image = Image.LoadPixelData<Rgba32>(rgbaPixels, sourceWidth, sourceHeight))
-        {
-            image.Mutate(ctx => ctx.Resize(_targetWidth, _targetHeight, KnownResamplers.Lanczos3));
-            image.CopyPixelDataTo(resizedPixels);
-        }
-
-        return resizedPixels;
-    }
-
 
     private (int Width, int Height) CombineImage()
     {
         var combineOp = GetActualCombineOp();
-        var (usesLeft, usesRight) = GetCombineOpFlags(combineOp);
-        var resizeOp = usesLeft && usesRight ? _resizeOp : ResizeOp.None;
-        (_targetWidth, _targetHeight) = resizeOp switch
+        var resizeOp = GetActualResizeOp(_resizeOp, combineOp);
+
+        var left  = resizeOp != ResizeOp.RightOnly ? RgbaPixelData.FromTexture(_left) : RgbaPixelData.Empty;
+        var right = resizeOp != ResizeOp.LeftOnly ? RgbaPixelData.FromTexture(_right) : RgbaPixelData.Empty;
+
+        var targetSize = resizeOp switch
         {
-            ResizeOp.ToLeft             => (_left.TextureWrap!.Width, _left.TextureWrap!.Height),
-            ResizeOp.ToRight            => (_right.TextureWrap!.Width, _right.TextureWrap!.Height),
-            ResizeOp.None when usesLeft => (_left.TextureWrap!.Width, _left.TextureWrap!.Height),
-            _                           => (_right.TextureWrap!.Width, _right.TextureWrap!.Height),
+            ResizeOp.RightOnly => right.Size,
+            ResizeOp.ToRight   => right.Size,
+            _                  => left.Size,
         };
-        _centerStorage.RgbaPixels = new byte[_targetWidth * _targetHeight * 4];
-        _centerStorage.Type       = TextureType.Bitmap;
+
         try
         {
-            if (usesLeft)
-                _leftPixels = ResizePixels(_left.RgbaPixels, _left.TextureWrap!.Width, _left.TextureWrap!.Height);
-            if (usesRight)
-                (_rightWidth, _rightHeight, _rightPixels) = (resizeOp == ResizeOp.ToLeft)
-                    ? (_targetWidth, _targetHeight, ResizePixels(_right.RgbaPixels, _right.TextureWrap!.Width, _right.TextureWrap!.Height))
-                    : (_right.TextureWrap!.Width, _right.TextureWrap!.Height, _right.RgbaPixels);
-            Parallel.For(0, _targetHeight, combineOp switch
+            _targetPixels = RgbaPixelData.WithNewPixelData(targetSize);
+
+            _centerStorage.RgbaPixels = _targetPixels.PixelData;
+            _centerStorage.Type       = TextureType.Bitmap;
+
+            _leftPixels = resizeOp switch
+            {
+                ResizeOp.RightOnly => RgbaPixelData.Empty,
+                _                  => left.Resize(targetSize),
+            };
+            _rightPixels = resizeOp switch
+            {
+                ResizeOp.LeftOnly => RgbaPixelData.Empty,
+                ResizeOp.None     => right,
+                _                 => right.Resize(targetSize),
+            };
+
+            Parallel.For(0, _targetPixels.Height, combineOp switch
             {
                 CombineOp.Over          => AddPixelsMultiplied,
                 CombineOp.Under         => ReverseAddPixelsMultiplied,
@@ -294,11 +323,12 @@ public partial class CombinedTexture
         }
         finally
         {
-            _leftPixels  = Array.Empty<byte>();
-            _rightPixels = Array.Empty<byte>();
+            _leftPixels   = RgbaPixelData.Empty;
+            _rightPixels  = RgbaPixelData.Empty;
+            _targetPixels = RgbaPixelData.Empty;
         }
 
-        return (_targetWidth, _targetHeight);
+        return targetSize;
     }
 
     private static Vector4 CappedVector(IReadOnlyList<byte> bytes, int offset, Matrix4x4 transform, Vector4 constant)
@@ -367,11 +397,11 @@ public partial class CombinedTexture
                 }
         }
 
-        var (usesLeft, usesRight) = GetCombineOpFlags(_combineOp);
-        using (var dis = ImRaii.Disabled(!usesLeft || !usesRight))
+        var resizeOp = GetActualResizeOp(_resizeOp, _combineOp);
+        using (var dis = ImRaii.Disabled((int)resizeOp < 0))
         {
             ret |= ImGuiUtil.GenericEnumCombo("Resizing Mode", 200.0f * UiHelpers.Scale, _resizeOp, out _resizeOp,
-                Enum.GetValues<ResizeOp>(), op => ResizeOpLabels[(int)op]);
+                Enum.GetValues<ResizeOp>().Where(op => (int)op >= 0), op => ResizeOpLabels[(int)op]);
         }
 
         using (var dis = ImRaii.Disabled(_combineOp != CombineOp.CopyChannels))
