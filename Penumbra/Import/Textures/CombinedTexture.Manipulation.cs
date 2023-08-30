@@ -8,81 +8,12 @@ using OtterGui;
 using SixLabors.ImageSharp.PixelFormats;
 using Dalamud.Interface;
 using Penumbra.UI;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
 using System.Linq;
 
 namespace Penumbra.Import.Textures;
 
 public partial class CombinedTexture
 {
-    private enum CombineOp
-    {
-        LeftMultiply  = -4,
-        LeftCopy      = -3,
-        RightCopy     = -2,
-        Invalid       = -1,
-        Over          = 0,
-        Under         = 1,
-        RightMultiply = 2,
-        CopyChannels  = 3,
-    }
-
-    private enum ResizeOp
-    {
-        LeftOnly  = -2,
-        RightOnly = -1,
-        None      = 0,
-        ToLeft    = 1,
-        ToRight   = 2,
-    }
-
-    [Flags]
-    private enum Channels
-    {
-        Red   = 1,
-        Green = 2,
-        Blue  = 4,
-        Alpha = 8,
-    }
-
-    private readonly record struct RgbaPixelData(int Width, int Height, byte[] PixelData)
-    {
-        public static readonly RgbaPixelData Empty = new(0, 0, Array.Empty<byte>());
-
-        public (int Width, int Height) Size
-            => (Width, Height);
-
-        public RgbaPixelData((int Width, int Height) size, byte[] pixelData)
-            : this(size.Width, size.Height, pixelData)
-        {
-        }
-
-        public Image<Rgba32> ToImage()
-            => Image.LoadPixelData<Rgba32>(PixelData, Width, Height);
-
-        public RgbaPixelData Resize((int Width, int Height) size)
-        {
-            if (Width == size.Width && Height == size.Height)
-                return this;
-
-            var result = new RgbaPixelData(size, NewPixelData(size));
-            using (var image = ToImage())
-            {
-                image.Mutate(ctx => ctx.Resize(size.Width, size.Height, KnownResamplers.Lanczos3));
-                image.CopyPixelDataTo(result.PixelData);
-            }
-
-            return result;
-        }
-
-        public static byte[] NewPixelData((int Width, int Height) size)
-            => new byte[size.Width * size.Height * 4];
-
-        public static RgbaPixelData FromTexture(Texture texture)
-            => new(texture.TextureWrap!.Width, texture.TextureWrap!.Height, texture.RgbaPixels);
-    }
-
     private Matrix4x4 _multiplierLeft  = Matrix4x4.Identity;
     private Vector4   _constantLeft    = Vector4.Zero;
     private Matrix4x4 _multiplierRight = Matrix4x4.Identity;
@@ -95,42 +26,6 @@ public partial class CombinedTexture
 
     private RgbaPixelData _leftPixels  = RgbaPixelData.Empty;
     private RgbaPixelData _rightPixels = RgbaPixelData.Empty;
-
-    private static readonly IReadOnlyList<string> CombineOpLabels = new string[]
-    {
-        "Overlay over Input",
-        "Input over Overlay",
-        "Replace Input",
-        "Copy Channels",
-    };
-
-    private static readonly IReadOnlyList<string> CombineOpTooltips = new string[]
-    {
-        "Standard composition.\nApply the overlay over the input.",
-        "Standard composition, reversed.\nApply the input over the overlay ; can be used to fix some wrong imports.",
-        "Completely replace the input with the overlay.\nCan be used to select the destination file as input and the source file as overlay.",
-        "Replace some input channels with those from the overlay.\nUseful for Multi maps.",
-    };
-
-    private static ResizeOp GetActualResizeOp(ResizeOp resizeOp, CombineOp combineOp)
-        => combineOp switch
-        {
-            CombineOp.LeftCopy      => ResizeOp.LeftOnly,
-            CombineOp.LeftMultiply  => ResizeOp.LeftOnly,
-            CombineOp.RightCopy     => ResizeOp.RightOnly,
-            CombineOp.RightMultiply => ResizeOp.RightOnly,
-            CombineOp.Over          => resizeOp,
-            CombineOp.Under         => resizeOp,
-            CombineOp.CopyChannels  => resizeOp,
-            _                       => throw new ArgumentException($"Invalid combine operation {combineOp}"),
-        };
-
-    private static readonly IReadOnlyList<string> ResizeOpLabels = new string[]
-    {
-        "No Resizing",
-        "Adjust Overlay to Input",
-        "Adjust Input to Overlay",
-    };
 
     private const float OneThird = 1.0f / 3.0f;
     private const float RWeight  = 0.2126f;
@@ -153,32 +48,6 @@ public partial class CombinedTexture
             ("Extract Alpha",                 new Matrix4x4(0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     0.0f,     1.0f, 1.0f, 1.0f, 0.0f), Vector4.UnitW ),
         };
     // @formatter:on
-
-    private CombineOp GetActualCombineOp()
-    {
-        var combineOp = (_left.IsLoaded, _right.IsLoaded) switch
-        {
-            (true, true)   => _combineOp,
-            (true, false)  => CombineOp.LeftMultiply,
-            (false, true)  => CombineOp.RightMultiply,
-            (false, false) => CombineOp.Invalid,
-        };
-
-        if (combineOp == CombineOp.CopyChannels)
-        {
-            if (_copyChannels == 0)
-                combineOp = CombineOp.LeftMultiply;
-            else if (_copyChannels == (Channels.Red | Channels.Green | Channels.Blue | Channels.Alpha))
-                combineOp = CombineOp.RightMultiply;
-        }
-
-        return combineOp switch
-        {
-            CombineOp.LeftMultiply when _multiplierLeft.IsIdentity && _constantLeft == Vector4.Zero    => CombineOp.LeftCopy,
-            CombineOp.RightMultiply when _multiplierRight.IsIdentity && _constantRight == Vector4.Zero => CombineOp.RightCopy,
-            _                                                                                          => combineOp,
-        };
-    }
 
     private Vector4 DataLeft(int offset)
         => CappedVector(_leftPixels.PixelData, offset, _multiplierLeft, _constantLeft);
@@ -280,11 +149,10 @@ public partial class CombinedTexture
         }
     }
 
-
     private (int Width, int Height) CombineImage()
     {
         var combineOp = GetActualCombineOp();
-        var resizeOp = GetActualResizeOp(_resizeOp, combineOp);
+        var resizeOp  = GetActualResizeOp(_resizeOp, combineOp);
 
         var left  = resizeOp != ResizeOp.RightOnly ? RgbaPixelData.FromTexture(_left) : RgbaPixelData.Empty;
         var right = resizeOp != ResizeOp.LeftOnly ? RgbaPixelData.FromTexture(_right) : RgbaPixelData.Empty;
@@ -325,8 +193,8 @@ public partial class CombinedTexture
         }
         finally
         {
-            _leftPixels   = RgbaPixelData.Empty;
-            _rightPixels  = RgbaPixelData.Empty;
+            _leftPixels  = RgbaPixelData.Empty;
+            _rightPixels = RgbaPixelData.Empty;
         }
 
         return targetSize;
@@ -488,99 +356,53 @@ public partial class CombinedTexture
 
     private static bool DrawMatrixTools(ref Matrix4x4 multiplier, ref Vector4 constant)
     {
-        var changes = false;
-
-        using (var combo = ImRaii.Combo("Presets", string.Empty, ImGuiComboFlags.NoPreview))
-        {
-            if (combo)
-                foreach (var (label, preMultiplier, preConstant) in PredefinedColorTransforms)
-                {
-                    if (ImGui.Selectable(label, multiplier == preMultiplier && constant == preConstant))
-                    {
-                        multiplier = preMultiplier;
-                        constant   = preConstant;
-                        changes    = true;
-                    }
-                }
-        }
-
+        var changes = PresetCombo(ref multiplier, ref constant);
         ImGui.SameLine();
         ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
         ImGui.SameLine();
         ImGui.TextUnformatted("Invert");
         ImGui.SameLine();
-        if (ImGui.Button("Colors"))
-        {
-            InvertRed(ref multiplier, ref constant);
-            InvertGreen(ref multiplier, ref constant);
-            InvertBlue(ref multiplier, ref constant);
-            changes = true;
-        }
 
+        Channels channels = 0;
+        if (ImGui.Button("Colors"))
+            channels |= Channels.Red | Channels.Green | Channels.Blue;
         ImGui.SameLine();
         if (ImGui.Button("R"))
-        {
-            InvertRed(ref multiplier, ref constant);
-            changes = true;
-        }
+            channels |= Channels.Red;
 
         ImGui.SameLine();
         if (ImGui.Button("G"))
-        {
-            InvertGreen(ref multiplier, ref constant);
-            changes = true;
-        }
+            channels |= Channels.Green;
 
         ImGui.SameLine();
         if (ImGui.Button("B"))
-        {
-            InvertBlue(ref multiplier, ref constant);
-            changes = true;
-        }
+            channels |= Channels.Blue;
 
         ImGui.SameLine();
         if (ImGui.Button("A"))
-        {
-            InvertAlpha(ref multiplier, ref constant);
-            changes = true;
-        }
+            channels |= Channels.Alpha;
 
+        changes |= InvertChannels(channels, ref multiplier, ref constant);
         return changes;
     }
 
-    private static void InvertRed(ref Matrix4x4 multiplier, ref Vector4 constant)
+    private static bool PresetCombo(ref Matrix4x4 multiplier, ref Vector4 constant)
     {
-        multiplier.M11 = -multiplier.M11;
-        multiplier.M21 = -multiplier.M21;
-        multiplier.M31 = -multiplier.M31;
-        multiplier.M41 = -multiplier.M41;
-        constant.X     = 1.0f - constant.X;
-    }
+        using var combo = ImRaii.Combo("Presets", string.Empty, ImGuiComboFlags.NoPreview);
+        if (!combo)
+            return false;
 
-    private static void InvertGreen(ref Matrix4x4 multiplier, ref Vector4 constant)
-    {
-        multiplier.M12 = -multiplier.M12;
-        multiplier.M22 = -multiplier.M22;
-        multiplier.M32 = -multiplier.M32;
-        multiplier.M42 = -multiplier.M42;
-        constant.Y     = 1.0f - constant.Y;
-    }
+        var ret = false;
+        foreach (var (label, preMultiplier, preConstant) in PredefinedColorTransforms)
+        {
+            if (!ImGui.Selectable(label, multiplier == preMultiplier && constant == preConstant))
+                continue;
 
-    private static void InvertBlue(ref Matrix4x4 multiplier, ref Vector4 constant)
-    {
-        multiplier.M13 = -multiplier.M13;
-        multiplier.M23 = -multiplier.M23;
-        multiplier.M33 = -multiplier.M33;
-        multiplier.M43 = -multiplier.M43;
-        constant.Z     = 1.0f - constant.Z;
-    }
+            multiplier = preMultiplier;
+            constant   = preConstant;
+            ret        = true;
+        }
 
-    private static void InvertAlpha(ref Matrix4x4 multiplier, ref Vector4 constant)
-    {
-        multiplier.M14 = -multiplier.M14;
-        multiplier.M24 = -multiplier.M24;
-        multiplier.M34 = -multiplier.M34;
-        multiplier.M44 = -multiplier.M44;
-        constant.W     = 1.0f - constant.W;
+        return ret;
     }
 }
