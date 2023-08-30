@@ -10,6 +10,7 @@ public unsafe struct CharacterUtilityData
 {
     public const int IndexTransparentTex = 72;
     public const int IndexDecalTex       = 73;
+    public const int IndexSkinShpk       = 76;
 
     public static readonly MetaIndex[] EqdpIndices = Enum.GetNames< MetaIndex >()
        .Zip( Enum.GetValues< MetaIndex >() )
@@ -94,6 +95,9 @@ public unsafe struct CharacterUtilityData
 
     [FieldOffset( 8 + IndexDecalTex * 8 )]
     public TextureResourceHandle* DecalTexResource;
+
+    [FieldOffset( 8 + IndexSkinShpk * 8 )]
+    public ResourceHandle* SkinShpkResource;
 
     // not included resources have no known use case.
 }
