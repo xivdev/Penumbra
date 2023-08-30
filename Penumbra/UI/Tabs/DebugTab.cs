@@ -36,7 +36,6 @@ using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
 using Penumbra.Interop.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
-using static Lumina.Data.Parsing.Layer.LayerCommon;
 
 namespace Penumbra.UI.Tabs;
 
@@ -623,18 +622,14 @@ public class DebugTab : Window, ITab
             ImGui.TableNextColumn();
             if (resource == null)
             {
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
-                ImGui.TableNextColumn();
+                ImGui.TableNextRow();
                 continue;
             }
             UiHelpers.Text(resource);
             ImGui.TableNextColumn();
             var data = (nint)ResourceHandle.GetData(resource);
             var length = ResourceHandle.GetLength(resource);
-            ImGui.Selectable($"0x{data:X}");
-            if (ImGui.IsItemClicked())
+            if (ImGui.Selectable($"0x{data:X}"))
             {
                 if (data != nint.Zero && length > 0)
                     ImGui.SetClipboardText(string.Join("\n",
@@ -643,7 +638,7 @@ public class DebugTab : Window, ITab
 
             ImGuiUtil.HoverTooltip("Click to copy bytes to clipboard.");
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"{length}");
+            ImGui.TextUnformatted(length.ToString());
 
             ImGui.TableNextColumn();
             if (intern.Value != -1)
