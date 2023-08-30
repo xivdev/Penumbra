@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
+using Penumbra.String;
 using Structs = Penumbra.Interop.Structs;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -52,7 +53,7 @@ public partial class ModEditWindow
 
     private static unsafe List<(int SubActorType, int ChildObjectIndex, int ModelSlot, int MaterialSlot)> FindMaterial(CharacterBase* drawObject, int subActorType, string materialPath)
     {
-        static void CollectMaterials(List<(int, int, int, int)> result, int subActorType, int childObjectIndex, CharacterBase* drawObject, string materialPath)
+        static void CollectMaterials(List<(int, int, int, int)> result, int subActorType, int childObjectIndex, CharacterBase* drawObject, ByteString materialPath)
         {
             for (var i = 0; i < drawObject->SlotCount; ++i)
             {
@@ -67,11 +68,8 @@ public partial class ModEditWindow
                         continue;
 
                     var mtrlHandle = material->MaterialResourceHandle;
-                    if (mtrlHandle == null)
-                        continue;
-
                     var path = ResolveContext.GetResourceHandlePath((Structs.ResourceHandle*)mtrlHandle);
-                    if (path.ToString() == materialPath)
+                    if (path == materialPath)
                         result.Add((subActorType, childObjectIndex, i, j));
                 }
             }
@@ -82,9 +80,8 @@ public partial class ModEditWindow
         if (drawObject == null)
             return result;
 
-        materialPath = materialPath.Replace('/', '\\').ToLowerInvariant();
-
-        CollectMaterials(result, subActorType, -1, drawObject, materialPath);
+        var path = ByteString.FromString(materialPath.Replace('/', '\\'), out var m, true) ? m : ByteString.Empty;
+        CollectMaterials(result, subActorType, -1, drawObject, path);
 
         var firstChildObject = (CharacterBase*)drawObject->DrawObject.Object.ChildObject;
         if (firstChildObject != null)
@@ -93,7 +90,7 @@ public partial class ModEditWindow
             var childObjectIndex = 0;
             do
             {
-                CollectMaterials(result, subActorType, childObjectIndex, childObject, materialPath);
+                CollectMaterials(result, subActorType, childObjectIndex, childObject, path);
 
                 childObject = (CharacterBase*)childObject->DrawObject.Object.NextSiblingObject;
                 ++childObjectIndex;

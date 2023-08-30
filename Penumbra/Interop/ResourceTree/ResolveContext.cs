@@ -65,31 +65,10 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
     private ResourceNode CreateNodeFromGamePath(ResourceType type, nint sourceAddress, Utf8GamePath gamePath, bool @internal)
         => new(null, type, sourceAddress, gamePath, FilterFullPath(Collection.ResolvePath(gamePath) ?? new FullPath(gamePath)), @internal);
 
-    public static unsafe FullPath GetResourceHandlePath(ResourceHandle* handle)
-    {
-        var name = handle->FileName();
-        if (name.IsEmpty)
-            return FullPath.Empty;
-
-        if (name[0] == (byte)'|')
-        {
-            var pos = name.IndexOf((byte)'|', 1);
-            if (pos < 0)
-                return FullPath.Empty;
-
-            name = name.Substring(pos + 1);
-        }
-
-        return new FullPath(Utf8GamePath.FromByteString(name, out var p) ? p : Utf8GamePath.Empty);
-    }
-
     private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint sourceAddress, ResourceHandle* handle, bool @internal,
         bool withName)
     {
-        if (handle == null)
-            return null;
-
-        var fullPath  = GetResourceHandlePath(handle);
+        var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(handle), out var p) ? new FullPath(p) : FullPath.Empty;
         if (fullPath.InternalName.IsEmpty)
             return null;
 
@@ -293,5 +272,26 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
     {
         var i = index.GetOffset(array.Length);
         return i >= 0 && i < array.Length ? array[i] : null;
+    }
+
+    internal static unsafe ByteString GetResourceHandlePath(ResourceHandle* handle)
+    {
+        if (handle == null)
+            return ByteString.Empty;
+
+        var name = handle->FileName();
+        if (name.IsEmpty)
+            return ByteString.Empty;
+
+        if (name[0] == (byte)'|')
+        {
+            var pos = name.IndexOf((byte)'|', 1);
+            if (pos < 0)
+                return ByteString.Empty;
+
+            name = name.Substring(pos + 1);
+        }
+
+        return name;
     }
 }
