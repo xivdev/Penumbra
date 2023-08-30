@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Files;
 using Penumbra.Interop.ResourceTree;
+using Penumbra.Interop.SafeHandles;
 using Structs = Penumbra.Interop.Structs;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -382,8 +383,8 @@ public partial class ModEditWindow
 
         private readonly Framework _framework;
 
-        private readonly Texture** _colorSetTexture;
-        private readonly Texture*  _originalColorSetTexture;
+        private readonly Texture**         _colorSetTexture;
+        private readonly SafeTextureHandle _originalColorSetTexture;
 
         private Half[] _colorSet;
         private bool   _updatePending;
@@ -404,10 +405,9 @@ public partial class ModEditWindow
 
             _colorSetTexture = colorSetTextures + (modelSlot * 4 + materialSlot);
 
-            _originalColorSetTexture = *_colorSetTexture;
-            if (_originalColorSetTexture == null)
+            _originalColorSetTexture = new SafeTextureHandle(*_colorSetTexture, true);
+            if (_originalColorSetTexture.IsInvalid)
                 throw new InvalidOperationException("Material doesn't have a color set");
-            Structs.TextureUtility.IncRef(_originalColorSetTexture);
 
             _colorSet = new Half[TextureLength];
             _updatePending = true;
@@ -422,13 +422,9 @@ public partial class ModEditWindow
             base.Dispose(disposing, reset);
 
             if (reset)
-            {
-                var oldTexture = (Texture*)Interlocked.Exchange(ref *(nint*)_colorSetTexture, (nint)_originalColorSetTexture);
-                if (oldTexture != null)
-                    Structs.TextureUtility.DecRef(oldTexture);
-            }
-            else
-                Structs.TextureUtility.DecRef(_originalColorSetTexture);
+                _originalColorSetTexture.Exchange(ref *(nint*)_colorSetTexture);
+
+            _originalColorSetTexture.Dispose();
         }
 
         public void ScheduleUpdate()
@@ -449,23 +445,17 @@ public partial class ModEditWindow
             textureSize[0] = TextureWidth;
             textureSize[1] = TextureHeight;
 
-            var newTexture = Structs.TextureUtility.Create2D(Device.Instance(), textureSize, 1, 0x2460, 0x80000804, 7);
-            if (newTexture == null)
+            using var texture = new SafeTextureHandle(Structs.TextureUtility.Create2D(Device.Instance(), textureSize, 1, 0x2460, 0x80000804, 7), false);
+            if (texture.IsInvalid)
                 return;
 
             bool success;
             lock (_colorSet)
                 fixed (Half* colorSet = _colorSet)
-                    success = Structs.TextureUtility.InitializeContents(newTexture, colorSet);
+                    success = Structs.TextureUtility.InitializeContents(texture.Texture, colorSet);
 
             if (success)
-            {
-                var oldTexture = (Texture*)Interlocked.Exchange(ref *(nint*)_colorSetTexture, (nint)newTexture);
-                if (oldTexture != null)
-                    Structs.TextureUtility.DecRef(oldTexture);
-            }
-            else
-                Structs.TextureUtility.DecRef(newTexture);
+                texture.Exchange(ref *(nint*)_colorSetTexture);
         }
 
         protected override bool IsStillValid()
