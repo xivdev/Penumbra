@@ -14,6 +14,7 @@ using Penumbra.GameData;
 using Penumbra.GameData.Enums;
 using Penumbra.Interop.PathResolving;
 using Penumbra.Interop.ResourceLoading;
+using Penumbra.Interop.SafeHandles;
 using Penumbra.String.Classes;
 
 namespace Penumbra.Interop.Services;
@@ -44,7 +45,7 @@ public unsafe class SkinFixer : IDisposable
     private readonly ResourceLoader     _resources;
     private readonly CharacterUtility   _utility;
 
-    private readonly ConcurrentDictionary<nint /* CharacterBase* */, nint /* ResourceHandle* */> _skinShpks = new();
+    private readonly ConcurrentDictionary<nint /* CharacterBase* */, SafeResourceHandle> _skinShpks = new();
 
     private readonly object _lock = new();
     
@@ -89,8 +90,7 @@ public unsafe class SkinFixer : IDisposable
         _gameEvents.CharacterBaseCreated    -= OnCharacterBaseCreated;
         _gameEvents.CharacterBaseDestructor -= OnCharacterBaseDestructor;
         foreach (var skinShpk in _skinShpks.Values)
-            if (skinShpk != nint.Zero)
-                ((ResourceHandle*)skinShpk)->DecRef();
+            skinShpk.Dispose();
         _skinShpks.Clear();
         _moddedSkinShpkCount = 0;
     }
@@ -105,29 +105,41 @@ public unsafe class SkinFixer : IDisposable
 
         Task.Run(delegate
         {
-            nint skinShpk;
+            var skinShpk = SafeResourceHandle.CreateInvalid();
             try
             {
                 var data = _collectionResolver.IdentifyCollection((DrawObject*)drawObject, true);
-                skinShpk = data.Valid ? (nint)_resources.LoadResolvedResource(ResourceCategory.Shader, ResourceType.Shpk, SkinShpkPath.Path, data) : nint.Zero;
+                if (data.Valid)
+                {
+                    var loadedShpk = _resources.LoadResolvedResource(ResourceCategory.Shader, ResourceType.Shpk, SkinShpkPath.Path, data);
+                    skinShpk = new SafeResourceHandle((ResourceHandle*)loadedShpk, incRef: false);
+                }
             }
             catch (Exception e)
             {
                 Penumbra.Log.Error($"Error while resolving skin.shpk for human {drawObject:X}: {e}");
-                skinShpk = nint.Zero;
             }
 
-            if (skinShpk != nint.Zero && _skinShpks.TryAdd(drawObject, skinShpk) && skinShpk != _utility.DefaultSkinShpkResource)
-                Interlocked.Increment(ref _moddedSkinShpkCount);
+            if (!skinShpk.IsInvalid)
+            {
+                if (_skinShpks.TryAdd(drawObject, skinShpk))
+                {
+                    if ((nint)skinShpk.ResourceHandle != _utility.DefaultSkinShpkResource)
+                        Interlocked.Increment(ref _moddedSkinShpkCount);
+                }
+                else
+                    skinShpk.Dispose();
+            }
         });
     }
 
     private void OnCharacterBaseDestructor(nint characterBase)
     {
-        if (_skinShpks.Remove(characterBase, out var skinShpk) && skinShpk != nint.Zero)
+        if (_skinShpks.Remove(characterBase, out var skinShpk))
         {
-            ((ResourceHandle*)skinShpk)->DecRef();
-            if (skinShpk != _utility.DefaultSkinShpkResource)
+            var handle = skinShpk.ResourceHandle;
+            skinShpk.Dispose();
+            if ((nint)handle != _utility.DefaultSkinShpkResource)
                 Interlocked.Decrement(ref _moddedSkinShpkCount);
         }
     }
@@ -136,12 +148,12 @@ public unsafe class SkinFixer : IDisposable
     {
         if (!_enabled ||                 // Can be toggled on the debug tab.
             _moddedSkinShpkCount == 0 || // If we don't have any on-screen instances of modded skin.shpk, we don't need the slow path at all.
-            !_skinShpks.TryGetValue(human, out var skinShpk) || skinShpk == nint.Zero)
+            !_skinShpks.TryGetValue(human, out var skinShpk))
             return _onRenderMaterialHook!.Original(human, param);
 
         var material = param->Model->Materials[param->MaterialIndex];
         var shpkResource = ((Structs.MtrlResource*)material->MaterialResourceHandle)->ShpkResourceHandle;
-        if ((nint)shpkResource != skinShpk)
+        if ((nint)shpkResource != (nint)skinShpk.ResourceHandle)
             return _onRenderMaterialHook!.Original(human, param);
 
         Interlocked.Increment(ref _slowPathCallDelta);
@@ -154,7 +166,7 @@ public unsafe class SkinFixer : IDisposable
         lock (_lock)
             try
             {
-                _utility.Address->SkinShpkResource = (Structs.ResourceHandle*)skinShpk;
+                _utility.Address->SkinShpkResource = (Structs.ResourceHandle*)skinShpk.ResourceHandle;
                 return _onRenderMaterialHook!.Original(human, param);
             }
             finally
