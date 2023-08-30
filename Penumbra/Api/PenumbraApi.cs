@@ -85,26 +85,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         }
     }
 
-    public event CreatedCharacterBaseDelegate? CreatedCharacterBase
-    {
-        add
-        {
-            if (value == null)
-                return;
-
-            CheckInitialized();
-            _communicator.CreatedCharacterBase.Subscribe(new Action<nint, string, nint>(value),
-                Communication.CreatedCharacterBase.Priority.Api);
-        }
-        remove
-        {
-            if (value == null)
-                return;
-
-            CheckInitialized();
-            _communicator.CreatedCharacterBase.Unsubscribe(new Action<nint, string, nint>(value));
-        }
-    }
+    public event CreatedCharacterBaseDelegate? CreatedCharacterBase;
 
     public bool Valid
         => _lumina != null;
@@ -157,6 +138,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _resourceLoader.ResourceLoaded += OnResourceLoaded;
         _communicator.ModPathChanged.Subscribe(ModPathChangeSubscriber, ModPathChanged.Priority.Api);
         _communicator.ModSettingChanged.Subscribe(OnModSettingChange, Communication.ModSettingChanged.Priority.Api);
+        _communicator.CreatedCharacterBase.Subscribe(OnCreatedCharacterBase, Communication.CreatedCharacterBase.Priority.Api);
     }
 
     public unsafe void Dispose()
@@ -167,6 +149,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
         _resourceLoader.ResourceLoaded -= OnResourceLoaded;
         _communicator.ModPathChanged.Unsubscribe(ModPathChangeSubscriber);
         _communicator.ModSettingChanged.Unsubscribe(OnModSettingChange);
+        _communicator.CreatedCharacterBase.Unsubscribe(OnCreatedCharacterBase);
         _lumina             = null;
         _communicator       = null!;
         _modManager         = null!;
@@ -1189,4 +1172,7 @@ public class PenumbraApi : IDisposable, IPenumbraApi
 
     private void OnModSettingChange(ModCollection collection, ModSettingChange type, Mod? mod, int _1, int _2, bool inherited)
         => ModSettingChanged?.Invoke(type, collection.Name, mod?.ModPath.Name ?? string.Empty, inherited);
+
+    private void OnCreatedCharacterBase(nint gameObject, ModCollection collection, nint drawObject)
+        => CreatedCharacterBase?.Invoke(gameObject, collection.Name, drawObject);
 }

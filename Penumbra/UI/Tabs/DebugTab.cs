@@ -34,6 +34,8 @@ using CharacterBase = FFXIVClientStructs.FFXIV.Client.Graphics.Scene.CharacterBa
 using CharacterUtility = Penumbra.Interop.Services.CharacterUtility;
 using ObjectKind = Dalamud.Game.ClientState.Objects.Enums.ObjectKind;
 using ResidentResourceManager = Penumbra.Interop.Services.ResidentResourceManager;
+using Penumbra.Interop.Services;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 
 namespace Penumbra.UI.Tabs;
 
@@ -63,6 +65,7 @@ public class DebugTab : Window, ITab
     private readonly ImportPopup               _importPopup;
     private readonly FrameworkManager          _framework;
     private readonly TextureManager            _textureManager;
+    private readonly SkinFixer                 _skinFixer;
 
     public DebugTab(StartTracker timer, PerformanceTracker performance, Configuration config, CollectionManager collectionManager,
         ValidityChecker validityChecker, ModManager modManager, HttpApi httpApi, ActorService actorService,
@@ -70,7 +73,7 @@ public class DebugTab : Window, ITab
         ResourceManagerService resourceManager, PenumbraIpcProviders ipc, CollectionResolver collectionResolver,
         DrawObjectState drawObjectState, PathState pathState, SubfileHelper subfileHelper, IdentifiedCollectionCache identifiedCollectionCache,
         CutsceneService cutsceneService, ModImportManager modImporter, ImportPopup importPopup, FrameworkManager framework,
-        TextureManager textureManager)
+        TextureManager textureManager, SkinFixer skinFixer)
         : base("Penumbra Debug Window", ImGuiWindowFlags.NoCollapse, false)
     {
         IsOpen = true;
@@ -103,6 +106,7 @@ public class DebugTab : Window, ITab
         _importPopup               = importPopup;
         _framework                 = framework;
         _textureManager            = textureManager;
+        _skinFixer                 = skinFixer;
     }
 
     public ReadOnlySpan<byte> Label
@@ -143,6 +147,8 @@ public class DebugTab : Window, ITab
         DrawResourceProblems();
         ImGui.NewLine();
         DrawPlayerModelInfo();
+        ImGui.NewLine();
+        DrawGlobalVariableInfo();
         ImGui.NewLine();
         DrawDebugTabIpc();
         ImGui.NewLine();
@@ -338,7 +344,7 @@ public class DebugTab : Window, ITab
         if (!ImGui.CollapsingHeader("Actors"))
             return;
 
-        using var table = Table("##actors", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+        using var table = Table("##actors", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
             return;
@@ -349,6 +355,7 @@ public class DebugTab : Window, ITab
                 return;
 
             ImGuiUtil.DrawTableColumn(name);
+            ImGuiUtil.DrawTableColumn(string.Empty);
             ImGuiUtil.DrawTableColumn(string.Empty);
             ImGuiUtil.DrawTableColumn(_actorService.AwaitedService.ToString(id));
             ImGuiUtil.DrawTableColumn(string.Empty);
@@ -363,6 +370,7 @@ public class DebugTab : Window, ITab
         {
             ImGuiUtil.DrawTableColumn($"{((GameObject*)obj.Address)->ObjectIndex}");
             ImGuiUtil.DrawTableColumn($"0x{obj.Address:X}");
+            ImGuiUtil.DrawTableColumn((obj.Address == nint.Zero) ? string.Empty : $"0x{(nint)((Character*)obj.Address)->GameObject.GetDrawObject():X}");
             var identifier = _actorService.AwaitedService.FromObject(obj, false, true, false);
             ImGuiUtil.DrawTableColumn(_actorService.AwaitedService.ToString(identifier));
             var id = obj.ObjectKind == ObjectKind.BattleNpc ? $"{identifier.DataId} | {obj.DataId}" : identifier.DataId.ToString();
@@ -582,45 +590,72 @@ public class DebugTab : Window, ITab
         if (!ImGui.CollapsingHeader("Character Utility"))
             return;
 
-        using var table = Table("##CharacterUtility", 6, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
+        var enableSkinFixer = _skinFixer.Enabled;
+        if (ImGui.Checkbox("Enable Skin Fixer", ref enableSkinFixer))
+            _skinFixer.Enabled = enableSkinFixer;
+
+        if (enableSkinFixer)
+        {
+            ImGui.SameLine();
+            ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"\u0394 Slow-Path Calls: {_skinFixer.GetAndResetSlowPathCallDelta()}");
+            ImGui.SameLine();
+            ImGui.Dummy(ImGuiHelpers.ScaledVector2(20, 0));
+            ImGui.SameLine();
+            ImGui.TextUnformatted($"Draw Objects with Modded skin.shpk: {_skinFixer.ModdedSkinShpkCount}");
+        }
+
+        using var table = Table("##CharacterUtility", 7, ImGuiTableFlags.RowBg | ImGuiTableFlags.SizingFixedFit,
             -Vector2.UnitX);
         if (!table)
             return;
 
-        for (var i = 0; i < CharacterUtility.RelevantIndices.Length; ++i)
+        for (var idx = 0; idx < CharacterUtility.ReverseIndices.Length; ++idx)
         {
-            var idx      = CharacterUtility.RelevantIndices[i];
-            var intern   = new CharacterUtility.InternalIndex(i);
+            var intern   = CharacterUtility.ReverseIndices[idx];
             var resource = _characterUtility.Address->Resource(idx);
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted($"[{idx}]");
             ImGui.TableNextColumn();
             ImGui.TextUnformatted($"0x{(ulong)resource:X}");
             ImGui.TableNextColumn();
+            if (resource == null)
+            {
+                ImGui.TableNextRow();
+                continue;
+            }
             UiHelpers.Text(resource);
             ImGui.TableNextColumn();
-            ImGui.Selectable($"0x{resource->GetData().Data:X}");
-            if (ImGui.IsItemClicked())
+            var data = (nint)ResourceHandle.GetData(resource);
+            var length = ResourceHandle.GetLength(resource);
+            if (ImGui.Selectable($"0x{data:X}"))
             {
-                var (data, length) = resource->GetData();
                 if (data != nint.Zero && length > 0)
                     ImGui.SetClipboardText(string.Join("\n",
-                        new ReadOnlySpan<byte>((byte*)data, length).ToArray().Select(b => b.ToString("X2"))));
+                        new ReadOnlySpan<byte>((byte*)data, (int)length).ToArray().Select(b => b.ToString("X2"))));
             }
 
             ImGuiUtil.HoverTooltip("Click to copy bytes to clipboard.");
+            ImGui.TableNextColumn();
+            ImGui.TextUnformatted(length.ToString());
 
             ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"{resource->GetData().Length}");
-            ImGui.TableNextColumn();
-            ImGui.Selectable($"0x{_characterUtility.DefaultResource(intern).Address:X}");
-            if (ImGui.IsItemClicked())
-                ImGui.SetClipboardText(string.Join("\n",
-                    new ReadOnlySpan<byte>((byte*)_characterUtility.DefaultResource(intern).Address,
-                        _characterUtility.DefaultResource(intern).Size).ToArray().Select(b => b.ToString("X2"))));
+            if (intern.Value != -1)
+            {
+                ImGui.Selectable($"0x{_characterUtility.DefaultResource(intern).Address:X}");
+                if (ImGui.IsItemClicked())
+                    ImGui.SetClipboardText(string.Join("\n",
+                        new ReadOnlySpan<byte>((byte*)_characterUtility.DefaultResource(intern).Address,
+                            _characterUtility.DefaultResource(intern).Size).ToArray().Select(b => b.ToString("X2"))));
 
-            ImGuiUtil.HoverTooltip("Click to copy bytes to clipboard.");
+                ImGuiUtil.HoverTooltip("Click to copy bytes to clipboard.");
 
-            ImGui.TableNextColumn();
-            ImGui.TextUnformatted($"{_characterUtility.DefaultResource(intern).Size}");
+                ImGui.TableNextColumn();
+                ImGui.TextUnformatted($"{_characterUtility.DefaultResource(intern).Size}");
+            }
+            else
+                ImGui.TableNextColumn();
         }
     }
 
@@ -665,6 +700,18 @@ public class DebugTab : Window, ITab
         }
     }
 
+    private static void DrawCopyableAddress(string label, nint address)
+    {
+        using (var _ = PushFont(UiBuilder.MonoFont))
+            if (ImGui.Selectable($"0x{address:X16}    {label}"))
+                ImGui.SetClipboardText($"{address:X16}");
+
+        ImGuiUtil.HoverTooltip("Click to copy address to clipboard.");
+    }
+
+    private static unsafe void DrawCopyableAddress(string label, void* address)
+        => DrawCopyableAddress(label, (nint)address);
+
     /// <summary> Draw information about the models, materials and resources currently loaded by the local player. </summary>
     private unsafe void DrawPlayerModelInfo()
     {
@@ -673,9 +720,13 @@ public class DebugTab : Window, ITab
         if (!ImGui.CollapsingHeader($"Player Model Info: {name}##Draw") || player == null)
             return;
 
+        DrawCopyableAddress("PlayerCharacter", player.Address);
+
         var model = (CharacterBase*)((Character*)player.Address)->GameObject.GetDrawObject();
         if (model == null)
             return;
+
+        DrawCopyableAddress("CharacterBase", model);
 
         using (var t1 = Table("##table", 2, ImGuiTableFlags.SizingFixedFit))
         {
@@ -728,6 +779,19 @@ public class DebugTab : Window, ITab
                 UiHelpers.Text(mdl->ResourceHandle);
             }
         }
+    }
+
+    /// <summary> Draw information about some game global variables. </summary>
+    private unsafe void DrawGlobalVariableInfo()
+    {
+        var header = ImGui.CollapsingHeader("Global Variables");
+        ImGuiUtil.HoverTooltip("Draw information about global variables. Can provide useful starting points for a memory viewer.");
+        if (!header)
+            return;
+
+        DrawCopyableAddress("CharacterUtility", _characterUtility.Address);
+        DrawCopyableAddress("ResidentResourceManager", _residentResources.Address);
+        DrawCopyableAddress("Device", Device.Instance());
     }
 
     /// <summary> Draw resources with unusual reference count. </summary>

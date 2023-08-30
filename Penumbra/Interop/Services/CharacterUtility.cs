@@ -33,6 +33,7 @@ public unsafe partial class CharacterUtility : IDisposable
     public event Action LoadingFinished;
     public nint         DefaultTransparentResource { get; private set; }
     public nint         DefaultDecalResource       { get; private set; }
+    public nint         DefaultSkinShpkResource    { get; private set; }
 
     /// <summary>
     /// The relevant indices depend on which meta manipulations we allow for.
@@ -102,6 +103,12 @@ public unsafe partial class CharacterUtility : IDisposable
             anyMissing           |= DefaultDecalResource == nint.Zero;
         }
 
+        if (DefaultSkinShpkResource == nint.Zero)
+        {
+            DefaultSkinShpkResource =  (nint)Address->SkinShpkResource;
+            anyMissing              |= DefaultSkinShpkResource == nint.Zero;
+        }
+
         if (anyMissing)
             return;
 
@@ -149,6 +156,7 @@ public unsafe partial class CharacterUtility : IDisposable
 
         Address->TransparentTexResource = (TextureResourceHandle*)DefaultTransparentResource;
         Address->DecalTexResource       = (TextureResourceHandle*)DefaultDecalResource;
+        Address->SkinShpkResource       = (ResourceHandle*)DefaultSkinShpkResource;
     }
 
     public void Dispose()

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Numerics;
 using System.Threading.Tasks;
 
@@ -68,6 +69,34 @@ public partial class CombinedTexture : IDisposable
             _current.TextureWrap!.Height);
     }
 
+    public void SaveAs(TextureType? texType, TextureManager textures, string path, TextureSaveType type, bool mipMaps)
+    {
+        var finalTexType = texType
+         ?? Path.GetExtension(path).ToLowerInvariant() switch
+            {
+                ".tex" => TextureType.Tex,
+                ".dds" => TextureType.Dds,
+                ".png" => TextureType.Png,
+                _      => TextureType.Unknown,
+            };
+
+        switch (finalTexType)
+        {
+            case TextureType.Tex:
+                SaveAsTex(textures, path, type, mipMaps);
+                break;
+            case TextureType.Dds:
+                SaveAsDds(textures, path, type, mipMaps);
+                break;
+            case TextureType.Png:
+                SaveAsPng(textures, path);
+                break;
+            default:
+                throw new ArgumentException(
+                    $"Cannot save texture as TextureType {finalTexType} with extension {Path.GetExtension(path).ToLowerInvariant()}");
+        }
+    }
+
     public void SaveAsTex(TextureManager textures, string path, TextureSaveType type, bool mipMaps)
         => SaveAs(textures, path, type, mipMaps, true);
 
@@ -97,36 +126,21 @@ public partial class CombinedTexture : IDisposable
     public void Update()
     {
         Clean();
-        if (_left.IsLoaded)
+        switch (GetActualCombineOp())
         {
-            if (_right.IsLoaded)
-            {
-                _current = _centerStorage;
-                _mode    = Mode.Custom;
-            }
-            else if (!_invertLeft && _multiplierLeft.IsIdentity)
-            {
+            case CombineOp.Invalid: break;
+            case CombineOp.LeftCopy:
                 _mode    = Mode.LeftCopy;
                 _current = _left;
-            }
-            else
-            {
-                _current = _centerStorage;
-                _mode    = Mode.Custom;
-            }
-        }
-        else if (_right.IsLoaded)
-        {
-            if (!_invertRight && _multiplierRight.IsIdentity)
-            {
-                _current = _right;
+                break;
+            case CombineOp.RightCopy:
                 _mode    = Mode.RightCopy;
-            }
-            else
-            {
-                _current = _centerStorage;
+                _current = _right;
+                break;
+            default:
                 _mode    = Mode.Custom;
-            }
+                _current = _centerStorage;
+                break;
         }
     }
 
