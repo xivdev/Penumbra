@@ -53,6 +53,11 @@ public partial class CombinedTexture
         public (int Width, int Height) Size
             => (Width, Height);
 
+        public RgbaPixelData((int Width, int Height) size, byte[] pixelData)
+            : this(size.Width, size.Height, pixelData)
+        {
+        }
+
         public Image<Rgba32> ToImage()
             => Image.LoadPixelData<Rgba32>(PixelData, Width, Height);
 
@@ -61,7 +66,7 @@ public partial class CombinedTexture
             if (Width == size.Width && Height == size.Height)
                 return this;
 
-            var result = WithNewPixelData(size);
+            var result = new RgbaPixelData(size, NewPixelData(size));
             using (var image = ToImage())
             {
                 image.Mutate(ctx => ctx.Resize(size.Width, size.Height, KnownResamplers.Lanczos3));
@@ -71,8 +76,8 @@ public partial class CombinedTexture
             return result;
         }
 
-        public static RgbaPixelData WithNewPixelData((int Width, int Height) size)
-            => new(size.Width, size.Height, new byte[size.Width * size.Height * 4]);
+        public static byte[] NewPixelData((int Width, int Height) size)
+            => new byte[size.Width * size.Height * 4];
 
         public static RgbaPixelData FromTexture(Texture texture)
             => new(texture.TextureWrap!.Width, texture.TextureWrap!.Height, texture.RgbaPixels);
@@ -88,9 +93,8 @@ public partial class CombinedTexture
     private ResizeOp  _resizeOp        = ResizeOp.None;
     private Channels  _copyChannels    = Channels.Red | Channels.Green | Channels.Blue | Channels.Alpha;
 
-    private RgbaPixelData _targetPixels = RgbaPixelData.Empty;
-    private RgbaPixelData _leftPixels   = RgbaPixelData.Empty;
-    private RgbaPixelData _rightPixels  = RgbaPixelData.Empty;
+    private RgbaPixelData _leftPixels  = RgbaPixelData.Empty;
+    private RgbaPixelData _rightPixels = RgbaPixelData.Empty;
 
     private static readonly IReadOnlyList<string> CombineOpLabels = new string[]
     {
@@ -195,9 +199,9 @@ public partial class CombinedTexture
 
     private void AddPixelsMultiplied(int y, ParallelLoopState _)
     {
-        for (var x = 0; x < _targetPixels.Width; ++x)
+        for (var x = 0; x < _leftPixels.Width; ++x)
         {
-            var offset = (_targetPixels.Width * y + x) * 4;
+            var offset = (_leftPixels.Width * y + x) * 4;
             var left   = DataLeft(offset);
             var right  = DataRight(x, y);
             var alpha  = right.W + left.W * (1 - right.W);
@@ -213,9 +217,9 @@ public partial class CombinedTexture
 
     private void ReverseAddPixelsMultiplied(int y, ParallelLoopState _)
     {
-        for (var x = 0; x < _targetPixels.Width; ++x)
+        for (var x = 0; x < _leftPixels.Width; ++x)
         {
-            var offset = (_targetPixels.Width * y + x) * 4;
+            var offset = (_leftPixels.Width * y + x) * 4;
             var left   = DataLeft(offset);
             var right  = DataRight(x, y);
             var alpha  = left.W + right.W * (1 - left.W);
@@ -232,9 +236,9 @@ public partial class CombinedTexture
     private void ChannelMergePixelsMultiplied(int y, ParallelLoopState _)
     {
         var channels = _copyChannels;
-        for (var x = 0; x < _targetPixels.Width; ++x)
+        for (var x = 0; x < _leftPixels.Width; ++x)
         {
-            var offset = (_targetPixels.Width * y + x) * 4;
+            var offset = (_leftPixels.Width * y + x) * 4;
             var left   = DataLeft(offset);
             var right  = DataRight(x, y);
             var rgba = new Rgba32((channels & Channels.Red) != 0 ? right.X : left.X,
@@ -250,9 +254,9 @@ public partial class CombinedTexture
 
     private void MultiplyPixelsLeft(int y, ParallelLoopState _)
     {
-        for (var x = 0; x < _targetPixels.Width; ++x)
+        for (var x = 0; x < _leftPixels.Width; ++x)
         {
-            var offset = (_targetPixels.Width * y + x) * 4;
+            var offset = (_leftPixels.Width * y + x) * 4;
             var left   = DataLeft(offset);
             var rgba   = new Rgba32(left);
             _centerStorage.RgbaPixels[offset]     = rgba.R;
@@ -264,9 +268,9 @@ public partial class CombinedTexture
 
     private void MultiplyPixelsRight(int y, ParallelLoopState _)
     {
-        for (var x = 0; x < _targetPixels.Width; ++x)
+        for (var x = 0; x < _rightPixels.Width; ++x)
         {
-            var offset = (_targetPixels.Width * y + x) * 4;
+            var offset = (_rightPixels.Width * y + x) * 4;
             var right  = DataRight(offset);
             var rgba   = new Rgba32(right);
             _centerStorage.RgbaPixels[offset]     = rgba.R;
@@ -294,9 +298,7 @@ public partial class CombinedTexture
 
         try
         {
-            _targetPixels = RgbaPixelData.WithNewPixelData(targetSize);
-
-            _centerStorage.RgbaPixels = _targetPixels.PixelData;
+            _centerStorage.RgbaPixels = RgbaPixelData.NewPixelData(targetSize);
             _centerStorage.Type       = TextureType.Bitmap;
 
             _leftPixels = resizeOp switch
@@ -311,7 +313,7 @@ public partial class CombinedTexture
                 _                 => right.Resize(targetSize),
             };
 
-            Parallel.For(0, _targetPixels.Height, combineOp switch
+            Parallel.For(0, targetSize.Height, combineOp switch
             {
                 CombineOp.Over          => AddPixelsMultiplied,
                 CombineOp.Under         => ReverseAddPixelsMultiplied,
@@ -325,7 +327,6 @@ public partial class CombinedTexture
         {
             _leftPixels   = RgbaPixelData.Empty;
             _rightPixels  = RgbaPixelData.Empty;
-            _targetPixels = RgbaPixelData.Empty;
         }
 
         return targetSize;
