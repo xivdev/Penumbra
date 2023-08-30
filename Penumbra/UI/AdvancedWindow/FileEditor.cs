@@ -39,11 +39,6 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
         _combo          = new Combo(config, getFiles);
     }
 
-    ~FileEditor()
-    {
-        DoDispose();
-    }
-
     public void Draw()
     {
         using var tab = ImRaii.TabItem(_tabName);
@@ -67,14 +62,10 @@ public class FileEditor<T> : IDisposable where T : class, IWritable
 
     public void Dispose()
     {
-        DoDispose();
-        GC.SuppressFinalize(this);
-    }
-
-    private void DoDispose()
-    {
         (_currentFile as IDisposable)?.Dispose();
         _currentFile = null;
+        (_defaultFile as IDisposable)?.Dispose();
+        _defaultFile = null;
     }
 
     private readonly string                         _tabName;
