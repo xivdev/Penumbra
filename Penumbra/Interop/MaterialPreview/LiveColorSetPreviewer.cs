@@ -5,6 +5,7 @@ using Dalamud.Plugin.Services;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using Penumbra.GameData.Files;
+using Penumbra.Interop.SafeHandles;
 
 namespace Penumbra.Interop.MaterialPreview;
 
@@ -16,8 +17,8 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
 
     private readonly Framework _framework;
 
-    private readonly Texture** _colorSetTexture;
-    private readonly Texture*  _originalColorSetTexture;
+    private readonly Texture**         _colorSetTexture;
+    private readonly SafeTextureHandle _originalColorSetTexture;
 
     private Half[] _colorSet;
     private bool   _updatePending;
@@ -40,11 +41,9 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
 
         _colorSetTexture = colorSetTextures + (MaterialInfo.ModelSlot * 4 + MaterialInfo.MaterialSlot);
 
-        _originalColorSetTexture = *_colorSetTexture;
+        _originalColorSetTexture = new SafeTextureHandle(*_colorSetTexture, true);
         if (_originalColorSetTexture == null)
             throw new InvalidOperationException("Material doesn't have a color set");
-
-        Structs.TextureUtility.IncRef(_originalColorSetTexture);
 
         _colorSet      = new Half[TextureLength];
         _updatePending = true;
@@ -59,15 +58,9 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
         base.Clear(disposing, reset);
 
         if (reset)
-        {
-            var oldTexture = (Texture*)Interlocked.Exchange(ref *(nint*)_colorSetTexture, (nint)_originalColorSetTexture);
-            if (oldTexture != null)
-                Structs.TextureUtility.DecRef(oldTexture);
-        }
-        else
-        {
-            Structs.TextureUtility.DecRef(_originalColorSetTexture);
-        }
+            _originalColorSetTexture.Exchange(ref *(nint*)_colorSetTexture);
+
+        _originalColorSetTexture.Dispose();
     }
 
     public void ScheduleUpdate()
@@ -89,8 +82,8 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
         textureSize[0] = TextureWidth;
         textureSize[1] = TextureHeight;
 
-        var newTexture = Structs.TextureUtility.Create2D(Device.Instance(), textureSize, 1, 0x2460, 0x80000804, 7);
-        if (newTexture == null)
+        using var texture = new SafeTextureHandle(Structs.TextureUtility.Create2D(Device.Instance(), textureSize, 1, 0x2460, 0x80000804, 7), false);
+        if (texture.IsInvalid)
             return;
 
         bool success;
@@ -98,20 +91,12 @@ public sealed unsafe class LiveColorSetPreviewer : LiveMaterialPreviewerBase
         {
             fixed (Half* colorSet = _colorSet)
             {
-                success = Structs.TextureUtility.InitializeContents(newTexture, colorSet);
+                success = Structs.TextureUtility.InitializeContents(texture.Texture, colorSet);
             }
         }
 
         if (success)
-        {
-            var oldTexture = (Texture*)Interlocked.Exchange(ref *(nint*)_colorSetTexture, (nint)newTexture);
-            if (oldTexture != null)
-                Structs.TextureUtility.DecRef(oldTexture);
-        }
-        else
-        {
-            Structs.TextureUtility.DecRef(newTexture);
-        }
+            texture.Exchange(ref *(nint*)_colorSetTexture);
     }
 
     protected override bool IsStillValid()
