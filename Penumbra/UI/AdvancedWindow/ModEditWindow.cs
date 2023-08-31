@@ -533,14 +533,20 @@ public partial class ModEditWindow : Window, IDisposable
         var ret = new HashSet<Utf8GamePath>();
 
         foreach (var path in _activeCollections.Current.ResolvedFiles.Keys)
+        {
             if (path.Path.StartsWith(prefix))
                 ret.Add(path);
+        }
 
         if (_mod != null)
             foreach (var option in _mod.Groups.SelectMany(g => g).Append(_mod.Default))
+            {
                 foreach (var path in option.Files.Keys)
+                {
                     if (path.Path.StartsWith(prefix))
                         ret.Add(path);
+                }
+            }
 
         return ret;
     }

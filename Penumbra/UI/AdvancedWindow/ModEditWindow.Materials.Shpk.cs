@@ -1,18 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Numerics;
 using System.Text;
 using Dalamud.Interface;
-using Dalamud.Interface.ImGuiFileDialog;
 using ImGuiNET;
-using Lumina.Data.Parsing;
-using Lumina.Excel.GeneratedSheets;
 using OtterGui;
 using OtterGui.Raii;
 using Penumbra.GameData;
-using Penumbra.GameData.Files;
 using Penumbra.String.Classes;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -25,7 +19,7 @@ public partial class ModEditWindow
     // Apricot shader packages are unlisted because
     // 1. they cause performance/memory issues when calculating the effective shader set
     // 2. they probably aren't intended for use with materials anyway
-    private static readonly IReadOnlyList<string> StandardShaderPackages = new string[]
+    private static readonly IReadOnlyList<string> StandardShaderPackages = new[]
     {
         "3dui.shpk",
         // "apricot_decal_dummy.shpk",
@@ -76,7 +70,7 @@ public partial class ModEditWindow
         Border = 3,
     }
 
-    private static readonly IReadOnlyList<string> TextureAddressModeTooltips = new string[]
+    private static readonly IReadOnlyList<string> TextureAddressModeTooltips = new[]
     {
         "Tile the texture at every UV integer junction.\n\nFor example, for U values between 0 and 3, the texture is repeated three times.",
         "Flip the texture at every UV integer junction.\n\nFor U values between 0 and 1, for example, the texture is addressed normally; between 1 and 2, the texture is mirrored; between 2 and 3, the texture is normal again; and so on.",
@@ -113,18 +107,15 @@ public partial class ModEditWindow
 
     private static bool DrawShaderFlagsInput(MtrlTab tab, bool disabled)
     {
-        var ret       = false;
         var shpkFlags = (int)tab.Mtrl.ShaderPackage.Flags;
         ImGui.SetNextItemWidth(UiHelpers.Scale * 250.0f);
-        if (ImGui.InputInt("Shader Flags", ref shpkFlags, 0, 0,
+        if (!ImGui.InputInt("Shader Flags", ref shpkFlags, 0, 0,
                 ImGuiInputTextFlags.CharsHexadecimal | (disabled ? ImGuiInputTextFlags.ReadOnly : ImGuiInputTextFlags.None)))
-        {
-            tab.Mtrl.ShaderPackage.Flags = (uint)shpkFlags;
-            ret                          = true;
-            tab.SetShaderPackageFlags((uint)shpkFlags);
-        }
+            return false;
 
-        return ret;
+        tab.Mtrl.ShaderPackage.Flags = (uint)shpkFlags;
+        tab.SetShaderPackageFlags((uint)shpkFlags);
+        return true;
     }
 
     /// <summary>

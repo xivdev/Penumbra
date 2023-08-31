@@ -6,7 +6,6 @@ using System.Linq;
 using System.Numerics;
 using Dalamud.Interface;
 using Dalamud.Interface.Internal.Notifications;
-using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using ImGuiNET;
 using Newtonsoft.Json.Linq;
@@ -17,10 +16,8 @@ using Penumbra.GameData;
 using Penumbra.GameData.Data;
 using Penumbra.GameData.Files;
 using Penumbra.GameData.Structs;
-using Penumbra.Services;
 using Penumbra.String;
 using Penumbra.String.Classes;
-using Penumbra.Util;
 using static Penumbra.GameData.Files.ShpkFile;
 
 namespace Penumbra.UI.AdvancedWindow;
@@ -48,28 +45,32 @@ public partial class ModEditWindow
         public ShpkFile? AssociatedShpk;
         public JObject?  AssociatedShpkDevkit;
 
-        public readonly string   LoadedBaseDevkitPathName = string.Empty;
+        public readonly string   LoadedBaseDevkitPathName;
         public readonly JObject? AssociatedBaseDevkit;
 
         // Shader Key State
-        public readonly List< (string Label, int Index, string Description, bool MonoFont, IReadOnlyList< (string Label, uint Value, string Description) > Values) > ShaderKeys = new(16);
+        public readonly
+            List<(string Label, int Index, string Description, bool MonoFont, IReadOnlyList<(string Label, uint Value, string Description)>
+                Values)> ShaderKeys = new(16);
 
-        public readonly HashSet< int > VertexShaders       = new(16);
-        public readonly HashSet< int > PixelShaders        = new(16);
-        public          bool           ShadersKnown        = false;
-        public          string         VertexShadersString = "Vertex Shaders: ???";
-        public          string         PixelShadersString  = "Pixel Shaders: ???";
+        public readonly HashSet<int> VertexShaders = new(16);
+        public readonly HashSet<int> PixelShaders  = new(16);
+        public          bool         ShadersKnown;
+        public          string       VertexShadersString = "Vertex Shaders: ???";
+        public          string       PixelShadersString  = "Pixel Shaders: ???";
 
         // Textures & Samplers
-        public readonly List< (string Label, int TextureIndex, int SamplerIndex, string Description, bool MonoFont) > Textures = new(4);
+        public readonly List<(string Label, int TextureIndex, int SamplerIndex, string Description, bool MonoFont)> Textures = new(4);
 
-        public readonly HashSet< int >  UnfoldedTextures   = new(4);
-        public readonly HashSet< uint > SamplerIds         = new(16);
-        public          float           TextureLabelWidth;
-        public          bool            UseColorDyeSet;
+        public readonly HashSet<int>  UnfoldedTextures = new(4);
+        public readonly HashSet<uint> SamplerIds       = new(16);
+        public          float         TextureLabelWidth;
+        public          bool          UseColorDyeSet;
 
         // Material Constants
-        public readonly List< (string Header, List< (string Label, int ConstantIndex, Range Slice, string Description, bool MonoFont, IConstantEditor Editor) > Constants) > Constants = new(16);
+        public readonly
+            List<(string Header, List<(string Label, int ConstantIndex, Range Slice, string Description, bool MonoFont, IConstantEditor Editor)>
+                Constants)> Constants = new(16);
 
         // Live-Previewers
         public readonly List<LiveMaterialPreviewer> MaterialPreviewers     = new(4);
@@ -77,15 +78,13 @@ public partial class ModEditWindow
         public          int                         HighlightedColorSetRow = -1;
         public readonly Stopwatch                   HighlightTime          = new();
 
-        public FullPath FindAssociatedShpk( out string defaultPath, out Utf8GamePath defaultGamePath )
+        public FullPath FindAssociatedShpk(out string defaultPath, out Utf8GamePath defaultGamePath)
         {
-            defaultPath = GamePaths.Shader.ShpkPath( Mtrl.ShaderPackage.Name );
-            if( !Utf8GamePath.FromString( defaultPath, out defaultGamePath, true ) )
-            {
+            defaultPath = GamePaths.Shader.ShpkPath(Mtrl.ShaderPackage.Name);
+            if (!Utf8GamePath.FromString(defaultPath, out defaultGamePath, true))
                 return FullPath.Empty;
-            }
 
-            return _edit.FindBestMatch( defaultGamePath );
+            return _edit.FindBestMatch(defaultGamePath);
         }
 
         public string[] GetShpkNames()
@@ -102,7 +101,7 @@ public partial class ModEditWindow
             return _shpkNames;
         }
 
-        public void LoadShpk( FullPath path )
+        public void LoadShpk(FullPath path)
         {
             ShaderHeader = $"Shader ({Mtrl.ShaderPackage.Name})###Shader";
 
@@ -110,26 +109,30 @@ public partial class ModEditWindow
             {
                 LoadedShpkPath = path;
                 var data = LoadedShpkPath.IsRooted
-                    ? File.ReadAllBytes( LoadedShpkPath.FullName )
-                    : _edit._dalamud.GameData.GetFile( LoadedShpkPath.InternalName.ToString() )?.Data;
-                AssociatedShpk     = data?.Length > 0 ? new ShpkFile( data ) : throw new Exception( "Failure to load file data." );
+                    ? File.ReadAllBytes(LoadedShpkPath.FullName)
+                    : _edit._dalamud.GameData.GetFile(LoadedShpkPath.InternalName.ToString())?.Data;
+                AssociatedShpk     = data?.Length > 0 ? new ShpkFile(data) : throw new Exception("Failure to load file data.");
                 LoadedShpkPathName = path.ToPath();
             }
-            catch( Exception e )
+            catch (Exception e)
             {
                 LoadedShpkPath     = FullPath.Empty;
                 LoadedShpkPathName = string.Empty;
                 AssociatedShpk     = null;
-                Penumbra.Chat.NotificationMessage( $"Could not load {LoadedShpkPath.ToPath()}:\n{e}", "Penumbra Advanced Editing", NotificationType.Error );
+                Penumbra.Chat.NotificationMessage($"Could not load {LoadedShpkPath.ToPath()}:\n{e}", "Penumbra Advanced Editing",
+                    NotificationType.Error);
             }
 
-            if( LoadedShpkPath.InternalName.IsEmpty )
+            if (LoadedShpkPath.InternalName.IsEmpty)
             {
                 AssociatedShpkDevkit     = null;
                 LoadedShpkDevkitPathName = string.Empty;
             }
             else
-                AssociatedShpkDevkit = TryLoadShpkDevkit( Path.GetFileNameWithoutExtension( Mtrl.ShaderPackage.Name ), out LoadedShpkDevkitPathName );
+            {
+                AssociatedShpkDevkit =
+                    TryLoadShpkDevkit(Path.GetFileNameWithoutExtension(Mtrl.ShaderPackage.Name), out LoadedShpkDevkitPathName);
+            }
 
             UpdateShaderKeys();
             Update();
@@ -157,10 +160,8 @@ public partial class ModEditWindow
         }
 
         private T? TryGetShpkDevkitData<T>(string category, uint? id, bool mayVary) where T : class
-        {
-            return TryGetShpkDevkitData<T>(AssociatedShpkDevkit, LoadedShpkDevkitPathName, category, id, mayVary)
-                ?? TryGetShpkDevkitData<T>(AssociatedBaseDevkit, LoadedBaseDevkitPathName, category, id, mayVary);
-        }
+            => TryGetShpkDevkitData<T>(AssociatedShpkDevkit,  LoadedShpkDevkitPathName, category, id, mayVary)
+             ?? TryGetShpkDevkitData<T>(AssociatedBaseDevkit, LoadedBaseDevkitPathName, category, id, mayVary);
 
         private T? TryGetShpkDevkitData<T>(JObject? devkit, string devkitPathName, string category, uint? id, bool mayVary) where T : class
         {
@@ -175,7 +176,7 @@ public partial class ModEditWindow
 
                 if (mayVary && (data as JObject)?["Vary"] != null)
                 {
-                    var selector = BuildSelector(data!["Vary"]!
+                    var selector = BuildSelector(data["Vary"]!
                         .Select(key => (uint)key)
                         .Select(key => Mtrl.GetShaderKey(key)?.Value ?? AssociatedShpk!.GetMaterialKeyById(key)!.Value.DefaultValue));
                     var index = (int)data["Selectors"]![selector.ToString()]!;
@@ -192,14 +193,13 @@ public partial class ModEditWindow
             }
         }
 
-        public void UpdateShaderKeys()
+        private void UpdateShaderKeys()
         {
             ShaderKeys.Clear();
             if (AssociatedShpk != null)
-            {
                 foreach (var key in AssociatedShpk.MaterialKeys)
                 {
-                    var dkData = TryGetShpkDevkitData<DevkitShaderKey>("ShaderKeys", key.Id, false);
+                    var dkData     = TryGetShpkDevkitData<DevkitShaderKey>("ShaderKeys", key.Id, false);
                     var hasDkLabel = !string.IsNullOrEmpty(dkData?.Label);
 
                     var valueSet = new HashSet<uint>(key.Values);
@@ -211,8 +211,8 @@ public partial class ModEditWindow
                     {
                         if (dkData != null && dkData.Values.TryGetValue(value, out var dkValue))
                             return (dkValue.Label.Length > 0 ? dkValue.Label : $"0x{value:X8}", value, dkValue.Description);
-                        else
-                            return ($"0x{value:X8}", value, string.Empty);
+
+                        return ($"0x{value:X8}", value, string.Empty);
                     }).ToArray();
                     Array.Sort(values, (x, y) =>
                     {
@@ -220,31 +220,33 @@ public partial class ModEditWindow
                             return -1;
                         if (y.Value == key.DefaultValue)
                             return 1;
-                        return x.Label.CompareTo(y.Label);
+
+                        return string.Compare(x.Label, y.Label, StringComparison.Ordinal);
                     });
-                    ShaderKeys.Add((hasDkLabel ? dkData!.Label : $"0x{key.Id:X8}", mtrlKeyIndex, dkData?.Description ?? string.Empty, !hasDkLabel, values));
+                    ShaderKeys.Add((hasDkLabel ? dkData!.Label : $"0x{key.Id:X8}", mtrlKeyIndex, dkData?.Description ?? string.Empty,
+                        !hasDkLabel, values));
                 }
-            }
             else
-            {
                 foreach (var (key, index) in Mtrl.ShaderPackage.ShaderKeys.WithIndex())
                     ShaderKeys.Add(($"0x{key.Category:X8}", index, string.Empty, true, Array.Empty<(string, uint, string)>()));
-            }
         }
 
-        public void UpdateShaders()
+        private void UpdateShaders()
         {
             VertexShaders.Clear();
             PixelShaders.Clear();
             if (AssociatedShpk == null)
+            {
                 ShadersKnown = false;
+            }
             else
             {
                 ShadersKnown = true;
                 var systemKeySelectors  = AllSelectors(AssociatedShpk.SystemKeys).ToArray();
                 var sceneKeySelectors   = AllSelectors(AssociatedShpk.SceneKeys).ToArray();
                 var subViewKeySelectors = AllSelectors(AssociatedShpk.SubViewKeys).ToArray();
-                var materialKeySelector = BuildSelector(AssociatedShpk.MaterialKeys.Select(key => Mtrl.GetOrAddShaderKey(key.Id, key.DefaultValue).Value));
+                var materialKeySelector =
+                    BuildSelector(AssociatedShpk.MaterialKeys.Select(key => Mtrl.GetOrAddShaderKey(key.Id, key.DefaultValue).Value));
                 foreach (var systemKeySelector in systemKeySelectors)
                 {
                     foreach (var sceneKeySelector in sceneKeySelectors)
@@ -252,15 +254,13 @@ public partial class ModEditWindow
                         foreach (var subViewKeySelector in subViewKeySelectors)
                         {
                             var selector = BuildSelector(systemKeySelector, sceneKeySelector, materialKeySelector, subViewKeySelector);
-                            var node = AssociatedShpk.GetNodeBySelector(selector);
+                            var node     = AssociatedShpk.GetNodeBySelector(selector);
                             if (node.HasValue)
-                            {
                                 foreach (var pass in node.Value.Passes)
                                 {
                                     VertexShaders.Add((int)pass.VertexShader);
                                     PixelShaders.Add((int)pass.PixelShader);
                                 }
-                            }
                             else
                                 ShadersKnown = false;
                         }
@@ -272,12 +272,12 @@ public partial class ModEditWindow
             var pixelShaders  = PixelShaders.OrderBy(i => i).Select(i => $"#{i}");
 
             VertexShadersString = $"Vertex Shaders: {string.Join(", ", ShadersKnown ? vertexShaders : vertexShaders.Append("???"))}";
-            PixelShadersString  = $"Pixel Shaders: {string.Join(", ", ShadersKnown ? pixelShaders : pixelShaders.Append("???"))}";
+            PixelShadersString  = $"Pixel Shaders: {string.Join(", ",  ShadersKnown ? pixelShaders : pixelShaders.Append("???"))}";
 
             ShaderComment = TryGetShpkDevkitData<string>("Comment", null, true) ?? string.Empty;
         }
 
-        public void UpdateTextures()
+        private void UpdateTextures()
         {
             Textures.Clear();
             SamplerIds.Clear();
@@ -302,50 +302,63 @@ public partial class ModEditWindow
                     if (Mtrl.ColorSets.Any(c => c.HasRows))
                         SamplerIds.Add(TableSamplerId);
                 }
+
                 foreach (var samplerId in SamplerIds)
                 {
                     var shpkSampler = AssociatedShpk.GetSamplerById(samplerId);
-                    if (!shpkSampler.HasValue || shpkSampler.Value.Slot != 2)
+                    if (shpkSampler is not { Slot: 2 })
                         continue;
 
-                    var dkData = TryGetShpkDevkitData<DevkitSampler>("Samplers", samplerId, true);
+                    var dkData     = TryGetShpkDevkitData<DevkitSampler>("Samplers", samplerId, true);
                     var hasDkLabel = !string.IsNullOrEmpty(dkData?.Label);
 
                     var sampler = Mtrl.GetOrAddSampler(samplerId, dkData?.DefaultTexture ?? string.Empty, out var samplerIndex);
-                    Textures.Add((hasDkLabel ? dkData!.Label : shpkSampler.Value.Name, sampler.TextureIndex, samplerIndex, dkData?.Description ?? string.Empty, !hasDkLabel));
+                    Textures.Add((hasDkLabel ? dkData!.Label : shpkSampler.Value.Name, sampler.TextureIndex, samplerIndex,
+                        dkData?.Description ?? string.Empty, !hasDkLabel));
                 }
+
                 if (SamplerIds.Contains(TableSamplerId))
                     Mtrl.FindOrAddColorSet();
             }
+
             Textures.Sort((x, y) => string.CompareOrdinal(x.Label, y.Label));
 
             TextureLabelWidth = 50f * UiHelpers.Scale;
 
             float helpWidth;
             using (var _ = ImRaii.PushFont(UiBuilder.IconFont))
+            {
                 helpWidth = ImGui.GetStyle().ItemSpacing.X + ImGui.CalcTextSize(FontAwesomeIcon.InfoCircle.ToIconString()).X;
+            }
 
             foreach (var (label, _, _, description, monoFont) in Textures)
+            {
                 if (!monoFont)
                     TextureLabelWidth = Math.Max(TextureLabelWidth, ImGui.CalcTextSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
+            }
 
             using (var _ = ImRaii.PushFont(UiBuilder.MonoFont))
             {
                 foreach (var (label, _, _, description, monoFont) in Textures)
+                {
                     if (monoFont)
-                        TextureLabelWidth = Math.Max(TextureLabelWidth, ImGui.CalcTextSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
+                        TextureLabelWidth = Math.Max(TextureLabelWidth,
+                            ImGui.CalcTextSize(label).X + (description.Length > 0 ? helpWidth : 0.0f));
+                }
             }
 
             TextureLabelWidth = TextureLabelWidth / UiHelpers.Scale + 4;
         }
 
-        public void UpdateConstants()
+        private void UpdateConstants()
         {
             static List<T> FindOrAddGroup<T>(List<(string, List<T>)> groups, string name)
             {
                 foreach (var (groupName, group) in groups)
+                {
                     if (string.Equals(name, groupName, StringComparison.Ordinal))
                         return group;
+                }
 
                 var newGroup = new List<T>(16);
                 groups.Add((name, newGroup));
@@ -360,7 +373,10 @@ public partial class ModEditWindow
                 {
                     var values = Mtrl.GetConstantValues(constant);
                     for (var i = 0; i < values.Length; i += 4)
-                        fcGroup.Add(($"0x{constant.Id:X8}", index, i..Math.Min(i + 4, values.Length), string.Empty, true, FloatConstantEditor.Default));
+                    {
+                        fcGroup.Add(($"0x{constant.Id:X8}", index, i..Math.Min(i + 4, values.Length), string.Empty, true,
+                            FloatConstantEditor.Default));
+                    }
                 }
             }
             else
@@ -371,13 +387,12 @@ public partial class ModEditWindow
                     if ((shpkConstant.ByteSize & 0x3) != 0)
                         continue;
 
-                    var constant = Mtrl.GetOrAddConstant(shpkConstant.Id, shpkConstant.ByteSize >> 2, out var constantIndex);
-                    var values = Mtrl.GetConstantValues(constant);
+                    var constant        = Mtrl.GetOrAddConstant(shpkConstant.Id, shpkConstant.ByteSize >> 2, out var constantIndex);
+                    var values          = Mtrl.GetConstantValues(constant);
                     var handledElements = new IndexSet(values.Length, false);
 
                     var dkData = TryGetShpkDevkitData<DevkitConstant[]>("Constants", shpkConstant.Id, true);
                     if (dkData != null)
-                    {
                         foreach (var dkConstant in dkData)
                         {
                             var offset = (int)dkConstant.Offset;
@@ -386,13 +401,13 @@ public partial class ModEditWindow
                                 length = Math.Min(length, (int)dkConstant.Length.Value);
                             if (length <= 0)
                                 continue;
+
                             var editor = dkConstant.CreateEditor();
                             if (editor != null)
                                 FindOrAddGroup(Constants, dkConstant.Group.Length > 0 ? dkConstant.Group : "Further Constants")
                                     .Add((dkConstant.Label, constantIndex, offset..(offset + length), dkConstant.Description, false, editor));
                             handledElements.AddRange(offset, length);
                         }
-                    }
 
                     var fcGroup = FindOrAddGroup(Constants, "Further Constants");
                     foreach (var (start, end) in handledElements.Ranges(true))
@@ -403,15 +418,20 @@ public partial class ModEditWindow
                             for (int i = (start & ~0x3) - (offset & 0x3), j = offset >> 2; i < end; i += 4, ++j)
                             {
                                 var rangeStart = Math.Max(i, start);
-                                var rangeEnd = Math.Min(i + 4, end);
+                                var rangeEnd   = Math.Min(i + 4, end);
                                 if (rangeEnd > rangeStart)
-                                    fcGroup.Add(($"{prefix}[{j:D2}]{VectorSwizzle((offset + rangeStart) & 0x3, (offset + rangeEnd - 1) & 0x3)} (0x{shpkConstant.Id:X8})", constantIndex, rangeStart..rangeEnd, string.Empty, true, FloatConstantEditor.Default));
+                                    fcGroup.Add((
+                                        $"{prefix}[{j:D2}]{VectorSwizzle((offset + rangeStart) & 0x3, (offset + rangeEnd - 1) & 0x3)} (0x{shpkConstant.Id:X8})",
+                                        constantIndex, rangeStart..rangeEnd, string.Empty, true, FloatConstantEditor.Default));
                             }
                         }
                         else
                         {
                             for (var i = start; i < end; i += 4)
-                                fcGroup.Add(($"0x{shpkConstant.Id:X8}", constantIndex, i..Math.Min(i + 4, end), string.Empty, true, FloatConstantEditor.Default));
+                            {
+                                fcGroup.Add(($"0x{shpkConstant.Id:X8}", constantIndex, i..Math.Min(i + 4, end), string.Empty, true,
+                                    FloatConstantEditor.Default));
+                            }
                         }
                     }
                 }
@@ -424,20 +444,23 @@ public partial class ModEditWindow
                     return 1;
                 if (string.Equals(y.Header, "Further Constants", StringComparison.Ordinal))
                     return -1;
+
                 return string.Compare(x.Header, y.Header, StringComparison.Ordinal);
             });
             // HACK the Replace makes w appear after xyz, for the cbuffer-location-based naming scheme
             foreach (var (_, group) in Constants)
+            {
                 group.Sort((x, y) => string.CompareOrdinal(
                     x.MonoFont ? x.Label.Replace("].w", "].{") : x.Label,
                     y.MonoFont ? y.Label.Replace("].w", "].{") : y.Label));
+            }
         }
 
         public unsafe void BindToMaterialInstances()
         {
             UnbindFromMaterialInstances();
 
-            var localPlayer = FindLocalPlayer(_edit._dalamud.Objects);
+            var localPlayer = LocalPlayer(_edit._dalamud.Objects);
             if (null == localPlayer)
                 return;
 
@@ -449,7 +472,9 @@ public partial class ModEditWindow
 
             var drawObjects = stackalloc CharacterBase*[4];
             drawObjects[0] = drawObject;
-
+            drawObjects[1] = *((CharacterBase**)&localPlayer->DrawData.MainHand + 1);
+            drawObjects[2] = *((CharacterBase**)&localPlayer->DrawData.OffHand + 1);
+            drawObjects[3] = *((CharacterBase**)&localPlayer->DrawData.UnkF0 + 1);
             for (var i = 0; i < 3; ++i)
             {
                 var subActor = FindSubActor(localPlayer, i);
@@ -470,9 +495,11 @@ public partial class ModEditWindow
                 var material = GetDrawObjectMaterial(drawObjects[subActorType + 1], modelSlot, materialSlot);
                 if (foundMaterials.Contains((nint)material))
                     continue;
+
                 try
                 {
-                    MaterialPreviewers.Add(new LiveMaterialPreviewer(_edit._dalamud.Objects, subActorType, childObjectIndex, modelSlot, materialSlot));
+                    MaterialPreviewers.Add(new LiveMaterialPreviewer(_edit._dalamud.Objects, subActorType, childObjectIndex, modelSlot,
+                        materialSlot));
                     foundMaterials.Add((nint)material);
                 }
                 catch (InvalidOperationException)
@@ -480,28 +507,31 @@ public partial class ModEditWindow
                     // Carry on without that previewer.
                 }
             }
+
             UpdateMaterialPreview();
 
             var colorSet = Mtrl.ColorSets.FirstOrNull(colorSet => colorSet.HasRows);
 
-            if (colorSet.HasValue)
+            if (!colorSet.HasValue)
+                return;
+
+            foreach (var (subActorType, childObjectIndex, modelSlot, materialSlot) in instances)
             {
-                foreach (var (subActorType, childObjectIndex, modelSlot, materialSlot) in instances)
+                try
                 {
-                    try
-                    {
-                        ColorSetPreviewers.Add(new LiveColorSetPreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, subActorType, childObjectIndex, modelSlot, materialSlot));
-                    }
-                    catch (InvalidOperationException)
-                    {
-                        // Carry on without that previewer.
-                    }
+                    ColorSetPreviewers.Add(new LiveColorSetPreviewer(_edit._dalamud.Objects, _edit._dalamud.Framework, subActorType,
+                        childObjectIndex, modelSlot, materialSlot));
                 }
-                UpdateColorSetPreview();
+                catch (InvalidOperationException)
+                {
+                    // Carry on without that previewer.
+                }
             }
+
+            UpdateColorSetPreview();
         }
 
-        public void UnbindFromMaterialInstances()
+        private void UnbindFromMaterialInstances()
         {
             foreach (var previewer in MaterialPreviewers)
                 previewer.Dispose();
@@ -512,9 +542,9 @@ public partial class ModEditWindow
             ColorSetPreviewers.Clear();
         }
 
-        public unsafe void UnbindFromDrawObjectMaterialInstances(nint characterBase)
+        private unsafe void UnbindFromDrawObjectMaterialInstances(nint characterBase)
         {
-            for (var i = MaterialPreviewers.Count; i-- > 0; )
+            for (var i = MaterialPreviewers.Count; i-- > 0;)
             {
                 var previewer = MaterialPreviewers[i];
                 if ((nint)previewer.DrawObject != characterBase)
@@ -553,7 +583,7 @@ public partial class ModEditWindow
                 previewer.SetSamplerFlags(samplerCrc, samplerFlags);
         }
 
-        public void UpdateMaterialPreview()
+        private void UpdateMaterialPreview()
         {
             SetShaderPackageFlags(Mtrl.ShaderPackage.Flags);
             foreach (var constant in Mtrl.ShaderPackage.Constants)
@@ -562,6 +592,7 @@ public partial class ModEditWindow
                 if (values != null)
                     SetMaterialParameter(constant.Id, 0, values);
             }
+
             foreach (var sampler in Mtrl.ShaderPackage.Samplers)
                 SetSamplerFlags(sampler.SamplerId, sampler.Flags);
         }
@@ -602,7 +633,7 @@ public partial class ModEditWindow
             if (!maybeColorSet.HasValue)
                 return;
 
-            var colorSet = maybeColorSet.Value;
+            var colorSet         = maybeColorSet.Value;
             var maybeColorDyeSet = Mtrl.ColorDyeSets.FirstOrNull(colorDyeSet => colorDyeSet.Index == colorSet.Index);
 
             var row = colorSet.Rows[rowIdx];
@@ -610,7 +641,7 @@ public partial class ModEditWindow
             {
                 var stm = _edit._stainService.StmFile;
                 var dye = maybeColorDyeSet.Value.Rows[rowIdx];
-                if (stm.TryGetValue(dye.Template, (StainId)_edit._stainService.StainCombo.CurrentSelection.Key, out var dyes))
+                if (stm.TryGetValue(dye.Template, _edit._stainService.StainCombo.CurrentSelection.Key, out var dyes))
                     row.ApplyDyeTemplate(dye, dyes);
             }
 
@@ -619,7 +650,8 @@ public partial class ModEditWindow
 
             foreach (var previewer in ColorSetPreviewers)
             {
-                row.AsHalves().CopyTo(previewer.ColorSet.AsSpan().Slice(LiveColorSetPreviewer.TextureWidth * 4 * rowIdx, LiveColorSetPreviewer.TextureWidth * 4));
+                row.AsHalves().CopyTo(previewer.ColorSet.AsSpan()
+                    .Slice(LiveColorSetPreviewer.TextureWidth * 4 * rowIdx, LiveColorSetPreviewer.TextureWidth * 4));
                 previewer.ScheduleUpdate();
             }
         }
@@ -633,19 +665,19 @@ public partial class ModEditWindow
             if (!maybeColorSet.HasValue)
                 return;
 
-            var colorSet = maybeColorSet.Value;
+            var colorSet         = maybeColorSet.Value;
             var maybeColorDyeSet = Mtrl.ColorDyeSets.FirstOrNull(colorDyeSet => colorDyeSet.Index == colorSet.Index);
 
             var rows = colorSet.Rows;
             if (maybeColorDyeSet.HasValue && UseColorDyeSet)
             {
-                var stm = _edit._stainService.StmFile;
-                var stainId = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
+                var stm         = _edit._stainService.StmFile;
+                var stainId     = (StainId)_edit._stainService.StainCombo.CurrentSelection.Key;
                 var colorDyeSet = maybeColorDyeSet.Value;
                 for (var i = 0; i < MtrlFile.ColorSet.RowArray.NumRows; ++i)
                 {
                     ref var row = ref rows[i];
-                    var dye = colorDyeSet.Rows[i];
+                    var     dye = colorDyeSet.Rows[i];
                     if (stm.TryGetValue(dye.Template, stainId, out var dyes))
                         row.ApplyDyeTemplate(dye, dyes);
                 }
@@ -663,10 +695,10 @@ public partial class ModEditWindow
 
         private static void ApplyHighlight(ref MtrlFile.ColorSet.Row row, float time)
         {
-            var level = Math.Sin(time * 2.0 * Math.PI) * 0.25 + 0.5;
+            var level   = Math.Sin(time * 2.0 * Math.PI) * 0.25 + 0.5;
             var levelSq = (float)(level * level);
 
-            row.Diffuse = Vector3.Zero;
+            row.Diffuse  = Vector3.Zero;
             row.Specular = Vector3.Zero;
             row.Emissive = new Vector3(levelSq);
         }
@@ -678,15 +710,15 @@ public partial class ModEditWindow
             UpdateConstants();
         }
 
-        public MtrlTab( ModEditWindow edit, MtrlFile file, string filePath, bool writable )
+        public MtrlTab(ModEditWindow edit, MtrlFile file, string filePath, bool writable)
         {
-            _edit          = edit;
-            Mtrl           = file;
-            FilePath       = filePath;
-            Writable       = writable;
-            UseColorDyeSet = file.ColorDyeSets.Length > 0;
-            AssociatedBaseDevkit = TryLoadShpkDevkit( "_base", out LoadedBaseDevkitPathName );
-            LoadShpk( FindAssociatedShpk( out _, out _ ) );
+            _edit                = edit;
+            Mtrl                 = file;
+            FilePath             = filePath;
+            Writable             = writable;
+            UseColorDyeSet       = file.ColorDyeSets.Length > 0;
+            AssociatedBaseDevkit = TryLoadShpkDevkit("_base", out LoadedBaseDevkitPathName);
+            LoadShpk(FindAssociatedShpk(out _, out _));
             if (writable)
             {
                 _edit._gameEvents.CharacterBaseDestructor += UnbindFromDrawObjectMaterialInstances;
@@ -694,18 +726,7 @@ public partial class ModEditWindow
             }
         }
 
-        ~MtrlTab()
-        {
-            DoDispose();
-        }
-
         public void Dispose()
-        {
-            DoDispose();
-            GC.SuppressFinalize(this);
-        }
-
-        private void DoDispose()
         {
             UnbindFromMaterialInstances();
             if (Writable)
@@ -723,11 +744,7 @@ public partial class ModEditWindow
             return output.Write();
         }
 
-        private sealed class DevkitShaderKeyValue
-        {
-            public string Label       = string.Empty;
-            public string Description = string.Empty;
-        }
+        private sealed record DevkitShaderKeyValue(string Label = "", string Description = "");
 
         private sealed class DevkitShaderKey
         {
@@ -736,12 +753,7 @@ public partial class ModEditWindow
             public Dictionary<uint, DevkitShaderKeyValue> Values      = new();
         }
 
-        private sealed class DevkitSampler
-        {
-            public string Label          = string.Empty;
-            public string Description    = string.Empty;
-            public string DefaultTexture = string.Empty;
-        }
+        private sealed record DevkitSampler(string Label = "", string Description = "", string DefaultTexture = "");
 
         private enum DevkitConstantType
         {
@@ -752,12 +764,7 @@ public partial class ModEditWindow
             Enum    = 3,
         }
 
-        private sealed class DevkitConstantValue
-        {
-            public string Label       = string.Empty;
-            public string Description = string.Empty;
-            public float  Value       = 0.0f;
-        }
+        private sealed record DevkitConstantValue(string Label = "", string Description = "", float Value = 0);
 
         private sealed class DevkitConstant
         {
@@ -783,25 +790,20 @@ public partial class ModEditWindow
             public DevkitConstantValue[] Values = Array.Empty<DevkitConstantValue>();
 
             public IConstantEditor? CreateEditor()
-            {
-                switch (Type)
+                => Type switch
                 {
-                    case DevkitConstantType.Hidden:
-                        return null;
-                    case DevkitConstantType.Float:
-                        return new FloatConstantEditor(Minimum, Maximum, Speed ?? 0.1f, RelativeSpeed, Factor, Bias, Precision, Unit);
-                    case DevkitConstantType.Integer:
-                        return new IntConstantEditor(ToInteger(Minimum), ToInteger(Maximum), Speed ?? 0.25f, RelativeSpeed, Factor, Bias, Unit);
-                    case DevkitConstantType.Color:
-                        return new ColorConstantEditor(SquaredRgb, Clamped);
-                    case DevkitConstantType.Enum:
-                        return new EnumConstantEditor(Array.ConvertAll(Values, value => (value.Label, value.Value, value.Description)));
-                    default:
-                        return FloatConstantEditor.Default;
-                }
-            }
+                    DevkitConstantType.Hidden => null,
+                    DevkitConstantType.Float => new FloatConstantEditor(Minimum, Maximum, Speed ?? 0.1f, RelativeSpeed, Factor, Bias, Precision,
+                        Unit),
+                    DevkitConstantType.Integer => new IntConstantEditor(ToInteger(Minimum), ToInteger(Maximum), Speed ?? 0.25f, RelativeSpeed,
+                        Factor, Bias, Unit),
+                    DevkitConstantType.Color => new ColorConstantEditor(SquaredRgb, Clamped),
+                    DevkitConstantType.Enum => new EnumConstantEditor(Array.ConvertAll(Values,
+                        value => (value.Label, value.Value, value.Description))),
+                    _ => FloatConstantEditor.Default,
+                };
 
-            private int? ToInteger(float? value)
+            private static int? ToInteger(float? value)
                 => value.HasValue ? (int)Math.Clamp(MathF.Round(value.Value), int.MinValue, int.MaxValue) : null;
         }
     }

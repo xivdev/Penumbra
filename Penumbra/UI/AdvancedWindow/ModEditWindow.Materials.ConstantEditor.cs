@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Numerics;
 using ImGuiNET;
 using OtterGui.Raii;
@@ -27,7 +28,8 @@ public partial class ModEditWindow
         private readonly float  _bias;
         private readonly string _format;
 
-        public FloatConstantEditor(float? minimum, float? maximum, float speed, float relativeSpeed, float factor, float bias, byte precision, string unit)
+        public FloatConstantEditor(float? minimum, float? maximum, float speed, float relativeSpeed, float factor, float bias, byte precision,
+            string unit)
         {
             _minimum       = minimum;
             _maximum       = maximum;
@@ -55,10 +57,13 @@ public partial class ModEditWindow
 
                 var value = (values[valueIdx] - _bias) / _factor;
                 if (disabled)
+                {
                     ImGui.DragFloat($"##{valueIdx}", ref value, Math.Max(_speed, value * _relativeSpeed), value, value, _format);
+                }
                 else
                 {
-                    if (ImGui.DragFloat($"##{valueIdx}", ref value, Math.Max(_speed, value * _relativeSpeed), _minimum ?? 0.0f, _maximum ?? 0.0f, _format))
+                    if (ImGui.DragFloat($"##{valueIdx}", ref value, Math.Max(_speed, value * _relativeSpeed), _minimum ?? 0.0f,
+                            _maximum ?? 0.0f, _format))
                     {
                         values[valueIdx] = Clamp(value) * _factor + _bias;
                         ret              = true;
@@ -111,10 +116,13 @@ public partial class ModEditWindow
 
                 var value = (int)Math.Clamp(MathF.Round((values[valueIdx] - _bias) / _factor), int.MinValue, int.MaxValue);
                 if (disabled)
+                {
                     ImGui.DragInt($"##{valueIdx}", ref value, Math.Max(_speed, value * _relativeSpeed), value, value, _format);
+                }
                 else
                 {
-                    if (ImGui.DragInt($"##{valueIdx}", ref value, Math.Max(_speed, value * _relativeSpeed), _minimum ?? 0, _maximum ?? 0, _format))
+                    if (ImGui.DragInt($"##{valueIdx}", ref value, Math.Max(_speed, value * _relativeSpeed), _minimum ?? 0, _maximum ?? 0,
+                            _format))
                     {
                         values[valueIdx] = Clamp(value) * _factor + _bias;
                         ret              = true;
@@ -142,14 +150,17 @@ public partial class ModEditWindow
 
         public bool Draw(Span<float> values, bool disabled, float editorWidth)
         {
-            if (values.Length == 3)
+            switch (values.Length)
             {
-                ImGui.SetNextItemWidth(editorWidth);
-                var value = new Vector3(values);
-                if (_squaredRgb)
-                    value = PseudoSqrtRgb(value);
-                if (ImGui.ColorEdit3("##0", ref value, ImGuiColorEditFlags.Float | (_clamped ? 0 : ImGuiColorEditFlags.HDR)) && !disabled)
+                case 3:
                 {
+                    ImGui.SetNextItemWidth(editorWidth);
+                    var value = new Vector3(values);
+                    if (_squaredRgb)
+                        value = PseudoSqrtRgb(value);
+                    if (!ImGui.ColorEdit3("##0", ref value, ImGuiColorEditFlags.Float | (_clamped ? 0 : ImGuiColorEditFlags.HDR)) || disabled)
+                        return false;
+
                     if (_squaredRgb)
                         value = PseudoSquareRgb(value);
                     if (_clamped)
@@ -157,17 +168,17 @@ public partial class ModEditWindow
                     value.CopyTo(values);
                     return true;
                 }
-
-                return false;
-            }
-            else if (values.Length == 4)
-            {
-                ImGui.SetNextItemWidth(editorWidth);
-                var value = new Vector4(values);
-                if (_squaredRgb)
-                    value = PseudoSqrtRgb(value);
-                if (ImGui.ColorEdit4("##0", ref value, ImGuiColorEditFlags.Float | ImGuiColorEditFlags.AlphaPreviewHalf | (_clamped ? 0 : ImGuiColorEditFlags.HDR)) && !disabled)
+                case 4:
                 {
+                    ImGui.SetNextItemWidth(editorWidth);
+                    var value = new Vector4(values);
+                    if (_squaredRgb)
+                        value = PseudoSqrtRgb(value);
+                    if (!ImGui.ColorEdit4("##0", ref value,
+                            ImGuiColorEditFlags.Float | ImGuiColorEditFlags.AlphaPreviewHalf | (_clamped ? 0 : ImGuiColorEditFlags.HDR))
+                     || disabled)
+                        return false;
+
                     if (_squaredRgb)
                         value = PseudoSquareRgb(value);
                     if (_clamped)
@@ -175,11 +186,8 @@ public partial class ModEditWindow
                     value.CopyTo(values);
                     return true;
                 }
-
-                return false;
+                default: return FloatConstantEditor.Default.Draw(values, disabled, editorWidth);
             }
-            else
-                return FloatConstantEditor.Default.Draw(values, disabled, editorWidth);
         }
     }
 
@@ -188,9 +196,7 @@ public partial class ModEditWindow
         private readonly IReadOnlyList<(string Label, float Value, string Description)> _values;
 
         public EnumConstantEditor(IReadOnlyList<(string Label, float Value, string Description)> values)
-        {
-            _values = values;
-        }
+            => _values = values;
 
         public bool Draw(Span<float> values, bool disabled, float editorWidth)
         {
@@ -200,33 +206,40 @@ public partial class ModEditWindow
 
             for (var valueIdx = 0; valueIdx < values.Length; ++valueIdx)
             {
+                using var id = ImRaii.PushId(valueIdx);
                 if (valueIdx > 0)
                     ImGui.SameLine();
 
                 ImGui.SetNextItemWidth(MathF.Round(fieldWidth * (valueIdx + 1)) - MathF.Round(fieldWidth * valueIdx));
 
                 var currentValue = values[valueIdx];
-                var (currentLabel, _, currentDescription) = _values.FirstOrNull(v => v.Value == currentValue) ?? (currentValue.ToString(), currentValue, string.Empty);
-                if (disabled)
-                    ImGui.InputText($"##{valueIdx}", ref currentLabel, (uint)currentLabel.Length, ImGuiInputTextFlags.ReadOnly);
-                else
-                {
-                    using var c = ImRaii.Combo($"##{valueIdx}", currentLabel);
-                    {
-                        if (c)
-                            foreach (var (valueLabel, value, valueDescription) in _values)
-                            {
-                                if (ImGui.Selectable(valueLabel, value == currentValue))
-                                {
-                                    values[valueIdx] = value;
-                                    ret              = true;
-                                }
+                var currentLabel = _values.FirstOrNull(v => v.Value == currentValue)?.Label
+                 ?? currentValue.ToString(CultureInfo.CurrentCulture);
+                ret = disabled
+                    ? ImGui.InputText(string.Empty, ref currentLabel, (uint)currentLabel.Length, ImGuiInputTextFlags.ReadOnly)
+                    : DrawCombo(currentLabel, ref values[valueIdx]);
+            }
 
-                                if (valueDescription.Length > 0)
-                                    ImGuiUtil.SelectableHelpMarker(valueDescription);
-                            }
-                    }
+            return ret;
+        }
+
+        private bool DrawCombo(string label, ref float currentValue)
+        {
+            using var c = ImRaii.Combo(string.Empty, label);
+            if (!c)
+                return false;
+
+            var ret = false;
+            foreach (var (valueLabel, value, valueDescription) in _values)
+            {
+                if (ImGui.Selectable(valueLabel, value == currentValue))
+                {
+                    currentValue = value;
+                    ret          = true;
                 }
+
+                if (valueDescription.Length > 0)
+                    ImGuiUtil.SelectableHelpMarker(valueDescription);
             }
 
             return ret;
