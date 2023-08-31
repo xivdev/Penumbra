@@ -128,7 +128,7 @@ public class ResourceTreeViewer
 
                 if (debugMode)
                     ImGuiUtil.HoverTooltip(
-                        $"Resource Type: {resourceNode.Type}\nSource Address: 0x{resourceNode.SourceAddress:X16}");
+                        $"Resource Type: {resourceNode.Type}\nObject Address: 0x{resourceNode.ObjectAddress:X16}\nResource Handle: 0x{resourceNode.ResourceHandle:X16}\nLength: 0x{resourceNode.Length:X}");
             }
 
             ImGui.TableNextColumn();

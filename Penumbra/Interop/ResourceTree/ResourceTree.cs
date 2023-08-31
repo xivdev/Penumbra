@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 using Penumbra.GameData.Enums;
 using Penumbra.GameData.Structs;
@@ -59,6 +60,8 @@ public class ResourceTree
                 Nodes.Add(globalContext.WithNames ? mdlNode.WithName(mdlNode.Name ?? $"Model #{i}") : mdlNode);
         }
 
+        AddSkeleton(Nodes, globalContext.CreateContext(EquipSlot.Unknown, default), model->Skeleton);
+
         if (character->GameObject.GetObjectKind() == (byte)ObjectKind.Pc)
             AddHumanResources(globalContext, (HumanExt*)model);
     }
@@ -97,6 +100,8 @@ public class ResourceTree
                             : mdlNode);
                 }
 
+                AddSkeleton(subObjectNodes, subObjectContext, subObject->Skeleton, $"{subObjectNamePrefix} #{subObjectIndex}, ");
+
                 subObject = (CharacterBase*)subObject->DrawObject.Object.NextSiblingObject;
                 ++subObjectIndex;
             } while (subObject != null && subObject != firstSubObject);
@@ -106,16 +111,25 @@ public class ResourceTree
 
         var context = globalContext.CreateContext(EquipSlot.Unknown, default);
 
-        var skeletonNode = context.CreateHumanSkeletonNode((GenderRace)human->Human.RaceSexId);
-        if (skeletonNode != null)
-            Nodes.Add(globalContext.WithNames ? skeletonNode.WithName(skeletonNode.Name ?? "Skeleton") : skeletonNode);
-
-        var decalNode = context.CreateNodeFromTex(human->Decal);
+        var decalNode = context.CreateNodeFromTex((TextureResourceHandle*)human->Decal);
         if (decalNode != null)
             Nodes.Add(globalContext.WithNames ? decalNode.WithName(decalNode.Name ?? "Face Decal") : decalNode);
 
-        var legacyDecalNode = context.CreateNodeFromTex(human->LegacyBodyDecal);
+        var legacyDecalNode = context.CreateNodeFromTex((TextureResourceHandle*)human->LegacyBodyDecal);
         if (legacyDecalNode != null)
             Nodes.Add(globalContext.WithNames ? legacyDecalNode.WithName(legacyDecalNode.Name ?? "Legacy Body Decal") : legacyDecalNode);
+    }
+
+    private unsafe void AddSkeleton(List<ResourceNode> nodes, ResolveContext context, Skeleton* skeleton, string prefix = "")
+    {
+        if (skeleton == null)
+            return;
+
+        for (var i = 0; i < skeleton->PartialSkeletonCount; ++i)
+        {
+            var sklbNode = context.CreateNodeFromPartialSkeleton(&skeleton->PartialSkeletons[i]);
+            if (sklbNode != null)
+                nodes.Add(context.WithNames ? sklbNode.WithName($"{prefix}Skeleton #{i}") : sklbNode);
+        }
     }
 }

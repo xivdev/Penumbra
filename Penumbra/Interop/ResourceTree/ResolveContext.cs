@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Kernel;
 using FFXIVClientStructs.FFXIV.Client.System.Resource;
 using Penumbra.Collections;
 using Penumbra.GameData;
@@ -23,17 +24,17 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
     CharacterArmor Equipment)
 {
     private static readonly ByteString ShpkPrefix = ByteString.FromSpanUnsafe("shader/sm5/shpk"u8, true, true, true);
-    private ResourceNode? CreateNodeFromShpk(nint sourceAddress, ByteString gamePath, bool @internal)
+    private unsafe ResourceNode? CreateNodeFromShpk(ShaderPackageResourceHandle* resourceHandle, ByteString gamePath, bool @internal)
     {
         if (gamePath.IsEmpty)
             return null;
         if (!Utf8GamePath.FromByteString(ByteString.Join((byte)'/', ShpkPrefix, gamePath), out var path, false))
             return null;
 
-        return CreateNodeFromGamePath(ResourceType.Shpk, sourceAddress, path, @internal);
+        return CreateNodeFromGamePath(ResourceType.Shpk, (nint)resourceHandle->ShaderPackage, &resourceHandle->Handle, path, @internal);
     }
 
-    private ResourceNode? CreateNodeFromTex(nint sourceAddress, ByteString gamePath, bool @internal, bool dx11)
+    private unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* resourceHandle, ByteString gamePath, bool @internal, bool dx11)
     {
         if (dx11)
         {
@@ -59,13 +60,19 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         if (!Utf8GamePath.FromByteString(gamePath, out var path))
             return null;
 
-        return CreateNodeFromGamePath(ResourceType.Tex, sourceAddress, path, @internal);
+        return CreateNodeFromGamePath(ResourceType.Tex, (nint)resourceHandle->KernelTexture, &resourceHandle->Handle, path, @internal);
     }
 
-    private ResourceNode CreateNodeFromGamePath(ResourceType type, nint sourceAddress, Utf8GamePath gamePath, bool @internal)
-        => new(null, type, sourceAddress, gamePath, FilterFullPath(Collection.ResolvePath(gamePath) ?? new FullPath(gamePath)), @internal);
+    private unsafe ResourceNode CreateNodeFromGamePath(ResourceType type, nint objectAddress, ResourceHandle* resourceHandle, Utf8GamePath gamePath, bool @internal)
+    {
+        var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(resourceHandle), out var p) ? new FullPath(p) : FullPath.Empty;
+        if (fullPath.InternalName.IsEmpty)
+            fullPath = Collection.ResolvePath(gamePath) ?? new FullPath(gamePath);
 
-    private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint sourceAddress, ResourceHandle* handle, bool @internal,
+        return new(null, type, objectAddress, (nint)resourceHandle, gamePath, FilterFullPath(fullPath), GetResourceHandleLength(resourceHandle), @internal);
+    }
+
+    private unsafe ResourceNode? CreateNodeFromResourceHandle(ResourceType type, nint objectAddress, ResourceHandle* handle, bool @internal,
         bool withName)
     {
         var fullPath = Utf8GamePath.FromByteString(GetResourceHandlePath(handle), out var p) ? new FullPath(p) : FullPath.Empty;
@@ -79,13 +86,14 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
             gamePaths = Filter(gamePaths);
 
         if (gamePaths.Count == 1)
-            return new ResourceNode(withName ? GuessNameFromPath(gamePaths[0]) : null, type, sourceAddress, gamePaths[0], fullPath, @internal);
+            return new ResourceNode(withName ? GuessNameFromPath(gamePaths[0]) : null, type, objectAddress, (nint)handle, gamePaths[0], fullPath,
+                GetResourceHandleLength(handle), @internal);
 
         Penumbra.Log.Information($"Found {gamePaths.Count} game paths while reverse-resolving {fullPath} in {Collection.Name}:");
         foreach (var gamePath in gamePaths)
             Penumbra.Log.Information($"Game path: {gamePath}");
 
-        return new ResourceNode(null, type, sourceAddress, gamePaths.ToArray(), fullPath, @internal);
+        return new ResourceNode(null, type, objectAddress, (nint)handle, gamePaths.ToArray(), fullPath, GetResourceHandleLength(handle), @internal);
     }
     public unsafe ResourceNode? CreateHumanSkeletonNode(GenderRace gr)
     {
@@ -95,12 +103,12 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         if (!Utf8GamePath.FromString(path, out var gamePath))
             return null;
 
-        return CreateNodeFromGamePath(ResourceType.Sklb, 0, gamePath, false);
+        return CreateNodeFromGamePath(ResourceType.Sklb, 0, null, gamePath, false);
     }
 
     public unsafe ResourceNode? CreateNodeFromImc(ResourceHandle* imc)
     {
-        var node = CreateNodeFromResourceHandle(ResourceType.Imc, (nint) imc, imc, true, false);
+        var node = CreateNodeFromResourceHandle(ResourceType.Imc, 0, imc, true, false);
         if (node == null)
             return null;
 
@@ -113,8 +121,8 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         return node;
     }
 
-    public unsafe ResourceNode? CreateNodeFromTex(ResourceHandle* tex)
-        => CreateNodeFromResourceHandle(ResourceType.Tex, (nint) tex, tex, false, WithNames);
+    public unsafe ResourceNode? CreateNodeFromTex(TextureResourceHandle* tex)
+        => CreateNodeFromResourceHandle(ResourceType.Tex, (nint)tex->KernelTexture, &tex->Handle, false, WithNames);
 
     public unsafe ResourceNode? CreateNodeFromRenderModel(RenderModel* mdl)
     {
@@ -145,6 +153,38 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
 
     private unsafe ResourceNode? CreateNodeFromMaterial(Material* mtrl)
     {
+        static ushort GetTextureIndex(ushort texFlags)
+        {
+            if ((texFlags & 0x001F) != 0x001F)
+                return (ushort)(texFlags & 0x001F);
+            else if ((texFlags & 0x03E0) != 0x03E0)
+                return (ushort)((texFlags >> 5) & 0x001F);
+            else
+                return (ushort)((texFlags >> 10) & 0x001F);
+        }
+        static uint? GetTextureSamplerId(Material* mtrl, TextureResourceHandle* handle)
+        {
+            var textures = mtrl->Textures;
+            for (var i = 0; i < mtrl->TextureCount; ++i)
+            {
+                if (textures[i].ResourceHandle == handle)
+                    return textures[i].Id;
+            }
+
+            return null;
+        }
+        static uint? GetSamplerCrcById(ShaderPackage* shpk, uint id)
+        {
+            var samplers = (ShaderPackageUtility.Sampler*)shpk->Samplers;
+            for (var i = 0; i < shpk->SamplerCount; ++i)
+            {
+                if (samplers[i].Id == id)
+                    return samplers[i].Crc;
+            }
+
+            return null;
+        }
+
         if (mtrl == null)
             return null;
 
@@ -153,23 +193,36 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         if (node == null)
             return null;
 
-        var mtrlFile = WithNames ? TreeBuildCache.ReadMaterial(node.FullPath) : null;
-
-        var shpkNode = CreateNodeFromShpk(nint.Zero, new ByteString(resource->ShpkString), false);
+        var shpkNode = CreateNodeFromShpk(resource->ShpkResourceHandle, new ByteString(resource->ShpkString), false);
         if (shpkNode != null)
             node.Children.Add(WithNames ? shpkNode.WithName("Shader Package") : shpkNode);
         var shpkFile = WithNames && shpkNode != null ? TreeBuildCache.ReadShaderPackage(shpkNode.FullPath) : null;
-        var samplers = WithNames ? mtrlFile?.GetSamplersByTexture(shpkFile) : null;
+        var shpk = WithNames && shpkNode != null ? (ShaderPackage*)shpkNode.ObjectAddress : null;
 
         for (var i = 0; i < resource->NumTex; i++)
         {
-            var texNode = CreateNodeFromTex(nint.Zero, new ByteString(resource->TexString(i)), false, resource->TexIsDX11(i));
+            var texNode = CreateNodeFromTex(resource->TexSpace[i].ResourceHandle, new ByteString(resource->TexString(i)), false, resource->TexIsDX11(i));
             if (texNode == null)
                 continue;
 
             if (WithNames)
             {
-                var name = samplers != null && i < samplers.Length ? samplers[i].ShpkSampler?.Name : null;
+                string? name = null;
+                if (shpk != null)
+                {
+                    var index = GetTextureIndex(resource->TexSpace[i].Flags);
+                    uint? samplerId;
+                    if (index != 0x001F)
+                        samplerId = mtrl->Textures[index].Id;
+                    else
+                        samplerId = GetTextureSamplerId(mtrl, resource->TexSpace[i].ResourceHandle);
+                    if (samplerId.HasValue)
+                    {
+                        var samplerCrc = GetSamplerCrcById(shpk, samplerId.Value);
+                        if (samplerCrc.HasValue)
+                            name = shpkFile?.GetSamplerById(samplerCrc.Value)?.Name ?? $"Texture 0x{samplerCrc.Value:X8}";
+                    }
+                }
                 node.Children.Add(texNode.WithName(name ?? $"Texture #{i}"));
             }
             else
@@ -179,6 +232,14 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         }
 
         return node;
+    }
+
+    public unsafe ResourceNode? CreateNodeFromPartialSkeleton(FFXIVClientStructs.FFXIV.Client.Graphics.Render.PartialSkeleton* sklb)
+    {
+        if (sklb->SkeletonResourceHandle == null)
+            return null;
+
+        return CreateNodeFromResourceHandle(ResourceType.Sklb, (nint)sklb, (ResourceHandle*)sklb->SkeletonResourceHandle, false, WithNames);
     }
 
     private FullPath FilterFullPath(FullPath fullPath)
@@ -293,5 +354,13 @@ internal record class ResolveContext(Configuration Config, IObjectIdentifier Ide
         }
 
         return name;
+    }
+
+    static unsafe ulong GetResourceHandleLength(ResourceHandle* handle)
+    {
+        if (handle == null)
+            return 0;
+
+        return ResourceHandle.GetLength(handle);
     }
 }

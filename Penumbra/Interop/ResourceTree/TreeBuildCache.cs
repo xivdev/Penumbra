@@ -12,7 +12,6 @@ namespace Penumbra.Interop.ResourceTree;
 internal class TreeBuildCache
 {
     private readonly IDataManager                    _dataManager;
-    private readonly Dictionary<FullPath, MtrlFile?> _materials      = new();
     private readonly Dictionary<FullPath, ShpkFile?> _shaderPackages = new();
     public readonly  List<Character>                 Characters;
     public readonly  Dictionary<uint, Character>     CharactersById;
@@ -26,10 +25,6 @@ internal class TreeBuildCache
             .GroupBy(c => c.ObjectId)
             .ToDictionary(c => c.Key, c => c.First());
     }
-
-    /// <summary> Try to read a material file from the given path and cache it on success. </summary>
-    public MtrlFile? ReadMaterial(FullPath path)
-        => ReadFile(_dataManager, path, _materials, bytes => new MtrlFile(bytes));
 
     /// <summary> Try to read a shpk file from the given path and cache it on success. </summary>
     public ShpkFile? ReadShaderPackage(FullPath path)
